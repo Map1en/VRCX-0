@@ -3,9 +3,11 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { FriendInstanceTimer } from '@/components/sidebar/friends-sidebar/FriendsSidebarLocation';
 import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import { UserDetailTile } from '@/components/UserDetailTile';
 import type { EntityRecord } from '@/domain/entities/profileEntities';
+import { resolveInstanceDwellEpoch } from '@/domain/instances/instanceRoster';
 import { timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -13,6 +15,7 @@ import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
 
 import {
+    isUndisclosedMutualFriendRow,
     summarizeEntityRow,
     userIdForRow,
     userRowSubtitle,
@@ -28,12 +31,14 @@ export function EntityList({
     rows,
     kind,
     loading = false,
-    error = ''
+    error = '',
+    showInstanceDuration = false
 }: {
     rows: readonly EntityRecord[];
     kind: UserDialogEntityKind;
     loading?: boolean;
     error?: string;
+    showInstanceDuration?: boolean;
 }) {
     const { t } = useTranslation();
     const currentEndpoint = useRuntimeStore(
@@ -72,10 +77,18 @@ export function EntityList({
                 }
 
                 const image = rowImage(row, kind);
-                const rawLabel =
-                    kind === 'user'
-                        ? row?.displayName || row?.username || ''
-                        : summarizeEntityRow(row);
+                const undisclosedMutualFriend =
+                    kind === 'user' && isUndisclosedMutualFriendRow(row);
+                let rawLabel;
+                if (undisclosedMutualFriend) {
+                    rawLabel = t(
+                        'dialog.user.mutual_friends.undisclosed_friend'
+                    );
+                } else if (kind === 'user') {
+                    rawLabel = row?.displayName || row?.username || '';
+                } else {
+                    rawLabel = summarizeEntityRow(row);
+                }
                 const label =
                     typeof rawLabel === 'string'
                         ? rawLabel
@@ -119,6 +132,7 @@ export function EntityList({
                             key={rowKey}
                             userId={userId}
                             seed={row}
+                            disabled={undisclosedMutualFriend}
                             className="active:not-aria-[haspopup]:translate-y-0"
                             imageUrl={image}
                             statusDotClassName={dotClassName}
@@ -127,7 +141,15 @@ export function EntityList({
                                 userColour ? { color: userColour } : undefined
                             }
                             subline={
-                                travelingTimestamp ? (
+                                showInstanceDuration ? (
+                                    <FriendInstanceTimer
+                                        epoch={
+                                            travelingTimestamp ||
+                                            resolveInstanceDwellEpoch(row)
+                                        }
+                                        traveling={Boolean(travelingTimestamp)}
+                                    />
+                                ) : travelingTimestamp ? (
                                     <>
                                         <Spinner
                                             data-icon="inline-start"
@@ -141,7 +163,11 @@ export function EntityList({
                                     subtitle || undefined
                                 )
                             }
-                            onOpen={() => openRow(row, kind)}
+                            onOpen={
+                                undisclosedMutualFriend
+                                    ? undefined
+                                    : () => openRow(row, kind)
+                            }
                         />
                     );
                 }

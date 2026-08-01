@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import avatarFeedHistoryRepository from '@/repositories/avatarFeedHistoryRepository';
 import configRepository from '@/repositories/configRepository';
 import databaseMaintenanceRepository from '@/repositories/databaseMaintenanceRepository';
-import feedRepository from '@/repositories/feedRepository';
 import mediaRepository from '@/repositories/mediaRepository';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 import {
@@ -149,10 +149,10 @@ export function useSettingsActions(deps: SettingsActionsDeps) {
         DEFAULT_SEARCH_LIMIT,
         applyAppFontPreferences,
         auth,
+        avatarFeedHistoryRepository,
         configRepository,
         confirm,
         databaseMaintenanceRepository,
-        feedRepository,
         gameState,
         isValidFontFamilyList,
         language: i18n.language,

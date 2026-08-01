@@ -112,6 +112,9 @@
             "pendingLegacyMigration": "请先完成待处理的旧版数据迁移。",
             "pendingMigration": "已有待完成的数据目录迁移，请重启 VRCX-0 完成。",
             "cleanupConflict": "迁回该文件夹前，请先清理旧数据或选择保留且不再提醒。",
+            "insufficientSpace": "可用空间不足，无法迁移数据。",
+            "invalidAdoptionTarget": "只有包含现有 VRCX-0 配置的文件夹才能直接采用。",
+            "invalidFreshStartTarget": "包含现有 VRCX-0 配置的文件夹不能用于全新开始。",
             "copyFailed": "无法复制数据库，VRCX-0 仍在使用原目录。",
             "commitFailed": "无法安装数据库副本，VRCX-0 仍在使用原目录。",
             "pointerCommitFailed": "无法启用新数据目录。请重启 VRCX-0 以安全重试。",
@@ -2573,6 +2576,7 @@
                         "purge_in_progress": "正在清理模型变动的相关数据",
                         "purge_complete": "模型变动相关数据清理成功。准备重启",
                         "purge_failed": "清理失败: {error}",
+                        "purge_optimization_failed": "模型变动相关数据已清理，但数据库压缩失败：{error}",
                         "legacy_migration": "迁移 VRCX 数据",
                         "legacy_migration_description": "用指定 VRCX 数据文件夹中的数据替换当前 VRCX-0 配置和数据库。",
                         "legacy_migration_confirm_title": "用 VRCX 数据替换 VRCX-0 数据？",
@@ -3326,6 +3330,7 @@
             },
             "mutual_friends": {
                 "header": "共同好友",
+                "undisclosed_friend": "未公开的共同好友",
                 "sorting": {
                     "alphabetical": "字母顺序",
                     "last_active": "最后活跃",

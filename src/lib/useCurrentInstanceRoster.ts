@@ -1,19 +1,18 @@
 import { useEffect, useState } from 'react';
 
+import {
+    includeCurrentUserInRoster,
+    type CurrentInstanceRosterContext,
+    type CurrentInstanceRosterPlayer
+} from '@/domain/instances/currentInstanceRoster';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
-import playerListPersistenceRepository from '@/repositories/playerListPersistenceRepository';
+import { loadCurrentInstanceRoster } from '@/services/currentInstanceRosterService';
 import { recordGameRuntimePresence } from '@/services/domainIngestionService';
+import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 
-import type { PlayerListProfileRecord } from './playerListTypes';
-
-type CurrentInstanceSnapshotResult = Awaited<
-    ReturnType<
-        typeof playerListPersistenceRepository.getCurrentInstanceSnapshot
-    >
->;
-type CurrentPlayerContext = CurrentInstanceSnapshotResult['context'];
-type CurrentPlayerRow = CurrentInstanceSnapshotResult['players'][number];
+type CurrentUserSnapshot = Record<string, unknown>;
+type CurrentInstanceRosterLoadStatus = 'error' | 'idle' | 'ready' | 'running';
 
 function createRuntimeContext({
     playerListLocation,
@@ -22,8 +21,8 @@ function createRuntimeContext({
 }: {
     playerListLocation?: unknown;
     playerListWorldId?: unknown;
-    source?: CurrentPlayerContext['source'];
-}): CurrentPlayerContext {
+    source?: CurrentInstanceRosterContext['source'];
+}): CurrentInstanceRosterContext {
     return {
         createdAt: '',
         groupName: '',
@@ -36,25 +35,23 @@ function createRuntimeContext({
     };
 }
 
-export function useCurrentPlayerRows({
-    addGameLogEventCount,
+export function useCurrentInstanceRoster({
     currentUserEndpoint,
     currentUserId,
     currentUserSnapshot,
-    gameLogDisabled,
-    gameLogTailSyncedAt,
+    disabled,
     isGameRunning,
     logLocationSnapshot,
     playerListLocation,
     playerListStartedAt,
-    playerListWorldId
+    playerListWorldId,
+    refreshRevision,
+    tailSyncRevision
 }: {
-    addGameLogEventCount?: unknown;
     currentUserEndpoint?: string;
     currentUserId?: unknown;
-    currentUserSnapshot?: PlayerListProfileRecord | null;
-    gameLogDisabled: boolean;
-    gameLogTailSyncedAt?: unknown;
+    currentUserSnapshot?: CurrentUserSnapshot | null;
+    disabled: boolean;
     isGameRunning: boolean;
     logLocationSnapshot?: {
         createdAt?: unknown;
@@ -64,25 +61,23 @@ export function useCurrentPlayerRows({
     playerListLocation?: unknown;
     playerListStartedAt?: unknown;
     playerListWorldId?: unknown;
+    refreshRevision?: unknown;
+    tailSyncRevision?: unknown;
 }) {
-    const [loadStatus, setLoadStatus] = useState('idle');
+    const [loadStatus, setLoadStatus] =
+        useState<CurrentInstanceRosterLoadStatus>('idle');
     const [detail, setDetail] = useState('');
-    const [context, setContext] = useState<CurrentPlayerContext>({
-        createdAt: '',
-        groupName: '',
-        location: '',
-        playerCount: 0,
-        source: 'none',
-        time: 0,
-        worldId: '',
-        worldName: ''
-    });
-    const [playerRows, setPlayerRows] = useState<CurrentPlayerRow[]>([]);
+    const [context, setContext] = useState<CurrentInstanceRosterContext>(() =>
+        createRuntimeContext({ source: 'none' })
+    );
+    const [playerRows, setPlayerRows] = useState<CurrentInstanceRosterPlayer[]>(
+        []
+    );
 
     useEffect(() => {
         let active = true;
 
-        if (gameLogDisabled) {
+        if (disabled) {
             setLoadStatus('idle');
             setDetail('Game log ingestion is disabled.');
             setContext(
@@ -130,16 +125,12 @@ export function useCurrentPlayerRows({
         if (playerListLocation === 'traveling') {
             setLoadStatus('idle');
             setDetail('');
-            setContext({
-                createdAt: '',
-                groupName: '',
-                location: 'traveling',
-                playerCount: 0,
-                source: 'runtime',
-                time: 0,
-                worldId: '',
-                worldName: ''
-            });
+            setContext(
+                createRuntimeContext({
+                    playerListLocation: 'traveling',
+                    playerListWorldId: ''
+                })
+            );
             setPlayerRows([]);
             return () => {
                 active = false;
@@ -149,24 +140,33 @@ export function useCurrentPlayerRows({
         setLoadStatus('running');
         setDetail('');
 
-        playerListPersistenceRepository
-            .getCurrentInstanceSnapshot({
-                currentLocation: playerListLocation,
-                currentLocationStartedAt: playerListStartedAt,
-                currentUserId
-            })
-            .then(async (result) => {
+        loadCurrentInstanceRoster({
+            currentLocation: playerListLocation,
+            currentLocationStartedAt: playerListStartedAt,
+            currentUserId
+        })
+            .then((result) => {
                 if (!active) {
                     return;
                 }
 
-                const players: CurrentPlayerRow[] = Array.isArray(
-                    result.players
-                )
-                    ? result.players
-                    : [];
-
-                const nextContext: CurrentPlayerContext = {
+                const rosterLocation =
+                    result.context.location ||
+                    normalizeString(playerListLocation);
+                const players = parseLocation(rosterLocation).isRealInstance
+                    ? includeCurrentUserInRoster({
+                          currentUserDisplayName: normalizeString(
+                              currentUserSnapshot?.displayName ||
+                                  currentUserSnapshot?.username
+                          ),
+                          currentUserId: normalizeString(currentUserId),
+                          joinedAt:
+                              result.context.createdAt ||
+                              normalizeString(playerListStartedAt),
+                          players: result.players
+                      })
+                    : result.players;
+                const nextContext: CurrentInstanceRosterContext = {
                     ...result.context,
                     playerCount: players.length || result.context.playerCount
                 };
@@ -185,7 +185,7 @@ export function useCurrentPlayerRows({
                     currentLocation:
                         nextContext.location ||
                         normalizeString(playerListLocation),
-                    currentLocationPlayers: players,
+                    currentLocationPlayers: result.players,
                     currentLocationStartedAt:
                         nextContext.createdAt ||
                         normalizeString(playerListStartedAt),
@@ -222,19 +222,19 @@ export function useCurrentPlayerRows({
             active = false;
         };
     }, [
-        addGameLogEventCount,
         currentUserEndpoint,
         currentUserId,
         currentUserSnapshot,
-        gameLogDisabled,
-        gameLogTailSyncedAt,
+        disabled,
         isGameRunning,
         logLocationSnapshot?.createdAt,
         logLocationSnapshot?.location,
         logLocationSnapshot?.worldName,
         playerListLocation,
         playerListStartedAt,
-        playerListWorldId
+        playerListWorldId,
+        refreshRevision,
+        tailSyncRevision
     ]);
 
     return {

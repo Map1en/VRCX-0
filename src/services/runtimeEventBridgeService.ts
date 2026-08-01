@@ -14,11 +14,19 @@ import {
 import { handleRuntimeAuthFailure } from './authSessionRecoveryService';
 import { applyBackgroundImageProjectionEvent } from './background-image/backgroundImageService';
 import { handleAppUpdateStatusEvent } from './backgroundMaintenanceUpdateService';
+import {
+    applyCommunityThemeProjectionEvent,
+    refreshCommunityThemeProjection
+} from './community-theme/installedThemes';
 import { getCurrentDataDirMigrationStatus } from './dataDirMigrationService';
 import { bindDeepLinkEvents, drainPendingDeepLinks } from './deepLinkService';
 import { handleFavoriteImportStatusEvent } from './favoriteImportService';
 import { applyFriendProfileLoadStatusPayload } from './friendProfileLoadService';
 import { handleGroupBanImportStatusEvent } from './groupBanImportService';
+import {
+    handleMutualGraphFetchStatusEvent,
+    refreshMutualGraphFetchStatus
+} from './mutualGraphFetchService';
 import { getCurrentProfileBackupStatus } from './profileBackupService';
 import { handleRealtimeEntryCorrection } from './realtimePresenceService';
 import { runForegroundUpdateRegistryBackupMaintenance } from './registryBackupMaintenanceService';
@@ -52,10 +60,12 @@ import type {
     RuntimeEventName,
     RuntimeEventPayloadMap
 } from './runtime-event-bridge/types';
+import { handleScreenshotLibraryScanStatusEvent } from './screenshotLibraryScanService';
 import {
     handleAppUpdateDownloadProgressEvent,
     handleAppUpdateInstalledEvent
 } from './updateInstallService';
+import { applyVrcStatusSnapshot } from './vrcStatusService';
 
 type RuntimeEventUnsubscribe = () => void;
 
@@ -124,6 +134,16 @@ function handleRuntimeEvent(event: RuntimeEvent): void {
         return;
     }
 
+    if (event.name === 'communityThemeState') {
+        applyCommunityThemeProjectionEvent(event.payload);
+        return;
+    }
+
+    if (event.name === 'vrcStatus') {
+        applyVrcStatusSnapshot(event.payload);
+        return;
+    }
+
     if (event.name === 'favoriteImportStatus') {
         handleFavoriteImportStatusEvent(event.payload);
         return;
@@ -131,6 +151,16 @@ function handleRuntimeEvent(event: RuntimeEvent): void {
 
     if (event.name === 'groupBanImportStatus') {
         handleGroupBanImportStatusEvent(event.payload);
+        return;
+    }
+
+    if (event.name === 'mutualGraphFetchStatus') {
+        handleMutualGraphFetchStatusEvent(event.payload);
+        return;
+    }
+
+    if (event.name === 'screenshotLibraryScanStatus') {
+        handleScreenshotLibraryScanStatusEvent(event.payload);
         return;
     }
 
@@ -151,7 +181,7 @@ function handleRuntimeEvent(event: RuntimeEvent): void {
         return;
     }
 
-    if (handleBackendRealtimeProjectionEvent(event.name, event.payload)) {
+    if (handleBackendRealtimeProjectionEvent(event)) {
         return;
     }
 
@@ -224,6 +254,7 @@ export async function bindRuntimeEvents(): Promise<() => void> {
         'appUpdateInstalled',
         'backendRuntimeTelemetry',
         'backgroundImageState',
+        'communityThemeState',
         'gameLogProjection',
         'gameLogPersistenceFallback',
         'gameLogSideEffect',
@@ -236,10 +267,14 @@ export async function bindRuntimeEvents(): Promise<() => void> {
         'favoriteImportStatus',
         'favoritesChanged',
         'groupBanImportStatus',
+        'groupModerationBatchProgress',
+        'mutualGraphFetchStatus',
+        'screenshotLibraryScanStatus',
         'friendProfileLoadStatus',
         'gameClientEvent',
         'runtimeWorkerError',
         'runtimeVrchatAuthFailure',
+        'vrcStatus',
         'realtimeFriendProjection',
         'realtimeUserProjection',
         'realtimeEntryCorrection',
@@ -260,6 +295,14 @@ export async function bindRuntimeEvents(): Promise<() => void> {
             unsubscribers.push(unsubscribe);
         }
         try {
+            await refreshCommunityThemeProjection();
+        } catch (error) {
+            console.warn(
+                'Failed to hydrate community theme projection:',
+                error
+            );
+        }
+        try {
             useProfileBackupStore
                 .getState()
                 .applyStatus(await getCurrentProfileBackupStatus());
@@ -275,6 +318,11 @@ export async function bindRuntimeEvents(): Promise<() => void> {
                 'Failed to hydrate data directory migration status:',
                 error
             );
+        }
+        try {
+            await refreshMutualGraphFetchStatus();
+        } catch (error) {
+            console.warn('Failed to hydrate mutual graph fetch status:', error);
         }
         try {
             await handleAppUpdateStatusEvent(

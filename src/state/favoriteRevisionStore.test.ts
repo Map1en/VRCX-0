@@ -6,6 +6,7 @@ describe('favoriteRevisionStore', () => {
     beforeEach(() => {
         useFavoriteRevisionStore.setState({
             revision: 0,
+            lastAttemptedRevision: 0,
             pendingRemote: false,
             pendingUnknown: false
         });
@@ -49,24 +50,62 @@ describe('favoriteRevisionStore', () => {
         });
     });
 
-    it('consumePending returns the accumulated flags and clears them', () => {
+    it('acknowledges only the exact revision that completed', () => {
         const store = useFavoriteRevisionStore.getState();
         store.bumpRevision({ kind: 'unknown', remote: true });
+        const pending = useFavoriteRevisionStore.getState().getPending();
 
-        const pending = store.consumePending();
+        store.bumpRevision({ kind: 'avatar', remote: true });
+        useFavoriteRevisionStore.getState().acknowledge(pending.revision);
 
-        expect(pending).toEqual({ remote: true, unknown: true });
+        expect(useFavoriteRevisionStore.getState()).toMatchObject({
+            revision: 2,
+            pendingRemote: true,
+            pendingUnknown: true
+        });
+    });
+
+    it('clears pending flags after the exact revision is acknowledged', () => {
+        const store = useFavoriteRevisionStore.getState();
+        store.bumpRevision({ kind: 'unknown', remote: true });
+        const pending = useFavoriteRevisionStore.getState().getPending();
+
+        useFavoriteRevisionStore.getState().acknowledge(pending.revision);
+
         expect(useFavoriteRevisionStore.getState()).toMatchObject({
             pendingRemote: false,
             pendingUnknown: false
         });
     });
 
-    it('consumePending returns false flags when nothing is pending', () => {
+    it('tracks attempts without consuming pending changes', () => {
         const store = useFavoriteRevisionStore.getState();
+        store.bumpRevision({ kind: 'world', remote: true });
 
-        const pending = store.consumePending();
+        useFavoriteRevisionStore.getState().markAttempted(1);
 
-        expect(pending).toEqual({ remote: false, unknown: false });
+        expect(useFavoriteRevisionStore.getState()).toMatchObject({
+            lastAttemptedRevision: 1,
+            pendingRemote: true
+        });
+    });
+
+    it('invalidates stale acknowledgements at the auth boundary', () => {
+        const store = useFavoriteRevisionStore.getState();
+        store.bumpRevision({ kind: 'world', remote: true });
+        const oldPending = useFavoriteRevisionStore.getState().getPending();
+
+        useFavoriteRevisionStore.getState().reset();
+        useFavoriteRevisionStore
+            .getState()
+            .bumpRevision({ kind: 'avatar', remote: true });
+        useFavoriteRevisionStore.getState().acknowledge(oldPending.revision);
+
+        expect(useFavoriteRevisionStore.getState()).toMatchObject({
+            revision: 3,
+            lastAttemptedRevision: 2,
+            pendingRemote: true,
+            pendingUnknown: false
+        });
     });
 });

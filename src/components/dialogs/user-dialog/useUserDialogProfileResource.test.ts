@@ -64,8 +64,7 @@ describe('useUserDialogProfileResource', () => {
         await waitFor(() => {
             expect(mocks.getUserAppearanceProfile).toHaveBeenCalledWith({
                 userId: 'usr_target',
-                asSelf: true,
-                force: false
+                asSelf: true
             });
             expect(mocks.getUserProfile).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -94,8 +93,7 @@ describe('useUserDialogProfileResource', () => {
         await waitFor(() => {
             expect(mocks.getUserAppearanceProfile).toHaveBeenCalledWith({
                 userId: 'usr_target',
-                asSelf: false,
-                force: false
+                asSelf: false
             });
             expect(mocks.getUserProfile).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -180,57 +178,6 @@ describe('useUserDialogProfileResource', () => {
                     location: 'wrld_live:instance',
                     iconFrame: '',
                     profileEffect: 'invt_profile'
-                })
-            );
-        });
-    });
-
-    it('shows cached appearance before the ordinary profile finishes loading', async () => {
-        let resolveProfile!: (profile: {
-            id: string;
-            displayName: string;
-        }) => void;
-        mocks.getUserProfile.mockReturnValue(
-            new Promise((resolve) => {
-                resolveProfile = resolve;
-            })
-        );
-        mocks.getUserAppearanceProfile.mockResolvedValue({
-            id: 'usr_target',
-            backgroundTextureId: 'prbg_cached'
-        });
-
-        const { result } = renderHook(() =>
-            useUserDialogProfileResource({
-                currentEndpoint: 'https://api.vrchat.cloud/api/1',
-                isTargetCurrentUser: false,
-                localSnapshot: {
-                    id: 'usr_target',
-                    displayName: 'Target'
-                },
-                normalizedUserId: 'usr_target',
-                updateEntityDialogMetadata: vi.fn()
-            })
-        );
-
-        await waitFor(() => {
-            expect(result.current.loadStatus).toBe('running');
-            expect(result.current.profile?.backgroundTextureId).toBe(
-                'prbg_cached'
-            );
-        });
-
-        resolveProfile({
-            id: 'usr_target',
-            displayName: 'Remote target'
-        });
-
-        await waitFor(() => {
-            expect(result.current.loadStatus).toBe('ready');
-            expect(result.current.profile).toEqual(
-                expect.objectContaining({
-                    displayName: 'Remote target',
-                    backgroundTextureId: 'prbg_cached'
                 })
             );
         });

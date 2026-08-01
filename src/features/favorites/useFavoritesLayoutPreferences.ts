@@ -19,7 +19,11 @@ const SORT_VALUES_BY_KIND: Record<FavoriteKind, Set<string>> = {
 };
 const DEFAULT_SORT_VALUE = 'date';
 
-function normalizeSplitterSizePx(value: any) {
+type SplitterPanelSize = {
+    inPixels?: unknown;
+};
+
+function normalizeSplitterSizePx(value: unknown): number {
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) {
         return SPLITTER_DEFAULT_SIZE_PX;
@@ -27,7 +31,10 @@ function normalizeSplitterSizePx(value: any) {
     return Math.max(SPLITTER_MIN_SIZE_PX, Math.round(parsed));
 }
 
-function normalizeFavoriteSortValue(kind: FavoriteKind, value: any) {
+function normalizeFavoriteSortValue(
+    kind: FavoriteKind,
+    value: unknown
+): string {
     const normalizedValue = String(value ?? '').trim();
     const allowedValues =
         SORT_VALUES_BY_KIND[kind] || SORT_VALUES_BY_KIND.friend;
@@ -56,7 +63,7 @@ function usePersistedPreference<T extends string>(
 
         configRepository
             .getString(configKey, fallbackRef.current)
-            .then((stored: any) => {
+            .then((stored) => {
                 if (active && loadVersionRef.current === loadVersion) {
                     setValue(sanitizeRef.current(stored));
                 }
@@ -105,23 +112,23 @@ export function useFavoritesLayoutPreferences(kind: FavoriteKind) {
         const configKey = FAVORITES_LAYOUT_CONFIG_KEYS.splitter[kind];
         configRepository
             .getString(configKey, '260')
-            .then((value: any) => {
+            .then((value) => {
                 if (!active) {
                     return;
                 }
                 const parsed = Number(value);
                 if (!Number.isFinite(parsed) || parsed < 0) {
                     setSplitterSizePx(SPLITTER_DEFAULT_SIZE_PX);
-                    setSplitterLayoutVersion((version: any) => version + 1);
+                    setSplitterLayoutVersion((version) => version + 1);
                     return;
                 }
                 setSplitterSizePx(normalizeSplitterSizePx(parsed));
-                setSplitterLayoutVersion((version: any) => version + 1);
+                setSplitterLayoutVersion((version) => version + 1);
             })
             .catch(() => {
                 if (active) {
                     setSplitterSizePx(SPLITTER_DEFAULT_SIZE_PX);
-                    setSplitterLayoutVersion((version: any) => version + 1);
+                    setSplitterLayoutVersion((version) => version + 1);
                 }
             });
 
@@ -130,7 +137,7 @@ export function useFavoritesLayoutPreferences(kind: FavoriteKind) {
         };
     }, [kind]);
 
-    function persistSplitterSizePx(nextSizePx: any) {
+    function persistSplitterSizePx(nextSizePx: unknown): void {
         const normalizedSizePx = normalizeSplitterSizePx(nextSizePx);
         setSplitterSizePx(normalizedSizePx);
         configRepository.setString(
@@ -139,7 +146,7 @@ export function useFavoritesLayoutPreferences(kind: FavoriteKind) {
         );
     }
 
-    function handleSplitterResize(panelSize: any) {
+    function handleSplitterResize(panelSize: SplitterPanelSize): void {
         const nextSizePx = Number(panelSize?.inPixels);
         if (!Number.isFinite(nextSizePx) || nextSizePx < 0) {
             return;
@@ -150,7 +157,7 @@ export function useFavoritesLayoutPreferences(kind: FavoriteKind) {
     function persistSplitterLayout() {
         const pendingSizePx = pendingSplitterSizePxRef.current;
         pendingSplitterSizePxRef.current = null;
-        if (Number.isFinite(pendingSizePx)) {
+        if (pendingSizePx !== null) {
             persistSplitterSizePx(pendingSizePx);
         }
     }

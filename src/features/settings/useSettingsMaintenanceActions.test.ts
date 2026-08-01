@@ -10,9 +10,21 @@ import {
 import { useSettingsMaintenanceActions } from './useSettingsMaintenanceActions';
 
 function createMaintenanceActions({
+    cleanupAvatarFeedHistory = async () => ({
+        deletedRows: 0,
+        status: 'completed' as const,
+        optimizationError: null
+    }),
     confirm,
-    saveBoolPreference
+    saveBoolPreference,
+    setPurgeDialogOpen = () => undefined,
+    toastWarning = () => undefined
 }: {
+    cleanupAvatarFeedHistory?: () => Promise<{
+        deletedRows: number;
+        status: 'completed' | 'optimizationFailed';
+        optimizationError: string | null;
+    }>;
     confirm: (options: {
         title: string;
         description: string;
@@ -22,17 +34,15 @@ function createMaintenanceActions({
         configKey: string,
         enabled: boolean
     ) => Promise<void>;
+    setPurgeDialogOpen?: (open: boolean) => void;
+    toastWarning?: (message: string) => void;
 }) {
     return useSettingsMaintenanceActions({
-        auth: {},
+        avatarFeedHistoryRepository: {
+            cleanupAvatarFeedHistory
+        },
         commit: async () => true,
         confirm,
-        databaseMaintenanceRepository: {
-            vacuum: async () => undefined
-        },
-        feedRepository: {
-            purgeAvatarFeedData: async () => undefined
-        },
         gameState: {
             isGameRunning: false
         },
@@ -74,7 +84,7 @@ function createMaintenanceActions({
         setCropInstancePrintsPreference: async () => undefined,
         setIntConfigPreference: async () => undefined,
         setPrefs: () => undefined,
-        setPurgeDialogOpen: () => undefined,
+        setPurgeDialogOpen,
         setPurgeInProgress: () => undefined,
         setUserGeneratedContentPathPreference: async () => '',
         speakNotificationTts: async () => undefined,
@@ -83,7 +93,7 @@ function createMaintenanceActions({
             dismiss: () => undefined,
             error: () => undefined,
             success: () => undefined,
-            warning: () => undefined
+            warning: toastWarning
         }
     });
 }
@@ -118,6 +128,31 @@ describe('handleGameLogDisabledChange', () => {
             'gameLogDisabled',
             'VRCX_gameLogDisabled',
             false
+        );
+    });
+});
+
+describe('purgeAvatarFeedData', () => {
+    it('reports a completed purge separately from a failed optimization', async () => {
+        const setPurgeDialogOpen = vi.fn();
+        const toastWarning = vi.fn();
+        const actions = createMaintenanceActions({
+            cleanupAvatarFeedHistory: async () => ({
+                deletedRows: 12,
+                status: 'optimizationFailed',
+                optimizationError: 'vacuum failed'
+            }),
+            confirm: async () => ({ ok: false }),
+            saveBoolPreference: async () => undefined,
+            setPurgeDialogOpen,
+            toastWarning
+        });
+
+        await actions.purgeAvatarFeedData();
+
+        expect(setPurgeDialogOpen).toHaveBeenCalledWith(false);
+        expect(toastWarning).toHaveBeenCalledWith(
+            'view.settings.advanced.advanced.database_cleanup.purge_optimization_failed'
         );
     });
 });

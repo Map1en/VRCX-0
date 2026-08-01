@@ -77,6 +77,23 @@ fn status_contract_uses_status_origin_without_referer() {
 }
 
 #[test]
+fn community_theme_requests_disable_automatic_redirects() {
+    let request = build_web_execute_request(
+        ExternalHttpRequestInput {
+            url: Some(
+                "https://raw.githubusercontent.com/Map1en/VRCX-0-Community-Themes/master/themes/catalog.json"
+                    .into(),
+            ),
+            ..Default::default()
+        },
+        ExternalApiScope::CommunityTheme,
+    )
+    .expect("community theme request");
+
+    assert!(!request.follow_redirects);
+}
+
+#[test]
 fn configured_request_origins_allow_http_and_https() {
     assert_eq!(
         request_origin("https://example.com/api"),

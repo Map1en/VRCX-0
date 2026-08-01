@@ -258,8 +258,8 @@ fn collect_present_favorite_group_keys(
     for row in
         vrcx_0_persistence::favorites::favorite_list(db, Some(owner_user_id), "friend".into())?
     {
-        let user_id = string_field(&row, "userId").unwrap_or_default();
-        let group_name = string_field(&row, "groupName").unwrap_or_default();
+        let user_id = row.user_id.unwrap_or_default();
+        let group_name = row.group_name;
         if !group_name.is_empty() && present_user_ids.contains(user_id.as_str()) {
             keys.insert(format!("local:{group_name}"));
         }

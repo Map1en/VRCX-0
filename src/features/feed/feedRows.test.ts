@@ -4,6 +4,7 @@ import {
     buildFeedFavoriteIdSet,
     canExpandFeedRow,
     canRequestInviteFromFeedFriend,
+    getFeedRowCreatedAtMs,
     getFeedRowId,
     isUserIdLike,
     normalizeFeedId,
@@ -28,7 +29,7 @@ describe('feed row helpers', () => {
         expect(resolveDisplayNameCandidate(USER_ID, USER_ID)).toBe('');
         expect(resolveDisplayNameCandidate('Unknown', USER_ID)).toBe('');
         expect(resolveDisplayNameCandidate('Maple', USER_ID)).toBe('Maple');
-        expect(resolveFeedUserId({ sender_user_id: USER_ID })).toBe(USER_ID);
+        expect(resolveFeedUserId({ userId: USER_ID })).toBe(USER_ID);
         expect(resolveFeedUserId({ displayName: USER_ID })).toBe(USER_ID);
         expect(
             resolveFeedUserDisplayName(
@@ -41,14 +42,22 @@ describe('feed row helpers', () => {
             UNKNOWN_FEED_USER_DISPLAY_NAME
         );
         expect(getFeedRowId({ rowId: 1, type: 'GPS', userId: USER_ID })).toBe(
-            'row:GPS:1'
+            'row:GPS::1'
         );
-        expect(getFeedRowId({ row_id: 1, type: 'GPS', sourceRank: 60 })).toBe(
+        expect(getFeedRowId({ rowId: 1, type: 'GPS', sourceRank: 60 })).toBe(
             'row:GPS:60:1'
         );
+        expect(getFeedRowId({ rowId: 1, type: 'Status', sourceRank: 40 })).toBe(
+            'row:Status:40:1'
+        );
         expect(
-            getFeedRowId({ row_id: 1, type: 'Status', sourceRank: 40 })
-        ).toBe('row:Status:40:1');
+            getFeedRowId({
+                type: 'GPS',
+                created_at: '2026-05-15T00:00:00Z',
+                userId: USER_ID,
+                location: 'wrld_1:instance'
+            })
+        ).toBe(`GPS:2026-05-15T00:00:00Z:${USER_ID}:wrld_1:instance`);
     });
 
     it('resolves friend state and current invite location from visible session data', () => {
@@ -203,5 +212,26 @@ describe('feed row helpers', () => {
             canExpandFeedRow({ type: 'Bio', bio: 'Hello', previousBio: '' })
         ).toBe(true);
         expect(canExpandFeedRow({ type: 'Friend' })).toBe(false);
+    });
+});
+
+describe('getFeedRowCreatedAtMs', () => {
+    it('parses timestamps and caches them per row reference', () => {
+        const row = { created_at: '2024-01-02T03:04:05.000Z' };
+        const expected = new Date('2024-01-02T03:04:05.000Z').valueOf();
+
+        expect(getFeedRowCreatedAtMs(row)).toBe(expected);
+
+        row.created_at = '2025-06-07T08:09:10.000Z';
+        expect(getFeedRowCreatedAtMs(row)).toBe(expected);
+        expect(
+            getFeedRowCreatedAtMs({ created_at: '2025-06-07T08:09:10.000Z' })
+        ).toBe(new Date('2025-06-07T08:09:10.000Z').valueOf());
+    });
+
+    it('returns 0 for missing rows and unparsable timestamps', () => {
+        expect(getFeedRowCreatedAtMs(null)).toBe(0);
+        expect(getFeedRowCreatedAtMs(undefined)).toBe(0);
+        expect(getFeedRowCreatedAtMs({ created_at: 'not-a-date' })).toBe(0);
     });
 });

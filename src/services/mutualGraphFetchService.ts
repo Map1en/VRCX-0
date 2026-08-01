@@ -13,8 +13,9 @@ const TERMINAL_STATUSES = new Set(['completed', 'cancelled', 'error']);
 const ACTIVE_STATUSES = new Set(['running', 'cancelling']);
 const TERMINAL_RESET_DELAY_MS = 5000;
 
-let pollTimer: number | null = null;
 let resetTimer: number | null = null;
+let latestAcceptedRunId = 0;
+let latestAcceptedRevision = 0;
 const sessionStartedRunIds = new Set<number>();
 
 function normalizeString(value: unknown) {
@@ -26,6 +27,7 @@ function normalizeStatus(
 ) {
     return {
         runId: normalizeNumber(status?.runId),
+        revision: normalizeNumber(status?.revision),
         status: normalizeString(status?.status || 'idle'),
         ownerUserId: normalizeString(status?.ownerUserId),
         totalFriends: normalizeNumber(status?.totalFriends),
@@ -42,17 +44,17 @@ function normalizeStatus(
     };
 }
 
+function isNewerStatus(runId: number, revision: number): boolean {
+    return (
+        runId > latestAcceptedRunId ||
+        (runId === latestAcceptedRunId && revision > latestAcceptedRevision)
+    );
+}
+
 function clearResetTimer() {
     if (resetTimer !== null) {
         window.clearTimeout(resetTimer);
         resetTimer = null;
-    }
-}
-
-function stopMutualGraphFetchStatusPolling() {
-    if (pollTimer !== null) {
-        window.clearInterval(pollTimer);
-        pollTimer = null;
     }
 }
 
@@ -64,45 +66,33 @@ function scheduleTerminalReset() {
     }, TERMINAL_RESET_DELAY_MS);
 }
 
-function applyStatus(
+function applyMutualGraphFetchStatus(
     status: Partial<MutualGraphFetchStatus> | null | undefined
 ) {
     const normalized = normalizeStatus(status);
+    if (!isNewerStatus(normalized.runId, normalized.revision)) {
+        return normalized;
+    }
+    latestAcceptedRunId = normalized.runId;
+    latestAcceptedRevision = normalized.revision;
     useRuntimeStore.getState().setMutualGraphState(normalized);
     if (ACTIVE_STATUSES.has(normalized.status)) {
         clearResetTimer();
-        startMutualGraphFetchStatusPolling();
-    } else {
-        stopMutualGraphFetchStatusPolling();
-        if (TERMINAL_STATUSES.has(normalized.status)) {
-            scheduleTerminalReset();
-        }
+    } else if (TERMINAL_STATUSES.has(normalized.status)) {
+        scheduleTerminalReset();
     }
     return normalized;
 }
 
-export async function refreshMutualGraphFetchStatus() {
-    const status = await commands.appMutualGraphFetchStatusGet();
-    return applyStatus(status);
+export function handleMutualGraphFetchStatusEvent(
+    status: Partial<MutualGraphFetchStatus> | null | undefined
+) {
+    return applyMutualGraphFetchStatus(status);
 }
 
-export function startMutualGraphFetchStatusPolling() {
-    if (pollTimer !== null) {
-        return;
-    }
-    pollTimer = window.setInterval(() => {
-        refreshMutualGraphFetchStatus().catch((error: unknown) => {
-            useRuntimeStore.getState().setMutualGraphState({
-                status: 'error',
-                lastError:
-                    error instanceof Error
-                        ? error.message
-                        : 'Failed to read mutual graph fetch status.'
-            });
-            stopMutualGraphFetchStatusPolling();
-            scheduleTerminalReset();
-        });
-    }, 1000);
+export async function refreshMutualGraphFetchStatus() {
+    const status = await commands.appMutualGraphFetchStatusGet();
+    return applyMutualGraphFetchStatus(status);
 }
 
 export async function startMutualGraphFetch({
@@ -115,18 +105,18 @@ export async function startMutualGraphFetch({
         endpoint,
         friendIds
     });
-    const normalized = applyStatus(status);
-    if (normalized.runId) {
-        sessionStartedRunIds.add(normalized.runId);
+    const runId = normalizeNumber(status.runId);
+    if (runId) {
+        sessionStartedRunIds.add(runId);
     }
-    return normalized;
+    return applyMutualGraphFetchStatus(status);
 }
 
 export async function cancelMutualGraphFetch(ownerUserId: string) {
     const status = await commands.appMutualGraphFetchCancel({
         ownerUserId
     });
-    return applyStatus(status);
+    return applyMutualGraphFetchStatus(status);
 }
 
 export function wasMutualGraphFetchStartedInThisSession(runId: number) {

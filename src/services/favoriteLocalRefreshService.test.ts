@@ -59,4 +59,74 @@ describe('favoriteLocalRefreshService', () => {
         expect(mocks.getFriendFavorites).toHaveBeenCalledTimes(1);
         expect(mocks.getWorldFavorites).not.toHaveBeenCalled();
     });
+
+    it('keeps the newest result when same-kind refreshes finish out of order', async () => {
+        let resolveFirst: (rows: unknown[]) => void = () => undefined;
+        mocks.getWorldFavorites
+            .mockImplementationOnce(
+                () =>
+                    new Promise<unknown[]>((resolve) => {
+                        resolveFirst = resolve;
+                    })
+            )
+            .mockResolvedValueOnce([
+                {
+                    created_at: '2026-01-02',
+                    worldId: 'wrld_new',
+                    groupName: 'New'
+                }
+            ]);
+        mocks.getExplicitLocalFavoriteGroups
+            .mockResolvedValueOnce(['Old'])
+            .mockResolvedValueOnce(['New']);
+        const { useFavoriteStore } = await import('@/state/favoriteStore');
+        const { refreshLocalFavoritesForKinds } =
+            await import('./favoriteLocalRefreshService');
+
+        const first = refreshLocalFavoritesForKinds(['world']);
+        await refreshLocalFavoritesForKinds(['world']);
+        resolveFirst([
+            {
+                created_at: '2026-01-01',
+                worldId: 'wrld_old',
+                groupName: 'Old'
+            }
+        ]);
+        await first;
+
+        expect(useFavoriteStore.getState().localWorldFavorites).toEqual({
+            New: ['wrld_new']
+        });
+    });
+
+    it('drops a completed read after the favorite owner changes', async () => {
+        let resolveRows: (rows: unknown[]) => void = () => undefined;
+        mocks.getFriendFavorites.mockImplementationOnce(
+            () =>
+                new Promise<unknown[]>((resolve) => {
+                    resolveRows = resolve;
+                })
+        );
+        mocks.getExplicitLocalFavoriteGroups.mockResolvedValue(['Friends']);
+        const { useFavoriteStore } = await import('@/state/favoriteStore');
+        const { refreshLocalFavoritesForKinds } =
+            await import('./favoriteLocalRefreshService');
+        useFavoriteStore.getState().setFavoritesLoading('usr_old');
+
+        const refresh = refreshLocalFavoritesForKinds(['friend']);
+        useFavoriteStore.getState().setFavoritesLoading('usr_new');
+        resolveRows([
+            {
+                created_at: '2026-01-01',
+                userId: 'usr_friend',
+                groupName: 'Friends'
+            }
+        ]);
+        await refresh;
+
+        expect(useFavoriteStore.getState()).toMatchObject({
+            currentUserId: 'usr_new',
+            localFriendFavorites: {}
+        });
+    });
 });

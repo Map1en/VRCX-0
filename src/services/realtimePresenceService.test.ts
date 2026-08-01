@@ -69,6 +69,8 @@ describe('realtimePresenceService projection boundary', () => {
             await import('./realtimePresenceService');
 
         handleRealtimeFriendProjection({
+            generation: 7,
+            baselineRevision: 1,
             patches: [
                 {
                     userId: 'usr_friend',
@@ -78,7 +80,8 @@ describe('realtimePresenceService projection boundary', () => {
                         state: 'online',
                         location: 'wrld_1:123'
                     },
-                    stateBucket: 'online'
+                    stateBucket: 'online',
+                    stateBucketAuthority: 'explicit'
                 }
             ],
             removals: [],
@@ -120,6 +123,8 @@ describe('realtimePresenceService projection boundary', () => {
 
         const before = useFriendLogStore.getState().revision;
         handleRealtimeFriendProjection({
+            generation: 7,
+            baselineRevision: 1,
             patches: [],
             removals: [],
             feedEntries: [],
@@ -128,6 +133,8 @@ describe('realtimePresenceService projection boundary', () => {
         expect(useFriendLogStore.getState().revision).toBe(before + 1);
 
         handleRealtimeFriendProjection({
+            generation: 7,
+            baselineRevision: 1,
             patches: [],
             removals: [],
             feedEntries: [],
@@ -160,6 +167,8 @@ describe('realtimePresenceService projection boundary', () => {
         });
 
         handleRealtimeFriendProjection({
+            generation: 7,
+            baselineRevision: 1,
             removals: ['usr_friend'],
             patches: [],
             feedEntries: [],
@@ -198,6 +207,8 @@ describe('realtimePresenceService projection boundary', () => {
         });
 
         handleRealtimeFriendProjection({
+            generation: 7,
+            baselineRevision: 1,
             patches: [
                 {
                     userId: 'usr_friend',
@@ -208,7 +219,8 @@ describe('realtimePresenceService projection boundary', () => {
                     stateBucket: 'offline',
                     stateBucketAuthority: 'preserve'
                 }
-            ]
+            ],
+            friendLogChanged: false
         });
 
         expect(useFriendRosterStore.getState()).toMatchObject({
@@ -232,6 +244,7 @@ describe('realtimePresenceService projection boundary', () => {
             await import('./realtimePresenceService');
 
         await handleRealtimeNotificationProjection({
+            generation: 7,
             upserts: [
                 {
                     notification: {
@@ -247,7 +260,8 @@ describe('realtimePresenceService projection boundary', () => {
                 }
             ],
             expiredIds: [],
-            seenIds: []
+            seenIds: [],
+            clearMenuIfNoUnseen: false
         });
 
         expect(useVrcNotificationStore.getState().rows[0]).toMatchObject({
@@ -276,6 +290,7 @@ describe('realtimePresenceService projection boundary', () => {
         useShellStore.getState().clearAllNotifications();
 
         await handleRealtimeNotificationProjection({
+            generation: 7,
             upserts: [
                 {
                     notification: {
@@ -289,7 +304,8 @@ describe('realtimePresenceService projection boundary', () => {
                 }
             ],
             expiredIds: [],
-            seenIds: []
+            seenIds: [],
+            clearMenuIfNoUnseen: false
         });
 
         expect(useVrcNotificationStore.getState().rows[0]).toMatchObject({
@@ -330,6 +346,7 @@ describe('realtimePresenceService projection boundary', () => {
             stateBucket: 'offline'
         });
         handleRealtimeCurrentUserProjection({
+            generation: 7,
             patch: {
                 id: 'usr_self',
                 displayName: 'New Self',
@@ -415,6 +432,7 @@ describe('realtimePresenceService projection boundary', () => {
         });
 
         handleRealtimeCurrentUserProjection({
+            generation: 7,
             patch: {
                 id: 'usr_self',
                 displayName: 'New Self',
@@ -449,6 +467,7 @@ describe('realtimePresenceService projection boundary', () => {
             await import('./realtimePresenceService');
 
         handleRealtimeCurrentUserProjection({
+            generation: 7,
             snapshot: {
                 id: 'usr_self',
                 location: 'private:private',
@@ -479,6 +498,7 @@ describe('realtimePresenceService projection boundary', () => {
             await import('./realtimePresenceService');
 
         await handleRealtimeInstanceClosedProjection({
+            generation: 7,
             notification: {
                 id: 'instance.closed:wrld_1:1',
                 type: 'instance.closed',

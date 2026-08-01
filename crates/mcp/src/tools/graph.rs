@@ -116,7 +116,7 @@ impl VrcxMcpServer {
         input: RefreshMutualGraphParams,
     ) -> Result<RefreshMutualGraphOutput, String> {
         let status = self.runtime.mutual_graph_fetch.status();
-        if is_active_fetch_status(&status.status) {
+        if status.status.is_active() {
             return Ok(RefreshMutualGraphOutput::from_status(
                 false,
                 "already running",
@@ -312,10 +312,6 @@ fn is_stale_mutual_meta(
     DateTime::parse_from_rfc3339(&meta.last_fetched_at)
         .map(|value| value.with_timezone(&Utc) < stale_after)
         .unwrap_or(true)
-}
-
-fn is_active_fetch_status(status: &str) -> bool {
-    matches!(status, "running" | "cancelling")
 }
 
 fn mutual_graph_refresh_caveats() -> Vec<String> {

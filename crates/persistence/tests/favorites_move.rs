@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use serde_json::Value;
 use vrcx_0_persistence::favorites::{favorite_add, favorite_list, favorite_move};
 use vrcx_0_persistence::DatabaseService;
 
@@ -38,12 +37,7 @@ fn group_names(db: &DatabaseService, kind: &str) -> Vec<String> {
     let mut names: Vec<String> = favorite_list(db, None, kind.into())
         .unwrap()
         .into_iter()
-        .map(|row| {
-            row.get("groupName")
-                .and_then(Value::as_str)
-                .unwrap_or_default()
-                .to_string()
-        })
+        .map(|row| row.group_name)
         .collect();
     names.sort();
     names

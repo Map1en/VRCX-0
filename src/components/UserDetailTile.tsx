@@ -48,6 +48,7 @@ type UserDetailTileProps = UserDetailContentProps & {
     seed?: ComponentProps<typeof UserHoverCard>['seed'];
     hoverSide?: ComponentProps<typeof UserHoverCard>['side'];
     hoverDisabled?: boolean;
+    disabled?: boolean;
     className?: string;
     onOpen?: () => void;
 };
@@ -57,6 +58,7 @@ export function UserDetailTile({
     seed = null,
     hoverSide,
     hoverDisabled = false,
+    disabled = false,
     className,
     onOpen,
     ...contentProps
@@ -66,11 +68,12 @@ export function UserDetailTile({
             userId={userId}
             seed={seed}
             side={hoverSide}
-            disabled={hoverDisabled}
+            disabled={hoverDisabled || disabled}
         >
             <Button
                 type="button"
                 variant="ghost"
+                disabled={disabled}
                 className={cn(
                     'h-auto min-w-0 justify-start gap-2 px-1.5 py-1.5 text-left font-normal',
                     className

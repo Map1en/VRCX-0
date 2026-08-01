@@ -21,6 +21,7 @@ sys-locale.workspace = true
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["time", "rt", "macros", "sync"] }
 tracing = { workspace = true }
+url = { workspace = true }
 vrcx-0-application = { path = "../application" }
 vrcx-0-application-activity = { path = "../application-activity" }
 vrcx-0-application-core = { path = "../application-core" }

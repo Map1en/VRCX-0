@@ -5,7 +5,6 @@ import { toast } from 'sonner';
 import { bootstrapFriendRoster } from '@/services/friendBootstrapService';
 import {
     cancelMutualGraphFetch,
-    refreshMutualGraphFetchStatus,
     startMutualGraphFetch
 } from '@/services/mutualGraphFetchService';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
@@ -53,10 +52,6 @@ export function useMutualFriendsGraphFetch({
         (state) => state.mutualGraph.cancelRequested
     );
     const lastError = useRuntimeStore((state) => state.mutualGraph.lastError);
-
-    useEffect(() => {
-        refreshMutualGraphFetchStatus().catch(() => {});
-    }, [currentUserId]);
 
     const isCurrentUserFetch =
         !statusOwnerUserId || statusOwnerUserId === currentUserId;

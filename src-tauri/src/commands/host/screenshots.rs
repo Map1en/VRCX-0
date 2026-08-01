@@ -88,6 +88,7 @@ pub fn app__start_screenshot_library_scan(
     Ok(screenshot::start_screenshot_library_scan(
         cache,
         state.paths.screenshot_thumbs.clone(),
+        state.runtime_context.event_bus.clone(),
         state.runtime_context.tasks.clone(),
         force.unwrap_or(false),
         vrchat_paths::vrchat_photos_location(),

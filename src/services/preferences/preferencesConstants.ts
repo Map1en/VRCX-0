@@ -27,7 +27,6 @@ export const DISCORD_BOOL_PREFERENCE_KEYS = new Set<DiscordPreferenceKey>([
     'discordWorldIntegration',
     'discordWorldNameAsDiscordStatus'
 ]);
-export const VRCHAT_RICH_PRESENCE_CONFIG_KEY = 'disableRichPresence';
 export const WRIST_OVERLAY_RUNTIME_CONFIG_KEYS = new Set([
     'appLanguage',
     'dtHour12',

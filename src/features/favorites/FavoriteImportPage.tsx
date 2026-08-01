@@ -30,6 +30,7 @@ import {
     processFavoriteImportList
 } from '@/services/favoriteImportService';
 import { useFavoriteImportStore } from '@/state/favoriteImportStore';
+import type { FavoriteImportRow } from '@/state/favoriteImportStore';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { Button } from '@/ui/shadcn/button';
 import { Progress, ProgressLabel, ProgressValue } from '@/ui/shadcn/progress';
@@ -76,33 +77,43 @@ function normalizeKind(value: unknown): ImportKind | null {
         : null;
 }
 
-function getRowName(kind: ImportKind, row: any) {
-    if (kind === 'friend') {
-        return row.displayName || row.username || row.id;
-    }
-    return row.name || row.id;
+function rowText(row: FavoriteImportRow, key: string): string {
+    const value = row[key];
+    return typeof value === 'string' ? value : String(value ?? '');
 }
 
-function getRowDetail(kind: ImportKind, row: any) {
+function getRowName(kind: ImportKind, row: FavoriteImportRow): string {
     if (kind === 'friend') {
-        return row.statusDescription || row.status || row.username || '';
+        return (
+            rowText(row, 'displayName') || rowText(row, 'username') || row.id
+        );
     }
-    return row.authorName || row.authorId || '';
+    return rowText(row, 'name') || row.id;
 }
 
-function getRowImage(row: any) {
+function getRowDetail(kind: ImportKind, row: FavoriteImportRow): string {
+    if (kind === 'friend') {
+        return (
+            rowText(row, 'statusDescription') ||
+            rowText(row, 'status') ||
+            rowText(row, 'username')
+        );
+    }
+    return rowText(row, 'authorName') || rowText(row, 'authorId');
+}
+
+function getRowImage(row: FavoriteImportRow): string {
     return (
-        row.thumbnailImageUrl ||
-        row.imageUrl ||
-        row.currentAvatarThumbnailImageUrl ||
-        row.currentAvatarImageUrl ||
-        row.userIcon ||
-        row.profilePicOverride ||
-        ''
+        rowText(row, 'thumbnailImageUrl') ||
+        rowText(row, 'imageUrl') ||
+        rowText(row, 'currentAvatarThumbnailImageUrl') ||
+        rowText(row, 'currentAvatarImageUrl') ||
+        rowText(row, 'userIcon') ||
+        rowText(row, 'profilePicOverride')
     );
 }
 
-function openRowDialog(kind: ImportKind, row: any) {
+function openRowDialog(kind: ImportKind, row: FavoriteImportRow): void {
     if (kind === 'avatar') {
         openAvatarDialog({ avatarId: row.id, seedData: row });
     } else if (kind === 'world') {
@@ -402,7 +413,7 @@ export function FavoriteImportPage() {
                             </TableHeader>
                             <TableBody>
                                 {rows.length > 0 ? (
-                                    rows.map((row: any) => (
+                                    rows.map((row) => (
                                         <TableRow
                                             key={row.id}
                                             className="animate-in fade-in slide-in-from-bottom-1 duration-200 ease-out motion-reduce:animate-none"

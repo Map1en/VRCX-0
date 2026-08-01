@@ -9,8 +9,10 @@ use vrcx_0_vrchat_client::users as remote_users;
 use super::message_dispatch::json_string_field;
 use super::state::ActiveRealtimeContext;
 use super::RealtimeHostRuntime;
-use crate::realtime::user_query_cache::UserQueryKind;
-use crate::realtime::{RealtimeFriendApplyResult, RealtimeUserProjection};
+use crate::realtime::{
+    RealtimeFriendApplyResult, RealtimeUserProjection, UserQueryCachePolicy, UserQueryKind,
+    UserQueryOptions,
+};
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_core::user_facts::UserFactMergeOptions;
 
@@ -233,10 +235,37 @@ impl RealtimeHostRuntime {
         dialog: bool,
         is_friend: Option<bool>,
     ) -> Result<VrchatApiResponse> {
+        let kind = if dialog {
+            UserQueryKind::Dialog
+        } else if is_friend == Some(true) {
+            UserQueryKind::LiveFriend
+        } else {
+            UserQueryKind::LiveNonFriend
+        };
+        self.get_user_via_cache_with_options(
+            endpoint,
+            user_id_input,
+            UserQueryOptions {
+                kind,
+                cache_policy: if force {
+                    UserQueryCachePolicy::Refresh
+                } else {
+                    UserQueryCachePolicy::UseCache
+                },
+            },
+        )
+        .await
+    }
+
+    pub async fn get_user_via_cache_with_options(
+        self: &Arc<Self>,
+        endpoint: String,
+        user_id_input: String,
+        options: UserQueryOptions,
+    ) -> Result<VrchatApiResponse> {
         let (user_id, request) = remote_users::user_get_input(endpoint.clone(), user_id_input)?;
         let refresh_expectation = self.capture_friend_state_sequence(&user_id);
-        let kind = UserQueryKind::from_request(dialog, is_friend);
-        if force {
+        if options.cache_policy == UserQueryCachePolicy::Refresh {
             self.user_query_cache
                 .invalidate_user(&endpoint, &user_id)
                 .await;
@@ -246,7 +275,7 @@ impl RealtimeHostRuntime {
         let fetch_marker = Arc::clone(&fetched);
         let response = self
             .user_query_cache
-            .get_or_fetch(kind, &endpoint, &user_id, async move {
+            .get_or_fetch(options.kind, &endpoint, &user_id, async move {
                 let resp = runtime
                     .deps
                     .web
@@ -262,7 +291,7 @@ impl RealtimeHostRuntime {
             && !crate::realtime::user_query_cache::is_negative_cacheable_status(status)
         {
             self.user_query_cache
-                .invalidate(kind, &endpoint, &user_id)
+                .invalidate(options.kind, &endpoint, &user_id)
                 .await;
         }
         if fetched.load(Ordering::SeqCst) {

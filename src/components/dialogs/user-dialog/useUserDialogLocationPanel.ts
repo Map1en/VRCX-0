@@ -6,6 +6,7 @@ import {
     resolveObservedPlayerUserIds,
     resolveSameInstanceFriendLocation
 } from '@/domain/friends/sameInstanceFriends';
+import type { CurrentInstanceRosterPlayer } from '@/domain/instances/currentInstanceRoster';
 import {
     createInstanceUserRow as createLocationUserRow,
     isSameInstanceLocation as isSameLocationTag,
@@ -16,9 +17,9 @@ import {
     userDisplayName,
     type InstanceRosterRow
 } from '@/domain/instances/instanceRoster';
-import playerListPersistenceRepository from '@/repositories/playerListPersistenceRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
+import { loadCurrentInstanceRoster } from '@/services/currentInstanceRosterService';
 import {
     recordGameRuntimePresence,
     recordKnownUsers,
@@ -55,6 +56,17 @@ type UserDialogLocationPanelData = {
     users: InstanceRosterRow[];
     friendCount: number;
     playerCount: number;
+};
+
+type UserDialogLocationGameState = {
+    currentDestination: string;
+    currentLocation: string;
+    currentLocationPlayerIds: string[];
+    currentLocationPlayers: CurrentInstanceRosterPlayer[];
+    currentLocationStartedAt: string | null;
+    currentWorldId: string;
+    currentWorldName: string;
+    isGameRunning: boolean | null;
 };
 
 function recordValues(value: unknown): Record<string, unknown>[] {
@@ -216,7 +228,7 @@ export function useUserDialogLocationPanel({
     currentEndpoint: string;
     currentUserId: unknown;
     currentUserSnapshot: Record<string, unknown> | null;
-    gameState: Record<string, unknown> | null;
+    gameState: UserDialogLocationGameState | null;
     groupInstancesState: Record<string, unknown>;
     friendsById: Record<string, Record<string, unknown>>;
     presenceLocation: string;
@@ -294,6 +306,7 @@ export function useUserDialogLocationPanel({
                 : activeLocation;
         const rowsById = new Map<string, InstanceRosterRow>();
         const knownUsersById = new Map<string, unknown>();
+        const visibleFriendIds = new Set<string>();
 
         function addKnownUser(userValue: unknown) {
             const user = record(userValue);
@@ -353,6 +366,10 @@ export function useUserDialogLocationPanel({
             ) {
                 continue;
             }
+            const friendId = locationUserId(friend);
+            if (friendId) {
+                visibleFriendIds.add(friendId);
+            }
             mergeLocationUser(rowsById, friend);
         }
 
@@ -395,12 +412,18 @@ export function useUserDialogLocationPanel({
                   .catch((): null => null)
             : Promise.resolve(null);
         const playerSnapshotPromise = currentLocationMatches
-            ? playerListPersistenceRepository
-                  .getCurrentInstanceSnapshot({
-                      currentUserId: normalizedCurrentUserId,
-                      currentLocation: snapshotLocation
-                  })
-                  .catch((): null => null)
+            ? loadCurrentInstanceRoster({
+                  currentUserId: normalizedCurrentUserId,
+                  currentLocation: snapshotLocation,
+                  runtime: {
+                      currentLocation: currentGameLocation,
+                      currentLocationStartedAt:
+                          gameState?.currentLocationStartedAt || null,
+                      currentWorldId: gameState?.currentWorldId || '',
+                      currentWorldName: gameState?.currentWorldName || '',
+                      players: gameState?.currentLocationPlayers || []
+                  }
+              }).catch((): null => null)
             : Promise.resolve(null);
 
         Promise.allSettled([
@@ -430,22 +453,20 @@ export function useUserDialogLocationPanel({
                         playerSnapshotResult.status === 'fulfilled'
                             ? playerSnapshotResult.value
                             : null;
-                    const snapshotPlayers = (
-                        Array.isArray(playerSnapshot?.players)
-                            ? playerSnapshot.players
-                            : []
-                    ).map((player) => {
-                        const userId = resolveObservedPlayerUserId(
-                            player,
-                            friendsById
-                        );
-                        return {
-                            id: userId,
-                            userId,
-                            displayName: player.displayName,
-                            joinedAt: player.joinedAt
-                        };
-                    });
+                    const snapshotPlayers = (playerSnapshot?.players || []).map(
+                        (player) => {
+                            const userId = resolveObservedPlayerUserId(
+                                player,
+                                friendsById
+                            );
+                            return {
+                                id: userId,
+                                userId,
+                                displayName: player.displayName,
+                                joinedAt: player.joinedAt
+                            };
+                        }
+                    );
                     const instanceOwnerId = resolveOwnerId(
                         instance,
                         parsedLocation.userId,
@@ -560,21 +581,16 @@ export function useUserDialogLocationPanel({
                     const users = filterVisibleUserDialogLocationUsers({
                         currentUserId: normalizedCurrentUserId,
                         friendsById,
+                        location: activeLocation,
+                        memberUserIds: visibleFriendIds,
                         users: allUsers
                     });
-                    const friendCount = allUsers.filter((user) => {
+                    const friendCount = users.filter((user) => {
                         const userId = normalizeUserId(
                             user?.id || user?.userId
                         );
                         return Boolean(userId && friendsById[userId]);
                     }).length;
-                    const instanceFriendCount =
-                        Number(
-                            instance?.friendCount ||
-                                instance?.friendsCount ||
-                                instance?.n_friends ||
-                                friendCount
-                        ) || friendCount;
 
                     setLocationPanel({
                         location: activeLocation,
@@ -582,7 +598,7 @@ export function useUserDialogLocationPanel({
                         ownerUser,
                         ownerGroup,
                         users,
-                        friendCount: instanceFriendCount,
+                        friendCount,
                         playerCount:
                             firstNonNegativeLocationNumber(
                                 instance?.userCount,
@@ -628,6 +644,8 @@ export function useUserDialogLocationPanel({
                 const users = filterVisibleUserDialogLocationUsers({
                     currentUserId: normalizedCurrentUserId,
                     friendsById,
+                    location: activeLocation,
+                    memberUserIds: visibleFriendIds,
                     users: allUsers
                 });
                 setLocationPanel({
@@ -654,6 +672,8 @@ export function useUserDialogLocationPanel({
         gameState?.currentLocationStartedAt,
         gameState?.currentLocationPlayerIds,
         gameState?.currentLocationPlayers,
+        gameState?.currentWorldId,
+        gameState?.currentWorldName,
         locationRefreshToken,
         normalizedCurrentUserId,
         presenceLocation,

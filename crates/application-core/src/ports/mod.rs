@@ -13,8 +13,7 @@ pub use print_cleanup::{NoopPrintCleanupInputSink, PrintCleanupInputSink, PrintC
 pub use process_monitor::{GameProcessEvent, GameProcessEventSink};
 pub use session::{
     BackgroundCapabilitySession, GameProcessStatus as HostSessionGameProcessStatus,
-    HostSessionProjection, HostSessionRuntime,
-    RealtimeSessionContext as HostRealtimeSessionContext, SessionHostRuntime,
+    HostRealtimeSessionContext, HostSessionProjection, HostSessionRuntime, SessionHostRuntime,
 };
 pub use updater::{
     NoopUpdaterPort, UpdaterCheckRequest, UpdaterDownloadOutcome, UpdaterDownloadProgress,

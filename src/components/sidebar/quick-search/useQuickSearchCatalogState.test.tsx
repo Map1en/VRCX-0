@@ -84,8 +84,8 @@ describe('useQuickSearchCatalogState', () => {
         expect(result.current.detail).toBe('current');
         expect(result.current.ownAvatars).toEqual([{ id: 'avtr_current' }]);
         expect(mocks.loadQuickSearchCatalog).toHaveBeenNthCalledWith(2, {
-            currentUserId: 'usr_second',
-            endpoint: 'https://second.example'
+            currentEndpoint: 'https://second.example',
+            currentUserId: 'usr_second'
         });
     });
 });

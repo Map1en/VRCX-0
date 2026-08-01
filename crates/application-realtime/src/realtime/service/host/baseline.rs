@@ -94,7 +94,7 @@ impl RealtimeHostRuntime {
                 FriendBaselineSyncMode::Direct { generation },
                 friends_by_id,
             )?
-            .result)
+            .into_result())
     }
 
     pub fn sync_friend_snapshot_with_watermark(
@@ -238,7 +238,7 @@ impl RealtimeHostRuntime {
                         baseline_revision: 0,
                         friend_count,
                     },
-                    Some(pending_snapshot),
+                    pending_snapshot,
                     friend_log_changed,
                 ));
             };
@@ -410,11 +410,12 @@ impl RealtimeHostRuntime {
             0,
         );
 
-        Ok(FriendBaselineSyncOutcome::accepted(
-            result,
-            final_snapshot,
-            friend_log_changed,
-        ))
+        Ok(match final_snapshot {
+            Some(snapshot) => {
+                FriendBaselineSyncOutcome::accepted(result, snapshot, friend_log_changed)
+            }
+            None => FriendBaselineSyncOutcome::rejected(result),
+        })
     }
 }
 
@@ -458,7 +459,7 @@ fn friend_snapshot_diff_projection(
                 user_id,
                 patch: record.clone(),
                 state_bucket,
-                state_bucket_authority: Some(FriendStateBucketAuthority::Explicit),
+                state_bucket_authority: FriendStateBucketAuthority::Explicit,
             });
         if let Some(entry) = joining_entry {
             projection.feed_entries.push(entry);

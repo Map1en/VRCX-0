@@ -24,8 +24,8 @@ export function useQuickSearchCatalogState({
         let active = true;
         setCatalog(createEmptyCatalog('running'));
         loadQuickSearchCatalog({
-            currentUserId,
-            endpoint: currentEndpoint
+            currentEndpoint,
+            currentUserId
         })
             .then((nextCatalog) => {
                 if (active) {

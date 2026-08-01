@@ -1,14 +1,10 @@
+import type { ScreenshotLibraryScanStatus } from '@/platform/tauri/bindings';
 import { invokeAppCommand } from '@/platform/tauri/dynamicCommand';
 import { safeJsonParse } from '@/repositories/baseRepository';
 
 type AppCommandName = string;
 
-export interface ScreenshotLibraryStatus {
-    running?: boolean;
-    ready?: boolean;
-    error?: string;
-    [key: string]: unknown;
-}
+export type ScreenshotLibraryStatus = ScreenshotLibraryScanStatus;
 
 function parseResponseValue(data: unknown): unknown {
     if (data === null || data === undefined || data === '') {

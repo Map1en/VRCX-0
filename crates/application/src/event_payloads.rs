@@ -2,8 +2,9 @@ use vrcx_0_application_core::RuntimeEventPayload;
 
 use crate::{
     AppUpdateDownloadProgressPayload, AppUpdateInstalledPayload, AppUpdateStatusSnapshot,
-    AuthenticatedRuntimePhaseSnapshot, BackgroundImageProjection, FavoriteImportStatus,
-    GroupBanImportStatus, NoteExportStatus, ProfileBackupStatus, ProfileRestoreProgress,
+    AuthenticatedRuntimePhaseSnapshot, BackgroundImageProjection, CommunityThemeProjection,
+    FavoriteImportStatus, GroupBanImportStatus, GroupModerationBatchProgress,
+    MutualGraphFetchStatus, NoteExportStatus, ProfileBackupStatus, ProfileRestoreProgress,
     SharedCollectionImportStatus,
 };
 
@@ -39,6 +40,10 @@ impl RuntimeEventPayload for GroupBanImportStatus {
     const EVENT_NAME: &'static str = "groupBanImportStatus";
 }
 
+impl RuntimeEventPayload for GroupModerationBatchProgress {
+    const EVENT_NAME: &'static str = "groupModerationBatchProgress";
+}
+
 impl RuntimeEventPayload for SharedCollectionImportStatus {
     const EVENT_NAME: &'static str = "sharedCollectionImportStatus";
 }
@@ -47,6 +52,14 @@ impl RuntimeEventPayload for NoteExportStatus {
     const EVENT_NAME: &'static str = "noteExportStatus";
 }
 
+impl RuntimeEventPayload for MutualGraphFetchStatus {
+    const EVENT_NAME: &'static str = "mutualGraphFetchStatus";
+}
+
 impl RuntimeEventPayload for BackgroundImageProjection {
     const EVENT_NAME: &'static str = "backgroundImageState";
+}
+
+impl RuntimeEventPayload for CommunityThemeProjection {
+    const EVENT_NAME: &'static str = "communityThemeState";
 }

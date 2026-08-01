@@ -1,6 +1,8 @@
 use std::collections::{HashMap, HashSet};
 pub(crate) use vrcx_0_core::text::first_non_empty;
 
+use super::friend_record::extra_str;
+pub(crate) use super::friend_record::friend_record_avatar_url;
 use vrcx_0_application::{
     evaluate_instance_action_gates, InstanceActionGateTarget, InstanceActionGates,
     InstanceActionGatesBatchInput,
@@ -10,7 +12,6 @@ use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::location::{parse_location, world_id_from_location};
 use vrcx_0_persistence::favorites::favorite_list;
 use vrcx_0_persistence::memos::{memo_list_user_notes, memo_list_users};
-use vrcx_0_runtime_host::notification::{user_image_url_128, UserImageSources};
 use vrcx_0_vr_overlay::{
     AvatarBitmap, FavoriteFriendsPanelModel, FriendPanelCategory, FriendPanelRow,
     FriendPanelRowActions, FriendPanelRowPrimaryAction, FriendPanelStatusTone,
@@ -139,11 +140,11 @@ pub(crate) fn local_favorite_friend_groups_from_db(
     let rows = favorite_list(db, Some(owner_user_id), "friend".to_string())?;
     let mut groups_by_key: HashMap<String, Vec<String>> = HashMap::new();
     for row in rows {
-        let user_id = json_string_field(&row, "userId").unwrap_or_default();
+        let user_id = row.user_id.unwrap_or_default();
         if user_id.is_empty() {
             continue;
         }
-        let group_name = json_string_field(&row, "groupName").unwrap_or_else(|| "Favorites".into());
+        let group_name = row.group_name;
         let group_name = if group_name.trim().is_empty() {
             "Favorites".to_string()
         } else {
@@ -881,34 +882,6 @@ fn traveling_location(record: &FriendRecord) -> String {
         legacy_traveling_to_location.as_str(),
     ])
     .to_string()
-}
-
-pub(crate) fn friend_record_avatar_url(
-    record: &FriendRecord,
-    allow_user_icon: bool,
-    endpoint: &str,
-) -> String {
-    user_image_url_128(
-        UserImageSources {
-            user_icon: extra_str(record, "userIcon"),
-            profile_pic_override_thumbnail: extra_str(record, "profilePicOverrideThumbnail"),
-            profile_pic_override: extra_str(record, "profilePicOverride"),
-            thumbnail_url: extra_str(record, "thumbnailUrl"),
-            current_avatar_thumbnail_image_url: record.current_avatar_thumbnail_image_url.as_str(),
-            current_avatar_image_url: record.current_avatar_image_url.as_str(),
-        },
-        allow_user_icon,
-        endpoint,
-    )
-    .unwrap_or_default()
-}
-
-fn extra_str<'a>(record: &'a FriendRecord, key: &str) -> &'a str {
-    record
-        .extra
-        .get(key)
-        .and_then(serde_json::Value::as_str)
-        .unwrap_or_default()
 }
 
 fn extra_string(record: &FriendRecord, key: &str) -> String {

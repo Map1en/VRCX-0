@@ -102,6 +102,29 @@ describe('friendsSidebarModel same-instance groups', () => {
 
         expect(groups[0]?.rows[0]?.$location_at).toBe(firstJoinTime);
     });
+
+    it('uses the observed current-instance join time instead of a sidebar fallback', () => {
+        const location = 'wrld_current:123';
+        const observedJoinTime = 1_700_000_000_000;
+        const groups = buildSameInstanceGroups(
+            [
+                {
+                    id: 'usr_friend',
+                    displayName: 'Friend',
+                    state: 'online',
+                    location
+                }
+            ],
+            { isShowCurrentUserInSameInstance: true },
+            {
+                location,
+                dwellEpochsByUserId: new Map([['usr_friend', observedJoinTime]])
+            },
+            new Map()
+        );
+
+        expect(groups[0]?.rows[0]?.$location_at).toBe(observedJoinTime);
+    });
 });
 
 describe('friendsSidebarModel friend status source', () => {

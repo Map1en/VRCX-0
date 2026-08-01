@@ -1,12 +1,19 @@
 import { useRuntimeStore } from '@/state/runtimeStore';
 
+import type { SettingsPageStateSections } from '../../settingsPageStateSections';
 import { SettingsTabContent } from '../SettingsViewParts';
 import { SettingsInterfaceAppearanceCard } from './SettingsInterfaceAppearanceCard';
 import { SettingsInterfaceDisplayCards } from './SettingsInterfaceDisplayCards';
 import { SettingsInterfaceThemesCard } from './SettingsInterfaceThemesCard';
 import { SettingsInterfaceUserColorsCard } from './SettingsInterfaceUserColorsCard';
 
-export function SettingsInterfaceTab({ settingsInterface }: any) {
+type SettingsInterfaceTabProps = {
+    settingsInterface: SettingsPageStateSections['interface'];
+};
+
+export function SettingsInterfaceTab({
+    settingsInterface
+}: SettingsInterfaceTabProps) {
     const isMacHost = useRuntimeStore(
         (state) => state.hostCapabilities.platform === 'macos'
     );

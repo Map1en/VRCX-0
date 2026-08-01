@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { useFavoriteStore } from '@/state/favoriteStore';
+import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 
 import type {
     FavoriteGroup,
@@ -46,7 +47,7 @@ export function useFavoritesActions({
     currentEndpoint: string;
     currentInviteLocation: string;
     currentUserId: string;
-    currentUserSnapshot: any;
+    currentUserSnapshot: CurrentUserSnapshotState | null;
     friendsById: Record<string, unknown>;
     friendsMap: Map<string, unknown>;
     kind: FavoriteKind;
@@ -115,9 +116,6 @@ export function useFavoritesActions({
     });
     const bulkActions = useFavoritesBulkActions({
         currentEndpoint,
-        handleRemoveLocalFavorite: collectionActions.handleRemoveLocalFavorite,
-        handleRemoveRemoteFavorite:
-            collectionActions.handleRemoveRemoteFavorite,
         kind,
         localGroups,
         refreshFavorites: collectionActions.refreshFavorites,

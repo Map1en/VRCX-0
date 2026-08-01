@@ -3,10 +3,12 @@ use crate::Error;
 
 pub fn ensure_realtime_tables(db: &DatabaseService, user_prefix: &str) -> Result<(), Error> {
     ensure_user_prefix(user_prefix)?;
-    for sql in realtime_table_statements(user_prefix) {
-        db.execute_non_query(&sql, &Default::default())?;
-    }
-    Ok(())
+    db.ensure_schema_once(&format!("realtime:{user_prefix}"), || {
+        for sql in realtime_table_statements(user_prefix) {
+            db.execute_non_query(&sql, &Default::default())?;
+        }
+        Ok(())
+    })
 }
 
 pub fn normalize_user_table_prefix(user_id: &str) -> Result<String, Error> {

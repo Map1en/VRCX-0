@@ -1,4 +1,8 @@
-use std::path::{Path, PathBuf};
+use std::{
+    io::Write,
+    path::{Path, PathBuf},
+    sync::atomic::{AtomicU64, Ordering},
+};
 
 use base64::{engine::general_purpose::STANDARD as B64, Engine};
 use serde::Serialize;
@@ -6,10 +10,18 @@ use serde::Serialize;
 use crate::{asset_bundle_cache, process_status, vrchat_paths};
 use vrcx_0_host::Error;
 
+static NEXT_ATOMIC_WRITE_ID: AtomicU64 = AtomicU64::new(0);
+
 #[derive(Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct VrchatConfigWriteResult {
     pub old_cache_cleanup_error: Option<String>,
+}
+
+#[derive(Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct VrchatRichPresenceDisableResult {
+    pub changed: bool,
 }
 
 pub fn open_link(url: &str) -> Result<(), Error> {
@@ -73,6 +85,38 @@ pub fn normalize_config_file_json(json: &str) -> Result<String, Error> {
 pub fn write_config_file(validated_json: &str) -> Result<(), Error> {
     let path = vrchat_paths::vrchat_config_path();
     write_string_file(&path, validated_json)
+}
+
+pub fn disable_vrchat_rich_presence() -> Result<VrchatRichPresenceDisableResult, Error> {
+    disable_vrchat_rich_presence_at(&vrchat_paths::vrchat_config_path())
+}
+
+fn disable_vrchat_rich_presence_at(path: &Path) -> Result<VrchatRichPresenceDisableResult, Error> {
+    let content = if path.exists() {
+        std::fs::read_to_string(path)?
+    } else {
+        String::new()
+    };
+    let mut config = if content.trim().is_empty() {
+        serde_json::Map::new()
+    } else {
+        serde_json::from_str::<serde_json::Value>(&content)?
+            .as_object()
+            .cloned()
+            .ok_or_else(|| Error::Custom("VRChat config JSON must be an object.".into()))?
+    };
+    if config
+        .get("disableRichPresence")
+        .and_then(|value| value.as_bool())
+        == Some(true)
+    {
+        return Ok(VrchatRichPresenceDisableResult { changed: false });
+    }
+
+    config.insert("disableRichPresence".into(), serde_json::Value::Bool(true));
+    let json = serde_json::to_string_pretty(&serde_json::Value::Object(config))?;
+    write_string_file_atomically(path, &json)?;
+    Ok(VrchatRichPresenceDisableResult { changed: true })
 }
 
 pub fn vrchat_cache_location_would_change(validated_json: &str) -> Result<bool, Error> {
@@ -212,6 +256,73 @@ pub fn write_string_file(path: &Path, content: &str) -> Result<(), Error> {
     Ok(())
 }
 
+fn write_string_file_atomically(path: &Path, content: &str) -> Result<(), Error> {
+    let parent = path
+        .parent()
+        .ok_or_else(|| Error::Custom("file path has no parent directory".into()))?;
+    std::fs::create_dir_all(parent)?;
+    let file_name = path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or("config.json");
+    let write_id = NEXT_ATOMIC_WRITE_ID.fetch_add(1, Ordering::Relaxed);
+    let temporary_path = parent.join(format!(
+        ".{file_name}.vrcx-0-{}-{write_id}.tmp",
+        std::process::id()
+    ));
+
+    let result = (|| -> Result<(), Error> {
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&temporary_path)?;
+        file.write_all(content.as_bytes())?;
+        file.sync_all()?;
+        replace_file_atomically(&temporary_path, path)?;
+        Ok(())
+    })();
+    if result.is_err() {
+        let _ = std::fs::remove_file(&temporary_path);
+    }
+    result
+}
+
+#[cfg(windows)]
+fn replace_file_atomically(source: &Path, destination: &Path) -> Result<(), Error> {
+    use std::os::windows::ffi::OsStrExt;
+    use windows_sys::Win32::Storage::FileSystem::{
+        MoveFileExW, MOVEFILE_REPLACE_EXISTING, MOVEFILE_WRITE_THROUGH,
+    };
+
+    let source = source
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect::<Vec<_>>();
+    let destination = destination
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect::<Vec<_>>();
+    let result = unsafe {
+        MoveFileExW(
+            source.as_ptr(),
+            destination.as_ptr(),
+            MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH,
+        )
+    };
+    if result == 0 {
+        return Err(std::io::Error::last_os_error().into());
+    }
+    Ok(())
+}
+
+#[cfg(not(windows))]
+fn replace_file_atomically(source: &Path, destination: &Path) -> Result<(), Error> {
+    std::fs::rename(source, destination)?;
+    Ok(())
+}
+
 #[cfg(target_os = "linux")]
 fn open_folder_and_select_item_linux(path: &Path, is_folder: bool) -> Result<(), Error> {
     let directory = if is_folder {
@@ -256,9 +367,10 @@ fn open_folder_and_select_item_linux(path: &Path, is_folder: bool) -> Result<(),
 #[cfg(test)]
 mod tests {
     use super::{
-        cache_paths_equal, cache_paths_overlap, discord_profile_url, normalize_config_file_json,
+        cache_paths_equal, cache_paths_overlap, disable_vrchat_rich_presence_at,
+        discord_profile_url, normalize_config_file_json,
     };
-    use std::path::Path;
+    use std::{path::Path, time::SystemTime};
 
     #[test]
     fn builds_discord_profile_web_url() {
@@ -305,5 +417,51 @@ mod tests {
         let cache_path = Path::new("cache");
 
         assert!(cache_paths_overlap(cache_path, &cache_path.join("nested")));
+    }
+
+    #[test]
+    fn disables_vrchat_rich_presence_atomically_and_preserves_config() {
+        let directory = temporary_test_directory("disable-rich-presence");
+        let path = directory.join("config.json");
+        std::fs::create_dir_all(&directory).unwrap();
+        std::fs::write(&path, r#"{"existing":true}"#).unwrap();
+
+        let first = disable_vrchat_rich_presence_at(&path).unwrap();
+        let second = disable_vrchat_rich_presence_at(&path).unwrap();
+        let config: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+
+        assert!(first.changed);
+        assert!(!second.changed);
+        assert_eq!(config.get("existing"), Some(&serde_json::Value::Bool(true)));
+        assert_eq!(
+            config.get("disableRichPresence"),
+            Some(&serde_json::Value::Bool(true))
+        );
+        assert_eq!(std::fs::read_dir(&directory).unwrap().count(), 1);
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn invalid_vrchat_config_is_not_overwritten() {
+        let directory = temporary_test_directory("invalid-rich-presence-config");
+        let path = directory.join("config.json");
+        std::fs::create_dir_all(&directory).unwrap();
+        std::fs::write(&path, r#"["not","an","object"]"#).unwrap();
+
+        assert!(disable_vrchat_rich_presence_at(&path).is_err());
+        assert_eq!(
+            std::fs::read_to_string(&path).unwrap(),
+            r#"["not","an","object"]"#
+        );
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+
+    fn temporary_test_directory(label: &str) -> std::path::PathBuf {
+        let timestamp = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        std::env::temp_dir().join(format!("vrcx-0-{label}-{}-{timestamp}", std::process::id()))
     }
 }

@@ -40,7 +40,7 @@ pub use error::Error;
 pub use event_bus::RuntimeEventForTest;
 pub use event_bus::{
     FavoritesChangedPayload, RuntimeEventBus, RuntimeEventPayload, RuntimeEventSink,
-    RuntimeRealtimeTransportEpoch, RuntimeVrchatAuthFailurePayload,
+    RuntimeRealtimeTransportEpoch, RuntimeVrchatAuthFailurePayload, VrcStatusSnapshot,
 };
 pub use events::{
     FriendProfileBulkLoadStatus, FriendProfileLoadStatusPayload, FriendProjection,

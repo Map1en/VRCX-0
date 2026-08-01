@@ -2,9 +2,8 @@
 
 use tauri::State;
 use vrcx_0_application_core::vrchat_api::favorites::{
-    favorite_add_input, favorite_avatars_get_input, favorite_delete_input,
-    favorite_group_clear_input, favorite_group_save_input, favorite_groups_get_input,
-    favorite_limits_get_input, favorite_worlds_get_input, favorites_get_input,
+    favorite_avatars_get_input, favorite_groups_get_input, favorite_limits_get_input,
+    favorite_worlds_get_input, favorites_get_input,
 };
 use vrcx_0_application_core::vrchat_api::require_text;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
@@ -28,6 +27,18 @@ async fn execute_favorite_api(
 ) -> Result<VrchatApiResponse, AppError> {
     super::super::execute::execute_vrchat_api(state, command, detail, input, VrchatScope::Vrchat)
         .await
+}
+
+fn mutation_deps<'a>(
+    state: &'a State<'_, AppState>,
+) -> vrcx_0_application::FavoriteRemoteMutationDeps<'a> {
+    vrcx_0_application::FavoriteRemoteMutationDeps {
+        db: &state.db,
+        web: &state.web,
+        diagnostics: &state.runtime_context.diagnostics,
+        sync: &state.runtime_context.sync,
+        realtime: &state.realtime_runtime,
+    }
 }
 
 #[tauri::command]
@@ -127,24 +138,16 @@ pub async fn app__vrchat_favorite_add(
     state: State<'_, AppState>,
     input: VrchatFavoriteAddInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (type_name, favorite_id, request) = favorite_add_input(
-        VRCHAT_API_DEFAULT_ENDPOINT.into(),
-        input.type_name,
-        input.favorite_id,
-        input.tags,
-    )?;
-    let realtime_runtime = state.realtime_runtime.clone();
-    let result = execute_favorite_api(
-        state,
-        "app__vrchat_favorite_add",
-        format!("Adding {type_name} favorite {favorite_id}."),
-        request,
+    Ok(vrcx_0_application::add_remote_favorite(
+        &mutation_deps(&state),
+        vrcx_0_application::FavoriteRemoteAddInput {
+            endpoint: VRCHAT_API_DEFAULT_ENDPOINT.into(),
+            kind: input.type_name,
+            entity_id: input.favorite_id,
+            tags: input.tags,
+        },
     )
-    .await;
-    if result.is_ok() {
-        realtime_runtime.notify_favorites_changed(&type_name, false, true);
-    }
-    result
+    .await?)
 }
 
 #[tauri::command]
@@ -153,20 +156,14 @@ pub async fn app__vrchat_favorite_delete(
     state: State<'_, AppState>,
     input: VrchatFavoriteDeleteInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let (object_id, request) =
-        favorite_delete_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input.object_id)?;
-    let realtime_runtime = state.realtime_runtime.clone();
-    let result = execute_favorite_api(
-        state,
-        "app__vrchat_favorite_delete",
-        format!("Deleting favorite for {object_id}."),
-        request,
+    Ok(vrcx_0_application::delete_remote_favorite(
+        &mutation_deps(&state),
+        vrcx_0_application::FavoriteRemoteDeleteInput {
+            endpoint: VRCHAT_API_DEFAULT_ENDPOINT.into(),
+            object_id: input.object_id,
+        },
     )
-    .await;
-    if result.is_ok() {
-        realtime_runtime.notify_favorites_changed("unknown", false, true);
-    }
-    result
+    .await?)
 }
 
 #[tauri::command]
@@ -175,27 +172,18 @@ pub async fn app__vrchat_favorite_group_save(
     state: State<'_, AppState>,
     input: VrchatFavoriteGroupSaveInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let kind = input.type_name.clone();
-    let (group, request) = favorite_group_save_input(
-        VRCHAT_API_DEFAULT_ENDPOINT.into(),
-        input.owner_id,
-        input.type_name,
-        input.group,
-        input.display_name,
-        input.visibility,
-    )?;
-    let realtime_runtime = state.realtime_runtime.clone();
-    let result = execute_favorite_api(
-        state,
-        "app__vrchat_favorite_group_save",
-        format!("Saving favorite group {group}."),
-        request,
+    Ok(vrcx_0_application::save_remote_favorite_group(
+        &mutation_deps(&state),
+        vrcx_0_application::FavoriteRemoteGroupSaveInput {
+            endpoint: VRCHAT_API_DEFAULT_ENDPOINT.into(),
+            owner_id: input.owner_id,
+            kind: input.type_name,
+            group: input.group,
+            display_name: input.display_name,
+            visibility: input.visibility,
+        },
     )
-    .await;
-    if result.is_ok() {
-        realtime_runtime.notify_favorites_changed(&kind, false, true);
-    }
-    result
+    .await?)
 }
 
 #[tauri::command]
@@ -204,25 +192,16 @@ pub async fn app__vrchat_favorite_group_clear(
     state: State<'_, AppState>,
     input: VrchatFavoriteGroupClearInput,
 ) -> Result<VrchatApiResponse, AppError> {
-    let kind = input.type_name.clone();
-    let (group, request) = favorite_group_clear_input(
-        VRCHAT_API_DEFAULT_ENDPOINT.into(),
-        input.owner_id,
-        input.type_name,
-        input.group,
-    )?;
-    let realtime_runtime = state.realtime_runtime.clone();
-    let result = execute_favorite_api(
-        state,
-        "app__vrchat_favorite_group_clear",
-        format!("Clearing favorite group {group}."),
-        request,
+    Ok(vrcx_0_application::clear_remote_favorite_group(
+        &mutation_deps(&state),
+        vrcx_0_application::FavoriteRemoteGroupClearInput {
+            endpoint: VRCHAT_API_DEFAULT_ENDPOINT.into(),
+            owner_id: input.owner_id,
+            kind: input.type_name,
+            group: input.group,
+        },
     )
-    .await;
-    if result.is_ok() {
-        realtime_runtime.notify_favorites_changed(&kind, false, true);
-    }
-    result
+    .await?)
 }
 
 #[tauri::command]

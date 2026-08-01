@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
+import { FriendInstanceTimer } from '@/components/sidebar/friends-sidebar/FriendsSidebarLocation';
 import {
     resolveSidebarStatusDotClassName,
     type SidebarFriendRecord
@@ -12,6 +13,7 @@ import {
     isGroupId,
     mergeInstanceUsers,
     normalizeInstanceUsers,
+    resolveInstanceDwellEpoch,
     type InstanceRosterRow
 } from '@/domain/instances/instanceRoster';
 import { timeToText } from '@/lib/dateTime';
@@ -107,10 +109,12 @@ function firstDisplayName(userId: unknown, ...sources: unknown[]) {
 
 export function InstanceUserTiles({
     instance,
-    visibleUserIds
+    visibleUserIds,
+    showInstanceDuration = false
 }: {
     instance: unknown;
     visibleUserIds?: ReadonlySet<string>;
+    showInstanceDuration?: boolean;
 }) {
     const { t } = useTranslation();
     const currentEndpoint = useRuntimeStore(
@@ -294,7 +298,15 @@ export function InstanceUserTiles({
                                 : undefined
                         }
                         subline={
-                            travelingTimestamp ? (
+                            showInstanceDuration ? (
+                                <FriendInstanceTimer
+                                    epoch={
+                                        travelingTimestamp ||
+                                        resolveInstanceDwellEpoch(user)
+                                    }
+                                    traveling={Boolean(travelingTimestamp)}
+                                />
+                            ) : travelingTimestamp ? (
                                 <>
                                     <Spinner
                                         aria-hidden="true"

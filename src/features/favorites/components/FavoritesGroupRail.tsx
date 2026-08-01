@@ -30,6 +30,8 @@ import { Input } from '@/ui/shadcn/input';
 import { Skeleton } from '@/ui/shadcn/skeleton';
 import { Spinner } from '@/ui/shadcn/spinner';
 
+import type { FavoriteGroup, FavoriteSource } from '../favoritesTypes';
+
 const VISIBILITY_OPTIONS = ['public', 'friends', 'private'] as const;
 type FavoriteVisibility = (typeof VISIBILITY_OPTIONS)[number];
 
@@ -118,6 +120,22 @@ function GroupCapacityMeter({
     );
 }
 
+type FavoriteGroupHandler = (group: FavoriteGroup) => void | Promise<void>;
+
+type GroupMenuProps = {
+    group: FavoriteGroup;
+    onRemoteRename: FavoriteGroupHandler;
+    onRemoteVisibility(
+        group: FavoriteGroup,
+        visibility: FavoriteVisibility
+    ): void | Promise<void>;
+    onRemoteClear: FavoriteGroupHandler;
+    onLocalRename: FavoriteGroupHandler;
+    onLocalDelete: FavoriteGroupHandler;
+    onHistoryClear?: FavoriteGroupHandler;
+    onShareCollection?: FavoriteGroupHandler;
+};
+
 function GroupMenu({
     group,
     onRemoteRename,
@@ -127,7 +145,7 @@ function GroupMenu({
     onLocalDelete,
     onHistoryClear,
     onShareCollection
-}: any) {
+}: GroupMenuProps) {
     const { t } = useTranslation();
 
     if (group.source === 'history') {
@@ -155,7 +173,7 @@ function GroupMenu({
                     <DropdownMenuGroup>
                         <DropdownMenuItem
                             variant="destructive"
-                            onClick={() => onHistoryClear(group)}
+                            onClick={() => onHistoryClear?.(group)}
                         >
                             {t('common.actions.clear')}
                         </DropdownMenuItem>
@@ -282,6 +300,35 @@ function GroupMenu({
     );
 }
 
+type GroupRailSectionProps = {
+    title: string;
+    icon: LucideIcon;
+    groups: FavoriteGroup[];
+    selectedSource: FavoriteSource | '';
+    selectedGroupKey: string;
+    loading?: boolean;
+    creating?: boolean;
+    newGroupName?: string;
+    newGroupLabel?: string;
+    showNewGroup?: boolean;
+    onRefresh?(): void | Promise<unknown>;
+    onSelect: FavoriteGroupHandler;
+    onStartCreate?(): void;
+    onNewGroupNameChange?(value: string): void;
+    onConfirmCreate?(): void | Promise<void>;
+    onCancelCreate?(): void;
+    onRemoteRename: FavoriteGroupHandler;
+    onRemoteVisibility(
+        group: FavoriteGroup,
+        visibility: FavoriteVisibility
+    ): void | Promise<void>;
+    onRemoteClear: FavoriteGroupHandler;
+    onLocalRename: FavoriteGroupHandler;
+    onLocalDelete: FavoriteGroupHandler;
+    onHistoryClear?: FavoriteGroupHandler;
+    onShareCollection?: FavoriteGroupHandler;
+};
+
 const GroupRailSection = memo(function GroupRailSection({
     title,
     icon: SectionIcon,
@@ -306,7 +353,7 @@ const GroupRailSection = memo(function GroupRailSection({
     onLocalDelete,
     onHistoryClear,
     onShareCollection
-}: any) {
+}: GroupRailSectionProps) {
     const { t } = useTranslation();
     const resolvedNewGroupLabel =
         newGroupLabel || t('view.favorite.worlds.new_group');
@@ -343,7 +390,7 @@ const GroupRailSection = memo(function GroupRailSection({
             </div>
             <div className="flex flex-col gap-0.5">
                 {loading && !groups.length ? (
-                    Array.from({ length: 5 }, (_: any, index: any) => (
+                    Array.from({ length: 5 }, (_, index) => (
                         <div
                             key={`group-placeholder-${index}`}
                             className="pointer-events-none flex w-full flex-col gap-1 rounded-md px-2 py-1.5 text-sm opacity-70"
@@ -353,7 +400,7 @@ const GroupRailSection = memo(function GroupRailSection({
                         </div>
                     ))
                 ) : groups.length ? (
-                    groups.map((group: any) => {
+                    groups.map((group) => {
                         const isActive =
                             selectedSource === group.source &&
                             selectedGroupKey === group.key;
@@ -384,7 +431,7 @@ const GroupRailSection = memo(function GroupRailSection({
                                             {visibilityLabel ? (
                                                 <GroupVisibilityIcon
                                                     visibility={
-                                                        group.visibility
+                                                        group.visibility || ''
                                                     }
                                                     label={visibilityLabel}
                                                 />
@@ -397,7 +444,7 @@ const GroupRailSection = memo(function GroupRailSection({
                                         </span>
                                         {group.capacity ? (
                                             <GroupCapacityMeter
-                                                count={group.count}
+                                                count={group.count ?? 0}
                                                 capacity={group.capacity}
                                             />
                                         ) : null}
@@ -443,13 +490,13 @@ const GroupRailSection = memo(function GroupRailSection({
                         disabled={loading}
                         placeholder={resolvedNewGroupLabel}
                         onChange={(event) =>
-                            onNewGroupNameChange(event.target.value)
+                            onNewGroupNameChange?.(event.target.value)
                         }
                         onKeyDown={(event) => {
                             if (event.key === 'Enter') {
-                                onConfirmCreate();
+                                onConfirmCreate?.();
                             } else if (event.key === 'Escape') {
-                                onCancelCreate();
+                                onCancelCreate?.();
                             }
                         }}
                         onBlur={onCancelCreate}

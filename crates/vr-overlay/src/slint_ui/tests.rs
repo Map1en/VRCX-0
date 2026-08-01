@@ -4,10 +4,13 @@ use super::{
     wrist::{wrist_device_item, wrist_device_tokens, wrist_feed_item, WRIST_MUTED_TEXT},
 };
 use crate::{
-    AvatarBitmap, DeviceChip, DeviceRole, DeviceStatus, FavoriteFriendsPanelModel, FeedKind,
-    FeedLine, FeedRelation, FeedSeverity, FriendPanelCategory, FriendPanelRow,
-    FriendPanelRowActions, FriendPanelRowPrimaryAction, FriendPanelStatusTone, MainSurfaceModel,
-    OverlayFooter, RgbaFrame, ToastCard, WristSurfaceModel,
+    AvatarBitmap, DeviceChip, DeviceRole, DeviceStatus, FeedKind, FeedLine, FeedRelation,
+    FeedSeverity, MainSurfaceModel, OverlayFooter, RgbaFrame, ToastCard, WristSurfaceModel,
+};
+#[cfg(feature = "friends-panel")]
+use crate::{
+    FavoriteFriendsPanelModel, FriendPanelCategory, FriendPanelRow, FriendPanelRowActions,
+    FriendPanelRowPrimaryAction, FriendPanelStatusTone,
 };
 use std::{sync::Arc, thread};
 
@@ -23,6 +26,7 @@ fn slint_platform_init_is_available_on_each_render_thread() {
     .unwrap();
 }
 
+#[cfg(feature = "friends-panel")]
 #[test]
 fn slint_panel_host_renders_friends_model_and_dispatches_pointer_input() {
     let mut host = SlintPanelHost::new(OverlaySize::new(1080, 720)).unwrap();
@@ -317,6 +321,7 @@ fn sample_main_model() -> MainSurfaceModel {
     }
 }
 
+#[cfg(feature = "friends-panel")]
 fn sample_friends_model() -> FavoriteFriendsPanelModel {
     FavoriteFriendsPanelModel {
         categories: vec![FriendPanelCategory {

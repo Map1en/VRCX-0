@@ -28,10 +28,6 @@ async function fetchYoutubeVideoMetadata({
     });
 }
 
-async function fetchVrcStatusJson(path: string) {
-    return commands.appExternalApiVrcStatusJsonGet({ path });
-}
-
 async function fetchGithubReleases({
     url,
     headers = {}
@@ -65,7 +61,6 @@ async function fetchImageDataUrl(url: string) {
 const externalApiRepository = Object.freeze({
     searchAvatarProvider,
     fetchYoutubeVideoMetadata,
-    fetchVrcStatusJson,
     fetchGithubReleases,
     fetchGithubContributors,
     fetchImageDataUrl
@@ -75,7 +70,6 @@ export {
     fetchGithubContributors,
     fetchGithubReleases,
     fetchImageDataUrl,
-    fetchVrcStatusJson,
     fetchYoutubeVideoMetadata,
     searchAvatarProvider
 };

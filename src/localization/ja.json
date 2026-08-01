@@ -112,6 +112,9 @@
             "pendingLegacyMigration": "保留中の旧データ移行を先に完了してください。",
             "pendingMigration": "データフォルダーの移動が保留中です。VRCX-0 を再起動してください。",
             "cleanupConflict": "このフォルダーへ戻す前に古いデータを処理してください。",
+            "insufficientSpace": "データを移動するための空き容量が不足しています。",
+            "invalidAdoptionTarget": "既存の VRCX-0 プロファイルを含むフォルダーだけを引き継げます。",
+            "invalidFreshStartTarget": "既存の VRCX-0 プロファイルを含むフォルダーは新規開始に使用できません。",
             "copyFailed": "データベースをコピーできませんでした。元のデータはそのまま使用されています。",
             "commitFailed": "コピーしたデータベースを配置できませんでした。元のデータはそのまま使用されています。",
             "pointerCommitFailed": "新しいデータフォルダーを有効にできませんでした。再起動して安全に再試行してください。",
@@ -2569,6 +2572,7 @@
                         "purge_in_progress": "アバターデータの削除中",
                         "purge_complete": "アバターデータの削除が完了しました。VRCX-0 は再起動します",
                         "purge_failed": "削除に失敗しました: {error}",
+                        "purge_optimization_failed": "アバターデータは削除されましたが、データベースを最適化できませんでした: {error}",
                         "legacy_migration": "VRCX データを移行",
                         "legacy_migration_description": "指定した VRCX データフォルダーのデータで、現在の VRCX-0 設定とデータベースを置き換えます。",
                         "legacy_migration_confirm_title": "VRCX-0 のデータを VRCX のデータで置き換えますか？",
@@ -3321,6 +3325,7 @@
             },
             "mutual_friends": {
                 "header": "共通のフレンド",
+                "undisclosed_friend": "非公開の共通フレンド",
                 "sorting": {
                     "alphabetical": "アルファベット順",
                     "last_active": "最終活動時間順",

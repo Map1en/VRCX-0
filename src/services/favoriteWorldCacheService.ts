@@ -1,113 +1,27 @@
-import favoritePersistenceRepository, {
-    type FavoriteCacheEntity
-} from '@/repositories/favoritePersistenceRepository';
+import { commands } from '@/platform/tauri/bindings';
 import { useFavoriteStore } from '@/state/favoriteStore';
 
-type WorldCacheSource = Record<string, unknown>;
-
-function isRecord(value: unknown): value is WorldCacheSource {
-    return Boolean(value && typeof value === 'object');
-}
-
-function normalizeEntityId(value: unknown) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
-
-function normalizeString(value: unknown) {
-    return typeof value === 'string' ? value : String(value ?? '');
-}
-
-function normalizeReleaseStatus(world: unknown) {
-    return normalizeEntityId(
-        isRecord(world) ? world.releaseStatus : undefined
-    ).toLowerCase();
-}
-
-function hasCompleteWorldSnapshot(world: unknown) {
-    const source = isRecord(world) ? world : {};
-    const name = normalizeString(source.name).trim();
-    const imageUrl =
-        normalizeString(source.thumbnailImageUrl).trim() ||
-        normalizeString(source.imageUrl).trim();
-    return Boolean(name && imageUrl);
-}
-
-function canUpsertWorldSnapshot(world: unknown) {
-    return (
-        normalizeReleaseStatus(world) === 'public' &&
-        hasCompleteWorldSnapshot(world)
-    );
-}
-
-function canInsertMissingWorldSnapshot(world: unknown) {
-    return (
-        normalizeReleaseStatus(world) === 'private' &&
-        hasCompleteWorldSnapshot(world)
-    );
-}
-
-function buildWorldCacheEntry(
-    world: unknown,
-    fallbackWorldId?: unknown
-): FavoriteCacheEntity | null {
-    if (!isRecord(world)) {
-        return null;
-    }
-
-    const id =
-        normalizeEntityId(world.id) || normalizeEntityId(fallbackWorldId);
-    if (!id) {
-        return null;
-    }
-
-    if (
-        !canUpsertWorldSnapshot(world) &&
-        !canInsertMissingWorldSnapshot(world)
-    ) {
-        return null;
-    }
-
-    return {
-        id,
-        authorId: normalizeEntityId(world.authorId),
-        authorName: normalizeString(world.authorName),
-        created_at: normalizeString(world.created_at ?? world.createdAt),
-        description: normalizeString(world.description),
-        imageUrl: normalizeString(world.imageUrl),
-        name: normalizeString(world.name),
-        releaseStatus: normalizeString(world.releaseStatus),
-        thumbnailImageUrl: normalizeString(world.thumbnailImageUrl),
-        updated_at: normalizeString(world.updated_at ?? world.updatedAt),
-        version: Number(world.version) || 0
-    };
-}
+import {
+    favoriteCachePayload,
+    normalizeFavoriteCacheEntityId
+} from './favoriteCachePayload';
 
 export async function cacheWorldDetails(
     world: unknown,
     fallbackWorldId?: unknown
-) {
-    const entry = buildWorldCacheEntry(world, fallbackWorldId);
-    if (!entry) {
+): Promise<boolean> {
+    const entity = favoriteCachePayload(world);
+    if (!entity) {
         return false;
     }
-
-    const canUpsert = canUpsertWorldSnapshot(world);
-    if (!canUpsert) {
-        const existing = await favoritePersistenceRepository.getCachedWorldById(
-            entry.id
-        );
-        if (existing) {
-            return false;
-        }
-    }
-
-    await favoritePersistenceRepository.addWorldToCache(entry);
-    return true;
+    return commands.appFavoriteCacheSnapshot({
+        kind: 'world',
+        entity,
+        fallbackEntityId: normalizeFavoriteCacheEntityId(fallbackWorldId)
+    });
 }
 
-function isFavoriteWorldId(id: string) {
+function isFavoriteWorldId(id: string): boolean {
     const state = useFavoriteStore.getState();
     return (
         state.favoriteWorldIds.includes(id) ||
@@ -115,27 +29,28 @@ function isFavoriteWorldId(id: string) {
     );
 }
 
-export async function cacheFavoriteWorldDetails(world: unknown) {
-    const id = normalizeEntityId(isRecord(world) ? world.id : undefined);
-    if (!id) {
+export async function cacheFavoriteWorldDetails(
+    world: unknown
+): Promise<boolean> {
+    const entity = favoriteCachePayload(world);
+    if (!entity) {
         return false;
     }
-
-    if (!isFavoriteWorldId(id)) {
-        return false;
-    }
-
-    return cacheWorldDetails(world);
+    const id = normalizeFavoriteCacheEntityId(entity.id);
+    return id && isFavoriteWorldId(id) ? cacheWorldDetails(entity) : false;
 }
 
-function reportWorldCacheError(error: unknown) {
+function reportWorldCacheError(error: unknown): void {
     console.warn('Failed to cache favorite world details:', error);
 }
 
-export function persistWorldDetails(world: unknown, fallbackWorldId?: unknown) {
+export function persistWorldDetails(
+    world: unknown,
+    fallbackWorldId?: unknown
+): void {
     void cacheWorldDetails(world, fallbackWorldId).catch(reportWorldCacheError);
 }
 
-export function persistFavoriteWorldDetails(world: unknown) {
+export function persistFavoriteWorldDetails(world: unknown): void {
     void cacheFavoriteWorldDetails(world).catch(reportWorldCacheError);
 }

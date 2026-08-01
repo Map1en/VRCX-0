@@ -6,7 +6,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
     bootstrapFriendRoster: vi.fn(),
     cancelMutualGraphFetch: vi.fn(),
-    refreshMutualGraphFetchStatus: vi.fn(),
     startMutualGraphFetch: vi.fn(),
     toastError: vi.fn(),
     toastInfo: vi.fn()
@@ -31,7 +30,6 @@ vi.mock('@/services/friendBootstrapService', () => ({
 
 vi.mock('@/services/mutualGraphFetchService', () => ({
     cancelMutualGraphFetch: mocks.cancelMutualGraphFetch,
-    refreshMutualGraphFetchStatus: mocks.refreshMutualGraphFetchStatus,
     startMutualGraphFetch: mocks.startMutualGraphFetch
 }));
 
@@ -79,7 +77,6 @@ describe('useMutualFriendsGraphFetch', () => {
                 id: 'usr_self'
             }
         });
-        mocks.refreshMutualGraphFetchStatus.mockResolvedValue(undefined);
         mocks.startMutualGraphFetch.mockResolvedValue(undefined);
     });
 

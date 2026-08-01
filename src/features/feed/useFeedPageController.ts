@@ -14,6 +14,7 @@ import { useFeedFilters } from './useFeedFilters';
 import { useFeedFriendActions } from './useFeedFriendActions';
 import { useFeedPreviousInstancesDialog } from './useFeedPreviousInstancesDialog';
 import { useFeedRows } from './useFeedRows';
+import { useFeedTableMeta } from './useFeedTableMeta';
 import { useFeedTableState } from './useFeedTableState';
 
 export function useFeedPageController() {
@@ -37,7 +38,7 @@ export function useFeedPageController() {
     });
     const previousInstancesDialog = useFeedPreviousInstancesDialog();
     const friendActions = useFeedFriendActions();
-    const columns = useFeedColumns({
+    const feedTableMeta = useFeedTableMeta({
         actions: friendActions,
         friendLogNamesById: feedRows.friendLogNamesById,
         loadingPreviousInstancesKey: previousInstancesDialog.loadingKey,
@@ -45,6 +46,7 @@ export function useFeedPageController() {
             previousInstancesDialog.openPreviousInstancesForLocation,
         rows: feedRows.rows
     });
+    const columns = useFeedColumns(feedTableMeta);
 
     useEffect(() => {
         const maxPageIndex = Math.max(
@@ -92,7 +94,8 @@ export function useFeedPageController() {
         getRowCanExpand: (row) => canExpandFeedRow(row.original),
         meta: {
             columnOrderLocked: tableModel.columnOrderLocked,
-            setColumnOrderLocked: tableModel.setColumnOrderLocked
+            setColumnOrderLocked: tableModel.setColumnOrderLocked,
+            feed: feedTableMeta
         }
     });
 

@@ -112,6 +112,9 @@
             "pendingLegacyMigration": "Finish the pending legacy migration first.",
             "pendingMigration": "A data folder move is already pending. Restart VRCX-0 to finish it.",
             "cleanupConflict": "Clean up or retain the old data before moving back to that folder.",
+            "insufficientSpace": "There is not enough free space to move the data.",
+            "invalidAdoptionTarget": "Only a folder containing an existing VRCX-0 profile can be adopted.",
+            "invalidFreshStartTarget": "A folder containing an existing VRCX-0 profile cannot be used for a fresh start.",
             "copyFailed": "The database could not be copied. The original data is still in use.",
             "commitFailed": "The copied database could not be installed. The original data is still in use.",
             "pointerCommitFailed": "The new data folder could not be activated. Restart VRCX-0 to retry safely.",
@@ -2573,6 +2576,7 @@
                         "purge_in_progress": "Purging avatar data",
                         "purge_complete": "Avatar data purged successfully. Restarting",
                         "purge_failed": "Purge failed: {error}",
+                        "purge_optimization_failed": "Avatar data was purged, but the database could not be optimized: {error}",
                         "legacy_migration": "Migrate VRCX Data",
                         "legacy_migration_description": "Replace the current VRCX-0 configuration and database with data from the fixed VRCX data folder.",
                         "legacy_migration_confirm_title": "Replace VRCX-0 data with VRCX data?",
@@ -3326,6 +3330,7 @@
             },
             "mutual_friends": {
                 "header": "Mutual Friends",
+                "undisclosed_friend": "Undisclosed Mutual Friend",
                 "sorting": {
                     "alphabetical": "Alphabetical",
                     "last_active": "Last Active",

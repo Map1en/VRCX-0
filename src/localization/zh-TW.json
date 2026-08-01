@@ -112,6 +112,9 @@
             "pendingLegacyMigration": "請先完成待處理的舊版資料移轉。",
             "pendingMigration": "已有待完成的資料目錄移轉，請重新啟動 VRCX-0。",
             "cleanupConflict": "移回此資料夾前，請先處理保留的舊資料。",
+            "insufficientSpace": "可用空間不足，無法移轉資料。",
+            "invalidAdoptionTarget": "只有包含現有 VRCX-0 設定檔的資料夾才能直接採用。",
+            "invalidFreshStartTarget": "包含現有 VRCX-0 設定檔的資料夾不能用於全新開始。",
             "copyFailed": "無法複製資料庫，VRCX-0 仍使用原目錄。",
             "commitFailed": "無法安裝資料庫副本，VRCX-0 仍使用原目錄。",
             "pointerCommitFailed": "無法啟用新資料目錄。請重新啟動 VRCX-0 安全重試。",
@@ -2573,6 +2576,7 @@
                         "purge_in_progress": "清除角色資料…",
                         "purge_complete": "角色資料清除成功。重新啟動…",
                         "purge_failed": "清除失敗： {error}",
+                        "purge_optimization_failed": "角色資料已清除，但資料庫最佳化失敗：{error}",
                         "legacy_migration": "遷移 VRCX 資料",
                         "legacy_migration_description": "用指定 VRCX 資料夾中的資料替換目前 VRCX-0 設定和資料庫。",
                         "legacy_migration_confirm_title": "用 VRCX 資料替換 VRCX-0 資料？",
@@ -3326,6 +3330,7 @@
             },
             "mutual_friends": {
                 "header": "共同好友",
+                "undisclosed_friend": "未公開的共同好友",
                 "sorting": {
                     "alphabetical": "按字母排序",
                     "last_active": "最後上線",

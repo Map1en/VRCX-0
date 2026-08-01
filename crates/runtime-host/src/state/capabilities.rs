@@ -1,4 +1,4 @@
-use super::*;
+use super::{BackendRuntimeSnapshot, RuntimeEventSink, RuntimeHostEventSink, RuntimeHostState};
 
 impl RuntimeHostState {
     pub fn set_event_sink<S>(&self, sink: S)

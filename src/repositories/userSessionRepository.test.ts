@@ -1,8 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const commandMocks = vi.hoisted(() => ({
-    appUserTablesEnsure: vi.fn(),
-    appFeedAvatarPurge: vi.fn()
+    appUserTablesEnsure: vi.fn()
 }));
 
 vi.mock('@/platform/tauri/bindings', () => ({
@@ -12,8 +11,7 @@ vi.mock('@/platform/tauri/bindings', () => ({
 import {
     ensureUserTables,
     initUserTablesUncached,
-    normalizeUserTablePrefix,
-    purgeAvatarFeedData
+    normalizeUserTablePrefix
 } from './userSessionRepository';
 
 describe('userSessionRepository', () => {
@@ -25,7 +23,6 @@ describe('userSessionRepository', () => {
                 userPrefix: normalizeUserTablePrefix(userId)
             })
         );
-        commandMocks.appFeedAvatarPurge.mockResolvedValue(undefined);
     });
 
     it('normalizes safe user ids into SQLite table prefixes', () => {
@@ -69,16 +66,11 @@ describe('userSessionRepository', () => {
         expect(commandMocks.appUserTablesEnsure).toHaveBeenCalledTimes(2);
     });
 
-    it('supports an uncached initialization path and avatar feed purge payloads', async () => {
+    it('supports an uncached initialization path', async () => {
         await initUserTablesUncached(' usr_uncached ');
-        await purgeAvatarFeedData(' usr_uncached ', '');
 
         expect(commandMocks.appUserTablesEnsure).toHaveBeenCalledWith(
             'usr_uncached'
-        );
-        expect(commandMocks.appFeedAvatarPurge).toHaveBeenCalledWith(
-            'usr_uncached',
-            null
         );
     });
 });

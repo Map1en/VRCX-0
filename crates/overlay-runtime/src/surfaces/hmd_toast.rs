@@ -16,8 +16,9 @@ use super::super::localization::OverlayLocale;
 use super::super::manager::VrOverlayManager;
 use super::super::runtime::{render_slint_hmd_frame, VrOverlayRuntime, VrOverlayRuntimeConfig};
 use super::super::service::HostVrOverlayService;
-use super::friends::{first_non_empty, friend_record_avatar_url};
+use super::friend_record::friend_record_avatar_url;
 use super::main::{build_main_surface_model, HmdToastView, MainOverlayFrameInput};
+use vrcx_0_core::text::first_non_empty;
 
 const HMD_TOAST_CAPACITY: usize = 3;
 const HMD_TOAST_WORLD_RESOLVE_BUDGET: Duration = Duration::from_secs(2);
@@ -479,5 +480,5 @@ pub(crate) fn refresh_cached_world_name(
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "friends-panel"))]
 mod tests;

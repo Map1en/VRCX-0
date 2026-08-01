@@ -4,6 +4,7 @@ use std::time::{Duration, Instant};
 
 use vrcx_0_persistence::config as config_store;
 
+use crate::realtime::{UserQueryCachePolicy, UserQueryKind, UserQueryOptions};
 use crate::world_enrich::{self, PendingWorldNameResolution};
 
 use super::message_dispatch::json_string_field;
@@ -296,12 +297,13 @@ impl RealtimeHostRuntime {
             let remaining = deadline.checked_duration_since(Instant::now())?;
             let response = tokio::time::timeout(
                 remaining,
-                self.get_user_via_cache(
+                self.get_user_via_cache_with_options(
                     endpoint.to_string(),
                     user_id.to_string(),
-                    false,
-                    false,
-                    None,
+                    UserQueryOptions {
+                        kind: UserQueryKind::LiveNonFriend,
+                        cache_policy: UserQueryCachePolicy::UseCache,
+                    },
                 ),
             )
             .await;

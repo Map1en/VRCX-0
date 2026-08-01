@@ -23,22 +23,6 @@ pub struct RuntimeJobRecordInput {
     pub detail: String,
 }
 
-#[derive(Clone, Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct RuntimeFrontendScheduleJobDeferInput {
-    pub name: String,
-    pub delay_seconds: u64,
-}
-
-#[derive(Clone, Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct RuntimeFrontendScheduleJobDueClaimInput {
-    pub name: String,
-    pub cadence_seconds: u64,
-    #[serde(default)]
-    pub initial_delay_seconds: u64,
-}
-
 fn default_frontend_owner() -> String {
     "frontend".into()
 }
@@ -65,34 +49,6 @@ pub fn app__authenticated_runtime_phase_snapshot_get(
     state: State<'_, AppState>,
 ) -> AuthenticatedRuntimePhaseSnapshot {
     state.authenticated_runtime.snapshot()
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn app__runtime_frontend_schedule_job_defer(
-    state: State<'_, AppState>,
-    input: RuntimeFrontendScheduleJobDeferInput,
-) -> bool {
-    state
-        .runtime_context
-        .background_jobs
-        .defer_frontend_job(&input.name, input.delay_seconds)
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn app__runtime_frontend_schedule_job_due_claim(
-    state: State<'_, AppState>,
-    input: RuntimeFrontendScheduleJobDueClaimInput,
-) -> bool {
-    state
-        .runtime_context
-        .background_jobs
-        .claim_frontend_job_due(
-            &input.name,
-            input.cadence_seconds,
-            input.initial_delay_seconds,
-        )
 }
 
 #[tauri::command]

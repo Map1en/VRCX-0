@@ -16,6 +16,17 @@ use vrcx_0_application_realtime::{RealtimeHostRuntime, RealtimeHostRuntimeDeps};
 use super::super::types::SocialFriendMutationStatus;
 use super::*;
 
+#[test]
+fn mutation_response_requires_2xx_and_strict_non_empty_json() {
+    assert!(validate_vrchat_mutation_response(302, "{}").is_err());
+    assert!(validate_vrchat_mutation_response(200, "not-json").is_err());
+    assert_eq!(
+        validate_vrchat_mutation_response(204, "").unwrap(),
+        serde_json::Value::Null
+    );
+    assert!(validate_vrchat_mutation_response(200, r#"{"error":{"message":"denied"}}"#).is_err());
+}
+
 struct TestDir {
     path: PathBuf,
 }

@@ -95,12 +95,10 @@ function FeedExpandedRow({
                 <div className="flex items-center gap-3">
                     <FeedLocationLink
                         disableTooltip
-                        groupName={row.previousGroupName}
                         loadingHistoryKey={loadingHistoryKey}
                         location={row.previousLocation}
                         onNewInstance={onNewInstance}
                         onOpenPreviousInstances={onOpenPreviousInstances}
-                        worldName={row.previousWorldName}
                         wrapperClassName="min-w-0"
                     />
                     <span className="flex shrink-0 flex-col items-center gap-1">

@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use serde_json::{json, Value};
 use vrcx_0_core::location::parse_location;
 
@@ -6,31 +8,58 @@ use super::activity_builders::{
     build_access_name, build_discord_activity, timestamp_seconds, DEFAULT_APP_ID,
 };
 use super::{
-    set_assets_or_noop, BackgroundDiscordActivityPayload, BackgroundDiscordPresenceCommand,
-    BackgroundDiscordPresenceState, DiscordConfig, DiscordLocationDetails, DiscordPresenceLabels,
-    GAME_STOP_DISCORD_CLOSE_ATTEMPTS,
+    discord_enrichment_status_retryable, set_assets_or_noop, BackgroundDiscordActivityPayload,
+    BackgroundDiscordPresenceCommand, BackgroundDiscordPresenceState, DiscordConfig,
+    DiscordLocationDetails, DiscordPresenceLabels, DISCORD_ENRICHMENT_RETRY_MAX,
 };
 
 #[test]
-fn discord_non_game_tick_is_quiet_after_close_attempts() {
-    let mut state = BackgroundDiscordPresenceState {
-        last_game_running: true,
-        is_active: true,
-        ..Default::default()
-    };
-    let facts = BackgroundPresenceFacts {
-        is_game_running: false,
+fn discord_clear_failure_remains_retryable() {
+    let mut state = BackgroundDiscordPresenceState::default();
+
+    state.apply_clear_failure();
+    assert!(state.is_active);
+
+    state.apply_clear_result();
+    assert!(!state.is_active);
+    assert!(state.last_payload.is_none());
+}
+
+#[test]
+fn discord_location_enrichment_retries_with_bounded_backoff() {
+    let now = Instant::now();
+    let location = "wrld_test:12345~group(grp_test)";
+    let mut details = DiscordLocationDetails {
+        tag: location.into(),
+        parsed: Some(parse_location(location)),
+        world_name: "Cached World".into(),
+        world_lookup_complete: true,
         ..Default::default()
     };
 
-    if !facts.is_game_running {
-        if state.last_game_running {
-            state.close_attempts_remaining = GAME_STOP_DISCORD_CLOSE_ATTEMPTS;
-        }
-        state.last_game_running = false;
+    assert!(!details.can_reuse(location, now));
+    details.schedule_enrichment_retry(now);
+    assert!(details.can_reuse(location, now + Duration::from_secs(4)));
+    assert!(!details.can_reuse(location, now + Duration::from_secs(5)));
+    assert_eq!(details.world_name, "Cached World");
+
+    for _ in 0..8 {
+        details.schedule_enrichment_retry(now);
     }
+    assert_eq!(
+        details.enrichment_retry_at,
+        Some(now + DISCORD_ENRICHMENT_RETRY_MAX)
+    );
+}
 
-    assert_eq!(state.close_attempts_remaining, 5);
+#[test]
+fn discord_location_enrichment_retries_only_transient_statuses() {
+    for status in [408, 409, 425, 429, 500, 503, 599, -1] {
+        assert!(discord_enrichment_status_retryable(status));
+    }
+    for status in [400, 401, 403, 404, 422] {
+        assert!(!discord_enrichment_status_retryable(status));
+    }
 }
 
 #[test]

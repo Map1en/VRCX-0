@@ -1,3 +1,5 @@
+import hmdDefaultScopes from './overlayActivityHmdDefaults.json';
+
 export type OverlayActivitySurface =
     | 'wrist'
     | 'desktop'
@@ -277,34 +279,12 @@ export const OVERLAY_ACTIVITY_RAW_TYPES: Record<
 export const OVERLAY_ACTIVITY_TYPE_DEFINITION_BY_KEY =
     overlayActivityDefinitionByKey(OVERLAY_ACTIVITY_TYPE_DEFINITIONS);
 
-const HMD_DEFAULT_SCOPE_OVERRIDES: Record<string, OverlayActivityScope> = {
-    OnPlayerJoined: 'friends',
-    OnPlayerLeft: 'friends',
-    Online: 'allFavorites',
-    Offline: 'allFavorites',
-    GPS: 'allFavorites',
-    Status: 'allFavorites',
-    Unfriend: 'off',
-    DisplayName: 'friends',
-    TrustLevel: 'friends',
-    groupChange: 'off',
-    'group.announcement': 'off',
-    'group.informative': 'off',
-    'group.joinRequest': 'off',
-    'group.transfer': 'off',
-    Event: 'off',
-    External: 'off',
-    Blocked: 'off',
-    Unblocked: 'off',
-    Muted: 'off',
-    Unmuted: 'off',
-    BlockedOnPlayerJoined: 'everyoneInInstance',
-    VideoPlay: 'off'
-};
+export const HMD_DEFAULT_SCOPES: Record<string, OverlayActivityScope> =
+    hmdDefaultScopes as Record<string, OverlayActivityScope>;
 
 for (const definition of OVERLAY_ACTIVITY_TYPE_DEFINITIONS) {
     definition.hmdDefaultScope =
-        HMD_DEFAULT_SCOPE_OVERRIDES[definition.key] ?? definition.defaultScope;
+        HMD_DEFAULT_SCOPES[definition.key] ?? definition.defaultScope;
 }
 
 export const DEFAULT_OVERLAY_ACTIVITY_TYPES: Record<

@@ -181,7 +181,8 @@ describe('worldDialogInstanceRows', () => {
         expect(users).toHaveLength(1);
         expect(users[0]).toMatchObject({
             id: 'usr_dup',
-            userId: 'usr_dup'
+            userId: 'usr_dup',
+            $location_at: '2024-01-01T00:00:00Z'
         });
     });
 
@@ -232,5 +233,71 @@ describe('worldDialogInstanceRows', () => {
         expect(
             result.displayInstanceRows[0].users.map((user) => user.id)
         ).toEqual(['usr_busy', 'usr_ask']);
+    });
+
+    it('removes an offline friend from stale instance and player snapshots', () => {
+        const location = 'wrld_test:live';
+        const result = buildWorldDialogDisplayInstanceRows({
+            creatorGroupsById: {},
+            currentInstanceDetails: {
+                location,
+                instance: {
+                    id: 'live',
+                    users: [
+                        { id: 'usr_departed', displayName: 'Departed Friend' }
+                    ]
+                },
+                playerSnapshot: {
+                    context: { playerCount: 1 },
+                    players: [
+                        { id: 'usr_departed', displayName: 'Departed Friend' }
+                    ]
+                }
+            },
+            currentLocation: location,
+            friendsById: {
+                usr_departed: {
+                    id: 'usr_departed',
+                    state: 'offline',
+                    stateBucket: 'offline',
+                    location
+                }
+            },
+            instanceRows: [],
+            isInstanceLocation: true,
+            normalizedWorldId: location,
+            world: { id: 'wrld_test', capacity: 40 }
+        });
+
+        expect(result.displayInstanceRows[0].users).toEqual([]);
+    });
+
+    it('removes a stale instance row after the friend moves elsewhere', () => {
+        const result = buildWorldDialogDisplayInstanceRows({
+            creatorGroupsById: {},
+            currentInstanceDetails: {},
+            currentLocation: 'wrld_current:123',
+            friendsById: {
+                usr_departed: {
+                    id: 'usr_departed',
+                    state: 'online',
+                    location: 'wrld_elsewhere:456'
+                }
+            },
+            instanceRows: [
+                {
+                    id: '123',
+                    location: 'wrld_current:123',
+                    users: [
+                        { id: 'usr_departed', displayName: 'Departed Friend' }
+                    ]
+                }
+            ],
+            isInstanceLocation: true,
+            normalizedWorldId: 'wrld_current:123',
+            world: { id: 'wrld_current', capacity: 40 }
+        });
+
+        expect(result.displayInstanceRows[0].users).toEqual([]);
     });
 });

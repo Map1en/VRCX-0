@@ -8,6 +8,7 @@ import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
 import { bootstrapFavorites } from '@/services/favoriteBootstrapService';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useModalStore } from '@/state/modalStore';
+import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 
 import { favoriteGroupType } from './favoritesItems';
 import type {
@@ -38,7 +39,7 @@ export function useFavoritesCollectionActions({
     allItems: FavoriteItem[];
     currentEndpoint: string;
     currentUserId: string;
-    currentUserSnapshot: any;
+    currentUserSnapshot: CurrentUserSnapshotState | null;
     kind: FavoriteKind;
     localGroups: FavoriteGroup[];
     refreshRemoteDetails(): void;
@@ -72,9 +73,9 @@ export function useFavoritesCollectionActions({
 
     const refreshFavorites = async ({
         silent = false
-    }: { silent?: boolean } = {}) => {
+    }: { silent?: boolean } = {}): Promise<boolean> => {
         if (refreshing) {
-            return;
+            return false;
         }
         if (!currentUserId || !currentUserSnapshot) {
             console.warn(
@@ -83,7 +84,7 @@ export function useFavoritesCollectionActions({
             toast.error(
                 t('view.favorites.toast.favorites_refresh_unavailable')
             );
-            return;
+            return false;
         }
         setRefreshing(true);
         try {
@@ -103,12 +104,14 @@ export function useFavoritesCollectionActions({
             if (!silent) {
                 toast.success(t('view.favorite.success.favorites_refreshed'));
             }
+            return true;
         } catch (error) {
             toast.error(
                 error instanceof Error
                     ? error.message
                     : t('view.favorites.toast.failed_to_refresh_favorites')
             );
+            return false;
         } finally {
             setRefreshing(false);
         }
@@ -249,7 +252,7 @@ export function useFavoritesCollectionActions({
         } finally {
             if (!silent) {
                 removingFavoriteKeyRef.current = '';
-                setRemovingFavoriteKey((currentKey: any) =>
+                setRemovingFavoriteKey((currentKey) =>
                     currentKey === item.key ? '' : currentKey
                 );
             }
@@ -266,7 +269,7 @@ export function useFavoritesCollectionActions({
         setExportDialogOpen(true);
     }
 
-    async function handleRemoteGroupRename(group: any) {
+    async function handleRemoteGroupRename(group: FavoriteGroup) {
         const result = await prompt({
             title: t('view.favorites.modal.change_favorite_group_name'),
             description: t('view.favorites.modal.enter_the_new_display_name'),
@@ -300,7 +303,10 @@ export function useFavoritesCollectionActions({
         }
     }
 
-    async function handleRemoteGroupVisibility(group: any, visibility: any) {
+    async function handleRemoteGroupVisibility(
+        group: FavoriteGroup,
+        visibility: string
+    ) {
         if (group.visibility === visibility) {
             return;
         }
@@ -324,7 +330,7 @@ export function useFavoritesCollectionActions({
         }
     }
 
-    async function handleRemoteGroupClear(group: any) {
+    async function handleRemoteGroupClear(group: FavoriteGroup) {
         const result = await confirm({
             title: t('view.favorites.modal.clear_favorite_group'),
             description: t(
@@ -354,7 +360,7 @@ export function useFavoritesCollectionActions({
         }
     }
 
-    async function handleLocalGroupRename(group: any) {
+    async function handleLocalGroupRename(group: FavoriteGroup) {
         const result = await prompt({
             title: t('view.favorites.modal.rename_local_favorite_group'),
             description: t(
@@ -372,9 +378,7 @@ export function useFavoritesCollectionActions({
         if (!nextName || nextName === group.key) {
             return;
         }
-        if (
-            localGroups.some((localGroup: any) => localGroup.key === nextName)
-        ) {
+        if (localGroups.some((localGroup) => localGroup.key === nextName)) {
             toast.error(
                 t('view.favorites.dynamic.local_group_value_already_exists', {
                     value: nextName
@@ -410,7 +414,7 @@ export function useFavoritesCollectionActions({
         }
     }
 
-    async function handleLocalGroupDelete(group: any) {
+    async function handleLocalGroupDelete(group: FavoriteGroup) {
         const result = await confirm({
             title: t('view.favorites.modal.delete_local_favorite_group'),
             description: t('view.favorites.modal.delete_value', {

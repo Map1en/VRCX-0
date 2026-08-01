@@ -112,6 +112,9 @@
             "pendingLegacyMigration": "Termina primero la migración de datos antiguos.",
             "pendingMigration": "Hay un traslado de datos pendiente. Reinicia VRCX-0.",
             "cleanupConflict": "Gestiona primero los datos antiguos antes de volver a esta carpeta.",
+            "insufficientSpace": "No hay suficiente espacio libre para trasladar los datos.",
+            "invalidAdoptionTarget": "Solo se puede adoptar una carpeta que contenga un perfil de VRCX-0 existente.",
+            "invalidFreshStartTarget": "Una carpeta con un perfil de VRCX-0 existente no se puede usar para empezar de cero.",
             "copyFailed": "No se pudo copiar la base de datos. Se siguen usando los datos originales.",
             "commitFailed": "No se pudo instalar la copia. Se siguen usando los datos originales.",
             "pointerCommitFailed": "No se pudo activar la nueva carpeta. Reinicia VRCX-0 para reintentarlo de forma segura.",
@@ -2573,6 +2576,7 @@
                         "purge_in_progress": "Purgando datos de avatar",
                         "purge_complete": "Datos de avatar purgados correctamente. Reiniciando",
                         "purge_failed": "Error al purgar: {error}",
+                        "purge_optimization_failed": "Los datos de avatar se purgaron, pero no se pudo optimizar la base de datos: {error}",
                         "legacy_migration": "Migrar datos de VRCX",
                         "legacy_migration_description": "Reemplaza la configuración y la base de datos actuales de VRCX-0 con los datos de la carpeta de datos de VRCX indicada.",
                         "legacy_migration_confirm_title": "¿Reemplazar los datos de VRCX-0 con los de VRCX?",
@@ -3326,6 +3330,7 @@
             },
             "mutual_friends": {
                 "header": "Amigos en común",
+                "undisclosed_friend": "Amigo en común no revelado",
                 "sorting": {
                     "alphabetical": "Alfabético",
                     "last_active": "Última actividad",

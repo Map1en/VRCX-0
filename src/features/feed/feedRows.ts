@@ -11,7 +11,6 @@ import type { FeedRow } from './feedTypes';
 export const UNKNOWN_FEED_USER_DISPLAY_NAME = 'Unknown';
 
 type FeedRecord = Record<string, unknown>;
-type FeedRowLike = FeedRecord | null | undefined;
 type FriendLike = FriendRecordInput | FeedRecord | null | undefined;
 type CurrentUserSnapshotLike =
     | (FeedRecord & {
@@ -59,45 +58,24 @@ export function resolveDisplayNameCandidate(value: unknown, userId: unknown) {
     return normalized;
 }
 
-export function resolveFeedUserId(row: FeedRowLike) {
-    const user = recordValue(row, 'user');
-    const directUserId = normalizeFeedId(
-        recordValue(row, 'userId') ||
-            recordValue(row, 'senderUserId') ||
-            recordValue(row, 'sender_user_id') ||
-            recordValue(row, 'receiverUserId') ||
-            recordValue(row, 'receiver_user_id') ||
-            recordValue(row, 'targetUserId') ||
-            recordValue(row, 'target_user_id') ||
-            recordValue(user, 'id') ||
-            recordValue(user, 'userId')
-    );
+export function resolveFeedUserId(row: FeedRow | null | undefined) {
+    const directUserId = normalizeFeedId(row?.userId);
     if (directUserId) {
         return directUserId;
     }
 
-    for (const candidate of [
-        recordValue(row, 'displayName'),
-        recordValue(row, 'username'),
-        recordValue(row, 'name')
-    ]) {
-        const normalized = normalizeFeedId(candidate);
-        if (isUserIdLike(normalized)) {
-            return normalized;
-        }
-    }
-
-    return '';
+    const displayName = normalizeFeedId(row?.displayName);
+    return isUserIdLike(displayName) ? displayName : '';
 }
 
 export function resolveFeedUserDisplayName(
-    row: FeedRowLike,
+    row: FeedRow | null | undefined,
     friend: FriendLike,
     cachedDisplayName: unknown = ''
 ) {
     const userId = resolveFeedUserId(row);
     const rowDisplayName = resolveDisplayNameCandidate(
-        recordValue(row, 'displayName'),
+        row?.displayName,
         userId
     );
     const friendDisplayName = resolveDisplayNameCandidate(
@@ -131,13 +109,28 @@ export function normalizePresenceState(value: unknown) {
     return state;
 }
 
-export function resolveFeedLocationForDisplay(row: FeedRowLike) {
-    const type = normalizeFeedId(recordValue(row, 'type'));
-    const location = normalizeFeedId(recordValue(row, 'location'));
+export function resolveFeedLocationForDisplay(row: FeedRow | null | undefined) {
+    const type = normalizeFeedId(row?.type);
+    const location = normalizeFeedId(row?.location);
     if (type === 'Online' && normalizePresenceState(location) === 'offline') {
         return '';
     }
     return location;
+}
+
+const feedRowCreatedAtMsCache = new WeakMap<FeedRow, number>();
+
+export function getFeedRowCreatedAtMs(row: FeedRow | null | undefined): number {
+    if (!row) {
+        return 0;
+    }
+    const cached = feedRowCreatedAtMsCache.get(row);
+    if (cached !== undefined) {
+        return cached;
+    }
+    const parsed = new Date(String(row.created_at || 0)).valueOf() || 0;
+    feedRowCreatedAtMsCache.set(row, parsed);
+    return parsed;
 }
 
 export function canExpandFeedRow(row: FeedRow): boolean {
@@ -291,29 +284,12 @@ export function toIsoRangeEnd(value: unknown) {
     return Number.isNaN(date.valueOf()) ? '' : date.toISOString();
 }
 
-export function getFeedRowId(row: FeedRowLike) {
-    if (recordValue(row, 'id') != null) {
-        return `id:${recordValue(row, 'id')}`;
+export function getFeedRowId(row: FeedRow | null | undefined) {
+    const type = row?.type ?? '';
+    if (row?.rowId != null) {
+        return `row:${type}:${row.sourceRank ?? ''}:${row.rowId}`;
     }
-    const rowId = recordValue(row, 'rowId') ?? recordValue(row, 'row_id');
-    if (rowId != null) {
-        const sourceRank =
-            recordValue(row, 'sourceRank') ?? recordValue(row, 'source_rank');
-        if (sourceRank != null) {
-            return `row:${recordValue(row, 'type') ?? ''}:${sourceRank}:${rowId}`;
-        }
-        return `row:${recordValue(row, 'type') ?? ''}:${rowId}`;
-    }
-    const details = recordValue(row, 'details');
-    const type = recordValue(row, 'type') ?? '';
-    const createdAt =
-        recordValue(row, 'created_at') ?? recordValue(row, 'createdAt') ?? '';
-    const userId =
-        recordValue(row, 'userId') ?? recordValue(row, 'senderUserId') ?? '';
-    const location =
-        recordValue(row, 'location') ?? recordValue(details, 'location') ?? '';
-    const message = recordValue(row, 'message') ?? '';
-    return `${type}:${createdAt}:${userId}:${location}:${message}`;
+    return `${type}:${row?.created_at ?? ''}:${row?.userId ?? ''}:${row?.location ?? ''}`;
 }
 
 export function parseDateInput(value: unknown) {

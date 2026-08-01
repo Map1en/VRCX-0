@@ -82,11 +82,7 @@ function FeedDetailCell({
         );
     }
 
-    return row?.message ? (
-        <span className="block w-full min-w-0 truncate">
-            {String(row.message)}
-        </span>
-    ) : null;
+    return null;
 }
 
 export { FeedDetailCell };

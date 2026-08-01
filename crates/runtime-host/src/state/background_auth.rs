@@ -2,8 +2,14 @@ use crate::notification::{
     auth_webhook_should_recover, send_auth_webhook, AuthWebhookEvent, AuthWebhookEventKind,
 };
 
-use super::*;
+use super::{
+    normalize_vrchat_api_endpoint, AtomicFlagGuard, AuthenticatedRuntimeSession,
+    BackendRuntimeMode, BackendRuntimeSnapshot, NonInteractiveAuthError, RuntimeHostState,
+};
 use vrcx_0_core::time::now_iso;
+
+#[cfg(test)]
+use super::BackendRuntimePhase;
 
 #[derive(Clone, Debug)]
 struct BackgroundAuthRecoveryContext {

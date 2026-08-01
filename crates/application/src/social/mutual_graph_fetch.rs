@@ -14,7 +14,10 @@ use vrcx_0_persistence::mutual_graph::{
 };
 use vrcx_0_persistence::DatabaseService;
 
-use crate::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, TaskSupervisor, WebClient};
+use crate::{
+    Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus, TaskSupervisor,
+    WebClient,
+};
 use vrcx_0_application_core::vrchat_api::users::user_mutual_friends_get_input;
 use vrcx_0_application_core::vrchat_api::VrchatScope;
 
@@ -44,7 +47,8 @@ pub struct MutualGraphFetchCancelInput {
 #[serde(rename_all = "camelCase")]
 pub struct MutualGraphFetchStatus {
     pub run_id: u64,
-    pub status: String,
+    pub revision: u64,
+    pub status: MutualGraphFetchState,
     pub owner_user_id: String,
     pub total_friends: usize,
     pub processed_friends: usize,
@@ -59,10 +63,28 @@ pub struct MutualGraphFetchStatus {
     pub last_error: Option<String>,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum MutualGraphFetchState {
+    Idle,
+    Running,
+    Cancelling,
+    Completed,
+    Cancelled,
+    Error,
+}
+
+impl MutualGraphFetchState {
+    pub fn is_active(self) -> bool {
+        matches!(self, Self::Running | Self::Cancelling)
+    }
+}
+
 #[derive(Clone)]
 pub struct MutualGraphFetchRuntime {
     inner: Arc<Mutex<MutualGraphFetchInner>>,
     next_run_id: Arc<AtomicU64>,
+    event_bus: RuntimeEventBus,
 }
 
 struct MutualGraphFetchInner {
@@ -100,12 +122,17 @@ impl Default for MutualGraphFetchRuntime {
 
 impl MutualGraphFetchRuntime {
     pub fn new() -> Self {
+        Self::with_event_bus(RuntimeEventBus::new())
+    }
+
+    pub fn with_event_bus(event_bus: RuntimeEventBus) -> Self {
         Self {
             inner: Arc::new(Mutex::new(MutualGraphFetchInner {
                 status: idle_status(),
                 cancel_flag: None,
             })),
             next_run_id: Arc::new(AtomicU64::new(1)),
+            event_bus,
         }
     }
 
@@ -135,29 +162,11 @@ impl MutualGraphFetchRuntime {
 
         let cancel_flag = Arc::new(AtomicBool::new(false));
         let run_id = self.next_run_id.fetch_add(1, Ordering::AcqRel);
-        let now = now_iso();
-        let status = MutualGraphFetchStatus {
-            run_id,
-            status: "running".into(),
-            owner_user_id: owner_user_id.clone(),
-            total_friends: friend_ids.len(),
-            processed_friends: 0,
-            current_friend_id: String::new(),
-            fetched_friends: 0,
-            opted_out_friends: 0,
-            failed_friends: 0,
-            cancel_requested: false,
-            started_at: now.clone(),
-            updated_at: now,
-            finished_at: None,
-            last_error: None,
-        };
-
-        {
+        let status = {
             let mut inner = self.inner.lock().map_err(|error| {
                 Error::Custom(format!("mutual graph fetch lock poisoned: {error}"))
             })?;
-            if is_active_status(&inner.status.status) {
+            if inner.status.status.is_active() {
                 if inner.status.owner_user_id == owner_user_id {
                     return Ok(inner.status.clone());
                 }
@@ -165,9 +174,29 @@ impl MutualGraphFetchRuntime {
                     "A mutual graph fetch is already running.".into(),
                 ));
             }
+            let now = now_iso();
+            let status = MutualGraphFetchStatus {
+                run_id,
+                revision: 1,
+                status: MutualGraphFetchState::Running,
+                owner_user_id: owner_user_id.clone(),
+                total_friends: friend_ids.len(),
+                processed_friends: 0,
+                current_friend_id: String::new(),
+                fetched_friends: 0,
+                opted_out_friends: 0,
+                failed_friends: 0,
+                cancel_requested: false,
+                started_at: now.clone(),
+                updated_at: now,
+                finished_at: None,
+                last_error: None,
+            };
             inner.status = status.clone();
             inner.cancel_flag = Some(Arc::clone(&cancel_flag));
-        }
+            status
+        };
+        self.emit_status(status.clone());
 
         let runtime = self.clone();
         tasks.spawn(async move {
@@ -191,23 +220,27 @@ impl MutualGraphFetchRuntime {
 
     pub fn cancel(&self, input: MutualGraphFetchCancelInput) -> Result<MutualGraphFetchStatus> {
         let owner_user_id = normalize_id(&input.owner_user_id);
-        let mut inner = self
-            .inner
-            .lock()
-            .map_err(|error| Error::Custom(format!("mutual graph fetch lock poisoned: {error}")))?;
-        if !is_active_status(&inner.status.status) {
-            return Ok(inner.status.clone());
-        }
-        if !owner_user_id.is_empty() && inner.status.owner_user_id != owner_user_id {
-            return Ok(inner.status.clone());
-        }
-        if let Some(cancel_flag) = &inner.cancel_flag {
-            cancel_flag.store(true, Ordering::Release);
-        }
-        inner.status.status = "cancelling".into();
-        inner.status.cancel_requested = true;
-        inner.status.updated_at = now_iso();
-        Ok(inner.status.clone())
+        let status = {
+            let mut inner = self.inner.lock().map_err(|error| {
+                Error::Custom(format!("mutual graph fetch lock poisoned: {error}"))
+            })?;
+            if !inner.status.status.is_active() {
+                return Ok(inner.status.clone());
+            }
+            if !owner_user_id.is_empty() && inner.status.owner_user_id != owner_user_id {
+                return Ok(inner.status.clone());
+            }
+            if let Some(cancel_flag) = &inner.cancel_flag {
+                cancel_flag.store(true, Ordering::Release);
+            }
+            inner.status.status = MutualGraphFetchState::Cancelling;
+            inner.status.cancel_requested = true;
+            inner.status.updated_at = now_iso();
+            inner.status.revision += 1;
+            inner.status.clone()
+        };
+        self.emit_status(status.clone());
+        Ok(status)
     }
 
     pub fn cancel_active(&self) -> Result<MutualGraphFetchStatus> {
@@ -248,7 +281,7 @@ impl MutualGraphFetchRuntime {
 
         for friend_id in friend_ids {
             if fetch_should_cancel(&cancel_flag, &auth_scope, &expected_scope) {
-                self.finish_run(run_id, "cancelled", None);
+                self.finish_run(run_id, MutualGraphFetchState::Cancelled, None);
                 return;
             }
 
@@ -275,7 +308,7 @@ impl MutualGraphFetchRuntime {
                     opted_out_friends += 1;
                 }
                 FriendFetchResult::Cancelled => {
-                    self.finish_run(run_id, "cancelled", None);
+                    self.finish_run(run_id, MutualGraphFetchState::Cancelled, None);
                     return;
                 }
                 FriendFetchResult::Failed(error) => {
@@ -297,14 +330,14 @@ impl MutualGraphFetchRuntime {
         }
 
         if fetch_should_cancel(&cancel_flag, &auth_scope, &expected_scope) {
-            self.finish_run(run_id, "cancelled", None);
+            self.finish_run(run_id, MutualGraphFetchState::Cancelled, None);
             return;
         }
 
         if failed_friends > 0 && fetched_friends + opted_out_friends == 0 {
             self.finish_run(
                 run_id,
-                "error",
+                MutualGraphFetchState::Error,
                 Some(last_error.unwrap_or_else(|| {
                     format!("{failed_friends} mutual graph friend fetches failed.")
                 })),
@@ -324,14 +357,18 @@ impl MutualGraphFetchRuntime {
                     cached,
                 ),
                 Err(error) => {
-                    self.finish_run(run_id, "error", Some(error.to_string()));
+                    self.finish_run(
+                        run_id,
+                        MutualGraphFetchState::Error,
+                        Some(error.to_string()),
+                    );
                     return;
                 }
             }
         }
 
         if fetch_should_cancel(&cancel_flag, &auth_scope, &expected_scope) {
-            self.finish_run(run_id, "cancelled", None);
+            self.finish_run(run_id, MutualGraphFetchState::Cancelled, None);
             return;
         }
 
@@ -342,10 +379,14 @@ impl MutualGraphFetchRuntime {
             meta_entries,
         ) {
             Ok(()) => {
-                self.finish_run(run_id, "completed", last_error);
+                self.finish_run(run_id, MutualGraphFetchState::Completed, last_error);
             }
             Err(error) => {
-                self.finish_run(run_id, "error", Some(error.to_string()));
+                self.finish_run(
+                    run_id,
+                    MutualGraphFetchState::Error,
+                    Some(error.to_string()),
+                );
             }
         }
     }
@@ -377,22 +418,28 @@ impl MutualGraphFetchRuntime {
     fn finish_run(
         &self,
         run_id: u64,
-        status_name: &str,
+        state: MutualGraphFetchState,
         last_error: Option<String>,
     ) -> MutualGraphFetchStatus {
         let now = now_iso();
         let mut output = idle_status();
+        let mut emitted = None;
         if let Ok(mut inner) = self.inner.lock() {
             if inner.status.run_id == run_id {
-                inner.status.status = status_name.to_string();
+                inner.status.status = state;
                 inner.status.cancel_requested = false;
                 inner.status.current_friend_id.clear();
                 inner.status.updated_at = now.clone();
                 inner.status.finished_at = Some(now);
                 inner.status.last_error = last_error;
+                inner.status.revision += 1;
                 inner.cancel_flag = None;
+                emitted = Some(inner.status.clone());
             }
             output = inner.status.clone();
+        }
+        if let Some(status) = emitted {
+            self.emit_status(status);
         }
         output
     }
@@ -401,13 +448,24 @@ impl MutualGraphFetchRuntime {
     where
         F: FnOnce(&mut MutualGraphFetchStatus),
     {
-        if let Ok(mut inner) = self.inner.lock() {
+        let status = if let Ok(mut inner) = self.inner.lock() {
             if inner.status.run_id != run_id {
                 return;
             }
             mutate(&mut inner.status);
             inner.status.updated_at = now_iso();
+            inner.status.revision += 1;
+            Some(inner.status.clone())
+        } else {
+            None
+        };
+        if let Some(status) = status {
+            self.emit_status(status);
         }
+    }
+
+    fn emit_status(&self, status: MutualGraphFetchStatus) {
+        self.event_bus.emit(status);
     }
 }
 
@@ -589,10 +647,6 @@ fn normalize_id(value: &str) -> String {
     value.trim().to_string()
 }
 
-fn is_active_status(status: &str) -> bool {
-    matches!(status, "running" | "cancelling")
-}
-
 fn resolve_fetch_scope(
     input: &MutualGraphFetchStartInput,
     auth_scope: &RuntimeAuthScope,
@@ -661,7 +715,8 @@ fn preserve_failed_friend_cache(
 fn idle_status() -> MutualGraphFetchStatus {
     MutualGraphFetchStatus {
         run_id: 0,
-        status: "idle".into(),
+        revision: 0,
+        status: MutualGraphFetchState::Idle,
         owner_user_id: String::new(),
         total_friends: 0,
         processed_friends: 0,
@@ -680,7 +735,109 @@ fn idle_status() -> MutualGraphFetchStatus {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{RuntimeEventSink, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle};
+    use serde_json::json;
+    use std::sync::Condvar;
     use vrcx_0_persistence::mutual_graph::{MutualGraphLinkOutput, MutualGraphMetaOutput};
+    use vrcx_0_persistence::storage::StorageService;
+
+    #[derive(Clone)]
+    struct DropTaskExecutor;
+
+    struct FinishedTaskHandle;
+
+    impl RuntimeTaskExecutor for DropTaskExecutor {
+        fn spawn(&self, _task: RuntimeTask) -> Box<dyn RuntimeTaskHandle> {
+            Box::new(FinishedTaskHandle)
+        }
+    }
+
+    impl RuntimeTaskHandle for FinishedTaskHandle {
+        fn abort(&self) {}
+
+        fn is_finished(&self) -> bool {
+            true
+        }
+
+        fn join_or_abort(&mut self, _timeout: Duration) {}
+    }
+
+    struct TestDir {
+        path: std::path::PathBuf,
+    }
+
+    impl TestDir {
+        fn new() -> Self {
+            let nonce = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            let path = std::env::temp_dir().join(format!(
+                "vrcx-0-mutual-graph-events-{}-{nonce}",
+                std::process::id()
+            ));
+            std::fs::create_dir_all(&path).unwrap();
+            Self { path }
+        }
+    }
+
+    impl Drop for TestDir {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.path);
+        }
+    }
+
+    #[derive(Default)]
+    struct ReorderedDeliveryState {
+        cancelling_entered: (Mutex<bool>, Condvar),
+        cancelled_delivered: (Mutex<bool>, Condvar),
+        delivered: Mutex<Vec<Value>>,
+    }
+
+    #[derive(Clone, Default)]
+    struct ReorderedDeliverySink {
+        state: Arc<ReorderedDeliveryState>,
+    }
+
+    impl ReorderedDeliverySink {
+        fn wait_for_cancelling(&self) {
+            let (entered, ready) = &self.state.cancelling_entered;
+            let mut entered = entered.lock().unwrap();
+            while !*entered {
+                entered = ready.wait(entered).unwrap();
+            }
+        }
+
+        fn delivered(&self) -> Vec<Value> {
+            self.state.delivered.lock().unwrap().clone()
+        }
+    }
+
+    impl RuntimeEventSink for ReorderedDeliverySink {
+        fn emit(&self, event: &str, payload: Value) {
+            if event != "mutualGraphFetchStatus" {
+                return;
+            }
+            if payload["status"] == "cancelling" {
+                let (entered, ready) = &self.state.cancelling_entered;
+                *entered.lock().unwrap() = true;
+                ready.notify_all();
+
+                let (delivered, ready) = &self.state.cancelled_delivered;
+                let mut delivered = delivered.lock().unwrap();
+                while !*delivered {
+                    delivered = ready.wait(delivered).unwrap();
+                }
+            }
+
+            self.state.delivered.lock().unwrap().push(payload.clone());
+            if payload["status"] == "cancelled" {
+                let (delivered, ready) = &self.state.cancelled_delivered;
+                *delivered.lock().unwrap() = true;
+                ready.notify_all();
+            }
+        }
+    }
 
     #[test]
     fn auth_scope_change_cancels_the_fetch_guard() {
@@ -734,14 +891,55 @@ mod tests {
     }
 
     #[test]
+    fn start_emits_a_running_status_before_the_job_is_spawned() {
+        let dir = TestDir::new();
+        let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap());
+        let storage = StorageService::new(&dir.path.join("VRCX-0.json")).unwrap();
+        let web = Arc::new(
+            WebClient::new(&storage, db.as_ref(), "https://app.example".into(), "test").unwrap(),
+        );
+        let auth_scope = RuntimeAuthScope::new();
+        auth_scope.set("usr_owner", "https://api.example.test/api/1");
+        let event_bus = RuntimeEventBus::new();
+        let runtime = MutualGraphFetchRuntime::with_event_bus(event_bus.clone());
+        let tasks = TaskSupervisor::new();
+        tasks.set_executor(DropTaskExecutor);
+
+        let started = runtime
+            .start(
+                MutualGraphFetchStartInput {
+                    owner_user_id: "usr_owner".into(),
+                    endpoint: String::new(),
+                    friend_ids: vec!["usr_friend".into()],
+                },
+                db,
+                web,
+                auth_scope,
+                tasks.clone(),
+            )
+            .unwrap();
+
+        assert_eq!(started.status, MutualGraphFetchState::Running);
+        assert_eq!(started.revision, 1);
+        let events = event_bus.take_events_for_test();
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].name, "mutualGraphFetchStatus");
+        assert_eq!(events[0].payload["status"], json!("running"));
+        assert_eq!(events[0].payload["revision"], json!(1));
+        tasks.stop_all();
+    }
+
+    #[test]
     fn cancel_active_marks_the_running_fetch_as_cancelling() {
-        let runtime = MutualGraphFetchRuntime::new();
+        let event_bus = RuntimeEventBus::new();
+        let runtime = MutualGraphFetchRuntime::with_event_bus(event_bus.clone());
         let cancel_flag = Arc::new(AtomicBool::new(false));
         {
             let mut inner = runtime.inner.lock().unwrap();
             inner.status = MutualGraphFetchStatus {
                 run_id: 7,
-                status: "running".into(),
+                revision: 1,
+                status: MutualGraphFetchState::Running,
                 owner_user_id: "usr_owner".into(),
                 total_friends: 2,
                 ..idle_status()
@@ -751,9 +949,86 @@ mod tests {
 
         let status = runtime.cancel_active().unwrap();
 
-        assert_eq!(status.status, "cancelling");
+        assert_eq!(status.status, MutualGraphFetchState::Cancelling);
+        assert_eq!(status.revision, 2);
         assert!(status.cancel_requested);
         assert!(cancel_flag.load(Ordering::Acquire));
+        let events = event_bus.take_events_for_test();
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].name, "mutualGraphFetchStatus");
+        assert_eq!(events[0].payload["status"], json!("cancelling"));
+        assert_eq!(events[0].payload["revision"], json!(2));
+    }
+
+    #[test]
+    fn progress_and_terminal_transitions_emit_typed_status_events() {
+        let event_bus = RuntimeEventBus::new();
+        let runtime = MutualGraphFetchRuntime::with_event_bus(event_bus.clone());
+        {
+            let mut inner = runtime.inner.lock().unwrap();
+            inner.status = MutualGraphFetchStatus {
+                run_id: 7,
+                revision: 1,
+                status: MutualGraphFetchState::Running,
+                owner_user_id: "usr_owner".into(),
+                total_friends: 2,
+                ..idle_status()
+            };
+        }
+
+        runtime.update_current_friend(7, "usr_friend");
+        runtime.update_progress(7, 1, 1, 0, 0, None);
+        runtime.finish_run(7, MutualGraphFetchState::Completed, None);
+
+        let events = event_bus.take_events_for_test();
+        assert_eq!(events.len(), 3);
+        assert!(events
+            .iter()
+            .all(|event| event.name == "mutualGraphFetchStatus"));
+        assert_eq!(events[0].payload["currentFriendId"], json!("usr_friend"));
+        assert_eq!(events[0].payload["revision"], json!(2));
+        assert_eq!(events[1].payload["processedFriends"], json!(1));
+        assert_eq!(events[1].payload["revision"], json!(3));
+        assert_eq!(events[2].payload["status"], json!("completed"));
+        assert_eq!(events[2].payload["revision"], json!(4));
+        assert!(events[2].payload["finishedAt"].is_string());
+    }
+
+    #[test]
+    fn delayed_cancelling_event_has_an_older_revision_than_cancelled() {
+        let event_bus = RuntimeEventBus::new();
+        let sink = ReorderedDeliverySink::default();
+        event_bus.set_sink(sink.clone());
+        let runtime = MutualGraphFetchRuntime::with_event_bus(event_bus);
+        let cancel_flag = Arc::new(AtomicBool::new(false));
+        {
+            let mut inner = runtime.inner.lock().unwrap();
+            inner.status = MutualGraphFetchStatus {
+                run_id: 7,
+                revision: 1,
+                status: MutualGraphFetchState::Running,
+                owner_user_id: "usr_owner".into(),
+                total_friends: 1,
+                ..idle_status()
+            };
+            inner.cancel_flag = Some(cancel_flag);
+        }
+
+        let cancelling_runtime = runtime.clone();
+        let cancelling = std::thread::spawn(move || cancelling_runtime.cancel_active().unwrap());
+        sink.wait_for_cancelling();
+        let cancelled = runtime.finish_run(7, MutualGraphFetchState::Cancelled, None);
+        let cancelling = cancelling.join().unwrap();
+
+        assert_eq!(cancelling.revision, 2);
+        assert_eq!(cancelled.revision, 3);
+        let delivered = sink.delivered();
+        assert_eq!(delivered.len(), 2);
+        assert_eq!(delivered[0]["status"], json!("cancelled"));
+        assert_eq!(delivered[0]["revision"], json!(3));
+        assert_eq!(delivered[1]["status"], json!("cancelling"));
+        assert_eq!(delivered[1]["revision"], json!(2));
+        assert_eq!(runtime.status().revision, 3);
     }
 
     #[test]

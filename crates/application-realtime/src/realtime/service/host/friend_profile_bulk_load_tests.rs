@@ -8,7 +8,7 @@ use super::friend_profile_bulk_load::{
 };
 use super::test_support::*;
 use super::*;
-use crate::realtime::user_query_cache::UserQueryKind;
+use crate::realtime::UserQueryKind;
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::{
     RuntimeAuthScope, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle,
@@ -214,7 +214,7 @@ async fn unexpected_exit_and_same_account_replacement_keep_bulk_worker_active() 
         .runtime()
         .user_query_cache
         .get_or_fetch(
-            UserQueryKind::from_request(false, Some(true)),
+            UserQueryKind::LiveFriend,
             &active_session.endpoint,
             "usr_a",
             async move { Ok(first_response) },
@@ -284,7 +284,7 @@ async fn unexpected_exit_and_same_account_replacement_keep_bulk_worker_active() 
         .runtime()
         .user_query_cache
         .get_or_fetch(
-            UserQueryKind::from_request(false, Some(true)),
+            UserQueryKind::LiveFriend,
             &active_session.endpoint,
             "usr_b",
             async move { Ok(second_response) },
@@ -739,7 +739,7 @@ async fn cached_user_response_is_not_replayed_into_friend_state() -> Result<()> 
         .runtime()
         .user_query_cache
         .get_or_fetch(
-            UserQueryKind::from_request(false, Some(true)),
+            UserQueryKind::LiveFriend,
             &active_session.endpoint,
             "usr_friend",
             async move { Ok(canned) },
@@ -827,7 +827,7 @@ async fn cached_user_response_does_not_revert_display_name() -> Result<()> {
         .runtime()
         .user_query_cache
         .get_or_fetch(
-            UserQueryKind::from_request(false, Some(true)),
+            UserQueryKind::LiveFriend,
             &active_session.endpoint,
             "usr_friend",
             async move { Ok(canned) },

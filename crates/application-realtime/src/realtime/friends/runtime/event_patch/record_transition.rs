@@ -70,7 +70,7 @@ pub(super) fn apply_friend_patch(
             user_id: user_id.to_string(),
             patch: next.clone(),
             state_bucket: state_bucket.to_string(),
-            state_bucket_authority: Some(state_bucket_authority),
+            state_bucket_authority,
         },
         next,
         was_traveling,

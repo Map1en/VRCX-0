@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
     setString: vi.fn(),
     setInt: vi.fn(),
     setArray: vi.fn(),
+    setMany: vi.fn(),
     setObject: vi.fn(),
     storageSetString: vi.fn(),
     publishPreferenceChanged: vi.fn(),
@@ -46,6 +47,7 @@ vi.mock('@/repositories/configRepository', () => ({
         setString: mocks.setString,
         setInt: mocks.setInt,
         setArray: mocks.setArray,
+        setMany: mocks.setMany,
         setObject: mocks.setObject
     }
 }));
@@ -110,6 +112,7 @@ import {
     setBoolConfigPreference,
     setIntConfigPreference,
     setStartAtWindowsStartupPreference,
+    setTableLimitsPreference,
     setTablePageSizesPreference
 } from './preferenceGenericSetters';
 
@@ -137,6 +140,7 @@ describe('preferenceGenericSetters', () => {
         mocks.setString.mockResolvedValue(undefined);
         mocks.setInt.mockResolvedValue(undefined);
         mocks.setArray.mockResolvedValue(undefined);
+        mocks.setMany.mockResolvedValue(undefined);
         mocks.setObject.mockResolvedValue(undefined);
         mocks.storageSetString.mockResolvedValue(undefined);
         mocks.appSetStartup.mockResolvedValue(undefined);
@@ -175,11 +179,10 @@ describe('preferenceGenericSetters', () => {
             setTablePageSizesPreference(['50', '10', 'bad', 25, 10])
         ).resolves.toEqual([10, 25, 50]);
 
-        expect(mocks.setArray).toHaveBeenCalledWith(
-            'VRCX_tablePageSizes',
-            [10, 25, 50]
-        );
-        expect(mocks.setInt).toHaveBeenCalledWith('VRCX_tablePageSize', 25);
+        expect(mocks.setMany).toHaveBeenCalledWith([
+            ['VRCX_tablePageSizes', '[10,25,50]'],
+            ['VRCX_tablePageSize', 25]
+        ]);
         expect(usePreferencesStore.getState()).toMatchObject({
             tablePageSize: 25,
             tablePageSizes: [10, 25, 50]
@@ -192,6 +195,40 @@ describe('preferenceGenericSetters', () => {
             'VRCX_tablePageSize',
             25
         );
+    });
+
+    it('persists table limits in one config transaction', async () => {
+        await expect(
+            setTableLimitsPreference({
+                maxTableSize: 750,
+                searchLimit: 25000
+            })
+        ).resolves.toEqual({
+            maxTableSize: 750,
+            searchLimit: 25000
+        });
+
+        expect(mocks.setMany).toHaveBeenCalledWith([
+            ['maxTableSize_v2', 750],
+            ['searchLimit', 25000]
+        ]);
+        expect(usePreferencesStore.getState().tableLimits).toEqual({
+            maxTableSize: 750,
+            searchLimit: 25000
+        });
+    });
+
+    it('keeps compound table preferences unchanged when the transaction fails', async () => {
+        mocks.setMany.mockRejectedValueOnce(new Error('write failed'));
+
+        await expect(setTablePageSizesPreference([10, 25, 50])).rejects.toThrow(
+            'write failed'
+        );
+
+        expect(usePreferencesStore.getState()).toMatchObject({
+            tablePageSize: DEFAULT_PREFERENCES.tablePageSize,
+            tablePageSizes: DEFAULT_PREFERENCES.tablePageSizes
+        });
     });
 
     it('clamps generic integer config values before persistence and publish', async () => {

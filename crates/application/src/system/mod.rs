@@ -1,6 +1,8 @@
 mod app_update;
+mod avatar_feed_cleanup;
 mod background_image;
 mod batch_mutation;
+mod community_theme;
 mod data_dir_migration;
 mod database_upgrade;
 mod database_upgrade_runtime;
@@ -10,11 +12,15 @@ mod notification_chains;
 mod notification_sync;
 mod profile_backup;
 mod translation;
+mod vrc_status;
 
 pub use app_update::{
-    AppUpdateBuildInfo, AppUpdateDownloadProgressPayload, AppUpdateDownloadStatusSnapshot,
-    AppUpdateInstalledPayload, AppUpdateReleaseSnapshot, AppUpdateRuntime, AppUpdateStatusSnapshot,
-    AppUpdateTargetResolver,
+    AppUpdateBuildInfo, AppUpdateDownloadPhase, AppUpdateDownloadProgressPayload,
+    AppUpdateDownloadStatusSnapshot, AppUpdateInstalledPayload, AppUpdateReleaseSnapshot,
+    AppUpdateRuntime, AppUpdateStatusSnapshot, AppUpdateTargetResolver,
+};
+pub use avatar_feed_cleanup::{
+    cleanup_avatar_feed_history, AvatarFeedCleanupOutcome, AvatarFeedCleanupStatus,
 };
 pub use background_image::{
     BackgroundImageConfigureInput, BackgroundImageCustomSource, BackgroundImageCustomSourceKind,
@@ -28,10 +34,16 @@ pub use batch_mutation::{
     BatchMutationItemState, BatchMutationResult, GroupLeaveBatchInput, GroupVisibility,
     GroupVisibilityBatchInput, VrchatBatchMutationActions, BATCH_MUTATION_MAX_ITEMS,
 };
+pub use community_theme::{
+    CommunityThemeAuthor, CommunityThemeCatalog, CommunityThemeConfigureInput,
+    CommunityThemeInstallMetadata, CommunityThemeManifest, CommunityThemeProjection,
+    CommunityThemeService, CommunityThemeStatsById, CommunityThemeStatsEntry,
+};
 pub use data_dir_migration::{
-    DataDirMigrationActionOutcome, DataDirMigrationError, DataDirMigrationErrorCode,
-    DataDirMigrationMode, DataDirMigrationPhase, DataDirMigrationPlan, DataDirMigrationRuntime,
-    DataDirMigrationState, DataDirMigrationStatus, DataDirPointerCommitter,
+    build_data_dir_migration_plan, DataDirMigrationActionOutcome, DataDirMigrationError,
+    DataDirMigrationErrorCode, DataDirMigrationMode, DataDirMigrationPhase, DataDirMigrationPlan,
+    DataDirMigrationRuntime, DataDirMigrationState, DataDirMigrationStatus,
+    DataDirPointerCommitter,
 };
 pub use database_upgrade::{
     database_upgrade_preflight, run_database_upgrade, DatabaseUpgradePreflight,
@@ -76,3 +88,4 @@ pub use translation::{
     TranslationDispatch, TranslationOverrides, TranslationResult, TranslationTranslateInput,
     DEFAULT_TRANSLATION_MODEL,
 };
+pub use vrc_status::VrcStatusService;

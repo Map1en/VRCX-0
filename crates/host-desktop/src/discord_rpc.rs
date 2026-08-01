@@ -14,6 +14,12 @@ const DEFAULT_APP_ID: &str = "1510639562177642557";
 #[cfg(any(windows, unix))]
 const DISCORD_IPC_OPCODE_HANDSHAKE: u32 = 0;
 const DISCORD_IPC_OPCODE_FRAME: u32 = 1;
+#[cfg(any(windows, unix))]
+const DISCORD_IPC_OPCODE_CLOSE: u32 = 2;
+#[cfg(any(windows, unix))]
+const DISCORD_IPC_OPCODE_PING: u32 = 3;
+#[cfg(any(windows, unix))]
+const DISCORD_IPC_OPCODE_PONG: u32 = 4;
 #[cfg(unix)]
 const DISCORD_RPC_RESPONSE_TIMEOUT: std::time::Duration = std::time::Duration::from_millis(750);
 const DISCORD_RPC_MAX_FRAME_BYTES: usize = 1024 * 1024;
@@ -27,7 +33,28 @@ pub struct DiscordRpc {
 struct DiscordRpcInner {
     connection: Option<DiscordRpcConnection>,
     nonce: u64,
-    is_active: bool,
+    active_app_id: Option<String>,
+}
+
+#[cfg(any(windows, unix))]
+#[derive(Debug)]
+struct DiscordIpcFrame {
+    opcode: u32,
+    payload: Value,
+}
+
+#[cfg(any(windows, unix))]
+#[derive(Clone, Copy)]
+enum DiscordResponseExpectation<'a> {
+    Ready,
+    Nonce(&'a str),
+}
+
+#[cfg(any(windows, unix))]
+enum DiscordResponseAction {
+    Complete,
+    Continue,
+    Pong(Value),
 }
 
 #[cfg(windows)]
@@ -50,27 +77,27 @@ impl DiscordRpc {
         Self::default()
     }
 
-    pub fn set_active(&self, active: bool) -> Result<bool, Error> {
+    pub fn clear(&self) -> Result<(), Error> {
         let mut inner = self
             .inner
             .lock()
             .map_err(|_| Error::Custom("discord rpc mutex poisoned".into()))?;
-
-        if active {
-            ensure_connection(&mut inner, DEFAULT_APP_ID)?;
-            inner.is_active = true;
-            return Ok(true);
+        if inner.active_app_id.is_none() && inner.connection.is_none() {
+            return Ok(());
         }
-
+        let app_id = inner
+            .active_app_id
+            .as_deref()
+            .unwrap_or(DEFAULT_APP_ID)
+            .to_string();
         let nonce = next_nonce(&mut inner);
-        if let Some(connection) = inner.connection.as_mut() {
-            if write_activity(connection, nonce, Value::Null).is_err() {
-                inner.connection = None;
-            }
-        }
+        let result = ensure_connection(&mut inner, &app_id)
+            .and_then(|connection| write_activity(connection, nonce, Value::Null));
         inner.connection = None;
-        inner.is_active = false;
-        Ok(false)
+        if result.is_ok() {
+            inner.active_app_id = None;
+        }
+        result
     }
 
     pub fn set_assets(&self, payload: Value) -> Result<bool, Error> {
@@ -92,10 +119,9 @@ impl DiscordRpc {
             .and_then(|connection| write_activity(connection, nonce, activity))
         {
             inner.connection = None;
-            inner.is_active = false;
             return Err(error);
         }
-        inner.is_active = true;
+        inner.active_app_id = Some(app_id.to_string());
         Ok(true)
     }
 }
@@ -118,11 +144,15 @@ fn write_activity(
         },
         "nonce": nonce
     });
+    let expected_nonce = payload
+        .get("nonce")
+        .and_then(Value::as_str)
+        .ok_or_else(|| Error::Custom("discord rpc request nonce is missing".into()))?;
     write_frame(
         connection,
         DISCORD_IPC_OPCODE_FRAME,
         &payload,
-        payload.get("nonce").and_then(Value::as_str),
+        expected_nonce,
     )
 }
 
@@ -175,7 +205,7 @@ fn open_connection(app_id: &str) -> Result<DiscordRpcConnection, Error> {
                         "client_id": app_id
                     });
                     write_raw_frame(&mut file, DISCORD_IPC_OPCODE_HANDSHAKE, &payload)?;
-                    read_response(&mut file, None)?;
+                    read_response(&mut file, DiscordResponseExpectation::Ready)?;
                     return Ok(DiscordRpcConnection {
                         app_id: app_id.to_string(),
                         file,
@@ -208,7 +238,7 @@ fn open_connection(app_id: &str) -> Result<DiscordRpcConnection, Error> {
                 });
                 stream.set_write_timeout(Some(DISCORD_RPC_RESPONSE_TIMEOUT))?;
                 write_raw_frame(&mut stream, DISCORD_IPC_OPCODE_HANDSHAKE, &payload)?;
-                read_response(&mut stream, None)?;
+                read_response(&mut stream, DiscordResponseExpectation::Ready)?;
                 return Ok(DiscordRpcConnection {
                     app_id: app_id.to_string(),
                     stream,
@@ -233,10 +263,13 @@ fn write_frame(
     connection: &mut DiscordRpcConnection,
     opcode: u32,
     payload: &Value,
-    expected_nonce: Option<&str>,
+    expected_nonce: &str,
 ) -> Result<(), Error> {
     write_raw_frame(&mut connection.file, opcode, payload)?;
-    read_response(&mut connection.file, expected_nonce)?;
+    read_response(
+        &mut connection.file,
+        DiscordResponseExpectation::Nonce(expected_nonce),
+    )?;
     Ok(())
 }
 
@@ -245,10 +278,13 @@ fn write_frame(
     connection: &mut DiscordRpcConnection,
     opcode: u32,
     payload: &Value,
-    expected_nonce: Option<&str>,
+    expected_nonce: &str,
 ) -> Result<(), Error> {
     write_raw_frame(&mut connection.stream, opcode, payload)?;
-    read_response(&mut connection.stream, expected_nonce)?;
+    read_response(
+        &mut connection.stream,
+        DiscordResponseExpectation::Nonce(expected_nonce),
+    )?;
     Ok(())
 }
 
@@ -257,7 +293,7 @@ fn write_frame(
     _connection: &mut DiscordRpcConnection,
     _opcode: u32,
     _payload: &Value,
-    _expected_nonce: Option<&str>,
+    _expected_nonce: &str,
 ) -> Result<(), Error> {
     Err(Error::Custom(
         "discord rpc is unsupported on this platform".into(),
@@ -271,30 +307,35 @@ fn write_raw_frame(
     payload: &Value,
 ) -> Result<(), Error> {
     let bytes = serde_json::to_vec(payload)?;
+    if bytes.len() > DISCORD_RPC_MAX_FRAME_BYTES {
+        return Err(Error::Custom("discord rpc request is too large".into()));
+    }
+    let length = u32::try_from(bytes.len())
+        .map_err(|_| Error::Custom("discord rpc request is too large".into()))?;
     writer.write_all(&opcode.to_le_bytes())?;
-    writer.write_all(&(bytes.len() as u32).to_le_bytes())?;
+    writer.write_all(&length.to_le_bytes())?;
     writer.write_all(&bytes)?;
     writer.flush()?;
     Ok(())
 }
 
 #[cfg(windows)]
-fn read_response(file: &mut std::fs::File, expected_nonce: Option<&str>) -> Result<(), Error> {
+fn read_response(
+    file: &mut std::fs::File,
+    expectation: DiscordResponseExpectation<'_>,
+) -> Result<(), Error> {
     use std::time::{Duration, Instant};
 
     let deadline = Instant::now() + Duration::from_millis(750);
     loop {
-        if let Some(payload) = read_next_frame(file)? {
-            if let Some(message) = discord_response_error(&payload) {
-                return Err(Error::Custom(message));
+        if let Some(frame) = read_next_frame(file)? {
+            match validate_response_frame(frame, expectation)? {
+                DiscordResponseAction::Complete => return Ok(()),
+                DiscordResponseAction::Continue => continue,
+                DiscordResponseAction::Pong(payload) => {
+                    write_raw_frame(file, DISCORD_IPC_OPCODE_PONG, &payload)?;
+                }
             }
-            if expected_nonce
-                .map(|nonce| payload.get("nonce").and_then(Value::as_str) == Some(nonce))
-                .unwrap_or(true)
-            {
-                return Ok(());
-            }
-            continue;
         }
 
         if Instant::now() >= deadline {
@@ -305,31 +346,29 @@ fn read_response(file: &mut std::fs::File, expected_nonce: Option<&str>) -> Resu
 }
 
 #[cfg(unix)]
-fn read_response(stream: &mut UnixStream, expected_nonce: Option<&str>) -> Result<(), Error> {
+fn read_response(
+    stream: &mut UnixStream,
+    expectation: DiscordResponseExpectation<'_>,
+) -> Result<(), Error> {
     let deadline = std::time::Instant::now() + DISCORD_RPC_RESPONSE_TIMEOUT;
     loop {
-        let payload = read_next_frame(stream, deadline)?;
-        if let Some(message) = discord_response_error(&payload) {
-            return Err(Error::Custom(message));
-        }
-        if expected_nonce
-            .map(|nonce| payload.get("nonce").and_then(Value::as_str) == Some(nonce))
-            .unwrap_or(true)
-        {
-            return Ok(());
+        let frame = read_next_frame(stream, deadline)?;
+        match validate_response_frame(frame, expectation)? {
+            DiscordResponseAction::Complete => return Ok(()),
+            DiscordResponseAction::Continue => {}
+            DiscordResponseAction::Pong(payload) => {
+                write_raw_frame(stream, DISCORD_IPC_OPCODE_PONG, &payload)?;
+            }
         }
     }
 }
 
 #[cfg(windows)]
-fn read_next_frame(file: &mut std::fs::File) -> Result<Option<Value>, Error> {
+fn read_next_frame(file: &mut std::fs::File) -> Result<Option<DiscordIpcFrame>, Error> {
     let Some((header, available)) = peek_frame_header(file)? else {
         return Ok(None);
     };
-    let length = u32::from_le_bytes(header[4..8].try_into().unwrap()) as usize;
-    if length > DISCORD_RPC_MAX_FRAME_BYTES {
-        return Err(Error::Custom("discord rpc response is too large".into()));
-    }
+    let length = frame_length(&header)?;
     if available < 8usize.saturating_add(length) {
         return Ok(None);
     }
@@ -338,21 +377,90 @@ fn read_next_frame(file: &mut std::fs::File) -> Result<Option<Value>, Error> {
     read_exact_from_pipe(file, &mut header)?;
     let mut payload = vec![0u8; length];
     read_exact_from_pipe(file, &mut payload)?;
-    Ok(Some(serde_json::from_slice(&payload)?))
+    Ok(Some(decode_frame(&header, &payload)?))
 }
 
 #[cfg(unix)]
-fn read_next_frame(stream: &mut UnixStream, deadline: std::time::Instant) -> Result<Value, Error> {
+fn read_next_frame(
+    stream: &mut UnixStream,
+    deadline: std::time::Instant,
+) -> Result<DiscordIpcFrame, Error> {
     let mut header = [0u8; 8];
     read_exact_from_stream(stream, &mut header, deadline)?;
-    let length = u32::from_le_bytes(header[4..8].try_into().unwrap()) as usize;
-    if length > DISCORD_RPC_MAX_FRAME_BYTES {
-        return Err(Error::Custom("discord rpc response is too large".into()));
-    }
+    let length = frame_length(&header)?;
 
     let mut payload = vec![0u8; length];
     read_exact_from_stream(stream, &mut payload, deadline)?;
-    Ok(serde_json::from_slice(&payload)?)
+    decode_frame(&header, &payload)
+}
+
+#[cfg(any(windows, unix))]
+fn frame_length(header: &[u8; 8]) -> Result<usize, Error> {
+    let length = u32::from_le_bytes([header[4], header[5], header[6], header[7]]) as usize;
+    if length > DISCORD_RPC_MAX_FRAME_BYTES {
+        return Err(Error::Custom("discord rpc response is too large".into()));
+    }
+    Ok(length)
+}
+
+#[cfg(any(windows, unix))]
+fn decode_frame(header: &[u8; 8], payload: &[u8]) -> Result<DiscordIpcFrame, Error> {
+    let opcode = u32::from_le_bytes([header[0], header[1], header[2], header[3]]);
+    let declared_length = frame_length(header)?;
+    if declared_length != payload.len() {
+        return Err(Error::Custom(
+            "discord rpc response length does not match payload".into(),
+        ));
+    }
+    Ok(DiscordIpcFrame {
+        opcode,
+        payload: serde_json::from_slice(payload)?,
+    })
+}
+
+#[cfg(any(windows, unix))]
+fn validate_response_frame(
+    frame: DiscordIpcFrame,
+    expectation: DiscordResponseExpectation<'_>,
+) -> Result<DiscordResponseAction, Error> {
+    match frame.opcode {
+        DISCORD_IPC_OPCODE_FRAME => {
+            if let Some(message) = discord_response_error(&frame.payload) {
+                return Err(Error::Custom(message));
+            }
+            match expectation {
+                DiscordResponseExpectation::Ready => {
+                    if frame
+                        .payload
+                        .get("evt")
+                        .and_then(Value::as_str)
+                        .is_some_and(|event| event.eq_ignore_ascii_case("READY"))
+                    {
+                        Ok(DiscordResponseAction::Complete)
+                    } else {
+                        Err(Error::Custom(
+                            "discord rpc handshake did not return READY".into(),
+                        ))
+                    }
+                }
+                DiscordResponseExpectation::Nonce(expected_nonce) => {
+                    if frame.payload.get("nonce").and_then(Value::as_str) == Some(expected_nonce) {
+                        Ok(DiscordResponseAction::Complete)
+                    } else {
+                        Ok(DiscordResponseAction::Continue)
+                    }
+                }
+            }
+        }
+        DISCORD_IPC_OPCODE_CLOSE => Err(Error::Custom(format!(
+            "discord rpc connection closed: {}",
+            frame.payload
+        ))),
+        DISCORD_IPC_OPCODE_PING => Ok(DiscordResponseAction::Pong(frame.payload)),
+        opcode => Err(Error::Custom(format!(
+            "discord rpc returned unexpected opcode {opcode}"
+        ))),
+    }
 }
 
 #[cfg(any(windows, unix))]
@@ -535,6 +643,16 @@ fn read_exact_from_pipe(file: &std::fs::File, buffer: &mut [u8]) -> Result<(), E
 mod tests {
     use super::*;
 
+    #[test]
+    fn clear_is_quiet_without_known_activity() {
+        let rpc = DiscordRpc::new();
+
+        assert!(rpc.clear().is_ok());
+        let inner = rpc.inner.lock().unwrap();
+        assert_eq!(inner.nonce, 0);
+        assert!(inner.active_app_id.is_none());
+    }
+
     #[cfg(any(windows, unix))]
     #[test]
     fn set_assets_discards_connection_after_io_failure() {
@@ -542,7 +660,7 @@ mod tests {
             inner: Mutex::new(DiscordRpcInner {
                 connection: Some(connection_that_rejects_activity()),
                 nonce: 0,
-                is_active: true,
+                active_app_id: Some(DEFAULT_APP_ID.into()),
             }),
         };
 
@@ -554,7 +672,109 @@ mod tests {
         assert!(result.is_err());
         let inner = rpc.inner.lock().unwrap();
         assert!(inner.connection.is_none());
-        assert!(!inner.is_active);
+        assert_eq!(inner.active_app_id.as_deref(), Some(DEFAULT_APP_ID));
+    }
+
+    #[cfg(any(windows, unix))]
+    #[test]
+    fn clear_propagates_io_failure_and_keeps_app_id_for_retry() {
+        let rpc = DiscordRpc {
+            inner: Mutex::new(DiscordRpcInner {
+                connection: Some(connection_that_rejects_activity()),
+                nonce: 0,
+                active_app_id: Some(DEFAULT_APP_ID.into()),
+            }),
+        };
+
+        assert!(rpc.clear().is_err());
+        let inner = rpc.inner.lock().unwrap();
+        assert!(inner.connection.is_none());
+        assert_eq!(inner.active_app_id.as_deref(), Some(DEFAULT_APP_ID));
+    }
+
+    #[cfg(any(windows, unix))]
+    #[test]
+    fn frame_codec_preserves_opcode_and_payload() {
+        let payload = json!({ "evt": "READY" });
+        let mut encoded = Vec::new();
+        write_raw_frame(&mut encoded, DISCORD_IPC_OPCODE_FRAME, &payload).unwrap();
+        let header: [u8; 8] = encoded[..8].try_into().unwrap();
+
+        let frame = decode_frame(&header, &encoded[8..]).unwrap();
+
+        assert_eq!(frame.opcode, DISCORD_IPC_OPCODE_FRAME);
+        assert_eq!(frame.payload, payload);
+    }
+
+    #[cfg(any(windows, unix))]
+    #[test]
+    fn oversized_frame_is_rejected_before_payload_allocation() {
+        let mut header = [0u8; 8];
+        header[4..8].copy_from_slice(&((DISCORD_RPC_MAX_FRAME_BYTES + 1) as u32).to_le_bytes());
+
+        assert!(frame_length(&header).is_err());
+    }
+
+    #[cfg(any(windows, unix))]
+    #[test]
+    fn handshake_requires_frame_ready_event() {
+        let ready = DiscordIpcFrame {
+            opcode: DISCORD_IPC_OPCODE_FRAME,
+            payload: json!({ "evt": "READY" }),
+        };
+        assert!(matches!(
+            validate_response_frame(ready, DiscordResponseExpectation::Ready).unwrap(),
+            DiscordResponseAction::Complete
+        ));
+
+        let unexpected = DiscordIpcFrame {
+            opcode: DISCORD_IPC_OPCODE_FRAME,
+            payload: json!({ "evt": "ACTIVITY_JOIN" }),
+        };
+        assert!(validate_response_frame(unexpected, DiscordResponseExpectation::Ready).is_err());
+    }
+
+    #[cfg(any(windows, unix))]
+    #[test]
+    fn response_validation_handles_nonce_error_ping_and_close() {
+        let other_nonce = DiscordIpcFrame {
+            opcode: DISCORD_IPC_OPCODE_FRAME,
+            payload: json!({ "nonce": "other" }),
+        };
+        assert!(matches!(
+            validate_response_frame(other_nonce, DiscordResponseExpectation::Nonce("expected"))
+                .unwrap(),
+            DiscordResponseAction::Continue
+        ));
+
+        let error = DiscordIpcFrame {
+            opcode: DISCORD_IPC_OPCODE_FRAME,
+            payload: json!({
+                "evt": "ERROR",
+                "data": { "code": 4000, "message": "bad request" }
+            }),
+        };
+        assert!(
+            validate_response_frame(error, DiscordResponseExpectation::Nonce("expected")).is_err()
+        );
+
+        let ping_payload = json!({ "time": 1 });
+        let ping = DiscordIpcFrame {
+            opcode: DISCORD_IPC_OPCODE_PING,
+            payload: ping_payload.clone(),
+        };
+        assert!(matches!(
+            validate_response_frame(ping, DiscordResponseExpectation::Nonce("expected")).unwrap(),
+            DiscordResponseAction::Pong(payload) if payload == ping_payload
+        ));
+
+        let close = DiscordIpcFrame {
+            opcode: DISCORD_IPC_OPCODE_CLOSE,
+            payload: json!({ "code": 4000 }),
+        };
+        assert!(
+            validate_response_frame(close, DiscordResponseExpectation::Nonce("expected")).is_err()
+        );
     }
 
     #[cfg(windows)]

@@ -250,25 +250,14 @@ async fn run_check(context: &AppUpdateCheckContext<'_>) -> AppUpdateStatusSnapsh
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum DownloadPhase {
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum AppUpdateDownloadPhase {
     Idle,
     Downloading,
     Downloaded,
     Installing,
     Error,
-}
-
-impl DownloadPhase {
-    fn as_str(self) -> &'static str {
-        match self {
-            Self::Idle => "idle",
-            Self::Downloading => "downloading",
-            Self::Downloaded => "downloaded",
-            Self::Installing => "installing",
-            Self::Error => "error",
-        }
-    }
 }
 
 struct PendingDownload {
@@ -278,7 +267,7 @@ struct PendingDownload {
 }
 
 struct DownloadState {
-    phase: DownloadPhase,
+    phase: AppUpdateDownloadPhase,
     version: Option<String>,
     downloaded_bytes: u64,
     total_bytes: u64,
@@ -291,7 +280,7 @@ struct DownloadState {
 impl DownloadState {
     fn idle() -> Self {
         Self {
-            phase: DownloadPhase::Idle,
+            phase: AppUpdateDownloadPhase::Idle,
             version: None,
             downloaded_bytes: 0,
             total_bytes: 0,
@@ -304,7 +293,7 @@ impl DownloadState {
 
     fn snapshot(&self) -> AppUpdateDownloadStatusSnapshot {
         AppUpdateDownloadStatusSnapshot {
-            phase: self.phase.as_str().into(),
+            phase: self.phase,
             version: self.version.clone(),
             downloaded_bytes: self.downloaded_bytes,
             total_bytes: self.total_bytes,
@@ -317,7 +306,7 @@ impl DownloadState {
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AppUpdateDownloadStatusSnapshot {
-    pub phase: String,
+    pub phase: AppUpdateDownloadPhase,
     pub version: Option<String>,
     pub downloaded_bytes: u64,
     pub total_bytes: u64,
@@ -329,7 +318,7 @@ pub struct AppUpdateDownloadStatusSnapshot {
 #[serde(rename_all = "camelCase")]
 pub struct AppUpdateDownloadProgressPayload {
     pub version: String,
-    pub phase: String,
+    pub phase: AppUpdateDownloadPhase,
     pub downloaded_bytes: u64,
     pub total_bytes: u64,
     pub percent: u32,
@@ -456,12 +445,14 @@ impl AppUpdateRuntime {
             notified.as_mut().enable();
             let action = self.with_download_state(|state| {
                 if let Some(pending) = &state.pending {
-                    if pending.version == version && state.phase == DownloadPhase::Downloaded {
-                        state.phase = DownloadPhase::Installing;
+                    if pending.version == version
+                        && state.phase == AppUpdateDownloadPhase::Downloaded
+                    {
+                        state.phase = AppUpdateDownloadPhase::Installing;
                         return Action::UsePending(state.pending.take().expect("pending checked"));
                     }
                 }
-                if state.phase == DownloadPhase::Downloading
+                if state.phase == AppUpdateDownloadPhase::Downloading
                     && state.version.as_deref() == Some(version)
                 {
                     return Action::Wait;
@@ -496,7 +487,7 @@ impl AppUpdateRuntime {
                 Action::NeedDownload => {
                     let release = self.release_for_version(version)?;
                     let status = self.ensure_downloaded(&release).await?;
-                    if status.phase != DownloadPhase::Downloaded.as_str() {
+                    if status.phase != AppUpdateDownloadPhase::Downloaded {
                         return Err(Error::Custom(
                             status
                                 .error
@@ -553,19 +544,19 @@ impl AppUpdateRuntime {
                     }
                 }
                 match state.phase {
-                    DownloadPhase::Installing => StartAction::Early(state.snapshot()),
-                    DownloadPhase::Downloading
+                    AppUpdateDownloadPhase::Installing => StartAction::Early(state.snapshot()),
+                    AppUpdateDownloadPhase::Downloading
                         if state.version.as_deref() == Some(version.as_str()) =>
                     {
                         StartAction::Wait
                     }
-                    DownloadPhase::Downloading => {
+                    AppUpdateDownloadPhase::Downloading => {
                         state.queued = Some(release.clone());
                         StartAction::Early(state.snapshot())
                     }
                     _ => {
                         *state = DownloadState {
-                            phase: DownloadPhase::Downloading,
+                            phase: AppUpdateDownloadPhase::Downloading,
                             version: Some(version.clone()),
                             downloaded_bytes: 0,
                             total_bytes: 0,
@@ -601,7 +592,7 @@ impl AppUpdateRuntime {
         let download_result = self.inner.port.download(request, on_progress).await;
 
         let owns_download = |state: &DownloadState| {
-            state.phase == DownloadPhase::Downloading
+            state.phase == AppUpdateDownloadPhase::Downloading
                 && state.version.as_deref() == Some(version.as_str())
         };
         let (snapshot, applied, error) = match download_result {
@@ -609,7 +600,7 @@ impl AppUpdateRuntime {
                 if !owns_download(state) {
                     return (state.snapshot(), false, None);
                 }
-                state.phase = DownloadPhase::Downloaded;
+                state.phase = AppUpdateDownloadPhase::Downloaded;
                 let total = state.total_bytes.max(state.downloaded_bytes);
                 state.total_bytes = total;
                 state.downloaded_bytes = total;
@@ -626,7 +617,7 @@ impl AppUpdateRuntime {
                 if !owns_download(state) {
                     return (state.snapshot(), false, Some(error));
                 }
-                state.phase = DownloadPhase::Error;
+                state.phase = AppUpdateDownloadPhase::Error;
                 state.error = Some(error.to_string());
                 (state.snapshot(), true, Some(error))
             }),
@@ -662,7 +653,7 @@ impl AppUpdateRuntime {
     fn record_install_error(&self, version: &str, error: &Error) {
         let snapshot = self.with_download_state(|state| {
             state.version = Some(version.to_string());
-            state.phase = DownloadPhase::Error;
+            state.phase = AppUpdateDownloadPhase::Error;
             state.error = Some(error.to_string());
             state.snapshot()
         });
@@ -708,7 +699,7 @@ impl AppUpdateRuntime {
         };
         self.inner.event_bus.emit(AppUpdateDownloadProgressPayload {
             version,
-            phase: snapshot.phase.clone(),
+            phase: snapshot.phase,
             downloaded_bytes: snapshot.downloaded_bytes,
             total_bytes: snapshot.total_bytes,
             percent: snapshot.percent,
@@ -745,7 +736,7 @@ impl AppUpdateRuntime {
         }
 
         match self.ensure_downloaded(release).await {
-            Ok(status) if status.phase == DownloadPhase::Downloaded.as_str() => {
+            Ok(status) if status.phase == AppUpdateDownloadPhase::Downloaded => {
                 match self.install(&release.canonical_version).await {
                     Ok(metadata) => Some(metadata),
                     Err(error) => {

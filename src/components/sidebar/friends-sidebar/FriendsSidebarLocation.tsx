@@ -64,16 +64,25 @@ export function FriendInstanceTimer({
     const timeUnitLabels = useShellStore((state) => state.timeUnitLabels);
     const [now, setNow] = useState(() => Date.now());
     const normalizedEpoch = timestampMsFromValue(epoch);
+    const elapsedMs = normalizedEpoch ? Math.max(0, now - normalizedEpoch) : 0;
     const text = normalizedEpoch
-        ? timeToText(now - normalizedEpoch, false, timeUnitLabels)
+        ? timeToText(elapsedMs, false, timeUnitLabels)
         : '-';
 
     useEffect(() => {
-        const intervalId = window.setInterval(() => {
-            setNow(Date.now());
-        }, 15000);
-        return () => window.clearInterval(intervalId);
-    }, []);
+        if (!normalizedEpoch) {
+            return;
+        }
+        const stepMs = elapsedMs < 60_000 ? 15_000 : 60_000;
+        const nextStepMs = (Math.floor(elapsedMs / stepMs) + 1) * stepMs;
+        const timeoutId = window.setTimeout(
+            () => {
+                setNow(Date.now());
+            },
+            Math.max(1, nextStepMs - elapsedMs)
+        );
+        return () => window.clearTimeout(timeoutId);
+    }, [elapsedMs, normalizedEpoch]);
 
     return (
         <span className="inline-flex min-w-0 items-center">

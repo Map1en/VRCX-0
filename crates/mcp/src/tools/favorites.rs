@@ -3,8 +3,12 @@ use rmcp::model::CallToolResult;
 use rmcp::{schemars, tool, tool_router};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use vrcx_0_application_core::vrchat_api::{self, favorites::favorite_add_input, VrchatScope};
-use vrcx_0_persistence::{favorites as persistence_favorites, social_aggregates};
+use vrcx_0_application::{add_remote_favorite, FavoriteRemoteAddInput, FavoriteRemoteMutationDeps};
+use vrcx_0_application_core::vrchat_api::{self};
+use vrcx_0_persistence::{
+    favorites::{self as persistence_favorites, FavoriteRow as PersistenceFavoriteRow},
+    social_aggregates,
+};
 
 use crate::config::MCP_ALLOW_VRCHAT_WRITES_CONFIG_KEY;
 use crate::server::VrcxMcpServer;
@@ -128,37 +132,25 @@ impl VrcxMcpServer {
             });
         }
 
-        let endpoint = self.runtime.current_endpoint();
-        let (_, _, request) =
-            favorite_add_input(endpoint, kind.clone(), entity_id.clone(), tags.clone())
-                .map_err(|error| error.to_string())?;
-        let response = vrchat_api::execute_api_command(
-            self.runtime.web.as_ref(),
-            self.runtime.db.as_ref(),
-            &self.runtime.diagnostics,
-            &self.runtime.sync,
-            (
-                "mcp__favorite_vrchat",
-                "Adding a VRChat favorite through MCP.",
-            ),
-            request,
-            VrchatScope::Vrchat,
+        let response = add_remote_favorite(
+            &FavoriteRemoteMutationDeps {
+                db: self.runtime.db.as_ref(),
+                web: self.runtime.web.as_ref(),
+                diagnostics: &self.runtime.diagnostics,
+                sync: &self.runtime.sync,
+                realtime: &self.runtime.realtime_runtime,
+            },
+            FavoriteRemoteAddInput {
+                endpoint: self.runtime.current_endpoint(),
+                kind: kind.clone(),
+                entity_id: entity_id.clone(),
+                tags: tags.clone(),
+            },
         )
         .await
         .map_err(|error| error.to_string())?;
-        let notification_kind = kind.clone();
         Ok(finish_remote_favorite_write(
-            kind,
-            entity_id,
-            tags,
-            response,
-            || {
-                self.runtime.realtime_runtime.notify_favorites_changed(
-                    &notification_kind,
-                    false,
-                    true,
-                );
-            },
+            kind, entity_id, tags, response,
         ))
     }
 }
@@ -168,13 +160,9 @@ fn finish_remote_favorite_write(
     entity_id: String,
     tags: String,
     response: vrchat_api::VrchatApiResponse,
-    notify: impl FnOnce(),
 ) -> FavoriteVrchatOutput {
     let status = response.status;
     let policy = vrchat_api::classify_api_response(status);
-    if policy.class == "ok" {
-        notify();
-    }
     FavoriteVrchatOutput {
         kind,
         entity_id,
@@ -321,25 +309,17 @@ fn validate_favorite_entity_id(kind: &str, entity_id: &str) -> Result<(), String
     }
 }
 
-fn favorite_row_from_value(kind: &str, row: &Value) -> Option<FavoriteRow> {
-    let metadata = favorite_kind_metadata(kind)?;
-    let entity_id = row
-        .get(metadata.entity_id_key)
-        .and_then(Value::as_str)?
-        .to_string();
+fn favorite_row_from_value(kind: &str, row: &PersistenceFavoriteRow) -> Option<FavoriteRow> {
+    favorite_kind_metadata(kind)?;
+    let entity_id = row.entity_id().to_string();
+    if entity_id.is_empty() {
+        return None;
+    }
     Some(FavoriteRow {
         kind: kind.to_string(),
         entity_id,
-        group: row
-            .get("groupName")
-            .and_then(Value::as_str)
-            .unwrap_or_default()
-            .to_string(),
-        created_at: row
-            .get("created_at")
-            .and_then(Value::as_str)
-            .unwrap_or_default()
-            .to_string(),
+        group: row.group_name.clone(),
+        created_at: row.created_at.clone(),
     })
 }
 
@@ -349,22 +329,18 @@ fn favorites_summary(kind: FavoriteListKind, count: usize) -> String {
 }
 
 struct FavoriteKindMetadata {
-    entity_id_key: &'static str,
     entity_id_prefix: &'static str,
 }
 
 fn favorite_kind_metadata(kind: &str) -> Option<FavoriteKindMetadata> {
     match kind {
         "world" => Some(FavoriteKindMetadata {
-            entity_id_key: "worldId",
             entity_id_prefix: "wrld_",
         }),
         "friend" => Some(FavoriteKindMetadata {
-            entity_id_key: "userId",
             entity_id_prefix: "usr_",
         }),
         "avatar" => Some(FavoriteKindMetadata {
-            entity_id_key: "avatarId",
             entity_id_prefix: "avtr_",
         }),
         _ => None,
@@ -450,9 +426,8 @@ mod favorite_kind_tests {
     }
 
     #[test]
-    fn remote_change_notification_requires_a_successful_write() {
-        let notifications = std::cell::Cell::new(0);
-        for (status, should_notify) in [
+    fn remote_write_output_classifies_http_status() {
+        for (status, expected_ok) in [
             (200, true),
             (204, true),
             (302, false),
@@ -460,7 +435,6 @@ mod favorite_kind_tests {
             (429, false),
             (500, false),
         ] {
-            let previous = notifications.get();
             let output = finish_remote_favorite_write(
                 "world".into(),
                 "wrld_test".into(),
@@ -469,16 +443,14 @@ mod favorite_kind_tests {
                     status,
                     data: "{}".into(),
                 },
-                || {
-                    notifications.set(notifications.get() + 1);
-                },
             );
 
             assert_eq!(output.status, Some(status));
-            assert_eq!(output.response.unwrap()["status"], status);
+            let response = output.response.as_ref().unwrap();
+            assert_eq!(response["status"], status);
             assert_eq!(
-                notifications.get(),
-                previous + i32::from(should_notify),
+                response["policy"]["class"] == "ok",
+                expected_ok,
                 "status {status}"
             );
         }

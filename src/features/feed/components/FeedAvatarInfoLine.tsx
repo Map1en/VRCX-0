@@ -1,4 +1,5 @@
 import { LockIcon } from 'lucide-react';
+import type { Dispatch, SetStateAction } from 'react';
 import { memo, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -14,21 +15,72 @@ import { Button } from '@/ui/shadcn/button';
 
 import { normalizeFeedId as normalizeId } from '../feedRows';
 
-async function findAvatarByImageUrl({ imageUrl, avatarName }: any) {
-    const fileId = extractFileId(imageUrl);
+type ResolvedAvatarRecord = Record<string, unknown> & {
+    id?: string;
+    name?: string;
+};
+
+type AvatarInfoLineStatus = 'idle' | 'loading' | 'ready' | 'error';
+
+type AvatarInfoLineState = {
+    avatarName: string;
+    ownerId: string;
+    status: AvatarInfoLineStatus;
+    cacheKey: string;
+};
+
+type AvatarInfoLineStateInput = {
+    avatarName?: unknown;
+    ownerId?: unknown;
+    status?: AvatarInfoLineStatus;
+    cacheKey?: string;
+};
+
+type AvatarInfoLineProps = {
+    avatarName?: unknown;
+    avatarTags?: unknown;
+    compact?: boolean;
+    imageUrl?: unknown;
+    ownerId?: unknown;
+    showTags?: boolean;
+    userId?: unknown;
+};
+
+function isAvatarRecord(value: unknown): value is ResolvedAvatarRecord {
+    return Boolean(value) && typeof value === 'object';
+}
+
+function avatarMatchesFileId(
+    avatar: unknown,
+    fileId: string
+): avatar is ResolvedAvatarRecord {
+    if (!isAvatarRecord(avatar) || !avatar.id) {
+        return false;
+    }
+    return (
+        extractFileId(String(avatar.imageUrl ?? '')) === fileId ||
+        extractFileId(String(avatar.thumbnailImageUrl ?? '')) === fileId
+    );
+}
+
+async function findAvatarByImageUrl({
+    imageUrl,
+    avatarName
+}: {
+    imageUrl: unknown;
+    avatarName: unknown;
+}): Promise<ResolvedAvatarRecord | null> {
+    const fileId = extractFileId(String(imageUrl ?? ''));
     const query = normalizeId(avatarName) || fileId;
     if (!fileId || query.length < 3) {
         return null;
     }
 
-    const cachedAvatars: unknown[] = await favoritePersistenceRepository
+    const cachedAvatars = await favoritePersistenceRepository
         .getAvatarCache()
-        .catch((): unknown[] => []);
-    const cachedMatch = cachedAvatars.find(
-        (avatar: any) =>
-            avatar?.id &&
-            (extractFileId(avatar.imageUrl) === fileId ||
-                extractFileId(avatar.thumbnailImageUrl) === fileId)
+        .catch(() => []);
+    const cachedMatch = cachedAvatars.find((avatar) =>
+        avatarMatchesFileId(avatar, fileId)
     );
     if (cachedMatch) {
         return avatarProfileRepository.normalize(cachedMatch);
@@ -46,17 +98,18 @@ async function findAvatarByImageUrl({ imageUrl, avatarName }: any) {
 
     return (
         response.avatars.find(
-            (avatar: any) =>
-                avatar?.id &&
-                (extractFileId(avatar.imageUrl) === fileId ||
-                    extractFileId(avatar.thumbnailImageUrl) === fileId)
-        ) || null
+            (avatar: unknown): avatar is ResolvedAvatarRecord =>
+                avatarMatchesFileId(avatar, fileId)
+        ) ?? null
     );
 }
 
-const avatarInfoLineCache = new Map();
+const avatarInfoLineCache = new Map<string, AvatarInfoLineState>();
 
-function getAvatarInfoLineCacheKey(imageUrl: any, endpoint: any) {
+function getAvatarInfoLineCacheKey(
+    imageUrl: unknown,
+    endpoint: unknown
+): string {
     const normalizedImageUrl = String(imageUrl || '').trim();
     if (!normalizedImageUrl) {
         return '';
@@ -69,7 +122,7 @@ function normalizeAvatarInfoLineState({
     ownerId = '',
     status = 'idle',
     cacheKey = ''
-}: any = {}) {
+}: AvatarInfoLineStateInput = {}): AvatarInfoLineState {
     return {
         avatarName: typeof avatarName === 'string' ? avatarName.trim() : '',
         ownerId: normalizeId(ownerId),
@@ -78,7 +131,10 @@ function normalizeAvatarInfoLineState({
     };
 }
 
-function isSameAvatarInfoLineState(left: any, right: any) {
+function isSameAvatarInfoLineState(
+    left: AvatarInfoLineState | undefined,
+    right: AvatarInfoLineState | undefined
+): boolean {
     return (
         left?.avatarName === right?.avatarName &&
         left?.ownerId === right?.ownerId &&
@@ -87,8 +143,11 @@ function isSameAvatarInfoLineState(left: any, right: any) {
     );
 }
 
-function setAvatarInfoLineState(setInfo: any, nextInfo: any) {
-    setInfo((current: any) =>
+function setAvatarInfoLineState(
+    setInfo: Dispatch<SetStateAction<AvatarInfoLineState>>,
+    nextInfo: AvatarInfoLineState
+): void {
+    setInfo((current) =>
         isSameAvatarInfoLineState(current, nextInfo) ? current : nextInfo
     );
 }
@@ -98,7 +157,12 @@ function resolveInitialAvatarInfoLineState({
     imageUrl,
     ownerId,
     endpoint
-}: any) {
+}: {
+    avatarName?: unknown;
+    imageUrl?: unknown;
+    ownerId?: unknown;
+    endpoint?: unknown;
+}): AvatarInfoLineState {
     const hintedName = typeof avatarName === 'string' ? avatarName.trim() : '';
     const hintedOwnerId = normalizeId(ownerId);
     const cacheKey = getAvatarInfoLineCacheKey(imageUrl, endpoint);
@@ -133,17 +197,23 @@ function resolveInitialAvatarInfoLineState({
     });
 }
 
-function avatarTagsEqual(left: any, right: any) {
+function isEmptyAvatarTags(value: unknown): boolean {
+    return !(value as { length?: unknown } | null | undefined)?.length;
+}
+
+function avatarTagsEqual(left: unknown, right: unknown): boolean {
     if (left === right) {
         return true;
     }
     if (!Array.isArray(left) || !Array.isArray(right)) {
-        return !left?.length && !right?.length;
+        return isEmptyAvatarTags(left) && isEmptyAvatarTags(right);
     }
     if (left.length !== right.length) {
         return false;
     }
-    return left.every((value: any, index: any) => value === right[index]);
+    return left.every(
+        (value: unknown, index: number) => value === right[index]
+    );
 }
 
 export const AvatarInfoLine = memo(function AvatarInfoLine({
@@ -154,7 +224,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
     ownerId,
     showTags = true,
     userId
-}: any) {
+}: AvatarInfoLineProps) {
     const { t } = useTranslation();
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
@@ -206,7 +276,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
         }
 
         let active = true;
-        setInfo((current: any) => {
+        setInfo((current) => {
             if (current.cacheKey === cacheKey && current.status === 'ready') {
                 return current;
             }
@@ -221,7 +291,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
 
         avatarProfileRepository
             .getAvatarNameFromImageUrl(imageUrl)
-            .then((nextInfo: any) => {
+            .then((nextInfo) => {
                 if (!active) {
                     return;
                 }
@@ -268,7 +338,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
             ? 'Resolving avatar info...'
             : info.avatarName || t('dialog.user.info.unknown_avatar');
 
-    async function openAvatarAuthorTarget() {
+    async function openAvatarAuthorTarget(): Promise<void> {
         if (!imageUrl) {
             return;
         }
@@ -367,7 +437,9 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
             {showTags && Array.isArray(avatarTags) && avatarTags.length ? (
                 <div className="text-muted-foreground truncate text-xs">
                     {avatarTags
-                        .map((tag: any) => String(tag).replace('content_', ''))
+                        .map((tag: unknown) =>
+                            String(tag).replace('content_', '')
+                        )
                         .join(', ')}
                 </div>
             ) : null}
@@ -375,7 +447,10 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
     );
 }, areAvatarInfoLinePropsEqual);
 
-function areAvatarInfoLinePropsEqual(previousProps: any, nextProps: any) {
+function areAvatarInfoLinePropsEqual(
+    previousProps: Readonly<AvatarInfoLineProps>,
+    nextProps: Readonly<AvatarInfoLineProps>
+): boolean {
     return (
         previousProps.avatarName === nextProps.avatarName &&
         previousProps.compact === nextProps.compact &&

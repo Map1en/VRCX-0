@@ -5,7 +5,7 @@ use tauri::State;
 use crate::error::AppError;
 use crate::state::AppState;
 
-use serde_json::Value;
+use vrcx_0_application::FavoriteRow;
 
 #[tauri::command]
 #[specta::specta]
@@ -16,9 +16,9 @@ pub fn app__favorite_add(
     group_name: String,
 ) -> Result<i64, AppError> {
     let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
-    let affected = vrcx_0_persistence::favorites::favorite_add(
+    let affected = vrcx_0_application::add_local_favorite(
         state.db.as_ref(),
-        Some(&owner_user_id),
+        &owner_user_id,
         kind.clone(),
         entity_id,
         group_name,
@@ -38,9 +38,9 @@ pub fn app__favorite_group_delete(
     group_name: String,
 ) -> Result<i64, AppError> {
     let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
-    let affected = vrcx_0_persistence::favorites::favorite_group_delete(
+    let affected = vrcx_0_application::delete_local_favorite_entries(
         state.db.as_ref(),
-        Some(&owner_user_id),
+        &owner_user_id,
         kind.clone(),
         group_name,
     )
@@ -60,9 +60,9 @@ pub fn app__favorite_group_rename(
     new_group_name: String,
 ) -> Result<i64, AppError> {
     let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
-    let affected = vrcx_0_persistence::favorites::favorite_group_rename(
+    let affected = vrcx_0_application::rename_local_favorite_entries(
         state.db.as_ref(),
-        Some(&owner_user_id),
+        &owner_user_id,
         kind.clone(),
         group_name,
         new_group_name,
@@ -79,9 +79,9 @@ pub fn app__favorite_group_rename(
 pub fn app__favorite_list(
     state: State<'_, AppState>,
     kind: String,
-) -> Result<Vec<Value>, AppError> {
+) -> Result<Vec<FavoriteRow>, AppError> {
     let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
-    vrcx_0_persistence::favorites::favorite_list(state.db.as_ref(), Some(&owner_user_id), kind)
+    vrcx_0_application::list_local_favorites(state.db.as_ref(), &owner_user_id, kind)
         .map_err(AppError::from)
 }
 
@@ -94,9 +94,9 @@ pub fn app__favorite_remove(
     group_name: String,
 ) -> Result<i64, AppError> {
     let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
-    let affected = vrcx_0_persistence::favorites::favorite_remove(
+    let affected = vrcx_0_application::remove_local_favorite(
         state.db.as_ref(),
-        Some(&owner_user_id),
+        &owner_user_id,
         kind.clone(),
         entity_id,
         group_name,

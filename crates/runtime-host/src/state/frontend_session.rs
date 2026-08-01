@@ -1,4 +1,13 @@
-use super::*;
+use std::sync::{Arc, Mutex};
+
+use serde_json::{json, Value};
+
+use super::{
+    string_field, AuthenticatedRuntimeSession, AuthenticatedSessionMaintenanceOutcome,
+    BackendRuntimeFrontendSessionSnapshot, BackendRuntimePhase, BackgroundCapabilitySession,
+    Result, RuntimeGroupInstancesProjection, RuntimeHostState,
+    CURRENT_USER_REFRESH_LOCAL_AUTHORITY_FIELDS,
+};
 
 impl RuntimeHostState {
     pub fn backend_runtime_frontend_session_snapshot(
@@ -80,15 +89,10 @@ impl RuntimeHostState {
         if let Some(previous) = previous {
             self.runtime_context
                 .event_bus
-                .emit(RuntimeGroupInstancesProjection {
-                    status: "idle".into(),
-                    user_id: previous.user_id,
-                    endpoint: previous.endpoint,
-                    fetched_at: None,
-                    error: Some(String::new()),
-                    instances: Some(Vec::new()),
-                    group_order: Some(Vec::new()),
-                });
+                .emit(RuntimeGroupInstancesProjection::cleared_session(
+                    previous.user_id,
+                    previous.endpoint,
+                ));
         }
     }
 

@@ -196,7 +196,7 @@ fn sync_friend_snapshot_persists_feed_when_refresh_confirms_pending_offline() ->
         },
     )?;
     assert_eq!(persisted_rows.len(), 1);
-    assert_eq!(persisted_rows[0].r#type.as_value(), &json!("Offline"));
+    assert_eq!(persisted_rows[0].r#type.as_deref(), Some("Offline"));
     Ok(())
 }
 

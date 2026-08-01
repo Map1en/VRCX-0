@@ -21,8 +21,7 @@ pub struct FriendProjectionPatch {
     pub user_id: String,
     pub patch: FriendRecord,
     pub state_bucket: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub state_bucket_authority: Option<FriendStateBucketAuthority>,
+    pub state_bucket_authority: FriendStateBucketAuthority,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, specta::Type)]

@@ -1,4 +1,5 @@
 mod group_ban_import;
+mod moderation_batch;
 mod permissions;
 mod quick_moderation;
 mod service;
@@ -9,6 +10,13 @@ pub use group_ban_import::{
     GroupBanImportActions, GroupBanImportFuture, GroupBanImportItemResult, GroupBanImportItemState,
     GroupBanImportRuntime, GroupBanImportStartInput, GroupBanImportState, GroupBanImportStatus,
     VrchatGroupBanImportActions,
+};
+pub use moderation_batch::{
+    run_group_moderation_batch, GroupModerationBatchAction, GroupModerationBatchCoordinator,
+    GroupModerationBatchInput, GroupModerationBatchItemResult, GroupModerationBatchItemState,
+    GroupModerationBatchProgress, GroupModerationBatchResult, GroupModerationBatchTarget,
+    VrchatGroupModerationBatchActions, GROUP_MODERATION_BATCH_MAX_OPERATIONS,
+    GROUP_MODERATION_BATCH_MAX_TARGETS,
 };
 pub use quick_moderation::{
     get_group_quick_moderation, run_group_quick_moderation_action, GroupQuickModerationActionInput,

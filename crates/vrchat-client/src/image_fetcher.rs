@@ -59,24 +59,11 @@ impl ImageFetcher {
     }
 
     pub async fn fetch_image(&self, url: &str) -> Result<Vec<u8>> {
-        let parsed = reqwest::Url::parse(url)
-            .map_err(|e| ImageFetchError::Custom(format!("invalid image url: {e}")))?;
-        let host = parsed
-            .host_str()
-            .ok_or_else(|| ImageFetchError::Custom("image url has no host".into()))?;
-
-        {
-            let allowed = self.allowed_hosts.lock().unwrap();
-            if !allowed.contains(host) {
-                return Err(ImageFetchError::Custom(format!(
-                    "invalid image host: {host}"
-                )));
-            }
-        }
+        let parsed = validate_image_url(url, &self.allowed_hosts.lock().unwrap())?;
 
         let response = self
             .client
-            .get(url)
+            .get(parsed)
             .send()
             .await
             .map_err(|e| ImageFetchError::Custom(format!("image fetch: {e}")))?;
@@ -94,5 +81,132 @@ impl ImageFetcher {
             .map_err(|e| ImageFetchError::Custom(format!("image read: {e}")))?;
 
         Ok(bytes.to_vec())
+    }
+}
+
+fn validate_image_url(url: &str, allowed_hosts: &HashSet<String>) -> Result<reqwest::Url> {
+    let parsed = reqwest::Url::parse(url)
+        .map_err(|e| ImageFetchError::Custom(format!("invalid image url: {e}")))?;
+    let host = parsed
+        .host_str()
+        .ok_or_else(|| ImageFetchError::Custom("image url has no host".into()))?;
+    if !allowed_hosts.contains(host) {
+        return Err(ImageFetchError::Custom(format!(
+            "invalid image host: {host}"
+        )));
+    }
+    Ok(parsed)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::net::TcpListener;
+
+    fn original_vrcx_hosts() -> HashSet<String> {
+        [
+            VRCHAT_API_HOST,
+            VRCHAT_FILES_HOST,
+            VRCHAT_LEGACY_CLOUDFRONT_HOST,
+            VRCHAT_ASSETS_HOST,
+        ]
+        .into_iter()
+        .map(str::to_string)
+        .collect()
+    }
+
+    fn local_fetcher(client: Client) -> ImageFetcher {
+        ImageFetcher {
+            client,
+            allowed_hosts: Mutex::new(HashSet::from(["127.0.0.1".into()])),
+        }
+    }
+
+    async fn serve_once(
+        status: &str,
+        body: &str,
+        delay: Duration,
+    ) -> (String, tokio::task::JoinHandle<()>) {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let response = format!(
+            "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+            body.len()
+        );
+        let task = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut request = [0_u8; 1024];
+            let _ = socket.read(&mut request).await;
+            tokio::time::sleep(delay).await;
+            let _ = socket.write_all(response.as_bytes()).await;
+        });
+        (format!("http://{address}/image.png"), task)
+    }
+
+    #[test]
+    fn image_url_policy_accepts_the_original_exact_host_allowlist() {
+        let hosts = original_vrcx_hosts();
+
+        for host in &hosts {
+            let url = format!("https://{host}/image/file_1/1/256");
+            assert_eq!(
+                validate_image_url(&url, &hosts).unwrap().host_str(),
+                Some(host.as_str())
+            );
+        }
+    }
+
+    #[test]
+    fn image_url_policy_rejects_deceptive_or_unknown_hosts() {
+        let hosts = original_vrcx_hosts();
+
+        for url in [
+            "https://api.vrchat.cloud.evil.example/image.png",
+            "https://api.vrchat.cloud@evil.example/image.png",
+            "https://vrchat.cloud/image.png",
+            "https://127.0.0.1/image.png",
+        ] {
+            assert!(validate_image_url(url, &hosts).is_err(), "{url}");
+        }
+    }
+
+    #[test]
+    fn image_url_policy_rejects_invalid_and_hostless_urls() {
+        let hosts = original_vrcx_hosts();
+
+        assert!(validate_image_url("not a url", &hosts).is_err());
+        assert!(validate_image_url("file:///tmp/image.png", &hosts).is_err());
+    }
+
+    #[tokio::test]
+    async fn image_fetcher_returns_success_bodies_and_rejects_error_statuses() {
+        let fetcher = local_fetcher(Client::new());
+        let (ok_url, ok_server) = serve_once("200 OK", "image-bytes", Duration::ZERO).await;
+        assert_eq!(fetcher.fetch_image(&ok_url).await.unwrap(), b"image-bytes");
+        ok_server.await.unwrap();
+
+        let (error_url, error_server) =
+            serve_once("503 Service Unavailable", "unavailable", Duration::ZERO).await;
+        let error = fetcher.fetch_image(&error_url).await.unwrap_err();
+        assert!(error.to_string().contains("image fetch status: 503"));
+        error_server.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn image_fetcher_honors_the_configured_read_timeout() {
+        let client = Client::builder()
+            .read_timeout(Duration::from_millis(20))
+            .build()
+            .unwrap();
+        let fetcher = local_fetcher(client);
+        let (url, server) = serve_once("200 OK", "late", Duration::from_millis(200)).await;
+
+        let error = fetcher.fetch_image(&url).await.unwrap_err();
+
+        assert!(error.to_string().contains("image fetch:"));
+        server.await.unwrap();
     }
 }

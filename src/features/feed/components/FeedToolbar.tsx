@@ -1,9 +1,7 @@
-import type { Table as ReactTable } from '@tanstack/react-table';
 import { CalendarRangeIcon, StarIcon, XIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu';
 import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
 import { cn } from '@/lib/utils';
 import type { FeedFilterType } from '@/repositories/feedRepository';
@@ -18,7 +16,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-import type { FeedDateRange, FeedRow } from '../feedTypes';
+import type { FeedDateRange } from '../feedTypes';
 
 type FeedDateFilterControlProps = {
     activeFilterCount: number;
@@ -51,6 +49,7 @@ type FeedSearchInputProps = FeedDateFilterControlProps & {
 };
 
 type FeedToolbarProps = {
+    columnsMenu: ReactNode;
     filterCommands: {
         onApplyDateFilter(): void;
         onClearDateFilter(): void;
@@ -79,7 +78,6 @@ type FeedToolbarProps = {
         todayDate: Date;
     };
     modeToggle: ReactNode;
-    table: ReactTable<FeedRow>;
 };
 
 function FeedDateFilterControl({
@@ -278,11 +276,11 @@ function FeedSearchInput({
     );
 }
 
-export function FeedToolbar({
+export const FeedToolbar = memo(function FeedToolbar({
+    columnsMenu,
     filterCommands,
     filterModel,
-    modeToggle,
-    table
+    modeToggle
 }: FeedToolbarProps) {
     const { t } = useTranslation();
     const {
@@ -367,10 +365,8 @@ export function FeedToolbar({
                     todayDate={todayDate}
                 />
 
-                <div className="flex items-center gap-2">
-                    <TableColumnVisibilityMenu table={table} />
-                </div>
+                <div className="flex items-center gap-2">{columnsMenu}</div>
             </PageToolbarRow>
         </PageToolbar>
     );
-}
+});

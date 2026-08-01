@@ -11,10 +11,6 @@ export interface UserSessionRepository {
     getUserTableContext(userId: unknown): Promise<UserTableContext>;
     initUserTables(userId: unknown): Promise<UserTableContext>;
     initUserTablesUncached(userId: unknown): Promise<UserTableContext>;
-    purgeAvatarFeedData(
-        userId: unknown,
-        cutoffDate?: string | null
-    ): Promise<void>;
 }
 
 const userTableInitPromises = new Map<string, Promise<UserTableContext>>();
@@ -89,23 +85,12 @@ async function initUserTablesUncached(
     };
 }
 
-async function purgeAvatarFeedData(
-    userId: unknown,
-    cutoffDate: string | null = null
-): Promise<void> {
-    await commands.appFeedAvatarPurge(
-        normalizeUserId(userId),
-        cutoffDate || null
-    );
-}
-
 const userSessionRepository: UserSessionRepository = {
     normalizeUserTablePrefix,
     ensureUserTables,
     getUserTableContext,
     initUserTables,
-    initUserTablesUncached,
-    purgeAvatarFeedData
+    initUserTablesUncached
 };
 
 export {
@@ -113,7 +98,6 @@ export {
     getUserTableContext,
     initUserTables,
     initUserTablesUncached,
-    normalizeUserTablePrefix,
-    purgeAvatarFeedData
+    normalizeUserTablePrefix
 };
 export default userSessionRepository;

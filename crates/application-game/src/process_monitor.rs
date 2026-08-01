@@ -14,6 +14,15 @@ pub struct GameProcessStatus {
     pub is_steamvr_running: bool,
 }
 
+#[derive(Clone, Copy, Debug)]
+enum ProcessMonitorPoll {
+    Initial(GameProcessStatus),
+    Subsequent {
+        previous: GameProcessStatus,
+        current: GameProcessStatus,
+    },
+}
+
 pub trait GameProcessMonitorActions: Send + 'static {
     fn detect(&mut self) -> GameProcessStatus;
     fn on_game_started(&mut self, steamvr_running: bool);
@@ -89,6 +98,19 @@ impl ProcessMonitor {
                 observed_game.store(game_found, Ordering::Relaxed);
                 game.store(game_found, Ordering::Relaxed);
                 let prev_steamvr = steamvr.swap(steamvr_found, Ordering::Relaxed);
+                let previous = GameProcessStatus {
+                    is_game_running: prev_game,
+                    is_steamvr_running: prev_steamvr,
+                };
+                let current = GameProcessStatus {
+                    is_game_running: game_found,
+                    is_steamvr_running: steamvr_found,
+                };
+                let poll = if first_poll {
+                    ProcessMonitorPoll::Initial(current)
+                } else {
+                    ProcessMonitorPoll::Subsequent { previous, current }
+                };
                 let game_changed = prev_game != game_found;
                 let steamvr_changed = prev_steamvr != steamvr_found;
 
@@ -108,14 +130,7 @@ impl ProcessMonitor {
                     }
                 }
 
-                dispatch_process_monitor_actions(
-                    &mut actions,
-                    first_poll,
-                    game_changed,
-                    steamvr_changed,
-                    game_found,
-                    steamvr_found,
-                );
+                dispatch_process_monitor_actions(&mut actions, poll);
                 if first_poll {
                     first_poll = false;
                 }
@@ -182,30 +197,27 @@ fn resolve_debounced_game_running(
 
 fn dispatch_process_monitor_actions(
     actions: &mut impl GameProcessMonitorActions,
-    first_poll: bool,
-    game_changed: bool,
-    steamvr_changed: bool,
-    game_found: bool,
-    steamvr_found: bool,
+    poll: ProcessMonitorPoll,
 ) {
-    if first_poll {
-        if game_found {
-            actions.on_game_started(steamvr_found);
+    match poll {
+        ProcessMonitorPoll::Initial(current) => {
+            if current.is_game_running {
+                actions.on_game_started(current.is_steamvr_running);
+            }
         }
-        return;
-    }
-
-    if game_changed {
-        if game_found {
-            actions.on_game_started(steamvr_found);
-        } else {
-            actions.on_game_stopped();
+        ProcessMonitorPoll::Subsequent { previous, current } => {
+            if previous.is_game_running != current.is_game_running {
+                if current.is_game_running {
+                    actions.on_game_started(current.is_steamvr_running);
+                } else {
+                    actions.on_game_stopped();
+                }
+            } else if current.is_game_running
+                && previous.is_steamvr_running != current.is_steamvr_running
+            {
+                actions.on_steamvr_changed(current.is_steamvr_running);
+            }
         }
-        return;
-    }
-
-    if game_found && steamvr_changed {
-        actions.on_steamvr_changed(steamvr_found);
     }
 }
 
@@ -246,16 +258,49 @@ mod tests {
     fn first_poll_running_game_starts_actions() {
         let mut actions = RecordingActions::default();
 
-        dispatch_process_monitor_actions(&mut actions, true, true, true, true, true);
+        dispatch_process_monitor_actions(
+            &mut actions,
+            ProcessMonitorPoll::Initial(GameProcessStatus {
+                is_game_running: true,
+                is_steamvr_running: true,
+            }),
+        );
 
         assert_eq!(actions.events, vec!["started:true"]);
+    }
+
+    #[test]
+    fn first_poll_without_game_dispatches_no_actions() {
+        let mut actions = RecordingActions::default();
+
+        dispatch_process_monitor_actions(
+            &mut actions,
+            ProcessMonitorPoll::Initial(GameProcessStatus {
+                is_game_running: false,
+                is_steamvr_running: true,
+            }),
+        );
+
+        assert!(actions.events.is_empty());
     }
 
     #[test]
     fn game_start_after_steamvr_reports_vr_mode() {
         let mut actions = RecordingActions::default();
 
-        dispatch_process_monitor_actions(&mut actions, false, true, false, true, true);
+        dispatch_process_monitor_actions(
+            &mut actions,
+            ProcessMonitorPoll::Subsequent {
+                previous: GameProcessStatus {
+                    is_game_running: false,
+                    is_steamvr_running: true,
+                },
+                current: GameProcessStatus {
+                    is_game_running: true,
+                    is_steamvr_running: true,
+                },
+            },
+        );
 
         assert_eq!(actions.events, vec!["started:true"]);
     }
@@ -264,7 +309,19 @@ mod tests {
     fn running_game_reacts_to_steamvr_changes() {
         let mut actions = RecordingActions::default();
 
-        dispatch_process_monitor_actions(&mut actions, false, false, true, true, true);
+        dispatch_process_monitor_actions(
+            &mut actions,
+            ProcessMonitorPoll::Subsequent {
+                previous: GameProcessStatus {
+                    is_game_running: true,
+                    is_steamvr_running: false,
+                },
+                current: GameProcessStatus {
+                    is_game_running: true,
+                    is_steamvr_running: true,
+                },
+            },
+        );
 
         assert_eq!(actions.events, vec!["steamvr:true"]);
     }

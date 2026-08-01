@@ -7,7 +7,6 @@ use serde_json::Value;
 use vrcx_0_core::json::RawJson;
 use vrcx_0_persistence::{
     avatars::{avatar_cache_existing_ids, avatar_cache_upsert},
-    cache_entities::CacheEntityInput,
     worlds::{world_cache_get_many, world_cache_upsert},
     DatabaseService,
 };
@@ -18,6 +17,11 @@ use vrcx_0_vrchat_client::{
 };
 
 use crate::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, WebClient};
+
+use super::cache_policy::{
+    cache_entry_from_entity, cache_write_decision, entity_id, release_status, CacheWriteDecision,
+    FavoriteCacheKind,
+};
 
 const FAVORITE_DETAILS_PAGE_SIZE: i64 = 300;
 const FAVORITE_DETAILS_MAX_PAGES: usize = 50;
@@ -332,7 +336,8 @@ fn persist_avatar_details(db: &DatabaseService, details_by_id: &HashMap<String, 
     let insert_candidates = details_by_id
         .iter()
         .filter(|(_, entity)| {
-            avatar_cache_write_decision(entity) == CacheWriteDecision::InsertIfMissing
+            cache_write_decision(FavoriteCacheKind::Avatar, entity)
+                == CacheWriteDecision::InsertIfMissing
         })
         .map(|(id, _)| id.clone())
         .collect::<Vec<_>>();
@@ -350,7 +355,7 @@ fn persist_avatar_details(db: &DatabaseService, details_by_id: &HashMap<String, 
 
     let mut cached_count = 0;
     for (id, entity) in details_by_id {
-        let decision = avatar_cache_write_decision(entity);
+        let decision = cache_write_decision(FavoriteCacheKind::Avatar, entity);
         if decision == CacheWriteDecision::Skip {
             continue;
         }
@@ -371,7 +376,8 @@ fn persist_world_details(db: &DatabaseService, details_by_id: &HashMap<String, V
     let insert_candidates = details_by_id
         .iter()
         .filter(|(_, entity)| {
-            world_cache_write_decision(entity) == CacheWriteDecision::InsertIfMissing
+            cache_write_decision(FavoriteCacheKind::World, entity)
+                == CacheWriteDecision::InsertIfMissing
         })
         .map(|(id, _)| id.clone())
         .collect::<Vec<_>>();
@@ -389,7 +395,7 @@ fn persist_world_details(db: &DatabaseService, details_by_id: &HashMap<String, V
 
     let mut cached_count = 0;
     for (id, entity) in details_by_id {
-        match world_cache_write_decision(entity) {
+        match cache_write_decision(FavoriteCacheKind::World, entity) {
             CacheWriteDecision::Skip => continue,
             CacheWriteDecision::InsertIfMissing if existing_ids.contains(id) => continue,
             CacheWriteDecision::InsertIfMissing | CacheWriteDecision::Upsert => {}
@@ -402,102 +408,6 @@ fn persist_world_details(db: &DatabaseService, details_by_id: &HashMap<String, V
         }
     }
     cached_count
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum CacheWriteDecision {
-    Upsert,
-    InsertIfMissing,
-    Skip,
-}
-
-fn avatar_cache_write_decision(entity: &Value) -> CacheWriteDecision {
-    if !has_complete_snapshot(entity) {
-        return CacheWriteDecision::Skip;
-    }
-    if release_status(entity) == "public" {
-        CacheWriteDecision::Upsert
-    } else {
-        CacheWriteDecision::InsertIfMissing
-    }
-}
-
-fn world_cache_write_decision(entity: &Value) -> CacheWriteDecision {
-    if !has_complete_snapshot(entity) {
-        return CacheWriteDecision::Skip;
-    }
-    match release_status(entity).as_str() {
-        "public" => CacheWriteDecision::Upsert,
-        "private" => CacheWriteDecision::InsertIfMissing,
-        _ => CacheWriteDecision::Skip,
-    }
-}
-
-fn release_status(entity: &Value) -> String {
-    field_text(entity, &["releaseStatus"]).trim().to_lowercase()
-}
-
-fn has_complete_snapshot(entity: &Value) -> bool {
-    let name = field_text(entity, &["name"]);
-    let image_url = {
-        let thumbnail = field_text(entity, &["thumbnailImageUrl"]);
-        let thumbnail = thumbnail.trim();
-        if thumbnail.is_empty() {
-            field_text(entity, &["imageUrl"]).trim().to_string()
-        } else {
-            thumbnail.to_string()
-        }
-    };
-    !name.trim().is_empty() && !image_url.is_empty()
-}
-
-fn cache_entry_from_entity(entity: &Value, fallback_id: &str) -> CacheEntityInput {
-    let id = entity_id(entity);
-    let id = if id.is_empty() {
-        normalize_text(fallback_id)
-    } else {
-        id
-    };
-    CacheEntityInput {
-        id: Value::String(id),
-        author_id: Value::String(entity_field_id(entity, "authorId")),
-        author_name: Value::String(field_text(entity, &["authorName"])),
-        created_at: Value::String(field_text(entity, &["created_at", "createdAt"])),
-        description: Value::String(field_text(entity, &["description"])),
-        image_url: Value::String(field_text(entity, &["imageUrl"])),
-        name: Value::String(field_text(entity, &["name"])),
-        release_status: Value::String(field_text(entity, &["releaseStatus"])),
-        thumbnail_image_url: Value::String(field_text(entity, &["thumbnailImageUrl"])),
-        updated_at: Value::String(field_text(entity, &["updated_at", "updatedAt"])),
-        version: Value::Number(entity_version(entity).into()),
-    }
-}
-
-fn entity_id(entity: &Value) -> String {
-    entity_field_id(entity, "id")
-}
-
-fn entity_field_id(entity: &Value, key: &str) -> String {
-    normalize_text(field_text(entity, &[key]))
-}
-
-fn field_text(entity: &Value, keys: &[&str]) -> String {
-    for key in keys {
-        match entity.get(*key) {
-            Some(Value::String(text)) => return text.clone(),
-            Some(Value::Null) | None => continue,
-            Some(other) => return other.to_string(),
-        }
-    }
-    String::new()
-}
-
-fn entity_version(entity: &Value) -> i64 {
-    match entity.get("version") {
-        Some(Value::Number(number)) => number.as_i64().unwrap_or(0),
-        Some(Value::String(text)) => text.trim().parse().unwrap_or(0),
-        _ => 0,
-    }
 }
 
 fn ensure_scope_matches(
@@ -545,7 +455,7 @@ mod tests {
     #[test]
     fn avatar_decision_upserts_public_complete_snapshots() {
         assert_eq!(
-            avatar_cache_write_decision(&complete("public")),
+            cache_write_decision(FavoriteCacheKind::Avatar, &complete("public")),
             CacheWriteDecision::Upsert
         );
     }
@@ -554,7 +464,7 @@ mod tests {
     fn avatar_decision_inserts_non_public_complete_snapshots_only_when_missing() {
         for status in ["private", "hidden", ""] {
             assert_eq!(
-                avatar_cache_write_decision(&complete(status)),
+                cache_write_decision(FavoriteCacheKind::Avatar, &complete(status)),
                 CacheWriteDecision::InsertIfMissing
             );
         }
@@ -563,15 +473,21 @@ mod tests {
     #[test]
     fn avatar_decision_skips_incomplete_snapshots() {
         assert_eq!(
-            avatar_cache_write_decision(&json!({ "id": "avtr_1", "releaseStatus": "public" })),
+            cache_write_decision(
+                FavoriteCacheKind::Avatar,
+                &json!({ "id": "avtr_1", "releaseStatus": "public" }),
+            ),
             CacheWriteDecision::Skip
         );
         assert_eq!(
-            avatar_cache_write_decision(&json!({
-                "id": "avtr_1",
-                "name": "Broken Avatar",
-                "releaseStatus": "public",
-            })),
+            cache_write_decision(
+                FavoriteCacheKind::Avatar,
+                &json!({
+                    "id": "avtr_1",
+                    "name": "Broken Avatar",
+                    "releaseStatus": "public",
+                })
+            ),
             CacheWriteDecision::Skip
         );
     }
@@ -580,13 +496,13 @@ mod tests {
     fn avatar_decision_normalizes_release_status_case_and_whitespace() {
         let mut entity = complete("  Public  ");
         assert_eq!(
-            avatar_cache_write_decision(&entity),
+            cache_write_decision(FavoriteCacheKind::Avatar, &entity),
             CacheWriteDecision::Upsert
         );
         entity["imageUrl"] = json!("https://example.test/image.png");
         entity["thumbnailImageUrl"] = json!("   ");
         assert_eq!(
-            avatar_cache_write_decision(&entity),
+            cache_write_decision(FavoriteCacheKind::Avatar, &entity),
             CacheWriteDecision::Upsert
         );
     }
@@ -594,7 +510,7 @@ mod tests {
     #[test]
     fn world_decision_upserts_public_complete_snapshots() {
         assert_eq!(
-            world_cache_write_decision(&complete("public")),
+            cache_write_decision(FavoriteCacheKind::World, &complete("public")),
             CacheWriteDecision::Upsert
         );
     }
@@ -602,7 +518,7 @@ mod tests {
     #[test]
     fn world_decision_inserts_private_complete_snapshots_only_when_missing() {
         assert_eq!(
-            world_cache_write_decision(&complete("private")),
+            cache_write_decision(FavoriteCacheKind::World, &complete("private")),
             CacheWriteDecision::InsertIfMissing
         );
     }
@@ -611,7 +527,7 @@ mod tests {
     fn world_decision_skips_other_release_statuses_unlike_avatars() {
         for status in ["hidden", "labs", ""] {
             assert_eq!(
-                world_cache_write_decision(&complete(status)),
+                cache_write_decision(FavoriteCacheKind::World, &complete(status)),
                 CacheWriteDecision::Skip
             );
         }
@@ -620,11 +536,14 @@ mod tests {
     #[test]
     fn world_decision_skips_incomplete_snapshots() {
         assert_eq!(
-            world_cache_write_decision(&json!({
-                "id": "wrld_1",
-                "name": "World",
-                "releaseStatus": "public",
-            })),
+            cache_write_decision(
+                FavoriteCacheKind::World,
+                &json!({
+                    "id": "wrld_1",
+                    "name": "World",
+                    "releaseStatus": "public",
+                })
+            ),
             CacheWriteDecision::Skip
         );
     }

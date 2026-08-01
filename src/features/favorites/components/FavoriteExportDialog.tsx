@@ -26,14 +26,23 @@ import {
     buildFavoriteExportCsv,
     FAVORITES_EXPORT_ALL_VALUE as EXPORT_ALL_VALUE,
     FAVORITES_EXPORT_NONE_VALUE as EXPORT_NONE_VALUE,
-    getFavoriteExportFieldOptions
+    getFavoriteExportFieldOptions,
+    type FavoriteExportField
 } from '../favoritesExport';
+import type {
+    FavoriteGroup,
+    FavoriteItem,
+    FavoriteKind
+} from '../favoritesTypes';
 
-type FavoriteExportGroupOption = {
-    capacity?: number;
-    count: number;
-    key: string;
-    label: string;
+type FavoriteExportDialogProps = {
+    open: boolean;
+    onOpenChange(open: boolean): void;
+    kind: FavoriteKind;
+    remoteGroups: FavoriteGroup[];
+    localGroups: FavoriteGroup[];
+    remoteItemsByGroup: Record<string, FavoriteItem[]>;
+    localItemsByGroup: Record<string, FavoriteItem[]>;
 };
 
 function FavoriteExportDialog({
@@ -44,12 +53,12 @@ function FavoriteExportDialog({
     localGroups,
     remoteItemsByGroup,
     localItemsByGroup
-}: any) {
+}: FavoriteExportDialogProps) {
     const { t } = useTranslation();
 
     const fieldOptions = getFavoriteExportFieldOptions(kind);
-    const [selectedFields, setSelectedFields] = useState(() =>
-        fieldOptions.map((option: any) => option.value)
+    const [selectedFields, setSelectedFields] = useState<FavoriteExportField[]>(
+        () => fieldOptions.map((option) => option.value)
     );
     const [remoteGroupKey, setRemoteGroupKey] = useState(EXPORT_ALL_VALUE);
     const [localGroupKey, setLocalGroupKey] = useState(EXPORT_NONE_VALUE);
@@ -72,18 +81,18 @@ function FavoriteExportDialog({
 
     useEffect(() => {
         if (open) {
-            setSelectedFields(fieldOptions.map((option: any) => option.value));
+            setSelectedFields(fieldOptions.map((option) => option.value));
             setRemoteGroupKey(EXPORT_ALL_VALUE);
             setLocalGroupKey(EXPORT_NONE_VALUE);
         }
     }, [fieldOptions, open]);
 
-    function toggleField(field: any, checked: any) {
-        setSelectedFields((current: any) => {
+    function toggleField(field: FavoriteExportField, checked: boolean) {
+        setSelectedFields((current) => {
             if (checked) {
                 return Array.from(new Set([...current, field]));
             }
-            return current.filter((entry: any) => entry !== field);
+            return current.filter((entry) => entry !== field);
         });
     }
 
@@ -119,7 +128,7 @@ function FavoriteExportDialog({
                     data-slot="checkbox-group"
                     className="flex flex-row flex-wrap gap-3"
                 >
-                    {fieldOptions.map((option: any) => (
+                    {fieldOptions.map((option) => (
                         <Field
                             key={option.value}
                             orientation="horizontal"
@@ -150,16 +159,14 @@ function FavoriteExportDialog({
                                     'view.favorite.label.all_vrchat_favorites'
                                 )
                             },
-                            ...remoteGroups.map(
-                                (group: FavoriteExportGroupOption) => ({
-                                    value: group.key,
-                                    label: `${group.label} (${
-                                        group.capacity
-                                            ? `${group.count}/${group.capacity}`
-                                            : group.count
-                                    })`
-                                })
-                            )
+                            ...remoteGroups.map((group) => ({
+                                value: group.key,
+                                label: `${group.label} (${
+                                    group.capacity
+                                        ? `${group.count}/${group.capacity}`
+                                        : group.count
+                                })`
+                            }))
                         ]}
                         onValueChange={(value) =>
                             setRemoteGroupKey(value ?? '')
@@ -179,7 +186,7 @@ function FavoriteExportDialog({
                                         'view.favorite.label.all_vrchat_favorites'
                                     )}
                                 </SelectItem>
-                                {remoteGroups.map((group: any) => (
+                                {remoteGroups.map((group) => (
                                     <SelectItem
                                         key={group.key}
                                         value={group.key}
@@ -201,12 +208,10 @@ function FavoriteExportDialog({
                                 value: EXPORT_NONE_VALUE,
                                 label: t('view.favorite.empty.no_local_group')
                             },
-                            ...localGroups.map(
-                                (group: FavoriteExportGroupOption) => ({
-                                    value: group.key,
-                                    label: `${group.label} (${group.count})`
-                                })
-                            )
+                            ...localGroups.map((group) => ({
+                                value: group.key,
+                                label: `${group.label} (${group.count})`
+                            }))
                         ]}
                         onValueChange={(value) => setLocalGroupKey(value ?? '')}
                     >
@@ -222,7 +227,7 @@ function FavoriteExportDialog({
                                 <SelectItem value={EXPORT_NONE_VALUE}>
                                     {t('view.favorite.empty.no_local_group')}
                                 </SelectItem>
-                                {localGroups.map((group: any) => (
+                                {localGroups.map((group) => (
                                     <SelectItem
                                         key={group.key}
                                         value={group.key}

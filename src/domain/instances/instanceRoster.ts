@@ -138,6 +138,29 @@ export function userIdForRosterRow(user: unknown): string {
     );
 }
 
+export function resolveInstanceDwellEpoch(user: unknown): unknown {
+    return (
+        field(user, '$location_at') ||
+        field(user, 'locationAt') ||
+        field(user, 'location_at') ||
+        field(user, 'joinedAtMs') ||
+        field(user, 'joinTimeMs') ||
+        field(user, 'joinedAt') ||
+        field(user, 'joined_at') ||
+        ''
+    );
+}
+
+export function applyInstanceDwellEpochs<TUser extends InstanceRosterRecord>(
+    users: readonly TUser[],
+    dwellEpochsByUserId: ReadonlyMap<string, unknown>
+): TUser[] {
+    return users.map((user) => {
+        const epoch = dwellEpochsByUserId.get(userIdForRosterRow(user));
+        return epoch ? { ...user, $location_at: epoch } : user;
+    });
+}
+
 export function userDisplayName(user: unknown): string {
     if (typeof user === 'string') {
         return firstText(user);

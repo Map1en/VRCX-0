@@ -1,16 +1,21 @@
+import type { SortingState } from '@tanstack/react-table';
+
 import {
     getDataTableStorageKey,
     readPersistedTableState,
     safeJsonParse,
     sanitizeTableColumnSizing,
+    sanitizeTableColumnVisibility,
     writePersistedTableState
 } from '@/components/data-table/dataTablePersistence';
 
 export { safeJsonParse };
 
-export const GAME_LOG_DEFAULT_PAGE_SIZES = [10, 15, 20, 25, 50, 100];
-export const GAME_LOG_DEFAULT_SORTING = [{ id: 'created_at', desc: true }];
-export const GAME_LOG_COLUMN_IDS = [
+export const GAME_LOG_DEFAULT_PAGE_SIZES: number[] = [10, 15, 20, 25, 50, 100];
+export const GAME_LOG_DEFAULT_SORTING: SortingState = [
+    { id: 'created_at', desc: true }
+];
+export const GAME_LOG_COLUMN_IDS: string[] = [
     'spacer',
     'created_at',
     'type',
@@ -32,21 +37,26 @@ export function writePersistedGameLogState(patch: Record<string, unknown>) {
     writePersistedTableState(STORAGE_KEY, patch);
 }
 
-export function sanitizeGameLogSorting(value: any) {
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+}
+
+export function sanitizeGameLogSorting(value: unknown): SortingState {
     if (!Array.isArray(value)) {
         return GAME_LOG_DEFAULT_SORTING;
     }
 
     const filtered = value.filter(
-        (entry: any) =>
-            entry &&
+        (entry): entry is SortingState[number] =>
+            isRecord(entry) &&
             typeof entry.id === 'string' &&
+            typeof entry.desc === 'boolean' &&
             GAME_LOG_SORTING_COLUMN_IDS.includes(entry.id)
     );
     return filtered.length ? filtered : GAME_LOG_DEFAULT_SORTING;
 }
 
-export function sanitizeGameLogPageSizes(value: any) {
+export function sanitizeGameLogPageSizes(value: unknown): number[] {
     if (!Array.isArray(value)) {
         return GAME_LOG_DEFAULT_PAGE_SIZES;
     }
@@ -54,79 +64,73 @@ export function sanitizeGameLogPageSizes(value: any) {
     const normalized = Array.from(
         new Set(
             value
-                .map((entry: any) => Number.parseInt(entry, 10))
+                .map((entry) => Number.parseInt(String(entry), 10))
                 .filter(
-                    (entry: any) =>
+                    (entry) =>
                         Number.isFinite(entry) && entry > 0 && entry <= 1000
                 )
         )
-    ).sort((left: any, right: any) => left - right);
+    ).sort((left, right) => left - right);
 
     return normalized.length ? normalized : GAME_LOG_DEFAULT_PAGE_SIZES;
 }
 
-export function sanitizeGameLogColumnVisibility(value: any) {
-    const visibility: Record<string, boolean> = {};
-    if (!value || typeof value !== 'object') {
-        return visibility;
-    }
-
-    for (const columnId of GAME_LOG_COLUMN_IDS) {
-        if (typeof value[columnId] === 'boolean') {
-            visibility[columnId] = value[columnId];
-        }
-    }
-
-    return visibility;
+export function sanitizeGameLogColumnVisibility(value: unknown) {
+    return sanitizeTableColumnVisibility(value, GAME_LOG_COLUMN_IDS);
 }
 
-export function sanitizeGameLogColumnOrder(value: any) {
+export function sanitizeGameLogColumnOrder(value: unknown): string[] {
     if (!Array.isArray(value)) {
         return GAME_LOG_COLUMN_IDS;
     }
 
-    const orderedColumns = value.filter((columnId: any) =>
-        GAME_LOG_COLUMN_IDS.includes(columnId)
+    const orderedColumns = value.filter(
+        (columnId): columnId is string =>
+            typeof columnId === 'string' &&
+            GAME_LOG_COLUMN_IDS.includes(columnId)
     );
     const missingColumns = GAME_LOG_COLUMN_IDS.filter(
-        (columnId: any) => !orderedColumns.includes(columnId)
+        (columnId) => !orderedColumns.includes(columnId)
     );
     const nextColumns = [...orderedColumns, ...missingColumns];
     return [
         'spacer',
-        ...nextColumns.filter((columnId: any) => columnId !== 'spacer')
+        ...nextColumns.filter((columnId) => columnId !== 'spacer')
     ];
 }
 
-export function sanitizeGameLogColumnSizing(value: any) {
+export function sanitizeGameLogColumnSizing(value: unknown) {
     return sanitizeTableColumnSizing(value, GAME_LOG_COLUMN_IDS);
 }
 
 export function resolveGameLogPageSize(
-    candidate: any,
-    allowed: any,
-    fallback: any = GAME_LOG_DEFAULT_PAGE_SIZES[1]
+    candidate: unknown,
+    allowed: unknown,
+    fallback: unknown = GAME_LOG_DEFAULT_PAGE_SIZES[1]
 ) {
     const pageSizes = Array.isArray(allowed)
-        ? allowed.filter((size: any) => Number.isFinite(size) && size > 0)
+        ? allowed.filter(
+              (size): size is number =>
+                  typeof size === 'number' && Number.isFinite(size) && size > 0
+          )
         : GAME_LOG_DEFAULT_PAGE_SIZES;
     const fallbackPageSize = pageSizes.length
         ? pageSizes[0]
         : GAME_LOG_DEFAULT_PAGE_SIZES[0];
-    const nearestPageSize = (value: any) =>
+    const nearestPageSize = (value: number) =>
         pageSizes.length
-            ? pageSizes.reduce((previous: any, size: any) =>
+            ? pageSizes.reduce((previous, size) =>
                   Math.abs(size - value) < Math.abs(previous - value)
                       ? size
                       : previous
               )
             : fallbackPageSize;
-    const parsed = Number.parseInt(candidate, 10);
+    const parsed = Number.parseInt(String(candidate), 10);
     if (Number.isFinite(parsed) && parsed > 0) {
         return pageSizes.includes(parsed) ? parsed : nearestPageSize(parsed);
     }
 
-    if (pageSizes.includes(fallback)) {
+    if (typeof fallback === 'number' && pageSizes.includes(fallback)) {
         return fallback;
     }
 

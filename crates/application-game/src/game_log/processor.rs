@@ -185,7 +185,7 @@ impl GameLogProcessor {
         let write_outcome = self.write_batch_or_emit_failure_telemetry(
             &deps.owner_user_id,
             &output.batch,
-            output.raw_rows.clone(),
+            output.raw_rows.len(),
         )?;
         if let GameLogWriteOutcome::RuntimePersisted { affected_count } = write_outcome {
             let overlay_output = self.overlay_activity_output(&output);
@@ -273,7 +273,7 @@ impl GameLogProcessor {
         &self,
         owner_user_id: &str,
         batch: &GameLogWriteBatch,
-        raw_rows: Vec<Vec<String>>,
+        attempted_row_count: usize,
     ) -> Result<GameLogWriteOutcome> {
         match write_batch_with_retry(&self.deps.db, owner_user_id, batch) {
             Ok(affected_count) => {
@@ -290,8 +290,7 @@ impl GameLogProcessor {
                 self.deps.sync.record_failure("gameLog", &message);
                 self.deps.event_bus.emit_game_log_persistence_fallback(
                     GameLogPersistenceFallbackPayload {
-                        batch: batch.clone(),
-                        raw_rows,
+                        attempted_row_count,
                         error: message.clone(),
                     },
                 );

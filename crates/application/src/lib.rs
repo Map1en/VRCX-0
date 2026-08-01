@@ -6,6 +6,8 @@ mod collections;
 mod event_payloads;
 mod favorites;
 mod media;
+mod remote_mutation_gate;
+mod scope_gate;
 mod social;
 mod system;
 
@@ -56,8 +58,15 @@ pub use collections::{
 };
 pub use collections::{preview_shared_collection, ImportPreview};
 pub use favorites::{
-    create_local_favorite_group, delete_local_favorite_group, rename_local_favorite_group,
+    add_local_favorite, create_local_favorite_group, delete_local_favorite_entries,
+    delete_local_favorite_group, list_local_favorites, remove_local_favorite,
+    rename_local_favorite_entries, rename_local_favorite_group, FavoriteRow,
     LocalFavoriteGroupWrite,
+};
+pub use favorites::{
+    add_remote_favorite, clear_remote_favorite_group, delete_remote_favorite,
+    save_remote_favorite_group, FavoriteRemoteAddInput, FavoriteRemoteDeleteInput,
+    FavoriteRemoteGroupClearInput, FavoriteRemoteGroupSaveInput, FavoriteRemoteMutationDeps,
 };
 pub use favorites::{
     favorite_transfer_plan_for_item, transfer_favorites, FavoriteTransferDeps,
@@ -70,6 +79,14 @@ pub use favorites::{
     FavoriteDetailsHydrateKind, FavoriteDetailsHydrateOutput,
 };
 pub use favorites::{
+    persist_favorite_cache_snapshot, FavoriteCacheKind, FavoriteCacheSnapshotInput,
+};
+pub use favorites::{
+    remove_favorites_bulk, FavoriteBulkRemoveDeps, FavoriteBulkRemoveInput, FavoriteBulkRemoveItem,
+    FavoriteBulkRemoveItemResult, FavoriteBulkRemoveItemState, FavoriteBulkRemoveResult,
+    FavoriteBulkRemoveSource, FAVORITE_BULK_REMOVE_MAX_ITEMS,
+};
+pub use favorites::{
     FavoriteImportItemResult, FavoriteImportItemState, FavoriteImportKind, FavoriteImportLocation,
     FavoriteImportOperation, FavoriteImportRuntime, FavoriteImportStartInput, FavoriteImportState,
     FavoriteImportStatus, FavoriteImportTarget, FAVORITE_IMPORT_MAX_ITEMS,
@@ -80,10 +97,13 @@ pub use media::{
     InventoryItemsCollectOutput, LegacyEntityImageKind, LegacyEntityImageUploadInput,
     LegacyMediaUploadDeps,
 };
+pub use remote_mutation_gate::RemoteMutationGate;
 pub use social::{
-    accept_friend_request, cancel_friend_request, send_friend_request, unfriend,
+    accept_friend_request, cancel_friend_request, send_friend_request, unfriend, unfriend_batch,
     SocialFriendMutationInput, SocialFriendMutationOutcome, SocialFriendMutationStatus,
     SocialFriendRequestAcceptInput, SocialFriendRequestCancelInput, SocialMutationDeps,
+    SocialUnfriendBatchInput, SocialUnfriendBatchItemResult, SocialUnfriendBatchItemState,
+    SocialUnfriendBatchResult, SocialUnfriendBatchTarget, SOCIAL_UNFRIEND_BATCH_MAX_ITEMS,
 };
 pub use social::{
     add_member_role, ban_member, block_group, cancel_request, create_post, delete_invite,
@@ -111,6 +131,10 @@ pub use social::{
     UserGroupsOverviewInput, UserGroupsOverviewOutput,
 };
 pub use social::{
+    load_group_calendar, GroupCalendarDeps, GroupCalendarInput, GroupCalendarSnapshot,
+};
+pub use social::{load_quick_search_catalog, QuickSearchCatalogDeps, QuickSearchCatalogSnapshot};
+pub use social::{
     prepare_note_export, run_note_export, NoteExportActions, NoteExportItemInput,
     NoteExportItemState, NoteExportItemStatus, NoteExportProgress, NoteExportResult,
     NoteExportStartInput, NoteExportState, NoteExportStatus, VrchatNoteExportActions,
@@ -122,16 +146,28 @@ pub use social::{
     ModerationSyncRefreshOutput, RemoteModerationRow,
 };
 pub use social::{
+    resolve_friend_log_names, FriendLogNameResolutionCoordinator, FriendLogNameResolutionDeps,
+    FriendLogNameResolutionInput, ResolvedFriendLogName, FRIEND_LOG_NAME_RESOLUTION_MAX_USERS,
+};
+pub use social::{
+    run_group_moderation_batch, GroupModerationBatchAction, GroupModerationBatchCoordinator,
+    GroupModerationBatchInput, GroupModerationBatchItemResult, GroupModerationBatchItemState,
+    GroupModerationBatchProgress, GroupModerationBatchResult, GroupModerationBatchTarget,
+    VrchatGroupModerationBatchActions, GROUP_MODERATION_BATCH_MAX_OPERATIONS,
+    GROUP_MODERATION_BATCH_MAX_TARGETS,
+};
+pub use social::{
     GroupBanImportActions, GroupBanImportFuture, GroupBanImportItemResult, GroupBanImportItemState,
     GroupBanImportRuntime, GroupBanImportStartInput, GroupBanImportState, GroupBanImportStatus,
     VrchatGroupBanImportActions,
 };
 pub use social::{
     MutualGraphFetchCancelInput, MutualGraphFetchRuntime, MutualGraphFetchStartInput,
-    MutualGraphFetchStatus,
+    MutualGraphFetchState, MutualGraphFetchStatus,
 };
 pub use system::DatabaseUpgradeRuntime;
 pub use system::ProfileOperationGate;
+pub use system::VrcStatusService;
 pub use system::{
     accept_request_invite_notification, dismiss_boop_notifications, hide_and_expire_notification,
     respond_and_expire_notification, send_boop_reply_notification,
@@ -141,6 +177,13 @@ pub use system::{
     NotificationRequestInviteAcceptInput, NotificationRespondInput, NotificationTarget,
     VrchatNotificationChainActions,
 };
+pub use system::{
+    build_data_dir_migration_plan, DataDirMigrationActionOutcome, DataDirMigrationError,
+    DataDirMigrationErrorCode, DataDirMigrationMode, DataDirMigrationPhase, DataDirMigrationPlan,
+    DataDirMigrationRuntime, DataDirMigrationState, DataDirMigrationStatus,
+    DataDirPointerCommitter,
+};
+pub use system::{cleanup_avatar_feed_history, AvatarFeedCleanupOutcome, AvatarFeedCleanupStatus};
 pub use system::{
     database_upgrade_preflight, run_database_upgrade, DatabaseUpgradePreflight,
     DatabaseUpgradePreflightStatus, DatabaseUpgradeRunResult, DatabaseUpgradeRunStatus,
@@ -171,9 +214,9 @@ pub use system::{
 };
 pub use system::{sync_notifications, NotificationSyncDeps, NotificationSyncOutcome};
 pub use system::{
-    AppUpdateBuildInfo, AppUpdateDownloadProgressPayload, AppUpdateDownloadStatusSnapshot,
-    AppUpdateInstalledPayload, AppUpdateReleaseSnapshot, AppUpdateRuntime, AppUpdateStatusSnapshot,
-    AppUpdateTargetResolver,
+    AppUpdateBuildInfo, AppUpdateDownloadPhase, AppUpdateDownloadProgressPayload,
+    AppUpdateDownloadStatusSnapshot, AppUpdateInstalledPayload, AppUpdateReleaseSnapshot,
+    AppUpdateRuntime, AppUpdateStatusSnapshot, AppUpdateTargetResolver,
 };
 pub use system::{
     BackgroundImageConfigureInput, BackgroundImageCustomSource, BackgroundImageCustomSourceKind,
@@ -182,9 +225,9 @@ pub use system::{
     BackgroundImageSnapshot, UnavailableBackgroundImageFileResolver,
 };
 pub use system::{
-    DataDirMigrationActionOutcome, DataDirMigrationError, DataDirMigrationErrorCode,
-    DataDirMigrationMode, DataDirMigrationPhase, DataDirMigrationPlan, DataDirMigrationRuntime,
-    DataDirMigrationState, DataDirMigrationStatus, DataDirPointerCommitter,
+    CommunityThemeAuthor, CommunityThemeCatalog, CommunityThemeConfigureInput,
+    CommunityThemeInstallMetadata, CommunityThemeManifest, CommunityThemeProjection,
+    CommunityThemeService, CommunityThemeStatsById, CommunityThemeStatsEntry,
 };
 pub use system::{
     ProfileBackupActionOutcome, ProfileBackupError, ProfileBackupErrorCode, ProfileBackupKind,
@@ -212,6 +255,7 @@ pub use vrcx_0_application_core::{
 };
 pub use vrcx_0_application_core::{
     Error, RuntimeDiagnostics, RuntimeEventBus, RuntimeEventSink, RuntimeVrchatAuthFailurePayload,
+    VrcStatusSnapshot,
 };
 pub use vrcx_0_application_core::{GameProcessEvent, GameProcessEventSink};
 pub use vrcx_0_application_core::{
@@ -236,8 +280,9 @@ pub use vrcx_0_application_core::{
 pub use vrcx_0_application_realtime::world_id_from_location_or_id;
 pub use vrcx_0_application_realtime::{
     apply_friend_roster_baseline_sync_outcome, build_favorites_baseline,
-    build_friend_roster_baseline, build_friend_roster_baseline_deferred, SocialBaselineDeps,
-    SocialFavoritesBaselineInput, SocialFavoritesBaselineOutput, SocialFriendRosterBaselineInput,
+    build_friend_roster_baseline, build_friend_roster_baseline_deferred, FavoriteBaselineSnapshot,
+    FavoriteGroupOutput, SocialBaselineDeps, SocialFavoritesBaselineInput,
+    SocialFavoritesBaselineOutput, SocialFriendRosterBaselineInput,
     SocialFriendRosterBaselineOutput,
 };
 pub use vrcx_0_application_realtime::{

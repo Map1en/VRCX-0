@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next';
 
 import { useLocationMetadataBatch } from '@/components/location/useLocationMetadata';
 import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows';
-import { resolveObservedPlayerUserIds } from '@/domain/friends/sameInstanceFriends';
+import {
+    resolveObservedPlayerDwellEpochs,
+    resolveObservedPlayerUserIds
+} from '@/domain/friends/sameInstanceFriends';
 import { subscribeRecentActions } from '@/services/recentActionService';
 import {
     buildLocalInstanceActionGateMap,
@@ -152,6 +155,10 @@ export function FriendsSidebar({
     const currentLocationSnapshot = useMemo<LastLocationSnapshot>(
         () => ({
             location: currentInviteLocation,
+            dwellEpochsByUserId: resolveObservedPlayerDwellEpochs(
+                currentLocationPlayers,
+                friendsById
+            ),
             friendList: new Set(
                 resolveObservedPlayerUserIds(
                     effectiveCurrentLocationPlayerIds,

@@ -405,7 +405,11 @@ function UserDialogPresenceSection({
             </div>
             {locationInstanceUsers.length ? (
                 <div className="max-h-60 min-h-10 overflow-auto rounded-md">
-                    <EntityList rows={locationInstanceUsers} kind="user" />
+                    <EntityList
+                        rows={locationInstanceUsers}
+                        kind="user"
+                        showInstanceDuration
+                    />
                 </div>
             ) : null}
         </InfoPanel>

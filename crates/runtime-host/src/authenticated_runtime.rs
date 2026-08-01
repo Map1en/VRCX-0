@@ -13,11 +13,11 @@ use vrcx_0_application_core::{
     RuntimeVrchatAuthFailurePayload, TaskStopToken, TaskSupervisor, WebClient,
 };
 use vrcx_0_application_realtime::{
-    build_favorites_baseline, build_synced_friend_roster_baseline, RealtimeHostRuntime,
-    RealtimeStopRequest, RealtimeTransportLifecycleEvent, RealtimeTransportStartResult,
-    RealtimeTransportTermination, SocialBaselineDeps, SocialFavoritesBaselineInput,
-    SocialFavoritesBaselineOutput, SocialFriendRosterBaselineInput,
-    SocialFriendRosterBaselineOutput,
+    build_favorites_baseline_from_friend_records, build_synced_friend_roster_baseline,
+    FavoriteBaselineSnapshot, RealtimeHostRuntime, RealtimeStopRequest,
+    RealtimeTransportLifecycleEvent, RealtimeTransportStartResult, RealtimeTransportTermination,
+    SocialBaselineDeps, SocialFavoritesBaselineOutput, SocialFavoritesBaselineRequest,
+    SocialFriendRosterBaselineInput, SocialFriendRosterBaselineOutput,
 };
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::json::RawJson;
@@ -464,22 +464,20 @@ impl AuthenticatedRuntimeOrchestrator {
         stop_token: &TaskStopToken,
         friends_by_id: &HashMap<String, FriendRecord>,
     ) {
-        let friend_roster_by_id =
-            RawJson::from(serde_json::to_value(friends_by_id).unwrap_or_default());
         let mut attempt = 1;
         loop {
             if !self.is_active(run_id, scope, stop_token) {
                 return;
             }
             self.set_step_running(run_id, RuntimeStep::Favorites, attempt);
-            let result = build_favorites_baseline(
+            let result = build_favorites_baseline_from_friend_records(
                 self.social_baseline_deps(),
-                SocialFavoritesBaselineInput {
+                SocialFavoritesBaselineRequest {
                     user_id: session.user_id.clone(),
                     endpoint: session.endpoint.clone(),
                     current_user_snapshot: RawJson::from(session.current_user.clone()),
-                    friend_roster_by_id: friend_roster_by_id.clone(),
                 },
+                friends_by_id,
             )
             .await;
             if !self.is_active(run_id, scope, stop_token) {
@@ -491,8 +489,8 @@ impl AuthenticatedRuntimeOrchestrator {
                 .and_then(require_favorites_baseline)
             {
                 Ok(output) => {
-                    if let Some(snapshot) = output.snapshot.as_ref().map(RawJson::as_value) {
-                        self.apply_favorites_snapshot(snapshot);
+                    if let Some(snapshot) = output.snapshot.as_ref() {
+                        self.apply_favorites_snapshot(&snapshot.to_value());
                     }
                     self.update_snapshot(run_id, |snapshot| {
                         snapshot.favorites =
@@ -1017,6 +1015,50 @@ pub fn favorite_world_group_membership_from_snapshot(
     groups
 }
 
+pub fn favorite_group_membership_from_baseline(
+    snapshot: &FavoriteBaselineSnapshot,
+) -> HashMap<String, Vec<String>> {
+    let mut groups = HashMap::new();
+    append_typed_favorite_group_membership(
+        &mut groups,
+        &snapshot.grouped_favorite_friend_ids_by_group_key,
+        "",
+    );
+    append_typed_favorite_group_membership(&mut groups, &snapshot.local_friend_favorites, "local:");
+    groups
+}
+
+pub fn favorite_world_group_membership_from_baseline(
+    snapshot: &FavoriteBaselineSnapshot,
+) -> HashMap<String, Vec<String>> {
+    let mut groups = HashMap::new();
+    append_typed_favorite_group_membership(
+        &mut groups,
+        &snapshot.grouped_favorite_world_ids_by_group_key,
+        "",
+    );
+    append_typed_favorite_group_membership(&mut groups, &snapshot.local_world_favorites, "local:");
+    groups
+}
+
+fn append_typed_favorite_group_membership(
+    groups: &mut HashMap<String, Vec<String>>,
+    memberships: &std::collections::BTreeMap<String, Vec<String>>,
+    key_prefix: &str,
+) {
+    for (group_key, entity_ids) in memberships {
+        let entity_ids = entity_ids
+            .iter()
+            .map(|entity_id| entity_id.trim())
+            .filter(|entity_id| !entity_id.is_empty())
+            .map(str::to_string)
+            .collect::<Vec<_>>();
+        if !entity_ids.is_empty() {
+            groups.insert(format!("{key_prefix}{group_key}"), entity_ids);
+        }
+    }
+}
+
 fn append_favorite_group_membership(
     groups: &mut HashMap<String, Vec<String>>,
     value: Option<&Value>,
@@ -1045,6 +1087,22 @@ fn append_favorite_group_membership(
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn typed_favorite_membership_normalizes_ids_and_prefixes_local_groups() {
+        let memberships = std::collections::BTreeMap::from([(
+            "Friends".to_string(),
+            vec![" usr_one ".to_string(), String::new()],
+        )]);
+        let mut groups = HashMap::new();
+
+        append_typed_favorite_group_membership(&mut groups, &memberships, "local:");
+
+        assert_eq!(
+            groups,
+            HashMap::from([("local:Friends".to_string(), vec!["usr_one".to_string()])])
+        );
+    }
 
     #[test]
     fn retry_schedule_caps_at_sixty_seconds() {

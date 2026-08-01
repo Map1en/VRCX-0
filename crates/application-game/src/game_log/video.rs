@@ -112,8 +112,7 @@ pub async fn handle_video_play(
         Err(error) => {
             let message = error.to_string();
             event_bus.emit_game_log_persistence_fallback(GameLogPersistenceFallbackPayload {
-                batch,
-                raw_rows: vec![raw_row],
+                attempted_row_count: 1,
                 error: message.clone(),
             });
             tracing::warn!(

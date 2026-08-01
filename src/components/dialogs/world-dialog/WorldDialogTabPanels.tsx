@@ -337,6 +337,7 @@ export function WorldDialogTabPanels({
                                     <InstanceUserTiles
                                         instance={instance}
                                         visibleUserIds={visibleInstanceUserIds}
+                                        showInstanceDuration
                                     />
                                 </div>
                             );

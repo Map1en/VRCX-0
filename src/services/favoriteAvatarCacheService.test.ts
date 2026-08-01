@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import avatarCacheRepository from '@/repositories/avatarCacheRepository';
+import { commands } from '@/platform/tauri/bindings';
 import { useFavoriteStore } from '@/state/favoriteStore';
 
 import {
@@ -8,23 +8,20 @@ import {
     cacheFavoriteAvatarDetails
 } from './favoriteAvatarCacheService';
 
-vi.mock('@/repositories/avatarCacheRepository', () => ({
-    default: {
-        addAvatarToCache: vi.fn(),
-        getCachedAvatarById: vi.fn()
+vi.mock('@/platform/tauri/bindings', () => ({
+    commands: {
+        appFavoriteCacheSnapshot: vi.fn()
     }
 }));
 
 describe('favoriteAvatarCacheService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.mocked(avatarCacheRepository.getCachedAvatarById).mockResolvedValue(
-            null
-        );
+        vi.mocked(commands.appFavoriteCacheSnapshot).mockResolvedValue(true);
         useFavoriteStore.getState().resetFavorites();
     });
 
-    it('normalizes avatar details before writing the cache DB', async () => {
+    it('forwards the existing payload to the Rust cache policy', async () => {
         const avatar = {
             id: ' avtr_cache ',
             name: 'Cached Avatar',
@@ -37,24 +34,18 @@ describe('favoriteAvatarCacheService', () => {
 
         await expect(cacheAvatarDetails(avatar)).resolves.toBe(true);
 
-        expect(avatarCacheRepository.addAvatarToCache).toHaveBeenCalledWith(
-            expect.objectContaining({
-                id: 'avtr_cache',
-                name: 'Cached Avatar',
-                releaseStatus: 'public',
-                thumbnailImageUrl: 'https://example.test/thumb.png',
-                created_at: '2026-06-01T00:00:00.000Z',
-                updated_at: '2026-06-02T00:00:00.000Z',
-                version: 7
-            })
-        );
+        expect(commands.appFavoriteCacheSnapshot).toHaveBeenCalledWith({
+            kind: 'avatar',
+            entity: avatar,
+            fallbackEntityId: ''
+        });
     });
 
     it('ignores empty avatar payloads', async () => {
+        vi.mocked(commands.appFavoriteCacheSnapshot).mockResolvedValue(false);
         await expect(cacheAvatarDetails({ name: 'Missing id' })).resolves.toBe(
             false
         );
-        expect(avatarCacheRepository.addAvatarToCache).not.toHaveBeenCalled();
     });
 
     it('uses the caller avatar id when a detail payload is missing id', async () => {
@@ -69,12 +60,15 @@ describe('favoriteAvatarCacheService', () => {
             )
         ).resolves.toBe(true);
 
-        expect(avatarCacheRepository.addAvatarToCache).toHaveBeenCalledWith(
-            expect.objectContaining({
-                id: 'avtr_fallback',
-                name: 'Fallback Avatar'
-            })
-        );
+        expect(commands.appFavoriteCacheSnapshot).toHaveBeenCalledWith({
+            kind: 'avatar',
+            entity: {
+                name: 'Fallback Avatar',
+                releaseStatus: 'public',
+                thumbnailImageUrl: 'https://example.test/fallback.png'
+            },
+            fallbackEntityId: 'avtr_fallback'
+        });
     });
 
     it('refreshes DB cache automatically for local favorite avatars', async () => {
@@ -86,7 +80,7 @@ describe('favoriteAvatarCacheService', () => {
         };
 
         await expect(cacheFavoriteAvatarDetails(avatar)).resolves.toBe(false);
-        expect(avatarCacheRepository.addAvatarToCache).not.toHaveBeenCalled();
+        expect(commands.appFavoriteCacheSnapshot).not.toHaveBeenCalled();
 
         useFavoriteStore.getState().addLocalFavorite({
             kind: 'avatar',
@@ -96,7 +90,7 @@ describe('favoriteAvatarCacheService', () => {
         });
 
         await expect(cacheFavoriteAvatarDetails(avatar)).resolves.toBe(true);
-        expect(avatarCacheRepository.addAvatarToCache).toHaveBeenCalledTimes(1);
+        expect(commands.appFavoriteCacheSnapshot).toHaveBeenCalledTimes(1);
     });
 
     it('refreshes DB cache automatically for remote favorite avatars', async () => {
@@ -112,12 +106,11 @@ describe('favoriteAvatarCacheService', () => {
         });
 
         await expect(cacheFavoriteAvatarDetails(avatar)).resolves.toBe(true);
-        expect(avatarCacheRepository.addAvatarToCache).toHaveBeenCalledWith(
-            expect.objectContaining({
-                id: 'avtr_remote_cached',
-                name: 'Cached Remote Avatar'
-            })
-        );
+        expect(commands.appFavoriteCacheSnapshot).toHaveBeenCalledWith({
+            kind: 'avatar',
+            entity: avatar,
+            fallbackEntityId: ''
+        });
     });
 
     it('inserts complete hidden avatar details when no DB cache exists', async () => {
@@ -130,36 +123,11 @@ describe('favoriteAvatarCacheService', () => {
             })
         ).resolves.toBe(true);
 
-        expect(avatarCacheRepository.getCachedAvatarById).toHaveBeenCalledWith(
-            'avtr_hidden'
-        );
-        expect(avatarCacheRepository.addAvatarToCache).toHaveBeenCalledWith(
-            expect.objectContaining({
-                id: 'avtr_hidden',
-                name: 'Hidden Avatar',
-                releaseStatus: 'hidden'
-            })
-        );
+        expect(commands.appFavoriteCacheSnapshot).toHaveBeenCalledTimes(1);
     });
 
     it('does not overwrite DB cache with non-public avatar details', async () => {
-        const existingAvatar = {
-            id: 'avtr_private',
-            authorId: 'usr_author',
-            authorName: 'Cache Author',
-            created_at: '2026-06-01T00:00:00.000Z',
-            description: 'Existing description',
-            imageUrl: 'https://example.test/existing-image.png',
-            name: 'Existing Public Avatar',
-            releaseStatus: 'public',
-            thumbnailImageUrl: 'https://example.test/existing-thumb.png',
-            updated_at: '2026-06-02T00:00:00.000Z',
-            version: 1
-        };
-
-        vi.mocked(avatarCacheRepository.getCachedAvatarById).mockResolvedValue(
-            existingAvatar
-        );
+        vi.mocked(commands.appFavoriteCacheSnapshot).mockResolvedValue(false);
 
         await expect(
             cacheAvatarDetails({
@@ -170,13 +138,11 @@ describe('favoriteAvatarCacheService', () => {
             })
         ).resolves.toBe(false);
 
-        expect(avatarCacheRepository.getCachedAvatarById).toHaveBeenCalledWith(
-            'avtr_private'
-        );
-        expect(avatarCacheRepository.addAvatarToCache).not.toHaveBeenCalled();
+        expect(commands.appFavoriteCacheSnapshot).toHaveBeenCalledTimes(1);
     });
 
     it('does not overwrite DB cache with incomplete avatar details', async () => {
+        vi.mocked(commands.appFavoriteCacheSnapshot).mockResolvedValue(false);
         await expect(
             cacheAvatarDetails({
                 id: 'avtr_broken',
@@ -192,6 +158,6 @@ describe('favoriteAvatarCacheService', () => {
             })
         ).resolves.toBe(false);
 
-        expect(avatarCacheRepository.addAvatarToCache).not.toHaveBeenCalled();
+        expect(commands.appFavoriteCacheSnapshot).toHaveBeenCalledTimes(2);
     });
 });

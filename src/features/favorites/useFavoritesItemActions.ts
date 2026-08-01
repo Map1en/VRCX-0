@@ -141,9 +141,9 @@ export function useFavoritesItemActions({
         }
     }
 
-    function getFavoriteFriend(item: any) {
-        const userId = normalizeEntityId(item?.id);
-        const seedData = item?.seedData;
+    function getFavoriteFriend(item: FavoriteItem): FavoriteFriendRecord {
+        const userId = normalizeEntityId(item.id);
+        const seedData = item.seedData;
         if (isFavoriteFriendRecord(seedData)) {
             return seedData;
         }
@@ -153,13 +153,13 @@ export function useFavoritesItemActions({
         }
         return {
             id: userId,
-            displayName: item?.title || userId,
+            displayName: item.title || userId,
             username: '',
             location: ''
         };
     }
 
-    async function launchFavoriteFriendLocation(item: any) {
+    async function launchFavoriteFriendLocation(item: FavoriteItem) {
         const friend = getFavoriteFriend(item);
         const location = resolveFavoritePresenceLocation(friend);
         const parsedLocation = parseLocation(location);
@@ -193,7 +193,7 @@ export function useFavoritesItemActions({
         }
     }
 
-    async function selfInviteFavoriteFriendLocation(item: any) {
+    async function selfInviteFavoriteFriendLocation(item: FavoriteItem) {
         const friend = getFavoriteFriend(item);
         const location = resolveFavoritePresenceLocation(friend);
         const parsedLocation = parseLocation(location);
@@ -231,9 +231,9 @@ export function useFavoritesItemActions({
         }
     }
 
-    async function sendFavoriteFriendInvite(item: any) {
+    async function sendFavoriteFriendInvite(item: FavoriteItem) {
         const friend = getFavoriteFriend(item);
-        const friendId = normalizeEntityId(friend?.id || item?.id);
+        const friendId = normalizeEntityId(friend.id || item.id);
         if (!friendId || friendId === normalizeEntityId(currentUserId)) {
             return;
         }
@@ -291,16 +291,16 @@ export function useFavoritesItemActions({
         }
     }
 
-    async function requestFavoriteFriendInvite(item: any) {
+    async function requestFavoriteFriendInvite(item: FavoriteItem) {
         const friend = getFavoriteFriend(item);
-        const friendId = normalizeEntityId(friend?.id || item?.id);
+        const friendId = normalizeEntityId(friend.id || item.id);
         if (!friendId || friendId === normalizeEntityId(currentUserId)) {
             return;
         }
         const result = await confirm({
             title: t('view.favorites.modal.request_invite'),
             description:
-                friend?.displayName ||
+                normalizeEntityId(friend.displayName) ||
                 t('view.favorites.description.this_user'),
             confirmText: t('view.favorites.modal.request_invite_2'),
             cancelText: t('common.actions.cancel')
@@ -322,17 +322,17 @@ export function useFavoritesItemActions({
         }
     }
 
-    async function sendFavoriteFriendBoop(item: any) {
+    async function sendFavoriteFriendBoop(item: FavoriteItem) {
         const friend = getFavoriteFriend(item);
-        const friendId = normalizeEntityId(friend?.id || item?.id);
+        const friendId = normalizeEntityId(friend.id || item.id);
         if (!friendId || friendId === normalizeEntityId(currentUserId)) {
             return;
         }
         try {
             const result = await boopPrompt({
                 targetLabel:
-                    friendText(friend?.displayName) ||
-                    friendText(friend?.username) ||
+                    friendText(friend.displayName) ||
+                    friendText(friend.username) ||
                     friendId
             });
             if (!result.ok) {
@@ -352,8 +352,11 @@ export function useFavoritesItemActions({
         }
     }
 
-    function openWorldNewInstance(item: any, selfInvite: any = false) {
-        if (!item?.id) {
+    function openWorldNewInstance(
+        item: FavoriteItem,
+        selfInvite = false
+    ): void {
+        if (!item.id) {
             return;
         }
         openWorldDialog({
@@ -364,8 +367,8 @@ export function useFavoritesItemActions({
         });
     }
 
-    async function selectFavoriteAvatar(item: any) {
-        if (!item?.id) {
+    async function selectFavoriteAvatar(item: FavoriteItem) {
+        if (!item.id) {
             return;
         }
         try {
@@ -393,7 +396,7 @@ export function useFavoritesItemActions({
             setNewLocalGroupName('');
             return;
         }
-        if (localGroups.some((group: any) => group.key === nextName)) {
+        if (localGroups.some((group) => group.key === nextName)) {
             toast.error(
                 t('view.favorites.dynamic.local_group_value_already_exists', {
                     value: nextName
@@ -430,7 +433,7 @@ export function useFavoritesItemActions({
             return;
         }
         await copyTextToClipboard(
-            selectedContentItems.map((item: any) => `${item.id}\n`).join(''),
+            selectedContentItems.map((item) => `${item.id}\n`).join(''),
             {
                 successMessage: t(
                     'view.favorite.success.copied_selected_favorite_ids'

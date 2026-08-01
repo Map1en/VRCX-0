@@ -1,7 +1,11 @@
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::VecDeque;
+#[cfg(feature = "friends-panel")]
+use std::collections::{HashMap, HashSet};
+#[cfg(feature = "friends-panel")]
+use std::sync::atomic::AtomicU64;
 use std::sync::{
-    atomic::{AtomicBool, AtomicU64, Ordering},
+    atomic::{AtomicBool, Ordering},
     Arc, Condvar, Mutex,
 };
 use std::thread::{self, ThreadId};
@@ -15,19 +19,24 @@ use vrcx_0_application_activity::{
 use vrcx_0_application_core::{GameProcessEvent, GameProcessEventSink, TaskSupervisor};
 use vrcx_0_application_game::{GameLogEvent, GameLogEventSink};
 use vrcx_0_application_realtime::RealtimeFriendSnapshot;
+#[cfg(feature = "friends-panel")]
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::log_watcher::GameLogEventKind;
 use vrcx_0_host_desktop::vr_overlay::{
-    OverlayActivationButton, OverlayInputEvent, OverlayInputKind, OverlayPlacement,
-    OverlaySurfaceConfig, VrDeviceSnapshot,
+    OverlayActivationButton, OverlayPlacement, OverlaySurfaceConfig, VrDeviceSnapshot,
 };
+#[cfg(feature = "friends-panel")]
+use vrcx_0_host_desktop::vr_overlay::{OverlayInputEvent, OverlayInputKind};
 use vrcx_0_runtime_host::notification::UserImageCache;
+#[cfg(feature = "friends-panel")]
 use vrcx_0_vr_overlay::{
-    AvatarBitmap, FavoriteFriendsPanelModel, MainSurfaceModel, OverlaySize, OverlaySurfaceId,
-    OverlayTransform, RgbaFrame, SlintHmdRenderer, SlintPanelHost, SlintPanelPointerEvent,
-    SlintWristRenderer, UvPoint, WristSurfaceModel, FRIENDS_PANEL_ID,
-    FRIENDS_PANEL_LASER_LEFT_SURFACE_ID, FRIENDS_PANEL_LASER_RIGHT_SURFACE_ID,
-    FRIENDS_PANEL_SURFACE_ID, LEGACY_DUMMY_PANEL_ID, MAIN_SURFACE_ID,
+    AvatarBitmap, FavoriteFriendsPanelModel, OverlayTransform, SlintPanelHost,
+    SlintPanelPointerEvent, UvPoint, FRIENDS_PANEL_ID, FRIENDS_PANEL_LASER_LEFT_SURFACE_ID,
+    FRIENDS_PANEL_LASER_RIGHT_SURFACE_ID, FRIENDS_PANEL_SURFACE_ID, LEGACY_DUMMY_PANEL_ID,
+};
+use vrcx_0_vr_overlay::{
+    MainSurfaceModel, OverlaySize, OverlaySurfaceId, RgbaFrame, SlintHmdRenderer,
+    SlintWristRenderer, WristSurfaceModel, MAIN_SURFACE_ID,
 };
 
 use crate::VrOverlayRuntimeServices;
@@ -39,6 +48,12 @@ use super::{
     localization::OverlayLocale,
     manager::VrOverlayManager,
     service::{HostVrOverlayService, OverlayBackendPreference},
+    surfaces::hmd_toast::{refresh_cached_world_name, HmdToastState},
+    WristOverlayFrameInput, WristOverlayRenderOptions, WristOverlaySizePreset, WristRuntimeFooter,
+};
+
+#[cfg(feature = "friends-panel")]
+use super::{
     surfaces::friends::{
         build_friends_panel_model, dedupe_preserve_order,
         favorite_friend_groups_snapshot_from_baseline, friend_record_avatar_url,
@@ -47,18 +62,17 @@ use super::{
         FavoriteFriendGroupsSnapshot, FriendsPanelModelInput, FRIENDS_PANEL_CATEGORY_ALL,
     },
     surfaces::friends_actions::{clear_expired_friends_panel_arm, disarm_friends_panel_action},
-    surfaces::hmd_toast::{refresh_cached_world_name, HmdToastState},
-    WristOverlayFrameInput, WristOverlayRenderOptions, WristOverlaySizePreset, WristRuntimeFooter,
 };
 
+pub use super::config::VR_OVERLAY_ENABLED_CONFIG_KEY;
 pub(crate) use super::config::{load_runtime_config, FRIENDS_PANEL_RUNTIME_ENABLED};
-#[cfg(test)]
+#[cfg(all(test, feature = "friends-panel"))]
 pub use super::config::{
     HMD_NOTIFICATIONS_ENABLED_CONFIG_KEY, HMD_NOTIFICATION_START_MODE_CONFIG_KEY,
 };
+#[cfg(feature = "friends-panel")]
 pub use super::config::{
-    VR_OVERLAY_ENABLED_CONFIG_KEY, VR_OVERLAY_FRIENDS_PANEL_GROUP_CONFIG_KEY,
-    VR_OVERLAY_PANEL_SELECTED_CATEGORY_CONFIG_KEY,
+    VR_OVERLAY_FRIENDS_PANEL_GROUP_CONFIG_KEY, VR_OVERLAY_PANEL_SELECTED_CATEGORY_CONFIG_KEY,
 };
 
 trait VrOverlayFrameProducer: Send {
@@ -71,9 +85,14 @@ type FriendsPanelSnapshotProvider = Arc<dyn Fn() -> Option<RealtimeFriendSnapsho
 thread_local! {
     static SLINT_WRIST_RENDERER: RefCell<Option<SlintWristRenderer>> = const { RefCell::new(None) };
     static SLINT_HMD_RENDERER: RefCell<Option<SlintHmdRenderer>> = const { RefCell::new(None) };
+}
+
+#[cfg(feature = "friends-panel")]
+thread_local! {
     static SLINT_FRIENDS_PANEL_HOST: RefCell<Option<SlintPanelHost>> = const { RefCell::new(None) };
 }
 
+#[cfg(feature = "friends-panel")]
 #[derive(Clone, Debug)]
 struct FriendsPanelQueuedInput {
     event: OverlayInputEvent,
@@ -82,13 +101,20 @@ struct FriendsPanelQueuedInput {
 
 const WRIST_DEVICE_REFRESH_INTERVAL: Duration = Duration::from_secs(5);
 const WRIST_FRAME_REFRESH_INTERVAL: Duration = Duration::from_secs(1);
+#[cfg(feature = "friends-panel")]
 const FRIENDS_PANEL_ANIMATION_REFRESH_INTERVAL: Duration = Duration::from_millis(100);
 const HMD_TOAST_ANIMATION_REFRESH_INTERVAL: Duration = Duration::from_millis(16);
+#[cfg(feature = "friends-panel")]
 const MAX_FRIENDS_PANEL_INPUT_EVENTS: usize = 512;
+#[cfg(feature = "friends-panel")]
 const FRIENDS_PANEL_AVATAR_FETCH_BATCH: usize = 8;
+#[cfg(feature = "friends-panel")]
 const FRIENDS_PANEL_SCROLL_ROW_PIXELS: f32 = 106.0;
+#[cfg(feature = "friends-panel")]
 pub(crate) const FRIENDS_PANEL_ACTION_ARM_TIMEOUT: Duration = Duration::from_secs(3);
+#[cfg(feature = "friends-panel")]
 const FRIENDS_PANEL_LASER_SIZE: OverlaySize = OverlaySize::new(256, 6);
+#[cfg(feature = "friends-panel")]
 const FRIENDS_PANEL_LASER_INITIAL_WIDTH_METERS: f32 = 0.45;
 const INTERACTIVE_INPUT_DRAIN_INTERVAL: Duration = Duration::from_millis(30);
 
@@ -224,6 +250,7 @@ struct VrOverlayFrameInput {
     devices: Vec<VrDeviceSnapshot>,
 }
 
+#[cfg(feature = "friends-panel")]
 #[derive(Clone, Default)]
 struct FriendsPanelNoteMemoCache {
     owner_user_id: String,
@@ -263,7 +290,7 @@ impl RefreshWake {
         Self::default()
     }
 
-    #[cfg(test)]
+    #[cfg(all(test, feature = "friends-panel"))]
     fn sequence(&self) -> u64 {
         self.sequence
             .lock()
@@ -293,6 +320,7 @@ impl RefreshWake {
     }
 }
 
+#[cfg(feature = "friends-panel")]
 #[derive(Clone)]
 pub(crate) struct InteractivePanelRuntimeState {
     pub(crate) visible: bool,
@@ -303,6 +331,7 @@ pub(crate) struct InteractivePanelRuntimeState {
     slint_animation_active: bool,
 }
 
+#[cfg(feature = "friends-panel")]
 impl Default for InteractivePanelRuntimeState {
     fn default() -> Self {
         Self {
@@ -316,6 +345,7 @@ impl Default for InteractivePanelRuntimeState {
     }
 }
 
+#[cfg(feature = "friends-panel")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum FriendsPanelActionKind {
     Open,
@@ -323,6 +353,7 @@ pub(crate) enum FriendsPanelActionKind {
     Invite,
 }
 
+#[cfg(feature = "friends-panel")]
 impl FriendsPanelActionKind {
     pub(crate) fn from_panel_kind(value: &str) -> Option<Self> {
         match value {
@@ -342,12 +373,14 @@ impl FriendsPanelActionKind {
     }
 }
 
+#[cfg(feature = "friends-panel")]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct FriendsPanelActionRequest {
     pub(crate) user_id: String,
     pub(crate) kind: FriendsPanelActionKind,
 }
 
+#[cfg(feature = "friends-panel")]
 #[derive(Clone)]
 struct FriendsPanelAvatarCacheEntry {
     bitmap: AvatarBitmap,
@@ -355,6 +388,7 @@ struct FriendsPanelAvatarCacheEntry {
     allow_user_icon: bool,
 }
 
+#[cfg(feature = "friends-panel")]
 impl FriendsPanelAvatarCacheEntry {
     fn matches(&self, initial_image_url: &str, allow_user_icon: bool) -> bool {
         let initial_image_url = initial_image_url.trim();
@@ -366,6 +400,7 @@ impl FriendsPanelAvatarCacheEntry {
     }
 }
 
+#[cfg(feature = "friends-panel")]
 fn insert_friends_panel_avatar_if_session_current(
     avatars: &Arc<Mutex<HashMap<String, FriendsPanelAvatarCacheEntry>>>,
     session_generation: &AtomicU64,
@@ -414,25 +449,37 @@ pub struct VrOverlayRuntime {
     refresh_loop_started: AtomicBool,
     wrist_frame_release_requested: AtomicBool,
     hmd_frame_release_requested: AtomicBool,
+    #[cfg(feature = "friends-panel")]
     friends_panel_host_release_requested: AtomicBool,
     device_refresh_requested: AtomicBool,
+    #[cfg(feature = "friends-panel")]
     interactive_degraded_logged: AtomicBool,
     backend_available: bool,
     pub(crate) services: Option<Arc<dyn VrOverlayRuntimeServices>>,
     config: Mutex<VrOverlayRuntimeConfig>,
     friends_panel_snapshot_provider: Mutex<Option<FriendsPanelSnapshotProvider>>,
+    #[cfg(feature = "friends-panel")]
     friends_panel_favorite_groups: Mutex<FavoriteFriendGroupsSnapshot>,
+    #[cfg(feature = "friends-panel")]
     friends_panel_avatars: Arc<Mutex<HashMap<String, FriendsPanelAvatarCacheEntry>>>,
+    #[cfg(feature = "friends-panel")]
     friends_panel_avatar_session_generation: Arc<AtomicU64>,
+    #[cfg(feature = "friends-panel")]
     friends_panel_avatar_fetches: Arc<Mutex<HashSet<String>>>,
+    #[cfg(feature = "friends-panel")]
     friends_panel_world_resolves: Arc<Mutex<HashSet<String>>>,
+    #[cfg(feature = "friends-panel")]
     friends_panel_note_memo_cache: Mutex<FriendsPanelNoteMemoCache>,
+    #[cfg(feature = "friends-panel")]
     friends_panel_model_dirty: Arc<AtomicBool>,
+    #[cfg(feature = "friends-panel")]
     pub(crate) friends_panel_frame_dirty: Arc<AtomicBool>,
+    #[cfg(feature = "friends-panel")]
     friends_panel_input_events: Mutex<VecDeque<FriendsPanelQueuedInput>>,
     refresh_wake: Arc<RefreshWake>,
     devices: Mutex<Vec<VrDeviceSnapshot>>,
     pub(crate) hmd_toasts: Mutex<VecDeque<HmdToastState>>,
+    #[cfg(feature = "friends-panel")]
     pub(crate) interactive_panel: Arc<Mutex<InteractivePanelRuntimeState>>,
     pub(crate) avatar_bitmap_cache: Arc<AvatarBitmapCache>,
     pub(crate) user_image_cache: Arc<UserImageCache>,
@@ -457,9 +504,7 @@ impl VrOverlayActivitySink {
 
 impl OverlayActivitySink for VrOverlayActivitySink {
     fn emit_overlay_activity_snapshot(&self, _snapshot: OverlayActivitySnapshot) {
-        self.runtime
-            .friends_panel_model_dirty
-            .store(true, Ordering::Release);
+        self.runtime.mark_friends_panel_model_dirty();
         self.runtime.reconcile_current();
     }
 
@@ -505,7 +550,7 @@ impl VrOverlayRuntime {
         )
     }
 
-    #[cfg(test)]
+    #[cfg(all(test, feature = "friends-panel"))]
     fn new_for_test_with_config_and_frame_producer_factory(
         backend_available: bool,
         config: VrOverlayRuntimeConfig,
@@ -539,8 +584,10 @@ impl VrOverlayRuntime {
             refresh_loop_started: AtomicBool::new(false),
             wrist_frame_release_requested: AtomicBool::new(false),
             hmd_frame_release_requested: AtomicBool::new(false),
+            #[cfg(feature = "friends-panel")]
             friends_panel_host_release_requested: AtomicBool::new(false),
             device_refresh_requested: AtomicBool::new(false),
+            #[cfg(feature = "friends-panel")]
             interactive_degraded_logged: AtomicBool::new(false),
             backend_available,
             services,
@@ -550,18 +597,28 @@ impl VrOverlayRuntime {
             refresh_thread_id: Mutex::new(None),
             config: Mutex::new(config),
             friends_panel_snapshot_provider: Mutex::new(None),
+            #[cfg(feature = "friends-panel")]
             friends_panel_favorite_groups: Mutex::new(FavoriteFriendGroupsSnapshot::default()),
+            #[cfg(feature = "friends-panel")]
             friends_panel_avatars: Arc::new(Mutex::new(HashMap::new())),
+            #[cfg(feature = "friends-panel")]
             friends_panel_avatar_session_generation: Arc::new(AtomicU64::new(0)),
+            #[cfg(feature = "friends-panel")]
             friends_panel_avatar_fetches: Arc::new(Mutex::new(HashSet::new())),
+            #[cfg(feature = "friends-panel")]
             friends_panel_world_resolves: Arc::new(Mutex::new(HashSet::new())),
+            #[cfg(feature = "friends-panel")]
             friends_panel_note_memo_cache: Mutex::new(FriendsPanelNoteMemoCache::default()),
+            #[cfg(feature = "friends-panel")]
             friends_panel_model_dirty: Arc::new(AtomicBool::new(false)),
+            #[cfg(feature = "friends-panel")]
             friends_panel_frame_dirty: Arc::new(AtomicBool::new(false)),
+            #[cfg(feature = "friends-panel")]
             friends_panel_input_events: Mutex::new(VecDeque::new()),
             refresh_wake: Arc::new(RefreshWake::new()),
             devices: Mutex::new(Vec::new()),
             hmd_toasts: Mutex::new(VecDeque::new()),
+            #[cfg(feature = "friends-panel")]
             interactive_panel: Arc::new(Mutex::new(InteractivePanelRuntimeState::default())),
             avatar_bitmap_cache: Arc::new(AvatarBitmapCache::new()),
             user_image_cache: Arc::new(UserImageCache::new()),
@@ -644,16 +701,10 @@ impl VrOverlayRuntime {
     fn should_defer_slint_render_to_refresh_thread(&self) -> bool {
         self.services.is_some() && !self.is_refresh_thread()
     }
+}
 
-    pub fn set_friends_panel_snapshot_provider<F>(&self, provider: F)
-    where
-        F: Fn() -> Option<RealtimeFriendSnapshot> + Send + Sync + 'static,
-    {
-        if let Ok(mut current) = self.friends_panel_snapshot_provider.lock() {
-            *current = Some(Arc::new(provider));
-        }
-    }
-
+#[cfg(feature = "friends-panel")]
+impl VrOverlayRuntime {
     pub fn update_friends_panel_favorite_groups_from_baseline(&self, snapshot: &serde_json::Value) {
         let next = favorite_friend_groups_snapshot_from_baseline(snapshot);
         if let Ok(mut current) = self.friends_panel_favorite_groups.lock() {
@@ -707,7 +758,9 @@ impl VrOverlayRuntime {
             *cache = FriendsPanelNoteMemoCache::default();
         }
     }
+}
 
+impl VrOverlayRuntime {
     pub fn is_backend_available(&self) -> bool {
         self.backend_available
     }
@@ -733,6 +786,27 @@ impl VrOverlayRuntime {
         self.active_surfaces(self.current_runtime_config()).any()
     }
 
+    pub fn set_friends_panel_snapshot_provider<F>(&self, provider: F)
+    where
+        F: Fn() -> Option<RealtimeFriendSnapshot> + Send + Sync + 'static,
+    {
+        if let Ok(mut current) = self.friends_panel_snapshot_provider.lock() {
+            *current = Some(Arc::new(provider));
+        }
+    }
+
+    pub(crate) fn current_friends_panel_snapshot(&self) -> Option<RealtimeFriendSnapshot> {
+        let provider = self
+            .friends_panel_snapshot_provider
+            .lock()
+            .ok()
+            .and_then(|provider| provider.clone());
+        provider.and_then(|provider| provider())
+    }
+}
+
+#[cfg(feature = "friends-panel")]
+impl VrOverlayRuntime {
     pub(crate) fn rebuild_visible_friends_panel_model(&self) {
         let (selected, status_message) = match self.interactive_panel.lock() {
             Ok(panel) if panel.visible => (
@@ -809,15 +883,6 @@ impl VrOverlayRuntime {
             .filter(|user_id| !user_id.is_empty())
             .collect::<Vec<_>>();
         (current_location, dedupe_preserve_order(player_ids))
-    }
-
-    pub(crate) fn current_friends_panel_snapshot(&self) -> Option<RealtimeFriendSnapshot> {
-        let provider = self
-            .friends_panel_snapshot_provider
-            .lock()
-            .ok()
-            .and_then(|provider| provider.clone());
-        provider.and_then(|provider| provider())
     }
 
     fn current_friends_panel_favorite_groups(&self) -> FavoriteFriendGroupsSnapshot {
@@ -1110,22 +1175,18 @@ impl VrOverlayRuntime {
             tracing::warn!(error = %error, "failed to persist VR friends panel category");
         }
     }
+}
 
+impl VrOverlayRuntime {
     fn refresh_interval(&self) -> Duration {
-        let base = if self.current_runtime_config().panel_enabled
-            && self.friends_panel_animation_refresh_active()
-        {
-            FRIENDS_PANEL_ANIMATION_REFRESH_INTERVAL
-        } else {
-            WRIST_FRAME_REFRESH_INTERVAL
-        };
+        let base = self.friends_panel_refresh_interval();
         match self.hmd_toast_refresh_hint(Instant::now()) {
             Some(hint) => base.min(hint.max(HMD_TOAST_ANIMATION_REFRESH_INTERVAL)),
             None => base,
         }
     }
 
-    #[cfg(test)]
+    #[cfg(all(test, feature = "friends-panel"))]
     pub(crate) fn refresh_wake_sequence(&self) -> u64 {
         self.refresh_wake.sequence()
     }
@@ -1146,6 +1207,7 @@ impl VrOverlayRuntime {
             .panel_listener
     }
 
+    #[cfg(feature = "friends-panel")]
     fn interactive_panel_interaction_active(&self) -> bool {
         self.interactive_panel
             .lock()
@@ -1153,6 +1215,7 @@ impl VrOverlayRuntime {
             .unwrap_or(false)
     }
 
+    #[cfg(feature = "friends-panel")]
     fn friends_panel_animation_refresh_active(&self) -> bool {
         self.interactive_panel
             .lock()
@@ -1161,6 +1224,49 @@ impl VrOverlayRuntime {
                     && (panel.slint_animation_active || panel.armed_action_expires_at.is_some())
             })
             .unwrap_or(false)
+    }
+
+    #[cfg(feature = "friends-panel")]
+    fn friends_panel_visible(&self) -> bool {
+        self.interactive_panel
+            .lock()
+            .map(|panel| panel.visible)
+            .unwrap_or(false)
+    }
+
+    #[cfg(not(feature = "friends-panel"))]
+    fn interactive_panel_interaction_active(&self) -> bool {
+        false
+    }
+
+    #[cfg(not(feature = "friends-panel"))]
+    fn friends_panel_visible(&self) -> bool {
+        false
+    }
+
+    #[cfg(feature = "friends-panel")]
+    pub(crate) fn mark_friends_panel_model_dirty(&self) {
+        self.friends_panel_model_dirty
+            .store(true, Ordering::Release);
+    }
+
+    #[cfg(not(feature = "friends-panel"))]
+    pub(crate) fn mark_friends_panel_model_dirty(&self) {}
+
+    #[cfg(feature = "friends-panel")]
+    fn friends_panel_refresh_interval(&self) -> Duration {
+        if self.current_runtime_config().panel_enabled
+            && self.friends_panel_animation_refresh_active()
+        {
+            FRIENDS_PANEL_ANIMATION_REFRESH_INTERVAL
+        } else {
+            WRIST_FRAME_REFRESH_INTERVAL
+        }
+    }
+
+    #[cfg(not(feature = "friends-panel"))]
+    fn friends_panel_refresh_interval(&self) -> Duration {
+        WRIST_FRAME_REFRESH_INTERVAL
     }
 
     pub fn snapshot(&self) -> VrOverlayRuntimeSnapshot {
@@ -1219,8 +1325,7 @@ impl VrOverlayRuntime {
             self.avatar_bitmap_cache.clear();
         }
         if previous_game_running != game_running {
-            self.friends_panel_model_dirty
-                .store(true, Ordering::Release);
+            self.mark_friends_panel_model_dirty();
         }
         self.steamvr_running
             .store(steamvr_running, Ordering::Release);
@@ -1375,12 +1480,7 @@ impl VrOverlayRuntime {
         steamvr_running: bool,
     ) -> ActiveOverlaySurfaces {
         let panel_listener = self.backend_available && steamvr_running && config.panel_enabled;
-        let friends_panel = panel_listener
-            && self
-                .interactive_panel
-                .lock()
-                .map(|panel| panel.visible)
-                .unwrap_or(false);
+        let friends_panel = panel_listener && self.friends_panel_visible();
         ActiveOverlaySurfaces {
             wrist: surface_active_for_start_mode(
                 self.enabled.load(Ordering::Acquire),
@@ -1442,8 +1542,7 @@ impl VrOverlayRuntime {
         if close_panel {
             self.close_friends_panel();
         } else if rebuild_friends_panel_model {
-            self.friends_panel_model_dirty
-                .store(true, Ordering::Release);
+            self.mark_friends_panel_model_dirty();
         }
     }
 
@@ -1537,6 +1636,7 @@ impl VrOverlayRuntime {
         self.consume_slint_renderer_release_request(&self.hmd_frame_release_requested, || {
             self.release_hmd_renderer_for_lifecycle_reset_on_current_thread();
         });
+        #[cfg(feature = "friends-panel")]
         self.consume_slint_renderer_release_request(
             &self.friends_panel_host_release_requested,
             || {
@@ -1568,6 +1668,7 @@ impl VrOverlayRuntime {
         self.release_hmd_renderer_for_lifecycle_reset_on_current_thread();
     }
 
+    #[cfg(feature = "friends-panel")]
     fn release_friends_panel_host(&self) {
         if let Ok(mut avatars) = self.friends_panel_avatars.lock() {
             avatars.clear();
@@ -1579,6 +1680,7 @@ impl VrOverlayRuntime {
         self.release_friends_panel_host_on_current_thread();
     }
 
+    #[cfg(feature = "friends-panel")]
     fn release_friends_panel_host_on_current_thread(&self) {
         self.friends_panel_host_release_requested
             .store(false, Ordering::Release);
@@ -1607,7 +1709,10 @@ impl VrOverlayRuntime {
             devices.clear();
         }
     }
+}
 
+#[cfg(feature = "friends-panel")]
+impl VrOverlayRuntime {
     fn close_friends_panel(&self) -> bool {
         let Ok(mut panel) = self.interactive_panel.lock() else {
             return false;
@@ -1958,6 +2063,39 @@ impl VrOverlayRuntime {
     }
 }
 
+#[cfg(not(feature = "friends-panel"))]
+impl VrOverlayRuntime {
+    pub fn update_friends_panel_favorite_groups_from_baseline(
+        &self,
+        _snapshot: &serde_json::Value,
+    ) {
+    }
+
+    pub fn clear_friends_panel_session_state(&self) {}
+
+    pub fn invalidate_friends_panel_note_memo_cache(&self) {}
+
+    fn close_friends_panel(&self) -> bool {
+        false
+    }
+
+    fn process_overlay_input_events(
+        &self,
+        _manager: &mut VrOverlayManager<HostVrOverlayService>,
+    ) -> OverlayInputProcessOutcome {
+        OverlayInputProcessOutcome::default()
+    }
+
+    fn push_friends_panel_frame(&self, _manager: &mut VrOverlayManager<HostVrOverlayService>) {}
+
+    fn log_interactive_backend_degradation(
+        &self,
+        _manager: &VrOverlayManager<HostVrOverlayService>,
+        _active_surfaces: ActiveOverlaySurfaces,
+    ) {
+    }
+}
+
 impl Default for VrOverlayRuntime {
     fn default() -> Self {
         Self::new_for_test()
@@ -1981,15 +2119,13 @@ impl GameLogEventSink for VrOverlayRuntime {
             GameLogEventKind::DesktopMode => self.set_vr_mode(false),
             GameLogEventKind::VrcQuit => {
                 self.set_vr_mode(false);
-                self.friends_panel_model_dirty
-                    .store(true, Ordering::Release);
+                self.mark_friends_panel_model_dirty();
             }
             GameLogEventKind::Location { .. }
             | GameLogEventKind::LocationDestination { .. }
             | GameLogEventKind::PlayerJoined { .. }
             | GameLogEventKind::PlayerLeft { .. } => {
-                self.friends_panel_model_dirty
-                    .store(true, Ordering::Release);
+                self.mark_friends_panel_model_dirty();
             }
             _ => {}
         }
@@ -2031,6 +2167,7 @@ fn clear_slint_wrist_renderer() {
     });
 }
 
+#[cfg(feature = "friends-panel")]
 fn clear_slint_friends_panel_host() {
     SLINT_FRIENDS_PANEL_HOST.with(|host| {
         host.borrow_mut().take();
@@ -2068,6 +2205,7 @@ fn start_mode_allows(start_mode: WristOverlayStartMode, game_running: bool, vr_m
     }
 }
 
+#[cfg(feature = "friends-panel")]
 fn friends_panel_slint_consumes_input(kind: &OverlayInputKind) -> bool {
     matches!(
         kind,
@@ -2078,14 +2216,17 @@ fn friends_panel_slint_consumes_input(kind: &OverlayInputKind) -> bool {
     )
 }
 
+#[cfg(feature = "friends-panel")]
 fn friends_panel_pointer_missed(uv: UvPoint) -> bool {
     !uv.x.is_finite() || !uv.y.is_finite() || uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0
 }
 
+#[cfg(feature = "friends-panel")]
 fn friends_panel_pointer_position(uv: UvPoint, size: OverlaySize) -> (f32, f32) {
     (uv.x * size.width as f32, uv.y * size.height as f32)
 }
 
+#[cfg(feature = "friends-panel")]
 fn friends_panel_pointer_events(
     input: FriendsPanelQueuedInput,
     size: OverlaySize,
@@ -2112,6 +2253,7 @@ fn friends_panel_pointer_events(
     )]
 }
 
+#[cfg(feature = "friends-panel")]
 fn friends_panel_pointer_event_at(
     kind: OverlayInputKind,
     uv: UvPoint,
@@ -2132,6 +2274,7 @@ fn friends_panel_pointer_event_at(
     }
 }
 
+#[cfg(feature = "friends-panel")]
 fn with_slint_friends_panel_host<T>(
     size: OverlaySize,
     callback: impl FnOnce(&mut SlintPanelHost) -> Result<T, String>,
@@ -2171,6 +2314,8 @@ fn overlay_surface_configs(
     config: VrOverlayRuntimeConfig,
     runtime: &VrOverlayRuntime,
 ) -> Vec<OverlaySurfaceConfig> {
+    #[cfg(not(feature = "friends-panel"))]
+    let _ = runtime;
     let mut configs = Vec::new();
     if active_surfaces.wrist {
         configs.extend(wrist_surface_configs(config));
@@ -2178,6 +2323,7 @@ fn overlay_surface_configs(
     if active_surfaces.hmd {
         configs.push(hmd_surface_config(config.hmd.position));
     }
+    #[cfg(feature = "friends-panel")]
     if active_surfaces.friends_panel {
         if let Some(config) = runtime.friends_panel_surface_config() {
             configs.push(config);
@@ -2187,6 +2333,7 @@ fn overlay_surface_configs(
     configs
 }
 
+#[cfg(feature = "friends-panel")]
 fn friends_panel_laser_surface_ids() -> [OverlaySurfaceId; 2] {
     [
         OverlaySurfaceId::new(FRIENDS_PANEL_LASER_LEFT_SURFACE_ID),
@@ -2194,6 +2341,7 @@ fn friends_panel_laser_surface_ids() -> [OverlaySurfaceId; 2] {
     ]
 }
 
+#[cfg(feature = "friends-panel")]
 fn friends_panel_laser_frame() -> RgbaFrame {
     let size = FRIENDS_PANEL_LASER_SIZE;
     let width = size.width as usize;
@@ -2279,6 +2427,7 @@ fn hmd_surface_config(position: HmdNotificationPosition) -> OverlaySurfaceConfig
     }
 }
 
+#[cfg(feature = "friends-panel")]
 fn is_friends_panel_id(panel_id: &str) -> bool {
     matches!(panel_id, FRIENDS_PANEL_ID | LEGACY_DUMMY_PANEL_ID)
 }
@@ -2376,5 +2525,5 @@ fn is_real_instance_location(location: &str) -> bool {
     location.starts_with("wrld_") && location.contains(':')
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "friends-panel"))]
 pub(crate) mod tests;

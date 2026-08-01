@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 type FavoriteImportType = 'avatar' | 'world' | 'friend';
-type FavoriteImportRow = {
+export type FavoriteImportRow = {
     id: string;
     [key: string]: unknown;
 };

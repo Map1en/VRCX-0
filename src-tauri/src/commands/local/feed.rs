@@ -24,13 +24,18 @@ pub fn app__feed_add_entry(
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__feed_avatar_purge(
+pub async fn app__avatar_feed_history_cleanup(
     state: State<'_, AppState>,
-    user_id: String,
     cutoff_date: Option<String>,
-) -> Result<i64, AppError> {
-    vrcx_0_persistence::feed::feed_avatar_purge(state.db.as_ref(), user_id, cutoff_date)
-        .map_err(AppError::from)
+) -> Result<vrcx_0_application::AvatarFeedCleanupOutcome, AppError> {
+    let db = state.db.clone();
+    let user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    tauri::async_runtime::spawn_blocking(move || {
+        vrcx_0_application::cleanup_avatar_feed_history(db.as_ref(), user_id, cutoff_date)
+    })
+    .await
+    .map_err(|error| AppError::Custom(format!("avatar feed cleanup task: {error}")))?
+    .map_err(AppError::from)
 }
 
 #[tauri::command]

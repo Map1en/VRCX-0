@@ -2,6 +2,18 @@ export type FavoriteKind = 'friend' | 'world' | 'avatar';
 
 export type FavoriteSource = 'remote' | 'local' | 'history';
 
+export type FavoriteSeedData = Record<string, unknown> & {
+    displayName?: string;
+    groupName?: string;
+    id?: string;
+    releaseStatus?: string;
+    state?: string;
+    stateBucket?: string;
+    status?: string | null;
+    travelingToWorld?: string;
+    worldName?: string;
+};
+
 export type FavoriteGroup = {
     key: string;
     source: FavoriteSource;
@@ -27,7 +39,7 @@ export type FavoriteItem = {
     detailText?: string;
     imageSmallUrl?: string;
     imageUrl?: string;
-    seedData?: unknown;
+    seedData?: FavoriteSeedData | null;
     isUnavailable?: boolean;
     isPrivate?: boolean;
     isDeleted?: boolean;

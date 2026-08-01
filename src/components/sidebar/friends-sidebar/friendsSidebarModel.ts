@@ -481,13 +481,46 @@ export function sameInstanceFallbackKey(
     return `${locationTag}:${friendId || normalizeId(readFriendRef(friend)?.id)}`;
 }
 
+function observedSameInstanceJoinTime(
+    friend: SidebarFriendRecord,
+    locationTag: string,
+    lastLocation: LastLocationSnapshot | null | undefined
+) {
+    const friendId = normalizeId(friend?.id || readFriendRef(friend)?.id);
+    if (normalizeId(lastLocation?.location) !== locationTag || !friendId) {
+        return 0;
+    }
+    return timestampMsFromValue(
+        lastLocation?.dwellEpochsByUserId?.get(friendId)
+    );
+}
+
 export function withSameInstanceJoinTime(
     friend: SidebarFriendRecord,
     locationTag: string,
-    fallbackJoinTimes: Map<string, number>
+    fallbackJoinTimes: Map<string, number>,
+    lastLocation: LastLocationSnapshot | null | undefined
 ) {
     const source = readFriendStatusSource(friend);
-    if (timestampMsFromValue(readFriendInstanceEpoch(source, false))) {
+    const friendJoinTime = timestampMsFromValue(
+        readFriendInstanceEpoch(source, false)
+    );
+    const observedJoinTime = observedSameInstanceJoinTime(
+        friend,
+        locationTag,
+        lastLocation
+    );
+    if (observedJoinTime) {
+        const ref = readFriendRef(friend);
+        if (ref && ref !== friend) {
+            return {
+                ...friend,
+                ref: { ...ref, $location_at: observedJoinTime }
+            };
+        }
+        return { ...friend, $location_at: observedJoinTime };
+    }
+    if (friendJoinTime) {
         return friend;
     }
     const fallbackKey = sameInstanceFallbackKey(locationTag, friend);
@@ -524,13 +557,23 @@ export function buildSameInstanceGroups(
             return friend;
         }
         const source = readFriendStatusSource(friend);
+        const observedJoinTime = observedSameInstanceJoinTime(
+            friend,
+            location,
+            lastLocation
+        );
         const needsFallback = !timestampMsFromValue(
-            readFriendInstanceEpoch(source, false)
+            observedJoinTime || readFriendInstanceEpoch(source, false)
         );
         if (needsFallback) {
             activeFallbackKeys.add(sameInstanceFallbackKey(location, friend));
         }
-        return withSameInstanceJoinTime(friend, location, fallbackJoinTimes);
+        return withSameInstanceJoinTime(
+            friend,
+            location,
+            fallbackJoinTimes,
+            lastLocation
+        );
     });
     const groups = buildSameInstanceFriendGroups(preparedRows, lastLocation, {
         includeCurrentUser: prefs.isShowCurrentUserInSameInstance !== false

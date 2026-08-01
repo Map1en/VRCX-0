@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { GameLogProjection } from '@/platform/tauri/bindings';
+
 const mocks = vi.hoisted(() => ({
     appIsGameRunning: vi.fn(),
-    getCurrentInstanceSnapshot: vi.fn(),
+    loadCurrentInstanceRoster: vi.fn(),
     recordGameRuntimePresence: vi.fn()
 }));
 
@@ -12,15 +14,28 @@ vi.mock('@/platform/tauri/bindings', () => ({
     }
 }));
 
-vi.mock('@/repositories/playerListPersistenceRepository', () => ({
-    default: {
-        getCurrentInstanceSnapshot: mocks.getCurrentInstanceSnapshot
-    }
+vi.mock('./currentInstanceRosterService', () => ({
+    loadCurrentInstanceRoster: mocks.loadCurrentInstanceRoster
 }));
 
 vi.mock('./domainIngestionService', () => ({
     recordGameRuntimePresence: mocks.recordGameRuntimePresence
 }));
+
+function projection(overrides: Partial<GameLogProjection>): GameLogProjection {
+    return {
+        currentDestination: '',
+        currentLocation: '',
+        currentLocationPlayerIds: [],
+        currentLocationPlayers: [],
+        currentLocationStartedAt: null,
+        currentWorldId: '',
+        currentWorldName: '',
+        lastGameLogAt: '',
+        lastGameLogType: '',
+        ...overrides
+    };
+}
 
 async function loadGameLogService() {
     vi.resetModules();
@@ -41,33 +56,35 @@ describe('gameLogIngestService characterization', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mocks.appIsGameRunning.mockReset();
-        mocks.getCurrentInstanceSnapshot.mockReset();
+        mocks.loadCurrentInstanceRoster.mockReset();
         mocks.appIsGameRunning.mockResolvedValue(true);
     });
 
-    it('applies runtime projections while ignoring empty players', async () => {
+    it('applies typed runtime projections including display-name-only players', async () => {
         const { service, useRuntimeStore } = await loadGameLogService();
 
-        service.applyRuntimeGameLogProjection({
-            currentLocation: 'wrld_test:123',
-            currentWorldId: 'wrld_test',
-            currentWorldName: 'Test World',
-            currentLocationStartedAt: '2026-05-14T00:00:00.000Z',
-            lastGameLogAt: '2026-05-14T00:00:01.000Z',
-            lastGameLogType: 'location',
-            currentLocationPlayers: [
-                {},
-                {
-                    displayName: 'Name Only',
-                    joinTimeMs: 1_768_348_800_000
-                },
-                {
-                    userId: 'usr_1',
-                    displayName: 'Known User',
-                    joinTimeMs: 1_768_348_801_000
-                }
-            ]
-        });
+        service.applyRuntimeGameLogProjection(
+            projection({
+                currentLocation: 'wrld_test:123',
+                currentWorldId: 'wrld_test',
+                currentWorldName: 'Test World',
+                currentLocationStartedAt: '2026-05-14T00:00:00.000Z',
+                lastGameLogAt: '2026-05-14T00:00:01.000Z',
+                lastGameLogType: 'location',
+                currentLocationPlayers: [
+                    {
+                        userId: '',
+                        displayName: 'Name Only',
+                        joinTimeMs: 1_768_348_800_000
+                    },
+                    {
+                        userId: 'usr_1',
+                        displayName: 'Known User',
+                        joinTimeMs: 1_768_348_801_000
+                    }
+                ]
+            })
+        );
 
         const gameState = useRuntimeStore.getState().gameState;
         expect(gameState).toMatchObject({
@@ -103,14 +120,22 @@ describe('gameLogIngestService characterization', () => {
     it('replaces the roster on each projection instead of merging', async () => {
         const { service, useRuntimeStore } = await loadGameLogService();
 
-        service.applyRuntimeGameLogProjection({
-            currentLocation: 'wrld_test:123',
-            currentLocationPlayers: [{ userId: 'usr_1', displayName: 'First' }]
-        });
-        service.applyRuntimeGameLogProjection({
-            currentLocation: 'wrld_test:123',
-            currentLocationPlayers: [{ userId: 'usr_2', displayName: 'Second' }]
-        });
+        service.applyRuntimeGameLogProjection(
+            projection({
+                currentLocation: 'wrld_test:123',
+                currentLocationPlayers: [
+                    { userId: 'usr_1', displayName: 'First', joinTimeMs: null }
+                ]
+            })
+        );
+        service.applyRuntimeGameLogProjection(
+            projection({
+                currentLocation: 'wrld_test:123',
+                currentLocationPlayers: [
+                    { userId: 'usr_2', displayName: 'Second', joinTimeMs: null }
+                ]
+            })
+        );
 
         expect(
             useRuntimeStore.getState().gameState.currentLocationPlayerIds
@@ -126,7 +151,7 @@ describe('gameLogIngestService characterization', () => {
                 displayName: 'Self'
             }
         });
-        mocks.getCurrentInstanceSnapshot.mockResolvedValue({
+        mocks.loadCurrentInstanceRoster.mockResolvedValue({
             context: {
                 location: 'wrld_test:123',
                 worldId: 'wrld_test',
@@ -146,7 +171,7 @@ describe('gameLogIngestService characterization', () => {
             service.restoreRuntimeGameLogProjectionFromPersistence()
         ).resolves.toBe(true);
 
-        expect(mocks.getCurrentInstanceSnapshot).toHaveBeenCalledWith({
+        expect(mocks.loadCurrentInstanceRoster).toHaveBeenCalledWith({
             currentUserId: 'usr_self',
             currentLocation: '',
             currentLocationStartedAt: ''
@@ -163,7 +188,9 @@ describe('gameLogIngestService characterization', () => {
         ).toEqual([
             expect.objectContaining({
                 id: 'display:Name Only',
-                displayName: 'Name Only'
+                displayName: 'Name Only',
+                joinedAt: new Date(1_768_348_800_000).toISOString(),
+                joinedAtMs: 1_768_348_800_000
             })
         ]);
     });
@@ -176,11 +203,11 @@ describe('gameLogIngestService characterization', () => {
         let resolveSnapshot!: (
             value: Awaited<
                 ReturnType<
-                    typeof import('@/repositories/playerListPersistenceRepository').getCurrentInstanceSnapshot
+                    typeof import('./currentInstanceRosterService').loadCurrentInstanceRoster
                 >
             >
         ) => void;
-        mocks.getCurrentInstanceSnapshot.mockReturnValue(
+        mocks.loadCurrentInstanceRoster.mockReturnValue(
             new Promise((resolve) => {
                 resolveSnapshot = resolve;
             })
@@ -189,7 +216,7 @@ describe('gameLogIngestService characterization', () => {
         const restore =
             service.restoreRuntimeGameLogProjectionFromPersistence();
         await vi.waitFor(() =>
-            expect(mocks.getCurrentInstanceSnapshot).toHaveBeenCalled()
+            expect(mocks.loadCurrentInstanceRoster).toHaveBeenCalled()
         );
         useRuntimeStore.getState().setGameState({
             currentLocation: 'wrld_new:456'
@@ -202,6 +229,7 @@ describe('gameLogIngestService characterization', () => {
                 createdAt: '2026-05-14T00:00:00.000Z',
                 time: 0,
                 groupName: '',
+                playerCount: 0,
                 source: 'database'
             },
             players: []
@@ -215,19 +243,21 @@ describe('gameLogIngestService characterization', () => {
 
     it('resets session state and now-playing on game stop', async () => {
         const { service, useRuntimeStore } = await loadGameLogService();
-        service.applyRuntimeGameLogProjection({
-            currentLocation: 'wrld_test:123',
-            currentWorldId: 'wrld_test',
-            currentWorldName: 'Test World',
-            currentLocationStartedAt: '2026-05-14T00:00:00.000Z',
-            currentLocationPlayers: [
-                {
-                    userId: 'usr_1',
-                    displayName: 'Known User',
-                    joinTimeMs: Date.parse('2026-05-14T00:01:00.000Z')
-                }
-            ]
-        });
+        service.applyRuntimeGameLogProjection(
+            projection({
+                currentLocation: 'wrld_test:123',
+                currentWorldId: 'wrld_test',
+                currentWorldName: 'Test World',
+                currentLocationStartedAt: '2026-05-14T00:00:00.000Z',
+                currentLocationPlayers: [
+                    {
+                        userId: 'usr_1',
+                        displayName: 'Known User',
+                        joinTimeMs: Date.parse('2026-05-14T00:01:00.000Z')
+                    }
+                ]
+            })
+        );
         useRuntimeStore.getState().setNowPlayingState({
             url: 'https://video.example.test',
             name: 'Some Video'

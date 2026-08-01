@@ -4,6 +4,7 @@ use vrcx_0_application_core::{
 };
 use vrcx_0_persistence::config::ConfigRepository;
 
+use super::webhook::discord_webhook_url_with_wait;
 use super::{send_json_webhook_with_retry, webhook_local_time_string};
 
 const AUTH_WEBHOOK_ENABLED_CONFIG_KEY: &str = "webhookAuthEventsEnabled";
@@ -69,10 +70,13 @@ pub async fn send_auth_webhook(
     let format = config
         .get_string("webhookFormat", "generic")
         .unwrap_or_else(|_| "generic".into());
-    let payload = if format == "discord" {
-        auth_webhook_discord_payload(event)
+    let (url, payload) = if format == "discord" {
+        (
+            discord_webhook_url_with_wait(&url),
+            auth_webhook_discord_payload(event),
+        )
     } else {
-        auth_webhook_generic_payload(event)
+        (url.trim().to_string(), auth_webhook_generic_payload(event))
     };
     send_json_webhook_with_retry(
         web,

@@ -12,7 +12,8 @@ import {
 import type {
     FavoriteGroup,
     FavoriteItem,
-    FavoriteKind
+    FavoriteKind,
+    FavoriteSeedData
 } from './favoritesTypes';
 
 type FavoriteItemsByGroup = Record<string, FavoriteItem[]>;
@@ -30,7 +31,7 @@ type FavoriteGroupInput = Record<string, unknown> & {
     key: string;
     label: string;
 };
-type FavoriteEntityDetail = Record<string, unknown> & {
+export type FavoriteEntityDetail = Record<string, unknown> & {
     authorName?: unknown;
     description?: unknown;
     imageUrl?: unknown;
@@ -69,6 +70,27 @@ function textValue(value: unknown) {
           : String(value);
 }
 
+function favoriteSeedData(
+    value: Record<string, unknown> | null | undefined
+): FavoriteSeedData | null {
+    if (!value) {
+        return null;
+    }
+    return {
+        ...value,
+        displayName: textValue(value.displayName) || undefined,
+        groupName: textValue(value.groupName) || undefined,
+        id: textValue(value.id) || undefined,
+        releaseStatus: textValue(value.releaseStatus) || undefined,
+        state: textValue(value.state) || undefined,
+        stateBucket: textValue(value.stateBucket) || undefined,
+        status:
+            value.status === null ? null : textValue(value.status) || undefined,
+        travelingToWorld: textValue(value.travelingToWorld) || undefined,
+        worldName: textValue(value.worldName) || undefined
+    };
+}
+
 function stringArray(value: unknown): string[] {
     return Array.isArray(value) ? value.map(textValue).filter(Boolean) : [];
 }
@@ -104,7 +126,7 @@ function buildRemoteFavoriteGroups(
             source: 'remote',
             key,
             name,
-            type: group.type || favoriteGroupType(kind, group),
+            type: textValue(group.type) || favoriteGroupType(kind, group),
             label: textValue(group.displayName || group.name || group.key),
             count: Number(group.count) || 0,
             capacity: Number(group.capacity) || 0,
@@ -227,7 +249,7 @@ function buildFriendFavoriteItem({
             status === 'online' || status === 'active'
                 ? 'default'
                 : 'secondary',
-        seedData: profile,
+        seedData: favoriteSeedData(profile),
         orderIndex: favoritesSortIndex?.[normalizedId] ?? index
     };
 }
@@ -516,7 +538,7 @@ export function buildFavoriteRemoteItemsByGroup({
             subtitle,
             authorName,
             description: textValue(displayDetail?.description),
-            seedData: displayDetail || null,
+            seedData: favoriteSeedData(displayDetail),
             ...imagePair,
             isPrivate,
             isDeleted,
@@ -599,7 +621,7 @@ export function buildFavoriteLocalItemsByGroup({
         const ids = Array.isArray(localFavorites?.[group.key])
             ? localFavorites[group.key]
             : [];
-        const items = ids.map((entityId, index) => {
+        const items: FavoriteItem[] = ids.map((entityId, index) => {
             const normalizedId = normalizeEntityId(entityId);
             const detail = localDetailsById?.[normalizedId] || {
                 id: normalizedId
@@ -619,7 +641,7 @@ export function buildFavoriteLocalItemsByGroup({
                 subtitle: textValue(detail.authorName),
                 authorName: textValue(detail.authorName),
                 description: textValue(detail.description),
-                seedData: detail || null,
+                seedData: favoriteSeedData(detail),
                 ...imagePair,
                 isPrivate: textValue(detail.releaseStatus) === 'private',
                 isUnavailable: false,
@@ -666,7 +688,7 @@ export function buildFavoriteAvatarHistoryItems({
             subtitle: textValue(detail?.authorName),
             authorName: textValue(detail?.authorName),
             description: textValue(detail?.description),
-            seedData: detail || null,
+            seedData: favoriteSeedData(detail),
             ...imagePair,
             isPrivate: textValue(detail?.releaseStatus) === 'private',
             isUnavailable: false,

@@ -19,23 +19,25 @@ const TTL_NEGATIVE_NOT_FOUND_SECS: u64 = 900;
 const TTL_NEGATIVE_FORBIDDEN_SECS: u64 = 60;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum UserQueryKind {
+pub enum UserQueryKind {
     Dialog,
     LiveFriend,
     LiveNonFriend,
 }
 
-impl UserQueryKind {
-    pub(crate) fn from_request(dialog: bool, is_friend: Option<bool>) -> Self {
-        if dialog {
-            Self::Dialog
-        } else if is_friend == Some(true) {
-            Self::LiveFriend
-        } else {
-            Self::LiveNonFriend
-        }
-    }
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum UserQueryCachePolicy {
+    UseCache,
+    Refresh,
+}
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct UserQueryOptions {
+    pub kind: UserQueryKind,
+    pub cache_policy: UserQueryCachePolicy,
+}
+
+impl UserQueryKind {
     fn prefix(self) -> &'static str {
         match self {
             Self::Dialog => "dlg",

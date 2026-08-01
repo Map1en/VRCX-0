@@ -1,5 +1,10 @@
 import type { EntityRecord } from '@/domain/entities/profileEntities';
-import { resolveObservedPlayerUserId } from '@/domain/friends/sameInstanceFriends';
+import {
+    isExplicitlyOfflineFriend,
+    resolveObservedPlayerDwellEpochs,
+    resolveObservedPlayerUserId
+} from '@/domain/friends/sameInstanceFriends';
+import { applyInstanceDwellEpochs } from '@/domain/instances/instanceRoster';
 import {
     parseLocation,
     resolveFriendPresenceLocation
@@ -127,16 +132,25 @@ export function buildWorldDialogDisplayInstanceRows({
     const currentInstanceOwnerIsGroup = isGroupId(currentInstanceOwnerId);
     const snapshotPlayers = (
         Array.isArray(playerSnapshot.players) ? playerSnapshot.players : []
-    ).map((player) => {
-        const source = record(player);
-        const userId = resolveObservedPlayerUserId(source, friendsById);
-        return {
-            id: userId,
-            userId,
-            displayName: firstText(source.displayName, source.display_name),
-            joinedAt: firstText(source.joinedAt, source.joined_at)
-        };
-    });
+    )
+        .map((player) => {
+            const source = record(player);
+            const userId = resolveObservedPlayerUserId(source, friendsById);
+            return {
+                id: userId,
+                userId,
+                displayName: firstText(source.displayName, source.display_name),
+                joinedAt: firstText(source.joinedAt, source.joined_at),
+                joinedAtMs: source.joinedAtMs
+            };
+        })
+        .filter(
+            (player) => !isExplicitlyOfflineFriend(friendsById[player.userId])
+        );
+    const currentInstanceDwellEpochsByUserId = resolveObservedPlayerDwellEpochs(
+        snapshotPlayers,
+        friendsById
+    );
     const currentInstanceRow: WorldDialogInstanceRow | null =
         parsedCurrentInstanceLocation?.worldId &&
         parsedCurrentInstanceLocation?.instanceId
@@ -247,12 +261,14 @@ export function buildWorldDialogDisplayInstanceRows({
                   )
                 : [currentInstanceRow, ...normalizedInstanceRows]
             : normalizedInstanceRows;
-    const friendLocations = Object.values(friendsById || {}).map((friend) => ({
-        friend,
-        location: resolveFriendPresenceLocation(friend, {
-            requireInstance: true
-        })
-    }));
+    const friendLocations = Object.values(friendsById || {})
+        .filter((friend) => !isExplicitlyOfflineFriend(friend))
+        .map((friend) => ({
+            friend,
+            location: resolveFriendPresenceLocation(friend, {
+                requireInstance: true
+            })
+        }));
     const candidateInstanceRows = [...baseDisplayInstanceRows];
     for (const { location } of friendLocations) {
         const parsedLocation = parseLocation(location);
@@ -313,14 +329,34 @@ export function buildWorldDialogDisplayInstanceRows({
         const creatorGroupProfile = creatorGroupId
             ? creatorGroupsById[creatorGroupId]
             : null;
+        const mergedUsers = mergeInstanceUsers(
+            instance.users,
+            friendsInInstance
+        ).filter((user) => {
+            const userId = firstText(user.id, user.userId);
+            const friend = friendsById[userId];
+            const friendLocation = resolveFriendPresenceLocation(friend, {
+                requireInstance: true
+            });
+            return Boolean(
+                !isExplicitlyOfflineFriend(friend) &&
+                (!friendLocation || sameLocationTag(friendLocation, location))
+            );
+        });
+        const isCurrentInstance = sameInstanceLocation(
+            world,
+            instance,
+            currentLocation || normalizedWorldId
+        );
         const instanceWithFriends: WorldDialogInstanceRow = {
             ...instance,
-            isCurrentInstance: sameInstanceLocation(
-                world,
-                instance,
-                currentLocation
-            ),
-            users: mergeInstanceUsers(instance.users, friendsInInstance)
+            isCurrentInstance,
+            users: isCurrentInstance
+                ? applyInstanceDwellEpochs(
+                      mergedUsers,
+                      currentInstanceDwellEpochsByUserId
+                  )
+                : mergedUsers
         };
         return creatorGroupProfile
             ? {

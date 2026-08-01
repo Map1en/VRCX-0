@@ -1,18 +1,30 @@
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 export { resolveCurrentInviteLocation } from '@/shared/utils/invite';
 
-export function normalizeFavoriteSearchValue(value: any) {
+import type { FavoriteKind } from './favoritesTypes';
+
+type SortableFavoriteItem = {
+    id?: unknown;
+    title?: unknown;
+    orderIndex?: number;
+    playerCount?: number;
+};
+
+export function normalizeFavoriteSearchValue(value: unknown): string {
     return typeof value === 'string' ? value.trim().toLowerCase() : '';
 }
 
-export function normalizeFavoriteEntityId(value: any) {
+export function normalizeFavoriteEntityId(value: unknown): string {
     return typeof value === 'string'
         ? value.trim()
         : String(value ?? '').trim();
 }
 
-export function sortFavoriteItems(items: any, sortValue: any) {
-    return [...items].sort((left: any, right: any) => {
+export function sortFavoriteItems<TItem extends SortableFavoriteItem>(
+    items: readonly TItem[],
+    sortValue: unknown
+): TItem[] {
+    return [...items].sort((left, right) => {
         if (sortValue === 'players') {
             const playerDelta =
                 (right.playerCount || 0) - (left.playerCount || 0);
@@ -46,11 +58,11 @@ export function sortFavoriteItems(items: any, sortValue: any) {
     });
 }
 
-export function resolveFavoriteImage(url: unknown) {
+export function resolveFavoriteImage(url: unknown): string {
     return typeof url === 'string' ? convertFileUrlToImageUrl(url, 256) : '';
 }
 
-export function shrinkFavoriteImage(url: unknown) {
+export function shrinkFavoriteImage(url: unknown): string {
     if (typeof url !== 'string') {
         return '';
     }
@@ -63,8 +75,11 @@ export function shrinkFavoriteImage(url: unknown) {
         : normalized;
 }
 
-export function favoriteGroupType(kind: any, group: any) {
-    if (group?.type) {
+export function favoriteGroupType(
+    kind: FavoriteKind,
+    group: { type?: unknown }
+): string {
+    if (typeof group.type === 'string' && group.type) {
         return group.type;
     }
     if (kind === 'world') {

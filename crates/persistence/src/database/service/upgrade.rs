@@ -11,8 +11,8 @@ use crate::Error;
 
 use super::{
     checkpoint, checkpoint_status, ensure_upgrade_version_written, open_configured_connection,
-    open_main_database, DatabaseMode, DatabaseService, DatabaseUpgradeStatus, MainDatabase,
-    UpgradeSession,
+    open_main_database, DatabaseMode, DatabaseService, DatabaseUpgradeStatus, EnsuredSchemas,
+    MainDatabase, UpgradeSession,
 };
 
 impl DatabaseService {
@@ -86,6 +86,7 @@ impl DatabaseService {
         *inner = DatabaseMode::Upgrade(UpgradeSession {
             conn: Mutex::new(conn),
             status,
+            ensured: EnsuredSchemas::default(),
         });
         Ok(())
     }
@@ -214,7 +215,7 @@ impl DatabaseService {
         let reopen_main = matches!(&*inner, DatabaseMode::Upgrade(_));
         let mut status = match std::mem::replace(&mut *inner, DatabaseMode::Closed) {
             DatabaseMode::Upgrade(session) => {
-                let UpgradeSession { conn, status } = session;
+                let UpgradeSession { conn, status, .. } = session;
                 match conn.into_inner() {
                     Ok(conn) => {
                         if let Err(error) = checkpoint(&conn) {

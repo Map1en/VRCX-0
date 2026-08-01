@@ -3,9 +3,8 @@
 use std::collections::{HashMap, HashSet};
 
 use serde_json::Value;
-use vrcx_0_core::json::RawJson;
 
-use crate::common::{add_list_params, normalize_text, strict_row_json, value_as_string};
+use crate::common::{add_list_params, normalize_text, value_as_string};
 use crate::database::DatabaseService;
 use crate::realtime::{ensure_realtime_tables, normalize_user_table_prefix};
 use crate::Error;
@@ -292,10 +291,12 @@ fn query_feed_rows(
             selects.join(" UNION ALL ")
         ),
         &params,
-    )?
-    .into_iter()
-    .map(|row| feed_row_from_unified_row(&row))
-    .collect()
+    )
+    .map(|rows| {
+        rows.iter()
+            .map(|row| feed_row_from_unified_row(row))
+            .collect()
+    })
 }
 
 fn query_feed_read_model(
@@ -314,31 +315,30 @@ fn query_feed_read_model(
         date_to: query.date_to.clone(),
         cursor: query.cursor.clone(),
     };
-    let rows = query_feed_rows(db, &rows_query)?
-        .into_iter()
-        .map(feed_row_output_to_value)
-        .map(RawJson::from)
-        .collect::<Vec<_>>();
+    let rows = query_feed_rows(db, &rows_query)?;
     let max_rows = if query.max_rows > 0 {
         query.max_rows
     } else {
         query.max_entries
     };
-
-    Ok(merge_feed_live_rows(FeedLiveRowsMergeInput {
-        rows,
-        current_user_id: query.user_id,
-        filters: query.filters,
-        search: query.search,
-        date_from: query.date_from,
-        date_to: query.date_to,
+    let context = FeedLiveRowsMergeContext {
+        current_user_id: &query.user_id,
+        filters: &query.filters,
+        search: &query.search,
+        date_from: &query.date_from,
+        date_to: &query.date_to,
         favorites_only: query.favorites_only,
-        favorite_user_ids: query.favorite_user_ids,
-        excluded_user_ids: query.excluded_user_ids,
-        live_entries: query.live_entries,
-        min_live_sequence: query.min_live_sequence,
+        favorite_user_ids: &query.favorite_user_ids,
+        excluded_user_ids: &query.excluded_user_ids,
         max_rows,
-    }))
+    };
+
+    Ok(merge_feed_rows_with_live(
+        rows,
+        &query.live_entries,
+        query.min_live_sequence,
+        context,
+    ))
 }
 
 pub fn feed_rows_query(
@@ -402,32 +402,152 @@ fn feed_cursor_condition(source_rank: i64, has_cursor: bool) -> String {
     )
 }
 
-fn feed_row_from_unified_row(row: &[Value]) -> Result<FeedRowOutput, Error> {
-    Ok(FeedRowOutput {
-        row_id: strict_row_json(row, 0)?.into(),
-        source_rank: strict_row_json(row, 1)?.into(),
-        created_at: strict_row_json(row, 2)?.into(),
-        user_id: strict_row_json(row, 3)?.into(),
-        display_name: strict_row_json(row, 4)?.into(),
-        r#type: strict_row_json(row, 5)?.into(),
-        location: strict_row_json(row, 6)?.into(),
-        world_name: strict_row_json(row, 7)?.into(),
-        previous_location: strict_row_json(row, 8)?.into(),
-        time: strict_row_json(row, 9)?.into(),
-        group_name: strict_row_json(row, 10)?.into(),
-        status: strict_row_json(row, 11)?.into(),
-        status_description: strict_row_json(row, 12)?.into(),
-        previous_status: strict_row_json(row, 13)?.into(),
-        previous_status_description: strict_row_json(row, 14)?.into(),
-        bio: strict_row_json(row, 15)?.into(),
-        previous_bio: strict_row_json(row, 16)?.into(),
-        owner_id: strict_row_json(row, 17)?.into(),
-        avatar_name: strict_row_json(row, 18)?.into(),
-        current_avatar_image_url: strict_row_json(row, 19)?.into(),
-        current_avatar_thumbnail_image_url: strict_row_json(row, 20)?.into(),
-        previous_current_avatar_image_url: strict_row_json(row, 21)?.into(),
-        previous_current_avatar_thumbnail_image_url: strict_row_json(row, 22)?.into(),
-    })
+fn value_opt_string(value: Option<&Value>) -> Option<String> {
+    match value? {
+        Value::Null => None,
+        other => {
+            let text = value_as_string(other);
+            (!text.is_empty()).then_some(text)
+        }
+    }
+}
+
+fn value_opt_i64(value: Option<&Value>) -> Option<i64> {
+    match value? {
+        Value::Number(number) => number.as_i64(),
+        Value::String(text) => text.trim().parse().ok(),
+        _ => None,
+    }
+}
+
+fn value_opt_string_list(value: Option<&Value>) -> Option<Vec<String>> {
+    Some(
+        value?
+            .as_array()?
+            .iter()
+            .filter(|item| !item.is_null())
+            .map(value_as_string)
+            .collect(),
+    )
+}
+
+fn row_opt_string(row: &[Value], index: usize) -> Option<String> {
+    value_opt_string(row.get(index))
+}
+
+fn row_opt_i64(row: &[Value], index: usize) -> Option<i64> {
+    value_opt_i64(row.get(index))
+}
+
+fn entry_opt_string(entry: &Value, keys: &[&str]) -> Option<String> {
+    value_opt_string(feed_entry_value(entry, keys))
+}
+
+fn entry_opt_i64(entry: &Value, keys: &[&str]) -> Option<i64> {
+    value_opt_i64(feed_entry_value(entry, keys))
+}
+
+fn entry_opt_string_list(entry: &Value, keys: &[&str]) -> Option<Vec<String>> {
+    value_opt_string_list(feed_entry_value(entry, keys))
+}
+
+fn feed_row_from_unified_row(row: &[Value]) -> FeedRowOutput {
+    FeedRowOutput {
+        row_id: row_opt_i64(row, 0),
+        source_rank: row_opt_i64(row, 1),
+        created_at: row_opt_string(row, 2),
+        user_id: row_opt_string(row, 3),
+        display_name: row_opt_string(row, 4),
+        r#type: row_opt_string(row, 5),
+        location: row_opt_string(row, 6),
+        world_name: row_opt_string(row, 7),
+        previous_location: row_opt_string(row, 8),
+        time: row_opt_i64(row, 9),
+        group_name: row_opt_string(row, 10),
+        status: row_opt_string(row, 11),
+        status_description: row_opt_string(row, 12),
+        previous_status: row_opt_string(row, 13),
+        previous_status_description: row_opt_string(row, 14),
+        bio: row_opt_string(row, 15),
+        previous_bio: row_opt_string(row, 16),
+        owner_id: row_opt_string(row, 17),
+        avatar_name: row_opt_string(row, 18),
+        current_avatar_image_url: row_opt_string(row, 19),
+        current_avatar_thumbnail_image_url: row_opt_string(row, 20),
+        current_avatar_tags: None,
+        previous_owner_id: None,
+        previous_avatar_name: None,
+        previous_current_avatar_image_url: row_opt_string(row, 21),
+        previous_current_avatar_thumbnail_image_url: row_opt_string(row, 22),
+        previous_current_avatar_tags: None,
+        owner_user_id: None,
+    }
+}
+
+fn feed_row_from_value(entry: &Value) -> FeedRowOutput {
+    FeedRowOutput {
+        row_id: entry_opt_i64(entry, &["rowId", "row_id"]),
+        source_rank: entry_opt_i64(entry, &["sourceRank", "source_rank"]),
+        created_at: entry_opt_string(entry, &["created_at", "createdAt"]),
+        user_id: entry_opt_string(entry, &["userId", "user_id"]),
+        display_name: entry_opt_string(entry, &["displayName", "display_name"]),
+        r#type: entry_opt_string(entry, &["type"]),
+        location: entry_opt_string(entry, &["location"]),
+        world_name: entry_opt_string(entry, &["worldName", "world_name"]),
+        previous_location: entry_opt_string(entry, &["previousLocation", "previous_location"]),
+        time: entry_opt_i64(entry, &["time"]),
+        group_name: entry_opt_string(entry, &["groupName", "group_name"]),
+        status: entry_opt_string(entry, &["status"]),
+        status_description: entry_opt_string(entry, &["statusDescription", "status_description"]),
+        previous_status: entry_opt_string(entry, &["previousStatus", "previous_status"]),
+        previous_status_description: entry_opt_string(
+            entry,
+            &["previousStatusDescription", "previous_status_description"],
+        ),
+        bio: entry_opt_string(entry, &["bio"]),
+        previous_bio: entry_opt_string(entry, &["previousBio", "previous_bio"]),
+        owner_id: entry_opt_string(entry, &["ownerId", "owner_id"]),
+        avatar_name: entry_opt_string(entry, &["avatarName", "avatar_name"]),
+        current_avatar_image_url: entry_opt_string(
+            entry,
+            &["currentAvatarImageUrl", "current_avatar_image_url"],
+        ),
+        current_avatar_thumbnail_image_url: entry_opt_string(
+            entry,
+            &[
+                "currentAvatarThumbnailImageUrl",
+                "current_avatar_thumbnail_image_url",
+            ],
+        ),
+        current_avatar_tags: entry_opt_string_list(
+            entry,
+            &["currentAvatarTags", "current_avatar_tags"],
+        ),
+        previous_owner_id: entry_opt_string(entry, &["previousOwnerId", "previous_owner_id"]),
+        previous_avatar_name: entry_opt_string(
+            entry,
+            &["previousAvatarName", "previous_avatar_name"],
+        ),
+        previous_current_avatar_image_url: entry_opt_string(
+            entry,
+            &[
+                "previousCurrentAvatarImageUrl",
+                "previous_current_avatar_image_url",
+            ],
+        ),
+        previous_current_avatar_thumbnail_image_url: entry_opt_string(
+            entry,
+            &[
+                "previousCurrentAvatarThumbnailImageUrl",
+                "previous_current_avatar_thumbnail_image_url",
+            ],
+        ),
+        previous_current_avatar_tags: entry_opt_string_list(
+            entry,
+            &["previousCurrentAvatarTags", "previous_current_avatar_tags"],
+        ),
+        owner_user_id: entry_opt_string(entry, &["ownerUserId", "owner_user_id"]),
+    }
 }
 
 #[derive(Default)]
@@ -512,44 +632,17 @@ fn feed_entry_string(entry: &Value, keys: &[&str]) -> String {
         .unwrap_or_default()
 }
 
-fn feed_entry_details_location(entry: &Value) -> String {
-    entry
-        .get("details")
-        .and_then(|details| feed_entry_value(details, &["location"]))
-        .map(value_as_string)
-        .unwrap_or_default()
-}
-
-fn feed_row_key(row: &Value) -> String {
-    if let Some(id) = feed_entry_value(row, &["id"]) {
-        return format!("id:{}", value_as_string(id));
-    }
-    if let Some(row_id) = feed_entry_value(row, &["rowId", "row_id"]) {
-        return format!(
-            "row:{}:{}",
-            feed_entry_string(row, &["type"]),
-            value_as_string(row_id)
-        );
+fn feed_row_key(row: &FeedRowOutput) -> String {
+    let entry_type = row.r#type.as_deref().unwrap_or_default();
+    if let Some(row_id) = row.row_id {
+        return format!("row:{entry_type}:{row_id}");
     }
 
-    let location = {
-        let direct = feed_entry_string(row, &["location"]);
-        if direct.is_empty() {
-            feed_entry_details_location(row)
-        } else {
-            direct
-        }
-    };
     format!(
-        "{}:{}:{}:{}:{}",
-        feed_entry_string(row, &["type"]),
-        feed_entry_string(row, &["created_at", "createdAt"]),
-        feed_entry_string(
-            row,
-            &["userId", "user_id", "senderUserId", "sender_user_id"]
-        ),
-        location,
-        feed_entry_string(row, &["message"])
+        "{entry_type}:{}:{}:{}",
+        row.created_at.as_deref().unwrap_or_default(),
+        row.user_id.as_deref().unwrap_or_default(),
+        row.location.as_deref().unwrap_or_default()
     )
 }
 
@@ -648,10 +741,6 @@ fn feed_live_entry_matches(
     feed_search_matches(row, context.search)
 }
 
-fn feed_row_output_to_value(row: FeedRowOutput) -> Value {
-    serde_json::to_value(row).unwrap_or(Value::Null)
-}
-
 pub(crate) struct FeedLiveRowsMergeContext<'a> {
     pub(crate) current_user_id: &'a str,
     pub(crate) filters: &'a [String],
@@ -665,7 +754,7 @@ pub(crate) struct FeedLiveRowsMergeContext<'a> {
 }
 
 fn merge_feed_rows_with_live(
-    rows: Vec<Value>,
+    rows: Vec<FeedRowOutput>,
     live_entries: &[FeedLiveEntryInput],
     min_live_sequence: i64,
     context: FeedLiveRowsMergeContext<'_>,
@@ -696,7 +785,7 @@ fn merge_feed_rows_with_live(
             &favorite_user_ids,
             &excluded_user_ids,
         ) {
-            matching_entries.push(live_entry.entry.clone().into_value());
+            matching_entries.push(feed_row_from_value(live_entry.entry.as_value()));
         }
     }
 
@@ -715,9 +804,10 @@ fn merge_feed_rows_with_live(
         }
     }
     for row in rows {
-        let user_id = feed_entry_string(&row, &["userId", "user_id"]);
-        if !user_id.is_empty() && excluded_user_ids.contains(&user_id) {
-            continue;
+        if let Some(user_id) = row.user_id.as_ref() {
+            if !user_id.is_empty() && excluded_user_ids.contains(user_id) {
+                continue;
+            }
         }
         let key = feed_row_key(&row);
         if seen.insert(key) {
@@ -727,7 +817,7 @@ fn merge_feed_rows_with_live(
     output_rows.truncate(max_rows);
 
     FeedReadModelOutput {
-        rows: output_rows.into_iter().map(RawJson::from).collect(),
+        rows: output_rows,
         max_sequence,
     }
 }
@@ -745,7 +835,11 @@ fn merge_feed_live_rows(query: FeedLiveRowsMergeInput) -> FeedReadModelOutput {
         max_rows: query.max_rows,
     };
     merge_feed_rows_with_live(
-        query.rows.into_iter().map(RawJson::into_value).collect(),
+        query
+            .rows
+            .iter()
+            .map(|row| feed_row_from_value(row.as_value()))
+            .collect(),
         &query.live_entries,
         query.min_live_sequence,
         context,
@@ -829,7 +923,90 @@ mod tests {
 
         assert_eq!(output.max_sequence, 2);
         assert_eq!(output.rows.len(), 1);
-        assert_eq!(output.rows[0].as_value()["type"], "GPS");
+        assert_eq!(output.rows[0].r#type.as_deref(), Some("GPS"));
+    }
+
+    #[test]
+    fn live_feed_rows_keep_avatar_fields_that_only_exist_on_live_entries() {
+        let output = feed_live_rows_merge(FeedLiveRowsMergeInput {
+            rows: Vec::new(),
+            current_user_id: "usr_self".into(),
+            filters: Vec::new(),
+            search: String::new(),
+            date_from: String::new(),
+            date_to: String::new(),
+            favorites_only: false,
+            favorite_user_ids: Vec::new(),
+            excluded_user_ids: Vec::new(),
+            live_entries: vec![FeedLiveEntryInput {
+                sequence: 1,
+                entry: RawJson::from(json!({
+                    "type": "Avatar",
+                    "userId": "usr_friend",
+                    "displayName": "Friend",
+                    "created_at": "2026-05-15T00:00:00Z",
+                    "avatarName": "Current",
+                    "previousAvatarName": "Previous",
+                    "ownerId": "usr_owner",
+                    "previousOwnerId": "usr_previous_owner",
+                    "currentAvatarTags": ["content_horror"],
+                    "previousCurrentAvatarTags": [],
+                })),
+            }],
+            min_live_sequence: 0,
+            max_rows: 10,
+        });
+
+        assert_eq!(output.rows.len(), 1);
+        let row = &output.rows[0];
+        assert_eq!(row.previous_avatar_name.as_deref(), Some("Previous"));
+        assert_eq!(row.previous_owner_id.as_deref(), Some("usr_previous_owner"));
+        assert_eq!(
+            row.current_avatar_tags.as_deref(),
+            Some(["content_horror".to_string()].as_slice())
+        );
+        assert_eq!(
+            row.previous_current_avatar_tags.as_deref(),
+            Some([].as_slice())
+        );
+        assert_eq!(row.row_id, None);
+    }
+
+    #[test]
+    fn merged_rows_normalize_snake_case_live_entry_field_names() {
+        let output = feed_live_rows_merge(FeedLiveRowsMergeInput {
+            rows: Vec::new(),
+            current_user_id: "usr_self".into(),
+            filters: Vec::new(),
+            search: String::new(),
+            date_from: String::new(),
+            date_to: String::new(),
+            favorites_only: false,
+            favorite_user_ids: Vec::new(),
+            excluded_user_ids: Vec::new(),
+            live_entries: vec![FeedLiveEntryInput {
+                sequence: 1,
+                entry: RawJson::from(json!({
+                    "type": "GPS",
+                    "user_id": "usr_friend",
+                    "display_name": "Friend",
+                    "createdAt": "2026-05-15T00:00:00Z",
+                    "location": "wrld_1:instance",
+                    "world_name": "World",
+                    "time": "1500",
+                })),
+            }],
+            min_live_sequence: 0,
+            max_rows: 10,
+        });
+
+        assert_eq!(output.rows.len(), 1);
+        let row = &output.rows[0];
+        assert_eq!(row.user_id.as_deref(), Some("usr_friend"));
+        assert_eq!(row.display_name.as_deref(), Some("Friend"));
+        assert_eq!(row.created_at.as_deref(), Some("2026-05-15T00:00:00Z"));
+        assert_eq!(row.world_name.as_deref(), Some("World"));
+        assert_eq!(row.time, Some(1500));
     }
 
     #[test]
@@ -885,7 +1062,7 @@ mod tests {
         )?;
 
         assert_eq!(first_page.len(), 1);
-        assert_eq!(first_page[0].display_name.as_value(), "newer-created");
+        assert_eq!(first_page[0].display_name.as_deref(), Some("newer-created"));
 
         let second_page = feed_rows_query(
             &db,
@@ -900,15 +1077,18 @@ mod tests {
                 date_from: String::new(),
                 date_to: String::new(),
                 cursor: Some(FeedCursorInput {
-                    created_at: first_page[0].created_at.as_value().as_str().unwrap().into(),
-                    source_rank: first_page[0].source_rank.as_value().as_i64().unwrap(),
-                    row_id: first_page[0].row_id.as_value().as_i64().unwrap(),
+                    created_at: first_page[0].created_at.clone().unwrap(),
+                    source_rank: first_page[0].source_rank.unwrap(),
+                    row_id: first_page[0].row_id.unwrap(),
                 }),
             },
         )?;
 
         assert_eq!(second_page.len(), 1);
-        assert_eq!(second_page[0].display_name.as_value(), "later-inserted");
+        assert_eq!(
+            second_page[0].display_name.as_deref(),
+            Some("later-inserted")
+        );
         Ok(())
     }
 }

@@ -377,22 +377,22 @@ fn canonical_records_replace_raw_roster_snapshot_and_ordering() -> Result<()> {
 
     let applied = apply_friend_roster_baseline_sync_outcome(
         &mut output,
-        FriendBaselineSyncOutcome {
-            result: crate::realtime::FriendBaselineResult {
+        FriendBaselineSyncOutcome::accepted(
+            crate::realtime::FriendBaselineResult {
                 accepted: true,
                 generation: 7,
                 baseline_revision: 1,
                 friend_count: friends_by_id.len(),
             },
-            snapshot: Some(crate::realtime::RealtimeFriendSnapshot {
+            crate::realtime::RealtimeFriendSnapshot {
                 current_user_id: "usr_self".into(),
                 generation: 7,
                 baseline_revision: 1,
                 friends_by_id,
                 ..crate::realtime::RealtimeFriendSnapshot::default()
-            }),
-            friend_log_changed: true,
-        },
+            },
+            true,
+        ),
     )?;
 
     let snapshot = output.snapshot.unwrap().into_value();
@@ -424,14 +424,10 @@ fn rejected_sync_outcome_clears_raw_roster_snapshot() -> Result<()> {
 
     let applied = apply_friend_roster_baseline_sync_outcome(
         &mut output,
-        FriendBaselineSyncOutcome {
-            result: crate::realtime::FriendBaselineResult {
-                accepted: false,
-                ..crate::realtime::FriendBaselineResult::default()
-            },
-            snapshot: Some(crate::realtime::RealtimeFriendSnapshot::default()),
-            friend_log_changed: true,
-        },
+        FriendBaselineSyncOutcome::rejected(crate::realtime::FriendBaselineResult {
+            accepted: false,
+            ..crate::realtime::FriendBaselineResult::default()
+        }),
     )?;
 
     assert!(!applied);

@@ -112,6 +112,9 @@
             "pendingLegacyMigration": "Conclua primeiro a migração de dados antigos.",
             "pendingMigration": "Há uma mudança de pasta pendente. Reinicie o VRCX-0.",
             "cleanupConflict": "Resolva primeiro os dados antigos antes de voltar a esta pasta.",
+            "insufficientSpace": "Não há espaço livre suficiente para mover os dados.",
+            "invalidAdoptionTarget": "Somente uma pasta com um perfil existente do VRCX-0 pode ser adotada.",
+            "invalidFreshStartTarget": "Uma pasta com um perfil existente do VRCX-0 não pode ser usada para começar do zero.",
             "copyFailed": "Não foi possível copiar o banco de dados. Os dados originais continuam em uso.",
             "commitFailed": "Não foi possível instalar a cópia. Os dados originais continuam em uso.",
             "pointerCommitFailed": "Não foi possível ativar a nova pasta. Reinicie o VRCX-0 para tentar novamente com segurança.",
@@ -2573,6 +2576,7 @@
                         "purge_in_progress": "Limpando dados de avatar...",
                         "purge_complete": "Dados de avatar limpos com sucesso. Reiniciando...",
                         "purge_failed": "Falha na limpeza: {error}",
+                        "purge_optimization_failed": "Os dados de avatar foram limpos, mas não foi possível otimizar o banco de dados: {error}",
                         "legacy_migration": "Migrar Dados do VRCX",
                         "legacy_migration_description": "Substituir a configuração e o banco de dados atuais do VRCX-0 pelos dados da pasta de dados definida do VRCX.",
                         "legacy_migration_confirm_title": "Substituir os dados do VRCX-0 pelos dados do VRCX?",
@@ -3326,6 +3330,7 @@
             },
             "mutual_friends": {
                 "header": "Amigos Mútuos",
+                "undisclosed_friend": "Amigo em comum não divulgado",
                 "sorting": {
                     "alphabetical": "Ordem Alfabética",
                     "last_active": "Último Ativo",

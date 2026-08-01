@@ -40,6 +40,7 @@ import {
     createEmptyGameLogSessionDurationDetails,
     type GameLogSessionDurationDetails
 } from '../gameLogSessionDurations';
+import type { GameLogSession, GameLogSessionEvent } from '../gameLogTypes';
 import { openGameLogUser } from '../gameLogUserLookup';
 import { SessionEventGroups } from './GameLogSessionEventRow';
 
@@ -75,7 +76,15 @@ function facepileInitial(name: string) {
     return Array.from(trimmed)[0].toUpperCase();
 }
 
-function SessionFriendFacepile({ friends }: { friends: any[] }) {
+type GameLogSessionFriend = ReturnType<
+    typeof collectGameLogSessionFriends
+>[number];
+
+function SessionFriendFacepile({
+    friends
+}: {
+    friends: readonly GameLogSessionFriend[];
+}) {
     const { t } = useTranslation();
     const shown = friends.slice(0, 3);
     const extra = friends.length - shown.length;
@@ -87,7 +96,7 @@ function SessionFriendFacepile({ friends }: { friends: any[] }) {
                 count: friends.length
             })}
         >
-            {shown.map((friend: any) => (
+            {shown.map((friend) => (
                 <UserHoverCard
                     key={friend.key}
                     userId={friend.userId}
@@ -140,8 +149,9 @@ function createPlayerDurationDetailsState({
     };
 }
 
-function sessionStartValue(session: any) {
-    return session?.created_at || session?.createdAt || '';
+function sessionStartValue(session: GameLogSession) {
+    const value = session?.created_at || session?.createdAt || '';
+    return typeof value === 'number' ? value : String(value);
 }
 
 function localDayKey(value: string | number) {
@@ -156,11 +166,11 @@ function localDayKey(value: string | number) {
     ].join('-');
 }
 
-function sessionDayKey(session: any) {
+function sessionDayKey(session: GameLogSession) {
     return localDayKey(sessionStartValue(session));
 }
 
-function SessionDayDivider({ session }: any) {
+function SessionDayDivider({ session }: { session: GameLogSession }) {
     const value = sessionStartValue(session);
     const label = formatDateFilter(value, 'date');
 
@@ -174,9 +184,17 @@ function SessionDayDivider({ session }: any) {
     );
 }
 
-function formatSessionEventRange(summary: any, fallbackCreatedAt: any) {
-    const firstEventAt = summary?.firstEventAt;
-    const lastEventAt = summary?.lastEventAt;
+type GameLogSessionSummary = {
+    firstEventAt: string;
+    lastEventAt: string;
+};
+
+function formatSessionEventRange(
+    summary: GameLogSessionSummary,
+    fallbackCreatedAt: string | number
+) {
+    const firstEventAt = summary.firstEventAt;
+    const lastEventAt = summary.lastEventAt;
     if (firstEventAt && lastEventAt && firstEventAt !== lastEventAt) {
         const firstDay = localDayKey(firstEventAt);
         const lastDay = localDayKey(lastEventAt);
@@ -186,7 +204,9 @@ function formatSessionEventRange(summary: any, fallbackCreatedAt: any) {
     return formatDateFilter(firstEventAt || fallbackCreatedAt, 'time');
 }
 
-function buildSessionSummary(events: any[] = []) {
+function buildSessionSummary(
+    events: readonly GameLogSessionEvent[] = []
+): GameLogSessionSummary {
     let firstEventAt = '';
     let lastEventAt = '';
 
@@ -220,6 +240,16 @@ function buildSessionSummary(events: any[] = []) {
     };
 }
 
+type GameLogSessionSegmentProps = {
+    sessionKey: string;
+    session: GameLogSession;
+    isLast: boolean;
+    isLatest: boolean;
+    isGameRunning: boolean;
+    isOpen?: boolean;
+    onOpenChange?: (sessionKey: string, nextOpen: boolean) => void;
+};
+
 const GameLogSessionSegment = memo(function GameLogSessionSegment({
     sessionKey,
     session,
@@ -228,11 +258,11 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
     isGameRunning,
     isOpen = false,
     onOpenChange
-}: any) {
+}: GameLogSessionSegmentProps) {
     const { t } = useTranslation();
     const worldTarget = resolveWorldTarget(session);
     const durationMs = resolveSessionDuration(session);
-    const sessionStartedAt = Date.parse(session?.created_at);
+    const sessionStartedAt = Date.parse(session?.created_at || '');
     const sessionLocation = session.location || '';
     const shouldLoadDurationDetails =
         Boolean(sessionLocation) && (isOpen || durationMs <= 0);
@@ -266,7 +296,10 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
         () => buildSessionSummary(session?.events ?? []),
         [session?.events]
     );
-    const eventRangeText = formatSessionEventRange(summary, session.created_at);
+    const eventRangeText = formatSessionEventRange(
+        summary,
+        session.created_at || ''
+    );
     const sessionFriends = useMemo(
         () => collectGameLogSessionFriends(session?.events ?? []),
         [session?.events]
@@ -275,7 +308,7 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
         playerDurationDetails.location === sessionLocation
             ? playerDurationDetails.durationByKey
             : EMPTY_DURATION_BY_KEY;
-    const handleOpenChange = (nextOpen: any) => {
+    const handleOpenChange = (nextOpen: boolean) => {
         if (sessionKey) {
             onOpenChange?.(sessionKey, nextOpen);
         }
@@ -436,6 +469,16 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
     );
 });
 
+type GameLogSessionsViewProps = {
+    sessions: GameLogSession[];
+    isGameRunning: boolean;
+    hasMore?: boolean;
+    isLoadingMore?: boolean;
+    autoFill?: boolean;
+    autoFillKey?: string;
+    onLoadMore?: () => void;
+};
+
 export function GameLogSessionsView({
     sessions,
     isGameRunning,
@@ -444,13 +487,13 @@ export function GameLogSessionsView({
     autoFill = false,
     autoFillKey = '',
     onLoadMore
-}: any) {
+}: GameLogSessionsViewProps) {
     const { t } = useTranslation();
     const scrollRef = useRef<HTMLDivElement | null>(null);
-    const sentinelRef = useRef(null);
+    const sentinelRef = useRef<HTMLDivElement | null>(null);
     const [autoFillAttempts, setAutoFillAttempts] = useState(0);
     const [sessionOpenOverrides, setSessionOpenOverrides] = useState(
-        () => new Map()
+        () => new Map<string, boolean>()
     );
     const [defaultOpen, setDefaultOpen] = useState(true);
     const collapseAll = useCallback(() => {
@@ -463,7 +506,7 @@ export function GameLogSessionsView({
     }, []);
     const allSessionsOpen = useMemo(
         () =>
-            sessions.every((session: any) => {
+            sessions.every((session) => {
                 const sessionKey = getGameLogSessionKey(session);
                 return sessionKey
                     ? (sessionOpenOverrides.get(sessionKey) ?? defaultOpen)
@@ -472,11 +515,11 @@ export function GameLogSessionsView({
         [defaultOpen, sessionOpenOverrides, sessions]
     );
     const handleSessionOpenChange = useCallback(
-        (sessionKey: any, nextOpen: any) => {
+        (sessionKey: string, nextOpen: boolean) => {
             if (!sessionKey) {
                 return;
             }
-            setSessionOpenOverrides((current: any) => {
+            setSessionOpenOverrides((current) => {
                 if (current.get(sessionKey) === nextOpen) {
                     return current;
                 }
@@ -505,7 +548,7 @@ export function GameLogSessionsView({
         }
 
         const observer = new IntersectionObserver(
-            (entries: any) => {
+            (entries) => {
                 for (const entry of entries) {
                     if (entry.isIntersecting) {
                         onLoadMore();
@@ -543,7 +586,7 @@ export function GameLogSessionsView({
 
         const timeoutId = window.setTimeout(() => {
             if (root.scrollHeight <= root.clientHeight + 16) {
-                setAutoFillAttempts((current: any) => current + 1);
+                setAutoFillAttempts((current) => current + 1);
                 onLoadMore();
             }
         }, 0);
@@ -588,7 +631,7 @@ export function GameLogSessionsView({
                 ref={scrollRef}
                 className="flex-1 overflow-x-hidden overflow-y-auto"
             >
-                {sessions.map((session: any, index: any) => {
+                {sessions.map((session, index) => {
                     const sessionKey = getGameLogSessionKey(session);
                     const currentDayKey = sessionDayKey(session);
                     const previousDayKey =

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -28,16 +28,10 @@ import {
     SHARE_COLLECTION_CLIENT_WORLD_CAP
 } from './shareCollectionDialogModel';
 import { useFavoritesPageController } from './useFavoritesPageController';
+import { useStableEvent } from './useStableEvent';
 
 const WORLD_COLLECTION_SHARE_COACHMARK_SEEN_CONFIG_KEY =
     'worldCollectionShareCoachmarkSeen';
-
-function useStableEvent(handler: any) {
-    const handlerRef = useRef(handler);
-    handlerRef.current = handler;
-
-    return useCallback((...args: any[]) => handlerRef.current?.(...args), []);
-}
 
 function FavoritesPage({
     kind,
@@ -267,14 +261,18 @@ function FavoritesPage({
     );
 }
 
-export function FavoriteFriendsPage(props: any) {
+type FavoriteRoutePageProps = {
+    embedded?: boolean;
+};
+
+export function FavoriteFriendsPage(props: FavoriteRoutePageProps) {
     return <FavoritesPage kind="friend" {...props} />;
 }
 
-export function FavoriteWorldsPage(props: any) {
+export function FavoriteWorldsPage(props: FavoriteRoutePageProps) {
     return <FavoritesPage kind="world" {...props} />;
 }
 
-export function FavoriteAvatarsPage(props: any) {
+export function FavoriteAvatarsPage(props: FavoriteRoutePageProps) {
     return <FavoritesPage kind="avatar" {...props} />;
 }

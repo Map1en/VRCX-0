@@ -4,6 +4,7 @@ use tauri::State;
 use vrcx_0_application::{
     self as social_mutation, SocialFriendMutationInput, SocialFriendMutationOutcome,
     SocialFriendRequestAcceptInput, SocialFriendRequestCancelInput, SocialMutationDeps,
+    SocialUnfriendBatchInput, SocialUnfriendBatchResult,
 };
 
 use crate::error::AppError;
@@ -64,6 +65,57 @@ pub async fn app__social_unfriend(
 
     let result = social_mutation::unfriend(deps(&state), input).await;
     record_outcome(&state, command, &result);
+
+    Ok(result?)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__social_unfriend_batch(
+    state: State<'_, AppState>,
+    input: SocialUnfriendBatchInput,
+) -> Result<SocialUnfriendBatchResult, AppError> {
+    let command = "app__social_unfriend_batch";
+    let target_count = input.targets.len();
+    state.runtime_context.diagnostics.record_command(
+        command,
+        "running",
+        format!("Unfriending {target_count} user(s)."),
+    );
+
+    let result =
+        social_mutation::unfriend_batch(deps(&state), &state.remote_mutations, input).await;
+    match &result {
+        Ok(output) => {
+            state.runtime_context.diagnostics.record_command(
+                command,
+                "ok",
+                format!(
+                    "succeeded={}, failed={}, localFailed={}",
+                    output.succeeded, output.failed, output.local_failed
+                ),
+            );
+            state.runtime_context.sync.record(
+                "socialMutation",
+                "ready",
+                format!(
+                    "{command} completed for {} user(s); {} failed.",
+                    output.succeeded, output.failed
+                ),
+                0,
+            );
+        }
+        Err(error) => {
+            state
+                .runtime_context
+                .diagnostics
+                .record_command(command, "error", error.to_string());
+            state
+                .runtime_context
+                .sync
+                .record_failure("socialMutation", error.to_string());
+        }
+    }
 
     Ok(result?)
 }

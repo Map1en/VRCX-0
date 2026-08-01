@@ -118,8 +118,13 @@ impl WebClient {
         &self,
         request: ExternalWebExecuteRequest,
     ) -> Result<(i32, String)> {
+        let follow_redirects = request.follow_redirects;
         let request = external_request_to_transport(request);
-        Ok(self.inner.execute(request).await?)
+        if follow_redirects {
+            Ok(self.inner.execute(request).await?)
+        } else {
+            Ok(self.inner.execute_without_redirects(request).await?)
+        }
     }
 
     pub async fn execute_api(
@@ -166,8 +171,29 @@ impl WebClient {
         input: ExternalHttpRequestInput,
         scope: ExternalApiScope,
     ) -> Result<ExternalApiExecuteResponse> {
-        let request = external_api::build_web_execute_request(input, scope)
+        self.execute_external_api_with_limit(input, scope, None)
+            .await
+    }
+
+    pub async fn execute_external_api_limited(
+        &self,
+        input: ExternalHttpRequestInput,
+        scope: ExternalApiScope,
+        max_response_bytes: usize,
+    ) -> Result<ExternalApiExecuteResponse> {
+        self.execute_external_api_with_limit(input, scope, Some(max_response_bytes))
+            .await
+    }
+
+    async fn execute_external_api_with_limit(
+        &self,
+        input: ExternalHttpRequestInput,
+        scope: ExternalApiScope,
+        max_response_bytes: Option<usize>,
+    ) -> Result<ExternalApiExecuteResponse> {
+        let mut request = external_api::build_web_execute_request(input, scope)
             .map_err(|error| crate::Error::Custom(error.to_string()))?;
+        request.response_body_limit = max_response_bytes;
         let (status, data) = self.execute_external(request).await?;
         if status == -1 {
             return Err(crate::Error::Custom(data));
@@ -205,5 +231,6 @@ fn external_request_to_transport(request: ExternalWebExecuteRequest) -> WebExecu
         headers: request.headers,
         body: request.body,
         upload: vrcx_0_vrchat_client::web_client::WebUploadMode::None,
+        response_body_limit: request.response_body_limit,
     }
 }

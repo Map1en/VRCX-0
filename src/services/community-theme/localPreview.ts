@@ -8,7 +8,6 @@ import {
     syncCommunityThemeAccentControl,
     syncCommunityThemeAppearanceControl
 } from './appearanceControl';
-import { currentTimestamp } from './installRecords';
 import {
     rewriteLocalThemeAssetUrls,
     setLocalPreviewCssSnapshot,
@@ -37,7 +36,7 @@ export async function loadLocalCommunityThemePreview(
     if (shouldApply && !shouldApply()) {
         throw new Error('Local theme preview load was cancelled.');
     }
-    const loadedAt = currentTimestamp();
+    const loadedAt = new Date().toISOString();
     const cssText = rewriteLocalThemeAssetUrls(
         output.css,
         output.cssPath,

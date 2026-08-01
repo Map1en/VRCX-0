@@ -14,8 +14,7 @@ use vrcx_0_host_desktop::vrchat_paths;
 use vrcx_0_persistence::data_dir_migration::{
     cleanup_manifest_size, data_dir_available_space, data_dir_migration_required_bytes,
     has_pending_data_dir_migration, inspect_data_dir_migration_target, DataDirCleanupPending,
-    DataDirCleanupReport, DataDirMigrationResult, DataDirMigrationTargetState,
-    DATA_DIR_MIGRATION_SPACE_MARGIN_BYTES,
+    DataDirCleanupReport, DataDirMigrationResult,
 };
 
 use vrcx_0_host_desktop::host_capabilities::{require_host_capability, HostCapability};
@@ -103,47 +102,6 @@ pub async fn app__get_app_data_dir_state(
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__validate_app_data_dir(
-    state: State<'_, AppState>,
-    path: String,
-) -> Result<app_paths::AppDataDirValidation, AppError> {
-    Ok(app_paths::validate_app_data_dir_selection(
-        path,
-        &state.runtime.app_data_dir.current_dir,
-    )?)
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn app__set_app_data_dir(
-    state: State<'_, AppState>,
-    path: String,
-) -> Result<AppDataDirState, AppError> {
-    ensure_data_dir_settings_available(&state)?;
-    let validation =
-        app_paths::validate_app_data_dir_selection(path, &state.runtime.app_data_dir.current_dir)?;
-    ensure_pointer_change_accepted(
-        state
-            .data_dir_migration
-            .switch_data_dir_pointer(PathBuf::from(validation.path)),
-    )?;
-    data_dir_state(&state.runtime.app_data_dir, &state.data_dir_migration)
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn app__clear_app_data_dir(state: State<'_, AppState>) -> Result<AppDataDirState, AppError> {
-    ensure_data_dir_settings_available(&state)?;
-    ensure_pointer_change_accepted(
-        state
-            .data_dir_migration
-            .switch_data_dir_pointer(state.runtime.app_data_dir.default_dir.clone()),
-    )?;
-    data_dir_state(&state.runtime.app_data_dir, &state.data_dir_migration)
-}
-
-#[tauri::command]
-#[specta::specta]
 pub async fn app__plan_data_dir_migration(
     state: State<'_, AppState>,
     path: String,
@@ -171,37 +129,7 @@ pub async fn app__request_data_dir_migration(
     let source_dir = state.paths.app_data.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let plan = plan_data_dir_migration(&current_dir, &source_dir, path)?;
-        match mode {
-            DataDirMigrationMode::Migrate => {
-                if plan.available_bytes < plan.required_bytes {
-                    return Err(AppError::Custom(format!(
-                        "Data directory migration requires {} bytes but only {} bytes are available.",
-                        plan.required_bytes, plan.available_bytes
-                    )));
-                }
-                Ok(runtime.run_migration(
-                    PathBuf::from(plan.target_path),
-                    plan.target_state == DataDirMigrationTargetState::ExistingProfile,
-                ))
-            }
-            DataDirMigrationMode::AdoptExisting => {
-                if plan.target_state != DataDirMigrationTargetState::ExistingProfile {
-                    return Err(AppError::Custom(
-                        "Only a directory containing a VRCX-0 profile can be adopted.".into(),
-                    ));
-                }
-                Ok(runtime.switch_data_dir_pointer(PathBuf::from(plan.target_path)))
-            }
-            DataDirMigrationMode::FreshStart => {
-                if plan.target_state == DataDirMigrationTargetState::ExistingProfile {
-                    return Err(AppError::Custom(
-                        "A directory containing a VRCX-0 profile cannot be used as a fresh start."
-                            .into(),
-                    ));
-                }
-                Ok(runtime.switch_data_dir_pointer(PathBuf::from(plan.target_path)))
-            }
-        }
+        Ok(runtime.request_migration(plan, mode))
     })
     .await
     .map_err(|error| AppError::Custom(format!("data directory migration task: {error}")))?
@@ -309,26 +237,13 @@ fn plan_data_dir_migration(
 ) -> Result<DataDirMigrationPlan, AppError> {
     let validation = app_paths::prepare_app_data_dir_migration_target(path, current_dir)?;
     let target_path = PathBuf::from(&validation.path);
-    let required_bytes = data_dir_migration_required_bytes(source_dir)?
-        .checked_add(DATA_DIR_MIGRATION_SPACE_MARGIN_BYTES)
-        .ok_or_else(|| AppError::Custom("Data directory migration size overflowed.".into()))?;
-    Ok(DataDirMigrationPlan {
-        target_path: validation.path,
-        required_bytes,
-        available_bytes: data_dir_available_space(&target_path)?,
-        target_state: inspect_data_dir_migration_target(&target_path)?,
-    })
-}
-
-fn ensure_pointer_change_accepted(outcome: DataDirMigrationActionOutcome) -> Result<(), AppError> {
-    if outcome.accepted {
-        Ok(())
-    } else {
-        Err(AppError::Custom(format!(
-            "Data directory pointer change was rejected: {:?}.",
-            outcome.error.map(|error| error.code)
-        )))
-    }
+    vrcx_0_application::build_data_dir_migration_plan(
+        validation.path,
+        data_dir_migration_required_bytes(source_dir)?,
+        data_dir_available_space(&target_path)?,
+        inspect_data_dir_migration_target(&target_path)?,
+    )
+    .map_err(AppError::from)
 }
 
 fn ensure_data_dir_settings_available(state: &AppState) -> Result<(), AppError> {

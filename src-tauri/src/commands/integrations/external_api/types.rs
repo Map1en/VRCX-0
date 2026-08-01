@@ -36,13 +36,6 @@ pub struct ExternalApiYoutubeVideoInput {
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-pub struct ExternalApiVrcStatusInput {
-    #[serde(default)]
-    pub(crate) path: String,
-}
-
-#[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
 pub struct ExternalApiUrlInput {
     #[serde(default)]
     pub(crate) url: String,

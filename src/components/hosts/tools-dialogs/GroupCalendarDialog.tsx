@@ -12,13 +12,21 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import {
+    entityQueryPolicies,
+    fetchCachedData,
+    queryKeys
+} from '@/lib/entityQueryCache';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
+import { commands } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
-import groupProfileRepository from '@/repositories/groupProfileRepository';
-import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
+import vrchatToolsRepository, {
+    type GroupCalendarEventRecord
+} from '@/repositories/vrchatToolsRepository';
 import { replaceBioSymbols } from '@/shared/utils/string';
 import { usePreferencesStore } from '@/state/preferencesStore';
+import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import { Calendar, CalendarDayButton } from '@/ui/shadcn/calendar';
 import {
@@ -52,9 +60,7 @@ import {
     updateArrayValue
 } from './toolsDialogUtils';
 
-type GroupCalendarEvent = Awaited<
-    ReturnType<typeof vrchatToolsRepository.getAllGroupCalendars>
->[number];
+type GroupCalendarEvent = GroupCalendarEventRecord;
 
 function getLocalTimeZone() {
     return Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -126,6 +132,10 @@ function GroupCalendarDayButton({
 
 export function GroupCalendarDialog({ open, onOpenChange }: any) {
     const { t, i18n } = useTranslation();
+    const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
+    const currentEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
     const weekStartsOn = usePreferencesStore((state) => state.weekStartsOn);
     const calendarTimeZone = useMemo(() => getLocalTimeZone(), []);
     const calendarLocale = useMemo(
@@ -213,91 +223,48 @@ export function GroupCalendarDialog({ open, onOpenChange }: any) {
             );
     }, [events, groupNames, search]);
 
-    async function resolveGroupNames(rows: any, requestId: any) {
-        const ids = Array.from(
-            new Set(rows.map(getEventGroupId).filter(Boolean))
-        );
-        const nextNames: any = {};
-        const nextProfiles: any = {};
-        await Promise.all(
-            ids.map(async (groupId: any) => {
-                if (groupNames[groupId]) {
-                    nextNames[groupId] = groupNames[groupId];
-                    if (groupProfiles[groupId]) {
-                        nextProfiles[groupId] = groupProfiles[groupId];
-                    }
-                    return;
-                }
-                try {
-                    const group = await groupProfileRepository.getGroupProfile({
-                        groupId,
-                        includeRoles: false
-                    });
-                    nextNames[groupId] = group.name || groupId;
-                    nextProfiles[groupId] = group;
-                } catch {
-                    nextNames[groupId] = groupId;
-                }
-            })
-        );
-        if (requestId !== loadRequestRef.current) {
-            return;
-        }
-        setGroupNames((current: any) => ({ ...current, ...nextNames }));
-        if (Object.keys(nextProfiles).length) {
-            setGroupProfiles((current: any) => ({
-                ...current,
-                ...nextProfiles
-            }));
-        }
-    }
-
-    async function loadCalendar({ force = false }: any = {}) {
+    async function loadCalendar(force = false) {
         const requestId = loadRequestRef.current + 1;
         loadRequestRef.current = requestId;
         setLoading(true);
         try {
-            const params: any = {
-                n: 100,
-                offset: 0,
-                date: formatCalendarRequestDate(visibleMonthDate)
-            };
-            const [calendarRows, followingRows, featuredRows] =
-                await Promise.all([
-                    vrchatToolsRepository.getAllGroupCalendars(params, {
-                        force
-                    }),
-                    vrchatToolsRepository.getAllFollowingGroupCalendars(
-                        params,
-                        {
-                            force
-                        }
-                    ),
-                    showFeaturedEvents
-                        ? vrchatToolsRepository.getAllFeaturedGroupCalendars(
-                              params,
-                              {
-                                  force
-                              }
-                          )
-                        : Promise.resolve([])
-                ]);
-            const normalizedRows = [...calendarRows, ...featuredRows].map(
-                (event: any) => ({
-                    ...event,
-                    title: replaceBioSymbols(event.title || ''),
-                    description: replaceBioSymbols(event.description || '')
-                })
-            );
+            const date = formatCalendarRequestDate(visibleMonthDate);
+            const snapshot = await fetchCachedData({
+                queryKey: queryKeys.groupCalendarList(
+                    'aggregate',
+                    {
+                        date,
+                        includeFeatured: showFeaturedEvents,
+                        userId: currentUserId
+                    },
+                    currentEndpoint
+                ),
+                policy: entityQueryPolicies.groupCollection,
+                force,
+                queryFn: () =>
+                    commands.appGroupCalendarSnapshotGet({
+                        date,
+                        includeFeatured: showFeaturedEvents
+                    })
+            });
+            const normalizedRows = snapshot.events.map((event: any) => ({
+                ...event,
+                title: replaceBioSymbols(event.title || ''),
+                description: replaceBioSymbols(event.description || '')
+            }));
             if (requestId !== loadRequestRef.current) {
                 return;
             }
             setEvents(normalizedRows);
-            setFollowingIds(followingRows.map(getEventId).filter(Boolean));
-            await resolveGroupNames(
-                [...normalizedRows, ...followingRows],
-                requestId
-            );
+            setFollowingIds(snapshot.followingEventIds);
+            setGroupNames((current: any) => ({
+                ...current,
+                ...snapshot.groupNames
+            }));
+            setGroupProfiles((current: any) => ({
+                ...current,
+                ...snapshot.groupProfiles
+            }));
         } catch (error) {
             if (requestId !== loadRequestRef.current) {
                 return;
@@ -334,7 +301,13 @@ export function GroupCalendarDialog({ open, onOpenChange }: any) {
             return;
         }
         loadCalendar();
-    }, [open, visibleMonthDate, showFeaturedEvents]);
+    }, [
+        currentEndpoint,
+        currentUserId,
+        open,
+        visibleMonthDate,
+        showFeaturedEvents
+    ]);
 
     async function toggleFeatured(nextValue: any) {
         setShowFeaturedEvents(nextValue);
@@ -443,7 +416,7 @@ export function GroupCalendarDialog({ open, onOpenChange }: any) {
                         variant="outline"
                         disabled={loading}
                         onClick={() => {
-                            loadCalendar({ force: true });
+                            loadCalendar(true);
                         }}
                     >
                         <RefreshCwIcon data-icon="inline-start" />

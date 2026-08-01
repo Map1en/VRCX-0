@@ -1,10 +1,11 @@
+import type { TFunction } from 'i18next';
 import {
     CloudIcon,
     HardDriveIcon,
     HistoryIcon,
     Share2Icon
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { isEditableTarget } from '@/components/layout/useGlobalKeyboardShortcuts';
@@ -19,8 +20,14 @@ import {
 } from '@/ui/shadcn/popover';
 
 import { getFavoritesDensityConfig } from '../favoritesDensity';
-import type { FavoriteGroup } from '../favoritesTypes';
+import type {
+    FavoriteGroup,
+    FavoriteItem,
+    FavoriteKind
+} from '../favoritesTypes';
+import type { useFavoritesPageController } from '../useFavoritesPageController';
 import { useFavoritesVirtualGrid } from '../useFavoritesVirtualGrid';
+import { useStableEvent } from '../useStableEvent';
 import { FavoriteCard } from './FavoriteCard';
 import { GroupRailSection } from './FavoritesGroupRail';
 import { FavoritesSelectionBar } from './FavoritesSelectionBar';
@@ -29,7 +36,7 @@ import {
     FavoritesLoadingState
 } from './FavoritesStateParts';
 
-function getFavoriteSearchResultsSubtitle(t: any, count: any) {
+function getFavoriteSearchResultsSubtitle(t: TFunction, count: number) {
     return t(
         count === 1
             ? 'view.favorites.dynamic.search_results_singular'
@@ -38,12 +45,34 @@ function getFavoriteSearchResultsSubtitle(t: any, count: any) {
     );
 }
 
-function useStableEvent(handler: any) {
-    const handlerRef = useRef(handler);
-    handlerRef.current = handler;
+type FavoritesController = ReturnType<typeof useFavoritesPageController>;
 
-    return useCallback((...args: any[]) => handlerRef.current?.(...args), []);
-}
+type FavoritesGroupRailPanelProps = {
+    collections: FavoritesController['collections'];
+    creatingLocalGroup: boolean;
+    favoriteCommands: FavoritesController['actions'];
+    filters: FavoritesController['filters'];
+    kind: FavoriteKind;
+    newLocalGroupName: string;
+    onNewGroupNameChange(value: string): void;
+    onShareCollectionGroup?(group: FavoriteGroup): void;
+    setCreatingLocalGroup: FavoritesController['setCreatingLocalGroup'];
+    viewData: FavoritesController['viewData'];
+};
+
+type FavoritesContentPanelProps = {
+    collections: FavoritesController['collections'];
+    favoriteCommands: FavoritesController['actions'];
+    filters: FavoritesController['filters'];
+    kind: FavoriteKind;
+    layout: FavoritesController['layout'];
+    selection: FavoritesController['selection'];
+    viewData: FavoritesController['viewData'];
+    onShareCollectionGroup?(group: FavoriteGroup): void;
+    shareCoachmarkOpen?: boolean;
+    onDismissShareCoachmark?(): void;
+    instanceActionGatesByItemKey: FavoritesController['instanceActionGatesByItemKey'];
+};
 
 type ShareCollectionButtonProps = {
     group: FavoriteGroup;
@@ -119,7 +148,7 @@ export function FavoritesGroupRailPanel({
     onShareCollectionGroup,
     setCreatingLocalGroup,
     viewData
-}: any) {
+}: FavoritesGroupRailPanelProps) {
     const { t } = useTranslation();
     const activeSource = viewData.hasSearchInput ? '' : filters.selectedSource;
     const activeGroupKey = viewData.hasSearchInput
@@ -129,7 +158,7 @@ export function FavoritesGroupRailPanel({
         collections.favoriteLoadStatus === 'running' ||
         favoriteCommands.refreshing;
 
-    const selectGroup = useStableEvent((group: any) => {
+    const selectGroup = useStableEvent((group: FavoriteGroup) => {
         filters.setSearchQuery('');
         filters.setSelectedSource(group.source);
         filters.setSelectedGroupKey(group.key);
@@ -227,7 +256,7 @@ export function FavoritesContentPanel({
     shareCoachmarkOpen,
     onDismissShareCoachmark,
     instanceActionGatesByItemKey
-}: any) {
+}: FavoritesContentPanelProps) {
     const { t } = useTranslation();
     const remoteDetails = collections.remoteEntityDetails || {};
     const remoteDetailsData = remoteDetails.data || {};
@@ -312,10 +341,10 @@ export function FavoritesContentPanel({
     const handleCardFriendBoop = useStableEvent(
         favoriteCommands.sendFavoriteFriendBoop
     );
-    const handleCardWorldNewInstance = useStableEvent((entry: any) =>
+    const handleCardWorldNewInstance = useStableEvent((entry: FavoriteItem) =>
         favoriteCommands.openWorldNewInstance(entry, false)
     );
-    const handleCardWorldSelfInvite = useStableEvent((entry: any) =>
+    const handleCardWorldSelfInvite = useStableEvent((entry: FavoriteItem) =>
         favoriteCommands.openWorldNewInstance(entry, true)
     );
     const handleCardAvatarSelect = useStableEvent(
@@ -412,7 +441,7 @@ export function FavoritesContentPanel({
                                 height: `${virtualGrid.totalHeight}px`
                             }}
                         >
-                            {virtualGrid.visibleRows.map((row: any) => (
+                            {virtualGrid.visibleRows.map((row) => (
                                 <div
                                     key={row.key}
                                     className="absolute right-0 left-0 grid min-w-0"
@@ -423,7 +452,7 @@ export function FavoritesContentPanel({
                                         transform: `translateY(${row.top}px)`
                                     }}
                                 >
-                                    {row.items.map((item: any) => (
+                                    {row.items.map((item: FavoriteItem) => (
                                         <FavoriteCard
                                             key={item.key}
                                             item={item}

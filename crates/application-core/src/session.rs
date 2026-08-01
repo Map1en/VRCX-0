@@ -2,8 +2,8 @@
 #[cfg(test)]
 mod tests {
     use crate::ports::{
-        HostRealtimeSessionContext as RealtimeSessionContext,
-        HostSessionGameProcessStatus as GameProcessStatus, HostSessionRuntime,
+        HostRealtimeSessionContext, HostSessionGameProcessStatus as GameProcessStatus,
+        HostSessionRuntime,
     };
 
     #[test]
@@ -59,7 +59,7 @@ mod tests {
     #[test]
     fn tracks_realtime_context_generation() {
         let runtime = HostSessionRuntime::new();
-        let generation = runtime.set_realtime_context(RealtimeSessionContext::new(
+        let generation = runtime.set_realtime_context(HostRealtimeSessionContext::new(
             " usr_1 ".into(),
             " https://api.example.test ".into(),
             " wss://pipeline.example.test ".into(),
@@ -82,7 +82,7 @@ mod tests {
     #[test]
     fn clears_realtime_context_only_for_matching_generation() {
         let runtime = HostSessionRuntime::new();
-        let generation = runtime.set_realtime_context(RealtimeSessionContext::new(
+        let generation = runtime.set_realtime_context(HostRealtimeSessionContext::new(
             "usr_1".into(),
             "https://api.example.test".into(),
             "wss://pipeline.example.test".into(),

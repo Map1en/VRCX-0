@@ -55,15 +55,27 @@ export function useWorldDialogTabbedRuntimeState() {
     const currentLocationStartedAt = useRuntimeStore(
         (state) => state.gameState.currentLocationStartedAt
     );
+    const currentLocationPlayers = useRuntimeStore(
+        (state) => state.gameState.currentLocationPlayers
+    );
+    const currentWorldId = useRuntimeStore(
+        (state) => state.gameState.currentWorldId
+    );
+    const currentWorldName = useRuntimeStore(
+        (state) => state.gameState.currentWorldName
+    );
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const openImagePreview = useModalStore((state) => state.openImagePreview);
 
     return {
         currentEndpoint,
         currentGameLocation,
+        currentLocationPlayers,
         currentLocationStartedAt,
         currentUserId,
         currentUserSnapshot,
+        currentWorldId,
+        currentWorldName,
         friendsById,
         openImagePreview,
         screenshotCacheStatus

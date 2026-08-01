@@ -458,9 +458,18 @@ fn group_from_value(group: &Value) -> Option<GroupQuickModerationGroup> {
     if group_id.is_empty() {
         return None;
     }
-    let name = object_string(group, &["name", "displayName"]).if_empty_then(|| group_id.clone());
-    let owner_id = object_string(group, &["ownerId", "ownerID"])
-        .if_empty_then(|| nested_object_string(group, "owner", &["id", "userId"]));
+    let name = object_string(group, &["name", "displayName"]);
+    let name = if name.is_empty() {
+        group_id.clone()
+    } else {
+        name
+    };
+    let owner_id = object_string(group, &["ownerId", "ownerID"]);
+    let owner_id = if owner_id.is_empty() {
+        nested_object_string(group, "owner", &["id", "userId"])
+    } else {
+        owner_id
+    };
     Some(GroupQuickModerationGroup {
         group_id,
         name,
@@ -500,8 +509,10 @@ fn group_with_member(
     mut group: GroupQuickModerationGroup,
     member: &Value,
 ) -> GroupQuickModerationGroup {
-    group.membership_label =
-        object_string(member, &["membershipStatus", "status"]).if_empty_then(|| "member".into());
+    group.membership_label = object_string(member, &["membershipStatus", "status"]);
+    if group.membership_label.is_empty() {
+        group.membership_label = "member".into();
+    }
     group.role_label = role_label_from_member(member);
     group
 }
@@ -530,20 +541,6 @@ fn role_label_from_member(member: &Value) -> String {
         return role_names.join(", ");
     }
     string_array(object.get("roleIds")).join(", ")
-}
-
-trait IfEmptyThen {
-    fn if_empty_then(self, fallback: impl FnOnce() -> String) -> String;
-}
-
-impl IfEmptyThen for String {
-    fn if_empty_then(self, fallback: impl FnOnce() -> String) -> String {
-        if self.is_empty() {
-            fallback()
-        } else {
-            self
-        }
-    }
 }
 
 #[cfg(test)]

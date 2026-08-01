@@ -9,10 +9,7 @@ import {
     startFriendProfileLoad
 } from '@/services/friendProfileLoadService';
 import friendRelationshipService from '@/services/friendRelationshipService';
-import {
-    startMutualGraphFetch,
-    startMutualGraphFetchStatusPolling
-} from '@/services/mutualGraphFetchService';
+import { startMutualGraphFetch } from '@/services/mutualGraphFetchService';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -78,6 +75,7 @@ export function useFriendListRowActions({
         (state) => state.friendProfileLoad.status
     );
     const handledMutualGraphRunRef = useRef(0);
+    const bulkUnfriendRunRef = useRef(0);
     const isMutualFetching =
         mutualGraphOwnerUserId === currentUserId &&
         (mutualGraphStatus === 'running' || mutualGraphStatus === 'cancelling');
@@ -206,6 +204,18 @@ export function useFriendListRowActions({
                 deleted: !result.stale
             };
         } catch (error) {
+            const auth = useRuntimeStore.getState().auth;
+            if (
+                normalizeId(auth.currentUserId) !==
+                    normalizeId(currentUserId) ||
+                normalizeId(auth.currentUserEndpoint) !==
+                    normalizeId(currentEndpoint)
+            ) {
+                return {
+                    stale: true,
+                    deleted: false
+                };
+            }
             toast.error(
                 error instanceof Error
                     ? error.message
@@ -241,6 +251,9 @@ export function useFriendListRowActions({
     }
 
     async function bulkUnfriendSelected() {
+        if (!currentUserId || !currentEndpoint) {
+            return;
+        }
         const selectedRows = filteredRows.filter((friend) =>
             selectedFriendIds.has(normalizeId(friend?.id))
         );
@@ -262,27 +275,104 @@ export function useFriendListRowActions({
         if (!result.ok) {
             return;
         }
+        const runId = bulkUnfriendRunRef.current + 1;
+        bulkUnfriendRunRef.current = runId;
         setIsBulkDeleting(true);
-        try {
-            let deletedCount = 0;
-            for (const friend of selectedRows) {
-                const deleteResult = await deleteFriendById(friend.id);
-                if (deleteResult.stale) {
-                    break;
-                }
-                if (deleteResult.deleted) {
-                    deletedCount += 1;
-                }
+        const targetIds = selectedRows.map((friend) => normalizeId(friend.id));
+        setDeletingFriendIds((current) => {
+            const next = new Set(current);
+            for (const userId of targetIds) {
+                next.add(userId);
             }
-            if (deletedCount > 0) {
+            return next;
+        });
+        try {
+            const batchResult = await friendRelationshipService.deleteFriends({
+                expectedEndpoint: currentEndpoint,
+                expectedOwnerUserId: currentUserId,
+                friends: selectedRows
+            });
+            if (
+                batchResult.stale ||
+                bulkUnfriendRunRef.current !== runId ||
+                normalizeId(useRuntimeStore.getState().auth.currentUserId) !==
+                    batchResult.ownerUserId ||
+                normalizeId(
+                    useRuntimeStore.getState().auth.currentUserEndpoint
+                ) !== normalizeId(currentEndpoint)
+            ) {
+                return;
+            }
+            const rowsById = new Map(
+                selectedRows.map((friend) => [normalizeId(friend.id), friend])
+            );
+            const removedIds = new Set<string>();
+            for (const item of batchResult.items) {
+                if (
+                    item.state === 'applied' ||
+                    item.state === 'remoteOkLocalFailed'
+                ) {
+                    removedIds.add(item.userId);
+                    if (item.state === 'remoteOkLocalFailed') {
+                        toast.warning(
+                            t(
+                                'dialog.user.toast.applied_on_vrchat_but_local_update_failed'
+                            )
+                        );
+                    }
+                    continue;
+                }
+                const friend = rowsById.get(item.userId);
+                toast.error(
+                    item.message ||
+                        t('view.friends.toast.failed_to_unfriend_value', {
+                            value: friend?.displayName || item.userId
+                        })
+                );
+            }
+            if (removedIds.size) {
+                setSelectedFriendIds((current) => {
+                    const next = new Set(current);
+                    for (const userId of removedIds) {
+                        next.delete(userId);
+                    }
+                    return next;
+                });
                 toast.success(
                     t('view.friends.dynamic.unfriended_value_friends', {
-                        value: deletedCount
+                        value: removedIds.size
                     })
                 );
             }
+        } catch (error) {
+            const auth = useRuntimeStore.getState().auth;
+            if (
+                bulkUnfriendRunRef.current !== runId ||
+                normalizeId(auth.currentUserId) !==
+                    normalizeId(currentUserId) ||
+                normalizeId(auth.currentUserEndpoint) !==
+                    normalizeId(currentEndpoint)
+            ) {
+                return;
+            }
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : t('view.friends.toast.failed_to_unfriend_value', {
+                          value: selectedRows.length
+                      })
+            );
         } finally {
-            setIsBulkDeleting(false);
+            if (bulkUnfriendRunRef.current === runId) {
+                setDeletingFriendIds((current) => {
+                    const next = new Set(current);
+                    for (const userId of targetIds) {
+                        next.delete(userId);
+                    }
+                    return next;
+                });
+                setIsBulkDeleting(false);
+            }
         }
     }
 
@@ -361,7 +451,6 @@ export function useFriendListRowActions({
                     normalizeId(friend?.id)
                 )
             });
-            startMutualGraphFetchStatusPolling();
             toast.info(t('view.charts.mutual_friend.prompt.message'));
         } catch (error) {
             toast.error(

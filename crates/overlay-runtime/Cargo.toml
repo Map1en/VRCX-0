@@ -5,6 +5,7 @@ edition = "2021"
 
 [features]
 default = []
+friends-panel = ["vrcx-0-vr-overlay/friends-panel"]
 steamvr-overlay = ["vrcx-0-host-desktop/steamvr-overlay"]
 openxr-overlay = ["vrcx-0-host-desktop/openxr-overlay"]
 

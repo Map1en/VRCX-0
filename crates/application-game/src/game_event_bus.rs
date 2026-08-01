@@ -1,5 +1,4 @@
 use vrcx_0_application_core::RuntimeEventPayload;
-use vrcx_0_persistence::game_log::GameLogWriteBatch;
 
 use crate::{DebugLoggingOutcome, GameLogProjection, RuntimeEventBus};
 
@@ -119,8 +118,7 @@ pub enum AddGameLogEventPayload {
 #[derive(Clone, Debug, PartialEq, serde::Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct GameLogPersistenceFallbackPayload {
-    pub batch: GameLogWriteBatch,
-    pub raw_rows: Vec<Vec<String>>,
+    pub attempted_row_count: usize,
     pub error: String,
 }
 
@@ -191,9 +189,24 @@ mod tests {
     use serde_json::json;
 
     use super::{
-        CrashRelaunchDecisionPayload, EmptyEventPayload, GameClientEvent, GameLogSideEffectEvent,
-        NowPlayingPayload,
+        CrashRelaunchDecisionPayload, EmptyEventPayload, GameClientEvent,
+        GameLogPersistenceFallbackPayload, GameLogSideEffectEvent, NowPlayingPayload,
     };
+
+    #[test]
+    fn persistence_fallback_exposes_diagnostics_without_raw_rows() {
+        assert_eq!(
+            serde_json::to_value(GameLogPersistenceFallbackPayload {
+                attempted_row_count: 3,
+                error: "database is locked".into(),
+            })
+            .unwrap(),
+            json!({
+                "attemptedRowCount": 3,
+                "error": "database is locked",
+            })
+        );
+    }
 
     #[test]
     fn now_playing_reset_preserves_empty_payload_object() {

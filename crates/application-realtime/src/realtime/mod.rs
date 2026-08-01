@@ -44,3 +44,4 @@ pub use service::{
     RealtimeCurrentUserRefreshExpectation, RealtimeHostRuntime, RealtimeHostRuntimeDeps,
     RealtimeStopRequest, SyntheticFriendEventOutcome,
 };
+pub use user_query_cache::{UserQueryCachePolicy, UserQueryKind, UserQueryOptions};

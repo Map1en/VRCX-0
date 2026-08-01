@@ -17,8 +17,8 @@ use vrcx_0_application_core::{Error, Result};
 use vrcx_0_application_core::{HostSessionRuntime, WebClient};
 
 use crate::social_baseline::types::{
-    SocialFavoritesBaselineInput, SocialFavoritesBaselineOutput, SocialFriendRosterBaselineInput,
-    SocialFriendRosterBaselineOutput,
+    SocialFavoritesBaselineInput, SocialFavoritesBaselineOutput, SocialFavoritesBaselineRequest,
+    SocialFriendRosterBaselineInput, SocialFriendRosterBaselineOutput,
 };
 
 const FAVORITES_PAGE_SIZE: i64 = 300;
@@ -140,15 +140,18 @@ mod favorites;
 mod friends;
 mod remote;
 
-pub use favorites::build_favorites_baseline;
 use favorites::CurrentUserSnapshotView;
+pub use favorites::{build_favorites_baseline, build_favorites_baseline_from_friend_records};
 #[cfg(test)]
 pub(crate) use friends::friend_log_relationship_candidates;
 pub use friends::{
     apply_friend_roster_baseline_sync_outcome, build_friend_roster_baseline,
     build_friend_roster_baseline_deferred, FriendStatusVerdicts,
 };
-use friends::{build_friend_state_map, build_snapshot_friend_ids};
+use friends::{
+    build_friend_roster_baseline_deferred_internal, build_friend_state_map,
+    build_snapshot_friend_ids,
+};
 pub(crate) use friends::{
     reconcile_friend_roster_records, verify_friend_log_relationship_changes,
     FriendRosterReconcileOutcome,
@@ -169,21 +172,15 @@ pub async fn build_synced_friend_roster_baseline(
     let endpoint = input.endpoint.clone();
     let websocket = input.websocket.clone();
     let watermark = runtime.capture_friend_baseline_watermark()?;
-    let mut output = build_friend_roster_baseline_deferred(deps.clone(), input).await?;
-    if output.stale {
+    let baseline = build_friend_roster_baseline_deferred_internal(deps.clone(), input).await?;
+    let mut output = baseline.output;
+    let Some(friends_by_id) = baseline.friends_by_id else {
         return Ok(SyncedFriendRosterBaseline {
             output,
             friends_by_id: None,
         });
-    }
-
-    let friends_value = output
-        .snapshot
-        .as_ref()
-        .and_then(|snapshot| snapshot.as_value().get("friendsById"))
-        .cloned()
-        .ok_or_else(|| Error::Custom("Friend roster baseline has no friendsById map.".into()))?;
-    let friends_by_id: HashMap<String, FriendRecord> = serde_json::from_value(friends_value)?;
+    };
+    let friends_by_id = friends_by_id?;
     let verdicts =
         verify_friend_log_relationship_changes(&deps, &endpoint, &output.user_id, &friends_by_id)
             .await;
@@ -195,9 +192,7 @@ pub async fn build_synced_friend_roster_baseline(
         verdicts,
     )?;
     let canonical_friends = outcome
-        .snapshot
-        .as_ref()
-        .filter(|_| outcome.result.accepted)
+        .accepted_snapshot()
         .map(|snapshot| snapshot.friends_by_id.clone());
     if !apply_friend_roster_baseline_sync_outcome(&mut output, outcome)? {
         return Ok(SyncedFriendRosterBaseline {

@@ -10,9 +10,14 @@ use slint::{
     platform::{
         self,
         software_renderer::{MinimalSoftwareWindow, PremultipliedRgbaColor, RepaintBufferType},
-        Platform, PlatformError, PointerEventButton, WindowAdapter, WindowEvent,
+        Platform, PlatformError, WindowAdapter,
     },
-    ComponentHandle, Image, LogicalPosition, Rgba8Pixel, SharedPixelBuffer,
+    ComponentHandle, Image, Rgba8Pixel, SharedPixelBuffer,
+};
+#[cfg(feature = "friends-panel")]
+use slint::{
+    platform::{PointerEventButton, WindowEvent},
+    LogicalPosition,
 };
 
 use crate::{AvatarBitmap, OverlaySize, RgbaFrame};
@@ -39,6 +44,7 @@ impl Platform for OverlaySlintPlatform {
     }
 }
 
+#[cfg(feature = "friends-panel")]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum SlintPanelPointerEvent {
     Moved {
@@ -139,6 +145,7 @@ where
     Ok((component, window))
 }
 
+#[cfg(feature = "friends-panel")]
 pub(super) fn to_window_event(event: SlintPanelPointerEvent) -> WindowEvent {
     match event {
         SlintPanelPointerEvent::Moved { x, y } => WindowEvent::PointerMoved {

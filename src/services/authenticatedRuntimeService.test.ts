@@ -70,11 +70,33 @@ function phaseSnapshot(
             count: 1,
             snapshot: {
                 currentUserId: 'usr_self',
+                favoriteLimits: {},
                 remoteFavoritesById: {},
+                remoteFavoritesByObjectId: {},
                 favoritesSortOrder: [],
+                favoriteFriendIds: ['usr_friend'],
+                groupedFavoriteFriendIdsByGroupKey: {},
+                favoriteWorldIds: [],
+                groupedFavoriteWorldIdsByGroupKey: {},
+                favoriteAvatarIds: [],
+                cachedFavoriteGroupsById: {},
+                favoriteFriendGroups: [],
+                favoriteWorldGroups: [],
+                favoriteAvatarGroups: [],
+                localWorldFavorites: {},
+                localAvatarFavorites: {},
                 localFriendFavorites: {
                     Favorites: ['usr_friend']
-                }
+                },
+                localWorldFavoriteGroups: [],
+                localAvatarFavoriteGroups: [],
+                localFriendFavoriteGroups: ['Favorites'],
+                localWorldFavoritesList: [],
+                localAvatarFavoritesList: [],
+                localFriendFavoritesList: ['usr_friend'],
+                localWorldDetailsById: {},
+                localAvatarDetailsById: {},
+                detail: 'Favorites ready.'
             }
         },
         realtimeTransport: {

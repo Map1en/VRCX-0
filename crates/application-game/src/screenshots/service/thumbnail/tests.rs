@@ -1,6 +1,9 @@
-use super::super::library::{find_screenshots, scan_screenshot_library_in};
+use super::super::library::{
+    find_screenshots, scan_screenshot_library_in, start_screenshot_library_scan,
+};
 use super::super::paths::unix_time_millis;
 use super::*;
+use crate::{RuntimeEventBus, TaskSupervisor};
 
 struct TestDir {
     path: PathBuf,
@@ -49,6 +52,50 @@ fn write_text_chunk(path: &Path, keyword: &str, text: &str) -> Result<()> {
         png::PngFile::open_rw(&path_str).map_err(|e| Error::Custom(format!("png open: {e}")))?;
     let chunk = png::generate_text_chunk(keyword, text);
     assert!(png.write_chunk(&chunk));
+    Ok(())
+}
+
+#[test]
+fn screenshot_library_scan_emits_started_and_terminal_status_events() -> Result<()> {
+    let dir = TestDir::new("screenshot-library-status-events");
+    let root = dir.path.join("photos");
+    std::fs::create_dir_all(&root)?;
+    write_test_png(&root.join("one.png"))?;
+    let cache = MetadataCacheDb::new(&dir.path.join("metadataCache.db"))?;
+    let event_bus = RuntimeEventBus::new();
+    let tasks = TaskSupervisor::new();
+
+    let started = start_screenshot_library_scan(
+        &cache,
+        dir.path.join("thumbnails"),
+        event_bus.clone(),
+        tasks.clone(),
+        false,
+        root.to_string_lossy().into_owned(),
+    );
+
+    assert!(started.running);
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    while cache.scan_status().running && std::time::Instant::now() < deadline {
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    let mut events = Vec::new();
+    while events.len() < 2 && std::time::Instant::now() < deadline {
+        events.extend(event_bus.take_events_for_test());
+        if events.len() >= 2 {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    tasks.stop_all();
+
+    assert_eq!(events.len(), 2);
+    assert!(events
+        .iter()
+        .all(|event| event.name == "screenshotLibraryScanStatus"));
+    assert_eq!(events[0].payload["running"], serde_json::json!(true));
+    assert_eq!(events[1].payload["running"], serde_json::json!(false));
+    assert_eq!(events[1].payload["scanned"], serde_json::json!(1));
     Ok(())
 }
 

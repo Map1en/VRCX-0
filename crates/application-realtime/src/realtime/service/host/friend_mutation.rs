@@ -57,7 +57,9 @@ impl RealtimeHostRuntime {
             Some(ScopedFriendLogMutation::new(
                 owner_user_id,
                 endpoint,
-                FriendLogMutation::Upsert { record },
+                FriendLogMutation::Upsert {
+                    record: Box::new(record),
+                },
             )),
         )
     }

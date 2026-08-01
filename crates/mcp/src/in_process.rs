@@ -112,3 +112,6 @@ pub async fn spawn_in_process_tools(runtime: McpRuntime) -> Result<InProcessMcpT
 
     Ok(InProcessMcpTools { client })
 }
+
+#[cfg(test)]
+mod tests;

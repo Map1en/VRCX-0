@@ -439,6 +439,7 @@ pub(crate) mod tests {
         }
     }
 
+    #[cfg(feature = "friends-panel")]
     pub(crate) fn test_avatar_bitmap_with_red(red: u8) -> AvatarBitmap {
         AvatarBitmap {
             width: 1,

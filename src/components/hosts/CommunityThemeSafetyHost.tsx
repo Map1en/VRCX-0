@@ -3,10 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { tauriClient } from '@/platform/tauri/client';
-import {
-    disableInstalledCommunityTheme,
-    stopLocalCommunityThemePreview
-} from '@/services/communityThemeService';
+import { stopLocalCommunityThemePreview } from '@/services/communityThemeService';
 
 export function CommunityThemeSafetyHost(): null {
     const { t } = useTranslation();
@@ -17,7 +14,6 @@ export function CommunityThemeSafetyHost(): null {
 
         async function disableThemeFromTray() {
             try {
-                await disableInstalledCommunityTheme();
                 await stopLocalCommunityThemePreview();
                 toast.success(t('view.community_themes.toast.theme_disabled'));
             } catch (error) {
@@ -33,7 +29,7 @@ export function CommunityThemeSafetyHost(): null {
             .subscribe('communityThemeDisableRequested', () => {
                 void disableThemeFromTray();
             })
-            .then((unsubscribe: any) => {
+            .then((unsubscribe: () => void) => {
                 if (disposed) {
                     unsubscribe();
                     return;

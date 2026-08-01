@@ -1,5 +1,5 @@
 import { registerCommunityThemeAppearanceHandlers } from './appearanceConflictCoordinator';
-import { disableInstalledCommunityTheme } from './community-theme/installedThemes';
+import { refreshCommunityThemeProjection } from './community-theme/installedThemes';
 import { stopLocalCommunityThemePreview } from './community-theme/localPreview';
 
 export { isCommunityThemeAccentControlled } from './community-theme/appearanceControl';
@@ -9,7 +9,9 @@ export {
     enableInstalledCommunityTheme,
     initializeCommunityThemes,
     installCommunityTheme,
-    loadCatalog
+    loadCatalog,
+    loadCommunityThemeStats,
+    reportCommunityThemeInstall
 } from './community-theme/installedThemes';
 export {
     loadLocalCommunityThemePreview,
@@ -25,6 +27,6 @@ export {
 } from './community-theme/overrideCss';
 
 registerCommunityThemeAppearanceHandlers({
-    disableInstalledCommunityTheme,
+    refreshInstalledCommunityTheme: refreshCommunityThemeProjection,
     stopLocalCommunityThemePreview
 });

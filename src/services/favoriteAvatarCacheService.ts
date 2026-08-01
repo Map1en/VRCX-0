@@ -1,99 +1,27 @@
-import avatarCacheRepository from '@/repositories/avatarCacheRepository';
+import { commands } from '@/platform/tauri/bindings';
 import { useFavoriteStore } from '@/state/favoriteStore';
 
-function normalizeEntityId(value: unknown) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
-
-function normalizeString(value: unknown) {
-    return typeof value === 'string' ? value : String(value ?? '');
-}
-
-function normalizeReleaseStatus(avatar: any) {
-    return normalizeEntityId(avatar?.releaseStatus).toLowerCase();
-}
-
-function hasCompleteAvatarSnapshot(avatar: any) {
-    const name = normalizeString(avatar?.name).trim();
-    const imageUrl =
-        normalizeString(avatar?.thumbnailImageUrl).trim() ||
-        normalizeString(avatar?.imageUrl).trim();
-    return Boolean(name && imageUrl);
-}
-
-function canUpsertAvatarSnapshot(avatar: any) {
-    return (
-        normalizeReleaseStatus(avatar) === 'public' &&
-        hasCompleteAvatarSnapshot(avatar)
-    );
-}
-
-function canInsertMissingAvatarSnapshot(avatar: any) {
-    return (
-        normalizeReleaseStatus(avatar) !== 'public' &&
-        hasCompleteAvatarSnapshot(avatar)
-    );
-}
-
-function buildAvatarCacheEntry(avatar: any, fallbackAvatarId?: unknown) {
-    if (!avatar || typeof avatar !== 'object') {
-        return null;
-    }
-
-    const id =
-        normalizeEntityId(avatar.id) || normalizeEntityId(fallbackAvatarId);
-    if (!id) {
-        return null;
-    }
-
-    if (
-        !canUpsertAvatarSnapshot(avatar) &&
-        !canInsertMissingAvatarSnapshot(avatar)
-    ) {
-        return null;
-    }
-
-    return {
-        id,
-        authorId: normalizeEntityId(avatar.authorId),
-        authorName: normalizeString(avatar.authorName),
-        created_at: normalizeString(avatar.created_at ?? avatar.createdAt),
-        description: normalizeString(avatar.description),
-        imageUrl: normalizeString(avatar.imageUrl),
-        name: normalizeString(avatar.name),
-        releaseStatus: normalizeString(avatar.releaseStatus),
-        thumbnailImageUrl: normalizeString(avatar.thumbnailImageUrl),
-        updated_at: normalizeString(avatar.updated_at ?? avatar.updatedAt),
-        version: Number(avatar.version) || 0
-    };
-}
+import {
+    favoriteCachePayload,
+    normalizeFavoriteCacheEntityId
+} from './favoriteCachePayload';
 
 export async function cacheAvatarDetails(
-    avatar: any,
+    avatar: unknown,
     fallbackAvatarId?: unknown
-) {
-    const entry = buildAvatarCacheEntry(avatar, fallbackAvatarId);
-    if (!entry) {
+): Promise<boolean> {
+    const entity = favoriteCachePayload(avatar);
+    if (!entity) {
         return false;
     }
-
-    const canUpsert = canUpsertAvatarSnapshot(avatar);
-    if (!canUpsert) {
-        const existing = await avatarCacheRepository.getCachedAvatarById(
-            entry.id
-        );
-        if (existing) {
-            return false;
-        }
-    }
-
-    await avatarCacheRepository.addAvatarToCache(entry);
-    return true;
+    return commands.appFavoriteCacheSnapshot({
+        kind: 'avatar',
+        entity,
+        fallbackEntityId: normalizeFavoriteCacheEntityId(fallbackAvatarId)
+    });
 }
 
-function isFavoriteAvatarId(id: string) {
+function isFavoriteAvatarId(id: string): boolean {
     const state = useFavoriteStore.getState();
     return (
         state.favoriteAvatarIds.includes(id) ||
@@ -101,29 +29,30 @@ function isFavoriteAvatarId(id: string) {
     );
 }
 
-export async function cacheFavoriteAvatarDetails(avatar: any) {
-    const id = normalizeEntityId(avatar?.id);
-    if (!id) {
+export async function cacheFavoriteAvatarDetails(
+    avatar: unknown
+): Promise<boolean> {
+    const entity = favoriteCachePayload(avatar);
+    if (!entity) {
         return false;
     }
-
-    if (!isFavoriteAvatarId(id)) {
-        return false;
-    }
-
-    return cacheAvatarDetails(avatar);
+    const id = normalizeFavoriteCacheEntityId(entity.id);
+    return id && isFavoriteAvatarId(id) ? cacheAvatarDetails(entity) : false;
 }
 
-function reportAvatarCacheError(error: unknown) {
+function reportAvatarCacheError(error: unknown): void {
     console.warn('Failed to cache favorite avatar details:', error);
 }
 
-export function persistAvatarDetails(avatar: any, fallbackAvatarId?: unknown) {
+export function persistAvatarDetails(
+    avatar: unknown,
+    fallbackAvatarId?: unknown
+): void {
     void cacheAvatarDetails(avatar, fallbackAvatarId).catch(
         reportAvatarCacheError
     );
 }
 
-export function persistFavoriteAvatarDetails(avatar: any) {
+export function persistFavoriteAvatarDetails(avatar: unknown): void {
     void cacheFavoriteAvatarDetails(avatar).catch(reportAvatarCacheError);
 }

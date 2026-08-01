@@ -112,6 +112,9 @@
             "pendingLegacyMigration": "Nejprve dokončete čekající převod starých dat.",
             "pendingMigration": "Čeká změna datové složky. Restartujte VRCX-0.",
             "cleanupConflict": "Před návratem do této složky nejprve vyřešte stará data.",
+            "insufficientSpace": "Pro přesun dat není dostatek volného místa.",
+            "invalidAdoptionTarget": "Převzít lze pouze složku s existujícím profilem VRCX-0.",
+            "invalidFreshStartTarget": "Složku s existujícím profilem VRCX-0 nelze použít pro nový začátek.",
             "copyFailed": "Databázi se nepodařilo zkopírovat. Nadále se používají původní data.",
             "commitFailed": "Kopii se nepodařilo nainstalovat. Nadále se používají původní data.",
             "pointerCommitFailed": "Novou datovou složku se nepodařilo aktivovat. Restartujte VRCX-0 a zkuste to bezpečně znovu.",
@@ -2575,6 +2578,7 @@
                         "purge_in_progress": "Probíhá mazání dat avatarů",
                         "purge_complete": "Data avatarů byla úspěšně vymazána. Restartuji",
                         "purge_failed": "Mazání se nezdařilo: {error}",
+                        "purge_optimization_failed": "Data avatarů byla vymazána, ale databázi se nepodařilo optimalizovat: {error}",
                         "legacy_migration": "Migrovat data VRCX",
                         "legacy_migration_description": "Nahradí aktuální konfiguraci a databázi VRCX-0 daty z pevné datové složky VRCX.",
                         "legacy_migration_confirm_title": "Nahradit data VRCX-0 daty z VRCX?",
@@ -3328,6 +3332,7 @@
             },
             "mutual_friends": {
                 "header": "Společní přátelé",
+                "undisclosed_friend": "Nezveřejněný společný přítel",
                 "sorting": {
                     "alphabetical": "Abecedně",
                     "last_active": "Naposledy aktivní",

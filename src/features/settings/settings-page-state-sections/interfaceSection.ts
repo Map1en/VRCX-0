@@ -56,26 +56,24 @@ export function buildInterfaceSection({
         resetTrustColors,
         saveTrustColor,
         setPrefs,
-        onLanguageChange: (value: unknown) => {
+        onLanguageChange: (value: string | null) => {
             setAppLanguagePreference(value);
         },
-        onFontFamilyChange: (value: unknown) => {
+        onFontFamilyChange: (value: string) => {
             if (value === 'custom') {
                 openCustomFontDialog();
                 return;
             }
             saveFontFamilyPreference(value);
         },
-        onCjkFontPackChange: (value: unknown) => {
+        onCjkFontPackChange: (value: string) => {
             selectCjkFontPack(value);
         },
-        onZoomInputChange: (value: unknown) => {
+        onZoomInputChange: (value: string) => {
             setZoomInput(value);
         },
-        onZoomBlur: (
-            event: { target?: { value?: unknown } } | null | undefined
-        ) => {
-            saveInterfaceZoomLevel(event?.target?.value ?? zoomInput);
+        onZoomBlur: () => {
+            saveInterfaceZoomLevel(zoomInput);
         },
         onNotificationLayoutChange: (value: string) => {
             commit(

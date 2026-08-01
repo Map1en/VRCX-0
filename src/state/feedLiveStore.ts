@@ -19,6 +19,13 @@ interface FeedLiveStoreState {
         entry: FeedLiveEntryPayload | null | undefined,
         options?: FeedLivePushOptions
     ) => void;
+    pushEntries: (
+        entries:
+            | readonly (FeedLiveEntryPayload | null | undefined)[]
+            | null
+            | undefined,
+        options?: FeedLivePushOptions
+    ) => void;
     patchEntry: (
         id: unknown,
         fields: FeedEntryPatchInput | null | undefined
@@ -73,27 +80,28 @@ function nonEmptyFeedPatch(fields: FeedEntryPatchInput): FeedEntryPatch {
     return patch;
 }
 
-export const useFeedLiveStore = create<FeedLiveStoreState>((set) => ({
+export const useFeedLiveStore = create<FeedLiveStoreState>((set, get) => ({
     ...initialState,
-    pushEntry(entry, { ownerUserId = '' }: FeedLivePushOptions = {}) {
-        if (!isRecord(entry)) {
+    pushEntry(entry, options) {
+        get().pushEntries([entry], options);
+    },
+    pushEntries(entries, { ownerUserId = '' }: FeedLivePushOptions = {}) {
+        const validEntries = (Array.isArray(entries) ? entries : []).filter(
+            (entry): entry is FeedLiveEntryPayload => isRecord(entry)
+        );
+        if (!validEntries.length) {
             return;
         }
         set((state) => {
-            const version = state.version + 1;
-            const entries = [
-                ...state.entries,
-                {
-                    sequence: version,
-                    ownerUserId,
-                    entry: { ...entry, ownerUserId }
-                }
-            ].slice(-100);
-            const nextState = {
-                version,
-                entries
+            const appended = validEntries.map((entry, index) => ({
+                sequence: state.version + index + 1,
+                ownerUserId,
+                entry: { ...entry, ownerUserId }
+            }));
+            return {
+                version: state.version + validEntries.length,
+                entries: [...state.entries, ...appended].slice(-100)
             };
-            return nextState;
         });
     },
     patchEntry(id, fields) {

@@ -36,6 +36,12 @@ export function useUserDialogRuntimeState(normalizedUserId: string) {
     const runtimeCurrentWorldId = useRuntimeStore(
         (state) => state.gameState.currentWorldId
     );
+    const runtimeCurrentWorldName = useRuntimeStore(
+        (state) => state.gameState.currentWorldName
+    );
+    const currentLocationStartedAt = useRuntimeStore(
+        (state) => state.gameState.currentLocationStartedAt
+    );
     const currentLocationPlayerIds = useRuntimeStore(
         (state) => state.gameState.currentLocationPlayerIds
     );
@@ -91,6 +97,8 @@ export function useUserDialogRuntimeState(normalizedUserId: string) {
             currentLocation: runtimeCurrentLocation,
             currentDestination: runtimeCurrentDestination,
             currentWorldId: runtimeCurrentWorldId,
+            currentWorldName: runtimeCurrentWorldName,
+            currentLocationStartedAt,
             currentLocationPlayerIds,
             currentLocationPlayers,
             isGameRunning
@@ -98,10 +106,12 @@ export function useUserDialogRuntimeState(normalizedUserId: string) {
         [
             currentLocationPlayerIds,
             currentLocationPlayers,
+            currentLocationStartedAt,
             isGameRunning,
             runtimeCurrentDestination,
             runtimeCurrentLocation,
-            runtimeCurrentWorldId
+            runtimeCurrentWorldId,
+            runtimeCurrentWorldName
         ]
     );
     const groupInstancesState = useMemo(

@@ -1,5 +1,5 @@
 import { PlusIcon, XIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type PropsWithChildren } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -36,7 +36,25 @@ import {
 } from '../settingsValues';
 import { Field, FieldGroup } from './SettingsField';
 
-export function SettingsTabContent({ value, children }: any) {
+type SettingsTabContentProps = PropsWithChildren<{
+    value: string;
+}>;
+
+type TablePageSizesDialogProps = {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSaved?: (sizes: number[]) => void;
+};
+
+type PersistOptions = {
+    close?: boolean;
+    showToast?: boolean;
+};
+
+export function SettingsTabContent({
+    value,
+    children
+}: SettingsTabContentProps) {
     return (
         <TabsContent
             value={value}
@@ -47,10 +65,17 @@ export function SettingsTabContent({ value, children }: any) {
     );
 }
 
-export function TablePageSizesDialog({ open, onOpenChange, onSaved }: any) {
+export function TablePageSizesDialog({
+    open,
+    onOpenChange,
+    onSaved
+}: TablePageSizesDialogProps) {
     const { t } = useTranslation();
     const [draft, setDraft] = useState(() => [...TABLE_PAGE_SIZE_DEFAULTS]);
     const [input, setInput] = useState('');
+    const committedSizesRef = useRef([...TABLE_PAGE_SIZE_DEFAULTS]);
+    const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+    const latestSaveIdRef = useRef(0);
     const options = buildTablePageSizeOptions(draft);
     const filteredOptions = filterTablePageSizeOptions(options, input);
 
@@ -58,63 +83,82 @@ export function TablePageSizesDialog({ open, onOpenChange, onSaved }: any) {
         if (!open) {
             return;
         }
-        setDraft(
-            normalizeTablePageSizes(
-                usePreferencesStore.getState().tablePageSizes
-            )
+        const savedSizes = normalizeTablePageSizes(
+            usePreferencesStore.getState().tablePageSizes
         );
+        committedSizesRef.current = savedSizes;
+        setDraft(savedSizes);
         setInput('');
     }, [open]);
 
     async function persist(
-        nextSizes: any,
-        { close = false, showToast = false }: any = {}
-    ) {
+        nextSizes: unknown,
+        { close = false, showToast = false }: PersistOptions = {}
+    ): Promise<void> {
         const normalizedSizes = normalizeTablePageSizes(nextSizes);
+        const saveId = latestSaveIdRef.current + 1;
+        latestSaveIdRef.current = saveId;
         setDraft(normalizedSizes);
+
+        const saveTask = saveQueueRef.current
+            .catch(() => undefined)
+            .then(async () => {
+                const saved =
+                    await setTablePageSizesPreference(normalizedSizes);
+                committedSizesRef.current = saved;
+                onSaved?.(saved);
+            });
+        saveQueueRef.current = saveTask.catch(() => undefined);
+
         try {
-            const saved = await setTablePageSizesPreference(normalizedSizes);
-            onSaved?.(saved);
+            await saveTask;
+            if (saveId !== latestSaveIdRef.current) {
+                return;
+            }
             if (close) {
                 onOpenChange(false);
             }
             if (showToast) {
                 toast.success(t('common.settings_saved'));
             }
-            return true;
         } catch (error) {
+            if (saveId === latestSaveIdRef.current) {
+                setDraft(committedSizesRef.current);
+            }
             toast.error(
                 error instanceof Error
                     ? error.message
                     : t('view.settings.toast.failed_to_save_setting')
             );
-            return false;
         }
     }
 
-    function addPageSize(value: any = input, opts: any = {}) {
-        const parsed = Number.parseInt(value, 10);
+    function addPageSize(
+        value: string | number = input,
+        options: PersistOptions = {}
+    ) {
+        const parsed = Number.parseInt(String(value), 10);
         if (!Number.isFinite(parsed) || parsed <= 0 || parsed > 1000) {
             toast.error(
                 t('view.settings.appearance.appearance.table_page_sizes_error')
             );
             return;
         }
-        persist([...draft, parsed], opts);
+        void persist([...draft, parsed], options);
         setInput('');
     }
 
-    function removePageSize(value: any) {
-        const next = draft.filter((entry: any) => entry !== value);
-        persist(next.length ? next : [...TABLE_PAGE_SIZE_DEFAULTS]);
+    function removePageSize(value: number) {
+        const next = draft.filter((entry) => entry !== value);
+        void persist(next.length ? next : [...TABLE_PAGE_SIZE_DEFAULTS]);
     }
 
-    function togglePageSize(value: any) {
+    function togglePageSize(value: number) {
         if (draft.includes(value)) {
             removePageSize(value);
             return;
         }
-        persist([...draft, value]);
+        void persist([...draft, value]);
     }
 
     function save() {
@@ -145,7 +189,7 @@ export function TablePageSizesDialog({ open, onOpenChange, onSaved }: any) {
                 </DialogHeader>
                 <FieldGroup>
                     <div className="flex flex-wrap gap-2">
-                        {draft.map((size: any) => (
+                        {draft.map((size) => (
                             <Badge
                                 key={size}
                                 variant="secondary"
@@ -212,7 +256,7 @@ export function TablePageSizesDialog({ open, onOpenChange, onSaved }: any) {
                     </Field>
                     <div className="max-h-64 overflow-y-auto rounded-md border p-1">
                         <FieldGroup>
-                            {filteredOptions.map((size: any) => {
+                            {filteredOptions.map((size) => {
                                 const optionId = `settings-table-page-size-option-${size}`;
                                 return (
                                     <ShadcnField

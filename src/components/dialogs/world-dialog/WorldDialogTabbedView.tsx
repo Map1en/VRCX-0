@@ -14,13 +14,17 @@ import type {
     GroupProfileRecord,
     WorldProfileRecord
 } from '@/domain/entities/profileEntities';
+import {
+    resolveRuntimeCurrentInstanceRoster,
+    type CurrentInstanceRosterSnapshot
+} from '@/domain/instances/currentInstanceRoster';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import mediaRepository from '@/repositories/mediaRepository';
-import playerListPersistenceRepository from '@/repositories/playerListPersistenceRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { copyTextToClipboard } from '@/services/clipboardService';
+import { loadCurrentInstanceRoster } from '@/services/currentInstanceRosterService';
 import { openUserDialog } from '@/services/dialogService';
 import {
     recordGameRuntimePresence,
@@ -30,6 +34,11 @@ import {
     convertFileUrlToImageUrl,
     openExternalLink
 } from '@/services/entityMediaService';
+import {
+    getCurrentScreenshotLibraryScanStatus,
+    startScreenshotLibraryScan,
+    subscribeScreenshotLibraryScanStatus
+} from '@/services/screenshotLibraryScanService';
 import { vrchatWorldUrl } from '@/shared/constants/vrchatWebUrls';
 import { vrcxWorldDeepLink } from '@/shared/constants/vrcxDeepLinks';
 import { parseLocation } from '@/shared/utils/location';
@@ -183,7 +192,7 @@ type CurrentInstanceDetails = {
     instance: EntityRecord | null;
     ownerUser: EntityRecord | null;
     ownerGroup: EntityRecord | null;
-    playerSnapshot: unknown;
+    playerSnapshot: CurrentInstanceRosterSnapshot | null;
 };
 
 type InstanceDetailTarget = {
@@ -312,9 +321,12 @@ export function WorldDialogTabbedView({
     const {
         currentEndpoint,
         currentGameLocation,
+        currentLocationPlayers,
         currentLocationStartedAt,
         currentUserId,
         currentUserSnapshot,
+        currentWorldId,
+        currentWorldName,
         friendsById,
         openImagePreview,
         screenshotCacheStatus
@@ -476,8 +488,7 @@ export function WorldDialogTabbedView({
         }
 
         let active = true;
-        let pollTimer = 0;
-        let pollInFlight = false;
+        let scanActive = false;
         let scanCompleted = false;
         let scanError = '';
 
@@ -520,6 +531,7 @@ export function WorldDialogTabbedView({
             if (scanCompleted) {
                 return;
             }
+            scanActive = false;
             scanCompleted = true;
             if (status?.error) {
                 scanError = status.error;
@@ -527,70 +539,58 @@ export function WorldDialogTabbedView({
             loadWorldScreenshots();
         };
 
-        const pollScanStatus = () => {
-            if (pollInFlight || scanCompleted) {
+        const handleScanStatus = (status: ScreenshotScanStatus) => {
+            if (!active) {
                 return;
             }
-            pollInFlight = true;
-            mediaRepository
-                .getScreenshotLibraryStatus()
-                .then((status) => {
-                    if (!active) {
-                        return;
-                    }
-                    if (status?.error) {
-                        scanError = status.error;
-                    }
-                    if (!status?.running) {
-                        if (pollTimer) {
-                            window.clearInterval(pollTimer);
-                            pollTimer = 0;
-                        }
-                        completeScan(status);
-                    }
-                })
-                .catch((error: unknown) => {
-                    if (!active) {
-                        return;
-                    }
-                    if (pollTimer) {
-                        window.clearInterval(pollTimer);
-                        pollTimer = 0;
-                    }
-                    setWorldScreenshots([]);
-                    setWorldScreenshotsError(
-                        error instanceof Error
-                            ? error.message
-                            : t('dialog.world.screenshots.load_failed')
-                    );
-                    setWorldScreenshotsStatus('error');
-                })
-                .finally(() => {
-                    pollInFlight = false;
-                });
+            if (status.error) {
+                scanError = status.error;
+            }
+            if (status.running) {
+                scanError = '';
+                scanActive = true;
+                scanCompleted = false;
+                return;
+            }
+            if (scanActive) {
+                completeScan(status);
+            }
         };
 
+        const unsubscribe =
+            subscribeScreenshotLibraryScanStatus(handleScanStatus);
         setWorldScreenshotsStatus('loading');
         setWorldScreenshotsError('');
         const forceRefresh = worldScreenshotsForceRefreshRef.current;
         worldScreenshotsForceRefreshRef.current = false;
-        mediaRepository
-            .startScreenshotLibraryScan(forceRefresh)
-            .then((status) => {
+        const initializeScan = async () => {
+            try {
+                let currentStatus =
+                    await getCurrentScreenshotLibraryScanStatus();
                 if (!active) {
                     return;
                 }
-                if (status?.error) {
-                    scanError = status.error;
+                if (!currentStatus) {
+                    currentStatus =
+                        await getCurrentScreenshotLibraryScanStatus();
+                    if (!active) {
+                        return;
+                    }
                 }
-                if (status?.running) {
-                    pollTimer = window.setInterval(pollScanStatus, 1000);
-                    pollScanStatus();
+                if (currentStatus?.running) {
+                    handleScanStatus(currentStatus);
                     return;
                 }
-                completeScan(status);
-            })
-            .catch((error: unknown) => {
+                scanActive = true;
+                const status = await startScreenshotLibraryScan(forceRefresh);
+                if (!active || !status) {
+                    return;
+                }
+                handleScanStatus(status);
+                if (!status.running) {
+                    completeScan(status);
+                }
+            } catch (error) {
                 if (!active) {
                     return;
                 }
@@ -601,13 +601,13 @@ export function WorldDialogTabbedView({
                         : t('dialog.world.screenshots.load_failed')
                 );
                 setWorldScreenshotsStatus('error');
-            });
+            }
+        };
+        void initializeScan();
 
         return () => {
             active = false;
-            if (pollTimer) {
-                window.clearInterval(pollTimer);
-            }
+            unsubscribe();
         };
     }, [activeTab, openNonce, t, world?.id, worldScreenshotsRefreshToken]);
 
@@ -765,34 +765,29 @@ export function WorldDialogTabbedView({
                 )
                 .catch((): null => null),
             isCurrentLiveInstance
-                ? playerListPersistenceRepository
-                      .getCurrentInstanceSnapshot({
-                          currentUserId,
-                          currentLocation: normalizedWorldId
-                      })
-                      .catch((): null => null)
+                ? loadCurrentInstanceRoster({
+                      currentUserId,
+                      currentLocation: normalizedWorldId,
+                      runtime: {
+                          currentLocation: currentResolvedLocation,
+                          currentLocationStartedAt,
+                          currentWorldId,
+                          currentWorldName,
+                          players: currentLocationPlayers
+                      }
+                  }).catch((): null => null)
                 : Promise.resolve(null)
         ])
             .then(async ([instance, playerSnapshot]) => {
-                const playerSnapshotRecord = record(playerSnapshot);
-                const playerContext = record(playerSnapshotRecord.context);
-                const snapshotPlayers = (
-                    Array.isArray(playerSnapshotRecord.players)
-                        ? playerSnapshotRecord.players
-                        : []
-                ).map((player) => {
-                    const source = record(player);
-                    const userId = firstText(source.userId, source.user_id);
-                    return {
-                        id: userId,
-                        userId,
-                        displayName: firstText(
-                            source.displayName,
-                            source.display_name
-                        ),
-                        joinedAt: firstText(source.joinedAt, source.joined_at)
-                    };
-                });
+                const playerContext = playerSnapshot?.context;
+                const snapshotPlayers = (playerSnapshot?.players || []).map(
+                    (player) => ({
+                        id: player.userId,
+                        userId: player.userId,
+                        displayName: player.displayName,
+                        joinedAt: player.joinedAt
+                    })
+                );
                 const instanceRecord = instance || {};
                 const ownerUserRecord = record(instanceRecord.ownerUser);
                 const ownerRecord = record(instanceRecord.owner);
@@ -898,11 +893,11 @@ export function WorldDialogTabbedView({
                         currentLocation: normalizedWorldId,
                         currentLocationStartedAt:
                             currentLocationStartedAt ||
-                            playerContext.createdAt ||
+                            playerContext?.createdAt ||
                             '',
                         currentLocationPlayers: snapshotPlayers,
                         currentWorldName:
-                            playerContext.worldName || world?.name || ''
+                            playerContext?.worldName || world?.name || ''
                     });
                 }
                 setCurrentInstanceDetails({
@@ -934,9 +929,48 @@ export function WorldDialogTabbedView({
         currentLocationStartedAt,
         currentUserId,
         currentUserSnapshot,
+        currentWorldId,
+        currentWorldName,
         isInstanceLocation,
         normalizedWorldId,
         world?.name
+    ]);
+
+    useEffect(() => {
+        if (
+            !isInstanceLocation ||
+            !sameLocationTag(currentResolvedLocation, normalizedWorldId)
+        ) {
+            return;
+        }
+
+        const playerSnapshot = resolveRuntimeCurrentInstanceRoster({
+            requestedLocation: normalizedWorldId,
+            runtime: {
+                currentLocation: currentResolvedLocation,
+                currentLocationStartedAt,
+                currentWorldId,
+                currentWorldName,
+                players: currentLocationPlayers
+            }
+        });
+        if (!playerSnapshot) {
+            return;
+        }
+
+        setCurrentInstanceDetails((current) => ({
+            ...current,
+            location: normalizedWorldId,
+            playerSnapshot
+        }));
+    }, [
+        currentLocationPlayers,
+        currentLocationStartedAt,
+        currentResolvedLocation,
+        currentWorldId,
+        currentWorldName,
+        isInstanceLocation,
+        normalizedWorldId
     ]);
 
     const worldUrl = world.id ? vrchatWorldUrl(world.id) : '';

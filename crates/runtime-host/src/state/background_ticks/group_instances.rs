@@ -41,15 +41,10 @@ pub(in crate::state) async fn run_background_group_instance_refresh(
     context
         .runtime_context
         .event_bus
-        .emit(RuntimeGroupInstancesProjection {
-            status: "running".into(),
-            user_id: session.current_user_id.clone(),
-            endpoint: session.endpoint.clone(),
-            fetched_at: None,
-            error: None,
-            instances: None,
-            group_order: None,
-        });
+        .emit(RuntimeGroupInstancesProjection::running(
+            session.current_user_id.clone(),
+            session.endpoint.clone(),
+        ));
     match refresh_background_group_instances(context.web.as_ref(), context.db.as_ref(), &session)
         .await
     {
@@ -72,17 +67,13 @@ pub(in crate::state) async fn run_background_group_instance_refresh(
             context
                 .runtime_context
                 .event_bus
-                .emit(RuntimeGroupInstancesProjection {
-                    status: "ready".into(),
-                    user_id: session.current_user_id.clone(),
-                    endpoint: session.endpoint.clone(),
-                    fetched_at: Some(refresh.fetched_at),
-                    error: None,
-                    instances: Some(refresh.instances),
-                    group_order: Some(
-                        group_order_source.read_group_order(&session.current_user_id),
-                    ),
-                });
+                .emit(RuntimeGroupInstancesProjection::ready(
+                    session.current_user_id.clone(),
+                    session.endpoint.clone(),
+                    refresh.fetched_at,
+                    refresh.instances,
+                    group_order_source.read_group_order(&session.current_user_id),
+                ));
             let detail = format!("group instance facts refreshed: {count} rows.");
             emit_background_info(
                 context.runtime_context,
@@ -116,15 +107,11 @@ pub(in crate::state) async fn run_background_group_instance_refresh(
             context
                 .runtime_context
                 .event_bus
-                .emit(RuntimeGroupInstancesProjection {
-                    status: "error".into(),
-                    user_id: session.current_user_id.clone(),
-                    endpoint: session.endpoint.clone(),
-                    fetched_at: None,
-                    error: Some(error.to_string()),
-                    instances: None,
-                    group_order: None,
-                });
+                .emit(RuntimeGroupInstancesProjection::failed(
+                    session.current_user_id.clone(),
+                    session.endpoint.clone(),
+                    error.to_string(),
+                ));
             emit_background_warning(
                 context.runtime_context,
                 context.backend_runtime,
@@ -156,26 +143,16 @@ fn emit_stale_group_instance_refresh_idle(
     if same_scope {
         runtime_context
             .event_bus
-            .emit(RuntimeGroupInstancesProjection {
-                status: "idle".into(),
-                user_id: session.current_user_id.clone(),
-                endpoint: session.endpoint.clone(),
-                fetched_at: None,
-                error: None,
-                instances: None,
-                group_order: None,
-            });
+            .emit(RuntimeGroupInstancesProjection::idle_preserving_entries(
+                session.current_user_id.clone(),
+                session.endpoint.clone(),
+            ));
         return;
     }
     runtime_context
         .event_bus
-        .emit(RuntimeGroupInstancesProjection {
-            status: "idle".into(),
-            user_id: session.current_user_id.clone(),
-            endpoint: session.endpoint.clone(),
-            fetched_at: None,
-            error: None,
-            instances: Some(Vec::new()),
-            group_order: Some(Vec::new()),
-        });
+        .emit(RuntimeGroupInstancesProjection::idle_clearing_entries(
+            session.current_user_id.clone(),
+            session.endpoint.clone(),
+        ));
 }

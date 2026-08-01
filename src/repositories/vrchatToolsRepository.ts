@@ -9,12 +9,6 @@ import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import { type QueryParams, unwrapVrchatResponse } from './vrchatRequest';
 
-const PAGE_SIZE = 100;
-
-type PageParams = {
-    offset: number;
-    n: number;
-};
 type PageResponse<TRow = unknown> = {
     results?: TRow[];
     json?: TRow[];
@@ -84,33 +78,6 @@ type VrchatApiResult = {
     data: unknown;
 };
 
-async function processAllPages<TRow = unknown>(
-    fetchPage: (params: PageParams) => Promise<PageResponse<TRow> | TRow[]>,
-    { pageSize = PAGE_SIZE }: { pageSize?: number } = {}
-): Promise<TRow[]> {
-    const results: TRow[] = [];
-    for (let offset = 0; ; offset += pageSize) {
-        const page = await fetchPage({ offset, n: pageSize });
-        const rows = Array.isArray(page)
-            ? page
-            : Array.isArray(page?.results)
-              ? page.results
-              : Array.isArray(page?.json)
-                ? page.json
-                : [];
-        const pageInfo = Array.isArray(page) ? null : page;
-        results.push(...rows);
-        if (
-            rows.length === 0 ||
-            pageInfo?.hasNext === false ||
-            rows.length < pageSize
-        ) {
-            break;
-        }
-    }
-    return results;
-}
-
 function unwrapVrchatToolsResponse<TJson = Record<string, unknown>>(
     response: VrchatApiResult,
     path: string,
@@ -119,30 +86,6 @@ function unwrapVrchatToolsResponse<TJson = Record<string, unknown>>(
     return unwrapVrchatResponse<TJson>(response, path, {
         fallbackMessage: 'VRChat tool request failed',
         responseType
-    });
-}
-
-async function getGroupCalendars(
-    params: CalendarListParams = {},
-    { force = false }: RepositoryOptions = {}
-) {
-    return fetchCachedData({
-        queryKey: queryKeys.groupCalendarList(
-            'all',
-            params,
-            DEFAULT_VRCHAT_API_ENDPOINT
-        ),
-        policy: entityQueryPolicies.groupCollection,
-        force,
-        queryFn: async () => {
-            const response = await commands.appVrchatToolsCalendarsGet({
-                params
-            });
-            return unwrapVrchatToolsResponse<GroupCalendarListResponse>(
-                response,
-                'calendar'
-            ).json;
-        }
     });
 }
 
@@ -194,63 +137,6 @@ async function getFollowingGroupCalendars(
             ).json;
         }
     });
-}
-
-async function getFeaturedGroupCalendars(
-    params: CalendarListParams = {},
-    { force = false }: RepositoryOptions = {}
-) {
-    return fetchCachedData({
-        queryKey: queryKeys.groupCalendarList(
-            'featured',
-            params,
-            DEFAULT_VRCHAT_API_ENDPOINT
-        ),
-        policy: entityQueryPolicies.groupCollection,
-        force,
-        queryFn: async () => {
-            const response = await commands.appVrchatToolsFeaturedCalendarsGet({
-                params
-            });
-            return unwrapVrchatToolsResponse<GroupCalendarListResponse>(
-                response,
-                'calendar/featured'
-            ).json;
-        }
-    });
-}
-
-async function getAllGroupCalendars(
-    params: CalendarListParams = {},
-    options: RepositoryOptions = {}
-) {
-    return processAllPages<GroupCalendarEventRecord>(
-        (pageParams: PageParams) =>
-            getGroupCalendars({ ...params, ...pageParams }, options),
-        { pageSize: params.n ?? PAGE_SIZE }
-    );
-}
-
-async function getAllFollowingGroupCalendars(
-    params: CalendarListParams = {},
-    options: RepositoryOptions = {}
-) {
-    return processAllPages<GroupCalendarEventRecord>(
-        (pageParams: PageParams) =>
-            getFollowingGroupCalendars({ ...params, ...pageParams }, options),
-        { pageSize: params.n ?? PAGE_SIZE }
-    );
-}
-
-async function getAllFeaturedGroupCalendars(
-    params: CalendarListParams = {},
-    options: RepositoryOptions = {}
-) {
-    return processAllPages<GroupCalendarEventRecord>(
-        (pageParams: PageParams) =>
-            getFeaturedGroupCalendars({ ...params, ...pageParams }, options),
-        { pageSize: params.n ?? PAGE_SIZE }
-    );
 }
 
 async function followGroupEvent({
@@ -306,6 +192,7 @@ async function saveUserNote({
         targetUserId,
         note
     });
+    void invalidateEntityQueries(['quickSearch']);
     return unwrapVrchatToolsResponse(response, 'userNotes').json;
 }
 
@@ -375,9 +262,6 @@ async function editInviteMessage({
 const vrchatToolsRepository = Object.freeze({
     getGroupCalendar,
     getFollowingGroupCalendars,
-    getAllGroupCalendars,
-    getAllFollowingGroupCalendars,
-    getAllFeaturedGroupCalendars,
     followGroupEvent,
     getGroupCalendarIcs,
     saveUserNote,
@@ -389,9 +273,6 @@ const vrchatToolsRepository = Object.freeze({
 export {
     getGroupCalendar,
     getFollowingGroupCalendars,
-    getAllGroupCalendars,
-    getAllFollowingGroupCalendars,
-    getAllFeaturedGroupCalendars,
     followGroupEvent,
     getGroupCalendarIcs,
     saveUserNote,

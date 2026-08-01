@@ -112,6 +112,9 @@
             "pendingLegacyMigration": "Schließe zuerst die ausstehende Altdatenmigration ab.",
             "pendingMigration": "Ein Datenordnerwechsel steht aus. Starte VRCX-0 neu.",
             "cleanupConflict": "Verarbeite zuerst die alten Daten, bevor du zu diesem Ordner zurückkehrst.",
+            "insufficientSpace": "Zum Verschieben der Daten ist nicht genügend freier Speicherplatz verfügbar.",
+            "invalidAdoptionTarget": "Nur ein Ordner mit einem vorhandenen VRCX-0-Profil kann übernommen werden.",
+            "invalidFreshStartTarget": "Ein Ordner mit einem vorhandenen VRCX-0-Profil kann nicht für einen Neustart verwendet werden.",
             "copyFailed": "Die Datenbank konnte nicht kopiert werden. Die ursprünglichen Daten werden weiter verwendet.",
             "commitFailed": "Die Datenbankkopie konnte nicht installiert werden. Die ursprünglichen Daten werden weiter verwendet.",
             "pointerCommitFailed": "Der neue Datenordner konnte nicht aktiviert werden. Starte VRCX-0 neu, um sicher fortzufahren.",
@@ -2573,6 +2576,7 @@
                         "purge_in_progress": "Avatar-Daten werden bereinigt",
                         "purge_complete": "Avatar-Daten erfolgreich bereinigt. Wird neu gestartet",
                         "purge_failed": "Bereinigung fehlgeschlagen: {error}",
+                        "purge_optimization_failed": "Die Avatar-Daten wurden bereinigt, aber die Datenbank konnte nicht optimiert werden: {error}",
                         "legacy_migration": "VRCX-Daten migrieren",
                         "legacy_migration_description": "Ersetzt die aktuelle VRCX-0-Konfiguration und -Datenbank durch Daten aus dem festen VRCX-Datenordner.",
                         "legacy_migration_confirm_title": "VRCX-0-Daten durch VRCX-Daten ersetzen?",
@@ -3326,6 +3330,7 @@
             },
             "mutual_friends": {
                 "header": "Gemeinsame Freunde",
+                "undisclosed_friend": "Nicht offengelegter gemeinsamer Freund",
                 "sorting": {
                     "alphabetical": "Alphabetisch",
                     "last_active": "Zuletzt aktiv",

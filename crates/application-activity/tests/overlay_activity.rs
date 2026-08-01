@@ -1,4 +1,7 @@
 use serde_json::{json, Map, Value};
+use std::collections::{BTreeMap, BTreeSet};
+use std::fs;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use vrcx_0_application_activity::{
     overlay_activity_type_definitions, OverlayActivityCandidate, OverlayActivityCategory,
@@ -50,57 +53,42 @@ fn activity_type_definitions_are_exported_from_backend() {
     );
 }
 
+fn hmd_default_scope_contract() -> BTreeMap<String, OverlayActivityScope> {
+    let crate_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let path = crate_dir
+        .parent()
+        .and_then(Path::parent)
+        .expect("application-activity crate must live inside the workspace crates directory")
+        .join("src/shared/constants/overlayActivityHmdDefaults.json");
+    let contents = fs::read_to_string(&path)
+        .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()));
+    serde_json::from_str(&contents)
+        .unwrap_or_else(|error| panic!("failed to parse {}: {error}", path.display()))
+}
+
+#[test]
+fn hmd_default_scope_contract_covers_every_activity_type() {
+    let contract = hmd_default_scope_contract();
+    let definition_keys = overlay_activity_type_definitions()
+        .into_iter()
+        .map(|definition| definition.key)
+        .collect::<BTreeSet<_>>();
+    let contract_keys = contract.keys().cloned().collect::<BTreeSet<_>>();
+
+    assert_eq!(
+        contract_keys, definition_keys,
+        "src/shared/constants/overlayActivityHmdDefaults.json is out of sync with hmd_scope_for_definition"
+    );
+}
+
 #[test]
 fn hmd_defaults_match_interruptive_notification_profile() {
     let filters = OverlayActivityFilters::default();
-    let expectations = [
-        ("invite", OverlayActivityScope::Friends),
-        ("requestInvite", OverlayActivityScope::Friends),
-        ("inviteResponse", OverlayActivityScope::Friends),
-        ("requestInviteResponse", OverlayActivityScope::Friends),
-        ("friendRequest", OverlayActivityScope::On),
-        ("boop", OverlayActivityScope::Friends),
-        ("group.queueReady", OverlayActivityScope::On),
-        ("instance.closed", OverlayActivityScope::On),
-        ("OnPlayerJoining", OverlayActivityScope::Friends),
-        ("OnPlayerJoined", OverlayActivityScope::Friends),
-        ("OnPlayerLeft", OverlayActivityScope::Friends),
-        ("Online", OverlayActivityScope::AllFavorites),
-        ("Offline", OverlayActivityScope::AllFavorites),
-        ("GPS", OverlayActivityScope::AllFavorites),
-        ("Status", OverlayActivityScope::AllFavorites),
-        ("Friend", OverlayActivityScope::On),
-        ("Unfriend", OverlayActivityScope::Off),
-        ("DisplayName", OverlayActivityScope::Friends),
-        ("TrustLevel", OverlayActivityScope::Friends),
-        ("AvatarChange", OverlayActivityScope::Off),
-        ("Bio", OverlayActivityScope::Off),
-        ("groupChange", OverlayActivityScope::Off),
-        ("group.announcement", OverlayActivityScope::Off),
-        ("group.informative", OverlayActivityScope::Off),
-        ("group.invite", OverlayActivityScope::On),
-        ("group.joinRequest", OverlayActivityScope::Off),
-        ("group.transfer", OverlayActivityScope::Off),
-        ("Event", OverlayActivityScope::Off),
-        ("External", OverlayActivityScope::Off),
-        ("Blocked", OverlayActivityScope::Off),
-        ("Unblocked", OverlayActivityScope::Off),
-        ("Muted", OverlayActivityScope::Off),
-        ("Unmuted", OverlayActivityScope::Off),
-        (
-            "BlockedOnPlayerJoined",
-            OverlayActivityScope::EveryoneInInstance,
-        ),
-        ("BlockedOnPlayerLeft", OverlayActivityScope::Off),
-        ("MutedOnPlayerJoined", OverlayActivityScope::Off),
-        ("MutedOnPlayerLeft", OverlayActivityScope::Off),
-        ("VideoPlay", OverlayActivityScope::Off),
-    ];
 
-    for (activity_type, scope) in expectations {
+    for (activity_type, scope) in hmd_default_scope_contract() {
         assert_eq!(
             filters
-                .rule_for(OverlayActivitySurface::Hmd, activity_type)
+                .rule_for(OverlayActivitySurface::Hmd, &activity_type)
                 .scope,
             scope,
             "{activity_type}"

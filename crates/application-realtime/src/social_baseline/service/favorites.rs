@@ -1,8 +1,9 @@
 use std::collections::{HashMap, HashSet};
 
-use serde::Serialize;
 use serde_json::Value;
 use vrcx_0_application_core::{Error, Result};
+use vrcx_0_core::friends::FriendRecord;
+use vrcx_0_persistence::favorites::FavoriteRow;
 
 use super::friends::{FriendStateMap, SnapshotFriendIds};
 use super::{
@@ -11,24 +12,36 @@ use super::{
     normalize_text, object_field, object_field_normalized, object_field_string, remote_favorites,
     stale_favorites_output, unique_values, value_as_i64, value_as_string, BTreeMap, Map, RawJson,
     SocialBaselineDeps, SocialFavoritesBaselineInput, SocialFavoritesBaselineOutput,
-    FAVORITES_PAGE_SIZE, FAVORITE_GROUPS_PAGE_SIZE,
+    SocialFavoritesBaselineRequest, FAVORITES_PAGE_SIZE, FAVORITE_GROUPS_PAGE_SIZE,
 };
+use crate::{FavoriteBaselineSnapshot, FavoriteGroupOutput};
 
 const MAX_FAVORITE_GROUPS_KEY: &str = "maxFavoriteGroups";
 const MAX_FAVORITES_PER_GROUP_KEY: &str = "maxFavoritesPerGroup";
 
-#[derive(Clone, Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-struct FavoriteGroupOutput {
-    assign: bool,
-    key: String,
-    #[serde(rename = "type")]
-    type_name: String,
-    name: String,
-    display_name: String,
-    capacity: i64,
-    count: i64,
-    visibility: String,
+#[derive(Default)]
+struct FavoriteGroupSets {
+    friends: Vec<FavoriteGroupOutput>,
+    worlds: Vec<FavoriteGroupOutput>,
+    avatars: Vec<FavoriteGroupOutput>,
+}
+
+impl FavoriteGroupSets {
+    fn for_type_mut(&mut self, type_name: &str) -> Option<&mut Vec<FavoriteGroupOutput>> {
+        match type_name {
+            "friend" => Some(&mut self.friends),
+            "world" | "vrcPlusWorld" => Some(&mut self.worlds),
+            "avatar" => Some(&mut self.avatars),
+            _ => None,
+        }
+    }
+
+    fn iter_mut(&mut self) -> impl Iterator<Item = &mut FavoriteGroupOutput> {
+        self.friends
+            .iter_mut()
+            .chain(self.worlds.iter_mut())
+            .chain(self.avatars.iter_mut())
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -144,19 +157,11 @@ fn favorite_limit(limits: &Value, section: &str, key: &str) -> i64 {
     value_as_i64(object_field(limits, section).and_then(|value| object_field(value, key)))
 }
 
-fn build_favorite_groups_from_limits(
-    favorite_limits: &Value,
-) -> (
-    Vec<FavoriteGroupOutput>,
-    Vec<FavoriteGroupOutput>,
-    Vec<FavoriteGroupOutput>,
-) {
-    let mut friend_groups = Vec::new();
-    let mut world_groups = Vec::new();
-    let mut avatar_groups = Vec::new();
+fn build_favorite_groups_from_limits(favorite_limits: &Value) -> FavoriteGroupSets {
+    let mut groups = FavoriteGroupSets::default();
 
     for index in 0..favorite_limit(favorite_limits, MAX_FAVORITE_GROUPS_KEY, "friend") {
-        friend_groups.push(FavoriteGroupOutput {
+        groups.friends.push(FavoriteGroupOutput {
             assign: false,
             key: format!("friend:group_{index}"),
             type_name: "friend".into(),
@@ -169,7 +174,7 @@ fn build_favorite_groups_from_limits(
     }
 
     for index in 0..favorite_limit(favorite_limits, MAX_FAVORITE_GROUPS_KEY, "world") {
-        world_groups.push(FavoriteGroupOutput {
+        groups.worlds.push(FavoriteGroupOutput {
             assign: false,
             key: format!("world:worlds{}", index + 1),
             type_name: "world".into(),
@@ -182,7 +187,7 @@ fn build_favorite_groups_from_limits(
     }
 
     for index in 0..favorite_limit(favorite_limits, MAX_FAVORITE_GROUPS_KEY, "vrcPlusWorld") {
-        world_groups.push(FavoriteGroupOutput {
+        groups.worlds.push(FavoriteGroupOutput {
             assign: false,
             key: format!("vrcPlusWorld:vrcPlusWorlds{}", index + 1),
             type_name: "vrcPlusWorld".into(),
@@ -195,7 +200,7 @@ fn build_favorite_groups_from_limits(
     }
 
     for index in 0..favorite_limit(favorite_limits, MAX_FAVORITE_GROUPS_KEY, "avatar") {
-        avatar_groups.push(FavoriteGroupOutput {
+        groups.avatars.push(FavoriteGroupOutput {
             assign: false,
             key: format!("avatar:avatars{}", index + 1),
             type_name: "avatar".into(),
@@ -207,29 +212,10 @@ fn build_favorite_groups_from_limits(
         });
     }
 
-    (friend_groups, world_groups, avatar_groups)
+    groups
 }
 
-fn favorite_groups_for_type_mut<'a>(
-    type_name: &str,
-    friend_groups: &'a mut Vec<FavoriteGroupOutput>,
-    world_groups: &'a mut Vec<FavoriteGroupOutput>,
-    avatar_groups: &'a mut Vec<FavoriteGroupOutput>,
-) -> Option<&'a mut Vec<FavoriteGroupOutput>> {
-    match type_name {
-        "friend" => Some(friend_groups),
-        "world" | "vrcPlusWorld" => Some(world_groups),
-        "avatar" => Some(avatar_groups),
-        _ => None,
-    }
-}
-
-fn assign_favorite_group_metadata(
-    refs: &[Value],
-    friend_groups: &mut Vec<FavoriteGroupOutput>,
-    world_groups: &mut Vec<FavoriteGroupOutput>,
-    avatar_groups: &mut Vec<FavoriteGroupOutput>,
-) {
+fn assign_favorite_group_metadata(refs: &[Value], groups: &mut FavoriteGroupSets) {
     let mut assignments = HashSet::new();
 
     for ref_value in refs {
@@ -238,9 +224,7 @@ fn assign_favorite_group_metadata(
         let ref_name = object_field_normalized(ref_value, &["name"]);
         let display_name = object_field_string(ref_value, &["displayName"]);
         let visibility = object_field_string(ref_value, &["visibility"]);
-        let Some(groups) =
-            favorite_groups_for_type_mut(&type_name, friend_groups, world_groups, avatar_groups)
-        else {
+        let Some(groups) = groups.for_type_mut(&type_name) else {
             continue;
         };
         for group in groups {
@@ -267,9 +251,7 @@ fn assign_favorite_group_metadata(
         let ref_name = object_field_normalized(ref_value, &["name"]);
         let display_name = object_field_string(ref_value, &["displayName"]);
         let visibility = object_field_string(ref_value, &["visibility"]);
-        let Some(groups) =
-            favorite_groups_for_type_mut(&type_name, friend_groups, world_groups, avatar_groups)
-        else {
+        let Some(groups) = groups.for_type_mut(&type_name) else {
             continue;
         };
         for group in groups {
@@ -292,24 +274,14 @@ fn assign_favorite_group_metadata(
 
 fn count_favorite_groups(
     favorites: &BTreeMap<String, RemoteFavoriteRef>,
-    friend_groups: &mut [FavoriteGroupOutput],
-    world_groups: &mut [FavoriteGroupOutput],
-    avatar_groups: &mut [FavoriteGroupOutput],
+    groups: &mut FavoriteGroupSets,
 ) {
-    for group in friend_groups
-        .iter_mut()
-        .chain(world_groups.iter_mut())
-        .chain(avatar_groups.iter_mut())
-    {
+    for group in groups.iter_mut() {
         group.count = 0;
     }
 
     for favorite in favorites.values() {
-        for group in friend_groups
-            .iter_mut()
-            .chain(world_groups.iter_mut())
-            .chain(avatar_groups.iter_mut())
-        {
+        for group in groups.iter_mut() {
             if group.key == favorite.group_key {
                 group.count += 1;
                 break;
@@ -318,22 +290,29 @@ fn count_favorite_groups(
     }
 }
 
-struct FriendRosterView<'a> {
-    raw: &'a Value,
+enum FriendRosterView<'a> {
+    Raw(&'a Value),
+    Typed(&'a HashMap<String, FriendRecord>),
 }
 
 impl<'a> FriendRosterView<'a> {
-    fn new(raw: &'a Value) -> Self {
-        Self { raw }
-    }
-
     fn object_id(&self, favorite_id: &str) -> String {
-        self.raw
-            .as_object()
-            .and_then(|roster| roster.get(favorite_id))
-            .map(|friend| object_field_normalized(friend, &["id"]))
-            .filter(|value| !value.is_empty())
-            .unwrap_or_else(|| favorite_id.to_string())
+        let object_id = match self {
+            Self::Raw(raw) => raw
+                .as_object()
+                .and_then(|roster| roster.get(favorite_id))
+                .map(|friend| object_field_normalized(friend, &["id"]))
+                .unwrap_or_default(),
+            Self::Typed(friends_by_id) => friends_by_id
+                .get(favorite_id)
+                .map(|friend| friend.id.trim().to_string())
+                .unwrap_or_default(),
+        };
+        if object_id.is_empty() {
+            favorite_id.to_string()
+        } else {
+            object_id
+        }
     }
 }
 
@@ -431,29 +410,31 @@ fn build_remote_favorite_snapshot(
     }
 }
 
-fn build_details_by_id(rows: Vec<Value>) -> Map<String, Value> {
-    let mut details_by_id = Map::new();
+fn build_details_by_id(rows: Vec<Value>) -> BTreeMap<String, RawJson> {
+    let mut details_by_id = BTreeMap::new();
     for row in rows {
         let object_id = object_field_normalized(&row, &["id"]);
         if !object_id.is_empty() {
-            details_by_id.insert(object_id, row);
+            details_by_id.insert(object_id, RawJson::from(row));
         }
     }
     details_by_id
 }
 
-fn ensure_local_detail_fallbacks(details_by_id: &mut Map<String, Value>, object_ids: &[String]) {
+fn ensure_local_detail_fallbacks(
+    details_by_id: &mut BTreeMap<String, RawJson>,
+    object_ids: &[String],
+) {
     for object_id in object_ids {
         if object_id.is_empty() || details_by_id.contains_key(object_id) {
             continue;
         }
-        details_by_id.insert(object_id.clone(), json!({ "id": object_id }));
+        details_by_id.insert(object_id.clone(), RawJson::from(json!({ "id": object_id })));
     }
 }
 
 fn build_local_grouped_ids(
-    rows: Vec<Value>,
-    id_field: &str,
+    rows: Vec<FavoriteRow>,
     explicit_groups: Vec<String>,
     fallback_group: &str,
 ) -> (BTreeMap<String, Vec<String>>, Vec<String>, Vec<String>) {
@@ -468,13 +449,13 @@ fn build_local_grouped_ids(
     }
 
     for row in rows {
-        let group_name = object_field_normalized(&row, &["groupName"]);
+        let object_id = normalize_text(row.entity_id());
+        let group_name = normalize_text(row.group_name);
         let group_name = if group_name.is_empty() {
             fallback_group.to_string()
         } else {
             group_name
         };
-        let object_id = object_field_normalized(&row, &[id_field]);
         if object_id.is_empty() {
             continue;
         }
@@ -497,36 +478,24 @@ fn build_local_grouped_ids(
 
 fn remote_favorite_refs_to_json(
     favorites: &BTreeMap<String, RemoteFavoriteRef>,
-) -> Map<String, Value> {
+) -> BTreeMap<String, RawJson> {
     favorites
         .iter()
         .map(|(key, favorite)| {
             debug_assert_eq!(favorite.id, *key);
-            (key.clone(), favorite.raw.clone())
+            (key.clone(), RawJson::from(favorite.raw.clone()))
         })
         .collect()
 }
 
 fn remote_favorite_refs_by_object_id_to_json(
     favorites: &BTreeMap<String, RemoteFavoriteRef>,
-) -> Map<String, Value> {
+) -> BTreeMap<String, RawJson> {
     favorites
         .iter()
         .map(|(key, favorite)| {
             debug_assert_eq!(favorite.favorite_id, *key);
-            (key.clone(), favorite.raw.clone())
-        })
-        .collect()
-}
-
-fn string_groups_to_json(groups: &BTreeMap<String, Vec<String>>) -> Map<String, Value> {
-    groups
-        .iter()
-        .map(|(key, ids)| {
-            (
-                key.clone(),
-                Value::Array(ids.iter().cloned().map(Value::String).collect()),
-            )
+            (key.clone(), RawJson::from(favorite.raw.clone()))
         })
         .collect()
 }
@@ -547,34 +516,65 @@ pub async fn build_favorites_baseline(
     deps: SocialBaselineDeps,
     input: SocialFavoritesBaselineInput,
 ) -> Result<SocialFavoritesBaselineOutput> {
-    let current_user = CurrentUserSnapshotView::from_raw(input.current_user_snapshot.as_value());
-    let user_id = normalize_text(if input.user_id.is_empty() {
+    let SocialFavoritesBaselineInput {
+        user_id,
+        endpoint,
+        current_user_snapshot,
+        friend_roster_by_id,
+    } = input;
+    build_favorites_baseline_inner(
+        deps,
+        SocialFavoritesBaselineRequest {
+            user_id,
+            endpoint,
+            current_user_snapshot,
+        },
+        FriendRosterView::Raw(friend_roster_by_id.as_value()),
+    )
+    .await
+}
+
+pub async fn build_favorites_baseline_from_friend_records(
+    deps: SocialBaselineDeps,
+    request: SocialFavoritesBaselineRequest,
+    friends_by_id: &HashMap<String, FriendRecord>,
+) -> Result<SocialFavoritesBaselineOutput> {
+    build_favorites_baseline_inner(deps, request, FriendRosterView::Typed(friends_by_id)).await
+}
+
+async fn build_favorites_baseline_inner(
+    deps: SocialBaselineDeps,
+    request: SocialFavoritesBaselineRequest,
+    friend_roster: FriendRosterView<'_>,
+) -> Result<SocialFavoritesBaselineOutput> {
+    let current_user = CurrentUserSnapshotView::from_raw(request.current_user_snapshot.as_value());
+    let user_id = normalize_text(if request.user_id.is_empty() {
         current_user.user_id
     } else {
-        input.user_id.clone()
+        request.user_id.clone()
     });
     if user_id.is_empty() {
         return Err(Error::Custom(
             "SocialFavoritesBaselineGet requires an authenticated user id.".into(),
         ));
     }
-    if !auth_scope_matches(&deps, &user_id, &input.endpoint) {
+    if !auth_scope_matches(&deps, &user_id, &request.endpoint) {
         return Ok(stale_favorites_output(user_id));
     }
 
     let favorite_limits_response = execute_vrchat_json_request(
         &deps,
-        remote_favorites::favorite_limits_get_input(normalize_endpoint(&input.endpoint)),
+        remote_favorites::favorite_limits_get_input(normalize_endpoint(&request.endpoint)),
     )
     .await?;
     let remote_favorites = fetch_paged_array(&deps, FAVORITES_PAGE_SIZE, None, |n, offset| {
-        remote_favorites::favorites_get_input(normalize_endpoint(&input.endpoint), n, offset)
+        remote_favorites::favorites_get_input(normalize_endpoint(&request.endpoint), n, offset)
     })
     .await?;
     let remote_favorite_groups =
         fetch_paged_array(&deps, FAVORITE_GROUPS_PAGE_SIZE, None, |n, offset| {
             remote_favorites::favorite_groups_get_input(
-                normalize_endpoint(&input.endpoint),
+                normalize_endpoint(&request.endpoint),
                 n,
                 offset,
                 String::new(),
@@ -613,7 +613,7 @@ pub async fn build_favorites_baseline(
     let explicit_local_friend_groups = unique_values(explicit_local_friend_groups);
 
     let favorite_limits = merge_favorite_limits(&favorite_limits_response);
-    let mut cached_favorite_groups_by_id = Map::new();
+    let mut cached_favorite_groups_by_id = BTreeMap::new();
     let mut favorite_group_refs = Vec::new();
     for json in &remote_favorite_groups {
         let ref_value = create_default_favorite_group_ref(json);
@@ -621,35 +621,26 @@ pub async fn build_favorites_baseline(
         if id.is_empty() {
             continue;
         }
-        cached_favorite_groups_by_id.insert(id, ref_value.clone());
+        cached_favorite_groups_by_id.insert(id, RawJson::from(ref_value.clone()));
         favorite_group_refs.push(ref_value);
     }
 
-    let (mut favorite_friend_groups, mut favorite_world_groups, mut favorite_avatar_groups) =
-        build_favorite_groups_from_limits(&favorite_limits);
-    assign_favorite_group_metadata(
-        &favorite_group_refs,
-        &mut favorite_friend_groups,
-        &mut favorite_world_groups,
-        &mut favorite_avatar_groups,
-    );
+    let mut favorite_groups = build_favorite_groups_from_limits(&favorite_limits);
+    assign_favorite_group_metadata(&favorite_group_refs, &mut favorite_groups);
 
-    let friend_roster = FriendRosterView::new(input.friend_roster_by_id.as_value());
     let remote_snapshot = build_remote_favorite_snapshot(remote_favorites, &friend_roster);
     count_favorite_groups(
         &remote_snapshot.remote_favorites_by_id,
-        &mut favorite_friend_groups,
-        &mut favorite_world_groups,
-        &mut favorite_avatar_groups,
+        &mut favorite_groups,
     );
 
     let local_world_ids = local_world_favorite_rows
         .iter()
-        .map(|row| object_field_normalized(row, &["worldId"]))
+        .filter_map(|row| row.world_id.clone())
         .collect::<Vec<_>>();
     let local_avatar_ids = local_avatar_favorite_rows
         .iter()
-        .map(|row| object_field_normalized(row, &["avatarId"]))
+        .filter_map(|row| row.avatar_id.clone())
         .collect::<Vec<_>>();
     let mut local_world_details_by_id = build_details_by_id(local_world_cache_rows);
     let mut local_avatar_details_by_id = build_details_by_id(local_avatar_cache_rows);
@@ -659,27 +650,24 @@ pub async fn build_favorites_baseline(
     let (local_world_favorites, local_world_favorite_groups, local_world_favorites_list) =
         build_local_grouped_ids(
             local_world_favorite_rows,
-            "worldId",
             explicit_local_world_groups,
             "Favorites",
         );
     let (local_avatar_favorites, local_avatar_favorite_groups, local_avatar_favorites_list) =
         build_local_grouped_ids(
             local_avatar_favorite_rows,
-            "avatarId",
             explicit_local_avatar_groups,
             "Favorites",
         );
     let (local_friend_favorites, local_friend_favorite_groups, local_friend_favorites_list) =
         build_local_grouped_ids(
             local_friend_favorite_rows,
-            "userId",
             explicit_local_friend_groups,
             "Favorites",
         );
 
     let display_name = object_field_string(
-        input.current_user_snapshot.as_value(),
+        request.current_user_snapshot.as_value(),
         &["displayName", "username", "id"],
     );
     let display_name = if display_name.is_empty() {
@@ -694,41 +682,49 @@ pub async fn build_favorites_baseline(
         local_avatar_favorites_list.len(),
         local_friend_favorites_list.len(),
     );
+    let FavoriteGroupSets {
+        friends: favorite_friend_groups,
+        worlds: favorite_world_groups,
+        avatars: favorite_avatar_groups,
+    } = favorite_groups;
 
-    let snapshot = json!({
-        "currentUserId": user_id.clone(),
-        "favoriteLimits": favorite_limits,
-        "favoritesSortOrder": remote_snapshot.favorites_sort_order,
-        "remoteFavoritesById": remote_favorite_refs_to_json(&remote_snapshot.remote_favorites_by_id),
-        "remoteFavoritesByObjectId": remote_favorite_refs_by_object_id_to_json(&remote_snapshot.remote_favorites_by_object_id),
-        "favoriteFriendIds": remote_snapshot.favorite_friend_ids,
-        "groupedFavoriteFriendIdsByGroupKey": string_groups_to_json(&remote_snapshot.grouped_favorite_friend_ids_by_group_key),
-        "favoriteWorldIds": remote_snapshot.favorite_world_ids,
-        "groupedFavoriteWorldIdsByGroupKey": string_groups_to_json(&remote_snapshot.grouped_favorite_world_ids_by_group_key),
-        "favoriteAvatarIds": remote_snapshot.favorite_avatar_ids,
-        "cachedFavoriteGroupsById": cached_favorite_groups_by_id,
-        "favoriteFriendGroups": favorite_friend_groups,
-        "favoriteWorldGroups": favorite_world_groups,
-        "favoriteAvatarGroups": favorite_avatar_groups,
-        "localWorldFavorites": string_groups_to_json(&local_world_favorites),
-        "localAvatarFavorites": string_groups_to_json(&local_avatar_favorites),
-        "localFriendFavorites": string_groups_to_json(&local_friend_favorites),
-        "localWorldFavoriteGroups": local_world_favorite_groups,
-        "localAvatarFavoriteGroups": local_avatar_favorite_groups,
-        "localFriendFavoriteGroups": local_friend_favorite_groups,
-        "localWorldFavoritesList": local_world_favorites_list,
-        "localAvatarFavoritesList": local_avatar_favorites_list,
-        "localFriendFavoritesList": local_friend_favorites_list,
-        "localWorldDetailsById": local_world_details_by_id,
-        "localAvatarDetailsById": local_avatar_details_by_id,
-        "detail": detail
-    });
-    let count = snapshot
-        .get("remoteFavoritesById")
-        .and_then(Value::as_object)
-        .map_or(0, Map::len);
+    let count = remote_snapshot.remote_favorites_by_id.len();
+    let snapshot = FavoriteBaselineSnapshot {
+        current_user_id: user_id.clone(),
+        favorite_limits: RawJson::from(favorite_limits),
+        favorites_sort_order: remote_snapshot.favorites_sort_order,
+        remote_favorites_by_id: remote_favorite_refs_to_json(
+            &remote_snapshot.remote_favorites_by_id,
+        ),
+        remote_favorites_by_object_id: remote_favorite_refs_by_object_id_to_json(
+            &remote_snapshot.remote_favorites_by_object_id,
+        ),
+        favorite_friend_ids: remote_snapshot.favorite_friend_ids,
+        grouped_favorite_friend_ids_by_group_key: remote_snapshot
+            .grouped_favorite_friend_ids_by_group_key,
+        favorite_world_ids: remote_snapshot.favorite_world_ids,
+        grouped_favorite_world_ids_by_group_key: remote_snapshot
+            .grouped_favorite_world_ids_by_group_key,
+        favorite_avatar_ids: remote_snapshot.favorite_avatar_ids,
+        cached_favorite_groups_by_id,
+        favorite_friend_groups,
+        favorite_world_groups,
+        favorite_avatar_groups,
+        local_world_favorites,
+        local_avatar_favorites,
+        local_friend_favorites,
+        local_world_favorite_groups,
+        local_avatar_favorite_groups,
+        local_friend_favorite_groups,
+        local_world_favorites_list,
+        local_avatar_favorites_list,
+        local_friend_favorites_list,
+        local_world_details_by_id,
+        local_avatar_details_by_id,
+        detail,
+    };
 
-    if !auth_scope_matches(&deps, &user_id, &input.endpoint) {
+    if !auth_scope_matches(&deps, &user_id, &request.endpoint) {
         return Ok(stale_favorites_output(user_id));
     }
 
@@ -736,6 +732,6 @@ pub async fn build_favorites_baseline(
         user_id,
         stale: false,
         count,
-        snapshot: Some(RawJson::from(snapshot)),
+        snapshot: Some(snapshot),
     })
 }

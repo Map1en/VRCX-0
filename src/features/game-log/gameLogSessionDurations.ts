@@ -5,6 +5,14 @@ export type GameLogSessionDurationDetails = {
     maxDurationMs: number;
 };
 
+type GameLogSessionDurationRow = {
+    displayName?: unknown;
+    display_name?: unknown;
+    time?: unknown;
+    userId?: unknown;
+    user_id?: unknown;
+};
+
 export function createEmptyGameLogSessionDurationDetails(): GameLogSessionDurationDetails {
     return {
         durationByKey: new Map(),
@@ -12,7 +20,9 @@ export function createEmptyGameLogSessionDurationDetails(): GameLogSessionDurati
     };
 }
 
-export function playerDurationKey(item: any) {
+export function playerDurationKey(
+    item: GameLogSessionDurationRow | null | undefined
+) {
     const userId = normalizeId(item?.userId || item?.user_id);
     if (userId) {
         return `id:${userId}`;
@@ -24,7 +34,7 @@ export function playerDurationKey(item: any) {
 }
 
 export function buildGameLogSessionDurationDetails(
-    rows: any[]
+    rows: readonly GameLogSessionDurationRow[]
 ): GameLogSessionDurationDetails {
     const durationByKey = new Map<string, number>();
 
@@ -45,7 +55,7 @@ export function buildGameLogSessionDurationDetails(
 
 export function getGameLogSessionPlayerDuration(
     durationByKey: Map<string, number>,
-    item: any
+    item: GameLogSessionDurationRow | null | undefined
 ) {
     const key = playerDurationKey(item);
     return key ? durationByKey.get(key) || 0 : 0;

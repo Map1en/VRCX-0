@@ -1,5 +1,6 @@
 use vrcx_0_persistence::config::resolve_config_key;
 use vrcx_0_persistence::favorites;
+use vrcx_0_persistence::favorites::FavoriteRow;
 use vrcx_0_persistence::DatabaseService;
 
 use crate::{Error, Result};
@@ -11,6 +12,56 @@ pub struct LocalFavoriteGroupWrite {
     pub config_key: String,
     pub group_names: Vec<String>,
     pub affected: i64,
+}
+
+pub fn list_local_favorites(
+    db: &DatabaseService,
+    owner_user_id: &str,
+    kind: String,
+) -> Result<Vec<FavoriteRow>> {
+    favorites::favorite_list(db, Some(owner_user_id), kind).map_err(Error::from)
+}
+
+pub fn add_local_favorite(
+    db: &DatabaseService,
+    owner_user_id: &str,
+    kind: String,
+    entity_id: String,
+    group_name: String,
+) -> Result<i64> {
+    favorites::favorite_add(db, Some(owner_user_id), kind, entity_id, group_name)
+        .map_err(Error::from)
+}
+
+pub fn remove_local_favorite(
+    db: &DatabaseService,
+    owner_user_id: &str,
+    kind: String,
+    entity_id: String,
+    group_name: String,
+) -> Result<i64> {
+    favorites::favorite_remove(db, Some(owner_user_id), kind, entity_id, group_name)
+        .map_err(Error::from)
+}
+
+pub fn rename_local_favorite_entries(
+    db: &DatabaseService,
+    owner_user_id: &str,
+    kind: String,
+    group_name: String,
+    new_group_name: String,
+) -> Result<i64> {
+    favorites::favorite_group_rename(db, Some(owner_user_id), kind, group_name, new_group_name)
+        .map_err(Error::from)
+}
+
+pub fn delete_local_favorite_entries(
+    db: &DatabaseService,
+    owner_user_id: &str,
+    kind: String,
+    group_name: String,
+) -> Result<i64> {
+    favorites::favorite_group_delete(db, Some(owner_user_id), kind, group_name).map_err(Error::from)
 }
 
 pub(super) fn local_group_config_key(kind: &str) -> Result<&'static str> {
@@ -136,7 +187,6 @@ fn group_config_realm_key(
 mod tests {
     use std::path::PathBuf;
 
-    use serde_json::Value;
     use vrcx_0_application_core::{read_config_string_array, write_config_string_array};
     use vrcx_0_persistence::favorites::{favorite_add, favorite_list};
 
@@ -205,11 +255,7 @@ mod tests {
         let groups = favorite_list(&db, Some("usr_a"), "friend".into())
             .unwrap()
             .into_iter()
-            .filter_map(|row| {
-                row.get("groupName")
-                    .and_then(Value::as_str)
-                    .map(str::to_string)
-            })
+            .map(|row| row.group_name)
             .collect::<Vec<_>>();
         assert_eq!(groups, vec!["renamed"]);
         assert_eq!(
@@ -251,18 +297,7 @@ mod tests {
         let mut rows = favorite_list(&db, Some("usr_a"), "friend".into())
             .unwrap()
             .into_iter()
-            .map(|row| {
-                (
-                    row.get("userId")
-                        .and_then(Value::as_str)
-                        .unwrap_or_default()
-                        .to_string(),
-                    row.get("groupName")
-                        .and_then(Value::as_str)
-                        .unwrap_or_default()
-                        .to_string(),
-                )
-            })
+            .map(|row| (row.user_id.unwrap_or_default(), row.group_name))
             .collect::<Vec<_>>();
         rows.sort();
         assert_eq!(

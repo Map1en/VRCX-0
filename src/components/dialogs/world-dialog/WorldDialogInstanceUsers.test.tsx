@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 type QueryOptions = {
@@ -52,10 +53,12 @@ vi.mock('@/components/sidebar/friends-sidebar/friendsSidebarModel', () => ({
 vi.mock('@/components/UserDetailTile', () => ({
     UserDetailTile: ({
         displayName,
-        imageUrl
+        imageUrl,
+        subline
     }: {
         displayName: unknown;
         imageUrl?: string;
+        subline?: ReactNode;
     }) => (
         <div
             data-testid="user-detail-tile"
@@ -63,7 +66,15 @@ vi.mock('@/components/UserDetailTile', () => ({
                 typeof displayName === 'string' ? displayName : ''
             }
             data-image-url={imageUrl}
-        />
+        >
+            {subline}
+        </div>
+    )
+}));
+
+vi.mock('@/components/sidebar/friends-sidebar/FriendsSidebarLocation', () => ({
+    FriendInstanceTimer: ({ epoch }: { epoch?: unknown }) => (
+        <span data-testid="instance-timer" data-epoch={String(epoch)} />
     )
 }));
 
@@ -189,5 +200,28 @@ describe('InstanceUserTiles', () => {
                 .getAllByTestId('user-detail-tile')
                 .map((tile) => tile.getAttribute('data-display-name'))
         ).toEqual(['Self', 'Friend']);
+    });
+
+    it('shows the instance timer instead of the status signature', () => {
+        render(
+            <InstanceUserTiles
+                instance={{
+                    users: [
+                        {
+                            id: 'usr_friend',
+                            displayName: 'Friend',
+                            statusDescription: 'World hopping',
+                            $location_at: 1_700_000_000_000
+                        }
+                    ]
+                }}
+                showInstanceDuration
+            />
+        );
+
+        expect(screen.getByTestId('instance-timer').dataset.epoch).toBe(
+            '1700000000000'
+        );
+        expect(screen.queryByText('World hopping')).toBeNull();
     });
 });

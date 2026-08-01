@@ -99,6 +99,7 @@ interface UserDialogTabbedViewProps {
     };
     locationPanel: {
         sameInstanceUsers?: unknown[];
+        dwellEpochsByUserId?: ReadonlyMap<string, unknown>;
         locationOwnerUser?: unknown;
         locationOwnerGroup?: unknown;
         locationInstance?: unknown;
@@ -139,6 +140,7 @@ function record(value: unknown): Record<string, unknown> {
 }
 
 const SELF_PANELS = ['profile-media', 'profile-decorations'] as const;
+const EMPTY_DWELL_EPOCHS_BY_USER_ID = new Map<string, unknown>();
 type SelfPanel = '' | (typeof SELF_PANELS)[number];
 
 const VRC_PLUS_SUMMARY_SNAPSHOT = Object.freeze({ $isVRCPlus: true });
@@ -210,6 +212,7 @@ export function UserDialogTabbedView({
     } = presence;
     const {
         sameInstanceUsers = [],
+        dwellEpochsByUserId = EMPTY_DWELL_EPOCHS_BY_USER_ID,
         locationOwnerUser = null,
         locationOwnerGroup = null,
         locationInstance = null,
@@ -428,6 +431,7 @@ export function UserDialogTabbedView({
         () =>
             buildUserDialogLocationUsers({
                 currentUserId,
+                dwellEpochsByUserId,
                 friendsById,
                 locationInstance,
                 locationOwnerGroup,
@@ -439,6 +443,7 @@ export function UserDialogTabbedView({
             }),
         [
             currentUserId,
+            dwellEpochsByUserId,
             friendsById,
             locationInstance,
             locationOwnerGroup,

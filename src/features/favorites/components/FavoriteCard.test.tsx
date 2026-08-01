@@ -132,7 +132,7 @@ function renderAvatarCard(
     );
 }
 
-describe('FavoriteCard avatar links', () => {
+describe('FavoriteCard website links', () => {
     it('shows the VRChat website link for a friend', () => {
         const item: FavoriteCardItem = {
             id: USER_ID,

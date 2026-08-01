@@ -50,6 +50,7 @@ describe('playerListRows', () => {
                     { userId: 'usr_a', displayName: 'A duplicate' },
                     { id: 'row_without_user', displayName: 'No user id' },
                     { id: 'row_without_user', displayName: 'Duplicate row id' },
+                    { displayName: 'Current User' },
                     { userId: 'usr_self', displayName: 'Self from log' }
                 ],
                 currentUserId: 'usr_self',

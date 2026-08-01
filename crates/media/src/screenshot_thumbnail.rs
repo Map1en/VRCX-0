@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use fast_image_resize::{FilterType as FirFilterType, ResizeAlg, ResizeOptions, Resizer};
 use sha2::{Digest, Sha256};
@@ -15,6 +16,7 @@ const THUMBNAIL_SHARPEN_THRESHOLD: i32 = 8;
 const THUMBNAIL_WEBP_QUALITY: f32 = 90.0;
 const THUMBNAIL_MAX_SOURCE_BYTES: i64 = 128 * 1024 * 1024;
 const THUMBNAIL_MAX_SOURCE_PIXELS: u64 = 100_000_000;
+static THUMBNAIL_TEMP_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone, Debug)]
 pub struct ScreenshotThumbnailFile {
@@ -62,6 +64,7 @@ pub fn screenshot_thumbnail_files(cache_dir: &Path) -> Vec<ScreenshotThumbnailFi
     entries
         .filter_map(|entry| entry.ok())
         .map(|entry| entry.path())
+        .filter(|path| path.is_file())
         .filter(|path| {
             path.extension()
                 .and_then(|extension| extension.to_str())
@@ -139,9 +142,10 @@ pub fn write_thumbnail_atomically(path: &Path, bytes: &[u8]) -> Result<(), Error
         .and_then(|name| name.to_str())
         .ok_or_else(|| Error::Custom("Invalid thumbnail cache path.".into()))?;
     let temp_path = path.with_file_name(format!(
-        "{file_name}.{}.{}.tmp",
+        "{file_name}.{}.{}.{}.tmp",
         std::process::id(),
-        unix_time_millis(std::time::SystemTime::now())
+        unix_time_millis(std::time::SystemTime::now()),
+        THUMBNAIL_TEMP_SEQUENCE.fetch_add(1, Ordering::Relaxed)
     ));
     std::fs::write(&temp_path, bytes)?;
     if path.is_file() {
@@ -160,3 +164,6 @@ pub fn write_thumbnail_atomically(path: &Path, bytes: &[u8]) -> Result<(), Error
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

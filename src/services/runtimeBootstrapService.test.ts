@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
     initializeReactRuntime: vi.fn(),
     applyThemeMode: vi.fn(),
     startRuntimeUpdateLoop: vi.fn(),
-    startVrcStatusPolling: vi.fn()
+    hydrateVrcStatus: vi.fn()
 }));
 
 vi.mock('./gameClientLifecycle', () => ({
@@ -37,7 +37,7 @@ vi.mock('./updateLoopService', () => ({
 }));
 
 vi.mock('./vrcStatusService', () => ({
-    startVrcStatusPolling: mocks.startVrcStatusPolling
+    hydrateVrcStatus: mocks.hydrateVrcStatus
 }));
 
 import { DEFAULT_TIME_UNIT_LABELS, useShellStore } from '@/state/shellStore';
@@ -87,7 +87,7 @@ describe('runtimeBootstrapService', () => {
         mocks.bindRuntimeEvents.mockResolvedValue(undefined);
         mocks.startRuntimeGameClientSync.mockReturnValue(undefined);
         mocks.startRuntimeUpdateLoop.mockReturnValue(undefined);
-        mocks.startVrcStatusPolling.mockReturnValue(undefined);
+        mocks.hydrateVrcStatus.mockResolvedValue(undefined);
     });
 
     it('syncs normalized locale state', () => {
@@ -121,12 +121,10 @@ describe('runtimeBootstrapService', () => {
         const eventCleanup = vi.fn();
         const gameClientCleanup = vi.fn();
         const updateLoopCleanup = vi.fn();
-        const statusCleanup = vi.fn();
         mocks.initializeReactRuntime.mockReturnValue(initialization.promise);
         mocks.bindRuntimeEvents.mockResolvedValue(eventCleanup);
         mocks.startRuntimeGameClientSync.mockReturnValue(gameClientCleanup);
         mocks.startRuntimeUpdateLoop.mockReturnValue(updateLoopCleanup);
-        mocks.startVrcStatusPolling.mockReturnValue(statusCleanup);
 
         const cleanupFirst = startReactRuntimeServices();
         const cleanupSecond = startReactRuntimeServices();
@@ -143,7 +141,7 @@ describe('runtimeBootstrapService', () => {
         expect(eventCleanup).toHaveBeenCalledTimes(1);
         expect(gameClientCleanup).toHaveBeenCalledTimes(1);
         expect(updateLoopCleanup).toHaveBeenCalledTimes(1);
-        expect(statusCleanup).toHaveBeenCalledTimes(1);
+        expect(mocks.hydrateVrcStatus).toHaveBeenCalledTimes(1);
     });
 
     it('cleans up runtime startup after its consumer leaves', async () => {

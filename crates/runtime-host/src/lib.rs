@@ -13,7 +13,8 @@ mod state;
 pub mod telemetry;
 
 pub use authenticated_runtime::{
-    favorite_group_membership_from_snapshot, favorite_world_group_membership_from_snapshot,
+    favorite_group_membership_from_baseline, favorite_group_membership_from_snapshot,
+    favorite_world_group_membership_from_baseline, favorite_world_group_membership_from_snapshot,
     AuthenticatedRuntimeOrchestrator,
 };
 pub use composition::{
@@ -22,7 +23,7 @@ pub use composition::{
 };
 pub use context::RuntimeHostContext;
 pub use error::{Error, Result};
-pub use event_payloads::RuntimeGroupInstancesProjection;
+pub use event_payloads::{RuntimeGroupInstancesProjection, RuntimeGroupInstancesStatus};
 pub use event_sink::RuntimeHostEventSink;
 pub use group_order::{GroupOrderSource, UnavailableGroupOrderSource};
 pub use note_export::NoteExportRuntime;

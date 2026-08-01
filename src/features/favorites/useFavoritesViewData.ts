@@ -10,11 +10,41 @@ import {
     buildFavoriteLocalItemsByGroup,
     buildFavoriteRemoteGroups,
     buildFavoriteRemoteItemsByGroup,
-    getFavoritesPageConfig
+    getFavoritesPageConfig,
+    type FavoriteEntityDetail
 } from './favoritesPageData';
 import type { FavoriteItem } from './favoritesTypes';
+import type { FavoriteKind, FavoriteSource } from './favoritesTypes';
+import type { useFavoritesCollectionsState } from './useFavoritesCollectionsState';
 
 const EMPTY_ITEMS: FavoriteItem[] = [];
+
+function isFavoriteEntityDetail(value: unknown): value is FavoriteEntityDetail {
+    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function normalizeFavoriteDetailMap(
+    value: Record<string, unknown> | undefined
+): Record<string, FavoriteEntityDetail | undefined> {
+    const details: Record<string, FavoriteEntityDetail | undefined> = {};
+    for (const [id, detail] of Object.entries(value || {})) {
+        if (isFavoriteEntityDetail(detail)) {
+            details[id] = detail;
+        }
+    }
+    return details;
+}
+
+type FavoritesViewDataInputs = ReturnType<
+    typeof useFavoritesCollectionsState
+>['viewDataInputs'] & {
+    kind: FavoriteKind;
+    searchMode: string;
+    searchQuery: string;
+    selectedGroupKey: string;
+    selectedSource: FavoriteSource;
+    sortValue: string;
+};
 
 export function useFavoritesViewData({
     avatarHistory,
@@ -45,12 +75,12 @@ export function useFavoritesViewData({
     sortValue,
     worldAvailabilityById,
     worldFactsById
-}: any) {
+}: FavoritesViewDataInputs) {
     const { t } = useTranslation();
 
     const favoritesSortIndex = useMemo(() => {
-        const index = Object.create(null);
-        favoritesSortOrder.forEach((favoriteId: any, position: any) => {
+        const index: Record<string, number> = {};
+        favoritesSortOrder.forEach((favoriteId, position) => {
             index[favoriteId] = position;
         });
         return index;
@@ -102,6 +132,30 @@ export function useFavoritesViewData({
         () => buildFavoriteGroupLabelByKey(remoteGroups),
         [remoteGroups]
     );
+    const remoteEntityDetailsData = useMemo(
+        () => normalizeFavoriteDetailMap(remoteEntityDetails.data),
+        [remoteEntityDetails.data]
+    );
+    const normalizedLocalWorldDetailsById = useMemo(
+        () => normalizeFavoriteDetailMap(localWorldDetailsById),
+        [localWorldDetailsById]
+    );
+    const normalizedLocalAvatarDetailsById = useMemo(
+        () => normalizeFavoriteDetailMap(localAvatarDetailsById),
+        [localAvatarDetailsById]
+    );
+    const normalizedRemoteWorldCacheFallbacksById = useMemo(
+        () => normalizeFavoriteDetailMap(remoteWorldCacheFallbacksById),
+        [remoteWorldCacheFallbacksById]
+    );
+    const normalizedRemoteAvatarCacheFallbacksById = useMemo(
+        () => normalizeFavoriteDetailMap(remoteAvatarCacheFallbacksById),
+        [remoteAvatarCacheFallbacksById]
+    );
+    const normalizedAvatarHistory = useMemo(
+        () => avatarHistory.filter(isFavoriteEntityDetail),
+        [avatarHistory]
+    );
 
     const remoteItemsByGroup = useMemo(() => {
         return buildFavoriteRemoteItemsByGroup({
@@ -113,13 +167,15 @@ export function useFavoritesViewData({
             favoritesSortIndex,
             sortValue,
             remoteFavoritesById,
-            remoteEntityDetailsData: remoteEntityDetails.data,
+            remoteEntityDetailsData,
             remoteEntityDetailsStatus: remoteEntityDetails.status,
             worldFactsById,
-            remoteWorldCacheFallbacksById,
-            remoteAvatarCacheFallbacksById,
-            localWorldDetailsById,
-            localAvatarDetailsById,
+            remoteWorldCacheFallbacksById:
+                normalizedRemoteWorldCacheFallbacksById,
+            remoteAvatarCacheFallbacksById:
+                normalizedRemoteAvatarCacheFallbacksById,
+            localWorldDetailsById: normalizedLocalWorldDetailsById,
+            localAvatarDetailsById: normalizedLocalAvatarDetailsById,
             remoteGroupLabelByKey,
             worldAvailabilityById,
             t
@@ -130,13 +186,13 @@ export function useFavoritesViewData({
         groupedFavoriteFriendIdsByGroupKey,
         knownUsersById,
         kind,
-        localAvatarDetailsById,
-        localWorldDetailsById,
-        remoteEntityDetails.data,
+        normalizedLocalAvatarDetailsById,
+        normalizedLocalWorldDetailsById,
+        remoteEntityDetailsData,
         remoteEntityDetails.status,
         remoteFavoritesById,
-        remoteAvatarCacheFallbacksById,
-        remoteWorldCacheFallbacksById,
+        normalizedRemoteAvatarCacheFallbacksById,
+        normalizedRemoteWorldCacheFallbacksById,
         remoteGroupLabelByKey,
         remoteGroups,
         sortValue,
@@ -152,8 +208,8 @@ export function useFavoritesViewData({
             localFriendFavorites,
             localAvatarFavorites,
             localWorldFavorites,
-            localAvatarDetailsById,
-            localWorldDetailsById,
+            localAvatarDetailsById: normalizedLocalAvatarDetailsById,
+            localWorldDetailsById: normalizedLocalWorldDetailsById,
             friendsById,
             knownUsersById,
             sortValue,
@@ -163,19 +219,23 @@ export function useFavoritesViewData({
         friendsById,
         knownUsersById,
         kind,
-        localAvatarDetailsById,
+        normalizedLocalAvatarDetailsById,
         localAvatarFavorites,
         localFriendFavorites,
         localGroups,
-        localWorldDetailsById,
+        normalizedLocalWorldDetailsById,
         localWorldFavorites,
         sortValue,
         t
     ]);
 
     const avatarHistoryItems = useMemo(() => {
-        return buildFavoriteAvatarHistoryItems({ kind, avatarHistory, t });
-    }, [avatarHistory, kind, t]);
+        return buildFavoriteAvatarHistoryItems({
+            kind,
+            avatarHistory: normalizedAvatarHistory,
+            t
+        });
+    }, [kind, normalizedAvatarHistory, t]);
 
     const allItems = useMemo(
         () => [

@@ -46,7 +46,7 @@ mod tests {
         assert_eq!(output.projection.patches[0].state_bucket, "offline");
         assert_eq!(
             output.projection.patches[0].state_bucket_authority,
-            Some(FriendStateBucketAuthority::Preserve)
+            FriendStateBucketAuthority::Preserve
         );
         assert_eq!(output.projection.patches[0].patch.location, "wrld_2:456");
         assert_eq!(output.profile_refetch_user_ids, vec!["usr_friend"]);

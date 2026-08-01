@@ -10,6 +10,7 @@ use url::Url;
 
 use crate::{Error, ImageCache, Result, WebClient};
 use vrcx_0_application_core::save_ugc_image_to_file;
+use vrcx_0_core::text::first_owned;
 use vrcx_0_media::image_processing;
 use vrcx_0_media::ugc_image_files::UgcCategory;
 use vrcx_0_persistence::config as config_store;
@@ -146,7 +147,7 @@ async fn save_instance_print(deps: InstanceMediaDeps, print_id: &str) -> Result<
         return Ok(());
     }
 
-    let created_at = text(print.get("createdAt")).or_else(|| text(print.get("timestamp")));
+    let created_at = first_owned([text(print.get("createdAt")), text(print.get("timestamp"))]);
     let created = parse_datetime_or_now(&created_at);
     let month_folder = created.format("%Y-%m").to_string();
     let file_date = created.format("%Y-%m-%d_%H-%M-%S%.3f").to_string();
@@ -198,11 +199,19 @@ async fn save_inventory_media(
         return Ok(());
     }
 
-    let image_url = text(item.pointer("/metadata/imageUrl")).or_else(|| text(item.get("imageUrl")));
+    let image_url = first_owned([
+        text(item.pointer("/metadata/imageUrl")),
+        text(item.get("imageUrl")),
+    ]);
     if image_url.is_empty() {
         return Ok(());
     }
-    let created_at = text(item.get("created_at")).or_else(|| Utc::now().to_rfc3339());
+    let created_at = text(item.get("created_at"));
+    let created_at = if created_at.is_empty() {
+        Utc::now().to_rfc3339()
+    } else {
+        created_at
+    };
     let created = parse_datetime_or_now(&created_at);
     let month_folder = created.format("%Y-%m").to_string();
     let file_date = created.format("%Y-%m-%d_%H-%M-%S%.3f").to_string();
@@ -284,15 +293,19 @@ fn parse_datetime_or_now(value: &str) -> DateTime<Utc> {
 
 fn emoji_file_name(item: &Value, user_id: &str, inventory_id: &str) -> String {
     let metadata = item.get("metadata").and_then(|value| value.as_object());
-    let holder_display_name =
-        text(item.get("holderDisplayName")).or_else(|| text(item.get("ownerDisplayName")));
-    let holder_id = text(item.get("holderId"))
-        .or_else(|| text(item.pointer("/holder/id")))
-        .or_else(|| text(item.get("userId")))
-        .or_else(|| user_id.to_string());
+    let holder_display_name = first_owned([
+        text(item.get("holderDisplayName")),
+        text(item.get("ownerDisplayName")),
+    ]);
+    let holder_id = first_owned([
+        text(item.get("holderId")),
+        text(item.pointer("/holder/id")),
+        text(item.get("userId")),
+        user_id.to_string(),
+    ]);
     let name = format!(
         "{}_{}",
-        holder_display_name.or_else(|| holder_id.clone()).trim(),
+        first_owned([holder_display_name, holder_id.clone()]),
         inventory_id
     );
     let animation_style = metadata
@@ -333,20 +346,6 @@ fn text(value: Option<&Value>) -> String {
         .unwrap_or_default()
         .trim()
         .to_string()
-}
-
-trait StringFallback {
-    fn or_else<F: FnOnce() -> String>(self, fallback: F) -> String;
-}
-
-impl StringFallback for String {
-    fn or_else<F: FnOnce() -> String>(self, fallback: F) -> String {
-        if self.is_empty() {
-            fallback()
-        } else {
-            self
-        }
-    }
 }
 
 fn value_to_string(value: &Value) -> String {

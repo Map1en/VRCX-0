@@ -4,17 +4,22 @@ use vrcx_0_application_activity::{
     OverlayActivityDelivery, OverlayActivitySink, OverlayActivitySnapshot,
 };
 use vrcx_0_application_core::{
-    HostSessionRuntime, RuntimeDiagnostics, TaskSupervisor, WebClient, WorldCache,
+    HostSessionRuntime, RuntimeDiagnostics, TaskStopToken, TaskSupervisor, WebClient, WorldCache,
 };
 use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
 
 use super::discord::{build_discord_payload, DiscordDeps};
 use super::generic_webhook::generic_webhook_payload;
 use super::preferences::{load_webhook_preferences, NotificationWebhookPreferences};
+use super::webhook::discord_webhook_url_with_wait;
 use super::{
     config_bool, load_notification_locale, render_delivery, resolve_delivery_world_name,
     send_json_webhook_with_retry, UserImageCache,
 };
+
+const NOTIFICATION_WEBHOOK_QUEUE_CAPACITY: usize = 64;
+const NOTIFICATION_WEBHOOK_STOP_POLL_INTERVAL: std::time::Duration =
+    std::time::Duration::from_millis(50);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum NotificationWebhookFormat {
@@ -38,12 +43,25 @@ fn select_notification_webhook_format(
 pub(crate) struct NotificationWebhookSink {
     session: HostSessionRuntime,
     config: ConfigRepository,
+    diagnostics: RuntimeDiagnostics,
+    queue: tokio::sync::mpsc::Sender<NotificationWebhookJob>,
+}
+
+struct NotificationWebhookJob {
+    delivery: OverlayActivityDelivery,
+    preferences: NotificationWebhookPreferences,
+    format: NotificationWebhookFormat,
+    locale: super::OverlayLocale,
+    vrchat_endpoint: String,
+    allow_user_icon: bool,
+}
+
+struct NotificationWebhookWorkerDeps {
     db: Arc<DatabaseService>,
     web: Arc<WebClient>,
     world_cache: Arc<WorldCache>,
     user_image_cache: Arc<UserImageCache>,
     diagnostics: RuntimeDiagnostics,
-    tasks: TaskSupervisor,
 }
 
 pub(crate) struct NotificationWebhookSinkDeps {
@@ -59,15 +77,22 @@ pub(crate) struct NotificationWebhookSinkDeps {
 
 impl NotificationWebhookSink {
     pub(crate) fn new(deps: NotificationWebhookSinkDeps) -> Self {
-        Self {
-            session: deps.session,
-            config: deps.config,
+        let (queue, receiver) = tokio::sync::mpsc::channel(NOTIFICATION_WEBHOOK_QUEUE_CAPACITY);
+        let worker_deps = NotificationWebhookWorkerDeps {
             db: deps.db,
             web: deps.web,
             world_cache: deps.world_cache,
             user_image_cache: deps.user_image_cache,
+            diagnostics: deps.diagnostics.clone(),
+        };
+        deps.tasks.spawn_cancellable(move |stop_token| {
+            run_notification_webhook_worker(receiver, worker_deps, stop_token)
+        });
+        Self {
+            session: deps.session,
+            config: deps.config,
             diagnostics: deps.diagnostics,
-            tasks: deps.tasks,
+            queue,
         }
     }
 }
@@ -91,61 +116,114 @@ impl OverlayActivitySink for NotificationWebhookSink {
             .map(|context| context.endpoint)
             .unwrap_or_default();
         let allow_user_icon = config_bool(&self.config, "displayVRCPlusIconsAsAvatar", true);
-        let world_cache = Arc::clone(&self.world_cache);
-        let user_image_cache = Arc::clone(&self.user_image_cache);
-        let web = Arc::clone(&self.web);
-        let db = Arc::clone(&self.db);
-        let diagnostics = self.diagnostics.clone();
+        let event_label = delivery.entry.activity_type.clone();
+        let job = NotificationWebhookJob {
+            delivery,
+            preferences,
+            format,
+            locale,
+            vrchat_endpoint: endpoint,
+            allow_user_icon,
+        };
+        if let Err(error) = self.queue.try_send(job) {
+            let reason = match error {
+                tokio::sync::mpsc::error::TrySendError::Full(_) => "queue full",
+                tokio::sync::mpsc::error::TrySendError::Closed(_) => "worker stopped",
+            };
+            self.diagnostics.record_command(
+                "notificationWebhook",
+                "error",
+                format!("{event_label}: {reason}"),
+            );
+            tracing::warn!(event = %event_label, reason, "webhook delivery dropped");
+        }
+    }
+}
 
-        self.tasks.spawn(async move {
-            let mut delivery = delivery;
-            if let Some((world_name, display_location)) = resolve_delivery_world_name(
-                world_cache.as_ref(),
-                web.as_ref(),
-                &endpoint,
-                &delivery,
+async fn run_notification_webhook_worker(
+    mut receiver: tokio::sync::mpsc::Receiver<NotificationWebhookJob>,
+    deps: NotificationWebhookWorkerDeps,
+    stop_token: TaskStopToken,
+) {
+    loop {
+        let job = tokio::select! {
+            job = receiver.recv() => job,
+            _ = wait_for_webhook_stop(&stop_token) => return,
+        };
+        let Some(job) = job else {
+            return;
+        };
+        tokio::select! {
+            _ = deliver_notification_webhook(&deps, job) => {}
+            _ = wait_for_webhook_stop(&stop_token) => return,
+        }
+    }
+}
+
+async fn wait_for_webhook_stop(stop_token: &TaskStopToken) {
+    while !stop_token.is_stop_requested() {
+        tokio::time::sleep(NOTIFICATION_WEBHOOK_STOP_POLL_INTERVAL).await;
+    }
+}
+
+async fn deliver_notification_webhook(
+    deps: &NotificationWebhookWorkerDeps,
+    mut job: NotificationWebhookJob,
+) {
+    if let Some((world_name, display_location)) = resolve_delivery_world_name(
+        deps.world_cache.as_ref(),
+        deps.web.as_ref(),
+        &job.vrchat_endpoint,
+        &job.delivery,
+    )
+    .await
+    {
+        job.delivery.entry.content.world_name = world_name;
+        if !display_location.trim().is_empty() {
+            job.delivery.entry.content.display_location = display_location;
+        }
+    }
+    let render = render_delivery(
+        &job.delivery,
+        job.locale,
+        job.preferences.show_instance_id_in_location,
+    );
+    let payload = match job.format {
+        NotificationWebhookFormat::Generic => {
+            generic_webhook_payload(&job.delivery, &render, &job.preferences.fields)
+        }
+        NotificationWebhookFormat::Discord => {
+            build_discord_payload(
+                &DiscordDeps {
+                    world_cache: deps.world_cache.as_ref(),
+                    user_image_cache: deps.user_image_cache.as_ref(),
+                    web: deps.web.as_ref(),
+                    db: deps.db.as_ref(),
+                    endpoint: &job.vrchat_endpoint,
+                    allow_user_icon: job.allow_user_icon,
+                },
+                &job.delivery,
+                &render,
+                job.locale,
             )
             .await
-            {
-                delivery.entry.content.world_name = world_name;
-                if !display_location.trim().is_empty() {
-                    delivery.entry.content.display_location = display_location;
-                }
-            }
-            let render =
-                render_delivery(&delivery, locale, preferences.show_instance_id_in_location);
-            let payload = match format {
-                NotificationWebhookFormat::Generic => {
-                    generic_webhook_payload(&delivery, &render, &preferences.fields)
-                }
-                NotificationWebhookFormat::Discord => {
-                    build_discord_payload(
-                        &DiscordDeps {
-                            world_cache: world_cache.as_ref(),
-                            user_image_cache: user_image_cache.as_ref(),
-                            web: web.as_ref(),
-                            db: db.as_ref(),
-                            endpoint: &endpoint,
-                            allow_user_icon,
-                        },
-                        &delivery,
-                        &render,
-                        locale,
-                    )
-                    .await
-                }
-            };
-            send_json_webhook_with_retry(
-                web.as_ref(),
-                &diagnostics,
-                preferences.url.trim(),
-                payload,
-                "notificationWebhook",
-                &delivery.entry.activity_type,
-            )
-            .await;
-        });
-    }
+        }
+    };
+    let url = match job.format {
+        NotificationWebhookFormat::Generic => job.preferences.url.trim().to_string(),
+        NotificationWebhookFormat::Discord => {
+            discord_webhook_url_with_wait(job.preferences.url.trim())
+        }
+    };
+    send_json_webhook_with_retry(
+        deps.web.as_ref(),
+        &deps.diagnostics,
+        &url,
+        payload,
+        "notificationWebhook",
+        &job.delivery.entry.activity_type,
+    )
+    .await;
 }
 
 #[cfg(test)]

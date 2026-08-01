@@ -9,19 +9,21 @@ use crate::Error;
 use super::schema::*;
 
 pub fn ensure_game_log_tables(db: &DatabaseService) -> Result<(), Error> {
-    ensure_game_log_tables_on(db)?;
-    for table in [
-        TABLE_LOCATION,
-        TABLE_JOIN_LEAVE,
-        TABLE_PORTAL_SPAWN,
-        TABLE_VIDEO_PLAY,
-        TABLE_RESOURCE_LOAD,
-        TABLE_EVENT,
-        TABLE_EXTERNAL,
-    ] {
-        add_column_if_missing(db, table, COL_OWNER_ID, "INTEGER NOT NULL DEFAULT 0")?;
-    }
-    Ok(())
+    db.ensure_schema_once("game_log", || {
+        ensure_game_log_tables_on(db)?;
+        for table in [
+            TABLE_LOCATION,
+            TABLE_JOIN_LEAVE,
+            TABLE_PORTAL_SPAWN,
+            TABLE_VIDEO_PLAY,
+            TABLE_RESOURCE_LOAD,
+            TABLE_EVENT,
+            TABLE_EXTERNAL,
+        ] {
+            add_column_if_missing(db, table, COL_OWNER_ID, "INTEGER NOT NULL DEFAULT 0")?;
+        }
+        Ok(())
+    })
 }
 
 pub(super) fn ensure_game_log_tables_on(target: &impl DbWriteTarget) -> Result<(), Error> {

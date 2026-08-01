@@ -123,21 +123,37 @@ pub async fn build_friend_roster_baseline(
     deps: SocialBaselineDeps,
     input: SocialFriendRosterBaselineInput,
 ) -> Result<SocialFriendRosterBaselineOutput> {
-    build_friend_roster_baseline_inner(deps, input, true).await
+    Ok(build_friend_roster_baseline_inner(deps, input, true)
+        .await?
+        .output)
 }
 
 pub async fn build_friend_roster_baseline_deferred(
     deps: SocialBaselineDeps,
     input: SocialFriendRosterBaselineInput,
 ) -> Result<SocialFriendRosterBaselineOutput> {
+    Ok(build_friend_roster_baseline_inner(deps, input, false)
+        .await?
+        .output)
+}
+
+pub(crate) async fn build_friend_roster_baseline_deferred_internal(
+    deps: SocialBaselineDeps,
+    input: SocialFriendRosterBaselineInput,
+) -> Result<BuiltFriendRosterBaseline> {
     build_friend_roster_baseline_inner(deps, input, false).await
+}
+
+pub(crate) struct BuiltFriendRosterBaseline {
+    pub(crate) output: SocialFriendRosterBaselineOutput,
+    pub(crate) friends_by_id: Option<Result<HashMap<String, FriendRecord>>>,
 }
 
 async fn build_friend_roster_baseline_inner(
     deps: SocialBaselineDeps,
     input: SocialFriendRosterBaselineInput,
     reconcile_friend_log: bool,
-) -> Result<SocialFriendRosterBaselineOutput> {
+) -> Result<BuiltFriendRosterBaseline> {
     let cached_current_user =
         CurrentUserSnapshotView::from_raw(input.current_user_snapshot.as_value());
     let user_id = normalize_text(if input.user_id.is_empty() {
@@ -151,7 +167,10 @@ async fn build_friend_roster_baseline_inner(
         ));
     }
     if !auth_scope_matches(&deps, &user_id, &input.endpoint) {
-        return Ok(stale_friend_output(user_id, String::new()));
+        return Ok(BuiltFriendRosterBaseline {
+            output: stale_friend_output(user_id, String::new()),
+            friends_by_id: None,
+        });
     }
 
     let current_user =
@@ -170,10 +189,10 @@ async fn build_friend_roster_baseline_inner(
         ..
     } = current_user;
     if !has_friend_list {
-        return Ok(stale_friend_output(
-            user_id,
-            "Current user friend list is incomplete.".into(),
-        ));
+        return Ok(BuiltFriendRosterBaseline {
+            output: stale_friend_output(user_id, "Current user friend list is incomplete.".into()),
+            friends_by_id: None,
+        });
     }
     let mut expected_ids = Vec::new();
     let mut expected_seen = HashSet::new();
@@ -210,7 +229,10 @@ async fn build_friend_roster_baseline_inner(
     }
 
     if !auth_scope_matches(&deps, &user_id, &input.endpoint) {
-        return Ok(stale_friend_output(user_id, String::new()));
+        return Ok(BuiltFriendRosterBaseline {
+            output: stale_friend_output(user_id, String::new()),
+            friends_by_id: None,
+        });
     }
 
     let mut refetch_ids =
@@ -250,6 +272,11 @@ async fn build_friend_roster_baseline_inner(
         .get("orderedFriendIds")
         .and_then(Value::as_array)
         .map_or(0, Vec::len);
+    let friends_by_id = snapshot
+        .get("friendsById")
+        .cloned()
+        .ok_or_else(|| Error::Custom("Friend roster baseline has no friendsById map.".into()))
+        .and_then(|value| serde_json::from_value(value).map_err(Error::from));
 
     let mut output = SocialFriendRosterBaselineOutput {
         user_id,
@@ -260,40 +287,42 @@ async fn build_friend_roster_baseline_inner(
         friend_log_changed: false,
     };
     if reconcile_friend_log {
-        output.friend_log_changed =
-            reconcile_friend_roster_baseline(&deps, &input.endpoint, &output, Some(&expected_ids))
+        match &friends_by_id {
+            Ok(friends_by_id) => {
+                output.friend_log_changed = reconcile_friend_roster_baseline(
+                    &deps,
+                    &input.endpoint,
+                    &output.user_id,
+                    friends_by_id,
+                    Some(&expected_ids),
+                )
                 .await;
+            }
+            Err(error) => tracing::warn!(
+                error = %error,
+                "Friend roster baseline friendsById decode failed during reconciliation"
+            ),
+        }
     }
-    Ok(output)
+    Ok(BuiltFriendRosterBaseline {
+        output,
+        friends_by_id: Some(friends_by_id),
+    })
 }
 
 async fn reconcile_friend_roster_baseline(
     deps: &SocialBaselineDeps,
     endpoint: &str,
-    output: &SocialFriendRosterBaselineOutput,
+    user_id: &str,
+    friends_by_id: &HashMap<String, FriendRecord>,
     roster_order: Option<&[String]>,
 ) -> bool {
-    if output.stale {
-        return false;
-    }
-    let Some(snapshot) = output.snapshot.as_ref().map(RawJson::as_value) else {
-        return false;
-    };
-    let Some(friends_by_id) = snapshot.get("friendsById").cloned() else {
-        return false;
-    };
-    let Ok(friends_by_id) = serde_json::from_value::<HashMap<String, FriendRecord>>(friends_by_id)
-    else {
-        tracing::warn!("Friend roster baseline friendsById decode failed during reconciliation");
-        return false;
-    };
     let verdicts =
-        verify_friend_log_relationship_changes(deps, endpoint, &output.user_id, &friends_by_id)
-            .await;
+        verify_friend_log_relationship_changes(deps, endpoint, user_id, friends_by_id).await;
     reconcile_friend_roster_records(
         deps.db.as_ref(),
-        &output.user_id,
-        &friends_by_id,
+        user_id,
+        friends_by_id,
         roster_order,
         &verdicts,
     )

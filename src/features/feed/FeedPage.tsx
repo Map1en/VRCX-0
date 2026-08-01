@@ -1,7 +1,8 @@
 import { Columns3Icon, TableIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { TableColumnVisibilityMenu } from '@/components/data-table/TableColumnVisibilityMenu';
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog';
 import { PageBody, PageScaffold } from '@/components/layout/PageScaffold';
 import { Spinner } from '@/ui/shadcn/spinner';
@@ -129,40 +130,76 @@ function FeedTableMode({ modeToggle }: { modeToggle: ReactNode }) {
         tableModel
     } = useFeedPageController();
     const arrivals = useFeedRowArrivals(rows, loadStatus);
+    const columnsMenu = useMemo(
+        () => <TableColumnVisibilityMenu table={table} />,
+        [table, tableModel.columnOrderLocked, tableModel.columnVisibility]
+    );
+    const filterModel = useMemo(
+        () => ({
+            activeFilterCount: filters.activeFilterCount,
+            activeFilters: filters.activeFilters,
+            dateDraftFrom: filters.dateDraftFrom,
+            dateDraftRange: filters.dateDraftRange,
+            dateDraftTo: filters.dateDraftTo,
+            dateFilterOpen: filters.dateFilterOpen,
+            dateFrom: filters.dateFrom,
+            dateTo: filters.dateTo,
+            favoritesOnly: filters.favoritesOnly,
+            feedFilterTypes: filters.feedFilterTypes,
+            searchDraft: filters.searchDraft,
+            todayDate: filters.todayDate
+        }),
+        [
+            filters.activeFilterCount,
+            filters.activeFilters,
+            filters.dateDraftFrom,
+            filters.dateDraftRange,
+            filters.dateDraftTo,
+            filters.dateFilterOpen,
+            filters.dateFrom,
+            filters.dateTo,
+            filters.favoritesOnly,
+            filters.feedFilterTypes,
+            filters.searchDraft,
+            filters.todayDate
+        ]
+    );
+    const filterCommands = useMemo(
+        () => ({
+            onApplyDateFilter: filters.applyDateFilter,
+            onClearDateFilter: filters.clearDateFilter,
+            onClearFeedFilters: () => filters.setFeedFilters([]),
+            onClearSearch: filters.clearSearch,
+            onDateFilterOpenChange: filters.setDateFilterOpen,
+            onDateRangeSelect: filters.onDateRangeSelect,
+            onSearchBlur: () => filters.commitSearch(),
+            onSearchDraftChange: filters.setSearchDraft,
+            onSearchEnter: filters.commitSearch,
+            onToggleFavoritesOnly: () =>
+                filters.setFavoritesOnly((current) => !current),
+            onToggleFeedFilter: filters.toggleFeedFilter
+        }),
+        [
+            filters.applyDateFilter,
+            filters.clearDateFilter,
+            filters.clearSearch,
+            filters.commitSearch,
+            filters.onDateRangeSelect,
+            filters.setDateFilterOpen,
+            filters.setFavoritesOnly,
+            filters.setFeedFilters,
+            filters.setSearchDraft,
+            filters.toggleFeedFilter
+        ]
+    );
 
     return (
         <>
             <FeedToolbar
-                filterModel={{
-                    activeFilterCount: filters.activeFilterCount,
-                    activeFilters: filters.activeFilters,
-                    dateDraftFrom: filters.dateDraftFrom,
-                    dateDraftRange: filters.dateDraftRange,
-                    dateDraftTo: filters.dateDraftTo,
-                    dateFilterOpen: filters.dateFilterOpen,
-                    dateFrom: filters.dateFrom,
-                    dateTo: filters.dateTo,
-                    favoritesOnly: filters.favoritesOnly,
-                    feedFilterTypes: filters.feedFilterTypes,
-                    searchDraft: filters.searchDraft,
-                    todayDate: filters.todayDate
-                }}
-                filterCommands={{
-                    onApplyDateFilter: filters.applyDateFilter,
-                    onClearDateFilter: filters.clearDateFilter,
-                    onClearFeedFilters: () => filters.setFeedFilters([]),
-                    onClearSearch: filters.clearSearch,
-                    onDateFilterOpenChange: filters.setDateFilterOpen,
-                    onDateRangeSelect: filters.onDateRangeSelect,
-                    onSearchBlur: () => filters.commitSearch(),
-                    onSearchDraftChange: filters.setSearchDraft,
-                    onSearchEnter: filters.commitSearch,
-                    onToggleFavoritesOnly: () =>
-                        filters.setFavoritesOnly((current) => !current),
-                    onToggleFeedFilter: filters.toggleFeedFilter
-                }}
+                columnsMenu={columnsMenu}
+                filterModel={filterModel}
+                filterCommands={filterCommands}
                 modeToggle={modeToggle}
-                table={table}
             />
             <PageBody>
                 <FeedTableShell

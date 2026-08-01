@@ -40,10 +40,6 @@ export function setCommunityThemeOverrideCssSnapshot(
     overrideCssEnabled = enabled;
 }
 
-export function setCommunityThemeOverrideCssEnabled(enabled: boolean): void {
-    overrideCssEnabled = enabled;
-}
-
 export function getCommunityThemeOverrideCssSnapshot(): string {
     return overrideCssSnapshot;
 }

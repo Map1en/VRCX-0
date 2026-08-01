@@ -36,8 +36,8 @@ pub use baseline::{
     build_friend_roster_baseline_deferred, FriendStatusVerdicts,
 };
 pub(crate) use baseline::{
-    reconcile_friend_roster_records, verify_friend_log_relationship_changes,
-    FriendRosterReconcileOutcome,
+    build_friend_roster_baseline_deferred_internal, reconcile_friend_roster_records,
+    verify_friend_log_relationship_changes, FriendRosterReconcileOutcome,
 };
 pub(super) use state_map::{
     build_friend_state_map, build_snapshot_friend_ids, FriendStateMap, SnapshotFriendIds,

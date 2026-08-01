@@ -1,3 +1,4 @@
+import { invalidateEntityQueries } from '@/lib/entityQueryCache';
 import {
     commands,
     type AvatarMemoOutput,
@@ -94,17 +95,23 @@ async function saveUserMemo({
     }
 
     const nextMemo = typeof memo === 'string' ? memo : '';
+    let result: UserMemoOutput;
     if (!nextMemo) {
         await commands.appMemoSaveUser(normalizedUserId, '');
-        return createEmptyUserMemo(normalizedUserId);
+        result = createEmptyUserMemo(normalizedUserId);
+    } else {
+        const entry = await commands.appMemoSaveUser(
+            normalizedUserId,
+            nextMemo
+        );
+        result = {
+            userId: entry.entityId,
+            editedAt: entry.editedAt,
+            memo: entry.memo
+        };
     }
-
-    const entry = await commands.appMemoSaveUser(normalizedUserId, nextMemo);
-    return {
-        userId: entry.entityId,
-        editedAt: entry.editedAt,
-        memo: entry.memo
-    };
+    void invalidateEntityQueries(['quickSearch']);
+    return result;
 }
 
 async function getWorldMemo(worldId: unknown): Promise<WorldMemoOutput> {

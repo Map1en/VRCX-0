@@ -20,8 +20,8 @@ use super::release::{
     parse_release_version, GitHubRelease, GitHubReleaseAsset, TOKYO_UTC_OFFSET_SECONDS,
 };
 use super::{
-    AppUpdateBuildInfo, AppUpdateReleaseSnapshot, AppUpdateRuntime, AppUpdateStatusSnapshot,
-    DownloadPhase, DownloadState,
+    AppUpdateBuildInfo, AppUpdateDownloadPhase, AppUpdateReleaseSnapshot, AppUpdateRuntime,
+    AppUpdateStatusSnapshot, DownloadState,
 };
 
 const TEST_UPDATE_VERSION: &str = "2.15.0";
@@ -414,7 +414,7 @@ async fn background_download_is_forced_without_a_saved_preference() {
 
     tokio::time::timeout(std::time::Duration::from_secs(2), async {
         loop {
-            if context.runtime.download_status().phase == "downloaded" {
+            if context.runtime.download_status().phase == AppUpdateDownloadPhase::Downloaded {
                 break;
             }
             tokio::time::sleep(std::time::Duration::from_millis(10)).await;
@@ -429,7 +429,7 @@ async fn background_download_does_not_replace_an_installing_flight() {
     let context = app_update_test_context("installing-flight", []);
     context.runtime.with_download_state(|state| {
         *state = DownloadState {
-            phase: DownloadPhase::Installing,
+            phase: AppUpdateDownloadPhase::Installing,
             version: Some(TEST_UPDATE_VERSION.into()),
             downloaded_bytes: 10,
             total_bytes: 10,
@@ -446,6 +446,6 @@ async fn background_download_does_not_replace_an_installing_flight() {
         .await
         .expect("installing snapshot is returned");
 
-    assert_eq!(status.phase, "installing");
+    assert_eq!(status.phase, AppUpdateDownloadPhase::Installing);
     assert_eq!(context.port.download_count.load(AtomicOrdering::Relaxed), 0);
 }

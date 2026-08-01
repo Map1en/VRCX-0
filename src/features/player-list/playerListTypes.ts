@@ -1,5 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 
+import type { CurrentInstanceRosterContext } from '@/domain/instances/currentInstanceRoster';
+
 export type PlayerListRecord = Record<string, unknown>;
 
 export type PlayerListLanguageRow = {
@@ -82,17 +84,7 @@ export type PlayerListSourceRow = PlayerListRecord & {
     ref?: PlayerListProfileRecord | null;
 };
 
-export type PlayerListContext = PlayerListRecord & {
-    createdAt?: unknown;
-    groupName?: unknown;
-    location?: unknown;
-    playerCount?: unknown;
-    source?: unknown;
-    time?: unknown;
-    worldId?: unknown;
-    worldName?: unknown;
-    playerFactsKnown?: unknown;
-};
+export type PlayerListContext = Partial<CurrentInstanceRosterContext>;
 
 export type PlayerListRow = PlayerListSourceRow & {
     displayName: string;

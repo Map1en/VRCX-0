@@ -11,8 +11,7 @@ use crate::DesktopRuntimeServices;
 use vrcx_0_application_core::GameProcessEventSink;
 #[cfg(any(windows, target_os = "linux"))]
 use vrcx_0_overlay_runtime::{
-    start_preview_bridge_if_enabled, VrOverlayActivitySink, VrOverlayRuntime,
-    VR_OVERLAY_ENABLED_CONFIG_KEY,
+    VrOverlayActivitySink, VrOverlayRuntime, VR_OVERLAY_ENABLED_CONFIG_KEY,
 };
 #[cfg(any(windows, target_os = "linux"))]
 use vrcx_0_persistence::config::ConfigRepository;
@@ -69,7 +68,6 @@ impl DesktopVrOverlayRuntime {
             services.set_overlay_activity_extra_sink(Arc::new(VrOverlayActivitySink::new(
                 Arc::clone(&runtime),
             )));
-            start_preview_bridge_if_enabled(services);
             Ok(Self { config, runtime })
         }
 

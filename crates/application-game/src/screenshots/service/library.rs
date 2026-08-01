@@ -7,7 +7,7 @@ use super::{
     ScreenshotLibraryScanStatus, ScreenshotMetadata, ScreenshotSearchResult, ScreenshotSearchType,
     SCREENSHOT_LIBRARY_INDEX_VERSION,
 };
-use crate::{TaskStopToken, TaskSupervisor};
+use crate::{RuntimeEventBus, TaskStopToken, TaskSupervisor};
 
 pub(super) fn screenshot_search_result(
     path: &str,
@@ -301,6 +301,7 @@ pub(super) fn scan_screenshot_library_in(
 pub fn start_screenshot_library_scan(
     cache: &MetadataCacheDb,
     thumbnail_cache_dir: PathBuf,
+    event_bus: RuntimeEventBus,
     tasks: TaskSupervisor,
     force: bool,
     root: String,
@@ -313,6 +314,7 @@ pub fn start_screenshot_library_scan(
             ..Default::default()
         };
         cache.set_scan_status(status.clone());
+        event_bus.emit(status.clone());
         return status;
     }
 
@@ -321,10 +323,12 @@ pub fn start_screenshot_library_scan(
     }
 
     let cache_for_scan = cache.clone();
-    cache.set_scan_status(ScreenshotLibraryScanStatus {
+    let started = ScreenshotLibraryScanStatus {
         running: true,
         ..Default::default()
-    });
+    };
+    cache.set_scan_status(started.clone());
+    event_bus.emit(started);
     tasks.spawn_cancellable_thread("screenshot-library-scan", move |stop_token| {
         let status = scan_screenshot_library_in(
             Path::new(&root),
@@ -333,7 +337,8 @@ pub fn start_screenshot_library_scan(
             force,
             Some(&stop_token),
         );
-        cache_for_scan.finish_scan(status);
+        cache_for_scan.finish_scan(status.clone());
+        event_bus.emit(status);
     });
 
     cache.scan_status()

@@ -6,7 +6,7 @@ use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::data_dir_migration::{
     read_pending_data_dir_migration, write_data_dir_cleanup_pending,
     write_pending_data_dir_migration, DataDirCleanupPending, DataDirMigrationJournalPhase,
-    PendingDataDirMigration,
+    DataDirMigrationTargetState, PendingDataDirMigration,
 };
 use vrcx_0_persistence::DatabaseService;
 
@@ -65,6 +65,56 @@ fn test_runtime(
         ),
         event_bus,
     )
+}
+
+#[test]
+fn request_migration_owns_mode_and_space_validation() {
+    let dir = TestDir::new("request-validation");
+    let source = dir.path.join("source");
+    let control = dir.path.join("control");
+    std::fs::create_dir(&source).unwrap();
+    std::fs::create_dir(&control).unwrap();
+    let db = test_database(&source);
+    let (runtime, _) = test_runtime(
+        source,
+        control,
+        db,
+        ProfileOperationGate::default(),
+        Arc::new(|_| Ok(())),
+    );
+    let plan = |target_state, required_bytes, available_bytes| DataDirMigrationPlan {
+        target_path: dir.path.join("target").to_string_lossy().into_owned(),
+        required_bytes,
+        available_bytes,
+        target_state,
+    };
+
+    let insufficient = runtime.request_migration(
+        plan(DataDirMigrationTargetState::Empty, 2, 1),
+        DataDirMigrationMode::Migrate,
+    );
+    assert_eq!(
+        insufficient.error.expect("space error").code,
+        DataDirMigrationErrorCode::InsufficientSpace
+    );
+
+    let invalid_adoption = runtime.request_migration(
+        plan(DataDirMigrationTargetState::Empty, 0, 0),
+        DataDirMigrationMode::AdoptExisting,
+    );
+    assert_eq!(
+        invalid_adoption.error.expect("adoption error").code,
+        DataDirMigrationErrorCode::InvalidAdoptionTarget
+    );
+
+    let invalid_fresh_start = runtime.request_migration(
+        plan(DataDirMigrationTargetState::ExistingProfile, 0, 0),
+        DataDirMigrationMode::FreshStart,
+    );
+    assert_eq!(
+        invalid_fresh_start.error.expect("fresh start error").code,
+        DataDirMigrationErrorCode::InvalidFreshStartTarget
+    );
 }
 
 #[test]

@@ -10,7 +10,7 @@ use vrcx_0_integrations::external_api::{
 
 use super::types::{
     ExternalApiAvatarSearchInput, ExternalApiImageInput, ExternalApiTranslationInput,
-    ExternalApiUrlInput, ExternalApiVrcStatusInput, ExternalApiYoutubeVideoInput,
+    ExternalApiUrlInput, ExternalApiYoutubeVideoInput,
 };
 
 fn normalize_text(value: impl AsRef<str>) -> String {
@@ -55,13 +55,6 @@ fn youtube_video_input(
     Ok(external_api::youtube_video_metadata_get_input(
         &video_id, &api_key,
     ))
-}
-
-fn vrc_status_input(
-    input: ExternalApiVrcStatusInput,
-) -> Result<ExternalHttpRequestInput, AppError> {
-    let path = require_text(input.path, "ExternalApiVrcStatusJsonGet requires path.")?;
-    Ok(external_api::vrc_status_json_get_input(&path))
 }
 
 fn github_releases_input(input: ExternalApiUrlInput) -> Result<ExternalHttpRequestInput, AppError> {
@@ -174,14 +167,6 @@ external_command!(
     youtube_video_input,
     ExternalApiScope::Youtube,
     "Getting YouTube video metadata."
-);
-
-external_command!(
-    app__external_api_vrc_status_json_get,
-    ExternalApiVrcStatusInput,
-    vrc_status_input,
-    ExternalApiScope::VrcStatus,
-    "Getting VRChat status JSON."
 );
 
 external_command!(

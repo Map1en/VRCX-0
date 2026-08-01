@@ -39,6 +39,8 @@ const FRIEND_PRESENCE_OVERRIDE_FIELDS = [
     'status',
     'travelingToLocation',
     'travelingToTime',
+    '$travelingToTime',
+    '$location_at',
     'locationAt',
     'pendingOffline'
 ];

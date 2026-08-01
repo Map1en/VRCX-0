@@ -6,6 +6,7 @@ import {
     GemIcon,
     GlobeIcon,
     PencilIcon,
+    ShieldCheckIcon,
     UserRoundIcon
 } from 'lucide-react';
 import {
@@ -58,7 +59,8 @@ import type {
 import { UserDialogHeaderActions } from './UserDialogHeaderActions';
 import {
     hasRenderableUserProfileBadges,
-    UserDialogHeaderBadges,
+    UserDialogHeaderAttributes,
+    UserDialogHeaderFlags,
     UserDialogHeaderMediaBadges
 } from './UserDialogHeaderBadges';
 import { UserDialogHeaderMedia } from './UserDialogHeaderMedia';
@@ -187,6 +189,42 @@ function preferenceLabel(value: boolean, t: TFunction) {
     return value
         ? t('dialog.user.info.avatar_cloning_allow')
         : t('dialog.user.info.avatar_cloning_deny');
+}
+
+function HeaderRowIcon({
+    icon,
+    className
+}: {
+    icon: ReactNode;
+    className?: string;
+}) {
+    return (
+        <span
+            className={cn(
+                'flex size-4 shrink-0 items-center justify-center opacity-70 [&_svg]:size-3.5',
+                className
+            )}
+        >
+            {icon}
+        </span>
+    );
+}
+
+function HeaderMetaRow({
+    icon,
+    children
+}: {
+    icon: ReactNode;
+    children: ReactNode;
+}) {
+    return (
+        <div className="flex min-w-0 items-center gap-2">
+            <HeaderRowIcon icon={icon} />
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1 gap-y-0.5">
+                {children}
+            </div>
+        </div>
+    );
 }
 
 function HeaderFactRow({
@@ -325,6 +363,7 @@ function UserDialogHeaderFacts({
         | 'onCopyUserId'
         | 'onCopyUsername'
         | 'onCopyUserUrl'
+        | 'onOpenDiscordProfile'
         | 'onOpenUserUrl'
         | 'onToggleSelfAvatarCopying'
         | 'onToggleSelfBooping'
@@ -344,6 +383,7 @@ function UserDialogHeaderFacts({
         onCopyUserId,
         onCopyUsername,
         onCopyUserUrl,
+        onOpenDiscordProfile,
         onOpenUserUrl,
         onToggleSelfAvatarCopying,
         onToggleSelfBooping,
@@ -351,6 +391,8 @@ function UserDialogHeaderFacts({
         onToggleSelfSharedConnections
     } = commands;
     const actionsDisabled = actionStatus !== 'idle';
+    const discordId =
+        typeof profile.discordId === 'string' ? profile.discordId : '';
 
     return (
         <div className="text-muted-foreground/80 flex min-w-0 flex-col gap-1 border-t pt-3 text-xs">
@@ -426,6 +468,23 @@ function UserDialogHeaderFacts({
                             onClick={onCopyUserUrl}
                         />
                     </HeaderFactValue>
+                </HeaderFactRow>
+            ) : null}
+            {discordId ? (
+                <HeaderFactRow label="Discord">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        title={t('dialog.user.tags.open_in_discord')}
+                        onClick={() => onOpenDiscordProfile(discordId)}
+                        className="text-muted-foreground/80 hover:text-primary h-auto min-w-0 px-1 py-0 text-xs font-normal"
+                    >
+                        <span className="min-w-0 truncate">
+                            {t('common.actions.open')}
+                        </span>
+                        <ExternalLinkIcon data-icon="inline-end" />
+                    </Button>
                 </HeaderFactRow>
             ) : null}
         </div>
@@ -565,6 +624,7 @@ export function UserDialogHeaderSection({
         onCopyUserId,
         onCopyUsername,
         onCopyUserUrl,
+        onOpenDiscordProfile,
         onOpenUserUrl,
         onToggleSelfAvatarCopying,
         onToggleSelfBooping,
@@ -630,7 +690,7 @@ export function UserDialogHeaderSection({
                 <div className="flex min-w-0 items-center gap-2">
                     <div
                         style={nameplateStyle}
-                        className="relative isolate min-h-9 min-w-0 flex-1 overflow-hidden rounded-md"
+                        className="relative isolate -ml-1.5 min-h-9 min-w-0 flex-1 overflow-hidden rounded-md"
                     >
                         <UserDialogProfileDecorationImage
                             item={profileAppearance.nameplateEffect}
@@ -639,18 +699,20 @@ export function UserDialogHeaderSection({
                         />
                         <CardTitle
                             className={cn(
-                                'relative z-10 flex min-h-9 min-w-0 items-center gap-x-1.5 px-1.5 py-1 text-lg leading-tight',
+                                'relative z-10 flex min-h-9 min-w-0 items-center gap-x-2 px-1.5 py-1 text-lg leading-tight',
                                 hasNameplateAppearance && 'text-white'
                             )}
                         >
-                            <UserStatusDot
-                                aria-label={statusStateText || undefined}
-                                role={statusStateText ? 'img' : undefined}
-                                title={statusStateText || undefined}
-                                statusDotClassName={statusDotClassName}
-                                className="inline-block size-2.5 shrink-0 align-middle"
-                                variant="inline"
-                            />
+                            <span className="flex size-4 shrink-0 items-center justify-center">
+                                <UserStatusDot
+                                    aria-label={statusStateText || undefined}
+                                    role={statusStateText ? 'img' : undefined}
+                                    title={statusStateText || undefined}
+                                    statusDotClassName={statusDotClassName}
+                                    className="inline-block size-2.5 shrink-0 align-middle"
+                                    variant="inline"
+                                />
+                            </span>
                             {onTitleClick ? (
                                 <Tooltip>
                                     <TooltipTrigger
@@ -715,92 +777,83 @@ export function UserDialogHeaderSection({
                         />
                     </div>
                 </div>
-                {estimatedOnlineForText ? (
-                    <div className="text-muted-foreground flex min-w-0 items-center gap-1.5 text-xs">
-                        <ClockIcon
-                            data-icon="inline-start"
-                            className="size-3 shrink-0 opacity-70"
-                        />
-                        <span className="min-w-0 truncate">
-                            {t('dialog.user.info.estimated_online_for', {
-                                duration: estimatedOnlineForText
-                            })}
-                        </span>
-                    </div>
-                ) : null}
-                <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                    <UserDialogHeaderBadges
-                        profile={profile}
-                        moderationState={moderationState}
-                        friendNumber={friendNumber}
-                        platform={platform}
-                        PlatformIcon={PlatformIcon}
-                        onOpenDiscordProfile={onOpenDiscordProfile}
-                    />
-                </div>
-                {hasIdentityMeta || hasTitleMeta ? (
-                    <div className="text-muted-foreground flex min-w-0 flex-col gap-1.5 text-xs">
-                        {hasIdentityMeta ? (
-                            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                                {pronounsText ? (
-                                    <Tooltip>
-                                        <TooltipTrigger
-                                            render={
-                                                <span className="inline-flex min-w-0 shrink-0 cursor-default items-center gap-1">
-                                                    <UserRoundIcon className="size-3 shrink-0 opacity-70" />
-                                                    <span className="min-w-0 truncate">
-                                                        {pronounsText}
-                                                    </span>
-                                                </span>
-                                            }
-                                        />
-                                        <TooltipContent>
-                                            {t('dialog.user.pronouns')}
-                                        </TooltipContent>
-                                    </Tooltip>
-                                ) : null}
-                                <PreviousDisplayNamesBadge
-                                    names={previousDisplayNames}
-                                />
-                            </div>
-                        ) : null}
-                        {hasTitleMeta ? (
-                            <div className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5">
-                                <GlobeIcon className="mr-0.5 size-3 shrink-0 opacity-70" />
-                                {profileLanguages.map((language, index) => {
-                                    const code = language.key.toUpperCase();
-                                    return (
-                                        <span
-                                            key={language.key}
-                                            className="inline-flex shrink-0 items-center"
-                                        >
-                                            <Tooltip>
-                                                <TooltipTrigger
-                                                    render={
-                                                        <span className="cursor-default">
-                                                            {languageDisplayName(
-                                                                language
-                                                            )}
-                                                        </span>
-                                                    }
-                                                />
-                                                <TooltipContent>
-                                                    {code}
-                                                </TooltipContent>
-                                            </Tooltip>
-                                            {index <
-                                            profileLanguages.length - 1 ? (
-                                                <span className="mx-1 opacity-50">
-                                                    ·
-                                                </span>
-                                            ) : null}
-                                        </span>
-                                    );
+                <UserDialogHeaderFlags
+                    profile={profile}
+                    moderationState={moderationState}
+                />
+                <div className="text-muted-foreground flex min-w-0 flex-col gap-1.5 text-xs">
+                    {estimatedOnlineForText ? (
+                        <HeaderMetaRow icon={<ClockIcon />}>
+                            <span className="min-w-0 truncate">
+                                {t('dialog.user.info.estimated_online_for', {
+                                    duration: estimatedOnlineForText
                                 })}
-                            </div>
-                        ) : null}
-                    </div>
-                ) : null}
+                            </span>
+                        </HeaderMetaRow>
+                    ) : null}
+                    <HeaderMetaRow icon={<ShieldCheckIcon />}>
+                        <UserDialogHeaderAttributes
+                            profile={profile}
+                            friendNumber={isFriend ? friendNumber : undefined}
+                            platform={platform}
+                            PlatformIcon={PlatformIcon}
+                        />
+                    </HeaderMetaRow>
+                    {hasIdentityMeta ? (
+                        <HeaderMetaRow icon={<UserRoundIcon />}>
+                            {pronounsText ? (
+                                <Tooltip>
+                                    <TooltipTrigger
+                                        render={
+                                            <span className="min-w-0 cursor-default truncate">
+                                                {pronounsText}
+                                            </span>
+                                        }
+                                    />
+                                    <TooltipContent>
+                                        {t('dialog.user.pronouns')}
+                                    </TooltipContent>
+                                </Tooltip>
+                            ) : null}
+                            <PreviousDisplayNamesBadge
+                                names={previousDisplayNames}
+                            />
+                        </HeaderMetaRow>
+                    ) : null}
+                    {hasTitleMeta ? (
+                        <HeaderMetaRow icon={<GlobeIcon />}>
+                            {profileLanguages.map((language, index) => {
+                                const code = language.key.toUpperCase();
+                                return (
+                                    <span
+                                        key={language.key}
+                                        className="inline-flex shrink-0 items-center"
+                                    >
+                                        <Tooltip>
+                                            <TooltipTrigger
+                                                render={
+                                                    <span className="cursor-default">
+                                                        {languageDisplayName(
+                                                            language
+                                                        )}
+                                                    </span>
+                                                }
+                                            />
+                                            <TooltipContent>
+                                                {code}
+                                            </TooltipContent>
+                                        </Tooltip>
+                                        {index < profileLanguages.length - 1 ? (
+                                            <span className="mx-1 opacity-50">
+                                                ·
+                                            </span>
+                                        ) : null}
+                                    </span>
+                                );
+                            })}
+                        </HeaderMetaRow>
+                    ) : null}
+                </div>
             </div>
 
             {hasProfileBadges ? (
@@ -832,9 +885,9 @@ export function UserDialogHeaderSection({
                             onClick={onEditSelfStatus}
                         >
                             <span className="flex min-w-0 items-start gap-2">
-                                <PencilIcon
-                                    data-icon="inline-start"
-                                    className="mt-1 size-3 shrink-0"
+                                <HeaderRowIcon
+                                    icon={<PencilIcon />}
+                                    className="mt-0.5"
                                 />
                                 <span className="min-w-0">
                                     {typeof profile.statusDescription ===
@@ -846,9 +899,9 @@ export function UserDialogHeaderSection({
                         </Button>
                     ) : (
                         <div className="text-muted-foreground flex max-h-24 min-w-0 items-start gap-2 overflow-auto text-sm whitespace-pre-wrap">
-                            <PencilIcon
-                                data-icon="inline-start"
-                                className="mt-1 size-3 shrink-0"
+                            <HeaderRowIcon
+                                icon={<PencilIcon />}
+                                className="mt-0.5"
                             />
                             <span className="min-w-0">
                                 {typeof profile.statusDescription === 'string'

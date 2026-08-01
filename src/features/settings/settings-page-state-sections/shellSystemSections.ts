@@ -3,14 +3,12 @@ import type { BuildSettingsPageStateSectionsInput } from '../settingsPageStateSe
 
 export function buildShellSection({
     activeSettingsTab,
-    setActiveSettingsTab,
-    loading
+    setActiveSettingsTab
 }: BuildSettingsPageStateSectionsInput) {
     return {
         activeSettingsTab,
         setActiveSettingsTab,
-        settingsTabs,
-        loading
+        settingsTabs
     };
 }
 

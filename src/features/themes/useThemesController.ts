@@ -4,11 +4,6 @@ import { toast } from 'sonner';
 
 import { commands } from '@/platform/tauri/bindings';
 import type { BackgroundImageMode } from '@/platform/tauri/bindings';
-import type { CommunityThemeStatsById } from '@/repositories/communityThemeRepository';
-import {
-    loadCommunityThemeStats,
-    reportCommunityThemeInstall
-} from '@/repositories/communityThemeRepository';
 import {
     disableBackgroundImage,
     setBackgroundImageMode
@@ -22,7 +17,9 @@ import {
     getCommunityThemeOverrideCssSnapshot,
     installCommunityTheme,
     loadCatalog,
+    loadCommunityThemeStats,
     loadLocalCommunityThemePreview,
+    reportCommunityThemeInstall,
     saveCommunityThemeOverrideCss,
     startLocalCommunityThemePreviewWatch,
     stopLocalCommunityThemePreview,
@@ -37,7 +34,8 @@ import { communityThemeControlsAccent } from '@/state/communityThemeStore';
 
 import type {
     CommunityThemeInstallMetadata,
-    CommunityThemeManifest
+    CommunityThemeManifest,
+    CommunityThemeStatsById
 } from './communityThemeTypes';
 import { resolveActiveThemeSource, type ThemeSource } from './themeHelpers';
 import { useThemesRuntimeState } from './useThemesRuntimeState';
@@ -85,7 +83,7 @@ export function useThemesController() {
         activeSource === 'built-in' ? selectedSource : activeSource;
 
     useEffect(() => {
-        loadCatalog().catch((loadError: any) => {
+        loadCatalog().catch((loadError: unknown) => {
             toast.error(
                 loadError instanceof Error
                     ? loadError.message

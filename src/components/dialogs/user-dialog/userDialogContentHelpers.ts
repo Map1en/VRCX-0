@@ -1,6 +1,9 @@
 import { AppleIcon, MonitorIcon, RectangleGogglesIcon } from 'lucide-react';
 
-import { resolveObservedPlayerUserIds } from '@/domain/friends/sameInstanceFriends';
+import {
+    isExplicitlyOfflineFriend,
+    resolveObservedPlayerUserIds
+} from '@/domain/friends/sameInstanceFriends';
 import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
 import {
     parseLocation,
@@ -147,11 +150,17 @@ export function resolveUserDialogTargetPresenceLocation({
     friendsById?: Record<string, unknown>;
 }) {
     const presenceLocation = resolvePresenceLocation(profile);
+    const normalizedTargetUserId = normalizeUserId(targetUserId);
+    if (
+        normalizedTargetUserId &&
+        isExplicitlyOfflineFriend(friendsById[normalizedTargetUserId])
+    ) {
+        return 'offline';
+    }
     if (parseLocation(presenceLocation).isRealInstance) {
         return presenceLocation;
     }
 
-    const normalizedTargetUserId = normalizeUserId(targetUserId);
     const normalizedCurrentLocation = normalizeUserId(currentLocation);
     if (
         !normalizedTargetUserId ||

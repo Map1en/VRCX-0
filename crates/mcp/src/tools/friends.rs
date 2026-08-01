@@ -2,7 +2,6 @@ use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::CallToolResult;
 use rmcp::{schemars, tool, tool_router};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use vrcx_0_core::location::parse_location;
 use vrcx_0_persistence::{
     favorites as persistence_favorites, friends as persistence_friends, local_moderation, memos,
@@ -525,12 +524,8 @@ impl VrcxMcpServer {
         )
         .map_err(map_persistence_error)?
         .into_iter()
-        .filter(|row| row.get("userId").and_then(Value::as_str) == Some(user_id))
-        .filter_map(|row| {
-            row.get("groupName")
-                .and_then(Value::as_str)
-                .map(str::to_string)
-        })
+        .filter(|row| row.user_id.as_deref() == Some(user_id))
+        .map(|row| row.group_name)
         .filter(|group| !group.trim().is_empty())
         .collect::<Vec<_>>();
         groups.sort();

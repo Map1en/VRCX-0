@@ -1,5 +1,6 @@
 import type { FeedLiveEntry } from '@/domain/feed/feedLiveTypes';
 import type { FeedReadModelResult } from '@/domain/feed/feedReadModelTypes';
+import type { FeedRowOutput } from '@/platform/tauri/bindings';
 
 import configRepository from './configRepository';
 import feedPersistenceRepository from './feedPersistenceRepository';
@@ -108,7 +109,7 @@ class FeedRepository {
         dateTo = '',
         maxEntries,
         cursor = null
-    }: FeedQueryOptions): Promise<FeedEntry[]> {
+    }: FeedQueryOptions): Promise<FeedRowOutput[]> {
         const { normalizedUserId, maxTableSize, searchLimit } =
             await this.#ensureReady(userId);
         const normalizedFilters = normalizeFilterList(filters);
@@ -154,7 +155,7 @@ class FeedRepository {
         );
     }
 
-    async queryFeedPage(options: FeedQueryOptions): Promise<FeedEntry[]> {
+    async queryFeedPage(options: FeedQueryOptions): Promise<FeedRowOutput[]> {
         return this.queryFeed(options);
     }
 
@@ -171,7 +172,7 @@ class FeedRepository {
         favoritesOnly = false,
         cursor = null,
         maxRows
-    }: FeedReadModelQueryOptions): Promise<FeedReadModelResult<FeedEntry>> {
+    }: FeedReadModelQueryOptions): Promise<FeedReadModelResult<FeedRowOutput>> {
         const { normalizedUserId, maxTableSize, searchLimit } =
             await this.#ensureReady(userId);
         const normalizedFilters = normalizeFilterList(filters);
@@ -228,7 +229,7 @@ class FeedRepository {
         minLiveSequence = 0,
         favoritesOnly = false,
         maxRows
-    }: FeedLiveRowsMergeOptions): Promise<FeedReadModelResult<FeedEntry>> {
+    }: FeedLiveRowsMergeOptions): Promise<FeedReadModelResult<FeedRowOutput>> {
         const normalizedUserId = normalizeUserId(userId);
         const normalizedFilters = normalizeFilterList(filters);
         const normalizedFavorites = Array.from(
@@ -291,16 +292,6 @@ class FeedRepository {
         return feedPersistenceRepository.addOnlineOfflineToDatabaseForUser(
             userId,
             entry
-        );
-    }
-
-    async purgeAvatarFeedData(
-        userId: unknown,
-        cutoffDate: string | null = null
-    ) {
-        return feedPersistenceRepository.purgeAvatarFeedData(
-            userId,
-            cutoffDate
         );
     }
 }

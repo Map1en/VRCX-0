@@ -15,8 +15,14 @@ const mocks = vi.hoisted(() => ({
         >(),
     applyRuntimeGameLogProjection: vi.fn(),
     applyBackgroundImageProjectionEvent: vi.fn(),
+    applyCommunityThemeProjectionEvent: vi.fn(),
+    refreshCommunityThemeProjection: vi.fn<() => Promise<void>>(),
+    applyVrcStatusSnapshot: vi.fn(),
     appBackgroundImageStateGet: vi.fn(),
     handleFavoriteImportStatusEvent: vi.fn(),
+    handleMutualGraphFetchStatusEvent: vi.fn(),
+    refreshMutualGraphFetchStatus: vi.fn(),
+    handleScreenshotLibraryScanStatusEvent: vi.fn(),
     handleGameRunningUpdate: vi.fn<() => Promise<void>>(),
     isHostCapabilityAvailable: vi.fn<(name: string) => boolean>(),
     refreshHostCapabilities: vi.fn(),
@@ -89,8 +95,24 @@ vi.mock('./background-image/backgroundImageService', () => ({
         mocks.applyBackgroundImageProjectionEvent
 }));
 
+vi.mock('./community-theme/installedThemes', () => ({
+    applyCommunityThemeProjectionEvent:
+        mocks.applyCommunityThemeProjectionEvent,
+    refreshCommunityThemeProjection: mocks.refreshCommunityThemeProjection
+}));
+
 vi.mock('./favoriteImportService', () => ({
     handleFavoriteImportStatusEvent: mocks.handleFavoriteImportStatusEvent
+}));
+
+vi.mock('./mutualGraphFetchService', () => ({
+    handleMutualGraphFetchStatusEvent: mocks.handleMutualGraphFetchStatusEvent,
+    refreshMutualGraphFetchStatus: mocks.refreshMutualGraphFetchStatus
+}));
+
+vi.mock('./screenshotLibraryScanService', () => ({
+    handleScreenshotLibraryScanStatusEvent:
+        mocks.handleScreenshotLibraryScanStatusEvent
 }));
 
 vi.mock('./gameStateService', () => ({
@@ -110,6 +132,7 @@ vi.mock('./sqliteErrorDialogService', () => ({
 }));
 
 vi.mock('./vrcStatusService', () => ({
+    applyVrcStatusSnapshot: mocks.applyVrcStatusSnapshot,
     handleBrowserFocus: mocks.handleBrowserFocus
 }));
 
@@ -351,6 +374,8 @@ describe('runtimeEventBridgeService', () => {
         mocks.bindDeepLinkEvents.mockResolvedValue(mocks.deepLinkUnsubscribe);
         mocks.drainPendingDeepLinks.mockResolvedValue(undefined);
         mocks.resumeFrontendSessionFromBackendRuntime.mockResolvedValue(false);
+        mocks.refreshMutualGraphFetchStatus.mockResolvedValue(undefined);
+        mocks.refreshCommunityThemeProjection.mockResolvedValue(undefined);
     });
 
     it('routes only current-scope structured VRChat 401 events to auth recovery', async () => {
@@ -560,6 +585,18 @@ describe('runtimeEventBridgeService', () => {
         expect(mocks.drainPendingDeepLinks).toHaveBeenCalledTimes(1);
     });
 
+    it('hydrates the community theme after runtime events are subscribed', async () => {
+        await bindRuntimeEvents();
+
+        expect(mocks.subscribe).toHaveBeenCalledWith(
+            'communityThemeState',
+            expect.any(Function)
+        );
+        expect(mocks.subscribe.mock.invocationCallOrder.at(-1)).toBeLessThan(
+            mocks.refreshCommunityThemeProjection.mock.invocationCallOrder[0]
+        );
+    });
+
     it('unsubscribes earlier runtime events when a later subscription fails', async () => {
         const unsubscribe = vi.fn();
         mocks.subscribe.mockImplementation(async (name) => {
@@ -573,7 +610,7 @@ describe('runtimeEventBridgeService', () => {
             'subscription failed'
         );
 
-        expect(unsubscribe).toHaveBeenCalledTimes(7);
+        expect(unsubscribe).toHaveBeenCalledTimes(8);
         expect(useSessionStore.getState().transportStatus).toBe('disconnected');
         expect(mocks.bindDeepLinkEvents).not.toHaveBeenCalled();
     });
@@ -599,7 +636,7 @@ describe('runtimeEventBridgeService', () => {
         );
         await vi.advanceTimersByTimeAsync(10_000);
 
-        expect(runtimeUnsubscribe).toHaveBeenCalledTimes(33);
+        expect(runtimeUnsubscribe).toHaveBeenCalledTimes(38);
         expect(mocks.deepLinkUnsubscribe).toHaveBeenCalledTimes(1);
         expect(useSessionStore.getState().transportStatus).toBe('disconnected');
         expect(useUserFactsStore.getState().usersByKey).toEqual({});
@@ -637,6 +674,48 @@ describe('runtimeEventBridgeService', () => {
             phase: 'package',
             percent: 60
         });
+    });
+
+    it('hydrates mutual status once and routes later typed task events', async () => {
+        const handlers = new Map<string, (payload: unknown) => void>();
+        mocks.subscribe.mockImplementation(async (name, handler) => {
+            handlers.set(name, handler);
+            return () => {};
+        });
+
+        await bindRuntimeEvents();
+        const mutualStatus = {
+            runId: 4,
+            status: 'running',
+            ownerUserId: 'usr_owner'
+        };
+        const screenshotStatus = {
+            running: false,
+            scanned: 3,
+            indexed: 2
+        };
+        handlers.get('mutualGraphFetchStatus')?.(mutualStatus);
+        handlers.get('screenshotLibraryScanStatus')?.(screenshotStatus);
+        const vrcStatus = {
+            status: 'operational',
+            indicator: 'none',
+            summary: 'All systems operational',
+            updatedAt: '2026-07-31T00:00:00.000Z',
+            lastFetchedAt: '2026-07-31T00:00:00.000Z',
+            pollingIntervalMs: 900_000,
+            refreshing: false,
+            error: ''
+        };
+        handlers.get('vrcStatus')?.(vrcStatus);
+
+        expect(mocks.refreshMutualGraphFetchStatus).toHaveBeenCalledTimes(1);
+        expect(mocks.handleMutualGraphFetchStatusEvent).toHaveBeenCalledWith(
+            mutualStatus
+        );
+        expect(
+            mocks.handleScreenshotLibraryScanStatusEvent
+        ).toHaveBeenCalledWith(screenshotStatus);
+        expect(mocks.applyVrcStatusSnapshot).toHaveBeenCalledWith(vrcStatus);
     });
 
     it('routes restore progress to the active global restore flow', async () => {
@@ -704,23 +783,7 @@ describe('runtimeEventBridgeService', () => {
 
         handlers.get('gameLogPersistenceFallback')?.({
             error: 'database is locked',
-            batch: {
-                video_plays: [
-                    {
-                        created_at: '2026-05-15T00:00:00.000Z',
-                        video_url: 'https://video.example.test'
-                    }
-                ]
-            },
-            rawRows: [
-                [
-                    'runtime-game-log',
-                    '2026-05-15T00:00:00.000Z',
-                    'video-play',
-                    'https://video.example.test',
-                    ''
-                ]
-            ]
+            attemptedRowCount: 1
         });
 
         expect(mocks.showSQLiteErrorDialog).not.toHaveBeenCalled();

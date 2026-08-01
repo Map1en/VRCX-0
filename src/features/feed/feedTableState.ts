@@ -4,7 +4,9 @@ import {
     getDataTableStorageKey,
     readPersistedTableState,
     safeJsonParse,
+    sanitizeTableColumnOrder,
     sanitizeTableColumnSizing,
+    sanitizeTableColumnVisibility,
     writePersistedTableState
 } from '@/components/data-table/dataTablePersistence';
 
@@ -33,87 +35,79 @@ export function writePersistedFeedTableState(patch: Record<string, unknown>) {
     writePersistedTableState(STORAGE_KEY, patch);
 }
 
-export function sanitizeFeedSorting(value: any) {
+function isFeedSortingEntry(value: unknown): value is SortingState[number] {
+    if (!value || typeof value !== 'object') {
+        return false;
+    }
+    const id = (value as { id?: unknown }).id;
+    return typeof id === 'string' && FEED_TABLE_COLUMN_IDS.includes(id);
+}
+
+export function sanitizeFeedSorting(value: unknown): SortingState {
     if (!Array.isArray(value)) {
         return FEED_TABLE_DEFAULT_SORTING;
     }
 
-    const allowedIds = new Set(FEED_TABLE_COLUMN_IDS);
-    const filtered = value.filter(
-        (entry: any) =>
-            entry && typeof entry.id === 'string' && allowedIds.has(entry.id)
-    );
+    const filtered = value.filter(isFeedSortingEntry);
     return filtered.length ? filtered : FEED_TABLE_DEFAULT_SORTING;
 }
 
-export function sanitizeFeedPageSizes(value: any) {
+export function sanitizeFeedPageSizes(value: unknown): number[] {
     if (!Array.isArray(value)) {
         return FEED_TABLE_DEFAULT_PAGE_SIZES;
     }
 
     const sizes = value
-        .map((entry: any) => Number.parseInt(entry, 10))
+        .map((entry: unknown) => Number.parseInt(String(entry), 10))
         .filter(
-            (entry: any) => Number.isFinite(entry) && entry > 0 && entry <= 1000
+            (entry) => Number.isFinite(entry) && entry > 0 && entry <= 1000
         );
     return sizes.length
-        ? [...new Set(sizes)].sort((left: any, right: any) => left - right)
+        ? [...new Set(sizes)].sort((left, right) => left - right)
         : FEED_TABLE_DEFAULT_PAGE_SIZES;
 }
 
-export function sanitizeFeedColumnVisibility(value: any) {
-    const visibility: Record<string, boolean> = {};
-    if (!value || typeof value !== 'object') {
-        return visibility;
-    }
-
-    for (const columnId of FEED_TABLE_COLUMN_IDS) {
-        if (typeof value[columnId] === 'boolean') {
-            visibility[columnId] = value[columnId];
-        }
-    }
-    return visibility;
+export function sanitizeFeedColumnVisibility(
+    value: unknown
+): Record<string, boolean> {
+    return sanitizeTableColumnVisibility(value, FEED_TABLE_COLUMN_IDS);
 }
 
-export function sanitizeFeedColumnOrder(value: any) {
-    if (!Array.isArray(value)) {
-        return [];
-    }
-
-    return value.filter((columnId: any) =>
-        FEED_TABLE_ORDER_COLUMN_IDS.includes(columnId)
-    );
+export function sanitizeFeedColumnOrder(value: unknown): string[] {
+    return sanitizeTableColumnOrder(value, FEED_TABLE_ORDER_COLUMN_IDS, []);
 }
 
-export function sanitizeFeedColumnSizing(value: any) {
+export function sanitizeFeedColumnSizing(
+    value: unknown
+): Record<string, number> {
     return sanitizeTableColumnSizing(value, FEED_TABLE_ORDER_COLUMN_IDS);
 }
 
 export function resolveFeedPageSize(
-    candidate: any,
-    pageSizes: any = FEED_TABLE_DEFAULT_PAGE_SIZES,
-    fallback: any = pageSizes[1] ?? FEED_TABLE_DEFAULT_PAGE_SIZES[1]
-) {
-    const allowed = Array.isArray(pageSizes)
-        ? pageSizes.filter((size: any) => Number.isFinite(size) && size > 0)
-        : FEED_TABLE_DEFAULT_PAGE_SIZES;
+    candidate: unknown,
+    pageSizes: number[] = FEED_TABLE_DEFAULT_PAGE_SIZES,
+    fallback: number = pageSizes[1] ?? FEED_TABLE_DEFAULT_PAGE_SIZES[1]
+): number {
+    const allowed = pageSizes.filter(
+        (size) => Number.isFinite(size) && size > 0
+    );
     const fallbackPageSize = allowed.length
         ? allowed[0]
         : FEED_TABLE_DEFAULT_PAGE_SIZES[0];
-    const nearestPageSize = (value: any) =>
+    const nearestPageSize = (value: number): number =>
         allowed.length
-            ? allowed.reduce((previous: any, size: any) =>
+            ? allowed.reduce((previous, size) =>
                   Math.abs(size - value) < Math.abs(previous - value)
                       ? size
                       : previous
               )
             : fallbackPageSize;
-    const parsed = Number.parseInt(candidate, 10);
+    const parsed = Number.parseInt(String(candidate), 10);
     if (Number.isFinite(parsed) && parsed > 0) {
         return allowed.includes(parsed) ? parsed : nearestPageSize(parsed);
     }
 
     return allowed.includes(fallback)
         ? fallback
-        : nearestPageSize(Number(fallback) || fallbackPageSize);
+        : nearestPageSize(fallback || fallbackPageSize);
 }

@@ -1,4 +1,13 @@
-use super::*;
+use std::fs::{File, OpenOptions};
+use std::io::Write as _;
+use std::path::Path;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Mutex,
+};
+use std::time::Duration;
+
+use super::{Result, PROFILE_LOCK_FILE};
 
 pub(super) struct ProfileLock {
     inner: Mutex<Option<ProfileLockGuard>>,

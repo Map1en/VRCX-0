@@ -112,6 +112,9 @@
             "pendingLegacyMigration": "Terminez d’abord la migration des anciennes données.",
             "pendingMigration": "Un déplacement du dossier de données est en attente. Redémarrez VRCX-0.",
             "cleanupConflict": "Traitez d’abord les anciennes données avant de revenir à ce dossier.",
+            "insufficientSpace": "L’espace libre est insuffisant pour déplacer les données.",
+            "invalidAdoptionTarget": "Seul un dossier contenant un profil VRCX-0 existant peut être adopté.",
+            "invalidFreshStartTarget": "Un dossier contenant un profil VRCX-0 existant ne peut pas servir à repartir de zéro.",
             "copyFailed": "La base de données n’a pas pu être copiée. Les données d’origine restent utilisées.",
             "commitFailed": "La copie n’a pas pu être installée. Les données d’origine restent utilisées.",
             "pointerCommitFailed": "Le nouveau dossier n’a pas pu être activé. Redémarrez VRCX-0 pour réessayer en toute sécurité.",
@@ -2573,6 +2576,7 @@
                         "purge_in_progress": "Purge des données d'avatar",
                         "purge_complete": "Données d'avatar purgées avec succès. Redémarrage",
                         "purge_failed": "Échec de la purge : {error}",
+                        "purge_optimization_failed": "Les données d’avatar ont été purgées, mais la base de données n’a pas pu être optimisée : {error}",
                         "legacy_migration": "Migrer les données VRCX",
                         "legacy_migration_description": "Remplacer la configuration et la base de données actuelles de VRCX-0 par les données du dossier de données VRCX indiqué.",
                         "legacy_migration_confirm_title": "Remplacer les données VRCX-0 par les données VRCX ?",
@@ -3326,6 +3330,7 @@
             },
             "mutual_friends": {
                 "header": "Amis en commun",
+                "undisclosed_friend": "Ami en commun non divulgué",
                 "sorting": {
                     "alphabetical": "Alphabétique",
                     "last_active": "Dernière activité",

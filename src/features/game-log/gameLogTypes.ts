@@ -5,6 +5,12 @@ import type {
 } from '@tanstack/react-table';
 import type { Dispatch, SetStateAction } from 'react';
 
+import type {
+    GameLogSessionDto as GeneratedGameLogSession,
+    GameLogSessionEventDto as GeneratedGameLogSessionEvent,
+    GameLogSessionMemberDto as GeneratedGameLogSessionMember
+} from '@/platform/tauri/bindings';
+
 export const GAME_LOG_SESSION_FILTER_TYPES = [
     'OnPlayerJoined',
     'OnPlayerLeft',
@@ -20,6 +26,7 @@ export type GameLogRow = {
     rowId?: unknown;
     type?: unknown;
     created_at?: unknown;
+    createdAt?: unknown;
     displayName?: unknown;
     userId?: unknown;
     location?: unknown;
@@ -31,21 +38,23 @@ export type GameLogRow = {
     data?: unknown;
     message?: unknown;
     resourceUrl?: unknown;
-    isFavorite?: boolean;
+    isFavorite?: boolean | null;
     isFriend?: boolean;
     [key: string]: unknown;
 };
 
-export type GameLogSessionEvent = GameLogRow & {
-    members?: GameLogSessionMember[];
-    count?: unknown;
-};
+export type GameLogSessionMember = GameLogRow &
+    Partial<GeneratedGameLogSessionMember>;
 
-export type GameLogSessionMember = GameLogRow;
+export type GameLogSessionEvent = GameLogRow &
+    Partial<Omit<GeneratedGameLogSessionEvent, 'members'>> & {
+        members?: GameLogSessionMember[] | null;
+    };
 
-export type GameLogSession = GameLogRow & {
-    events?: GameLogSessionEvent[];
-};
+export type GameLogSession = GameLogRow &
+    Partial<Omit<GeneratedGameLogSession, 'events' | 'id'>> & {
+        events?: GameLogSessionEvent[];
+    };
 
 export type GameLogDetailValue = {
     primary?: unknown;

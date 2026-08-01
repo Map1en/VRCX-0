@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { reconcilePendingFavoriteRevision } from '@/services/favoriteRevisionReconciliationService';
 import {
     buildLocalInstanceActionGateMap,
     evaluateLocalInstanceActionGates,
@@ -166,16 +167,14 @@ export function useFavoritesPageController({ kind }: { kind: FavoriteKind }) {
     const refreshFavoritesRef = useRef(actions.refreshFavorites);
     refreshFavoritesRef.current = actions.refreshFavorites;
     useEffect(() => {
+        if (actions.refreshing) {
+            return;
+        }
         const timer = setTimeout(() => {
-            const pending = useFavoriteRevisionStore
-                .getState()
-                .consumePending();
-            if (pending.remote || pending.unknown) {
-                void refreshFavoritesRef.current({ silent: true });
-            }
+            void reconcilePendingFavoriteRevision(refreshFavoritesRef.current);
         }, FAVORITES_REVISION_DEBOUNCE_MS);
         return () => clearTimeout(timer);
-    }, [favoriteRevision]);
+    }, [actions.refreshing, favoriteRevision]);
 
     useEffect(() => {
         setExportDialogOpen(false);

@@ -1,11 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, type Dispatch, type SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { commands } from '@/platform/tauri/bindings';
+import {
+    commands,
+    type AppDataDirState,
+    type TtsVoice
+} from '@/platform/tauri/bindings';
 import avatarSearchProviderRepository from '@/repositories/avatarSearchProviderRepository';
 import configRepository from '@/repositories/configRepository';
-import { loadPreferenceSnapshot } from '@/services/preferencesService';
 import { getAppDataDirState } from '@/services/shellIntegrationService';
 import {
     APP_CJK_FONT_PACK_DEFAULT_KEY,
@@ -16,18 +19,37 @@ import {
     normalizeZoomLevel
 } from '@/services/themeService';
 
+import type { createDefaultSettingsPrefs } from './settingsDefaultPrefs';
+import type { AvatarProviderConfig } from './useAvatarProviderConfig';
+
+type SettingsPrefs = ReturnType<typeof createDefaultSettingsPrefs>;
+type SettingsPreferenceState = Record<string, unknown> & {
+    preferencesHydrated: boolean;
+};
+
+type SettingsEffectsDeps = {
+    applyAvatarProviderConfig: (config: AvatarProviderConfig) => void;
+    applyPreferenceSnapshotToLocalState: (snapshot: unknown) => void;
+    preferenceState: SettingsPreferenceState;
+    setAppDataDirState: Dispatch<SetStateAction<AppDataDirState | null>>;
+    setPrefs: Dispatch<SetStateAction<SettingsPrefs>>;
+    setTtsVoices: Dispatch<SetStateAction<TtsVoice[]>>;
+    setZoomInput: Dispatch<SetStateAction<string>>;
+    sidebarOpen: boolean;
+    zoomLevel: unknown;
+};
+
 export function useSettingsEffects({
     applyAvatarProviderConfig,
     applyPreferenceSnapshotToLocalState,
     preferenceState,
-    setLoading,
     setAppDataDirState,
     setPrefs,
     setTtsVoices,
     setZoomInput,
     sidebarOpen,
     zoomLevel
-}: any) {
+}: SettingsEffectsDeps) {
     const { t } = useTranslation();
     useEffect(() => {
         if (!preferenceState.preferencesHydrated) {
@@ -37,15 +59,12 @@ export function useSettingsEffects({
     }, [preferenceState]);
     useEffect(() => {
         let active = true;
-        Promise.all([
-            loadPreferenceSnapshot(),
-            avatarSearchProviderRepository.getConfig()
-        ])
-            .then(([snapshot, avatarConfig]: any) => {
+        avatarSearchProviderRepository
+            .getConfig()
+            .then((avatarConfig) => {
                 if (!active) {
                     return;
                 }
-                applyPreferenceSnapshotToLocalState(snapshot);
                 applyAvatarProviderConfig(avatarConfig);
             })
             .catch((error: unknown) => {
@@ -54,9 +73,6 @@ export function useSettingsEffects({
                         ? error.message
                         : t('view.settings.toast.failed_to_load_settings')
                 );
-            })
-            .finally(() => {
-                if (active) setLoading(false);
             });
         return () => {
             active = false;
@@ -83,7 +99,7 @@ export function useSettingsEffects({
                     customFontPrimary,
                     customFontSecondary,
                     customFontOverride
-                ]: any) => {
+                ]) => {
                     if (!active) {
                         return;
                     }
@@ -91,7 +107,7 @@ export function useSettingsEffects({
                         normalizeAppFontFamily(appFontFamily);
                     const normalizedCjkFont =
                         normalizeAppCjkFontPack(appCjkFontPack);
-                    setPrefs((current: any) => ({
+                    setPrefs((current) => ({
                         ...current,
                         appFontFamily: normalizedFont,
                         appCjkFontPack: normalizedCjkFont,
@@ -137,7 +153,7 @@ export function useSettingsEffects({
         setZoomInput(String(normalizeZoomLevel(zoomLevel)));
     }, [zoomLevel]);
     useEffect(() => {
-        setPrefs((current: any) => ({
+        setPrefs((current) => ({
             ...current,
             navIsCollapsed: !sidebarOpen
         }));

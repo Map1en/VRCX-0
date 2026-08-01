@@ -13,6 +13,9 @@ const TRANSLATION_DEEPL_PRO_ORIGIN: &str = "https://api.deepl.com";
 const BACKGROUND_IMAGE_EPIC_ORIGIN: &str = "https://epic.gsfc.nasa.gov";
 const BACKGROUND_IMAGE_AIC_ORIGIN: &str = "https://api.artic.edu";
 const BACKGROUND_IMAGE_APOD_ORIGIN: &str = "https://api.nasa.gov";
+const COMMUNITY_THEME_CATALOG_ORIGIN: &str = "https://raw.githubusercontent.com";
+const COMMUNITY_THEME_STATS_ORIGIN: &str = "https://theme.vrcx-0.dev";
+const COMMUNITY_THEME_CATALOG_PATH_PREFIX: &str = "/Map1en/VRCX-0-Community-Themes/master/themes/";
 
 #[derive(Debug, thiserror::Error)]
 pub enum ExternalApiError {
@@ -30,6 +33,7 @@ pub enum ExternalApiScope {
     GithubContributors,
     Image,
     BackgroundImage,
+    CommunityTheme,
 }
 
 #[derive(Debug, Serialize, PartialEq, Eq, specta::Type)]
@@ -84,6 +88,8 @@ pub struct ExternalWebExecuteRequest {
     pub method: String,
     pub headers: Vec<(String, String)>,
     pub body: Option<String>,
+    pub response_body_limit: Option<usize>,
+    pub follow_redirects: bool,
 }
 
 impl ExternalWebExecuteRequest {
@@ -93,6 +99,8 @@ impl ExternalWebExecuteRequest {
             method: method.into(),
             headers: Vec::new(),
             body: None,
+            response_body_limit: None,
+            follow_redirects: true,
         }
     }
 }
@@ -216,6 +224,7 @@ pub fn build_web_execute_request_with_policy(
         .to_ascii_uppercase();
     let mut request =
         ExternalWebExecuteRequest::new(build_request_url(&input, scope, policy)?, method.clone());
+    request.follow_redirects = scope != ExternalApiScope::CommunityTheme;
 
     let headers = sanitize_headers(input.headers.as_ref(), scope)?;
     request.headers = headers.into_iter().collect();
@@ -272,6 +281,7 @@ fn scope_name(scope: ExternalApiScope) -> &'static str {
         ExternalApiScope::GithubContributors => "externalGithubContributors",
         ExternalApiScope::Image => "externalImage",
         ExternalApiScope::BackgroundImage => "externalBackgroundImage",
+        ExternalApiScope::CommunityTheme => "externalCommunityTheme",
     }
 }
 
@@ -350,6 +360,14 @@ fn external_url_allowed(url: &Url, scope: ExternalApiScope, policy: &ExternalApi
                     && url.path().starts_with("/api/v1/artworks/search"))
                 || (origin == BACKGROUND_IMAGE_APOD_ORIGIN
                     && url.path().starts_with("/planetary/apod"))
+        }
+        ExternalApiScope::CommunityTheme => {
+            (origin == COMMUNITY_THEME_CATALOG_ORIGIN
+                && url.path().starts_with(COMMUNITY_THEME_CATALOG_PATH_PREFIX))
+                || (origin == COMMUNITY_THEME_STATS_ORIGIN
+                    && (url.path() == "/v1/themes/stats"
+                        || (url.path().starts_with("/v1/themes/")
+                            && url.path().ends_with("/install"))))
         }
     }
 }

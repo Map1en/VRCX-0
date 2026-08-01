@@ -5,8 +5,21 @@ type WebviewWindowLike = {
     scaleFactor?: (() => Promise<number> | number) | number;
 };
 
+export type WindowResizeDirection =
+    | 'North'
+    | 'NorthEast'
+    | 'East'
+    | 'SouthEast'
+    | 'South'
+    | 'SouthWest'
+    | 'West'
+    | 'NorthWest';
+
 type WindowLike = {
     startDragging?: () => Promise<unknown> | unknown;
+    startResizeDragging?: (
+        direction: WindowResizeDirection
+    ) => Promise<unknown> | unknown;
     minimize?: () => Promise<unknown> | unknown;
     toggleMaximize?: () => Promise<unknown> | unknown;
     close?: () => Promise<unknown> | unknown;
@@ -77,6 +90,16 @@ export async function startDraggingWindow(): Promise<unknown> {
     return undefined;
 }
 
+export async function startResizeDraggingWindow(
+    direction: WindowResizeDirection
+): Promise<unknown> {
+    const current = await getCurrentWindow();
+    if (current && typeof current.startResizeDragging === 'function') {
+        return current.startResizeDragging(direction);
+    }
+    return undefined;
+}
+
 export async function minimizeWindow(): Promise<unknown> {
     const current = await getCurrentWindow();
     if (current && typeof current.minimize === 'function') {
@@ -115,6 +138,7 @@ export const webview = Object.freeze({
     setZoom,
     getScaleFactor,
     startDraggingWindow,
+    startResizeDraggingWindow,
     minimizeWindow,
     toggleMaximizeWindow,
     closeWindow,

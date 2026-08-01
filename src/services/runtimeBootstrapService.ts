@@ -9,7 +9,7 @@ import { bindRuntimeEvents } from './runtimeEventBridgeService';
 import { initializeReactRuntime } from './startupService';
 import { applyThemeMode } from './themeService';
 import { startRuntimeUpdateLoop } from './updateLoopService';
-import { startVrcStatusPolling } from './vrcStatusService';
+import { hydrateVrcStatus } from './vrcStatusService';
 
 type ShellState = ReturnType<typeof useShellStore.getState>;
 type CleanupFn = () => void;
@@ -50,7 +50,7 @@ function createReactRuntimeStartPromise() {
             cleanups.push(cleanup ?? null);
             cleanups.push(startRuntimeGameClientSync());
             cleanups.push(startRuntimeUpdateLoop());
-            cleanups.push(startVrcStatusPolling());
+            void hydrateVrcStatus();
             reactRuntimeCleanup = () => {
                 for (const entry of cleanups) {
                     entry?.();

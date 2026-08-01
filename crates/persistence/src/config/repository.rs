@@ -73,8 +73,10 @@ impl ConfigRepository {
 }
 
 pub fn ensure_config_table(db: &DatabaseService) -> Result<(), Error> {
-    db.execute_non_query(&create_configs_sql(), &Default::default())?;
-    Ok(())
+    db.ensure_schema_once("config", || {
+        db.execute_non_query(&create_configs_sql(), &Default::default())?;
+        Ok(())
+    })
 }
 
 pub fn get_raw(db: &DatabaseService, key: &str) -> Result<Option<String>, Error> {

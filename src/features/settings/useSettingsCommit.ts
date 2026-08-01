@@ -1,10 +1,19 @@
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-export function useSettingsCommit() {
+type SettingsCommitAction = () => unknown | Promise<unknown>;
+type SettingsRollback = () => void;
+type SettingsOptimisticUpdate = () => void | SettingsRollback;
+
+export type SettingsCommit = (
+    action: SettingsCommitAction,
+    optimistic?: SettingsOptimisticUpdate
+) => Promise<boolean>;
+
+export function useSettingsCommit(): SettingsCommit {
     const { t } = useTranslation();
 
-    return async function commit(action: any, optimistic?: any) {
+    return async function commit(action, optimistic) {
         const rollback = optimistic?.();
         try {
             await action();

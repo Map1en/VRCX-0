@@ -6,6 +6,7 @@ use base64::{engine::general_purpose::STANDARD as B64, Engine};
 use cookie_store::{CookieStore, RawCookie};
 use reqwest::header::{HeaderName, HeaderValue, CONTENT_TYPE, REFERER};
 use reqwest::multipart::{Form, Part};
+use reqwest::redirect::Policy;
 use reqwest::{Client, Method, Proxy};
 use vrcx_0_core::image_sniff::sniff_image_mime;
 use vrcx_0_core::vrchat_endpoints::{VRCHAT_CLOUD_ROOT_HOST, VRCHAT_SITE_HOST};
@@ -79,6 +80,7 @@ pub struct WebExecuteRequest {
     pub headers: Vec<(String, String)>,
     pub body: Option<String>,
     pub upload: WebUploadMode,
+    pub response_body_limit: Option<usize>,
 }
 
 impl WebExecuteRequest {
@@ -89,6 +91,7 @@ impl WebExecuteRequest {
             headers: Vec::new(),
             body: None,
             upload: WebUploadMode::None,
+            response_body_limit: None,
         }
     }
 }
@@ -224,6 +227,15 @@ fn build_http_client(
     proxy_url: Option<&str>,
     user_agent: &str,
 ) -> Result<Client> {
+    build_http_client_with_redirects(jar, proxy_url, user_agent, true)
+}
+
+fn build_http_client_with_redirects(
+    jar: Arc<CookieJar>,
+    proxy_url: Option<&str>,
+    user_agent: &str,
+    follow_redirects: bool,
+) -> Result<Client> {
     let mut builder = Client::builder()
         .cookie_provider(jar)
         .user_agent(user_agent)
@@ -235,6 +247,9 @@ fn build_http_client(
         .tcp_keepalive(std::time::Duration::from_secs(60))
         .connect_timeout(std::time::Duration::from_secs(10))
         .read_timeout(std::time::Duration::from_secs(30));
+    if !follow_redirects {
+        builder = builder.redirect(Policy::none());
+    }
 
     if let Some(url) = proxy_url {
         builder = builder
@@ -254,8 +269,30 @@ fn normalize_execute_result(result: Result<(i32, String)>) -> Result<(i32, Strin
     }
 }
 
-async fn execute_request(client: &Client, request: reqwest::Request) -> Result<(i32, String)> {
-    let response = client
+fn response_body_from_bytes(status: i32, content_type: &str, bytes: &[u8]) -> (i32, String) {
+    if content_type.starts_with("image/") {
+        return (
+            status,
+            format!("data:{content_type};base64,{}", B64.encode(bytes)),
+        );
+    }
+    if content_type == "application/octet-stream" {
+        if let Some(image_mime) = sniff_image_mime(bytes) {
+            return (
+                status,
+                format!("data:{image_mime};base64,{}", B64.encode(bytes)),
+            );
+        }
+    }
+    (status, String::from_utf8_lossy(bytes).into_owned())
+}
+
+async fn execute_request(
+    client: &Client,
+    request: reqwest::Request,
+    response_body_limit: Option<usize>,
+) -> Result<(i32, String)> {
+    let mut response = client
         .execute(request)
         .await
         .map_err(|e| Error::Custom(e.to_string()))?;
@@ -271,24 +308,42 @@ async fn execute_request(client: &Client, request: reqwest::Request) -> Result<(
         .trim()
         .to_ascii_lowercase();
 
-    if content_type.starts_with("image/") {
-        let bytes = response
-            .bytes()
-            .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
-        let b64 = B64.encode(&bytes);
-        Ok((status, format!("data:{content_type};base64,{b64}")))
-    } else if content_type == "application/octet-stream" {
-        let bytes = response
-            .bytes()
-            .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
-        if let Some(image_mime) = sniff_image_mime(&bytes) {
-            let b64 = B64.encode(&bytes);
-            Ok((status, format!("data:{image_mime};base64,{b64}")))
-        } else {
-            Ok((status, String::from_utf8_lossy(&bytes).into_owned()))
+    if let Some(max_bytes) = response_body_limit {
+        if response
+            .content_length()
+            .is_some_and(|content_length| content_length > max_bytes as u64)
+        {
+            return Err(Error::Custom(format!(
+                "HTTP response body exceeds the {max_bytes} byte limit"
+            )));
         }
+        let mut bytes = Vec::with_capacity(
+            response
+                .content_length()
+                .unwrap_or_default()
+                .min(max_bytes as u64) as usize,
+        );
+        while let Some(chunk) = response
+            .chunk()
+            .await
+            .map_err(|error| Error::Custom(error.to_string()))?
+        {
+            if bytes.len().saturating_add(chunk.len()) > max_bytes {
+                return Err(Error::Custom(format!(
+                    "HTTP response body exceeds the {max_bytes} byte limit"
+                )));
+            }
+            bytes.extend_from_slice(&chunk);
+        }
+        return Ok(response_body_from_bytes(status, &content_type, &bytes));
+    }
+
+    if content_type.starts_with("image/") || content_type == "application/octet-stream" {
+        let bytes = response
+            .bytes()
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+        Ok(response_body_from_bytes(status, &content_type, &bytes))
     } else {
         let body = response
             .text()
@@ -428,6 +483,17 @@ impl WebClient {
         normalize_execute_result(result)
     }
 
+    pub async fn execute_without_redirects(
+        &self,
+        request: WebExecuteRequest,
+    ) -> Result<(i32, String)> {
+        let result = self
+            .do_execute_fresh_standard_with_redirects(&request, false)
+            .await;
+
+        normalize_execute_result(result)
+    }
+
     pub async fn execute_fresh_standard(
         &self,
         request: WebExecuteRequest,
@@ -441,21 +507,33 @@ impl WebClient {
         &self,
         request: &WebExecuteRequest,
     ) -> Result<(i32, String)> {
+        self.do_execute_fresh_standard_with_redirects(request, true)
+            .await
+    }
+
+    async fn do_execute_fresh_standard_with_redirects(
+        &self,
+        request: &WebExecuteRequest,
+        follow_redirects: bool,
+    ) -> Result<(i32, String)> {
         if !matches!(&request.upload, WebUploadMode::None) {
             return Err(Error::Custom(
                 "fresh HTTP client execution does not support uploads".into(),
             ));
         }
-        let client = build_http_client(
+        let client = build_http_client_with_redirects(
             Arc::clone(&self.jar),
             self.proxy_url.as_deref(),
             &self.user_agent,
+            follow_redirects,
         )?;
+        let response_body_limit = request.response_body_limit;
         let request = self.build_standard_request_with(&client, request)?;
-        execute_request(&client, request).await
+        execute_request(&client, request, response_body_limit).await
     }
 
     async fn do_execute(&self, request: &WebExecuteRequest) -> Result<(i32, String)> {
+        let response_body_limit = request.response_body_limit;
         let request = match &request.upload {
             WebUploadMode::None => self.build_standard_request(request)?,
             WebUploadMode::FilePut {
@@ -481,7 +559,7 @@ impl WebClient {
             }
         };
 
-        execute_request(&self.client, request).await
+        execute_request(&self.client, request, response_body_limit).await
     }
 
     fn build_standard_request(&self, request: &WebExecuteRequest) -> Result<reqwest::Request> {
@@ -831,6 +909,59 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn no_redirect_transport_does_not_follow_a_loopback_location() -> Result<()> {
+        use std::sync::atomic::{AtomicBool, Ordering};
+        use std::time::Duration;
+        use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+        use tokio::net::TcpListener;
+
+        let target_listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let target_address = target_listener.local_addr().unwrap();
+        let target_hit = Arc::new(AtomicBool::new(false));
+        let target_hit_for_server = Arc::clone(&target_hit);
+        let target_server = tokio::spawn(async move {
+            if let Ok(Ok((_stream, _))) =
+                tokio::time::timeout(Duration::from_millis(200), target_listener.accept()).await
+            {
+                target_hit_for_server.store(true, Ordering::Release);
+            }
+        });
+
+        let redirect_listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let redirect_address = redirect_listener.local_addr().unwrap();
+        let redirect_server = tokio::spawn(async move {
+            let (stream, _) = redirect_listener.accept().await.unwrap();
+            let mut stream = BufReader::new(stream);
+            loop {
+                let mut line = String::new();
+                stream.read_line(&mut line).await.unwrap();
+                if line == "\r\n" {
+                    break;
+                }
+            }
+            let response = format!(
+                "HTTP/1.1 302 Found\r\nLocation: http://{target_address}/private\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+            );
+            stream
+                .get_mut()
+                .write_all(response.as_bytes())
+                .await
+                .unwrap();
+        });
+
+        let web = WebClient::new(None, None, env!("CARGO_PKG_VERSION"))?;
+        let request =
+            WebExecuteRequest::new(format!("http://{redirect_address}/theme"), "GET".into());
+        let (status, _) = web.execute_without_redirects(request).await?;
+
+        redirect_server.await.unwrap();
+        target_server.await.unwrap();
+        assert_eq!(status, 302);
+        assert!(!target_hit.load(Ordering::Acquire));
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn transport_preserves_declared_image_mime() -> Result<()> {
         let bytes = [0xFF, 0xD8, 0xFF, 0xD9];
         let (url, server) = serve_response("image/jpeg", &bytes).await;
@@ -846,6 +977,21 @@ mod tests {
             response.1,
             format!("data:image/jpeg;base64,{}", B64.encode(bytes))
         );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn transport_rejects_responses_above_the_request_limit() -> Result<()> {
+        let (url, server) = serve_response("text/plain", b"response-too-large").await;
+        let web = WebClient::new(None, None, env!("CARGO_PKG_VERSION"))?;
+        let mut request = WebExecuteRequest::new(url, "GET".into());
+        request.response_body_limit = Some(8);
+
+        let response = web.execute(request).await?;
+        server.await.unwrap();
+
+        assert_eq!(response.0, -1);
+        assert!(response.1.contains("8 byte limit"));
         Ok(())
     }
 

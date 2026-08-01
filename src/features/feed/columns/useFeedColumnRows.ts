@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import type { FeedReadModelResult } from '@/domain/feed/feedReadModelTypes';
 import type { FeedCursor } from '@/repositories/feedPersistenceRepository';
 import feedRepository from '@/repositories/feedRepository';
 import { useFavoriteStore } from '@/state/favoriteStore';
@@ -14,6 +13,12 @@ import {
     buildFeedColumnFavoriteIds
 } from '../feedColumnScope';
 import type { FeedColumnConfig } from '../feedColumnsState';
+import type { FeedLiveMergeOptionsBuilder } from '../feedLiveMerge';
+import {
+    mergeFeedRowsWithLiveEntries,
+    prepareFeedRowsForCommit
+} from '../feedLiveMerge';
+import { subscribeFeedLiveMerge } from '../feedLiveMergeScheduler';
 import { getFeedRowId, normalizeFeedId as normalizeId } from '../feedRows';
 import type { FeedLoadStatus, FeedRow } from '../feedTypes';
 
@@ -25,10 +30,14 @@ export function resolveFeedColumnInitialLiveSequence(value: unknown) {
 }
 
 function resolveFeedCursor(row: FeedRow): FeedCursor | null {
-    const createdAt = normalizeId(row?.created_at || row?.createdAt);
-    const sourceRank = Number(row?.sourceRank ?? row?.source_rank);
-    const rowId = Number(row?.rowId ?? row?.row_id);
-    if (!createdAt || !Number.isFinite(sourceRank) || !Number.isFinite(rowId)) {
+    const createdAt = normalizeId(row.created_at);
+    const sourceRank = row.sourceRank;
+    const rowId = row.rowId;
+    if (
+        !createdAt ||
+        typeof sourceRank !== 'number' ||
+        typeof rowId !== 'number'
+    ) {
         return null;
     }
     return {
@@ -143,52 +152,21 @@ export function useFeedColumnRows(column: FeedColumnConfig) {
         [column, currentUserId, excludedFavoriteUserIds, favoriteUserIds]
     );
 
-    const mergeWithLiveRows = useCallback(
-        async ({
+    const buildMergeOptions = useCallback<FeedLiveMergeOptionsBuilder>(
+        ({ liveEntries, minLiveSequence, rows }) => ({
+            rows,
+            userId: currentUserId,
+            filters: column.feedTypes,
+            excludedFavoriteUserIds,
+            favoriteUserIds,
+            liveEntries,
             minLiveSequence,
-            requestIsCurrent,
-            rows
-        }: {
-            minLiveSequence: number;
-            requestIsCurrent(): boolean;
-            rows: FeedRow[];
-        }) => {
-            let result: FeedReadModelResult<FeedRow> = {
-                rows,
-                maxSequence: minLiveSequence
-            };
-            let previousMaxSequence = minLiveSequence;
-            while (requestIsCurrent()) {
-                const liveSnapshot = useFeedLiveStore.getState();
-                const maxRows = Math.max(
-                    result.rows.length + liveSnapshot.entries.length,
-                    result.rows.length + FEED_COLUMN_PAGE_SIZE
-                );
-                result = await feedRepository.mergeLiveRows({
-                    rows: result.rows,
-                    userId: currentUserId,
-                    filters: column.feedTypes,
-                    excludedFavoriteUserIds,
-                    favoriteUserIds,
-                    liveEntries: liveSnapshot.entries,
-                    minLiveSequence: result.maxSequence,
-                    favoritesOnly: column.friendScope.kind === 'favorites',
-                    maxRows
-                });
-                if (!requestIsCurrent()) {
-                    return null;
-                }
-                const liveVersion = useFeedLiveStore.getState().version;
-                if (
-                    liveVersion <= result.maxSequence ||
-                    result.maxSequence <= previousMaxSequence
-                ) {
-                    return result;
-                }
-                previousMaxSequence = result.maxSequence;
-            }
-            return null;
-        },
+            favoritesOnly: column.friendScope.kind === 'favorites',
+            maxRows: Math.max(
+                rows.length + liveEntries.length,
+                rows.length + FEED_COLUMN_PAGE_SIZE
+            )
+        }),
         [
             column.feedTypes,
             column.friendScope.kind,
@@ -196,38 +174,6 @@ export function useFeedColumnRows(column: FeedColumnConfig) {
             excludedFavoriteUserIds,
             favoriteUserIds
         ]
-    );
-
-    const prepareFeedColumnRowsForCommit = useCallback(
-        async ({
-            requestIsCurrent,
-            result
-        }: {
-            requestIsCurrent(): boolean;
-            result: FeedReadModelResult<FeedRow>;
-        }) => {
-            let nextResult = result;
-            while (requestIsCurrent()) {
-                liveMergeRequestIdRef.current += 1;
-                if (
-                    useFeedLiveStore.getState().version <=
-                    nextResult.maxSequence
-                ) {
-                    return nextResult;
-                }
-                const mergedResult = await mergeWithLiveRows({
-                    minLiveSequence: nextResult.maxSequence,
-                    requestIsCurrent,
-                    rows: nextResult.rows
-                });
-                if (!mergedResult) {
-                    return null;
-                }
-                nextResult = mergedResult;
-            }
-            return null;
-        },
-        [mergeWithLiveRows]
     );
 
     useEffect(() => {
@@ -275,7 +221,8 @@ export function useFeedColumnRows(column: FeedColumnConfig) {
                 const pageRows = readModel.rows;
                 cursorRef.current = resolveLastFeedCursor(pageRows);
                 setHasMore(pageRows.length >= FEED_COLUMN_PAGE_SIZE);
-                const merged = await mergeWithLiveRows({
+                const merged = await mergeFeedRowsWithLiveEntries({
+                    buildMergeOptions,
                     minLiveSequence: readModel.maxSequence,
                     requestIsCurrent,
                     rows: pageRows
@@ -283,7 +230,11 @@ export function useFeedColumnRows(column: FeedColumnConfig) {
                 if (!merged) {
                     return;
                 }
-                const commitResult = await prepareFeedColumnRowsForCommit({
+                const commitResult = await prepareFeedRowsForCommit({
+                    buildMergeOptions,
+                    onMergeRound: () => {
+                        liveMergeRequestIdRef.current += 1;
+                    },
                     requestIsCurrent,
                     result: merged
                 });
@@ -305,13 +256,12 @@ export function useFeedColumnRows(column: FeedColumnConfig) {
                 }
             });
     }, [
+        buildMergeOptions,
         column.feedTypes,
         currentUserId,
         excludedFavoriteUserIds,
         favoriteUserIds,
         favoritesReady,
-        mergeWithLiveRows,
-        prepareFeedColumnRowsForCommit,
         queryKey,
         scopeHasRows
     ]);
@@ -321,43 +271,40 @@ export function useFeedColumnRows(column: FeedColumnConfig) {
         if (loadStatus !== 'ready' || !normalizeId(currentUserId)) {
             return undefined;
         }
-        return useFeedLiveStore.subscribe((state, previousState) => {
-            if (
-                state.version === previousState?.version ||
-                state.entries.length === 0 ||
-                state.version <= liveSequenceRef.current
-            ) {
-                return;
-            }
-            const requestId = requestIdRef.current;
-            const mergeRequestId = liveMergeRequestIdRef.current + 1;
-            liveMergeRequestIdRef.current = mergeRequestId;
-            const requestIsCurrent = () =>
-                requestIdRef.current === requestId &&
-                liveMergeRequestIdRef.current === mergeRequestId;
-            mergeWithLiveRows({
-                minLiveSequence: liveSequenceRef.current,
-                requestIsCurrent,
-                rows: rowsRef.current
-            })
-                .then((merged) => {
-                    if (!merged) {
-                        return;
-                    }
-                    if (!requestIsCurrent()) {
-                        return;
-                    }
-                    if (merged.maxSequence > liveSequenceRef.current) {
-                        liveSequenceRef.current = merged.maxSequence;
-                    }
-                    rowsRef.current = merged.rows;
-                    setRows(merged.rows);
+        return subscribeFeedLiveMerge(
+            () => {
+                const requestId = requestIdRef.current;
+                const mergeRequestId = liveMergeRequestIdRef.current + 1;
+                liveMergeRequestIdRef.current = mergeRequestId;
+                const requestIsCurrent = () =>
+                    requestIdRef.current === requestId &&
+                    liveMergeRequestIdRef.current === mergeRequestId;
+                mergeFeedRowsWithLiveEntries({
+                    buildMergeOptions,
+                    minLiveSequence: liveSequenceRef.current,
+                    requestIsCurrent,
+                    rows: rowsRef.current
                 })
-                .catch((error: unknown) => {
-                    console.error(error);
-                });
-        });
-    }, [currentUserId, loadStatus, mergeWithLiveRows]);
+                    .then((merged) => {
+                        if (!merged) {
+                            return;
+                        }
+                        if (!requestIsCurrent()) {
+                            return;
+                        }
+                        if (merged.maxSequence > liveSequenceRef.current) {
+                            liveSequenceRef.current = merged.maxSequence;
+                        }
+                        rowsRef.current = merged.rows;
+                        setRows(merged.rows);
+                    })
+                    .catch((error: unknown) => {
+                        console.error(error);
+                    });
+            },
+            (state) => state.version > liveSequenceRef.current
+        );
+    }, [buildMergeOptions, currentUserId, loadStatus]);
 
     const loadOlder = useCallback(() => {
         const cursor = cursorRef.current;
@@ -381,11 +328,10 @@ export function useFeedColumnRows(column: FeedColumnConfig) {
                 maxEntries: FEED_COLUMN_PAGE_SIZE,
                 cursor
             })
-            .then((dbRows) => {
+            .then((pageRows) => {
                 if (requestIdRef.current !== requestId) {
                     return;
                 }
-                const pageRows: FeedRow[] = Array.isArray(dbRows) ? dbRows : [];
                 cursorRef.current = resolveLastFeedCursor(pageRows);
                 setHasMore(pageRows.length >= FEED_COLUMN_PAGE_SIZE);
                 setRows((currentRows) => {

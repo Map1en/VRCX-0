@@ -1,8 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import favoritePersistenceRepository, {
-    type FavoriteCacheEntity
-} from '@/repositories/favoritePersistenceRepository';
+import { commands } from '@/platform/tauri/bindings';
 import { useFavoriteStore } from '@/state/favoriteStore';
 
 import {
@@ -10,23 +8,20 @@ import {
     cacheWorldDetails
 } from './favoriteWorldCacheService';
 
-vi.mock('@/repositories/favoritePersistenceRepository', () => ({
-    default: {
-        addWorldToCache: vi.fn(),
-        getCachedWorldById: vi.fn()
+vi.mock('@/platform/tauri/bindings', () => ({
+    commands: {
+        appFavoriteCacheSnapshot: vi.fn()
     }
 }));
 
 describe('favoriteWorldCacheService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.mocked(
-            favoritePersistenceRepository.getCachedWorldById
-        ).mockResolvedValue(null);
+        vi.mocked(commands.appFavoriteCacheSnapshot).mockResolvedValue(true);
         useFavoriteStore.getState().resetFavorites();
     });
 
-    it('normalizes world details before writing the cache DB', async () => {
+    it('forwards the existing payload to the Rust cache policy', async () => {
         const world = {
             id: ' wrld_cache ',
             name: 'Cached World',
@@ -39,28 +34,18 @@ describe('favoriteWorldCacheService', () => {
 
         await expect(cacheWorldDetails(world)).resolves.toBe(true);
 
-        expect(
-            favoritePersistenceRepository.addWorldToCache
-        ).toHaveBeenCalledWith(
-            expect.objectContaining({
-                id: 'wrld_cache',
-                name: 'Cached World',
-                releaseStatus: 'public',
-                thumbnailImageUrl: 'https://example.test/thumb.png',
-                created_at: '2026-06-01T00:00:00.000Z',
-                updated_at: '2026-06-02T00:00:00.000Z',
-                version: 7
-            })
-        );
+        expect(commands.appFavoriteCacheSnapshot).toHaveBeenCalledWith({
+            kind: 'world',
+            entity: world,
+            fallbackEntityId: ''
+        });
     });
 
     it('ignores empty world payloads', async () => {
+        vi.mocked(commands.appFavoriteCacheSnapshot).mockResolvedValue(false);
         await expect(cacheWorldDetails({ name: 'Missing id' })).resolves.toBe(
             false
         );
-        expect(
-            favoritePersistenceRepository.addWorldToCache
-        ).not.toHaveBeenCalled();
     });
 
     it('uses the caller world id when a detail payload is missing id', async () => {
@@ -75,14 +60,15 @@ describe('favoriteWorldCacheService', () => {
             )
         ).resolves.toBe(true);
 
-        expect(
-            favoritePersistenceRepository.addWorldToCache
-        ).toHaveBeenCalledWith(
-            expect.objectContaining({
-                id: 'wrld_fallback',
-                name: 'Fallback World'
-            })
-        );
+        expect(commands.appFavoriteCacheSnapshot).toHaveBeenCalledWith({
+            kind: 'world',
+            entity: {
+                name: 'Fallback World',
+                releaseStatus: 'public',
+                thumbnailImageUrl: 'https://example.test/fallback.png'
+            },
+            fallbackEntityId: 'wrld_fallback'
+        });
     });
 
     it('refreshes DB cache automatically for local favorite worlds', async () => {
@@ -94,9 +80,7 @@ describe('favoriteWorldCacheService', () => {
         };
 
         await expect(cacheFavoriteWorldDetails(world)).resolves.toBe(false);
-        expect(
-            favoritePersistenceRepository.addWorldToCache
-        ).not.toHaveBeenCalled();
+        expect(commands.appFavoriteCacheSnapshot).not.toHaveBeenCalled();
 
         useFavoriteStore.getState().addLocalFavorite({
             kind: 'world',
@@ -106,9 +90,7 @@ describe('favoriteWorldCacheService', () => {
         });
 
         await expect(cacheFavoriteWorldDetails(world)).resolves.toBe(true);
-        expect(
-            favoritePersistenceRepository.addWorldToCache
-        ).toHaveBeenCalledTimes(1);
+        expect(commands.appFavoriteCacheSnapshot).toHaveBeenCalledTimes(1);
     });
 
     it('refreshes DB cache automatically for remote favorite worlds', async () => {
@@ -124,14 +106,11 @@ describe('favoriteWorldCacheService', () => {
         });
 
         await expect(cacheFavoriteWorldDetails(world)).resolves.toBe(true);
-        expect(
-            favoritePersistenceRepository.addWorldToCache
-        ).toHaveBeenCalledWith(
-            expect.objectContaining({
-                id: 'wrld_remote_cached',
-                name: 'Cached Remote World'
-            })
-        );
+        expect(commands.appFavoriteCacheSnapshot).toHaveBeenCalledWith({
+            kind: 'world',
+            entity: world,
+            fallbackEntityId: ''
+        });
     });
 
     it('inserts complete private world details when no DB cache exists', async () => {
@@ -144,38 +123,11 @@ describe('favoriteWorldCacheService', () => {
             })
         ).resolves.toBe(true);
 
-        expect(
-            favoritePersistenceRepository.getCachedWorldById
-        ).toHaveBeenCalledWith('wrld_private');
-        expect(
-            favoritePersistenceRepository.addWorldToCache
-        ).toHaveBeenCalledWith(
-            expect.objectContaining({
-                id: 'wrld_private',
-                name: 'Private World',
-                releaseStatus: 'private'
-            })
-        );
+        expect(commands.appFavoriteCacheSnapshot).toHaveBeenCalledTimes(1);
     });
 
     it('does not overwrite DB cache with private world details', async () => {
-        const existingWorld: FavoriteCacheEntity = {
-            id: 'wrld_private',
-            authorId: 'usr_author',
-            authorName: 'Cache Author',
-            created_at: '2026-06-01T00:00:00.000Z',
-            description: 'Existing description',
-            imageUrl: 'https://example.test/existing-image.png',
-            name: 'Existing Public World',
-            releaseStatus: 'public',
-            thumbnailImageUrl: 'https://example.test/existing-thumb.png',
-            updated_at: '2026-06-02T00:00:00.000Z',
-            version: 1
-        };
-
-        vi.mocked(
-            favoritePersistenceRepository.getCachedWorldById
-        ).mockResolvedValue(existingWorld);
+        vi.mocked(commands.appFavoriteCacheSnapshot).mockResolvedValue(false);
 
         await expect(
             cacheWorldDetails({
@@ -186,15 +138,11 @@ describe('favoriteWorldCacheService', () => {
             })
         ).resolves.toBe(false);
 
-        expect(
-            favoritePersistenceRepository.getCachedWorldById
-        ).toHaveBeenCalledWith('wrld_private');
-        expect(
-            favoritePersistenceRepository.addWorldToCache
-        ).not.toHaveBeenCalled();
+        expect(commands.appFavoriteCacheSnapshot).toHaveBeenCalledTimes(1);
     });
 
     it('does not overwrite DB cache with unknown world details', async () => {
+        vi.mocked(commands.appFavoriteCacheSnapshot).mockResolvedValue(false);
         await expect(
             cacheWorldDetails({
                 id: 'wrld_unknown',
@@ -204,12 +152,11 @@ describe('favoriteWorldCacheService', () => {
             })
         ).resolves.toBe(false);
 
-        expect(
-            favoritePersistenceRepository.addWorldToCache
-        ).not.toHaveBeenCalled();
+        expect(commands.appFavoriteCacheSnapshot).toHaveBeenCalledTimes(1);
     });
 
     it('does not overwrite DB cache with incomplete world details', async () => {
+        vi.mocked(commands.appFavoriteCacheSnapshot).mockResolvedValue(false);
         await expect(
             cacheWorldDetails({
                 id: 'wrld_broken',
@@ -225,8 +172,6 @@ describe('favoriteWorldCacheService', () => {
             })
         ).resolves.toBe(false);
 
-        expect(
-            favoritePersistenceRepository.addWorldToCache
-        ).not.toHaveBeenCalled();
+        expect(commands.appFavoriteCacheSnapshot).toHaveBeenCalledTimes(2);
     });
 });

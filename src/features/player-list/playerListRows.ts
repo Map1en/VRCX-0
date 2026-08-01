@@ -145,6 +145,9 @@ export function buildPlayerSourceRows({
     const knownKeys = new Set<string>();
 
     const currentUserKey = normalizeString(currentUserId);
+    const currentUserDisplayName = normalizeString(
+        currentUserSnapshot?.displayName || currentUserSnapshot?.username
+    ).toLowerCase();
     const activeLocation = currentUserLocation || context.location;
     const canUseLiveRows =
         isGameRunning &&
@@ -152,11 +155,15 @@ export function buildPlayerSourceRows({
         isLiveLocation(activeLocation);
     const addRow = (row: PlayerListSourceRow) => {
         const rowUserId = normalizeString(row.userId);
-        if (currentUserKey && rowUserId === currentUserKey) {
+        const rowDisplayName = normalizeString(row.displayName).toLowerCase();
+        if (
+            (currentUserKey && rowUserId === currentUserKey) ||
+            (currentUserDisplayName &&
+                rowDisplayName === currentUserDisplayName)
+        ) {
             return;
         }
 
-        const rowDisplayName = normalizeString(row.displayName).toLowerCase();
         const rowKey =
             rowUserId ||
             normalizeString(row.id || row.rowId) ||

@@ -1,20 +1,18 @@
-import type { Column, Row } from '@tanstack/react-table';
+import type { CellContext, Column, Row } from '@tanstack/react-table';
 import { ChevronRightIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useKnownUserFacts } from '@/lib/useKnownUser';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-import { resolveFeedUserDisplayName, resolveFeedUserId } from '../feedRows';
-import type {
-    FeedColumns,
-    FeedFriendActions,
-    FeedLocationActionPayload,
-    FeedRow
-} from '../feedTypes';
+import {
+    getFeedRowCreatedAtMs,
+    resolveFeedUserDisplayName,
+    resolveFeedUserId
+} from '../feedRows';
+import type { FeedColumns, FeedRow, FeedTableMeta } from '../feedTypes';
 import {
     FeedDetailCell,
     FeedUserLink,
@@ -23,14 +21,6 @@ import {
     formatTimestampParts
 } from './FeedTableParts';
 import { FeedTypeIndicator } from './FeedTypeIndicator';
-
-type UseFeedColumnsOptions = {
-    actions: FeedFriendActions;
-    friendLogNamesById: Record<string, string>;
-    loadingPreviousInstancesKey: string;
-    onOpenPreviousInstances(payload?: FeedLocationActionPayload): void;
-    rows: FeedRow[];
-};
 
 function ExpanderCell({ row }: { row: Row<FeedRow> }) {
     if (!row.getCanExpand()) {
@@ -79,19 +69,43 @@ function DateCell({ row }: { row: Row<FeedRow> }) {
     );
 }
 
-export function useFeedColumns({
-    actions,
-    friendLogNamesById,
-    loadingPreviousInstancesKey,
-    onOpenPreviousInstances,
-    rows
-}: UseFeedColumnsOptions): FeedColumns {
-    const { t } = useTranslation();
-    const rowUserIds = useMemo(
-        () => rows.map(resolveFeedUserId).filter(Boolean),
-        [rows]
+function UserCell({ row, table }: CellContext<FeedRow, unknown>) {
+    const meta = table.options.meta?.feed;
+    if (!meta) {
+        return null;
+    }
+
+    return (
+        <FeedUserLink
+            actions={meta.actions}
+            cachedDisplayName={
+                meta.friendLogNamesById[resolveFeedUserId(row.original)]
+            }
+            row={row.original}
+        />
     );
-    const knownUsersById = useKnownUserFacts(rowUserIds);
+}
+
+function DetailCell({ row, table }: CellContext<FeedRow, unknown>) {
+    const meta = table.options.meta?.feed;
+    if (!meta) {
+        return null;
+    }
+
+    return (
+        <div className="text-foreground/80 font-normal">
+            <FeedDetailCell
+                loadingHistoryKey={meta.loadingPreviousInstancesKey}
+                onNewInstance={meta.actions.openFeedNewInstance}
+                onOpenPreviousInstances={meta.onOpenPreviousInstances}
+                row={row.original}
+            />
+        </div>
+    );
+}
+
+export function useFeedColumns(meta: FeedTableMeta): FeedColumns {
+    const { t } = useTranslation();
 
     return useMemo(
         () => [
@@ -108,8 +122,7 @@ export function useFeedColumns({
             },
             {
                 id: 'created_at',
-                accessorFn: (row: FeedRow) =>
-                    new Date(String(row?.created_at || 0)).valueOf() || 0,
+                accessorFn: getFeedRowCreatedAtMs,
                 meta: { label: t('table.feed.date') },
                 header: ({ column }: { column: Column<FeedRow, unknown> }) => (
                     <SortButton column={column} label={t('table.feed.date')} />
@@ -141,23 +154,15 @@ export function useFeedColumns({
                     const userId = resolveFeedUserId(row);
                     return resolveFeedUserDisplayName(
                         row,
-                        knownUsersById[userId],
-                        friendLogNamesById[userId]
+                        meta.knownUsersById[userId],
+                        meta.friendLogNamesById[userId]
                     );
                 },
                 meta: { label: t('table.feed.user') },
                 header: ({ column }: { column: Column<FeedRow, unknown> }) => (
                     <SortButton column={column} label={t('table.feed.user')} />
                 ),
-                cell: ({ row }: { row: Row<FeedRow> }) => (
-                    <FeedUserLink
-                        actions={actions}
-                        cachedDisplayName={
-                            friendLogNamesById[resolveFeedUserId(row.original)]
-                        }
-                        row={row.original}
-                    />
-                )
+                cell: UserCell
             },
             {
                 id: 'detail',
@@ -167,8 +172,7 @@ export function useFeedColumns({
                         row?.worldName,
                         row?.statusDescription,
                         row?.avatarName,
-                        row?.bio,
-                        row?.message
+                        row?.bio
                     ]
                         .filter(Boolean)
                         .join(' '),
@@ -180,25 +184,9 @@ export function useFeedColumns({
                     </span>
                 ),
                 minSize: 100,
-                cell: ({ row }: { row: Row<FeedRow> }) => (
-                    <div className="text-foreground/80 font-normal">
-                        <FeedDetailCell
-                            loadingHistoryKey={loadingPreviousInstancesKey}
-                            onNewInstance={actions.openFeedNewInstance}
-                            onOpenPreviousInstances={onOpenPreviousInstances}
-                            row={row.original}
-                        />
-                    </div>
-                )
+                cell: DetailCell
             }
         ],
-        [
-            actions,
-            friendLogNamesById,
-            knownUsersById,
-            loadingPreviousInstancesKey,
-            onOpenPreviousInstances,
-            t
-        ]
+        [meta, t]
     );
 }

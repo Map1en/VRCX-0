@@ -1,14 +1,20 @@
+import type { TFunction } from 'i18next';
 import { toast } from 'sonner';
 
 import { openUserDialog } from '@/services/dialogService';
 import { resolveUserByDisplayName } from '@/services/userIdentityService';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
 
+import type { GameLogRow } from './gameLogTypes';
+
 function recordOrNull(value: unknown): Record<string, unknown> | null {
     return value && typeof value === 'object' ? { ...value } : null;
 }
 
-export async function openGameLogUser(row: any, t: any) {
+export async function openGameLogUser(
+    row: GameLogRow | null | undefined,
+    t: TFunction
+) {
     const userId = normalizeId(row?.userId);
     const displayName = normalizeId(row?.displayName);
     if (userId) {

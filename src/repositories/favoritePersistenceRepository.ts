@@ -5,6 +5,7 @@ import {
     type LocalFavoriteGroupInput as IpcLocalFavoriteGroupInput,
     type LocalFavoriteGroupRenameInput as IpcLocalFavoriteGroupRenameInput,
     type LocalFavoriteInput as IpcLocalFavoriteInput,
+    type FavoriteRow,
     type WorldSummaryOutput
 } from '@/platform/tauri/bindings';
 
@@ -128,36 +129,27 @@ function normalizeCacheRow(
     };
 }
 
-function normalizeWorldFavoriteRow(
-    row: ObjectRow | null | undefined
-): WorldFavoriteRow {
-    const record = asObjectRow(row);
+function normalizeWorldFavoriteRow(row: FavoriteRow): WorldFavoriteRow {
     return {
-        created_at: normalizeEntityId(record.created_at),
-        worldId: normalizeEntityId(record.worldId),
-        groupName: normalizeGroupName(record.groupName)
+        created_at: normalizeEntityId(row.createdAt),
+        worldId: normalizeEntityId(row.worldId),
+        groupName: normalizeGroupName(row.groupName)
     };
 }
 
-function normalizeAvatarFavoriteRow(
-    row: ObjectRow | null | undefined
-): AvatarFavoriteRow {
-    const record = asObjectRow(row);
+function normalizeAvatarFavoriteRow(row: FavoriteRow): AvatarFavoriteRow {
     return {
-        created_at: normalizeEntityId(record.created_at),
-        avatarId: normalizeEntityId(record.avatarId),
-        groupName: normalizeGroupName(record.groupName)
+        created_at: normalizeEntityId(row.createdAt),
+        avatarId: normalizeEntityId(row.avatarId),
+        groupName: normalizeGroupName(row.groupName)
     };
 }
 
-function normalizeFriendFavoriteRow(
-    row: ObjectRow | null | undefined
-): FriendFavoriteRow {
-    const record = asObjectRow(row);
+function normalizeFriendFavoriteRow(row: FavoriteRow): FriendFavoriteRow {
     return {
-        created_at: normalizeEntityId(record.created_at),
-        userId: normalizeEntityId(record.userId),
-        groupName: normalizeGroupName(record.groupName)
+        created_at: normalizeEntityId(row.createdAt),
+        userId: normalizeEntityId(row.userId),
+        groupName: normalizeGroupName(row.groupName)
     };
 }
 
@@ -243,24 +235,21 @@ async function createLocalFavoriteGroup({
 }
 
 async function getWorldFavorites() {
-    const rows: unknown = await commands.appFavoriteList('world');
-    return Array.isArray(rows)
-        ? rows.filter(isObjectRow).map(normalizeWorldFavoriteRow)
-        : [];
+    return (await commands.appFavoriteList('world')).map(
+        normalizeWorldFavoriteRow
+    );
 }
 
 async function getAvatarFavorites() {
-    const rows: unknown = await commands.appFavoriteList('avatar');
-    return Array.isArray(rows)
-        ? rows.filter(isObjectRow).map(normalizeAvatarFavoriteRow)
-        : [];
+    return (await commands.appFavoriteList('avatar')).map(
+        normalizeAvatarFavoriteRow
+    );
 }
 
 async function getFriendFavorites() {
-    const rows: unknown = await commands.appFavoriteList('friend');
-    return Array.isArray(rows)
-        ? rows.filter(isObjectRow).map(normalizeFriendFavoriteRow)
-        : [];
+    return (await commands.appFavoriteList('friend')).map(
+        normalizeFriendFavoriteRow
+    );
 }
 
 async function getWorldCache() {

@@ -1,3 +1,4 @@
+import { resolveInstanceDwellEpoch } from '@/domain/instances/instanceRoster';
 import { hasUserIdPrefix } from '@/shared/constants/vrchatIds';
 import { isRealInstance } from '@/shared/utils/instance';
 import {
@@ -12,6 +13,7 @@ type FriendPresenceRecord = Record<string, unknown> & {
 };
 
 type SameInstanceLastLocation = {
+    dwellEpochsByUserId?: ReadonlyMap<string, unknown>;
     friendList?:
         | Set<unknown>
         | Map<unknown, unknown>
@@ -134,10 +136,33 @@ function resolveObservedPlayerUserIds(
     return Array.from(userIds);
 }
 
+function resolveObservedPlayerDwellEpochs(
+    players: unknown,
+    friendsById: Record<string, unknown>
+): Map<string, unknown> {
+    const dwellEpochsByUserId = new Map<string, unknown>();
+    for (const player of Array.isArray(players) ? players : []) {
+        const userId = resolveObservedPlayerUserId(player, friendsById);
+        const epoch = resolveInstanceDwellEpoch(player);
+        if (userId && epoch) {
+            dwellEpochsByUserId.set(userId, epoch);
+        }
+    }
+    return dwellEpochsByUserId;
+}
+
 function isOnlineSameInstanceFriend(friend: unknown): boolean {
     const source = friendPresenceSource(friend);
     return (
         normalizeFriendState(source?.stateBucket || source?.state) === 'online'
+    );
+}
+
+function isExplicitlyOfflineFriend(friend: unknown): boolean {
+    const source = friendPresenceSource(friend);
+    return Boolean(
+        source?.pendingOffline ||
+        normalizeFriendState(source?.stateBucket || source?.state) === 'offline'
     );
 }
 
@@ -204,9 +229,11 @@ function buildSameInstanceFriendGroups<TFriend>(
 
 export {
     buildSameInstanceFriendGroups,
+    isExplicitlyOfflineFriend,
     isOnlineSameInstanceFriend,
     resolveObservedPlayerUserId,
     resolveObservedPlayerUserIds,
+    resolveObservedPlayerDwellEpochs,
     resolveSameInstanceFriendLocation
 };
 export type { SameInstanceFriendGroup, SameInstanceLastLocation };

@@ -2,13 +2,15 @@
 
 use tauri::State;
 use vrcx_0_application::{
-    hydrate_favorite_details, mark_notifications_seen_batch, run_avatar_content_tags_batch,
-    run_group_leave_batch, run_group_visibility_batch, sync_notifications,
-    AvatarContentTagsBatchInput, BatchMutationResult, FavoriteDetailsHydrateDeps,
+    hydrate_favorite_details, mark_notifications_seen_batch, persist_favorite_cache_snapshot,
+    run_avatar_content_tags_batch, run_group_leave_batch, run_group_moderation_batch,
+    run_group_visibility_batch, sync_notifications, AvatarContentTagsBatchInput,
+    BatchMutationResult, FavoriteCacheSnapshotInput, FavoriteDetailsHydrateDeps,
     FavoriteDetailsHydrateInput, FavoriteDetailsHydrateOutput, FavoriteImportStartInput,
     FavoriteImportStatus, GroupBanImportStartInput, GroupBanImportStatus, GroupLeaveBatchInput,
-    GroupVisibilityBatchInput, NotificationMarkSeenBatchInput, NotificationMarkSeenBatchResult,
-    NotificationSyncDeps, NotificationSyncOutcome, VrchatBatchMutationActions,
+    GroupModerationBatchInput, GroupModerationBatchResult, GroupVisibilityBatchInput,
+    NotificationMarkSeenBatchInput, NotificationMarkSeenBatchResult, NotificationSyncDeps,
+    NotificationSyncOutcome, VrchatBatchMutationActions, VrchatGroupModerationBatchActions,
     VrchatNotificationMarkSeenActions,
 };
 use vrcx_0_application_core::RuntimeAuthScopeSnapshot;
@@ -75,6 +77,15 @@ pub async fn app__favorite_details_hydrate(
 
 #[tauri::command]
 #[specta::specta]
+pub fn app__favorite_cache_snapshot(
+    state: State<'_, AppState>,
+    input: FavoriteCacheSnapshotInput,
+) -> Result<bool, AppError> {
+    Ok(persist_favorite_cache_snapshot(state.db.as_ref(), input)?)
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn app__avatar_content_tags_batch(
     state: State<'_, AppState>,
     input: AvatarContentTagsBatchInput,
@@ -119,6 +130,24 @@ pub async fn app__group_leave_batch(
         expected_scope,
     };
     Ok(run_group_leave_batch(&actions, input).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__group_moderation_batch(
+    state: State<'_, AppState>,
+    input: GroupModerationBatchInput,
+) -> Result<GroupModerationBatchResult, AppError> {
+    let expected_scope = active_scope(&state)?;
+    let actions = VrchatGroupModerationBatchActions {
+        db: state.db.as_ref(),
+        web: state.web.as_ref(),
+        auth_scope: &state.runtime_context.auth_scope,
+        expected_scope,
+        event_bus: state.runtime_context.event_bus.clone(),
+        remote_mutation_gate: &state.remote_mutations,
+    };
+    Ok(run_group_moderation_batch(&state.group_moderation_batches, &actions, input).await?)
 }
 
 #[tauri::command]

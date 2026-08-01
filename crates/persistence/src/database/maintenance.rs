@@ -249,15 +249,15 @@ fn run_database_maintenance_task(
         }
         DatabaseMaintenanceTask::FixGameLogTraveling => {
             let traveling = db.execute(
-                "SELECT * FROM gamelog_join_leave WHERE type = 'OnPlayerLeft' AND location = 'traveling'",
+                "SELECT id, created_at, display_name FROM gamelog_join_leave WHERE type = 'OnPlayerLeft' AND location = 'traveling'",
                 &Default::default(),
             )?;
             for row in traveling.into_iter().rev() {
                 let row_id = row.first().cloned().unwrap_or(Value::Null);
                 let created_at = row.get(1).cloned().unwrap_or(Value::Null);
-                let display_name = row.get(3).cloned().unwrap_or(Value::Null);
+                let display_name = row.get(2).cloned().unwrap_or(Value::Null);
                 let join_rows = db.execute(
-                    "SELECT * FROM gamelog_join_leave WHERE type = 'OnPlayerJoined' AND display_name = @display_name AND created_at <= @created_at ORDER BY created_at DESC LIMIT 1",
+                    "SELECT location FROM gamelog_join_leave WHERE type = 'OnPlayerJoined' AND display_name = @display_name AND created_at <= @created_at ORDER BY created_at DESC LIMIT 1",
                     &ParamsBuilder::new()
                         .set("display_name", display_name)
                         .set("created_at", created_at)
@@ -265,7 +265,7 @@ fn run_database_maintenance_task(
                 )?;
                 let Some(location) = join_rows
                     .first()
-                    .and_then(|row| row.get(4))
+                    .and_then(|row| row.first())
                     .and_then(Value::as_str)
                     .filter(|value| !value.is_empty())
                 else {

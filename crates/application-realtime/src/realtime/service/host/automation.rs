@@ -18,7 +18,8 @@ use crate::realtime::invite_automation::decision::{
 use crate::realtime::invite_automation::runtime::{sender_scope_key, InviteOutcome};
 use crate::realtime::{RealtimeNotificationProjection, RealtimeSessionContext};
 use crate::social_baseline::{
-    build_favorites_baseline, SocialBaselineDeps, SocialFavoritesBaselineInput,
+    build_favorites_baseline_from_friend_records, SocialBaselineDeps,
+    SocialFavoritesBaselineRequest,
 };
 
 use super::message_dispatch::json_string_field;
@@ -252,32 +253,30 @@ impl RealtimeHostRuntime {
         let current_user_snapshot = self
             .current_user_snapshot()
             .unwrap_or_else(|| json!({ "id": session.user_id }));
-        let friend_roster_by_id = self
+        let friends_by_id = self
             .friends
             .snapshot()
-            .map(|snapshot| {
-                serde_json::to_value(snapshot.friends_by_id).unwrap_or_else(|_| json!({}))
-            })
-            .unwrap_or_else(|| json!({}));
-        let output = build_favorites_baseline(
+            .map(|snapshot| snapshot.friends_by_id)
+            .unwrap_or_default();
+        let output = build_favorites_baseline_from_friend_records(
             SocialBaselineDeps {
                 db: Arc::clone(&self.deps.db),
                 web: Arc::clone(&self.deps.web),
                 auth_scope: self.deps.auth_scope.clone(),
                 session: self.deps.session.clone(),
             },
-            SocialFavoritesBaselineInput {
+            SocialFavoritesBaselineRequest {
                 user_id: session.user_id.clone(),
                 endpoint: session.endpoint.clone(),
                 current_user_snapshot: RawJson::from(current_user_snapshot),
-                friend_roster_by_id: RawJson::from(friend_roster_by_id),
             },
+            &friends_by_id,
         )
         .await?;
         if output.stale {
             return Ok(None);
         }
-        Ok(output.snapshot.map(RawJson::into_value))
+        Ok(output.snapshot.map(|snapshot| snapshot.into_value()))
     }
 
     async fn cleanup_invite_request_notification(

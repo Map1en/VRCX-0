@@ -308,3 +308,6 @@ impl McpServerController {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

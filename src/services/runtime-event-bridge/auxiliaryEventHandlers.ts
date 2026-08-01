@@ -1,5 +1,6 @@
 import { toast } from 'sonner';
 
+import { invalidateEntityQueries } from '@/lib/entityQueryCache';
 import { commands } from '@/platform/tauri/bindings';
 import type { PrintAutoCleanupEvent } from '@/platform/tauri/bindings';
 import mediaRepository from '@/repositories/vrchatMediaRepository';
@@ -80,6 +81,7 @@ export function handlePrintCleanupEvent(event: PrintAutoCleanupEvent): void {
 export function handleFavoritesChangedEvent(
     payload: FavoritesChangedEventPayload
 ): void {
+    void invalidateEntityQueries(['quickSearch']);
     const kind = normalizeFavoritesChangedKind(payload.kind);
     useFavoriteRevisionStore.getState().bumpRevision({
         kind,

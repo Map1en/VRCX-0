@@ -14,6 +14,7 @@ import { AppTitleBar } from '@/components/layout/AppTitleBar';
 import { MacNativeMenuActionHost } from '@/components/layout/MacNativeMenuActionHost';
 import { MacOverlayTitleBar } from '@/components/layout/MacOverlayTitleBar';
 import { useGlobalKeyboardShortcuts } from '@/components/layout/useGlobalKeyboardShortcuts';
+import { WindowResizeHandles } from '@/components/layout/WindowResizeHandles';
 import { cn } from '@/lib/utils';
 import { recordRouteEnter } from '@/services/telemetry/telemetryPageReach';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -119,61 +120,70 @@ function AppRouterContent() {
         };
     }, [isMacHost]);
 
-    return (
-        <div
-            data-vrcx-0-surface="app-root"
-            className={cn(
-                'vrcx-0-app-root flex min-h-0 w-full flex-col overflow-hidden',
-                hostPlatform === 'windows'
-                    ? 'vrcx-0-custom-window-frame h-full'
-                    : 'h-screen'
-            )}
-        >
-            {isMacHost ? <MacOverlayTitleBar /> : <AppTitleBar />}
-            <div
-                data-vrcx-0-surface="route-host"
-                className="vrcx-0-route-host min-h-0 flex-1 overflow-hidden"
-            >
-                <RouteErrorBoundary
-                    resetKey={pathname}
-                    fallback={<RouteErrorFallback />}
-                >
-                    <Routes>
-                        <Route element={<RedirectIfAuthenticated />}>
-                            {publicRoutes.map((route) => (
-                                <Route
-                                    key={route.path}
-                                    path={route.path}
-                                    element={route.element}
-                                />
-                            ))}
-                        </Route>
+    const isWindowsHost = hostPlatform === 'windows';
 
-                        <Route element={<RequireAuth />}>
-                            <Route element={<AppShellRoute />}>
-                                <Route
-                                    index
-                                    element={<Navigate to="/feed" replace />}
-                                />
-                                {protectedRoutes.map((route) => (
+    return (
+        <>
+            <div
+                data-vrcx-0-surface="app-root"
+                className={cn(
+                    'vrcx-0-app-root flex min-h-0 w-full flex-col overflow-hidden',
+                    isWindowsHost
+                        ? 'vrcx-0-custom-window-frame h-full'
+                        : 'h-screen'
+                )}
+            >
+                {isMacHost ? <MacOverlayTitleBar /> : <AppTitleBar />}
+                <div
+                    data-vrcx-0-surface="route-host"
+                    className="vrcx-0-route-host min-h-0 flex-1 overflow-hidden"
+                >
+                    <RouteErrorBoundary
+                        resetKey={pathname}
+                        fallback={<RouteErrorFallback />}
+                    >
+                        <Routes>
+                            <Route element={<RedirectIfAuthenticated />}>
+                                {publicRoutes.map((route) => (
                                     <Route
                                         key={route.path}
                                         path={route.path}
                                         element={route.element}
                                     />
                                 ))}
-                                <Route
-                                    path="*"
-                                    element={<Navigate to="/feed" replace />}
-                                />
                             </Route>
-                        </Route>
-                    </Routes>
-                </RouteErrorBoundary>
+
+                            <Route element={<RequireAuth />}>
+                                <Route element={<AppShellRoute />}>
+                                    <Route
+                                        index
+                                        element={
+                                            <Navigate to="/feed" replace />
+                                        }
+                                    />
+                                    {protectedRoutes.map((route) => (
+                                        <Route
+                                            key={route.path}
+                                            path={route.path}
+                                            element={route.element}
+                                        />
+                                    ))}
+                                    <Route
+                                        path="*"
+                                        element={
+                                            <Navigate to="/feed" replace />
+                                        }
+                                    />
+                                </Route>
+                            </Route>
+                        </Routes>
+                    </RouteErrorBoundary>
+                </div>
+                <GlobalHosts />
+                <MacNativeMenuActionHost />
             </div>
-            <GlobalHosts />
-            <MacNativeMenuActionHost />
-        </div>
+            {isWindowsHost ? <WindowResizeHandles /> : null}
+        </>
     );
 }
 

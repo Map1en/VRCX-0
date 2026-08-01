@@ -128,27 +128,24 @@ pub(in crate::state) async fn run_background_discord_tick(
 
     let detail = match command {
         BackgroundDiscordPresenceCommand::Noop { detail } => detail,
-        BackgroundDiscordPresenceCommand::SetActive { active, detail, .. } => {
+        BackgroundDiscordPresenceCommand::Clear { detail } => {
             let rpc = Arc::clone(discord_rpc);
-            match tokio::task::spawn_blocking(move || rpc.set_active(active)).await {
-                Ok(Ok(result)) => {
-                    discord_state.apply_set_active_result(result);
+            match tokio::task::spawn_blocking(move || rpc.clear()).await {
+                Ok(Ok(())) => {
+                    discord_state.apply_clear_result();
                     emit_background_info_if_changed(
                         context.runtime_context,
                         context.backend_runtime,
                         last_discord_output,
-                        format!(
-                            "Discord presence {}: {detail}",
-                            if active { "connected" } else { "cleared" }
-                        ),
+                        format!("Discord presence cleared: {detail}"),
                     );
                     detail
                 }
                 Ok(Err(error)) => {
-                    discord_state.apply_set_active_result(false);
-                    let detail = format!("Discord SetActive failed: {error}.");
+                    discord_state.apply_clear_failure();
+                    let detail = format!("Discord clear failed: {error}.");
                     if remember_background_output_if_changed(last_discord_output, &detail) {
-                        tracing::warn!(error = %error, "background Discord SetActive failed");
+                        tracing::warn!(error = %error, "background Discord clear failed");
                         emit_background_warning(
                             context.runtime_context,
                             context.backend_runtime,
@@ -161,10 +158,10 @@ pub(in crate::state) async fn run_background_discord_tick(
                     return;
                 }
                 Err(error) => {
-                    discord_state.apply_set_active_result(false);
-                    let detail = format!("Discord SetActive task failed: {error}.");
+                    discord_state.apply_clear_failure();
+                    let detail = format!("Discord clear task failed: {error}.");
                     if remember_background_output_if_changed(last_discord_output, &detail) {
-                        tracing::warn!(error = %error, "background Discord SetActive task failed");
+                        tracing::warn!(error = %error, "background Discord clear task failed");
                         emit_background_error(
                             context.runtime_context,
                             context.backend_runtime,

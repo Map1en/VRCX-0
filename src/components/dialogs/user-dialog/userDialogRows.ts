@@ -10,6 +10,7 @@ import {
 import { userStatusLabel } from '@/shared/utils/userStatus';
 
 const DASH = '\u2014';
+const UNDISCLOSED_MUTUAL_FRIEND_ID = 'usr_00000000-0000-0000-0000-000000000000';
 
 type UserDialogRow = ComparableRecord & {
     authorName?: string;
@@ -318,6 +319,12 @@ export function replacePreviousDisplayNameSource(
 
 export function userIdForRow(row: UserDialogRow | null | undefined) {
     return normalizedText(row?.id || row?.userId || row?.targetUserId);
+}
+
+export function isUndisclosedMutualFriendRow(
+    row: UserDialogRow | null | undefined
+): boolean {
+    return userIdForRow(row) === UNDISCLOSED_MUTUAL_FRIEND_ID;
 }
 
 export function formatCountText(count: unknown, max: unknown) {

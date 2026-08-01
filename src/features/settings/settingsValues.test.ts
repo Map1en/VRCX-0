@@ -8,6 +8,7 @@ import {
     createCustomFontDraftFromPrefs,
     DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS,
     filterTablePageSizeOptions,
+    HMD_DEFAULT_SCOPES,
     isValidFontFamilyList,
     normalizeOverlayActivityFilters,
     normalizeTablePageSizes,
@@ -131,92 +132,24 @@ describe('settingsValues', () => {
         });
     });
 
-    it('builds HMD activity filters from the interruptive notification defaults', () => {
-        expect(DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS.types).toEqual({
-            invite: { scope: 'friends', favoriteGroupKeys: 'all' },
-            requestInvite: { scope: 'friends', favoriteGroupKeys: 'all' },
-            inviteResponse: { scope: 'friends', favoriteGroupKeys: 'all' },
-            requestInviteResponse: {
-                scope: 'friends',
-                favoriteGroupKeys: 'all'
-            },
-            friendRequest: { scope: 'on', favoriteGroupKeys: 'all' },
-            boop: { scope: 'friends', favoriteGroupKeys: 'all' },
-            'group.queueReady': { scope: 'on', favoriteGroupKeys: 'all' },
-            'instance.closed': { scope: 'on', favoriteGroupKeys: 'all' },
-            OnPlayerJoining: { scope: 'friends', favoriteGroupKeys: 'all' },
-            OnPlayerJoined: {
-                scope: 'friends',
-                favoriteGroupKeys: 'all'
-            },
-            OnPlayerLeft: {
-                scope: 'friends',
-                favoriteGroupKeys: 'all'
-            },
-            Online: {
-                scope: 'allFavorites',
-                favoriteGroupKeys: 'all'
-            },
-            Offline: {
-                scope: 'allFavorites',
-                favoriteGroupKeys: 'all'
-            },
-            GPS: {
-                scope: 'allFavorites',
-                favoriteGroupKeys: 'all'
-            },
-            Status: {
-                scope: 'allFavorites',
-                favoriteGroupKeys: 'all'
-            },
-            Friend: { scope: 'on', favoriteGroupKeys: 'all' },
-            Unfriend: { scope: 'off', favoriteGroupKeys: 'all' },
-            DisplayName: { scope: 'friends', favoriteGroupKeys: 'all' },
-            TrustLevel: { scope: 'friends', favoriteGroupKeys: 'all' },
-            AvatarChange: { scope: 'off', favoriteGroupKeys: 'all' },
-            Bio: { scope: 'off', favoriteGroupKeys: 'all' },
-            groupChange: { scope: 'off', favoriteGroupKeys: 'all' },
-            'group.announcement': {
-                scope: 'off',
-                favoriteGroupKeys: 'all'
-            },
-            'group.informative': {
-                scope: 'off',
-                favoriteGroupKeys: 'all'
-            },
-            'group.invite': { scope: 'on', favoriteGroupKeys: 'all' },
-            'group.joinRequest': {
-                scope: 'off',
-                favoriteGroupKeys: 'all'
-            },
-            'group.transfer': { scope: 'off', favoriteGroupKeys: 'all' },
-            Event: { scope: 'off', favoriteGroupKeys: 'all' },
-            External: { scope: 'off', favoriteGroupKeys: 'all' },
-            Blocked: { scope: 'off', favoriteGroupKeys: 'all' },
-            Unblocked: { scope: 'off', favoriteGroupKeys: 'all' },
-            Muted: { scope: 'off', favoriteGroupKeys: 'all' },
-            Unmuted: { scope: 'off', favoriteGroupKeys: 'all' },
-            BlockedOnPlayerJoined: {
-                scope: 'everyoneInInstance',
-                favoriteGroupKeys: 'all'
-            },
-            BlockedOnPlayerLeft: {
-                scope: 'off',
-                favoriteGroupKeys: 'all'
-            },
-            MutedOnPlayerJoined: {
-                scope: 'off',
-                favoriteGroupKeys: 'all'
-            },
-            MutedOnPlayerLeft: {
-                scope: 'off',
-                favoriteGroupKeys: 'all'
-            },
-            VideoPlay: {
-                scope: 'off',
-                favoriteGroupKeys: 'all'
-            }
-        });
+    it('builds HMD activity filters from the shared HMD default scope contract', () => {
+        const scopes = Object.fromEntries(
+            Object.entries(DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS.types).map(
+                ([key, rule]) => [key, rule.scope]
+            )
+        );
+
+        expect(scopes).toEqual(HMD_DEFAULT_SCOPES);
+        expect(Object.keys(HMD_DEFAULT_SCOPES).sort()).toEqual(
+            OVERLAY_ACTIVITY_TYPE_DEFINITIONS.map(
+                (definition) => definition.key
+            ).sort()
+        );
+        expect(
+            Object.values(
+                DEFAULT_HMD_NOTIFICATION_ACTIVITY_FILTERS.types
+            ).every((rule) => rule.favoriteGroupKeys === 'all')
+        ).toBe(true);
     });
 
     it('migrates legacy wrist category rules into per-type rules', () => {

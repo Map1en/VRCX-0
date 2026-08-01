@@ -53,7 +53,7 @@ export type BuildSettingsPageStateSectionsInput = Record<string, unknown> & {
     handleGameLogDisabledChange: SettingsCallback<[boolean]>;
     hmdNotificationsDialogOpen: boolean;
     integrationPrefs: SettingsIntegrationPrefs;
-    loading: boolean;
+    locale: string;
     migrateLegacyVrcxData: SettingsCallback;
     normalizeRecentActionCooldownMinutes: (value: unknown) => number;
     notificationTtsTest: string;
@@ -78,11 +78,11 @@ export type BuildSettingsPageStateSectionsInput = Record<string, unknown> & {
     saveAvatarProviderEnabled: SettingsCallback<[boolean]>;
     saveBoolPreference: SettingsCallback<[string, string, boolean]>;
     saveDiscordBoolPreference: SettingsCallback<[string, boolean]>;
-    saveFontFamilyPreference: SettingsCallback<[unknown]>;
+    saveFontFamilyPreference: SettingsCallback<[string]>;
     saveIntegrationBoolPreference: SettingsCallback<
         [string, boolean, SettingsAction]
     >;
-    saveInterfaceZoomLevel: SettingsCallback<[unknown]>;
+    saveInterfaceZoomLevel: SettingsCallback<[string | number]>;
     savePreferenceValue: SettingsCallback<[string, unknown, SettingsAction]>;
     saveStringPreference: SettingsCallback<[string, string, string]>;
     saveTrustColor: SettingsCallback<[string, string]>;
@@ -97,10 +97,10 @@ export type BuildSettingsPageStateSectionsInput = Record<string, unknown> & {
     saveWebhookActivityFilters: SettingsCallback<[unknown, unknown?]>;
     saveTtsNotificationActivityFilters: SettingsCallback<[unknown, unknown?]>;
     saveWristOverlayEnabled: SettingsCallback<[boolean]>;
-    selectCjkFontPack: SettingsCallback<[unknown]>;
+    selectCjkFontPack: SettingsCallback<[string]>;
     setAccessibleStatusIndicatorsPreference: SettingsCallback<[boolean]>;
     setActiveSettingsTab: SettingsCallback<[string]>;
-    setAppLanguagePreference: SettingsCallback<[unknown]>;
+    setAppLanguagePreference: SettingsCallback<[string | null]>;
     setAvatarProviderDialogOpen: SettingsCallback<[boolean]>;
     setCloseToTrayPreference: SettingsCallback<[boolean]>;
     setConfigTreeData: SettingsCallback<[Record<string, unknown>]>;
@@ -134,7 +134,7 @@ export type BuildSettingsPageStateSectionsInput = Record<string, unknown> & {
     setWebhookNotificationsDialogOpen: SettingsCallback<[boolean]>;
     setWristFeedNotificationsDialogOpen: SettingsCallback<[boolean]>;
     setYoutubeApiEnabledPreference: SettingsCallback<[boolean]>;
-    setZoomInput: SettingsCallback<[unknown]>;
+    setZoomInput: SettingsCallback<[string]>;
     speakNotificationTts: SettingsCallback<[string, string?]>;
     sqliteTableSizes: Record<string, unknown>;
     toggleLocalFavoriteFriendsGroup: SettingsCallback<[unknown, boolean]>;
@@ -143,6 +143,7 @@ export type BuildSettingsPageStateSectionsInput = Record<string, unknown> & {
     vrNotificationsDialogOpen: boolean;
     webhookNotificationsDialogOpen: boolean;
     wristFeedNotificationsDialogOpen: boolean;
+    zoomInput: string;
     addFeedHiddenUser: SettingsCallback<[string]>;
     favoriteFriendGroupOptions: FavoriteFriendGroupOption[];
     localFavoriteFriendGroupOptions: FavoriteFriendGroupOption[];

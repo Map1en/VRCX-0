@@ -400,6 +400,89 @@ fn status_reader_recovers_a_synced_temporary_journal() -> Result<(), Error> {
     Ok(())
 }
 
+fn count_schema_runs(db: &DatabaseService, key: &str, runs: &mut i64) -> Result<(), Error> {
+    db.ensure_schema_once(key, || {
+        *runs += 1;
+        Ok(())
+    })
+}
+
+#[test]
+fn schema_bootstrap_runs_once_per_key() -> Result<(), Error> {
+    let dir = TestDir::new("schema-once");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+    let mut runs = 0;
+    let mut other_runs = 0;
+
+    count_schema_runs(&db, "alpha", &mut runs)?;
+    count_schema_runs(&db, "alpha", &mut runs)?;
+    count_schema_runs(&db, "beta", &mut other_runs)?;
+
+    assert_eq!(runs, 1);
+    assert_eq!(other_runs, 1);
+    Ok(())
+}
+
+#[test]
+fn schema_bootstrap_does_not_cache_a_failed_run() -> Result<(), Error> {
+    let dir = TestDir::new("schema-once-failure");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+
+    assert!(db
+        .ensure_schema_once("alpha", || Err(Error::Database("bootstrap failed".into())))
+        .is_err());
+
+    let mut runs = 0;
+    count_schema_runs(&db, "alpha", &mut runs)?;
+    assert_eq!(runs, 1);
+    Ok(())
+}
+
+#[test]
+fn schema_bootstrap_memo_does_not_survive_a_new_connection_generation() -> Result<(), Error> {
+    let dir = TestDir::new("schema-once-generation");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+    let mut runs = 0;
+
+    count_schema_runs(&db, "alpha", &mut runs)?;
+    db.freeze_for_migration()?;
+    db.reopen_after_migration_abort()?;
+    count_schema_runs(&db, "alpha", &mut runs)?;
+
+    assert_eq!(runs, 2);
+    Ok(())
+}
+
+#[test]
+fn schema_bootstrap_memo_is_isolated_between_main_and_upgrade_copies() -> Result<(), Error> {
+    let dir = TestDir::new("schema-once-upgrade");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+    let mut runs = 0;
+
+    count_schema_runs(&db, "alpha", &mut runs)?;
+    db.begin_upgrade(17, 18)?;
+    count_schema_runs(&db, "alpha", &mut runs)?;
+    db.fail_upgrade("test complete".into())?;
+    count_schema_runs(&db, "alpha", &mut runs)?;
+
+    assert_eq!(runs, 3);
+    Ok(())
+}
+
+#[test]
+fn schema_bootstrap_is_unavailable_while_the_database_is_closed() -> Result<(), Error> {
+    let dir = TestDir::new("schema-once-closed");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+    db.freeze_for_migration()?;
+
+    let mut runs = 0;
+    assert!(count_schema_runs(&db, "alpha", &mut runs).is_err());
+    assert_eq!(runs, 0);
+
+    db.reopen_after_migration_abort()?;
+    Ok(())
+}
+
 #[test]
 fn profile_backup_maps_sqlite_disk_full_to_storage_full_io() {
     let sqlite_error =

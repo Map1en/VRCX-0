@@ -329,12 +329,8 @@ impl WorldCache {
         match favorite_list(self.db.as_ref(), None, "world".into()) {
             Ok(rows) => rows
                 .into_iter()
-                .filter_map(|row| {
-                    row.get("worldId")
-                        .and_then(Value::as_str)
-                        .map(normalize_id)
-                        .filter(|id| !id.is_empty())
-                })
+                .filter_map(|row| row.world_id.map(|id| normalize_id(&id)))
+                .filter(|id| !id.is_empty())
                 .collect(),
             Err(error) => {
                 tracing::warn!("WorldCache favorite load failed: {error}");

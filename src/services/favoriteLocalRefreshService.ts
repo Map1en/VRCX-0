@@ -9,6 +9,12 @@ import type {
     FavoriteKind
 } from '@/state/favoriteStoreTypes';
 
+const refreshSequences: Record<FavoriteKind, number> = {
+    friend: 0,
+    world: 0,
+    avatar: 0
+};
+
 function buildGroupMap<Row extends { groupName: string }>(
     rows: Row[],
     idField: keyof Row
@@ -32,30 +38,29 @@ function buildGroupMap<Row extends { groupName: string }>(
     return map;
 }
 
-async function refreshLocalWorldFavorites(): Promise<void> {
+async function readLocalWorldFavorites() {
     const [rows, groups] = await Promise.all([
         favoritePersistenceRepository.getWorldFavorites(),
         favoritePersistenceRepository.getExplicitLocalFavoriteGroups('world')
     ]);
-    useFavoriteStore.getState().setLocalFavoritesForKind('world', {
+    return {
         localFavorites: buildGroupMap<WorldFavoriteRow>(rows, 'worldId'),
         localFavoriteGroups: groups
-    });
+    };
 }
 
-async function refreshLocalAvatarFavorites(): Promise<void> {
+async function readLocalAvatarFavorites() {
     const [rows, groups] = await Promise.all([
         favoritePersistenceRepository.getAvatarFavorites(),
         favoritePersistenceRepository.getExplicitLocalFavoriteGroups('avatar')
     ]);
-    useFavoriteStore.getState().setLocalFavoritesForKind('avatar', {
+    return {
         localFavorites: buildGroupMap<AvatarFavoriteRow>(rows, 'avatarId'),
         localFavoriteGroups: groups
-    });
+    };
 }
 
-async function refreshLocalFriendFavorites(): Promise<void> {
-    const currentUserId = useFavoriteStore.getState().currentUserId;
+async function readLocalFriendFavorites(currentUserId: string | null) {
     const [rows, groups] = await Promise.all([
         favoritePersistenceRepository.getFriendFavorites(),
         favoritePersistenceRepository.getExplicitLocalFavoriteGroups(
@@ -63,23 +68,27 @@ async function refreshLocalFriendFavorites(): Promise<void> {
             currentUserId
         )
     ]);
-    useFavoriteStore.getState().setLocalFavoritesForKind('friend', {
+    return {
         localFavorites: buildGroupMap<FriendFavoriteRow>(rows, 'userId'),
         localFavoriteGroups: groups
-    });
+    };
 }
 
 async function refreshLocalFavoritesForKind(kind: FavoriteKind): Promise<void> {
-    if (kind === 'world') {
-        await refreshLocalWorldFavorites();
-        return;
-    }
-    if (kind === 'avatar') {
-        await refreshLocalAvatarFavorites();
-        return;
-    }
-    if (kind === 'friend') {
-        await refreshLocalFriendFavorites();
+    const sequence = ++refreshSequences[kind];
+    const currentUserId = useFavoriteStore.getState().currentUserId;
+    const snapshot =
+        kind === 'world'
+            ? await readLocalWorldFavorites()
+            : kind === 'avatar'
+              ? await readLocalAvatarFavorites()
+              : await readLocalFriendFavorites(currentUserId);
+    const store = useFavoriteStore.getState();
+    if (
+        refreshSequences[kind] === sequence &&
+        store.currentUserId === currentUserId
+    ) {
+        store.setLocalFavoritesForKind(kind, snapshot);
     }
 }
 

@@ -9,6 +9,9 @@ mod tools;
 mod transport;
 mod types;
 
+#[cfg(test)]
+mod test_support;
+
 pub use auth::{
     authorize_mcp_request, client_config_snippets, generate_mcp_token, McpAuthError, McpAuthPolicy,
 };

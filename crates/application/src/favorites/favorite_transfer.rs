@@ -7,6 +7,10 @@ use vrcx_0_persistence::cache_entities::CacheEntityInput;
 use vrcx_0_persistence::DatabaseService;
 
 use crate::{Error, Result};
+
+use super::cache_policy::{
+    cache_entry_from_entity, cache_write_decision, CacheWriteDecision, FavoriteCacheKind,
+};
 use vrcx_0_application_core::vrchat_api::favorites::{
     favorite_add_input, favorite_delete_input, favorite_limits_get_input, favorites_get_input,
 };
@@ -976,15 +980,6 @@ fn remote_favorite_type(input: &FavoriteTransferInput, kind: &str) -> String {
     }
 }
 
-fn normalize_optional_text(value: Option<&str>) -> Option<String> {
-    let value = normalize_text(value.unwrap_or_default());
-    if value.is_empty() {
-        None
-    } else {
-        Some(value)
-    }
-}
-
 fn ensure_vrchat_response_ok(status: i32, data: &str, action: &str) -> Result<()> {
     if status < 400 {
         return Ok(());
@@ -1024,37 +1019,10 @@ fn build_public_world_cache_entry(
     world: &Value,
     fallback_world_id: &str,
 ) -> Option<CacheEntityInput> {
-    let id = string_field(world, &["id"])
-        .or_else(|| normalize_optional_text(Some(fallback_world_id)))?;
-    let release_status = string_field(world, &["releaseStatus"])?;
-    if release_status.to_lowercase() != "public" {
+    if cache_write_decision(FavoriteCacheKind::World, world) != CacheWriteDecision::Upsert {
         return None;
     }
-    let name = string_field(world, &["name"])?;
-    let thumbnail_image_url = string_field(world, &["thumbnailImageUrl"]);
-    let image_url = string_field(world, &["imageUrl"]);
-    if thumbnail_image_url
-        .as_deref()
-        .unwrap_or_default()
-        .is_empty()
-        && image_url.as_deref().unwrap_or_default().is_empty()
-    {
-        return None;
-    }
-
-    Some(CacheEntityInput {
-        id: Value::String(id),
-        author_id: string_value(world, &["authorId"]),
-        author_name: string_value(world, &["authorName"]),
-        created_at: string_value(world, &["created_at", "createdAt"]),
-        description: string_value(world, &["description"]),
-        image_url: Value::String(image_url.unwrap_or_default()),
-        name: Value::String(name),
-        release_status: Value::String(release_status),
-        thumbnail_image_url: Value::String(thumbnail_image_url.unwrap_or_default()),
-        updated_at: string_value(world, &["updated_at", "updatedAt"]),
-        version: world.get("version").cloned().unwrap_or(Value::Null),
-    })
+    Some(cache_entry_from_entity(world, fallback_world_id))
 }
 
 fn string_field(value: &Value, keys: &[&str]) -> Option<String> {
@@ -1069,10 +1037,6 @@ fn string_field(value: &Value, keys: &[&str]) -> Option<String> {
         }
     }
     None
-}
-
-fn string_value(value: &Value, keys: &[&str]) -> Value {
-    Value::String(string_field(value, keys).unwrap_or_default())
 }
 
 #[cfg(test)]

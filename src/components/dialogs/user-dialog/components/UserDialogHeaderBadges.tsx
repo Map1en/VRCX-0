@@ -1,5 +1,10 @@
-import { EyeIcon, EyeOffIcon, ShieldCheckIcon } from 'lucide-react';
-import type { ComponentType } from 'react';
+import {
+    BadgeCheckIcon,
+    EyeIcon,
+    EyeOffIcon,
+    ShieldCheckIcon
+} from 'lucide-react';
+import type { ComponentType, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
@@ -66,20 +71,12 @@ export function hasRenderableUserProfileBadges(profile: unknown) {
     );
 }
 
-export function UserDialogHeaderBadges({
+export function UserDialogHeaderFlags({
     profile,
-    moderationState,
-    friendNumber,
-    platform,
-    PlatformIcon,
-    onOpenDiscordProfile
+    moderationState
 }: {
     profile: UserDialogProfileRecord;
     moderationState: UserHeaderModel['moderationState'];
-    friendNumber?: number | string;
-    platform: UserHeaderModel['platform'];
-    PlatformIcon: ComponentType | null;
-    onOpenDiscordProfile: (discordId: string) => void;
 }) {
     const { t } = useTranslation();
     const customTag =
@@ -88,19 +85,29 @@ export function UserDialogHeaderBadges({
         typeof profile.$customTagColour === 'string'
             ? profile.$customTagColour
             : '';
-    const trustLevel =
-        typeof profile.$trustLevel === 'string'
-            ? profile.$trustLevel
-            : 'Visitor';
-    const discordId =
-        typeof profile.discordId === 'string' ? profile.discordId : '';
+    const hasFlags = Boolean(
+        moderationState.block ||
+        moderationState.mute ||
+        profile.$isTroll ||
+        profile.$isProbableTroll ||
+        profile.$isModerator ||
+        customTag
+    );
+
+    if (!hasFlags) {
+        return null;
+    }
 
     return (
-        <>
-            {profile.$isModerator ? (
-                <Badge variant="secondary">
-                    <ShieldCheckIcon data-icon="inline-start" />
-                    {t('dialog.user.label.moderator')}
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+            {moderationState.block ? (
+                <Badge variant="destructive">
+                    {t('dialog.user.error.blocked')}
+                </Badge>
+            ) : null}
+            {moderationState.mute ? (
+                <Badge variant="destructive">
+                    {t('dialog.user.label.muted')}
                 </Badge>
             ) : null}
             {profile.$isTroll ? (
@@ -113,6 +120,12 @@ export function UserDialogHeaderBadges({
             {profile.$isProbableTroll ? (
                 <Badge variant="outline">
                     {t('view.favorite.avatars.almost_nuisance')}
+                </Badge>
+            ) : null}
+            {profile.$isModerator ? (
+                <Badge variant="secondary">
+                    <ShieldCheckIcon data-icon="inline-start" />
+                    {t('dialog.user.label.moderator')}
                 </Badge>
             ) : null}
             {customTag ? (
@@ -130,50 +143,83 @@ export function UserDialogHeaderBadges({
                     {customTag}
                 </Badge>
             ) : null}
-            {profile.ageVerified ? <Badge variant="outline">18+</Badge> : null}
-            {friendNumber ? (
-                <Badge variant="outline">
+        </div>
+    );
+}
+
+export function UserDialogHeaderAttributes({
+    profile,
+    friendNumber,
+    platform,
+    PlatformIcon
+}: {
+    profile: UserDialogProfileRecord;
+    friendNumber?: number | string;
+    platform: UserHeaderModel['platform'];
+    PlatformIcon: ComponentType | null;
+}) {
+    const { t } = useTranslation();
+    const trustLevel =
+        typeof profile.$trustLevel === 'string'
+            ? profile.$trustLevel
+            : 'Visitor';
+    const items: { key: string; node: ReactNode }[] = [
+        {
+            key: 'trust',
+            node: <span className="min-w-0 truncate">{trustLevel}</span>
+        }
+    ];
+
+    if (profile.ageVerified) {
+        items.push({
+            key: 'age-verified',
+            node: (
+                <span className="text-foreground inline-flex shrink-0 items-center gap-1 font-medium">
+                    <BadgeCheckIcon
+                        aria-hidden="true"
+                        className="size-3.5 shrink-0"
+                    />
+                    18+
+                </span>
+            )
+        });
+    }
+
+    items.push({
+        key: 'platform',
+        node: (
+            <span className="inline-flex shrink-0 items-center gap-1 [&_svg]:size-3.5">
+                {PlatformIcon ? <PlatformIcon /> : null}
+                {platform.label}
+            </span>
+        )
+    });
+
+    if (friendNumber) {
+        items.push({
+            key: 'friend-number',
+            node: (
+                <span className="shrink-0">
                     {t('dialog.user.label.friend')}
                     {friendNumber}
-                </Badge>
-            ) : null}
-            {moderationState.block ? (
-                <Badge variant="destructive">
-                    {t('dialog.user.error.blocked')}
-                </Badge>
-            ) : null}
-            {moderationState.mute ? (
-                <Badge variant="destructive">
-                    {t('dialog.user.label.muted')}
-                </Badge>
-            ) : null}
-            <Badge variant="outline">{trustLevel}</Badge>
-            <Badge
-                variant="outline"
-                className={
-                    PlatformIcon ? 'size-5 justify-center p-0' : undefined
-                }
-                title={platform.label}
-                aria-label={platform.label}
-            >
-                {PlatformIcon ? <PlatformIcon /> : platform.label}
-            </Badge>
-            {discordId ? (
-                <Badge
-                    variant="outline"
-                    className="hover:bg-muted hover:text-muted-foreground cursor-pointer"
-                    render={
-                        <button
-                            type="button"
-                            aria-label={t('dialog.user.tags.open_in_discord')}
-                            title={t('dialog.user.tags.open_in_discord')}
-                            onClick={() => onOpenDiscordProfile(discordId)}
-                        />
-                    }
+                </span>
+            )
+        });
+    }
+
+    return (
+        <>
+            {items.map((item, index) => (
+                <span
+                    key={item.key}
+                    className="inline-flex min-w-0 items-center"
                 >
-                    Discord
-                </Badge>
-            ) : null}
+                    {item.node}
+                    {index < items.length - 1 ? (
+                        <span className="mx-1 opacity-50">·</span>
+                    ) : null}
+                </span>
+            ))}
         </>
     );
 }
@@ -239,19 +285,13 @@ export function UserDialogHeaderMediaBadges({
                                     size={badgeImageUrl ? 'icon' : 'sm'}
                                     aria-label={badgeTitle}
                                     title={badgeTitle}
-                                    className={
+                                    className={cn(
+                                        'transition-transform duration-150 ease-out active:scale-[0.97] [@media(hover:hover)]:hover:scale-110',
                                         badgeImageUrl
-                                            ? cn(
-                                                  'size-8 rounded-sm p-0',
-                                                  !isBadgeVisible &&
-                                                      'opacity-60'
-                                              )
-                                            : cn(
-                                                  'h-8 max-w-full rounded-sm px-2 text-xs',
-                                                  !isBadgeVisible &&
-                                                      'opacity-60'
-                                              )
-                                    }
+                                            ? 'size-8 rounded-sm p-0'
+                                            : 'h-8 max-w-full rounded-sm px-2 text-xs',
+                                        !isBadgeVisible && 'opacity-60'
+                                    )}
                                     onClick={(event) => event.stopPropagation()}
                                 >
                                     {badgeImageUrl ? (

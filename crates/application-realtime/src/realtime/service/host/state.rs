@@ -28,8 +28,10 @@ pub(super) struct FriendOwnerGuard<'a> {
 
 pub(super) enum FriendLogMutation {
     Remove { user_id: String },
-    Upsert { record: FriendRecord },
+    Upsert { record: Box<FriendRecord> },
 }
+
+pub(super) type CurrentUserRefreshStatus = Option<std::result::Result<bool, String>>;
 
 pub(super) struct ScopedFriendLogMutation {
     owner_user_id: String,
@@ -73,6 +75,7 @@ impl ScopedFriendLogMutation {
                 }
             }
             FriendLogMutation::Upsert { record } => {
+                let record = *record;
                 let user_id = record.id.clone();
                 let state_bucket = record.state_bucket.clone();
                 pending
@@ -93,7 +96,7 @@ impl ScopedFriendLogMutation {
                         user_id,
                         patch: record,
                         state_bucket,
-                        state_bucket_authority: Some(FriendStateBucketAuthority::Explicit),
+                        state_bucket_authority: FriendStateBucketAuthority::Explicit,
                     });
             }
         }
@@ -227,7 +230,7 @@ pub struct RealtimeHostRuntime {
         Mutex<super::friend_profile_bulk_load::FriendProfileBulkLoadState>,
     pub(super) friend_profile_bulk_cancel_tx: watch::Sender<u64>,
     pub(super) current_user_refresh_inflight:
-        Mutex<Option<watch::Receiver<Option<std::result::Result<bool, String>>>>>,
+        Mutex<Option<watch::Receiver<CurrentUserRefreshStatus>>>,
 }
 
 pub(super) struct RealtimeHostRuntimeMessageSink {

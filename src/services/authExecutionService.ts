@@ -13,6 +13,7 @@ import authRepository, {
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
 import { useDialogStore } from '@/state/dialogStore';
+import { useFavoriteRevisionStore } from '@/state/favoriteRevisionStore';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
@@ -170,6 +171,7 @@ function resetCurrentUserRuntimeCaches() {
     avatarProfileRepository.clearAvatarNameCache();
     useFriendRosterStore.getState().resetRoster();
     useFavoriteStore.getState().resetFavorites();
+    useFavoriteRevisionStore.getState().reset();
     useFeedLiveStore.getState().resetFeedLive();
     resetDomainFacts();
     useRuntimeStore

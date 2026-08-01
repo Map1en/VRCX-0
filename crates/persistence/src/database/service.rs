@@ -1,10 +1,10 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
-    Mutex, RwLock,
+    Arc, Mutex, RwLock,
 };
 
 use rusqlite::{
@@ -39,12 +39,14 @@ pub struct DatabaseUpgradeStatus {
 struct UpgradeSession {
     conn: Mutex<Connection>,
     status: DatabaseUpgradeStatus,
+    ensured: EnsuredSchemas,
 }
 
 struct MainDatabase {
     writer: Mutex<Connection>,
     readers: Vec<Mutex<Connection>>,
     next_reader: AtomicUsize,
+    ensured: EnsuredSchemas,
 }
 
 enum DatabaseMode {
@@ -52,6 +54,8 @@ enum DatabaseMode {
     Upgrade(UpgradeSession),
     Closed,
 }
+
+type EnsuredSchemas = Arc<Mutex<HashSet<String>>>;
 
 pub struct DatabaseService {
     db_path: PathBuf,
@@ -184,6 +188,40 @@ impl DatabaseService {
             .to_owned();
         conn.execute("VACUUM INTO ?1", [&dest])
             .map_err(map_profile_backup_sqlite_error)?;
+        Ok(())
+    }
+
+    pub(crate) fn ensure_schema_once<F>(&self, key: &str, ensure: F) -> Result<(), Error>
+    where
+        F: FnOnce() -> Result<(), Error>,
+    {
+        let ensured = {
+            let inner = self
+                .inner
+                .read()
+                .map_err(|error| Error::Database(error.to_string()))?;
+            match &*inner {
+                DatabaseMode::Main(main) => Arc::clone(&main.ensured),
+                DatabaseMode::Upgrade(upgrade) => Arc::clone(&upgrade.ensured),
+                DatabaseMode::Closed => {
+                    return Err(Error::Database(
+                        "Database connection is temporarily unavailable.".into(),
+                    ));
+                }
+            }
+        };
+        if ensured
+            .lock()
+            .map_err(|error| Error::Database(error.to_string()))?
+            .contains(key)
+        {
+            return Ok(());
+        }
+        ensure()?;
+        ensured
+            .lock()
+            .map_err(|error| Error::Database(error.to_string()))?
+            .insert(key.to_owned());
         Ok(())
     }
 
@@ -385,6 +423,7 @@ fn open_main_database(db_path: &Path) -> Result<MainDatabase, Error> {
         writer: Mutex::new(writer),
         readers,
         next_reader: AtomicUsize::new(0),
+        ensured: EnsuredSchemas::default(),
     })
 }
 

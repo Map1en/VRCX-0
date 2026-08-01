@@ -14,7 +14,7 @@ pub struct GameProcessStatus {
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct RealtimeSessionContext {
+pub struct HostRealtimeSessionContext {
     pub current_user_id: String,
     pub endpoint: String,
     pub websocket: String,
@@ -28,7 +28,7 @@ pub struct BackgroundCapabilitySession {
     pub current_user_snapshot: Value,
 }
 
-impl RealtimeSessionContext {
+impl HostRealtimeSessionContext {
     pub fn new(current_user_id: String, endpoint: String, websocket: String) -> Self {
         Self {
             current_user_id: current_user_id.trim().to_string(),
@@ -46,7 +46,7 @@ pub struct HostSessionSnapshot {
     pub last_game_state_changed_at: Option<String>,
     pub generation: u64,
     pub realtime_generation: u64,
-    pub realtime_context: Option<RealtimeSessionContext>,
+    pub realtime_context: Option<HostRealtimeSessionContext>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, specta::Type)]
@@ -73,7 +73,7 @@ struct HostSessionState {
     last_game_state_changed_at: Option<String>,
     generation: u64,
     realtime_generation: u64,
-    realtime_context: Option<RealtimeSessionContext>,
+    realtime_context: Option<HostRealtimeSessionContext>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -125,7 +125,7 @@ impl HostSessionRuntime {
         }
     }
 
-    pub fn set_realtime_context(&self, context: RealtimeSessionContext) -> u64 {
+    pub fn set_realtime_context(&self, context: HostRealtimeSessionContext) -> u64 {
         let mut state = self.lock_state();
         state.realtime_generation = state.realtime_generation.saturating_add(1);
         state.realtime_context = Some(context);

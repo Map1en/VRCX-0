@@ -3,6 +3,30 @@ import { describe, expect, it } from 'vitest';
 import { resolveUserDialogTargetPresenceLocation } from './userDialogContentHelpers';
 
 describe('resolveUserDialogTargetPresenceLocation', () => {
+    it('does not keep a stale instance for an explicitly offline friend', () => {
+        expect(
+            resolveUserDialogTargetPresenceLocation({
+                profile: {
+                    id: 'usr_target',
+                    state: 'offline',
+                    stateBucket: 'offline',
+                    location: 'wrld_old:123'
+                },
+                targetUserId: 'usr_target',
+                currentLocation: 'wrld_old:123',
+                currentLocationPlayerIds: ['usr_target'],
+                currentLocationPlayers: [],
+                friendsById: {
+                    usr_target: {
+                        id: 'usr_target',
+                        state: 'offline',
+                        stateBucket: 'offline',
+                        location: 'wrld_old:123'
+                    }
+                }
+            })
+        ).toBe('offline');
+    });
     const currentLocation = 'wrld_current:123';
 
     it('uses the current instance for a private user observed in its player list', () => {

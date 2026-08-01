@@ -25,7 +25,7 @@ pub use realtime::{
     RealtimeNotificationUpsert, RealtimeSessionContext, RealtimeStopRequest,
     RealtimeTransportLifecycleEvent, RealtimeTransportStartResult, RealtimeTransportTermination,
     RealtimeUserProjection, RealtimeWsMessagePayload, RealtimeWsStatusPayload,
-    SyntheticFriendEventOutcome,
+    SyntheticFriendEventOutcome, UserQueryCachePolicy, UserQueryKind, UserQueryOptions,
 };
 pub use realtime::{normalize_v1_notification, normalize_v2_notification};
 pub use realtime::{
@@ -34,9 +34,10 @@ pub use realtime::{
 };
 pub use social_baseline::{
     apply_friend_roster_baseline_sync_outcome, build_favorites_baseline,
-    build_friend_roster_baseline, build_friend_roster_baseline_deferred,
-    build_synced_friend_roster_baseline, FriendStatusVerdicts, SocialBaselineDeps,
-    SocialFavoritesBaselineInput, SocialFavoritesBaselineOutput, SocialFriendRosterBaselineInput,
-    SocialFriendRosterBaselineOutput, SyncedFriendRosterBaseline,
+    build_favorites_baseline_from_friend_records, build_friend_roster_baseline,
+    build_friend_roster_baseline_deferred, build_synced_friend_roster_baseline,
+    FavoriteBaselineSnapshot, FavoriteGroupOutput, FriendStatusVerdicts, SocialBaselineDeps,
+    SocialFavoritesBaselineInput, SocialFavoritesBaselineOutput, SocialFavoritesBaselineRequest,
+    SocialFriendRosterBaselineInput, SocialFriendRosterBaselineOutput, SyncedFriendRosterBaseline,
 };
 pub use world_enrich::world_id_from_location_or_id;

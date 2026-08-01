@@ -7,9 +7,8 @@ const mocks = vi.hoisted(() => ({
     appOverlayActivityDefinitionsGet: vi.fn(),
     appOverlayActivityFiltersReload: vi.fn(),
     appVrOverlayEnabledSet: vi.fn(),
-    appReadConfigFile: vi.fn(),
+    appDisableVrchatRichPresence: vi.fn(),
     appRuntimeDiscordReconcileRequest: vi.fn(),
-    appWriteConfigFile: vi.fn(),
     appSystemCulture: vi.fn(),
     getRawValue: vi.fn(),
     has: vi.fn(),
@@ -47,10 +46,9 @@ vi.mock('@/platform/tauri/bindings', () => ({
             mocks.appOverlayActivityDefinitionsGet,
         appOverlayActivityFiltersReload: mocks.appOverlayActivityFiltersReload,
         appVrOverlayEnabledSet: mocks.appVrOverlayEnabledSet,
-        appReadConfigFile: mocks.appReadConfigFile,
+        appDisableVrchatRichPresence: mocks.appDisableVrchatRichPresence,
         appRuntimeDiscordReconcileRequest:
             mocks.appRuntimeDiscordReconcileRequest,
-        appWriteConfigFile: mocks.appWriteConfigFile,
         appSystemCulture: mocks.appSystemCulture
     }
 }));
@@ -280,6 +278,7 @@ describe('preferencesService characterization', () => {
         mocks.appVrOverlayConfigReload.mockResolvedValue(undefined);
         mocks.appLanguageChanged.mockResolvedValue(undefined);
         mocks.appRestartApplication.mockResolvedValue(undefined);
+        mocks.appDisableVrchatRichPresence.mockResolvedValue({ changed: true });
         mocks.appRuntimeDiscordReconcileRequest.mockResolvedValue(1);
         mocks.readRecentActionCooldown.mockReturnValue({
             enabled: false,
@@ -300,11 +299,10 @@ describe('preferencesService characterization', () => {
             setTablePageSizesPreference(['50', 10, 'bad', 25, 10])
         ).resolves.toEqual([10, 25, 50]);
 
-        expect(mocks.setArray).toHaveBeenCalledWith(
-            'VRCX_tablePageSizes',
-            [10, 25, 50]
-        );
-        expect(mocks.setInt).toHaveBeenCalledWith('VRCX_tablePageSize', 25);
+        expect(mocks.setMany).toHaveBeenCalledWith([
+            ['VRCX_tablePageSizes', '[10,25,50]'],
+            ['VRCX_tablePageSize', 25]
+        ]);
         expect(usePreferencesStore.getState()).toMatchObject({
             tablePageSize: 25,
             tablePageSizes: [10, 25, 50]
@@ -326,8 +324,10 @@ describe('preferencesService characterization', () => {
             searchLimit: 100_000
         });
 
-        expect(mocks.setInt).toHaveBeenCalledWith('maxTableSize_v2', 100);
-        expect(mocks.setInt).toHaveBeenCalledWith('searchLimit', 100_000);
+        expect(mocks.setMany).toHaveBeenCalledWith([
+            ['maxTableSize_v2', 100],
+            ['searchLimit', 100_000]
+        ]);
         expect(usePreferencesStore.getState().tableLimits).toEqual({
             maxTableSize: 100,
             searchLimit: 100_000
@@ -756,29 +756,35 @@ describe('preferencesService characterization', () => {
     });
 
     it('disables VRChat rich presence when Discord presence is enabled', async () => {
-        mocks.appReadConfigFile.mockResolvedValue(
-            JSON.stringify({ existing: true })
-        );
-
         await expect(
             setDiscordBoolPreference('discordActive', true)
         ).resolves.toBe(true);
 
+        expect(mocks.appDisableVrchatRichPresence).toHaveBeenCalledTimes(1);
         expect(mocks.setBool).toHaveBeenCalledWith('discordActive', true);
-        expect(mocks.appWriteConfigFile).toHaveBeenCalledWith(
-            JSON.stringify(
-                {
-                    existing: true,
-                    disableRichPresence: true
-                },
-                null,
-                2
-            )
-        );
+        expect(
+            mocks.appDisableVrchatRichPresence.mock.invocationCallOrder[0]
+        ).toBeLessThan(mocks.setBool.mock.invocationCallOrder[0]);
         expect(mocks.appRuntimeDiscordReconcileRequest).toHaveBeenCalledTimes(
             1
         );
         expect(usePreferencesStore.getState().discordActive).toBe(true);
+    });
+
+    it('does not enable Discord presence when the VRChat config patch fails', async () => {
+        mocks.appDisableVrchatRichPresence.mockRejectedValueOnce(
+            new Error('config is read-only')
+        );
+
+        await expect(
+            setDiscordBoolPreference('discordActive', true)
+        ).rejects.toThrow('config is read-only');
+
+        expect(mocks.setBool).not.toHaveBeenCalledWith('discordActive', true);
+        expect(mocks.appRuntimeDiscordReconcileRequest).toHaveBeenCalledTimes(
+            0
+        );
+        expect(usePreferencesStore.getState().discordActive).toBe(false);
     });
 
     it('loads legacy proxy enabled state from a non-empty proxy address', async () => {

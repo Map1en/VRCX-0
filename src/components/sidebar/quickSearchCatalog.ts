@@ -1,20 +1,15 @@
-import groupProfileRepository from '@/repositories/groupProfileRepository';
-import memoPersistenceRepository from '@/repositories/memoPersistenceRepository';
-import myAvatarRepository from '@/repositories/myAvatarRepository';
-import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
-import worldProfileRepository from '@/repositories/worldProfileRepository';
+import {
+    entityQueryPolicies,
+    fetchCachedData,
+    invalidateEntityQueries,
+    queryKeys
+} from '@/lib/entityQueryCache';
+import {
+    commands,
+    type QuickSearchCatalogSnapshot
+} from '@/platform/tauri/bindings';
 
-export type QuickSearchCatalog = {
-    status: string;
-    detail: string;
-    ownAvatars: unknown[];
-    favoriteAvatars: unknown[];
-    ownWorlds: unknown[];
-    favoriteWorlds: unknown[];
-    groups: unknown[];
-    userMemos: unknown[];
-    userNotes: unknown[];
-};
+export type QuickSearchCatalog = QuickSearchCatalogSnapshot;
 
 export type QuickSearchEntityType = 'friend' | 'avatar' | 'world' | 'group';
 
@@ -32,10 +27,8 @@ export type QuickSearchResult = {
     userColour?: string;
 };
 
-function recordValue(value: unknown): Record<string, unknown> | null {
-    return value && typeof value === 'object'
-        ? (value as Record<string, unknown>)
-        : null;
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === 'object');
 }
 
 export function createEmptyCatalog(
@@ -61,16 +54,10 @@ function normalize(value: unknown) {
         : String(value ?? '').trim();
 }
 
-function settledRows(result: PromiseSettledResult<unknown>): unknown[] {
-    return result.status === 'fulfilled' && Array.isArray(result.value)
-        ? result.value
-        : [];
-}
-
 export function buildUserTextMap(rows: unknown, fieldName: string) {
     const map = new Map<string, unknown>();
     for (const row of Array.isArray(rows) ? rows : []) {
-        const record = recordValue(row);
+        const record = isRecord(row) ? row : null;
         const userId = normalize(record?.userId);
         if (userId) {
             map.set(userId, record?.[fieldName] || '');
@@ -79,57 +66,28 @@ export function buildUserTextMap(rows: unknown, fieldName: string) {
     return map;
 }
 
-export async function loadQuickSearchCatalog({
-    currentUserId
+export function loadQuickSearchCatalog({
+    currentEndpoint,
+    currentUserId,
+    force = false
 }: {
+    currentEndpoint?: string | null;
     currentUserId: string;
-    endpoint?: string | null;
-}) {
-    const [
-        ownAvatars,
-        ownWorlds,
-        favoriteAvatars,
-        favoriteWorlds,
-        groups,
-        userMemos,
-        userNotes
-    ] = await Promise.allSettled([
-        myAvatarRepository.getMyAvatars(),
-        worldProfileRepository.getAllWorldsByUser({
-            userId: currentUserId
-        }),
-        vrchatFavoriteRepository.getAllFavoriteAvatars(),
-        vrchatFavoriteRepository.getAllFavoriteWorlds(),
-        groupProfileRepository.getUserGroups({
-            userId: currentUserId
-        }),
-        memoPersistenceRepository.getAllUserMemos(),
-        memoPersistenceRepository.getAllUserNotes(currentUserId)
-    ]);
-
-    const rejectedCount = [
-        ownAvatars,
-        ownWorlds,
-        favoriteAvatars,
-        favoriteWorlds,
-        groups,
-        userMemos,
-        userNotes
-    ].filter((result) => result.status === 'rejected').length;
-
-    return {
-        ...createEmptyCatalog(
-            'ready',
-            rejectedCount
-                ? `${rejectedCount} search source(s) failed to load.`
-                : ''
-        ),
-        ownAvatars: settledRows(ownAvatars),
-        ownWorlds: settledRows(ownWorlds),
-        favoriteAvatars: settledRows(favoriteAvatars),
-        favoriteWorlds: settledRows(favoriteWorlds),
-        groups: settledRows(groups),
-        userMemos: settledRows(userMemos),
-        userNotes: settledRows(userNotes)
-    };
+    force?: boolean;
+}): Promise<QuickSearchCatalog> {
+    const queryKey = queryKeys.quickSearchCatalog(
+        currentUserId,
+        currentEndpoint
+    );
+    return fetchCachedData({
+        queryKey,
+        policy: entityQueryPolicies.groupCollection,
+        force,
+        queryFn: () => commands.appQuickSearchCatalogGet()
+    }).then((catalog) => {
+        if (catalog.status === 'partial') {
+            void invalidateEntityQueries(queryKey);
+        }
+        return catalog;
+    });
 }

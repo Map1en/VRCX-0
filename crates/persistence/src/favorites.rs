@@ -1,8 +1,9 @@
 #![allow(non_snake_case)]
 
-use serde_json::{json, Value};
+use serde::Serialize;
+use serde_json::json;
 
-use crate::common::{normalize_text, now_iso, row_json, ParamsBuilder};
+use crate::common::{normalize_text, now_iso, row_string, ParamsBuilder};
 use crate::config::{ensure_config_table, resolve_config_key};
 use crate::database::schema::ensure_global_store_tables;
 use crate::database::{DatabaseService, DatabaseWriteTransaction};
@@ -18,19 +19,54 @@ pub struct FavoriteMoveResult {
     pub added: i64,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct FavoriteRow {
+    pub created_at: String,
+    pub group_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub user_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avatar_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub world_id: Option<String>,
+}
+
+impl FavoriteRow {
+    fn new(kind: &str, created_at: String, entity_id: String, group_name: String) -> Self {
+        let mut row = Self {
+            created_at,
+            group_name,
+            user_id: None,
+            avatar_id: None,
+            world_id: None,
+        };
+        match kind {
+            "friend" => row.user_id = Some(entity_id),
+            "avatar" => row.avatar_id = Some(entity_id),
+            "world" => row.world_id = Some(entity_id),
+            _ => {}
+        }
+        row
+    }
+
+    pub fn entity_id(&self) -> &str {
+        self.user_id
+            .as_deref()
+            .or(self.avatar_id.as_deref())
+            .or(self.world_id.as_deref())
+            .unwrap_or_default()
+    }
+}
+
 pub fn favorite_list(
     db: &DatabaseService,
     owner_user_id: Option<&str>,
     kind: String,
-) -> Result<Vec<Value>, Error> {
+) -> Result<Vec<FavoriteRow>, Error> {
     ensure_global_store_tables(db)?;
     let (table, column, _) = normalize_kind(&kind)?;
-    let id_key = match kind.trim() {
-        "friend" => "userId",
-        "avatar" => "avatarId",
-        "world" => "worldId",
-        _ => "entityId",
-    };
+    let normalized_kind = kind.trim();
     let owner_id = owner_id_for_kind_read(db, &kind, owner_user_id)?;
     Ok(db
         .execute(
@@ -42,11 +78,12 @@ pub fn favorite_list(
         )?
         .into_iter()
         .map(|row| {
-            json!({
-                "created_at": row_json(&row, 0),
-                id_key: row_json(&row, 1),
-                "groupName": row_json(&row, 2)
-            })
+            FavoriteRow::new(
+                normalized_kind,
+                row_string(&row, 0),
+                row_string(&row, 1),
+                row_string(&row, 2),
+            )
         })
         .collect())
 }
@@ -443,17 +480,12 @@ mod tests {
         favorite_list(db, None, kind.into())
             .unwrap()
             .into_iter()
-            .map(|row| {
-                row.get("groupName")
-                    .and_then(Value::as_str)
-                    .unwrap_or_default()
-                    .to_string()
-            })
+            .map(|row| row.group_name)
             .collect()
     }
 
     fn config_array(db: &DatabaseService, key: &str) -> Vec<String> {
-        get_json(db, key, Value::Null)
+        get_json(db, key, serde_json::Value::Null)
             .unwrap()
             .as_array()
             .map(|items| {
@@ -672,8 +704,8 @@ mod tests {
         let rows = favorite_list(&db, Some("usr_owner"), "friend".into()).unwrap();
 
         assert_eq!(rows.len(), 1);
-        assert_eq!(rows[0]["userId"], "usr_legacy");
-        assert_eq!(rows[0]["groupName"], "legacy");
+        assert_eq!(rows[0].user_id.as_deref(), Some("usr_legacy"));
+        assert_eq!(rows[0].group_name, "legacy");
         let columns = crate::database::schema::table_column_names(&db, "favorite_friend").unwrap();
         assert!(columns.contains("owner_id"));
     }

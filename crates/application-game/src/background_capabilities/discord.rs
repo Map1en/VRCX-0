@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use serde::Serialize;
 use serde_json::Value;
 use vrcx_0_core::location::{parse_location, ParsedLocation};
@@ -21,6 +23,9 @@ mod tests;
 use activity_builders::{build_discord_activity, build_running_fallback_activity};
 
 const GAME_STOP_DISCORD_CLOSE_ATTEMPTS: u8 = 5;
+const DISCORD_ENRICHMENT_RETRY_BASE: Duration = Duration::from_secs(5);
+const DISCORD_ENRICHMENT_RETRY_MAX: Duration = Duration::from_secs(60);
+
 #[derive(Clone, Debug, Default)]
 pub struct BackgroundDiscordPresenceState {
     is_active: bool,
@@ -33,12 +38,14 @@ pub struct BackgroundDiscordPresenceState {
 }
 
 impl BackgroundDiscordPresenceState {
-    pub fn apply_set_active_result(&mut self, active: bool) {
-        self.is_active = active;
-        if !active {
-            self.last_location_details = DiscordLocationDetails::default();
-            self.last_payload = None;
-        }
+    pub fn apply_clear_result(&mut self) {
+        self.is_active = false;
+        self.last_location_details = DiscordLocationDetails::default();
+        self.last_payload = None;
+    }
+
+    pub fn apply_clear_failure(&mut self) {
+        self.is_active = true;
     }
 
     pub fn apply_set_assets_result(
@@ -110,9 +117,7 @@ pub enum BackgroundDiscordPresenceCommand {
     Noop {
         detail: String,
     },
-    SetActive {
-        active: bool,
-        force: bool,
+    Clear {
         detail: String,
     },
     SetAssets {
@@ -140,6 +145,43 @@ struct DiscordLocationDetails {
     world_capacity: i64,
     world_link: String,
     group_name: String,
+    world_lookup_complete: bool,
+    group_lookup_complete: bool,
+    enrichment_failures: u8,
+    enrichment_retry_at: Option<Instant>,
+}
+
+impl DiscordLocationDetails {
+    fn is_enrichment_complete(&self) -> bool {
+        self.parsed.as_ref().is_some_and(|parsed| {
+            (parsed.world_id.is_empty() || self.world_lookup_complete)
+                && (parsed.group_id.as_deref().unwrap_or_default().is_empty()
+                    || self.group_lookup_complete)
+        })
+    }
+
+    fn can_reuse(&self, current_location: &str, now: Instant) -> bool {
+        self.tag == current_location
+            && self.parsed.is_some()
+            && (self.is_enrichment_complete()
+                || self
+                    .enrichment_retry_at
+                    .is_some_and(|retry_at| now < retry_at))
+    }
+
+    fn schedule_enrichment_retry(&mut self, now: Instant) {
+        self.enrichment_failures = self.enrichment_failures.saturating_add(1);
+        let exponent = u32::from(self.enrichment_failures.saturating_sub(1).min(4));
+        let delay = DISCORD_ENRICHMENT_RETRY_BASE
+            .saturating_mul(2u32.pow(exponent))
+            .min(DISCORD_ENRICHMENT_RETRY_MAX);
+        self.enrichment_retry_at = Some(now + delay);
+    }
+
+    fn mark_enrichment_complete(&mut self) {
+        self.enrichment_failures = 0;
+        self.enrichment_retry_at = None;
+    }
 }
 
 pub async fn build_background_discord_presence_command(
@@ -158,25 +200,19 @@ pub async fn build_background_discord_presence_command(
             state.last_game_running = false;
         } else if !state.initial_non_game_cleanup_sent {
             state.initial_non_game_cleanup_sent = true;
-            return Ok(BackgroundDiscordPresenceCommand::SetActive {
-                active: false,
-                force: true,
+            return Ok(BackgroundDiscordPresenceCommand::Clear {
                 detail: "Initial background Discord cleanup while VRChat is not running.".into(),
             });
         }
 
         if state.close_attempts_remaining > 0 {
             state.close_attempts_remaining = state.close_attempts_remaining.saturating_sub(1);
-            return Ok(BackgroundDiscordPresenceCommand::SetActive {
-                active: false,
-                force: true,
+            return Ok(BackgroundDiscordPresenceCommand::Clear {
                 detail: "VRChat stopped; clearing Discord presence.".into(),
             });
         }
         if force || state.is_active {
-            return Ok(BackgroundDiscordPresenceCommand::SetActive {
-                active: false,
-                force,
+            return Ok(BackgroundDiscordPresenceCommand::Clear {
                 detail: "VRChat is not running.".into(),
             });
         }
@@ -192,9 +228,7 @@ pub async fn build_background_discord_presence_command(
     if !discord_config.discord_active {
         if force || state.is_active || !state.disabled_cleanup_sent {
             state.disabled_cleanup_sent = true;
-            return Ok(BackgroundDiscordPresenceCommand::SetActive {
-                active: false,
-                force: true,
+            return Ok(BackgroundDiscordPresenceCommand::Clear {
                 detail: "Discord presence is disabled.".into(),
             });
         }
@@ -219,9 +253,7 @@ pub async fn build_background_discord_presence_command(
     let location_details =
         load_discord_location_details(web, db, facts, state, discord_location).await?;
     let Some(parsed) = location_details.parsed.clone() else {
-        return Ok(BackgroundDiscordPresenceCommand::SetActive {
-            active: false,
-            force,
+        return Ok(BackgroundDiscordPresenceCommand::Clear {
             detail: "Current location is not a Discord instance.".into(),
         });
     };
@@ -265,19 +297,23 @@ async fn load_discord_location_details(
     state: &mut BackgroundDiscordPresenceState,
     current_location: &str,
 ) -> Result<DiscordLocationDetails> {
-    if state.last_location_details.tag == current_location
-        && state.last_location_details.parsed.is_some()
-    {
+    let now = Instant::now();
+    if state.last_location_details.can_reuse(current_location, now) {
         return Ok(state.last_location_details.clone());
     }
 
     let parsed = parse_location(current_location);
-    let mut details = DiscordLocationDetails {
-        tag: parsed.tag.clone(),
-        parsed: Some(parsed.clone()),
-        ..Default::default()
+    let mut details = if state.last_location_details.tag == current_location {
+        state.last_location_details.clone()
+    } else {
+        DiscordLocationDetails {
+            tag: parsed.tag.clone(),
+            parsed: Some(parsed.clone()),
+            ..Default::default()
+        }
     };
-    if !parsed.world_id.is_empty() {
+    details.enrichment_retry_at = None;
+    if !parsed.world_id.is_empty() && !details.world_lookup_complete {
         let (_, request) = world_get_input(
             normalize_vrchat_api_endpoint(Some(&facts.endpoint)),
             parsed.world_id.clone(),
@@ -295,6 +331,7 @@ async fn load_discord_location_details(
                         details.world_link =
                             format!("{VRCHAT_SITE_ORIGIN}/home/world/{}", parsed.world_id);
                     }
+                    details.world_lookup_complete = true;
                 }
             }
             Ok(response) => {
@@ -303,6 +340,9 @@ async fn load_discord_location_details(
                     status = response.status,
                     "background Discord world lookup failed"
                 );
+                if !discord_enrichment_status_retryable(response.status) {
+                    details.world_lookup_complete = true;
+                }
             }
             Err(error) => {
                 tracing::warn!(
@@ -321,7 +361,11 @@ async fn load_discord_location_details(
         }
     }
 
-    if let Some(group_id) = parsed.group_id.as_ref().filter(|value| !value.is_empty()) {
+    if let Some(group_id) = parsed
+        .group_id
+        .as_ref()
+        .filter(|value| !value.is_empty() && !details.group_lookup_complete)
+    {
         let (_, request) = group_profile_get_input(
             normalize_vrchat_api_endpoint(Some(&facts.endpoint)),
             group_id.clone(),
@@ -331,6 +375,7 @@ async fn load_discord_location_details(
             Ok(response) if (200..=299).contains(&response.status) => {
                 if let Some(group) = parse_response_json(&response.data) {
                     details.group_name = string_field(&group, "name").unwrap_or_default();
+                    details.group_lookup_complete = true;
                 }
             }
             Ok(response) => {
@@ -339,6 +384,9 @@ async fn load_discord_location_details(
                     status = response.status,
                     "background Discord group lookup failed"
                 );
+                if !discord_enrichment_status_retryable(response.status) {
+                    details.group_lookup_complete = true;
+                }
             }
             Err(error) => {
                 tracing::warn!(
@@ -350,6 +398,16 @@ async fn load_discord_location_details(
         }
     }
 
+    if details.is_enrichment_complete() {
+        details.mark_enrichment_complete();
+    } else {
+        details.schedule_enrichment_retry(now);
+    }
+
     state.last_location_details = details.clone();
     Ok(details)
+}
+
+fn discord_enrichment_status_retryable(status: i32) -> bool {
+    matches!(status, 408 | 409 | 425 | 429 | 500..=599 | -1)
 }

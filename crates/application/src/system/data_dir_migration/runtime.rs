@@ -12,7 +12,8 @@ use vrcx_0_persistence::data_dir_migration::{
     read_data_dir_cleanup_pending, read_data_dir_cleanup_pendings,
     remove_pending_data_dir_migration, take_data_dir_migration_result,
     write_data_dir_cleanup_pending, write_pending_data_dir_migration, DataDirCleanupPending,
-    DataDirCleanupReport, DataDirMigrationResult, PendingDataDirMigration,
+    DataDirCleanupReport, DataDirMigrationResult, DataDirMigrationTargetState,
+    PendingDataDirMigration,
 };
 use vrcx_0_persistence::profile_backup::has_pending_profile_restore;
 use vrcx_0_persistence::DatabaseService;
@@ -20,7 +21,8 @@ use vrcx_0_persistence::DatabaseService;
 use super::super::profile_backup::{OperationGuard, ProfileOperationGate};
 use super::types::{
     DataDirMigrationActionOutcome, DataDirMigrationError, DataDirMigrationErrorCode,
-    DataDirMigrationPhase, DataDirMigrationState, DataDirMigrationStatus,
+    DataDirMigrationMode, DataDirMigrationPhase, DataDirMigrationPlan, DataDirMigrationState,
+    DataDirMigrationStatus,
 };
 
 const PROGRESS_EVENT_INTERVAL: Duration = Duration::from_millis(20);
@@ -78,6 +80,46 @@ impl DataDirMigrationRuntime {
             .lock()
             .map(|state| state.snapshot.clone())
             .unwrap_or_default()
+    }
+
+    pub fn request_migration(
+        &self,
+        plan: DataDirMigrationPlan,
+        mode: DataDirMigrationMode,
+    ) -> DataDirMigrationActionOutcome {
+        let target_dir = PathBuf::from(&plan.target_path);
+        match mode {
+            DataDirMigrationMode::Migrate => {
+                if plan.available_bytes < plan.required_bytes {
+                    return self.rejected(
+                        DataDirMigrationErrorCode::InsufficientSpace,
+                        Some(&target_dir),
+                    );
+                }
+                self.run_migration(
+                    target_dir,
+                    plan.target_state == DataDirMigrationTargetState::ExistingProfile,
+                )
+            }
+            DataDirMigrationMode::AdoptExisting => {
+                if plan.target_state != DataDirMigrationTargetState::ExistingProfile {
+                    return self.rejected(
+                        DataDirMigrationErrorCode::InvalidAdoptionTarget,
+                        Some(&target_dir),
+                    );
+                }
+                self.switch_data_dir_pointer(target_dir)
+            }
+            DataDirMigrationMode::FreshStart => {
+                if plan.target_state == DataDirMigrationTargetState::ExistingProfile {
+                    return self.rejected(
+                        DataDirMigrationErrorCode::InvalidFreshStartTarget,
+                        Some(&target_dir),
+                    );
+                }
+                self.switch_data_dir_pointer(target_dir)
+            }
+        }
     }
 
     pub fn run_migration(

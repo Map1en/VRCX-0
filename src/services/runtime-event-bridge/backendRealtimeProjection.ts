@@ -13,20 +13,24 @@ import {
 } from '../realtimePresenceService';
 import { showSQLiteErrorDialog } from '../sqliteErrorDialogService';
 import { isRecord } from './guards';
-import type {
-    RuntimeEventName,
-    RuntimeEventPayloadMap,
-    RuntimeSnapshotPayload
-} from './types';
+import type { RuntimeEvent, RuntimeSnapshotPayload } from './types';
 
 type BackendRealtimeProjectionScope = {
     userId: string;
     generation: number;
 };
 
+type BackendRealtimeProjectionEvent = RuntimeEvent<
+    | 'realtimeFriendProjection'
+    | 'realtimeUserProjection'
+    | 'realtimeNotificationProjection'
+    | 'realtimeCurrentUserProjection'
+    | 'realtimeInstanceClosedProjection'
+    | 'realtimeInstanceQueueProjection'
+>;
+
 let pendingBackendRealtimeProjectionEvents: Array<{
-    name: RuntimeEventName;
-    payload: unknown;
+    event: BackendRealtimeProjectionEvent;
     scope: BackendRealtimeProjectionScope;
 }> = [];
 
@@ -65,13 +69,17 @@ function currentBackendRealtimeUserId(): string {
     return isRecord(snapshot) ? normalizeString(snapshot.authUserId) : '';
 }
 
-function projectionGeneration(payload: unknown): number {
-    const generation = Number(isRecord(payload) ? payload.generation : null);
+function projectionGeneration(
+    payload: BackendRealtimeProjectionEvent['payload']
+): number {
+    const generation = Number(
+        'generation' in payload ? payload.generation : null
+    );
     return Number.isFinite(generation) && generation > 0 ? generation : 0;
 }
 
 function currentBackendRealtimeProjectionScope(
-    payload: unknown
+    payload: BackendRealtimeProjectionEvent['payload']
 ): BackendRealtimeProjectionScope | null {
     const userId = currentBackendRealtimeUserId();
     const generation = projectionGeneration(payload);
@@ -93,15 +101,20 @@ function sameBackendRealtimeProjectionScope(
     );
 }
 
-function isRealtimeProjectionEvent(name: RuntimeEventName): boolean {
-    return (
-        name === 'realtimeFriendProjection' ||
-        name === 'realtimeUserProjection' ||
-        name === 'realtimeNotificationProjection' ||
-        name === 'realtimeCurrentUserProjection' ||
-        name === 'realtimeInstanceClosedProjection' ||
-        name === 'realtimeInstanceQueueProjection'
-    );
+function isRealtimeProjectionEvent(
+    event: RuntimeEvent
+): event is BackendRealtimeProjectionEvent {
+    switch (event.name) {
+        case 'realtimeFriendProjection':
+        case 'realtimeUserProjection':
+        case 'realtimeNotificationProjection':
+        case 'realtimeCurrentUserProjection':
+        case 'realtimeInstanceClosedProjection':
+        case 'realtimeInstanceQueueProjection':
+            return true;
+        default:
+            return false;
+    }
 }
 
 function handleBackendRealtimeProjectionFailure(error: unknown): void {
@@ -116,42 +129,32 @@ function handleBackendRealtimeProjectionFailure(error: unknown): void {
 }
 
 function deliverBackendRealtimeProjectionEvent(
-    name: RuntimeEventName,
-    payload: unknown
+    event: BackendRealtimeProjectionEvent
 ): void {
-    useRuntimeStore.getState().recordRuntimeEvent(name, payload);
-    if (name === 'realtimeFriendProjection') {
-        handleRealtimeFriendProjection(
-            payload as RuntimeEventPayloadMap['realtimeFriendProjection']
-        );
-    } else if (name === 'realtimeUserProjection') {
-        handleRealtimeUserCacheProjection(payload);
-    } else if (name === 'realtimeNotificationProjection') {
+    useRuntimeStore.getState().recordRuntimeEvent(event.name, event.payload);
+    if (event.name === 'realtimeFriendProjection') {
+        handleRealtimeFriendProjection(event.payload);
+    } else if (event.name === 'realtimeUserProjection') {
+        handleRealtimeUserCacheProjection(event.payload);
+    } else if (event.name === 'realtimeNotificationProjection') {
         Promise.resolve(
-            handleRealtimeNotificationProjection(
-                payload as RuntimeEventPayloadMap['realtimeNotificationProjection']
-            )
+            handleRealtimeNotificationProjection(event.payload)
         ).catch(handleBackendRealtimeProjectionFailure);
-    } else if (name === 'realtimeCurrentUserProjection') {
-        handleRealtimeCurrentUserProjection(
-            payload as RuntimeEventPayloadMap['realtimeCurrentUserProjection']
-        );
-    } else if (name === 'realtimeInstanceClosedProjection') {
+    } else if (event.name === 'realtimeCurrentUserProjection') {
+        handleRealtimeCurrentUserProjection(event.payload);
+    } else if (event.name === 'realtimeInstanceClosedProjection') {
         Promise.resolve(
-            handleRealtimeInstanceClosedProjection(
-                payload as RuntimeEventPayloadMap['realtimeInstanceClosedProjection']
-            )
+            handleRealtimeInstanceClosedProjection(event.payload)
         ).catch(handleBackendRealtimeProjectionFailure);
-    } else if (name === 'realtimeInstanceQueueProjection') {
-        handleRealtimeInstanceQueueProjection(payload);
+    } else if (event.name === 'realtimeInstanceQueueProjection') {
+        handleRealtimeInstanceQueueProjection(event.payload);
     }
 }
 
 function queuePendingBackendRealtimeProjectionEvent(
-    name: RuntimeEventName,
-    payload: unknown
+    event: BackendRealtimeProjectionEvent
 ): void {
-    const scope = currentBackendRealtimeProjectionScope(payload);
+    const scope = currentBackendRealtimeProjectionScope(event.payload);
     if (!scope) {
         return;
     }
@@ -163,7 +166,7 @@ function queuePendingBackendRealtimeProjectionEvent(
     ) {
         pendingBackendRealtimeProjectionEvents = [];
     }
-    pendingBackendRealtimeProjectionEvents.push({ name, payload, scope });
+    pendingBackendRealtimeProjectionEvents.push({ event, scope });
     if (pendingBackendRealtimeProjectionEvents.length > 128) {
         pendingBackendRealtimeProjectionEvents.shift();
     }
@@ -183,7 +186,7 @@ export function flushPendingBackendRealtimeProjectionEvents(): void {
     pendingBackendRealtimeProjectionEvents = [];
     for (const entry of pending) {
         if (sameBackendRealtimeProjectionScope(entry.scope, currentScope)) {
-            deliverBackendRealtimeProjectionEvent(entry.name, entry.payload);
+            deliverBackendRealtimeProjectionEvent(entry.event);
         }
     }
 }
@@ -211,21 +214,20 @@ export function prunePendingBackendRealtimeProjectionEvents(
 }
 
 export function handleBackendRealtimeProjectionEvent(
-    name: RuntimeEventName,
-    payload: unknown
+    event: RuntimeEvent
 ): boolean {
-    if (!isRealtimeProjectionEvent(name)) {
+    if (!isRealtimeProjectionEvent(event)) {
         return false;
     }
     if (!isBackendRuntimeRealtimeOwner()) {
         if (isBackendRuntimeRealtimeCandidate()) {
-            queuePendingBackendRealtimeProjectionEvent(name, payload);
+            queuePendingBackendRealtimeProjectionEvent(event);
         }
         return true;
     }
 
     flushPendingBackendRealtimeProjectionEvents();
-    deliverBackendRealtimeProjectionEvent(name, payload);
+    deliverBackendRealtimeProjectionEvent(event);
     return true;
 }
 

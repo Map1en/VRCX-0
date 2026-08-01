@@ -55,39 +55,16 @@ import { Spinner } from '@/ui/shadcn/spinner';
 
 import type { FavoritesDensityConfig } from '../favoritesDensity';
 import { normalizeFavoriteEntityId as normalizeEntityId } from '../favoritesItems';
+import type { FavoriteItem } from '../favoritesTypes';
+
+type FavoriteCardItem = FavoriteItem;
 
 function resolvePresenceLocation(profile: unknown) {
     return resolveFriendPresenceLocation(profile);
 }
 
-type FavoriteCardSeedData = SidebarFriendRecord & {
-    groupName?: unknown;
-    releaseStatus?: unknown;
-    travelingToWorld?: unknown;
-    worldName?: unknown;
-};
-
-type FavoriteCardItem = {
-    id: string;
-    key: string;
-    kind: 'friend' | 'world' | 'avatar' | string;
-    source?: 'local' | 'remote' | 'history' | string;
-    title?: string;
-    subtitle?: string;
-    imageUrl?: string;
-    imageSmallUrl?: string;
-    seedData?: FavoriteCardSeedData | null;
-    groupLabel?: string;
-    isPrivate?: boolean;
-    isDeleted?: boolean;
-    isUnavailable?: boolean;
-    titleColor?: string;
-    travelingToLocation?: unknown;
-    playerCount?: number;
-};
-
 type FavoriteCardProps = {
-    item: FavoriteCardItem;
+    item: FavoriteItem;
     instanceActionGate?: LocalInstanceActionGates;
     selectionActive?: boolean;
     selected?: boolean;
@@ -95,16 +72,16 @@ type FavoriteCardProps = {
     densityConfig: FavoritesDensityConfig;
     removing?: boolean;
     onToggleSelect?: (key: string, selected: boolean, shift: boolean) => void;
-    onRemoveLocal?: (item: FavoriteCardItem) => void;
-    onRemoveRemote?: (item: FavoriteCardItem) => void;
-    onFriendLaunch?: (item: FavoriteCardItem) => void;
-    onFriendSelfInvite?: (item: FavoriteCardItem) => void;
-    onFriendInvite?: (item: FavoriteCardItem) => void;
-    onFriendRequestInvite?: (item: FavoriteCardItem) => void;
-    onFriendBoop?: (item: FavoriteCardItem) => void;
-    onWorldNewInstance?: (item: FavoriteCardItem) => void;
-    onWorldSelfInvite?: (item: FavoriteCardItem) => void;
-    onAvatarSelect?: (item: FavoriteCardItem) => void;
+    onRemoveLocal?: (item: FavoriteItem) => void;
+    onRemoveRemote?: (item: FavoriteItem) => void;
+    onFriendLaunch?: (item: FavoriteItem) => void;
+    onFriendSelfInvite?: (item: FavoriteItem) => void;
+    onFriendInvite?: (item: FavoriteItem) => void;
+    onFriendRequestInvite?: (item: FavoriteItem) => void;
+    onFriendBoop?: (item: FavoriteItem) => void;
+    onWorldNewInstance?: (item: FavoriteItem) => void;
+    onWorldSelfInvite?: (item: FavoriteItem) => void;
+    onAvatarSelect?: (item: FavoriteItem) => void;
 };
 
 const FavoriteCard = memo(function FavoriteCard({
@@ -196,8 +173,8 @@ const FavoriteCard = memo(function FavoriteCard({
         item.id !== currentAvatarId &&
         onAvatarSelect
     );
-    const userId = isFriendCard ? item.id : '';
-    const vrchatUserPageUrl = userId ? vrchatUserUrl(userId) : '';
+    const vrchatUserPageUrl =
+        isFriendCard && item.id ? vrchatUserUrl(item.id) : '';
     const avatarId = item.kind === 'avatar' ? item.id : '';
     const vrchatAvatarPageUrl = avatarId ? vrchatAvatarUrl(avatarId) : '';
     const vrcxAvatarShareUrl =

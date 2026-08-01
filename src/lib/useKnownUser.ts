@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
 import {
     normalizeEndpoint,
@@ -6,12 +7,14 @@ import {
     userFactKey,
     type UserFact
 } from '@/domain/users/userFacts';
-import { getKnownUserFact } from '@/services/userFactAccessService';
 import {
     useRuntimeStore,
     type CurrentUserSnapshotState
 } from '@/state/runtimeStore';
-import { useUserFactsStore } from '@/state/userFactsStore';
+import {
+    useUserFactsStore,
+    type UserFactsStoreState
+} from '@/state/userFactsStore';
 
 interface UseKnownUserOptions {
     endpoint?: unknown;
@@ -92,39 +95,48 @@ function useKnownUserFacts(
         (state) => state.auth.currentUserSnapshot
     );
     const endpoint = normalizeEndpoint(options.endpoint || storeEndpoint);
-    const version = useUserFactsStore((state) => state.version);
     const normalizedUserIds = useMemo(
         () => normalizeUserIdList(userIds),
         [userIds]
     );
+    const currentUserFact = useMemo(
+        () =>
+            currentSnapshotToUserFact(
+                currentUserSnapshot,
+                currentUserId,
+                endpoint
+            ),
+        [currentUserSnapshot, currentUserId, endpoint]
+    );
 
-    return useMemo(() => {
-        const usersById: Record<string, UserFact> = {};
-        for (const userId of normalizedUserIds) {
-            if (userId === currentUserId && currentUserSnapshot) {
-                const currentUserFact = currentSnapshotToUserFact(
-                    currentUserSnapshot,
-                    userId,
-                    endpoint
-                );
-                if (currentUserFact) {
-                    usersById[userId] = currentUserFact;
+    const selectUserFacts = useCallback(
+        (state: UserFactsStoreState) => {
+            const usersById: Record<string, UserFact> = {};
+            for (const userId of normalizedUserIds) {
+                if (userId === currentUserId && currentUserSnapshot) {
+                    if (currentUserFact) {
+                        usersById[userId] = currentUserFact;
+                    }
+                    continue;
                 }
-                continue;
+                const key = userFactKey(endpoint, userId);
+                const fact = key ? state.usersByKey[key] : null;
+                if (fact) {
+                    usersById[userId] = fact;
+                }
             }
-            const fact = getKnownUserFact(endpoint, userId);
-            if (fact) {
-                usersById[userId] = fact;
-            }
-        }
-        return usersById;
-    }, [
-        endpoint,
-        normalizedUserIds,
-        version,
-        currentUserId,
-        currentUserSnapshot
-    ]);
+            return usersById;
+        },
+        [
+            endpoint,
+            normalizedUserIds,
+            currentUserFact,
+            currentUserId,
+            currentUserSnapshot
+        ]
+    );
+
+    return useUserFactsStore(useShallow(selectUserFacts));
 }
 
 export { useKnownUserFact, useKnownUserFacts };

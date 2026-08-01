@@ -8,6 +8,11 @@ import type {
     GroupProfileRecord
 } from '@/domain/entities/profileEntities';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import {
+    commands,
+    type GroupModerationBatchAction,
+    type GroupModerationBatchProgress as GroupModerationBatchProgressEvent
+} from '@/platform/tauri/bindings';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { openUserDialog } from '@/services/dialogService';
 import { useModalStore } from '@/state/modalStore';
@@ -22,6 +27,7 @@ import {
     type GroupModerationTabValue
 } from './groupDialogUtils';
 import { GroupModerationBanImportDialog } from './GroupModerationBanImportDialog';
+import { buildGroupModerationBatchInput } from './groupModerationBatch';
 import {
     GroupModerationBulkPanel,
     type GroupModerationBulkProgress
@@ -30,7 +36,6 @@ import { GroupModerationLogsPanel } from './GroupModerationLogsPanel';
 import {
     getGroupModerationTabs,
     moderationRowLabel,
-    moderationRowRoleIds,
     moderationRowUserId,
     resolveGroupModerationActiveTab,
     type GroupModerationAction
@@ -48,6 +53,25 @@ function isEntityRecord(value: unknown): value is EntityRecord {
     return Boolean(value && typeof value === 'object');
 }
 
+function isGroupModerationBatchProgress(
+    value: unknown
+): value is GroupModerationBatchProgressEvent {
+    return Boolean(
+        value &&
+        typeof value === 'object' &&
+        'groupId' in value &&
+        typeof value.groupId === 'string' &&
+        'ownerUserId' in value &&
+        typeof value.ownerUserId === 'string' &&
+        'endpoint' in value &&
+        typeof value.endpoint === 'string' &&
+        'completed' in value &&
+        typeof value.completed === 'number' &&
+        'total' in value &&
+        typeof value.total === 'number'
+    );
+}
+
 const BULK_SELECTABLE_TABS = new Set(['bans', 'members']);
 
 export function GroupModerationWorkspace({
@@ -60,6 +84,12 @@ export function GroupModerationWorkspace({
     const { t } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
+    const currentAuthEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
+    const batchProgressEvent = useRuntimeStore(
+        (state) => state.runtimeEvents.groupModerationBatchProgress
+    );
     const [activeTab, setActiveTab] = useState<GroupModerationTabValue | ''>(
         'members'
     );
@@ -82,6 +112,8 @@ export function GroupModerationWorkspace({
     const [memberSort, setMemberSort] = useState('joinedAt:desc');
     const [memberRoleId, setMemberRoleId] = useState('');
     const resetKeyRef = useRef('');
+    const bulkProgressEventCountRef = useRef(0);
+    const bulkRunSequenceRef = useRef(0);
     const moderationTabs = useMemo(
         () => getGroupModerationTabs(t, group),
         [group.id, group.myMember, group.roles, t]
@@ -107,6 +139,32 @@ export function GroupModerationWorkspace({
         ? rows.filter((row) => selectedIds.has(moderationRowUserId(row)))
         : [];
     const bulkSelectable = BULK_SELECTABLE_TABS.has(activeTab);
+
+    useEffect(() => {
+        const progress = batchProgressEvent?.lastPayload;
+        if (
+            bulkBusy &&
+            batchProgressEvent &&
+            batchProgressEvent.count > bulkProgressEventCountRef.current &&
+            isGroupModerationBatchProgress(progress) &&
+            progress.ownerUserId === currentUserId &&
+            progress.endpoint === endpoint &&
+            currentAuthEndpoint === endpoint &&
+            progress.groupId === group.id
+        ) {
+            setBulkProgress({
+                current: progress.completed,
+                total: progress.total
+            });
+        }
+    }, [
+        batchProgressEvent,
+        bulkBusy,
+        currentAuthEndpoint,
+        currentUserId,
+        endpoint,
+        group.id
+    ]);
 
     const openModerationUserDialog = useCallback((row: EntityRecord) => {
         const userId = moderationRowUserId(row);
@@ -165,6 +223,7 @@ export function GroupModerationWorkspace({
     useEffect(() => {
         if (resetKeyRef.current !== resetKey) {
             resetKeyRef.current = resetKey;
+            bulkRunSequenceRef.current += 1;
             setActiveTab(
                 resolveGroupModerationActiveTab('members', moderationTabs)
             );
@@ -292,15 +351,15 @@ export function GroupModerationWorkspace({
     }
 
     async function runBulkAction({
+        action,
         label,
         destructive = false,
-        skipSelf,
-        action
+        roleIds
     }: {
+        action: GroupModerationBatchAction;
         label: string;
         destructive?: boolean;
-        skipSelf: boolean;
-        action: (row: EntityRecord) => Promise<void>;
+        roleIds?: string[];
     }) {
         if (bulkBusy || !selectedRows.length) {
             return;
@@ -319,138 +378,143 @@ export function GroupModerationWorkspace({
         if (!result.ok) {
             return;
         }
+        const batchOwnerUserId = useRuntimeStore.getState().auth.currentUserId;
+        const batchEndpoint = endpoint;
+        if (
+            !batchOwnerUserId ||
+            batchOwnerUserId !== currentUserId ||
+            useRuntimeStore.getState().auth.currentUserEndpoint !==
+                batchEndpoint
+        ) {
+            return;
+        }
 
+        const batchRunSequence = bulkRunSequenceRef.current + 1;
+        bulkRunSequenceRef.current = batchRunSequence;
+        const isCurrentBatchRun = () => {
+            const auth = useRuntimeStore.getState().auth;
+            return (
+                bulkRunSequenceRef.current === batchRunSequence &&
+                auth.currentUserId === batchOwnerUserId &&
+                auth.currentUserEndpoint === batchEndpoint
+            );
+        };
         setBulkBusy(true);
+        bulkProgressEventCountRef.current = batchProgressEvent?.count ?? 0;
         setBulkProgress({ current: 0, total: targetRows.length });
-        let successCount = 0;
-        for (let index = 0; index < targetRows.length; index += 1) {
-            const row = targetRows[index];
-            setBulkProgress({ current: index + 1, total: targetRows.length });
-            const userId = moderationRowUserId(row);
-            if (skipSelf && currentUserId && userId === currentUserId) {
-                continue;
+        try {
+            const batchResult = await commands.appGroupModerationBatch(
+                buildGroupModerationBatchInput({
+                    action,
+                    expectedEndpoint: endpoint,
+                    expectedOwnerUserId: batchOwnerUserId,
+                    groupId: group.id,
+                    roleIds,
+                    rows: targetRows
+                })
+            );
+            if (
+                !isCurrentBatchRun() ||
+                batchResult.ownerUserId !== batchOwnerUserId ||
+                batchResult.endpoint !== batchEndpoint
+            ) {
+                return;
             }
-            try {
-                await action(row);
-                successCount += 1;
-            } catch (actionError) {
+            setBulkProgress({
+                current: batchResult.total,
+                total: batchResult.total
+            });
+            const rowsByUserId = new Map(
+                targetRows.map((row) => [moderationRowUserId(row), row])
+            );
+            for (const item of batchResult.items) {
+                if (
+                    item.state !== 'failed' &&
+                    item.state !== 'partiallyApplied' &&
+                    item.state !== 'notAttempted'
+                ) {
+                    continue;
+                }
+                const row = rowsByUserId.get(item.userId);
                 toast.error(
-                    `${moderationRowLabel(row)}: ${userFacingErrorMessage(
-                        actionError,
+                    `${moderationRowLabel(row || item.userId)}: ${userFacingErrorMessage(
+                        item.message,
                         t('dialog.group.toast.value_failed', { value: label })
                     )}`
                 );
             }
-        }
-
-        setBulkBusy(false);
-        setBulkProgress(null);
-        clearSelection();
-        setReloadToken((value) => value + 1);
-        if (successCount) {
-            toast.success(
-                t('dialog.group_member_moderation.bulk_action_completed', {
-                    count: successCount,
-                    value: label
-                })
-            );
+            if (batchResult.succeeded) {
+                toast.success(
+                    t('dialog.group_member_moderation.bulk_action_completed', {
+                        count: batchResult.succeeded,
+                        value: label
+                    })
+                );
+            }
+        } catch (actionError) {
+            if (isCurrentBatchRun()) {
+                toast.error(
+                    userFacingErrorMessage(
+                        actionError,
+                        t('dialog.group.toast.value_failed', { value: label })
+                    )
+                );
+            }
+        } finally {
+            if (bulkRunSequenceRef.current === batchRunSequence) {
+                setBulkBusy(false);
+                setBulkProgress(null);
+                if (isCurrentBatchRun()) {
+                    clearSelection();
+                    setReloadToken((value) => value + 1);
+                }
+            }
         }
     }
 
     function runBulkKick() {
         return runBulkAction({
+            action: { type: 'kick' },
             label: t('dialog.group_member_moderation.kick'),
-            destructive: true,
-            skipSelf: true,
-            action: async (row) => {
-                await groupProfileRepository.kickGroupMember({
-                    groupId: group.id,
-                    userId: moderationRowUserId(row)
-                });
-            }
+            destructive: true
         });
     }
 
     function runBulkBan() {
         return runBulkAction({
+            action: { type: 'ban' },
             label: t('dialog.group_member_moderation.ban'),
-            destructive: true,
-            skipSelf: true,
-            action: async (row) => {
-                await groupProfileRepository.banGroupMember({
-                    groupId: group.id,
-                    userId: moderationRowUserId(row)
-                });
-            }
+            destructive: true
         });
     }
 
     function runBulkUnban() {
         return runBulkAction({
-            label: t('dialog.group_member_moderation.unban'),
-            skipSelf: true,
-            action: async (row) => {
-                await groupProfileRepository.unbanGroupMember({
-                    groupId: group.id,
-                    userId: moderationRowUserId(row)
-                });
-            }
+            action: { type: 'unban' },
+            label: t('dialog.group_member_moderation.unban')
         });
     }
 
     function runBulkSaveNote(note: string) {
         return runBulkAction({
-            label: t('dialog.group_member_moderation.save_note'),
-            skipSelf: false,
-            action: async (row) => {
-                await groupProfileRepository.setGroupMemberProps({
-                    groupId: group.id,
-                    userId: moderationRowUserId(row),
-                    params: { managerNotes: note }
-                });
-            }
+            action: { type: 'saveNote', note },
+            label: t('dialog.group_member_moderation.save_note')
         });
     }
 
     function runBulkAddRoles(roleIds: string[]) {
         return runBulkAction({
+            action: { type: 'addRoles' },
             label: t('dialog.group_member_moderation.add_roles'),
-            skipSelf: true,
-            action: async (row) => {
-                const userId = moderationRowUserId(row);
-                const currentRoleIds = new Set(moderationRowRoleIds(row));
-                for (const roleId of roleIds) {
-                    if (currentRoleIds.has(roleId)) {
-                        continue;
-                    }
-                    await groupProfileRepository.addGroupMemberRole({
-                        groupId: group.id,
-                        userId,
-                        roleId
-                    });
-                }
-            }
+            roleIds
         });
     }
 
     function runBulkRemoveRoles(roleIds: string[]) {
         return runBulkAction({
+            action: { type: 'removeRoles' },
             label: t('dialog.group_member_moderation.remove_roles'),
-            skipSelf: true,
-            action: async (row) => {
-                const userId = moderationRowUserId(row);
-                const currentRoleIds = new Set(moderationRowRoleIds(row));
-                for (const roleId of roleIds) {
-                    if (!currentRoleIds.has(roleId)) {
-                        continue;
-                    }
-                    await groupProfileRepository.removeGroupMemberRole({
-                        groupId: group.id,
-                        userId,
-                        roleId
-                    });
-                }
-            }
+            roleIds
         });
     }
 

@@ -436,12 +436,13 @@ export async function setTablePageSizesPreference(value: unknown) {
         currentTablePageSize,
         tablePageSizes
     );
-    await Promise.all([
-        configRepository.setArray('VRCX_tablePageSizes', tablePageSizes),
-        nextTablePageSize === currentTablePageSize
-            ? Promise.resolve()
-            : configRepository.setInt('VRCX_tablePageSize', nextTablePageSize)
-    ]);
+    const entries: Array<[string, unknown]> = [
+        ['VRCX_tablePageSizes', JSON.stringify(tablePageSizes)]
+    ];
+    if (nextTablePageSize !== currentTablePageSize) {
+        entries.push(['VRCX_tablePageSize', nextTablePageSize]);
+    }
+    await configRepository.setMany(entries);
     patchPreferences({
         tablePageSize: nextTablePageSize,
         tablePageSizes
@@ -483,9 +484,9 @@ export async function getTablePageSizesPreference(
 
 export async function setTableLimitsPreference(value: unknown) {
     const tableLimits = normalizeTableLimits(value);
-    await Promise.all([
-        configRepository.setInt('maxTableSize_v2', tableLimits.maxTableSize),
-        configRepository.setInt('searchLimit', tableLimits.searchLimit)
+    await configRepository.setMany([
+        ['maxTableSize_v2', tableLimits.maxTableSize],
+        ['searchLimit', tableLimits.searchLimit]
     ]);
     patchPreferences({ tableLimits });
     publishPreferenceChanged('maxTableSize_v2', tableLimits.maxTableSize);

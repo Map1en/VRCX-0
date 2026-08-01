@@ -14,6 +14,28 @@ pub struct ConfigReadEntry {
     pub value: String,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ConfigMutation {
+    pub key: String,
+    pub value: Option<String>,
+}
+
+impl ConfigMutation {
+    pub fn set(key: impl Into<String>, value: impl Into<String>) -> Self {
+        Self {
+            key: key.into(),
+            value: Some(value.into()),
+        }
+    }
+
+    pub fn remove(key: impl Into<String>) -> Self {
+        Self {
+            key: key.into(),
+            value: None,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ConfigKey(String);
 

@@ -9,11 +9,11 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconEvent};
 use tauri::Emitter;
 use tauri::Manager;
 use tauri::WindowEvent;
+use vrcx_0_application::CommunityThemeConfigureInput;
 use vrcx_0_application_core::{
     recommended_tokio_max_blocking_threads, recommended_tokio_worker_threads, BackendRuntimeMode,
     BackendRuntimePhase,
 };
-use vrcx_0_persistence::config::{self as config_store, ConfigWriteEntry};
 
 fn stop_background_mode_and_show_window(app: &tauri::AppHandle, state: &AppState) {
     if let Err(error) = bootstrap::restore_foreground_window_from_background_mode(app, state) {
@@ -62,22 +62,28 @@ fn is_background_mode_hidden(app: &tauri::AppHandle, state: &AppState) -> bool {
     }
 }
 
-fn disable_community_theme_from_tray(app: &tauri::AppHandle, state: &AppState) {
-    if let Err(error) = config_store::config_set_values(
-        state.db.as_ref(),
-        vec![ConfigWriteEntry {
-            key: "config:vrcx_communitythemeenabled".into(),
-            value: "false".into(),
-        }],
-    ) {
-        tracing::warn!(error = %error, "failed to disable community theme from tray");
-    }
-    if let Err(error) = app.emit("communityThemeDisableRequested", serde_json::json!({})) {
-        tracing::warn!(error = %error, "failed to emit community theme disable request");
-    }
-    if let Err(error) = bootstrap::refresh_tray_menu(app, state) {
-        tracing::warn!(error = %error, "failed to refresh tray menu after disabling community theme");
-    }
+fn disable_community_theme_from_tray(app: &tauri::AppHandle) {
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let Some(state) = app.try_state::<AppState>() else {
+            return;
+        };
+        if let Err(error) = state
+            .desktop
+            .community_theme
+            .configure(CommunityThemeConfigureInput::Disable)
+            .await
+        {
+            tracing::warn!(error = %error, "failed to disable community theme from tray");
+            return;
+        }
+        if let Err(error) = app.emit("communityThemeDisableRequested", serde_json::json!({})) {
+            tracing::warn!(error = %error, "failed to emit community theme disable request");
+        }
+        if let Err(error) = bootstrap::refresh_tray_menu(&app, &state) {
+            tracing::warn!(error = %error, "failed to refresh tray menu after disabling community theme");
+        }
+    });
 }
 
 fn start_background_mode_from_shell(app: tauri::AppHandle) {
@@ -278,9 +284,7 @@ pub fn run() {
                 }
             }
             "tray-disable-theme" => {
-                if let Some(state) = app.try_state::<AppState>() {
-                    disable_community_theme_from_tray(app, &state);
-                }
+                disable_community_theme_from_tray(app);
             }
             "tray-rebuild-ui" => {
                 let app_handle = app.clone();

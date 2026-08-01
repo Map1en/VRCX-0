@@ -12,9 +12,8 @@ import { useTranslation } from 'react-i18next';
 
 import { LocationWorld } from '@/components/LocationWorld';
 import { timeToText } from '@/lib/dateTime';
-import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import { useCurrentInstanceRoster } from '@/lib/useCurrentInstanceRoster';
 import { cn } from '@/lib/utils';
-import playerListPersistenceRepository from '@/repositories/playerListPersistenceRepository';
 import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 import { normalizeProfileLanguageRows } from '@/shared/utils/userLanguage';
@@ -42,14 +41,6 @@ import {
 import { DashboardWidgetEmptyState } from './DashboardWidgetEmptyState';
 import { DashboardWidgetHeader } from './DashboardWidgetHeader';
 import { buildFavoriteIdSet, joinCompactParts } from './dashboardWidgetUtils';
-
-type CurrentInstanceSnapshotResult = Awaited<
-    ReturnType<
-        typeof playerListPersistenceRepository.getCurrentInstanceSnapshot
-    >
->;
-type DashboardInstanceContext = CurrentInstanceSnapshotResult['context'];
-type DashboardInstancePlayer = CurrentInstanceSnapshotResult['players'][number];
 
 const ALL_COLUMNS = DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS.map(
     (column: any) => column.key
@@ -425,8 +416,23 @@ export function DashboardInstanceWidget({
 }: any) {
     const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
+    const currentUserEndpoint = useRuntimeStore(
+        (state) => state.auth.currentUserEndpoint
+    );
+    const currentUserSnapshot = useRuntimeStore(
+        (state) => state.auth.currentUserSnapshot
+    );
     const currentUserLocation = useRuntimeStore(
-        (state) => state.auth.currentUserSnapshot?.location || ''
+        (state) =>
+            state.gameState.currentLocation ||
+            state.auth.currentUserSnapshot?.location ||
+            ''
+    );
+    const currentLocationStartedAt = useRuntimeStore(
+        (state) => state.gameState.currentLocationStartedAt
+    );
+    const currentWorldId = useRuntimeStore(
+        (state) => state.gameState.currentWorldId
     );
     const isGameRunning = useRuntimeStore((state) =>
         Boolean(state.gameState.isGameRunning)
@@ -442,21 +448,24 @@ export function DashboardInstanceWidget({
         (state) => state.localFriendFavorites
     );
 
-    const [instanceSnapshot, setInstanceSnapshot] =
-        useState<DashboardInstanceContext>({
-            createdAt: '',
-            location: '',
-            worldId: '',
-            worldName: '',
-            time: 0,
-            groupName: '',
-            playerCount: 0,
-            source: 'none'
-        });
-    const [rows, setRows] = useState<DashboardInstancePlayer[]>([]);
-    const [loadStatus, setLoadStatus] = useState('idle');
-    const [detail, setDetail] = useState('');
     const [clockNow, setClockNow] = useState(() => Date.now());
+    const {
+        context: instanceSnapshot,
+        detail,
+        loadStatus,
+        playerRows: rows
+    } = useCurrentInstanceRoster({
+        currentUserEndpoint,
+        currentUserId,
+        currentUserSnapshot,
+        disabled: false,
+        isGameRunning,
+        playerListLocation: currentUserLocation,
+        playerListStartedAt: currentLocationStartedAt,
+        playerListWorldId:
+            currentWorldId || parseLocation(currentUserLocation).worldId || '',
+        refreshRevision: addGameLogEventCount
+    });
 
     const activeColumns = getActiveColumns(config);
     const favoriteIdSet = useMemo(
@@ -474,75 +483,6 @@ export function DashboardInstanceWidget({
         };
     }, []);
 
-    useEffect(() => {
-        let active = true;
-
-        if (!isGameRunning) {
-            setInstanceSnapshot({
-                createdAt: '',
-                location: currentUserLocation || '',
-                worldId: '',
-                worldName: '',
-                time: 0,
-                groupName: '',
-                playerCount: 0,
-                source: 'runtime'
-            });
-            setRows([]);
-            setLoadStatus('idle');
-            setDetail('');
-            return () => {
-                active = false;
-            };
-        }
-
-        setLoadStatus('running');
-        setDetail('');
-
-        playerListPersistenceRepository
-            .getCurrentInstanceSnapshot({
-                currentUserId,
-                currentLocation: currentUserLocation
-            })
-            .then((result: any) => {
-                if (!active) {
-                    return;
-                }
-
-                setInstanceSnapshot(result.context);
-                setRows(Array.isArray(result.players) ? result.players : []);
-                setLoadStatus('ready');
-                setDetail(
-                    result.context.source === 'database'
-                        ? 'Rebuilt from local join/leave history.'
-                        : 'Using runtime location while local game-log history catches up.'
-                );
-            })
-            .catch((error: unknown) => {
-                if (!active) {
-                    return;
-                }
-
-                setRows([]);
-                setLoadStatus('error');
-                setDetail(
-                    userFacingErrorMessage(
-                        error,
-                        'Failed to rebuild the current instance roster.'
-                    )
-                );
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [
-        addGameLogEventCount,
-        currentUserId,
-        currentUserLocation,
-        isGameRunning
-    ]);
-
     const parsedLocation = useMemo(
         () =>
             parseLocation(
@@ -553,7 +493,7 @@ export function DashboardInstanceWidget({
 
     const enrichedRows = useMemo(
         () =>
-            rows.map((row: any) => {
+            rows.map((row) => {
                 const normalizedUserId = normalizeString(row.userId);
                 const friend = normalizedUserId
                     ? friendsById[normalizedUserId]
@@ -615,10 +555,7 @@ export function DashboardInstanceWidget({
             <DashboardInstanceWidgetShell settingsMenu={settingsMenu}>
                 <DashboardWidgetEmptyState
                     title={t('view.dashboard.error.instance_widget_failed')}
-                    description={userFacingErrorMessage(
-                        detail,
-                        'Current players did not finish loading.'
-                    )}
+                    description={detail}
                 />
             </DashboardInstanceWidgetShell>
         );

@@ -153,25 +153,6 @@ describe('UserDialogHeaderSection nameplate', () => {
         expect(actionButton.classList.contains('size-9')).toBe(true);
     });
 
-    it('renders the Discord action with the same outline style as profile badges', () => {
-        const headerModel = createHeaderModel();
-        headerModel.profile.discordId = '123456789012345678';
-
-        render(
-            <UserDialogHeaderSection
-                headerModel={headerModel}
-                headerCommands={createHeaderCommands()}
-            />
-        );
-
-        const discordButton = screen.getByRole('button', {
-            name: 'dialog.user.tags.open_in_discord'
-        });
-
-        expect(discordButton.classList.contains('border-border')).toBe(true);
-        expect(discordButton.classList.contains('bg-secondary')).toBe(false);
-    });
-
     it.each([
         ['a static asset', nameplateEffect],
         ['a gradient', gradientNameplateEffect]
@@ -204,5 +185,41 @@ describe('UserDialogHeaderSection nameplate', () => {
         const titleRow = title.closest('[data-slot="card-title"]');
 
         expect(titleRow?.classList.contains('text-white')).toBe(false);
+    });
+});
+
+describe('UserDialogHeaderSection friend number', () => {
+    it('shows the stored friend number for a current friend', () => {
+        const headerModel = createHeaderModel();
+        headerModel.friendNumber = 42;
+        headerModel.isCurrentUser = false;
+        headerModel.isFriend = true;
+
+        render(
+            <UserDialogHeaderSection
+                headerModel={headerModel}
+                headerCommands={createHeaderCommands()}
+            />
+        );
+
+        expect(
+            screen.getByText(/dialog\.user\.label\.friend/).textContent
+        ).toContain('42');
+    });
+
+    it('hides the stored friend number for a former friend', () => {
+        const headerModel = createHeaderModel();
+        headerModel.friendNumber = 42;
+        headerModel.isCurrentUser = false;
+        headerModel.isFriend = false;
+
+        render(
+            <UserDialogHeaderSection
+                headerModel={headerModel}
+                headerCommands={createHeaderCommands()}
+            />
+        );
+
+        expect(screen.queryByText(/dialog\.user\.label\.friend/)).toBeNull();
     });
 });

@@ -11,6 +11,7 @@ use crate::events::{
 };
 use crate::ports::HostSessionProjection;
 use vrcx_0_core::realtime::RealtimeWsStatusPayload;
+use vrcx_0_core::screenshots::ScreenshotLibraryScanStatus;
 
 pub trait RuntimeEventSink: Send + Sync {
     fn emit(&self, event: &str, payload: Value);
@@ -26,6 +27,19 @@ pub struct FavoritesChangedPayload {
     pub kind: String,
     pub local: bool,
     pub remote: bool,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct VrcStatusSnapshot {
+    pub status: String,
+    pub indicator: String,
+    pub summary: String,
+    pub updated_at: Option<String>,
+    pub last_fetched_at: Option<String>,
+    pub polling_interval_ms: u32,
+    pub refreshing: bool,
+    pub error: String,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize, specta::Type)]
@@ -72,6 +86,7 @@ macro_rules! runtime_event_payload {
 }
 
 runtime_event_payload!(FavoritesChangedPayload, "favoritesChanged");
+runtime_event_payload!(VrcStatusSnapshot, "vrcStatus");
 runtime_event_payload!(RuntimeVrchatAuthFailurePayload, "runtimeVrchatAuthFailure");
 runtime_event_payload!(BackendRuntimeCountTelemetry, "backendRuntimeTelemetry");
 runtime_event_payload!(BackendRuntimeMessageTelemetry, "backendRuntimeTelemetry");
@@ -99,6 +114,7 @@ runtime_event_payload!(
 runtime_event_payload!(HostSessionProjection, "updateIsGameRunning");
 runtime_event_payload!(PrintAutoCleanupEvent, "printsAutoCleanup");
 runtime_event_payload!(FriendProfileLoadStatusPayload, "friendProfileLoadStatus");
+runtime_event_payload!(ScreenshotLibraryScanStatus, "screenshotLibraryScanStatus");
 
 #[cfg(any(test, feature = "test-utils"))]
 #[derive(Clone, Debug)]

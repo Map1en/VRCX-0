@@ -1,4 +1,21 @@
-use super::*;
+use std::collections::HashMap;
+use std::sync::{atomic::Ordering, Arc, Mutex};
+use std::time::{Duration, Instant};
+
+use super::{
+    run_background_current_user_refresh, run_background_group_instance_refresh,
+    run_background_moderation_refresh, run_background_print_cleanup,
+    run_background_social_baseline_refresh, run_social_baseline_refresh_core, session_slot_matches,
+    BackendRuntime, BackendRuntimeFrontendSessionSnapshot, BackendRuntimeMode, BackendRuntimePhase,
+    BackendRuntimeSnapshot, BackendRuntimeTelemetry, BackgroundCapabilitySession,
+    BackgroundTickContext, RuntimeHostContext, RuntimeHostState, SocialBaselineRefreshOutput,
+    BACKGROUND_CURRENT_USER_CADENCE_SECONDS, BACKGROUND_CURRENT_USER_REFRESH_JOB,
+    BACKGROUND_GROUP_INSTANCE_CADENCE_SECONDS, BACKGROUND_GROUP_INSTANCE_REFRESH_JOB,
+    BACKGROUND_MODERATION_CADENCE_SECONDS, BACKGROUND_MODERATION_REFRESH_JOB,
+    BACKGROUND_PRINT_CLEANUP_CADENCE_SECONDS, BACKGROUND_PRINT_CLEANUP_JOB,
+    BACKGROUND_SOCIAL_BASELINE_CADENCE_SECONDS, BACKGROUND_SOCIAL_BASELINE_REFRESH_JOB,
+};
+use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
 
 impl RuntimeHostState {
     pub(super) fn start_social_maintenance_loops(&self) {
@@ -150,8 +167,8 @@ impl RuntimeHostState {
                             .and_then(|baseline| baseline.snapshot.as_ref())
                         {
                             favorite_friend_groups_by_key =
-                                crate::authenticated_runtime::favorite_group_membership_from_snapshot(
-                                    favorites.as_value(),
+                                crate::authenticated_runtime::favorite_group_membership_from_baseline(
+                                    favorites,
                                 );
                             favorite_groups_initialized = true;
                         }

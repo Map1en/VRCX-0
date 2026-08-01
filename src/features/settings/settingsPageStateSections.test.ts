@@ -48,7 +48,7 @@ function createInput(
             translationAPIPrompt: '',
             translationAPIReasoningEffort: ''
         },
-        loading: false,
+        locale: 'en',
         migrateLegacyVrcxData: callback,
         normalizeRecentActionCooldownMinutes: () => 60,
         notificationTtsTest: '',
@@ -141,6 +141,7 @@ function createInput(
         remoteFavoriteFriendGroupOptions: [],
         removeFeedHiddenUser: callback,
         selectedFavoriteFriendGroupLabel: '',
+        zoomInput: '100',
         ...overrides
     };
 }
@@ -151,7 +152,6 @@ describe('settingsPageStateSections', () => {
         const sections = buildSettingsPageStateSections(
             createInput({
                 activeSettingsTab: 'interface',
-                loading: true,
                 locale: 'ja',
                 prefs,
                 zoomInput: '125',
@@ -179,8 +179,7 @@ describe('settingsPageStateSections', () => {
             'dialogs'
         ]);
         expect(sections.shell).toMatchObject({
-            activeSettingsTab: 'interface',
-            loading: true
+            activeSettingsTab: 'interface'
         });
         expect(sections.system.prefs).toBe(prefs);
         expect(sections.interface).toMatchObject({

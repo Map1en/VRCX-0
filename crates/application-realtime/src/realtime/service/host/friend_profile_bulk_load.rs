@@ -8,7 +8,9 @@ pub use vrcx_0_application_core::{FriendProfileBulkLoadStatus, FriendProfileLoad
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
 
-use crate::realtime::RealtimeSessionContext;
+use crate::realtime::{
+    RealtimeSessionContext, UserQueryCachePolicy, UserQueryKind, UserQueryOptions,
+};
 
 use super::state::ActiveRealtimeContext;
 use super::{RealtimeHostRuntime, RealtimeStopRequest};
@@ -419,12 +421,13 @@ impl RealtimeHostRuntime {
             let response = tokio::select! {
                 biased;
                 _ = wait_for_friend_profile_bulk_load_cancel(run_id, cancel_rx) => return None,
-                response = self.get_user_via_cache(
+                response = self.get_user_via_cache_with_options(
                     owner.endpoint.clone(),
                     user_id.to_string(),
-                    false,
-                    false,
-                    Some(true),
+                    UserQueryOptions {
+                        kind: UserQueryKind::LiveFriend,
+                        cache_policy: UserQueryCachePolicy::UseCache,
+                    },
                 ) => response,
             };
             if !self.friend_profile_bulk_load_is_current(run_id, owner) {

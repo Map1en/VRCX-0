@@ -119,7 +119,6 @@ export function useSettingsPageState() {
     const [customFontOptions, setCustomFontOptions] = useState<string[]>([]);
     const [customFontOptionsLoading, setCustomFontOptionsLoading] =
         useState(false);
-    const [loading, setLoading] = useState(true);
     const [activeSettingsTab, setActiveSettingsTab] = useState('system');
     const [
         wristFeedNotificationsDialogOpen,
@@ -264,7 +263,6 @@ export function useSettingsPageState() {
         applyAvatarProviderConfig,
         applyPreferenceSnapshotToLocalState,
         preferenceState,
-        setLoading,
         setAppDataDirState,
         setPrefs,
         setTtsVoices,
@@ -365,7 +363,6 @@ export function useSettingsPageState() {
         locale,
         localFavoriteFriendGroupOptions,
         localFavoriteFriendsGroups,
-        loading,
         migrateLegacyVrcxData,
         normalizeRecentActionCooldownMinutes,
         notificationTtsTest,

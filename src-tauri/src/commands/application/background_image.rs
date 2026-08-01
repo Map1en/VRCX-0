@@ -17,7 +17,11 @@ pub async fn app__background_image_configure(
     state: State<'_, AppState>,
     input: BackgroundImageConfigureInput,
 ) -> Result<BackgroundImageProjection, AppError> {
-    Ok(state.desktop.background_image.configure(input).await?)
+    Ok(state
+        .desktop
+        .community_theme
+        .configure_background_image(input)
+        .await?)
 }
 
 #[tauri::command]
@@ -25,5 +29,9 @@ pub async fn app__background_image_configure(
 pub async fn app__background_image_refresh(
     state: State<'_, AppState>,
 ) -> Result<BackgroundImageProjection, AppError> {
-    Ok(state.desktop.background_image.refresh(true).await?)
+    Ok(state
+        .desktop
+        .community_theme
+        .refresh_background_image(true)
+        .await?)
 }

@@ -1,29 +1,26 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { CommunityThemeManifest } from '@/features/themes/communityThemeTypes';
+import type {
+    CommunityThemeConfigureInput,
+    CommunityThemeInstallMetadata,
+    CommunityThemeProjection
+} from '@/platform/tauri/bindings';
 
 const CATALOG_URL = 'https://themes.example.test/index.json';
-const CSS_FILE_NAME = 'theme.css';
 
 const mocks = vi.hoisted(() => ({
     convertFileSrc: vi.fn(),
     appRefreshTrayMenu: vi.fn(),
     appCommunityThemeDebugLoadLocalTheme: vi.fn(),
-    loadCommunityThemeCatalog: vi.fn(),
-    loadCommunityThemeCss: vi.fn(),
-    resolveCommunityThemeAssetUrl: vi.fn(),
-    getBool: vi.fn(),
+    appCommunityThemeStateGet: vi.fn(),
+    appCommunityThemeCatalogGet: vi.fn(),
+    appCommunityThemeStatsGet: vi.fn(),
+    appCommunityThemeInstallReport: vi.fn(),
+    appCommunityThemeConfigure: vi.fn(),
     getString: vi.fn(),
-    getObject: vi.fn(),
-    getRawValue: vi.fn(),
-    setBool: vi.fn(),
-    setString: vi.fn(),
-    setMany: vi.fn(),
-    remove: vi.fn(),
     isDevToolsBuild: vi.fn(),
     disableBackgroundImage: vi.fn(),
     isBackgroundImageActive: vi.fn(),
-    migrateLegacyNasaApodCommunityTheme: vi.fn(),
     registerCommunityThemeAppearanceHandlers: vi.fn(),
     applyThemeColor: vi.fn(),
     resolveThemeMode: vi.fn(),
@@ -41,28 +38,18 @@ vi.mock('@/platform/tauri/bindings', () => ({
     commands: {
         appRefreshTrayMenu: mocks.appRefreshTrayMenu,
         appCommunityThemeDebugLoadLocalTheme:
-            mocks.appCommunityThemeDebugLoadLocalTheme
+            mocks.appCommunityThemeDebugLoadLocalTheme,
+        appCommunityThemeStateGet: mocks.appCommunityThemeStateGet,
+        appCommunityThemeCatalogGet: mocks.appCommunityThemeCatalogGet,
+        appCommunityThemeStatsGet: mocks.appCommunityThemeStatsGet,
+        appCommunityThemeInstallReport: mocks.appCommunityThemeInstallReport,
+        appCommunityThemeConfigure: mocks.appCommunityThemeConfigure
     }
-}));
-
-vi.mock('@/repositories/communityThemeRepository', () => ({
-    COMMUNITY_THEME_CATALOG_URL: CATALOG_URL,
-    COMMUNITY_THEME_CSS_FILE_NAME: CSS_FILE_NAME,
-    loadCommunityThemeCatalog: mocks.loadCommunityThemeCatalog,
-    loadCommunityThemeCss: mocks.loadCommunityThemeCss,
-    resolveCommunityThemeAssetUrl: mocks.resolveCommunityThemeAssetUrl
 }));
 
 vi.mock('@/repositories/configRepository', () => ({
     default: {
-        getBool: mocks.getBool,
-        getString: mocks.getString,
-        getObject: mocks.getObject,
-        getRawValue: mocks.getRawValue,
-        setBool: mocks.setBool,
-        setString: mocks.setString,
-        setMany: mocks.setMany,
-        remove: mocks.remove
+        getString: mocks.getString
     }
 }));
 
@@ -73,8 +60,6 @@ vi.mock('@/shared/buildLabel', () => ({
 vi.mock('./appearanceConflictCoordinator', () => ({
     disableBackgroundImageForCommunityTheme: mocks.disableBackgroundImage,
     isBackgroundImageAppearanceActive: mocks.isBackgroundImageActive,
-    migrateLegacyNasaApodCommunityThemeForBackgroundImage:
-        mocks.migrateLegacyNasaApodCommunityTheme,
     registerCommunityThemeAppearanceHandlers:
         mocks.registerCommunityThemeAppearanceHandlers
 }));
@@ -91,48 +76,42 @@ vi.mock('./vrcx0CssLayerService', () => ({
     setVrcxCssLayers: mocks.setVrcxCssLayers
 }));
 
-function themeRecord(
-    themeId: string,
-    cssSnapshot: string,
-    patch: Record<string, unknown> = {}
-) {
+function installedTheme(
+    themeId = 'theme-a',
+    patch: Partial<CommunityThemeInstallMetadata> = {}
+): CommunityThemeInstallMetadata {
     return {
         themeId,
         themeName: `${themeId} name`,
         version: '1.0.0',
-        sourceUrl: `${CATALOG_URL}/${themeId}/${CSS_FILE_NAME}`,
+        sourceUrl: `${CATALOG_URL}/${themeId}/theme.css`,
         sha256: `${themeId}-sha`,
         installedAt: '2026-05-01T00:00:00.000Z',
         updatedAt: '2026-05-01T00:00:00.000Z',
         darkMode: true,
-        accentMode: true,
-        cssSnapshot,
+        accentMode: false,
         ...patch
     };
 }
 
-function manifest(
-    id = 'theme-a',
-    patch: Partial<CommunityThemeManifest> = {}
-): CommunityThemeManifest {
+function projection(
+    revision: number,
+    patch: Partial<CommunityThemeProjection> = {}
+): CommunityThemeProjection {
     return {
-        id,
-        name: `${id} name`,
-        version: '1.0.0',
-        tags: [],
-        author: { name: 'Tester', github: 'tester' },
-        description: '',
-        testedWith: '2.7.0',
-        remoteAssets: false,
-        darkMode: true,
-        accentMode: true,
-        previewUrl: '',
-        readmeUrl: '',
+        revision,
+        catalogUrl: CATALOG_URL,
+        enabled: false,
+        installedTheme: null,
+        installedThemes: [],
+        installedCssSnapshot: '',
+        overrideCss: '',
+        overrideCssEnabled: false,
         ...patch
     };
 }
 
-function installBrowserStubs() {
+function installBrowserStubs(): void {
     const attributes = new Map<string, string>();
     vi.stubGlobal('document', {
         documentElement: {
@@ -172,7 +151,7 @@ async function loadCommunityThemeService() {
     };
 }
 
-describe('communityThemeService characterization', () => {
+describe('communityThemeService', () => {
     beforeEach(() => {
         vi.useFakeTimers();
         vi.setSystemTime(new Date('2026-05-02T03:04:05.000Z'));
@@ -183,6 +162,15 @@ describe('communityThemeService characterization', () => {
             (path: string) => `file:///converted/${path.replace(/\\/g, '/')}`
         );
         mocks.appRefreshTrayMenu.mockResolvedValue(undefined);
+        mocks.appCommunityThemeStateGet.mockResolvedValue(projection(1));
+        mocks.appCommunityThemeCatalogGet.mockResolvedValue({
+            sourceUrl: CATALOG_URL,
+            schemaVersion: 1,
+            themes: []
+        });
+        mocks.appCommunityThemeStatsGet.mockResolvedValue({});
+        mocks.appCommunityThemeInstallReport.mockResolvedValue(true);
+        mocks.appCommunityThemeConfigure.mockResolvedValue(projection(1));
         mocks.appCommunityThemeDebugLoadLocalTheme.mockResolvedValue({
             folderPath: 'C:\\themes\\local',
             cssPath: 'C:\\themes\\local\\theme.css',
@@ -193,29 +181,12 @@ describe('communityThemeService characterization', () => {
             accentMode: false,
             css: '.hero{background:url("./images/bg.png")}'
         });
-        mocks.loadCommunityThemeCatalog.mockResolvedValue({
-            sourceUrl: CATALOG_URL,
-            themes: []
-        });
-        mocks.loadCommunityThemeCss.mockResolvedValue('.installed{}');
-        mocks.resolveCommunityThemeAssetUrl.mockImplementation(
-            (catalogUrl: string, themeId: string, fileName: string) =>
-                `${catalogUrl}/${themeId}/${fileName}`
-        );
-        mocks.getBool.mockResolvedValue(false);
         mocks.getString.mockImplementation((key: string, fallback = '') =>
-            Promise.resolve(String(fallback ?? ''))
+            Promise.resolve(String(fallback))
         );
-        mocks.getObject.mockResolvedValue(null);
-        mocks.getRawValue.mockResolvedValue(null);
-        mocks.setBool.mockResolvedValue(undefined);
-        mocks.setString.mockResolvedValue(undefined);
-        mocks.setMany.mockResolvedValue(undefined);
-        mocks.remove.mockResolvedValue(undefined);
         mocks.isDevToolsBuild.mockReturnValue(true);
         mocks.disableBackgroundImage.mockResolvedValue(undefined);
         mocks.isBackgroundImageActive.mockReturnValue(false);
-        mocks.migrateLegacyNasaApodCommunityTheme.mockResolvedValue(undefined);
         mocks.resolveThemeMode.mockImplementation((value: unknown) =>
             value === 'light' || value === 'dark' ? value : 'system'
         );
@@ -230,7 +201,7 @@ describe('communityThemeService characterization', () => {
         vi.unstubAllGlobals();
     });
 
-    it('keeps the public facade and registers the appearance handlers', async () => {
+    it('keeps the public facade and registers projection refresh handlers', async () => {
         const { service } = await loadCommunityThemeService();
 
         expect(Object.keys(service).sort()).toEqual([
@@ -244,7 +215,9 @@ describe('communityThemeService characterization', () => {
             'installCommunityTheme',
             'isCommunityThemeAccentControlled',
             'loadCatalog',
+            'loadCommunityThemeStats',
             'loadLocalCommunityThemePreview',
+            'reportCommunityThemeInstall',
             'saveCommunityThemeOverrideCss',
             'startLocalCommunityThemePreviewWatch',
             'stopLocalCommunityThemePreview',
@@ -253,102 +226,68 @@ describe('communityThemeService characterization', () => {
         expect(
             mocks.registerCommunityThemeAppearanceHandlers
         ).toHaveBeenCalledWith({
-            disableInstalledCommunityTheme:
-                service.disableInstalledCommunityTheme,
+            refreshInstalledCommunityTheme: expect.any(Function),
             stopLocalCommunityThemePreview:
                 service.stopLocalCommunityThemePreview
         });
     });
 
-    it('loads the community theme catalog and records catalog failures', async () => {
-        const catalogTheme = manifest('theme-c');
-        mocks.loadCommunityThemeCatalog.mockResolvedValueOnce({
+    it('loads backend-owned catalog and stats endpoints', async () => {
+        const catalog = {
             sourceUrl: CATALOG_URL,
-            themes: [catalogTheme]
+            schemaVersion: 1,
+            themes: []
+        };
+        mocks.appCommunityThemeCatalogGet.mockResolvedValueOnce(catalog);
+        mocks.appCommunityThemeStatsGet.mockResolvedValueOnce({
+            'theme-a': { downloads: 7 }
         });
         const { service, useCommunityThemeStore } =
             await loadCommunityThemeService();
 
-        await expect(service.loadCatalog()).resolves.toEqual({
-            sourceUrl: CATALOG_URL,
-            themes: [catalogTheme]
+        await expect(service.loadCatalog()).resolves.toEqual(catalog);
+        await expect(service.loadCommunityThemeStats()).resolves.toEqual({
+            'theme-a': { downloads: 7 }
         });
-
+        await expect(
+            service.reportCommunityThemeInstall('theme-a')
+        ).resolves.toBe(true);
+        expect(mocks.appCommunityThemeInstallReport).toHaveBeenCalledWith(
+            'theme-a'
+        );
         expect(useCommunityThemeStore.getState()).toMatchObject({
             catalogUrl: CATALOG_URL,
-            catalog: [catalogTheme],
+            catalog: [],
             loading: false,
             error: null
         });
-
-        const failure = new Error('catalog unavailable');
-        mocks.loadCommunityThemeCatalog.mockRejectedValueOnce(failure);
-
-        await expect(service.loadCatalog()).rejects.toBe(failure);
-        expect(useCommunityThemeStore.getState()).toMatchObject({
-            loading: false,
-            error: 'catalog unavailable'
-        });
     });
 
-    it('initializes installed themes from current catalog records only', async () => {
-        const validRecord = themeRecord('theme-a', '.theme-a{}', {
-            accentMode: false
-        });
-        const staleRecord = themeRecord('theme-stale', '.stale{}', {
-            sourceUrl: 'https://old.example.test/theme.css'
-        });
-        const legacyApodRecord = themeRecord('nasa-apod-wallpaper', '.apod{}');
-        mocks.getBool.mockImplementation((key: string) =>
-            Promise.resolve(key === 'VRCX_communityThemeEnabled')
+    it('hydrates CSS and render mirrors from the Rust projection', async () => {
+        const theme = installedTheme();
+        mocks.appCommunityThemeStateGet.mockResolvedValueOnce(
+            projection(4, {
+                enabled: true,
+                installedTheme: theme,
+                installedThemes: [theme],
+                installedCssSnapshot: '.theme{}',
+                overrideCss: '.override{}',
+                overrideCssEnabled: true
+            })
         );
-        mocks.getString.mockImplementation((key: string, fallback = '') => {
-            const values: Record<string, string> = {
-                VRCX_communityThemeId: 'theme-a',
-                VRCX_communityThemeCssSnapshot: '',
-                VRCX_communityThemeOverrideCss: '.override{}',
-                VRCX_themeColor: 'blue',
-                ThemeMode: 'dark'
-            };
-            return Promise.resolve(values[key] ?? String(fallback ?? ''));
-        });
-        mocks.getObject.mockImplementation((key: string) => {
-            if (key === 'VRCX_communityThemeInstalledThemes') {
-                return Promise.resolve([
-                    staleRecord,
-                    validRecord,
-                    legacyApodRecord
-                ]);
-            }
-            return Promise.resolve(null);
-        });
-
         const { service, useCommunityThemeStore } =
             await loadCommunityThemeService();
+
         await service.initializeCommunityThemes();
 
         expect(useCommunityThemeStore.getState()).toMatchObject({
             enabled: true,
-            installedTheme: expect.objectContaining({
-                themeId: 'theme-a',
-                themeName: 'theme-a name'
-            }),
-            installedThemes: [
-                expect.objectContaining({
-                    themeId: 'theme-a'
-                })
-            ],
+            installedTheme: theme,
+            installedThemes: [theme],
             overrideCssLength: '.override{}'.length
         });
-        expect(mocks.setMany).toHaveBeenCalledWith(
-            expect.arrayContaining([
-                ['VRCX_communityThemeEnabled', 'true'],
-                ['VRCX_communityThemeId', 'theme-a'],
-                ['VRCX_communityThemeCssSnapshot', '.theme-a{}']
-            ])
-        );
         expect(mocks.setVrcxCssLayers).toHaveBeenLastCalledWith({
-            'installed-theme': '.theme-a{}',
+            'installed-theme': '.theme{}',
             'local-theme-preview': '',
             'user-override': '.override{}'
         });
@@ -364,210 +303,75 @@ describe('communityThemeService characterization', () => {
         expect(mocks.appRefreshTrayMenu).toHaveBeenCalledTimes(1);
     });
 
-    it('clears stored install state when only stale records remain', async () => {
-        const staleRecord = themeRecord('theme-stale', '.stale{}', {
-            sourceUrl: 'https://old.example.test/theme.css'
-        });
-        mocks.getBool.mockImplementation((key: string) =>
-            Promise.resolve(key === 'VRCX_communityThemeEnabled')
+    it('sends mutations to Rust and applies only returned projections', async () => {
+        const theme = installedTheme('theme-b');
+        let revision = 0;
+        mocks.appCommunityThemeConfigure.mockImplementation(
+            (input: CommunityThemeConfigureInput) => {
+                revision += 1;
+                if (input.kind === 'install') {
+                    return Promise.resolve(
+                        projection(revision, {
+                            enabled: true,
+                            installedTheme: theme,
+                            installedThemes: [theme],
+                            installedCssSnapshot: '.theme-b{}'
+                        })
+                    );
+                }
+                return Promise.resolve(
+                    projection(revision, {
+                        overrideCss:
+                            input.kind === 'setOverride' ? input.cssText : '',
+                        overrideCssEnabled:
+                            input.kind === 'setOverride' &&
+                            Boolean(input.cssText)
+                    })
+                );
+            }
         );
-        mocks.getObject.mockImplementation((key: string) =>
-            Promise.resolve(
-                key === 'VRCX_communityThemeInstalledThemes'
-                    ? [staleRecord]
-                    : null
-            )
-        );
-
         const { service, useCommunityThemeStore } =
             await loadCommunityThemeService();
-        await service.initializeCommunityThemes();
 
-        expect(mocks.setBool).toHaveBeenCalledWith(
-            'VRCX_communityThemeEnabled',
-            false
-        );
-        expect(mocks.remove).toHaveBeenCalledWith('VRCX_communityThemeId');
-        expect(mocks.remove).toHaveBeenCalledWith(
-            'VRCX_communityThemeInstalledThemes'
-        );
-        expect(useCommunityThemeStore.getState()).toMatchObject({
-            enabled: false,
-            installedTheme: null,
-            installedThemes: []
-        });
-    });
-
-    it('installs and enables community themes with persisted CSS snapshots', async () => {
-        const { service, useCommunityThemeStore } =
-            await loadCommunityThemeService();
-        mocks.getObject.mockResolvedValue([]);
-        mocks.loadCommunityThemeCss.mockResolvedValue('.theme-b{}');
-
-        const metadata = await service.installCommunityTheme(
-            manifest('theme-b', {
+        await expect(
+            service.installCommunityTheme({
+                id: 'theme-b',
+                name: 'Untrusted frontend metadata',
+                version: '0',
+                author: { name: 'Tester', github: 'tester' },
+                description: '',
+                tags: [],
+                testedWith: '',
+                remoteAssets: false,
                 darkMode: false,
-                accentMode: true
+                accentMode: true,
+                previewUrl: '',
+                readmeUrl: ''
             })
-        );
-
-        expect(metadata).toMatchObject({
-            themeId: 'theme-b',
-            themeName: 'theme-b name',
-            version: '1.0.0',
-            sourceUrl: `${CATALOG_URL}/theme-b/${CSS_FILE_NAME}`,
-            installedAt: '2026-05-02T03:04:05.000Z',
-            updatedAt: '2026-05-02T03:04:05.000Z',
-            darkMode: false,
-            accentMode: true
-        });
-        expect(mocks.disableBackgroundImage).toHaveBeenCalledWith({
-            restoreAppTheme: false
-        });
-        expect(mocks.setMany).toHaveBeenCalledWith(
-            expect.arrayContaining([
-                ['VRCX_communityThemeEnabled', 'true'],
-                ['VRCX_communityThemeId', 'theme-b'],
-                ['VRCX_communityThemeCssSnapshot', '.theme-b{}']
-            ])
-        );
-        expect(useCommunityThemeStore.getState().installedTheme).toMatchObject({
+        ).resolves.toEqual(theme);
+        expect(mocks.appCommunityThemeConfigure).toHaveBeenCalledWith({
+            kind: 'install',
             themeId: 'theme-b'
         });
-
-        mocks.getObject.mockResolvedValue([
-            themeRecord('theme-a', '.theme-a{}'),
-            themeRecord('theme-b', '.theme-b{}')
-        ]);
-        await service.enableInstalledCommunityTheme('theme-a');
-
-        expect(useCommunityThemeStore.getState().installedTheme).toMatchObject({
-            themeId: 'theme-a'
-        });
-        expect(mocks.setVrcxCssLayers).toHaveBeenLastCalledWith(
-            expect.objectContaining({
-                'installed-theme': '.theme-a{}'
-            })
-        );
-    });
-
-    it('disables and deletes installed theme records without losing remaining records', async () => {
-        const { service, useCommunityThemeStore } =
-            await loadCommunityThemeService();
-        const themeA = themeRecord('theme-a', '.theme-a{}');
-        const themeB = themeRecord('theme-b', '.theme-b{}');
-        mocks.getObject.mockResolvedValue([themeA, themeB]);
-        useCommunityThemeStore.getState().hydrate({
-            catalogUrl: CATALOG_URL,
-            enabled: true,
-            installedTheme: themeB,
-            installedThemes: [themeA, themeB],
-            overrideCssLength: 0,
-            localPreview: null
-        });
-
-        await service.disableInstalledCommunityTheme();
-
-        expect(useCommunityThemeStore.getState()).toMatchObject({
-            enabled: false,
-            installedTheme: null,
-            installedThemes: [
-                expect.objectContaining({ themeId: 'theme-a' }),
-                expect.objectContaining({ themeId: 'theme-b' })
-            ]
-        });
-        expect(mocks.setBool).toHaveBeenCalledWith(
-            'VRCX_communityThemeEnabled',
-            false
-        );
-        expect(mocks.setVrcxCssLayers).toHaveBeenLastCalledWith(
-            expect.objectContaining({
-                'installed-theme': ''
-            })
-        );
-
-        useCommunityThemeStore.getState().hydrate({
-            catalogUrl: CATALOG_URL,
-            enabled: true,
-            installedTheme: themeB,
-            installedThemes: [themeA, themeB],
-            overrideCssLength: 0,
-            localPreview: null
-        });
-        await service.deleteInstalledCommunityTheme('theme-b');
-
-        expect(useCommunityThemeStore.getState()).toMatchObject({
-            enabled: false,
-            installedTheme: null,
-            installedThemes: [expect.objectContaining({ themeId: 'theme-a' })]
-        });
-    });
-
-    it('persists override CSS and toggles its layer independently', async () => {
-        const { service, useCommunityThemeStore } =
-            await loadCommunityThemeService();
+        expect(useCommunityThemeStore.getState().installedTheme).toEqual(theme);
 
         await service.saveCommunityThemeOverrideCss('.override{}');
-
-        expect(mocks.setString).toHaveBeenCalledWith(
-            'VRCX_communityThemeOverrideCss',
-            '.override{}'
-        );
-        expect(mocks.setBool).toHaveBeenCalledWith(
-            'VRCX_communityThemeOverrideEnabled',
-            true
-        );
+        expect(mocks.appCommunityThemeConfigure).toHaveBeenLastCalledWith({
+            kind: 'setOverride',
+            cssText: '.override{}'
+        });
         expect(service.getCommunityThemeOverrideCssSnapshot()).toBe(
             '.override{}'
         );
-        expect(useCommunityThemeStore.getState().overrideCssLength).toBe(
-            '.override{}'.length
-        );
-        expect(mocks.setVrcxCssLayers).toHaveBeenLastCalledWith(
-            expect.objectContaining({
-                'user-override': '.override{}'
-            })
-        );
 
         await service.disableCommunityThemeOverrideCss();
-
-        expect(mocks.setBool).toHaveBeenCalledWith(
-            'VRCX_communityThemeOverrideEnabled',
-            false
-        );
+        expect(mocks.appCommunityThemeConfigure).toHaveBeenLastCalledWith({
+            kind: 'disableOverride'
+        });
         expect(useCommunityThemeStore.getState().overrideCssLength).toBe(0);
-        expect(mocks.setVrcxCssLayers).toHaveBeenLastCalledWith(
-            expect.objectContaining({
-                'user-override': ''
-            })
-        );
     });
 
-    it('clears override CSS through the same persistence and layer path', async () => {
-        const { service, useCommunityThemeStore } =
-            await loadCommunityThemeService();
-
-        await service.saveCommunityThemeOverrideCss('.override{}');
-        await service.clearCommunityThemeOverrideCss();
-
-        expect(mocks.setString).toHaveBeenLastCalledWith(
-            'VRCX_communityThemeOverrideCss',
-            ''
-        );
-        expect(mocks.setBool).toHaveBeenLastCalledWith(
-            'VRCX_communityThemeOverrideEnabled',
-            false
-        );
-        expect(service.getCommunityThemeOverrideCssSnapshot()).toBe('');
-        expect(useCommunityThemeStore.getState().overrideCssLength).toBe(0);
-        expect(mocks.setVrcxCssLayers).toHaveBeenLastCalledWith(
-            expect.objectContaining({
-                'user-override': ''
-            })
-        );
-    });
-
-    it('loads local previews, rewrites relative asset URLs, and clears the watch timer', async () => {
+    it('loads local previews, rewrites relative URLs, and clears the watch timer', async () => {
         const { service, useCommunityThemeStore } =
             await loadCommunityThemeService();
         mocks.appCommunityThemeDebugLoadLocalTheme.mockResolvedValue({
@@ -591,8 +395,6 @@ describe('communityThemeService characterization', () => {
         expect(preview).toMatchObject({
             folderPath: 'C:\\themes\\local',
             themeName: 'Local Theme',
-            darkMode: false,
-            accentMode: false,
             loadedAt: '2026-05-02T03:04:05.000Z'
         });
         const previewLayer =
@@ -606,7 +408,6 @@ describe('communityThemeService characterization', () => {
         expect(previewLayer).toContain('url(#mask)');
 
         service.startLocalCommunityThemePreviewWatch(' C:\\themes\\local ');
-
         expect(
             useCommunityThemeStore.getState().localPreviewWatch
         ).toMatchObject({
@@ -620,14 +421,7 @@ describe('communityThemeService characterization', () => {
         );
 
         service.stopLocalCommunityThemePreviewWatch();
-
         expect(window.clearInterval).toHaveBeenCalledTimes(1);
-        expect(
-            useCommunityThemeStore.getState().localPreviewWatch
-        ).toMatchObject({
-            enabled: false,
-            error: null
-        });
     });
 
     it('blocks local preview outside dev tools builds', async () => {
@@ -642,27 +436,5 @@ describe('communityThemeService characterization', () => {
         expect(
             mocks.appCommunityThemeDebugLoadLocalTheme
         ).not.toHaveBeenCalled();
-    });
-
-    it('records local preview watch reload errors in the store', async () => {
-        mocks.appCommunityThemeDebugLoadLocalTheme.mockRejectedValueOnce(
-            new Error('manifest missing')
-        );
-        const { service, useCommunityThemeStore } =
-            await loadCommunityThemeService();
-
-        service.startLocalCommunityThemePreviewWatch('C:\\themes\\broken');
-        await Promise.resolve();
-        await Promise.resolve();
-
-        expect(
-            useCommunityThemeStore.getState().localPreviewWatch
-        ).toMatchObject({
-            enabled: true,
-            folderPath: 'C:\\themes\\broken',
-            error: 'manifest missing'
-        });
-
-        service.stopLocalCommunityThemePreviewWatch();
     });
 });

@@ -80,6 +80,14 @@ pub fn app__write_config_file(json: String) -> Result<(), AppError> {
 
 #[tauri::command]
 #[specta::specta]
+pub fn app__disable_vrchat_rich_presence(
+) -> Result<shell_actions::VrchatRichPresenceDisableResult, AppError> {
+    require_host_capability(HostCapability::VrchatPathDiscovery)?;
+    Ok(shell_actions::disable_vrchat_rich_presence()?)
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn app__vrchat_cache_location_would_change(json: String) -> Result<bool, AppError> {
     require_host_capability(HostCapability::VrchatPathDiscovery)?;
     let normalized_json = shell_actions::normalize_config_file_json(&json)?;

@@ -7,7 +7,7 @@ import {
     SettingsIcon,
     WaypointsIcon
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Location } from '@/components/Location';
@@ -62,10 +62,24 @@ type DashboardGameLogRow = {
     worldId?: string;
     worldName?: string;
     data?: string;
+    message?: string;
+    isFavorite?: boolean;
+    isFriend?: boolean;
     [key: string]: unknown;
 };
 
-function openGameLogWidgetUser(row: any) {
+type DashboardGameLogWidgetProps = {
+    config?: Record<string, unknown>;
+    configUpdater?: ((nextConfig: Record<string, unknown>) => void) | null;
+};
+
+type DashboardGameLogLoadStatus = 'idle' | 'running' | 'ready' | 'error';
+
+function isDashboardGameLogRow(value: unknown): value is DashboardGameLogRow {
+    return typeof value === 'object' && value !== null;
+}
+
+function openGameLogWidgetUser(row: DashboardGameLogRow) {
     const userId = normalizeString(row?.userId);
     if (!userId) {
         return;
@@ -77,7 +91,13 @@ function openGameLogWidgetUser(row: any) {
     });
 }
 
-function GameLogWidgetUserName({ row, className = '' }: any) {
+function GameLogWidgetUserName({
+    row,
+    className = ''
+}: {
+    row: DashboardGameLogRow;
+    className?: string;
+}) {
     const displayName = row?.displayName || '';
     const userId = normalizeString(row?.userId);
     if (!userId) {
@@ -99,7 +119,7 @@ function GameLogWidgetUserName({ row, className = '' }: any) {
     );
 }
 
-function GameLogWidgetLocation({ row }: any) {
+function GameLogWidgetLocation({ row }: { row: DashboardGameLogRow }) {
     if (!row?.location) {
         return (
             <span className="text-muted-foreground">
@@ -121,7 +141,13 @@ function GameLogWidgetLocation({ row }: any) {
     );
 }
 
-function GameLogEntryContent({ row, showDetail }: any) {
+function GameLogEntryContent({
+    row,
+    showDetail
+}: {
+    row: DashboardGameLogRow;
+    showDetail: boolean;
+}) {
     switch (row?.type) {
         case 'Location':
             return (
@@ -235,7 +261,7 @@ function GameLogEntryContent({ row, showDetail }: any) {
 export function DashboardGameLogWidget({
     config = {},
     configUpdater = null
-}: any) {
+}: DashboardGameLogWidgetProps) {
     const { t } = useTranslation();
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const addGameLogEventCount = useRuntimeStore(
@@ -249,7 +275,8 @@ export function DashboardGameLogWidget({
     );
 
     const [rows, setRows] = useState<DashboardGameLogRow[]>([]);
-    const [loadStatus, setLoadStatus] = useState('idle');
+    const [loadStatus, setLoadStatus] =
+        useState<DashboardGameLogLoadStatus>('idle');
     const [detail, setDetail] = useState('');
 
     const favoriteIdSet = useMemo(
@@ -277,14 +304,16 @@ export function DashboardGameLogWidget({
                 currentUserId,
                 filters: Array.isArray(config.filters) ? config.filters : []
             })
-            .then((nextRows: any) => {
+            .then((nextRows: unknown) => {
                 if (!active) {
                     return;
                 }
 
                 setRows(
                     Array.isArray(nextRows)
-                        ? nextRows.slice(0, GAME_LOG_WIDGET_MAX_ROWS)
+                        ? nextRows
+                              .filter(isDashboardGameLogRow)
+                              .slice(0, GAME_LOG_WIDGET_MAX_ROWS)
                         : []
                 );
                 setLoadStatus('ready');
@@ -312,7 +341,7 @@ export function DashboardGameLogWidget({
 
     const annotatedRows = useMemo(
         () =>
-            rows.map((row: any) => {
+            rows.map((row) => {
                 const normalizedUserId = normalizeString(row?.userId);
                 return {
                     ...row,
@@ -381,7 +410,7 @@ export function DashboardGameLogWidget({
             </DropdownMenuContent>
         </DropdownMenu>
     ) : null;
-    const renderShell = (children: any) => (
+    const renderShell = (children: ReactNode) => (
         <div className="flex h-full min-h-0 flex-col">
             <DashboardWidgetHeader
                 title={t('dashboard.widget.game_log')}
@@ -457,7 +486,7 @@ export function DashboardGameLogWidget({
             <div className="min-h-0 flex-1 overflow-auto">
                 <Table className="app-data-table table-fixed">
                     <TableBody>
-                        {annotatedRows.map((row: any, index: any) => {
+                        {annotatedRows.map((row, index) => {
                             return (
                                 <TableRow
                                     key={`${row.type || 'gamelog'}-${row.created_at || index}-${index}`}

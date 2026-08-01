@@ -8,8 +8,7 @@ import {
 import {
     DEFAULT_TRANSLATION_ENDPOINT,
     DEFAULT_TRANSLATION_MODEL,
-    DISCORD_BOOL_PREFERENCE_KEYS,
-    VRCHAT_RICH_PRESENCE_CONFIG_KEY
+    DISCORD_BOOL_PREFERENCE_KEYS
 } from './preferencesConstants';
 import {
     normalizeBioLanguage,
@@ -111,12 +110,10 @@ export async function setDiscordBoolPreference(
         throw new Error(`Unsupported Discord preference: ${key}`);
     }
     const enabled = value;
-    await configRepository.setBool(key, enabled);
     if (key === 'discordActive' && enabled) {
-        await disableVrchatRichPresence().catch((error: unknown) => {
-            console.warn('Failed to disable VRChat Rich Presence:', error);
-        });
+        await commands.appDisableVrchatRichPresence();
     }
+    await configRepository.setBool(key, enabled);
     patchPreferences({ [key]: enabled });
     publishPreferenceChanged(key, enabled);
     commands.appRuntimeDiscordReconcileRequest().catch((error: unknown) => {
@@ -126,23 +123,4 @@ export async function setDiscordBoolPreference(
         );
     });
     return enabled;
-}
-
-async function disableVrchatRichPresence() {
-    const rawConfig = await commands.appReadConfigFile();
-    const config = rawConfig ? JSON.parse(String(rawConfig)) : {};
-    if (config?.[VRCHAT_RICH_PRESENCE_CONFIG_KEY] === true) {
-        return;
-    }
-
-    await commands.appWriteConfigFile(
-        JSON.stringify(
-            {
-                ...config,
-                [VRCHAT_RICH_PRESENCE_CONFIG_KEY]: true
-            },
-            null,
-            2
-        )
-    );
 }

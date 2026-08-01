@@ -6,7 +6,10 @@ use std::time::{Duration, Instant};
 use crate::adapters::log_watcher::LogWatcherCompatBridge;
 use crate::deep_link::PendingDeepLinks;
 use crate::error::AppError;
-use vrcx_0_application::DatabaseUpgradeRuntime;
+use vrcx_0_application::{
+    DatabaseUpgradeRuntime, FriendLogNameResolutionCoordinator, GroupModerationBatchCoordinator,
+    RemoteMutationGate,
+};
 use vrcx_0_application_core::UpdaterPort;
 use vrcx_0_harness::AssistantController;
 use vrcx_0_host::app_paths::AppDataDirResolution;
@@ -21,6 +24,9 @@ pub struct AppState {
     pub log_watcher_compat_bridge: LogWatcherCompatBridge,
     pub pending_deep_links: PendingDeepLinks,
     pub database_upgrade: DatabaseUpgradeRuntime,
+    pub group_moderation_batches: GroupModerationBatchCoordinator,
+    pub friend_log_name_resolutions: FriendLogNameResolutionCoordinator,
+    pub remote_mutations: RemoteMutationGate,
     assistant: tokio::sync::OnceCell<AssistantController>,
     background_resume_route: Mutex<Option<String>>,
     pub(crate) background_delay_generation: AtomicU64,
@@ -73,6 +79,9 @@ impl AppState {
             log_watcher_compat_bridge,
             pending_deep_links: PendingDeepLinks::default(),
             database_upgrade,
+            group_moderation_batches: GroupModerationBatchCoordinator::default(),
+            friend_log_name_resolutions: FriendLogNameResolutionCoordinator::default(),
+            remote_mutations: RemoteMutationGate::default(),
             assistant: tokio::sync::OnceCell::new(),
             background_resume_route: Mutex::new(None),
             background_delay_generation: AtomicU64::new(0),

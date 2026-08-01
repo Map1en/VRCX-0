@@ -4,6 +4,11 @@ import { toast } from 'sonner';
 import configRepository from '@/repositories/configRepository';
 import type { ScreenshotLibraryStatus } from '@/repositories/mediaFileRepository';
 import mediaRepository from '@/repositories/mediaRepository';
+import {
+    getCurrentScreenshotLibraryScanStatus,
+    startScreenshotLibraryScan,
+    subscribeScreenshotLibraryScanStatus
+} from '@/services/screenshotLibraryScanService';
 
 import {
     getGalleryFolderPathSet,
@@ -36,6 +41,7 @@ export function useScreenshotGalleryController({
     const selectedGalleryFolderRef = useRef('');
     const galleryScrollPositionsRef = useRef<Map<string, number>>(new Map());
     const galleryScrollPersistTimerRef = useRef<number | null>(null);
+    const galleryScanActiveRef = useRef(false);
     const [folderTree, setFolderTree] = useState<unknown>(null);
     const [galleryImages, setGalleryImages] = useState<unknown[]>([]);
     const [galleryImagesFolder, setGalleryImagesFolder] = useState('');
@@ -182,27 +188,49 @@ export function useScreenshotGalleryController({
         [routeFolder, storedGalleryFolder, t]
     );
 
+    const applyScanStatus = useCallback(
+        (status: ScreenshotLibraryStatus) => {
+            setScanStatus(status);
+            setGalleryScanError(status.error || '');
+            if (status.running) {
+                galleryScanActiveRef.current = true;
+                return;
+            }
+            if (galleryScanActiveRef.current) {
+                galleryScanActiveRef.current = false;
+                void loadGalleryTree({ preferPopulated: true });
+            }
+        },
+        [loadGalleryTree]
+    );
+
     const refreshGallery = useCallback(
         async (force = false) => {
             setGalleryScanError('');
             setGalleryTreeError('');
             setGalleryImagesError('');
+            galleryScanActiveRef.current = true;
             try {
-                const status =
-                    await mediaRepository.startScreenshotLibraryScan(force);
-                setScanStatus(status || null);
-                setGalleryScanError(status?.error || '');
+                const status = await startScreenshotLibraryScan(force);
+                if (!status) {
+                    return;
+                }
+                applyScanStatus(status);
+                if (status.running) {
+                    await loadGalleryTree({ preferPopulated: force });
+                }
             } catch (error) {
+                galleryScanActiveRef.current = false;
                 const message =
                     error instanceof Error
                         ? error.message
                         : t('dialog.screenshot_metadata.scan_failed');
                 setGalleryScanError(message);
                 toast.error(message);
+                await loadGalleryTree({ preferPopulated: force });
             }
-            await loadGalleryTree({ preferPopulated: force });
         },
-        [loadGalleryTree, t]
+        [applyScanStatus, loadGalleryTree, t]
     );
 
     useEffect(() => {
@@ -211,13 +239,50 @@ export function useScreenshotGalleryController({
             !screenshotCacheStatus?.available ||
             !isGalleryFolderPreferenceLoaded
         ) {
-            return;
+            return undefined;
         }
-        refreshGallery(false);
+        let active = true;
+        const unsubscribe = subscribeScreenshotLibraryScanStatus((status) => {
+            if (active) {
+                applyScanStatus(status);
+            }
+        });
+        getCurrentScreenshotLibraryScanStatus()
+            .then((status) => {
+                if (!active || !status) {
+                    return;
+                }
+                applyScanStatus(status);
+                if (status.running) {
+                    void loadGalleryTree();
+                } else {
+                    void refreshGallery(false);
+                }
+            })
+            .catch((error: unknown) => {
+                if (!active) {
+                    return;
+                }
+                const message =
+                    error instanceof Error
+                        ? error.message
+                        : t('dialog.screenshot_metadata.scan_failed');
+                setGalleryScanError(message);
+                toast.error(message);
+            });
+        return () => {
+            active = false;
+            galleryScanActiveRef.current = false;
+            unsubscribe();
+        };
     }, [
+        applyScanStatus,
         isGalleryFolderPreferenceLoaded,
         isGalleryMode,
-        screenshotCacheStatus?.available
+        loadGalleryTree,
+        refreshGallery,
+        screenshotCacheStatus?.available,
+        t
     ]);
 
     useEffect(() => {
@@ -238,57 +303,6 @@ export function useScreenshotGalleryController({
         selectedGalleryFolder,
         storedGalleryFolder
     ]);
-
-    useEffect(() => {
-        if (!isGalleryMode || !scanStatus?.running) {
-            return undefined;
-        }
-
-        let active = true;
-        let pollInFlight = false;
-        let scanCompleted = false;
-        const timer = window.setInterval(() => {
-            if (pollInFlight || scanCompleted) {
-                return;
-            }
-            pollInFlight = true;
-            mediaRepository
-                .getScreenshotLibraryStatus()
-                .then((status) => {
-                    if (!active) {
-                        return;
-                    }
-                    setScanStatus(status || null);
-                    setGalleryScanError(status?.error || '');
-                    if (!status?.running) {
-                        scanCompleted = true;
-                        window.clearInterval(timer);
-                        loadGalleryTree({ preferPopulated: true });
-                    }
-                })
-                .catch((error: unknown) => {
-                    if (!active) {
-                        return;
-                    }
-                    const message =
-                        error instanceof Error
-                            ? error.message
-                            : t('dialog.screenshot_metadata.scan_failed');
-                    setGalleryScanError(message);
-                    setScanStatus((current) =>
-                        current ? { ...current, running: false } : current
-                    );
-                })
-                .finally(() => {
-                    pollInFlight = false;
-                });
-        }, 1000);
-
-        return () => {
-            active = false;
-            window.clearInterval(timer);
-        };
-    }, [isGalleryMode, loadGalleryTree, scanStatus?.running, t]);
 
     useEffect(() => {
         if (!isGalleryMode || !selectedGalleryFolder) {

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
     buildSameInstanceFriendGroups,
+    resolveObservedPlayerDwellEpochs,
     resolveObservedPlayerUserId,
     resolveObservedPlayerUserIds,
     resolveSameInstanceFriendLocation
@@ -199,5 +200,25 @@ describe('sameInstanceFriends', () => {
                 friendsById
             )
         ).toEqual(['usr_known', 'usr_friend']);
+    });
+
+    it('indexes persisted join times by the resolved friend id', () => {
+        expect(
+            resolveObservedPlayerDwellEpochs(
+                [
+                    {
+                        userId: '',
+                        displayName: 'Exact Friend',
+                        joinedAtMs: 1_700_000_000_000
+                    }
+                ],
+                {
+                    usr_friend: {
+                        id: 'usr_friend',
+                        displayName: 'Exact Friend'
+                    }
+                }
+            )
+        ).toEqual(new Map([['usr_friend', 1_700_000_000_000]]));
     });
 });

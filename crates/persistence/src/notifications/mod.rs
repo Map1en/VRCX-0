@@ -13,3 +13,6 @@ pub use write::{
     notification_friend_requests_sync, notification_mark_seen_local_bulk,
     notification_update_expired, notification_v2_expire, notification_v2_mark_seen,
 };
+
+#[cfg(test)]
+mod query_integration_tests;

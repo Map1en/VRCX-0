@@ -104,37 +104,68 @@ pub struct FeedLiveRowsMergeInput {
 #[derive(Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FeedReadModelOutput {
-    pub rows: Vec<RawJson>,
+    pub rows: Vec<FeedRowOutput>,
     pub max_sequence: i64,
 }
 
-#[derive(Debug, Serialize, specta::Type)]
+#[derive(Clone, Debug, Default, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct FeedRowOutput {
-    #[serde(rename = "rowId")]
-    pub row_id: RawJson,
-    #[serde(rename = "sourceRank")]
-    pub source_rank: RawJson,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub row_id: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_rank: Option<i64>,
     #[serde(rename = "created_at")]
-    pub created_at: RawJson,
-    pub user_id: RawJson,
-    pub display_name: RawJson,
-    pub r#type: RawJson,
-    pub location: RawJson,
-    pub world_name: RawJson,
-    pub previous_location: RawJson,
-    pub time: RawJson,
-    pub group_name: RawJson,
-    pub status: RawJson,
-    pub status_description: RawJson,
-    pub previous_status: RawJson,
-    pub previous_status_description: RawJson,
-    pub bio: RawJson,
-    pub previous_bio: RawJson,
-    pub owner_id: RawJson,
-    pub avatar_name: RawJson,
-    pub current_avatar_image_url: RawJson,
-    pub current_avatar_thumbnail_image_url: RawJson,
-    pub previous_current_avatar_image_url: RawJson,
-    pub previous_current_avatar_thumbnail_image_url: RawJson,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub created_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub user_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub r#type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub location: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub world_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub previous_location: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub time: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub group_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status_description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub previous_status: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub previous_status_description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bio: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub previous_bio: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub owner_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avatar_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub current_avatar_image_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub current_avatar_thumbnail_image_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub current_avatar_tags: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub previous_owner_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub previous_avatar_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub previous_current_avatar_image_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub previous_current_avatar_thumbnail_image_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub previous_current_avatar_tags: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub owner_user_id: Option<String>,
 }

@@ -12,7 +12,7 @@ use crate::realtime::{
     RealtimeSessionContext,
 };
 
-use super::state::ActiveRealtimeContext;
+use super::state::{ActiveRealtimeContext, CurrentUserRefreshStatus};
 use super::RealtimeHostRuntime;
 
 #[derive(Clone, Copy, Debug)]
@@ -184,8 +184,8 @@ impl RealtimeHostRuntime {
 
     pub async fn refresh_current_user_now(self: &Arc<Self>, overlay_patch: Value) -> Result<bool> {
         enum RefreshFlight {
-            Leader(watch::Sender<Option<std::result::Result<bool, String>>>),
-            Follower(watch::Receiver<Option<std::result::Result<bool, String>>>),
+            Leader(watch::Sender<CurrentUserRefreshStatus>),
+            Follower(watch::Receiver<CurrentUserRefreshStatus>),
         }
 
         let flight = {

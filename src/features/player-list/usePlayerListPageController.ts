@@ -1,6 +1,6 @@
+import { useCurrentInstanceRoster } from '@/lib/useCurrentInstanceRoster';
 import { parseLocation } from '@/shared/utils/location';
 
-import { useCurrentPlayerRows } from './useCurrentPlayerRows';
 import { usePlayerListActions } from './usePlayerListActions';
 import { usePlayerListClock } from './usePlayerListClock';
 import { usePlayerListLogLocation } from './usePlayerListLogLocation';
@@ -24,12 +24,18 @@ export function usePlayerListPageController() {
         runtime.currentLocationStartedAt ||
         logLocationSnapshot?.createdAt ||
         '';
-    const rowsState = useCurrentPlayerRows({
-        ...runtime,
+    const rowsState = useCurrentInstanceRoster({
+        currentUserEndpoint: runtime.currentUserEndpoint,
+        currentUserId: runtime.currentUserId,
+        currentUserSnapshot: runtime.currentUserSnapshot,
+        disabled: runtime.gameLogDisabled,
+        isGameRunning: runtime.isGameRunning,
         logLocationSnapshot,
         playerListLocation,
         playerListStartedAt,
-        playerListWorldId
+        playerListWorldId,
+        refreshRevision: runtime.addGameLogEventCount,
+        tailSyncRevision: runtime.gameLogTailSyncedAt
     });
     const instanceSnapshot = rowsState.context;
     const moderationByUserId = usePlayerListModeration(runtime.currentUserId);

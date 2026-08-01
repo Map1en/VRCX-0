@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import type { FeedReadModelResult } from '@/domain/feed/feedReadModelTypes';
 import feedRepository from '@/repositories/feedRepository';
 import friendLogRepository from '@/repositories/friendLogRepository';
 import gameLogRepository from '@/repositories/gameLogRepository';
@@ -11,6 +10,12 @@ import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
+import type { FeedLiveMergeOptionsBuilder } from './feedLiveMerge';
+import {
+    mergeFeedRowsWithLiveEntries,
+    prepareFeedRowsForCommit
+} from './feedLiveMerge';
+import { subscribeFeedLiveMerge } from './feedLiveMergeScheduler';
 import {
     buildFeedFavoriteIdSet as buildFavoriteIdSet,
     normalizeFeedId as normalizeId,
@@ -69,6 +74,7 @@ export function useFeedRows({
     const lastLiveFeedSequenceRef = useRef(0);
     const rowsRef = useRef(rows);
     const liveMergeRequestIdRef = useRef(0);
+    const unresolvedUserIdsRef = useRef<Set<string>>(new Set());
 
     const favoriteIdSet = useMemo(
         () =>
@@ -85,85 +91,27 @@ export function useFeedRows({
         rowsRef.current = rows;
     }, [rows]);
 
-    async function mergeRowsWithLatestLive({
-        rows,
-        minLiveSequence,
+    function createMergeOptionsBuilder({
         excludedUserIds,
-        favoriteUserIds,
-        requestIsCurrent
+        favoriteUserIds
     }: {
-        rows: FeedRow[];
-        minLiveSequence: number;
         excludedUserIds: unknown[];
         favoriteUserIds: unknown[];
-        requestIsCurrent(): boolean;
-    }): Promise<FeedReadModelResult<FeedRow> | null> {
-        let result: FeedReadModelResult<FeedRow> = {
+    }): FeedLiveMergeOptionsBuilder {
+        return ({ liveEntries, minLiveSequence, rows }) => ({
             rows,
-            maxSequence: minLiveSequence
-        };
-        let previousMaxSequence = minLiveSequence;
-        while (requestIsCurrent()) {
-            const liveFeedSnapshot = useFeedLiveStore.getState();
-            result = await feedRepository.mergeLiveRows({
-                rows: result.rows,
-                userId: currentUserId,
-                search: deferredSearchQuery,
-                filters: activeFilters,
-                excludedFavoriteUserIds: excludedUserIds,
-                favoriteUserIds,
-                dateFrom: toIsoRangeStart(dateFrom),
-                dateTo: toIsoRangeEnd(dateTo),
-                liveEntries: liveFeedSnapshot.entries,
-                minLiveSequence: result.maxSequence,
-                favoritesOnly,
-                maxRows: maxFeedRows
-            });
-            if (!requestIsCurrent()) {
-                return null;
-            }
-            const liveVersion = useFeedLiveStore.getState().version;
-            if (
-                liveVersion <= result.maxSequence ||
-                result.maxSequence <= previousMaxSequence
-            ) {
-                return result;
-            }
-            previousMaxSequence = result.maxSequence;
-        }
-        return null;
-    }
-
-    async function prepareFullQueryRowsForCommit({
-        result,
-        excludedUserIds,
-        favoriteUserIds,
-        requestIsCurrent
-    }: {
-        result: FeedReadModelResult<FeedRow>;
-        excludedUserIds: unknown[];
-        favoriteUserIds: unknown[];
-        requestIsCurrent(): boolean;
-    }) {
-        let nextResult = result;
-        while (requestIsCurrent()) {
-            liveMergeRequestIdRef.current += 1;
-            if (useFeedLiveStore.getState().version <= nextResult.maxSequence) {
-                return nextResult;
-            }
-            const mergedResult = await mergeRowsWithLatestLive({
-                rows: nextResult.rows,
-                excludedUserIds,
-                favoriteUserIds,
-                minLiveSequence: nextResult.maxSequence,
-                requestIsCurrent
-            });
-            if (!mergedResult) {
-                return null;
-            }
-            nextResult = mergedResult;
-        }
-        return null;
+            userId: currentUserId,
+            search: deferredSearchQuery,
+            filters: activeFilters,
+            excludedFavoriteUserIds: excludedUserIds,
+            favoriteUserIds,
+            dateFrom: toIsoRangeStart(dateFrom),
+            dateTo: toIsoRangeEnd(dateTo),
+            liveEntries,
+            minLiveSequence,
+            favoritesOnly,
+            maxRows: maxFeedRows
+        });
     }
 
     useEffect(() => {
@@ -172,6 +120,7 @@ export function useFeedRows({
 
     useEffect(() => {
         let active = true;
+        unresolvedUserIdsRef.current = new Set();
         const normalizedCurrentUserId = normalizeId(currentUserId);
         if (!normalizedCurrentUserId) {
             setFriendLogNamesById({});
@@ -209,14 +158,15 @@ export function useFeedRows({
     }, [currentUserId, friendRosterLastLoadedAt]);
 
     useEffect(() => {
-        const missingUserIds = [];
+        const missingUserIds: string[] = [];
         const seenUserIds = new Set<string>();
         for (const row of rows) {
             const userId = resolveFeedUserId(row);
             if (
                 !userId ||
                 friendLogNamesById[userId] ||
-                seenUserIds.has(userId)
+                seenUserIds.has(userId) ||
+                unresolvedUserIdsRef.current.has(userId)
             ) {
                 continue;
             }
@@ -241,20 +191,31 @@ export function useFeedRows({
                 if (!active) {
                     return;
                 }
+                const resolvedNamesById: Record<string, string> = {};
+                for (const row of Array.isArray(statsRows) ? statsRows : []) {
+                    const userId = normalizeId(row?.userId);
+                    const displayName = resolveDisplayNameCandidate(
+                        row?.displayName,
+                        userId
+                    );
+                    if (userId && displayName) {
+                        resolvedNamesById[userId] = displayName;
+                    }
+                }
+                for (const userId of missingUserIds) {
+                    if (!resolvedNamesById[userId]) {
+                        unresolvedUserIdsRef.current.add(userId);
+                    }
+                }
                 setFriendLogNamesById((current) => {
                     let changed = false;
                     const nextNamesById = {
                         ...current
                     };
-                    for (const row of Array.isArray(statsRows)
-                        ? statsRows
-                        : []) {
-                        const userId = normalizeId(row?.userId);
-                        const displayName = resolveDisplayNameCandidate(
-                            row?.displayName,
-                            userId
-                        );
-                        if (userId && displayName && !nextNamesById[userId]) {
+                    for (const [userId, displayName] of Object.entries(
+                        resolvedNamesById
+                    )) {
+                        if (!nextNamesById[userId]) {
                             nextNamesById[userId] = displayName;
                             changed = true;
                         }
@@ -308,21 +269,26 @@ export function useFeedRows({
                 if (requestIdRef.current !== requestId) {
                     return;
                 }
-                const mergedResult = await mergeRowsWithLatestLive({
-                    rows: result.rows,
+                const buildMergeOptions = createMergeOptionsBuilder({
                     excludedUserIds: hiddenUserIds,
-                    favoriteUserIds,
+                    favoriteUserIds
+                });
+                const mergedResult = await mergeFeedRowsWithLiveEntries({
+                    buildMergeOptions,
                     minLiveSequence: result.maxSequence,
-                    requestIsCurrent: () => requestIdRef.current === requestId
+                    requestIsCurrent: () => requestIdRef.current === requestId,
+                    rows: result.rows
                 });
                 if (!mergedResult || requestIdRef.current !== requestId) {
                     return;
                 }
-                const commitResult = await prepareFullQueryRowsForCommit({
-                    result: mergedResult,
-                    excludedUserIds: hiddenUserIds,
-                    favoriteUserIds,
-                    requestIsCurrent: () => requestIdRef.current === requestId
+                const commitResult = await prepareFeedRowsForCommit({
+                    buildMergeOptions,
+                    onMergeRound: () => {
+                        liveMergeRequestIdRef.current += 1;
+                    },
+                    requestIsCurrent: () => requestIdRef.current === requestId,
+                    result: mergedResult
                 });
                 if (!commitResult || requestIdRef.current !== requestId) {
                     return;
@@ -365,23 +331,21 @@ export function useFeedRows({
         if (!preferencesReady || !currentUserId) {
             return undefined;
         }
-        return useFeedLiveStore.subscribe((state, previousState) => {
-            if (
-                state.version === previousState?.version ||
-                state.entries.length === 0
-            ) {
-                return;
-            }
+        return subscribeFeedLiveMerge(() => {
             const mergeRequestId = liveMergeRequestIdRef.current + 1;
             liveMergeRequestIdRef.current = mergeRequestId;
             const minLiveSequence = lastLiveFeedSequenceRef.current;
-            mergeRowsWithLatestLive({
-                rows: rowsRef.current,
-                excludedUserIds: hiddenUserIds,
-                favoriteUserIds: favoritesOnly ? Array.from(favoriteIdSet) : [],
+            mergeFeedRowsWithLiveEntries({
+                buildMergeOptions: createMergeOptionsBuilder({
+                    excludedUserIds: hiddenUserIds,
+                    favoriteUserIds: favoritesOnly
+                        ? Array.from(favoriteIdSet)
+                        : []
+                }),
                 minLiveSequence,
                 requestIsCurrent: () =>
-                    liveMergeRequestIdRef.current === mergeRequestId
+                    liveMergeRequestIdRef.current === mergeRequestId,
+                rows: rowsRef.current
             })
                 .then((result) => {
                     if (!result) {

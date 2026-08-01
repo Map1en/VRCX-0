@@ -260,7 +260,16 @@ export function annotateGameLogSessionEvent(
 export function collectGameLogSessionFriends(
     events: readonly GameLogSessionEvent[] = []
 ) {
-    const seen = new Map<string, GameLogSessionMember & { key: string }>();
+    const seen = new Map<
+        string,
+        {
+            key: string;
+            id: string;
+            userId: string;
+            displayName: string;
+            isFavorite: boolean;
+        }
+    >();
     for (const event of events) {
         const candidates =
             Array.isArray(event?.members) && event.members.length > 0

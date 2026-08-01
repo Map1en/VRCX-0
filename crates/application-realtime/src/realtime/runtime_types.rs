@@ -55,14 +55,22 @@ impl FriendBaselineSyncOutcome {
 
     pub(crate) fn accepted(
         result: FriendBaselineResult,
-        snapshot: Option<RealtimeFriendSnapshot>,
+        snapshot: RealtimeFriendSnapshot,
         friend_log_changed: bool,
     ) -> Self {
         Self {
             result,
-            snapshot,
+            snapshot: Some(snapshot),
             friend_log_changed,
         }
+    }
+
+    pub(crate) fn into_result(self) -> FriendBaselineResult {
+        self.result
+    }
+
+    pub(crate) fn accepted_snapshot(&self) -> Option<&RealtimeFriendSnapshot> {
+        self.snapshot.as_ref().filter(|_| self.result.accepted)
     }
 }
 

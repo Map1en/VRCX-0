@@ -1,4 +1,7 @@
-import type { AppDataDirState } from '@/platform/tauri/bindings';
+import type {
+    AppDataDirState,
+    AvatarFeedCleanupOutcome
+} from '@/platform/tauri/bindings';
 import { formatDataDirMigrationBytes } from '@/services/dataDirMigrationI18n';
 import {
     cleanupMigratedDataDir,
@@ -54,22 +57,15 @@ type SettingsToast = {
     warning(message: string, options?: { duration?: number }): unknown;
 };
 type SettingsMaintenanceActionsDeps = {
-    auth: {
-        currentUserId?: unknown;
-    };
     commit: (
         action: PreferenceAction,
         optimistic?: () => PreferenceRollback
     ) => Promise<boolean>;
     confirm: (options: SettingsConfirmOptions) => Promise<SettingsDialogResult>;
-    databaseMaintenanceRepository: {
-        vacuum(): Promise<unknown>;
-    };
-    feedRepository: {
-        purgeAvatarFeedData(
-            userId: unknown,
+    avatarFeedHistoryRepository: {
+        cleanupAvatarFeedHistory(
             cutoffDate: string | null
-        ): Promise<unknown>;
+        ): Promise<AvatarFeedCleanupOutcome>;
     };
     gameState: {
         isGameRunning: boolean | null;
@@ -102,11 +98,9 @@ type SettingsMaintenanceActionsDeps = {
 };
 
 export function useSettingsMaintenanceActions({
-    auth,
     commit,
     confirm,
-    databaseMaintenanceRepository,
-    feedRepository,
+    avatarFeedHistoryRepository,
     gameState,
     language,
     mediaRepository,
@@ -354,18 +348,26 @@ export function useSettingsMaintenanceActions({
             }
         );
         try {
-            await feedRepository.purgeAvatarFeedData(
-                auth.currentUserId,
-                cutoffDate
-            );
-            await databaseMaintenanceRepository.vacuum();
+            const outcome =
+                await avatarFeedHistoryRepository.cleanupAvatarFeedHistory(
+                    cutoffDate
+                );
             toast.dismiss(toastId);
+            setPurgeDialogOpen(false);
+            if (outcome.status === 'optimizationFailed') {
+                toast.warning(
+                    t(
+                        'view.settings.advanced.advanced.database_cleanup.purge_optimization_failed',
+                        { error: outcome.optimizationError ?? '' }
+                    )
+                );
+                return;
+            }
             toast.success(
                 t(
                     'view.settings.advanced.advanced.database_cleanup.purge_complete'
                 )
             );
-            setPurgeDialogOpen(false);
             await new Promise<void>((resolve) =>
                 window.setTimeout(resolve, 1500)
             );

@@ -1,66 +1,18 @@
+import { collectRuntimeRosterPlayers } from '@/domain/instances/currentInstanceRoster';
 import { commands } from '@/platform/tauri/bindings';
-import playerListPersistenceRepository from '@/repositories/playerListPersistenceRepository';
+import type { GameLogProjection } from '@/platform/tauri/bindings';
 import { buildCurrentUserGameStatePresencePatch } from '@/shared/utils/currentUserPresence';
 import { normalizeLocationValue, parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 import { useInstanceJoinHistoryStore } from '@/state/instanceJoinHistoryStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
+import { loadCurrentInstanceRoster } from './currentInstanceRosterService';
 import { recordGameRuntimePresence } from './domainIngestionService';
 
 type RuntimeState = ReturnType<typeof useRuntimeStore.getState>;
 type GameStatePatch = Parameters<RuntimeState['setGameState']>[0];
-type CurrentLocationPlayer = {
-    id: string;
-    userId: string;
-    displayName: string;
-    joinedAt: string;
-    joinedAtMs: number;
-    lastDurationMs: number;
-    source: 'runtime';
-};
-
-function collectProjectionPlayers(value: unknown): {
-    playerIds: string[];
-    players: CurrentLocationPlayer[];
-} {
-    const playersByKey = new Map<string, CurrentLocationPlayer>();
-    for (const entry of Array.isArray(value) ? value : []) {
-        const player =
-            entry && typeof entry === 'object'
-                ? (entry as Record<string, unknown>)
-                : {};
-        const userId = normalizeString(player.userId);
-        const displayName = normalizeString(player.displayName);
-        if (!userId && !displayName) {
-            continue;
-        }
-        const joinTime = Number(player.joinTimeMs) || 0;
-        playersByKey.set(userId || `display:${displayName}`, {
-            id: userId || `display:${displayName}`,
-            userId,
-            displayName,
-            joinedAt: joinTime ? new Date(joinTime).toISOString() : '',
-            joinedAtMs: joinTime,
-            lastDurationMs: 0,
-            source: 'runtime'
-        });
-    }
-
-    const players = Array.from(playersByKey.values());
-    return {
-        playerIds: Array.from(
-            new Set(players.map((player) => player.userId).filter(Boolean))
-        ),
-        players
-    };
-}
-
-export function applyRuntimeGameLogProjection(payload: unknown) {
-    const projection =
-        payload && typeof payload === 'object'
-            ? (payload as Record<string, unknown>)
-            : {};
+export function applyRuntimeGameLogProjection(projection: GameLogProjection) {
     const currentLocation = normalizeString(projection.currentLocation);
     const currentWorldId = normalizeString(projection.currentWorldId);
     const currentWorldName = normalizeString(projection.currentWorldName);
@@ -74,7 +26,7 @@ export function applyRuntimeGameLogProjection(payload: unknown) {
     const {
         playerIds: currentLocationPlayerIds,
         players: currentLocationPlayers
-    } = collectProjectionPlayers(projection.currentLocationPlayers);
+    } = collectRuntimeRosterPlayers(projection.currentLocationPlayers);
 
     const gameStatePatch: GameStatePatch = {
         currentLocation,
@@ -129,13 +81,12 @@ export async function restoreRuntimeGameLogProjectionFromPersistence(): Promise<
     const requestedLocation = parseLocation(currentLocation).isRealInstance
         ? currentLocation
         : '';
-    const snapshot =
-        await playerListPersistenceRepository.getCurrentInstanceSnapshot({
-            currentUserId,
-            currentLocation: requestedLocation,
-            currentLocationStartedAt:
-                initialState.gameState.currentLocationStartedAt || ''
-        });
+    const snapshot = await loadCurrentInstanceRoster({
+        currentUserId,
+        currentLocation: requestedLocation,
+        currentLocationStartedAt:
+            initialState.gameState.currentLocationStartedAt || ''
+    });
     const snapshotLocation = normalizeLocationValue(snapshot.context.location);
     const parsedSnapshotLocation = parseLocation(snapshotLocation);
     if (!parsedSnapshotLocation.isRealInstance) {
@@ -158,6 +109,8 @@ export async function restoreRuntimeGameLogProjectionFromPersistence(): Promise<
 
     applyRuntimeGameLogProjection({
         currentLocation: snapshotLocation,
+        currentDestination: '',
+        currentLocationPlayerIds: [],
         currentWorldId: snapshot.context.worldId,
         currentWorldName: snapshot.context.worldName,
         currentLocationStartedAt: snapshot.context.createdAt,

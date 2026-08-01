@@ -6,11 +6,7 @@ import { formatDateTime } from '@/lib/dateTime';
 import { STATUS_BAR_CONFIG_KEYS } from '@/repositories/configKeys';
 import configRepository from '@/repositories/configRepository';
 import { startBackgroundModeForCurrentSession } from '@/services/backgroundModeService';
-import {
-    refreshMutualGraphFetchStatus,
-    startMutualGraphFetchStatusPolling,
-    wasMutualGraphFetchStartedInThisSession
-} from '@/services/mutualGraphFetchService';
+import { wasMutualGraphFetchStartedInThisSession } from '@/services/mutualGraphFetchService';
 import { loadPreferenceSnapshot } from '@/services/preferencesService';
 import {
     proxySettingsErrorMessage,
@@ -443,19 +439,6 @@ export function AppStatusBar() {
             setProxyDraftServer(proxyServer);
         }
     }, [proxyEditorOpen, proxyEnabled, proxyServer]);
-
-    useEffect(() => {
-        refreshMutualGraphFetchStatus().catch(() => {});
-    }, []);
-
-    useEffect(() => {
-        if (
-            mutualGraphStatus === 'running' ||
-            mutualGraphStatus === 'cancelling'
-        ) {
-            startMutualGraphFetchStatusPolling();
-        }
-    }, [mutualGraphStatus]);
 
     useEffect(() => {
         const runId = Number(mutualGraphRunId) || 0;

@@ -6,6 +6,7 @@ build = "build.rs"
 
 [features]
 default = []
+friends-panel = []
 slint-ui = ["dep:slint"]
 
 [dependencies]

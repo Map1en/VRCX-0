@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import {
     ChevronRightIcon,
     CopyIcon,
@@ -33,13 +34,17 @@ import {
 } from '@/ui/shadcn/context-menu';
 
 import { getGameLogSessionPlayerDuration } from '../gameLogSessionDurations';
+import type {
+    GameLogSessionEvent,
+    GameLogSessionMember
+} from '../gameLogTypes';
 import { openGameLogUser } from '../gameLogUserLookup';
 
 const VIDEO_SOURCE_WITHOUT_LINK = new Set(['LSMedia', 'PopcornPalace']);
 const PLAYER_EVENT_GRID_CLASS =
     'grid-cols-[4.75rem_1rem_minmax(0,1fr)_5.5rem_5rem]';
 
-function getEventLabel(event: any, t: any) {
+function getEventLabel(event: GameLogSessionEvent, t: TFunction) {
     if (event?.type === 'JoinGroup') {
         return t('view.game_log.filters.OnPlayerJoined');
     }
@@ -51,7 +56,10 @@ function getEventLabel(event: any, t: any) {
     });
 }
 
-function normalizeSessionMember(member: any, fallbackCreatedAt: any = '') {
+function normalizeSessionMember(
+    member: GameLogSessionEvent | GameLogSessionMember,
+    fallbackCreatedAt = ''
+): GameLogSessionMember {
     const userId = normalizeId(member?.userId);
     return {
         created_at: member?.created_at || fallbackCreatedAt || '',
@@ -62,9 +70,9 @@ function normalizeSessionMember(member: any, fallbackCreatedAt: any = '') {
     };
 }
 
-function getGroupMembers(event: any) {
+function getGroupMembers(event: GameLogSessionEvent) {
     if (Array.isArray(event?.members) && event.members.length > 0) {
-        return event.members.map((member: any) =>
+        return event.members.map((member) =>
             normalizeSessionMember(member, event?.created_at)
         );
     }
@@ -76,11 +84,18 @@ function getGroupMembers(event: any) {
     return [];
 }
 
-function getGroupCount(event: any, members: any[]) {
+function getGroupCount(
+    event: GameLogSessionEvent,
+    members: readonly GameLogSessionMember[]
+) {
     if (members.length > 0) {
         return members.length;
     }
-    return Number.isFinite(event?.count) && event.count > 0 ? event.count : 0;
+    return typeof event.count === 'number' &&
+        Number.isFinite(event.count) &&
+        event.count > 0
+        ? event.count
+        : 0;
 }
 
 function EventTime({ value }: { value: unknown }) {
@@ -91,7 +106,7 @@ function EventTime({ value }: { value: unknown }) {
     );
 }
 
-function EventIcon({ event }: { event: any }) {
+function EventIcon({ event }: { event: GameLogSessionEvent }) {
     const isJoin =
         event?.type === 'OnPlayerJoined' || event?.type === 'JoinGroup';
     const Icon = isJoin ? LogInIcon : LogOutIcon;
@@ -104,7 +119,7 @@ function EventIcon({ event }: { event: any }) {
     );
 }
 
-function EventLabel({ event }: { event: any }) {
+function EventLabel({ event }: { event: GameLogSessionEvent }) {
     const { t } = useTranslation();
 
     return (
@@ -126,7 +141,7 @@ function DurationText({ value }: { value: number }) {
     );
 }
 
-function PlayerNameButton({ item }: any) {
+function PlayerNameButton({ item }: { item: GameLogSessionMember }) {
     const { t } = useTranslation();
     const displayName =
         item?.displayName || t('view.game_log.sessions.unknown_user');
@@ -154,7 +169,7 @@ function PlayerNameButton({ item }: any) {
     );
 }
 
-function PlayerCell({ item }: any) {
+function PlayerCell({ item }: { item: GameLogSessionMember }) {
     return (
         <div className="flex min-w-0 items-center gap-1.5">
             <PlayerNameButton item={item} />
@@ -172,7 +187,7 @@ function PlayerActivityRow({
     item
 }: {
     durationByKey: Map<string, number>;
-    item: any;
+    item: GameLogSessionMember;
 }) {
     return (
         <div className="hover:bg-muted/35 grid min-h-7 grid-cols-[4.75rem_minmax(0,1fr)_5rem] items-center gap-2 rounded-md px-2 py-0.5 text-sm">
@@ -190,7 +205,7 @@ function SinglePlayerActivityRow({
     event
 }: {
     durationByKey: Map<string, number>;
-    event: any;
+    event: GameLogSessionEvent;
 }) {
     const item = normalizeSessionMember(event, event?.created_at);
 
@@ -212,12 +227,18 @@ function SinglePlayerActivityRow({
     );
 }
 
-function GroupActivityRow({ durationByKey, event }: any) {
+function GroupActivityRow({
+    durationByKey,
+    event
+}: {
+    durationByKey: Map<string, number>;
+    event: GameLogSessionEvent;
+}) {
     const { t } = useTranslation();
     const [isExpanded, setIsExpanded] = useState(false);
     const members = getGroupMembers(event);
     const count = getGroupCount(event, members);
-    const friendCount = members.filter((member: any) => member.isFriend).length;
+    const friendCount = members.filter((member) => member.isFriend).length;
 
     return (
         <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
@@ -259,7 +280,7 @@ function GroupActivityRow({ durationByKey, event }: any) {
             {members.length ? (
                 <CollapsibleContent>
                     <div className="border-border/70 ml-6 border-l pl-3">
-                        {members.map((member: any, index: any) => (
+                        {members.map((member, index) => (
                             <PlayerActivityRow
                                 key={`${member.userId}:${member.created_at}:${member.displayName}:${index}`}
                                 durationByKey={durationByKey}
@@ -273,15 +294,17 @@ function GroupActivityRow({ durationByKey, event }: any) {
     );
 }
 
-function VideoActivityRow({ event }: any) {
+function VideoActivityRow({ event }: { event: GameLogSessionEvent }) {
     const { t } = useTranslation();
+    const videoUrl = event.videoUrl || '';
     const videoLabel =
         event?.videoName ||
-        event?.videoUrl ||
+        videoUrl ||
         event?.videoId ||
         t('view.game_log.sessions.unknown_video');
-    const showVideoLink =
-        event?.videoUrl && !VIDEO_SOURCE_WITHOUT_LINK.has(event?.videoId);
+    const showVideoLink = Boolean(
+        videoUrl && !VIDEO_SOURCE_WITHOUT_LINK.has(event.videoId || '')
+    );
 
     return (
         <ContextMenu>
@@ -298,7 +321,7 @@ function VideoActivityRow({ event }: any) {
                                     className="text-foreground h-auto min-w-0 shrink justify-start p-0 text-left font-normal"
                                     onClick={(eventObject) => {
                                         eventObject.stopPropagation();
-                                        openExternalLink(event.videoUrl);
+                                        openExternalLink(videoUrl);
                                     }}
                                 >
                                     <span className="truncate">
@@ -310,7 +333,8 @@ function VideoActivityRow({ event }: any) {
                                     {videoLabel}
                                 </span>
                             )}
-                            {event?.playCount > 1 ? (
+                            {typeof event.playCount === 'number' &&
+                            event.playCount > 1 ? (
                                 <Badge
                                     variant="secondary"
                                     className="h-4 shrink-0 px-1 text-xs"
@@ -339,7 +363,7 @@ function VideoActivityRow({ event }: any) {
                         <ContextMenuGroup>
                             <ContextMenuItem
                                 onClick={() => {
-                                    openExternalLink(event.videoUrl);
+                                    openExternalLink(videoUrl);
                                 }}
                             >
                                 <ExternalLinkIcon data-icon="inline-start" />
@@ -352,14 +376,11 @@ function VideoActivityRow({ event }: any) {
                 <ContextMenuGroup>
                     <ContextMenuItem
                         onClick={() => {
-                            void copyTextToClipboard(
-                                event?.videoUrl || videoLabel,
-                                {
-                                    successMessage: t(
-                                        'view.game_log.success.copied_game_log_detail'
-                                    )
-                                }
-                            );
+                            void copyTextToClipboard(videoUrl || videoLabel, {
+                                successMessage: t(
+                                    'view.game_log.success.copied_game_log_detail'
+                                )
+                            });
                         }}
                     >
                         <CopyIcon data-icon="inline-start" />
@@ -376,7 +397,7 @@ function SessionEventRow({
     event
 }: {
     durationByKey: Map<string, number>;
-    event: any;
+    event: GameLogSessionEvent;
 }) {
     const isJoin =
         event?.type === 'OnPlayerJoined' || event?.type === 'JoinGroup';
@@ -403,16 +424,20 @@ function SessionEventRow({
     return null;
 }
 
-export function SessionEventGroups({ durationByKey = new Map(), events }: any) {
+export function SessionEventGroups({
+    durationByKey = new Map(),
+    events = []
+}: {
+    durationByKey?: Map<string, number>;
+    events?: readonly GameLogSessionEvent[];
+}) {
     const { t } = useTranslation();
-    const visibleEvents = (events ?? []).filter((event: any) =>
+    const visibleEvents = events.filter((event) =>
         ['JoinGroup', 'LeftGroup', 'OnPlayerJoined', 'OnPlayerLeft'].includes(
-            event?.type
+            event?.type || ''
         )
     );
-    const videoEvents = (events ?? []).filter(
-        (event: any) => event?.type === 'VideoPlay'
-    );
+    const videoEvents = events.filter((event) => event?.type === 'VideoPlay');
 
     if (!visibleEvents.length && !videoEvents.length) {
         return null;
@@ -420,7 +445,7 @@ export function SessionEventGroups({ durationByKey = new Map(), events }: any) {
 
     return (
         <div className="flex flex-col gap-0.5 px-2 py-1.5">
-            {visibleEvents.map((event: any, index: any) => (
+            {visibleEvents.map((event, index) => (
                 <SessionEventRow
                     key={`${event.type}:${event.created_at}:${event.userId || index}`}
                     durationByKey={durationByKey}
@@ -433,7 +458,7 @@ export function SessionEventGroups({ durationByKey = new Map(), events }: any) {
                         {t('view.game_log.sessions.videos')}
                     </div>
                     <div className="flex flex-col gap-0.5">
-                        {videoEvents.map((event: any, index: any) => (
+                        {videoEvents.map((event, index) => (
                             <VideoActivityRow
                                 key={`${event.type}:${event.created_at}:${event.videoUrl || index}`}
                                 event={event}

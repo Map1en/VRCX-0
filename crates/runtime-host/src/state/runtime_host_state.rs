@@ -1,5 +1,51 @@
-use super::*;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::sync::{
+    atomic::{AtomicBool, AtomicU64},
+    Arc, Mutex,
+};
+
+use serde::Serialize;
+use serde_json::Value;
+
+use super::profile_lock::ProfileLock;
+use crate::{
+    AuthenticatedRuntimeOrchestrator, GroupOrderSource, NoteExportRuntime, Result,
+    RuntimeHostComposition, RuntimeHostContext, RuntimeHostProfile, RuntimeHostProfileExtension,
+    SharedCollectionImportRuntime, UnavailableGroupOrderSource,
+};
+use vrcx_0_application::{
+    AuthenticatedSessionMaintenanceOutcome, DataDirMigrationRuntime, FavoriteImportRuntime,
+    GroupApiDeps, GroupBanImportRuntime, PrintCleanupDeps, PrintCleanupQueueSink,
+    ProfileBackupRuntime, ProfileBackupRuntimeDeps, VrchatGroupBanImportActions,
+};
+use vrcx_0_application_core::{
+    BackendRuntime, ImageCache, UnavailableLocalGameContextSource, WebClient,
+};
+use vrcx_0_application_realtime::{RealtimeHostRuntime, RealtimeHostRuntimeDeps};
+use vrcx_0_host::app_paths::{
+    app_data_paths_match, commit_app_data_dir_pointer, AppDataDirResolution, AppDataDirSource,
+    AppPaths,
+};
+use vrcx_0_persistence::data_dir_migration::{
+    cleanup_interrupted_data_dir_migration, complete_data_dir_migration,
+    finalize_data_dir_migration, read_pending_data_dir_migration,
+    record_data_dir_migration_database_open_failure, DataDirMigrationFinalizeOutcome,
+    DataDirMigrationJournalPhase, PendingDataDirMigration,
+};
+use vrcx_0_persistence::legacy_migration::{
+    consume_pending_legacy_migration, LegacyMigrationPaths,
+};
+use vrcx_0_persistence::legacy_vrcx::{LegacyVrcxMigrationStatus, LegacyVrcxSource};
+use vrcx_0_persistence::profile_backup::{
+    cleanup_profile_backup_artifacts, consume_pending_profile_restore, ProfileRestoreFailureCode,
+};
+use vrcx_0_persistence::storage::StorageService;
+use vrcx_0_persistence::DatabaseService;
+
+#[cfg(test)]
+use std::sync::atomic::Ordering;
+#[cfg(test)]
+use vrcx_0_application_core::{BackendRuntimeMode, BackendRuntimePhase};
 
 pub struct RuntimeHostOptions {
     pub realtime_origin: String,
@@ -82,80 +128,104 @@ pub struct RuntimeHostState {
     pub(super) _profile_lock: ProfileLock,
 }
 
-fn run_secret_startup(
-    initialize: impl FnOnce(),
-    is_encrypting_writes: impl FnOnce() -> bool,
-    migrate_cookies: impl FnOnce() -> Result<()>,
-    migrate_saved_credentials: impl FnOnce() -> Result<()>,
-    read_cleanup_completed: impl FnOnce() -> Result<bool>,
-    cleanup: impl FnOnce() -> Result<()>,
-    record_cleanup_completed: impl FnOnce() -> Result<()>,
-) {
-    initialize();
+trait SecretStartupActions {
+    fn initialize(&mut self);
+    fn is_encrypting_writes(&mut self) -> bool;
+    fn migrate_cookies(&mut self) -> Result<()>;
+    fn migrate_saved_credentials(&mut self) -> Result<()>;
+    fn read_cleanup_completed(&mut self) -> Result<bool>;
+    fn cleanup(&mut self) -> Result<()>;
+    fn record_cleanup_completed(&mut self) -> Result<()>;
+}
+
+fn run_secret_startup(actions: &mut dyn SecretStartupActions) {
+    actions.initialize();
     let mut migrations_succeeded = true;
-    if let Err(error) = migrate_cookies() {
+    if let Err(error) = actions.migrate_cookies() {
         migrations_succeeded = false;
         tracing::warn!(error = %error, "failed to migrate stored cookies to encrypted form");
     }
-    if let Err(error) = migrate_saved_credentials() {
+    if let Err(error) = actions.migrate_saved_credentials() {
         migrations_succeeded = false;
         tracing::warn!(error = %error, "failed to migrate saved credentials to encrypted form");
     }
-    let cleanup_completed = match read_cleanup_completed() {
+    let cleanup_completed = match actions.read_cleanup_completed() {
         Ok(completed) => completed,
         Err(error) => {
             tracing::warn!(error = %error, "failed to read secret migration cleanup state");
             false
         }
     };
-    if !is_encrypting_writes() || !migrations_succeeded || cleanup_completed {
+    if !actions.is_encrypting_writes() || !migrations_succeeded || cleanup_completed {
         return;
     }
-    if let Err(error) = cleanup() {
+    if let Err(error) = actions.cleanup() {
         tracing::warn!(error = %error, "failed to remove plaintext remnants after secret migration");
         return;
     }
-    if let Err(error) = record_cleanup_completed() {
+    if let Err(error) = actions.record_cleanup_completed() {
         tracing::warn!(error = %error, "failed to record completed secret migration cleanup state");
     }
 }
 
+struct SecretStartup<'a> {
+    db: &'a Arc<DatabaseService>,
+    config: vrcx_0_persistence::config::ConfigRepository,
+    allow_encrypted_writes: bool,
+}
+
+impl SecretStartupActions for SecretStartup<'_> {
+    fn initialize(&mut self) {
+        vrcx_0_persistence::secrets::init_secrets(
+            vrcx_0_host::machine_key::derive_secrets_key(),
+            self.allow_encrypted_writes,
+        );
+    }
+
+    fn is_encrypting_writes(&mut self) -> bool {
+        vrcx_0_persistence::secrets::is_encrypting_writes()
+    }
+
+    fn migrate_cookies(&mut self) -> Result<()> {
+        vrcx_0_persistence::cookies::migrate_default_cookies(self.db)?;
+        Ok(())
+    }
+
+    fn migrate_saved_credentials(&mut self) -> Result<()> {
+        vrcx_0_application::migrate_saved_credential_secrets(&self.config)?;
+        Ok(())
+    }
+
+    fn read_cleanup_completed(&mut self) -> Result<bool> {
+        Ok(self.config.get_bool(
+            vrcx_0_persistence::secrets::CLEANUP_COMPLETED_CONFIG_KEY,
+            false,
+        )?)
+    }
+
+    fn cleanup(&mut self) -> Result<()> {
+        Ok(vrcx_0_persistence::maintenance::vacuum_after_secret_migration(self.db)?)
+    }
+
+    fn record_cleanup_completed(&mut self) -> Result<()> {
+        Ok(self.config.set_bool(
+            vrcx_0_persistence::secrets::CLEANUP_COMPLETED_CONFIG_KEY,
+            true,
+        )?)
+    }
+}
+
 fn prepare_secrets_at_rest(db: &Arc<DatabaseService>, profile: RuntimeHostProfile) {
-    let config = vrcx_0_persistence::config::ConfigRepository::new(Arc::clone(db));
     let allow_encrypted_writes = match profile {
         RuntimeHostProfile::Desktop => true,
         RuntimeHostProfile::HeadlessData => false,
     };
-    run_secret_startup(
-        || {
-            vrcx_0_persistence::secrets::init_secrets(
-                vrcx_0_host::machine_key::derive_secrets_key(),
-                allow_encrypted_writes,
-            );
-        },
-        vrcx_0_persistence::secrets::is_encrypting_writes,
-        || {
-            vrcx_0_persistence::cookies::migrate_default_cookies(db)?;
-            Ok(())
-        },
-        || {
-            vrcx_0_application::migrate_saved_credential_secrets(&config)?;
-            Ok(())
-        },
-        || {
-            Ok(config.get_bool(
-                vrcx_0_persistence::secrets::CLEANUP_COMPLETED_CONFIG_KEY,
-                false,
-            )?)
-        },
-        || Ok(vrcx_0_persistence::maintenance::vacuum_after_secret_migration(db)?),
-        || {
-            Ok(config.set_bool(
-                vrcx_0_persistence::secrets::CLEANUP_COMPLETED_CONFIG_KEY,
-                true,
-            )?)
-        },
-    );
+    let mut startup = SecretStartup {
+        db,
+        config: vrcx_0_persistence::config::ConfigRepository::new(Arc::clone(db)),
+        allow_encrypted_writes,
+    };
+    run_secret_startup(&mut startup);
 }
 
 struct PreparedDataDirMigration {
@@ -547,9 +617,8 @@ impl RuntimeHostState {
 
 #[cfg(test)]
 mod secret_startup_tests {
-    use super::run_secret_startup;
+    use super::{run_secret_startup, SecretStartupActions};
     use crate::{Error, Result};
-    use std::cell::{Cell, RefCell};
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     enum Step {
@@ -562,40 +631,72 @@ mod secret_startup_tests {
         RecordCleanupCompleted,
     }
 
+    struct TestSecretStartup {
+        events: Vec<Step>,
+        fail_at: Option<Step>,
+        encrypting_writes: bool,
+        cleanup_completed: bool,
+        cleanup_recorded: bool,
+    }
+
+    impl TestSecretStartup {
+        fn step(&mut self, current: Step) -> Result<()> {
+            self.events.push(current);
+            if self.fail_at == Some(current) {
+                return Err(Error::Custom(format!("{current:?} failed")));
+            }
+            Ok(())
+        }
+    }
+
+    impl SecretStartupActions for TestSecretStartup {
+        fn initialize(&mut self) {
+            self.events.push(Step::Initialize);
+        }
+
+        fn is_encrypting_writes(&mut self) -> bool {
+            self.events.push(Step::IsEncryptingWrites);
+            self.encrypting_writes
+        }
+
+        fn migrate_cookies(&mut self) -> Result<()> {
+            self.step(Step::MigrateCookies)
+        }
+
+        fn migrate_saved_credentials(&mut self) -> Result<()> {
+            self.step(Step::MigrateSavedCredentials)
+        }
+
+        fn read_cleanup_completed(&mut self) -> Result<bool> {
+            self.step(Step::ReadCleanupCompleted)?;
+            Ok(self.cleanup_completed)
+        }
+
+        fn cleanup(&mut self) -> Result<()> {
+            self.step(Step::Cleanup)
+        }
+
+        fn record_cleanup_completed(&mut self) -> Result<()> {
+            self.step(Step::RecordCleanupCompleted)?;
+            self.cleanup_recorded = true;
+            Ok(())
+        }
+    }
+
     fn run(
         fail_at: Option<Step>,
         encrypting_writes: bool,
         cleanup_completed: bool,
     ) -> (Vec<Step>, bool) {
-        let events = RefCell::new(Vec::new());
-        let cleanup_recorded = Cell::new(false);
-        let step = |current| -> Result<()> {
-            events.borrow_mut().push(current);
-            if fail_at == Some(current) {
-                return Err(Error::Custom(format!("{current:?} failed")));
-            }
-            Ok(())
+        let mut startup = TestSecretStartup {
+            events: Vec::new(),
+            fail_at,
+            encrypting_writes,
+            cleanup_completed,
+            cleanup_recorded: false,
         };
-        run_secret_startup(
-            || events.borrow_mut().push(Step::Initialize),
-            || {
-                events.borrow_mut().push(Step::IsEncryptingWrites);
-                encrypting_writes
-            },
-            || step(Step::MigrateCookies),
-            || step(Step::MigrateSavedCredentials),
-            || {
-                step(Step::ReadCleanupCompleted)?;
-                Ok(cleanup_completed)
-            },
-            || step(Step::Cleanup),
-            || {
-                step(Step::RecordCleanupCompleted)?;
-                cleanup_recorded.set(true);
-                Ok(())
-            },
-        );
-        (events.into_inner(), cleanup_recorded.get())
+        run_secret_startup(&mut startup);
+        (startup.events, startup.cleanup_recorded)
     }
 
     #[test]

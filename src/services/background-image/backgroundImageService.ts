@@ -234,16 +234,11 @@ export async function refreshBackgroundImage(): Promise<boolean> {
     return projection.enabled;
 }
 
-export async function migrateLegacyNasaApodCommunityTheme(): Promise<void> {
-    await configureBackgroundImage({ kind: 'migrateLegacyNasaApod' });
-}
-
 export function isBackgroundImageActive(): boolean {
     return useBackgroundImageStore.getState().enabled;
 }
 
 registerBackgroundImageAppearanceHandlers({
     disableBackgroundImage,
-    isBackgroundImageActive,
-    migrateLegacyNasaApodCommunityTheme
+    isBackgroundImageActive
 });
