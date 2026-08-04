@@ -20,7 +20,6 @@ import { Textarea } from '@/ui/shadcn/textarea';
 export type UserNoteMemoDialogProps = {
     open: boolean;
     targetLabel: string;
-    editingCurrentUser: boolean;
     note: string;
     memo: string;
     saving: boolean;
@@ -34,7 +33,6 @@ export type UserNoteMemoDialogProps = {
 export function UserNoteMemoDialog({
     open,
     targetLabel,
-    editingCurrentUser,
     note,
     memo,
     saving,
@@ -58,26 +56,24 @@ export function UserNoteMemoDialog({
                     ) : null}
                 </DialogHeader>
                 <FieldGroup>
-                    {!editingCurrentUser ? (
-                        <Field>
-                            <FieldLabel htmlFor="user-note-memo-note">
-                                {t('dialog.user.info.note')}
-                            </FieldLabel>
-                            <Textarea
-                                id="user-note-memo-note"
-                                value={note}
-                                maxLength={256}
-                                disabled={saving}
-                                className="min-h-24 resize-y"
-                                onChange={(event) =>
-                                    onNoteChange(event.target.value)
-                                }
-                            />
-                            <FieldDescription className="text-right text-xs">
-                                {String(note || '').length}/256
-                            </FieldDescription>
-                        </Field>
-                    ) : null}
+                    <Field>
+                        <FieldLabel htmlFor="user-note-memo-note">
+                            {t('dialog.user.info.note')}
+                        </FieldLabel>
+                        <Textarea
+                            id="user-note-memo-note"
+                            value={note}
+                            maxLength={256}
+                            disabled={saving}
+                            className="min-h-24 resize-y"
+                            onChange={(event) =>
+                                onNoteChange(event.target.value)
+                            }
+                        />
+                        <FieldDescription className="text-right text-xs">
+                            {String(note || '').length}/256
+                        </FieldDescription>
+                    </Field>
                     <Field>
                         <FieldLabel htmlFor="user-note-memo-memo">
                             {t('dialog.user.info.memo')}

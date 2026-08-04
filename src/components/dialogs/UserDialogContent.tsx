@@ -325,7 +325,6 @@ export function UserDialogContent({
         applyFriendPatch,
         currentEndpoint,
         friendsById,
-        isCurrentUser,
         normalizedUserId,
         profile,
         setBaseProfile,

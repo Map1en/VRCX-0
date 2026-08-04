@@ -69,7 +69,6 @@ export function UserDialogContentDialogs({
             <UserNoteMemoDialog
                 open={noteMemoDialog.open}
                 targetLabel={noteMemoDialog.targetLabel}
-                editingCurrentUser={noteMemoDialog.editingCurrentUser}
                 note={noteMemoDialog.note}
                 memo={noteMemoDialog.memo}
                 saving={noteMemoDialog.saving}

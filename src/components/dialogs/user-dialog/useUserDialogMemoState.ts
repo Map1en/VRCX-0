@@ -23,7 +23,6 @@ function createMemoDialogState() {
         targetUserId: '',
         targetEndpoint: '',
         targetLabel: '',
-        editingCurrentUser: false,
         originalNote: '',
         note: '',
         memo: '',
@@ -40,7 +39,6 @@ type UseUserDialogMemoStateProps = {
     >['applyFriendPatch'];
     currentEndpoint: string;
     friendsById: FriendRosterById;
-    isCurrentUser: boolean;
     normalizedUserId: string;
     profile: UserDialogProfileRecord | null;
     setBaseProfile: Dispatch<SetStateAction<UserDialogProfileRecord | null>>;
@@ -52,7 +50,6 @@ export function useUserDialogMemoState({
     applyFriendPatch,
     currentEndpoint,
     friendsById,
-    isCurrentUser,
     normalizedUserId,
     profile,
     setBaseProfile,
@@ -106,7 +103,6 @@ export function useUserDialogMemoState({
             targetUserId,
             targetEndpoint: currentEndpoint,
             targetLabel: targetProfile?.displayName || targetProfile?.id || '',
-            editingCurrentUser: Boolean(isCurrentUser),
             originalNote,
             note: originalNote,
             memo
@@ -123,9 +119,7 @@ export function useUserDialogMemoState({
 
         const nextNote = String(dialog.note || '').slice(0, 256);
         const nextMemoInput = String(dialog.memo || '');
-        const nextProfileNote = dialog.editingCurrentUser
-            ? dialog.originalNote
-            : nextNote;
+        const nextProfileNote = nextNote;
 
         memoRevisionRef.current += 1;
         setMemoDialog((current: MemoDialogState) => ({
@@ -133,10 +127,7 @@ export function useUserDialogMemoState({
             saving: true
         }));
         try {
-            if (
-                !dialog.editingCurrentUser &&
-                nextNote !== dialog.originalNote
-            ) {
+            if (nextNote !== dialog.originalNote) {
                 await vrchatToolsRepository.saveUserNote({
                     targetUserId,
                     note: nextNote
