@@ -3,7 +3,8 @@ use std::future::{self, Future};
 use rmcp::handler::server::router::tool::ToolRouter;
 use rmcp::model::{
     Implementation, ListResourcesResult, PaginatedRequestParams, ReadResourceRequestParams,
-    ReadResourceResult, Resource, ResourceContents, ServerCapabilities, ServerInfo,
+    ReadResourceResponse, ReadResourceResult, Resource, ResourceContents, ServerCapabilities,
+    ServerInfo,
 };
 use rmcp::service::{MaybeSendFuture, RequestContext, RoleServer};
 use rmcp::{tool_handler, ErrorData as RmcpError, ServerHandler};
@@ -85,7 +86,7 @@ impl ServerHandler for VrcxMcpServer {
         &self,
         request: ReadResourceRequestParams,
         _context: RequestContext<RoleServer>,
-    ) -> impl Future<Output = Result<ReadResourceResult, RmcpError>> + MaybeSendFuture + '_ {
+    ) -> impl Future<Output = Result<ReadResourceResponse, RmcpError>> + MaybeSendFuture + '_ {
         if request.uri != DATA_CAVEATS_URI {
             return future::ready(Err(RmcpError::invalid_params(
                 "Unknown VRCX-0 MCP resource",
@@ -96,7 +97,8 @@ impl ServerHandler for VrcxMcpServer {
             social_aggregates::data_caveats_resource(),
             DATA_CAVEATS_URI,
         )
-        .with_mime_type("text/plain")])))
+        .with_mime_type("text/plain")])
+        .into()))
     }
 }
 

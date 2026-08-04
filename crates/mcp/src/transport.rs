@@ -56,7 +56,7 @@ fn streamable_http_server_config(
     allow_lan_connections: bool,
 ) -> StreamableHttpServerConfig {
     let mut config = StreamableHttpServerConfig::default();
-    config.stateful_mode = true;
+    config.legacy_session_mode = true;
     config.cancellation_token = cancel;
     if allow_lan_connections {
         config.allowed_hosts.clear();
