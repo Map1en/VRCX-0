@@ -14,7 +14,7 @@ arboard = "3"
 base64 = { workspace = true }
 chrono = { workspace = true }
 dirs = { workspace = true }
-fontdb = "0.23"
+fontdb = "0.24"
 hex = "0.4"
 open = "5"
 serde = { workspace = true, features = ["derive"] }
