@@ -1186,7 +1186,7 @@
             "avatars": {
                 "search": "Search",
                 "vrchat_favorites": "VRChat Favorites",
-                "local_favorites": "Local Favorites (VRChat+)",
+                "local_favorites": "Local Favorites (VRC+)",
                 "new_group": "New Group",
                 "local_history": "Local History",
                 "styles": "Styles",
@@ -1445,7 +1445,7 @@
                     "earned": "Badge Earned"
                 },
                 "vrcplus": {
-                    "gift": "VRChat+ Gift"
+                    "gift": "VRC+ Gift"
                 },
                 "economy": {
                     "received": {
@@ -4134,7 +4134,7 @@
         "favorite": {
             "vrchat_favorites": "VRChat Favorites",
             "local_favorites": "Local Favorites",
-            "local_avatar_favorites": "Local Favorites (VRChat+)"
+            "local_avatar_favorites": "Local Favorites (VRC+)"
         },
         "social_status": {
             "presets": "Presets"
@@ -5199,7 +5199,7 @@
             "url_copied": "World URL copied to clipboard"
         },
         "vrcplus": {
-            "required": "VRChat+"
+            "required": "VRC+"
         },
         "screenshot_metadata": {
             "deleted": "Screenshot metadata deleted",
