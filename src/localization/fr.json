@@ -337,7 +337,7 @@
     },
     "overlay": {
         "footer": {
-            "players": "{count} joueurs",
+            "players": "{count} utilisateurs",
             "instance_duration": "Instance {duration}"
         },
         "generic_instance_location": "une instance",
@@ -447,7 +447,7 @@
         "feed": "Actualité",
         "game_log": "Historique de jeu",
         "instance_history": "Historique des instances",
-        "player_list": "Liste des joueurs",
+        "player_list": "Liste des utilisateurs",
         "search": "Rechercher",
         "favorites": "Favoris",
         "favorite_friends": "Amis favoris",
@@ -522,7 +522,7 @@
             "unknown_world": "Monde inconnu",
             "feed_online": "en ligne",
             "feed_bio": "a mis à jour sa bio",
-            "instance_players": "joueurs"
+            "instance_players": "utilisateurs"
         },
         "confirmations": {
             "delete_title": "Supprimer le tableau de bord",
@@ -548,8 +548,8 @@
             "live_friend_location_board": "Tableau en direct de l'emplacement des amis.",
             "game_log": "Journal de jeu",
             "game_log_table_page": "Page tableau du journal de jeu.",
-            "current_players": "Joueurs actuels",
-            "current_instance_player_page": "Page des joueurs de l'instance actuelle.",
+            "current_players": "Utilisateurs actuels",
+            "current_instance_player_page": "Page des utilisateurs de l'instance actuelle.",
             "search": "Rechercher",
             "search_worlds_and_groups": "Rechercher des mondes et des groupes.",
             "favorite_friends": "Amis favoris",
@@ -1035,7 +1035,7 @@
                 "grid_density_compact": "Compact",
                 "grid_density_dense": "Dense",
                 "click_to_wear": "Cliquer pour porter",
-                "impostor_queued_for_creation": "Impostor mis en file d'attente pour création",
+                "impostor_queued_for_creation": "Imposteur mis en file d'attente pour création",
                 "showing": "Affichage de",
                 "of": "sur",
                 "avatar": "avatar",
@@ -1072,11 +1072,11 @@
                 "failed_to_update_avatar_tags": "Échec de la mise à jour des tags d'avatar",
                 "failed_to_update_avatar": "Échec de la mise à jour de l'avatar",
                 "failed_to_select_avatar": "Échec de la sélection de l'avatar",
-                "failed_to_create_impostor": "Échec de la création de l'Impostor",
+                "failed_to_create_impostor": "Échec de la création de l'Imposteur",
                 "failed_to_upload_avatar_image": "Échec de l'envoi de l'image de l'avatar"
             },
             "modal": {
-                "create_impostor": "Créer un Impostor ?",
+                "create_impostor": "Créer un Imposteur ?",
                 "create": "Créer",
                 "make_avatar_public": "Rendre l'avatar public ?",
                 "make_avatar_private": "Rendre l'avatar privé ?"
@@ -1173,7 +1173,7 @@
                 "item_s": "élément(s)",
                 "sort_favorites": "Trier les favoris",
                 "sort_by_date": "Trier par date",
-                "sort_by_players": "Trier par joueurs",
+                "sort_by_players": "Trier par utilisateur",
                 "visibility": "Visibilité",
                 "group": "Groupe",
                 "favorite_group_renamed": "Groupe de favoris renommé",
@@ -1298,7 +1298,7 @@
                 "FriendRequest": "Demande d'ami envoyée",
                 "CancelFriendRequest": "Demande d'ami annulée",
                 "DisplayName": "Nom d'affichage",
-                "TrustLevel": "Niveau de confiance"
+                "TrustLevel": "Rang de confiance"
             },
             "loading": {
                 "loading_the_friend_history_snapshot": "Chargement de l'historique des amis"
@@ -1413,7 +1413,7 @@
             "action": {
                 "mark_seen": "Marquer comme lu",
                 "send_boop": "Envoyer un boop",
-                "search_emoji": "Rechercher un emoji",
+                "search_emoji": "Rechercher un émoji",
                 "clear_selection": "Effacer la sélection",
                 "send": "Envoyer"
             },
@@ -1432,7 +1432,7 @@
                 "cannot_send_invite_response_no_current_user_session_is_available": "Impossible d'envoyer la réponse à l'invitation : aucune session utilisateur actuelle n'est disponible"
             },
             "empty": {
-                "no_custom_emoji_selected_the_default_boop_will_be_sent": "Aucun emoji personnalisé sélectionné. Le boop par défaut sera envoyé"
+                "no_custom_emoji_selected_the_default_boop_will_be_sent": "Aucun émoji personnalisé sélectionné. Le boop par défaut sera envoyé"
             },
             "loading": {
                 "loading_emojis": "Chargement des emojis"
@@ -1779,7 +1779,7 @@
                 "world_groups": "Groupes de mondes favoris",
                 "world_groups_hint": "Laisser vide pour inclure tous les groupes de favoris.",
                 "minimum_friends": "Nombre minimum d'amis",
-                "minimum_players": "Nombre minimum de joueurs",
+                "minimum_players": "Nombre minimum d'utilisateurs",
                 "friend_user_ids": "ID utilisateur des amis",
                 "room_types": "Types d'instance",
                 "room_types_hint": "Laisser vide pour tout type d'instance. Les règles qui vous font apparaître comme rejoignable devraient rester limitées.",
@@ -1788,7 +1788,7 @@
                 "preset_with_anyone": "Avec n'importe qui",
                 "preset_with_any_friend": "Avec n'importe quel ami",
                 "preset_friend_count_at_least": "Nombre d'amis au moins égal à",
-                "preset_player_count_at_least": "Nombre de joueurs au moins égal à",
+                "preset_player_count_at_least": "Nombre d'utilisateur au moins égal à",
                 "preset_with_selected_groups": "Avec les groupes sélectionnés",
                 "preset_with_selected_friend": "Avec l'ami sélectionné",
                 "preset_in_selected_room_types": "Dans les types d'instance sélectionnés",
@@ -1816,13 +1816,13 @@
             },
             "success": {
                 "media_item_deleted": "Élément multimédia supprimé",
-                "print_deleted": "Print supprimé"
+                "print_deleted": "Imprimé supprimé"
             },
             "empty": {
                 "no_current_user_is_available": "Aucun utilisateur actuel disponible",
-                "no_prints_loaded": "Aucun Print chargé",
+                "no_prints_loaded": "Aucun imprimé chargé",
                 "no_inventory_items_loaded": "Aucun objet d'inventaire chargé",
-                "no_player_metadata": "Aucune métadonnée de joueur",
+                "no_player_metadata": "Aucune métadonnée d'utilisateur",
                 "no_screenshot_selected": "Aucune capture d'écran sélectionnée"
             },
             "label": {
@@ -1833,9 +1833,9 @@
             },
             "action": {
                 "preview": "Aperçu",
-                "refresh_this_tab_to_load_your_vrchat_prints": "Actualisez cet onglet pour charger vos Print VRChat",
+                "refresh_this_tab_to_load_your_vrchat_prints": "Actualisez cet onglet pour charger vos imprimés VRChat",
                 "refresh_this_tab_to_load_inventory_items": "Actualisez cet onglet pour charger les objets d'inventaire",
-                "load_a_screenshot_to_inspect_embedded_world_player_and_file_metadata": "Chargez une capture d'écran pour examiner les métadonnées intégrées du monde, du joueur et du fichier"
+                "load_a_screenshot_to_inspect_embedded_world_player_and_file_metadata": "Chargez une capture d'écran pour examiner les métadonnées intégrées du monde, de l'utilisateur et du fichier"
             },
             "error": {
                 "dropped_screenshot_path_is_not_available": "Le chemin de la capture d'écran déposée n'est pas disponible"
@@ -1853,10 +1853,10 @@
             },
             "toast": {
                 "failed_to_load_value": "Échec du chargement de {value}",
-                "failed_to_load_prints": "Échec du chargement des prints",
+                "failed_to_load_prints": "Échec du chargement des imprimés",
                 "failed_to_load_inventory": "Échec du chargement de l'inventaire",
                 "failed_to_delete_media_item": "Échec de la suppression du média",
-                "failed_to_delete_print": "Échec de la suppression du print",
+                "failed_to_delete_print": "Échec de la suppression de l'imprimé",
                 "failed_to_update_profile_media": "Échec de la mise à jour du média de profil",
                 "failed_to_consume_inventory_bundle": "Échec de l'utilisation du lot d'inventaire",
                 "failed_to_redeem_reward": "Échec de la récupération de la récompense",
@@ -1864,27 +1864,27 @@
                 "failed_to_copy_image": "Échec de la copie de l'image",
                 "failed_to_pin_tool_to_navigation": "Échec de l'épinglage de l'outil à la navigation",
                 "failed_to_unpin_tool_from_navigation": "Échec du désépinglage de l'outil de la navigation",
-                "failed_to_update_print_favorite": "Échec de la mise à jour du favori du print"
+                "failed_to_update_print_favorite": "Échec de la mise à jour du favori de l'imprimé"
             },
             "modal": {
                 "delete_value_item": "Supprimer l'élément {value}",
-                "delete_print": "Supprimer le print"
+                "delete_print": "Supprimer l'imprimé"
             },
             "dynamic": {
                 "no_value_loaded": "Aucun {value} chargé",
                 "refresh_this_tab_to_load_value_files": "Actualisez cet onglet pour charger les fichiers {value}"
             },
             "prints_favorites": {
-                "favorite": "Épingler le print",
+                "favorite": "Épingler l'imprimé",
                 "unfavorite": "Retirer des favoris",
                 "favorite_badge": "Favori",
-                "favorited_toast": "Print ajouté aux favoris",
-                "unfavorited_toast": "Print retiré des favoris",
-                "favorite_limit_toast": "Vous pouvez mettre jusqu'à {max} print(s) en favori avec la limite de suppression automatique actuelle.",
-                "cleanup_deleted": "{count} ancien(s) print(s) supprimé(s) automatiquement. {remaining} print(s) restant(s).",
+                "favorited_toast": "Imprimé ajouté aux favoris",
+                "unfavorited_toast": "Imprimé retiré des favoris",
+                "favorite_limit_toast": "Vous pouvez ajouter jusqu'à {max} imprimé(s) en favori avec la limite de suppression automatique actuelle.",
+                "cleanup_deleted": "{count} ancien(s) imrpimé(s) supprimé(s) automatiquement. {remaining} imprimé(s) restant(s).",
                 "warning": {
-                    "too_many_favorites": "{favorites} print(s) favori(s) dépassent la limite de {max} de {over}. La suppression automatique ne supprimera pas les prints favoris.",
-                    "too_many_favorites_event": "La suppression automatique n'a pas pu redescendre sous la limite configurée car les prints favoris remplissent la liste. {remaining} print(s) restant(s)."
+                    "too_many_favorites": "{favorites} imprimé(s) favori(s) dépassent la limite de {max} de {over}. La suppression automatique ne supprimera pas les imprimés favoris.",
+                    "too_many_favorites_event": "La suppression automatique n'a pas pu redescendre sous la limite configurée car les imprimés favoris remplissent la liste. {remaining} imprimé(s) restant(s)."
                 }
             },
             "llm_endpoints": {
@@ -2237,16 +2237,16 @@
                     "header": "Couleurs des utilisateurs",
                     "random_colors_from_user_id": "Couleurs cohérentes par utilisateur",
                     "random_colors_from_user_id_description": "Attribuer une couleur cohérente à chaque utilisateur en fonction de son ID.",
-                    "trust_colors": "Couleurs du niveau de confiance",
-                    "trust_colors_description": "Personnaliser les couleurs utilisées pour les noms de niveau de confiance.",
+                    "trust_colors": "Couleurs du rang de confiance",
+                    "trust_colors_description": "Personnaliser les couleurs utilisées pour les noms de rang de confiance.",
                     "trust_levels": {
                         "visitor": "Visiteur",
                         "new_user": "Nouvel utilisateur",
                         "user": "Utilisateur",
-                        "known_user": "Utilisateur connu",
-                        "trusted_user": "Utilisateur de confiance",
+                        "known_user": "Utilisateur Régulier",
+                        "trusted_user": "Utilisateur Fidèle",
                         "vrchat_team": "Équipe VRChat",
-                        "nuisance": "Gênant"
+                        "nuisance": "Nuisance"
                     }
                 },
                 "friend_log": {
@@ -2354,7 +2354,7 @@
                     "description": "* Actif uniquement lorsque vous êtes dans une instance.",
                     "enable": "Activer",
                     "enable_tooltip": "Il est recommandé de désactiver la Rich Presence de VRChat dans le fichier config.json de VRChat pour éviter les conflits.",
-                    "instance_type_player_count": "Type d'instance / nombre de joueurs",
+                    "instance_type_player_count": "Type d'instance / nombre d'utilisateurs",
                     "join_button": "Bouton rejoindre (en public uniquement)",
                     "show_details_in_private": "Afficher les détails dans les instances privées",
                     "show_images": "Afficher les images du monde",
@@ -2451,20 +2451,20 @@
                         "header": "Enregistrement des Impressions d'instance dans un fichier",
                         "header_tooltip": "Nécessite l'option de lancement du VRChat « --enable-sdk-log-levels ».",
                         "description": "Enregistre les impressions générées dans votre dossier VRChat Pictures",
-                        "crop": "Retirer automatiquement la bordure blanche des prints"
+                        "crop": "Retirer automatiquement la bordure blanche des imprimés"
                     },
                     "save_instance_stickers_to_file": {
                         "header": "Enregistrer les autocollants d'instance dans un fichier",
                         "description": "Enregistrer les autocollants placés dans votre dossier VRChat Pictures"
                     },
                     "save_instance_emoji_to_file": {
-                        "header": "Enregistrer les emoji de l'instance dans un fichier",
-                        "description": "Enregistrer les emoji apparus dans votre dossier Pictures de VRChat"
+                        "header": "Enregistrer les émoji de l'instance dans un fichier",
+                        "description": "Enregistrer les émoji apparus dans votre dossier Pictures de VRChat"
                     },
                     "delete_all_screenshot_metadata": {
                         "button": "Supprimer les métadonnées des captures d'écran",
                         "ask": "Voulez-vous vraiment supprimer toutes les métadonnées des captures d'écran VRChat et VRCX-0 de votre dossier Pictures de VRChat ?",
-                        "confirm": "La suppression de toutes les métadonnées des captures d'écran est une action très destructrice et irréversible ! Cela inclut tous les prints, sous-dossiers et autres images sans rapport présents dans votre dossier Pictures de VRChat ; si ces photos vous sont précieuses, veuillez faire une sauvegarde avant de continuer.",
+                        "confirm": "La suppression de toutes les métadonnées des captures d'écran est une action très destructrice et irréversible ! Cela inclut tous les imprimés, sous-dossiers et autres images sans rapport présents dans votre dossier Pictures de VRChat ; si ces photos vous sont précieuses, veuillez faire une sauvegarde avant de continuer.",
                         "confirm_yes": "Oui",
                         "confirm_no": "Non"
                     },
@@ -2488,7 +2488,7 @@
                     },
                     "screenshot_helper": {
                         "header": "Aide pour les captures d'écran",
-                        "description": "Stocke l'ID du monde, le nom du monde et les joueurs dans l'instance, dans les métadonnées du fichier de toutes les photos que vous prenez dans le jeu.",
+                        "description": "Stocke l'ID du monde, le nom du monde et les utilisateurs dans l'instance, dans les métadonnées du fichier de toutes les photos que vous prenez dans le jeu.",
                         "description_tooltip": "Malheureusement, Windows ne permet pas de visualiser les metadonnées des images PNG (peu de choses le font) en mode natif, mais vous pouvez les visualiser à l'aide d'un outil en ligne de commande comme exiftool, d'un inspecteur de metadonnées d'images ou d'un éditeur hexadécimal.",
                         "enable": "Activé",
                         "modify_filename": "Modifier le nom du fichier",
@@ -2580,15 +2580,15 @@
                     "user_content": {
                         "header": "Dossier de contenu",
                         "folder": "Ouvrir le dossier",
-                        "description": "Ouvrir ou définir le dossier pour le contenu VRChat tel que les Prints et les Stickers.",
+                        "description": "Ouvrir ou définir le dossier pour le contenu VRChat tel que les imprimés et les autocollants.",
                         "set_folder": "Définir le dossier",
                         "reset_override": "Réinitialiser"
                     },
                     "auto_delete_prints": {
-                        "enable": "Supprimer automatiquement les anciens prints VRChat",
-                        "description": "Delete the oldest non-favorite VRChat prints when your print list is above the limit.",
-                        "limit": "Keep at most",
-                        "limit_description": "Allowed range is 30-60. Favorite prints are never deleted. You can favorite up to 5 fewer than this limit."
+                        "enable": "Supprimer automatiquement les anciens imprimés VRChat",
+                        "description": "Supprimer l'imprimé non favoris le plus ancien une fois la limite d'imprimés atteinte.",
+                        "limit": "Garder au maximum",
+                        "limit_description": "La limite autorisée est entre 30 et 60. Les imprimés favoris ne sont pas supprimés. Vous pouvez ajouter jusqu'à 5 favoris en dessous de cette limite."
                     }
                 }
             },
@@ -2599,7 +2599,7 @@
                 "screenshot_metadata_removed": "Métadonnées de la capture d'écran supprimées"
             },
             "label": {
-                "existing_saved_prints_cropped": "Prints enregistrés existants recadrés",
+                "existing_saved_prints_cropped": "Imprimés enregistrés existants recadrés",
                 "favorite_detail_cache": "Cache des détails de Favoris"
             },
             "loading": {
@@ -2613,15 +2613,15 @@
                 "failed_to_refresh_config_json": "Échec de l'actualisation du config JSON",
                 "failed_to_refresh_online_user_count": "Échec de l'actualisation du nombre d'utilisateurs en ligne",
                 "failed_to_save_proxy_settings": "Échec de l'enregistrement des paramètres de proxy",
-                "failed_to_crop_existing_prints": "Échec du recadrage des Prints existants",
+                "failed_to_crop_existing_prints": "Échec du recadrage des imprimés existants",
                 "failed_to_save_translation_settings": "Échec de l'enregistrement des paramètres de traduction",
                 "failed_to_fetch_translation_models": "Échec de la récupération des modèles de traduction",
                 "failed_to_save_feed_filters": "Échec de l'enregistrement des filtres du flux"
             },
             "modal": {
-                "crop_existing_prints": "Recadrer les Prints existants",
-                "crop_already_saved_instance_prints_in_the_config": "Recadrer maintenant les Prints d'instance déjà enregistrés dans le dossier UGC configuré ?",
-                "crop_prints": "Recadrer les Prints",
+                "crop_existing_prints": "Recadrer les imprimés existants",
+                "crop_already_saved_instance_prints_in_the_config": "Recadrer maintenant les imprimés d'instance déjà enregistrés dans le dossier UGC configuré ?",
+                "crop_prints": "Recadrer les imprimés",
                 "skip": "Ignorer"
             },
             "dynamic": {
@@ -2670,7 +2670,7 @@
                 "game_log_unavailable": "Journal de jeu indisponible",
                 "game_log_widget_failed": "Échec du widget de journal de jeu",
                 "instance_widget_failed": "Échec du widget d'instance",
-                "current_players_are_not_available_yet": "Les joueurs actuels ne sont pas encore disponibles"
+                "current_players_are_not_available_yet": "Les utilisateurs actuels ne sont pas encore disponibles"
             },
             "empty": {
                 "no_feed_rows": "Aucune ligne de flux",
@@ -2686,7 +2686,7 @@
                 "back_to_feed": "Retour au flux",
                 "add_a_row_to_start_building_this_dashboard": "Ajoutez une ligne pour commencer à construire ce tableau de bord",
                 "add_row": "Ajouter une ligne :",
-                "start_vrchat_before_the_dashboard_can_rebuild_the_current_instance_roster": "Lancez VRChat pour que le tableau de bord puisse reconstruire la liste des joueurs de l'instance actuelle"
+                "start_vrchat_before_the_dashboard_can_rebuild_the_current_instance_roster": "Lancez VRChat pour que le tableau de bord puisse reconstruire la liste des utilisateurs de l'instance actuelle"
             },
             "description": {
                 "matches_the_stored_feed_widget_config": "Utilise les paramètres enregistrés du widget de flux",
@@ -2719,15 +2719,15 @@
                 "created": "Créé"
             },
             "empty": {
-                "no_user_id_was_found_for_this_player_row": "Impossible de trouver le profil de ce joueur",
+                "no_user_id_was_found_for_this_player_row": "Impossible de trouver le profil de cet utilisateur",
                 "currently_traveling_between_instances": "En transit entre instances",
                 "no_current_instance_detected": "Aucune instance actuelle détectée",
-                "no_players_reconstructed_for_this_instance_yet": "Aucun joueur actuel trouvé pour le moment",
-                "enable_game_log_ingestion_in_settings_before_current_players_can_be_reconstructed": "Activez le journal de jeu dans les paramètres pour afficher les joueurs actuels.",
+                "no_players_reconstructed_for_this_instance_yet": "Aucun utilisateur actuel trouvé pour le moment",
+                "enable_game_log_ingestion_in_settings_before_current_players_can_be_reconstructed": "Activez le journal de jeu dans les paramètres pour afficher les utilisateurs actuels.",
                 "start_vrchat_and_let_vrcx_receive_game_log_events_before_this_page_can_rebuild_the_current_instance": "Lancez VRChat et laissez VRCX-0 recevoir les événements du journal de jeu avant que cette page puisse reconstruire l'instance actuelle.",
-                "stay_in_the_instance_until_local_join_leave_events_are_recorded": "Restez dans l'instance jusqu'à ce que VRCX-0 détecte l'activité des joueurs. Cette liste se mettra à jour automatiquement.",
-                "current_players_follow_live_instance_locations": "Les joueurs actuels apparaîtront lorsque VRCX-0 détectera votre prochain emplacement.",
-                "local_join_leave_history_has_no_current_players": "L'historique d'arrivée/départ local ne contient encore aucun joueur actuel pour l'emplacement actif."
+                "stay_in_the_instance_until_local_join_leave_events_are_recorded": "Restez dans l'instance jusqu'à ce que VRCX-0 détecte l'activité des utilisateurs. Cette liste se mettra à jour automatiquement.",
+                "current_players_follow_live_instance_locations": "Les utilisateurs actuels apparaîtront lorsque VRCX-0 détectera votre prochain emplacement.",
+                "local_join_leave_history_has_no_current_players": "L'historique d'arrivée/départ local ne contient encore aucun utilisateur actuel pour l'emplacement actif."
             },
             "label": {
                 "instance_master": "Maître de l'instance",
@@ -2742,15 +2742,15 @@
                 "friends": "Amis",
                 "favorites": "Favoris",
                 "restricted": "Restreints",
-                "search_placeholder": "Rechercher des joueurs, des notes ou des ID utilisateur",
-                "rebuilding_the_current_instance_roster_from_game_log_history": "Reconstruction de la liste des joueurs de l'instance actuelle à partir de l'historique du journal de jeu"
+                "search_placeholder": "Rechercher des utilisateurs, des notes ou des ID utilisateur",
+                "rebuilding_the_current_instance_roster_from_game_log_history": "Reconstruction de la liste des utilisateurs de l'instance actuelle à partir de l'historique du journal de jeu"
             },
             "error": {
                 "blocked": "Bloqué",
-                "current_players_failed_to_load": "Échec du chargement des joueurs actuels"
+                "current_players_failed_to_load": "Échec du chargement des utilisateurs actuels"
             },
             "toast": {
-                "failed_to_look_up_this_player": "Échec de la recherche de ce joueur"
+                "failed_to_look_up_this_player": "Échec de la recherche de cet utilisateur"
             }
         },
         "auth": {
@@ -3416,7 +3416,7 @@
                 "muted": "Mis en sourdine",
                 "order_by": "Trier par",
                 "group_by": "Grouper par",
-                "trust_level": "Niveau de confiance",
+                "trust_level": "Rang de confiance",
                 "age_verified": "Âge vérifié",
                 "platform": "Dernière plateforme utilisée",
                 "friend_number": "Numéro d'ordre d'ami",
@@ -3598,7 +3598,7 @@
                 "copy_vrcx_url": "Copier le lien de partage",
                 "youtube_preview": "Aperçu Youtube",
                 "author_tags": "Tags de l'auteur",
-                "players": "Joueurs",
+                "players": "Utilisateurs",
                 "favorites": "Favoris",
                 "visits": "Visites",
                 "capacity": "Capacité",
@@ -3764,7 +3764,7 @@
                 "public": "Public",
                 "private": "Privé",
                 "fallback": "Secours",
-                "impostor": "Impostor",
+                "impostor": "Imposteur",
                 "future_proofing": "Future Proofing",
                 "cache": "Cache"
             },
@@ -3782,9 +3782,9 @@
                 "change_image": "Modifier l'image",
                 "download_package": "Télécharger le package Unity",
                 "delete": "Supprimer",
-                "delete_impostor": "Supprimer l'Impostor",
-                "regenerate_impostor": "Recréer un Impostor",
-                "create_impostor": "Créer un Impostor",
+                "delete_impostor": "Supprimer l'Imposteur",
+                "regenerate_impostor": "Recréer un Imposteur",
+                "create_impostor": "Créer un Imposteur",
                 "manage_tags": "Gérer les tags"
             },
             "info": {
@@ -3877,12 +3877,12 @@
                 "selected_file_is_not_an_image": "Le fichier sélectionné n'est pas une image",
                 "failed_to_upload_avatar_image": "Échec de l'envoi de l'image de l'avatar",
                 "failed_to_upload_avatar_gallery_image": "Échec de l'envoi de l'image de la galerie de l'avatar",
-                "impostor_queued_for_creation": "Impostor mis en file d'attente pour création",
-                "failed_to_create_impostor": "Échec de la création de l'Impostor",
-                "impostor_deleted": "Impostor supprimé",
-                "failed_to_delete_impostor": "Échec de la suppression de l'Impostor",
-                "impostor_queued_for_regeneration": "Impostor mis en file d'attente pour régénération",
-                "failed_to_regenerate_impostor": "Échec de la régénération de l'Impostor",
+                "impostor_queued_for_creation": "Imposteur mis en file d'attente pour création",
+                "failed_to_create_impostor": "Échec de la création de l'Imposteur",
+                "impostor_deleted": "Imposteur supprimé",
+                "failed_to_delete_impostor": "Échec de la suppression de l'Imposteur",
+                "impostor_queued_for_regeneration": "Imposteur mis en file d'attente pour régénération",
+                "failed_to_regenerate_impostor": "Échec de la régénération de l'Imposteur",
                 "avatar_deleted_but_current_user_snapshot_refresh": "Avatar supprimé, mais votre liste d'avatars n'a pas pu être actualisée"
             },
             "modal": {
@@ -3890,10 +3890,10 @@
                 "select_fallback": "Sélectionner comme secours",
                 "delete_avatar": "Supprimer l'avatar ?",
                 "edit_local_memo": "Modifier la note locale",
-                "create_impostor_title": "Créer un Impostor ?",
+                "create_impostor_title": "Créer un Imposteur ?",
                 "create": "Créer",
-                "delete_impostor_title": "Supprimer l'Impostor ?",
-                "regenerate_impostor_title": "Régénérer l'Impostor ?",
+                "delete_impostor_title": "Supprimer l'Imposteur ?",
+                "regenerate_impostor_title": "Régénérer l'Imposteur ?",
                 "regenerate": "Régénérer",
                 "block_avatar_title": "Bloquer l'avatar ?",
                 "unblock_avatar_title": "Débloquer l'avatar ?",
@@ -4294,11 +4294,11 @@
             "edit_current_profile_media": "Modifier la bannière et l'icône actuelles",
             "profile_icons_managed_link": "Les icônes de profil sont gérées dans la galerie",
             "emoji_animation_styles": "Styles d'animation",
-            "emoji_animation_type": "Emoji animé",
+            "emoji_animation_type": "Émoji animé",
             "emoji_animation_fps": "FPS",
             "emoji_animation_frame_count": "Nombre de frames",
             "emoji_loop_pingpong": "Boucle aller-retour (Ping-Pong)",
-            "flipbook_info": "Sélectionnez une image PNG 1024x1024 pour l'utiliser comme emoji animé : 4, 16 ou 64 (64 FPS max, 64 frames max).",
+            "flipbook_info": "Sélectionnez une image PNG 1024x1024 pour l'utiliser comme émoji animé : 4, 16 ou 64 (64 FPS max, 64 frames max).",
             "note": "Note",
             "crop_print_border": "Rogner la bordure existante (nouvel envoi)",
             "upload_options": "Options de téléversement",
@@ -4306,9 +4306,9 @@
             "item": "Objet",
             "sticker": "Autocollant",
             "drone_skin": "Skin de drone",
-            "emoji": "Emoji",
+            "emoji": "Émoji",
             "redeem": "Utiliser un code",
-            "create_animated_emoji": "Générateur d'emoji animés",
+            "create_animated_emoji": "Générateur d'émoji animés",
             "grid_settings": "Paramètres de la grille",
             "grid_density": "Densité de la grille",
             "density_options": {
@@ -4391,21 +4391,21 @@
             "search_placeholder": "Rechercher",
             "search_type_placeholder": "Type de recherche",
             "search_types": {
-                "player_name": "Nom du joueur",
-                "player_id": "ID du joueur",
+                "player_name": "Nom de l'utilisateur",
+                "player_id": "ID de l'utilisateur",
                 "world_name": "Nom du monde",
                 "world_id": "ID du monde"
             },
             "no_results": "Aucun résultat trouvé",
             "invalid_file": "Fichier sélectionné invalide. Veuillez sélectionner une capture d'écran VRChat valide",
             "section_location": "Emplacement",
-            "section_players": "Joueurs",
+            "section_players": "Utilisateurs",
             "section_file_info": "Informations du fichier",
-            "unknown_player": "Joueur inconnu",
+            "unknown_player": "Utilisateur inconnu",
             "section_note": "Note",
             "col_date": "Date",
             "col_world": "Monde",
-            "col_players": "Joueurs",
+            "col_players": "Utilisateurs",
             "col_resolution": "Résolution",
             "col_match": "Correspondance",
             "col_author": "Auteur",
@@ -4584,9 +4584,9 @@
                 "boop": "Boop",
                 "group_queueReady": "File d'attente d'instance prête",
                 "instance_closed": "Instance fermée",
-                "OnPlayerJoining": "Joueur en cours d'arrivée",
-                "OnPlayerJoined": "Joueur arrivé",
-                "OnPlayerLeft": "Joueur parti",
+                "OnPlayerJoining": "Utilisateur en cours d'arrivée",
+                "OnPlayerJoined": "Utilisateur arrivé",
+                "OnPlayerLeft": "Utilisateur parti",
                 "AvatarChange": "Changement d'avatar",
                 "Online": "En ligne",
                 "Offline": "Hors ligne",
@@ -4595,7 +4595,7 @@
                 "Friend": "Nouvel ami",
                 "Unfriend": "Retrait d'ami",
                 "DisplayName": "Changement de nom affiché",
-                "TrustLevel": "Changement de niveau de confiance",
+                "TrustLevel": "Changement de rang de confiance",
                 "Bio": "Changement de bio",
                 "groupChange": "Changement de groupe",
                 "group_announcement": "Annonce de groupe",
@@ -4609,10 +4609,10 @@
                 "Unblocked": "Débloqué",
                 "Muted": "Mis en sourdine",
                 "Unmuted": "Sourdine retirée",
-                "BlockedOnPlayerJoined": "Joueur bloqué arrivé",
-                "BlockedOnPlayerLeft": "Joueur bloqué parti",
-                "MutedOnPlayerJoined": "Joueur en sourdine arrivé",
-                "MutedOnPlayerLeft": "Joueur en sourdine parti",
+                "BlockedOnPlayerJoined": "Utilisateur bloqué arrivé",
+                "BlockedOnPlayerLeft": "Utilisateur bloqué parti",
+                "MutedOnPlayerJoined": "Utilisateur en sourdine arrivé",
+                "MutedOnPlayerLeft": "Utilisateur en sourdine parti",
                 "VideoPlay": "Lecture vidéo"
             },
             "favorite_groups": {
@@ -4626,13 +4626,13 @@
             "header": "Historique des instances",
             "info": "Détails de l'instance",
             "search_placeholder": "Rechercher dans l'historique des instances",
-            "table_view": "Joueurs",
+            "table_view": "utilisateurs",
             "chart_view": "Chronologie",
             "empty": {
-                "no_player_detail_rows": "Aucune ligne de détail de joueur",
+                "no_player_detail_rows": "Aucune ligne de détail de l'utilisateur",
                 "there_are_no_timeline_rows_for_this_instance": "Aucune ligne de chronologie pour cette instance",
                 "no_instance_selected": "Aucune instance sélectionnée",
-                "no_player_detail_rows_for_this_instance": "Aucune ligne de détail de joueur pour cette instance",
+                "no_player_detail_rows_for_this_instance": "Aucune ligne de détail de l'utilisateur pour cette instance",
                 "no_instance_records": "Aucun enregistrement d'instance"
             },
             "description": {
@@ -4649,7 +4649,7 @@
                 "this_user_instance_row_cannot_be_deleted_without_event_ids": "Cette visite ne peut pas être supprimée"
             },
             "label": {
-                "players_count": "{count} joueurs",
+                "players_count": "{count} utilisateurs",
                 "recorded_instance_visits": "visites d'instance enregistrées",
                 "recorded_instance_visits_count": "{count} visites d'instance enregistrées.",
                 "rows": "Lignes",
@@ -4754,7 +4754,7 @@
         "boop_dialog": {
             "header": "Boop",
             "emoji_manager": "Gestionnaire d'emojis",
-            "select_default_emoji": "Sélectionner l'emoji par défaut",
+            "select_default_emoji": "Sélectionner l'émoji par défaut",
             "default_emojis": "Emojis par défaut",
             "send": "Envoyer"
         },
@@ -5224,7 +5224,7 @@
         "friend_request": "vous a envoyé une demande d'ami",
         "friend": "est maintenant votre ami",
         "unfriend": "n'est plus votre ami",
-        "trust_level": "Le niveau de confiance est désormais {trustLevel}",
+        "trust_level": "Le rang de confiance est désormais {trustLevel}",
         "display_name": "a changé son nom en {displayName}",
         "group_announcement_title": "Annonce de groupe",
         "group_informative_title": "Information de groupe",
@@ -5383,8 +5383,8 @@
         "avatar": "avatar",
         "copy_value": "Copier {value}",
         "open_link": "Ouvrir le lien : {link}",
-        "open_player": "Ouvrir le profil du joueur : {player}",
-        "player": "joueur",
+        "open_player": "Ouvrir le profil de l'utilisateur : {player}",
+        "player": "utilisateur",
         "remove_value": "Supprimer {value}",
         "add_table_page_size": "Ajouter une taille de page de tableau"
     },
@@ -5557,7 +5557,7 @@
             "modal": {
                 "launch_vrchat": "Lancer VRChat",
                 "launch": "Lancer",
-                "vrchat_is_already_running_continue_launching_this_instance": "VRChat est déjà en cours d'exécution. VRCX-0 enverra une nouvelle requête de lancement au client actif. Si plusieurs clients sont ouverts, le GameLog, la localisation actuelle, la liste des joueurs et certains services en arrière-plan peuvent devenir peu fiables. Continuer ?"
+                "vrchat_is_already_running_continue_launching_this_instance": "VRChat est déjà en cours d'exécution. VRCX-0 enverra une nouvelle requête de lancement au client actif. Si plusieurs clients sont ouverts, le GameLog, la localisation actuelle, la liste des utilisateurs et certains services en arrière-plan peuvent devenir peu fiables. Continuer ?"
             },
             "dynamic": {
                 "value_copied": "{value} copié"
@@ -5724,7 +5724,7 @@
             "table_heavy_game_event_log": "Journal des événements de jeu en mode tableau.",
             "instance_history": "Historique des instances",
             "local_instance_history_for_a_selected_user": "Historique des instances pour un utilisateur sélectionné.",
-            "current_players": "Joueurs actuels",
+            "current_players": "Utilisateurs actuels",
             "search": "Rechercher",
             "world_and_group_search_route": "Route de recherche de mondes et de groupes.",
             "dashboard": "Tableau de bord",
@@ -5761,7 +5761,7 @@
             "vrchat_log_viewer_for_local_output_logs": "Visionneuse des journaux de sortie locaux de VRChat.",
             "settings": "Paramètres",
             "settings_and_diagnostics": "Paramètres et diagnostics.",
-            "current_instance_player_roster_rebuilt_from_local_activity_data": "Liste des joueurs de l'instance actuelle reconstruite à partir des données d'activité locales.",
+            "current_instance_player_roster_rebuilt_from_local_activity_data": "Liste des utilisateurs de l'instance actuelle reconstruite à partir des données d'activité locales.",
             "themes": "Thèmes",
             "themes_description": "Gestion des sources de thèmes et du CSS personnalisé."
         }
