@@ -1,4 +1,5 @@
 import { REGEXP_ONLY_DIGITS, REGEXP_ONLY_DIGITS_AND_CHARS } from 'input-otp';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { BoopEmojiDialog } from '@/components/dialogs/BoopEmojiDialog';
@@ -59,6 +60,7 @@ export function ModalHost() {
     const { t } = useTranslation();
 
     const alertDialog = useModalStore((state) => state.alertDialog);
+    const [retainedAlertDialog, setRetainedAlertDialog] = useState(alertDialog);
     const promptDialog = useModalStore((state) => state.promptDialog);
     const boopDialog = useModalStore((state) => state.boopDialog);
     const otpDialog = useModalStore((state) => state.otpDialog);
@@ -94,6 +96,9 @@ export function ModalHost() {
     const closeImagePreview = useModalStore((state) => state.closeImagePreview);
     const updatePromptValue = useModalStore((state) => state.updatePromptValue);
     const updateOtpValue = useModalStore((state) => state.updateOtpValue);
+    const renderedAlertDialog = alertDialog.open
+        ? alertDialog
+        : retainedAlertDialog;
     const promptValueIsValid = matchesPromptPattern(
         promptDialog.inputPattern,
         promptDialog.value
@@ -101,11 +106,17 @@ export function ModalHost() {
     const otpValue = getOtpInputValue(otpDialog.value, otpDialog.mode);
     const otpIsRecoveryCode = otpDialog.mode === 'otp';
 
+    useEffect(() => {
+        if (alertDialog.open) {
+            setRetainedAlertDialog(alertDialog);
+        }
+    }, [alertDialog]);
+
     return (
         <>
             <Dialog
                 open={alertDialog.open}
-                disablePointerDismissal={!alertDialog.dismissible}
+                disablePointerDismissal={!renderedAlertDialog.dismissible}
                 onOpenChange={(open) => {
                     if (!open) {
                         handleDismiss();
@@ -114,51 +125,56 @@ export function ModalHost() {
                 onOpenChangeComplete={(open) => {
                     if (!open) {
                         handleAlertCloseComplete();
+                        const currentAlertDialog =
+                            useModalStore.getState().alertDialog;
+                        if (!currentAlertDialog.open) {
+                            setRetainedAlertDialog(currentAlertDialog);
+                        }
                     }
                 }}
             >
                 <DialogContent
                     role="alertdialog"
-                    showCloseButton={alertDialog.dismissible}
+                    showCloseButton={renderedAlertDialog.dismissible}
                 >
                     <DialogHeader>
-                        <DialogTitle>{alertDialog.title}</DialogTitle>
+                        <DialogTitle>{renderedAlertDialog.title}</DialogTitle>
                         <DialogDescription>
-                            {alertDialog.description}
+                            {renderedAlertDialog.description}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
-                        {alertDialog.mode === 'confirm' ? (
+                        {renderedAlertDialog.mode === 'confirm' ? (
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={handleCancel}
                             >
-                                {alertDialog.cancelText ||
+                                {renderedAlertDialog.cancelText ||
                                     t('dialog.alertdialog.cancel')}
                             </Button>
                         ) : null}
-                        {alertDialog.alternativeText ? (
+                        {renderedAlertDialog.alternativeText ? (
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={handleAlternative}
                             >
-                                {alertDialog.alternativeText}
+                                {renderedAlertDialog.alternativeText}
                             </Button>
                         ) : null}
                         <Button
                             type="button"
                             variant={
-                                alertDialog.destructive
+                                renderedAlertDialog.destructive
                                     ? 'destructive'
                                     : 'default'
                             }
                             onClick={handleOk}
                         >
-                            {alertDialog.confirmText ||
+                            {renderedAlertDialog.confirmText ||
                                 t(
-                                    alertDialog.mode === 'alert'
+                                    renderedAlertDialog.mode === 'alert'
                                         ? 'dialog.alertdialog.ok'
                                         : 'dialog.alertdialog.confirm'
                                 )}

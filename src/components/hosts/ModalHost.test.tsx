@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import {
+    act,
+    cleanup,
+    fireEvent,
+    render,
+    screen
+} from '@testing-library/react';
 import {
     useEffect,
     useState,
@@ -206,5 +212,34 @@ describe('ModalHost', () => {
 
         expect(screen.queryByRole('alertdialog')).toBeNull();
         expect(useModalStore.getState().alertDialog.title).toBe('');
+    });
+
+    it('retains confirmation content when modal state resets during the close animation', async () => {
+        const result = useModalStore.getState().confirm({
+            title: '退出登录',
+            description: '确定要登出吗？'
+        });
+
+        render(<ModalHost />);
+
+        fireEvent.click(screen.getByRole('button', { name: '确认' }));
+        await expect(result).resolves.toMatchObject({
+            ok: true,
+            reason: 'ok'
+        });
+
+        act(() => {
+            useModalStore.getState().resetModalState();
+        });
+
+        expect(useModalStore.getState().alertDialog.title).toBe('');
+        expect(screen.getByRole('heading', { name: '退出登录' })).toBeTruthy();
+        expect(screen.getByText('确定要登出吗？')).toBeTruthy();
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'finish close animation' })
+        );
+
+        expect(screen.queryByRole('alertdialog')).toBeNull();
     });
 });
