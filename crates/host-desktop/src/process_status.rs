@@ -44,6 +44,16 @@ pub fn detect_steamvr_running() -> bool {
     detect_process_status().is_steamvr_running
 }
 
+pub fn vrchat_process_ids() -> Vec<u32> {
+    let mut sys = System::new();
+    sys.refresh_processes(ProcessesToUpdate::All, true);
+    sys.processes()
+        .values()
+        .filter(|process| is_vrchat_process_name(&process.name().to_string_lossy()))
+        .map(|process| process.pid().as_u32())
+        .collect()
+}
+
 pub fn detect_legacy_vrcx_running() -> bool {
     let mut sys = System::new();
     sys.refresh_processes(ProcessesToUpdate::All, true);
