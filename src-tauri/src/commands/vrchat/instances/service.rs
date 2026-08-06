@@ -119,11 +119,15 @@ impl InstanceLaunchPipe for TauriInstanceLaunchPipe {
     ) -> vrcx_0_application_core::Result<bool> {
         require_host_capability(HostCapability::VrchatLaunchPipe)
             .map_err(|error| vrcx_0_application_core::Error::Custom(error.to_string()))?;
-        let accepted = crate::adapters::ipc::vrcipc_send(launch_url);
-        if accepted {
-            vrcx_0_host_desktop::game_window::focus_vrchat_window();
+        let result = crate::adapters::ipc::vrcipc_send_with_result(launch_url);
+        if result.accepted {
+            if let Some(process_id) = result.server_process_id {
+                vrcx_0_host_desktop::game_window::focus_vrchat_window_for_process(process_id);
+            } else {
+                vrcx_0_host_desktop::game_window::focus_vrchat_window();
+            }
         }
-        Ok(accepted)
+        Ok(result.accepted)
     }
 }
 

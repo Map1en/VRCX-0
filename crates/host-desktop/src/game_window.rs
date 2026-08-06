@@ -1,5 +1,24 @@
 #[cfg(target_os = "windows")]
 pub fn focus_vrchat_window() -> bool {
+    focus_vrchat_windows(
+        crate::process_status::vrchat_process_ids()
+            .into_iter()
+            .collect(),
+    )
+}
+
+#[cfg(target_os = "windows")]
+pub fn focus_vrchat_window_for_process(process_id: u32) -> bool {
+    use std::collections::HashSet;
+
+    if !crate::process_status::vrchat_process_ids().contains(&process_id) {
+        return false;
+    }
+    focus_vrchat_windows(HashSet::from([process_id]))
+}
+
+#[cfg(target_os = "windows")]
+fn focus_vrchat_windows(process_ids: std::collections::HashSet<u32>) -> bool {
     use std::collections::HashSet;
 
     use windows_sys::core::BOOL;
@@ -32,9 +51,6 @@ pub fn focus_vrchat_window() -> bool {
         0
     }
 
-    let process_ids = crate::process_status::vrchat_process_ids()
-        .into_iter()
-        .collect();
     let mut search = WindowSearch {
         process_ids,
         window: std::ptr::null_mut(),
@@ -75,5 +91,10 @@ pub fn focus_vrchat_window() -> bool {
 
 #[cfg(not(target_os = "windows"))]
 pub fn focus_vrchat_window() -> bool {
+    false
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn focus_vrchat_window_for_process(_process_id: u32) -> bool {
     false
 }

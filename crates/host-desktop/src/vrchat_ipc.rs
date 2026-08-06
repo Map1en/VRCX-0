@@ -1,26 +1,57 @@
-#[cfg(target_os = "windows")]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct VrcIpcSendResult {
+    pub accepted: bool,
+    pub server_process_id: Option<u32>,
+}
+
 pub fn vrcipc_send(message: &str) -> bool {
+    vrcipc_send_with_result(message).accepted
+}
+
+#[cfg(target_os = "windows")]
+pub fn vrcipc_send_with_result(message: &str) -> VrcIpcSendResult {
     use std::io::{Read, Write};
+    use std::os::windows::io::AsRawHandle;
     use std::time::Duration;
+    use windows_sys::Win32::Foundation::HANDLE;
+    use windows_sys::Win32::System::Pipes::GetNamedPipeServerProcessId;
 
     let pipe_path = r"\\.\pipe\VRChatURLLaunchPipe";
 
     let mut pipe = match open_pipe_client(pipe_path, Duration::from_secs(1)) {
         Some(p) => p,
-        None => return false,
+        None => return VrcIpcSendResult::default(),
+    };
+    let mut server_process_id = 0;
+    let server_process_id = if unsafe {
+        GetNamedPipeServerProcessId(pipe.as_raw_handle() as HANDLE, &mut server_process_id)
+    } != 0
+    {
+        Some(server_process_id)
+    } else {
+        None
     };
 
     let bytes = message.as_bytes();
     if pipe.write_all(bytes).is_err() {
-        return false;
+        return VrcIpcSendResult {
+            accepted: false,
+            server_process_id,
+        };
     }
 
     let mut result = [0u8; 1];
     if pipe.read_exact(&mut result).is_err() {
-        return false;
+        return VrcIpcSendResult {
+            accepted: false,
+            server_process_id,
+        };
     }
 
-    result[0] == 1
+    VrcIpcSendResult {
+        accepted: result[0] == 1,
+        server_process_id,
+    }
 }
 
 #[cfg(target_os = "windows")]
@@ -62,13 +93,17 @@ fn open_pipe_client(pipe_path: &str, timeout: std::time::Duration) -> Option<std
 }
 
 #[cfg(target_os = "linux")]
-pub fn vrcipc_send(message: &str) -> bool {
-    match linux_vrcipc_send(message) {
+pub fn vrcipc_send_with_result(message: &str) -> VrcIpcSendResult {
+    let accepted = match linux_vrcipc_send(message) {
         Ok(result) => result,
         Err(error) => {
             tracing::warn!(%error, "Linux VRChat launch pipe bridge failed");
             false
         }
+    };
+    VrcIpcSendResult {
+        accepted,
+        server_process_id: None,
     }
 }
 
@@ -198,8 +233,8 @@ fn linux_launch_pipe_script(payload_path: &str) -> String {
 }
 
 #[cfg(not(any(target_os = "windows", target_os = "linux")))]
-pub fn vrcipc_send(_message: &str) -> bool {
-    false
+pub fn vrcipc_send_with_result(_message: &str) -> VrcIpcSendResult {
+    VrcIpcSendResult::default()
 }
 
 #[cfg(test)]
