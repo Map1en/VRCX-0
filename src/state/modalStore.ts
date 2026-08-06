@@ -83,6 +83,7 @@ type ModalStore = {
     handleAlternative(): void;
     handleCancel(): void;
     handleDismiss(): void;
+    handleAlertCloseComplete(): void;
     handlePromptOk(value?: string): void;
     handlePromptCancel(value?: string): void;
     handlePromptDismiss(value?: string): void;
@@ -207,6 +208,15 @@ export const useModalStore = create<ModalStore>((set, get) => {
         if (typeof resolver === 'function') {
             resolver(result);
         }
+    }
+
+    function hideAlertDialog() {
+        set((state) => ({
+            alertDialog: {
+                ...state.alertDialog,
+                open: false
+            }
+        }));
     }
 
     function openBaseAlert(mode: AlertMode, options: AlertDialogOptions = {}) {
@@ -363,7 +373,7 @@ export const useModalStore = create<ModalStore>((set, get) => {
                 return;
             }
 
-            set({ alertDialog: createAlertDialogState() });
+            hideAlertDialog();
             resolveAlert(createResult(true, 'ok'));
         },
         handleAlternative() {
@@ -371,7 +381,7 @@ export const useModalStore = create<ModalStore>((set, get) => {
                 return;
             }
 
-            set({ alertDialog: createAlertDialogState() });
+            hideAlertDialog();
             resolveAlert(createResult(true, 'alternative'));
         },
         handleCancel() {
@@ -380,7 +390,7 @@ export const useModalStore = create<ModalStore>((set, get) => {
                 return;
             }
 
-            set({ alertDialog: createAlertDialogState() });
+            hideAlertDialog();
             if (alertDialog.mode === 'alert') {
                 resolveAlert(createResult(true, 'ok'));
                 return;
@@ -394,13 +404,20 @@ export const useModalStore = create<ModalStore>((set, get) => {
                 return;
             }
 
-            set({ alertDialog: createAlertDialogState() });
+            hideAlertDialog();
             if (alertDialog.mode === 'alert') {
                 resolveAlert(createResult(true, 'ok'));
                 return;
             }
 
             resolveAlert(createResult(false, 'dismiss'));
+        },
+        handleAlertCloseComplete() {
+            if (get().alertDialog.open) {
+                return;
+            }
+
+            set({ alertDialog: createAlertDialogState() });
         },
         handlePromptOk(value = '') {
             const { promptDialog } = get();

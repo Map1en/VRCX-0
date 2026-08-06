@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import type { ComponentProps, PropsWithChildren } from 'react';
+import {
+    useEffect,
+    useState,
+    type ComponentProps,
+    type PropsWithChildren
+} from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('react-i18next', () => ({
@@ -59,23 +64,46 @@ vi.mock('@/ui/shadcn/dialog', () => ({
         children,
         open,
         disablePointerDismissal = false,
-        onOpenChange
+        onOpenChange,
+        onOpenChangeComplete
     }: PropsWithChildren<{
         open: boolean;
         disablePointerDismissal?: boolean;
         onOpenChange?(open: boolean): void;
-    }>) =>
-        open ? (
+        onOpenChangeComplete?(open: boolean): void;
+    }>) => {
+        const [mounted, setMounted] = useState(open);
+
+        useEffect(() => {
+            if (open) {
+                setMounted(true);
+            }
+        }, [open]);
+
+        return mounted ? (
             <div
                 data-testid="dialog-root"
                 data-disable-pointer-dismissal={disablePointerDismissal}
+                data-state={open ? 'open' : 'closed'}
             >
                 <button type="button" onClick={() => onOpenChange?.(false)}>
                     dismiss dialog
                 </button>
+                {!open ? (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setMounted(false);
+                            onOpenChangeComplete?.(false);
+                        }}
+                    >
+                        finish close animation
+                    </button>
+                ) : null}
                 {children}
             </div>
-        ) : null,
+        ) : null;
+    },
     DialogContent: ({
         children,
         showCloseButton: _showCloseButton,
@@ -165,6 +193,18 @@ describe('ModalHost', () => {
             ok: false,
             reason: 'dismiss'
         });
+
+        expect(screen.getByRole('heading', { name: '关闭房间' })).toBeTruthy();
+        expect(screen.getByText('wrld_test:1')).toBeTruthy();
+        expect(
+            screen.getByTestId('dialog-root').getAttribute('data-state')
+        ).toBe('closed');
+
+        fireEvent.click(
+            screen.getByRole('button', { name: 'finish close animation' })
+        );
+
         expect(screen.queryByRole('alertdialog')).toBeNull();
+        expect(useModalStore.getState().alertDialog.title).toBe('');
     });
 });

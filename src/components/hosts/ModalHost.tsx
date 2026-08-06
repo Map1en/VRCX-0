@@ -76,6 +76,9 @@ export function ModalHost() {
     const handleAlternative = useModalStore((state) => state.handleAlternative);
     const handleCancel = useModalStore((state) => state.handleCancel);
     const handleDismiss = useModalStore((state) => state.handleDismiss);
+    const handleAlertCloseComplete = useModalStore(
+        (state) => state.handleAlertCloseComplete
+    );
     const handlePromptOk = useModalStore((state) => state.handlePromptOk);
     const handlePromptCancel = useModalStore(
         (state) => state.handlePromptCancel
@@ -106,6 +109,11 @@ export function ModalHost() {
                 onOpenChange={(open) => {
                     if (!open) {
                         handleDismiss();
+                    }
+                }}
+                onOpenChangeComplete={(open) => {
+                    if (!open) {
+                        handleAlertCloseComplete();
                     }
                 }}
             >

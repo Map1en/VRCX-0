@@ -20,6 +20,24 @@ describe('modalStore', () => {
             destructive: true
         });
         useModalStore.getState().handleCancel();
+        expect(useModalStore.getState().alertDialog).toMatchObject({
+            open: false,
+            mode: 'alert',
+            title: 'Notice',
+            destructive: true
+        });
+        useModalStore.getState().handleAlertCloseComplete();
+        expect(useModalStore.getState().alertDialog).toEqual({
+            open: false,
+            mode: 'alert',
+            title: '',
+            description: '',
+            confirmText: '',
+            alternativeText: '',
+            cancelText: '',
+            dismissible: true,
+            destructive: false
+        });
         await expect(alertResult).resolves.toEqual({
             ok: true,
             reason: 'ok',
@@ -48,6 +66,24 @@ describe('modalStore', () => {
 
         useModalStore.getState().handleOk();
         await expect(second).resolves.toMatchObject({ ok: true, reason: 'ok' });
+    });
+
+    it('does not clear a new alert when an earlier close animation completes', async () => {
+        const first = useModalStore.getState().confirm({ title: 'First' });
+        useModalStore.getState().handleCancel();
+        await first;
+
+        const second = useModalStore.getState().alert({ title: 'Second' });
+        useModalStore.getState().handleAlertCloseComplete();
+
+        expect(useModalStore.getState().alertDialog).toMatchObject({
+            open: true,
+            mode: 'alert',
+            title: 'Second'
+        });
+
+        useModalStore.getState().handleOk();
+        await second;
     });
 
     it('resolves an optional alternative confirm action', async () => {
