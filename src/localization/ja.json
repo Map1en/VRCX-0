@@ -2509,8 +2509,8 @@
                         "crop": "自動でプリントの外枠 (白い部分) をトリミングする"
                     },
                     "save_instance_stickers_to_file": {
-                        "header": "インスタンス内にあるスタンプをローカルファイルに保存",
-                        "description": "貼られたスタンプを、VRChat の画像フォルダに保存する"
+                        "header": "インスタンス内にあるステッカーをローカルファイルに保存",
+                        "description": "貼られたステッカーを、VRChat の画像フォルダに保存する"
                     },
                     "save_instance_emoji_to_file": {
                         "header": "インスタンス内の絵文字をローカルファイルに保存",
