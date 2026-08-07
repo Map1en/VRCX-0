@@ -287,9 +287,9 @@ export function AboutVrcxDialog({
                 <div className="mt-6 flex flex-wrap items-center justify-between gap-2 border-t pt-4">
                     <Button
                         type="button"
-                        variant="link"
+                        variant="ghost"
                         size="sm"
-                        className="text-muted-foreground/70 hover:text-foreground h-auto p-0 text-[11.5px] font-normal"
+                        className="text-muted-foreground/70 hover:text-foreground h-7 px-2 text-[11.5px] font-medium"
                         onClick={() => {
                             openExternalLink(links.license);
                         }}
