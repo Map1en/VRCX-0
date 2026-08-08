@@ -32,12 +32,6 @@ export async function setTrayIconNotification(notify: boolean): Promise<void> {
     await commands.appSetTrayIconNotification(notify);
 }
 
-export async function setTaskbarOverlayNotification(
-    notify: boolean
-): Promise<void> {
-    await commands.appSetTaskbarOverlayNotification(notify);
-}
-
 export async function showDesktopNotification(
     boldText: string,
     text: string,

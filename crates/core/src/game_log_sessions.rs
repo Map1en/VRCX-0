@@ -32,6 +32,7 @@ pub struct SessionEventInput {
     pub video_url: Option<String>,
     pub video_name: Option<String>,
     pub video_id: Option<String>,
+    pub resource_url: Option<String>,
     pub is_favorite: bool,
 }
 
@@ -62,6 +63,8 @@ pub struct SessionEventOut {
     pub video_name: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub video_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub resource_url: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub play_count: Option<i64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -97,13 +100,14 @@ fn dedupe_key(event: &SessionEventInput) -> String {
         return format!("{}\0row:{}", event.type_, row_id);
     }
     format!(
-        "{}\0{}\0{}\0{}\0{}\0{}",
+        "{}\0{}\0{}\0{}\0{}\0{}\0{}",
         event.type_,
         event.created_at,
         event.user_id,
         event.display_name,
         event.location,
-        event.video_url.as_deref().unwrap_or_default()
+        event.video_url.as_deref().unwrap_or_default(),
+        event.resource_url.as_deref().unwrap_or_default()
     )
 }
 
@@ -118,6 +122,7 @@ struct SingleNode {
     video_url: Option<String>,
     video_name: Option<String>,
     video_id: Option<String>,
+    resource_url: Option<String>,
     is_favorite: bool,
     play_count: Option<i64>,
 }
@@ -162,6 +167,7 @@ fn single_node(event: &SessionEventInput) -> SingleNode {
         video_url: event.video_url.clone(),
         video_name: event.video_name.clone(),
         video_id: event.video_id.clone(),
+        resource_url: event.resource_url.clone(),
         is_favorite: event.is_favorite,
         play_count: None,
     }
@@ -298,6 +304,7 @@ fn node_to_out(node: Node) -> SessionEventOut {
             video_url: single.video_url,
             video_name: single.video_name,
             video_id: single.video_id,
+            resource_url: single.resource_url,
             play_count: single.play_count,
             is_favorite: Some(single.is_favorite),
             count: None,
@@ -313,6 +320,7 @@ fn node_to_out(node: Node) -> SessionEventOut {
             video_url: None,
             video_name: None,
             video_id: None,
+            resource_url: None,
             play_count: None,
             is_favorite: None,
             count: Some(group.members.len() as i64),

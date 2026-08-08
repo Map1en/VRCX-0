@@ -9,9 +9,9 @@ use serde_json::Value;
 
 use super::profile_lock::ProfileLock;
 use crate::{
-    AuthenticatedRuntimeDeps, AuthenticatedRuntimeOrchestrator, GroupOrderSource,
-    NoteExportRuntime, Result, RuntimeHostComposition, RuntimeHostContext, RuntimeHostProfile,
-    RuntimeHostProfileExtension, SharedCollectionImportRuntime, UnavailableGroupOrderSource,
+    AuthenticatedRuntimeOrchestrator, GroupOrderSource, NoteExportRuntime, Result,
+    RuntimeHostComposition, RuntimeHostContext, RuntimeHostProfile, RuntimeHostProfileExtension,
+    SharedCollectionImportRuntime, UnavailableGroupOrderSource,
 };
 use vrcx_0_application::{
     AuthenticatedSessionMaintenanceOutcome, DataDirMigrationRuntime, FavoriteImportRuntime,
@@ -509,17 +509,16 @@ impl RuntimeHostStateBuilder {
                 },
             ) as crate::RuntimeHostFavoritesCallback)
         };
-        let authenticated_runtime =
-            AuthenticatedRuntimeOrchestrator::new(AuthenticatedRuntimeDeps {
-                db: Arc::clone(&self.db),
-                web: Arc::clone(&self.web),
-                event_bus: self.runtime_context.event_bus.clone(),
-                tasks: self.runtime_context.tasks.clone(),
-                auth_scope: self.runtime_context.auth_scope.clone(),
-                session: self.runtime_context.session.clone(),
-                realtime_runtime: Arc::clone(&realtime_runtime),
-                favorites_sink,
-            });
+        let authenticated_runtime = AuthenticatedRuntimeOrchestrator::new(
+            Arc::clone(&self.db),
+            Arc::clone(&self.web),
+            self.runtime_context.event_bus.clone(),
+            self.runtime_context.tasks.clone(),
+            self.runtime_context.auth_scope.clone(),
+            self.runtime_context.session.clone(),
+            Arc::clone(&realtime_runtime),
+            favorites_sink,
+        );
         let favorite_import = FavoriteImportRuntime::new(
             Arc::clone(&self.db),
             Arc::clone(&self.web),

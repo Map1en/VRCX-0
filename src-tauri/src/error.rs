@@ -203,10 +203,9 @@ mod tests {
 
     #[test]
     fn serializes_structured_database_error_with_sqlite_category() {
-        let payload = serde_json::to_value(AppError::Database(
-            "database or disk is full".to_string(),
-        ))
-        .unwrap();
+        let payload =
+            serde_json::to_value(AppError::Database("database or disk is full".to_string()))
+                .unwrap();
 
         assert_eq!(
             payload,
@@ -220,10 +219,8 @@ mod tests {
 
     #[test]
     fn omits_sqlite_category_for_unrelated_errors() {
-        let payload = serde_json::to_value(AppError::Custom(
-            "database or disk is full".to_string(),
-        ))
-        .unwrap();
+        let payload =
+            serde_json::to_value(AppError::Custom("database or disk is full".to_string())).unwrap();
 
         assert_eq!(
             payload,

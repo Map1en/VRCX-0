@@ -3,6 +3,8 @@ import {
     ChevronRightIcon,
     CopyIcon,
     ExternalLinkIcon,
+    FileTextIcon,
+    ImageIcon,
     LogInIcon,
     LogOutIcon,
     UsersIcon,
@@ -392,6 +394,78 @@ function VideoActivityRow({ event }: { event: GameLogSessionEvent }) {
     );
 }
 
+function ResourceActivityRow({ event }: { event: GameLogSessionEvent }) {
+    const { t } = useTranslation();
+    const resourceUrl = String(event?.resourceUrl || '').trim();
+    const isImage = event?.type === 'ImageLoad';
+    const Icon = isImage ? ImageIcon : FileTextIcon;
+
+    return (
+        <ContextMenu>
+            <ContextMenuTrigger
+                render={
+                    <div className="hover:bg-muted/35 grid min-h-8 grid-cols-[4.75rem_1rem_minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1 text-sm">
+                        <EventTime value={event?.created_at} />
+                        <Icon className="text-muted-foreground size-3.5 shrink-0" />
+                        {resourceUrl ? (
+                            <Button
+                                type="button"
+                                variant="link"
+                                className="text-foreground h-auto min-w-0 justify-start p-0 text-left font-normal"
+                                onClick={(eventObject) => {
+                                    eventObject.stopPropagation();
+                                    openExternalLink(resourceUrl);
+                                }}
+                            >
+                                <span className="truncate">{resourceUrl}</span>
+                            </Button>
+                        ) : (
+                            <span className="text-muted-foreground min-w-0 truncate">
+                                {getEventLabel(event, t)}
+                            </span>
+                        )}
+                        <span className="text-muted-foreground shrink-0 text-xs">
+                            {getEventLabel(event, t)}
+                        </span>
+                    </div>
+                }
+            />
+            <ContextMenuContent>
+                {resourceUrl ? (
+                    <>
+                        <ContextMenuGroup>
+                            <ContextMenuItem
+                                onClick={() => {
+                                    openExternalLink(resourceUrl);
+                                }}
+                            >
+                                <ExternalLinkIcon data-icon="inline-start" />
+                                {t('common.actions.open_link')}
+                            </ContextMenuItem>
+                        </ContextMenuGroup>
+                        <ContextMenuSeparator />
+                    </>
+                ) : null}
+                <ContextMenuGroup>
+                    <ContextMenuItem
+                        disabled={!resourceUrl}
+                        onClick={() => {
+                            void copyTextToClipboard(resourceUrl, {
+                                successMessage: t(
+                                    'view.game_log.success.copied_game_log_detail'
+                                )
+                            });
+                        }}
+                    >
+                        <CopyIcon data-icon="inline-start" />
+                        {t('common.actions.copy')}
+                    </ContextMenuItem>
+                </ContextMenuGroup>
+            </ContextMenuContent>
+        </ContextMenu>
+    );
+}
+
 function SessionEventRow({
     durationByKey,
     event
@@ -410,6 +484,10 @@ function SessionEventRow({
 
     if (event?.type === 'VideoPlay') {
         return <VideoActivityRow event={event} />;
+    }
+
+    if (event?.type === 'StringLoad' || event?.type === 'ImageLoad') {
+        return <ResourceActivityRow event={event} />;
     }
 
     if (isJoin || isLeave) {
@@ -438,8 +516,15 @@ export function SessionEventGroups({
         )
     );
     const videoEvents = events.filter((event) => event?.type === 'VideoPlay');
+    const resourceEvents = events.filter(
+        (event) => event?.type === 'StringLoad' || event?.type === 'ImageLoad'
+    );
 
-    if (!visibleEvents.length && !videoEvents.length) {
+    if (
+        !visibleEvents.length &&
+        !videoEvents.length &&
+        !resourceEvents.length
+    ) {
         return null;
     }
 
@@ -461,6 +546,21 @@ export function SessionEventGroups({
                         {videoEvents.map((event, index) => (
                             <VideoActivityRow
                                 key={`${event.type}:${event.created_at}:${event.videoUrl || index}`}
+                                event={event}
+                            />
+                        ))}
+                    </div>
+                </div>
+            ) : null}
+            {resourceEvents.length ? (
+                <div className="border-border mt-2 border-t pt-2">
+                    <div className="text-muted-foreground px-2 pb-1 text-xs font-medium">
+                        {t('view.game_log.sessions.resources')}
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                        {resourceEvents.map((event, index) => (
+                            <ResourceActivityRow
+                                key={`${event.type}:${event.created_at}:${event.resourceUrl || index}`}
                                 event={event}
                             />
                         ))}

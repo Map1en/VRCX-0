@@ -37,6 +37,8 @@ const LEGACY_SORT_COLUMN_IDS = [
     'language',
     'bioLink',
     'joinCount',
+    'inviteSentCount',
+    'inviteReceivedCount',
     'timeTogether',
     'lastSeen',
     'mutualFriends',
@@ -101,7 +103,10 @@ export function sanitizeFriendListPageSizes(value: unknown): number[] {
 }
 
 export function sanitizeFriendListColumnVisibility(value: unknown) {
-    const visibility: Record<string, boolean> = {};
+    const visibility: Record<string, boolean> = {
+        inviteSentCount: false,
+        inviteReceivedCount: false
+    };
     if (value && typeof value === 'object') {
         const source = Object.fromEntries(Object.entries(value));
         for (const columnId of FRIEND_LIST_COLUMN_IDS) {

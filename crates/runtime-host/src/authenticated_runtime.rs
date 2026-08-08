@@ -38,17 +38,6 @@ enum RuntimeStep {
     Realtime,
 }
 
-pub struct AuthenticatedRuntimeDeps {
-    pub db: Arc<DatabaseService>,
-    pub web: Arc<WebClient>,
-    pub event_bus: RuntimeEventBus,
-    pub tasks: TaskSupervisor,
-    pub auth_scope: RuntimeAuthScope,
-    pub session: HostSessionRuntime,
-    pub realtime_runtime: Arc<RealtimeHostRuntime>,
-    pub favorites_sink: Option<RuntimeHostFavoritesCallback>,
-}
-
 #[derive(Clone)]
 pub struct AuthenticatedRuntimeOrchestrator {
     snapshot: Arc<Mutex<AuthenticatedRuntimePhaseSnapshot>>,
@@ -64,18 +53,28 @@ pub struct AuthenticatedRuntimeOrchestrator {
 }
 
 impl AuthenticatedRuntimeOrchestrator {
-    pub fn new(deps: AuthenticatedRuntimeDeps) -> Self {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        db: Arc<DatabaseService>,
+        web: Arc<WebClient>,
+        event_bus: RuntimeEventBus,
+        tasks: TaskSupervisor,
+        auth_scope: RuntimeAuthScope,
+        session: HostSessionRuntime,
+        realtime_runtime: Arc<RealtimeHostRuntime>,
+        favorites_sink: Option<RuntimeHostFavoritesCallback>,
+    ) -> Self {
         Self {
             snapshot: Arc::new(Mutex::new(AuthenticatedRuntimePhaseSnapshot::default())),
             generation: Arc::new(AtomicU64::new(0)),
-            db: deps.db,
-            web: deps.web,
-            event_bus: deps.event_bus,
-            tasks: deps.tasks,
-            auth_scope: deps.auth_scope,
-            session: deps.session,
-            realtime_runtime: deps.realtime_runtime,
-            favorites_sink: deps.favorites_sink,
+            db,
+            web,
+            event_bus,
+            tasks,
+            auth_scope,
+            session,
+            realtime_runtime,
+            favorites_sink,
         }
     }
 

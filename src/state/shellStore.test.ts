@@ -3,13 +3,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-    setTrayIconNotification: vi.fn<() => Promise<void>>(),
-    setTaskbarOverlayNotification: vi.fn<() => Promise<void>>()
+    setTrayIconNotification: vi.fn<() => Promise<void>>()
 }));
 
 vi.mock('@/services/shellIntegrationService', () => ({
-    setTrayIconNotification: mocks.setTrayIconNotification,
-    setTaskbarOverlayNotification: mocks.setTaskbarOverlayNotification
+    setTrayIconNotification: mocks.setTrayIconNotification
 }));
 
 import { useShellStore } from './shellStore';
@@ -17,18 +15,13 @@ import { useShellStore } from './shellStore';
 describe('shellStore tray notification ownership', () => {
     beforeEach(() => {
         mocks.setTrayIconNotification.mockReset().mockResolvedValue(undefined);
-        mocks.setTaskbarOverlayNotification
-            .mockReset()
-            .mockResolvedValue(undefined);
         window.location.hash = '#/feed';
         useShellStore.setState({
             notificationLayout: 'notification-center',
             notificationIconDot: true,
-            taskbarIconDot: true,
             notifiedMenus: [],
             vrcUnseenNotificationCount: 0,
-            trayIconNotify: false,
-            taskbarIconNotify: false
+            trayIconNotify: false
         });
     });
 
@@ -91,40 +84,5 @@ describe('shellStore tray notification ownership', () => {
 
         expect(useShellStore.getState().trayIconNotify).toBe(false);
         expect(mocks.setTrayIconNotification).toHaveBeenCalledWith(false);
-    });
-
-    it('drives the taskbar overlay from the same trigger as the tray icon', () => {
-        useShellStore.getState().notifyMenu('friend-log');
-
-        expect(useShellStore.getState().taskbarIconNotify).toBe(true);
-        expect(mocks.setTaskbarOverlayNotification).toHaveBeenCalledWith(true);
-
-        useShellStore.getState().clearAllNotifications();
-
-        expect(useShellStore.getState().taskbarIconNotify).toBe(false);
-        expect(mocks.setTaskbarOverlayNotification).toHaveBeenLastCalledWith(
-            false
-        );
-    });
-
-    it('keeps the tray and taskbar indicators independently switchable', () => {
-        useShellStore.setState({ taskbarIconDot: false });
-        mocks.setTrayIconNotification.mockClear();
-        mocks.setTaskbarOverlayNotification.mockClear();
-
-        useShellStore.getState().notifyMenu('friend-log');
-
-        expect(useShellStore.getState().trayIconNotify).toBe(true);
-        expect(useShellStore.getState().taskbarIconNotify).toBe(false);
-        expect(mocks.setTaskbarOverlayNotification).not.toHaveBeenCalled();
-
-        useShellStore.setState({ notificationIconDot: false });
-        useShellStore.getState().setTaskbarIconDot(true);
-
-        expect(useShellStore.getState().trayIconNotify).toBe(false);
-        expect(useShellStore.getState().taskbarIconNotify).toBe(true);
-        expect(mocks.setTaskbarOverlayNotification).toHaveBeenLastCalledWith(
-            true
-        );
     });
 });

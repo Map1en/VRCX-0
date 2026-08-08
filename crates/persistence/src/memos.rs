@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 use serde::Serialize;
 
 use crate::common::{normalize_text, now_iso, row_i64, row_string, ParamsBuilder};

@@ -21,7 +21,7 @@ use super::release::{
 };
 use super::{
     AppUpdateBuildInfo, AppUpdateDeliveryKind, AppUpdateDownloadPhase, AppUpdateReleaseSnapshot,
-    AppUpdateRuntime, AppUpdateRuntimeDeps, AppUpdateStatusSnapshot, DownloadState,
+    AppUpdateRuntime, AppUpdateStatusSnapshot, DownloadState,
 };
 
 const TEST_UPDATE_VERSION: &str = "2.15.0";
@@ -180,22 +180,22 @@ fn app_update_test_context_with_update_check(
     let event_bus = RuntimeEventBus::new();
     let port = Arc::new(MockUpdaterPort::new(install_outcomes));
     let updater_port: Arc<dyn UpdaterPort> = port.clone();
-    let runtime = AppUpdateRuntime::new(AppUpdateRuntimeDeps {
+    let runtime = AppUpdateRuntime::new(
         web,
         db,
         storage,
-        event_bus: event_bus.clone(),
-        background_jobs: RuntimeBackgroundJobs::new(),
-        build: AppUpdateBuildInfo {
+        event_bus.clone(),
+        RuntimeBackgroundJobs::new(),
+        AppUpdateBuildInfo {
             app_version: "2.14.0".into(),
             build_label: "stable".into(),
             build_badge: String::new(),
             update_check_disabled,
         },
-        target_resolver: Arc::new(|| Some("windows-x86_64-stable".into())),
-        port: updater_port,
-        tasks: TaskSupervisor::new(),
-    });
+        Arc::new(|| Some("windows-x86_64-stable".into())),
+        updater_port,
+        TaskSupervisor::new(),
+    );
     if !update_check_disabled {
         *runtime.inner.status.lock().expect("lock update status") = AppUpdateStatusSnapshot {
             has_available_update: true,

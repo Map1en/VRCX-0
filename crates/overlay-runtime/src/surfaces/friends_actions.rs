@@ -17,6 +17,7 @@ use vrcx_0_application_core::vrchat_api::{
 };
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::location::parse_location;
+use vrcx_0_persistence::invite_history::record_successful_invite_send;
 use vrcx_0_vr_overlay::SlintPanelEvent;
 
 use crate::VrOverlayRuntimeServices;
@@ -44,6 +45,7 @@ impl VrOverlayRuntime {
         let endpoint =
             first_non_empty([snapshot.endpoint.as_str(), auth_snapshot.endpoint.as_str()])
                 .to_string();
+        let owner_user_id = auth_snapshot.current_user_id;
         let current_location = self.current_friends_panel_location_snapshot().0;
         let panel = Arc::clone(&self.interactive_panel);
         let frame_dirty = Arc::clone(&self.friends_panel_frame_dirty);
@@ -54,9 +56,15 @@ impl VrOverlayRuntime {
         );
         let tasks = services.data().tasks.clone();
         tasks.spawn(async move {
-            let message =
-                run_friends_panel_action(services, endpoint, current_location, record, action)
-                    .await;
+            let message = run_friends_panel_action(
+                services,
+                owner_user_id,
+                endpoint,
+                current_location,
+                record,
+                action,
+            )
+            .await;
             set_friends_panel_status_message(&panel, &frame_dirty, message);
         });
     }
@@ -210,6 +218,7 @@ impl InstanceLaunchPipe for RuntimeFriendsPanelLaunchPipe {
 
 async fn run_friends_panel_action(
     services: Arc<dyn VrOverlayRuntimeServices>,
+    owner_user_id: String,
     endpoint: String,
     current_location: String,
     record: FriendRecord,
@@ -273,7 +282,8 @@ async fn run_friends_panel_action(
                 Ok(params) => params,
                 Err(error) => return format!("Invite failed: {error}"),
             };
-            let request = invite_send_input(endpoint, action.user_id, params);
+            let receiver_user_id = action.user_id;
+            let request = invite_send_input(endpoint, receiver_user_id.clone(), params);
             let request = match request {
                 Ok((_, request)) => request,
                 Err(error) => return format!("Invite failed: {error}"),
@@ -286,7 +296,20 @@ async fn run_friends_panel_action(
             )
             .await
             {
-                Ok(()) => "Invite sent.".to_string(),
+                Ok(()) => {
+                    match record_successful_invite_send(
+                        services.data().db.as_ref(),
+                        &owner_user_id,
+                        &receiver_user_id,
+                        "vr-overlay-friends-panel",
+                        None,
+                    ) {
+                        Ok(_) => "Invite sent.".to_string(),
+                        Err(error) => format!(
+                            "Invite sent, but its local history could not be saved: {error}"
+                        ),
+                    }
+                }
                 Err(error) => format!("Invite failed: {error}"),
             }
         }

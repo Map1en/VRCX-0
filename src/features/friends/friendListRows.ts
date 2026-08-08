@@ -16,6 +16,8 @@ export const FRIEND_LIST_DEFAULT_SEARCH_FILTER_IDS = [
 export type FriendListRow = Record<string, unknown> & {
     $friendNumber?: unknown;
     $joinCount?: number;
+    $inviteReceivedCount?: number;
+    $inviteSentCount?: number;
     $lastSeen?: string;
     $mutualCount?: number | string;
     $mutualOptedOut?: boolean;
@@ -66,6 +68,8 @@ export type FriendListStatsPatch = FriendPatchEntry & {
     userId: string;
     patch: {
         $joinCount?: number;
+        $inviteReceivedCount: number;
+        $inviteSentCount: number;
         $lastSeen?: string;
         $mutualCount: number;
         $mutualOptedOut: boolean;

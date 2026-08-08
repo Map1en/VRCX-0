@@ -1,7 +1,6 @@
 import { PanelRightIcon, Settings2Icon, XIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
 import {
@@ -18,7 +17,10 @@ import {
     type Session
 } from '@/platform/tauri/bindings';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
-import { useLlmEndpointsStore } from '@/state/llmEndpointsStore';
+import {
+    openLlmEndpointsManager,
+    useLlmEndpointsStore
+} from '@/state/llmEndpointsStore';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -51,6 +53,7 @@ import {
     SelectContent,
     SelectGroup,
     SelectItem,
+    SelectLabel,
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
@@ -65,7 +68,6 @@ import {
 import { AssistantTranscript } from './components/AssistantTranscript';
 import { Composer } from './components/Composer';
 import { EntityPanel } from './components/EntityPanel';
-import { RuntimeModelSelect } from './components/RuntimeModelSelect';
 import { SessionSidebar } from './components/SessionSidebar';
 import { useAssistantEvents } from './useAssistantEvents';
 import type { AssistantHealth } from './useAssistantHealth';
@@ -118,7 +120,6 @@ function isEndpointRemovedError(error: unknown): boolean {
 
 export function AssistantDialog() {
     const { t } = useTranslation();
-    const navigate = useNavigate();
     useAssistantEvents();
     const runtimeStatus = useAssistantRuntimeStatus();
     const endpoints = useLlmEndpointsStore((state) => state.endpoints);
@@ -130,7 +131,6 @@ export function AssistantDialog() {
         useState<AssistantRuntimeSelection>(DEFAULT_RUNTIME_SELECTION);
     const [assistantReasoningEffort, setAssistantReasoningEffort] =
         useState('');
-    const [endpointsLoaded, setEndpointsLoaded] = useState(false);
 
     const open = useAssistantChatStore((state) => state.open);
     const setOpen = useAssistantChatStore((state) => state.setOpen);
@@ -151,6 +151,7 @@ export function AssistantDialog() {
     const selectedEndpoint = endpoints.find(
         (endpoint) => endpoint.id === runtimeSelection.endpointId
     );
+    const modelOptions = selectedEndpoint?.models ?? [];
     const hasRuntime = Boolean(selectedEndpoint && runtimeSelection.model);
     const showReasoningEffort = shouldShowReasoningEffortSelector(
         selectedEndpoint ?? null,
@@ -180,9 +181,7 @@ export function AssistantDialog() {
     useEffect(() => {
         if (open) {
             refreshSessions();
-            loadEndpoints()
-                .catch(() => {})
-                .finally(() => setEndpointsLoaded(true));
+            loadEndpoints().catch(() => {});
             commands
                 .appAssistantReasoningEffort()
                 .then((effort) => setAssistantReasoningEffort(effort))
@@ -246,20 +245,27 @@ export function AssistantDialog() {
         }
     }
 
-    function refreshSelectableModels() {
-        const stale = endpoints.filter(
-            (endpoint) =>
-                !endpoint.models.length ||
-                endpoint.id === runtimeSelection.endpointId
-        );
-        for (const endpoint of stale) {
-            detectEndpointModels({
-                id: endpoint.id,
-                baseUrl: null,
-                apiKey: null,
-                persist: true
-            }).catch(() => {});
+    function updateEndpoint(endpointId: string) {
+        const endpoint = endpoints.find((item) => item.id === endpointId);
+        const currentModel = runtimeSelection.model;
+        const nextModel =
+            endpoint?.models.find((model) => model === currentModel) ??
+            endpoint?.models[0] ??
+            null;
+        updateRuntimeSelection({ endpointId, model: nextModel });
+    }
+
+    function refreshSelectedEndpointModels() {
+        const endpointId = runtimeSelection.endpointId;
+        if (!endpointId) {
+            return;
         }
+        detectEndpointModels({
+            id: endpointId,
+            baseUrl: null,
+            apiKey: null,
+            persist: true
+        }).catch(() => {});
     }
 
     async function updateReasoningEffort(effort: string) {
@@ -273,9 +279,9 @@ export function AssistantDialog() {
         }
     }
 
-    function openAssistantSettings() {
+    function openEndpointManager() {
         setOpen(false);
-        navigate('/settings?tab=ai');
+        openLlmEndpointsManager();
     }
 
     async function handleSend(text: string) {
@@ -296,7 +302,6 @@ export function AssistantDialog() {
     }
 
     const notConfigured = !hasRuntime;
-    const showSetupGate = notConfigured && endpointsLoaded;
     const examplePrompts = useMemo(
         () => [
             t('assistant.example_1'),
@@ -324,7 +329,7 @@ export function AssistantDialog() {
                         <Popover
                             onOpenChange={(popoverOpen) => {
                                 if (popoverOpen) {
-                                    refreshSelectableModels();
+                                    refreshSelectedEndpointModels();
                                 }
                             }}
                         >
@@ -356,48 +361,254 @@ export function AssistantDialog() {
                                     </PopoverTitle>
                                 </PopoverHeader>
                                 <div className="grid gap-3">
-                                    {showSetupGate ? (
-                                        <div className="grid gap-2.5 pb-1">
-                                            <span className="text-muted-foreground">
-                                                {t('assistant.setup_title')}
-                                            </span>
-                                            <Button
-                                                type="button"
-                                                size="sm"
-                                                onClick={openAssistantSettings}
-                                            >
-                                                {t('assistant.open_settings')}
-                                            </Button>
-                                        </div>
-                                    ) : (
-                                        <RuntimeSettings
-                                            selection={runtimeSelection}
-                                            sessionScoped={Boolean(
-                                                activeSessionId
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="assistant-runtime-endpoint">
+                                            {t('assistant.runtime.connection')}
+                                        </Label>
+                                        <Select
+                                            value={
+                                                runtimeSelection.endpointId ||
+                                                undefined
+                                            }
+                                            items={endpoints.map(
+                                                (endpoint) => ({
+                                                    value: endpoint.id,
+                                                    label: endpoint.name
+                                                })
                                             )}
-                                            reasoningEffort={
-                                                showReasoningEffort
-                                                    ? effectiveAssistantEffort
-                                                    : null
+                                            disabled={!endpoints.length}
+                                            onValueChange={(value) =>
+                                                updateEndpoint(value ?? '')
                                             }
-                                            reasoningEffortOptions={
-                                                reasoningEffortOptions
+                                        >
+                                            <SelectTrigger
+                                                id="assistant-runtime-endpoint"
+                                                className="w-full"
+                                            >
+                                                <SelectValue
+                                                    placeholder={t(
+                                                        'assistant.runtime.connection_unset'
+                                                    )}
+                                                />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectGroup>
+                                                    {endpoints.map(
+                                                        (endpoint) => (
+                                                            <SelectItem
+                                                                key={
+                                                                    endpoint.id
+                                                                }
+                                                                value={
+                                                                    endpoint.id
+                                                                }
+                                                            >
+                                                                {endpoint.name}
+                                                            </SelectItem>
+                                                        )
+                                                    )}
+                                                </SelectGroup>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="assistant-runtime-model">
+                                            {t('assistant.runtime.model')}
+                                        </Label>
+                                        {modelOptions.length ? (
+                                            <Select
+                                                value={
+                                                    runtimeSelection.model ||
+                                                    undefined
+                                                }
+                                                items={modelOptions.map(
+                                                    (model) => ({
+                                                        value: model,
+                                                        label: model
+                                                    })
+                                                )}
+                                                onValueChange={(model) =>
+                                                    updateRuntimeSelection({
+                                                        model
+                                                    })
+                                                }
+                                            >
+                                                <SelectTrigger
+                                                    id="assistant-runtime-model"
+                                                    className="w-full"
+                                                >
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                        {selectedEndpoint?.name ? (
+                                                            <SelectLabel>
+                                                                {
+                                                                    selectedEndpoint.name
+                                                                }
+                                                            </SelectLabel>
+                                                        ) : null}
+                                                        {modelOptions.map(
+                                                            (model) => (
+                                                                <SelectItem
+                                                                    key={model}
+                                                                    value={
+                                                                        model
+                                                                    }
+                                                                >
+                                                                    {model}
+                                                                </SelectItem>
+                                                            )
+                                                        )}
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
+                                        ) : (
+                                            <div className="text-muted-foreground rounded-md border px-3 py-2 text-xs">
+                                                {t(
+                                                    'assistant.runtime.model_unset'
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {showReasoningEffort ? (
+                                        <div className="grid gap-1.5">
+                                            <Label htmlFor="assistant-runtime-reasoning-effort">
+                                                {t(
+                                                    'assistant.runtime.reasoning_effort'
+                                                )}
+                                            </Label>
+                                            <Select
+                                                value={effectiveAssistantEffort}
+                                                items={reasoningEffortOptions.map(
+                                                    (effort) => ({
+                                                        value: effort,
+                                                        label: effort
+                                                    })
+                                                )}
+                                                onValueChange={(value) =>
+                                                    updateReasoningEffort(
+                                                        value ?? ''
+                                                    )
+                                                }
+                                            >
+                                                <SelectTrigger
+                                                    id="assistant-runtime-reasoning-effort"
+                                                    className="data-placeholder:text-foreground w-full"
+                                                >
+                                                    <SelectValue>
+                                                        {effectiveAssistantEffort ||
+                                                            t(
+                                                                'assistant.runtime.reasoning_effort_provider_default'
+                                                            )}
+                                                    </SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                        <SelectItem value="">
+                                                            {t(
+                                                                'assistant.runtime.reasoning_effort_provider_default'
+                                                            )}
+                                                        </SelectItem>
+                                                        {reasoningEffortOptions.map(
+                                                            (effort) => (
+                                                                <SelectItem
+                                                                    key={effort}
+                                                                    value={
+                                                                        effort
+                                                                    }
+                                                                >
+                                                                    {effort}
+                                                                </SelectItem>
+                                                            )
+                                                        )}
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    ) : null}
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="assistant-runtime-playbook">
+                                            {t(
+                                                'assistant.runtime.playbook_mode'
+                                            )}
+                                        </Label>
+                                        <Select
+                                            value={
+                                                runtimeSelection.playbookMode
                                             }
-                                            onSelectionChange={(patch) =>
-                                                void updateRuntimeSelection(
-                                                    patch
-                                                )
+                                            items={PLAYBOOK_MODES.map(
+                                                (mode) => ({
+                                                    value: mode,
+                                                    label: t(
+                                                        `assistant.settings.playbook_mode_${mode}`
+                                                    )
+                                                })
+                                            )}
+                                            onValueChange={(value) =>
+                                                updateRuntimeSelection({
+                                                    playbookMode:
+                                                        parsePlaybookMode(
+                                                            value ?? ''
+                                                        )
+                                                })
                                             }
-                                            onReasoningEffortChange={(effort) =>
-                                                void updateReasoningEffort(
-                                                    effort
-                                                )
+                                        >
+                                            <SelectTrigger
+                                                id="assistant-runtime-playbook"
+                                                className="w-full"
+                                            >
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectGroup>
+                                                    {PLAYBOOK_MODES.map(
+                                                        (mode) => (
+                                                            <SelectItem
+                                                                key={mode}
+                                                                value={mode}
+                                                            >
+                                                                {t(
+                                                                    `assistant.settings.playbook_mode_${mode}`
+                                                                )}
+                                                            </SelectItem>
+                                                        )
+                                                    )}
+                                                </SelectGroup>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+                                        <Label
+                                            htmlFor="assistant-runtime-writes"
+                                            className="text-sm"
+                                        >
+                                            {t(
+                                                'assistant.runtime.allow_writes'
+                                            )}
+                                        </Label>
+                                        <Switch
+                                            id="assistant-runtime-writes"
+                                            checked={
+                                                runtimeSelection.allowWrites
                                             }
-                                            onOpenSettings={
-                                                openAssistantSettings
+                                            onCheckedChange={(allowWrites) =>
+                                                updateRuntimeSelection({
+                                                    allowWrites
+                                                })
                                             }
                                         />
-                                    )}
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={openEndpointManager}
+                                    >
+                                        {t(
+                                            'assistant.runtime.manage_endpoints'
+                                        )}
+                                    </Button>
                                 </div>
                             </PopoverContent>
                         </Popover>
@@ -470,61 +681,35 @@ export function AssistantDialog() {
                                     <Empty className="py-12">
                                         <EmptyHeader>
                                             <EmptyTitle>
-                                                {showSetupGate
-                                                    ? t('assistant.setup_title')
-                                                    : t(
-                                                          'assistant.empty_title'
-                                                      )}
+                                                {t('assistant.empty_title')}
                                             </EmptyTitle>
                                         </EmptyHeader>
                                         <EmptyContent>
-                                            {showSetupGate ? (
+                                            {examplePrompts.map((prompt) => (
                                                 <Button
+                                                    key={prompt}
                                                     type="button"
-                                                    size="sm"
-                                                    onClick={
-                                                        openAssistantSettings
+                                                    size="xs"
+                                                    variant="outline"
+                                                    disabled={notConfigured}
+                                                    onClick={() =>
+                                                        sendMessage(prompt)
                                                     }
+                                                    className="h-auto max-w-full whitespace-normal"
                                                 >
-                                                    {t(
-                                                        'assistant.open_settings'
-                                                    )}
+                                                    {prompt}
                                                 </Button>
-                                            ) : (
-                                                examplePrompts.map((prompt) => (
-                                                    <Button
-                                                        key={prompt}
-                                                        type="button"
-                                                        size="xs"
-                                                        variant="outline"
-                                                        disabled={notConfigured}
-                                                        onClick={() =>
-                                                            sendMessage(prompt)
-                                                        }
-                                                        className="h-auto max-w-full whitespace-normal"
-                                                    >
-                                                        {prompt}
-                                                    </Button>
-                                                ))
-                                            )}
+                                            ))}
                                         </EmptyContent>
                                     </Empty>
                                 }
                             />
 
-                            {showSetupGate && messages?.length ? (
-                                <div className="text-muted-foreground flex flex-wrap items-center justify-center gap-2 px-3 pt-2 text-xs">
-                                    <span>{t('assistant.not_configured')}</span>
-                                    <Button
-                                        type="button"
-                                        size="xs"
-                                        variant="outline"
-                                        onClick={openAssistantSettings}
-                                    >
-                                        {t('assistant.open_settings')}
-                                    </Button>
+                            {notConfigured && (
+                                <div className="text-muted-foreground px-3 pt-2 text-center text-xs">
+                                    {t('assistant.not_configured')}
                                 </div>
-                            ) : null}
+                            )}
                             <Composer
                                 busy={busy}
                                 disabled={notConfigured}
@@ -549,149 +734,5 @@ export function AssistantDialog() {
                 </ResizablePanelGroup>
             </DialogContent>
         </Dialog>
-    );
-}
-
-type RuntimeSettingsProps = {
-    selection: AssistantRuntimeSelection;
-    sessionScoped: boolean;
-    reasoningEffort: string | null;
-    reasoningEffortOptions: string[];
-    onSelectionChange: (patch: Partial<AssistantRuntimeSelection>) => void;
-    onReasoningEffortChange: (effort: string) => void;
-    onOpenSettings: () => void;
-};
-
-function RuntimeSettings({
-    selection,
-    sessionScoped,
-    reasoningEffort,
-    reasoningEffortOptions,
-    onSelectionChange,
-    onReasoningEffortChange,
-    onOpenSettings
-}: RuntimeSettingsProps) {
-    const { t } = useTranslation();
-    const providerDefaultEffort = t(
-        'assistant.runtime.reasoning_effort_provider_default'
-    );
-
-    return (
-        <>
-            <div className="grid gap-1.5">
-                <Label htmlFor="assistant-runtime-model">
-                    {t('assistant.runtime.model')}
-                </Label>
-                <RuntimeModelSelect
-                    id="assistant-runtime-model"
-                    endpointId={selection.endpointId}
-                    model={selection.model}
-                    placeholder={t('assistant.runtime.model_unset')}
-                    emptyLabel={t('assistant.runtime.model_unset')}
-                    onSelect={onSelectionChange}
-                />
-            </div>
-            {reasoningEffort !== null ? (
-                <div className="grid gap-1.5">
-                    <Label htmlFor="assistant-runtime-reasoning-effort">
-                        {t('assistant.runtime.reasoning_effort')}
-                    </Label>
-                    <Select
-                        value={reasoningEffort}
-                        items={reasoningEffortOptions.map((effort) => ({
-                            value: effort,
-                            label: effort
-                        }))}
-                        onValueChange={(value) =>
-                            onReasoningEffortChange(value ?? '')
-                        }
-                    >
-                        <SelectTrigger
-                            id="assistant-runtime-reasoning-effort"
-                            className="data-placeholder:text-foreground w-full"
-                        >
-                            <SelectValue>
-                                {reasoningEffort || providerDefaultEffort}
-                            </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectGroup>
-                                <SelectItem value="">
-                                    {providerDefaultEffort}
-                                </SelectItem>
-                                {reasoningEffortOptions.map((effort) => (
-                                    <SelectItem key={effort} value={effort}>
-                                        {effort}
-                                    </SelectItem>
-                                ))}
-                            </SelectGroup>
-                        </SelectContent>
-                    </Select>
-                </div>
-            ) : null}
-            <div className="grid gap-1.5">
-                <Label htmlFor="assistant-runtime-playbook">
-                    {t('assistant.runtime.playbook_mode')}
-                </Label>
-                <Select
-                    value={selection.playbookMode}
-                    items={PLAYBOOK_MODES.map((mode) => ({
-                        value: mode,
-                        label: t(`assistant.settings.playbook_mode_${mode}`)
-                    }))}
-                    onValueChange={(value) =>
-                        onSelectionChange({
-                            playbookMode: parsePlaybookMode(value ?? '')
-                        })
-                    }
-                >
-                    <SelectTrigger
-                        id="assistant-runtime-playbook"
-                        className="w-full"
-                    >
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectGroup>
-                            {PLAYBOOK_MODES.map((mode) => (
-                                <SelectItem key={mode} value={mode}>
-                                    {t(
-                                        `assistant.settings.playbook_mode_${mode}`
-                                    )}
-                                </SelectItem>
-                            ))}
-                        </SelectGroup>
-                    </SelectContent>
-                </Select>
-            </div>
-            <div className="flex items-center justify-between gap-3 pt-0.5">
-                <Label htmlFor="assistant-runtime-writes" className="text-sm">
-                    {t('assistant.runtime.allow_writes')}
-                </Label>
-                <Switch
-                    id="assistant-runtime-writes"
-                    checked={selection.allowWrites}
-                    onCheckedChange={(allowWrites) =>
-                        onSelectionChange({ allowWrites })
-                    }
-                />
-            </div>
-            <div className="flex items-center justify-between gap-2">
-                <span className="text-muted-foreground text-xs">
-                    {sessionScoped
-                        ? t('assistant.runtime.scope_session')
-                        : t('assistant.runtime.scope_default')}
-                </span>
-                <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-auto px-1.5 py-1 text-xs"
-                    onClick={onOpenSettings}
-                >
-                    {t('assistant.open_settings')}
-                </Button>
-            </div>
-        </>
     );
 }

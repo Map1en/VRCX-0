@@ -108,13 +108,6 @@ export function buildInterfaceSection({
                 enabled
             );
         },
-        onTaskbarIconDotChange: (checked: unknown) => {
-            saveBoolPreference(
-                'taskbarIconDot',
-                'taskbarIconDot',
-                normalizeCheckedState(checked)
-            );
-        },
         onTableDensityChange: (value: unknown) => {
             savePreferenceValue('tableDensity', value, () =>
                 setTableDensityPreference(value)

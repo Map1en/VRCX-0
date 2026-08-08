@@ -33,26 +33,6 @@ const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(30 * 60);
 const LOOP_SLEEP: Duration = Duration::from_secs(1);
 const SHUTDOWN_FLUSH_TIMEOUT: Duration = Duration::from_secs(1);
 const SEND_RETRY_BACKOFF: Duration = Duration::from_secs(60);
-const MAX_FEEDBACK_LENGTH: usize = 2000;
-
-#[derive(Clone, Debug, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-struct FeedbackPayload<'a> {
-    install_id: &'a str,
-    content: &'a str,
-}
-
-#[derive(Debug, Clone, Copy, thiserror::Error)]
-pub enum FeedbackSubmitError {
-    #[error("feedback content is empty")]
-    EmptyContent,
-    #[error("feedback content is too long")]
-    ContentTooLong,
-    #[error("telemetry is disabled")]
-    Disabled,
-    #[error("feedback request failed")]
-    RequestFailed,
-}
 
 #[cfg(test)]
 type TestPost = Arc<
@@ -177,34 +157,6 @@ impl TelemetryRuntime {
             .is_err()
         {
             self.inner.shutdown_flushed.store(false, Ordering::Release);
-        }
-    }
-
-    pub async fn submit_feedback(&self, content: &str) -> Result<(), FeedbackSubmitError> {
-        let trimmed = content.trim();
-        if trimmed.is_empty() {
-            return Err(FeedbackSubmitError::EmptyContent);
-        }
-        if trimmed.chars().count() > MAX_FEEDBACK_LENGTH {
-            return Err(FeedbackSubmitError::ContentTooLong);
-        }
-        if !self.inner.client.is_enabled() {
-            return Err(FeedbackSubmitError::Disabled);
-        }
-        let Some(session) = self.ensure_session() else {
-            return Err(FeedbackSubmitError::RequestFailed);
-        };
-        let payload = FeedbackPayload {
-            install_id: &session.install_id,
-            content: trimmed,
-        };
-        if self
-            .post_debug("/api/v1/telemetry/feedback", &payload, "feedback")
-            .await
-        {
-            Ok(())
-        } else {
-            Err(FeedbackSubmitError::RequestFailed)
         }
     }
 

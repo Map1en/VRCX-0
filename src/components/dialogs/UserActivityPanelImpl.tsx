@@ -27,6 +27,7 @@ import {
 } from './user-dialog/components/UserActivityPanelParts';
 import {
     UserActivityOverlapSection,
+    UserActivityTopAvatarsSection,
     UserActivityTopWorldsSection
 } from './user-dialog/components/UserActivityPanelSections';
 import {
@@ -107,6 +108,8 @@ export function UserActivityPanel({
         peakTimeText,
         refreshData,
         selectedPeriod,
+        topAvatars,
+        topAvatarsLoading,
         topWorlds,
         topWorldsLoading,
         topWorldsLoadingVisible,
@@ -349,7 +352,7 @@ export function UserActivityPanel({
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
             ) : null}
-            {!loading && !error && !hasAnyData ? (
+            {!loading && !error && !hasAnyData && !topAvatars.length ? (
                 <ActivityEmptyState title={t('common.no_data')} />
             ) : null}
             {!loading && hasAnyData && filteredEventCount === 0 ? (
@@ -406,6 +409,15 @@ export function UserActivityPanel({
                     topWorldsLoading={topWorldsLoading}
                     topWorldsLoadingVisible={topWorldsLoadingVisible}
                     topWorldsSortBy={topWorldsSortBy}
+                />
+            ) : null}
+
+            {hasAnyData || topAvatars.length || topAvatarsLoading ? (
+                <UserActivityTopAvatarsSection
+                    isAllTime={selectedPeriod === 'all'}
+                    isCurrentUser={isCurrentUser}
+                    loading={topAvatarsLoading}
+                    topAvatars={topAvatars}
                 />
             ) : null}
         </div>

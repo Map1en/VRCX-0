@@ -367,6 +367,40 @@ export function useFriendListColumns({
                 )
             },
             {
+                id: 'inviteSentCount',
+                accessorFn: (row) => parseListNumber(row?.$inviteSentCount),
+                size: 140,
+                meta: { label: t('table.friendList.inviteSentCount') },
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('table.friendList.inviteSentCount')}
+                    />
+                ),
+                cell: ({ row }) => (
+                    <span className="block text-right">
+                        {parseListNumber(row.original?.$inviteSentCount)}
+                    </span>
+                )
+            },
+            {
+                id: 'inviteReceivedCount',
+                accessorFn: (row) => parseListNumber(row?.$inviteReceivedCount),
+                size: 150,
+                meta: { label: t('table.friendList.inviteReceivedCount') },
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('table.friendList.inviteReceivedCount')}
+                    />
+                ),
+                cell: ({ row }) => (
+                    <span className="block text-right">
+                        {parseListNumber(row.original?.$inviteReceivedCount)}
+                    </span>
+                )
+            },
+            {
                 id: 'timeTogether',
                 accessorFn: (row) => parseListNumber(row?.$timeSpent),
                 size: 150,

@@ -58,8 +58,6 @@
         "example_2": "От кого я отдаляюсь?",
         "example_3": "Когда самое подходящее время поймать моих друзей в интернете?",
         "not_configured": "Выберите LLM-эндпоинт и модель, чтобы начать.",
-        "setup_title": "Сначала подключите модель",
-        "open_settings": "Открыть настройки AI",
         "entities_title": "Упомянутые объекты",
         "entities_empty": "Люди и миры, упомянутые в ответах, появляются здесь.",
         "untitled": "Новый разговор",
@@ -81,16 +79,15 @@
         },
         "runtime": {
             "title": "Среда выполнения",
+            "connection": "Подключение",
             "connection_unset": "Нет эндпоинта",
             "model": "Модель",
-            "model_unset": "Нет доступных моделей",
+            "model_unset": "Для этого эндпоинта не сохранено ни одной модели",
             "playbook_mode": "Режим анализа",
             "allow_writes": "Разрешить действия записи",
             "manage_endpoints": "Управление LLM-эндпоинтами",
             "reasoning_effort": "Уровень рассуждений",
-            "reasoning_effort_provider_default": "По умолчанию провайдера",
-            "scope_session": "Применяется только к этой беседе",
-            "scope_default": "Применяется к новым беседам"
+            "reasoning_effort_provider_default": "По умолчанию провайдера"
         }
     },
     "user_hover_card": {
@@ -521,7 +518,6 @@
         "qq_group": "QQ-группа",
         "changelog": "Изменить журнал",
         "update": "Обновление",
-        "update_downloading": "Загрузка…",
         "update_downloaded": "Перезапустить",
         "mark_all_read": "Отметить всё как прочитанное",
         "edit_dashboard": "Правка Dashboard",
@@ -561,6 +557,8 @@
         }
     },
     "dashboard": {
+        "friend_status_widget": "Friend Status Widget",
+        "live_friend_status_distribution": "Live distribution of online friend statuses.",
         "default_name": "Панель",
         "new_dashboard": "Новая панель",
         "empty": "Эта панель пуста.",
@@ -1960,6 +1958,8 @@
                 "description": "Общие OpenAI-совместимые подключения для Social AI и перевода.",
                 "follow_custom_proxy": "Использовать пользовательский прокси VRCX-0",
                 "follow_custom_proxy_description": "Если он настроен, запросы к LLM идут через него; иначе используется системный прокси.",
+                "endpoint_count": "Эндпоинтов: {count}",
+                "model_count": "Моделей: {count}",
                 "add": "Добавить эндпоинт",
                 "empty_description": "Добавьте OpenAI-совместимый эндпоинт для Social AI и OpenAI-совместимого перевода.",
                 "preset": "Пресет",
@@ -1968,13 +1968,11 @@
                     "siliconflow": "SiliconFlow"
                 },
                 "name": "Имя",
-                "name_description": "Показывается как название группы при выборе модели.",
                 "base_url": "Базовый URL",
-                "base_url_invalid": "Введите полный адрес, начинающийся с http:// или https://.",
                 "models": "Модели",
-                "models_placeholder": "Найдите определённую модель или введите свою и нажмите Enter",
-                "models_empty": "Пока ничего не определено. Введите название модели и нажмите Enter.",
-                "unusable": "Моделей пока нет, поэтому этот эндпоинт использовать нельзя.",
+                "key": "Ключ",
+                "actions": "Действия",
+                "no_models": "Нет моделей",
                 "key_saved": "Сохранён",
                 "key_empty": "Пусто",
                 "detect_models": "Определить модели",
@@ -1984,9 +1982,9 @@
                 "clear_key": "Очистить ключ",
                 "key_preserve_placeholder": "Оставьте пустым, чтобы сохранить существующий ключ",
                 "saved": "Эндпоинт сохранён",
-                "saved_unusable": "Сохранено, но модели для этого эндпоинта не найдены.",
                 "save_failed": "Не удалось сохранить эндпоинт",
                 "load_failed": "Не удалось загрузить эндпоинты",
+                "base_url_required": "Требуется базовый URL.",
                 "models_detected": "Определено моделей: {count}",
                 "no_models_detected": "Модели не определены",
                 "detect_failed": "Не удалось определить модели",
@@ -2013,30 +2011,7 @@
                 "ai": "МА",
                 "vr": "VR",
                 "media": "Средства массовой информации",
-                "integrations": "Интеграция",
-                "feedback": "Обратная связь"
-            },
-            "feedback": {
-                "title": "Отправить отзыв",
-                "description": "Отзыв отправляется анонимно. Мы читаем каждое сообщение, но не можем ответить напрямую.",
-                "privacy_note": "Данные аккаунта не прикрепляются — только анонимный идентификатор установки, защищающий от спама.",
-                "placeholder": "Расскажите, что работает хорошо, что нет, или что хотелось бы видеть…",
-                "submit": "Отправить",
-                "submitting": "Отправка…",
-                "thanks": "Спасибо за ваш отзыв!",
-                "cooldown": "Отправить снова можно через {{seconds}} с",
-                "more_help": "Нужен ответ или хотите приложить логи?",
-                "error_generic": "Не удалось отправить отзыв. Попробуйте позже."
-            },
-            "ai": {
-                "header": "Социальный AI",
-                "description": "Настройки по умолчанию для новых бесед. Отдельную беседу можно настроить в панели «Социальный AI».",
-                "default_model": "Модель по умолчанию",
-                "default_model_description": "Новые беседы начинаются с этой моделью.",
-                "default_model_unset": "Нет доступных моделей",
-                "setup_hint": "«Социальному AI» нужно OpenAI-совместимое подключение, иначе он не сможет отвечать.",
-                "playbook_mode_description": "Насколько свободно модель действует при анализе данных.",
-                "endpoints_description": "Используются и «Социальным AI», и переводом."
+                "integrations": "Интеграция"
             },
             "social": {
                 "interaction": {
@@ -2264,8 +2239,6 @@
                     "table_page_sizes_description": "Добавить, удалить и выбрать параметры размера страниц, показанные в контроле за таблицами.",
                     "table_page_sizes_error": "Размер страницы должен составлять от 1 до 1 000",
                     "show_notification_icon_dot": "Лоток-уведомление",
-                    "show_taskbar_icon_dot": "Точка уведомлений на панели задач",
-                    "show_taskbar_icon_dot_description": "Показывать красную точку на кнопке VRCX-0 на панели задач, пока есть непрочитанные уведомления.",
                     "striped_data_table_mode": "Разделенные столы",
                     "reduced_motion_and_blur": "Уменьшить эффекты",
                     "reduced_motion_and_blur_description": "Отключает анимации, переходы и размытие фона для повышения производительности на слабых устройствах.",
@@ -2444,11 +2417,11 @@
             "discord_presence": {
                 "discord_presence": {
                     "header": "Отображение в Discord",
+                    "description": "* Активно только во время работы VRChat.",
                     "enable": "Включить",
                     "enable_tooltip": "Рекомендуется отключить Rich Presence Discord в VRChat config.json, чтобы не конфликтовало",
                     "instance_type_player_count": "Тип инстанса / количество игроков",
-                    "join_button": "Кнопка «Присоединиться»",
-                    "join_button_description": "Отображается только в публичных инстансах.",
+                    "join_button": "Кнопка Присоединиться (только для публичных)",
                     "show_details_in_private": "Показывать детали мира в приватном режиме",
                     "show_images": "Показывать изображение мира",
                     "show_current_platform": "Показать текущую платформу",
@@ -2726,6 +2699,14 @@
             }
         },
         "dashboard": {
+            "friend_status": {
+                "loading": "Loading friend status widget",
+                "total_online_friends": "Online friends",
+                "distribution": "Friend status distribution",
+                "error": "Friend status widget failed",
+                "empty": "No online friends",
+                "empty_description": "The current friend roster has no online friends."
+            },
             "loading": {
                 "loading_dashboard_panel": "Приборная панель для загрузки",
                 "loading_feed_widget": "Загрузка виджета ленты",

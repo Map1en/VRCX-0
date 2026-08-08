@@ -11,6 +11,7 @@ import { Button } from '@/ui/shadcn/button';
 import { DashboardEmbeddedPagePanel } from './DashboardEmbeddedPagePanel';
 import { canEmbedDashboardPagePanel } from './dashboardPagePanelRegistry';
 import { DashboardFeedWidget } from './widgets/DashboardFeedWidget';
+import { DashboardFriendStatusWidget } from './widgets/DashboardFriendStatusWidget';
 import { DashboardGameLogWidget } from './widgets/DashboardGameLogWidget';
 import { DashboardInstanceWidget } from './widgets/DashboardInstanceWidget';
 
@@ -57,6 +58,10 @@ function DashboardWidgetPreview({
                 configUpdater={onConfigChange ?? null}
             />
         );
+    }
+
+    if (definition.key === 'widget:friend-status') {
+        return <DashboardFriendStatusWidget />;
     }
 
     return (

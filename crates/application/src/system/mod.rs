@@ -18,7 +18,7 @@ mod vrc_status;
 pub use app_update::{
     AppUpdateBuildInfo, AppUpdateDownloadPhase, AppUpdateDownloadProgressPayload,
     AppUpdateDownloadStatusSnapshot, AppUpdateInstalledPayload, AppUpdateReleaseSnapshot,
-    AppUpdateRuntime, AppUpdateRuntimeDeps, AppUpdateStatusSnapshot, AppUpdateTargetResolver,
+    AppUpdateRuntime, AppUpdateStatusSnapshot, AppUpdateTargetResolver,
 };
 pub use avatar_feed_cleanup::{
     cleanup_avatar_feed_history, AvatarFeedCleanupOutcome, AvatarFeedCleanupStatus,

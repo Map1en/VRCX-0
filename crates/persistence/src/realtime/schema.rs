@@ -61,6 +61,7 @@ fn realtime_table_statements(user_prefix: &str) -> Vec<String> {
         format!("CREATE TABLE IF NOT EXISTS {user_prefix}_feed_bio (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, display_name TEXT, bio TEXT, previous_bio TEXT)"),
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_feed_bio_created_id_idx ON {user_prefix}_feed_bio (created_at DESC, id DESC)"),
         format!("CREATE TABLE IF NOT EXISTS {user_prefix}_feed_avatar (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, display_name TEXT, owner_id TEXT, avatar_name TEXT, current_avatar_image_url TEXT, current_avatar_thumbnail_image_url TEXT, previous_current_avatar_image_url TEXT, previous_current_avatar_thumbnail_image_url TEXT)"),
+        format!("CREATE INDEX IF NOT EXISTS {user_prefix}_feed_avatar_user_created_idx ON {user_prefix}_feed_avatar (user_id, created_at)"),
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_feed_avatar_created_id_idx ON {user_prefix}_feed_avatar (created_at DESC, id DESC)"),
         format!("CREATE TABLE IF NOT EXISTS {user_prefix}_feed_online_offline (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, display_name TEXT, type TEXT, location TEXT, world_name TEXT, time INTEGER, group_name TEXT)"),
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_feed_online_offline_user_created_idx ON {user_prefix}_feed_online_offline (user_id, created_at)"),
@@ -74,6 +75,11 @@ fn realtime_table_statements(user_prefix: &str) -> Vec<String> {
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_notifications_v2_created_id_idx ON {user_prefix}_notifications_v2 (created_at DESC, id DESC)"),
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_notifications_v2_seen_created_id_idx ON {user_prefix}_notifications_v2 (seen, created_at DESC, id DESC)"),
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_notifications_v2_type_created_id_idx ON {user_prefix}_notifications_v2 (type, created_at DESC, id DESC)"),
+        format!("CREATE TABLE IF NOT EXISTS {user_prefix}_invite_send_history (id INTEGER PRIMARY KEY AUTOINCREMENT, created_at TEXT NOT NULL, receiver_user_id TEXT NOT NULL, source TEXT NOT NULL, source_notification_id TEXT NOT NULL DEFAULT '')"),
+        format!("CREATE INDEX IF NOT EXISTS {user_prefix}_invite_send_history_receiver_created_idx ON {user_prefix}_invite_send_history (receiver_user_id, created_at DESC)"),
+        format!("CREATE UNIQUE INDEX IF NOT EXISTS {user_prefix}_invite_send_history_source_notification_idx ON {user_prefix}_invite_send_history (source, source_notification_id) WHERE source_notification_id <> ''"),
+        format!("CREATE TABLE IF NOT EXISTS {user_prefix}_invite_automation_receipts (source_notification_id TEXT PRIMARY KEY, created_at TEXT NOT NULL, action TEXT NOT NULL, target_user_id TEXT NOT NULL)"),
+        format!("CREATE INDEX IF NOT EXISTS {user_prefix}_invite_automation_receipts_created_idx ON {user_prefix}_invite_automation_receipts (created_at DESC)"),
         format!("CREATE TABLE IF NOT EXISTS {user_prefix}_avatar_history (avatar_id TEXT PRIMARY KEY, created_at TEXT, time INTEGER)"),
     ]
 }

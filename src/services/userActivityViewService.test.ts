@@ -7,7 +7,8 @@ import { userActivityViewService } from './userActivityViewService';
 vi.mock('@/platform/tauri/bindings', () => ({
     commands: {
         appActivityView: vi.fn(),
-        appActivityOverlapView: vi.fn()
+        appActivityOverlapView: vi.fn(),
+        appActivityTopAvatars: vi.fn()
     }
 }));
 
@@ -17,6 +18,7 @@ describe('userActivityViewService Rust activity views', () => {
     beforeEach(() => {
         vi.mocked(commands.appActivityView).mockReset();
         vi.mocked(commands.appActivityOverlapView).mockReset();
+        vi.mocked(commands.appActivityTopAvatars).mockReset();
     });
 
     it('loads activity view from Rust and formats peak labels', async () => {
@@ -129,6 +131,40 @@ describe('userActivityViewService Rust activity views', () => {
             overlapPercent: 100,
             hasOverlapData: true,
             bestOverlapTime: 'Sun, 02:00-04:00'
+        });
+    });
+
+    it('loads typed top avatar rows with the selected period', async () => {
+        vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
+        const rows = [
+            {
+                avatarId: null,
+                avatarKey: 'https://avatar.test/image.png',
+                avatarName: 'Observed Avatar',
+                authorId: 'usr_author',
+                imageUrl: 'https://avatar.test/image.png',
+                thumbnailImageUrl: 'https://avatar.test/thumb.png',
+                lastUsedAt: '2025-01-06T00:00:00.000Z',
+                useCount: 3,
+                totalTime: 0,
+                metric: 'observedChanges' as const,
+                approximate: true
+            }
+        ];
+        vi.mocked(commands.appActivityTopAvatars).mockResolvedValue(rows);
+
+        await expect(
+            userActivityViewService.loadTopAvatarsView({
+                targetUserId: 'usr_friend',
+                rangeDays: 30,
+                limit: 5
+            })
+        ).resolves.toEqual(rows);
+        expect(commands.appActivityTopAvatars).toHaveBeenCalledWith({
+            targetUserId: 'usr_friend',
+            rangeDays: 30,
+            nowMs: 1_700_000_000_000,
+            limit: 5
         });
     });
 });

@@ -9,7 +9,8 @@ use vrcx_0_persistence::activity::{
     ActivityBucketCacheInput, ActivityBucketCacheOutput, ActivityBucketCacheQueryInput,
     ActivityOverlapViewBuildInput, ActivityOverlapViewOutput, ActivitySelfSessionsRefreshInput,
     ActivitySelfSessionsRefreshOutput, ActivitySelfSourceBoundsOutput, ActivitySessionInput,
-    ActivitySessionOutput, ActivitySyncStateInput, ActivitySyncStateOutput, ActivityViewBuildInput,
+    ActivitySessionOutput, ActivitySyncStateInput, ActivitySyncStateOutput,
+    ActivityTopAvatarOutput, ActivityTopAvatarsQueryInput, ActivityViewBuildInput,
     ActivityViewOutput,
 };
 
@@ -51,6 +52,21 @@ pub fn app__activity_view(
 ) -> Result<ActivityViewOutput, AppError> {
     vrcx_0_persistence::activity::activity_view_build(state.db.as_ref(), input)
         .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn app__activity_top_avatars(
+    state: State<'_, AppState>,
+    input: ActivityTopAvatarsQueryInput,
+) -> Result<Vec<ActivityTopAvatarOutput>, AppError> {
+    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    vrcx_0_persistence::activity::activity_top_avatars_query(
+        state.db.as_ref(),
+        &owner_user_id,
+        input,
+    )
+    .map_err(AppError::from)
 }
 
 #[tauri::command]

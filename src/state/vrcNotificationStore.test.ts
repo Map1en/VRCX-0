@@ -22,8 +22,7 @@ vi.mock('@/repositories/notificationPersistenceRepository', () => ({
 }));
 
 vi.mock('@/services/shellIntegrationService', () => ({
-    setTrayIconNotification: vi.fn(() => Promise.resolve()),
-    setTaskbarOverlayNotification: vi.fn(() => Promise.resolve())
+    setTrayIconNotification: vi.fn(() => Promise.resolve())
 }));
 
 import { useRuntimeStore } from './runtimeStore';
@@ -317,6 +316,62 @@ describe('vrcNotificationStore', () => {
         });
     });
 
+    it('clears only the notification menu marker after mark-all-seen succeeds', async () => {
+        const notification = {
+            id: 'notif_menu_marker',
+            type: 'invite',
+            version: 2,
+            seen: false,
+            created_at: new Date().toISOString()
+        };
+        notificationRepositoryMock.queryNotifications.mockResolvedValue([
+            { ...notification, seen: true }
+        ]);
+        useShellStore.setState({
+            notifiedMenus: ['notification', 'friend-log']
+        });
+        useVrcNotificationStore.getState().upsertNotification(notification);
+
+        await useVrcNotificationStore.getState().markAllSeen();
+
+        expect(useShellStore.getState().notifiedMenus).toEqual(['friend-log']);
+    });
+
+    it('continues through hidden unread pages and keeps every batch within the backend limit', async () => {
+        const firstPage = Array.from({ length: 1_001 }, (_, index) => ({
+            id: `notif_page_one_${index}`,
+            type: 'invite',
+            version: 2,
+            seen: false,
+            created_at: new Date().toISOString()
+        }));
+        const secondPage = {
+            id: 'notif_page_two',
+            type: 'invite',
+            version: 2,
+            seen: false,
+            created_at: new Date().toISOString()
+        };
+        notificationRepositoryMock.queryNotifications
+            .mockResolvedValueOnce([secondPage])
+            .mockResolvedValueOnce([{ ...secondPage, seen: true }]);
+        useVrcNotificationStore.setState({
+            ...useVrcNotificationStore.getState(),
+            rows: firstPage,
+            unseenCount: firstPage.length
+        });
+
+        await useVrcNotificationStore.getState().markAllSeen();
+
+        expect(commandMocks.markSeenBatch).toHaveBeenCalledTimes(3);
+        expect(
+            commandMocks.markSeenBatch.mock.calls.map(
+                ([input]) => input.items.length
+            )
+        ).toEqual([1_000, 1, 1]);
+        expect(useVrcNotificationStore.getState().unseenCount).toBe(0);
+    });
+
     it('marks system notifications locally and activity notifications remotely in one batch', async () => {
         const systemNotification = {
             id: 'notif_group_announcement',
@@ -393,6 +448,7 @@ describe('vrcNotificationStore', () => {
         useVrcNotificationStore
             .getState()
             .upsertNotification(activityNotification);
+        useShellStore.setState({ notifiedMenus: ['notification'] });
 
         await expect(
             useVrcNotificationStore.getState().markAllSeen()
@@ -405,6 +461,9 @@ describe('vrcNotificationStore', () => {
             seen: false
         });
         expect(useShellStore.getState().vrcUnseenNotificationCount).toBe(1);
+        expect(useShellStore.getState().notifiedMenus).toEqual([
+            'notification'
+        ]);
     });
 
     it('reloads the persisted unread state when the batch command rejects', async () => {

@@ -12,7 +12,9 @@ import type { GameLogPreviousInstanceWorldRow } from '@/repositories/gameLogRepo
 export const GAME_LOG_SESSION_FILTER_TYPES = [
     'OnPlayerJoined',
     'OnPlayerLeft',
-    'VideoPlay'
+    'VideoPlay',
+    'StringLoad',
+    'ImageLoad'
 ] as const;
 
 export type GameLogViewMode = 'sessions' | 'table';

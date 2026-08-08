@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use crate::http_api::normalize_vrchat_api_endpoint;
 use hyper_util::client::legacy::connect::proxy::{SocksV5, Tunnel};
 use hyper_util::client::legacy::connect::HttpConnector;
 use serde_json::Value;
@@ -13,6 +12,7 @@ use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{client_async_tls, MaybeTlsStream, WebSocketStream};
 use tower_service::Service;
 use url::Url;
+use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 
 const DEFAULT_WEBSOCKET_DOMAIN: &str = "wss://pipeline.vrchat.cloud";
 const VRCHAT_WEBSOCKET_HOST: &str = "pipeline.vrchat.cloud";
@@ -88,6 +88,15 @@ pub fn validated_websocket_domain(value: &str) -> Result<String, Error> {
     Ok(domain)
 }
 
+fn normalize_endpoint(value: &str) -> String {
+    let trimmed = value.trim().trim_end_matches('/');
+    if trimmed.is_empty() {
+        VRCHAT_API_DEFAULT_ENDPOINT.to_string()
+    } else {
+        trimmed.to_string()
+    }
+}
+
 pub fn build_transport_url(websocket: &str, token: &str) -> Result<String, Error> {
     Ok(format!(
         "{}/?auth={}",
@@ -126,7 +135,7 @@ pub fn encode_uri_component(value: &str) -> String {
 }
 
 pub fn build_auth_url(endpoint: &str) -> String {
-    format!("{}/auth", normalize_vrchat_api_endpoint(Some(endpoint)))
+    format!("{}/auth", normalize_endpoint(endpoint))
 }
 
 pub fn extract_auth_token(body: &str) -> Result<String, Error> {

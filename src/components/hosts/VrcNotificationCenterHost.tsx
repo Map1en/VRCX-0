@@ -457,21 +457,20 @@ export function VrcNotificationCenterHost() {
                     showCloseButton={false}
                     className="flex w-full! flex-col gap-0 p-0 sm:max-w-[40rem]!"
                 >
-                    <SheetHeader className="border-b px-4 py-3">
-                        <div className="flex items-center justify-between gap-3">
-                            <SheetTitle className="flex items-center gap-2 text-base">
-                                <BellIcon className="text-muted-foreground size-4" />
+                    <SheetHeader className="border-b px-4 pt-4 pb-3">
+                        <div className="flex items-center justify-between gap-3 pr-8">
+                            <SheetTitle className="flex items-center gap-2">
+                                <BellIcon className="size-4" />
                                 {t('side_panel.notification_center.title')}
-                                {unseenCount ? (
-                                    <Badge
-                                        variant="default"
-                                        className="h-5 min-w-5 justify-center px-1.5 tabular-nums"
-                                    >
-                                        {unseenCount}
-                                    </Badge>
-                                ) : null}
                             </SheetTitle>
-                            <div className="flex items-center gap-0.5">
+                            <div className="flex items-center gap-2">
+                                <Badge
+                                    variant={
+                                        unseenCount ? 'default' : 'outline'
+                                    }
+                                >
+                                    {unseenCount}
+                                </Badge>
                                 <Tooltip>
                                     <TooltipTrigger
                                         render={
@@ -535,20 +534,6 @@ export function VrcNotificationCenterHost() {
                                         {t('view.notification.refresh_tooltip')}
                                     </TooltipContent>
                                 </Tooltip>
-                                <SheetClose
-                                    render={
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon-sm"
-                                            aria-label={t(
-                                                'common.actions.close'
-                                            )}
-                                        />
-                                    }
-                                >
-                                    <XIcon data-icon="inline-start" />
-                                </SheetClose>
                             </div>
                         </div>
                         {detail ? (
@@ -582,6 +567,20 @@ export function VrcNotificationCenterHost() {
                         }}
                         onNavigateToTable={navigateToTable}
                     />
+                    <SheetClose
+                        render={
+                            <Button
+                                variant="ghost"
+                                className="absolute top-3 right-3"
+                                size="icon-sm"
+                            />
+                        }
+                    >
+                        <XIcon />
+                        <span className="sr-only">
+                            {t('common.actions.close')}
+                        </span>
+                    </SheetClose>
                 </SheetContent>
             </Sheet>
             <InviteMessageDialog

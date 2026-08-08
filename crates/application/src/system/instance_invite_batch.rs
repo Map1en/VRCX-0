@@ -3,6 +3,7 @@ use std::{future::Future, pin::Pin, time::Duration};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use vrcx_0_core::location::parse_location;
+use vrcx_0_persistence::invite_history::record_successful_invite_send;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::{
     http_api::{ApiScope, HttpApiRequestInput},
@@ -199,7 +200,18 @@ impl InstanceInviteBatchActions for VrchatInstanceInviteBatchActions<'_> {
                 }
             };
             self.execute_request(request, fallback_message, allow_success_plain_text)
-                .await
+                .await?;
+            if target.kind == InstanceInviteTargetKind::UserInvite {
+                record_successful_invite_send(
+                    self.db,
+                    &self.expected_scope.current_user_id,
+                    &target.receiver_user_id,
+                    "instance-invite-batch",
+                    None,
+                )
+                .map_err(InstanceInviteRemoteError::terminal)?;
+            }
+            Ok(())
         })
     }
 

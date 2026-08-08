@@ -25,6 +25,8 @@ import { InviteRulesTab, type InviteRulesTabValues } from './InviteRulesTab';
 import {
     createGroupOptions,
     createInstanceOptions,
+    DEFAULT_INVITE_MESSAGE_REPLY_SETTINGS,
+    normalizeInviteMessageReplySettings,
     normalizeContextRule,
     type ContextAutomationRule,
     type TimeAutomationRule
@@ -33,12 +35,13 @@ import { TimeRulesTab } from './TimeRulesTab';
 
 const DEFAULT_INVITE_VALUES: InviteRulesTabValues = {
     autoAcceptInviteRequests: 'Off',
-    autoAcceptInviteGroups: []
+    autoAcceptInviteGroups: [],
+    autoInviteMessageReplies: DEFAULT_INVITE_MESSAGE_REPLY_SETTINGS
 };
 
 const I18N_ROOT = 'view.tools.social_automation';
 
-type ConfigValueType = 'array' | 'bool' | 'string';
+type ConfigValueType = 'array' | 'bool' | 'json' | 'string';
 type DialogOpenProps = {
     onOpenChange: (open: boolean) => void;
     open: boolean;
@@ -54,7 +57,7 @@ async function saveConfigValue(
 ) {
     if (type === 'bool') {
         await configRepository.setBool(key, value as boolean);
-    } else if (type === 'array') {
+    } else if (type === 'array' || type === 'json') {
         await configRepository.setString(key, JSON.stringify(value));
     } else {
         await configRepository.setString(key, value);
@@ -340,7 +343,8 @@ export function PresenceInviteRequestsDialog({
         setLoading(true);
         Promise.all([
             configRepository.getString('autoAcceptInviteRequests', 'Off'),
-            configRepository.getString('autoAcceptInviteGroups', '[]')
+            configRepository.getString('autoAcceptInviteGroups', '[]'),
+            configRepository.getString('autoInviteMessageReplies', '{}')
         ])
             .then((result) => {
                 if (!active) {
@@ -350,7 +354,9 @@ export function PresenceInviteRequestsDialog({
                     autoAcceptInviteRequests: normalizeAutoAcceptValue(
                         result[0]
                     ),
-                    autoAcceptInviteGroups: parseJsonArray(result[1])
+                    autoAcceptInviteGroups: parseJsonArray(result[1]),
+                    autoInviteMessageReplies:
+                        normalizeInviteMessageReplySettings(result[2])
                 });
             })
             .catch((error: unknown) =>

@@ -31,8 +31,7 @@ describe('settingsValues', () => {
             'media',
             'ai',
             'integrations',
-            'advanced',
-            'feedback'
+            'advanced'
         ]);
     });
 

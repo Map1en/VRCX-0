@@ -58,8 +58,6 @@
         "example_2": "요즘 누구와 멀어지고 있나요?",
         "example_3": "친구들이 접속해 있을 가능성이 가장 높은 시간은?",
         "not_configured": "시작하려면 LLM 엔드포인트와 모델을 선택하세요.",
-        "setup_title": "먼저 모델을 연결하세요",
-        "open_settings": "AI 설정 열기",
         "entities_title": "언급됨",
         "entities_empty": "답변에서 언급된 사람과 월드가 여기에 표시됩니다.",
         "untitled": "새 대화",
@@ -81,16 +79,15 @@
         },
         "runtime": {
             "title": "런타임",
+            "connection": "연결",
             "connection_unset": "엔드포인트 없음",
             "model": "모델",
-            "model_unset": "사용할 수 있는 모델 없음",
+            "model_unset": "이 엔드포인트에 저장된 모델이 없습니다",
             "playbook_mode": "분석 모드",
             "allow_writes": "쓰기 작업 허용",
             "manage_endpoints": "LLM 엔드포인트 관리",
             "reasoning_effort": "추론 강도",
-            "reasoning_effort_provider_default": "제공업체 기본값",
-            "scope_session": "이 대화에만 적용됩니다",
-            "scope_default": "새 대화에 적용됩니다"
+            "reasoning_effort_provider_default": "제공업체 기본값"
         }
     },
     "user_hover_card": {
@@ -520,7 +517,6 @@
         "qq_group": "QQ그룹 (중국 커뮤니티)",
         "changelog": "변경 내역",
         "update": "업데이트",
-        "update_downloading": "다운로드 중…",
         "update_downloaded": "다시 시작",
         "mark_all_read": "모두 읽음으로 표시",
         "edit_dashboard": "대시보드 편집",
@@ -560,6 +556,8 @@
         }
     },
     "dashboard": {
+        "friend_status_widget": "Friend Status Widget",
+        "live_friend_status_distribution": "Live distribution of online friend statuses.",
         "default_name": "대시보드",
         "new_dashboard": "새로운 대시보드",
         "empty": "이 대시보드는 비어 있습니다.",
@@ -1936,6 +1934,8 @@
                 "description": "Social AI 및 번역에서 공유하는 OpenAI 호환 연결입니다.",
                 "follow_custom_proxy": "VRCX-0 사용자 지정 프록시 사용",
                 "follow_custom_proxy_description": "설정되어 있으면 LLM 요청에 사용하고, 그렇지 않으면 시스템 프록시 설정을 따릅니다.",
+                "endpoint_count": "엔드포인트 {count}개",
+                "model_count": "모델 {count}개",
                 "add": "엔드포인트 추가",
                 "empty_description": "Social AI 및 OpenAI 호환 번역에 사용할 OpenAI 호환 엔드포인트를 추가하세요.",
                 "preset": "사전 설정",
@@ -1944,13 +1944,11 @@
                     "siliconflow": "SiliconFlow"
                 },
                 "name": "이름",
-                "name_description": "모델을 고를 때 그룹 이름으로 표시됩니다.",
                 "base_url": "Base URL",
-                "base_url_invalid": "http:// 또는 https:// 로 시작하는 전체 주소를 입력하세요.",
                 "models": "모델",
-                "models_placeholder": "감지된 모델을 검색하거나, 입력 후 Enter로 추가",
-                "models_empty": "아직 감지된 모델이 없습니다. 모델 이름을 입력하고 Enter를 누르면 추가됩니다.",
-                "unusable": "모델이 없어 이 엔드포인트는 아직 사용할 수 없습니다.",
+                "key": "키",
+                "actions": "작업",
+                "no_models": "모델 없음",
                 "key_saved": "저장됨",
                 "key_empty": "비어 있음",
                 "detect_models": "모델 감지",
@@ -1960,9 +1958,9 @@
                 "clear_key": "키 지우기",
                 "key_preserve_placeholder": "비워 두면 저장된 키를 유지합니다",
                 "saved": "엔드포인트가 저장되었습니다",
-                "saved_unusable": "저장했지만 이 엔드포인트의 모델을 찾지 못했습니다.",
                 "save_failed": "엔드포인트 저장에 실패했습니다",
                 "load_failed": "엔드포인트를 불러오지 못했습니다",
+                "base_url_required": "Base URL은 필수입니다.",
                 "models_detected": "모델 {count}개를 감지했습니다",
                 "no_models_detected": "감지된 모델이 없습니다",
                 "detect_failed": "모델 감지에 실패했습니다",
@@ -1988,30 +1986,7 @@
                 "ai": "AI",
                 "vr": "VR",
                 "media": "미디어",
-                "integrations": "통합",
-                "feedback": "피드백"
-            },
-            "feedback": {
-                "title": "피드백 보내기",
-                "description": "피드백은 익명으로 전송됩니다. 모든 메시지를 읽지만 직접 답변드리기는 어렵습니다.",
-                "privacy_note": "계정 정보는 포함되지 않으며, 도배를 막기 위한 익명 설치 ID만 함께 전송됩니다.",
-                "placeholder": "잘 되는 점, 불편한 점, 추가됐으면 하는 기능 등을 알려 주세요…",
-                "submit": "보내기",
-                "submitting": "전송 중…",
-                "thanks": "피드백 감사합니다!",
-                "cooldown": "{{seconds}}초 후에 다시 보낼 수 있습니다",
-                "more_help": "답변이 필요하거나 로그를 첨부하고 싶다면",
-                "error_generic": "피드백을 보내지 못했습니다. 잠시 후 다시 시도해 주세요."
-            },
-            "ai": {
-                "header": "소셜 AI",
-                "description": "새 대화에 적용되는 기본값입니다. 대화별 설정은 소셜 AI 패널에서 바꿀 수 있습니다.",
-                "default_model": "기본 모델",
-                "default_model_description": "새 대화는 이 모델로 시작합니다.",
-                "default_model_unset": "사용할 수 있는 모델 없음",
-                "setup_hint": "소셜 AI를 쓰려면 먼저 OpenAI 호환 연결이 필요합니다.",
-                "playbook_mode_description": "분석할 때 모델에 얼마나 재량을 줄지 정합니다.",
-                "endpoints_description": "소셜 AI와 번역이 함께 사용합니다."
+                "integrations": "통합"
             },
             "social": {
                 "interaction": {
@@ -2192,8 +2167,6 @@
                     "table_page_sizes_description": "테이블 컨트롤에 표시된 페이지 크기 옵션을 추가, 제거 및 선택합니다.",
                     "table_page_sizes_error": "페이지 크기는 1에서 1000 사이의 숫자여야 합니다.",
                     "show_notification_icon_dot": "트레이 알림 점",
-                    "show_taskbar_icon_dot": "작업 표시줄 알림 점",
-                    "show_taskbar_icon_dot_description": "읽지 않은 알림이 있으면 작업 표시줄의 VRCX-0 버튼에 빨간 점을 표시합니다.",
                     "striped_data_table_mode": "스트라이프 테이블",
                     "reduced_motion_and_blur": "효과 줄이기",
                     "reduced_motion_and_blur_description": "애니메이션, 전환, 배경 흐림 효과를 꺼서 저사양 기기의 성능을 개선합니다.",
@@ -2394,11 +2367,11 @@
             "discord_presence": {
                 "discord_presence": {
                     "header": "디스코드 연동 (Rich Presence)",
+                    "description": "*인스턴스 상태에서만 활성화됩니다.",
                     "enable": "사용",
                     "enable_tooltip": "충돌을 막기 위해 VRChat 설정 파일(config.json)에서 Rich Presence를 비활성화하는 편이 좋습니다",
                     "instance_type_player_count": "인스턴스 유형/인원수 표시",
-                    "join_button": "참가 버튼",
-                    "join_button_description": "퍼블릭 인스턴스에서만 표시됩니다.",
+                    "join_button": "Public일 경우 참가 버튼 표시",
                     "show_details_in_private": "프라이빗 인스턴스에 세부 정보 표시",
                     "show_images": "세계 이미지 표시",
                     "show_current_platform": "현재 플랫폼 표시",
@@ -2676,6 +2649,14 @@
             }
         },
         "dashboard": {
+            "friend_status": {
+                "loading": "Loading friend status widget",
+                "total_online_friends": "Online friends",
+                "distribution": "Friend status distribution",
+                "error": "Friend status widget failed",
+                "empty": "No online friends",
+                "empty_description": "The current friend roster has no online friends."
+            },
             "loading": {
                 "loading_dashboard_panel": "대시보드 패널 로드 중",
                 "loading_feed_widget": "피드 위젯 로드 중",

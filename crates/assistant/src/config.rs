@@ -83,7 +83,8 @@ impl AssistantConfig {
         if !self.is_configured() {
             return Err(AssistantError::NotConfigured);
         }
-        LlmClient::new(&self.base_url, &self.api_key, &self.model, None).map_err(AssistantError::from)
+        LlmClient::new(&self.base_url, &self.api_key, &self.model, None)
+            .map_err(AssistantError::from)
     }
 }
 

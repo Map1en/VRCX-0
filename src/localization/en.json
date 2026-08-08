@@ -58,8 +58,6 @@
         "example_2": "Who am I drifting away from?",
         "example_3": "When is the best time to catch my friends online?",
         "not_configured": "Select an LLM Endpoint and model to start.",
-        "setup_title": "Connect a model to get started",
-        "open_settings": "Go to AI settings",
         "entities_title": "Mentioned",
         "entities_empty": "People and worlds mentioned in answers show up here.",
         "untitled": "New conversation",
@@ -81,16 +79,15 @@
         },
         "runtime": {
             "title": "Runtime",
+            "connection": "Connection",
             "connection_unset": "No endpoint",
             "model": "Model",
-            "model_unset": "No model available",
+            "model_unset": "No models saved for this endpoint",
             "playbook_mode": "Analysis mode",
             "allow_writes": "Allow write actions",
             "manage_endpoints": "Manage LLM Endpoints",
             "reasoning_effort": "Reasoning effort",
-            "reasoning_effort_provider_default": "Provider default",
-            "scope_session": "Applies to this conversation only",
-            "scope_default": "Applies to new conversations"
+            "reasoning_effort_provider_default": "Provider default"
         }
     },
     "user_hover_card": {
@@ -521,7 +518,6 @@
         "qq_group": "QQ Group",
         "changelog": "Changelog",
         "update": "Update",
-        "update_downloading": "Downloading…",
         "update_downloaded": "Restart",
         "mark_all_read": "Mark All as Read",
         "edit_dashboard": "Edit Dashboard",
@@ -561,6 +557,8 @@
         }
     },
     "dashboard": {
+        "friend_status_widget": "Friend Status Widget",
+        "live_friend_status_distribution": "Live distribution of online friend statuses.",
         "default_name": "Dashboard",
         "new_dashboard": "New Dashboard",
         "empty": "This dashboard is empty",
@@ -986,6 +984,7 @@
                 "friends_count": "{count} friends",
                 "play_count": "×{count}",
                 "videos": "Videos",
+                "resources": "Resource loads",
                 "unknown_user": "Unknown user",
                 "unknown_video": "Unknown video",
                 "played_by": "Played by {name}",
@@ -1867,7 +1866,18 @@
                 "all_favorite_friends": "All favorite friends",
                 "selected_favorite_groups": "Selected favorite groups",
                 "selected_favorite_groups_label": "Selected favorite groups",
-                "automatic_replies_note": "Automatic replies only run while VRChat is running and your current location can send invites. Cooldown is enforced per sender, and notifications are hidden only after the invite API succeeds.",
+                "scheduled_invite_messages": "Scheduled message replies",
+                "scheduled_invite_messages_description": "Reply to invites or join requests with a VRChat message template during selected times. This is off by default and only applies to current friends.",
+                "invite_message_actions": "Message reply actions",
+                "invite_message_actions_description": "When a scheduled message reply matches, it takes priority over sending an invite and only one action is performed for that notification.",
+                "reply_to_invite": "Reply to invites with a message",
+                "reply_to_request_invite": "Reply to join requests with a message",
+                "message_slot_value": "Message slot {slot}",
+                "active_days": "Active days",
+                "start_time": "Start time",
+                "end_time": "End time",
+                "overnight_schedule_note": "If the end is earlier than the start, the window continues overnight. Matching after midnight uses the previous selected day. Equal times mean all day.",
+                "automatic_replies_note": "Each notification is processed in arrival order without a per-sender cooldown. A notification is hidden only after its invite or message API succeeds, and its notification ID is saved to prevent duplicate replies.",
                 "failed_to_load_schedule_rules": "Failed to load schedule rules.",
                 "failed_to_save_schedule_rules": "Failed to save schedule rules.",
                 "failed_to_load_room_rules": "Failed to load room rules.",
@@ -1956,8 +1966,10 @@
             "llm_endpoints": {
                 "title": "LLM Endpoints",
                 "description": "Shared OpenAI-compatible connections for Social AI and translation.",
-                "follow_custom_proxy": "Use VRCX-0 Custom Proxy",
+                "follow_custom_proxy": "Use VRCX-0 custom proxy",
                 "follow_custom_proxy_description": "LLM requests use it when configured; otherwise, the system proxy applies.",
+                "endpoint_count": "{count} endpoints",
+                "model_count": "{count} models",
                 "add": "Add endpoint",
                 "empty_description": "Add an OpenAI-compatible endpoint for Social AI and OpenAI-compatible translation.",
                 "preset": "Preset",
@@ -1966,13 +1978,11 @@
                     "siliconflow": "SiliconFlow"
                 },
                 "name": "Name",
-                "name_description": "Shown as the group name when you pick a model.",
                 "base_url": "Base URL",
-                "base_url_invalid": "Enter a full http:// or https:// address.",
                 "models": "Models",
-                "models_placeholder": "Search detected models, or type one and press Enter",
-                "models_empty": "Nothing detected yet. Type a model name and press Enter to add it.",
-                "unusable": "No models yet, so this endpoint cannot be used.",
+                "key": "Key",
+                "actions": "Actions",
+                "no_models": "No models",
                 "key_saved": "Saved",
                 "key_empty": "Empty",
                 "detect_models": "Detect models",
@@ -1982,9 +1992,9 @@
                 "clear_key": "Clear key",
                 "key_preserve_placeholder": "Leave blank to keep the saved key",
                 "saved": "Endpoint saved",
-                "saved_unusable": "Saved, but no models were found for this endpoint.",
                 "save_failed": "Failed to save endpoint",
                 "load_failed": "Failed to load endpoints",
+                "base_url_required": "Base URL is required.",
                 "models_detected": "{count} models detected",
                 "no_models_detected": "No models detected",
                 "detect_failed": "Failed to detect models",
@@ -2011,30 +2021,7 @@
                 "ai": "AI",
                 "vr": "VR",
                 "media": "Media",
-                "integrations": "Integrations",
-                "feedback": "Feedback"
-            },
-            "feedback": {
-                "title": "Send feedback",
-                "description": "Feedback is submitted anonymously. We read every message, but can't reply directly.",
-                "privacy_note": "No account info is attached — only an anonymous install ID that keeps the endpoint from being spammed.",
-                "placeholder": "Tell us what's working, what's not, or what you'd like to see...",
-                "submit": "Send",
-                "submitting": "Sending…",
-                "thanks": "Thanks for your feedback!",
-                "cooldown": "You can send again in {{seconds}}s",
-                "more_help": "Need a reply, or want to attach logs?",
-                "error_generic": "Couldn't send feedback. Please try again later."
-            },
-            "ai": {
-                "header": "Social AI",
-                "description": "Defaults for new conversations. Each conversation can override them from the Social AI panel.",
-                "default_model": "Default model",
-                "default_model_description": "New conversations start with this model.",
-                "default_model_unset": "No model available",
-                "setup_hint": "Social AI needs an OpenAI-compatible connection before it can answer anything.",
-                "playbook_mode_description": "How much freedom the model gets when analyzing your data.",
-                "endpoints_description": "Shared by Social AI and translation."
+                "integrations": "Integrations"
             },
             "social": {
                 "interaction": {
@@ -2262,8 +2249,6 @@
                     "table_page_sizes_description": "Add, remove, and select the page-size options shown in table controls.",
                     "table_page_sizes_error": "Page size must be a number between 1 and 1000",
                     "show_notification_icon_dot": "Tray Notification Dot",
-                    "show_taskbar_icon_dot": "Taskbar Notification Dot",
-                    "show_taskbar_icon_dot_description": "Show a red dot on the VRCX-0 taskbar button while notifications are unread.",
                     "striped_data_table_mode": "Striped Tables",
                     "reduced_motion_and_blur": "Reduce Effects",
                     "reduced_motion_and_blur_description": "Turn off animations, transitions, and background blur for better performance on lower-end devices.",
@@ -2442,11 +2427,11 @@
             "discord_presence": {
                 "discord_presence": {
                     "header": "Discord Presence",
+                    "description": "* Only active while in an instance.",
                     "enable": "Enable",
                     "enable_tooltip": "Disable VRChat's Rich Presence to avoid conflicts.",
                     "instance_type_player_count": "Instance Type & Player Count",
-                    "join_button": "Join Button",
-                    "join_button_description": "Only shown in public instances.",
+                    "join_button": "Join Button (Public Only)",
                     "show_details_in_private": "Show Details in Private Instances",
                     "show_images": "Show World Images",
                     "show_current_platform": "Show Current Platform",
@@ -2576,7 +2561,7 @@
                         "enable_tooltip": "Fetches video titles for the Game Log and video duration for the overlay progress bar"
                     },
                     "translation_api": {
-                        "header": "Content Translation",
+                        "header": "Enable Content Translation",
                         "enable": "Enable",
                         "translation_api_key": "Translate API Key",
                         "enable_tooltip": "Translate user bios and world descriptions on demand."
@@ -2724,6 +2709,14 @@
             }
         },
         "dashboard": {
+            "friend_status": {
+                "loading": "Loading friend status widget",
+                "total_online_friends": "Online friends",
+                "distribution": "Friend status distribution",
+                "error": "Friend status widget failed",
+                "empty": "No online friends",
+                "empty_description": "The current friend roster has no online friends."
+            },
             "loading": {
                 "loading_dashboard_panel": "Loading dashboard panel",
                 "loading_feed_widget": "Loading feed widget",
@@ -3463,6 +3456,16 @@
                     "sort_by_time": "By Time",
                     "sort_by_count": "By Visits",
                     "visit_count_label": "{count} visits"
+                },
+                "most_used_avatars": {
+                    "header": "Most Used Avatars",
+                    "loading": "Loading avatar usage...",
+                    "self_all_time_hint": "Usage time is cumulative across all recorded history.",
+                    "self_period_hint": "These avatars were last used in the selected period; usage time is cumulative across all recorded history.",
+                    "friend_hint": "Counts avatar image changes observed in the selected period. Results are approximate.",
+                    "approximate": "Approximate",
+                    "observed_changes_label": "{count} observed changes",
+                    "unknown_avatar": "Unknown avatar"
                 },
                 "preparing_data": "Preparing activity data...",
                 "preparing_data_hint": "This may take a moment on first load",
@@ -5426,6 +5429,8 @@
             "language": "Language",
             "bioLink": "Bio Links",
             "joinCount": "Join Count",
+            "inviteSentCount": "Invites Sent",
+            "inviteReceivedCount": "Invites Received",
             "timeTogether": "Time Together",
             "lastSeen": "Last Seen",
             "lastActivity": "Last Activity",

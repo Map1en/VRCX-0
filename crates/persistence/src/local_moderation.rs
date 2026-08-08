@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

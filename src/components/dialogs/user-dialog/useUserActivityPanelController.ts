@@ -21,6 +21,7 @@ import {
     TOP_WORLDS_LOADING_DELAY_MS,
     type ActivityHeatmapData,
     type TopWorldsSort,
+    type UserActivityTopAvatar,
     type UserActivityTopWorld
 } from './userActivityPanelModel';
 
@@ -74,6 +75,14 @@ function normalizeTopWorlds(value: unknown): UserActivityTopWorld[] {
     return Array.isArray(value) ? value.filter(isTopWorld) : [];
 }
 
+function isTopAvatar(value: unknown): value is UserActivityTopAvatar {
+    return Boolean(value && typeof value === 'object');
+}
+
+function normalizeTopAvatars(value: unknown): UserActivityTopAvatar[] {
+    return Array.isArray(value) ? value.filter(isTopAvatar) : [];
+}
+
 export function useUserActivityPanelController({
     active,
     activityContextKey,
@@ -101,6 +110,8 @@ export function useUserActivityPanelController({
         useState(false);
     const [topWorldsSortBy, setTopWorldsSortBy] =
         useState<TopWorldsSort>('time');
+    const [topAvatars, setTopAvatars] = useState<UserActivityTopAvatar[]>([]);
+    const [topAvatarsLoading, setTopAvatarsLoading] = useState(false);
     const [excludeHomeWorldEnabled, setExcludeHomeWorldEnabled] =
         useState(false);
     const [overlapLoading, setOverlapLoading] = useState(false);
@@ -200,6 +211,8 @@ export function useUserActivityPanelController({
         setTopWorldsLoading(false);
         setTopWorldsLoadingVisible(false);
         setTopWorldsSortBy('time');
+        setTopAvatars([]);
+        setTopAvatarsLoading(false);
         setHasOverlapData(false);
         setOverlapPercent(0);
         setBestOverlapTime('');
@@ -311,6 +324,42 @@ export function useUserActivityPanelController({
             fetchMissingTopWorldThumbnails(rows);
         } finally {
             finishTopWorldsLoading(topWorldRequestId);
+        }
+    }
+
+    async function loadTopAvatars({
+        rangeDays,
+        requestId
+    }: {
+        rangeDays: number;
+        requestId: number;
+    }) {
+        if (!userId) {
+            return;
+        }
+        setTopAvatarsLoading(true);
+        try {
+            const rows = normalizeTopAvatars(
+                await userActivityViewService.loadTopAvatarsView({
+                    targetUserId: userId,
+                    rangeDays,
+                    limit: 5
+                })
+            );
+            if (requestId !== activityRequestIdRef.current) {
+                return;
+            }
+            setTopAvatars(rows);
+        } catch (nextError) {
+            if (requestId !== activityRequestIdRef.current) {
+                return;
+            }
+            console.warn('Failed to load top avatar activity:', nextError);
+            setTopAvatars([]);
+        } finally {
+            if (requestId === activityRequestIdRef.current) {
+                setTopAvatarsLoading(false);
+            }
         }
     }
 
@@ -432,6 +481,11 @@ export function useUserActivityPanelController({
             });
             lastLoadedContextRef.current = activityContextKey;
 
+            await loadTopAvatars({ rangeDays, requestId });
+            if (requestId !== activityRequestIdRef.current) {
+                return;
+            }
+
             if (!activityView.hasAnyData) {
                 setTopWorlds([]);
                 setTopWorldsLoading(false);
@@ -508,6 +562,7 @@ export function useUserActivityPanelController({
             setOverlapLoadingVisible(false);
             setTopWorldsLoading(false);
             setTopWorldsLoadingVisible(false);
+            setTopAvatarsLoading(false);
             return undefined;
         }
 
@@ -685,6 +740,8 @@ export function useUserActivityPanelController({
         topWorlds,
         topWorldsLoading,
         topWorldsLoadingVisible,
-        topWorldsSortBy
+        topWorldsSortBy,
+        topAvatars,
+        topAvatarsLoading
     };
 }

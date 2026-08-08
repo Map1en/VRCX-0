@@ -121,29 +121,6 @@ pub fn app__set_tray_icon_notification(app_handle: AppHandle, notify: Option<boo
     }
 }
 
-#[cfg(windows)]
-pub(crate) fn main_window_handle(app_handle: &AppHandle) -> Option<isize> {
-    use tauri::Manager;
-
-    app_handle
-        .get_webview_window("main")
-        .and_then(|window| window.hwnd().ok())
-        .map(|hwnd| hwnd.0 as isize)
-}
-
-#[tauri::command]
-#[specta::specta]
-#[allow(unused_variables)]
-pub fn app__set_taskbar_overlay_notification(app_handle: AppHandle, notify: Option<bool>) {
-    #[cfg(windows)]
-    if let Some(handle) = main_window_handle(&app_handle) {
-        vrcx_0_host_desktop::taskbar_overlay::set_taskbar_overlay_notification(
-            handle,
-            notify.unwrap_or(false),
-        );
-    }
-}
-
 #[tauri::command]
 #[specta::specta]
 pub fn app__refresh_tray_menu(app_handle: AppHandle) -> Result<(), AppError> {

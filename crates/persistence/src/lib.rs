@@ -13,6 +13,7 @@ pub mod favorites;
 pub mod feed;
 pub mod friends;
 pub mod game_log;
+pub mod invite_history;
 pub mod legacy_migration;
 pub mod legacy_vrcx;
 pub mod local_moderation;

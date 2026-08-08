@@ -14,8 +14,7 @@ const mocks = vi.hoisted(() => ({
     updateLoop: {
         autoDownloadState: 'idle',
         downloadedVersion: null as string | null,
-        downloadProgress: 0,
-        downloadedBytes: 0
+        downloadProgress: 0
     }
 }));
 
@@ -24,7 +23,6 @@ vi.mock('react-i18next', () => ({
         t: (key: string) =>
             ({
                 'nav_menu.update': 'Update',
-                'nav_menu.update_downloading': 'Downloading…',
                 'nav_menu.update_downloaded': 'Restart',
                 'message.vrcx_updater.current_version': 'Current Version',
                 'message.vrcx_updater.latest_version': 'Latest Version',
@@ -108,7 +106,6 @@ describe('TitleBarUpdateButton', () => {
         mocks.updateLoop.autoDownloadState = 'idle';
         mocks.updateLoop.downloadedVersion = null;
         mocks.updateLoop.downloadProgress = 0;
-        mocks.updateLoop.downloadedBytes = 0;
     });
 
     it('renders the update entry with the latest release snapshot', () => {
@@ -140,11 +137,10 @@ describe('TitleBarUpdateButton', () => {
         expect(html).toContain('data-variant="default"');
     });
 
-    it('shows an elongated downloading pill with size and progress while downloading', () => {
+    it('shows download progress in the hover content while downloading', () => {
         mocks.updateLoop.autoDownloadState = 'downloading';
         mocks.updateLoop.downloadedVersion = '2.7.0';
         mocks.updateLoop.downloadProgress = 42;
-        mocks.updateLoop.downloadedBytes = 12_500_000;
 
         const html = renderToStaticMarkup(
             React.createElement(TitleBarUpdateButton, {
@@ -152,8 +148,7 @@ describe('TitleBarUpdateButton', () => {
             })
         );
 
-        expect(html).toContain('Downloading…');
-        expect(html).toContain('12 MB');
+        expect(html).toContain('Update');
         expect(html).toContain('42%');
     });
 });

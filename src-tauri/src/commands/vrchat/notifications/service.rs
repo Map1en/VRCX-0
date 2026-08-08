@@ -8,6 +8,7 @@ use vrcx_0_application_core::vrchat_api::notifications::{
     request_invite_send_input,
 };
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
+use vrcx_0_persistence::invite_history::record_successful_invite_send;
 use vrcx_0_persistence::notifications::notification_mark_seen;
 
 use crate::error::AppError;
@@ -193,13 +194,24 @@ pub async fn app__vrchat_invite_send(
         input.receiver_user_id,
         input.params,
     )?;
-    execute_notification_api(
-        state,
+    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    let response = execute_notification_api(
+        state.clone(),
         "app__vrchat_invite_send",
         format!("Sending invite to {receiver_user_id}."),
         request,
     )
-    .await
+    .await?;
+    if !response_has_error(&response) {
+        record_successful_invite_send(
+            state.db.as_ref(),
+            &owner_user_id,
+            &receiver_user_id,
+            "manual-invite",
+            None,
+        )?;
+    }
+    Ok(response)
 }
 
 #[tauri::command]
@@ -214,13 +226,24 @@ pub async fn app__vrchat_invite_photo_send(
         input.params,
         input.image_data,
     )?;
-    execute_media_api(
-        state,
+    let owner_user_id = state.runtime_context.auth_scope.snapshot().current_user_id;
+    let response = execute_media_api(
+        state.clone(),
         "app__vrchat_invite_photo_send",
         format!("Sending invite photo to {receiver_user_id}."),
         media_upload::prepare_media_upload_request(request)?,
     )
-    .await
+    .await?;
+    if !response_has_error(&response) {
+        record_successful_invite_send(
+            state.db.as_ref(),
+            &owner_user_id,
+            &receiver_user_id,
+            "manual-invite-photo",
+            None,
+        )?;
+    }
+    Ok(response)
 }
 
 #[tauri::command]

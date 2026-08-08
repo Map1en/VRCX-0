@@ -1,4 +1,5 @@
 mod repository;
+mod top_avatars;
 mod types;
 mod view;
 
@@ -9,12 +10,14 @@ pub use repository::{
     activity_sessions_get, activity_sessions_replace, activity_sync_state_get,
     activity_sync_state_upsert,
 };
+pub use top_avatars::activity_top_avatars_query;
 pub use types::{
     ActivityBucketCacheInput, ActivityBucketCacheOutput, ActivityBucketCacheQueryInput,
     ActivityOverlapViewBuildInput, ActivityOverlapViewOutput, ActivityRefreshMode,
     ActivitySelfSessionsRefreshInput, ActivitySelfSessionsRefreshOutput,
     ActivitySelfSourceBoundsOutput, ActivitySessionInput, ActivitySessionOutput,
-    ActivitySyncStateInput, ActivitySyncStateOutput, ActivityViewBuildInput, ActivityViewKind,
-    ActivityViewOutput,
+    ActivitySyncStateInput, ActivitySyncStateOutput, ActivityTopAvatarMetric,
+    ActivityTopAvatarOutput, ActivityTopAvatarsQueryInput, ActivityViewBuildInput,
+    ActivityViewKind, ActivityViewOutput,
 };
 pub use view::{activity_overlap_view_build, activity_self_sessions_warmup, activity_view_build};

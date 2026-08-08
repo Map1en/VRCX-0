@@ -330,7 +330,6 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     hideUnfriends: false,
     randomUserColours: false,
     notificationIconDot: true,
-    taskbarIconDot: true,
     showPostUpdateChangelogToast: true,
     autoInstallUpdatesOnStartup: true,
     desktopToast: 'Never',
@@ -489,7 +488,6 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         hideUnfriends: normalizeBool(next.hideUnfriends),
         randomUserColours: normalizeBool(next.randomUserColours),
         notificationIconDot: normalizeBool(next.notificationIconDot),
-        taskbarIconDot: normalizeBool(next.taskbarIconDot),
         showPostUpdateChangelogToast: normalizeBool(
             next.showPostUpdateChangelogToast
         ),

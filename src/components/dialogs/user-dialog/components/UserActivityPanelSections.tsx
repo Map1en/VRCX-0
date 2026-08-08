@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
+import { Badge } from '@/ui/shadcn/badge';
 import { Field, FieldLabel } from '@/ui/shadcn/field';
 import {
     Select,
@@ -18,9 +19,14 @@ import {
     USER_ACTIVITY_HOUR_LABELS,
     type ActivityHeatmapData,
     type TopWorldsSort,
+    type UserActivityTopAvatar,
     type UserActivityTopWorld
 } from '../userActivityPanelModel';
-import { HeatmapChart, TopWorldRows } from './UserActivityPanelParts';
+import {
+    HeatmapChart,
+    TopAvatarRows,
+    TopWorldRows
+} from './UserActivityPanelParts';
 
 export function UserActivityOverlapSection({
     bestOverlapTime,
@@ -335,6 +341,60 @@ export function UserActivityTopWorldsSection({
                 </div>
             ) : (
                 <TopWorldRows worlds={topWorlds} sortBy={topWorldsSortBy} />
+            )}
+        </div>
+    );
+}
+
+export function UserActivityTopAvatarsSection({
+    isAllTime,
+    isCurrentUser,
+    loading,
+    topAvatars
+}: {
+    isAllTime: boolean;
+    isCurrentUser: boolean;
+    loading: boolean;
+    topAvatars: UserActivityTopAvatar[];
+}) {
+    const { t } = useTranslation();
+    const hint = isCurrentUser
+        ? t(
+              isAllTime
+                  ? 'dialog.user.activity.most_used_avatars.self_all_time_hint'
+                  : 'dialog.user.activity.most_used_avatars.self_period_hint'
+          )
+        : t('dialog.user.activity.most_used_avatars.friend_hint');
+
+    return (
+        <div className="border-border mt-4 border-t pt-3">
+            <div className="mb-1 flex items-center gap-2">
+                <span className="text-sm font-medium">
+                    {t('dialog.user.activity.most_used_avatars.header')}
+                </span>
+                {loading ? <Spinner className="size-3.5" /> : null}
+                {!isCurrentUser ? (
+                    <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+                        {t(
+                            'dialog.user.activity.most_used_avatars.approximate'
+                        )}
+                    </Badge>
+                ) : null}
+            </div>
+            <p className="text-muted-foreground mb-2 text-xs">{hint}</p>
+            {loading && !topAvatars.length ? (
+                <div className="text-muted-foreground flex items-center gap-2 py-2 text-sm">
+                    <Spinner className="size-4" />
+                    <span>
+                        {t('dialog.user.activity.most_used_avatars.loading')}
+                    </span>
+                </div>
+            ) : !loading && !topAvatars.length ? (
+                <div className="text-muted-foreground py-2 text-sm">
+                    {t('dialog.user.activity.no_data_in_period')}
+                </div>
+            ) : (
+                <TopAvatarRows avatars={topAvatars} />
             )}
         </div>
     );

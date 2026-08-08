@@ -45,6 +45,15 @@ fn location_filter_sql(instance_id: &str, db_params: &mut HashMap<String, Value>
     }
 }
 
+fn resource_type_filter_sql(include_string: bool, include_image: bool) -> &'static str {
+    match (include_string, include_image) {
+        (true, true) => "AND resource_type IN ('StringLoad', 'ImageLoad')",
+        (true, false) => "AND resource_type = 'StringLoad'",
+        (false, true) => "AND resource_type = 'ImageLoad'",
+        (false, false) => "AND 1 = 0",
+    }
+}
+
 pub fn game_log_query(
     db: &DatabaseService,
     owner_user_id: &str,
@@ -122,6 +131,9 @@ pub fn game_log_query(
             } else {
                 format!("AND user_id IN ({})", vip_placeholders.join(", "))
             };
+            let include_resource_loads =
+                vip_placeholders.is_empty() && (flags.stringload || flags.imageload);
+            let resource_type_query = resource_type_filter_sql(flags.stringload, flags.imageload);
             let mut selects = Vec::new();
 
             if mode == "rowsByLocation" {
@@ -160,19 +172,9 @@ pub fn game_log_query(
                         include_extra,
                     ));
                 }
-                if flags.stringload || flags.imageload {
-                    let check_string = if flags.stringload {
-                        ""
-                    } else {
-                        "AND resource_type != 'StringLoad'"
-                    };
-                    let check_image = if flags.imageload {
-                        ""
-                    } else {
-                        "AND resource_type != 'ImageLoad'"
-                    };
+                if include_resource_loads {
                     selects.push(game_log_resource_load_union_select(
-                        &format!("{location_filter} {check_string} {check_image}"),
+                        &format!("{location_filter} {resource_type_query}"),
                         include_extra,
                     ));
                 }
@@ -212,19 +214,9 @@ pub fn game_log_query(
                         include_extra,
                     ));
                 }
-                if flags.stringload || flags.imageload {
-                    let check_string = if flags.stringload {
-                        ""
-                    } else {
-                        "AND resource_type != 'StringLoad'"
-                    };
-                    let check_image = if flags.imageload {
-                        ""
-                    } else {
-                        "AND resource_type != 'ImageLoad'"
-                    };
+                if include_resource_loads {
                     selects.push(game_log_resource_load_union_select(
-                        &format!("1=1 {check_string} {check_image}"),
+                        &format!("1=1 {resource_type_query}"),
                         include_extra,
                     ));
                 }
@@ -276,19 +268,9 @@ pub fn game_log_query(
                         include_extra,
                     ));
                 }
-                if flags.stringload || flags.imageload {
-                    let check_string = if flags.stringload {
-                        ""
-                    } else {
-                        "AND resource_type != 'StringLoad'"
-                    };
-                    let check_image = if flags.imageload {
-                        ""
-                    } else {
-                        "AND resource_type != 'ImageLoad'"
-                    };
+                if include_resource_loads {
                     selects.push(game_log_resource_load_union_select(
-                        &format!("resource_url LIKE @search_like {check_string} {check_image}"),
+                        &format!("resource_url LIKE @search_like {resource_type_query}"),
                         include_extra,
                     ));
                 }

@@ -37,6 +37,11 @@ type LoadTopWorldsViewOptions = {
     rangeDays?: number;
     sortBy?: string;
 };
+type LoadTopAvatarsViewOptions = {
+    limit?: number;
+    rangeDays?: number;
+    targetUserId: string;
+};
 type TopWorldRows = Awaited<
     ReturnType<typeof gameLogRepository.getMyTopWorlds>
 >;
@@ -57,6 +62,9 @@ type UserActivityViewService = {
             overlapPercent?: number;
         }
     >;
+    loadTopAvatarsView(
+        options: LoadTopAvatarsViewOptions
+    ): ReturnType<typeof commands.appActivityTopAvatars>;
     loadTopWorldsView(options: LoadTopWorldsViewOptions): Promise<TopWorldRows>;
 };
 
@@ -196,9 +204,23 @@ async function loadTopWorldsView({
     );
 }
 
+async function loadTopAvatarsView({
+    targetUserId,
+    rangeDays = 30,
+    limit = 5
+}: LoadTopAvatarsViewOptions) {
+    return commands.appActivityTopAvatars({
+        targetUserId,
+        rangeDays,
+        nowMs: Date.now(),
+        limit
+    });
+}
+
 const userActivityViewService: UserActivityViewService = {
     loadActivityView,
     loadOverlapView,
+    loadTopAvatarsView,
     loadTopWorldsView
 };
 

@@ -193,6 +193,7 @@ pub struct SessionEventRow {
     pub video_url: Option<String>,
     pub video_name: Option<String>,
     pub video_id: Option<String>,
+    pub resource_url: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

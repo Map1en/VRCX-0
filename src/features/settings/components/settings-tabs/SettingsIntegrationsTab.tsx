@@ -10,7 +10,6 @@ import type { SettingsPageStateSections } from '../../settingsPageStateSections'
 import { normalizeCheckedState } from '../../settingsValues';
 import { Field, SettingsGroup } from '../SettingsField';
 import { SettingsTabContent } from '../SettingsViewParts';
-import { McpServerSettingsGroup } from './McpServerSettingsGroup';
 import { WebhookSettingsGroup } from './WebhookSettingsGroup';
 
 type SettingsIntegrationsTabProps = {
@@ -122,15 +121,16 @@ export function SettingsIntegrationsTab({
                 title={t(
                     'view.settings.discord_presence.discord_presence.header'
                 )}
-            >
-                <Field
-                    label={t(
-                        'view.settings.discord_presence.discord_presence.enable'
-                    )}
-                    description={
+                description={
+                    <div className="flex flex-col gap-2">
+                        <div>
+                            {t(
+                                'view.settings.discord_presence.discord_presence.description'
+                            )}
+                        </div>
                         <Button
                             type="button"
-                            variant="link"
+                            variant="ghost"
                             className="text-muted-foreground hover:text-primary h-auto justify-start p-0 text-left text-xs font-normal"
                             onClick={openVrchatConfig}
                         >
@@ -138,7 +138,13 @@ export function SettingsIntegrationsTab({
                                 'view.settings.discord_presence.discord_presence.enable_tooltip'
                             )}
                         </Button>
-                    }
+                    </div>
+                }
+            >
+                <Field
+                    label={t(
+                        'view.settings.discord_presence.discord_presence.enable'
+                    )}
                 >
                     <Switch
                         checked={discordPrefs.discordActive}
@@ -204,9 +210,6 @@ export function SettingsIntegrationsTab({
                     label={t(
                         'view.settings.discord_presence.discord_presence.join_button'
                     )}
-                    description={t(
-                        'view.settings.discord_presence.discord_presence.join_button_description'
-                    )}
                 >
                     <Switch
                         checked={discordPrefs.discordJoinButton}
@@ -266,6 +269,9 @@ export function SettingsIntegrationsTab({
                     label={t(
                         'view.settings.advanced.advanced.translation_api.enable'
                     )}
+                    description={t(
+                        'view.settings.advanced.advanced.translation_api.enable_tooltip'
+                    )}
                 >
                     <Switch
                         checked={integrationPrefs.translationAPI}
@@ -283,7 +289,9 @@ export function SettingsIntegrationsTab({
                         size="sm"
                         onClick={onOpenTranslationApiDialog}
                     >
-                        {t('common.configure')}
+                        {t(
+                            'view.settings.advanced.advanced.translation_api.translation_api_key'
+                        )}
                     </Button>
                 </Field>
             </SettingsGroup>
@@ -297,6 +305,9 @@ export function SettingsIntegrationsTab({
                 <Field
                     label={t(
                         'view.settings.advanced.advanced.youtube_api.enable'
+                    )}
+                    description={t(
+                        'view.settings.advanced.advanced.youtube_api.enable_tooltip'
                     )}
                 >
                     <Switch
@@ -315,7 +326,9 @@ export function SettingsIntegrationsTab({
                         size="sm"
                         onClick={onOpenYoutubeApiDialog}
                     >
-                        {t('common.configure')}
+                        {t(
+                            'view.settings.advanced.advanced.youtube_api.youtube_api_key'
+                        )}
                     </Button>
                 </Field>
             </SettingsGroup>
@@ -331,6 +344,9 @@ export function SettingsIntegrationsTab({
                 <Field
                     label={t(
                         'view.settings.advanced.advanced.remote_database.enable'
+                    )}
+                    description={t(
+                        'view.settings.advanced.advanced.remote_database.enable_description'
                     )}
                 >
                     <Switch
@@ -350,12 +366,12 @@ export function SettingsIntegrationsTab({
                         size="sm"
                         onClick={onOpenAvatarProviderDialog}
                     >
-                        {t('common.configure')}
+                        {t(
+                            'view.settings.advanced.advanced.remote_database.avatar_database_provider'
+                        )}
                     </Button>
                 </Field>
             </SettingsGroup>
-
-            <McpServerSettingsGroup />
         </SettingsTabContent>
     );
 }

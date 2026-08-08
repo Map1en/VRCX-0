@@ -6,7 +6,18 @@ use crate::error::AppError;
 use crate::state::AppState;
 
 use serde_json::Value;
+use vrcx_0_persistence::invite_history::{FriendInviteCountsQueryInput, FriendInviteCountsRow};
 use vrcx_0_persistence::notifications::{NotificationListItemOutput, NotificationListQueryInput};
+
+#[tauri::command]
+#[specta::specta]
+pub fn app__friend_invite_counts_query(
+    state: State<'_, AppState>,
+    input: FriendInviteCountsQueryInput,
+) -> Result<Vec<FriendInviteCountsRow>, AppError> {
+    vrcx_0_persistence::invite_history::friend_invite_counts_query(state.db.as_ref(), input)
+        .map_err(AppError::from)
+}
 
 #[tauri::command]
 #[specta::specta]

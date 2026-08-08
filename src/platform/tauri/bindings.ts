@@ -315,11 +315,6 @@ export const commands = {
     async appTelemetryRecordEvent(event: TelemetryClientEvent): Promise<null> {
         return await TAURI_INVOKE('app__telemetry_record_event', { event });
     },
-    async appTelemetrySubmitFeedback(content: string): Promise<null> {
-        return await TAURI_INVOKE('app__telemetry_submit_feedback', {
-            content
-        });
-    },
     async appProxySettingsTest(
         input: ProxySettingsTestInput
     ): Promise<ProxySettingsTestResult> {
@@ -989,6 +984,11 @@ export const commands = {
     ): Promise<ActivityViewOutput> {
         return await TAURI_INVOKE('app__activity_view', { input });
     },
+    async appActivityTopAvatars(
+        input: ActivityTopAvatarsQueryInput
+    ): Promise<ActivityTopAvatarOutput[]> {
+        return await TAURI_INVOKE('app__activity_top_avatars', { input });
+    },
     async appActivityOverlapView(
         input: ActivityOverlapViewBuildInput
     ): Promise<ActivityOverlapViewOutput> {
@@ -1139,6 +1139,11 @@ export const commands = {
         query: NotificationListQueryInput
     ): Promise<NotificationListItemOutput[]> {
         return await TAURI_INVOKE('app__notification_list_query', { query });
+    },
+    async appFriendInviteCountsQuery(
+        input: FriendInviteCountsQueryInput
+    ): Promise<FriendInviteCountsRow[]> {
+        return await TAURI_INVOKE('app__friend_invite_counts_query', { input });
     },
     async appNotificationAddV1(
         userId: string,
@@ -2411,11 +2416,6 @@ export const commands = {
     async appSetTrayIconNotification(notify: boolean | null): Promise<void> {
         await TAURI_INVOKE('app__set_tray_icon_notification', { notify });
     },
-    async appSetTaskbarOverlayNotification(
-        notify: boolean | null
-    ): Promise<void> {
-        await TAURI_INVOKE('app__set_taskbar_overlay_notification', { notify });
-    },
     async appRefreshTrayMenu(): Promise<null> {
         return await TAURI_INVOKE('app__refresh_tray_menu');
     },
@@ -2822,6 +2822,26 @@ export type ActivitySyncStateOutput = {
     sourceLastCreatedAt: string;
     pendingSessionStartAt: JsonValue;
     cachedRangeDays: number;
+};
+export type ActivityTopAvatarMetric = 'totalTime' | 'observedChanges';
+export type ActivityTopAvatarOutput = {
+    avatarId?: string | null;
+    avatarKey: string;
+    avatarName: string;
+    authorId: string;
+    imageUrl: string;
+    thumbnailImageUrl: string;
+    lastUsedAt: string;
+    useCount: number;
+    totalTime: number;
+    metric: ActivityTopAvatarMetric;
+    approximate: boolean;
+};
+export type ActivityTopAvatarsQueryInput = {
+    targetUserId: string;
+    rangeDays: number;
+    nowMs: number;
+    limit?: number;
 };
 export type ActivityViewBuildInput = {
     ownerUserId: string;
@@ -3914,6 +3934,15 @@ export type FeedRowsQueryInput = {
     dateTo?: string;
     cursor?: FeedCursorInput | null;
 };
+export type FriendInviteCountsQueryInput = {
+    ownerUserId: string;
+    userIds?: string[];
+};
+export type FriendInviteCountsRow = {
+    userId: string;
+    sentCount: number;
+    receivedCount: number;
+};
 export type FriendLogCurrentOutput = {
     userId: string;
     displayName: string;
@@ -4071,6 +4100,7 @@ export type GameLogSessionEventDto = {
     videoUrl?: string | null;
     videoName?: string | null;
     videoId?: string | null;
+    resourceUrl?: string | null;
     playCount?: number | null;
     isFavorite?: boolean | null;
     count?: number | null;

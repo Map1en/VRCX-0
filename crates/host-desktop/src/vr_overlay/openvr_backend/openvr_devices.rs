@@ -2,8 +2,8 @@ use std::collections::{HashMap, HashSet};
 
 use openvr::{
     property::{
-        DeviceBatteryPercentage_Float, DeviceIsCharging_Bool,
-        DeviceProvidesBatteryStatus_Bool, ModelNumber_String, SerialNumber_String,
+        DeviceBatteryPercentage_Float, DeviceIsCharging_Bool, DeviceProvidesBatteryStatus_Bool,
+        ModelNumber_String, SerialNumber_String,
     },
     TrackedControllerRole, TrackedDeviceClass, TrackedDeviceIndex, TrackingUniverseOrigin,
     MAX_TRACKED_DEVICE_COUNT,

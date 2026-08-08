@@ -58,8 +58,6 @@
         "example_2": "最近疎遠になっている人は？",
         "example_3": "フレンドがオンラインになりやすい時間は？",
         "not_configured": "LLM エンドポイントとモデルを選択して開始してください。",
-        "setup_title": "まずはモデルをつないでください",
-        "open_settings": "AI 設定を開く",
         "entities_title": "言及",
         "entities_empty": "回答で言及された人やワールドがここに表示されます。",
         "untitled": "新しい会話",
@@ -81,16 +79,15 @@
         },
         "runtime": {
             "title": "ランタイム",
+            "connection": "接続",
             "connection_unset": "エンドポイントなし",
             "model": "モデル",
-            "model_unset": "利用できるモデルがありません",
+            "model_unset": "このエンドポイントに保存されたモデルはありません",
             "playbook_mode": "分析モード",
             "allow_writes": "書き込み操作を許可",
             "manage_endpoints": "LLM エンドポイントを管理",
             "reasoning_effort": "推論の深さ",
-            "reasoning_effort_provider_default": "プロバイダーのデフォルト",
-            "scope_session": "このチャットにだけ反映されます",
-            "scope_default": "新しいチャットに反映されます"
+            "reasoning_effort_provider_default": "プロバイダーのデフォルト"
         }
     },
     "user_hover_card": {
@@ -521,7 +518,6 @@
         "qq_group": "QQグループ",
         "changelog": "新機能 (更新履歴)",
         "update": "更新",
-        "update_downloading": "ダウンロード中…",
         "update_downloaded": "再起動",
         "mark_all_read": "すべてを既読にする",
         "edit_dashboard": "ダッシュボードを編集",
@@ -561,6 +557,8 @@
         }
     },
     "dashboard": {
+        "friend_status_widget": "フレンドステータスウィジェット",
+        "live_friend_status_distribution": "オンラインフレンドのステータス割合をリアルタイムで表示します。",
         "default_name": "ダッシュボード",
         "new_dashboard": "新しいダッシュボード",
         "empty": "このダッシュボードは空です",
@@ -986,6 +984,7 @@
                 "friends_count": "フレンド {count} 人",
                 "play_count": "×{count}",
                 "videos": "動画",
+                "resources": "リソース読み込み",
                 "unknown_user": "不明なユーザー",
                 "unknown_video": "不明な動画",
                 "played_by": "{name} が再生",
@@ -1863,7 +1862,18 @@
                 "all_favorite_friends": "すべてのお気に入りフレンド",
                 "selected_favorite_groups": "選択したお気に入りグループ",
                 "selected_favorite_groups_label": "選択したお気に入りグループ",
-                "automatic_replies_note": "自動返信は VRChat 起動中、かつ現在の場所から招待を送信できるときだけ実行されます。クールダウンは送信者ごとに適用され、通知は招待 API が成功した後にだけ非表示になります。",
+                "scheduled_invite_messages": "スケジュール付きメッセージ返信",
+                "scheduled_invite_messages_description": "選択した時間帯に、招待または招待リクエストへ VRChat のメッセージテンプレートで返信します。初期状態はオフで、現在のフレンドだけが対象です。",
+                "invite_message_actions": "メッセージ返信アクション",
+                "invite_message_actions_description": "スケジュールに一致するメッセージ返信は招待送信より優先され、1件の通知につき1つのアクションだけを実行します。",
+                "reply_to_invite": "招待にメッセージで返信",
+                "reply_to_request_invite": "招待リクエストにメッセージで返信",
+                "message_slot_value": "メッセージスロット {slot}",
+                "active_days": "有効な曜日",
+                "start_time": "開始時刻",
+                "end_time": "終了時刻",
+                "overnight_schedule_note": "終了が開始より早い場合は翌日にまたがります。午前0時以降は前日の選択曜日として判定します。同じ時刻なら終日有効です。",
+                "automatic_replies_note": "送信者ごとのクールダウンはなく、各通知を到着順に処理します。招待またはメッセージ API が成功した後だけ通知を非表示にし、通知 ID を保存して重複返信を防ぎます。",
                 "failed_to_load_schedule_rules": "スケジュールルールの読み込みに失敗しました。",
                 "failed_to_save_schedule_rules": "スケジュールルールの保存に失敗しました。",
                 "failed_to_load_room_rules": "ルームルールの読み込みに失敗しました。",
@@ -1954,6 +1964,8 @@
                 "description": "Social AI と翻訳で共有する OpenAI 互換の接続です。",
                 "follow_custom_proxy": "VRCX-0 のカスタムプロキシを使用",
                 "follow_custom_proxy_description": "設定されている場合は LLM リクエストに使用し、それ以外はシステムのプロキシ設定に従います。",
+                "endpoint_count": "{count} 件のエンドポイント",
+                "model_count": "{count} 件のモデル",
                 "add": "エンドポイントを追加",
                 "empty_description": "Social AI と OpenAI 互換翻訳で使う OpenAI 互換エンドポイントを追加します。",
                 "preset": "プリセット",
@@ -1962,13 +1974,11 @@
                     "siliconflow": "SiliconFlow"
                 },
                 "name": "名前",
-                "name_description": "モデルを選ぶときのグループ名として表示されます。",
                 "base_url": "Base URL",
-                "base_url_invalid": "http:// または https:// から始まる完全なアドレスを入力してください。",
                 "models": "モデル",
-                "models_placeholder": "検出済みのモデルを検索、または入力して Enter で追加",
-                "models_empty": "まだ検出されていません。モデル名を入力して Enter で追加できます。",
-                "unusable": "モデルがないため、このエンドポイントはまだ使えません。",
+                "key": "キー",
+                "actions": "操作",
+                "no_models": "モデルなし",
                 "key_saved": "保存済み",
                 "key_empty": "未設定",
                 "detect_models": "モデルを検出",
@@ -1978,9 +1988,9 @@
                 "clear_key": "キーをクリア",
                 "key_preserve_placeholder": "空欄のままにすると保存済みのキーを保持します",
                 "saved": "エンドポイントを保存しました",
-                "saved_unusable": "保存しましたが、このエンドポイントのモデルは見つかりませんでした。",
                 "save_failed": "エンドポイントの保存に失敗しました",
                 "load_failed": "エンドポイントの読み込みに失敗しました",
+                "base_url_required": "Base URL は必須です。",
                 "models_detected": "{count} 件のモデルを検出しました",
                 "no_models_detected": "モデルが検出されませんでした",
                 "detect_failed": "モデルの検出に失敗しました",
@@ -2007,30 +2017,7 @@
                 "ai": "AI",
                 "vr": "VR",
                 "media": "メディア",
-                "integrations": "統合",
-                "feedback": "フィードバック"
-            },
-            "feedback": {
-                "title": "フィードバックを送信",
-                "description": "フィードバックは匿名で送信されます。すべてのメッセージに目を通しますが、直接返信することはできません。",
-                "privacy_note": "アカウント情報は含まれず、連投を防ぐための匿名の識別子だけが付きます。",
-                "placeholder": "使い心地、改善してほしい点、ほしい機能などを教えてください…",
-                "submit": "送信",
-                "submitting": "送信中…",
-                "thanks": "フィードバックありがとうございます！",
-                "cooldown": "{{seconds}} 秒後にもう一度送信できます",
-                "more_help": "返信が必要な場合や、ログを添えたい場合は",
-                "error_generic": "フィードバックを送信できませんでした。あとでもう一度お試しください。"
-            },
-            "ai": {
-                "header": "ソーシャル AI",
-                "description": "新しいチャットの初期設定です。チャットごとの変更はソーシャル AI パネルから行えます。",
-                "default_model": "既定のモデル",
-                "default_model_description": "新しいチャットはこのモデルで始まります。",
-                "default_model_unset": "利用できるモデルがありません",
-                "setup_hint": "ソーシャル AI を使うには、OpenAI 互換の接続先が必要です。",
-                "playbook_mode_description": "分析するときにモデルへどこまで任せるかを決めます。",
-                "endpoints_description": "ソーシャル AI と翻訳で共通です。"
+                "integrations": "統合"
             },
             "social": {
                 "interaction": {
@@ -2258,8 +2245,6 @@
                     "table_page_sizes_description": "テーブルコントロールに表示するページサイズ候補を追加、削除、選択します。",
                     "table_page_sizes_error": "1〜1000の数字を入力してください",
                     "show_notification_icon_dot": "トレイ通知ドットを表示",
-                    "show_taskbar_icon_dot": "タスクバー通知ドットを表示",
-                    "show_taskbar_icon_dot_description": "未読の通知があるあいだ、タスクバーの VRCX-0 ボタンに赤いドットを表示します。",
                     "striped_data_table_mode": "テーブルの行に交互に色を付ける",
                     "reduced_motion_and_blur": "エフェクトを減らす",
                     "reduced_motion_and_blur_description": "アニメーション、トランジション、背景のぼかしを無効にして、低スペック環境での動作を軽くします。",
@@ -2438,11 +2423,11 @@
             "discord_presence": {
                 "discord_presence": {
                     "header": "Discord でのゲームステータス表示",
+                    "description": "VRChat が起動しているときのみ動作します。",
                     "enable": "有効化する",
                     "enable_tooltip": "競合を防ぐため、VRChat 側の Discord Rich Presence を無効化します。",
                     "instance_type_player_count": "インスタンス詳細/プレイヤー数",
-                    "join_button": "Join ボタン",
-                    "join_button_description": "パブリックインスタンスでのみ表示されます。",
+                    "join_button": "Join ボタンを表示 (パブリックのみ)",
                     "show_details_in_private": "プライベートでもワールド詳細を表示",
                     "show_images": "ワールド画像を表示",
                     "show_current_platform": "現在のプラットフォームを表示",
@@ -2720,6 +2705,14 @@
             }
         },
         "dashboard": {
+            "friend_status": {
+                "loading": "フレンドステータスを読み込み中",
+                "total_online_friends": "オンラインフレンド",
+                "distribution": "フレンドステータスの割合",
+                "error": "フレンドステータスウィジェットでエラーが発生しました",
+                "empty": "オンラインのフレンドはいません",
+                "empty_description": "現在のフレンド一覧にオンラインのフレンドはいません。"
+            },
             "loading": {
                 "loading_dashboard_panel": "ダッシュボードパネルを読み込み中",
                 "loading_feed_widget": "フィードウィジェットを読み込み中",
@@ -3458,6 +3451,16 @@
                     "sort_by_time": "滞在時間順",
                     "sort_by_count": "訪問回数順",
                     "visit_count_label": "{count} 回訪問"
+                },
+                "most_used_avatars": {
+                    "header": "よく使うアバター",
+                    "loading": "アバター利用履歴を読み込み中...",
+                    "self_all_time_hint": "使用時間は記録された全期間の累積値です。",
+                    "self_period_hint": "選択期間内に最後に使用したアバターを表示します。使用時間は記録された全期間の累積値です。",
+                    "friend_hint": "選択期間内に観測したアバター画像の変更回数です。結果は概算です。",
+                    "approximate": "概算",
+                    "observed_changes_label": "観測 {count} 回",
+                    "unknown_avatar": "不明なアバター"
                 },
                 "preparing_data": "アクティビティデータを準備しています...",
                 "preparing_data_hint": "初回ロード時は時間がかかる場合があります。",
@@ -5419,6 +5422,8 @@
             "language": "言語",
             "bioLink": "自己紹介リンク",
             "joinCount": "参加した回数",
+            "inviteSentCount": "招待を送った回数",
+            "inviteReceivedCount": "招待を受け取った回数",
             "timeTogether": "一緒に居た時間",
             "lastSeen": "最後に見た日時",
             "lastActivity": "最後に活動した時間",

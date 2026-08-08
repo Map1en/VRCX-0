@@ -14,7 +14,7 @@ pub mod telemetry;
 
 pub use authenticated_runtime::{
     favorite_group_membership_from_baseline, favorite_world_group_membership_from_baseline,
-    AuthenticatedRuntimeDeps, AuthenticatedRuntimeOrchestrator,
+    AuthenticatedRuntimeOrchestrator,
 };
 pub use composition::{
     RuntimeHostCallback, RuntimeHostComposition, RuntimeHostFavoritesCallback,

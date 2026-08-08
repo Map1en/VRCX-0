@@ -33,7 +33,13 @@ const GAME_LOG_FILTER_TYPES: [&str; 9] = [
     "StringLoad",
     "ImageLoad",
 ];
-const SESSION_EVENT_FILTER_TYPES: [&str; 3] = ["OnPlayerJoined", "OnPlayerLeft", "VideoPlay"];
+const SESSION_EVENT_FILTER_TYPES: [&str; 5] = [
+    "OnPlayerJoined",
+    "OnPlayerLeft",
+    "VideoPlay",
+    "StringLoad",
+    "ImageLoad",
+];
 
 #[derive(Clone, Debug, Default, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -88,6 +94,8 @@ pub struct GameLogSessionEventDto {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub video_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub resource_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub play_count: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub is_favorite: Option<bool>,
@@ -135,6 +143,7 @@ impl From<SessionEventOut> for GameLogSessionEventDto {
             video_url: event.video_url,
             video_name: event.video_name,
             video_id: event.video_id,
+            resource_url: event.resource_url,
             play_count: event.play_count,
             is_favorite: event.is_favorite,
             count: event.count,
@@ -293,6 +302,7 @@ fn load_session_events(
                 video_url: row.video_url,
                 video_name: row.video_name,
                 video_id: row.video_id,
+                resource_url: row.resource_url,
                 is_favorite: favorite,
             }
         })
@@ -361,7 +371,8 @@ fn filter_event_by_search(event: SessionEventOut, query: &str) -> Option<Session
         || contains_ci(&event.user_id, query)
         || contains_ci(&event.video_name, query)
         || contains_ci(&event.video_url, query)
-        || contains_ci(&event.video_id, query);
+        || contains_ci(&event.video_id, query)
+        || contains_ci(&event.resource_url, query);
     if value_matches {
         return Some(event);
     }
@@ -561,8 +572,8 @@ mod tests {
     use std::sync::Arc;
 
     use vrcx_0_persistence::game_log::{
-        write_batch, GameLogJoinLeaveEntry, GameLogLocationEntry, GameLogVideoPlayEntry,
-        GameLogWriteBatch,
+        write_batch, GameLogJoinLeaveEntry, GameLogLocationEntry, GameLogResourceLoadEntry,
+        GameLogVideoPlayEntry, GameLogWriteBatch,
     };
 
     use super::*;
@@ -638,6 +649,20 @@ mod tests {
             location: location.to_string(),
             display_name: String::new(),
             user_id: String::new(),
+        }
+    }
+
+    fn resource(
+        created_at: &str,
+        resource_type: &str,
+        resource_url: &str,
+        location: &str,
+    ) -> GameLogResourceLoadEntry {
+        GameLogResourceLoadEntry {
+            created_at: created_at.to_string(),
+            resource_url: resource_url.to_string(),
+            resource_type: resource_type.to_string(),
+            location: location.to_string(),
         }
     }
 
@@ -756,5 +781,78 @@ mod tests {
 
         assert_eq!(sessions.len(), 1);
         assert_eq!(sessions[0].world_name, "Alpha World");
+    }
+
+    #[test]
+    fn resource_loads_flow_through_session_filters_and_search() {
+        let (_dir, db) = test_db("sessions-resource-loads");
+        write_rows(
+            &db,
+            vec![location(
+                "2026-01-01T10:00:00.000Z",
+                "wrld_resource:1",
+                "wrld_resource",
+                "Resource World",
+            )],
+            Vec::new(),
+            Vec::new(),
+        );
+        write_batch(
+            &db,
+            "",
+            &GameLogWriteBatch {
+                resource_loads: vec![
+                    resource(
+                        "2026-01-01T10:00:01.000Z",
+                        "StringLoad",
+                        "https://resource.test/config.json",
+                        "wrld_resource:1",
+                    ),
+                    resource(
+                        "2026-01-01T10:00:02.000Z",
+                        "ImageLoad",
+                        "https://resource.test/image.png",
+                        "wrld_resource:1",
+                    ),
+                ],
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        let image_sessions = query(
+            &db,
+            GameLogSessionsQueryInput {
+                filters: vec!["ImageLoad".into()],
+                ..Default::default()
+            },
+        );
+        assert_eq!(image_sessions.len(), 1);
+        assert_eq!(image_sessions[0].events.len(), 1);
+        assert_eq!(image_sessions[0].events[0].type_, "ImageLoad");
+        assert_eq!(
+            image_sessions[0].events[0].resource_url.as_deref(),
+            Some("https://resource.test/image.png")
+        );
+
+        let searched_sessions = query(
+            &db,
+            GameLogSessionsQueryInput {
+                search: "config.json".into(),
+                ..Default::default()
+            },
+        );
+        assert_eq!(searched_sessions.len(), 1);
+        assert_eq!(searched_sessions[0].events.len(), 1);
+        assert_eq!(searched_sessions[0].events[0].type_, "StringLoad");
+
+        let favorite_only_sessions = query(
+            &db,
+            GameLogSessionsQueryInput {
+                favorite_user_ids: vec!["usr_missing".into()],
+                ..Default::default()
+            },
+        );
+        assert!(favorite_only_sessions.is_empty());
     }
 }

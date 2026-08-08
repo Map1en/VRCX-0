@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use vrcx_0_application_core::{RealtimeNotificationProjection, RuntimeEventBus};
 use vrcx_0_persistence::{
+    invite_history::record_successful_invite_send,
     notifications::{notification_expire, notification_list_query, NotificationListQueryInput},
     DatabaseService,
 };
@@ -203,6 +204,13 @@ pub trait NotificationChainActions: Send + Sync {
     fn expire_local(&self, id: String) -> Result<()>;
     fn query_boop_rows(&self) -> Result<Vec<BoopNotificationRow>>;
     fn emit_expired(&self, expired_ids: Vec<String>);
+    fn record_invite_send(
+        &self,
+        _receiver_user_id: &str,
+        _source_notification_id: &str,
+    ) -> Result<()> {
+        Ok(())
+    }
 }
 
 pub struct VrchatNotificationChainActions<'a> {
@@ -353,6 +361,22 @@ impl NotificationChainActions for VrchatNotificationChainActions<'_> {
                 ..RealtimeNotificationProjection::default()
             });
     }
+
+    fn record_invite_send(
+        &self,
+        receiver_user_id: &str,
+        source_notification_id: &str,
+    ) -> Result<()> {
+        ensure_scope_matches(&self.auth_scope.snapshot(), &self.expected_scope)?;
+        record_successful_invite_send(
+            self.db,
+            &self.expected_scope.current_user_id,
+            receiver_user_id,
+            "request-invite-accept",
+            Some(source_notification_id),
+        )?;
+        Ok(())
+    }
 }
 
 fn normalize_target(mut target: NotificationTarget) -> NotificationTarget {
@@ -453,11 +477,11 @@ pub async fn accept_request_invite_notification(
         normalize_text(&input.owner_user_id).as_str(),
         &input.endpoint,
     )?;
-    let receiver_user_id = target.sender_user_id.clone();
     let instance_id = normalize_text(&input.instance_id);
     let world_id = normalize_text(&input.world_id);
     let world_name = normalize_text(&input.world_name);
-    if !receiver_user_id.is_empty() && !instance_id.is_empty() && !world_id.is_empty() {
+    let mut history_error = None;
+    if !target.sender_user_id.is_empty() && !instance_id.is_empty() && !world_id.is_empty() {
         let params = json!({
             "instanceId": instance_id,
             "worldId": world_id,
@@ -466,7 +490,7 @@ pub async fn accept_request_invite_notification(
         });
         if let Err(error) = actions
             .execute_remote(NotificationChainRemoteCall::InviteSend {
-                receiver_user_id,
+                receiver_user_id: target.sender_user_id.clone(),
                 params,
             })
             .await
@@ -476,8 +500,17 @@ pub async fn accept_request_invite_notification(
             outcome.remote_error = Some(error.message);
             return finish(actions, outcome);
         }
+        if let Err(error) = actions.record_invite_send(&target.sender_user_id, &target.id) {
+            history_error = Some(error.to_string());
+        }
     }
-    let outcome = hide_then_expire(actions, &target).await;
+    let mut outcome = hide_then_expire(actions, &target).await;
+    if let Some(error) = history_error {
+        outcome.local_error = Some(error);
+        if outcome.status == NotificationActionStatus::Applied {
+            outcome.status = NotificationActionStatus::RemoteOkLocalFailed;
+        }
+    }
     finish(actions, outcome)
 }
 

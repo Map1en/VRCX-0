@@ -51,7 +51,6 @@ type FontPreferencePrefs = {
 type AppearancePrefs = FontPreferencePrefs & {
     notificationLayout: string;
     notificationIconDot: boolean;
-    taskbarIconDot: boolean;
     tableDensity: string;
     dataTableStriped: boolean;
     reducedMotionAndBlur: boolean;
@@ -63,7 +62,6 @@ type SettingsInterfaceAppearanceCardProps = {
     prefs: AppearancePrefs;
     zoomInput: string;
     hideFontControls: boolean;
-    showTaskbarIconDot: boolean;
     onLanguageChange: (value: string | null) => void;
     onFontFamilyChange: (value: string) => void;
     onCjkFontPackChange: (value: string) => void;
@@ -72,7 +70,6 @@ type SettingsInterfaceAppearanceCardProps = {
     notificationLayoutOptions: readonly SettingsOption[];
     onNotificationLayoutChange: (value: string) => void;
     onNotificationIconDotChange: (value: boolean) => void;
-    onTaskbarIconDotChange: (value: boolean) => void;
     onTableDensityChange: (value: string) => void;
     onDataTableStripedChange: (value: boolean) => void;
     onAccessibleStatusIndicatorsChange: (value: boolean) => void;
@@ -271,7 +268,6 @@ export function SettingsInterfaceAppearanceCard({
     prefs,
     zoomInput,
     hideFontControls,
-    showTaskbarIconDot,
     onLanguageChange,
     onFontFamilyChange,
     onCjkFontPackChange,
@@ -280,7 +276,6 @@ export function SettingsInterfaceAppearanceCard({
     notificationLayoutOptions,
     onNotificationLayoutChange,
     onNotificationIconDotChange,
-    onTaskbarIconDotChange,
     onTableDensityChange,
     onDataTableStripedChange,
     onAccessibleStatusIndicatorsChange,
@@ -389,22 +384,6 @@ export function SettingsInterfaceAppearanceCard({
                     onCheckedChange={onNotificationIconDotChange}
                 />
             </Field>
-
-            {showTaskbarIconDot ? (
-                <Field
-                    label={t(
-                        'view.settings.appearance.appearance.show_taskbar_icon_dot'
-                    )}
-                    description={t(
-                        'view.settings.appearance.appearance.show_taskbar_icon_dot_description'
-                    )}
-                >
-                    <Switch
-                        checked={prefs.taskbarIconDot}
-                        onCheckedChange={onTaskbarIconDotChange}
-                    />
-                </Field>
-            ) : null}
 
             <Field
                 label={t('view.settings.appearance.appearance.table_density')}

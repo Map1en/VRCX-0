@@ -23,8 +23,7 @@ vi.mock('./sharedFeedNotificationService', () => ({
 }));
 
 vi.mock('./shellIntegrationService', () => ({
-    setTrayIconNotification: vi.fn(async () => undefined),
-    setTaskbarOverlayNotification: vi.fn(async () => undefined)
+    setTrayIconNotification: vi.fn(async () => undefined)
 }));
 
 describe('realtimePresenceService projection boundary', () => {

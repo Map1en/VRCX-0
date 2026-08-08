@@ -358,36 +358,35 @@ struct AppUpdateRuntimeInner {
     hydration_notified_version: Mutex<Option<String>>,
 }
 
-pub struct AppUpdateRuntimeDeps {
-    pub web: Arc<WebClient>,
-    pub db: Arc<DatabaseService>,
-    pub storage: Arc<StorageService>,
-    pub event_bus: RuntimeEventBus,
-    pub background_jobs: RuntimeBackgroundJobs,
-    pub build: AppUpdateBuildInfo,
-    pub target_resolver: AppUpdateTargetResolver,
-    pub port: Arc<dyn UpdaterPort>,
-    pub tasks: TaskSupervisor,
-}
-
 #[derive(Clone)]
 pub struct AppUpdateRuntime {
     inner: Arc<AppUpdateRuntimeInner>,
 }
 
 impl AppUpdateRuntime {
-    pub fn new(deps: AppUpdateRuntimeDeps) -> Self {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        web: Arc<WebClient>,
+        db: Arc<DatabaseService>,
+        storage: Arc<StorageService>,
+        event_bus: RuntimeEventBus,
+        background_jobs: RuntimeBackgroundJobs,
+        build: AppUpdateBuildInfo,
+        target_resolver: AppUpdateTargetResolver,
+        port: Arc<dyn UpdaterPort>,
+        tasks: TaskSupervisor,
+    ) -> Self {
         Self {
             inner: Arc::new(AppUpdateRuntimeInner {
-                web: deps.web,
-                db: deps.db,
-                storage: deps.storage,
-                event_bus: deps.event_bus,
-                background_jobs: deps.background_jobs,
-                build: deps.build,
-                target_resolver: deps.target_resolver,
-                port: deps.port,
-                tasks: deps.tasks,
+                web,
+                db,
+                storage,
+                event_bus,
+                background_jobs,
+                build,
+                target_resolver,
+                port,
+                tasks,
                 status: Mutex::new(AppUpdateStatusSnapshot::idle()),
                 download: Mutex::new(DownloadState::idle()),
                 download_notify: Notify::new(),

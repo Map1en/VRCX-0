@@ -10,6 +10,7 @@ import {
     FieldLegend,
     FieldSet
 } from '@/ui/shadcn/field';
+import { Input } from '@/ui/shadcn/input';
 import {
     Select,
     SelectContent,
@@ -22,16 +23,21 @@ import { Switch } from '@/ui/shadcn/switch';
 
 import { normalizeAutoAcceptMode } from '../toolsDialogUtils';
 import { CompactCheckList } from './AutomationRuleLayout';
-import type { PresenceOption } from './presenceAutomationDialogUtils';
+import {
+    dayOptions,
+    type InviteMessageReplySettings,
+    type PresenceOption
+} from './presenceAutomationDialogUtils';
 
 const I18N_ROOT = 'view.tools.social_automation';
 
 export type InviteRulesTabValues = {
     autoAcceptInviteGroups: string[];
     autoAcceptInviteRequests: string;
+    autoInviteMessageReplies: InviteMessageReplySettings;
 };
 
-type ConfigValueType = 'array' | 'bool' | 'string';
+type ConfigValueType = 'array' | 'bool' | 'json' | 'string';
 
 type InviteRulesTabProps = {
     groupOptions: PresenceOption[];
@@ -54,6 +60,22 @@ export function InviteRulesTab({
     const autoAcceptEnabled = values.autoAcceptInviteRequests !== 'Off';
     const selectedFavoritesOnly =
         values.autoAcceptInviteRequests === 'Selected Favorites';
+    const messageReplies = values.autoInviteMessageReplies;
+    const messageSlotOptions = Array.from({ length: 12 }, (_, slot) => ({
+        value: String(slot),
+        label: t(`${I18N_ROOT}.message_slot_value`, { slot })
+    }));
+    const scheduleDayOptions = dayOptions.map((option) => ({
+        value: String(option.value),
+        label: t(option.labelKey)
+    }));
+    const saveMessageReplies = (patch: Partial<InviteMessageReplySettings>) => {
+        onSaveValue(
+            'autoInviteMessageReplies',
+            { ...messageReplies, ...patch },
+            'json'
+        );
+    };
 
     return (
         <FieldGroup className="gap-4">
@@ -171,6 +193,192 @@ export function InviteRulesTab({
                             }}
                         />
                     </Field>
+                </FieldGroup>
+            </FieldSet>
+            <FieldSet className="bg-card/40 rounded-lg border p-3">
+                <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                        <FieldLegend variant="label">
+                            {t(`${I18N_ROOT}.scheduled_invite_messages`)}
+                        </FieldLegend>
+                        <FieldDescription>
+                            {t(
+                                `${I18N_ROOT}.scheduled_invite_messages_description`
+                            )}
+                        </FieldDescription>
+                    </div>
+                    <Switch
+                        checked={messageReplies.enabled}
+                        disabled={loading}
+                        aria-label={t(`${I18N_ROOT}.scheduled_invite_messages`)}
+                        onCheckedChange={(enabled) =>
+                            saveMessageReplies({ enabled })
+                        }
+                    />
+                </div>
+            </FieldSet>
+            <FieldSet
+                className="bg-card/40 rounded-lg border p-3"
+                disabled={loading || !messageReplies.enabled}
+                data-disabled={loading || !messageReplies.enabled}
+            >
+                <FieldLegend variant="label">
+                    {t(`${I18N_ROOT}.invite_message_actions`)}
+                </FieldLegend>
+                <FieldDescription>
+                    {t(`${I18N_ROOT}.invite_message_actions_description`)}
+                </FieldDescription>
+                <FieldGroup
+                    className={!messageReplies.enabled ? 'opacity-75' : ''}
+                >
+                    <Field>
+                        <div className="flex items-center justify-between gap-3">
+                            <FieldLabel>
+                                {t(`${I18N_ROOT}.reply_to_invite`)}
+                            </FieldLabel>
+                            <Switch
+                                checked={messageReplies.inviteEnabled}
+                                disabled={loading || !messageReplies.enabled}
+                                aria-label={t(`${I18N_ROOT}.reply_to_invite`)}
+                                onCheckedChange={(inviteEnabled) =>
+                                    saveMessageReplies({ inviteEnabled })
+                                }
+                            />
+                        </div>
+                        <Select
+                            value={String(messageReplies.inviteResponseSlot)}
+                            disabled={
+                                loading ||
+                                !messageReplies.enabled ||
+                                !messageReplies.inviteEnabled
+                            }
+                            items={messageSlotOptions}
+                            onValueChange={(value) =>
+                                saveMessageReplies({
+                                    inviteResponseSlot:
+                                        Number.parseInt(value || '0', 10) || 0
+                                })
+                            }
+                        >
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    {messageSlotOptions.map((option) => (
+                                        <SelectItem
+                                            key={option.value}
+                                            value={option.value}
+                                        >
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field>
+                        <div className="flex items-center justify-between gap-3">
+                            <FieldLabel>
+                                {t(`${I18N_ROOT}.reply_to_request_invite`)}
+                            </FieldLabel>
+                            <Switch
+                                checked={messageReplies.requestInviteEnabled}
+                                disabled={loading || !messageReplies.enabled}
+                                aria-label={t(
+                                    `${I18N_ROOT}.reply_to_request_invite`
+                                )}
+                                onCheckedChange={(requestInviteEnabled) =>
+                                    saveMessageReplies({ requestInviteEnabled })
+                                }
+                            />
+                        </div>
+                        <Select
+                            value={String(
+                                messageReplies.requestInviteResponseSlot
+                            )}
+                            disabled={
+                                loading ||
+                                !messageReplies.enabled ||
+                                !messageReplies.requestInviteEnabled
+                            }
+                            items={messageSlotOptions}
+                            onValueChange={(value) =>
+                                saveMessageReplies({
+                                    requestInviteResponseSlot:
+                                        Number.parseInt(value || '0', 10) || 0
+                                })
+                            }
+                        >
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    {messageSlotOptions.map((option) => (
+                                        <SelectItem
+                                            key={option.value}
+                                            value={option.value}
+                                        >
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+                    <Field>
+                        <FieldLabel>{t(`${I18N_ROOT}.active_days`)}</FieldLabel>
+                        <CompactCheckList
+                            values={messageReplies.days.map(String)}
+                            options={scheduleDayOptions}
+                            disabled={loading || !messageReplies.enabled}
+                            onChange={(days) =>
+                                saveMessageReplies({
+                                    days: days
+                                        .map((day) => Number.parseInt(day, 10))
+                                        .filter((day) => day >= 1 && day <= 7)
+                                })
+                            }
+                        />
+                    </Field>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <Field>
+                            <FieldLabel htmlFor="invite-message-start">
+                                {t(`${I18N_ROOT}.start_time`)}
+                            </FieldLabel>
+                            <Input
+                                id="invite-message-start"
+                                type="time"
+                                value={messageReplies.start}
+                                disabled={loading || !messageReplies.enabled}
+                                onChange={(event) =>
+                                    saveMessageReplies({
+                                        start: event.target.value
+                                    })
+                                }
+                            />
+                        </Field>
+                        <Field>
+                            <FieldLabel htmlFor="invite-message-end">
+                                {t(`${I18N_ROOT}.end_time`)}
+                            </FieldLabel>
+                            <Input
+                                id="invite-message-end"
+                                type="time"
+                                value={messageReplies.end}
+                                disabled={loading || !messageReplies.enabled}
+                                onChange={(event) =>
+                                    saveMessageReplies({
+                                        end: event.target.value
+                                    })
+                                }
+                            />
+                        </Field>
+                    </div>
+                    <FieldDescription>
+                        {t(`${I18N_ROOT}.overnight_schedule_note`)}
+                    </FieldDescription>
                 </FieldGroup>
             </FieldSet>
             <Alert>

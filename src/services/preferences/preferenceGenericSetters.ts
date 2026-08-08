@@ -322,8 +322,6 @@ export async function setBoolConfigPreference(
     const normalizedKey = normalizePreferenceKey(key);
     if (normalizedKey === 'notificationIconDot') {
         useShellStore.getState().setNotificationIconDot(enabled);
-    } else if (normalizedKey === 'taskbarIconDot') {
-        useShellStore.getState().setTaskbarIconDot(enabled);
     } else if (normalizedKey === 'displayVRCPlusIconsAsAvatar') {
         useShellStore.getState().setAppearancePreferences({
             displayVRCPlusIconsAsAvatar: enabled

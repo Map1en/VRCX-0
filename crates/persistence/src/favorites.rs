@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 use serde::Serialize;
 use serde_json::json;
 use vrcx_0_core::FavoriteEntityKind;

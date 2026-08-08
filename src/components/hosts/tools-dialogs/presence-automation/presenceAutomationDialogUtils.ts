@@ -54,6 +54,29 @@ export type PresenceOption = {
     value: string;
 };
 
+export type InviteMessageReplySettings = {
+    enabled: boolean;
+    inviteEnabled: boolean;
+    inviteResponseSlot: number;
+    requestInviteEnabled: boolean;
+    requestInviteResponseSlot: number;
+    days: number[];
+    start: string;
+    end: string;
+};
+
+export const DEFAULT_INVITE_MESSAGE_REPLY_SETTINGS: InviteMessageReplySettings =
+    {
+        enabled: false,
+        inviteEnabled: false,
+        inviteResponseSlot: 0,
+        requestInviteEnabled: false,
+        requestInviteResponseSlot: 0,
+        days: [1, 2, 3, 4, 5, 6, 7],
+        start: '00:00',
+        end: '00:00'
+    };
+
 type TranslationFunction = (key: string) => string;
 
 export const dayOptions = [
@@ -129,6 +152,60 @@ function asRuleRecord(value: unknown): Record<string, unknown> {
     return value && typeof value === 'object'
         ? (value as Record<string, unknown>)
         : {};
+}
+
+export function normalizeInviteMessageReplySettings(
+    value: unknown
+): InviteMessageReplySettings {
+    let source: Record<string, unknown> = {};
+    try {
+        source = asRuleRecord(
+            typeof value === 'string' ? JSON.parse(value) : value
+        );
+    } catch {
+        source = {};
+    }
+    const normalizeSlot = (candidate: unknown) => {
+        const slot = Number.parseInt(String(candidate ?? ''), 10);
+        return Number.isFinite(slot) && slot >= 0 && slot <= 11 ? slot : 0;
+    };
+    const normalizeClock = (candidate: unknown, fallback: string) => {
+        const value = String(candidate ?? '').trim();
+        const match = /^(\d{2}):(\d{2})$/.exec(value);
+        if (!match) {
+            return fallback;
+        }
+        const hour = Number(match[1]);
+        const minute = Number(match[2]);
+        return hour < 24 && minute < 60 ? value : fallback;
+    };
+    const days = Array.isArray(source.days)
+        ? Array.from(
+              new Set(
+                  source.days
+                      .map((day) => Number.parseInt(String(day), 10))
+                      .filter((day) => day >= 1 && day <= 7)
+              )
+          ).sort((left, right) => left - right)
+        : [...DEFAULT_INVITE_MESSAGE_REPLY_SETTINGS.days];
+    return {
+        enabled: source.enabled === true,
+        inviteEnabled: source.inviteEnabled === true,
+        inviteResponseSlot: normalizeSlot(source.inviteResponseSlot),
+        requestInviteEnabled: source.requestInviteEnabled === true,
+        requestInviteResponseSlot: normalizeSlot(
+            source.requestInviteResponseSlot
+        ),
+        days,
+        start: normalizeClock(
+            source.start,
+            DEFAULT_INVITE_MESSAGE_REPLY_SETTINGS.start
+        ),
+        end: normalizeClock(
+            source.end,
+            DEFAULT_INVITE_MESSAGE_REPLY_SETTINGS.end
+        )
+    };
 }
 
 function asStringArray(value: unknown): string[] {

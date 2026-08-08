@@ -1,4 +1,4 @@
-import { BarChart, HeatmapChart } from 'echarts/charts';
+import { BarChart, HeatmapChart, PieChart } from 'echarts/charts';
 import {
     GridComponent,
     TooltipComponent,
@@ -10,6 +10,7 @@ import { CanvasRenderer } from 'echarts/renderers';
 echarts.use([
     BarChart,
     HeatmapChart,
+    PieChart,
     GridComponent,
     TooltipComponent,
     VisualMapComponent,

@@ -17,9 +17,6 @@ export function SettingsInterfaceTab({
     const isMacHost = useRuntimeStore(
         (state) => state.hostCapabilities.platform === 'macos'
     );
-    const isWindowsHost = useRuntimeStore(
-        (state) => state.hostCapabilities.platform === 'windows'
-    );
     const {
         locale,
         prefs,
@@ -32,7 +29,6 @@ export function SettingsInterfaceTab({
         notificationLayoutOptions,
         onNotificationLayoutChange,
         onNotificationIconDotChange,
-        onTaskbarIconDotChange,
         onTableDensityChange,
         onDataTableStripedChange,
         onAccessibleStatusIndicatorsChange,
@@ -63,7 +59,6 @@ export function SettingsInterfaceTab({
                 prefs={prefs}
                 zoomInput={zoomInput}
                 hideFontControls={isMacHost}
-                showTaskbarIconDot={isWindowsHost}
                 onLanguageChange={onLanguageChange}
                 onFontFamilyChange={onFontFamilyChange}
                 onCjkFontPackChange={onCjkFontPackChange}
@@ -72,7 +67,6 @@ export function SettingsInterfaceTab({
                 notificationLayoutOptions={notificationLayoutOptions}
                 onNotificationLayoutChange={onNotificationLayoutChange}
                 onNotificationIconDotChange={onNotificationIconDotChange}
-                onTaskbarIconDotChange={onTaskbarIconDotChange}
                 onTableDensityChange={onTableDensityChange}
                 onDataTableStripedChange={onDataTableStripedChange}
                 onAccessibleStatusIndicatorsChange={

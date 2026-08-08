@@ -557,6 +557,8 @@
         }
     },
     "dashboard": {
+        "friend_status_widget": "Friend Status Widget",
+        "live_friend_status_distribution": "Live distribution of online friend statuses.",
         "default_name": "Tableau de bord",
         "new_dashboard": "Nouveau tableau de bord",
         "empty": "Ce tableau de bord est vide",
@@ -2408,6 +2410,7 @@
             "discord_presence": {
                 "discord_presence": {
                     "header": "Présence sur Discord",
+                    "description": "* Actif uniquement lorsque vous êtes dans une instance.",
                     "enable": "Activer",
                     "enable_tooltip": "Il est recommandé de désactiver la Rich Presence de VRChat dans le fichier config.json de VRChat pour éviter les conflits.",
                     "instance_type_player_count": "Type d'instance / nombre d'utilisateurs",
@@ -2687,6 +2690,14 @@
             }
         },
         "dashboard": {
+            "friend_status": {
+                "loading": "Loading friend status widget",
+                "total_online_friends": "Online friends",
+                "distribution": "Friend status distribution",
+                "error": "Friend status widget failed",
+                "empty": "No online friends",
+                "empty_description": "The current friend roster has no online friends."
+            },
             "loading": {
                 "loading_dashboard_panel": "Chargement du panneau du tableau de bord",
                 "loading_feed_widget": "Chargement du widget du flux",

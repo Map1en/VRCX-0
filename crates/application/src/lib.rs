@@ -227,7 +227,7 @@ pub use system::{sync_notifications, NotificationSyncDeps, NotificationSyncOutco
 pub use system::{
     AppUpdateBuildInfo, AppUpdateDownloadPhase, AppUpdateDownloadProgressPayload,
     AppUpdateDownloadStatusSnapshot, AppUpdateInstalledPayload, AppUpdateReleaseSnapshot,
-    AppUpdateRuntime, AppUpdateRuntimeDeps, AppUpdateStatusSnapshot, AppUpdateTargetResolver,
+    AppUpdateRuntime, AppUpdateStatusSnapshot, AppUpdateTargetResolver,
 };
 pub use system::{
     BackgroundImageConfigureInput, BackgroundImageCustomSource, BackgroundImageCustomSourceKind,

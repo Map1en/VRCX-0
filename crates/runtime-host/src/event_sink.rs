@@ -67,11 +67,7 @@ where
     S: RuntimeEventSink,
 {
     fn emit(&self, event: &str, payload: serde_json::Value, typed_payload: &dyn Any) {
-        if let Some(extension) = self
-            .profile_extension
-            .as_ref()
-            .and_then(Weak::upgrade)
-        {
+        if let Some(extension) = self.profile_extension.as_ref().and_then(Weak::upgrade) {
             extension.observe_runtime_event(typed_payload);
         }
 

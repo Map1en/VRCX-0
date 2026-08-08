@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 use std::collections::HashMap;
 
 use chrono::{DateTime, Utc};
@@ -27,6 +29,15 @@ fn notification_unseen_v2_select_sql(table: &str) -> String {
         table,
         NOTIFICATION_V2_COLUMNS,
         " WHERE seen = 0 AND (expires_at IS NULL OR expires_at = '' OR expires_at > @now)",
+        false,
+    )
+}
+
+fn notification_unseen_v1_select_sql(table: &str) -> String {
+    notification_select_sql(
+        table,
+        NOTIFICATION_V1_COLUMNS,
+        " WHERE type = 'friendRequest' AND COALESCE(expired, 0) = 0",
         false,
     )
 }
@@ -126,6 +137,12 @@ fn notification_matches_filters(
         .filter(|value| !value.is_empty())
         .collect::<Vec<_>>();
     filters.is_empty() || filters.iter().any(|filter| filter == &notification.r#type)
+}
+
+fn notification_is_unseen(notification: &NotificationListItemOutput) -> bool {
+    !notification.expired
+        && ((notification.version == 2 && !notification.seen)
+            || (notification.version != 2 && notification.r#type == "friendRequest"))
 }
 
 fn notification_v1_list_item(row: NotificationV1RowOutput) -> NotificationListItemOutput {
@@ -375,6 +392,17 @@ fn query_notification_list(
     } else {
         Vec::new()
     };
+    let unseen_v1_rows = if query.include_unseen {
+        db.execute(
+            &notification_unseen_v1_select_sql(&format!("{user_prefix}_notifications")),
+            &DbParams::new(),
+        )?
+        .into_iter()
+        .map(|row| notification_v1_from_row(&row))
+        .collect::<Result<Vec<_>, _>>()?
+    } else {
+        Vec::new()
+    };
 
     let mut deduped = HashMap::new();
     for row in v1_rows {
@@ -386,6 +414,9 @@ fn query_notification_list(
     for row in unseen_v2_rows {
         notification_push_dedup(&mut deduped, notification_v2_list_item(row, now));
     }
+    for row in unseen_v1_rows {
+        notification_push_dedup(&mut deduped, notification_v1_list_item(row));
+    }
 
     let mut notifications = deduped
         .into_values()
@@ -393,8 +424,14 @@ fn query_notification_list(
         .filter(|notification| notification_matches_search(notification, &search))
         .collect::<Vec<_>>();
     notifications.sort_by(|left, right| {
-        notification_date_millis(&right.created_at)
-            .cmp(&notification_date_millis(&left.created_at))
+        query
+            .include_unseen
+            .then(|| notification_is_unseen(right).cmp(&notification_is_unseen(left)))
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then_with(|| {
+                notification_date_millis(&right.created_at)
+                    .cmp(&notification_date_millis(&left.created_at))
+            })
             .then_with(|| right.id.cmp(&left.id))
     });
     notifications.truncate(final_limit as usize);

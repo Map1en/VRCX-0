@@ -56,6 +56,14 @@ export const DASHBOARD_WIDGET_DEFINITIONS: DashboardPanelDefinition[] = [
             'dashboard.registry.compact_in_game_status_widget_configuration',
         path: '/player-list',
         defaultConfig: { columns: ['icon', 'displayName', 'timer'] }
+    },
+    {
+        key: 'widget:friend-status',
+        category: 'widget',
+        labelKey: 'dashboard.friend_status_widget',
+        descriptionKey: 'dashboard.live_friend_status_distribution',
+        path: '/friends-locations',
+        defaultConfig: {}
     }
 ];
 

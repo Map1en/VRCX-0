@@ -1,17 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { mergeModels } from './llmEndpointsStore';
+import { mergeManualModels } from './llmEndpointsStore';
 
 describe('llmEndpointsStore helpers', () => {
-    it('merges model lists into a sorted unique set', () => {
+    it('merges manual model input with detected models', () => {
         expect(
-            mergeModels(['gpt-4o-mini', 'llama'], ['llama', 'qwen', ' gemma '])
+            mergeManualModels(['gpt-4o-mini', 'llama'], 'llama\nqwen, gemma ')
         ).toEqual(['gemma', 'gpt-4o-mini', 'llama', 'qwen']);
-    });
-
-    it('drops blank entries', () => {
-        expect(mergeModels(['', '  '], ['gpt-4o-mini'])).toEqual([
-            'gpt-4o-mini'
-        ]);
     });
 });

@@ -178,6 +178,24 @@ fn session_video_events_sql() -> String {
         .to_string(SqliteQueryBuilder)
 }
 
+fn session_resource_events_sql() -> String {
+    Query::select()
+        .columns([
+            ident(COL_ID),
+            ident(COL_CREATED_AT),
+            ident(COL_RESOURCE_URL),
+            ident(COL_RESOURCE_TYPE),
+            ident(COL_LOCATION),
+        ])
+        .from(ident(TABLE_RESOURCE_LOAD))
+        .and_where(Expr::col(ident(COL_CREATED_AT)).gte(Expr::cust("@afterDate")))
+        .and_where(Expr::col(ident(COL_CREATED_AT)).lte(Expr::cust("@beforeDate")))
+        .and_where(owner_scope_expr())
+        .order_by(ident(COL_CREATED_AT), Order::Asc)
+        .order_by(ident(COL_ID), Order::Asc)
+        .to_string(SqliteQueryBuilder)
+}
+
 fn latest_created_at_sql(table: &str) -> String {
     Query::select()
         .column(ident(COL_CREATED_AT))
@@ -507,6 +525,7 @@ pub fn get_session_events_for_range(
             video_url: None,
             video_name: None,
             video_id: None,
+            resource_url: None,
         });
     }
     for row in db.execute(&session_video_events_sql(), &args)? {
@@ -520,6 +539,21 @@ pub fn get_session_events_for_range(
             display_name: row_string(&row, 5),
             user_id: row_string(&row, 6),
             location: row_string(&row, 7),
+            resource_url: None,
+        });
+    }
+    for row in db.execute(&session_resource_events_sql(), &args)? {
+        rows.push(SessionEventRow {
+            row_id: row_i64(&row, 0),
+            event_type: row_string(&row, 3),
+            created_at: row_string(&row, 1),
+            resource_url: Some(row_string(&row, 2)),
+            location: row_string(&row, 4),
+            display_name: String::new(),
+            user_id: String::new(),
+            video_url: None,
+            video_name: None,
+            video_id: None,
         });
     }
     Ok(rows)

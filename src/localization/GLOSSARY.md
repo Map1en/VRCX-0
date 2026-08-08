@@ -225,7 +225,6 @@ the app and across releases.
 | Discord Names                      | 查找好友的 Discord 名称    | Discord 名稱          | Discord のユーザー名                 |
 | Display                            | 显示                       | 顯示                  | 表示                                 |
 | Download Unity Package             | 下载 Unity Package         | 下載 Unity Package    | Unity Package をダウンロード         |
-| Downloading…                       | 下载中…                    | 下載中…               | ダウンロード中…                      |
 | Edit Dashboard                     | 编辑仪表板                 | 編輯儀錶板            | ダッシュボードを編集                 |
 | Edit Details                       | 编辑详情                   | 編輯詳細資訊          | 詳細を編集                           |
 | Edit Note and Local Note           | 编辑在线备注与本地备注     | 編輯備註與本機備註    | ノートとローカルノートを編集         |

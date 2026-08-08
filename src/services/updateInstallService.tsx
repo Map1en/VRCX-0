@@ -9,7 +9,8 @@ import {
     formatReleaseDisplayVersion,
     type AppUpdateDownloadProgressPayload,
     type AppUpdateInstalledPayload,
-    type NormalizedRelease
+    type NormalizedRelease,
+    type UpdateDownloadProgress
 } from '@/services/updateService';
 import { links } from '@/shared/constants/link';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -22,12 +23,53 @@ type DirectUpdateInstallOptions = {
     toastId?: string | number;
 };
 
+type DownloadToastContentProps = {
+    detail: string;
+    progress: UpdateDownloadProgress;
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
     return Boolean(value && typeof value === 'object');
 }
 
 function getString(value: unknown) {
     return typeof value === 'string' ? value : String(value || '');
+}
+
+function formatMegabytes(bytes: number) {
+    if (!Number.isFinite(bytes) || bytes <= 0) {
+        return '0.00 MB';
+    }
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function formatProgressDetail(progress: UpdateDownloadProgress) {
+    const percentText = `${progress.percent}%`;
+    const downloadedText = formatMegabytes(progress.downloadedBytes);
+    if (progress.totalBytes > 0) {
+        return `${percentText} · ${downloadedText} / ${formatMegabytes(
+            progress.totalBytes
+        )}`;
+    }
+    return `${percentText} · ${downloadedText}`;
+}
+
+function DownloadToastContent({ detail, progress }: DownloadToastContentProps) {
+    const percent = Math.max(0, Math.min(100, progress.percent || 0));
+
+    return (
+        <div className="mt-1 flex w-full flex-col gap-2">
+            <div className="text-muted-foreground text-xs tabular-nums">
+                {detail}
+            </div>
+            <div className="bg-muted h-2 overflow-hidden rounded-full">
+                <div
+                    className="bg-primary h-full transition-[width]"
+                    style={{ width: `${percent}%` }}
+                />
+            </div>
+        </div>
+    );
 }
 
 function readLatestUpdateRelease(): NormalizedRelease | null {
@@ -67,23 +109,22 @@ function canInstallUpdateRelease(
     );
 }
 
-const IDLE_DOWNLOAD_STATE = {
-    autoDownloadState: 'idle',
-    downloadedVersion: null,
-    downloadProgress: 0,
-    downloadedBytes: 0
-};
-
 function resetUpdateLoopState() {
     useRuntimeStore.getState().setUpdateLoopState({
-        ...IDLE_DOWNLOAD_STATE,
         hasAvailableUpdate: false,
-        latestUpdaterRelease: null
+        latestUpdaterRelease: null,
+        autoDownloadState: 'idle',
+        downloadedVersion: null,
+        downloadProgress: 0
     });
 }
 
 function resetAutoDownloadInstallState() {
-    useRuntimeStore.getState().setUpdateLoopState({ ...IDLE_DOWNLOAD_STATE });
+    useRuntimeStore.getState().setUpdateLoopState({
+        autoDownloadState: 'idle',
+        downloadedVersion: null,
+        downloadProgress: 0
+    });
 }
 
 let directInstallInFlight: Promise<boolean> | null = null;
@@ -108,7 +149,22 @@ export function installUpdateRelease(
         return Promise.resolve(false);
     }
 
-    toast.dismiss(toastId);
+    const displayVersion =
+        release.displayVersion ||
+        formatReleaseDisplayVersion(release.canonicalVersion) ||
+        release.tagName ||
+        '-';
+    toast.loading(
+        i18n.t('host.system_dialogs.dynamic.downloading_value', {
+            value: displayVersion
+        }),
+        {
+            id: toastId,
+            duration: Infinity,
+            position: 'bottom-right',
+            dismissible: false
+        }
+    );
 
     directInstallInFlight = (async () => {
         try {
@@ -161,20 +217,50 @@ export function handleAppUpdateDownloadProgressEvent(
     useRuntimeStore.getState().setUpdateLoopState({
         autoDownloadState: payload.phase,
         downloadedVersion: payload.version,
-        downloadProgress: payload.percent,
-        downloadedBytes: payload.downloadedBytes
+        downloadProgress: payload.percent
     });
 
-    if (!directInstallInFlight || payload.phase !== 'downloaded') {
+    if (!directInstallInFlight) {
         return;
     }
 
-    toast.loading(i18n.t('message.vrcx_updater.installing_update'), {
-        id: UPDATE_AVAILABLE_TOAST_ID,
-        duration: Infinity,
-        position: 'bottom-right',
-        dismissible: false
-    });
+    if (payload.phase === 'downloaded') {
+        toast.loading(i18n.t('message.vrcx_updater.installing_update'), {
+            id: UPDATE_AVAILABLE_TOAST_ID,
+            duration: Infinity,
+            position: 'bottom-right',
+            dismissible: false
+        });
+        return;
+    }
+    if (payload.phase !== 'downloading') {
+        return;
+    }
+
+    const progress: UpdateDownloadProgress = {
+        downloadedBytes: payload.downloadedBytes,
+        totalBytes: payload.totalBytes,
+        percent: payload.percent
+    };
+    const displayVersion =
+        formatReleaseDisplayVersion(payload.version) || payload.version;
+    toast.loading(
+        i18n.t('host.system_dialogs.dynamic.downloading_value', {
+            value: displayVersion
+        }),
+        {
+            id: UPDATE_AVAILABLE_TOAST_ID,
+            description: (
+                <DownloadToastContent
+                    detail={formatProgressDetail(progress)}
+                    progress={progress}
+                />
+            ),
+            duration: Infinity,
+            position: 'bottom-right',
+            dismissible: false
+        }
+    );
 }
 
 export function handleAppUpdateInstalledEvent(

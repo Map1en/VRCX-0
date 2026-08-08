@@ -16,7 +16,6 @@ pub mod process_status;
 pub mod shell_actions;
 pub mod system_fonts;
 pub mod system_theme;
-pub mod taskbar_overlay;
 pub mod tts;
 pub mod updater_policy;
 #[cfg(any(windows, target_os = "linux"))]

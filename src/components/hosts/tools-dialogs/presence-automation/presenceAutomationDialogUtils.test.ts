@@ -6,6 +6,7 @@ import {
     createTimeRule,
     hasGameRunningCondition,
     normalizeContextRule,
+    normalizeInviteMessageReplySettings,
     priorityLabelKeyFromNumber,
     priorityNumberFromValue,
     priorityValueFromNumber,
@@ -58,6 +59,47 @@ describe('presenceAutomationDialogUtils priority mapping', () => {
         expect(priorityNumberFromValue('low')).toBe(100);
         expect(priorityNumberFromValue('unknown')).toBe(400);
         expect(priorityNumberFromValue(undefined, 123)).toBe(123);
+    });
+});
+
+describe('invite message reply settings', () => {
+    it('normalizes persisted slots, days, and overnight time bounds', () => {
+        expect(
+            normalizeInviteMessageReplySettings(
+                JSON.stringify({
+                    enabled: true,
+                    inviteEnabled: true,
+                    inviteResponseSlot: '3',
+                    requestInviteEnabled: true,
+                    requestInviteResponseSlot: 7,
+                    days: ['1', 2, 2, 9],
+                    start: '22:00',
+                    end: '02:00'
+                })
+            )
+        ).toEqual({
+            enabled: true,
+            inviteEnabled: true,
+            inviteResponseSlot: 3,
+            requestInviteEnabled: true,
+            requestInviteResponseSlot: 7,
+            days: [1, 2],
+            start: '22:00',
+            end: '02:00'
+        });
+    });
+
+    it('defaults malformed persisted settings to disabled all-day values', () => {
+        expect(normalizeInviteMessageReplySettings('{broken')).toEqual({
+            enabled: false,
+            inviteEnabled: false,
+            inviteResponseSlot: 0,
+            requestInviteEnabled: false,
+            requestInviteResponseSlot: 0,
+            days: [1, 2, 3, 4, 5, 6, 7],
+            start: '00:00',
+            end: '00:00'
+        });
     });
 });
 

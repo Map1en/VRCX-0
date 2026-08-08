@@ -5,7 +5,8 @@ use std::time::{Duration, Instant};
 use openvr::{
     overlay::OverlayHandle,
     property::{
-        ControllerRoleHint_Int32, ModelNumber_String, SerialNumber_String, TrackingSystemName_String,
+        ControllerRoleHint_Int32, ModelNumber_String, SerialNumber_String,
+        TrackingSystemName_String,
     },
     system::event::Event,
     tracked_device_index, ApplicationType, Context, ControllerState, Overlay, System,
@@ -28,7 +29,6 @@ use super::openvr_helpers::{
     trigger_pressed, FrameFingerprint, InteractiveHit, InteractiveSurfaceCandidate,
     InteractiveTarget,
 };
-use openvr_devices::{snapshot_openvr_devices, string_property, BatteryReadingState};
 use super::{
     actor::{OverlayBackend, TickOutcome},
     policy::WristVisibilityPolicy,
@@ -38,6 +38,7 @@ use super::{
         VrDeviceSnapshot,
     },
 };
+use openvr_devices::{snapshot_openvr_devices, string_property, BatteryReadingState};
 
 const WRIST_VISIBLE_FRAME_UPLOAD_INTERVAL: Duration = Duration::from_secs(2);
 const MAIN_VISIBLE_FRAME_UPLOAD_INTERVAL: Duration = Duration::from_millis(16);

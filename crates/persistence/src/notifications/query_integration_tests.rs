@@ -61,6 +61,26 @@ fn add_v1(
     )
 }
 
+fn add_v1_friend_request(
+    db: &DatabaseService,
+    user_id: &str,
+    id: &str,
+    created_at: &str,
+) -> Result<(), Error> {
+    notification_add_v1(
+        db,
+        user_id.into(),
+        json!({
+            "id": id,
+            "created_at": created_at,
+            "type": "friendRequest",
+            "senderUserId": "usr_sender_v1",
+            "senderUsername": "Legacy Sender",
+            "expired": false
+        }),
+    )
+}
+
 fn add_v2(
     db: &DatabaseService,
     user_id: &str,
@@ -178,20 +198,21 @@ fn unseen_expansion_keeps_unexpired_rows_beyond_the_per_table_window() -> Result
         false,
         "2000-01-01T00:00:00Z",
     )?;
+    add_v1_friend_request(&db, user_id, "unseen-legacy-oldest", "2026-02-28T00:00:00Z")?;
 
     assert_eq!(
         query(&db, user_id, 1, 10, false)?
             .iter()
             .map(|row| row.id.as_str())
             .collect::<Vec<_>>(),
-        vec!["seen-newest"]
+        vec!["seen-newest", "unseen-legacy-oldest"]
     );
     assert_eq!(
-        query(&db, user_id, 1, 10, true)?
+        query(&db, user_id, 1, 1, true)?
             .iter()
             .map(|row| row.id.as_str())
             .collect::<Vec<_>>(),
-        vec!["seen-newest", "unseen-older"]
+        vec!["unseen-older"]
     );
     Ok(())
 }

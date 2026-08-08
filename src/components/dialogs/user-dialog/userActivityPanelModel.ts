@@ -31,6 +31,22 @@ export type UserActivityTopWorld = Record<string, unknown> & {
     totalTime?: number;
 };
 
+export type TopAvatarMetric = 'totalTime' | 'observedChanges';
+
+export type UserActivityTopAvatar = Record<string, unknown> & {
+    approximate?: boolean;
+    authorId?: string;
+    avatarId?: string;
+    avatarKey?: string;
+    avatarName?: string;
+    imageUrl?: string;
+    lastUsedAt?: string;
+    metric?: TopAvatarMetric;
+    thumbnailImageUrl?: string;
+    totalTime?: number;
+    useCount?: number;
+};
+
 export const VALID_ACTIVITY_PERIODS = new Set([
     '7',
     '30',
@@ -78,5 +94,12 @@ export function getWorldThumbnailUrl(
     world: UserActivityTopWorld | null | undefined
 ) {
     const url = world?.thumbnailImageUrl || world?.imageUrl || '';
+    return url ? url.replace('256', '128') : '';
+}
+
+export function getAvatarThumbnailUrl(
+    avatar: UserActivityTopAvatar | null | undefined
+) {
+    const url = avatar?.thumbnailImageUrl || avatar?.imageUrl || '';
     return url ? url.replace('256', '128') : '';
 }

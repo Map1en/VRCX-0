@@ -58,8 +58,6 @@
         "example_2": "De quem estou me distanciando?",
         "example_3": "Qual o melhor horário para encontrar meus amigos online?",
         "not_configured": "Select an LLM Endpoint and model to start.",
-        "setup_title": "Conecte um modelo para começar",
-        "open_settings": "Abrir configurações de IA",
         "entities_title": "Mencionados",
         "entities_empty": "Pessoas e mundos mencionados nas respostas aparecem aqui.",
         "untitled": "Nova conversa",
@@ -81,16 +79,15 @@
         },
         "runtime": {
             "title": "Runtime",
+            "connection": "Conexão",
             "connection_unset": "Sem endpoint",
             "model": "Modelo",
-            "model_unset": "Nenhum modelo disponível",
+            "model_unset": "Nenhum modelo salvo para este endpoint",
             "playbook_mode": "Modo de análise",
             "allow_writes": "Permitir ações de escrita",
             "manage_endpoints": "Gerenciar endpoints LLM",
             "reasoning_effort": "Esforço de raciocínio",
-            "reasoning_effort_provider_default": "Padrão do provedor",
-            "scope_session": "Aplica-se apenas a esta conversa",
-            "scope_default": "Aplica-se a novas conversas"
+            "reasoning_effort_provider_default": "Padrão do provedor"
         }
     },
     "user_hover_card": {
@@ -521,7 +518,6 @@
         "qq_group": "Grupo do QQ (comunidade chinesa)",
         "changelog": "Registro de alterações",
         "update": "Atualizar",
-        "update_downloading": "Baixando…",
         "update_downloaded": "Reiniciar",
         "mark_all_read": "Marcar Tudo como Lido",
         "edit_dashboard": "Editar Painel",
@@ -561,6 +557,8 @@
         }
     },
     "dashboard": {
+        "friend_status_widget": "Friend Status Widget",
+        "live_friend_status_distribution": "Live distribution of online friend statuses.",
         "default_name": "Painel",
         "new_dashboard": "Novo Painel",
         "empty": "Este painel está vazio",
@@ -1958,6 +1956,8 @@
                 "description": "Conexões compartilhadas compatíveis com OpenAI para Social AI e tradução.",
                 "follow_custom_proxy": "Usar o proxy personalizado do VRCX-0",
                 "follow_custom_proxy_description": "As solicitações ao LLM usam esse proxy quando configurado; caso contrário, usam o proxy do sistema.",
+                "endpoint_count": "{count} endpoints",
+                "model_count": "{count} modelos",
                 "add": "Adicionar endpoint",
                 "empty_description": "Adicione um endpoint compatível com OpenAI para Social AI e tradução compatível com OpenAI.",
                 "preset": "Predefinição",
@@ -1966,13 +1966,11 @@
                     "siliconflow": "SiliconFlow"
                 },
                 "name": "Nome",
-                "name_description": "Aparece como nome do grupo ao escolher um modelo.",
                 "base_url": "URL base",
-                "base_url_invalid": "Informe um endereço http:// ou https:// completo.",
                 "models": "Modelos",
-                "models_placeholder": "Busque modelos detectados, ou digite um e pressione Enter",
-                "models_empty": "Nada detectado ainda. Digite um modelo e pressione Enter para adicionar.",
-                "unusable": "Ainda sem modelos, então este endpoint não pode ser usado.",
+                "key": "Chave",
+                "actions": "Ações",
+                "no_models": "Sem modelos",
                 "key_saved": "Salva",
                 "key_empty": "Vazia",
                 "detect_models": "Detectar modelos",
@@ -1982,9 +1980,9 @@
                 "clear_key": "Limpar chave",
                 "key_preserve_placeholder": "Deixe em branco para manter a chave salva",
                 "saved": "Endpoint salvo",
-                "saved_unusable": "Salvo, mas nenhum modelo foi encontrado para este endpoint.",
                 "save_failed": "Falha ao salvar o endpoint",
                 "load_failed": "Falha ao carregar os endpoints",
+                "base_url_required": "A URL base é obrigatória.",
                 "models_detected": "{count} modelos detectados",
                 "no_models_detected": "Nenhum modelo detectado",
                 "detect_failed": "Falha ao detectar modelos",
@@ -2011,30 +2009,7 @@
                 "ai": "IA",
                 "vr": "VR",
                 "media": "Mídia",
-                "integrations": "Integrações",
-                "feedback": "Feedback"
-            },
-            "feedback": {
-                "title": "Enviar feedback",
-                "description": "O feedback é enviado de forma anónima. Lemos todas as mensagens, mas não podemos responder diretamente.",
-                "privacy_note": "Não é incluída nenhuma informação da conta, apenas um ID de instalação anónimo que evita spam.",
-                "placeholder": "Diga-nos o que funciona, o que não funciona ou o que gostaria de ver…",
-                "submit": "Enviar",
-                "submitting": "A enviar…",
-                "thanks": "Obrigado pelo seu feedback!",
-                "cooldown": "Pode enviar novamente dentro de {{seconds}} s",
-                "more_help": "Precisa de resposta ou quer anexar registos?",
-                "error_generic": "Não foi possível enviar o feedback. Tente novamente mais tarde."
-            },
-            "ai": {
-                "header": "IA Social",
-                "description": "Padrões para novas conversas. Cada conversa pode alterá-los no painel da IA Social.",
-                "default_model": "Modelo padrão",
-                "default_model_description": "Novas conversas começam com este modelo.",
-                "default_model_unset": "Nenhum modelo disponível",
-                "setup_hint": "A IA Social precisa de uma conexão compatível com OpenAI antes de responder qualquer coisa.",
-                "playbook_mode_description": "Quanta liberdade o modelo tem ao analisar seus dados.",
-                "endpoints_description": "Compartilhadas pela IA Social e pela tradução."
+                "integrations": "Integrações"
             },
             "social": {
                 "interaction": {
@@ -2262,8 +2237,6 @@
                     "table_page_sizes_description": "Adicione, remova e selecione as opções de tamanho de página exibidas nos controles de tabela.",
                     "table_page_sizes_error": "O tamanho da página deve ser um número entre 1 e 1000",
                     "show_notification_icon_dot": "Mostrar Ponto de Notificação na Bandeja",
-                    "show_taskbar_icon_dot": "Mostrar Ponto de Notificação na Barra de Tarefas",
-                    "show_taskbar_icon_dot_description": "Mostra um ponto vermelho no botão do VRCX-0 na barra de tarefas enquanto houver notificações não lidas.",
                     "striped_data_table_mode": "Modo de Tabela Listrada",
                     "reduced_motion_and_blur": "Reduzir efeitos",
                     "reduced_motion_and_blur_description": "Desativa animações, transições e desfoque de fundo para melhorar o desempenho em dispositivos menos potentes.",
@@ -2442,11 +2415,11 @@
             "discord_presence": {
                 "discord_presence": {
                     "header": "Presença no Discord",
+                    "description": "* Ativo apenas enquanto em uma instância.",
                     "enable": "Ativar",
                     "enable_tooltip": "Recomendado desativar a Rich Presence no config.json do VRChat para evitar conflitos",
                     "instance_type_player_count": "Tipo de Instância e Contagem de Usuários",
-                    "join_button": "Botão Entrar",
-                    "join_button_description": "Exibido apenas em instâncias públicas.",
+                    "join_button": "Botão Entrar (Apenas Público)",
                     "show_details_in_private": "Mostrar Detalhes do Mundo em Privado",
                     "show_images": "Mostrar Imagens do Mundo",
                     "show_current_platform": "Mostrar Plataforma Atual",
@@ -2724,6 +2697,14 @@
             }
         },
         "dashboard": {
+            "friend_status": {
+                "loading": "Loading friend status widget",
+                "total_online_friends": "Online friends",
+                "distribution": "Friend status distribution",
+                "error": "Friend status widget failed",
+                "empty": "No online friends",
+                "empty_description": "The current friend roster has no online friends."
+            },
             "loading": {
                 "loading_dashboard_panel": "Carregando painel do dashboard",
                 "loading_feed_widget": "Carregando widget do feed",

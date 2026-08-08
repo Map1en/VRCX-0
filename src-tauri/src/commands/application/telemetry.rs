@@ -15,17 +15,3 @@ pub fn app__telemetry_record_event(
     state.desktop.telemetry.record_event(event);
     Ok(())
 }
-
-#[tauri::command]
-#[specta::specta]
-pub async fn app__telemetry_submit_feedback(
-    state: State<'_, AppState>,
-    content: String,
-) -> Result<(), AppError> {
-    state
-        .desktop
-        .telemetry
-        .submit_feedback(&content)
-        .await
-        .map_err(|error| AppError::Custom(error.to_string()))
-}

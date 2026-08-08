@@ -16,6 +16,40 @@ pub enum ActivityViewKind {
     Overlap,
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum ActivityTopAvatarMetric {
+    TotalTime,
+    ObservedChanges,
+}
+
+#[derive(Clone, Debug, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ActivityTopAvatarsQueryInput {
+    pub target_user_id: String,
+    pub range_days: i64,
+    pub now_ms: i64,
+    #[serde(default)]
+    pub limit: i64,
+}
+
+#[derive(Clone, Debug, Serialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ActivityTopAvatarOutput {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avatar_id: Option<String>,
+    pub avatar_key: String,
+    pub avatar_name: String,
+    pub author_id: String,
+    pub image_url: String,
+    pub thumbnail_image_url: String,
+    pub last_used_at: String,
+    pub use_count: i64,
+    pub total_time: i64,
+    pub metric: ActivityTopAvatarMetric,
+    pub approximate: bool,
+}
+
 impl ActivityViewKind {
     pub const fn as_str(self) -> &'static str {
         match self {

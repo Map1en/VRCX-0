@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { timeToText } from '@/lib/dateTime';
 import { echarts } from '@/lib/echarts';
 import { cn } from '@/lib/utils';
-import { openWorldDialog } from '@/services/dialogService';
+import { openAvatarDialog, openWorldDialog } from '@/services/dialogService';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -18,8 +18,10 @@ import {
 } from '@/ui/shadcn/empty';
 
 import {
+    getAvatarThumbnailUrl,
     getWorldThumbnailUrl,
     type TopWorldsSort,
+    type UserActivityTopAvatar,
     type UserActivityTopWorld
 } from '../userActivityPanelModel';
 
@@ -401,6 +403,133 @@ export function TopWorldRows({
                                 />
                             </span>
                         </span>
+                    </Button>
+                );
+            })}
+        </div>
+    );
+}
+
+export function TopAvatarRows({
+    avatars
+}: {
+    avatars: UserActivityTopAvatar[];
+}) {
+    const { t } = useTranslation();
+    const maxValue = Math.max(
+        ...avatars.map((avatar) =>
+            avatar.metric === 'observedChanges'
+                ? Number(avatar.useCount || 0)
+                : Number(avatar.totalTime || 0)
+        ),
+        0
+    );
+
+    if (!avatars.length) {
+        return null;
+    }
+
+    return (
+        <div className="flex flex-col gap-0.5">
+            {avatars.map((avatar, index) => {
+                const isObservedChanges = avatar.metric === 'observedChanges';
+                const value = isObservedChanges
+                    ? Number(avatar.useCount || 0)
+                    : Number(avatar.totalTime || 0);
+                const thumbnailUrl = getAvatarThumbnailUrl(avatar);
+                const avatarId = String(avatar.avatarId || '').trim();
+                const avatarName =
+                    String(avatar.avatarName || '').trim() ||
+                    avatarId ||
+                    t('dialog.user.activity.most_used_avatars.unknown_avatar');
+                const barWidth =
+                    maxValue > 0
+                        ? `${Math.max((value / maxValue) * 100, 8)}%`
+                        : '0%';
+                const content = (
+                    <>
+                        <span
+                            className={cn(
+                                'mt-1 w-5 shrink-0 text-right font-mono text-xs font-bold',
+                                index === 0
+                                    ? 'text-primary'
+                                    : 'text-muted-foreground'
+                            )}
+                        >
+                            #{index + 1}
+                        </span>
+                        <Avatar className="mt-0.5 size-8 shrink-0 rounded-sm">
+                            {thumbnailUrl ? (
+                                <AvatarImage
+                                    src={thumbnailUrl}
+                                    loading="lazy"
+                                    decoding="async"
+                                    className="rounded-sm object-cover"
+                                />
+                            ) : null}
+                            <AvatarFallback className="rounded-sm [&>svg]:size-3.5">
+                                <ImageIcon className="text-muted-foreground" />
+                            </AvatarFallback>
+                        </Avatar>
+                        <span className="min-w-0 flex-1">
+                            <span className="flex items-baseline justify-between gap-2">
+                                <span className="truncate text-sm font-medium">
+                                    {avatarName}
+                                </span>
+                                <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
+                                    {isObservedChanges
+                                        ? t(
+                                              'dialog.user.activity.most_used_avatars.observed_changes_label',
+                                              { count: value }
+                                          )
+                                        : timeToText(value)}
+                                </span>
+                            </span>
+                            <span className="bg-muted mt-1 block h-1.5 w-full overflow-hidden rounded-full">
+                                <span
+                                    className="bg-muted-foreground/45 block h-full rounded-full transition-[width] duration-200 ease-out motion-reduce:transition-none"
+                                    style={{ width: barWidth }}
+                                />
+                            </span>
+                        </span>
+                    </>
+                );
+                const className = cn(
+                    'h-auto w-full items-start justify-start gap-3 rounded-lg px-3 py-2 text-left font-normal transition-colors',
+                    index === 0 ? 'bg-primary/5' : ''
+                );
+                if (!avatarId) {
+                    return (
+                        <div
+                            key={String(avatar.avatarKey || index)}
+                            className={cn('flex', className)}
+                        >
+                            {content}
+                        </div>
+                    );
+                }
+                return (
+                    <Button
+                        key={avatarId}
+                        type="button"
+                        variant="ghost"
+                        className={className}
+                        onClick={() =>
+                            openAvatarDialog({
+                                avatarId,
+                                title: avatarName,
+                                seedData: {
+                                    id: avatarId,
+                                    name: avatarName,
+                                    authorId: avatar.authorId || '',
+                                    imageUrl: avatar.imageUrl || '',
+                                    thumbnailImageUrl:
+                                        avatar.thumbnailImageUrl || ''
+                                }
+                            })
+                        }
+                    >
+                        {content}
                     </Button>
                 );
             })}

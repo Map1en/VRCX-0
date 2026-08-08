@@ -9,8 +9,7 @@ use vrcx_0_application_core::RuntimeOperationStatus;
 
 use serde_json::json;
 use vrcx_0_application::{
-    AppUpdateBuildInfo, AppUpdateRuntime, AppUpdateRuntimeDeps, BackgroundImageService,
-    CommunityThemeService,
+    AppUpdateBuildInfo, AppUpdateRuntime, BackgroundImageService, CommunityThemeService,
 };
 use vrcx_0_application_activity::OverlayActivitySnapshot;
 use vrcx_0_application_core::{
@@ -180,24 +179,22 @@ impl DesktopRuntimeHostState {
                     .to_string()
             }),
         });
-        let app_update = AppUpdateRuntime::new(AppUpdateRuntimeDeps {
-            web: Arc::clone(&builder.web),
-            db: Arc::clone(&builder.db),
-            storage: Arc::clone(&builder.storage),
-            event_bus: builder.runtime_context.event_bus.clone(),
-            background_jobs: builder.runtime_context.background_jobs.clone(),
-            build: AppUpdateBuildInfo {
+        let app_update = AppUpdateRuntime::new(
+            Arc::clone(&builder.web),
+            Arc::clone(&builder.db),
+            Arc::clone(&builder.storage),
+            builder.runtime_context.event_bus.clone(),
+            builder.runtime_context.background_jobs.clone(),
+            AppUpdateBuildInfo {
                 app_version: app_version.clone(),
                 build_label: app_update_build_label,
                 build_badge: app_update_build_badge,
                 update_check_disabled: app_update_check_disabled,
             },
-            target_resolver: Arc::new(|| {
-                vrcx_0_host_desktop::updater_policy::expected_updater_target().ok()
-            }),
-            port: updater_port,
-            tasks: builder.runtime_context.tasks.clone(),
-        });
+            Arc::new(|| vrcx_0_host_desktop::updater_policy::expected_updater_target().ok()),
+            updater_port,
+            builder.runtime_context.tasks.clone(),
+        );
         let game_log_runtime = Arc::new(GameLogHostRuntime::new(
             Arc::clone(&builder.runtime_context),
             host_file_access.clone(),

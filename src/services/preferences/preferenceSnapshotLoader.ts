@@ -106,7 +106,6 @@ export async function loadPreferenceSnapshot() {
         hideUnfriends,
         randomUserColours,
         notificationIconDot,
-        taskbarIconDot,
         showPostUpdateChangelogToast,
         autoInstallUpdatesOnStartup,
         desktopToast,
@@ -235,7 +234,6 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('hideUnfriends', false),
         configRepository.getBool('randomUserColours', false),
         configRepository.getBool('notificationIconDot', true),
-        configRepository.getBool('taskbarIconDot', true),
         configRepository.getBool(POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY, true),
         configRepository.getBool('autoInstallUpdatesOnStartup', true),
         configRepository.getString('desktopToast', 'Never'),
@@ -356,7 +354,6 @@ export async function loadPreferenceSnapshot() {
             notificationLayout || DEFAULT_NOTIFICATION_LAYOUT
         );
     useShellStore.getState().setNotificationIconDot(notificationIconDot);
-    useShellStore.getState().setTaskbarIconDot(taskbarIconDot);
     useShellStore.getState().setAppearancePreferences({
         displayVRCPlusIconsAsAvatar,
         hideNicknames
@@ -428,7 +425,6 @@ export async function loadPreferenceSnapshot() {
         hideUnfriends: Boolean(hideUnfriends),
         randomUserColours: Boolean(randomUserColours),
         notificationIconDot: Boolean(notificationIconDot),
-        taskbarIconDot: Boolean(taskbarIconDot),
         showPostUpdateChangelogToast: Boolean(showPostUpdateChangelogToast),
         autoInstallUpdatesOnStartup: Boolean(autoInstallUpdatesOnStartup),
         desktopToast: desktopToast || 'Never',

@@ -1,4 +1,3 @@
-import { ChevronRightIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -7,6 +6,7 @@ import type {
     NotificationBucket,
     NotificationCategories
 } from '@/state/vrcNotificationStore';
+import { Button } from '@/ui/shadcn/button';
 
 import type { NotificationRowActionHandlers } from '../notificationRowActions';
 import {
@@ -42,6 +42,17 @@ function notificationBuckets(
     return Object.values(value);
 }
 
+export function collectUnseenDrawerEntries(
+    categories: NotificationCategories
+): NotificationDrawerEntry[] {
+    return notificationBuckets(categories).flatMap((bucket) =>
+        bucket.unseen.map((notification) => ({
+            notification,
+            isUnseen: true
+        }))
+    );
+}
+
 export function NotificationDrawerList({
     categories,
     currentUserId,
@@ -51,16 +62,7 @@ export function NotificationDrawerList({
 }: NotificationDrawerListProps) {
     const { t } = useTranslation();
     const groups = useMemo(() => {
-        const entries: NotificationDrawerEntry[] = [];
-        for (const bucket of notificationBuckets(categories)) {
-            for (const notification of bucket.unseen) {
-                entries.push({ notification, isUnseen: true });
-            }
-            for (const notification of bucket.recent) {
-                entries.push({ notification, isUnseen: false });
-            }
-        }
-        return groupDrawerEntries(entries);
+        return groupDrawerEntries(collectUnseenDrawerEntries(categories));
     }, [categories]);
     const hasAny = NOTIFICATION_LIFECYCLE_ORDER.some(
         (bucket: NotificationLifecycleBucket) => groups[bucket].length > 0
@@ -103,20 +105,20 @@ export function NotificationDrawerList({
                 ) : (
                     <div className="text-muted-foreground flex items-center justify-center p-8 text-sm">
                         {t(
-                            'side_panel.notification_center.no_new_notifications'
+                            'side_panel.notification_center.no_unseen_notifications'
                         )}
                     </div>
                 )}
-                {hasAny ? (
-                    <button
-                        type="button"
-                        className="text-muted-foreground hover:text-foreground hover:bg-accent/50 flex w-full items-center justify-center gap-1 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors"
-                        onClick={onNavigateToTable}
-                    >
-                        {t('side_panel.notification_center.view_more')}
-                        <ChevronRightIcon className="size-3.5" />
-                    </button>
-                ) : null}
+            </div>
+            <div className="flex justify-center border-t p-3">
+                <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={onNavigateToTable}
+                >
+                    {t('side_panel.notification_center.view_more')}
+                </Button>
             </div>
         </div>
     );

@@ -1,7 +1,9 @@
-import { CalendarDaysIcon } from 'lucide-react';
+import { CalendarDaysIcon, LinkIcon } from 'lucide-react';
 
+import { openNotificationLink } from '@/components/hosts/vrc-notification-center/notificationCenterUtils';
 import { Location } from '@/components/Location';
 import type { NotificationRow } from '@/repositories/notificationPersistenceRepository';
+import { Button } from '@/ui/shadcn/button';
 import { HoverCardContent } from '@/ui/shadcn/hover-card';
 import { Separator } from '@/ui/shadcn/separator';
 
@@ -47,6 +49,23 @@ export function NotificationLocationLine({
                 link
                 className="text-xs"
             />
+        );
+    }
+
+    if (notification?.link) {
+        return (
+            <Button
+                type="button"
+                variant="link"
+                size="sm"
+                className="hover:text-primary h-auto max-w-full justify-start p-0 text-left text-xs font-normal"
+                onClick={() => openNotificationLink(notification.link)}
+            >
+                <LinkIcon data-icon="inline-start" />
+                <span className="truncate">
+                    {notification.linkText || notification.link}
+                </span>
+            </Button>
         );
     }
 

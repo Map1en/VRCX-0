@@ -72,6 +72,17 @@ fn lookup_rows_respects_filters_vip_and_limit() -> Result<(), crate::Error> {
     );
     assert!(user_ids.iter().all(|user_id| user_id == "usr_vip"));
 
+    let resources_with_vip = rows(query(
+        &test_db.db,
+        "lookupRows",
+        json!({
+            "filters": ["ImageLoad", "StringLoad"],
+            "vipList": ["usr_vip"],
+            "maxEntries": 10
+        }),
+    )?);
+    assert!(resources_with_vip.is_empty());
+
     let limited = rows(query(
         &test_db.db,
         "lookupRows",
@@ -130,6 +141,19 @@ fn rows_by_location_filters_current_user_resource_kind_and_empty_filters(
 ) -> Result<(), crate::Error> {
     let test_db = test_db("local-query-location")?;
     seed_fixture(&test_db.db)?;
+    write_game_log_batch(
+        &test_db.db,
+        "usr_test",
+        &GameLogWriteBatch {
+            resource_loads: vec![GameLogResourceLoadEntry {
+                created_at: "2026-05-14T08:08:30Z".into(),
+                resource_url: "https://assets.example/generic.bin".into(),
+                resource_type: "ResourceLoad".into(),
+                location: "wrld_alpha:inst-a~group(grp_alpha)".into(),
+            }],
+            ..Default::default()
+        },
+    )?;
 
     let result = rows(query(
         &test_db.db,
@@ -154,6 +178,7 @@ fn rows_by_location_filters_current_user_resource_kind_and_empty_filters(
     );
     assert!(!user_ids.contains(&"usr_self".to_string()));
     assert!(!types.contains(&"StringLoad".to_string()));
+    assert!(!types.contains(&"ResourceLoad".to_string()));
 
     let empty = rows(query(
         &test_db.db,

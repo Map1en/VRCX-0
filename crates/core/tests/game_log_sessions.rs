@@ -44,6 +44,7 @@ fn join(row_id: Option<i64>, at: &str, user_id: &str, location: &str) -> Session
         video_url: None,
         video_name: None,
         video_id: None,
+        resource_url: None,
         is_favorite: false,
     }
 }
@@ -68,6 +69,31 @@ fn video(row_id: Option<i64>, at: &str, url: &str, location: &str) -> SessionEve
         video_url: Some(url.to_string()),
         video_name: Some("Clip".to_string()),
         video_id: None,
+        resource_url: None,
+        is_favorite: false,
+    }
+}
+
+fn resource(
+    row_id: Option<i64>,
+    at: &str,
+    type_: &str,
+    url: &str,
+    location: &str,
+) -> SessionEventInput {
+    SessionEventInput {
+        epoch: epoch(at),
+        sort_id: row_id.unwrap_or(0),
+        row_id,
+        type_: type_.to_string(),
+        created_at: at.to_string(),
+        display_name: String::new(),
+        user_id: String::new(),
+        location: location.to_string(),
+        video_url: None,
+        video_name: None,
+        video_id: None,
+        resource_url: Some(url.to_string()),
         is_favorite: false,
     }
 }
@@ -377,4 +403,41 @@ fn dedupes_repeated_rows_across_pages_by_row_key() {
     let segments = build_game_log_sessions(&locations, &events);
 
     assert_eq!(event_user_ids(&segments[0]), vec!["usr_a".to_string()]);
+}
+
+#[test]
+fn preserves_distinct_resource_load_urls_without_row_ids() {
+    let locations = [location(
+        1,
+        "2024-01-01T10:00:00.000Z",
+        "wrld_resource:1",
+        "wrld_resource",
+        None,
+    )];
+    let events = [
+        resource(
+            None,
+            "2024-01-01T10:00:01.000Z",
+            "StringLoad",
+            "https://resource.test/config.json",
+            "wrld_resource:1",
+        ),
+        resource(
+            None,
+            "2024-01-01T10:00:01.000Z",
+            "ImageLoad",
+            "https://resource.test/image.png",
+            "wrld_resource:1",
+        ),
+    ];
+
+    let segments = build_game_log_sessions(&locations, &events);
+
+    assert_eq!(segments[0].events.len(), 2);
+    assert_eq!(segments[0].events[0].type_, "ImageLoad");
+    assert_eq!(
+        segments[0].events[0].resource_url.as_deref(),
+        Some("https://resource.test/image.png")
+    );
+    assert_eq!(segments[0].events[1].type_, "StringLoad");
 }

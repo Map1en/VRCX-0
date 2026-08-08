@@ -20,6 +20,8 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { useShellStore } from '@/state/shellStore';
 
 const pendingSeenIds = new Set<string>();
+const MARK_SEEN_BATCH_LIMIT = 1_000;
+const MARK_ALL_MAX_PASSES = 100;
 
 export type LoadStatus = 'idle' | 'running' | 'ready' | 'error';
 export type NotificationCategoryKey = 'friend' | 'group' | 'other';
@@ -407,13 +409,15 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
         },
         async markAllSeen() {
             const auth = getCurrentAuth();
-            const unseenRows = getUnseenRows(get().rows);
-            if (!auth.currentUserId || !unseenRows.length) {
+            if (!auth.currentUserId || !get().unseenCount) {
                 return;
             }
 
-            const items = unseenRows.flatMap<NotificationMarkSeenBatchItem>(
-                (notification) => {
+            let previousPageSignature = '';
+            for (let pass = 0; pass < MARK_ALL_MAX_PASSES; pass += 1) {
+                const items = getUnseenRows(
+                    get().rows
+                ).flatMap<NotificationMarkSeenBatchItem>((notification) => {
                     const id = normalizeNotificationId(notification.id);
                     const version = Number(notification.version) || 1;
                     const remote = shouldMarkSeenRemotely(notification);
@@ -427,50 +431,80 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                             location: remote ? 'remote' : 'local'
                         }
                     ];
-                }
-            );
-            const ids = items.map((item) => item.id);
-            if (!ids.length) {
-                return;
-            }
-            for (const id of ids) {
-                pendingSeenIds.add(id);
-            }
-            get().markNotificationsSeen(ids);
-            let failedCount = 0;
-            try {
-                const result = await commands.appNotificationMarkSeenBatch({
-                    items
                 });
-                failedCount = result.failed;
-                for (const item of result.items) {
-                    if (item.state === 'failed') {
-                        pendingSeenIds.delete(item.id);
-                        console.warn(
-                            'Failed to mark VRChat notification as seen:',
-                            item.message
-                        );
+                if (!items.length) {
+                    break;
+                }
+                const pageSignature = items
+                    .map((item) => `${item.version}:${item.id}`)
+                    .sort()
+                    .join('|');
+                if (pageSignature === previousPageSignature) {
+                    throw new Error(
+                        'Notifications remained unread after mark-all-seen.'
+                    );
+                }
+                previousPageSignature = pageSignature;
+
+                const ids = items.map((item) => item.id);
+                for (const id of ids) {
+                    pendingSeenIds.add(id);
+                }
+                get().markNotificationsSeen(ids);
+                let failedCount = 0;
+                try {
+                    for (
+                        let index = 0;
+                        index < items.length;
+                        index += MARK_SEEN_BATCH_LIMIT
+                    ) {
+                        const result =
+                            await commands.appNotificationMarkSeenBatch({
+                                items: items.slice(
+                                    index,
+                                    index + MARK_SEEN_BATCH_LIMIT
+                                )
+                            });
+                        failedCount += result.failed;
+                        for (const item of result.items) {
+                            if (item.state === 'failed') {
+                                pendingSeenIds.delete(item.id);
+                                console.warn(
+                                    'Failed to mark VRChat notification as seen:',
+                                    item.message
+                                );
+                            }
+                        }
+                    }
+                    await get().loadForCurrentUser();
+                } catch (error) {
+                    for (const id of ids) {
+                        pendingSeenIds.delete(id);
+                    }
+                    await get()
+                        .loadForCurrentUser()
+                        .catch(() => {});
+                    throw error;
+                } finally {
+                    for (const id of ids) {
+                        pendingSeenIds.delete(id);
                     }
                 }
-                await get().loadForCurrentUser();
-            } catch (error) {
-                for (const id of ids) {
-                    pendingSeenIds.delete(id);
+                if (failedCount > 0) {
+                    throw new Error(
+                        `Failed to mark ${failedCount} notification(s) as seen.`
+                    );
                 }
-                await get()
-                    .loadForCurrentUser()
-                    .catch(() => {});
-                throw error;
-            } finally {
-                for (const id of ids) {
-                    pendingSeenIds.delete(id);
+                if (get().unseenCount === 0) {
+                    break;
                 }
             }
-            if (failedCount > 0) {
+            if (get().unseenCount > 0) {
                 throw new Error(
-                    `Failed to mark ${failedCount} notification(s) as seen.`
+                    'Unable to finish mark-all-seen within the safety limit.'
                 );
             }
+            useShellStore.getState().removeNotify('notification');
         },
         resetVrcNotificationState() {
             set({

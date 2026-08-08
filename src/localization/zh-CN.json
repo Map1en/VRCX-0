@@ -58,8 +58,6 @@
         "example_2": "我正在和谁疏远？",
         "example_3": "什么时候最容易碰到我的好友在线？",
         "not_configured": "请先选择 LLM 端点和模型。",
-        "setup_title": "先连接一个模型才能开始",
-        "open_settings": "去 AI 设置",
         "entities_title": "提及",
         "entities_empty": "回答中提到的人和世界会显示在这里。",
         "untitled": "新对话",
@@ -81,16 +79,15 @@
         },
         "runtime": {
             "title": "运行时",
+            "connection": "连接",
             "connection_unset": "无端点",
             "model": "模型",
-            "model_unset": "暂无可用模型",
+            "model_unset": "此端点未保存任何模型",
             "playbook_mode": "分析模式",
             "allow_writes": "允许写入操作",
             "manage_endpoints": "管理 LLM 端点",
             "reasoning_effort": "推理强度",
-            "reasoning_effort_provider_default": "服务商默认",
-            "scope_session": "仅对本次对话生效",
-            "scope_default": "对新对话生效"
+            "reasoning_effort_provider_default": "服务商默认"
         }
     },
     "user_hover_card": {
@@ -521,7 +518,6 @@
         "qq_group": "QQ群",
         "changelog": "更新日志",
         "update": "更新",
-        "update_downloading": "下载中…",
         "update_downloaded": "重启",
         "mark_all_read": "全部标为已读",
         "edit_dashboard": "编辑仪表板",
@@ -561,6 +557,8 @@
         }
     },
     "dashboard": {
+        "friend_status_widget": "Friend Status Widget",
+        "live_friend_status_distribution": "Live distribution of online friend statuses.",
         "default_name": "仪表板",
         "new_dashboard": "新建仪表板",
         "empty": "此仪表板为空",
@@ -1958,6 +1956,8 @@
                 "description": "供 Social AI 和翻译共用的 OpenAI 兼容连接。",
                 "follow_custom_proxy": "跟随 VRCX-0 自定义代理",
                 "follow_custom_proxy_description": "已配置时，LLM 请求使用该代理；否则跟随系统代理。",
+                "endpoint_count": "{count} 个端点",
+                "model_count": "{count} 个模型",
                 "add": "添加端点",
                 "empty_description": "添加一个 OpenAI 兼容端点，供 Social AI 和 OpenAI 兼容翻译使用。",
                 "preset": "预设",
@@ -1966,13 +1966,11 @@
                     "siliconflow": "硅基流动"
                 },
                 "name": "名称",
-                "name_description": "选择模型时会作为分组名显示。",
                 "base_url": "Base URL",
-                "base_url_invalid": "请填写完整的 http:// 或 https:// 地址。",
                 "models": "模型",
-                "models_placeholder": "搜索已检测到的模型，或输入后按回车添加",
-                "models_empty": "还没有检测到模型。输入模型名后按回车即可添加。",
-                "unusable": "还没有模型，这个端点暂时用不了。",
+                "key": "密钥",
+                "actions": "操作",
+                "no_models": "无模型",
                 "key_saved": "已保存",
                 "key_empty": "为空",
                 "detect_models": "检测模型",
@@ -1982,9 +1980,9 @@
                 "clear_key": "清除密钥",
                 "key_preserve_placeholder": "留空以保留已保存的密钥",
                 "saved": "端点已保存",
-                "saved_unusable": "已保存，但没有找到这个端点的模型。",
                 "save_failed": "保存端点失败",
                 "load_failed": "加载端点失败",
+                "base_url_required": "Base URL 为必填项。",
                 "models_detected": "检测到 {count} 个模型",
                 "no_models_detected": "未检测到模型",
                 "detect_failed": "检测模型失败",
@@ -2011,30 +2009,7 @@
                 "ai": "AI",
                 "vr": "VR",
                 "media": "媒体",
-                "integrations": "集成",
-                "feedback": "反馈"
-            },
-            "feedback": {
-                "title": "发送反馈",
-                "description": "反馈将匿名提交。我们会阅读每一条消息,但无法直接回复。",
-                "privacy_note": "不会附带任何账号信息,只带一个用于防刷的匿名安装标识。",
-                "placeholder": "告诉我们哪些好用、哪些不好用,或者你希望看到什么新功能……",
-                "submit": "发送",
-                "submitting": "发送中…",
-                "thanks": "感谢你的反馈！",
-                "cooldown": "{{seconds}} 秒后可再次发送",
-                "more_help": "需要回复,或者想附上日志?",
-                "error_generic": "发送失败,请稍后重试。"
-            },
-            "ai": {
-                "header": "AI 助手",
-                "description": "新对话的默认设置。每个对话都可以在 AI 助手面板里单独调整。",
-                "default_model": "默认模型",
-                "default_model_description": "新对话默认使用这个模型。",
-                "default_model_unset": "暂无可用模型",
-                "setup_hint": "AI 助手需要先连接一个 OpenAI 兼容的接口才能回答问题。",
-                "playbook_mode_description": "模型分析数据时的自由度。",
-                "endpoints_description": "AI 助手和翻译共用。"
+                "integrations": "集成"
             },
             "social": {
                 "interaction": {
@@ -2262,8 +2237,6 @@
                     "table_page_sizes_description": "添加、移除并选择表格控件中显示的每页数量选项。",
                     "table_page_sizes_error": "页面尺寸必须是 1 到 1000 之间的数字",
                     "show_notification_icon_dot": "显示托盘通知",
-                    "show_taskbar_icon_dot": "显示任务栏通知红点",
-                    "show_taskbar_icon_dot_description": "有未读通知时，在任务栏的 VRCX-0 按钮上显示红点。",
                     "striped_data_table_mode": "斑马纹表格模式",
                     "reduced_motion_and_blur": "减少特效",
                     "reduced_motion_and_blur_description": "关闭动画、过渡和背景模糊效果，改善低配置设备的性能。",
@@ -2442,11 +2415,11 @@
             "discord_presence": {
                 "discord_presence": {
                     "header": "Discord 状态面板",
+                    "description": "* 仅在 VRChat 运行时生效",
                     "enable": "启用",
                     "enable_tooltip": "建议在 VRChat 的 “config.json” 中停用原生的 Discord 状态面板来防止冲突",
                     "instance_type_player_count": "显示房间类型和人数",
-                    "join_button": "加入按钮",
-                    "join_button_description": "仅在公开房间中显示。",
+                    "join_button": "在面板上显示加入按钮（仅限公开房间）",
                     "show_details_in_private": "在私人房间时显示房间信息",
                     "show_images": "显示世界缩略图",
                     "show_current_platform": "显示当前所在的平台",
@@ -2724,6 +2697,14 @@
             }
         },
         "dashboard": {
+            "friend_status": {
+                "loading": "Loading friend status widget",
+                "total_online_friends": "Online friends",
+                "distribution": "Friend status distribution",
+                "error": "Friend status widget failed",
+                "empty": "No online friends",
+                "empty_description": "The current friend roster has no online friends."
+            },
             "loading": {
                 "loading_dashboard_panel": "正在加载仪表板面板",
                 "loading_feed_widget": "正在加载动态小组件",

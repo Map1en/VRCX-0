@@ -126,6 +126,10 @@ describe('friendListState', () => {
     });
 
     it('sanitizes saved columns while keeping friend number always visible', () => {
+        expect(sanitizeFriendListColumnVisibility(undefined)).toEqual({
+            inviteReceivedCount: false,
+            inviteSentCount: false
+        });
         expect(
             sanitizeFriendListColumnVisibility({
                 friendNumber: false,
@@ -135,6 +139,8 @@ describe('friendListState', () => {
             })
         ).toEqual({
             avatar: false,
+            inviteReceivedCount: false,
+            inviteSentCount: false,
             status: true
         });
 

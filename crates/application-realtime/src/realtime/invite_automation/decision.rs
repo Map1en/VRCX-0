@@ -1,9 +1,8 @@
 use std::collections::HashSet;
 
+use chrono::{DateTime, Datelike, Timelike};
 use vrcx_0_application_core::LocalGameContextSnapshot;
 use vrcx_0_core::location::parse_location;
-
-pub const INVITE_AUTOMATION_COOLDOWN_MS: i64 = 10 * 60 * 1000;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum InviteAutomationMode {
@@ -16,6 +15,33 @@ pub enum InviteAutomationMode {
 pub struct InviteAutomationConfig {
     pub mode: InviteAutomationMode,
     pub selected_groups: Vec<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct InviteMessageReplyConfig {
+    pub enabled: bool,
+    pub invite_enabled: bool,
+    pub invite_response_slot: Option<i64>,
+    pub request_invite_enabled: bool,
+    pub request_invite_response_slot: Option<i64>,
+    pub days: Vec<u32>,
+    pub start: String,
+    pub end: String,
+}
+
+impl Default for InviteMessageReplyConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            invite_enabled: false,
+            invite_response_slot: None,
+            request_invite_enabled: false,
+            request_invite_response_slot: None,
+            days: (1..=7).collect(),
+            start: "00:00".into(),
+            end: "00:00".into(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -60,9 +86,9 @@ impl InviteLocationFacts {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct CooldownView {
-    pub last_sent_at_ms: Option<i64>,
+pub struct DeliveryView {
     pub is_pending: bool,
+    pub is_processed: bool,
     pub in_failure_backoff: bool,
 }
 
@@ -72,8 +98,7 @@ pub struct InviteAutomationInput {
     pub config: InviteAutomationConfig,
     pub allowlist: SenderAllowlist,
     pub location: InviteLocationFacts,
-    pub cooldown: CooldownView,
-    pub now_ms: i64,
+    pub delivery: DeliveryView,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -92,13 +117,14 @@ pub enum InviteDecision {
 pub enum InviteAutomationSkipReason {
     Disabled,
     InvalidNotification,
+    SenderNotFriend,
     SenderNotAllowlisted,
     LocalGameContextUnavailable,
     GameNotRunning,
     MissingCurrentSessionOrLocation,
     CurrentLocationNotInvitable,
     Pending,
-    Cooldown,
+    AlreadyProcessed,
     FailureBackoff,
 }
 
@@ -107,13 +133,14 @@ impl InviteAutomationSkipReason {
         match self {
             Self::Disabled => "disabled",
             Self::InvalidNotification => "invalid-notification",
+            Self::SenderNotFriend => "sender-not-friend",
             Self::SenderNotAllowlisted => "sender-not-allowlisted",
             Self::LocalGameContextUnavailable => "local-game-context-unavailable",
             Self::GameNotRunning => "game-not-running",
             Self::MissingCurrentSessionOrLocation => "missing-current-session-or-location",
             Self::CurrentLocationNotInvitable => "current-location-not-invitable",
-            Self::Pending => "sender-invite-pending",
-            Self::Cooldown => "sender-cooldown",
+            Self::Pending => "notification-action-pending",
+            Self::AlreadyProcessed => "notification-already-processed",
             Self::FailureBackoff => "send-failure-backoff",
         }
     }
@@ -153,22 +180,62 @@ pub fn context_gates(
     Ok(())
 }
 
-pub fn cooldown_gate(
-    cooldown: &CooldownView,
-    now_ms: i64,
-) -> Result<(), InviteAutomationSkipReason> {
-    if cooldown.is_pending {
+pub fn delivery_gate(delivery: &DeliveryView) -> Result<(), InviteAutomationSkipReason> {
+    if delivery.is_pending {
         return Err(InviteAutomationSkipReason::Pending);
     }
-    if cooldown.in_failure_backoff {
+    if delivery.is_processed {
+        return Err(InviteAutomationSkipReason::AlreadyProcessed);
+    }
+    if delivery.in_failure_backoff {
         return Err(InviteAutomationSkipReason::FailureBackoff);
     }
-    if cooldown.last_sent_at_ms.is_some_and(|last_sent_at| {
-        now_ms.saturating_sub(last_sent_at) < INVITE_AUTOMATION_COOLDOWN_MS
-    }) {
-        return Err(InviteAutomationSkipReason::Cooldown);
-    }
     Ok(())
+}
+
+/// Returns the configured VRChat message slot when a notification should be
+/// answered now. Overnight windows attribute the after-midnight portion to the
+/// previous selected day, matching the other scheduled automation settings.
+pub fn scheduled_message_reply_slot<Tz: chrono::TimeZone>(
+    config: &InviteMessageReplyConfig,
+    notification_type: &str,
+    now: DateTime<Tz>,
+) -> Option<i64> {
+    if !config.enabled {
+        return None;
+    }
+    let slot = match notification_type {
+        "invite" if config.invite_enabled => config.invite_response_slot,
+        "requestInvite" if config.request_invite_enabled => config.request_invite_response_slot,
+        _ => None,
+    }?;
+    if !(0..=11).contains(&slot) {
+        return None;
+    }
+    let start = parse_clock_minutes(&config.start)?;
+    let end = parse_clock_minutes(&config.end)?;
+    let minute = now.hour() * 60 + now.minute();
+    let today = now.weekday().number_from_monday();
+    let previous_day = if today == 1 { 7 } else { today - 1 };
+    let day_selected = |day| config.days.is_empty() || config.days.contains(&day);
+
+    let in_window = if start == end {
+        day_selected(today)
+    } else if start < end {
+        day_selected(today) && minute >= start && minute < end
+    } else if minute >= start {
+        day_selected(today)
+    } else {
+        minute < end && day_selected(previous_day)
+    };
+    in_window.then_some(slot)
+}
+
+fn parse_clock_minutes(value: &str) -> Option<u32> {
+    let (hour, minute) = value.trim().split_once(':')?;
+    let hour = hour.parse::<u32>().ok()?;
+    let minute = minute.parse::<u32>().ok()?;
+    (hour < 24 && minute < 60).then_some(hour * 60 + minute)
 }
 
 pub fn evaluate_invite_automation(input: &InviteAutomationInput) -> InviteDecision {
@@ -184,7 +251,7 @@ pub fn evaluate_invite_automation(input: &InviteAutomationInput) -> InviteDecisi
     if !sender_allowed(&input.config, &input.allowlist) {
         return skip(InviteAutomationSkipReason::SenderNotAllowlisted);
     }
-    if let Err(reason) = cooldown_gate(&input.cooldown, input.now_ms) {
+    if let Err(reason) = delivery_gate(&input.delivery) {
         return skip(reason);
     }
 
@@ -258,6 +325,7 @@ fn location_cache_key(parsed: &vrcx_0_core::location::ParsedLocation) -> String 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::{FixedOffset, TimeZone};
 
     fn local_game_context(is_game_running: bool, location: &str) -> LocalGameContextSnapshot {
         LocalGameContextSnapshot::Available {
@@ -298,12 +366,11 @@ mod tests {
                 current_user_id: "usr_self".into(),
                 closed_locations: HashSet::new(),
             },
-            cooldown: CooldownView {
-                last_sent_at_ms: None,
+            delivery: DeliveryView {
                 is_pending: false,
+                is_processed: false,
                 in_failure_backoff: false,
             },
-            now_ms: 1_000_000,
         }
     }
 
@@ -412,9 +479,9 @@ mod tests {
     }
 
     #[test]
-    fn skips_pending_and_sender_cooldown() {
+    fn skips_pending_processed_and_failure_backoff() {
         let mut pending = base_input();
-        pending.cooldown.is_pending = true;
+        pending.delivery.is_pending = true;
         assert_eq!(
             evaluate_invite_automation(&pending),
             InviteDecision::Skip {
@@ -422,22 +489,112 @@ mod tests {
             }
         );
 
-        let mut cooling_down = base_input();
-        cooling_down.cooldown.last_sent_at_ms = Some(cooling_down.now_ms - 60_000);
+        let mut processed = base_input();
+        processed.delivery.is_processed = true;
         assert_eq!(
-            evaluate_invite_automation(&cooling_down),
+            evaluate_invite_automation(&processed),
             InviteDecision::Skip {
-                reason: InviteAutomationSkipReason::Cooldown,
+                reason: InviteAutomationSkipReason::AlreadyProcessed,
             }
         );
 
         let mut backing_off = base_input();
-        backing_off.cooldown.in_failure_backoff = true;
+        backing_off.delivery.in_failure_backoff = true;
         assert_eq!(
             evaluate_invite_automation(&backing_off),
             InviteDecision::Skip {
                 reason: InviteAutomationSkipReason::FailureBackoff,
             }
+        );
+    }
+
+    fn message_config(start: &str, end: &str, days: Vec<u32>) -> InviteMessageReplyConfig {
+        InviteMessageReplyConfig {
+            enabled: true,
+            invite_enabled: true,
+            invite_response_slot: Some(2),
+            request_invite_enabled: true,
+            request_invite_response_slot: Some(5),
+            days,
+            start: start.into(),
+            end: end.into(),
+        }
+    }
+
+    #[test]
+    fn scheduled_message_reply_selects_slots_by_notification_type() {
+        let zone = FixedOffset::east_opt(9 * 3600).unwrap();
+        let monday_noon = zone.with_ymd_and_hms(2026, 8, 3, 12, 0, 0).unwrap();
+        let config = message_config("09:00", "18:00", vec![1]);
+
+        assert_eq!(
+            scheduled_message_reply_slot(&config, "invite", monday_noon),
+            Some(2)
+        );
+        assert_eq!(
+            scheduled_message_reply_slot(&config, "requestInvite", monday_noon),
+            Some(5)
+        );
+        assert_eq!(
+            scheduled_message_reply_slot(&config, "friendRequest", monday_noon),
+            None
+        );
+    }
+
+    #[test]
+    fn scheduled_message_reply_rejects_out_of_range_slots() {
+        let zone = FixedOffset::east_opt(9 * 3600).unwrap();
+        let monday_noon = zone.with_ymd_and_hms(2026, 8, 3, 12, 0, 0).unwrap();
+        let mut config = message_config("00:00", "00:00", vec![1]);
+        config.invite_response_slot = Some(12);
+        config.request_invite_response_slot = Some(-1);
+
+        assert_eq!(
+            scheduled_message_reply_slot(&config, "invite", monday_noon),
+            None
+        );
+        assert_eq!(
+            scheduled_message_reply_slot(&config, "requestInvite", monday_noon),
+            None
+        );
+    }
+
+    #[test]
+    fn overnight_schedule_uses_previous_day_after_midnight() {
+        let zone = FixedOffset::east_opt(9 * 3600).unwrap();
+        let config = message_config("22:00", "02:00", vec![1]);
+        let monday_late = zone.with_ymd_and_hms(2026, 8, 3, 23, 0, 0).unwrap();
+        let tuesday_early = zone.with_ymd_and_hms(2026, 8, 4, 1, 30, 0).unwrap();
+        let tuesday_late = zone.with_ymd_and_hms(2026, 8, 4, 3, 0, 0).unwrap();
+
+        assert_eq!(
+            scheduled_message_reply_slot(&config, "invite", monday_late),
+            Some(2)
+        );
+        assert_eq!(
+            scheduled_message_reply_slot(&config, "invite", tuesday_early),
+            Some(2)
+        );
+        assert_eq!(
+            scheduled_message_reply_slot(&config, "invite", tuesday_late),
+            None
+        );
+    }
+
+    #[test]
+    fn equal_schedule_bounds_mean_all_day_on_selected_days() {
+        let zone = FixedOffset::east_opt(9 * 3600).unwrap();
+        let config = message_config("00:00", "00:00", vec![1]);
+        let monday = zone.with_ymd_and_hms(2026, 8, 3, 23, 59, 0).unwrap();
+        let tuesday = zone.with_ymd_and_hms(2026, 8, 4, 0, 0, 0).unwrap();
+
+        assert_eq!(
+            scheduled_message_reply_slot(&config, "invite", monday),
+            Some(2)
+        );
+        assert_eq!(
+            scheduled_message_reply_slot(&config, "invite", tuesday),
+            None
         );
     }
 }
