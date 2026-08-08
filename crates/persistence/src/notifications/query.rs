@@ -424,10 +424,13 @@ fn query_notification_list(
         .filter(|notification| notification_matches_search(notification, &search))
         .collect::<Vec<_>>();
     notifications.sort_by(|left, right| {
-        query
-            .include_unseen
-            .then(|| notification_is_unseen(right).cmp(&notification_is_unseen(left)))
-            .unwrap_or(std::cmp::Ordering::Equal)
+        let unseen_order = if query.include_unseen {
+            notification_is_unseen(right).cmp(&notification_is_unseen(left))
+        } else {
+            std::cmp::Ordering::Equal
+        };
+    
+        unseen_order
             .then_with(|| {
                 notification_date_millis(&right.created_at)
                     .cmp(&notification_date_millis(&left.created_at))
