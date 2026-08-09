@@ -28,6 +28,13 @@ describe('userActivityViewService Rust activity views', () => {
             peakHourEnd: 3,
             filteredEventCount: 1,
             hasAnyData: true,
+            statusDistribution: {
+                joinMeCount: 2,
+                activeCount: 3,
+                askMeCount: 1,
+                busyCount: 0,
+                totalCount: 999
+            },
             builtFromCursor: 'cursor',
             builtAt: '2025-01-06T00:00:00.000Z'
         });
@@ -56,7 +63,14 @@ describe('userActivityViewService Rust activity views', () => {
             filteredEventCount: 1,
             hasAnyData: true,
             peakDay: 'Sun',
-            peakTime: '01:00-03:00'
+            peakTime: '01:00-03:00',
+            statusDistribution: {
+                joinMeCount: 2,
+                activeCount: 3,
+                askMeCount: 1,
+                busyCount: 0,
+                totalCount: 6
+            }
         });
     });
 
@@ -69,6 +83,13 @@ describe('userActivityViewService Rust activity views', () => {
             peakHourEnd: 10,
             filteredEventCount: 1,
             hasAnyData: true,
+            statusDistribution: {
+                joinMeCount: 0,
+                activeCount: 0,
+                askMeCount: 0,
+                busyCount: 0,
+                totalCount: 0
+            },
             builtFromCursor: 'cursor',
             builtAt: '2025-01-06T00:00:00.000Z'
         });

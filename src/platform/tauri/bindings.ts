@@ -2807,6 +2807,13 @@ export type ActivitySessionOutput = {
     isOpenTail: boolean;
     sourceRevision: string;
 };
+export type ActivityStatusDistributionOutput = {
+    joinMeCount: number;
+    activeCount: number;
+    askMeCount: number;
+    busyCount: number;
+    totalCount: number;
+};
 export type ActivitySyncStateInput = {
     userId?: string;
     updatedAt?: string;
@@ -2841,6 +2848,7 @@ export type ActivityViewOutput = {
     peakHourEnd: number;
     filteredEventCount: number;
     hasAnyData: boolean;
+    statusDistribution: ActivityStatusDistributionOutput;
     builtFromCursor: string;
     builtAt: string;
 };

@@ -20,6 +20,23 @@ export type ActivityHeatmapData = {
     rawBuckets: number[];
 };
 
+export type UserActivityStatusDistribution = {
+    activeCount: number;
+    askMeCount: number;
+    busyCount: number;
+    joinMeCount: number;
+    totalCount: number;
+};
+
+export const EMPTY_USER_ACTIVITY_STATUS_DISTRIBUTION: UserActivityStatusDistribution =
+    Object.freeze({
+        activeCount: 0,
+        askMeCount: 0,
+        busyCount: 0,
+        joinMeCount: 0,
+        totalCount: 0
+    });
+
 export type TopWorldsSort = 'time' | 'count';
 
 export type UserActivityTopWorld = Record<string, unknown> & {
@@ -72,6 +89,13 @@ export function normalizeActivityPeriod(period: unknown) {
 
 export function normalizeTopWorldsSort(sortBy: unknown): TopWorldsSort {
     return sortBy === 'time' || sortBy === 'count' ? sortBy : 'time';
+}
+
+export function getActivityStatusPercentage(count: number, total: number) {
+    if (!Number.isFinite(count) || !Number.isFinite(total) || total <= 0) {
+        return 0;
+    }
+    return (Math.max(0, count) / total) * 100;
 }
 
 export function getWorldThumbnailUrl(

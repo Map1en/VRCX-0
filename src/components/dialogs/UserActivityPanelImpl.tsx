@@ -27,6 +27,7 @@ import {
 } from './user-dialog/components/UserActivityPanelParts';
 import {
     UserActivityOverlapSection,
+    UserActivityStatusDistributionSection,
     UserActivityTopWorldsSection
 } from './user-dialog/components/UserActivityPanelSections';
 import {
@@ -107,6 +108,7 @@ export function UserActivityPanel({
         peakTimeText,
         refreshData,
         selectedPeriod,
+        statusDistribution,
         topWorlds,
         topWorldsLoading,
         topWorldsLoadingVisible,
@@ -200,6 +202,9 @@ export function UserActivityPanel({
         [isDarkMode]
     );
     const emptyColor = isDarkMode ? 'hsl(220, 15%, 12%)' : 'hsl(210, 30%, 95%)';
+    const hasStatusDistributionData =
+        !isCurrentUser && statusDistribution.totalCount > 0;
+    const hasVisibleActivityData = hasAnyData || hasStatusDistributionData;
 
     return (
         <div
@@ -333,7 +338,7 @@ export function UserActivityPanel({
                 </div>
             ) : null}
 
-            {loading && !hasAnyData ? (
+            {loading && !hasVisibleActivityData ? (
                 <div className="mt-8 flex flex-1 flex-col items-center justify-center gap-2">
                     <Spinner className="size-5" />
                     <span className="text-muted-foreground text-sm">
@@ -349,10 +354,13 @@ export function UserActivityPanel({
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
             ) : null}
-            {!loading && !error && !hasAnyData ? (
+            {!loading && !error && !hasVisibleActivityData ? (
                 <ActivityEmptyState title={t('common.no_data')} />
             ) : null}
-            {!loading && hasAnyData && filteredEventCount === 0 ? (
+            {!loading &&
+            hasVisibleActivityData &&
+            filteredEventCount === 0 &&
+            !hasStatusDistributionData ? (
                 <ActivityEmptyState
                     title={t('dialog.user.activity.no_data_in_period')}
                 />
@@ -370,6 +378,12 @@ export function UserActivityPanel({
                     scaleColors={activityScaleColors}
                     unitLabel={t('dialog.user.activity.minutes_online')}
                     onContextMenu={onActivityChartRightClick}
+                />
+            ) : null}
+
+            {!isCurrentUser && hasVisibleActivityData ? (
+                <UserActivityStatusDistributionSection
+                    distribution={statusDistribution}
                 />
             ) : null}
 

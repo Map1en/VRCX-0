@@ -3451,6 +3451,12 @@
                     "no_data": "重なりを計算するにはデータが不足しています",
                     "minutes_overlap": "分の重なり"
                 },
+                "status_distribution": {
+                    "header": "ステータス変更ログの割合",
+                    "description": "オンライン時間ではなく、このフレンドの記録済みカラーステータス変更を集計しています。",
+                    "chart_center_label": "ログ",
+                    "no_data": "選択期間にカラーステータスの変更ログがありません。"
+                },
                 "most_visited_worlds": {
                     "header": "最も訪問したワールド",
                     "loading": "最も訪問したワールドを読み込んでいます...",

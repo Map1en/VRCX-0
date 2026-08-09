@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { getActivityStatusPercentage } from './user-dialog/userActivityPanelModel';
 import { getDisplayDayLabels, getRangeDays } from './UserActivityPanelImpl';
 
 describe('UserActivityPanelImpl helpers', () => {
@@ -39,5 +40,12 @@ describe('UserActivityPanelImpl helpers', () => {
         expect(getRangeDays('7')).toBe(7);
         expect(getRangeDays('bad')).toBe(30);
         expect(getRangeDays(undefined)).toBe(30);
+    });
+
+    it('computes status-log percentages without treating missing data as a ratio', () => {
+        expect(getActivityStatusPercentage(1, 4)).toBe(25);
+        expect(getActivityStatusPercentage(2, 3)).toBeCloseTo(66.6667, 3);
+        expect(getActivityStatusPercentage(-1, 4)).toBe(0);
+        expect(getActivityStatusPercentage(1, 0)).toBe(0);
     });
 });

@@ -10,6 +10,7 @@ import {
     ACTIVITY_SELF_EXCLUDE_HOME_WORLD_KEY,
     ACTIVITY_SELF_PERIOD_KEY,
     ACTIVITY_SELF_TOP_WORLDS_SORT_KEY,
+    EMPTY_USER_ACTIVITY_STATUS_DISTRIBUTION,
     getRangeDays,
     getWorldThumbnailUrl,
     normalizeActivityPeriod,
@@ -21,6 +22,7 @@ import {
     TOP_WORLDS_LOADING_DELAY_MS,
     type ActivityHeatmapData,
     type TopWorldsSort,
+    type UserActivityStatusDistribution,
     type UserActivityTopWorld
 } from './userActivityPanelModel';
 
@@ -95,6 +97,10 @@ export function useUserActivityPanelController({
         rawBuckets: [],
         normalizedBuckets: []
     });
+    const [statusDistribution, setStatusDistribution] =
+        useState<UserActivityStatusDistribution>(
+            EMPTY_USER_ACTIVITY_STATUS_DISTRIBUTION
+        );
     const [topWorlds, setTopWorlds] = useState<UserActivityTopWorld[]>([]);
     const [topWorldsLoading, setTopWorldsLoading] = useState(false);
     const [topWorldsLoadingVisible, setTopWorldsLoadingVisible] =
@@ -196,6 +202,7 @@ export function useUserActivityPanelController({
         setPeakDayText('');
         setPeakTimeText('');
         setMainHeatmap({ rawBuckets: [], normalizedBuckets: [] });
+        setStatusDistribution(EMPTY_USER_ACTIVITY_STATUS_DISTRIBUTION);
         setTopWorlds([]);
         setTopWorldsLoading(false);
         setTopWorldsLoadingVisible(false);
@@ -430,6 +437,10 @@ export function useUserActivityPanelController({
                 rawBuckets: activityView.rawBuckets || [],
                 normalizedBuckets: activityView.normalizedBuckets || []
             });
+            setStatusDistribution(
+                activityView.statusDistribution ||
+                    EMPTY_USER_ACTIVITY_STATUS_DISTRIBUTION
+            );
             lastLoadedContextRef.current = activityContextKey;
 
             if (!activityView.hasAnyData) {
@@ -682,6 +693,7 @@ export function useUserActivityPanelController({
         peakTimeText,
         refreshData,
         selectedPeriod,
+        statusDistribution,
         topWorlds,
         topWorldsLoading,
         topWorldsLoadingVisible,

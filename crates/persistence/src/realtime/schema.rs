@@ -57,6 +57,7 @@ fn realtime_table_statements(user_prefix: &str) -> Vec<String> {
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_feed_gps_location_idx ON {user_prefix}_feed_gps (location)"),
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_feed_gps_created_id_idx ON {user_prefix}_feed_gps (created_at DESC, id DESC)"),
         format!("CREATE TABLE IF NOT EXISTS {user_prefix}_feed_status (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, display_name TEXT, status TEXT, status_description TEXT, previous_status TEXT, previous_status_description TEXT)"),
+        format!("CREATE INDEX IF NOT EXISTS {user_prefix}_feed_status_user_created_idx ON {user_prefix}_feed_status (user_id, created_at)"),
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_feed_status_created_id_idx ON {user_prefix}_feed_status (created_at DESC, id DESC)"),
         format!("CREATE TABLE IF NOT EXISTS {user_prefix}_feed_bio (id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, display_name TEXT, bio TEXT, previous_bio TEXT)"),
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_feed_bio_created_id_idx ON {user_prefix}_feed_bio (created_at DESC, id DESC)"),

@@ -521,6 +521,84 @@ pub fn activity_friend_presence_last_created_at(
     activity_friend_presence_bound(db, owner_user_id, user_id, "MAX")
 }
 
+pub fn activity_friend_status_distribution(
+    db: &DatabaseService,
+    owner_user_id: &str,
+    user_id: &str,
+    range_days: i64,
+    now_ms: i64,
+) -> Result<ActivityStatusDistributionOutput, Error> {
+    let owner_user_id = normalize_text(owner_user_id);
+    let user_id = normalize_text(user_id);
+    if owner_user_id.is_empty() || user_id.is_empty() {
+        return Ok(ActivityStatusDistributionOutput::default());
+    }
+
+    let user_prefix = normalize_user_table_prefix(&owner_user_id)?;
+    ensure_user_store_tables(db, &user_prefix)?;
+    let table_name = format!("{user_prefix}_feed_status");
+    let to_date_iso = activity_iso_from_ms(now_ms);
+    let mut sql = format!(
+        "SELECT status, previous_status, COUNT(*) FROM {table_name} WHERE user_id = @user_id AND created_at <= @to_date_iso"
+    );
+    let mut params = ParamsBuilder::new()
+        .set("user_id", user_id)
+        .set("to_date_iso", to_date_iso);
+    if range_days > 0 {
+        let range_days = range_days.clamp(1, ACTIVITY_MAX_RANGE_DAYS);
+        let from_ms = now_ms.saturating_sub(range_days.saturating_mul(ACTIVITY_DAY_MS));
+        sql.push_str(" AND created_at >= @from_date_iso");
+        params = params.set("from_date_iso", activity_iso_from_ms(from_ms));
+    }
+    sql.push_str(" GROUP BY status, previous_status");
+
+    let mut output = ActivityStatusDistributionOutput::default();
+    for row in db.execute(&sql, &params.build())? {
+        let Some(status) = activity_status_bucket(&row_string(&row, 0)) else {
+            continue;
+        };
+        if activity_status_bucket(&row_string(&row, 1)) == Some(status) {
+            continue;
+        }
+        let count = row_i64(&row, 2).max(0);
+        match status {
+            ActivityStatusBucket::JoinMe => output.join_me_count += count,
+            ActivityStatusBucket::Active => output.active_count += count,
+            ActivityStatusBucket::AskMe => output.ask_me_count += count,
+            ActivityStatusBucket::Busy => output.busy_count += count,
+        }
+    }
+    output.total_count = output
+        .join_me_count
+        .saturating_add(output.active_count)
+        .saturating_add(output.ask_me_count)
+        .saturating_add(output.busy_count);
+    Ok(output)
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ActivityStatusBucket {
+    JoinMe,
+    Active,
+    AskMe,
+    Busy,
+}
+
+fn activity_status_bucket(value: &str) -> Option<ActivityStatusBucket> {
+    let normalized = value
+        .chars()
+        .filter(|character| !character.is_whitespace() && !matches!(*character, '-' | '_'))
+        .collect::<String>()
+        .to_ascii_lowercase();
+    match normalized.as_str() {
+        "joinme" => Some(ActivityStatusBucket::JoinMe),
+        "active" | "online" => Some(ActivityStatusBucket::Active),
+        "askme" => Some(ActivityStatusBucket::AskMe),
+        "busy" => Some(ActivityStatusBucket::Busy),
+        _ => None,
+    }
+}
+
 pub(super) fn activity_self_source_first_created_at(
     db: &DatabaseService,
     owner_user_id: &str,

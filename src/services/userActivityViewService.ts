@@ -1,3 +1,4 @@
+import type { UserActivityStatusDistribution } from '@/components/dialogs/user-dialog/userActivityPanelModel';
 import { commands } from '@/platform/tauri/bindings';
 import gameLogRepository from '@/repositories/gameLogRepository';
 
@@ -48,6 +49,7 @@ type UserActivityViewService = {
             hasAnyData: boolean;
             peakDay?: string;
             peakTime?: string;
+            statusDistribution: UserActivityStatusDistribution;
         }
     >;
     loadOverlapView(options: LoadOverlapViewOptions): Promise<
@@ -67,6 +69,26 @@ function normalizeNumber(value: unknown): number {
 
 function normalizeNumberArray(value: unknown): number[] {
     return Array.isArray(value) ? value.map(normalizeNumber) : [];
+}
+
+function normalizeStatusDistribution(
+    value: unknown
+): UserActivityStatusDistribution {
+    const source =
+        value && typeof value === 'object'
+            ? (value as Record<string, unknown>)
+            : {};
+    const joinMeCount = Math.max(0, normalizeNumber(source.joinMeCount));
+    const activeCount = Math.max(0, normalizeNumber(source.activeCount));
+    const askMeCount = Math.max(0, normalizeNumber(source.askMeCount));
+    const busyCount = Math.max(0, normalizeNumber(source.busyCount));
+    return {
+        joinMeCount,
+        activeCount,
+        askMeCount,
+        busyCount,
+        totalCount: joinMeCount + activeCount + askMeCount + busyCount
+    };
 }
 
 function utcOffsetMinutes() {
@@ -137,7 +159,10 @@ async function loadActivityView({
         peakDay,
         peakTime,
         rawBuckets: normalizeNumberArray(output.rawBuckets),
-        normalizedBuckets: normalizeNumberArray(output.normalizedBuckets)
+        normalizedBuckets: normalizeNumberArray(output.normalizedBuckets),
+        statusDistribution: normalizeStatusDistribution(
+            output.statusDistribution
+        )
     };
 }
 

@@ -3456,6 +3456,12 @@
                     "no_data": "Not enough data to calculate overlap",
                     "minutes_overlap": "min overlap"
                 },
+                "status_distribution": {
+                    "header": "Status change log share",
+                    "description": "Based on this friend's recorded color-status changes, not online time.",
+                    "chart_center_label": "logs",
+                    "no_data": "No color-status changes were recorded in the selected period."
+                },
                 "most_visited_worlds": {
                     "header": "Most Visited Worlds",
                     "loading": "Loading most visited worlds...",

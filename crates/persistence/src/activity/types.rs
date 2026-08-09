@@ -184,6 +184,16 @@ pub struct ActivityViewBuildInput {
     pub force_refresh: bool,
 }
 
+#[derive(Clone, Debug, Default, Serialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ActivityStatusDistributionOutput {
+    pub join_me_count: i64,
+    pub active_count: i64,
+    pub ask_me_count: i64,
+    pub busy_count: i64,
+    pub total_count: i64,
+}
+
 #[derive(Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ActivityViewOutput {
@@ -194,6 +204,7 @@ pub struct ActivityViewOutput {
     pub peak_hour_end: i32,
     pub filtered_event_count: i64,
     pub has_any_data: bool,
+    pub status_distribution: ActivityStatusDistributionOutput,
     pub built_from_cursor: String,
     pub built_at: String,
 }

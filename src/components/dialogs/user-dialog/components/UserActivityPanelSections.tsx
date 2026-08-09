@@ -16,11 +16,164 @@ import { Switch } from '@/ui/shadcn/switch';
 import {
     OVERLAP_RENDER_DELAY_MS,
     USER_ACTIVITY_HOUR_LABELS,
+    getActivityStatusPercentage,
     type ActivityHeatmapData,
     type TopWorldsSort,
+    type UserActivityStatusDistribution,
     type UserActivityTopWorld
 } from '../userActivityPanelModel';
 import { HeatmapChart, TopWorldRows } from './UserActivityPanelParts';
+
+const STATUS_DISTRIBUTION_SEGMENTS = [
+    {
+        countKey: 'joinMeCount',
+        labelKey: 'dialog.user.status.join_me',
+        color: 'var(--status-joinme)'
+    },
+    {
+        countKey: 'activeCount',
+        labelKey: 'dialog.user.status.online',
+        color: 'var(--status-online)'
+    },
+    {
+        countKey: 'askMeCount',
+        labelKey: 'dialog.user.status.ask_me',
+        color: 'var(--status-askme)'
+    },
+    {
+        countKey: 'busyCount',
+        labelKey: 'dialog.user.status.busy',
+        color: 'var(--status-busy)'
+    }
+] as const;
+
+export function UserActivityStatusDistributionSection({
+    distribution
+}: {
+    distribution: UserActivityStatusDistribution;
+}) {
+    const { i18n, t } = useTranslation();
+    const total = distribution.totalCount;
+    const percentageFormatter = new Intl.NumberFormat(
+        i18n.resolvedLanguage || 'en',
+        { maximumFractionDigits: 1 }
+    );
+    let offset = 0;
+    const segments = STATUS_DISTRIBUTION_SEGMENTS.map((segment) => {
+        const count = distribution[segment.countKey];
+        const percentage = getActivityStatusPercentage(count, total);
+        const result = {
+            ...segment,
+            count,
+            percentage,
+            offset
+        };
+        offset += percentage;
+        return result;
+    });
+    const chartLabel = segments
+        .filter((segment) => segment.count > 0)
+        .map(
+            (segment) =>
+                `${t(segment.labelKey)} ${percentageFormatter.format(segment.percentage)}%`
+        )
+        .join(', ');
+
+    return (
+        <section className="border-border mt-4 border-t pt-3">
+            <div className="mb-3">
+                <h3 className="text-sm font-medium">
+                    {t('dialog.user.activity.status_distribution.header')}
+                </h3>
+                <p className="text-muted-foreground mt-0.5 text-xs">
+                    {t('dialog.user.activity.status_distribution.description')}
+                </p>
+            </div>
+            {total > 0 ? (
+                <div className="flex flex-col items-center gap-5 py-1 sm:flex-row sm:items-center sm:justify-center">
+                    <div
+                        className="relative size-36 shrink-0"
+                        role="img"
+                        aria-label={chartLabel}
+                    >
+                        <svg
+                            viewBox="0 0 42 42"
+                            className="size-full -rotate-90"
+                            aria-hidden="true"
+                        >
+                            <circle
+                                cx="21"
+                                cy="21"
+                                r="16"
+                                fill="none"
+                                stroke="var(--muted)"
+                                strokeWidth="7"
+                            />
+                            {segments.map((segment) =>
+                                segment.count > 0 ? (
+                                    <circle
+                                        key={segment.countKey}
+                                        cx="21"
+                                        cy="21"
+                                        r="16"
+                                        pathLength="100"
+                                        fill="none"
+                                        stroke={segment.color}
+                                        strokeWidth="7"
+                                        strokeDasharray={`${segment.percentage} ${100 - segment.percentage}`}
+                                        strokeDashoffset={-segment.offset}
+                                    />
+                                ) : null
+                            )}
+                        </svg>
+                        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                            <span className="text-xl font-semibold tabular-nums">
+                                {total}
+                            </span>
+                            <span className="text-muted-foreground text-[11px]">
+                                {t(
+                                    'dialog.user.activity.status_distribution.chart_center_label'
+                                )}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="grid w-full max-w-md min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
+                        {segments.map((segment) => (
+                            <div
+                                key={segment.countKey}
+                                className="border-border/70 bg-muted/20 flex min-w-0 items-center gap-2 rounded-md border px-2.5 py-2"
+                            >
+                                <span
+                                    className="size-2.5 shrink-0 rounded-full"
+                                    style={{ backgroundColor: segment.color }}
+                                    aria-hidden="true"
+                                />
+                                <span className="min-w-0 flex-1 truncate text-sm">
+                                    {t(segment.labelKey)}
+                                </span>
+                                <span className="shrink-0 text-right text-sm tabular-nums">
+                                    <span className="font-medium">
+                                        {percentageFormatter.format(
+                                            segment.percentage
+                                        )}
+                                        %
+                                    </span>
+                                    <span className="text-muted-foreground ml-1 text-xs">
+                                        ({segment.count})
+                                    </span>
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ) : (
+                <div className="text-muted-foreground py-2 text-sm">
+                    {t('dialog.user.activity.status_distribution.no_data')}
+                </div>
+            )}
+        </section>
+    );
+}
 
 export function UserActivityOverlapSection({
     bestOverlapTime,

@@ -13,14 +13,15 @@ use crate::Error;
 use super::repository::{
     activity_bucket_cache_get, activity_bucket_cache_upsert,
     activity_friend_presence_first_created_at, activity_friend_presence_last_created_at,
-    activity_friend_presence_slice, activity_iso_from_ms, activity_self_sessions_refresh_auto,
-    activity_self_source_first_created_at, parse_activity_time_ms,
+    activity_friend_presence_slice, activity_friend_status_distribution, activity_iso_from_ms,
+    activity_self_sessions_refresh_auto, activity_self_source_first_created_at,
+    parse_activity_time_ms,
 };
 use super::types::{
     ActivityBucketCacheInput, ActivityBucketCacheOutput, ActivityBucketCacheQueryInput,
     ActivityFriendPresenceSliceInput, ActivityOverlapViewBuildInput, ActivityOverlapViewOutput,
-    ActivitySelfSessionsRefreshOutput, ActivityViewBuildInput, ActivityViewKind,
-    ActivityViewOutput,
+    ActivitySelfSessionsRefreshOutput, ActivityStatusDistributionOutput, ActivityViewBuildInput,
+    ActivityViewKind, ActivityViewOutput,
 };
 
 const BUCKET_COUNT: usize = 168;
@@ -38,6 +39,17 @@ pub fn activity_view_build(
     if owner_user_id.is_empty() || target_user_id.is_empty() {
         return Ok(empty_activity_output(String::new(), input.now_ms));
     }
+    let status_distribution = if input.is_self {
+        ActivityStatusDistributionOutput::default()
+    } else {
+        activity_friend_status_distribution(
+            db,
+            &owner_user_id,
+            &target_user_id,
+            input.range_days,
+            input.now_ms,
+        )?
+    };
     let cache_range_days = cache_range_days(input.range_days);
     let effective_range_days = resolve_activity_effective_days(
         db,
@@ -55,13 +67,14 @@ pub fn activity_view_build(
 
     if !input.force_refresh && !input.is_self {
         let cursor = activity_friend_presence_last_created_at(db, &owner_user_id, &target_user_id)?;
-        if let Some(cached) = cached_activity_output(
+        if let Some(mut cached) = cached_activity_output(
             db,
             &owner_user_id,
             &target_cache_id,
             cache_range_days,
             &cursor,
         )? {
+            cached.status_distribution = status_distribution.clone();
             return Ok(cached);
         }
     }
@@ -85,13 +98,14 @@ pub fn activity_view_build(
     };
 
     if !input.force_refresh && input.is_self {
-        if let Some(cached) = cached_activity_output(
+        if let Some(mut cached) = cached_activity_output(
             db,
             &owner_user_id,
             &target_cache_id,
             cache_range_days,
             &source.cursor,
         )? {
+            cached.status_distribution = status_distribution.clone();
             return Ok(cached);
         }
     }
@@ -113,6 +127,7 @@ pub fn activity_view_build(
         peak_hour_end: view.peak_hour_end,
         filtered_event_count: view.filtered_event_count as i64,
         has_any_data: source.has_any_data,
+        status_distribution,
         built_from_cursor: source.cursor,
         built_at,
     };
@@ -345,6 +360,7 @@ fn cached_activity_output(
         peak_hour_end: summary_i32(&cached.summary, "peakHourEnd").unwrap_or(derived.peak_hour_end),
         filtered_event_count: summary_i64(&cached.summary, "filteredEventCount").unwrap_or(0),
         has_any_data,
+        status_distribution: ActivityStatusDistributionOutput::default(),
         built_from_cursor: cached.built_from_cursor,
         built_at: cached.built_at,
     };
@@ -466,6 +482,7 @@ fn empty_activity_output(cursor: String, now_ms: i64) -> ActivityViewOutput {
         peak_hour_end: -1,
         filtered_event_count: 0,
         has_any_data: false,
+        status_distribution: ActivityStatusDistributionOutput::default(),
         built_from_cursor: cursor,
         built_at: activity_iso_from_ms(now_ms),
     }

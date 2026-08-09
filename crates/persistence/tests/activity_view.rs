@@ -5,11 +5,12 @@ use chrono::DateTime;
 use serde_json::json;
 use vrcx_0_persistence::activity::{
     activity_bucket_cache_get, activity_bucket_cache_upsert,
-    activity_friend_presence_last_created_at, activity_overlap_view_build,
-    activity_self_sessions_warmup, activity_sessions_replace, activity_sync_state_get,
-    activity_sync_state_upsert, activity_view_build, ActivityBucketCacheInput,
-    ActivityBucketCacheQueryInput, ActivityOverlapViewBuildInput, ActivitySessionInput,
-    ActivitySyncStateInput, ActivityViewBuildInput, ActivityViewKind, ActivityViewOutput,
+    activity_friend_presence_last_created_at, activity_friend_status_distribution,
+    activity_overlap_view_build, activity_self_sessions_warmup, activity_sessions_replace,
+    activity_sync_state_get, activity_sync_state_upsert, activity_view_build,
+    ActivityBucketCacheInput, ActivityBucketCacheQueryInput, ActivityOverlapViewBuildInput,
+    ActivitySessionInput, ActivitySyncStateInput, ActivityViewBuildInput, ActivityViewKind,
+    ActivityViewOutput,
 };
 use vrcx_0_persistence::game_log::{write_batch, GameLogLocationEntry, GameLogWriteBatch};
 use vrcx_0_persistence::realtime::{write_realtime_batch, RealtimePersistenceBatch};
@@ -110,6 +111,119 @@ fn add_presence(
         },
     )
     .unwrap();
+}
+
+fn add_status(
+    db: &DatabaseService,
+    owner_user_id: &str,
+    target_user_id: &str,
+    created_at: &str,
+    status: &str,
+) {
+    let normalized = status
+        .chars()
+        .filter(|character| !character.is_whitespace())
+        .collect::<String>()
+        .to_ascii_lowercase();
+    let previous_status = if normalized == "active" || normalized == "online" {
+        "busy"
+    } else {
+        "active"
+    };
+    add_status_with_previous(
+        db,
+        owner_user_id,
+        target_user_id,
+        created_at,
+        status,
+        previous_status,
+    );
+}
+
+fn add_status_with_previous(
+    db: &DatabaseService,
+    owner_user_id: &str,
+    target_user_id: &str,
+    created_at: &str,
+    status: &str,
+    previous_status: &str,
+) {
+    write_realtime_batch(
+        db,
+        owner_user_id,
+        &RealtimePersistenceBatch {
+            feed_entries: vec![json!({
+                "created_at": created_at,
+                "userId": target_user_id,
+                "displayName": "Friend",
+                "type": "Status",
+                "status": status,
+                "statusDescription": "",
+                "previousStatus": previous_status,
+                "previousStatusDescription": ""
+            })],
+            ..RealtimePersistenceBatch::default()
+        },
+    )
+    .unwrap();
+}
+
+#[test]
+fn activity_friend_status_distribution_counts_four_status_logs_in_range() {
+    let (_dir, db) = test_db("activity-friend-status-distribution");
+    let owner = "usr_owner";
+    let friend = "usr_friend";
+    add_status(&db, owner, friend, "2024-12-20T00:00:00Z", "join me");
+    add_status(&db, owner, friend, "2025-01-01T00:00:00Z", "Join_Me");
+    add_status(&db, owner, friend, "2025-01-02T00:00:00Z", "ACTIVE");
+    add_status(&db, owner, friend, "2025-01-03T00:00:00Z", "online");
+    add_status(&db, owner, friend, "2025-01-04T00:00:00Z", "ask-me");
+    add_status(&db, owner, friend, "2025-01-05T00:00:00Z", "busy");
+    add_status_with_previous(
+        &db,
+        owner,
+        friend,
+        "2025-01-05T00:30:00Z",
+        "active",
+        "active",
+    );
+    add_status(&db, owner, friend, "2025-01-05T01:00:00Z", "offline");
+    add_status(&db, owner, "usr_other", "2025-01-05T02:00:00Z", "busy");
+
+    let recent =
+        activity_friend_status_distribution(&db, owner, friend, 7, ms("2025-01-06T00:00:00Z"))
+            .unwrap();
+    assert_eq!(recent.join_me_count, 1);
+    assert_eq!(recent.active_count, 2);
+    assert_eq!(recent.ask_me_count, 1);
+    assert_eq!(recent.busy_count, 1);
+    assert_eq!(recent.total_count, 5);
+
+    let all =
+        activity_friend_status_distribution(&db, owner, friend, 0, ms("2025-01-06T00:00:00Z"))
+            .unwrap();
+    assert_eq!(all.join_me_count, 2);
+    assert_eq!(all.total_count, 6);
+}
+
+#[test]
+fn cached_friend_activity_view_refreshes_status_distribution_independently() {
+    let (_dir, db) = test_db("activity-friend-status-cache");
+    let owner = "usr_owner";
+    let friend = "usr_friend";
+    add_status(&db, owner, friend, "2025-01-04T00:00:00Z", "active");
+
+    let first = build_friend_view(&db, owner, friend, 7, "2025-01-06T00:00:00Z");
+    assert!(!first.has_any_data);
+    assert_eq!(first.status_distribution.active_count, 1);
+    assert_eq!(first.status_distribution.total_count, 1);
+
+    add_status(&db, owner, friend, "2025-01-05T00:00:00Z", "busy");
+    let second = build_friend_view(&db, owner, friend, 7, "2025-01-06T00:00:00Z");
+    assert!(!second.has_any_data);
+    assert_eq!(second.status_distribution.active_count, 1);
+    assert_eq!(second.status_distribution.busy_count, 1);
+    assert_eq!(second.status_distribution.total_count, 2);
 }
 
 #[test]
