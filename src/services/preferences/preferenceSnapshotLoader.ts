@@ -271,7 +271,7 @@ export async function loadPreferenceSnapshot() {
         configRepository.getBool('wristOverlayShowBatteryPercent', false),
         configRepository.getBool('relaunchVRChatAfterCrash', false),
         configRepository.getBool('vrcQuitFix', true),
-        configRepository.getBool('focusVrchatOnJoin', true),
+        configRepository.getBool('focusVrchatOnJoin', false),
         configRepository.getBool('autoSweepVRChatCache', false),
         configRepository.getBool('gameLogDisabled', false),
         configRepository.getBool('feedPersistenceDisabled', false),

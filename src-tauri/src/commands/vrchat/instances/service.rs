@@ -116,7 +116,7 @@ struct TauriInstanceLaunchPipe {
 }
 
 fn should_focus_game_window(db: &DatabaseService) -> bool {
-    config_store::get_bool(db, "focusVrchatOnJoin", true).unwrap_or(true)
+    config_store::get_bool(db, "focusVrchatOnJoin", false).unwrap_or(false)
         && config_store::get_bool(db, "isGameNoVR", false).unwrap_or(false)
 }
 
@@ -297,12 +297,12 @@ mod tests {
     }
 
     #[test]
-    fn defaults_on_when_the_game_runs_in_desktop_mode() {
-        let dir = TestDir::new("default-on");
+    fn stays_off_until_the_user_enables_it() {
+        let dir = TestDir::new("default-off");
         let db = database(&dir);
         config_store::set_bool(&db, "isGameNoVR", true).unwrap();
 
-        assert!(should_focus_game_window(&db));
+        assert!(!should_focus_game_window(&db));
     }
 
     #[test]

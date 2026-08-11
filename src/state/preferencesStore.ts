@@ -368,7 +368,7 @@ export const DEFAULT_PREFERENCES: PreferenceInputSnapshot = Object.freeze({
     wristOverlayShowBatteryPercent: false,
     relaunchVRChatAfterCrash: false,
     vrcQuitFix: true,
-    focusVrchatOnJoin: true,
+    focusVrchatOnJoin: false,
     autoSweepVRChatCache: false,
     gameLogDisabled: false,
     feedPersistenceDisabled: false,
