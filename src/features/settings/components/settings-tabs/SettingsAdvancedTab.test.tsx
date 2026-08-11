@@ -196,6 +196,20 @@ describe('SettingsAdvancedTab data directory states', () => {
         ).toBeNull();
     });
 
+    it.each([
+        ['\\\\?\\C:\\VRCX-0', 'C:\\VRCX-0'],
+        ['\\\\?\\UNC\\server\\share\\VRCX-0', '\\\\server\\share\\VRCX-0']
+    ])('displays the extended path %s as %s', (currentDir, displayedPath) => {
+        renderTab(
+            createModel({
+                appDataDirState: appDataDirState({ currentDir })
+            })
+        );
+
+        expect(screen.getByText(displayedPath)).toBeTruthy();
+        expect(screen.queryByText(currentDir)).toBeNull();
+    });
+
     it('shows the More menu for a custom directory', () => {
         renderTab(
             createModel({
