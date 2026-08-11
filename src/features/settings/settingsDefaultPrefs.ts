@@ -95,7 +95,7 @@ export function createDefaultSettingsPrefs() {
         wristOverlayShowBatteryPercent: false,
         relaunchVRChatAfterCrash: false,
         vrcQuitFix: true,
-        focusVrchatOnJoin: false,
+        focusVrchatOnJoin: true,
         autoSweepVRChatCache: false,
         gameLogDisabled: false,
         feedPersistenceDisabled: false,

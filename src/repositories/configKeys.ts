@@ -110,7 +110,7 @@ export const ConfigKeys = defineConfigKeys({
     bioLanguage: { type: 'string', default: null },
     relaunchVRChatAfterCrash: { type: 'bool', default: false },
     vrcQuitFix: { type: 'bool', default: true },
-    focusVrchatOnJoin: { type: 'bool', default: false },
+    focusVrchatOnJoin: { type: 'bool', default: true },
     autoSweepVRChatCache: { type: 'bool', default: false },
     saveInstancePrints: { type: 'bool', default: false },
     cropInstancePrints: { type: 'bool', default: false },
