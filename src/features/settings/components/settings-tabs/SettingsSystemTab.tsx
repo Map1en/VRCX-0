@@ -151,21 +151,6 @@ export function SettingsSystemTab({
                         onCheckedChange={onBackgroundModeDelayEnabledChange}
                     />
                 </Field>
-                {isWindows ? (
-                    <Field
-                        label={t(
-                            'view.settings.general.application.system_window_frame'
-                        )}
-                        description={t(
-                            'view.settings.general.application.system_window_frame_description'
-                        )}
-                    >
-                        <Switch
-                            checked={systemWindowFrame}
-                            onCheckedChange={onSystemWindowFrameChange}
-                        />
-                    </Field>
-                ) : null}
                 {backgroundModeDelayEnabled ? (
                     <Field
                         label={t(
@@ -190,6 +175,21 @@ export function SettingsSystemTab({
                                 )}
                             </Button>
                         </div>
+                    </Field>
+                ) : null}
+                {isWindows ? (
+                    <Field
+                        label={t(
+                            'view.settings.general.application.system_window_frame'
+                        )}
+                        description={t(
+                            'view.settings.general.application.system_window_frame_description'
+                        )}
+                    >
+                        <Switch
+                            checked={systemWindowFrame}
+                            onCheckedChange={onSystemWindowFrameChange}
+                        />
                     </Field>
                 ) : null}
                 {updateCheckDisabled ? (

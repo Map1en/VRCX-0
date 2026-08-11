@@ -39,10 +39,22 @@ type DataDirectoryPathProps = {
     value?: string | null;
 };
 
+function dataDirectoryPathForDisplay(value?: string | null) {
+    if (!value) {
+        return '-';
+    }
+    if (value.startsWith('\\\\?\\UNC\\')) {
+        return `\\\\${value.slice(8)}`;
+    }
+    if (value.startsWith('\\\\?\\')) {
+        return value.slice(4);
+    }
+    return value;
+}
 function DataDirectoryPath({ value }: DataDirectoryPathProps) {
     return (
         <div className="bg-muted/40 text-muted-foreground w-full min-w-0 rounded-md border px-2 py-1 font-mono text-xs break-all">
-            {value || '-'}
+            {dataDirectoryPathForDisplay(value)}
         </div>
     );
 }
