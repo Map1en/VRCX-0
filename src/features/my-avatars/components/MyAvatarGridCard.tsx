@@ -104,11 +104,13 @@ export function AvatarActionMenuItems({
 
     return (
         <>
-            <Label className="max-w-64 truncate">
-                {avatar?.name ||
-                    avatar?.id ||
-                    t('view.my_avatars.label.untitled_avatar')}
-            </Label>
+            <Group>
+                <Label className="max-w-64 truncate">
+                    {avatar?.name ||
+                        avatar?.id ||
+                        t('view.my_avatars.label.untitled_avatar')}
+                </Label>
+            </Group>
             <Separator />
             <Group>
                 <Item {...actionItemProps('details')}>
