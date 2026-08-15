@@ -292,6 +292,78 @@ function createTaskState(): TaskState {
     };
 }
 
+function sameStringList(left: unknown, right: unknown): boolean {
+    if (left === right) {
+        return true;
+    }
+    if (!Array.isArray(left) || !Array.isArray(right)) {
+        return false;
+    }
+    if (left.length !== right.length) {
+        return false;
+    }
+    return left.every((value, index) => value === right[index]);
+}
+
+function isRosterPlayerLike(
+    value: unknown
+): value is Partial<CurrentInstanceRosterPlayer> {
+    return typeof value === 'object' && value !== null;
+}
+
+function sameRosterPlayers(left: unknown, right: unknown): boolean {
+    if (left === right) {
+        return true;
+    }
+    if (!Array.isArray(left) || !Array.isArray(right)) {
+        return false;
+    }
+    if (left.length !== right.length) {
+        return false;
+    }
+    return left.every((player, index) => {
+        const other = right[index];
+        if (!isRosterPlayerLike(player) || !isRosterPlayerLike(other)) {
+            return false;
+        }
+        return (
+            player.id === other.id &&
+            player.userId === other.userId &&
+            player.displayName === other.displayName &&
+            player.joinedAt === other.joinedAt &&
+            player.joinedAtMs === other.joinedAtMs &&
+            player.lastDurationMs === other.lastDurationMs &&
+            player.source === other.source
+        );
+    });
+}
+
+function preservedRosterRefs(
+    current: RuntimeStore['gameState'],
+    patch: Partial<RuntimeStore['gameState']>
+): Partial<RuntimeStore['gameState']> {
+    const preserved: Partial<RuntimeStore['gameState']> = {};
+    if (
+        patch.currentLocationPlayerIds &&
+        sameStringList(
+            current.currentLocationPlayerIds,
+            patch.currentLocationPlayerIds
+        )
+    ) {
+        preserved.currentLocationPlayerIds = current.currentLocationPlayerIds;
+    }
+    if (
+        patch.currentLocationPlayers &&
+        sameRosterPlayers(
+            current.currentLocationPlayers,
+            patch.currentLocationPlayers
+        )
+    ) {
+        preserved.currentLocationPlayers = current.currentLocationPlayers;
+    }
+    return preserved;
+}
+
 function createRuntimeEventState(): RuntimeEventState {
     return {
         count: 0,
@@ -702,7 +774,8 @@ export const useRuntimeStore = create<RuntimeStore>((set, get) => ({
         set((state) => ({
             gameState: {
                 ...state.gameState,
-                ...patch
+                ...patch,
+                ...preservedRosterRefs(state.gameState, patch)
             }
         }));
     },

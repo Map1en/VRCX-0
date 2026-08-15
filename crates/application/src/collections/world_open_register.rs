@@ -5,6 +5,7 @@ use vrcx_0_integrations::world_collections::{
 };
 use vrcx_0_persistence::{worlds::world_cache_get, DatabaseService};
 
+use crate::blocking_db::run_blocking_db;
 use crate::Error;
 
 use super::share_collection::{
@@ -29,7 +30,7 @@ pub async fn register_world_open_share(
         ));
     }
 
-    let Some(row) = world_cache_get(db, world_id.to_string())? else {
+    let Some(row) = run_blocking_db(|| world_cache_get(db, world_id.to_string()))? else {
         return Err(Error::Custom("World is not cached locally.".into()));
     };
     if row.id.trim().is_empty()

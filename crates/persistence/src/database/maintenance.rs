@@ -26,6 +26,33 @@ pub fn vacuum_after_secret_migration(db: &DatabaseService) -> Result<(), Error> 
     db.checkpoint_and_vacuum()
 }
 
+const VACUUM_MIN_FREE_PAGE_RATIO: f64 = 0.10;
+const VACUUM_MIN_FREE_PAGES: i64 = 1024;
+
+fn read_page_stats(db: &DatabaseService) -> Result<(i64, i64), Error> {
+    let rows = db.execute(
+        "SELECT (SELECT freelist_count FROM pragma_freelist_count()), \
+         (SELECT page_count FROM pragma_page_count())",
+        &Default::default(),
+    )?;
+    let Some(row) = rows.first() else {
+        return Ok((0, 0));
+    };
+    Ok((row_i64(row, 0), row_i64(row, 1)))
+}
+
+pub fn database_vacuum_if_fragmented(db: &DatabaseService) -> Result<bool, Error> {
+    let (free_pages, page_count) = read_page_stats(db)?;
+    if free_pages < VACUUM_MIN_FREE_PAGES
+        || page_count <= 0
+        || (free_pages as f64) < (page_count as f64) * VACUUM_MIN_FREE_PAGE_RATIO
+    {
+        return Ok(false);
+    }
+    run_database_maintenance_task(db, DatabaseMaintenanceTask::Vacuum)?;
+    Ok(true)
+}
+
 #[derive(Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct UserTableContextOutput {

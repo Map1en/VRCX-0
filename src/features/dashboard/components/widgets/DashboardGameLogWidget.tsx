@@ -12,7 +12,9 @@ import { useTranslation } from 'react-i18next';
 import { AffinityBadge } from '@/components/affinity/AffinityBadge';
 import { Location } from '@/components/Location';
 import { describeGameLogDetail } from '@/features/game-log/gameLogRows';
+import { GAME_LOG_LIVE_REFRESH_THROTTLE_MS } from '@/features/game-log/gameLogTypes';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import { useThrottledValue } from '@/lib/useThrottledValue';
 import { cn } from '@/lib/utils';
 import { GAME_LOG_FILTER_TYPES } from '@/repositories/gameLogRepository';
 import gameLogRepository from '@/repositories/gameLogRepository';
@@ -279,6 +281,10 @@ export function DashboardGameLogWidget({
     const addGameLogEventCount = useRuntimeStore(
         (state) => state.runtimeEvents.addGameLogEvent.count
     );
+    const throttledGameLogEventCount = useThrottledValue(
+        addGameLogEventCount,
+        GAME_LOG_LIVE_REFRESH_THROTTLE_MS
+    );
     const remoteFavoriteFriendIds = useFavoriteStore(
         (state) => state.favoriteFriendIds
     );
@@ -351,7 +357,7 @@ export function DashboardGameLogWidget({
         return () => {
             active = false;
         };
-    }, [addGameLogEventCount, config.filters, currentUserId]);
+    }, [throttledGameLogEventCount, config.filters, currentUserId]);
 
     const annotatedRows = useMemo(
         () =>

@@ -15,6 +15,8 @@ export const GAME_LOG_SESSION_FILTER_TYPES = [
     'VideoPlay'
 ] as const;
 
+export const GAME_LOG_LIVE_REFRESH_THROTTLE_MS = 1000;
+
 export type GameLogViewMode = 'sessions' | 'table';
 
 export type GameLogLoadStatus = 'idle' | 'running' | 'ready' | 'error';

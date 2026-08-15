@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use vrcx_0_persistence::feed::feed_avatar_purge;
-use vrcx_0_persistence::maintenance::{database_maintenance_run, DatabaseMaintenanceTask};
+use vrcx_0_persistence::maintenance::database_vacuum_if_fragmented;
 use vrcx_0_persistence::DatabaseService;
 
 use crate::Result;
@@ -27,9 +27,13 @@ pub fn cleanup_avatar_feed_history(
     cutoff_date: Option<String>,
 ) -> Result<AvatarFeedCleanupOutcome> {
     let deleted_rows = feed_avatar_purge(db, user_id, cutoff_date)?;
-    let optimization_error = database_maintenance_run(db, DatabaseMaintenanceTask::Vacuum)
-        .err()
-        .map(|error| error.to_string());
+    let optimization_error = match database_vacuum_if_fragmented(db) {
+        Ok(vacuumed) => {
+            tracing::debug!(deleted_rows, vacuumed, "avatar feed cleanup finished");
+            None
+        }
+        Err(error) => Some(error.to_string()),
+    };
     Ok(cleanup_outcome(deleted_rows, optimization_error))
 }
 

@@ -534,3 +534,62 @@ fn fix_broken_game_log_display_names_skips_unique_key_collisions() -> Result<(),
     assert_eq!(row_string(&rows[1], 0), "Alice (usr_b)");
     Ok(())
 }
+
+#[test]
+fn vacuum_is_skipped_when_there_is_nothing_meaningful_to_reclaim() -> Result<(), Error> {
+    let dir = TestDir::new("vacuum-skip");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+
+    assert!(!database_vacuum_if_fragmented(&db)?);
+    Ok(())
+}
+
+#[test]
+fn vacuum_runs_once_a_large_delete_leaves_the_file_fragmented() -> Result<(), Error> {
+    let dir = TestDir::new("vacuum-run");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+
+    db.execute_non_query(
+        "CREATE TABLE bulk (id INTEGER PRIMARY KEY, blob TEXT)",
+        &Default::default(),
+    )?;
+    db.write_transaction(|tx| {
+        for index in 0..6000 {
+            tx.execute_non_query(
+                "INSERT INTO bulk (blob) VALUES (@blob)",
+                &ParamsBuilder::new()
+                    .set("blob", format!("{index}{}", "x".repeat(2048)))
+                    .build(),
+            )?;
+        }
+        Ok(())
+    })?;
+    db.execute_non_query("DELETE FROM bulk", &Default::default())?;
+
+    let (free_pages, page_count) = read_page_stats(&db)?;
+    assert!(
+        free_pages >= VACUUM_MIN_FREE_PAGES,
+        "expected a large free list, got {free_pages} free of {page_count}"
+    );
+
+    assert!(database_vacuum_if_fragmented(&db)?);
+
+    let (free_after, _) = read_page_stats(&db)?;
+    assert!(
+        free_after < free_pages,
+        "vacuum should have reclaimed pages, {free_pages} -> {free_after}"
+    );
+    Ok(())
+}
+
+#[test]
+fn page_stats_come_from_a_single_snapshot() -> Result<(), Error> {
+    let dir = TestDir::new("vacuum-stats");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+
+    let (free_pages, page_count) = read_page_stats(&db)?;
+    assert!(page_count > 0);
+    assert!(free_pages >= 0);
+    assert!(free_pages <= page_count);
+    Ok(())
+}

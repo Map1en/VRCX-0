@@ -67,6 +67,76 @@ describe('vrcNotificationStore', () => {
         useVrcNotificationStore.getState().resetVrcNotificationState();
     });
 
+    it('caps live upserts so a long session cannot grow rows without bound', () => {
+        const store = useVrcNotificationStore.getState();
+        for (let index = 0; index < 2050; index += 1) {
+            store.upsertNotification({
+                id: `notif_${index}`,
+                type: 'inviteResponse',
+                version: 2,
+                seen: true,
+                created_at: new Date(1700000000000 + index).toISOString()
+            });
+        }
+
+        const { rows } = useVrcNotificationStore.getState();
+        expect(rows).toHaveLength(2000);
+        expect(rows[0].id).toBe('notif_2049');
+        expect(rows.some((row) => row.id === 'notif_0')).toBe(false);
+    });
+
+    it('keeps an upserted notification even when it sorts past the cap', () => {
+        const store = useVrcNotificationStore.getState();
+        for (let index = 0; index < 2000; index += 1) {
+            store.upsertNotification({
+                id: `notif_${index}`,
+                type: 'inviteResponse',
+                version: 2,
+                seen: true,
+                created_at: new Date(1700000000000 + index).toISOString()
+            });
+        }
+        expect(useVrcNotificationStore.getState().rows).toHaveLength(2000);
+
+        store.upsertNotification({
+            id: 'notif_backfill',
+            type: 'inviteResponse',
+            version: 2,
+            seen: true
+        });
+
+        const { rows } = useVrcNotificationStore.getState();
+        expect(rows).toHaveLength(2000);
+        expect(rows.some((row) => row.id === 'notif_backfill')).toBe(true);
+        expect(rows.some((row) => row.id === 'notif_0')).toBe(false);
+    });
+
+    it('never truncates a list that was loaded from the database', async () => {
+        const loaded = Array.from({ length: 2400 }, (_, index) => ({
+            id: `notif_loaded_${index}`,
+            type: 'inviteResponse',
+            version: 2,
+            seen: true,
+            created_at: new Date(1700000000000 + index).toISOString()
+        }));
+        notificationRepositoryMock.queryNotifications.mockResolvedValue(loaded);
+
+        await useVrcNotificationStore.getState().loadForCurrentUser();
+        expect(useVrcNotificationStore.getState().rows).toHaveLength(2400);
+
+        useVrcNotificationStore.getState().upsertNotification({
+            id: 'notif_live',
+            type: 'inviteResponse',
+            version: 2,
+            seen: true,
+            created_at: new Date(1800000000000).toISOString()
+        });
+
+        const { rows } = useVrcNotificationStore.getState();
+        expect(rows).toHaveLength(2400);
+        expect(rows[0].id).toBe('notif_live');
+    });
+
     it('expires old v1 friend requests after mark-all-seen', async () => {
         const friendRequest = {
             id: 'notif_friend_request',

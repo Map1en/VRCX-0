@@ -10,14 +10,13 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
 import { buildGameLogFavoriteIdSet, getGameLogRowKey } from './gameLogRows';
+import { GAME_LOG_LIVE_REFRESH_THROTTLE_MS } from './gameLogTypes';
 import type {
     GameLogLoadStatus,
     GameLogRow,
     GameLogSession,
     GameLogViewMode
 } from './gameLogTypes';
-
-const GAME_LOG_LIVE_REFRESH_THROTTLE_MS = 1000;
 
 type UseGameLogRowsOptions = {
     deferredSearchQuery: string;

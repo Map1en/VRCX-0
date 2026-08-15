@@ -15,12 +15,21 @@ const mocks = vi.hoisted(() => {
     return {
         favoriteState,
         queryGameLog: vi.fn(),
+        useThrottledValue: vi.fn(),
+        throttledValue: 0,
         runtimeState: {
             auth: { currentUserId: 'usr_self' },
             runtimeEvents: { addGameLogEvent: { count: 0 } }
         }
     };
 });
+
+vi.mock('@/lib/useThrottledValue', () => ({
+    useThrottledValue: (value: number, intervalMs: number): number => {
+        mocks.useThrottledValue(value, intervalMs);
+        return mocks.throttledValue;
+    }
+}));
 
 vi.mock('react-i18next', async (importOriginal) => ({
     ...(await importOriginal<typeof import('react-i18next')>()),
@@ -52,6 +61,8 @@ describe('DashboardGameLogWidget', () => {
         mocks.runtimeState.runtimeEvents.addGameLogEvent.count = 0;
         mocks.queryGameLog.mockReset();
         mocks.queryGameLog.mockResolvedValue([]);
+        mocks.useThrottledValue.mockReset();
+        mocks.throttledValue = 0;
     });
 
     afterEach(cleanup);
@@ -75,6 +86,7 @@ describe('DashboardGameLogWidget', () => {
         });
 
         mocks.runtimeState.runtimeEvents.addGameLogEvent.count = 1;
+        mocks.throttledValue = 1;
         rerender(renderWidget());
 
         await waitFor(() => {
@@ -84,6 +96,38 @@ describe('DashboardGameLogWidget', () => {
                 filters: ['Location'],
                 limit: 200
             });
+        });
+    });
+
+    it('does not re-query while the throttled counter is unchanged', async () => {
+        const config = { filters: [] };
+        const renderWidget = () => (
+            <MemoryRouter>
+                <DashboardGameLogWidget config={config} />
+            </MemoryRouter>
+        );
+        const { rerender } = render(renderWidget());
+
+        await waitFor(() => {
+            expect(mocks.queryGameLog).toHaveBeenCalledTimes(1);
+        });
+        expect(mocks.useThrottledValue).toHaveBeenCalledWith(0, 1000);
+
+        for (let count = 1; count <= 5; count += 1) {
+            mocks.runtimeState.runtimeEvents.addGameLogEvent.count = count;
+            rerender(renderWidget());
+        }
+
+        await waitFor(() => {
+            expect(mocks.useThrottledValue).toHaveBeenLastCalledWith(5, 1000);
+        });
+        expect(mocks.queryGameLog).toHaveBeenCalledTimes(1);
+
+        mocks.throttledValue = 5;
+        rerender(renderWidget());
+
+        await waitFor(() => {
+            expect(mocks.queryGameLog).toHaveBeenCalledTimes(2);
         });
     });
 

@@ -41,6 +41,8 @@ type NotificationStateSnapshot = {
     unseenCount: number;
     detail: string;
 };
+const NOTIFICATION_ROWS_MAX_ENTRIES = 2000;
+
 const NOTIFICATION_DETAILS_PATCH_KEYS = [
     'worldName',
     'displayLocation'
@@ -163,6 +165,10 @@ function buildCategories(rows: NotificationRow[]): NotificationCategories {
     return categories;
 }
 
+function notificationRowsCapacity(currentLength: number): number {
+    return Math.max(NOTIFICATION_ROWS_MAX_ENTRIES, currentLength);
+}
+
 function sortRows(rows: NotificationRow[]): NotificationRow[] {
     return [...rows].sort((left, right) => {
         const leftTime = getNotificationTs(left);
@@ -176,13 +182,18 @@ function sortRows(rows: NotificationRow[]): NotificationRow[] {
 
 function createNotificationState(
     rows: NotificationRow[],
-    detail = ''
+    detail = '',
+    capacity = Number.POSITIVE_INFINITY
 ): NotificationStateSnapshot {
     const sortedRows = sortRows(rows);
+    const cappedRows =
+        sortedRows.length > capacity
+            ? sortedRows.slice(0, capacity)
+            : sortedRows;
     return {
-        rows: sortedRows,
-        categories: buildCategories(sortedRows),
-        unseenCount: getUnseenRows(sortedRows).length,
+        rows: cappedRows,
+        categories: buildCategories(cappedRows),
+        unseenCount: getUnseenRows(cappedRows).length,
         detail
     };
 }
@@ -357,11 +368,23 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
             set((state) => {
                 const existing =
                     state.rows.find((row) => row.id === notification.id) || {};
+                const merged = { ...existing, ...notification };
                 const rows = [
-                    { ...existing, ...notification },
+                    merged,
                     ...state.rows.filter((row) => row.id !== notification.id)
                 ];
-                return createNotificationState(rows, state.detail);
+                const next = createNotificationState(
+                    rows,
+                    state.detail,
+                    notificationRowsCapacity(state.rows.length)
+                );
+                if (next.rows.some((row) => row.id === notification.id)) {
+                    return next;
+                }
+                return createNotificationState(
+                    [merged, ...next.rows.slice(0, -1)],
+                    state.detail
+                );
             });
             syncShellUnseenCount(get().unseenCount);
         },
