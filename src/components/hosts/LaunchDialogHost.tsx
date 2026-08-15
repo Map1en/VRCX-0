@@ -458,16 +458,16 @@ export function LaunchDialogHost() {
                 onOpenChange={setLaunchDialogOpen}
             >
                 <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
+                    <DialogHeader className="min-w-0">
                         <DialogTitle>{t('dialog.launch.header')}</DialogTitle>
-                        <DialogDescription className="truncate">
+                        <DialogDescription className="min-w-0 break-words whitespace-normal">
                             {subtitle}
                         </DialogDescription>
                     </DialogHeader>
 
                     <div
                         className={cn(
-                            'grid grid-cols-3 gap-2',
+                            'grid min-w-0 grid-cols-3 gap-2',
                             loading && 'opacity-60'
                         )}
                     >
