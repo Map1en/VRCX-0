@@ -3,7 +3,7 @@ use serde::Serialize;
 use serde_json::Value;
 use vrcx_0_core::ReleaseStatus;
 
-use crate::cache_entities::{upsert_cache_entity, CacheEntityInput};
+use crate::cache_entities::{upsert_cache_entities, upsert_cache_entity, CacheEntityInput};
 use crate::common::{normalize_text, row_i64, row_string, ParamsBuilder};
 use crate::database::schema::ensure_global_store_tables;
 use crate::database::DatabaseService;
@@ -32,6 +32,13 @@ pub struct WorldSummaryOutput {
 
 pub fn world_cache_upsert(db: &DatabaseService, entry: CacheEntityInput) -> Result<i64, Error> {
     upsert_cache_entity(db, "cache_world", entry)
+}
+
+pub fn world_cache_upsert_many(
+    db: &DatabaseService,
+    entries: Vec<CacheEntityInput>,
+) -> Result<u32, Error> {
+    upsert_cache_entities(db, "cache_world", entries)
 }
 
 pub fn world_cache_remove(db: &DatabaseService, world_id: String) -> Result<(), Error> {
@@ -290,5 +297,72 @@ mod tests {
         assert!(world_cache_search(db.as_ref(), "Invalid World", 10)
             .unwrap()
             .is_empty());
+    }
+
+    #[test]
+    fn cache_upsert_many_persists_a_typical_favourites_page_in_one_pass() {
+        let (_dir, db) = test_db("upsert-many");
+
+        let entries = (0..300)
+            .map(|index| world_entry(&format!("wrld_{index}"), &format!("World {index}")))
+            .collect::<Vec<_>>();
+        let written = world_cache_upsert_many(db.as_ref(), entries).unwrap();
+
+        assert_eq!(written, 300);
+        for index in [0, 150, 299] {
+            assert!(world_cache_get(db.as_ref(), format!("wrld_{index}"))
+                .unwrap()
+                .is_some());
+        }
+    }
+
+    #[test]
+    fn cache_upsert_many_skips_malformed_entries_without_losing_the_batch() {
+        let (_dir, db) = test_db("upsert-many-invalid");
+
+        let mut invalid = world_entry("wrld_placeholder", "Invalid World");
+        invalid.id = json!(null);
+        let entries = vec![
+            world_entry("wrld_ok_a", "World A"),
+            invalid,
+            world_entry("wrld_ok_b", "World B"),
+        ];
+
+        let written = world_cache_upsert_many(db.as_ref(), entries).unwrap();
+
+        assert_eq!(written, 2);
+        assert!(world_cache_get(db.as_ref(), "wrld_ok_a".into())
+            .unwrap()
+            .is_some());
+        assert!(world_cache_get(db.as_ref(), "wrld_ok_b".into())
+            .unwrap()
+            .is_some());
+    }
+
+    #[test]
+    fn cache_upsert_many_reports_database_failures_instead_of_swallowing_them() {
+        let (_dir, db) = test_db("upsert-many-db-error");
+        world_cache_upsert(db.as_ref(), world_entry("wrld_seed", "Seed")).unwrap();
+        db.execute_non_query("DROP TABLE cache_world", &Default::default())
+            .unwrap();
+        db.execute_non_query(
+            "CREATE TABLE cache_world (id TEXT PRIMARY KEY, added_at TEXT, author_id TEXT, author_name TEXT, created_at TEXT, description TEXT, image_url TEXT, name TEXT, release_status TEXT, thumbnail_image_url TEXT, updated_at TEXT, version INTEGER, required_extra TEXT NOT NULL)",
+            &Default::default(),
+        )
+        .unwrap();
+
+        let result = world_cache_upsert_many(db.as_ref(), vec![world_entry("wrld_a", "World A")]);
+
+        assert!(
+            result.is_err(),
+            "a schema-level write failure must surface, not be downgraded to Ok"
+        );
+    }
+
+    #[test]
+    fn cache_upsert_many_is_a_noop_for_an_empty_batch() {
+        let (_dir, db) = test_db("upsert-many-empty");
+
+        assert_eq!(world_cache_upsert_many(db.as_ref(), Vec::new()).unwrap(), 0);
     }
 }

@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::common::{now_iso, ParamsBuilder};
+use crate::common::{insert_or_replace_sql, now_iso, DbWriteTarget, ParamsBuilder};
 use crate::database::schema::ensure_global_store_tables;
 use crate::database::DatabaseService;
 use crate::Error;
@@ -33,22 +33,91 @@ pub struct CacheEntityInput {
     pub version: Value,
 }
 
+const CACHE_ENTITY_CHUNK_SIZE: usize = 5000;
+
+const CACHE_ENTITY_COLUMNS: &[&str] = &[
+    "id",
+    "added_at",
+    "author_id",
+    "author_name",
+    "created_at",
+    "description",
+    "image_url",
+    "name",
+    "release_status",
+    "thumbnail_image_url",
+    "updated_at",
+    "version",
+];
+
 pub(crate) fn upsert_cache_entity(
     db: &DatabaseService,
     table_name: &str,
     entry: CacheEntityInput,
 ) -> Result<i64, Error> {
-    let id = entry
+    let id = cache_entity_id(&entry)?;
+    ensure_global_store_tables(db)?;
+    upsert_cache_entity_on(
+        db,
+        &insert_or_replace_sql(table_name, CACHE_ENTITY_COLUMNS),
+        id,
+        entry,
+    )
+}
+
+pub(crate) fn upsert_cache_entities(
+    db: &DatabaseService,
+    table_name: &str,
+    entries: Vec<CacheEntityInput>,
+) -> Result<u32, Error> {
+    if entries.is_empty() {
+        return Ok(0);
+    }
+    ensure_global_store_tables(db)?;
+    let sql = insert_or_replace_sql(table_name, CACHE_ENTITY_COLUMNS);
+    let mut remaining = entries;
+    let mut written = 0;
+    while !remaining.is_empty() {
+        let take = remaining.len().min(CACHE_ENTITY_CHUNK_SIZE);
+        let chunk = remaining.drain(..take).collect::<Vec<_>>();
+        written += db.write_transaction(|tx| {
+            let mut chunk_written = 0;
+            for entry in chunk {
+                let id = match cache_entity_id(&entry) {
+                    Ok(id) => id,
+                    Err(error) => {
+                        tracing::warn!("skipped malformed {table_name} entity: {error}");
+                        continue;
+                    }
+                };
+                upsert_cache_entity_on(tx, &sql, id, entry)?;
+                chunk_written += 1;
+            }
+            Ok(chunk_written)
+        })?;
+    }
+    Ok(written)
+}
+
+fn cache_entity_id(entry: &CacheEntityInput) -> Result<String, Error> {
+    entry
         .id
         .as_str()
         .map(str::trim)
         .filter(|id| !id.is_empty())
-        .ok_or_else(|| Error::InvalidData("Cache entity id must be a non-empty string.".into()))?
-        .to_owned();
-    ensure_global_store_tables(db)?;
+        .ok_or_else(|| Error::InvalidData("Cache entity id must be a non-empty string.".into()))
+        .map(ToOwned::to_owned)
+}
+
+fn upsert_cache_entity_on(
+    target: &impl DbWriteTarget,
+    sql: &str,
+    id: String,
+    entry: CacheEntityInput,
+) -> Result<i64, Error> {
     let now = now_iso();
-    db.execute_non_query(
-        &format!("INSERT OR REPLACE INTO {table_name} (id, added_at, author_id, author_name, created_at, description, image_url, name, release_status, thumbnail_image_url, updated_at, version) VALUES (@id, @added_at, @author_id, @author_name, @created_at, @description, @image_url, @name, @release_status, @thumbnail_image_url, @updated_at, @version)"),
+    target.execute_non_query(
+        sql,
         &ParamsBuilder::new()
             .set("id", id)
             .set("added_at", now)

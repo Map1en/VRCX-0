@@ -8,7 +8,7 @@ use serde_json::Value;
 use tokio::sync::Mutex as AsyncMutex;
 use vrcx_0_core::json::RawJson;
 use vrcx_0_persistence::{
-    avatars::{avatar_cache_existing_ids, avatar_cache_upsert},
+    avatars::{avatar_cache_existing_ids, avatar_cache_upsert_many},
     DatabaseService,
 };
 use vrcx_0_vrchat_client::{
@@ -546,43 +546,53 @@ fn hydrate_world_details(
 }
 
 fn persist_avatar_details(db: &DatabaseService, details_by_id: &HashMap<String, Value>) -> u32 {
-    let insert_candidates = details_by_id
+    let writable = details_by_id
         .iter()
-        .filter(|(_, entity)| {
-            cache_write_decision(FavoriteCacheKind::Avatar, entity)
-                == CacheWriteDecision::InsertIfMissing
+        .map(|(id, entity)| {
+            (
+                id,
+                entity,
+                cache_write_decision(FavoriteCacheKind::Avatar, entity),
+            )
         })
-        .map(|(id, _)| id.clone())
+        .filter(|(_, _, decision)| *decision != CacheWriteDecision::Skip)
         .collect::<Vec<_>>();
-    let existing_ids: HashSet<String> = if insert_candidates.is_empty() {
-        HashSet::new()
+
+    let insert_candidates = writable
+        .iter()
+        .filter(|(_, _, decision)| *decision == CacheWriteDecision::InsertIfMissing)
+        .map(|(id, _, _)| (*id).clone())
+        .collect::<Vec<_>>();
+    let existing_ids: Option<HashSet<String>> = if insert_candidates.is_empty() {
+        Some(HashSet::new())
     } else {
         match avatar_cache_existing_ids(db, &insert_candidates) {
-            Ok(ids) => ids.into_iter().collect(),
+            Ok(ids) => Some(ids.into_iter().collect()),
             Err(error) => {
                 tracing::warn!("failed to read favorite avatar cache: {error}");
-                return 0;
+                None
             }
         }
     };
 
-    let mut cached_count = 0;
-    for (id, entity) in details_by_id {
-        let decision = cache_write_decision(FavoriteCacheKind::Avatar, entity);
-        if decision == CacheWriteDecision::Skip {
-            continue;
-        }
-        if decision == CacheWriteDecision::InsertIfMissing && existing_ids.contains(id) {
-            continue;
-        }
-        match avatar_cache_upsert(db, cache_entry_from_entity(entity, id)) {
-            Ok(_) => cached_count += 1,
-            Err(error) => {
-                tracing::warn!("failed to cache favorite avatar details for {id}: {error}");
-            }
+    let entries = writable
+        .into_iter()
+        .filter(|(id, _, decision)| match decision {
+            CacheWriteDecision::InsertIfMissing => existing_ids
+                .as_ref()
+                .is_some_and(|existing| !existing.contains(*id)),
+            _ => true,
+        })
+        .map(|(id, entity, _)| cache_entry_from_entity(entity, id))
+        .collect::<Vec<_>>();
+
+    match avatar_cache_upsert_many(db, entries) {
+        Ok(cached_count) => cached_count,
+        Err(error) => {
+            tracing::warn!("failed to cache favorite avatar details: {error}");
+            0
         }
     }
-    cached_count
 }
 
 fn ensure_scope_matches(

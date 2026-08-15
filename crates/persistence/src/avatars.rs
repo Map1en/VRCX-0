@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use vrcx_0_core::ReleaseStatus;
 
-use crate::cache_entities::{upsert_cache_entity, CacheEntityInput};
+use crate::cache_entities::{upsert_cache_entities, upsert_cache_entity, CacheEntityInput};
 use crate::common::{normalize_text, now_iso, row_i64, row_string, ParamsBuilder};
 use crate::database::schema::{ensure_global_store_tables, ensure_user_store_tables};
 use crate::database::DatabaseService;
@@ -66,6 +66,13 @@ pub struct AvatarTagsPatchInput {
 
 pub fn avatar_cache_upsert(db: &DatabaseService, entry: CacheEntityInput) -> Result<i64, Error> {
     upsert_cache_entity(db, "cache_avatar", entry)
+}
+
+pub fn avatar_cache_upsert_many(
+    db: &DatabaseService,
+    entries: Vec<CacheEntityInput>,
+) -> Result<u32, Error> {
+    upsert_cache_entities(db, "cache_avatar", entries)
 }
 
 pub fn avatar_cache_get(

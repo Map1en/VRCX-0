@@ -10,7 +10,7 @@ use vrcx_0_core::ReleaseStatus;
 use vrcx_0_persistence::cache_entities::CacheEntityInput;
 use vrcx_0_persistence::worlds::{
     world_cache_get, world_cache_get_many, world_cache_search, world_cache_upsert,
-    WorldSummaryOutput,
+    world_cache_upsert_many, WorldSummaryOutput,
 };
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::http_api::{
@@ -153,14 +153,21 @@ impl WorldCache {
     }
 
     pub fn hydrate_summary_from_payload(&self, world_value: &Value) -> Option<WorldSummaryOutput> {
-        self.hydrate_summary_from_payload_with_policy(world_value, false)
+        let (summary, entry) = self.hydrate_summary_from_payload_with_policy(world_value, false)?;
+        if let Some(entry) = entry {
+            let world_id = summary.id.clone();
+            if let Err(error) = world_cache_upsert(self.db.as_ref(), entry) {
+                tracing::warn!(world_id = %world_id, "WorldCache upsert failed: {error}");
+            }
+        }
+        Some(summary)
     }
 
     fn hydrate_summary_from_payload_with_policy(
         &self,
         world_value: &Value,
         insert_private: bool,
-    ) -> Option<WorldSummaryOutput> {
+    ) -> Option<(WorldSummaryOutput, Option<CacheEntityInput>)> {
         let world_id = world_id(world_value);
         if world_id.is_empty() {
             return None;
@@ -177,25 +184,23 @@ impl WorldCache {
 
         let persist = is_persistable_world(world_value, &name)
             || (insert_private && is_cacheable_private_world(world_value, &name));
-        if persist {
-            let entry = CacheEntityInput {
-                id: Value::String(world_id.clone()),
-                author_id: value_or_null(world_value, "authorId"),
-                author_name: value_or_null(world_value, "authorName"),
-                created_at: value_or_null_with_fallback(world_value, "created_at", "createdAt"),
-                description: value_or_null(world_value, "description"),
-                image_url: value_or_null(world_value, "imageUrl"),
-                name: Value::String(name.clone()),
-                release_status: value_or_null(world_value, "releaseStatus"),
-                thumbnail_image_url: value_or_null(world_value, "thumbnailImageUrl"),
-                updated_at: value_or_null_with_fallback(world_value, "updated_at", "updatedAt"),
-                version: value_or_null(world_value, "version"),
-            };
-            if let Err(error) = world_cache_upsert(self.db.as_ref(), entry) {
-                tracing::warn!(world_id = %world_id, "WorldCache upsert failed: {error}");
-            }
+        if !persist {
+            return Some((summary, None));
         }
-        Some(summary)
+        let entry = CacheEntityInput {
+            id: Value::String(world_id.clone()),
+            author_id: value_or_null(world_value, "authorId"),
+            author_name: value_or_null(world_value, "authorName"),
+            created_at: value_or_null_with_fallback(world_value, "created_at", "createdAt"),
+            description: value_or_null(world_value, "description"),
+            image_url: value_or_null(world_value, "imageUrl"),
+            name: Value::String(name.clone()),
+            release_status: value_or_null(world_value, "releaseStatus"),
+            thumbnail_image_url: value_or_null(world_value, "thumbnailImageUrl"),
+            updated_at: value_or_null_with_fallback(world_value, "updated_at", "updatedAt"),
+            version: value_or_null(world_value, "version"),
+        };
+        Some((summary, Some(entry)))
     }
 
     pub fn hydrate_favorite_payloads<'a>(
@@ -232,17 +237,23 @@ impl WorldCache {
                 }
             }
         };
-        world_values
+        let mut pending = Vec::new();
+        let payloads = world_values
             .into_iter()
             .map(|world_value| {
                 let id = world_id(world_value);
-                let summary = self.hydrate_summary_from_payload_with_policy(
+                let (summary, entry) = self.hydrate_summary_from_payload_with_policy(
                     world_value,
                     private_ids_to_insert.contains(&id),
                 )?;
+                pending.extend(entry);
                 self.get_cached_card_payload(&summary.id)
             })
-            .collect()
+            .collect();
+        if let Err(error) = world_cache_upsert_many(self.db.as_ref(), pending) {
+            tracing::warn!("WorldCache batch upsert failed: {error}");
+        }
+        payloads
     }
 
     pub async fn resolve_name(
