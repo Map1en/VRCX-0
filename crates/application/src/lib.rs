@@ -2,7 +2,6 @@ mod auth;
 mod authenticated_runtime;
 mod avatars;
 mod background_capabilities;
-mod blocking_db;
 mod collections;
 mod event_payloads;
 mod favorites;

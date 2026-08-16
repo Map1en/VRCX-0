@@ -5,7 +5,7 @@ use vrcx_0_integrations::world_collections::{
 };
 use vrcx_0_persistence::{worlds::world_cache_get, DatabaseService};
 
-use crate::blocking_db::run_blocking_db;
+use super::blocking_db::run_blocking_db;
 use crate::Error;
 
 use super::share_collection::{

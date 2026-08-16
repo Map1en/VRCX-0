@@ -17,7 +17,7 @@ use vrcx_0_persistence::{
     DatabaseService,
 };
 
-use crate::blocking_db::run_blocking_db;
+use super::blocking_db::run_blocking_db;
 use crate::Error;
 
 pub const SHARE_COLLECTION_MAX_WORLDS: usize = 1_000;

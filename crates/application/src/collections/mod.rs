@@ -1,3 +1,4 @@
+mod blocking_db;
 mod import_collection;
 mod share_collection;
 mod shared_collection_import;
