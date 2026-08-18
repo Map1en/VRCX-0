@@ -68,7 +68,7 @@ specta = { workspace = true }
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
 
 [target.'cfg(windows)'.dependencies]
-tauri-winrt-notification = "0.7.3"
+tauri-winrt-notification = "0.8.1"
 windows-sys = { version = "0.61", features = [
     "Win32_Foundation",
     "Win32_Storage_FileSystem",
