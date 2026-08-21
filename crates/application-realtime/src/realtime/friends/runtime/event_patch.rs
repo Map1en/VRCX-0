@@ -209,7 +209,6 @@ fn apply_delete(
 ) -> Option<()> {
     let user_id = event_user_id(content)?;
     let previous = get_friend_record(state, &user_id);
-    previous.as_ref()?;
     state.pending_offline.remove(&user_id);
     state.recent_gps.remove(&user_id);
     let friend_was_removed = state
@@ -225,17 +224,19 @@ fn apply_delete(
         target_user_id: user_id.clone(),
         created_at: now.iso.clone(),
     });
-    let patch = json!({ "id": user_id.clone() });
-    output
-        .persistence
-        .feed_entries
-        .push(friend_relationship_feed_entry(
-            FriendRelationshipFeedKind::Unfriend,
-            &user_id,
-            &patch,
-            previous.as_ref(),
-            &now.iso,
-        ));
+    if let Some(previous) = previous.as_ref() {
+        let patch = json!({ "id": user_id.clone() });
+        output
+            .persistence
+            .feed_entries
+            .push(friend_relationship_feed_entry(
+                FriendRelationshipFeedKind::Unfriend,
+                &user_id,
+                &patch,
+                Some(previous),
+                &now.iso,
+            ));
+    }
     output.projection.friend_log_changed = true;
     Some(())
 }

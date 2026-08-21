@@ -1671,6 +1671,91 @@ fn friend_projection_clears_feed_entries_when_persistence_fails() -> Result<()> 
 }
 
 #[test]
+fn repeated_friend_delete_retries_after_persistence_failure_without_duplicate_feed() -> Result<()> {
+    let (_dir, runtime, active_session) =
+        runtime_with_active_session("friend-delete-persistence-retry")?;
+    runtime.runtime().sync_friend_snapshot(
+        active_session.clone(),
+        Some(7),
+        [(
+            "usr_friend".to_string(),
+            FriendRecord {
+                id: "usr_friend".into(),
+                display_name: "Friend".into(),
+                state: "offline".into(),
+                ..FriendRecord::default()
+            },
+        )]
+        .into_iter()
+        .collect(),
+    )?;
+    write_realtime_batch(
+        runtime.runtime().deps.db.as_ref(),
+        &OwnerId::new(active_session.user_id.clone()),
+        &RealtimePersistenceBatch {
+            friend_log_upserts: vec![vrcx_0_persistence::realtime::FriendLogUpsert {
+                target_user_id: "usr_friend".into(),
+                display_name: "Friend".into(),
+                trust_level: "Visitor".into(),
+                friend_number: 1,
+                created_at: "2026-05-15T00:00:00Z".into(),
+                force_history: false,
+            }],
+            ..RealtimePersistenceBatch::default()
+        },
+    )?;
+    runtime.runtime().deps.event_bus.take_events_for_test();
+    let payload = RealtimeWsMessagePayload {
+        json: json!({
+            "type": "friend-delete",
+            "content": { "userId": "usr_friend" }
+        }),
+        raw: "{}".into(),
+        received_at: "2026-05-15T00:00:01Z".into(),
+    };
+
+    let RealtimeFriendApplyResult::Output(mut first) =
+        runtime.runtime().friends.apply_ws_message(&payload)
+    else {
+        panic!("first friend-delete should produce an output");
+    };
+    first.persistence.feed_entries[0]["type"] = json!("NewFeedType");
+    runtime.runtime().apply_friend_output(*first);
+
+    assert_eq!(
+        vrcx_0_persistence::friends::friend_log_current_list(
+            runtime.runtime().deps.db.as_ref(),
+            active_session.user_id.clone(),
+        )?
+        .len(),
+        1
+    );
+
+    let RealtimeFriendApplyResult::Output(retry) =
+        runtime.runtime().friends.apply_ws_message(&payload)
+    else {
+        panic!("repeated friend-delete should retry persistence");
+    };
+    assert_eq!(retry.persistence.friend_log_deletes.len(), 1);
+    assert!(retry.persistence.feed_entries.is_empty());
+    runtime.runtime().apply_friend_output(*retry);
+
+    assert!(vrcx_0_persistence::friends::friend_log_current_list(
+        runtime.runtime().deps.db.as_ref(),
+        active_session.user_id,
+    )?
+    .is_empty());
+    assert!(runtime
+        .runtime()
+        .deps
+        .event_bus
+        .take_events_for_test()
+        .iter()
+        .all(|event| event.name != "realtimeFeedProjection"));
+    Ok(())
+}
+
+#[test]
 fn disabled_feed_persistence_keeps_projection_and_other_batch_writes() -> Result<()> {
     let (_dir, runtime, active_session) =
         runtime_with_active_session("friend-feed-persistence-disabled")?;
