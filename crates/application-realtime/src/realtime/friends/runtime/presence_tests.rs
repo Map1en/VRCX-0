@@ -717,6 +717,20 @@ mod tests {
             output.persistence.feed_entries[0]["displayName"],
             "Removed Friend"
         );
+
+        assert!(matches!(
+            runtime.apply_ws_message(&RealtimeWsMessagePayload {
+                json: json!({
+                    "type": "friend-delete",
+                    "content": {
+                        "userId": "usr_removed"
+                    }
+                }),
+                raw: "{}".into(),
+                received_at: "2026-05-15T00:00:01Z".into(),
+            }),
+            RealtimeFriendApplyResult::Ignored
+        ));
     }
 
     #[test]

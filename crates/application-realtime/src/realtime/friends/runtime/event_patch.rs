@@ -209,6 +209,7 @@ fn apply_delete(
 ) -> Option<()> {
     let user_id = event_user_id(content)?;
     let previous = get_friend_record(state, &user_id);
+    previous.as_ref()?;
     state.pending_offline.remove(&user_id);
     state.recent_gps.remove(&user_id);
     let friend_was_removed = state
