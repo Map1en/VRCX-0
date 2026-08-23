@@ -87,8 +87,33 @@ vi.mock('./PreviousInstanceInfoChart', () => ({
 
 import {
     CopyInstanceWorldNameButton,
-    InstanceOwnerCell
+    InstanceOwnerCell,
+    instanceDetailsSummary
 } from './PreviousInstancesViewParts';
+
+describe('instanceDetailsSummary', () => {
+    it('includes the complete instance identity', () => {
+        const translations: Record<string, string> = {
+            'dialog.new_instance.access_type_group': 'Group',
+            'dialog.new_instance.group_access_type_plus': 'Plus'
+        };
+        const t = ((key: string) => translations[key] || key) as Parameters<
+            typeof instanceDetailsSummary
+        >[1];
+
+        expect(
+            instanceDetailsSummary(
+                {
+                    location:
+                        'wrld_test:12345~region(jp)~group(grp_test)~groupAccessType(plus)',
+                    worldName: 'Test World',
+                    groupName: 'Group Alpha'
+                },
+                t
+            )
+        ).toBe('Test World · Group Plus · #12345 · JP · (Group Alpha)');
+    });
+});
 
 describe('CopyInstanceWorldNameButton', () => {
     afterEach(cleanup);

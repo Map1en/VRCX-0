@@ -29,7 +29,12 @@ import userProfileRepository from '@/repositories/userProfileRepository';
 import { copyTextToClipboard } from '@/services/clipboardService';
 import { openUserDialog, openWorldDialog } from '@/services/dialogService';
 import { openGameLogUser } from '@/services/gameLogUserDialogService';
-import { parseLocation } from '@/shared/utils/location';
+import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType';
+import {
+    getLocationText,
+    parseLocation,
+    translateAccessType
+} from '@/shared/utils/location';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -122,10 +127,35 @@ export function DialogErrorState({ children }: { children: ReactNode }) {
     );
 }
 
-function instanceDetailsSummary(row: PreviousInstanceRow | null, t: TFunction) {
-    const parts = [row?.worldName, row?.groupName].filter(Boolean);
+export function instanceDetailsSummary(
+    row: PreviousInstanceRow | null,
+    t: TFunction
+) {
+    const parsedLocation = parseLocation(rowLocation(row));
+    const worldName =
+        row?.worldName || row?.$location?.worldName || parsedLocation.worldId;
+    const groupName = row?.groupName || row?.$location?.groupName || '';
+    const accessTypeLabel = parsedLocation.instanceId
+        ? translateAccessType(
+              parsedLocation.accessTypeName,
+              t,
+              accessTypeLocaleKeyMap
+          )
+        : '';
+    const locationText = getLocationText(parsedLocation, {
+        hint: worldName,
+        worldName,
+        accessTypeLabel,
+        t
+    });
+    const parts = [
+        locationText || worldName,
+        parsedLocation.instanceName ? `#${parsedLocation.instanceName}` : '',
+        parsedLocation.region.toUpperCase(),
+        groupName ? `(${groupName})` : ''
+    ].filter(Boolean);
     if (parts.length) {
-        return parts.join(' / ');
+        return parts.join(' · ');
     }
     const dateText = formatDateFilterOrFallback(
         row?.created_at || row?.createdAt,
@@ -549,7 +579,7 @@ export function PreviousInstanceDetailsPanel({
                                 <PageTitle>
                                     {t('dialog.previous_instances.info')}
                                 </PageTitle>
-                                <PageDescription className="truncate">
+                                <PageDescription className="break-words">
                                     {instanceDetailsSummary(row, t)}
                                 </PageDescription>
                             </PageHeader>

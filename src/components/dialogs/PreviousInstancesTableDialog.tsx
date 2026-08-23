@@ -1,4 +1,3 @@
-import type { TFunction } from 'i18next';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -24,7 +23,10 @@ import {
     rowMatchesSearch,
     sortPreviousInstanceRows
 } from './previous-instances-table/previousInstancesRows';
-import { PreviousInstanceDetailsPanel } from './previous-instances-table/PreviousInstancesViewParts';
+import {
+    instanceDetailsSummary,
+    PreviousInstanceDetailsPanel
+} from './previous-instances-table/PreviousInstancesViewParts';
 
 type PreviousInstancesPanelProps<TRow extends PreviousInstanceRow> = {
     className?: string;
@@ -47,16 +49,6 @@ type PreviousInstancesTableDialogProps<TRow extends PreviousInstanceRow> = {
     title?: string;
     variant?: PreviousInstanceVariant;
 };
-
-function instanceDialogDescription(
-    row: PreviousInstanceRow | null | undefined,
-    t: TFunction
-) {
-    const parts = [row?.worldName, row?.groupName].filter(Boolean);
-    return parts.length
-        ? parts.join(' / ')
-        : t('dialog.previous_instances.description.instance_details');
-}
 
 function PreviousInstancesPanel<TRow extends PreviousInstanceRow>({
     title = 'Instance History',
@@ -227,7 +219,7 @@ function PreviousInstancesTableDialog<TRow extends PreviousInstanceRow>({
         ? t('dialog.previous_instances.info')
         : title;
     const dialogDescription = detailsOnly
-        ? instanceDialogDescription(initialDetailRow, t)
+        ? instanceDetailsSummary(initialDetailRow, t)
         : t('dialog.previous_instances.label.recorded_instance_visits_count', {
               count: instanceCountText
           });
