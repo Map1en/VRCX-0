@@ -3870,7 +3870,10 @@
                 "change_world_image": "更换世界图片",
                 "reset_your_vrchat_home_location": "重置你的 VRChat 主页位置",
                 "edit_managed_content_author_and_feature_tags_for_this_world": "编辑此世界的托管内容、作者和功能标签",
+                "enable_avatar_scaling": "启用模型缩放",
+                "enable_focus_view": "启用聚焦视图",
                 "enable_debugging": "启用调试",
+                "enable_third_person_view": "启用第三人称视角",
                 "add_domain": "添加域名"
             },
             "loading": {

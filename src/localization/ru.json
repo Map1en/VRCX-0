@@ -3874,7 +3874,10 @@
                 "change_world_image": "Редактировать изображение мира",
                 "reset_your_vrchat_home_location": "Сбросить домашнее местоположение VRChat",
                 "edit_managed_content_author_and_feature_tags_for_this_world": "Редактировать управляемый контент, автора и теги функций этого мира",
+                "enable_avatar_scaling": "Включить масштабирование аватара",
+                "enable_focus_view": "Включить фокусировку вида",
                 "enable_debugging": "Включить отладку",
+                "enable_third_person_view": "Включить вид от третьего лица",
                 "add_domain": "Добавить домен"
             },
             "loading": {

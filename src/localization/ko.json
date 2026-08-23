@@ -3817,7 +3817,10 @@
                 "update_world_name_description_capacity_and_preview": "이 세계의 이름, 설명, 용량, 미리보기 업데이트",
                 "change_world_image": "월드 이미지 변경",
                 "edit_managed_content_author_and_feature_tags_for_this_world": "이 세계에 대한 관리 콘텐츠, 작성자 및 기능 태그 편집",
+                "enable_avatar_scaling": "아바타 크기 조정 활성화",
+                "enable_focus_view": "포커스 뷰 활성화",
                 "enable_debugging": "디버깅 활성화",
+                "enable_third_person_view": "3인칭 시점 활성화",
                 "add_domain": "도메인 추가",
                 "reset_your_vrchat_home_location": "VRChat 집 위치 재설정"
             },

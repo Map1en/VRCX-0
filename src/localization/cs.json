@@ -3874,7 +3874,10 @@
                 "change_world_image": "Upravit obrázek světa",
                 "reset_your_vrchat_home_location": "Obnovit domovskou lokaci VRChat",
                 "edit_managed_content_author_and_feature_tags_for_this_world": "Upravit spravovaný obsah, autora a funkční štítky tohoto světa",
+                "enable_avatar_scaling": "Povolit škálování avatarů",
+                "enable_focus_view": "Povolit zaměřený pohled",
                 "enable_debugging": "Povolit ladění",
+                "enable_third_person_view": "Povolit pohled třetí osoby",
                 "add_domain": "Přidat doménu"
             },
             "loading": {

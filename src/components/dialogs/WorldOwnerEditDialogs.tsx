@@ -44,9 +44,10 @@ const FEATURE_TAGS = [
     ['pedestals', 'feature_pedestals_disabled', 'Pedestals'],
     ['prints', 'feature_prints_disabled', 'Prints'],
     ['drones', 'feature_drones_disabled', 'Drones'],
-    ['props', 'feature_props_disabled', 'Items'],
-    ['thirdPerson', 'feature_third_person_view_disabled', 'Third Person']
+    ['props', 'feature_props_disabled', 'Items']
 ] as const;
+
+const THIRD_PERSON_DISABLED_TAG = 'feature_third_person_view_disabled';
 
 type ContentTagKey = (typeof CONTENT_TAGS)[number][0];
 type FeatureTagKey = (typeof FEATURE_TAGS)[number][0];
@@ -64,8 +65,9 @@ export type WorldTagsDraft = Record<ManagedTagKey, boolean> & {
     authorTags: string;
     contentTags: string;
     debugAllowed: boolean;
-    avatarScalingDisabled: boolean;
-    focusViewDisabled: boolean;
+    avatarScalingEnabled: boolean;
+    focusViewEnabled: boolean;
+    thirdPersonEnabled: boolean;
 };
 
 interface WorldEditorDialogProps<T> {
@@ -80,6 +82,7 @@ const EXPLICIT_TAGS = new Set([
     'debug_allowed',
     'feature_avatar_scaling_disabled',
     'feature_focus_view_disabled',
+    THIRD_PERSON_DISABLED_TAG,
     ...CONTENT_TAGS.map(([, tag]) => tag),
     ...FEATURE_TAGS.map(([, tag]) => tag)
 ]);
@@ -104,10 +107,11 @@ function createWorldTagsDraft(tags: readonly string[] = []): WorldTagsDraft {
         authorTags: '',
         contentTags: '',
         debugAllowed: values.includes('debug_allowed'),
-        avatarScalingDisabled: values.includes(
+        avatarScalingEnabled: !values.includes(
             'feature_avatar_scaling_disabled'
         ),
-        focusViewDisabled: values.includes('feature_focus_view_disabled'),
+        focusViewEnabled: !values.includes('feature_focus_view_disabled'),
+        thirdPersonEnabled: !values.includes(THIRD_PERSON_DISABLED_TAG),
         contentHorror: values.includes('content_horror'),
         contentGore: values.includes('content_gore'),
         contentViolence: values.includes('content_violence'),
@@ -118,8 +122,7 @@ function createWorldTagsDraft(tags: readonly string[] = []): WorldTagsDraft {
         pedestals: !values.includes('feature_pedestals_disabled'),
         prints: !values.includes('feature_prints_disabled'),
         drones: !values.includes('feature_drones_disabled'),
-        props: !values.includes('feature_props_disabled'),
-        thirdPerson: !values.includes('feature_third_person_view_disabled')
+        props: !values.includes('feature_props_disabled')
     };
     draft.authorTags = values
         .filter((tag) => tag.startsWith('author_tag_'))
@@ -165,11 +168,14 @@ function buildWorldTags(
     if (draft.debugAllowed) {
         pushUnique(tags, 'debug_allowed');
     }
-    if (draft.avatarScalingDisabled) {
+    if (!draft.avatarScalingEnabled) {
         pushUnique(tags, 'feature_avatar_scaling_disabled');
     }
-    if (draft.focusViewDisabled) {
+    if (!draft.focusViewEnabled) {
         pushUnique(tags, 'feature_focus_view_disabled');
+    }
+    if (!draft.thirdPersonEnabled) {
+        pushUnique(tags, THIRD_PERSON_DISABLED_TAG);
     }
     for (const [key, tag] of FEATURE_TAGS) {
         if (!draft[key]) {
@@ -374,32 +380,47 @@ function WorldTagsDialog({
                 <FieldGroup className="gap-3">
                     <Field orientation="horizontal">
                         <Checkbox
-                            id="world-tag-avatar-scaling-disabled"
-                            checked={draft.avatarScalingDisabled}
+                            id="world-tag-avatar-scaling-enabled"
+                            checked={draft.avatarScalingEnabled}
                             disabled={saving}
                             onCheckedChange={(checked) =>
                                 updateDraft({
-                                    avatarScalingDisabled: checked === true
+                                    avatarScalingEnabled: checked === true
                                 })
                             }
                         />
-                        <FieldLabel htmlFor="world-tag-avatar-scaling-disabled">
-                            {t('dialog.world.label.avatar_scaling_disabled')}
+                        <FieldLabel htmlFor="world-tag-avatar-scaling-enabled">
+                            {t('dialog.world.action.enable_avatar_scaling')}
                         </FieldLabel>
                     </Field>
                     <Field orientation="horizontal">
                         <Checkbox
-                            id="world-tag-focus-view-disabled"
-                            checked={draft.focusViewDisabled}
+                            id="world-tag-focus-view-enabled"
+                            checked={draft.focusViewEnabled}
                             disabled={saving}
                             onCheckedChange={(checked) =>
                                 updateDraft({
-                                    focusViewDisabled: checked === true
+                                    focusViewEnabled: checked === true
                                 })
                             }
                         />
-                        <FieldLabel htmlFor="world-tag-focus-view-disabled">
-                            {t('dialog.world.label.focus_view_disabled')}
+                        <FieldLabel htmlFor="world-tag-focus-view-enabled">
+                            {t('dialog.world.action.enable_focus_view')}
+                        </FieldLabel>
+                    </Field>
+                    <Field orientation="horizontal">
+                        <Checkbox
+                            id="world-tag-third-person-enabled"
+                            checked={draft.thirdPersonEnabled}
+                            disabled={saving}
+                            onCheckedChange={(checked) =>
+                                updateDraft({
+                                    thirdPersonEnabled: checked === true
+                                })
+                            }
+                        />
+                        <FieldLabel htmlFor="world-tag-third-person-enabled">
+                            {t('dialog.world.action.enable_third_person_view')}
                         </FieldLabel>
                     </Field>
                     <Field orientation="horizontal">

@@ -3871,7 +3871,10 @@
                 "change_world_image": "Modifier l'image du monde",
                 "reset_your_vrchat_home_location": "Réinitialiser votre emplacement d'accueil VRChat",
                 "edit_managed_content_author_and_feature_tags_for_this_world": "Modifier les tags de contenu géré, d'auteur et de fonctionnalité pour ce monde",
+                "enable_avatar_scaling": "Activer la mise à l’échelle des avatars",
+                "enable_focus_view": "Activer la vue focale",
                 "enable_debugging": "Activer le débogage",
+                "enable_third_person_view": "Activer la vue à la troisième personne",
                 "add_domain": "Ajouter un domaine"
             },
             "loading": {

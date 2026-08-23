@@ -1,0 +1,112 @@
+// @vitest-environment jsdom
+
+import { cleanup, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import type { WorldProfileRecord } from '@/domain/entities/world';
+
+import { WorldTagsDialog } from './WorldOwnerEditDialogs';
+
+vi.mock('react-i18next', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('react-i18next')>();
+    return {
+        ...actual,
+        useTranslation: () => ({ t: (key: string) => key })
+    };
+});
+
+afterEach(cleanup);
+
+function createWorld(tags: string[]): WorldProfileRecord {
+    return {
+        id: 'wrld_test',
+        name: 'Test World',
+        tags
+    } as WorldProfileRecord;
+}
+
+describe('WorldTagsDialog', () => {
+    it('shows managed world features as positive controls before author tags', () => {
+        render(
+            <WorldTagsDialog
+                open
+                onOpenChange={vi.fn()}
+                world={createWorld([
+                    'feature_avatar_scaling_disabled',
+                    'feature_focus_view_disabled',
+                    'feature_third_person_view_disabled'
+                ])}
+                onSave={vi.fn()}
+            />
+        );
+
+        const avatarScaling = screen.getByRole('checkbox', {
+            name: 'dialog.world.action.enable_avatar_scaling'
+        });
+        const focusView = screen.getByRole('checkbox', {
+            name: 'dialog.world.action.enable_focus_view'
+        });
+        const thirdPerson = screen.getByRole('checkbox', {
+            name: 'dialog.world.action.enable_third_person_view'
+        });
+        const debug = screen.getByRole('checkbox', {
+            name: 'dialog.world.action.enable_debugging'
+        });
+        const authorTags = screen.getByLabelText(
+            'dialog.world.label.author_tags'
+        );
+
+        expect(avatarScaling.getAttribute('aria-checked')).toBe('false');
+        expect(focusView.getAttribute('aria-checked')).toBe('false');
+        expect(thirdPerson.getAttribute('aria-checked')).toBe('false');
+        expect(
+            thirdPerson.compareDocumentPosition(debug) &
+                Node.DOCUMENT_POSITION_FOLLOWING
+        ).toBeTruthy();
+        expect(
+            debug.compareDocumentPosition(authorTags) &
+                Node.DOCUMENT_POSITION_FOLLOWING
+        ).toBeTruthy();
+        expect(screen.queryByText('Third Person')).toBeNull();
+    });
+
+    it('converts the positive controls back to VRChat disabled tags on save', async () => {
+        const user = userEvent.setup();
+        const onSave = vi.fn();
+
+        render(
+            <WorldTagsDialog
+                open
+                onOpenChange={vi.fn()}
+                world={createWorld([])}
+                onSave={onSave}
+            />
+        );
+
+        await user.click(
+            screen.getByRole('checkbox', {
+                name: 'dialog.world.action.enable_avatar_scaling'
+            })
+        );
+        await user.click(
+            screen.getByRole('checkbox', {
+                name: 'dialog.world.action.enable_focus_view'
+            })
+        );
+        await user.click(
+            screen.getByRole('checkbox', {
+                name: 'dialog.world.action.enable_third_person_view'
+            })
+        );
+        await user.click(screen.getByText('common.actions.save'));
+
+        expect(onSave).toHaveBeenCalledWith(
+            expect.arrayContaining([
+                'feature_avatar_scaling_disabled',
+                'feature_focus_view_disabled',
+                'feature_third_person_view_disabled'
+            ])
+        );
+    });
+});
