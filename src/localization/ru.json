@@ -3760,7 +3760,8 @@
                 "content_gore": "Жестокость",
                 "content_violence": "Насилие",
                 "content_adult": "Для взрослых",
-                "content_sex": "Сексуальные"
+                "content_sex": "Сексуальные",
+                "pedestals": "Пьедесталы"
             },
             "actions": {
                 "delete_cache_tooltip": "Удалить мир из кэша",

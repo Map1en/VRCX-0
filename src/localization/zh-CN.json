@@ -3756,7 +3756,8 @@
                 "content_gore": "血腥",
                 "content_violence": "暴力",
                 "content_adult": "成人内容",
-                "content_sex": "性暗示"
+                "content_sex": "性暗示",
+                "pedestals": "展示台"
             },
             "actions": {
                 "delete_cache_tooltip": "从缓存中删除此世界",

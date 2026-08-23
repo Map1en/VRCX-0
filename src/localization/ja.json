@@ -3751,7 +3751,8 @@
                 "content_gore": "過剰なゴア",
                 "content_violence": "写実的な暴力",
                 "content_adult": "成人向けの言葉やテーマ",
-                "content_sex": "性的なものを思わせる"
+                "content_sex": "性的なものを思わせる",
+                "pedestals": "台座"
             },
             "actions": {
                 "delete_cache_tooltip": "キャッシュからワールドを削除",

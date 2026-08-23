@@ -3704,7 +3704,8 @@
                 "content_gore": "고어",
                 "content_violence": "폭력",
                 "content_adult": "성인",
-                "content_sex": "성적"
+                "content_sex": "성적",
+                "pedestals": "받침대"
             },
             "actions": {
                 "delete_cache_tooltip": "캐시에서 월드 삭제",

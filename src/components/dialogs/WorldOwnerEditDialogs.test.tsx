@@ -109,4 +109,33 @@ describe('WorldTagsDialog', () => {
             ])
         );
     });
+
+    it('uses translation keys for content and default-content options', () => {
+        render(
+            <WorldTagsDialog
+                open
+                onOpenChange={vi.fn()}
+                world={createWorld([])}
+                onSave={vi.fn()}
+            />
+        );
+
+        const optionTranslationKeys = [
+            'dialog.world.tags.content_horror',
+            'dialog.world.tags.content_gore',
+            'dialog.world.tags.content_violence',
+            'dialog.world.tags.content_adult',
+            'dialog.world.tags.content_sex',
+            'dialog.gallery_icons.emoji',
+            'dialog.gallery_icons.stickers',
+            'dialog.world.tags.pedestals',
+            'dialog.gallery_icons.prints',
+            'dialog.inventory.drones',
+            'dialog.inventory.items'
+        ];
+
+        for (const name of optionTranslationKeys) {
+            expect(screen.getByRole('checkbox', { name })).toBeTruthy();
+        }
+    });
 });

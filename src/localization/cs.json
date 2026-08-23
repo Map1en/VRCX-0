@@ -3760,7 +3760,8 @@
                 "content_gore": "Krvavé násilí",
                 "content_violence": "Násilí",
                 "content_adult": "Pro dospělé",
-                "content_sex": "Sexuální obsah"
+                "content_sex": "Sexuální obsah",
+                "pedestals": "Podstavce"
             },
             "actions": {
                 "delete_cache_tooltip": "Odstranit svět z mezipaměti",

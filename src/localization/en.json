@@ -3756,7 +3756,8 @@
                 "content_gore": "Gore",
                 "content_violence": "Violence",
                 "content_adult": "Adult",
-                "content_sex": "Sexual"
+                "content_sex": "Sexual",
+                "pedestals": "Pedestals"
             },
             "actions": {
                 "delete_cache_tooltip": "Delete world from cache",

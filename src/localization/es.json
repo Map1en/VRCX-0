@@ -3756,7 +3756,8 @@
                 "content_gore": "Sangriento",
                 "content_violence": "Violencia",
                 "content_adult": "Adulto",
-                "content_sex": "Sexual"
+                "content_sex": "Sexual",
+                "pedestals": "Pedestales"
             },
             "actions": {
                 "delete_cache_tooltip": "Eliminar mundo del caché",

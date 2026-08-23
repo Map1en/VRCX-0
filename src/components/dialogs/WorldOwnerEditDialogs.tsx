@@ -31,20 +31,24 @@ import { ScrollArea } from '@/ui/shadcn/scroll-area';
 import { Textarea } from '@/ui/shadcn/textarea';
 
 const CONTENT_TAGS = [
-    ['contentHorror', 'content_horror', 'Horror'],
-    ['contentGore', 'content_gore', 'Gore'],
-    ['contentViolence', 'content_violence', 'Violence'],
-    ['contentAdult', 'content_adult', 'Adult'],
-    ['contentSex', 'content_sex', 'Sex']
+    ['contentHorror', 'content_horror', 'dialog.world.tags.content_horror'],
+    ['contentGore', 'content_gore', 'dialog.world.tags.content_gore'],
+    [
+        'contentViolence',
+        'content_violence',
+        'dialog.world.tags.content_violence'
+    ],
+    ['contentAdult', 'content_adult', 'dialog.world.tags.content_adult'],
+    ['contentSex', 'content_sex', 'dialog.world.tags.content_sex']
 ] as const;
 
 const FEATURE_TAGS = [
-    ['emoji', 'feature_emoji_disabled', 'Emoji'],
-    ['stickers', 'feature_stickers_disabled', 'Stickers'],
-    ['pedestals', 'feature_pedestals_disabled', 'Pedestals'],
-    ['prints', 'feature_prints_disabled', 'Prints'],
-    ['drones', 'feature_drones_disabled', 'Drones'],
-    ['props', 'feature_props_disabled', 'Items']
+    ['emoji', 'feature_emoji_disabled', 'dialog.gallery_icons.emoji'],
+    ['stickers', 'feature_stickers_disabled', 'dialog.gallery_icons.stickers'],
+    ['pedestals', 'feature_pedestals_disabled', 'dialog.world.tags.pedestals'],
+    ['prints', 'feature_prints_disabled', 'dialog.gallery_icons.prints'],
+    ['drones', 'feature_drones_disabled', 'dialog.inventory.drones'],
+    ['props', 'feature_props_disabled', 'dialog.inventory.items']
 ] as const;
 
 const THIRD_PERSON_DISABLED_TAG = 'feature_third_person_view_disabled';
@@ -459,7 +463,7 @@ function WorldTagsDialog({
                             data-slot="checkbox-group"
                             className="grid grid-cols-2 gap-2"
                         >
-                            {CONTENT_TAGS.map(([key, , label]) => (
+                            {CONTENT_TAGS.map(([key, , labelKey]) => (
                                 <Field key={key} orientation="horizontal">
                                     <Checkbox
                                         id={`world-content-tag-${key}`}
@@ -474,7 +478,7 @@ function WorldTagsDialog({
                                     <FieldLabel
                                         htmlFor={`world-content-tag-${key}`}
                                     >
-                                        {label}
+                                        {t(labelKey)}
                                     </FieldLabel>
                                 </Field>
                             ))}
@@ -508,7 +512,7 @@ function WorldTagsDialog({
                             data-slot="checkbox-group"
                             className="grid grid-cols-2 gap-2"
                         >
-                            {FEATURE_TAGS.map(([key, , label]) => (
+                            {FEATURE_TAGS.map(([key, , labelKey]) => (
                                 <Field key={key} orientation="horizontal">
                                     <Checkbox
                                         id={`world-feature-tag-${key}`}
@@ -523,7 +527,7 @@ function WorldTagsDialog({
                                     <FieldLabel
                                         htmlFor={`world-feature-tag-${key}`}
                                     >
-                                        {label}
+                                        {t(labelKey)}
                                     </FieldLabel>
                                 </Field>
                             ))}
