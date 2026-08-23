@@ -1,8 +1,9 @@
-import { HistoryIcon } from 'lucide-react';
+import { CopyIcon, HistoryIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import { DropdownMenuCheckboxItem } from '@/ui/shadcn/dropdown-menu';
 import {
     HoverCard,
@@ -16,9 +17,11 @@ import {
 } from '../userDialogRows';
 
 export function PreviousDisplayNamesBadge({
-    names
+    names,
+    onCopyName
 }: {
     names: ReturnType<typeof normalizePreviousDisplayNames>;
+    onCopyName: (name: string) => void;
 }) {
     const { t } = useTranslation();
 
@@ -40,7 +43,12 @@ export function PreviousDisplayNamesBadge({
                         variant="ghost"
                         className="text-muted-foreground max-w-52 cursor-pointer px-1 text-xs font-normal"
                         render={
-                            <button type="button" aria-label={label}>
+                            <button
+                                type="button"
+                                aria-label={`${t('common.actions.copy')}: ${primaryName} (${label})`}
+                                title={t('common.actions.copy')}
+                                onClick={() => onCopyName(primaryName)}
+                            >
                                 <HistoryIcon data-icon="inline-start" />
                                 <span className="min-w-0 truncate">
                                     {primaryName}
@@ -65,11 +73,16 @@ export function PreviousDisplayNamesBadge({
                     </div>
                     <div className="flex max-h-64 flex-col overflow-auto p-1">
                         {names.map((entry, index) => (
-                            <div
+                            <Button
                                 key={`${entry.displayName}:${entry.updated_at || index}`}
-                                className="flex min-w-0 items-center justify-between gap-3 rounded-md px-2 py-1.5"
+                                type="button"
+                                variant="ghost"
+                                className="h-auto w-full min-w-0 justify-start gap-3 rounded-md px-2 py-1.5 text-left"
+                                aria-label={`${t('common.actions.copy')}: ${entry.displayName}`}
+                                title={t('common.actions.copy')}
+                                onClick={() => onCopyName(entry.displayName)}
                             >
-                                <span className="min-w-0 truncate font-medium">
+                                <span className="min-w-0 flex-1 truncate font-medium">
                                     {entry.displayName}
                                 </span>
                                 {entry.updated_at ? (
@@ -77,7 +90,11 @@ export function PreviousDisplayNamesBadge({
                                         {formatStatsDate(entry.updated_at)}
                                     </span>
                                 ) : null}
-                            </div>
+                                <CopyIcon
+                                    aria-hidden="true"
+                                    className="text-muted-foreground size-3.5 shrink-0"
+                                />
+                            </Button>
                         ))}
                     </div>
                 </div>

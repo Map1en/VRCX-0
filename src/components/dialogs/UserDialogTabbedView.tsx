@@ -589,6 +589,12 @@ export function UserDialogTabbedView({
     const headerCommands = {
         onAvatarOverride,
         onBoop,
+        onCopyDisplayName: (displayName: string) => {
+            copyUserText(
+                normalizedText(displayName),
+                t('dialog.user.info.display_name')
+            );
+        },
         onCopyUserId: () => {
             copyUserText(normalizedText(profile.id), t('dialog.user.info.id'));
         },
@@ -632,17 +638,6 @@ export function UserDialogTabbedView({
         onReportHacking,
         onShowAvatarAuthor: showAvatarAuthor,
         onShowInstanceHistory: openInstanceHistory,
-        onTitleClick:
-            profile.displayName || profile.username
-                ? () => {
-                      copyUserText(
-                          normalizedText(
-                              profile.displayName || profile.username
-                          ),
-                          t('dialog.user.info.display_name')
-                      );
-                  }
-                : undefined,
         onToggleBadgeShowcased,
         onToggleBadgeVisibility,
         onToggleSelfAvatarCopying,

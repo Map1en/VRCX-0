@@ -95,6 +95,7 @@ function createHeaderCommands(): UserHeaderCommands {
     return {
         onAvatarOverride: noop,
         onBoop: noop,
+        onCopyDisplayName: noop,
         onCopyUserId: noop,
         onCopyUserUrl: noop,
         onEditMemo: noop,
@@ -132,6 +133,25 @@ function createHeaderCommands(): UserHeaderCommands {
 }
 
 describe('UserDialogHeaderSection nameplate', () => {
+    it('copies the current display name from the title', () => {
+        const headerCommands = createHeaderCommands();
+        headerCommands.onCopyDisplayName = vi.fn();
+
+        render(
+            <UserDialogHeaderSection
+                headerModel={createHeaderModel()}
+                headerCommands={headerCommands}
+            />
+        );
+
+        fireEvent.click(screen.getByTitle('Map1en_'));
+
+        expect(headerCommands.onCopyDisplayName).toHaveBeenCalledOnce();
+        expect(headerCommands.onCopyDisplayName).toHaveBeenCalledWith(
+            'Map1en_'
+        );
+    });
+
     it('aligns a decorated nameplate with the action button', () => {
         render(
             <UserDialogHeaderSection

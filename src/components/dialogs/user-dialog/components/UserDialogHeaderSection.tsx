@@ -165,6 +165,7 @@ export interface UserHeaderModel {
 export interface UserHeaderCommands {
     onAvatarOverride: (type: AvatarOverrideType) => void;
     onBoop: () => void;
+    onCopyDisplayName: (displayName: string) => void;
     onCopyUserId: () => void;
     onCopyUsername?: () => void;
     onCopyUserUrl: () => void;
@@ -195,7 +196,6 @@ export interface UserHeaderCommands {
     onReportHacking: () => void;
     onShowAvatarAuthor: () => void;
     onShowInstanceHistory: () => void;
-    onTitleClick?: () => void;
     onToggleBadgeShowcased: (
         badge: UserBadgeRecord,
         showcased: boolean
@@ -488,6 +488,7 @@ export function UserDialogHeaderSection({
     const {
         onAvatarOverride,
         onBoop,
+        onCopyDisplayName,
         onCopyUserId,
         onCopyUsername,
         onCopyUserUrl,
@@ -515,7 +516,6 @@ export function UserDialogHeaderSection({
         onReportHacking,
         onShowAvatarAuthor,
         onShowInstanceHistory,
-        onTitleClick,
         onToggleBadgeShowcased,
         onToggleBadgeVisibility,
         onToggleSelfAvatarCopying,
@@ -615,6 +615,9 @@ export function UserDialogHeaderSection({
         nameplateAssets.animatedUrl ||
         nameplateAssets.staticUrl
     );
+    const copyableDisplayName = String(
+        profile.displayName || profile.username || ''
+    ).trim();
     return (
         <EntityOverviewCard
             style={profileBackgroundStyle}
@@ -667,7 +670,7 @@ export function UserDialogHeaderSection({
                                     variant="inline"
                                 />
                             </span>
-                            {onTitleClick ? (
+                            {copyableDisplayName ? (
                                 <Tooltip>
                                     <TooltipTrigger
                                         render={
@@ -676,7 +679,11 @@ export function UserDialogHeaderSection({
                                                 variant="ghost"
                                                 className="hover:text-primary h-auto min-w-0 justify-start p-0 text-left text-lg leading-tight font-semibold"
                                                 title={profileTitle}
-                                                onClick={onTitleClick}
+                                                onClick={() =>
+                                                    onCopyDisplayName(
+                                                        copyableDisplayName
+                                                    )
+                                                }
                                             >
                                                 <span className="min-w-0 truncate">
                                                     {profileTitle}
@@ -778,6 +785,7 @@ export function UserDialogHeaderSection({
                             ) : null}
                             <PreviousDisplayNamesBadge
                                 names={previousDisplayNames}
+                                onCopyName={onCopyDisplayName}
                             />
                         </HeaderMetaRow>
                     ) : null}
