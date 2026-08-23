@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import type { TFunction } from 'i18next';
+import { CopyIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +26,7 @@ import { useKnownUserFact, useKnownUserFacts } from '@/lib/useKnownUser';
 import { cn } from '@/lib/utils';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
+import { copyTextToClipboard } from '@/services/clipboardService';
 import { openUserDialog, openWorldDialog } from '@/services/dialogService';
 import { openGameLogUser } from '@/services/gameLogUserDialogService';
 import { parseLocation } from '@/shared/utils/location';
@@ -238,6 +240,43 @@ function PreviousInstancePlayerNameButton({
     );
 }
 
+export function CopyInstanceWorldNameButton({
+    worldName,
+    variant = 'ghost'
+}: {
+    worldName: string;
+    variant?: 'ghost' | 'outline';
+}) {
+    const { t } = useTranslation();
+    const normalizedWorldName = worldName.trim();
+
+    if (!normalizedWorldName) {
+        return null;
+    }
+
+    const label = `${t('common.actions.copy')}: ${normalizedWorldName}`;
+
+    return (
+        <Button
+            type="button"
+            size="icon-xs"
+            variant={variant}
+            className="shrink-0"
+            aria-label={label}
+            title={label}
+            onClick={() => {
+                void copyTextToClipboard(normalizedWorldName, {
+                    successMessage: t('dialog.world.dynamic.value_copied', {
+                        value: t('dialog.world.info.name')
+                    })
+                });
+            }}
+        >
+            <CopyIcon data-icon="icon" />
+        </Button>
+    );
+}
+
 function InstanceWorldCell({ row }: { row: PreviousInstanceRow | null }) {
     const worldId = rowWorldId(row);
     const worldName = row?.worldName || '';
@@ -246,24 +285,27 @@ function InstanceWorldCell({ row }: { row: PreviousInstanceRow | null }) {
         return <span className="text-muted-foreground">-</span>;
     }
 
-    if (!worldId) {
-        return <span>{worldName}</span>;
-    }
-
     return (
-        <Button
-            type="button"
-            variant="ghost"
-            className="hover:text-primary h-auto max-w-full min-w-0 justify-start p-0 text-left font-normal"
-            onClick={() =>
-                openWorldDialog({
-                    worldId,
-                    title: worldName || undefined
-                })
-            }
-        >
-            <span className="truncate">{worldName || worldId}</span>
-        </Button>
+        <div className="flex min-w-0 items-center gap-1.5">
+            {worldId ? (
+                <Button
+                    type="button"
+                    variant="ghost"
+                    className="hover:text-primary h-auto max-w-full min-w-0 justify-start p-0 text-left font-normal"
+                    onClick={() =>
+                        openWorldDialog({
+                            worldId,
+                            title: worldName || undefined
+                        })
+                    }
+                >
+                    <span className="truncate">{worldName || worldId}</span>
+                </Button>
+            ) : (
+                <span className="min-w-0 truncate">{worldName}</span>
+            )}
+            <CopyInstanceWorldNameButton worldName={worldName} />
+        </div>
     );
 }
 

@@ -6,6 +6,7 @@ import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 const virtualizerMocks = vi.hoisted(() => ({
+    copyTextToClipboard: vi.fn().mockResolvedValue(true),
     scrollKeyToView: vi.fn()
 }));
 
@@ -20,6 +21,10 @@ vi.mock('@/components/instances/InstanceActionBar', () => ({
 
 vi.mock('@/components/Location', () => ({
     Location: ({ location }: { location: string }) => <span>{location}</span>
+}));
+
+vi.mock('@/services/clipboardService', () => ({
+    copyTextToClipboard: virtualizerMocks.copyTextToClipboard
 }));
 
 vi.mock('@/components/sidebar/useVirtualSidebarRows', () => ({
@@ -75,6 +80,39 @@ describe('InstanceHistoryRow', () => {
 
         await user.click(selectionButton);
         expect(onOpenDetails).toHaveBeenCalledWith(row);
+    });
+
+    it('copies the world name without opening the row details', async () => {
+        const user = userEvent.setup();
+        const row = {
+            createdAt: '2026-07-01T10:00:00Z',
+            location: 'wrld_test:1',
+            worldName: 'Test World',
+            time: 60_000,
+            events: [1]
+        };
+        const onOpenDetails = vi.fn();
+
+        render(
+            <InstanceHistoryRow
+                row={row}
+                selected={false}
+                onOpenDetails={onOpenDetails}
+                onDeleteRow={vi.fn()}
+            />
+        );
+
+        await user.click(
+            screen.getByRole('button', {
+                name: 'common.actions.copy: Test World'
+            })
+        );
+
+        expect(virtualizerMocks.copyTextToClipboard).toHaveBeenCalledWith(
+            'Test World',
+            expect.objectContaining({ successMessage: expect.any(String) })
+        );
+        expect(onOpenDetails).not.toHaveBeenCalled();
     });
 });
 

@@ -7,7 +7,7 @@ import {
     screen,
     waitFor
 } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 type QueryOptions = {
@@ -16,10 +16,16 @@ type QueryOptions = {
 };
 
 const mocks = vi.hoisted(() => ({
+    copyTextToClipboard: vi.fn().mockResolvedValue(true),
     getUserProfile: vi.fn(() => Promise.resolve({})),
     knownUser: null as Record<string, unknown> | null,
     openUserDialog: vi.fn(),
     queryData: null as Record<string, unknown> | null
+}));
+
+vi.mock('react-i18next', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('react-i18next')>()),
+    useTranslation: () => ({ t: (key: string) => key })
 }));
 
 vi.mock('@tanstack/react-query', async (importOriginal) => {
@@ -56,15 +62,21 @@ vi.mock('@/services/dialogService', () => ({
     openUserDialog: mocks.openUserDialog,
     openWorldDialog: vi.fn()
 }));
+vi.mock('@/services/clipboardService', () => ({
+    copyTextToClipboard: mocks.copyTextToClipboard
+}));
 vi.mock('@/ui/shadcn/button', () => ({
     Button: ({
         children,
-        onClick
-    }: {
+        size: _size,
+        variant: _variant,
+        ...props
+    }: ComponentProps<'button'> & {
         children: ReactNode;
-        onClick?: () => void;
+        size?: string;
+        variant?: string;
     }) => (
-        <button type="button" onClick={onClick}>
+        <button type="button" {...props}>
             {children}
         </button>
     )
@@ -73,7 +85,31 @@ vi.mock('./PreviousInstanceInfoChart', () => ({
     PreviousInstanceInfoChart: () => null
 }));
 
-import { InstanceOwnerCell } from './PreviousInstancesViewParts';
+import {
+    CopyInstanceWorldNameButton,
+    InstanceOwnerCell
+} from './PreviousInstancesViewParts';
+
+describe('CopyInstanceWorldNameButton', () => {
+    afterEach(cleanup);
+
+    it('copies the provided world name', () => {
+        render(<CopyInstanceWorldNameButton worldName="Test World" />);
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'common.actions.copy: Test World'
+            })
+        );
+
+        expect(mocks.copyTextToClipboard).toHaveBeenCalledWith(
+            'Test World',
+            expect.objectContaining({
+                successMessage: 'dialog.world.dynamic.value_copied'
+            })
+        );
+    });
+});
 
 describe('InstanceOwnerCell', () => {
     afterEach(cleanup);
