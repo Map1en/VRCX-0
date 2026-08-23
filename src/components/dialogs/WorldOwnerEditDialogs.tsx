@@ -30,17 +30,11 @@ import {
 import { ScrollArea } from '@/ui/shadcn/scroll-area';
 import { Textarea } from '@/ui/shadcn/textarea';
 
-const CONTENT_TAGS = [
-    ['contentHorror', 'content_horror', 'dialog.world.tags.content_horror'],
-    ['contentGore', 'content_gore', 'dialog.world.tags.content_gore'],
-    [
-        'contentViolence',
-        'content_violence',
-        'dialog.world.tags.content_violence'
-    ],
-    ['contentAdult', 'content_adult', 'dialog.world.tags.content_adult'],
-    ['contentSex', 'content_sex', 'dialog.world.tags.content_sex']
-] as const;
+import {
+    CONTENT_TAG_OPTIONS,
+    contentTagsCsv,
+    contentTagsFromCsv
+} from './contentTags';
 
 const FEATURE_TAGS = [
     ['emoji', 'feature_emoji_disabled', 'dialog.gallery_icons.emoji'],
@@ -53,9 +47,7 @@ const FEATURE_TAGS = [
 
 const THIRD_PERSON_DISABLED_TAG = 'feature_third_person_view_disabled';
 
-type ContentTagKey = (typeof CONTENT_TAGS)[number][0];
 type FeatureTagKey = (typeof FEATURE_TAGS)[number][0];
-type ManagedTagKey = ContentTagKey | FeatureTagKey;
 
 export interface WorldDetailsDraft {
     name: string;
@@ -65,7 +57,7 @@ export interface WorldDetailsDraft {
     previewYoutubeId: string;
 }
 
-export type WorldTagsDraft = Record<ManagedTagKey, boolean> & {
+export type WorldTagsDraft = Record<FeatureTagKey, boolean> & {
     authorTags: string;
     contentTags: string;
     debugAllowed: boolean;
@@ -87,7 +79,7 @@ const EXPLICIT_TAGS = new Set([
     'feature_avatar_scaling_disabled',
     'feature_focus_view_disabled',
     THIRD_PERSON_DISABLED_TAG,
-    ...CONTENT_TAGS.map(([, tag]) => tag),
+    ...CONTENT_TAG_OPTIONS.map(({ value }) => value),
     ...FEATURE_TAGS.map(([, tag]) => tag)
 ]);
 
@@ -116,11 +108,6 @@ function createWorldTagsDraft(tags: readonly string[] = []): WorldTagsDraft {
         ),
         focusViewEnabled: !values.includes('feature_focus_view_disabled'),
         thirdPersonEnabled: !values.includes(THIRD_PERSON_DISABLED_TAG),
-        contentHorror: values.includes('content_horror'),
-        contentGore: values.includes('content_gore'),
-        contentViolence: values.includes('content_violence'),
-        contentAdult: values.includes('content_adult'),
-        contentSex: values.includes('content_sex'),
         emoji: !values.includes('feature_emoji_disabled'),
         stickers: !values.includes('feature_stickers_disabled'),
         pedestals: !values.includes('feature_pedestals_disabled'),
@@ -132,14 +119,7 @@ function createWorldTagsDraft(tags: readonly string[] = []): WorldTagsDraft {
         .filter((tag) => tag.startsWith('author_tag_'))
         .map((tag) => tag.slice('author_tag_'.length))
         .join(',');
-    draft.contentTags = values
-        .filter(
-            (tag) =>
-                tag.startsWith('content_') &&
-                !CONTENT_TAGS.some(([, fixedTag]) => fixedTag === tag)
-        )
-        .map((tag) => tag.slice('content_'.length))
-        .join(',');
+    draft.contentTags = contentTagsCsv(values);
     return draft;
 }
 
@@ -156,18 +136,8 @@ function buildWorldTags(
         .filter(Boolean)) {
         pushUnique(tags, `author_tag_${tag}`);
     }
-    for (const tag of String(draft.contentTags || '')
-        .split(',')
-        .map((value) => value.trim())
-        .filter(Boolean)) {
-        if (!['horror', 'gore', 'violence', 'adult', 'sex'].includes(tag)) {
-            pushUnique(tags, `content_${tag}`);
-        }
-    }
-    for (const [key, tag] of CONTENT_TAGS) {
-        if (draft[key]) {
-            pushUnique(tags, tag);
-        }
+    for (const tag of contentTagsFromCsv(draft.contentTags)) {
+        pushUnique(tags, tag);
     }
     if (draft.debugAllowed) {
         pushUnique(tags, 'debug_allowed');
@@ -368,6 +338,19 @@ function WorldTagsDialog({
         setDraft((current) => ({ ...current, ...patch }));
     }
 
+    const selectedContentTags = contentTagsFromCsv(draft.contentTags);
+    const selectedContentTagsSet = new Set(selectedContentTags);
+
+    function toggleContentTag(tag: string) {
+        const nextTags = new Set(selectedContentTags);
+        if (nextTags.has(tag)) {
+            nextTags.delete(tag);
+        } else {
+            nextTags.add(tag);
+        }
+        updateDraft({ contentTags: contentTagsCsv(Array.from(nextTags)) });
+    }
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-md">
@@ -463,22 +446,25 @@ function WorldTagsDialog({
                             data-slot="checkbox-group"
                             className="grid grid-cols-2 gap-2"
                         >
-                            {CONTENT_TAGS.map(([key, , labelKey]) => (
-                                <Field key={key} orientation="horizontal">
+                            {CONTENT_TAG_OPTIONS.map((option) => (
+                                <Field
+                                    key={option.value}
+                                    orientation="horizontal"
+                                >
                                     <Checkbox
-                                        id={`world-content-tag-${key}`}
-                                        checked={draft[key]}
+                                        id={`world-content-tag-${option.value}`}
+                                        checked={selectedContentTagsSet.has(
+                                            option.value
+                                        )}
                                         disabled={saving}
-                                        onCheckedChange={(checked) =>
-                                            updateDraft({
-                                                [key]: checked === true
-                                            })
+                                        onCheckedChange={() =>
+                                            toggleContentTag(option.value)
                                         }
                                     />
                                     <FieldLabel
-                                        htmlFor={`world-content-tag-${key}`}
+                                        htmlFor={`world-content-tag-${option.value}`}
                                     >
-                                        {t(labelKey)}
+                                        {t(option.labelKey)}
                                     </FieldLabel>
                                 </Field>
                             ))}
@@ -496,6 +482,7 @@ function WorldTagsDialog({
                                 value={draft.contentTags}
                                 disabled={saving}
                                 className="resize-none"
+                                placeholder="horror,gore,violence,adult,sex"
                                 onChange={(event) =>
                                     updateDraft({
                                         contentTags: event.target.value

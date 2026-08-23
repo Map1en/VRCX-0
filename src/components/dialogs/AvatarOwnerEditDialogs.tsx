@@ -29,6 +29,12 @@ import {
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Textarea } from '@/ui/shadcn/textarea';
 
+import {
+    CONTENT_TAG_OPTIONS,
+    contentTagsCsv,
+    contentTagsFromCsv
+} from './contentTags';
+
 export { AvatarDetailsDialog } from './AvatarDetailsDialog';
 
 type OwnAvatar = Awaited<
@@ -42,40 +48,6 @@ type EditableAvatar = Partial<OwnAvatar> & {
     tags?: string[];
     thumbnailImageUrl?: string;
 };
-
-const contentTagOptions = [
-    { value: 'content_horror', label: 'Horror' },
-    { value: 'content_gore', label: 'Gore' },
-    { value: 'content_violence', label: 'Violence' },
-    { value: 'content_adult', label: 'Adult' },
-    { value: 'content_sex', label: 'Sex' }
-];
-
-function normalizeTagName(value: unknown, prefix: string) {
-    const normalized = String(value || '')
-        .trim()
-        .toLowerCase()
-        .replace(new RegExp(`^${prefix}`), '');
-    return normalized ? `${prefix}${normalized}` : '';
-}
-
-function contentTagsFromCsv(value: unknown) {
-    return Array.from(
-        new Set(
-            String(value || '')
-                .split(',')
-                .map((entry) => normalizeTagName(entry, 'content_'))
-                .filter(Boolean)
-        )
-    );
-}
-
-function contentTagsCsv(tags: string[]) {
-    return tags
-        .filter((tag) => tag.startsWith('content_'))
-        .map((tag) => tag.replace(/^content_/, ''))
-        .join(',');
-}
 
 function mergeAvatars(currentAvatar: EditableAvatar, rows: OwnAvatar[]) {
     const avatars: EditableAvatar[] = [];
@@ -344,7 +316,7 @@ export function AvatarContentTagsDialog({
                             data-slot="checkbox-group"
                             className="grid gap-2 sm:grid-cols-2"
                         >
-                            {contentTagOptions.map((option) => (
+                            {CONTENT_TAG_OPTIONS.map((option) => (
                                 <Field
                                     key={option.value}
                                     orientation="horizontal"
@@ -361,7 +333,7 @@ export function AvatarContentTagsDialog({
                                     <FieldLabel
                                         htmlFor={`avatar-content-tag-${option.value}`}
                                     >
-                                        {option.label}
+                                        {t(option.labelKey)}
                                     </FieldLabel>
                                 </Field>
                             ))}

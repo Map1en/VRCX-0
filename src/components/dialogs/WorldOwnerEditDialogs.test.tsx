@@ -138,4 +138,59 @@ describe('WorldTagsDialog', () => {
             expect(screen.getByRole('checkbox', { name })).toBeTruthy();
         }
     });
+
+    it('keeps content tag checkboxes and raw input in sync like avatars', async () => {
+        const user = userEvent.setup();
+        const onSave = vi.fn();
+
+        render(
+            <WorldTagsDialog
+                open
+                onOpenChange={vi.fn()}
+                world={createWorld([
+                    'content_horror',
+                    'content_custom',
+                    'system_approved'
+                ])}
+                onSave={onSave}
+            />
+        );
+
+        const contentTags = screen.getByLabelText(
+            'dialog.world.label.raw_content_tags'
+        );
+        const horror = screen.getByRole('checkbox', {
+            name: 'dialog.world.tags.content_horror'
+        });
+        const violence = screen.getByRole('checkbox', {
+            name: 'dialog.world.tags.content_violence'
+        });
+
+        expect((contentTags as HTMLTextAreaElement).value).toBe(
+            'horror,custom'
+        );
+        expect(horror.getAttribute('aria-checked')).toBe('true');
+
+        await user.clear(contentTags);
+        await user.type(contentTags, 'violence,content_custom');
+
+        expect(horror.getAttribute('aria-checked')).toBe('false');
+        expect(violence.getAttribute('aria-checked')).toBe('true');
+
+        await user.click(horror);
+        expect((contentTags as HTMLTextAreaElement).value).toBe(
+            'violence,custom,horror'
+        );
+
+        await user.click(screen.getByText('common.actions.save'));
+
+        expect(onSave).toHaveBeenCalledWith(
+            expect.arrayContaining([
+                'content_violence',
+                'content_custom',
+                'content_horror',
+                'system_approved'
+            ])
+        );
+    });
 });
