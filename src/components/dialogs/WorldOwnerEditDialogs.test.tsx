@@ -193,4 +193,41 @@ describe('WorldTagsDialog', () => {
             ])
         );
     });
+
+    it('preserves existing custom content tags when managed tags change', async () => {
+        const user = userEvent.setup();
+        const onSave = vi.fn<(tags: string[]) => void>();
+
+        render(
+            <WorldTagsDialog
+                open
+                onOpenChange={vi.fn()}
+                world={createWorld([
+                    'content_Custom',
+                    'content_content_custom',
+                    'content_Foo',
+                    'content_foo',
+                    'system_approved'
+                ])}
+                onSave={onSave}
+            />
+        );
+
+        await user.click(
+            screen.getByRole('checkbox', {
+                name: 'dialog.world.tags.content_horror'
+            })
+        );
+        await user.click(screen.getByText('common.actions.save'));
+
+        const savedTags = onSave.mock.calls[0]?.[0] ?? [];
+        expect(savedTags.filter((tag) => tag.startsWith('content_'))).toEqual([
+            'content_Custom',
+            'content_content_custom',
+            'content_Foo',
+            'content_foo',
+            'content_horror'
+        ]);
+        expect(savedTags).toContain('system_approved');
+    });
 });

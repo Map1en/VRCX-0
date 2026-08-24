@@ -30,11 +30,7 @@ import {
 import { ScrollArea } from '@/ui/shadcn/scroll-area';
 import { Textarea } from '@/ui/shadcn/textarea';
 
-import {
-    CONTENT_TAG_OPTIONS,
-    contentTagsCsv,
-    contentTagsFromCsv
-} from './contentTags';
+import { CONTENT_TAG_OPTIONS, contentTagsCsv } from './contentTags';
 
 const FEATURE_TAGS = [
     ['emoji', 'feature_emoji_disabled', 'dialog.gallery_icons.emoji'],
@@ -97,6 +93,36 @@ function pushUnique(tags: string[], tag: string) {
     }
 }
 
+function worldContentTagsFromCsv(
+    value: unknown,
+    baseTags: readonly string[] = []
+): string[] {
+    const originalTags = Array.isArray(baseTags) ? baseTags.map(String) : [];
+    return Array.from(
+        new Set(
+            String(value || '')
+                .split(',')
+                .map((entry) => {
+                    const rawTag = entry.trim();
+                    if (!rawTag) {
+                        return '';
+                    }
+                    const originalTag = originalTags.find(
+                        (tag) =>
+                            tag.startsWith('content_') &&
+                            tag.slice('content_'.length) === rawTag
+                    );
+                    if (originalTag) {
+                        return originalTag;
+                    }
+                    const tagName = rawTag.replace(/^content_/, '');
+                    return tagName ? `content_${tagName}` : '';
+                })
+                .filter(Boolean)
+        )
+    );
+}
+
 function createWorldTagsDraft(tags: readonly string[] = []): WorldTagsDraft {
     const values = Array.isArray(tags) ? tags.map(String) : [];
     const draft: WorldTagsDraft = {
@@ -136,7 +162,7 @@ function buildWorldTags(
         .filter(Boolean)) {
         pushUnique(tags, `author_tag_${tag}`);
     }
-    for (const tag of contentTagsFromCsv(draft.contentTags)) {
+    for (const tag of worldContentTagsFromCsv(draft.contentTags, baseTags)) {
         pushUnique(tags, tag);
     }
     if (draft.debugAllowed) {
@@ -338,7 +364,10 @@ function WorldTagsDialog({
         setDraft((current) => ({ ...current, ...patch }));
     }
 
-    const selectedContentTags = contentTagsFromCsv(draft.contentTags);
+    const selectedContentTags = worldContentTagsFromCsv(
+        draft.contentTags,
+        world?.tags
+    );
     const selectedContentTagsSet = new Set(selectedContentTags);
 
     function toggleContentTag(tag: string) {
