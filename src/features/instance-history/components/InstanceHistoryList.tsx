@@ -7,10 +7,7 @@ import {
     rowDuration,
     rowLocation
 } from '@/components/dialogs/previous-instances-table/previousInstancesRows';
-import {
-    CopyInstanceWorldNameButton,
-    DialogEmptyState
-} from '@/components/dialogs/previous-instances-table/PreviousInstancesViewParts';
+import { DialogEmptyState } from '@/components/dialogs/previous-instances-table/PreviousInstancesViewParts';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { Location } from '@/components/Location';
 import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows';
@@ -97,10 +94,6 @@ export function InstanceHistoryRow({
                 </span>
             </button>
             <div className="bg-muted invisible absolute top-1/2 right-2 z-10 flex -translate-y-1/2 items-center gap-1 rounded-md px-1 group-focus-within:visible group-hover:visible">
-                <CopyInstanceWorldNameButton
-                    worldName={row?.worldName || ''}
-                    variant="outline"
-                />
                 <InstanceActionBar
                     target={{
                         location,
