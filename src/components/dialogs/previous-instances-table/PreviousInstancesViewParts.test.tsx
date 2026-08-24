@@ -113,6 +113,25 @@ describe('instanceDetailsSummary', () => {
             )
         ).toBe('Test World · Group Plus · #12345 · JP · (Group Alpha)');
     });
+
+    it('includes the default US region when the location omits it', () => {
+        const translations: Record<string, string> = {
+            'dialog.new_instance.access_type_public': 'Public'
+        };
+        const t = ((key: string) => translations[key] || key) as Parameters<
+            typeof instanceDetailsSummary
+        >[1];
+
+        expect(
+            instanceDetailsSummary(
+                {
+                    location: 'wrld_test:12345',
+                    worldName: 'Test World'
+                },
+                t
+            )
+        ).toBe('Test World · Public · #12345 · US');
+    });
 });
 
 describe('CopyInstanceWorldNameButton', () => {

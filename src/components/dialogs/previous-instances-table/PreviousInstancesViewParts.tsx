@@ -33,6 +33,7 @@ import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType';
 import {
     getLocationText,
     parseLocation,
+    resolveRegion,
     translateAccessType
 } from '@/shared/utils/location';
 import { useFavoriteStore } from '@/state/favoriteStore';
@@ -151,7 +152,7 @@ export function instanceDetailsSummary(
     const parts = [
         locationText || worldName,
         parsedLocation.instanceName ? `#${parsedLocation.instanceName}` : '',
-        parsedLocation.region.toUpperCase(),
+        resolveRegion(parsedLocation).toUpperCase(),
         groupName ? `(${groupName})` : ''
     ].filter(Boolean);
     if (parts.length) {
