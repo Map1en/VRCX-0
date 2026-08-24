@@ -351,15 +351,18 @@ export function splitUserGroups(
     const remainingGroups: UserGroupRow[] = [];
 
     for (const group of groups || []) {
-        if (isOwnedGroupForUser(group, userId)) {
+        const isOwnedGroup = isOwnedGroupForUser(group, userId);
+        const isMutual = isMutualGroupForUser(group, isCurrentUser);
+
+        if (isOwnedGroup) {
             ownGroups.push(group);
-            continue;
         }
-        if (isMutualGroupForUser(group, isCurrentUser)) {
+        if (isMutual) {
             mutualGroups.push(group);
-            continue;
         }
-        remainingGroups.push(group);
+        if (!isOwnedGroup && !isMutual) {
+            remainingGroups.push(group);
+        }
     }
 
     return { ownGroups, mutualGroups, remainingGroups };

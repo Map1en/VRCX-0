@@ -222,6 +222,27 @@ describe('userDialogRows', () => {
         ]);
     });
 
+    it('keeps an owned mutual group visible in both sections', () => {
+        const groups = normalizeUserGroupMembershipRows([
+            {
+                id: 'grp_owned_mutual',
+                name: 'Owned Mutual Group',
+                ownerId: 'usr_profile',
+                mutualGroup: true
+            }
+        ]);
+
+        const sections = splitUserGroups(groups, 'usr_profile', false);
+
+        expect(sections.ownGroups.map(groupIdForRow)).toEqual([
+            'grp_owned_mutual'
+        ]);
+        expect(sections.mutualGroups.map(groupIdForRow)).toEqual([
+            'grp_owned_mutual'
+        ]);
+        expect(sections.remainingGroups).toEqual([]);
+    });
+
     it('shows previous display names from profile history or cached stats', () => {
         expect(
             normalizePreviousDisplayNames(
