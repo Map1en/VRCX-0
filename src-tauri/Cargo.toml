@@ -98,7 +98,7 @@ openxr-overlay = [
 tauri-build = { version = "2", features = [] }
 
 [dev-dependencies]
-cargo_metadata = "0.19.2"
+cargo_metadata = "0.23.1"
 image = { workspace = true }
 vrcx-0-application = { path = "../crates/application", features = [
     "test-utils"
