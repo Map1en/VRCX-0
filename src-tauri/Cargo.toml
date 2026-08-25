@@ -80,7 +80,7 @@ windows-sys = { version = "0.61", features = [
 ] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-webkit2gtk-nvidia-quirk = "1"
+webkit2gtk-nvidia-quirk = "2"
 
 [features]
 default = ["steamvr-overlay", "openxr-overlay"]
