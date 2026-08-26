@@ -4,9 +4,7 @@
 
 ### VRCX, plus léger et plus rapide.
 
-[English](README.md) | [简体中文](README.zh-CN.md) |
-[繁體中文](README.zh-Hant.md) | [日本語](README.ja-JP.md) |
-[한국어](README.ko-KR.md) | Français
+[English](README.md) | Français | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-Hant.md) | [日本語](README.ja-JP.md) | [한국어](README.ko-KR.md)
 
 [![Version](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Map1en/VRCX-0/badge-data/version.json&style=flat&color=4340a2&labelColor=1f2328&logo=github&logoColor=white)](https://github.com/Map1en/VRCX-0/releases/latest)
 [![Téléchargements](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Map1en/VRCX-0/badge-data/downloads.json&style=flat&color=4340a2&labelColor=1f2328)](https://github.com/Map1en/VRCX-0)
