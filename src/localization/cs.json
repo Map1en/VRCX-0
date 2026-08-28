@@ -4866,8 +4866,8 @@
             "msg_test_failed": "Neplatný klíč YouTube API"
         },
         "translation_api": {
-            "header": "API pro překlad bia",
-            "description": "Zadejte svůj klíč Google Translate API",
+            "header": "API pro překlad",
+            "description": "Zde můžete upravit nastavení API pro překlad.",
             "guide": "Návod",
             "mode": "Poskytovatel",
             "mode_google": "Google Translate",
@@ -4881,7 +4881,7 @@
             "openai": {
                 "model": "Název modelu",
                 "prompt_optional": "Prompt (volitelné)",
-                "prompt_optional_description": "Volitelný systémový prompt pro překladová API kompatibilní s OpenAI.",
+                "prompt_optional_description": "Volitelný systémový prompt pro překladová API kompatibilní s OpenAI. Proměnná cílového jazyka je {targetLang}.",
                 "connection": "LLM endpoint",
                 "connection_description": "Používá se překladem kompatibilním s OpenAI.",
                 "connection_placeholder": "Vyberte endpoint",

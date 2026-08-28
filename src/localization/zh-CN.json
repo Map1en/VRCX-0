@@ -4864,7 +4864,7 @@
         },
         "translation_api": {
             "header": "翻译 API",
-            "description": "输入你的 Google 翻译 API 密钥",
+            "description": "在此编辑你的翻译 API 设置。",
             "guide": "查看教程（英语）",
             "mode": "提供商",
             "mode_google": "Google 翻译",
@@ -4878,7 +4878,7 @@
             "openai": {
                 "model": "模型名称",
                 "prompt_optional": "提示词（可选）",
-                "prompt_optional_description": "OpenAI 兼容翻译 API 的可选系统提示词。",
+                "prompt_optional_description": "OpenAI 兼容翻译 API 的可选系统提示词。目标语言变量为 {targetLang}。",
                 "connection": "LLM 端点",
                 "connection_description": "供 OpenAI 兼容翻译使用。",
                 "connection_placeholder": "选择一个端点",

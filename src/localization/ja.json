@@ -4857,8 +4857,8 @@
             "msg_test_failed": "YouTube API キーが無効です"
         },
         "translation_api": {
-            "header": "プロフィールの翻訳 API",
-            "description": "Google 翻訳の API キーを入力",
+            "header": "翻訳 API",
+            "description": "翻訳 API の設定をここで編集します。",
             "guide": "設定方法",
             "mode": "翻訳サービスプロバイダ",
             "mode_google": "Google 翻訳",
@@ -4872,7 +4872,7 @@
             "openai": {
                 "model": "モデル名",
                 "prompt_optional": "プロンプト (オプション)",
-                "prompt_optional_description": "OpenAI 互換翻訳 API 用の任意のシステムプロンプトです。",
+                "prompt_optional_description": "OpenAI 互換翻訳 API 用の任意のシステムプロンプトです。対象言語の変数は {targetLang} です。",
                 "connection": "LLM エンドポイント",
                 "connection_description": "OpenAI 互換翻訳で使用します。",
                 "connection_placeholder": "エンドポイントを選択",

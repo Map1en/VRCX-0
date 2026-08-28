@@ -4862,8 +4862,8 @@
             "msg_test_failed": "Clave de API de YouTube no válida"
         },
         "translation_api": {
-            "header": "API de traducción de la biografía",
-            "description": "Introduce tu clave de API de Google Translate",
+            "header": "API de traducción",
+            "description": "Edita aquí la configuración de la API de traducción.",
             "guide": "Guía",
             "mode": "Proveedor",
             "mode_google": "Google Translate",
@@ -4877,7 +4877,7 @@
             "openai": {
                 "model": "Nombre del modelo",
                 "prompt_optional": "Prompt (opcional)",
-                "prompt_optional_description": "Prompt de sistema opcional para las API de traducción compatibles con OpenAI.",
+                "prompt_optional_description": "Prompt de sistema opcional para las API de traducción compatibles con OpenAI. La variable del idioma de destino es {targetLang}.",
                 "connection": "Endpoint LLM",
                 "connection_description": "Usado por la traducción compatible con OpenAI.",
                 "connection_placeholder": "Selecciona un endpoint",

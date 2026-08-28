@@ -4867,8 +4867,8 @@
             "msg_test_failed": "Неверно YouTube API ключ"
         },
         "translation_api": {
-            "header": "Биоперевод API",
-            "description": "Введите ваш ключ API Google Translate",
+            "header": "API перевода",
+            "description": "Измените здесь настройки API перевода.",
             "guide": "Руководство",
             "mode": "Поставщик",
             "mode_google": "Google",
@@ -4882,7 +4882,7 @@
             "openai": {
                 "model": "Название модели",
                 "prompt_optional": "Промпт (необязательно)",
-                "prompt_optional_description": "Необязательный системный промпт для OpenAI-совместимых API перевода.",
+                "prompt_optional_description": "Необязательный системный промпт для OpenAI-совместимых API перевода. Переменная целевого языка — {targetLang}.",
                 "connection": "LLM Эндпоинт",
                 "connection_description": "Используется OpenAI-совместимым переводом.",
                 "connection_placeholder": "Выберите эндпоинт",

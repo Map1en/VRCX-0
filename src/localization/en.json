@@ -4862,8 +4862,8 @@
             "msg_test_failed": "Invalid YouTube API key"
         },
         "translation_api": {
-            "header": "Bio Translation API",
-            "description": "Enter your Google Translate API Key",
+            "header": "Translation API",
+            "description": "Edit your Translation API settings here. ",
             "guide": "Guide",
             "mode": "Provider",
             "mode_google": "Google Translate",
@@ -4877,7 +4877,7 @@
             "openai": {
                 "model": "Model Name",
                 "prompt_optional": "Prompt (Optional)",
-                "prompt_optional_description": "Optional system prompt for OpenAI-compatible translation APIs.",
+                "prompt_optional_description": "Optional system prompt for OpenAI-compatible translation APIs. The target language variable is {targetLang}",
                 "connection": "LLM Endpoint",
                 "connection_description": "Used by OpenAI-compatible translation.",
                 "connection_placeholder": "Select an endpoint",
