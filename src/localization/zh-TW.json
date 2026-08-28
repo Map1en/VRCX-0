@@ -2738,10 +2738,10 @@
                         "enable_tooltip": "擷取影片標題，以便與 GameLog 搭配使用，並擷取時間長度，以便覆蓋進度條"
                     },
                     "translation_api": {
-                        "header": "翻譯 API",
+                        "header": "內容翻譯",
                         "enable": "啟用",
                         "translation_api_key": "翻譯 API 金鑰",
-                        "enable_tooltip": "翻譯用戶個人簡介"
+                        "enable_tooltip": "按需翻譯用戶自我介紹和世界簡介。"
                     },
                     "screenshot_helper": {
                         "header": "螢幕截圖助理",

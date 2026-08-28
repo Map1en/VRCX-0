@@ -2734,10 +2734,10 @@
                         "enable_tooltip": "ゲームログに動画のタイトルと、動画の長さを取得し表示します。"
                     },
                     "translation_api": {
-                        "header": "プロフィールの翻訳 API",
+                        "header": "コンテンツの翻訳",
                         "enable": "有効化する",
                         "translation_api_key": "翻訳 API キー",
-                        "enable_tooltip": "ユーザーの自己紹介を翻訳します"
+                        "enable_tooltip": "必要に応じてユーザーの自己紹介とワールドの説明を翻訳します。"
                     },
                     "screenshot_helper": {
                         "header": "スクリーンショット ヘルパー",

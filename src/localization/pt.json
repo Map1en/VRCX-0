@@ -2738,10 +2738,10 @@
                         "enable_tooltip": "Busca títulos de vídeos para uso com o gameLog e duração para a barra de progresso do overlay"
                     },
                     "translation_api": {
-                        "header": "API de Tradução de Bio",
+                        "header": "Tradução de conteúdo",
                         "enable": "Ativar",
                         "translation_api_key": "Chave de API de Tradução",
-                        "enable_tooltip": "Traduzir bios de usuários"
+                        "enable_tooltip": "Traduza biografias de usuários e descrições de mundos sob demanda."
                     },
                     "screenshot_helper": {
                         "header": "Assistente de Captura de Tela",

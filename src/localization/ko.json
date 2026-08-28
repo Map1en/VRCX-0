@@ -2690,7 +2690,7 @@
                         "enable_tooltip": "gameLog와 함께 사용할 비디오 타이틀과 오버레이 진행률 표시줄의 지속 시간을 가져옵니다."
                     },
                     "translation_api": {
-                        "header": "콘텐츠 번역 활성화",
+                        "header": "콘텐츠 번역",
                         "enable": "활성화",
                         "enable_tooltip": "필요에 따라 사용자 약력과 세계 설명을 번역합니다.",
                         "translation_api_key": "번역 API 키"

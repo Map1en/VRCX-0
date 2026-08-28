@@ -2738,7 +2738,7 @@
                         "enable_tooltip": "Obtiene títulos de videos para usar con gameLog y duración para la barra de progreso de la superposición"
                     },
                     "translation_api": {
-                        "header": "Habilitar traducción de contenido",
+                        "header": "Traducción de contenido",
                         "enable": "Habilitar",
                         "translation_api_key": "Clave de la API de traducción",
                         "enable_tooltip": "Traduce las biografías de usuarios y las descripciones de mundos cuando lo necesites."

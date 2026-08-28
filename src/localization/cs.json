@@ -2740,7 +2740,7 @@
                         "enable_tooltip": "Načítá názvy videí pro použití v GameLogu a délku pro ukazatel průběhu v overlayi"
                     },
                     "translation_api": {
-                        "header": "Povolit překlad obsahu",
+                        "header": "Překlad obsahu",
                         "enable": "Povolit",
                         "translation_api_key": "API klíč pro překlad",
                         "enable_tooltip": "Na vyžádání přeloží uživatelská bio a popisy světů."

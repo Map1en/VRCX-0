@@ -2738,7 +2738,7 @@
                         "enable_tooltip": "Ruft Videotitel für GameLog sowie die Dauer für die Overlay-Fortschrittsanzeige ab"
                     },
                     "translation_api": {
-                        "header": "Inhaltsübersetzung aktivieren",
+                        "header": "Inhaltsübersetzung",
                         "enable": "Aktivieren",
                         "translation_api_key": "Übersetzungs-API-Schlüssel",
                         "enable_tooltip": "Übersetzt Nutzer-Bios und Weltbeschreibungen auf Anfrage."
