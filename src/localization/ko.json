@@ -2693,7 +2693,7 @@
                         "header": "콘텐츠 번역",
                         "enable": "활성화",
                         "enable_tooltip": "필요에 따라 사용자 약력과 세계 설명을 번역합니다.",
-                        "translation_api_key": "번역 API 키"
+                        "translation_api_key": "공급자 설정"
                     },
                     "screenshot_helper": {
                         "header": "스크린샷 도우미",
@@ -4825,9 +4825,9 @@
             "openai": {
                 "model": "모델명",
                 "prompt_optional": "프롬프트(선택 사항)",
-                "prompt_optional_description": "OpenAI 호환 번역 API에 대한 선택적 시스템 프롬프트입니다. 대상 언어 변수는 {targetLang}입니다.",
+                "prompt_optional_description": "선택적 시스템 프롬프트입니다. 대상 언어를 나타내는 {targetLang} 변수를 반드시 포함하세요.",
                 "connection": "LLM 엔드포인트",
-                "connection_description": "OpenAI 호환 번역에서 사용합니다.",
+                "connection_description": "OpenAI 호환 엔드포인트만 지원됩니다.",
                 "connection_placeholder": "엔드포인트를 선택하세요",
                 "reasoning_effort": "추론 강도",
                 "reasoning_effort_provider_default": "제공업체 기본값"
@@ -4835,8 +4835,8 @@
             "deepl": {
                 "api_key": "DeepL API 키"
             },
-            "header": "번역 API",
-            "description": "여기에서 번역 API 설정을 편집하세요."
+            "header": "번역 공급자 구성",
+            "description": "콘텐츠 번역에 사용할 공급자를 선택하고 구성하세요."
         },
         "shared_feed_filters": {
             "notification": "알림 필터",

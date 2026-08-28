@@ -2736,7 +2736,7 @@
                     "translation_api": {
                         "header": "コンテンツの翻訳",
                         "enable": "有効化する",
-                        "translation_api_key": "翻訳 API キー",
+                        "translation_api_key": "プロバイダー設定",
                         "enable_tooltip": "必要に応じてユーザーの自己紹介とワールドの説明を翻訳します。"
                     },
                     "screenshot_helper": {
@@ -4857,8 +4857,8 @@
             "msg_test_failed": "YouTube API キーが無効です"
         },
         "translation_api": {
-            "header": "翻訳 API",
-            "description": "翻訳 API の設定をここで編集します。",
+            "header": "翻訳サービスプロバイダー設定",
+            "description": "コンテンツの翻訳に使用するプロバイダーを選択して設定します。",
             "guide": "設定方法",
             "mode": "翻訳サービスプロバイダ",
             "mode_google": "Google 翻訳",
@@ -4872,9 +4872,9 @@
             "openai": {
                 "model": "モデル名",
                 "prompt_optional": "プロンプト (オプション)",
-                "prompt_optional_description": "OpenAI 互換翻訳 API 用の任意のシステムプロンプトです。対象言語の変数は {targetLang} です。",
+                "prompt_optional_description": "任意のシステムプロンプトです。対象言語の変数 {targetLang} を必ず含めてください。",
                 "connection": "LLM エンドポイント",
-                "connection_description": "OpenAI 互換翻訳で使用します。",
+                "connection_description": "OpenAI 互換エンドポイントのみ対応しています。",
                 "connection_placeholder": "エンドポイントを選択",
                 "reasoning_effort": "推論の深さ",
                 "reasoning_effort_provider_default": "プロバイダーのデフォルト"

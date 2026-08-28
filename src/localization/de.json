@@ -2740,7 +2740,7 @@
                     "translation_api": {
                         "header": "Inhaltsübersetzung",
                         "enable": "Aktivieren",
-                        "translation_api_key": "Übersetzungs-API-Schlüssel",
+                        "translation_api_key": "Anbieterkonfiguration",
                         "enable_tooltip": "Übersetzt Nutzer-Bios und Weltbeschreibungen auf Anfrage."
                     },
                     "screenshot_helper": {
@@ -4862,8 +4862,8 @@
             "msg_test_failed": "Ungültiger YouTube-API-Schlüssel"
         },
         "translation_api": {
-            "header": "Übersetzungs-API",
-            "description": "Bearbeite hier deine Übersetzungs-API-Einstellungen.",
+            "header": "Konfiguration des Übersetzungsanbieters",
+            "description": "Wähle und konfiguriere den Anbieter für Inhaltsübersetzungen.",
             "guide": "Anleitung",
             "mode": "Anbieter",
             "mode_google": "Google Translate",
@@ -4877,9 +4877,9 @@
             "openai": {
                 "model": "Modellname",
                 "prompt_optional": "Prompt (optional)",
-                "prompt_optional_description": "Optionaler System-Prompt für OpenAI-kompatible Übersetzungs-APIs. Die Variable für die Zielsprache ist {targetLang}.",
+                "prompt_optional_description": "Optionaler System-Prompt. Stelle sicher, dass die Variable für die Zielsprache {targetLang} enthalten ist.",
                 "connection": "LLM-Endpoint",
-                "connection_description": "Wird für OpenAI-kompatible Übersetzung verwendet.",
+                "connection_description": "Es werden nur OpenAI-kompatible Endpoints unterstützt.",
                 "connection_placeholder": "Endpoint auswählen",
                 "reasoning_effort": "Reasoning-Aufwand",
                 "reasoning_effort_provider_default": "Standard des Anbieters"

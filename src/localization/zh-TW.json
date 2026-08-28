@@ -2740,7 +2740,7 @@
                     "translation_api": {
                         "header": "內容翻譯",
                         "enable": "啟用",
-                        "translation_api_key": "翻譯 API 金鑰",
+                        "translation_api_key": "服務提供者設定",
                         "enable_tooltip": "按需翻譯用戶自我介紹和世界簡介。"
                     },
                     "screenshot_helper": {
@@ -4863,8 +4863,8 @@
             "msg_test_failed": "無效的 YouTube API 金鑰"
         },
         "translation_api": {
-            "header": "翻譯 API",
-            "description": "在此編輯你的翻譯 API 設定。",
+            "header": "翻譯服務提供者設定",
+            "description": "選擇並設定用於內容翻譯的服務提供者。",
             "guide": "使用指南",
             "mode": "服務提供者",
             "mode_google": "Google 翻譯",
@@ -4878,9 +4878,9 @@
             "openai": {
                 "model": "模型名稱",
                 "prompt_optional": "提示詞（選填）",
-                "prompt_optional_description": "OpenAI 相容翻譯 API 的選用系統提示詞。目標語言變數為 {targetLang}。",
+                "prompt_optional_description": "選用的系統提示詞。請務必包含目標語言變數 {targetLang}。",
                 "connection": "LLM 端點",
-                "connection_description": "用於與 OpenAI 相容的翻譯功能。",
+                "connection_description": "僅支援與 OpenAI 相容的端點。",
                 "connection_placeholder": "選擇一個端點",
                 "reasoning_effort": "推理強度",
                 "reasoning_effort_provider_default": "服務商預設"

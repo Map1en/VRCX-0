@@ -2740,7 +2740,7 @@
                     "translation_api": {
                         "header": "Content Translation",
                         "enable": "Enable",
-                        "translation_api_key": "Translate API Key",
+                        "translation_api_key": "Provider Configuration",
                         "enable_tooltip": "Translate user bios and world descriptions on demand."
                     },
                     "screenshot_helper": {
@@ -4862,24 +4862,24 @@
             "msg_test_failed": "Invalid YouTube API key"
         },
         "translation_api": {
-            "header": "Translation API",
-            "description": "Edit your Translation API settings here. ",
+            "header": "Translation Provider Configuration",
+            "description": "Choose and configure the provider used for content translation.",
             "guide": "Guide",
             "mode": "Provider",
             "mode_google": "Google Translate",
             "mode_deepl": "DeepL Free API",
             "test": "Test",
             "save": "Save",
-            "msg_fill_endpoint_model": "Please fill endpoint and model",
+            "msg_fill_endpoint_model": "Please fill in endpoint and model",
             "msg_settings_saved": "Translation settings saved",
             "msg_test_success": "Test succeeded",
             "msg_test_failed": "Test failed",
             "openai": {
                 "model": "Model Name",
                 "prompt_optional": "Prompt (Optional)",
-                "prompt_optional_description": "Optional system prompt for OpenAI-compatible translation APIs. The target language variable is {targetLang}",
+                "prompt_optional_description": "Optional system prompt. Make sure to include the target language variable {targetLang}.",
                 "connection": "LLM Endpoint",
-                "connection_description": "Used by OpenAI-compatible translation.",
+                "connection_description": "Only OpenAI-compatible endpoints are supported.",
                 "connection_placeholder": "Select an endpoint",
                 "reasoning_effort": "Reasoning effort",
                 "reasoning_effort_provider_default": "Provider default"

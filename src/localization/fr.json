@@ -2731,7 +2731,7 @@
                     "translation_api": {
                         "header": "Traduction du contenu",
                         "enable": "Activer",
-                        "translation_api_key": "Clé d'API de traduction",
+                        "translation_api_key": "Configuration du fournisseur",
                         "enable_tooltip": "Traduire la biographie des utilisateurs et les descriptions des mondes sur demande."
                     },
                     "screenshot_helper": {
@@ -4816,8 +4816,8 @@
             "msg_test_failed": "Clé API YouTube invalide"
         },
         "translation_api": {
-            "header": "API de traduction",
-            "description": "Modifiez les paramètres de votre API de traduction ici.",
+            "header": "Configuration du fournisseur de traduction",
+            "description": "Choisissez et configurez le fournisseur utilisé pour la traduction du contenu.",
             "guide": "Guide",
             "mode": "Fournisseur",
             "mode_google": "Google Translate",
@@ -4831,9 +4831,9 @@
             "openai": {
                 "model": "Nom du modèle",
                 "prompt_optional": "Prompt (facultatif)",
-                "prompt_optional_description": "Prompt système facultatif pour les API de traduction compatibles OpenAI. La variable de langue cible est {targetLang}.",
+                "prompt_optional_description": "Prompt système facultatif. Veillez à inclure la variable de langue cible {targetLang}.",
                 "connection": "Endpoint LLM",
-                "connection_description": "Utilisé par la traduction compatible OpenAI.",
+                "connection_description": "Seuls les endpoints compatibles avec OpenAI sont pris en charge.",
                 "connection_placeholder": "Sélectionner un endpoint",
                 "reasoning_effort": "Effort de raisonnement",
                 "reasoning_effort_provider_default": "Par défaut du fournisseur"

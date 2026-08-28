@@ -2740,7 +2740,7 @@
                     "translation_api": {
                         "header": "内容翻译",
                         "enable": "启用",
-                        "translation_api_key": "翻译 API 密钥",
+                        "translation_api_key": "提供商配置",
                         "enable_tooltip": "按需翻译玩家简介和世界简介。"
                     },
                     "screenshot_helper": {
@@ -4863,8 +4863,8 @@
             "msg_test_failed": "无效的 YouTube API 密钥"
         },
         "translation_api": {
-            "header": "翻译 API",
-            "description": "在此编辑你的翻译 API 设置。",
+            "header": "翻译提供商配置",
+            "description": "选择并配置用于内容翻译的提供商。",
             "guide": "查看教程（英语）",
             "mode": "提供商",
             "mode_google": "Google 翻译",
@@ -4878,9 +4878,9 @@
             "openai": {
                 "model": "模型名称",
                 "prompt_optional": "提示词（可选）",
-                "prompt_optional_description": "OpenAI 兼容翻译 API 的可选系统提示词。目标语言变量为 {targetLang}。",
+                "prompt_optional_description": "可选的系统提示词。请务必包含目标语言变量 {targetLang}。",
                 "connection": "LLM 端点",
-                "connection_description": "供 OpenAI 兼容翻译使用。",
+                "connection_description": "仅支持 OpenAI 兼容端点。",
                 "connection_placeholder": "选择一个端点",
                 "reasoning_effort": "推理强度",
                 "reasoning_effort_provider_default": "服务商默认"
