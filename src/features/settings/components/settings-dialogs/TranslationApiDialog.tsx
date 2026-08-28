@@ -447,6 +447,8 @@ export function TranslationApiDialog({
                                     'dialog.translation_api.openai.prompt_optional_description'
                                 )}
                                 controlId="settings-translation-prompt"
+                                className="lg:grid-cols-1"
+                                controlClassName="w-full"
                             >
                                 <Textarea
                                     id="settings-translation-prompt"
@@ -461,7 +463,7 @@ export function TranslationApiDialog({
                                             event.target.value
                                         )
                                     }
-                                    className="w-96 max-w-full resize-none"
+                                    className="field-sizing-fixed max-h-[50vh] min-h-30 w-full resize-y overflow-y-auto"
                                 />
                             </Field>
                         </>
