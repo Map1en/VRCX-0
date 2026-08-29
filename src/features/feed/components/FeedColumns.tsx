@@ -115,7 +115,10 @@ export function useFeedColumns(meta: FeedTableMeta): FeedColumns {
         () => [
             {
                 id: 'expander',
-                size: 20,
+                size: 50,
+                minSize: 50,
+                maxSize: 50,
+                enableResizing: false,
                 enableSorting: false,
                 enableHiding: false,
                 meta: { label: '' },
@@ -179,7 +182,8 @@ export function useFeedColumns(meta: FeedTableMeta): FeedColumns {
                         .filter(Boolean)
                         .join(' '),
                 enableSorting: false,
-                meta: { label: t('table.feed.detail') },
+                enableHiding: false,
+                meta: { label: t('table.feed.detail'), stretch: true },
                 header: () => (
                     <span className="text-muted-foreground text-xs tracking-wide uppercase">
                         {t('table.feed.detail')}

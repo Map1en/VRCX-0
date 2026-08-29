@@ -310,7 +310,7 @@ export function PlayerListTableShell({
             <DataTableScrollArea>
                 <DataTableColumnDndProvider table={table}>
                     <Table
-                        className="app-data-table min-w-full table-fixed"
+                        className="app-data-table table-fixed"
                         style={getDataTableSizingStyle(table)}
                     >
                         <DataTableColumnSizeColGroup table={table} />

@@ -181,7 +181,8 @@ export function useGroupModerationColumns({
             size: 280,
             minSize: 140,
             enableSorting: false,
-            meta: { label: detailLabel },
+            enableHiding: false,
+            meta: { label: detailLabel, stretch: true },
             header: () => columnHeaderLabel(detailLabel),
             cell: ({ row }) => {
                 const detail =

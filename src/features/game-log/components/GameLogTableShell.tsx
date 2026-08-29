@@ -44,7 +44,7 @@ export function GameLogTableShell({
                 <DataTableScrollArea>
                     <DataTableColumnDndProvider table={table}>
                         <Table
-                            className="min-w-full table-fixed"
+                            className="table-fixed"
                             style={getDataTableSizingStyle(table)}
                         >
                             <DataTableColumnSizeColGroup table={table} />

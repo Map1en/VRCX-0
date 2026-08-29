@@ -43,6 +43,31 @@ describe('useAppTable', () => {
         expect(result.current.getColumn('detail')?.getSize()).toBe(410);
     });
 
+    it('keeps unhidable columns visible when persisted state hides them', () => {
+        const pinnedColumns: AppColumnDef<Row>[] = [
+            {
+                accessorKey: 'detail',
+                id: 'detail',
+                enableHiding: false
+            },
+            {
+                accessorKey: 'detail',
+                id: 'note'
+            }
+        ];
+        const { result } = renderHook(() =>
+            useAppTable({
+                columns: pinnedColumns,
+                data: [],
+                state: { columnVisibility: { detail: false, note: false } }
+            })
+        );
+
+        expect(
+            result.current.getVisibleLeafColumns().map((column) => column.id)
+        ).toEqual(['detail']);
+    });
+
     it('publishes drag resizing through the controlled state callback', () => {
         const { result } = renderHook(() => {
             const [columnSizing, setColumnSizing] = useState<ColumnSizingState>(

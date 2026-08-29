@@ -46,6 +46,7 @@ export function useModerationColumns({
                 size: 20,
                 minSize: 0,
                 maxSize: 20,
+                enableResizing: false,
                 enableSorting: false,
                 enableHiding: false,
                 header: () => null,
@@ -151,6 +152,7 @@ export function useModerationColumns({
                 size: 260,
                 minSize: 80,
                 enableSorting: false,
+                enableHiding: false,
                 meta: {
                     label: t('table.moderation.target'),
                     stretch: true
@@ -186,6 +188,7 @@ export function useModerationColumns({
                 size: 80,
                 minSize: 80,
                 maxSize: 80,
+                enableResizing: false,
                 enableSorting: false,
                 meta: {
                     label: t('table.moderation.action')

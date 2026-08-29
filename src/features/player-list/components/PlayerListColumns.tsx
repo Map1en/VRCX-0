@@ -351,6 +351,9 @@ export function usePlayerListColumns(): AppColumnDef<PlayerListRow>[] {
             {
                 id: 'avatar',
                 size: 72,
+                minSize: 72,
+                maxSize: 72,
+                enableResizing: false,
                 meta: { label: t('table.playerList.avatar') },
                 header: () => (
                     <HeaderLabel>{t('table.playerList.avatar')}</HeaderLabel>
@@ -381,7 +384,11 @@ export function usePlayerListColumns(): AppColumnDef<PlayerListRow>[] {
             {
                 id: 'displayName',
                 size: 280,
-                meta: { label: t('table.playerList.displayName') },
+                enableHiding: false,
+                meta: {
+                    label: t('table.playerList.displayName'),
+                    stretch: true
+                },
                 accessorFn: (row) => row.displayName,
                 header: ({ column }) => (
                     <SortButton

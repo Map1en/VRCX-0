@@ -367,7 +367,10 @@ export function useMyAvatarsColumns({
                 size: 170,
                 minSize: 130,
                 accessorFn: (row) => row.updated_at || '',
-                meta: { label: t('dialog.avatar.info.last_updated') },
+                meta: {
+                    label: t('dialog.avatar.info.last_updated'),
+                    stretch: true
+                },
                 header: ({ column }) => (
                     <SortButton
                         column={column}

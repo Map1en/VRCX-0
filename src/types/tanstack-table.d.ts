@@ -11,6 +11,7 @@ declare module '@tanstack/react-table' {
         tableCellClassName?: string;
         disableReorder?: boolean;
         disableVisibilityToggle?: boolean;
+        stretch?: boolean;
         spacer?: boolean;
         isSpacer?: boolean;
     }

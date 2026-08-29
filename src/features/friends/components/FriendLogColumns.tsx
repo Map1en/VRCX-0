@@ -111,6 +111,7 @@ export function useFriendLogColumns({
                 id: 'displayName',
                 size: 260,
                 minSize: 80,
+                meta: { stretch: true },
                 accessorFn: (row) =>
                     row?.resolvedDisplayName ||
                     row?.displayName ||
@@ -123,7 +124,9 @@ export function useFriendLogColumns({
             {
                 id: 'action',
                 size: 64,
+                minSize: 64,
                 maxSize: 64,
+                enableResizing: false,
                 enableSorting: false,
                 accessorFn: (row) => getFriendLogRowKey(row, rowsOwnerUserId),
                 header: () => t('table.friendLog.action'),

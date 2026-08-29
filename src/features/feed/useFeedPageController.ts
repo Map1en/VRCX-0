@@ -88,7 +88,7 @@ export function useFeedPageController({
         autoResetExpanded: false,
         autoResetPageIndex: false,
         enableColumnResizing: true,
-        columnResizeMode: 'onEnd',
+        columnResizeMode: 'onChange',
         getRowId: (row) => getFeedRowId(row),
         getRowCanExpand: (row) => canExpandFeedRow(row.original),
         meta: {

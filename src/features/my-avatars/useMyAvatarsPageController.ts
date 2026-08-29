@@ -69,7 +69,7 @@ export function useMyAvatarsPageController() {
             columnVisibility: tableState.initialColumnVisibility
         },
         enableColumnResizing: true,
-        columnResizeMode: 'onEnd',
+        columnResizeMode: 'onChange',
         meta: {
             columnOrderLocked: tableState.columnOrderLocked,
             setColumnOrderLocked: tableState.setColumnOrderLocked

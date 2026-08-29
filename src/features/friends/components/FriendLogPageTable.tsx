@@ -36,10 +36,10 @@ export function FriendLogPageTable({
     return (
         <>
             <DataTableSurface>
-                <DataTableScrollArea wideTable>
+                <DataTableScrollArea>
                     <DataTableColumnDndProvider table={table}>
                         <Table
-                            className="min-w-full table-fixed"
+                            className="table-fixed"
                             style={getDataTableSizingStyle(table)}
                         >
                             <DataTableColumnSizeColGroup table={table} />

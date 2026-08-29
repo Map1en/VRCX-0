@@ -59,7 +59,8 @@ import { ResizableTableCell, ResizableTableHead } from './ResizableTableParts';
 import {
     getColumnOrder,
     getColumnOrderLocked,
-    getReorderableColumnIds
+    getReorderableColumnIds,
+    getStretchColumnId
 } from './tableColumnLayout';
 import { TableColumnHeaderContextMenu } from './TableColumnVisibilityMenu';
 
@@ -94,11 +95,14 @@ function getColumnId<TData extends RowData>(column: AppColumnDef<TData>) {
 
 export function getDataTableSizingStyle<TData extends RowData>(
     table: AppTable<TData>
-): CSSProperties | undefined {
+): CSSProperties {
     const totalSize = table.getTotalSize();
-    return Number.isFinite(totalSize) && totalSize > 0
-        ? { width: `${totalSize}px` }
-        : undefined;
+    if (!Number.isFinite(totalSize) || totalSize <= 0) {
+        return { width: '100%' };
+    }
+    return getStretchColumnId(table)
+        ? { width: `max(100%, ${totalSize}px)` }
+        : { width: `${totalSize}px` };
 }
 
 export function DataTableColumnSizeColGroup<TData extends RowData>({
@@ -106,14 +110,18 @@ export function DataTableColumnSizeColGroup<TData extends RowData>({
 }: {
     table: AppTable<TData>;
 }) {
+    const stretchColumnId = getStretchColumnId(table);
+
     return (
         <colgroup>
             {table.getVisibleLeafColumns().map((column) => (
                 <col
                     key={column.id}
-                    style={{
-                        width: `${column.getSize()}px`
-                    }}
+                    style={
+                        column.id === stretchColumnId
+                            ? undefined
+                            : { width: `${column.getSize()}px` }
+                    }
                 />
             ))}
         </colgroup>
@@ -297,18 +305,15 @@ export function DataTableSurface({
 
 export function DataTableScrollArea({
     className = '',
-    wideTable = false,
     children
 }: {
     className?: string;
-    wideTable?: boolean;
     children: ReactNode;
 }) {
     return (
         <div
             className={cn(
                 'h-full min-h-0 min-w-0 overflow-auto [&>[data-slot=table-container]]:min-w-full [&>[data-slot=table-container]]:overflow-visible',
-                wideTable && '[&>[data-slot=table-container]]:w-max',
                 className
             )}
         >
@@ -533,7 +538,7 @@ export function DataTableView<TData extends RowData>({
             <DataTableScrollArea>
                 <DataTableColumnDndProvider table={table}>
                     <Table
-                        className="min-w-full table-fixed"
+                        className="table-fixed"
                         style={getDataTableSizingStyle(table)}
                     >
                         <DataTableColumnSizeColGroup table={table} />

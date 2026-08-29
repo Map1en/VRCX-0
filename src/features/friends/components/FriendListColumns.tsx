@@ -82,6 +82,9 @@ export function useFriendListColumns({
             {
                 id: 'bulkSelect',
                 size: 55,
+                minSize: 55,
+                maxSize: 55,
+                enableResizing: false,
                 enableSorting: false,
                 header: (): ReactNode => null,
                 cell: ({ row }) => {
@@ -136,6 +139,9 @@ export function useFriendListColumns({
             {
                 id: 'avatar',
                 size: 90,
+                minSize: 90,
+                maxSize: 90,
+                enableResizing: false,
                 meta: { label: t('table.friendList.avatar') },
                 accessorFn: (row) => userImage(row, true),
                 enableSorting: false,
@@ -172,7 +178,11 @@ export function useFriendListColumns({
             {
                 id: 'displayName',
                 size: 200,
-                meta: { label: t('table.friendList.displayName') },
+                enableHiding: false,
+                meta: {
+                    label: t('table.friendList.displayName'),
+                    stretch: true
+                },
                 accessorFn: (row) => row?.displayName || '',
                 enableSorting: false,
                 header: () => (
@@ -498,6 +508,9 @@ export function useFriendListColumns({
             {
                 id: 'unfriend',
                 size: 100,
+                minSize: 100,
+                maxSize: 100,
+                enableResizing: false,
                 enableSorting: false,
                 meta: { label: t('table.friendList.unfriend') },
                 header: () => (

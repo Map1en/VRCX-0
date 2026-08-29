@@ -1,6 +1,6 @@
 import type { RowData } from '@tanstack/react-table';
 
-import type { AppColumn, AppTable } from './appTable';
+import type { AppColumn, AppTable, AppTableCore } from './appTable';
 
 export function resolveColumnLabel<TData extends RowData>(
     column: AppColumn<TData> | null | undefined
@@ -40,6 +40,34 @@ export function isSpacerColumn<TData extends RowData>(
         return true;
     }
     return Boolean(column.columnDef?.meta?.spacer);
+}
+
+export function getStretchColumnId<TData extends RowData>(
+    table: AppTableCore<TData>
+): string | null {
+    const visibleLeafColumns = table.getVisibleLeafColumns();
+    const markedStretchColumn = visibleLeafColumns.find(
+        (column) => column.columnDef?.meta?.stretch === true
+    );
+    if (markedStretchColumn) {
+        return markedStretchColumn.id;
+    }
+
+    for (let index = visibleLeafColumns.length - 1; index >= 0; index -= 1) {
+        const column = visibleLeafColumns[index];
+        if (isSpacerColumn(column)) {
+            continue;
+        }
+        if (column.columnDef?.maxSize != null) {
+            continue;
+        }
+        if (column.columnDef?.enableResizing === false) {
+            continue;
+        }
+        return column.id;
+    }
+
+    return null;
 }
 
 export function getColumnOrder<TData extends RowData>(

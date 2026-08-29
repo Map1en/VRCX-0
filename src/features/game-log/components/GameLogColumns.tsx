@@ -227,6 +227,7 @@ export function useGameLogColumns({
             {
                 id: 'detail',
                 minSize: 150,
+                meta: { stretch: true },
                 accessorFn: (row: GameLogRow) => {
                     const detailValue = describeGameLogDetail(row);
                     return [detailValue.primary, detailValue.secondary]
@@ -374,6 +375,7 @@ export function useGameLogColumns({
                 size: 90,
                 minSize: 90,
                 maxSize: 90,
+                enableResizing: false,
                 header: () => t('table.gameLog.action'),
                 enableSorting: false,
                 cell: ({ row }) => {

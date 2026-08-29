@@ -3,10 +3,12 @@ import type {
     CellContext,
     Column,
     ColumnDef,
+    ColumnVisibilityState,
     Header,
     ReactTable,
     Row,
     RowData,
+    Table,
     TableOptions
 } from '@tanstack/react-table';
 import {
@@ -23,6 +25,7 @@ import {
     tableFeatures,
     useTable
 } from '@tanstack/react-table';
+import { useMemo } from 'react';
 
 const appTableFeatures = tableFeatures({
     rowSortingFeature,
@@ -54,6 +57,10 @@ export type AppTable<TData extends RowData> = ReactTable<
     AppTableFeatures,
     TData
 >;
+export type AppTableCore<TData extends RowData> = Table<
+    AppTableFeatures,
+    TData
+>;
 export type AppCell<TData extends RowData, TValue = unknown> = Cell<
     AppTableFeatures,
     TData,
@@ -69,8 +76,55 @@ export type AppCellContext<
     TValue = unknown
 > = CellContext<AppTableFeatures, TData, TValue>;
 
+function resolveColumnDefId<TData extends RowData>(
+    column: AppColumnDef<TData>
+) {
+    const columnId =
+        ('id' in column ? column.id : undefined) ??
+        ('accessorKey' in column ? column.accessorKey : undefined);
+    return typeof columnId === 'string' ? columnId : null;
+}
+
+function dropVisibilityOfUnhidableColumns<TData extends RowData>(
+    columns: readonly AppColumnDef<TData>[],
+    columnVisibility: ColumnVisibilityState
+) {
+    let resolved = columnVisibility;
+
+    for (const column of columns) {
+        if (column.enableHiding !== false) {
+            continue;
+        }
+        const columnId = resolveColumnDefId(column);
+        if (!columnId || resolved[columnId] !== false) {
+            continue;
+        }
+        if (resolved === columnVisibility) {
+            resolved = { ...columnVisibility };
+        }
+        delete resolved[columnId];
+    }
+
+    return resolved;
+}
+
 export function useAppTable<TData extends RowData>(
     options: Omit<TableOptions<AppTableFeatures, TData>, 'features'>
 ): AppTable<TData> {
-    return useTable({ ...options, features: appTableFeatures });
+    const columns = options.columns;
+    const columnVisibility = options.state?.columnVisibility;
+    const state = useMemo(() => {
+        if (!options.state || !columnVisibility) {
+            return options.state;
+        }
+        const resolvedVisibility = dropVisibilityOfUnhidableColumns(
+            columns,
+            columnVisibility
+        );
+        return resolvedVisibility === columnVisibility
+            ? options.state
+            : { ...options.state, columnVisibility: resolvedVisibility };
+    }, [columns, columnVisibility, options.state]);
+
+    return useTable({ ...options, state, features: appTableFeatures });
 }

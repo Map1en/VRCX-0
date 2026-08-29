@@ -318,7 +318,8 @@ export function createGroupAuditLogColumns(
             size: 320,
             minSize: 160,
             enableSorting: false,
-            meta: { label: descriptionLabel },
+            enableHiding: false,
+            meta: { label: descriptionLabel, stretch: true },
             header: () => auditLogHeaderLabel(descriptionLabel),
             cell: ({ row }) => {
                 const targetId = String(row.original.targetId || '').trim();
@@ -524,7 +525,7 @@ export function GroupModerationLogsTable({
                     <DataTableScrollArea>
                         <DataTableColumnDndProvider table={table}>
                             <Table
-                                className="min-w-full table-fixed"
+                                className="table-fixed"
                                 style={getDataTableSizingStyle(table)}
                             >
                                 <DataTableColumnSizeColGroup table={table} />
