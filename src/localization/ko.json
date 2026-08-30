@@ -194,65 +194,65 @@
     },
     "language": "한국어 (ko)",
     "data_dir_migration": {
-        "title": "VRCX-0 데이터 이동",
-        "description": "선택한 폴더를 사용하는 방법을 선택하세요.",
-        "completed_title": "데이터 이동 완료",
-        "completed_description": "VRCX-0을 다시 시작하면 새 데이터 폴더를 사용합니다.",
-        "error_short": "데이터 이동 실패",
-        "start": "이동 시작",
+        "title": "데이터 저장 폴더 변경",
+        "description": "새 폴더에서 사용할 데이터를 선택하세요.",
+        "completed_title": "다시 시작하여 변경 완료",
+        "completed_description": "VRCX-0을 다시 시작하면 새 폴더를 사용합니다.",
+        "error_short": "저장 폴더를 변경하지 못했어요",
+        "start": "복사 후 변경",
         "restart_now": "지금 다시 시작",
         "restart_later": "나중에",
-        "create_backup_first": "먼저 백업 만들기",
-        "space_summary": "필요: {required} · 사용 가능: {available}",
-        "insufficient_space": "데이터를 이동할 여유 공간이 부족합니다.",
-        "contents_notice": "데이터베이스, 앱 설정, 갤러리 색인과 썸네일을 복사합니다. 이미지 캐시는 새 위치에서 다시 다운로드됩니다. 이전 데이터는 정리할 때까지 보관됩니다.",
-        "unsupported_storage_warning": "네트워크 드라이브, 클라우드 동기화 폴더(OneDrive, iCloud 등), 이동식 드라이브는 사용하지 마세요. 이러한 위치의 데이터베이스는 손상될 수 있으며 지원되지 않습니다.",
+        "create_backup_first": "백업 도구 열기",
+        "space_summary": "필요한 공간: {required} · 사용 가능한 공간: {available}",
+        "insufficient_space": "데이터를 복사할 공간이 부족해요. 다른 드라이브의 폴더를 선택하거나 공간을 확보해 주세요.",
+        "contents_notice": "현재 기록과 설정을 새 폴더로 복사합니다. 원래 폴더의 데이터는 그대로 남습니다.",
+        "unsupported_storage_warning": "네트워크 드라이브, 클라우드 동기화 폴더, 이동식 드라이브는 지원하지 않습니다. 사용하면 데이터가 손상될 수 있습니다.",
         "mode": {
-            "migrate": "현재 데이터 이동(권장)",
-            "adoptExisting": "이 폴더의 기존 VRCX-0 프로필 사용",
-            "freshStart": "이 폴더에서 새 프로필 시작"
+            "migrate": "현재 데이터 유지 (권장)",
+            "adoptExisting": "이 폴더에 있는 데이터 사용",
+            "freshStart": "새로 시작"
         },
         "target": {
             "empty": "선택한 폴더가 비어 있습니다.",
-            "existingProfile": "VRCX-0 프로필이 이미 있습니다. 교체 전에 보관됩니다.",
-            "foreignContent": "다른 파일이 있습니다. VRCX-0은 자체 파일만 관리합니다."
+            "existingProfile": "이 폴더에 있는 VRCX-0 데이터가 교체됩니다. 교체 전에 복사본을 보관합니다.",
+            "foreignContent": "이 폴더에는 다른 파일도 있습니다. VRCX-0은 자체 파일만 변경합니다."
         },
         "phase": {
-            "preparing": "데이터 이동 준비 중",
-            "freezing": "데이터베이스 중지 중",
-            "copying": "데이터베이스 복사 중",
-            "verifying": "복사본 확인 중",
-            "committing": "데이터 이동 완료 중"
+            "preparing": "데이터 준비 중…",
+            "freezing": "데이터 준비 중…",
+            "copying": "데이터 복사 중…",
+            "verifying": "복사한 데이터 확인 중…",
+            "committing": "변경 마무리 중…"
         },
         "error": {
             "operationBusy": "다른 백업, 복원 또는 데이터 이동이 진행 중입니다.",
-            "databaseUnavailable": "현재 데이터베이스를 이동할 수 없습니다.",
+            "databaseUnavailable": "지금은 데이터를 복사할 수 없어요. 잠시 후 다시 시도해 주세요.",
             "pendingRestore": "대기 중인 프로필 복원을 먼저 완료하거나 취소하세요.",
             "pendingLegacyMigration": "대기 중인 이전 데이터 이전을 먼저 완료하세요.",
             "pendingMigration": "데이터 폴더 이동이 대기 중입니다. VRCX-0을 다시 시작하세요.",
             "cleanupConflict": "이 폴더로 돌아가기 전에 이전 데이터를 처리하세요.",
             "insufficientSpace": "데이터를 이동할 여유 공간이 부족합니다.",
-            "invalidAdoptionTarget": "기존 VRCX-0 프로필이 있는 폴더만 그대로 사용할 수 있습니다.",
-            "invalidFreshStartTarget": "기존 VRCX-0 프로필이 있는 폴더는 새로 시작하는 데 사용할 수 없습니다.",
-            "copyFailed": "데이터베이스를 복사하지 못했습니다. 원래 데이터를 계속 사용합니다.",
-            "commitFailed": "복사한 데이터베이스를 설치하지 못했습니다. 원래 데이터를 계속 사용합니다.",
+            "invalidAdoptionTarget": "이 폴더에는 사용할 VRCX-0 데이터가 없어요. 다른 폴더를 선택해 주세요.",
+            "invalidFreshStartTarget": "이 폴더에는 이미 VRCX-0 데이터가 있어요. 새로 시작하려면 다른 폴더를 선택해 주세요.",
+            "copyFailed": "데이터를 복사하지 못했어요. VRCX-0은 원래 폴더를 계속 사용합니다.",
+            "commitFailed": "복사한 데이터를 저장하지 못했어요. VRCX-0은 원래 폴더를 계속 사용합니다.",
             "pointerCommitFailed": "새 데이터 폴더를 활성화하지 못했습니다. 다시 시작하여 안전하게 재시도하세요.",
             "io": "데이터 폴더 파일을 읽거나 쓸 수 없습니다."
         },
         "warning": {
             "configCopyFailed": "일부 앱 설정을 복사하지 못해 기본값이 사용될 수 있습니다.",
-            "galleryCopyFailed": "일부 갤러리 색인 또는 썸네일을 복사하지 못했으며 필요할 때 다시 생성됩니다.",
+            "galleryCopyFailed": "일부 갤러리 데이터를 복사하지 못했어요. 필요할 때 자동으로 다시 생성됩니다.",
             "cacheCleanupFailed": "일부 이전 캐시를 삭제하지 못했습니다."
         },
         "result": {
-            "succeeded": "데이터 폴더 이동 완료",
+            "succeeded": "데이터 저장 폴더를 변경했어요",
             "failed_title": "새 데이터 폴더를 사용할 수 없습니다",
             "database_open_failed": "원래 폴더를 계속 사용합니다. 데이터에는 영향이 없습니다.",
-            "interrupted_title": "데이터 폴더 이동이 중단되었습니다",
+            "interrupted_title": "저장 폴더 변경이 중단됐어요",
             "interrupted": "원래 폴더를 계속 사용합니다. 다시 시도할 수 있습니다."
         },
         "cleanup": {
-            "ready_title": "데이터 폴더 이동 완료",
+            "ready_title": "데이터 저장 폴더를 변경했어요",
             "ready_description": "이전 데이터가 {path}에 남아 있습니다.",
             "action": "이전 데이터 정리",
             "action_with_size": "이전 데이터 정리({size})",
@@ -265,6 +265,16 @@
             "settings_description": "이전 VRCX-0 데이터가 {path}에 남아 있습니다({size}바이트).",
             "dismiss": "보관하고 다시 알리지 않기",
             "dismissed": "정리 알림을 껐습니다"
+        },
+        "running_title": "저장 폴더 변경 중",
+        "running_description": "완료될 때까지 VRCX-0을 닫지 마세요.",
+        "start_existing": "기존 데이터 사용",
+        "start_fresh": "새 폴더 사용",
+        "new_folder": "새 폴더",
+        "cancelling": "취소 중…",
+        "mode_description": {
+            "adoptExisting": "이 폴더에 있는 기록과 설정을 사용합니다. 현재 데이터는 복사하지 않습니다.",
+            "freshStart": "현재 데이터를 복사하지 않고 새 폴더에서 새로 시작합니다. 원래 데이터는 삭제되지 않습니다."
         }
     },
     "profile_backup": {
@@ -2712,19 +2722,13 @@
                         "reset": "기본값으로 재설정",
                         "restart": "다시 시작",
                         "source_cli": "명령줄 재정의",
-                        "source_persisted": "저장된 사용자 정의 디렉토리",
-                        "source_default": "기본 디렉토리",
+                        "source_persisted": "직접 지정한 폴더",
+                        "source_default": "기본 폴더",
                         "cli_override": "이번 실행에서는 --data-dir을 사용하고 있습니다. 저장된 디렉터리를 변경하려면 명령줄 재정의 없이 시작하세요.",
-                        "confirm_empty": "선택한 폴더는 비어 있으며 데이터를 복사하지 않으면 새 프로필로 시작됩니다.",
                         "failed_to_load": "데이터 디렉터리 설정을 로드하지 못했습니다.",
-                        "description": "활성 소스: {source}. 저장 경로만 변경되며 기존 데이터는 이동되지 않습니다.",
+                        "description": "현재 사용 중: {source}",
                         "restart_hint": "VRCX-0을(를) 다시 시작한 후에 변경 사항이 적용됩니다.",
-                        "confirm_title": "VRCX-0 데이터 디렉터리를 전환하시겠습니까?",
-                        "confirm_description": "VRCX-0은 현재 데이터를 복사하지 않습니다. 로그인, 데이터베이스, 구성 및 캐시를 유지하려면 다시 시작하기 전에 현재 데이터 디렉터리를 {path}에 직접 복사하세요. 이 디렉터리를 저장하고 다시 시작하여 적용하세요.",
-                        "confirm_missing_profile": "선택한 폴더에는 VRCX-0.sqlite3 또는 VRCX-0.json이 포함되어 있지 않으며 새 프로필로 시작할 수 있습니다.",
                         "saved_restart_required": "데이터 디렉터리가 저장되었습니다. 적용하려면 VRCX-0을(를) 다시 시작하세요.",
-                        "reset_confirm_title": "VRCX-0 데이터 디렉터리를 재설정하시겠습니까?",
-                        "reset_confirm_description": "VRCX-0은 다시 시작한 후 기본 데이터 디렉터리를 사용합니다. 파일은 복사되지 않습니다.",
                         "reset_saved": "데이터 디렉토리 재설정. 적용하려면 VRCX-0을(를) 다시 시작하세요."
                     },
                     "cache_debug": {

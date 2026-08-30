@@ -194,65 +194,65 @@
     },
     "language": "English (en)",
     "data_dir_migration": {
-        "title": "Move VRCX-0 data",
-        "description": "Choose how VRCX-0 should use the selected folder.",
-        "completed_title": "Data move complete",
-        "completed_description": "Restart VRCX-0 to start using the new data folder.",
-        "error_short": "Data move failed",
-        "start": "Start",
+        "title": "Change data folder",
+        "description": "Choose which data to use in the new folder.",
+        "completed_title": "Restart to finish changing folders",
+        "completed_description": "Restart VRCX-0 to start using the new folder.",
+        "error_short": "Couldn't change the data folder",
+        "start": "Copy and switch",
         "restart_now": "Restart now",
         "restart_later": "Later",
-        "create_backup_first": "Create a backup first",
-        "space_summary": "Required: {required} · Available: {available}",
-        "insufficient_space": "There is not enough free space to move the data.",
-        "contents_notice": "The database, app settings, and gallery index and thumbnails will be copied. Image caches will be downloaded again. Your old data remains until you choose to clean it up.",
-        "unsupported_storage_warning": "Do not use a network drive, cloud-synced folder (such as OneDrive or iCloud), or removable drive. Databases in these locations may be damaged and are not supported.",
+        "create_backup_first": "Open backup tools",
+        "space_summary": "Space needed: {required} · Available: {available}",
+        "insufficient_space": "There isn't enough space to copy your data. Choose a folder on another drive or free up some space.",
+        "contents_notice": "Copy your records and settings to the new folder. The original data will stay in the old folder.",
+        "unsupported_storage_warning": "Network drives, cloud-synced folders and removable drives aren't supported. Using them may damage your data.",
         "mode": {
-            "migrate": "Move my current data (recommended)",
-            "adoptExisting": "Use the VRCX-0 profile already in this folder",
-            "freshStart": "Start with a new profile in this folder"
+            "migrate": "Keep current data (recommended)",
+            "adoptExisting": "Use data already in this folder",
+            "freshStart": "Start fresh"
         },
         "target": {
             "empty": "The selected folder is empty.",
-            "existingProfile": "The selected folder already contains a VRCX-0 profile. Moving will preserve it before replacement.",
-            "foreignContent": "The selected folder contains other files. VRCX-0 will only manage its own files."
+            "existingProfile": "The VRCX-0 data already in this folder will be replaced. A copy will be kept before it's replaced.",
+            "foreignContent": "This folder contains other files. VRCX-0 will only change its own files."
         },
         "phase": {
-            "preparing": "Preparing data move",
-            "freezing": "Freezing the database",
-            "copying": "Copying the database",
-            "verifying": "Verifying the copy",
-            "committing": "Finishing the data move"
+            "preparing": "Preparing data…",
+            "freezing": "Preparing data…",
+            "copying": "Copying data…",
+            "verifying": "Checking copied data…",
+            "committing": "Finishing up…"
         },
         "error": {
             "operationBusy": "Another backup, restore, or data move is already running.",
-            "databaseUnavailable": "The database is unavailable for moving right now.",
+            "databaseUnavailable": "Your data can't be copied right now. Try again later.",
             "pendingRestore": "Finish or cancel the pending profile restore first.",
             "pendingLegacyMigration": "Finish the pending legacy migration first.",
             "pendingMigration": "A data folder move is already pending. Restart VRCX-0 to finish it.",
             "cleanupConflict": "Clean up or retain the old data before moving back to that folder.",
             "insufficientSpace": "There is not enough free space to move the data.",
-            "invalidAdoptionTarget": "Only a folder containing an existing VRCX-0 profile can be adopted.",
-            "invalidFreshStartTarget": "A folder containing an existing VRCX-0 profile cannot be used for a fresh start.",
-            "copyFailed": "The database could not be copied. The original data is still in use.",
-            "commitFailed": "The copied database could not be installed. The original data is still in use.",
+            "invalidAdoptionTarget": "This folder has no VRCX-0 data to use. Choose a different folder.",
+            "invalidFreshStartTarget": "This folder already has VRCX-0 data. Choose a different folder to start fresh.",
+            "copyFailed": "Couldn't copy your data. VRCX-0 is still using the original folder.",
+            "commitFailed": "Couldn't save the copied data. VRCX-0 is still using the original folder.",
             "pointerCommitFailed": "The new data folder could not be activated. Restart VRCX-0 to retry safely.",
             "io": "A data folder file could not be read or written."
         },
         "warning": {
             "configCopyFailed": "Some app settings could not be copied and may use defaults.",
-            "galleryCopyFailed": "Some gallery index or thumbnail data could not be copied and will rebuild as needed.",
+            "galleryCopyFailed": "Some gallery data couldn't be copied. It will be recreated when needed.",
             "cacheCleanupFailed": "Some old cache files could not be removed."
         },
         "result": {
-            "succeeded": "Data folder move completed",
+            "succeeded": "Data folder changed",
             "failed_title": "The new data folder could not be used",
             "database_open_failed": "VRCX-0 continued using the original folder. Your data was not affected.",
-            "interrupted_title": "Data folder move was interrupted",
+            "interrupted_title": "Folder change interrupted",
             "interrupted": "VRCX-0 continued using the original folder. You can try again."
         },
         "cleanup": {
-            "ready_title": "Data folder move complete",
+            "ready_title": "Data folder changed",
             "ready_description": "The old data is still stored at {path}.",
             "action": "Clean up old data",
             "action_with_size": "Clean up old data ({size})",
@@ -265,6 +265,16 @@
             "settings_description": "Old VRCX-0 data remains at {path} ({size} bytes).",
             "dismiss": "Keep it and stop reminding me",
             "dismissed": "Cleanup reminders disabled"
+        },
+        "running_title": "Changing data folder",
+        "running_description": "Keep VRCX-0 open until this finishes.",
+        "start_existing": "Use existing data",
+        "start_fresh": "Use new folder",
+        "new_folder": "New folder",
+        "cancelling": "Cancelling…",
+        "mode_description": {
+            "adoptExisting": "Use the records and settings in this folder without copying your current data.",
+            "freshStart": "Start over without copying your current data. Nothing in the old folder will be deleted."
         }
     },
     "profile_backup": {
@@ -2754,7 +2764,7 @@
                     },
                     "data_directory": {
                         "header": "Data Directory",
-                        "description": "Active source: {source}. Changes the saved path only — existing data is not moved.",
+                        "description": "Currently using: {source}.",
                         "current": "Current Directory",
                         "actions": "Data Directory Actions",
                         "choose": "Choose Folder",
@@ -2762,16 +2772,10 @@
                         "restart": "Restart",
                         "restart_hint": "Changes apply after restarting VRCX-0.",
                         "source_cli": "Command line override",
-                        "source_persisted": "saved custom directory",
-                        "source_default": "default directory",
+                        "source_persisted": "custom folder",
+                        "source_default": "default folder",
                         "cli_override": "This launch is using --data-dir. Start without the command-line override to change the saved directory.",
-                        "confirm_title": "Switch VRCX-0 data directory?",
-                        "confirm_description": "VRCX-0 will not copy current data. To keep your login, database, configuration, and cache, copy the current data directory to {path} yourself before restarting. Save this directory and restart to apply it.",
-                        "confirm_empty": "The selected folder is empty and will start as a new profile unless you copy data into it.",
-                        "confirm_missing_profile": "The selected folder does not contain VRCX-0.sqlite3 or VRCX-0.json and may start as a new profile.",
                         "saved_restart_required": "Data directory saved. Restart VRCX-0 to apply it.",
-                        "reset_confirm_title": "Reset VRCX-0 data directory?",
-                        "reset_confirm_description": "VRCX-0 will use the default data directory after restart. No files will be copied.",
                         "reset_saved": "Data directory reset. Restart VRCX-0 to apply it.",
                         "failed_to_load": "Failed to load data directory settings."
                     },

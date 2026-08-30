@@ -194,65 +194,65 @@
     },
     "language": "Čeština (cs)",
     "data_dir_migration": {
-        "title": "Přesunout data VRCX-0",
-        "description": "Zvolte, jak má VRCX-0 vybranou složku použít.",
-        "completed_title": "Data byla přesunuta",
-        "completed_description": "Restartujte VRCX-0, aby začal používat novou datovou složku.",
-        "error_short": "Přesun se nezdařil",
-        "start": "Spustit",
+        "title": "Změnit složku s daty",
+        "description": "Vyberte, která data chcete v nové složce používat.",
+        "completed_title": "Dokončete změnu restartem",
+        "completed_description": "Restartujte VRCX-0, aby začal používat novou složku.",
+        "error_short": "Složku s daty se nepodařilo změnit",
+        "start": "Zkopírovat a přepnout",
         "restart_now": "Restartovat nyní",
         "restart_later": "Později",
-        "create_backup_first": "Nejprve vytvořit zálohu",
-        "space_summary": "Požadováno: {required} · Dostupné: {available}",
-        "insufficient_space": "Pro přesun dat není dostatek volného místa.",
-        "contents_notice": "Zkopíruje se databáze, nastavení aplikace, index galerie a miniatury. Mezipaměť obrázků se stáhne znovu. Stará data zůstanou zachována až do vyčištění.",
-        "unsupported_storage_warning": "Nepoužívejte síťovou jednotku, složku synchronizovanou s cloudem (OneDrive, iCloud apod.) ani vyměnitelnou jednotku. Databáze se tam může poškodit a takové umístění není podporováno.",
+        "create_backup_first": "Otevřít zálohování",
+        "space_summary": "Potřebné místo: {required} · Volné místo: {available}",
+        "insufficient_space": "Pro kopírování dat není dost místa. Vyberte složku na jiném disku nebo uvolněte místo.",
+        "contents_notice": "Současné záznamy a nastavení se zkopírují do nové složky. Data ve staré složce zůstanou zachována.",
+        "unsupported_storage_warning": "Síťové disky, složky synchronizované s cloudem a vyměnitelné disky nejsou podporovány. Jejich použití může poškodit data.",
         "mode": {
-            "migrate": "Přesunout současná data (doporučeno)",
-            "adoptExisting": "Použít profil VRCX-0, který již v této složce je",
-            "freshStart": "Vytvořit v této složce nový profil"
+            "migrate": "Zachovat současná data (doporučeno)",
+            "adoptExisting": "Použít data z této složky",
+            "freshStart": "Začít znovu"
         },
         "target": {
             "empty": "Vybraná složka je prázdná.",
-            "existingProfile": "Složka již obsahuje profil VRCX-0. Před nahrazením bude zachován.",
-            "foreignContent": "Složka obsahuje další soubory. VRCX-0 bude spravovat pouze vlastní soubory."
+            "existingProfile": "Data VRCX-0 v této složce budou nahrazena. Před nahrazením se uchová jejich kopie.",
+            "foreignContent": "Tato složka obsahuje i další soubory. VRCX-0 změní pouze své vlastní soubory."
         },
         "phase": {
-            "preparing": "Příprava přesunu",
-            "freezing": "Zastavování databáze",
-            "copying": "Kopírování databáze",
-            "verifying": "Ověřování kopie",
-            "committing": "Dokončování přesunu"
+            "preparing": "Příprava dat…",
+            "freezing": "Příprava dat…",
+            "copying": "Kopírování dat…",
+            "verifying": "Kontrola zkopírovaných dat…",
+            "committing": "Dokončování změny…"
         },
         "error": {
             "operationBusy": "Již probíhá jiné zálohování, obnovení nebo přesun.",
-            "databaseUnavailable": "Databázi nyní nelze přesunout.",
+            "databaseUnavailable": "Data teď nelze zkopírovat. Zkuste to později.",
             "pendingRestore": "Nejprve dokončete nebo zrušte čekající obnovení.",
             "pendingLegacyMigration": "Nejprve dokončete čekající převod starých dat.",
             "pendingMigration": "Čeká změna datové složky. Restartujte VRCX-0.",
             "cleanupConflict": "Před návratem do této složky nejprve vyřešte stará data.",
             "insufficientSpace": "Pro přesun dat není dostatek volného místa.",
-            "invalidAdoptionTarget": "Převzít lze pouze složku s existujícím profilem VRCX-0.",
-            "invalidFreshStartTarget": "Složku s existujícím profilem VRCX-0 nelze použít pro nový začátek.",
-            "copyFailed": "Databázi se nepodařilo zkopírovat. Nadále se používají původní data.",
-            "commitFailed": "Kopii se nepodařilo nainstalovat. Nadále se používají původní data.",
+            "invalidAdoptionTarget": "V této složce nejsou žádná použitelná data VRCX-0. Vyberte jinou složku.",
+            "invalidFreshStartTarget": "Tato složka již obsahuje data VRCX-0. Pokud chcete začít znovu, vyberte jinou složku.",
+            "copyFailed": "Data se nepodařilo zkopírovat. VRCX-0 stále používá původní složku.",
+            "commitFailed": "Zkopírovaná data se nepodařilo uložit. VRCX-0 stále používá původní složku.",
             "pointerCommitFailed": "Novou datovou složku se nepodařilo aktivovat. Restartujte VRCX-0 a zkuste to bezpečně znovu.",
             "io": "Soubor v datové složce se nepodařilo přečíst nebo zapsat."
         },
         "warning": {
             "configCopyFailed": "Některá nastavení aplikace se nepodařilo zkopírovat.",
-            "galleryCopyFailed": "Některá data galerie se nepodařilo zkopírovat a podle potřeby se znovu vytvoří.",
+            "galleryCopyFailed": "Některá data galerie se nepodařilo zkopírovat. V případě potřeby se vytvoří znovu.",
             "cacheCleanupFailed": "Některé staré soubory mezipaměti se nepodařilo odstranit."
         },
         "result": {
-            "succeeded": "Datová složka byla přesunuta",
+            "succeeded": "Složka s daty změněna",
             "failed_title": "Novou datovou složku nebylo možné použít",
             "database_open_failed": "VRCX-0 nadále používá původní složku. Vaše data nebyla ovlivněna.",
-            "interrupted_title": "Přesun byl přerušen",
+            "interrupted_title": "Změna složky byla přerušena",
             "interrupted": "VRCX-0 nadále používá původní složku. Můžete to zkusit znovu."
         },
         "cleanup": {
-            "ready_title": "Datová složka byla přesunuta",
+            "ready_title": "Složka s daty změněna",
             "ready_description": "Stará data jsou stále v {path}.",
             "action": "Vyčistit stará data",
             "action_with_size": "Vyčistit stará data ({size})",
@@ -265,6 +265,16 @@
             "settings_description": "Stará data VRCX-0 jsou stále v {path} ({size} bajtů).",
             "dismiss": "Ponechat a již nepřipomínat",
             "dismissed": "Připomínky čištění byly vypnuty"
+        },
+        "running_title": "Probíhá změna složky",
+        "running_description": "Nezavírejte VRCX-0, dokud se změna nedokončí.",
+        "start_existing": "Použít stávající data",
+        "start_fresh": "Použít novou složku",
+        "new_folder": "Nová složka",
+        "cancelling": "Rušení…",
+        "mode_description": {
+            "adoptExisting": "Použít záznamy a nastavení z této složky bez kopírování současných dat.",
+            "freshStart": "Začít v nové složce od začátku bez kopírování současných dat. Ze staré složky se nic nesmaže."
         }
     },
     "profile_backup": {
@@ -2756,7 +2766,7 @@
                     },
                     "data_directory": {
                         "header": "Datový adresář",
-                        "description": "Aktivní zdroj: {source}. Změní pouze uloženou cestu — stávající data se nepřesouvají.",
+                        "description": "Právě se používá: {source}.",
                         "current": "Aktuální adresář",
                         "actions": "Akce datového adresáře",
                         "choose": "Vybrat složku",
@@ -2764,16 +2774,10 @@
                         "restart": "Restartovat",
                         "restart_hint": "Změny se projeví po restartu VRCX-0.",
                         "source_cli": "Přepsáno příkazovým řádkem",
-                        "source_persisted": "uložený vlastní adresář",
-                        "source_default": "výchozí adresář",
+                        "source_persisted": "vlastní složka",
+                        "source_default": "výchozí složka",
                         "cli_override": "Toto spuštění používá parametr --data-dir. Chcete-li změnit uložený adresář, spusťte aplikaci bez tohoto přepsání příkazovým řádkem.",
-                        "confirm_title": "Přepnout datový adresář VRCX-0?",
-                        "confirm_description": "VRCX-0 aktuální data nezkopíruje. Chcete-li si zachovat přihlášení, databázi, konfiguraci a mezipaměť, zkopírujte si aktuální datový adresář do {path} sami před restartem. Uložte tento adresář a restartujte aplikaci, aby se změna projevila.",
-                        "confirm_empty": "Vybraná složka je prázdná a spustí se jako nový profil, pokud do ní data nezkopírujete.",
-                        "confirm_missing_profile": "Vybraná složka neobsahuje soubor VRCX-0.sqlite3 ani VRCX-0.json a může se spustit jako nový profil.",
                         "saved_restart_required": "Datový adresář uložen. Restartujte VRCX-0, aby se změna projevila.",
-                        "reset_confirm_title": "Obnovit výchozí datový adresář VRCX-0?",
-                        "reset_confirm_description": "Po restartu bude VRCX-0 používat výchozí datový adresář. Žádné soubory nebudou zkopírovány.",
                         "reset_saved": "Datový adresář obnoven na výchozí. Restartujte VRCX-0, aby se změna projevila.",
                         "failed_to_load": "Nepodařilo se načíst nastavení datového adresáře."
                     },

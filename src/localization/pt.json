@@ -194,65 +194,65 @@
     },
     "language": "Português Brasileiro (pt-br)",
     "data_dir_migration": {
-        "title": "Mover os dados do VRCX-0",
-        "description": "Escolha como o VRCX-0 deve usar a pasta selecionada.",
-        "completed_title": "Dados movidos",
-        "completed_description": "Reinicie o VRCX-0 para usar a nova pasta de dados.",
-        "error_short": "Falha ao mover dados",
-        "start": "Iniciar",
+        "title": "Alterar pasta de dados",
+        "description": "Escolha quais dados usar na nova pasta.",
+        "completed_title": "Reinicie para concluir a alteração",
+        "completed_description": "Reinicie o VRCX-0 para começar a usar a nova pasta.",
+        "error_short": "Não foi possível alterar a pasta de dados",
+        "start": "Copiar e trocar de pasta",
         "restart_now": "Reiniciar agora",
         "restart_later": "Mais tarde",
-        "create_backup_first": "Criar um backup primeiro",
-        "space_summary": "Necessário: {required} · Disponível: {available}",
-        "insufficient_space": "Não há espaço livre suficiente.",
-        "contents_notice": "O banco de dados, as configurações, o índice da galeria e as miniaturas serão copiados. Os caches de imagens serão baixados novamente. Os dados antigos ficam guardados até você optar pela limpeza.",
-        "unsupported_storage_warning": "Não use unidade de rede, pasta sincronizada na nuvem (OneDrive, iCloud etc.) nem unidade removível. Bancos de dados podem ser corrompidos nesses locais, que não são compatíveis.",
+        "create_backup_first": "Abrir ferramentas de backup",
+        "space_summary": "Espaço necessário: {required} · Disponível: {available}",
+        "insufficient_space": "Não há espaço suficiente para copiar os dados. Escolha uma pasta em outra unidade ou libere espaço.",
+        "contents_notice": "Copie seus registros e configurações para a nova pasta. Os dados da pasta antiga serão mantidos.",
+        "unsupported_storage_warning": "Unidades de rede, pastas sincronizadas com a nuvem e unidades removíveis não são compatíveis. Usá-las pode danificar os dados.",
         "mode": {
-            "migrate": "Mover meus dados atuais (recomendado)",
-            "adoptExisting": "Usar o perfil do VRCX-0 que já está nesta pasta",
-            "freshStart": "Criar um novo perfil nesta pasta"
+            "migrate": "Manter dados atuais (recomendado)",
+            "adoptExisting": "Usar os dados desta pasta",
+            "freshStart": "Começar do zero"
         },
         "target": {
             "empty": "A pasta selecionada está vazia.",
-            "existingProfile": "A pasta já contém um perfil do VRCX-0. Ele será preservado antes da substituição.",
-            "foreignContent": "A pasta contém outros arquivos. O VRCX-0 só gerenciará os próprios arquivos."
+            "existingProfile": "Os dados do VRCX-0 nesta pasta serão substituídos. Uma cópia será guardada antes da substituição.",
+            "foreignContent": "Esta pasta também contém outros arquivos. O VRCX-0 só alterará os próprios arquivos."
         },
         "phase": {
-            "preparing": "Preparando a movimentação",
-            "freezing": "Pausando o banco de dados",
-            "copying": "Copiando o banco de dados",
-            "verifying": "Verificando a cópia",
-            "committing": "Concluindo a movimentação"
+            "preparing": "Preparando os dados…",
+            "freezing": "Preparando os dados…",
+            "copying": "Copiando os dados…",
+            "verifying": "Verificando os dados copiados…",
+            "committing": "Concluindo a alteração…"
         },
         "error": {
             "operationBusy": "Outro backup, restauração ou movimentação já está em andamento.",
-            "databaseUnavailable": "O banco de dados não pode ser movido agora.",
+            "databaseUnavailable": "Não é possível copiar os dados agora. Tente novamente mais tarde.",
             "pendingRestore": "Conclua ou cancele primeiro a restauração pendente.",
             "pendingLegacyMigration": "Conclua primeiro a migração de dados antigos.",
             "pendingMigration": "Há uma mudança de pasta pendente. Reinicie o VRCX-0.",
             "cleanupConflict": "Resolva primeiro os dados antigos antes de voltar a esta pasta.",
             "insufficientSpace": "Não há espaço livre suficiente para mover os dados.",
-            "invalidAdoptionTarget": "Somente uma pasta com um perfil existente do VRCX-0 pode ser adotada.",
-            "invalidFreshStartTarget": "Uma pasta com um perfil existente do VRCX-0 não pode ser usada para começar do zero.",
-            "copyFailed": "Não foi possível copiar o banco de dados. Os dados originais continuam em uso.",
-            "commitFailed": "Não foi possível instalar a cópia. Os dados originais continuam em uso.",
+            "invalidAdoptionTarget": "Esta pasta não contém dados do VRCX-0 que possam ser usados. Escolha outra pasta.",
+            "invalidFreshStartTarget": "Esta pasta já contém dados do VRCX-0. Escolha outra para começar do zero.",
+            "copyFailed": "Não foi possível copiar os dados. O VRCX-0 continua usando a pasta original.",
+            "commitFailed": "Não foi possível salvar os dados copiados. O VRCX-0 continua usando a pasta original.",
             "pointerCommitFailed": "Não foi possível ativar a nova pasta. Reinicie o VRCX-0 para tentar novamente com segurança.",
             "io": "Não foi possível ler ou gravar um arquivo da pasta de dados."
         },
         "warning": {
             "configCopyFailed": "Algumas configurações não puderam ser copiadas.",
-            "galleryCopyFailed": "Alguns dados da galeria não puderam ser copiados e serão recriados quando necessário.",
+            "galleryCopyFailed": "Alguns dados da galeria não puderam ser copiados. Eles serão recriados quando necessário.",
             "cacheCleanupFailed": "Alguns arquivos de cache antigos não puderam ser removidos."
         },
         "result": {
-            "succeeded": "Pasta de dados movida",
+            "succeeded": "Pasta de dados alterada",
             "failed_title": "A nova pasta de dados não pôde ser usada",
             "database_open_failed": "O VRCX-0 continuou usando a pasta original. Seus dados não foram afetados.",
-            "interrupted_title": "Movimentação interrompida",
+            "interrupted_title": "Alteração de pasta interrompida",
             "interrupted": "O VRCX-0 continuou usando a pasta original. Você pode tentar novamente."
         },
         "cleanup": {
-            "ready_title": "Pasta de dados movida",
+            "ready_title": "Pasta de dados alterada",
             "ready_description": "Os dados antigos ainda estão em {path}.",
             "action": "Limpar dados antigos",
             "action_with_size": "Limpar dados antigos ({size})",
@@ -265,6 +265,16 @@
             "settings_description": "Os dados antigos do VRCX-0 ainda estão em {path} ({size} bytes).",
             "dismiss": "Manter e não avisar novamente",
             "dismissed": "Lembretes de limpeza desativados"
+        },
+        "running_title": "Alterando a pasta de dados",
+        "running_description": "Mantenha o VRCX-0 aberto até a conclusão.",
+        "start_existing": "Usar dados existentes",
+        "start_fresh": "Usar nova pasta",
+        "new_folder": "Nova pasta",
+        "cancelling": "Cancelando…",
+        "mode_description": {
+            "adoptExisting": "Use os registros e as configurações desta pasta sem copiar seus dados atuais.",
+            "freshStart": "Comece do zero na nova pasta, sem copiar seus dados atuais. Nada será excluído da pasta antiga."
         }
     },
     "profile_backup": {
@@ -2754,7 +2764,7 @@
                     },
                     "data_directory": {
                         "header": "Diretório de Dados",
-                        "description": "Origem ativa: {source}. Altera apenas o caminho salvo — os dados existentes não são movidos.",
+                        "description": "Em uso: {source}.",
                         "current": "Diretório Atual",
                         "actions": "Ações do Diretório de Dados",
                         "choose": "Escolher Pasta",
@@ -2762,16 +2772,10 @@
                         "restart": "Reiniciar",
                         "restart_hint": "As alterações são aplicadas após reiniciar o VRCX-0.",
                         "source_cli": "Substituição via linha de comando",
-                        "source_persisted": "diretório personalizado salvo",
-                        "source_default": "diretório padrão",
+                        "source_persisted": "pasta personalizada",
+                        "source_default": "pasta padrão",
                         "cli_override": "Esta inicialização está usando --data-dir. Inicie sem a substituição via linha de comando para alterar o diretório salvo.",
-                        "confirm_title": "Trocar o diretório de dados do VRCX-0?",
-                        "confirm_description": "O VRCX-0 não copiará os dados atuais. Para manter seu login, banco de dados, configuração e cache, copie você mesmo o diretório de dados atual para {path} antes de reiniciar. Salve este diretório e reinicie para aplicá-lo.",
-                        "confirm_empty": "A pasta selecionada está vazia e iniciará como um novo perfil, a menos que você copie dados para ela.",
-                        "confirm_missing_profile": "A pasta selecionada não contém VRCX-0.sqlite3 nem VRCX-0.json e pode iniciar como um novo perfil.",
                         "saved_restart_required": "Diretório de dados salvo. Reinicie o VRCX-0 para aplicá-lo.",
-                        "reset_confirm_title": "Restaurar o diretório de dados do VRCX-0?",
-                        "reset_confirm_description": "O VRCX-0 usará o diretório de dados padrão após reiniciar. Nenhum arquivo será copiado.",
                         "reset_saved": "Diretório de dados restaurado. Reinicie o VRCX-0 para aplicá-lo.",
                         "failed_to_load": "Falha ao carregar as configurações do diretório de dados."
                     },

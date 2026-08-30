@@ -194,65 +194,65 @@
     },
     "language": "Español (es)",
     "data_dir_migration": {
-        "title": "Mover los datos de VRCX-0",
-        "description": "Elige cómo debe usar VRCX-0 la carpeta seleccionada.",
-        "completed_title": "Datos movidos",
-        "completed_description": "Reinicia VRCX-0 para usar la nueva carpeta de datos.",
-        "error_short": "Error al mover los datos",
-        "start": "Empezar",
+        "title": "Cambiar carpeta de datos",
+        "description": "Elige qué datos usar en la nueva carpeta.",
+        "completed_title": "Reinicia para completar el cambio",
+        "completed_description": "Reinicia VRCX-0 para empezar a usar la nueva carpeta.",
+        "error_short": "No se pudo cambiar la carpeta de datos",
+        "start": "Copiar y cambiar",
         "restart_now": "Reiniciar ahora",
         "restart_later": "Más tarde",
-        "create_backup_first": "Crear antes una copia",
-        "space_summary": "Necesario: {required} · Disponible: {available}",
-        "insufficient_space": "No hay suficiente espacio libre.",
-        "contents_notice": "Se copiarán la base de datos, los ajustes, el índice de la galería y las miniaturas. Las cachés de imágenes se descargarán de nuevo. Los datos antiguos se conservarán hasta que decidas limpiarlos.",
-        "unsupported_storage_warning": "No uses unidades de red, carpetas sincronizadas en la nube (OneDrive, iCloud, etc.) ni unidades extraíbles. Las bases de datos pueden dañarse en esas ubicaciones y no son compatibles.",
+        "create_backup_first": "Abrir copias de seguridad",
+        "space_summary": "Espacio necesario: {required} · Disponible: {available}",
+        "insufficient_space": "No hay espacio suficiente para copiar los datos. Elige una carpeta en otra unidad o libera espacio.",
+        "contents_notice": "Copia tu historial y ajustes a la nueva carpeta. Los datos de la carpeta anterior se conservarán.",
+        "unsupported_storage_warning": "No se admiten unidades de red, carpetas sincronizadas con la nube ni unidades extraíbles. Usarlas puede dañar los datos.",
         "mode": {
-            "migrate": "Mover mis datos actuales (recomendado)",
-            "adoptExisting": "Usar el perfil de VRCX-0 que ya existe en esta carpeta",
-            "freshStart": "Crear un perfil nuevo en esta carpeta"
+            "migrate": "Conservar datos actuales (recomendado)",
+            "adoptExisting": "Usar los datos de esta carpeta",
+            "freshStart": "Empezar de cero"
         },
         "target": {
             "empty": "La carpeta seleccionada está vacía.",
-            "existingProfile": "La carpeta ya contiene un perfil de VRCX-0. Se conservará antes de sustituirlo.",
-            "foreignContent": "La carpeta contiene otros archivos. VRCX-0 solo administrará los suyos."
+            "existingProfile": "Se reemplazarán los datos de VRCX-0 de esta carpeta. Antes se guardará una copia.",
+            "foreignContent": "Esta carpeta también contiene otros archivos. VRCX-0 solo modificará los suyos."
         },
         "phase": {
-            "preparing": "Preparando el traslado",
-            "freezing": "Deteniendo la base de datos",
-            "copying": "Copiando la base de datos",
-            "verifying": "Verificando la copia",
-            "committing": "Finalizando el traslado"
+            "preparing": "Preparando los datos…",
+            "freezing": "Preparando los datos…",
+            "copying": "Copiando los datos…",
+            "verifying": "Comprobando los datos copiados…",
+            "committing": "Finalizando el cambio…"
         },
         "error": {
             "operationBusy": "Ya hay otra copia, restauración o traslado en curso.",
-            "databaseUnavailable": "La base de datos no se puede mover ahora.",
+            "databaseUnavailable": "Ahora mismo no se pueden copiar los datos. Inténtalo de nuevo más tarde.",
             "pendingRestore": "Termina o cancela primero la restauración pendiente.",
             "pendingLegacyMigration": "Termina primero la migración de datos antiguos.",
             "pendingMigration": "Hay un traslado de datos pendiente. Reinicia VRCX-0.",
             "cleanupConflict": "Gestiona primero los datos antiguos antes de volver a esta carpeta.",
             "insufficientSpace": "No hay suficiente espacio libre para trasladar los datos.",
-            "invalidAdoptionTarget": "Solo se puede adoptar una carpeta que contenga un perfil de VRCX-0 existente.",
-            "invalidFreshStartTarget": "Una carpeta con un perfil de VRCX-0 existente no se puede usar para empezar de cero.",
-            "copyFailed": "No se pudo copiar la base de datos. Se siguen usando los datos originales.",
-            "commitFailed": "No se pudo instalar la copia. Se siguen usando los datos originales.",
+            "invalidAdoptionTarget": "Esta carpeta no contiene datos de VRCX-0 que se puedan usar. Elige otra carpeta.",
+            "invalidFreshStartTarget": "Esta carpeta ya contiene datos de VRCX-0. Elige otra para empezar de cero.",
+            "copyFailed": "No se pudieron copiar los datos. VRCX-0 sigue usando la carpeta original.",
+            "commitFailed": "No se pudieron guardar los datos copiados. VRCX-0 sigue usando la carpeta original.",
             "pointerCommitFailed": "No se pudo activar la nueva carpeta. Reinicia VRCX-0 para reintentarlo de forma segura.",
             "io": "No se pudo leer o escribir un archivo de la carpeta de datos."
         },
         "warning": {
             "configCopyFailed": "No se pudieron copiar algunos ajustes.",
-            "galleryCopyFailed": "No se pudieron copiar algunos datos de la galería y se reconstruirán cuando sea necesario.",
+            "galleryCopyFailed": "No se pudieron copiar algunos datos de la galería. Se volverán a crear cuando hagan falta.",
             "cacheCleanupFailed": "No se pudieron eliminar algunos archivos de caché antiguos."
         },
         "result": {
-            "succeeded": "Carpeta de datos trasladada",
+            "succeeded": "Carpeta de datos cambiada",
             "failed_title": "No se pudo usar la nueva carpeta de datos",
             "database_open_failed": "VRCX-0 sigue usando la carpeta original. Tus datos no se han visto afectados.",
-            "interrupted_title": "Traslado interrumpido",
+            "interrupted_title": "Se interrumpió el cambio de carpeta",
             "interrupted": "VRCX-0 sigue usando la carpeta original. Puedes volver a intentarlo."
         },
         "cleanup": {
-            "ready_title": "Carpeta de datos trasladada",
+            "ready_title": "Carpeta de datos cambiada",
             "ready_description": "Los datos antiguos siguen en {path}.",
             "action": "Limpiar datos antiguos",
             "action_with_size": "Limpiar datos antiguos ({size})",
@@ -265,6 +265,16 @@
             "settings_description": "Los datos antiguos de VRCX-0 siguen en {path} ({size} bytes).",
             "dismiss": "Conservarlos y no volver a avisar",
             "dismissed": "Avisos de limpieza desactivados"
+        },
+        "running_title": "Cambiando la carpeta de datos",
+        "running_description": "No cierres VRCX-0 hasta que termine.",
+        "start_existing": "Usar datos existentes",
+        "start_fresh": "Usar nueva carpeta",
+        "new_folder": "Nueva carpeta",
+        "cancelling": "Cancelando…",
+        "mode_description": {
+            "adoptExisting": "Usa el historial y los ajustes de esta carpeta sin copiar tus datos actuales.",
+            "freshStart": "Empieza de cero en la nueva carpeta sin copiar tus datos actuales. No se eliminará nada de la carpeta anterior."
         }
     },
     "profile_backup": {
@@ -2754,7 +2764,7 @@
                     },
                     "data_directory": {
                         "header": "Directorio de datos",
-                        "description": "Fuente activa: {source}. Solo cambia la ruta guardada — los datos existentes no se mueven.",
+                        "description": "En uso: {source}.",
                         "current": "Directorio actual",
                         "actions": "Acciones del directorio de datos",
                         "choose": "Elegir carpeta",
@@ -2762,16 +2772,10 @@
                         "restart": "Reiniciar",
                         "restart_hint": "Los cambios se aplican tras reiniciar VRCX-0.",
                         "source_cli": "Anulación por línea de comandos",
-                        "source_persisted": "directorio personalizado guardado",
-                        "source_default": "directorio predeterminado",
+                        "source_persisted": "carpeta personalizada",
+                        "source_default": "carpeta predeterminada",
                         "cli_override": "Este inicio usa --data-dir. Inicia sin la anulación por línea de comandos para cambiar el directorio guardado.",
-                        "confirm_title": "¿Cambiar el directorio de datos de VRCX-0?",
-                        "confirm_description": "VRCX-0 no copiará los datos actuales. Para conservar tu inicio de sesión, base de datos, configuración y caché, copia tú mismo el directorio de datos actual a {path} antes de reiniciar. Guarda este directorio y reinicia para aplicarlo.",
-                        "confirm_empty": "La carpeta seleccionada está vacía y se iniciará como un perfil nuevo a menos que copies datos en ella.",
-                        "confirm_missing_profile": "La carpeta seleccionada no contiene VRCX-0.sqlite3 ni VRCX-0.json y puede iniciarse como un perfil nuevo.",
                         "saved_restart_required": "Directorio de datos guardado. Reinicia VRCX-0 para aplicarlo.",
-                        "reset_confirm_title": "¿Restablecer el directorio de datos de VRCX-0?",
-                        "reset_confirm_description": "VRCX-0 usará el directorio de datos predeterminado tras reiniciar. No se copiará ningún archivo.",
                         "reset_saved": "Directorio de datos restablecido. Reinicia VRCX-0 para aplicarlo.",
                         "failed_to_load": "No se pudieron cargar los ajustes del directorio de datos."
                     },

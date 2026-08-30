@@ -194,65 +194,65 @@
     },
     "language": "中文（繁體） (zh-TW)",
     "data_dir_migration": {
-        "title": "移轉 VRCX-0 資料",
-        "description": "選擇 VRCX-0 要如何使用所選資料夾。",
-        "completed_title": "資料移轉完成",
-        "completed_description": "重新啟動 VRCX-0 後會開始使用新的資料目錄。",
-        "error_short": "資料移轉失敗",
-        "start": "開始移轉",
+        "title": "更換資料夾",
+        "description": "選擇要在新資料夾中使用的資料。",
+        "completed_title": "請重新啟動以完成更換",
+        "completed_description": "重新啟動 VRCX-0 後，就會開始使用新資料夾。",
+        "error_short": "無法更換資料夾",
+        "start": "複製並更換",
         "restart_now": "立即重新啟動",
         "restart_later": "稍後再說",
-        "create_backup_first": "先建立備份",
-        "space_summary": "需要：{required} · 可用：{available}",
-        "insufficient_space": "可用空間不足，無法移轉資料。",
-        "contents_notice": "將複製資料庫、應用程式設定、相簿索引與縮圖；圖片快取會在新目錄重新下載。舊資料會保留到你確認清理為止。",
-        "unsupported_storage_warning": "請勿選擇網路磁碟、雲端同步資料夾（例如 OneDrive 或 iCloud）或卸除式磁碟。資料庫在這些位置可能損毀，且不在支援範圍內。",
+        "create_backup_first": "開啟備份工具",
+        "space_summary": "所需空間：{required} · 可用空間：{available}",
+        "insufficient_space": "空間不足，無法複製資料。請選擇其他磁碟上的資料夾，或先釋放一些空間。",
+        "contents_notice": "將現有紀錄與設定複製到新資料夾，原資料夾中的資料會保留。",
+        "unsupported_storage_warning": "不支援網路磁碟、雲端同步資料夾、隨身碟或外接硬碟，使用這些位置可能導致資料損毀。",
         "mode": {
-            "migrate": "移轉目前資料（建議）",
-            "adoptExisting": "使用此資料夾中現有的 VRCX-0 設定檔",
-            "freshStart": "在此資料夾建立全新設定檔"
+            "migrate": "保留目前資料（建議）",
+            "adoptExisting": "使用這裡現有的資料",
+            "freshStart": "重新開始"
         },
         "target": {
             "empty": "所選資料夾是空的。",
-            "existingProfile": "所選資料夾已有 VRCX-0 設定檔；覆寫前會先完整保留。",
-            "foreignContent": "所選資料夾含有其他檔案；VRCX-0 只會管理自己的檔案。"
+            "existingProfile": "這裡現有的 VRCX-0 資料將被取代，取代前會保留一份副本。",
+            "foreignContent": "此資料夾中還有其他檔案，VRCX-0 只會變更自己的檔案。"
         },
         "phase": {
-            "preparing": "正在準備移轉",
-            "freezing": "正在凍結資料庫",
-            "copying": "正在複製資料庫",
-            "verifying": "正在驗證副本",
-            "committing": "正在完成移轉"
+            "preparing": "正在準備資料…",
+            "freezing": "正在準備資料…",
+            "copying": "正在複製資料…",
+            "verifying": "正在檢查複製結果…",
+            "committing": "正在完成更換…"
         },
         "error": {
             "operationBusy": "另一個備份、還原或資料移轉作業正在執行。",
-            "databaseUnavailable": "資料庫目前無法移轉。",
+            "databaseUnavailable": "目前無法複製資料，請稍後再試。",
             "pendingRestore": "請先完成或取消待處理的設定檔還原。",
             "pendingLegacyMigration": "請先完成待處理的舊版資料移轉。",
             "pendingMigration": "已有待完成的資料目錄移轉，請重新啟動 VRCX-0。",
             "cleanupConflict": "移回此資料夾前，請先處理保留的舊資料。",
             "insufficientSpace": "可用空間不足，無法移轉資料。",
-            "invalidAdoptionTarget": "只有包含現有 VRCX-0 設定檔的資料夾才能直接採用。",
-            "invalidFreshStartTarget": "包含現有 VRCX-0 設定檔的資料夾不能用於全新開始。",
-            "copyFailed": "無法複製資料庫，VRCX-0 仍使用原目錄。",
-            "commitFailed": "無法安裝資料庫副本，VRCX-0 仍使用原目錄。",
+            "invalidAdoptionTarget": "此資料夾中沒有可用的 VRCX-0 資料，請選擇其他資料夾。",
+            "invalidFreshStartTarget": "此資料夾中已有 VRCX-0 資料。若要重新開始，請選擇其他資料夾。",
+            "copyFailed": "無法複製資料，VRCX-0 仍在使用原資料夾。",
+            "commitFailed": "無法儲存複製的資料，VRCX-0 仍在使用原資料夾。",
             "pointerCommitFailed": "無法啟用新資料目錄。請重新啟動 VRCX-0 安全重試。",
             "io": "無法讀取或寫入資料目錄檔案。"
         },
         "warning": {
             "configCopyFailed": "部分應用程式設定未能複製，可能會使用預設值。",
-            "galleryCopyFailed": "部分相簿索引或縮圖未能複製，將視需要自動重建。",
+            "galleryCopyFailed": "部分相簿資料未能複製，會在需要時自動重新產生。",
             "cacheCleanupFailed": "部分舊快取檔案未能移除。"
         },
         "result": {
-            "succeeded": "資料目錄移轉完成",
+            "succeeded": "已更換資料夾",
             "failed_title": "無法使用新的資料目錄",
             "database_open_failed": "VRCX-0 已繼續使用原目錄，你的資料未受影響。",
-            "interrupted_title": "資料目錄移轉已中斷",
+            "interrupted_title": "更換資料夾的操作已中斷",
             "interrupted": "VRCX-0 已繼續使用原目錄，你可以稍後重試。"
         },
         "cleanup": {
-            "ready_title": "資料目錄移轉完成",
+            "ready_title": "已更換資料夾",
             "ready_description": "舊資料仍保留在 {path}。",
             "action": "清理舊資料",
             "action_with_size": "清理舊資料（{size}）",
@@ -265,6 +265,16 @@
             "settings_description": "舊的 VRCX-0 資料仍位於 {path}（{size} 位元組）。",
             "dismiss": "保留舊資料，不再提醒",
             "dismissed": "已停用清理提醒"
+        },
+        "running_title": "正在更換資料夾",
+        "running_description": "請勿關閉 VRCX-0，並等候操作完成。",
+        "start_existing": "使用現有資料",
+        "start_fresh": "使用新資料夾",
+        "new_folder": "新資料夾",
+        "cancelling": "正在取消…",
+        "mode_description": {
+            "adoptExisting": "使用此資料夾中的紀錄與設定，不複製目前的資料。",
+            "freshStart": "不複製目前的資料，在新資料夾中重新開始。原有資料不會刪除。"
         }
     },
     "profile_backup": {
@@ -2754,7 +2764,7 @@
                     },
                     "data_directory": {
                         "header": "資料目錄",
-                        "description": "目前來源：{source}。這裡只儲存目錄位置，VRCX-0 不會複製資料。",
+                        "description": "目前使用：{source}。",
                         "current": "目前目錄",
                         "actions": "資料目錄操作",
                         "choose": "選擇目錄",
@@ -2762,16 +2772,10 @@
                         "restart": "重新啟動",
                         "restart_hint": "更改會在重新啟動 VRCX-0 後生效。",
                         "source_cli": "命令行覆蓋",
-                        "source_persisted": "已儲存的自訂目錄",
-                        "source_default": "預設目錄",
+                        "source_persisted": "自訂資料夾",
+                        "source_default": "預設資料夾",
                         "cli_override": "本次啟動正在使用 --data-dir。要修改持久化目錄，請不帶命令行覆蓋啟動。",
-                        "confirm_title": "切換 VRCX-0 資料目錄？",
-                        "confirm_description": "VRCX-0 不會複製目前資料。要保留登入、資料庫、設定和快取，請在重新啟動前自行把目前資料目錄複製到 {path}。儲存此目錄並重新啟動後生效。",
-                        "confirm_empty": "所選目錄為空；除非你手動複製資料進去，否則會作為新的 profile 啟動。",
-                        "confirm_missing_profile": "所選目錄不包含 VRCX-0.sqlite3 或 VRCX-0.json，可能會作為新的 profile 啟動。",
                         "saved_restart_required": "資料目錄已儲存。請重新啟動 VRCX-0 以生效。",
-                        "reset_confirm_title": "重設 VRCX-0 資料目錄？",
-                        "reset_confirm_description": "重新啟動後 VRCX-0 將使用預設資料目錄。不會複製任何檔案。",
                         "reset_saved": "資料目錄已重設。請重新啟動 VRCX-0 以生效。",
                         "failed_to_load": "讀取資料目錄設定失敗。"
                     },

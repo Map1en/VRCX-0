@@ -194,65 +194,65 @@
     },
     "language": "中文（简体） (zh-CN)",
     "data_dir_migration": {
-        "title": "迁移 VRCX-0 数据",
-        "description": "选择 VRCX-0 如何使用所选文件夹。",
-        "completed_title": "数据迁移完成",
-        "completed_description": "重启 VRCX-0 后将开始使用新的数据目录。",
-        "error_short": "数据迁移失败",
-        "start": "开始迁移",
+        "title": "更换数据文件夹",
+        "description": "选择在新文件夹中使用哪些数据。",
+        "completed_title": "请重启以完成更换",
+        "completed_description": "重启 VRCX-0 后将开始使用新文件夹。",
+        "error_short": "更换数据文件夹失败",
+        "start": "复制并更换",
         "restart_now": "立即重启",
         "restart_later": "稍后重启",
-        "create_backup_first": "先创建备份",
-        "space_summary": "需要：{required} · 可用：{available}",
-        "insufficient_space": "可用空间不足，无法迁移数据。",
-        "contents_notice": "将复制数据库、应用设置以及相册索引和缩略图；图片缓存会在新目录重新下载。旧数据会保留，直到你确认清理。",
-        "unsupported_storage_warning": "请勿选择网络盘、云同步文件夹（如 OneDrive 或 iCloud）或可移动磁盘。数据库在这些位置可能损坏，此类配置不受支持。",
+        "create_backup_first": "打开备份工具",
+        "space_summary": "所需空间：{required} · 可用空间：{available}",
+        "insufficient_space": "空间不足，无法复制数据。请选择其他磁盘上的文件夹，或先释放一些空间。",
+        "contents_notice": "将现有记录和设置复制到新文件夹，原文件夹中的数据会保留。",
+        "unsupported_storage_warning": "不支持网络盘、云同步文件夹、U 盘或移动硬盘，使用这些位置可能导致数据损坏。",
         "mode": {
-            "migrate": "迁移当前数据（推荐）",
-            "adoptExisting": "使用此文件夹中已有的 VRCX-0 配置",
-            "freshStart": "在此文件夹中创建全新配置"
+            "migrate": "保留当前数据（推荐）",
+            "adoptExisting": "使用这里已有的数据",
+            "freshStart": "重新开始"
         },
         "target": {
             "empty": "所选文件夹为空。",
-            "existingProfile": "所选文件夹已有 VRCX-0 配置；覆盖迁移前会先完整保留它。",
-            "foreignContent": "所选文件夹还包含其他文件；VRCX-0 只会管理自己的文件。"
+            "existingProfile": "这里已有的 VRCX-0 数据会被替换，替换前会保留一份副本。",
+            "foreignContent": "此文件夹中还有其他文件，VRCX-0 只会改动自己的文件。"
         },
         "phase": {
-            "preparing": "正在准备迁移",
-            "freezing": "正在冻结数据库",
-            "copying": "正在复制数据库",
-            "verifying": "正在校验副本",
-            "committing": "正在完成迁移"
+            "preparing": "正在准备数据…",
+            "freezing": "正在准备数据…",
+            "copying": "正在复制数据…",
+            "verifying": "正在检查复制结果…",
+            "committing": "正在完成更换…"
         },
         "error": {
             "operationBusy": "另一个备份、恢复或数据迁移任务正在运行。",
-            "databaseUnavailable": "数据库当前无法迁移。",
+            "databaseUnavailable": "暂时无法复制数据，请稍后重试。",
             "pendingRestore": "请先完成或取消待处理的配置恢复。",
             "pendingLegacyMigration": "请先完成待处理的旧版数据迁移。",
             "pendingMigration": "已有待完成的数据目录迁移，请重启 VRCX-0 完成。",
             "cleanupConflict": "迁回该文件夹前，请先清理旧数据或选择保留且不再提醒。",
             "insufficientSpace": "可用空间不足，无法迁移数据。",
-            "invalidAdoptionTarget": "只有包含现有 VRCX-0 配置的文件夹才能直接采用。",
-            "invalidFreshStartTarget": "包含现有 VRCX-0 配置的文件夹不能用于全新开始。",
-            "copyFailed": "无法复制数据库，VRCX-0 仍在使用原目录。",
-            "commitFailed": "无法安装数据库副本，VRCX-0 仍在使用原目录。",
+            "invalidAdoptionTarget": "此文件夹中没有可用的 VRCX-0 数据，请选择其他文件夹。",
+            "invalidFreshStartTarget": "此文件夹中已有 VRCX-0 数据。若要重新开始，请选择其他文件夹。",
+            "copyFailed": "无法复制数据，VRCX-0 仍在使用原文件夹。",
+            "commitFailed": "无法保存复制的数据，VRCX-0 仍在使用原文件夹。",
             "pointerCommitFailed": "无法启用新数据目录。请重启 VRCX-0 以安全重试。",
             "io": "无法读取或写入数据目录中的文件。"
         },
         "warning": {
             "configCopyFailed": "部分应用设置未能复制，可能会恢复为默认值。",
-            "galleryCopyFailed": "部分相册索引或缩略图未能复制，将在需要时自动重建。",
+            "galleryCopyFailed": "部分相册数据未能复制，将在需要时自动重新生成。",
             "cacheCleanupFailed": "部分旧缓存文件未能删除。"
         },
         "result": {
-            "succeeded": "数据目录迁移完成",
+            "succeeded": "数据文件夹已更换",
             "failed_title": "无法使用新的数据目录",
             "database_open_failed": "VRCX-0 已继续使用原目录，你的数据未受影响。",
-            "interrupted_title": "数据目录迁移已中断",
+            "interrupted_title": "更换文件夹已中断",
             "interrupted": "VRCX-0 已继续使用原目录，你可以稍后重试。"
         },
         "cleanup": {
-            "ready_title": "数据目录迁移完成",
+            "ready_title": "数据文件夹已更换",
             "ready_description": "旧数据仍保留在 {path}。",
             "action": "清理旧数据",
             "action_with_size": "清理旧数据（{size}）",
@@ -265,6 +265,16 @@
             "settings_description": "旧的 VRCX-0 数据仍位于 {path}（{size} 字节）。",
             "dismiss": "保留旧数据，不再提醒",
             "dismissed": "已关闭清理提醒"
+        },
+        "running_title": "正在更换数据文件夹",
+        "running_description": "请保持 VRCX-0 开启，等待操作完成。",
+        "start_existing": "使用已有数据",
+        "start_fresh": "使用新文件夹",
+        "new_folder": "新文件夹",
+        "cancelling": "正在取消…",
+        "mode_description": {
+            "adoptExisting": "使用此文件夹中的记录和设置，不复制当前数据。",
+            "freshStart": "不复制当前数据，在新文件夹中重新开始。原有数据不会删除。"
         }
     },
     "profile_backup": {
@@ -2754,7 +2764,7 @@
                     },
                     "data_directory": {
                         "header": "数据目录",
-                        "description": "当前来源：{source}。这里只保存目录位置，VRCX-0 不会复制数据。",
+                        "description": "当前使用：{source}。",
                         "current": "当前目录",
                         "actions": "数据目录操作",
                         "choose": "选择目录",
@@ -2762,16 +2772,10 @@
                         "restart": "重启",
                         "restart_hint": "更改会在重启 VRCX-0 后生效。",
                         "source_cli": "命令行覆盖",
-                        "source_persisted": "已保存的自定义目录",
-                        "source_default": "默认目录",
+                        "source_persisted": "自定义文件夹",
+                        "source_default": "默认文件夹",
                         "cli_override": "本次启动正在使用 --data-dir 进行命令行目录覆盖。要修改持久化目录，请不要携带命令行启动。",
-                        "confirm_title": "切换 VRCX-0 数据目录？",
-                        "confirm_description": "VRCX-0 不会复制当前数据。要保留登录、数据库、配置和缓存，请在重启前自行把当前数据目录复制到 {path} 并保存，重启后生效。",
-                        "confirm_empty": "所选目录为空；除非你手动复制数据进去，否则会作为新的 profile 启动。",
-                        "confirm_missing_profile": "所选目录不包含 VRCX-0.sqlite3 或 VRCX-0.json，可能会作为新的 profile 启动。",
                         "saved_restart_required": "数据目录已保存，请重启 VRCX-0 以生效。",
-                        "reset_confirm_title": "重置 VRCX-0 数据目录的位置？",
-                        "reset_confirm_description": "重启后 VRCX-0 将使用默认数据目录，不会复制任何文件。",
                         "reset_saved": "数据目录已重置，请重启 VRCX-0 以生效。",
                         "failed_to_load": "读取数据目录设置失败。"
                     },
