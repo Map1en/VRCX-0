@@ -11,7 +11,6 @@ use vrcx_0_persistence::data_dir_migration::{
 use vrcx_0_persistence::DatabaseService;
 
 use super::*;
-use crate::profile::profile_backup::{OperationGuard, ProfileOperationGate};
 
 struct TestDir {
     path: PathBuf,
@@ -158,6 +157,131 @@ fn migration_happy_path_freezes_copies_and_commits_pointer() {
     let events = event_bus.take_events_for_test();
     assert!(events.iter().all(|event| event.name == "dataDirMigration"));
     assert!(events.len() >= 5);
+}
+
+#[test]
+fn migration_succeeds_when_a_reader_prevents_wal_truncation() {
+    let dir = TestDir::new("reader-prevents-truncation");
+    let source = dir.path.join("source");
+    let target = dir.path.join("target");
+    let control = dir.path.join("control");
+    for path in [&source, &target, &control] {
+        std::fs::create_dir(path).unwrap();
+    }
+    let db = test_database(&source);
+    let mut reader = rusqlite::Connection::open_with_flags(
+        db.db_path(),
+        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
+    )
+    .unwrap();
+    let read_snapshot = reader.transaction().unwrap();
+    let count: i64 = read_snapshot
+        .query_row("SELECT COUNT(*) FROM configs", [], |row| row.get(0))
+        .unwrap();
+    assert!(count > 0);
+    let committed = Arc::new(Mutex::new(None));
+    let committed_for_callback = Arc::clone(&committed);
+    let (runtime, _) = test_runtime(
+        source.clone(),
+        control.clone(),
+        Arc::clone(&db),
+        ProfileOperationGate::default(),
+        Arc::new(move |path| {
+            *committed_for_callback.lock().unwrap() = Some(path.to_path_buf());
+            Ok(())
+        }),
+    );
+
+    let outcome = runtime.run_migration(target.clone(), false);
+
+    assert!(outcome.accepted, "{outcome:?}");
+    assert_eq!(outcome.status.state, DataDirMigrationState::Completed);
+    assert_eq!(*committed.lock().unwrap(), Some(target.clone()));
+    assert!(!db.is_main_mode());
+    let journal = read_pending_data_dir_migration(&control)
+        .unwrap()
+        .expect("switched journal");
+    assert_eq!(journal.phase, DataDirMigrationJournalPhase::Switched);
+    assert_eq!(journal.wal_bytes, None);
+    assert!(
+        std::fs::metadata(source.join("VRCX-0.sqlite3-wal"))
+            .unwrap()
+            .len()
+            > 0
+    );
+    assert!(!target.join("VRCX-0.sqlite3-wal").exists());
+    assert!(!target.join("VRCX-0.sqlite3-shm").exists());
+    let migrated = Arc::new(DatabaseService::new(&target.join("VRCX-0.sqlite3")).unwrap());
+    assert_eq!(
+        ConfigRepository::new(migrated)
+            .get_string("migration-test", "")
+            .unwrap(),
+        "source"
+    );
+    read_snapshot.rollback().unwrap();
+}
+
+#[test]
+fn freeze_failure_preserves_source_database_and_does_not_commit_pointer() {
+    let dir = TestDir::new("busy-checkpoint");
+    let source = dir.path.join("source");
+    let target = dir.path.join("target");
+    let control = dir.path.join("control");
+    for path in [&source, &target, &control] {
+        std::fs::create_dir(path).unwrap();
+    }
+    let db = test_database(&source);
+    let config = ConfigRepository::new(Arc::clone(&db));
+    let mut reader = rusqlite::Connection::open_with_flags(
+        db.db_path(),
+        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
+    )
+    .unwrap();
+    let read_snapshot = reader.transaction().unwrap();
+    let count: i64 = read_snapshot
+        .query_row("SELECT COUNT(*) FROM configs", [], |row| row.get(0))
+        .unwrap();
+    assert!(count > 0);
+    config.set_string("migration-test", "after-reader").unwrap();
+    let checkpoint = db.checkpoint_wal_passive().unwrap();
+    assert!(checkpoint.log_frames > checkpoint.checkpointed_frames);
+    let committed = Arc::new(Mutex::new(None));
+    let committed_for_callback = Arc::clone(&committed);
+    let (runtime, _) = test_runtime(
+        source,
+        control.clone(),
+        Arc::clone(&db),
+        ProfileOperationGate::default(),
+        Arc::new(move |path| {
+            *committed_for_callback.lock().unwrap() = Some(path.to_path_buf());
+            Ok(())
+        }),
+    );
+
+    let outcome = runtime.run_migration(target.clone(), false);
+
+    assert!(!outcome.accepted);
+    assert_eq!(outcome.status.state, DataDirMigrationState::Error);
+    assert_eq!(outcome.status.phase, Some(DataDirMigrationPhase::Freezing));
+    assert_eq!(
+        outcome.error.expect("freeze error").code,
+        DataDirMigrationErrorCode::DatabaseUnavailable
+    );
+    assert!(committed.lock().unwrap().is_none());
+    assert!(!target.join("VRCX-0.sqlite3").exists());
+    assert!(read_pending_data_dir_migration(&control).unwrap().is_none());
+    assert!(db.is_main_mode());
+    read_snapshot.rollback().unwrap();
+    assert_eq!(
+        config.get_string("migration-test", "").unwrap(),
+        "after-reader"
+    );
+    config.set_string("migration-test", "after-abort").unwrap();
+
+    let retried = runtime.run_migration(target, false);
+    assert!(retried.accepted, "{retried:?}");
+    assert_eq!(retried.status.state, DataDirMigrationState::Completed);
+    assert!(!db.is_main_mode());
 }
 
 #[test]
