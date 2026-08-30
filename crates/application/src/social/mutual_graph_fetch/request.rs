@@ -5,6 +5,7 @@ use std::time::Duration;
 use serde_json::Value;
 use tokio::time::{sleep, Instant};
 use vrcx_0_application_core::vrchat_api::VrchatScope;
+use vrcx_0_application_realtime::RealtimeHostRuntime;
 use vrcx_0_core::json::RawJson;
 
 use super::types::{
@@ -16,6 +17,9 @@ use super::types::{
 use crate::remote::VrchatRequestPort;
 use vrcx_0_application_core::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot};
 use vrcx_0_core::OwnerId;
+
+#[cfg(test)]
+mod tests;
 
 const MUTUAL_GRAPH_PAGE_SIZE: i32 = 100;
 const MUTUAL_GRAPH_REQUEST_INTERVAL: Duration = Duration::from_millis(200);
@@ -98,6 +102,7 @@ pub async fn refresh_mutual_graph_friend(
 
 pub async fn get_user_mutual_friends_list(
     deps: MutualGraphRequestDeps<'_>,
+    realtime: &RealtimeHostRuntime,
     input: UserMutualFriendsListInput,
 ) -> Result<UserMutualFriendsListOutput> {
     let expected_scope =
@@ -121,7 +126,8 @@ pub async fn get_user_mutual_friends_list(
     let result = fetch_mutual_friend_rows(&mut context, &user_id).await?;
     ensure_mutual_scope_matches(deps.auth_scope, &expected_scope)?;
 
-    let backfills_graph = user_id != expected_scope.current_user_id;
+    let backfills_graph =
+        user_id != expected_scope.current_user_id && realtime.is_current_friend(&user_id);
     let owner_user_id = OwnerId::new(expected_scope.current_user_id);
 
     match result {

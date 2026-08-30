@@ -372,6 +372,7 @@ impl LocalDataRuntime {
                 self.mutual_graph_remote.as_ref(),
                 &self.auth_scope,
             ),
+            &self.realtime,
             input,
         )
         .await
