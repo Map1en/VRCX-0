@@ -97,6 +97,25 @@ fn observed_entry(record: &FriendRecord, observed_ms: i64) -> FriendLocationEntr
     }
 }
 
+fn calibrate_friend_entry(
+    entry: &mut FriendLocationEntry,
+    roster_location: &str,
+    joined_at_ms: i64,
+) {
+    if entry.location == roster_location
+        && matches!(
+            entry.phase,
+            FriendLocationPhase::Present | FriendLocationPhase::Traveling
+        )
+    {
+        entry.since_ms = Some(
+            entry
+                .since_ms
+                .map_or(joined_at_ms, |since_ms| since_ms.min(joined_at_ms)),
+        );
+    }
+}
+
 fn update_friend_entry(
     state: &mut InstanceDwellState,
     user_id: &str,
@@ -113,6 +132,9 @@ fn update_friend_entry(
             next.since_ms = previous.since_ms;
         }
     }
+    if let Some(&joined_at_ms) = state.roster_joins.get(user_id) {
+        calibrate_friend_entry(&mut next, &state.roster_location, joined_at_ms);
+    }
     state.friends.insert(user_id.to_string(), next);
 }
 
@@ -122,28 +144,11 @@ fn projected_friend(
     entry: &FriendLocationEntry,
 ) -> FriendLocationTime {
     let roster_join = state.roster_joins.get(user_id).copied();
-    let roster_matches_observed = !state.roster_location.is_empty()
-        && entry.location == state.roster_location
-        && matches!(
-            entry.phase,
-            FriendLocationPhase::Present | FriendLocationPhase::Traveling
-        );
     let roster_can_supply_location = !state.roster_location.is_empty()
         && entry.phase == FriendLocationPhase::Inactive
         && !parse_location(&entry.location).is_real_instance;
 
     if let Some(joined_at_ms) = roster_join {
-        if roster_matches_observed {
-            return FriendLocationTime {
-                user_id: user_id.to_string(),
-                location: entry.location.clone(),
-                since_ms: Some(
-                    entry
-                        .since_ms
-                        .map_or(joined_at_ms, |since_ms| since_ms.min(joined_at_ms)),
-                ),
-            };
-        }
         if roster_can_supply_location {
             return FriendLocationTime {
                 user_id: user_id.to_string(),
@@ -225,6 +230,7 @@ impl InstanceDwellRegistry {
             let previous_joins = if state.roster_location == location {
                 std::mem::take(&mut state.roster_joins)
             } else {
+                state.roster_joins.clear();
                 HashMap::new()
             };
             state.roster_location = location.clone();
@@ -235,13 +241,14 @@ impl InstanceDwellRegistry {
                         continue;
                     };
                     if !user_id.is_empty() {
-                        state.roster_joins.insert(
-                            user_id.to_string(),
-                            previous_joins
-                                .get(user_id)
-                                .copied()
-                                .map_or(joined_at_ms, |previous| previous.min(joined_at_ms)),
-                        );
+                        let joined_at_ms = previous_joins
+                            .get(user_id)
+                            .copied()
+                            .map_or(joined_at_ms, |previous| previous.min(joined_at_ms));
+                        state.roster_joins.insert(user_id.to_string(), joined_at_ms);
+                        if let Some(entry) = state.friends.get_mut(user_id) {
+                            calibrate_friend_entry(entry, &location, joined_at_ms);
+                        }
                     }
                 }
             }
@@ -475,6 +482,91 @@ mod tests {
         assert_eq!(registry.snapshot()[0].since_ms, Some(1_000));
         registry.observe_roster(&roster("wrld_a:1", &[("usr_a", 9_000)]));
         assert_eq!(registry.snapshot()[0].since_ms, Some(1_000));
+    }
+
+    #[test]
+    fn calibrated_start_survives_leaving_the_local_roster() {
+        for next_roster in [roster("wrld_a:1", &[]), roster("wrld_b:2", &[])] {
+            let registry = InstanceDwellRegistry::new();
+            let record = friend("usr_a", "online", "wrld_a:1");
+            registry.observe_friend_record("usr_a", &record, 5_000);
+            registry.observe_roster(&roster("wrld_a:1", &[("usr_a", 1_000)]));
+
+            registry.observe_roster(&next_roster);
+            registry.observe_friend_record("usr_a", &record, 9_000);
+
+            assert_eq!(registry.snapshot()[0].location, "wrld_a:1");
+            assert_eq!(registry.snapshot()[0].since_ms, Some(1_000));
+        }
+    }
+
+    #[test]
+    fn calibrated_start_survives_game_exit() {
+        let registry = InstanceDwellRegistry::new();
+        registry.observe_friend_record("usr_a", &friend("usr_a", "online", "wrld_a:1"), 5_000);
+        registry.observe_roster(&roster("wrld_a:1", &[("usr_a", 1_000)]));
+
+        vrcx_0_contracts::InstanceRosterObserver::on_game_running(&registry, false);
+        registry.observe_roster(&InstanceRosterSnapshot::default());
+
+        assert_eq!(registry.snapshot()[0].since_ms, Some(1_000));
+        assert_eq!(registry.tracked_count(), (1, 0));
+    }
+
+    #[test]
+    fn existing_roster_calibrates_presence_updates_before_it_is_removed() {
+        let registry = InstanceDwellRegistry::new();
+        registry.observe_roster(&roster("wrld_a:1", &[("usr_a", 1_000)]));
+        registry.observe_friend_record("usr_a", &friend("usr_a", "online", "wrld_a:1"), 5_000);
+        let mut traveling = friend("usr_a", "online", "traveling");
+        traveling.traveling_to_location = "wrld_a:1".into();
+        registry.observe_friend_record("usr_a", &traveling, 7_000);
+        registry.observe_friend_record("usr_a", &friend("usr_a", "online", "wrld_a:1"), 9_000);
+
+        registry.observe_roster(&roster("wrld_a:1", &[]));
+
+        assert_eq!(registry.snapshot()[0].since_ms, Some(1_000));
+    }
+
+    #[test]
+    fn calibrated_start_is_not_reused_after_a_friend_changes_instance() {
+        let registry = InstanceDwellRegistry::new();
+        registry.observe_friend_record("usr_a", &friend("usr_a", "online", "wrld_a:1"), 5_000);
+        registry.observe_roster(&roster("wrld_a:1", &[("usr_a", 1_000)]));
+
+        registry.observe_friend_record("usr_a", &friend("usr_a", "online", "wrld_b:2"), 9_000);
+        registry.observe_roster(&roster("wrld_a:1", &[]));
+
+        assert_eq!(registry.snapshot()[0].location, "wrld_b:2");
+        assert_eq!(registry.snapshot()[0].since_ms, Some(9_000));
+    }
+
+    #[test]
+    fn new_instance_roster_does_not_reuse_previous_instance_members() {
+        let registry = InstanceDwellRegistry::new();
+        registry.observe_friend_record("usr_a", &friend("usr_a", "online", "wrld_b:2"), 100_000);
+        registry.observe_roster(&roster("wrld_a:1", &[("usr_a", 1_000)]));
+
+        registry.observe_roster(&roster("wrld_b:2", &[]));
+        assert_eq!(registry.tracked_count(), (1, 0));
+        assert_eq!(registry.snapshot()[0].since_ms, Some(100_000));
+
+        registry.observe_roster(&roster("wrld_b:2", &[("usr_a", 100_500)]));
+        assert_eq!(registry.snapshot()[0].since_ms, Some(100_000));
+    }
+
+    #[test]
+    fn game_exit_discards_roster_members_before_the_next_instance() {
+        let registry = InstanceDwellRegistry::new();
+        registry.observe_friend_record("usr_a", &friend("usr_a", "online", "wrld_b:2"), 100_000);
+        registry.observe_roster(&roster("wrld_a:1", &[("usr_a", 1_000)]));
+
+        vrcx_0_contracts::InstanceRosterObserver::on_game_running(&registry, false);
+        assert_eq!(registry.tracked_count(), (1, 0));
+
+        registry.observe_roster(&roster("wrld_b:2", &[]));
+        registry.observe_roster(&roster("wrld_b:2", &[("usr_a", 100_500)]));
+        assert_eq!(registry.snapshot()[0].since_ms, Some(100_000));
     }
 
     #[test]

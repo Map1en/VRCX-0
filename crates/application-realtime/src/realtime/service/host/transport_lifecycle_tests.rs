@@ -4,7 +4,10 @@ use std::time::Duration;
 use super::test_support::*;
 use super::*;
 use crate::realtime::{RealtimeSessionContext, RealtimeTransportLifecycleEvent};
-use vrcx_0_application_core::{RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle};
+use vrcx_0_application_core::{
+    InstanceRosterMember, InstanceRosterSnapshot, RuntimeTask, RuntimeTaskExecutor,
+    RuntimeTaskHandle,
+};
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::OwnerId;
 
@@ -67,6 +70,280 @@ fn seed_online_friend(
         .into_iter()
         .collect(),
     )?;
+    Ok(())
+}
+
+fn local_friend_roster(joined_at_ms: i64) -> InstanceRosterSnapshot {
+    InstanceRosterSnapshot {
+        location: "wrld_old:123".into(),
+        members: vec![InstanceRosterMember {
+            user_id: "usr_friend".into(),
+            display_name: "Friend".into(),
+            joined_at_ms: Some(joined_at_ms),
+        }],
+        ..InstanceRosterSnapshot::default()
+    }
+}
+
+#[test]
+fn fresh_baseline_reconnect_preserves_location_time_without_new_game_logs() -> Result<()> {
+    let (_dir, runtime, active_session) = runtime_with_active_session("reconnect-location-time")?;
+    let old_transport = active_transport(&runtime);
+    seed_online_friend(&runtime, &active_session, old_transport.generation)?;
+    runtime
+        .runtime()
+        .deps
+        .instance_dwell
+        .observe_roster(&local_friend_roster(1_000));
+    let expected_times = runtime.runtime().deps.instance_dwell.snapshot();
+    let fresh_friends = runtime.runtime().friend_snapshot().unwrap().friends_by_id;
+    let RealtimeFriendApplyResult::Output(output) =
+        runtime
+            .runtime()
+            .friends
+            .apply_ws_message(&RealtimeWsMessagePayload {
+                json: json!({"type": "friend-offline", "content": {"userId": "usr_friend"}}),
+                raw: "{}".into(),
+                received_at: "2026-07-20T00:00:00Z".into(),
+            })
+    else {
+        panic!("friend-offline should produce an output");
+    };
+    let PendingOfflineTimerAction::Schedule { token, .. } = output.timer_action else {
+        panic!("friend-offline should schedule a pending timer");
+    };
+    runtime.runtime().finish_realtime_transport(
+        old_transport,
+        RealtimeTransportTermination::UnexpectedExit {
+            reason: "websocket stream ended".into(),
+            connected_secs: Some(60),
+        },
+    );
+    let watermark = runtime.runtime().capture_friend_baseline_watermark()?;
+    runtime.runtime().sync_friend_snapshot_with_watermark(
+        active_session.clone(),
+        watermark,
+        fresh_friends,
+        FriendStatusVerdicts::default(),
+    )?;
+    runtime.take_events_for_test();
+    runtime.set_task_executor_for_test(DiscardTaskExecutor);
+
+    runtime.runtime().start_from_friend_baseline(
+        active_session.user_id.clone(),
+        active_session.endpoint.clone(),
+        active_session.websocket.clone(),
+        2,
+        json!({"id": active_session.user_id}),
+    )?;
+
+    assert_eq!(
+        runtime.runtime().deps.instance_dwell.snapshot(),
+        expected_times
+    );
+    let events = runtime.take_events_for_test();
+    let projection = events
+        .iter()
+        .find(|event| event.name == "realtimeFriendProjection")
+        .expect("reconnect should publish the preserved location times");
+    assert_eq!(
+        projection.payload["locationTimeSnapshot"],
+        serde_json::to_value(expected_times).unwrap()
+    );
+    assert!(
+        !runtime.runtime().friend_snapshot().unwrap().friends_by_id["usr_friend"]
+            .extra
+            .get("pendingOffline")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false)
+    );
+    assert!(runtime
+        .runtime()
+        .friends
+        .fire_pending_offline("usr_friend", token, "2026-07-20T00:03:00Z".into(),)
+        .is_none());
+
+    for location in ["traveling", "wrld_old:123"] {
+        runtime.handle_active_friend_ws_message_for_test(&RealtimeWsMessagePayload {
+            json: json!({
+                "type": "friend-location",
+                "content": {
+                    "userId": "usr_friend",
+                    "location": location,
+                    "travelingToLocation": "wrld_old:123",
+                    "user": {"id": "usr_friend"}
+                }
+            }),
+            raw: "{}".into(),
+            received_at: "2026-07-20T00:04:00Z".into(),
+        });
+        assert_eq!(
+            runtime.runtime().deps.instance_dwell.snapshot()[0].since_ms,
+            Some(1_000)
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn fresh_placeholder_baseline_clears_pending_offline_before_syncing_location_time() -> Result<()> {
+    let (_dir, runtime, active_session) =
+        runtime_with_active_session("reconnect-placeholder-offline")?;
+    let old_transport = active_transport(&runtime);
+    seed_online_friend(&runtime, &active_session, old_transport.generation)?;
+    runtime.handle_active_friend_ws_message_for_test(&RealtimeWsMessagePayload {
+        json: json!({"type": "friend-offline", "content": {"userId": "usr_friend"}}),
+        raw: "{}".into(),
+        received_at: "2026-07-20T00:00:00Z".into(),
+    });
+    assert_eq!(
+        runtime.runtime().friend_snapshot().unwrap().friends_by_id["usr_friend"].extra
+            ["pendingOffline"],
+        true,
+    );
+    runtime.runtime().finish_realtime_transport(
+        old_transport,
+        RealtimeTransportTermination::UnexpectedExit {
+            reason: "websocket stream ended".into(),
+            connected_secs: Some(60),
+        },
+    );
+    let placeholder = FriendRecord {
+        id: "usr_friend".into(),
+        state: "offline".into(),
+        extra: [("$profileSource".into(), json!("placeholder"))]
+            .into_iter()
+            .collect(),
+        ..FriendRecord::default()
+    };
+    runtime.runtime().sync_friend_snapshot(
+        active_session.clone(),
+        None,
+        HashMap::from([("usr_friend".into(), placeholder)]),
+    )?;
+    runtime.set_task_executor_for_test(DiscardTaskExecutor);
+
+    runtime.runtime().start_from_friend_baseline(
+        active_session.user_id.clone(),
+        active_session.endpoint,
+        active_session.websocket,
+        2,
+        json!({"id": active_session.user_id}),
+    )?;
+
+    let snapshot = runtime.runtime().friend_snapshot().unwrap();
+    let friend = &snapshot.friends_by_id["usr_friend"];
+    assert_eq!(friend.state, "offline");
+    assert!(!friend.extra.contains_key("pendingOffline"));
+    assert_eq!(
+        runtime.runtime().deps.instance_dwell.snapshot()[0].since_ms,
+        None
+    );
+    Ok(())
+}
+
+#[test]
+fn preserved_baseline_reconnect_publishes_calibration_received_while_disconnected() -> Result<()> {
+    let (_dir, runtime, active_session) =
+        runtime_with_active_session("reconnect-missed-calibration")?;
+    let old_transport = active_transport(&runtime);
+    seed_online_friend(&runtime, &active_session, old_transport.generation)?;
+    let weak_runtime = Arc::downgrade(runtime.runtime());
+    runtime
+        .runtime()
+        .deps
+        .instance_dwell
+        .set_roster_change_callback(Arc::new(move || {
+            if let Some(runtime) = weak_runtime.upgrade() {
+                runtime.emit_friend_location_time_snapshot();
+            }
+        }));
+    runtime.runtime().finish_realtime_transport(
+        old_transport,
+        RealtimeTransportTermination::UnexpectedExit {
+            reason: "websocket stream ended".into(),
+            connected_secs: Some(60),
+        },
+    );
+    runtime.take_events_for_test();
+    runtime
+        .runtime()
+        .deps
+        .instance_dwell
+        .observe_roster(&local_friend_roster(1_000));
+    assert!(runtime
+        .take_events_for_test()
+        .iter()
+        .all(|event| event.name != "realtimeFriendProjection"));
+    runtime.set_task_executor_for_test(DiscardTaskExecutor);
+
+    runtime.runtime().start_from_friend_baseline(
+        active_session.user_id.clone(),
+        active_session.endpoint.clone(),
+        active_session.websocket.clone(),
+        2,
+        json!({"id": active_session.user_id}),
+    )?;
+
+    let events = runtime.take_events_for_test();
+    let projection = events
+        .iter()
+        .find(|event| event.name == "realtimeFriendProjection")
+        .expect("reconnect should publish calibration skipped while disconnected");
+    assert_eq!(
+        projection.payload["locationTimeSnapshot"][0]["sinceMs"],
+        1_000
+    );
+    Ok(())
+}
+
+#[test]
+fn replacement_session_does_not_inherit_friend_location_times() -> Result<()> {
+    for changed_field in ["user", "endpoint", "websocket"] {
+        let (_dir, runtime, active_session) =
+            runtime_with_active_session("replacement-session-time")?;
+        let old_transport = active_transport(&runtime);
+        seed_online_friend(&runtime, &active_session, old_transport.generation)?;
+        runtime
+            .runtime()
+            .deps
+            .instance_dwell
+            .observe_roster(&local_friend_roster(1_000));
+        let friends = runtime.runtime().friend_snapshot().unwrap().friends_by_id;
+        runtime.runtime().finish_realtime_transport(
+            old_transport,
+            RealtimeTransportTermination::UnexpectedExit {
+                reason: "websocket stream ended".into(),
+                connected_secs: Some(60),
+            },
+        );
+        let mut replacement = active_session;
+        match changed_field {
+            "user" => replacement.user_id = "usr_other".into(),
+            "endpoint" => replacement.endpoint = "https://api.example.test/api/1".into(),
+            "websocket" => replacement.websocket = "wss://pipeline.example.test".into(),
+            _ => unreachable!(),
+        }
+        runtime
+            .auth_scope()
+            .set(&replacement.user_id, &replacement.endpoint);
+        runtime
+            .runtime()
+            .sync_friend_snapshot(replacement.clone(), None, friends)?;
+        runtime.set_task_executor_for_test(DiscardTaskExecutor);
+
+        runtime.runtime().start_from_friend_baseline(
+            replacement.user_id.clone(),
+            replacement.endpoint,
+            replacement.websocket,
+            2,
+            json!({"id": replacement.user_id}),
+        )?;
+
+        let times = runtime.runtime().deps.instance_dwell.snapshot();
+        assert_eq!(times.len(), 1);
+        assert!(times[0].since_ms.is_some_and(|since_ms| since_ms > 1_000));
+    }
     Ok(())
 }
 

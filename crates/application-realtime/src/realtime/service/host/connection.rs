@@ -216,7 +216,9 @@ impl RealtimeHostRuntime {
             state.automation.invite.clear_all();
             let friend_user_ids =
                 if let Some(friends_by_id) = pending_friends.or_else(|| supplied_friends.take()) {
-                    self.friends.clear();
+                    if self.friends.session_context().as_ref() != Some(&session) {
+                        self.friends.clear();
+                    }
                     let friend_user_ids = friends_by_id.keys().cloned().collect::<Vec<_>>();
                     self.friends.set_baseline(
                         FriendRosterBaseline {
@@ -228,8 +230,6 @@ impl RealtimeHostRuntime {
                         generation,
                         0,
                     );
-                    pending_projection.location_time_snapshot =
-                        Some(self.deps.instance_dwell.snapshot());
                     friend_user_ids
                 } else {
                     let Some(friend_user_ids) = self
@@ -246,6 +246,7 @@ impl RealtimeHostRuntime {
                     };
                     friend_user_ids
                 };
+            pending_projection.location_time_snapshot = Some(self.deps.instance_dwell.snapshot());
             state.connection.active_context = Some(ActiveRealtimeContext {
                 session: session.clone(),
                 auth_scope_generation,
@@ -265,21 +266,15 @@ impl RealtimeHostRuntime {
             .baseline_causal_watermark()
             .baseline_revision
             .unwrap_or(0);
-        if !pending_projection.patches.is_empty()
-            || !pending_projection.removals.is_empty()
-            || pending_projection.friend_log_changed
-            || pending_projection.location_time_snapshot.is_some()
-        {
-            pending_projection.generation = generation;
-            pending_projection.baseline_revision = baseline_revision;
-            self.apply_friend_output_owned(
-                &friend_owner,
-                RealtimeFriendOutput::from_projection(
-                    OwnerId::new(session.user_id.clone()),
-                    pending_projection,
-                ),
-            );
-        }
+        pending_projection.generation = generation;
+        pending_projection.baseline_revision = baseline_revision;
+        self.apply_friend_output_owned(
+            &friend_owner,
+            RealtimeFriendOutput::from_projection(
+                OwnerId::new(session.user_id.clone()),
+                pending_projection,
+            ),
+        );
         self.apply_reconciled_friend_feed_entries_owned(
             &friend_owner,
             &OwnerId::new(session.user_id.clone()),
