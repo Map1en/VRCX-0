@@ -1,4 +1,5 @@
 import { normalizeString as normalizeId } from '@/shared/utils/string';
+import type { FriendLocationTimeEntry } from '@/state/friendLocationTimeStore';
 
 import {
     buildSameInstanceGroups,
@@ -101,16 +102,23 @@ export function buildFavoriteCollectionFriendIdSet({
 export function buildFavoriteCollectionSameInstanceGroups({
     rows,
     prefs,
-    currentLocationSnapshot
+    currentLocationSnapshot,
+    locationTimes
 }: {
     rows: readonly SidebarFriendRecord[];
     prefs: SidebarPreferences;
     currentLocationSnapshot: LastLocationSnapshot;
+    locationTimes?: Readonly<Record<string, FriendLocationTimeEntry>>;
 }): SameInstanceGroup[] {
     if (!prefs?.sidebarGroupByInstance) {
         return [];
     }
-    return buildSameInstanceGroups(rows, prefs, currentLocationSnapshot);
+    return buildSameInstanceGroups(
+        rows,
+        prefs,
+        currentLocationSnapshot,
+        locationTimes
+    );
 }
 
 export function buildFavoriteCollectionSidebarVirtualRows({

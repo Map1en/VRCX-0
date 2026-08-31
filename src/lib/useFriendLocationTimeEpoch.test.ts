@@ -4,10 +4,25 @@ import { resolveFriendLocationTimeEpoch } from './useFriendLocationTimeEpoch';
 
 const entry = {
     location: 'wrld_test:1',
-    sinceMs: 1_700_000_000_000
+    sinceMs: 1_700_000_000_000,
+    source: 'realtime' as const
 };
 
 describe('resolveFriendLocationTimeEpoch', () => {
+    it('keeps local mode visible even when the remote friend is offline', () => {
+        const localEntry = { ...entry, source: 'gameLog' as const };
+        expect(
+            resolveFriendLocationTimeEpoch(
+                { state: 'offline' },
+                localEntry,
+                entry.location
+            )
+        ).toBe(entry.sinceMs);
+        expect(
+            resolveFriendLocationTimeEpoch(null, localEntry, entry.location)
+        ).toBe(0);
+    });
+
     it('returns the backend time only for an online matching friend', () => {
         expect(
             resolveFriendLocationTimeEpoch(

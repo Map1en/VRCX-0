@@ -14,6 +14,7 @@ import { UserStatusDot } from '@/components/UserStatusDot';
 import type { FriendRecord } from '@/domain/friends/types';
 import { useFriendLocationTimeEpoch } from '@/lib/useFriendLocationTimeEpoch';
 import { cn } from '@/lib/utils';
+import type { FriendLocationTimeSource } from '@/platform/tauri/bindings';
 import { userImage } from '@/services/entityMediaService';
 import {
     normalizeUserStatus,
@@ -318,6 +319,7 @@ function resolveLineClampClass(lineClamp: number) {
 }
 
 export interface FriendLocationCardLocationModel {
+    source?: FriendLocationTimeSource;
     label?: string;
     groupHint?: string;
     raw?: string | null;
@@ -403,13 +405,19 @@ export function FriendLocationCard({
     const tone = resolveStatusTone(friend, currentUserSnapshot);
     const canOpenUser = typeof onOpenUser === 'function';
     const canOpenWorld = typeof onOpenWorld === 'function';
-    const cardLocation = resolveCardLocation(rawLocation, friend);
+    const localLocation =
+        location.source === 'gameLog'
+            ? normalizeLocationValue(rawLocation)
+            : '';
+    const cardLocation =
+        localLocation || resolveCardLocation(rawLocation, friend);
     const source = readFriendRef(friend);
     const hasRef = hasFriendRef(friend);
     const sourceState = normalizeStatusText(
         source?.stateBucket || source?.state
     );
-    const rawSourceLocation = resolveRawCardLocation(rawLocation, friend);
+    const rawSourceLocation =
+        localLocation || resolveRawCardLocation(rawLocation, friend);
     const sourceLocation = isStaleOfflineLocationForLiveState(
         rawSourceLocation,
         sourceState

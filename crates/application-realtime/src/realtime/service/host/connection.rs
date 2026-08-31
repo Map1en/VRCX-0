@@ -216,7 +216,11 @@ impl RealtimeHostRuntime {
             state.automation.invite.clear_all();
             let friend_user_ids =
                 if let Some(friends_by_id) = pending_friends.or_else(|| supplied_friends.take()) {
-                    if self.friends.session_context().as_ref() != Some(&session) {
+                    if self
+                        .friends
+                        .session_context()
+                        .is_some_and(|previous| previous != session)
+                    {
                         self.friends.clear();
                     }
                     let friend_user_ids = friends_by_id.keys().cloned().collect::<Vec<_>>();
@@ -564,7 +568,17 @@ impl RealtimeHostRuntime {
                 None => {
                     if !request.has_scope() {
                         state.connection.generation = state.connection.generation.saturating_add(1);
+                        state.friend_baseline.pending = None;
+                        state.friend_profile.refetches.clear();
+                        state.world_enrichment.fetches.clear();
+                        state.world_enrichment.inflight.clear();
+                        state.world_enrichment.pending_corrections.clear();
                         let _ = self.cancel_tx.send(state.connection.generation);
+                        self.deps.session.clear_realtime_context();
+                        if self.friends.session_context().is_some() {
+                            self.friends.clear();
+                        }
+                        self.current_user.clear();
                     }
                     None
                 }
@@ -617,6 +631,12 @@ impl RealtimeHostRuntime {
         )) = stopped
         else {
             self.cancel_friend_profile_bulk_load_for_stop_request(&request);
+            if !request.has_scope() {
+                self.user_cache.clear();
+                self.user_query_cache.clear();
+                self.world_cache.clear_working();
+                self.reset_feed_live_cache();
+            }
             return;
         };
         self.cancel_friend_profile_bulk_load_for_session(&stopped_active.session);

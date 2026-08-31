@@ -66,6 +66,7 @@ pub struct GameLogIngestOutput {
     pub runtime_persisted_mirrors: Vec<Vec<String>>,
     pub destination_started_at: Vec<String>,
     pub instance_roster_changed: bool,
+    pub departed_user_ids: Vec<String>,
     pub projection: Option<GameLogProjection>,
     pub side_effects: Vec<GameLogSideEffect>,
 }
@@ -162,7 +163,11 @@ impl GameLogIngestEngine {
                     display_name,
                     user_id,
                 } => {
-                    self.ingest_player_left(&mut output.batch, event, display_name, user_id);
+                    if let Some(user_id) =
+                        self.ingest_player_left(&mut output.batch, event, display_name, user_id)
+                    {
+                        output.departed_user_ids.push(user_id);
+                    }
                     output.instance_roster_changed = true;
                 }
                 GameLogEventKind::PortalSpawn => self.ingest_portal_spawn(&mut output.batch, event),
@@ -375,7 +380,7 @@ impl GameLogIngestEngine {
         event: &GameLogEvent,
         display_name: &str,
         user_id: &str,
-    ) {
+    ) -> Option<String> {
         let left_time_ms = parse_event_time_ms(&event.created_at);
         let player = remove_player_for_leave(&mut self.state, display_name, user_id);
         let duration = duration_ms(player.as_ref().and_then(|p| p.join_time_ms), left_time_ms);
@@ -389,6 +394,10 @@ impl GameLogIngestEngine {
             world_name: self.state.current_world_name.clone(),
             time: duration,
         });
+        player
+            .map(|player| player.user_id)
+            .filter(|id| !id.is_empty())
+            .or_else(|| (!user_id.trim().is_empty()).then(|| user_id.trim().to_string()))
     }
 
     fn ingest_portal_spawn(&self, batch: &mut GameLogWriteBatch, event: &GameLogEvent) {

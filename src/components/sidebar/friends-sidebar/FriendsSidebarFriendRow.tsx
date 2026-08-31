@@ -15,6 +15,7 @@ import {
     TRUST_COLOR_DEFAULTS,
     type TrustColorMap
 } from '@/shared/utils/trustColors';
+import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
 import { buttonVariants } from '@/ui/shadcn/button';
 import {
     ContextMenu,
@@ -97,6 +98,9 @@ export function FriendRow({
     appearance
 }: FriendRowProps) {
     const { t } = useTranslation();
+    const locationTime = useFriendLocationTimeStore(
+        (state) => state.byUserId[friend.id || '']
+    );
     const {
         isCurrentUser,
         isGroupByInstance = false,
@@ -167,7 +171,8 @@ export function FriendRow({
     } = resolveFriendRowLocationState({
         friend,
         isCurrentUser,
-        isGroupByInstance
+        isGroupByInstance,
+        locationTime
     });
     const timerLocation = isTraveling
         ? displayTraveling || ''

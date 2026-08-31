@@ -13,6 +13,7 @@ import type { FriendRecord } from '@/domain/friends/types';
 import { isSameInstanceLocation } from '@/domain/instances/instanceRoster';
 import { cn } from '@/lib/utils';
 import { normalizeLocationValue, parseLocation } from '@/shared/utils/location';
+import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 
@@ -203,16 +204,25 @@ export function FriendsLocationCardItem({
     onSendBoop
 }: FriendsLocationCardItemProps) {
     const { t } = useTranslation();
-    const location = resolveLocationSummary(friend, t);
-    const target = resolveLocationTarget(friend);
+    const locationTime = useFriendLocationTimeStore(
+        (state) => state.byUserId[friend.id]
+    );
+    const localLocation =
+        locationTime?.source === 'gameLog' ? locationTime.location : '';
+    const locationSource = localLocation ? { location: localLocation } : friend;
+    const location = resolveLocationSummary(locationSource, t);
+    const target = resolveLocationTarget(locationSource);
     const rawLocation = target.rawLocation;
-    const groupHint = resolveFriendGroupName(friend);
+    const groupHint = localLocation ? '' : resolveFriendGroupName(friend);
     const source = isFriendLocationSource(friend.ref) ? friend.ref : friend;
     const isTravelingLocation =
+        !localLocation &&
         normalizeId(source?.location).toLowerCase() === 'traveling';
-    const travelingLocation = normalizeLocationValue(
-        source?.travelingToLocation || source?.$travelingToLocation
-    );
+    const travelingLocation = localLocation
+        ? ''
+        : normalizeLocationValue(
+              source?.travelingToLocation || source?.$travelingToLocation
+          );
     const friendIsCurrentUser =
         normalizeId(friend?.id || friend?.userId) ===
         normalizeId(currentUserId);
@@ -223,7 +233,7 @@ export function FriendsLocationCardItem({
         .isRealInstance
         ? sectionLocation
         : '';
-    const timerLocation =
+    const fallbackTimerLocation =
         friendIsOnline &&
         (sectionInstanceLocation ||
             target.parsed.isRealInstance ||
@@ -232,11 +242,19 @@ export function FriendsLocationCardItem({
                 ? travelingLocation
                 : sectionInstanceLocation || rawLocation
             : '';
+    let timerLocation = fallbackTimerLocation;
+    if (locationTime) {
+        timerLocation =
+            locationTime.sinceMs !== null && (localLocation || friendIsOnline)
+                ? locationTime.location
+                : '';
+    }
 
     return (
         <FriendLocationCard
             friend={friend}
             location={{
+                source: locationTime?.source,
                 label: location.label,
                 groupHint,
                 raw: rawLocation,

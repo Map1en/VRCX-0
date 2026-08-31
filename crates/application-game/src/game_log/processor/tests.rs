@@ -302,7 +302,19 @@ fn disabled_persistence_keeps_live_state_projection_overlay_and_side_effects() -
 
 #[test]
 fn disabled_initial_scan_rebuilds_memory_without_replaying_side_effects() -> Result<()> {
-    let (_dir, store, processor) = test_processor("runtime-gamelog-disabled-replay")?;
+    let (_dir, store, mut processor) = test_processor("runtime-gamelog-disabled-replay")?;
+    let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
+    timers.observe_friend_record(
+        "usr_replay",
+        &vrcx_0_core::friends::FriendRecord {
+            id: "usr_replay".into(),
+            state: "online".into(),
+            location: "wrld_replay:1".into(),
+            ..Default::default()
+        },
+        1,
+    );
+    processor.deps.instance_roster_observer = Some(timers.clone());
     store.set_bool("gameLogDisabled", true)?;
 
     processor.handle_jobs(vec![
@@ -330,6 +342,14 @@ fn disabled_initial_scan_rebuilds_memory_without_replaying_side_effects() -> Res
     let snapshot = processor.deps.snapshot.snapshot();
     assert_eq!(snapshot.location, "wrld_replay:1");
     assert_eq!(snapshot.players[0].user_id, "usr_replay");
+    assert_eq!(
+        timers.snapshot()[0].since_ms,
+        snapshot.players[0].join_time_ms
+    );
+    assert_eq!(
+        timers.snapshot()[0].source,
+        vrcx_0_application_core::FriendLocationTimeSource::GameLog
+    );
     assert!(!store.get_bool("isGameNoVR", false)?);
     assert!(processor
         .deps
@@ -337,6 +357,268 @@ fn disabled_initial_scan_rebuilds_memory_without_replaying_side_effects() -> Res
         .snapshot()
         .entries
         .is_empty());
+    Ok(())
+}
+
+#[test]
+fn local_mode_initial_replay_does_not_restart_remote_timers() -> Result<()> {
+    for persistence_disabled in [false, true] {
+        let (_dir, store, mut processor) = test_processor("runtime-gamelog-replay-departures")?;
+        store.set_bool("gameLogDisabled", persistence_disabled)?;
+        let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
+        for user_id in ["usr_remote", "usr_local"] {
+            timers.observe_friend_record(
+                user_id,
+                &vrcx_0_core::friends::FriendRecord {
+                    id: user_id.into(),
+                    state: "online".into(),
+                    location: "wrld_current:2".into(),
+                    ..Default::default()
+                },
+                500,
+            );
+        }
+        processor.deps.instance_roster_observer = Some(timers.clone());
+
+        processor.handle_jobs(vec![
+            GameLogWorkerJob::InitialEvent(event(
+                "1970-01-01T00:00:01Z",
+                GameLogEventKind::Location {
+                    location: "wrld_history:1".into(),
+                    world_name: "History".into(),
+                },
+            )),
+            GameLogWorkerJob::InitialEvent(event(
+                "1970-01-01T00:00:02Z",
+                GameLogEventKind::PlayerJoined {
+                    display_name: "Remote".into(),
+                    user_id: "usr_remote".into(),
+                },
+            )),
+            GameLogWorkerJob::InitialEvent(event(
+                "1970-01-01T00:00:03Z",
+                GameLogEventKind::PlayerLeft {
+                    display_name: "Remote".into(),
+                    user_id: "usr_remote".into(),
+                },
+            )),
+            GameLogWorkerJob::InitialEvent(event(
+                "1970-01-01T00:00:04Z",
+                GameLogEventKind::Location {
+                    location: "wrld_current:2".into(),
+                    world_name: "Current".into(),
+                },
+            )),
+            GameLogWorkerJob::InitialEvent(event(
+                "1970-01-01T00:00:05Z",
+                GameLogEventKind::PlayerJoined {
+                    display_name: "Local".into(),
+                    user_id: "usr_local".into(),
+                },
+            )),
+        ])?;
+
+        let snapshot = timers.snapshot();
+        let remote = snapshot
+            .iter()
+            .find(|entry| entry.user_id == "usr_remote")
+            .unwrap();
+        assert_eq!(remote.since_ms, Some(500));
+        assert_eq!(
+            remote.source,
+            vrcx_0_application_core::FriendLocationTimeSource::Realtime
+        );
+        let local = snapshot
+            .iter()
+            .find(|entry| entry.user_id == "usr_local")
+            .unwrap();
+        assert_eq!(local.since_ms, Some(5_000));
+        assert_eq!(
+            local.source,
+            vrcx_0_application_core::FriendLocationTimeSource::GameLog
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn local_mode_resume_prefix_does_not_restart_timers_but_live_departures_do() -> Result<()> {
+    let (_dir, _store, mut processor) = test_processor("runtime-gamelog-resume-departures")?;
+    let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
+    timers.observe_friend_record(
+        "usr_friend",
+        &vrcx_0_core::friends::FriendRecord {
+            id: "usr_friend".into(),
+            state: "online".into(),
+            location: "wrld_local:1".into(),
+            ..Default::default()
+        },
+        500,
+    );
+    processor.deps.instance_roster_observer = Some(timers.clone());
+    processor.set_persistence_resume_after("1970-01-01T00:00:03Z");
+    let joined = GameLogEventKind::PlayerJoined {
+        display_name: "Friend".into(),
+        user_id: "usr_friend".into(),
+    };
+    let left = GameLogEventKind::PlayerLeft {
+        display_name: "Friend".into(),
+        user_id: "usr_friend".into(),
+    };
+
+    processor.handle_jobs(vec![
+        GameLogWorkerJob::Event(event(
+            "1970-01-01T00:00:01Z",
+            GameLogEventKind::Location {
+                location: "wrld_local:1".into(),
+                world_name: "Local".into(),
+            },
+        )),
+        GameLogWorkerJob::Event(event("1970-01-01T00:00:02Z", joined.clone())),
+        GameLogWorkerJob::Event(event("1970-01-01T00:00:03Z", left.clone())),
+        GameLogWorkerJob::Event(event("1970-01-01T00:00:04Z", GameLogEventKind::DesktopMode)),
+    ])?;
+    assert_eq!(timers.snapshot()[0].since_ms, Some(500));
+
+    processor.handle_jobs(vec![GameLogWorkerJob::Event(event(
+        "1970-01-01T00:00:05Z",
+        joined,
+    ))])?;
+    assert_eq!(timers.snapshot()[0].since_ms, Some(5_000));
+    let before_leave = chrono::Utc::now().timestamp_millis();
+    processor.handle_jobs(vec![GameLogWorkerJob::Event(event(
+        "1970-01-01T00:00:06Z",
+        left,
+    ))])?;
+    assert!(timers.snapshot()[0].since_ms.unwrap() >= before_leave);
+    assert_eq!(
+        timers.snapshot()[0].source,
+        vrcx_0_application_core::FriendLocationTimeSource::Realtime
+    );
+    Ok(())
+}
+
+#[test]
+fn local_mode_distinguishes_player_leave_rejoin_and_own_room_exit() -> Result<()> {
+    let (_dir, _store, mut processor) = test_processor("runtime-gamelog-local-mode")?;
+    let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
+    timers.observe_friend_record(
+        "usr_friend",
+        &vrcx_0_core::friends::FriendRecord {
+            id: "usr_friend".into(),
+            state: "online".into(),
+            location: "wrld_local:1".into(),
+            ..Default::default()
+        },
+        500,
+    );
+    processor.deps.instance_roster_observer = Some(timers.clone());
+    let joined = GameLogEventKind::PlayerJoined {
+        display_name: "Friend".into(),
+        user_id: "usr_friend".into(),
+    };
+    let left = GameLogEventKind::PlayerLeft {
+        display_name: "Friend".into(),
+        user_id: "usr_friend".into(),
+    };
+
+    processor.handle_jobs(vec![
+        GameLogWorkerJob::InitialEvent(event(
+            "1970-01-01T00:00:01Z",
+            GameLogEventKind::Location {
+                location: "wrld_local:1".into(),
+                world_name: "Local".into(),
+            },
+        )),
+        GameLogWorkerJob::InitialEvent(event("1970-01-01T00:00:02Z", joined.clone())),
+    ])?;
+    assert_eq!(timers.snapshot()[0].since_ms, Some(2_000));
+
+    processor.handle_jobs(vec![
+        GameLogWorkerJob::Event(event("1970-01-01T00:00:03Z", left.clone())),
+        GameLogWorkerJob::Event(event("1970-01-01T00:00:04Z", joined.clone())),
+    ])?;
+    assert_eq!(timers.snapshot()[0].since_ms, Some(4_000));
+
+    processor.handle_jobs(vec![GameLogWorkerJob::Event(event(
+        "1970-01-01T00:00:05Z",
+        left,
+    ))])?;
+    let remote_start = timers.snapshot()[0].since_ms.unwrap();
+    assert!(remote_start > 4_000);
+    assert_eq!(
+        timers.snapshot()[0].source,
+        vrcx_0_application_core::FriendLocationTimeSource::Realtime
+    );
+
+    processor.handle_jobs(vec![GameLogWorkerJob::Event(event(
+        "1970-01-01T00:00:06Z",
+        joined,
+    ))])?;
+    processor.handle_jobs(vec![GameLogWorkerJob::Event(event(
+        "1970-01-01T00:00:07Z",
+        GameLogEventKind::LocationDestination {
+            location: "wrld_next:2".into(),
+        },
+    ))])?;
+    assert_eq!(timers.snapshot()[0].since_ms, Some(remote_start));
+    assert_eq!(
+        timers.snapshot()[0].source,
+        vrcx_0_application_core::FriendLocationTimeSource::Realtime
+    );
+    Ok(())
+}
+
+#[test]
+fn local_mode_player_leave_is_not_lost_when_own_exit_is_in_the_same_batch() -> Result<()> {
+    let (_dir, _store, mut processor) = test_processor("runtime-gamelog-batched-leave")?;
+    let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
+    timers.observe_friend_record(
+        "usr_friend",
+        &vrcx_0_core::friends::FriendRecord {
+            id: "usr_friend".into(),
+            state: "online".into(),
+            location: "wrld_local:1".into(),
+            ..Default::default()
+        },
+        500,
+    );
+    processor.deps.instance_roster_observer = Some(timers.clone());
+    processor.handle_jobs(vec![
+        GameLogWorkerJob::InitialEvent(event(
+            "1970-01-01T00:00:01Z",
+            GameLogEventKind::Location {
+                location: "wrld_local:1".into(),
+                world_name: "Local".into(),
+            },
+        )),
+        GameLogWorkerJob::InitialEvent(event(
+            "1970-01-01T00:00:02Z",
+            GameLogEventKind::PlayerJoined {
+                display_name: "Friend".into(),
+                user_id: "usr_friend".into(),
+            },
+        )),
+    ])?;
+    assert_eq!(timers.snapshot()[0].since_ms, Some(2_000));
+
+    processor.handle_jobs(vec![
+        GameLogWorkerJob::Event(event(
+            "1970-01-01T00:00:03Z",
+            GameLogEventKind::PlayerLeft {
+                display_name: "Friend".into(),
+                user_id: String::new(),
+            },
+        )),
+        GameLogWorkerJob::Event(event(
+            "1970-01-01T00:00:04Z",
+            GameLogEventKind::LocationDestination {
+                location: "wrld_next:2".into(),
+            },
+        )),
+    ])?;
+
+    assert!(timers.snapshot()[0].since_ms.unwrap() > 2_000);
     Ok(())
 }
 
