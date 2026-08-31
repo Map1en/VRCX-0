@@ -34,8 +34,13 @@ import { useMutualFriendsViewFilters } from './useMutualFriendsViewFilters';
 export function useMutualFriendsPageState() {
     const { t } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
-    const { currentUserId, friendsById, orderedFriendIds, resolvedTheme } =
-        useMutualFriendsRuntime();
+    const {
+        currentUserId,
+        friendsById,
+        friendLabelsById,
+        orderedFriendIds,
+        resolvedTheme
+    } = useMutualFriendsRuntime();
     const currentUserIdRef = useRef(currentUserId);
     const [excludeSearchQuery, setExcludeSearchQuery] = useState('');
     const [selectedNodeId, setSelectedNodeId] = useState('');
@@ -77,12 +82,12 @@ export function useMutualFriendsPageState() {
             buildMutualFriendsBaseGraph(
                 snapshot.snapshotData.snapshot,
                 snapshot.snapshotData.meta,
-                friendsById,
+                friendLabelsById,
                 excludedFriendIds
             ),
         [
             excludedFriendIds,
-            friendsById,
+            friendLabelsById,
             snapshot.snapshotData.meta,
             snapshot.snapshotData.snapshot
         ]

@@ -1,4 +1,4 @@
-import type { FriendRecord, FriendRosterById } from '@/domain/friends/types';
+import type { FriendRecord } from '@/domain/friends/types';
 
 import {
     isValidMutualFriendId,
@@ -19,14 +19,13 @@ export function mutualFriendUsername(friend: FriendRecord | null | undefined) {
 export function buildMutualFriendsBaseGraph(
     snapshot: MutualFriendSnapshot | null | undefined,
     meta: MutualFriendMeta | null | undefined,
-    friendsById: FriendRosterById | null | undefined,
+    friendLabelsById: Readonly<Record<string, string>> | null | undefined,
     excludedFriendIds: readonly string[] = []
 ): MutualFriendGraph {
     const nodeMap = new Map<string, MutualFriendNode>();
     const totalCountById = new Map<string, number>();
     const edgeMap = new Map<string, MutualFriendLink>();
     const metaMap = meta instanceof Map ? meta : new Map();
-    const friends = friendsById ?? {};
     const excluded = new Set(
         excludedFriendIds.map(normalizeMutualFriendId).filter(Boolean)
     );
@@ -43,14 +42,10 @@ export function buildMutualFriendsBaseGraph(
         if (existing) {
             return existing;
         }
-        const friend = friends[normalizedId];
         const metadata = metaMap.get(normalizedId);
         const node: MutualFriendNode = {
             id: normalizedId,
-            label:
-                friend?.displayName ||
-                mutualFriendUsername(friend) ||
-                normalizedId,
+            label: friendLabelsById?.[normalizedId] || normalizedId,
             lastFetchedAt: metadata?.lastFetchedAt ?? null,
             optedOut: Boolean(metadata?.optedOut),
             degree: 0,

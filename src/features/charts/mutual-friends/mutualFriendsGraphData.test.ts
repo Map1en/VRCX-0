@@ -1,28 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import type { FriendRecord } from '@/domain/friends/types';
-
 import { buildMutualFriendsBaseGraph } from './mutualFriendsGraphData';
 import { MUTUAL_GRAPH_EMPTY_USER_ID } from './mutualFriendsSettings';
-
-function friend(patch: Partial<FriendRecord> = {}): FriendRecord {
-    return {
-        id: 'usr_1',
-        displayName: 'Friend',
-        tags: [],
-        state: 'offline',
-        stateBucket: 'offline',
-        $trustLevel: 'Visitor',
-        $friendNumber: 0,
-        $trustClass: 'x-tag-untrusted',
-        $trustSortNum: 0,
-        $isModerator: false,
-        $isTroll: false,
-        $isProbableTroll: false,
-        $platform: '',
-        ...patch
-    };
-}
 
 describe('mutualFriendsGraphData', () => {
     it('turns a cached mutual-friends snapshot into unique graph nodes and edges', () => {
@@ -46,13 +25,9 @@ describe('mutualFriendsGraphData', () => {
                 ]
             ]),
             {
-                usr_a: friend({ id: 'usr_a', displayName: 'Ava' }),
-                usr_b: friend({
-                    id: 'usr_b',
-                    displayName: '',
-                    username: 'ben_user'
-                }),
-                usr_c: friend({ id: 'usr_c', displayName: 'Cora' })
+                usr_a: 'Ava',
+                usr_b: 'ben_user',
+                usr_c: 'Cora'
             }
         );
 
