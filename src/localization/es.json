@@ -4944,8 +4944,8 @@
                     "example": "Entradas, salidas"
                 },
                 "favoriteMovement": {
-                    "label": "Movimiento de favoritos",
-                    "description": "Cambios de conexión, desconexión, ubicación y estado de los amigos favoritos.",
+                    "label": "Actividad de amigos",
+                    "description": "Cambios de conexión, desconexión, ubicación y estado de los amigos.",
                     "example": "En línea, GPS"
                 },
                 "profileChange": {

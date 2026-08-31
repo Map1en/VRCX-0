@@ -595,14 +595,14 @@
         "edit_dashboard": "编辑仪表板",
         "delete_dashboard": "删除仪表板",
         "custom_nav": {
-            "dialog_description": "拖动可排序,把条目拖进文件夹即可分组。隐藏的条目会进入「已隐藏」列表,随时可以放回来。仪表盘的改动立即生效。",
+            "dialog_description": "拖动可排序，把条目拖进文件夹即可分组。隐藏的条目会进入「已隐藏」列表，随时可以放回来。仪表盘的改动立即生效。",
             "visible_items": "菜单中",
             "hidden_empty": "没有隐藏的条目",
             "folder_item_count": "{count} 项",
             "ungroup_folder": "解散文件夹",
             "move_into_folder": "把条目移入此文件夹",
             "restore_default_description": "会用默认排列覆盖你当前的排列。",
-            "applies_immediately": "此操作立即生效,取消也无法撤销。",
+            "applies_immediately": "此操作立即生效，取消也无法撤销。",
             "header": "自定义导航栏",
             "dialog_title": "自定义导航栏",
             "new_folder": "添加文件夹",
@@ -1415,8 +1415,8 @@
                     "forget_success": "记录已移除",
                     "forget_failed": "移除记录失败",
                     "no_worlds": "此分组没有可分享的世界 ID",
-                    "too_many": "单次分享最多 {cap} 个世界,请先拆分该分组。",
-                    "skipped": "已分享,跳过 {count} 个世界(未同步或非公开)。"
+                    "too_many": "单次分享最多 {cap} 个世界，请先拆分该分组。",
+                    "skipped": "已分享，跳过 {count} 个世界（未同步或非公开）。"
                 }
             }
         },
@@ -2132,15 +2132,15 @@
             },
             "feedback": {
                 "title": "发送反馈",
-                "description": "反馈将匿名提交。我们会阅读每一条消息,但无法直接回复。",
+                "description": "反馈将匿名提交。我们会阅读每一条消息，但无法直接回复。",
                 "privacy_note": "不会附带任何账号信息。",
-                "placeholder": "告诉我们哪些好用、哪些不好用,或者你希望看到什么新功能……",
+                "placeholder": "告诉我们哪些好用、哪些不好用，或者你希望看到什么新功能……",
                 "submit": "发送",
                 "submitting": "发送中…",
                 "thanks": "感谢你的反馈！",
                 "cooldown": "{{seconds}} 秒后可再次发送",
-                "more_help": "需要回复,或者想附上日志?",
-                "error_generic": "发送失败,请稍后重试。"
+                "more_help": "需要回复，或者想附上日志？",
+                "error_generic": "发送失败，请稍后重试。"
             },
             "ai": {
                 "header": "AI 助手",
@@ -2241,7 +2241,7 @@
                     "status_label": "状态",
                     "port_active_connections": "端口 {port}；活动连接 {count}",
                     "client_config": "客户端配置",
-                    "client_config_description": "按客户端选择: Claude Code：执行一次性 `claude mcp add` 命令。\nHTTP 方式：直连 HTTP 的 JSON 配置，无需额外工具。mcp-remote 方式：经 Node.js 代理隧道的 JSON 配置,适用于不支持原生 HTTP 的客户端（如 Claude Desktop）；需 PATH 中有 Node.js。开启局域网连接后，复制出的配置会使用 `YOUR-LAN-IP`；在其他设备上使用前请替换为本机局域网 IP。",
+                    "client_config_description": "按客户端选择：Claude Code：执行一次性 `claude mcp add` 命令。\nHTTP 方式：直连 HTTP 的 JSON 配置，无需额外工具。mcp-remote 方式：经 Node.js 代理隧道的 JSON 配置，适用于不支持原生 HTTP 的客户端（如 Claude Desktop）；需 PATH 中有 Node.js。开启局域网连接后，复制出的配置会使用 `YOUR-LAN-IP`；在其他设备上使用前请替换为本机局域网 IP。",
                     "copy_mcp_remote": "mcp-remote 方式",
                     "copy_generic": "HTTP 方式",
                     "security_note": "客户端配置包含明文 token，应只提供给你信任的工具或设备。",
@@ -4945,8 +4945,8 @@
                     "example": "加入、离开"
                 },
                 "favoriteMovement": {
-                    "label": "分组好友动态",
-                    "description": "分组好友的上线、离线、位置和状态变化。",
+                    "label": "好友动态",
+                    "description": "好友的上线、离线、位置和状态变化。",
                     "example": "上线通知、位置变动"
                 },
                 "profileChange": {
@@ -5102,13 +5102,13 @@
             "bulk_action_completed": "已对 {count} 名成员完成{value}",
             "import_bans": "导入封禁",
             "import_bans_description": "粘贴包含 usr_ ID 的用户 ID、个人资料链接或 CSV 数据以批量封禁。",
-            "import_bans_warning": "此操作将立即封禁所有匹配到的用户,且不可撤销。",
+            "import_bans_warning": "此操作将立即封禁所有匹配到的用户，且不可撤销。",
             "import_bans_placeholder": "usr_11111111-1111-1111-1111-111111111111\nusr_22222222-2222-2222-2222-222222222222",
             "import_bans_start": "开始导入",
             "import_bans_clear_errors": "清除错误",
             "import_bans_no_ids_found": "未找到有效的用户 ID(usr_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)。",
-            "import_bans_done": "已完成,共封禁 {success}/{total} 名用户。",
-            "import_bans_cancelled": "已取消,共封禁 {success}/{total} 名用户。",
+            "import_bans_done": "已完成，共封禁 {success}/{total} 名用户。",
+            "import_bans_cancelled": "已取消，共封禁 {success}/{total} 名用户。",
             "export_logs": "导出 CSV",
             "export_logs_copied": "审核日志 CSV 已复制到剪贴板",
             "inspector_empty": "选择一行以查看详情",
@@ -6050,11 +6050,11 @@
                 "loading": "正在加载你有管理权限的群组...",
                 "empty_title": "没有可管理的群组",
                 "empty_description": "你目前在任何群组中都没有管理权限。",
-                "permissions_degraded": "部分群组权限无法验证,以下列表可能不完整。",
+                "permissions_degraded": "部分群组权限无法验证，以下列表可能不完整。",
                 "member_count": "{count} 名成员",
                 "rail_title": "你管理的群组",
                 "select_a_group_title": "选择群组",
-                "select_a_group_description": "从列表中选择一个群组,以管理成员、封禁、邀请与加入申请。",
+                "select_a_group_description": "从列表中选择一个群组，以管理成员、封禁、邀请与加入申请。",
                 "moderator_hint": "你在此群组拥有管理权限",
                 "member_online_count": "{members} 名成员 · 在线 {online}"
             }
@@ -6136,7 +6136,7 @@
         "show_original": "显示原文",
         "source_to_target": "{source} → {target}",
         "error_generic": "翻译失败",
-        "error_network": "网络错误,请重试",
+        "error_network": "网络错误，请重试",
         "error_unsupported": "翻译功能未配置"
     },
     "saved_group_favorites": {

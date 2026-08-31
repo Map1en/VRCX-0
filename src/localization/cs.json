@@ -4948,8 +4948,8 @@
                     "example": "Příchody, odchody"
                 },
                 "favoriteMovement": {
-                    "label": "Pohyb oblíbených",
-                    "description": "Změny online/offline stavu, lokace a stavu u oblíbených přátel.",
+                    "label": "Aktivita přátel",
+                    "description": "Změny online/offline stavu, lokace a stavu u přátel.",
                     "example": "Online, GPS"
                 },
                 "profileChange": {

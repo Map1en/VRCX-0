@@ -4894,8 +4894,8 @@
                     "example": "입장, 퇴장"
                 },
                 "favoriteMovement": {
-                    "label": "즐겨찾기 이동",
-                    "description": "즐겨찾기 친구의 온라인, 오프라인, 위치 및 상태 변경.",
+                    "label": "친구 활동",
+                    "description": "친구의 온라인, 오프라인, 위치 및 상태 변경.",
                     "example": "온라인, 위치"
                 },
                 "profileChange": {

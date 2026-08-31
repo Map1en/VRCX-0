@@ -4944,8 +4944,8 @@
                     "example": "Joins, leaves"
                 },
                 "favoriteMovement": {
-                    "label": "Favorite Movement",
-                    "description": "Online, offline, location, and status changes for favorite friends.",
+                    "label": "Friend Activity",
+                    "description": "Online, offline, location, and status changes for friends.",
                     "example": "Online, location"
                 },
                 "profileChange": {

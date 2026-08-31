@@ -4939,8 +4939,8 @@
                     "example": "参加、退出"
                 },
                 "favoriteMovement": {
-                    "label": "お気に入りの動き",
-                    "description": "お気に入りフレンドのオンライン、オフライン、位置、ステータスの変化です。",
+                    "label": "フレンドの動き",
+                    "description": "フレンドのオンライン、オフライン、位置、ステータスの変化です。",
                     "example": "オンライン、位置"
                 },
                 "profileChange": {

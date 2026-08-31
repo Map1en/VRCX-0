@@ -4945,8 +4945,8 @@
                     "example": "加入、離開"
                 },
                 "favoriteMovement": {
-                    "label": "收藏好友動態",
-                    "description": "收藏好友的上線、離線、位置和狀態變更。",
+                    "label": "好友動態",
+                    "description": "好友的上線、離線、位置和狀態變更。",
                     "example": "上線、位置"
                 },
                 "profileChange": {
