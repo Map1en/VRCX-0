@@ -15,6 +15,7 @@ import {
     type LocalInstanceActionGateTarget
 } from '@/shared/utils/invite';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
+import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
 import { useModalStore } from '@/state/modalStore';
 
 import {
@@ -125,6 +126,9 @@ export function FriendsSidebar({
         onlineIds,
         orderedFriendIds
     } = useFriendsSidebarRosterState();
+    const locationTimesByUserId = useFriendLocationTimeStore(
+        (state) => state.byUserId
+    );
     const {
         favoriteFriendGroups,
         favoriteFriendIds,
@@ -668,9 +672,14 @@ export function FriendsSidebar({
         () =>
             virtualItems
                 .map((item) => item.row)
-                .map((row) => buildSidebarLocationMetadataEntry(row))
+                .map((row) =>
+                    buildSidebarLocationMetadataEntry(
+                        row,
+                        locationTimesByUserId
+                    )
+                )
                 .filter(Boolean),
-        [virtualItems]
+        [locationTimesByUserId, virtualItems]
     );
     const locationMetadataByKey = useLocationMetadataBatch(
         visibleLocationMetadataEntries,
@@ -692,7 +701,8 @@ export function FriendsSidebar({
         trustColor
     };
     const locationView = {
-        locationMetadataByKey
+        locationMetadataByKey,
+        locationTimesByUserId
     };
     const friendRowCommands = {
         onOpenFriend: openFriend,

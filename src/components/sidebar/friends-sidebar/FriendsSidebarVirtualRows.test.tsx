@@ -11,6 +11,7 @@ vi.mock('./FriendsSidebarFriendRow', () => ({
         rowModel: {
             canRequestInvite?: boolean;
             instanceLocation?: string;
+            locationTime?: { location?: string | null } | null;
         };
     }) => (
         <button
@@ -19,6 +20,7 @@ vi.mock('./FriendsSidebarFriendRow', () => ({
                 appearance.currentLocationStartedAt ?? ''
             )}
             data-instance-location={rowModel.instanceLocation || ''}
+            data-projected-location={rowModel.locationTime?.location || ''}
         >
             Request invite
         </button>
@@ -32,11 +34,13 @@ type VirtualRowProps = ComponentProps<typeof FriendsSidebarVirtualRow>;
 function renderFriendRow({
     currentLocationStartedAt = null,
     instanceLocation,
+    projectedLocation,
     isCurrentUser = false,
     state = 'offline'
 }: {
     currentLocationStartedAt?: string | number | null;
     instanceLocation?: string;
+    projectedLocation?: string;
     isCurrentUser?: boolean;
     state?: string;
 }) {
@@ -46,7 +50,17 @@ function renderFriendRow({
             onOpenFriend: vi.fn(),
             onToggleSection: vi.fn()
         },
-        location: { locationMetadataByKey: new Map() },
+        location: {
+            locationMetadataByKey: new Map(),
+            locationTimesByUserId: projectedLocation
+                ? {
+                      usr_friend: {
+                          location: projectedLocation,
+                          sinceMs: 1_700_000_000_000
+                      }
+                  }
+                : {}
+        },
         row: {
             type: 'friend',
             key: 'friend:test',
@@ -106,5 +120,11 @@ describe('FriendsSidebarVirtualRow request invite action', () => {
         expect(renderFriendRow({ instanceLocation: 'wrld_live:1' })).toContain(
             'data-instance-location="wrld_live:1"'
         );
+    });
+
+    it('passes the backend-projected location through for a friend row', () => {
+        expect(
+            renderFriendRow({ projectedLocation: 'wrld_current:123' })
+        ).toContain('data-projected-location="wrld_current:123"');
     });
 });

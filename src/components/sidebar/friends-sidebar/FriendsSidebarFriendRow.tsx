@@ -15,6 +15,7 @@ import {
     TRUST_COLOR_DEFAULTS,
     type TrustColorMap
 } from '@/shared/utils/trustColors';
+import type { FriendLocationTimeEntry } from '@/state/friendLocationTimeStore';
 import { buttonVariants } from '@/ui/shadcn/button';
 import {
     ContextMenu,
@@ -50,6 +51,7 @@ type FriendRowModel = {
     isCurrentUser?: boolean;
     isGroupByInstance?: boolean;
     instanceLocation?: string;
+    locationTime?: FriendLocationTimeEntry | null;
     canSendInvite?: boolean;
     canRequestInvite?: boolean;
     canBoop?: boolean;
@@ -101,6 +103,7 @@ export function FriendRow({
         isCurrentUser,
         isGroupByInstance = false,
         instanceLocation,
+        locationTime,
         canSendInvite,
         canRequestInvite,
         canBoop,
@@ -167,7 +170,8 @@ export function FriendRow({
     } = resolveFriendRowLocationState({
         friend,
         isCurrentUser,
-        isGroupByInstance
+        isGroupByInstance,
+        locationTime
     });
     const timerLocation = isTraveling
         ? displayTraveling || ''

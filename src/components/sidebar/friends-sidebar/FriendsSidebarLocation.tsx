@@ -23,6 +23,7 @@ import {
 } from '@/shared/utils/location';
 import { isRecord } from '@/shared/utils/record';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
+import type { FriendLocationTimeEntry } from '@/state/friendLocationTimeStore';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
@@ -83,19 +84,30 @@ function friendGroupHint(
 export function resolveFriendRowLocationState({
     friend,
     isCurrentUser = false,
-    isGroupByInstance = false
+    isGroupByInstance = false,
+    locationTime = null
 }: {
     friend: SidebarFriendRecord;
     isCurrentUser?: boolean;
     isGroupByInstance?: boolean;
+    locationTime?: FriendLocationTimeEntry | null;
 }) {
     const displaySource = readFriendRef(friend);
     const statusSource = readFriendStatusSource(friend);
     const friendState = normalizeStateBucket(statusSource?.state);
     const friendStateBucket = friendState;
-    const rawFriendLocation = isCurrentUser
+    const apiFriendLocation = isCurrentUser
         ? resolvePresenceLocation(friend)
         : readFriendRefLocation(friend);
+    const projectedFriendLocation = normalizeId(locationTime?.location);
+    const useProjectedFriendLocation = Boolean(
+        !isCurrentUser &&
+        locationSentinel(apiFriendLocation) === 'private' &&
+        parseLocation(projectedFriendLocation).isRealInstance
+    );
+    const rawFriendLocation = useProjectedFriendLocation
+        ? projectedFriendLocation
+        : apiFriendLocation;
     const friendLocation = clearStaleOfflineLocation(
         rawFriendLocation,
         friendState
@@ -364,7 +376,12 @@ export function StaticSidebarLocation({
     );
 }
 
-export function buildSidebarLocationMetadataEntry(row: SidebarVirtualRow) {
+export function buildSidebarLocationMetadataEntry(
+    row: SidebarVirtualRow,
+    locationTimesByUserId: Readonly<
+        Record<string, FriendLocationTimeEntry>
+    > = {}
+) {
     if (row?.type === 'instance-header') {
         const currentLocation = sidebarLocationTarget(row.location);
         return {
@@ -381,7 +398,8 @@ export function buildSidebarLocationMetadataEntry(row: SidebarVirtualRow) {
     const locationState = resolveFriendRowLocationState({
         friend: row.friend,
         isCurrentUser: row.isCurrentUser,
-        isGroupByInstance: row.isGroupByInstance
+        isGroupByInstance: row.isGroupByInstance,
+        locationTime: locationTimesByUserId[normalizeId(row.friend.id)] ?? null
     });
     if (!locationState.showLocationSubline) {
         return null;

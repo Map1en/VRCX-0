@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import type { UserStatus } from '@/platform/tauri/bindings';
 import type { LocalInstanceActionGates } from '@/shared/utils/invite';
 import type { TrustColorMap } from '@/shared/utils/trustColors';
+import type { FriendLocationTimeEntry } from '@/state/friendLocationTimeStore';
 import { Skeleton } from '@/ui/shadcn/skeleton';
 
 import type { StatusPreset } from './FriendsSidebarActionItems';
@@ -56,6 +57,7 @@ type AppearanceView = {
 
 type LocationView = {
     locationMetadataByKey: Map<string, LocationMetadata>;
+    locationTimesByUserId: Readonly<Record<string, FriendLocationTimeEntry>>;
 };
 
 type StatusCommandsView = {
@@ -149,6 +151,7 @@ function FriendVirtualRow({
                 isCurrentUser,
                 isGroupByInstance,
                 instanceLocation,
+                locationTime: location.locationTimesByUserId[friendId] ?? null,
                 canSendInvite: Boolean(instanceActionGates?.canInvite),
                 canRequestInvite: !isCurrentUser,
                 canBoop: Boolean(runtime.currentUser?.isBoopingEnabled),
