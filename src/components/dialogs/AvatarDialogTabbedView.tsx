@@ -29,6 +29,7 @@ import { AvatarDialogGalleryTab } from './avatar-dialog/components/AvatarDialogG
 import { AvatarDialogHeaderActions } from './avatar-dialog/components/AvatarDialogHeaderActions';
 import { AvatarDialogHeaderBadges } from './avatar-dialog/components/AvatarDialogHeaderBadges';
 import { AvatarDialogInfoTab } from './avatar-dialog/components/AvatarDialogInfoTab';
+import { AvatarDialogPerformanceTab } from './avatar-dialog/components/AvatarDialogPerformanceTab';
 import { useAvatarDialogClipboard } from './avatar-dialog/useAvatarDialogClipboard';
 import { useAvatarDialogPreview } from './avatar-dialog/useAvatarDialogPreview';
 import {
@@ -381,7 +382,11 @@ export function AvatarDialogTabbedView({
     const currentGalleryImage = currentGalleryRawImage
         ? convertFileUrlToImageUrl(currentGalleryRawImage, 1024)
         : '';
-    const platformInfo = getPlatformInfo(avatar.unityPackages);
+    const platformInfo = getPlatformInfo(
+        avatar.unityPackages,
+        avatar.performance,
+        fileAnalysis
+    );
     const localTags = Array.isArray(avatar.$tags) ? avatar.$tags : [];
     const remoteTags = Array.isArray(avatar.tags) ? avatar.tags : [];
     const contentTags = remoteTags.filter((tag) => tag.startsWith('content_'));
@@ -403,6 +408,10 @@ export function AvatarDialogTabbedView({
     const tabs = useMemo(
         (): Array<{ value: AvatarDialogTab; label: string }> => [
             { value: 'info', label: t('dialog.avatar.info.header') },
+            {
+                value: 'performance',
+                label: t('dialog.avatar.performance.header')
+            },
             {
                 value: 'gallery',
                 label: t('dialog.avatar.info.gallery')
@@ -574,6 +583,10 @@ export function AvatarDialogTabbedView({
                         platformInfo={platformInfo}
                         onOpenAuthor={openAvatarAuthor}
                         onSaveMemo={onSaveMemo}
+                    />
+                    <AvatarDialogPerformanceTab
+                        platformInfo={platformInfo}
+                        fileAnalysis={fileAnalysis}
                     />
                     <AvatarDialogGalleryTab
                         canManageAvatar={canManageAvatar}

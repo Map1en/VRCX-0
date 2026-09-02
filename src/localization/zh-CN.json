@@ -4188,6 +4188,52 @@
                 "listings": "列表",
                 "gallery": "模型相册"
             },
+            "performance": {
+                "header": "性能",
+                "rating": "评级",
+                "download_size": "下载大小",
+                "uncompressed_size": "解压后大小",
+                "texture_memory": "纹理内存",
+                "analysis_unavailable": "此平台暂无详细性能分析数据。",
+                "yes": "是",
+                "no": "否",
+                "group": {
+                    "geometry": "几何数据",
+                    "dynamics": "动态骨骼与约束",
+                    "components": "组件与特效"
+                },
+                "stat": {
+                    "triangles": "三角面",
+                    "vertices": "顶点",
+                    "skinned_meshes": "蒙皮网格",
+                    "basic_meshes": "基础网格",
+                    "material_slots": "材质槽",
+                    "bones": "骨骼",
+                    "blend_shapes": "混合形状",
+                    "bounds": "边界尺寸",
+                    "physbone_components": "PhysBone 组件",
+                    "affected_transforms": "PhysBone 影响的变换",
+                    "physbone_colliders": "PhysBone 碰撞器",
+                    "collision_checks": "PhysBone 碰撞检查",
+                    "contacts": "Contacts",
+                    "constraints": "约束",
+                    "constraint_depth": "约束深度",
+                    "animators": "Animator",
+                    "particle_systems": "粒子系统",
+                    "max_particles": "最大活动粒子总数",
+                    "mesh_particle_triangles": "网格粒子三角面",
+                    "lights": "灯光",
+                    "audio_sources": "音频源",
+                    "cloths": "布料组件",
+                    "cloth_vertices": "布料顶点",
+                    "trail_renderers": "拖尾渲染器",
+                    "line_renderers": "线渲染器",
+                    "physics_colliders": "物理碰撞器",
+                    "rigidbodies": "物理刚体",
+                    "particle_trails": "启用粒子拖尾",
+                    "particle_collision": "启用粒子碰撞"
+                }
+            },
             "json": {
                 "header": "原始 JSON 信息"
             },

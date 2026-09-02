@@ -32,7 +32,7 @@ export type AvatarLoadStatus = LoadStatus;
 export type AvatarOwnerEditor = 'content-tags' | 'details' | null;
 export type AvatarImposterAction = 'create' | 'delete' | 'regenerate';
 export type AvatarReleaseStatus = GeneratedAvatarReleaseStatus;
-export type AvatarDialogTab = 'info' | 'gallery' | 'json';
+export type AvatarDialogTab = 'info' | 'performance' | 'gallery' | 'json';
 
 export type AvatarTarget = {
     avatarId: string;

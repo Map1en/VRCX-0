@@ -78,4 +78,39 @@ describe('avatarPlatform', () => {
             ios: {}
         });
     });
+
+    it('falls back through file analysis, package, and avatar ratings', () => {
+        expect(
+            getPlatformInfo(
+                [
+                    {
+                        platform: 'standalonewindows',
+                        performanceRating: 'Good'
+                    },
+                    { platform: 'android', performanceRating: 'None' }
+                ],
+                {
+                    standalonewindows: 'Poor',
+                    android: 'Medium',
+                    ios: 'Excellent'
+                },
+                {
+                    standalonewindows: { performanceRating: 'VeryPoor' }
+                }
+            )
+        ).toEqual({
+            pc: {
+                platform: 'standalonewindows',
+                performanceRating: 'VeryPoor'
+            },
+            android: {
+                platform: 'android',
+                performanceRating: 'Medium'
+            },
+            ios: {
+                platform: 'ios',
+                performanceRating: 'Excellent'
+            }
+        });
+    });
 });

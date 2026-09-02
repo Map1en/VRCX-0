@@ -4187,6 +4187,52 @@
                 "listings": "Listings",
                 "gallery": "Gallery"
             },
+            "performance": {
+                "header": "Performance",
+                "rating": "Rating",
+                "download_size": "Download size",
+                "uncompressed_size": "Uncompressed size",
+                "texture_memory": "Texture memory",
+                "analysis_unavailable": "Detailed performance analysis is unavailable for this platform.",
+                "yes": "Yes",
+                "no": "No",
+                "group": {
+                    "geometry": "Geometry",
+                    "dynamics": "Dynamics and constraints",
+                    "components": "Components and effects"
+                },
+                "stat": {
+                    "triangles": "Triangles",
+                    "vertices": "Vertices",
+                    "skinned_meshes": "Skinned meshes",
+                    "basic_meshes": "Basic meshes",
+                    "material_slots": "Material slots",
+                    "bones": "Bones",
+                    "blend_shapes": "Blend shapes",
+                    "bounds": "Bounds",
+                    "physbone_components": "PhysBone components",
+                    "affected_transforms": "PhysBone affected transforms",
+                    "physbone_colliders": "PhysBone colliders",
+                    "collision_checks": "PhysBone collision checks",
+                    "contacts": "Contacts",
+                    "constraints": "Constraints",
+                    "constraint_depth": "Constraint depth",
+                    "animators": "Animators",
+                    "particle_systems": "Particle systems",
+                    "max_particles": "Total particles active",
+                    "mesh_particle_triangles": "Mesh particle triangles",
+                    "lights": "Lights",
+                    "audio_sources": "Audio sources",
+                    "cloths": "Cloths",
+                    "cloth_vertices": "Cloth vertices",
+                    "trail_renderers": "Trail renderers",
+                    "line_renderers": "Line renderers",
+                    "physics_colliders": "Physics colliders",
+                    "rigidbodies": "Physics rigidbodies",
+                    "particle_trails": "Particle trails enabled",
+                    "particle_collision": "Particle collision enabled"
+                }
+            },
             "json": {
                 "header": "JSON"
             },
