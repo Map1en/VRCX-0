@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react';
 import type { AvatarProfileRecord } from '@/domain/entities/avatar';
 import type { LoadStatus } from '@/domain/shared/types';
 import {
-    getFileAnalysisForUnityPackages,
-    hasFileAnalysisCandidates
+    hasFileAnalysisCandidates,
+    loadFileAnalysisForUnityPackages
 } from '@/lib/fileAnalysis';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 
@@ -33,8 +33,9 @@ export function useAvatarDialogSideData({
         defaultAvatarSideData()
     );
     const [galleryStatus, setGalleryStatus] = useState<LoadStatus>('idle');
-    const [fileAnalysisStatus, setFileAnalysisStatus] =
-        useState<LoadStatus>('idle');
+    const [fileAnalysisStatus, setFileAnalysisStatus] = useState<
+        LoadStatus | 'pending'
+    >('idle');
     const avatarId = avatar?.id;
     const avatarAssetUrl = avatar?.assetUrl;
     const avatarUnityPackages = avatar?.unityPackages;
@@ -87,12 +88,12 @@ export function useAvatarDialogSideData({
             });
         if (hasAnalysisCandidates) {
             setFileAnalysisStatus('running');
-            void getFileAnalysisForUnityPackages({
+            void loadFileAnalysisForUnityPackages({
                 unityPackages: avatarUnityPackages,
                 sdkUnityVersion,
                 endpoint: currentEndpoint
             })
-                .then((fileAnalysis) => {
+                .then(({ fileAnalysis, pending }) => {
                     if (active) {
                         setAvatarSideData((current) => ({
                             ...current,
@@ -101,7 +102,9 @@ export function useAvatarDialogSideData({
                         setFileAnalysisStatus(
                             Object.keys(fileAnalysis).length > 0
                                 ? 'ready'
-                                : 'error'
+                                : pending
+                                  ? 'pending'
+                                  : 'error'
                         );
                     }
                 })

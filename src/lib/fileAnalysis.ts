@@ -8,6 +8,7 @@ import {
     queryKeys
 } from '@/lib/entityQueryCache';
 import vrchatAuthRepository from '@/repositories/vrchatAuthRepository';
+import { isVrchatRequestError } from '@/repositories/vrchatRequest';
 import { compareUnityVersion } from '@/shared/utils/avatar';
 import { extractFileId, extractFileVersion } from '@/shared/utils/fileUtils';
 import { isRecord } from '@/shared/utils/record';
@@ -33,6 +34,11 @@ type FileAnalysisRequest = {
     fileId: string;
     variant: string;
     version: number;
+};
+
+export type FileAnalysisLoadResult = {
+    fileAnalysis: PlatformFileAnalysis;
+    pending: boolean;
 };
 
 function formatMiB(value: unknown) {
@@ -130,12 +136,13 @@ export function hasFileAnalysisCandidates(
     return collectFileAnalysisRequests(options).size > 0;
 }
 
-export async function getFileAnalysisForUnityPackages({
+export async function loadFileAnalysisForUnityPackages({
     unityPackages = [],
     sdkUnityVersion = '',
     endpoint = ''
 }: FileAnalysisOptions = {}) {
     const result: PlatformFileAnalysis = {};
+    let pending = false;
     const requests = collectFileAnalysisRequests({
         unityPackages,
         sdkUnityVersion
@@ -163,12 +170,24 @@ export async function getFileAnalysisForUnityPackages({
                     if (analysis?.success) {
                         result[platform] = analysis;
                     }
-                } catch {
-                    // no-op
+                } catch (error) {
+                    if (isVrchatRequestError(error) && error.status === 202) {
+                        pending = true;
+                    }
                 }
             }
         )
     );
 
-    return result;
+    return {
+        fileAnalysis: result,
+        pending
+    } satisfies FileAnalysisLoadResult;
+}
+
+export async function getFileAnalysisForUnityPackages(
+    options: FileAnalysisOptions = {}
+) {
+    const { fileAnalysis } = await loadFileAnalysisForUnityPackages(options);
+    return fileAnalysis;
 }

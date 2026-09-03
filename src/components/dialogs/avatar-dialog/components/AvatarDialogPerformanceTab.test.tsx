@@ -30,7 +30,18 @@ describe('AvatarDialogPerformanceTab', () => {
         );
 
         expect(screen.getByText('analysis_loading')).toBeTruthy();
-        expect(screen.queryByText('analysis_unavailable')).toBeNull();
+    });
+
+    it('explains when detailed analysis is not ready yet', () => {
+        render(
+            <AvatarDialogPerformanceTab
+                platformInfo={{ pc: {}, android: {}, ios: {} }}
+                fileAnalysis={{}}
+                pending
+            />
+        );
+
+        expect(screen.getByText('analysis_pending')).toBeTruthy();
     });
 
     it('renders the platform rating, sizes, and detailed avatar stats', () => {

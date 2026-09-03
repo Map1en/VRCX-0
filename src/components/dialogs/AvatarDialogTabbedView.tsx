@@ -411,6 +411,7 @@ export function AvatarDialogTabbedView({
     );
     const showPerformanceTab =
         fileAnalysisStatus === 'running' ||
+        fileAnalysisStatus === 'pending' ||
         hasAvatarPerformanceDetails(fileAnalysis);
     const tabs = useMemo((): Array<{
         value: AvatarDialogTab;
@@ -610,6 +611,7 @@ export function AvatarDialogTabbedView({
                         platformInfo={platformInfo}
                         fileAnalysis={fileAnalysis}
                         loading={fileAnalysisStatus === 'running'}
+                        pending={fileAnalysisStatus === 'pending'}
                     />
                     <AvatarDialogGalleryTab
                         canManageAvatar={canManageAvatar}

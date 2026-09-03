@@ -229,11 +229,13 @@ function PlatformPerformanceSection({
 export function AvatarDialogPerformanceTab({
     platformInfo,
     fileAnalysis,
-    loading = false
+    loading = false,
+    pending = false
 }: {
     platformInfo: AvatarPlatformInfo;
     fileAnalysis: PlatformFileAnalysis;
     loading?: boolean;
+    pending?: boolean;
 }) {
     const { t } = useTranslation();
     const platforms = [
@@ -259,11 +261,15 @@ export function AvatarDialogPerformanceTab({
 
     return (
         <EntityDialogTabContent value="performance">
-            {loading ? (
+            {loading || pending ? (
                 <div className="text-muted-foreground flex min-h-40 items-center justify-center gap-2 text-sm">
-                    <Spinner />
+                    {loading ? <Spinner /> : null}
                     <span>
-                        {t('dialog.avatar.performance.analysis_loading')}
+                        {t(
+                            loading
+                                ? 'dialog.avatar.performance.analysis_loading'
+                                : 'dialog.avatar.performance.analysis_pending'
+                        )}
                     </span>
                 </div>
             ) : (

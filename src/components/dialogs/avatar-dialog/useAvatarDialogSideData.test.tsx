@@ -5,14 +5,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     getAvatarGallery: vi.fn(),
-    getFileAnalysisForUnityPackages: vi.fn(),
     hasFileAnalysisCandidates: vi.fn(),
+    loadFileAnalysisForUnityPackages: vi.fn(),
     readAvatarCacheInfo: vi.fn()
 }));
 
 vi.mock('@/lib/fileAnalysis', () => ({
-    getFileAnalysisForUnityPackages: mocks.getFileAnalysisForUnityPackages,
-    hasFileAnalysisCandidates: mocks.hasFileAnalysisCandidates
+    hasFileAnalysisCandidates: mocks.hasFileAnalysisCandidates,
+    loadFileAnalysisForUnityPackages: mocks.loadFileAnalysisForUnityPackages
 }));
 vi.mock('@/repositories/avatarProfileRepository', () => ({
     default: {
@@ -45,7 +45,10 @@ describe('useAvatarDialogSideData', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mocks.hasFileAnalysisCandidates.mockReturnValue(true);
-        mocks.getFileAnalysisForUnityPackages.mockResolvedValue({});
+        mocks.loadFileAnalysisForUnityPackages.mockResolvedValue({
+            fileAnalysis: {},
+            pending: false
+        });
         mocks.readAvatarCacheInfo.mockResolvedValue({
             inCache: true,
             cacheSize: '12 MB',
@@ -72,7 +75,7 @@ describe('useAvatarDialogSideData', () => {
         await waitFor(() => {
             expect(mocks.readAvatarCacheInfo).toHaveBeenCalledOnce();
             expect(
-                mocks.getFileAnalysisForUnityPackages
+                mocks.loadFileAnalysisForUnityPackages
             ).toHaveBeenCalledOnce();
         });
         expect(mocks.getAvatarGallery).not.toHaveBeenCalled();
@@ -93,9 +96,12 @@ describe('useAvatarDialogSideData', () => {
 
     it('starts cache and file analysis without Gallery and settles them independently', async () => {
         const gallery = deferred<Array<{ url: string }>>();
-        const fileAnalysis = deferred<Record<string, never>>();
+        const fileAnalysis = deferred<{
+            fileAnalysis: Record<string, never>;
+            pending: boolean;
+        }>();
         mocks.getAvatarGallery.mockReturnValue(gallery.promise);
-        mocks.getFileAnalysisForUnityPackages.mockReturnValue(
+        mocks.loadFileAnalysisForUnityPackages.mockReturnValue(
             fileAnalysis.promise
         );
         const { result } = renderHook(() =>
@@ -112,11 +118,11 @@ describe('useAvatarDialogSideData', () => {
             expect(result.current.fileAnalysisStatus).toBe('running');
             expect(result.current.galleryStatus).toBe('running');
         });
-        expect(mocks.getFileAnalysisForUnityPackages).toHaveBeenCalledOnce();
+        expect(mocks.loadFileAnalysisForUnityPackages).toHaveBeenCalledOnce();
 
         await act(async () => {
             gallery.resolve([{ url: 'https://example.test/gallery.png' }]);
-            fileAnalysis.resolve({});
+            fileAnalysis.resolve({ fileAnalysis: {}, pending: false });
             await gallery.promise;
             await fileAnalysis.promise;
         });
@@ -143,6 +149,27 @@ describe('useAvatarDialogSideData', () => {
             expect(result.current.avatarSideData.cache.inCache).toBe(true);
         });
         expect(result.current.fileAnalysisStatus).toBe('idle');
-        expect(mocks.getFileAnalysisForUnityPackages).not.toHaveBeenCalled();
+        expect(mocks.loadFileAnalysisForUnityPackages).not.toHaveBeenCalled();
+    });
+
+    it('keeps a distinct pending state when VRChat is still analyzing', async () => {
+        mocks.loadFileAnalysisForUnityPackages.mockResolvedValue({
+            fileAnalysis: {},
+            pending: true
+        });
+
+        const { result } = renderHook(() =>
+            useAvatarDialogSideData({
+                avatar,
+                currentEndpoint: 'https://api.example.test',
+                galleryActive: false,
+                sdkUnityVersion: '2022.3.22f1'
+            })
+        );
+
+        await waitFor(() => {
+            expect(result.current.fileAnalysisStatus).toBe('pending');
+        });
+        expect(result.current.avatarSideData.fileAnalysis).toEqual({});
     });
 });

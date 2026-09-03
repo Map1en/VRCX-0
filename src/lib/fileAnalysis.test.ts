@@ -16,7 +16,8 @@ vi.mock('@/repositories/vrchatAuthRepository', () => ({
 
 import {
     getFileAnalysisForUnityPackages,
-    hasFileAnalysisCandidates
+    hasFileAnalysisCandidates,
+    loadFileAnalysisForUnityPackages
 } from './fileAnalysis';
 
 describe('getFileAnalysisForUnityPackages', () => {
@@ -66,6 +67,34 @@ describe('getFileAnalysisForUnityPackages', () => {
                 physBoneComponentCount: 12
             }
         });
+    });
+
+    it('reports analysis responses that are not ready yet', async () => {
+        mocks.getFileAnalysis.mockRejectedValue(
+            Object.assign(new Error('Analysis not yet available'), {
+                status: 202,
+                endpoint:
+                    'analysis/file_12345678-1234-1234-1234-1234567890ab/2/security',
+                payload: {
+                    error: {
+                        message: 'Analysis not yet available',
+                        status_code: 202
+                    }
+                }
+            })
+        );
+
+        const result = await loadFileAnalysisForUnityPackages({
+            unityPackages: [
+                {
+                    platform: 'standalonewindows',
+                    assetUrl:
+                        'https://api.vrchat.cloud/api/1/file/file_12345678-1234-1234-1234-1234567890ab/2/file'
+                }
+            ]
+        });
+
+        expect(result).toEqual({ fileAnalysis: {}, pending: true });
     });
 
     it('identifies Unity packages that can request file analysis', () => {

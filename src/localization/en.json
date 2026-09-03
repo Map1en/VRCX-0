@@ -4194,6 +4194,7 @@
                 "uncompressed_size": "Uncompressed size",
                 "texture_memory": "Texture memory",
                 "analysis_loading": "Loading detailed performance analysis…",
+                "analysis_pending": "Detailed performance analysis is not ready yet. Refresh the avatar to try again.",
                 "analysis_unavailable": "Detailed performance analysis is unavailable for this platform.",
                 "yes": "Yes",
                 "no": "No",

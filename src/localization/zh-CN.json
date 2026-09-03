@@ -4195,6 +4195,7 @@
                 "uncompressed_size": "解压后大小",
                 "texture_memory": "纹理内存",
                 "analysis_loading": "正在获取详细性能分析…",
+                "analysis_pending": "详细性能分析尚未生成，请稍后刷新 Avatar 重试。",
                 "analysis_unavailable": "此平台暂无详细性能分析数据。",
                 "yes": "是",
                 "no": "否",
