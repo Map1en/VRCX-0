@@ -22,6 +22,41 @@ interface PlatformFileAnalysis {
     standalonewindows?: PlatformAnalysis;
 }
 
+function hasDetailValue(value: unknown): boolean {
+    return value !== undefined && value !== null && value !== '';
+}
+
+function hasAnalysisDetails(analysis: PlatformAnalysis | undefined): boolean {
+    if (!analysis) {
+        return false;
+    }
+    if (
+        [
+            analysis.fileSize,
+            analysis.uncompressedSize,
+            analysis._fileSize,
+            analysis._uncompressedSize,
+            analysis._totalTextureUsage
+        ].some(hasDetailValue)
+    ) {
+        return true;
+    }
+    const avatarStats = analysis.avatarStats;
+    return Boolean(
+        avatarStats &&
+        typeof avatarStats === 'object' &&
+        Object.values(avatarStats).some(hasDetailValue)
+    );
+}
+
+export function hasAvatarPerformanceDetails(
+    fileAnalysis: PlatformFileAnalysis | null | undefined
+): boolean {
+    return Boolean(
+        fileAnalysis && Object.values(fileAnalysis).some(hasAnalysisDetails)
+    );
+}
+
 function normalizeUnityPackages(unityPackages: unknown): UnityPackage[] {
     return Array.isArray(unityPackages)
         ? unityPackages.filter((unityPackage): unityPackage is UnityPackage =>

@@ -11,7 +11,10 @@ import {
 } from '@/services/entityMediaService';
 import { vrchatAvatarUrl } from '@/shared/constants/vrchatWebUrls';
 import { vrcxAvatarDeepLink } from '@/shared/constants/vrcxDeepLinks';
-import { getPlatformInfo } from '@/shared/utils/avatarPlatform';
+import {
+    getPlatformInfo,
+    hasAvatarPerformanceDetails
+} from '@/shared/utils/avatarPlatform';
 import { replaceVrcPackageUrl } from '@/shared/utils/urlUtils';
 import { Button } from '@/ui/shadcn/button';
 import { Separator } from '@/ui/shadcn/separator';
@@ -405,21 +408,30 @@ export function AvatarDialogTabbedView({
     const imposterVersion = normalizeEntityId(
         imposterPackage?.impostorizerVersion
     );
-    const tabs = useMemo(
-        (): Array<{ value: AvatarDialogTab; label: string }> => [
-            { value: 'info', label: t('dialog.avatar.info.header') },
-            {
+    const showPerformanceTab = hasAvatarPerformanceDetails(fileAnalysis);
+    const tabs = useMemo((): Array<{
+        value: AvatarDialogTab;
+        label: string;
+    }> => {
+        const items: Array<{
+            value: AvatarDialogTab;
+            label: string;
+        }> = [{ value: 'info', label: t('dialog.avatar.info.header') }];
+        if (showPerformanceTab) {
+            items.push({
                 value: 'performance',
                 label: t('dialog.avatar.performance.header')
-            },
+            });
+        }
+        items.push(
             {
                 value: 'gallery',
                 label: t('dialog.avatar.info.gallery')
             },
             { value: 'json', label: t('dialog.avatar.json.header') }
-        ],
-        [t]
-    );
+        );
+        return items;
+    }, [showPerformanceTab, t]);
 
     function changeTab(tab: string) {
         onActiveTabChange(resolveAvatarDialogTab(tabs, tab));
@@ -434,6 +446,13 @@ export function AvatarDialogTabbedView({
     useEffect(() => {
         setGalleryIndex(0);
     }, [avatar.id]);
+
+    useEffect(() => {
+        const resolvedTab = resolveAvatarDialogTab(tabs, activeTab);
+        if (resolvedTab !== activeTab) {
+            onActiveTabChange(resolvedTab);
+        }
+    }, [activeTab, onActiveTabChange, tabs]);
 
     function openAvatarAuthor() {
         if (!avatar.authorId) {
