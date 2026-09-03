@@ -91,9 +91,8 @@ export function getAvailablePlatforms(unityPackages: unknown) {
 }
 
 function normalizeRating(value: unknown): string {
-    return typeof value === 'string' && value.trim() && value !== 'None'
-        ? value.trim()
-        : '';
+    const rating = typeof value === 'string' ? value.trim() : '';
+    return rating && rating !== 'None' ? rating : '';
 }
 
 function enrichPlatformInfo(
@@ -109,11 +108,16 @@ function enrichPlatformInfo(
     if (!unityPackage.platform && !performanceRating && !analysis) {
         return unityPackage;
     }
-    return {
+    const result = {
         ...unityPackage,
-        platform: unityPackage.platform || platform,
-        ...(performanceRating ? { performanceRating } : {})
+        platform: unityPackage.platform || platform
     };
+    if (performanceRating) {
+        result.performanceRating = performanceRating;
+    } else {
+        delete result.performanceRating;
+    }
+    return result;
 }
 
 export function getPlatformInfo(
@@ -135,24 +139,24 @@ export function getPlatformInfo(
         }
         if (unityPackage.platform === 'standalonewindows') {
             if (
-                unityPackage.performanceRating === 'None' &&
-                pc.performanceRating
+                !normalizeRating(unityPackage.performanceRating) &&
+                normalizeRating(pc.performanceRating)
             ) {
                 continue;
             }
             pc = unityPackage;
         } else if (unityPackage.platform === 'android') {
             if (
-                unityPackage.performanceRating === 'None' &&
-                android.performanceRating
+                !normalizeRating(unityPackage.performanceRating) &&
+                normalizeRating(android.performanceRating)
             ) {
                 continue;
             }
             android = unityPackage;
         } else if (unityPackage.platform === 'ios') {
             if (
-                unityPackage.performanceRating === 'None' &&
-                ios.performanceRating
+                !normalizeRating(unityPackage.performanceRating) &&
+                normalizeRating(ios.performanceRating)
             ) {
                 continue;
             }

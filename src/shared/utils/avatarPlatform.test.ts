@@ -49,7 +49,7 @@ describe('avatarPlatform', () => {
         };
         const pcNone = {
             platform: 'standalonewindows',
-            performanceRating: 'None',
+            performanceRating: ' None ',
             variant: 'standard'
         };
         const androidNoneFirst = {
@@ -81,6 +81,17 @@ describe('avatarPlatform', () => {
             android: androidMedium,
             ios: {}
         });
+    });
+
+    it('removes whitespace-padded None ratings', () => {
+        expect(
+            getPlatformInfo([
+                {
+                    platform: 'standalonewindows',
+                    performanceRating: ' None '
+                }
+            ]).pc
+        ).toEqual({ platform: 'standalonewindows' });
     });
 
     it('falls back through file analysis, package, and avatar ratings', () => {
