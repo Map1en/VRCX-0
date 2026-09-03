@@ -101,6 +101,7 @@ export type AvatarViewState = {
     canSelectFallbackAvatar: boolean;
     detail: string;
     fileAnalysis: PlatformFileAnalysis;
+    fileAnalysisStatus: LoadStatus;
     galleryStatus: LoadStatus;
     isCurrentAvatar: boolean;
     memo: string;

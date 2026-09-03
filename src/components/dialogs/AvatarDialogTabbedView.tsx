@@ -334,6 +334,7 @@ export function AvatarDialogTabbedView({
         canSelectAvatar,
         canSelectFallbackAvatar,
         fileAnalysis = {},
+        fileAnalysisStatus,
         galleryStatus
     } = avatarView;
     const {
@@ -408,7 +409,9 @@ export function AvatarDialogTabbedView({
     const imposterVersion = normalizeEntityId(
         imposterPackage?.impostorizerVersion
     );
-    const showPerformanceTab = hasAvatarPerformanceDetails(fileAnalysis);
+    const showPerformanceTab =
+        fileAnalysisStatus === 'running' ||
+        hasAvatarPerformanceDetails(fileAnalysis);
     const tabs = useMemo((): Array<{
         value: AvatarDialogTab;
         label: string;
@@ -606,6 +609,7 @@ export function AvatarDialogTabbedView({
                     <AvatarDialogPerformanceTab
                         platformInfo={platformInfo}
                         fileAnalysis={fileAnalysis}
+                        loading={fileAnalysisStatus === 'running'}
                     />
                     <AvatarDialogGalleryTab
                         canManageAvatar={canManageAvatar}

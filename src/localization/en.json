@@ -4193,6 +4193,7 @@
                 "download_size": "Download size",
                 "uncompressed_size": "Uncompressed size",
                 "texture_memory": "Texture memory",
+                "analysis_loading": "Loading detailed performance analysis…",
                 "analysis_unavailable": "Detailed performance analysis is unavailable for this platform.",
                 "yes": "Yes",
                 "no": "No",

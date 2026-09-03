@@ -7,6 +7,7 @@ import type {
     PlatformFileAnalysis
 } from '@/domain/entities/world';
 import { Badge } from '@/ui/shadcn/badge';
+import { Spinner } from '@/ui/shadcn/spinner';
 
 import { EntityDialogTabContent } from '../../EntityDialogScaffold';
 import type { AvatarPlatformInfo } from '../avatarDialogTypes';
@@ -227,11 +228,14 @@ function PlatformPerformanceSection({
 
 export function AvatarDialogPerformanceTab({
     platformInfo,
-    fileAnalysis
+    fileAnalysis,
+    loading = false
 }: {
     platformInfo: AvatarPlatformInfo;
     fileAnalysis: PlatformFileAnalysis;
+    loading?: boolean;
 }) {
+    const { t } = useTranslation();
     const platforms = [
         {
             key: 'pc',
@@ -255,16 +259,25 @@ export function AvatarDialogPerformanceTab({
 
     return (
         <EntityDialogTabContent value="performance">
-            <div className="space-y-4">
-                {platforms.map(({ key, label, platform, analysis }) => (
-                    <PlatformPerformanceSection
-                        key={key}
-                        label={label}
-                        platform={platform}
-                        analysis={analysis}
-                    />
-                ))}
-            </div>
+            {loading ? (
+                <div className="text-muted-foreground flex min-h-40 items-center justify-center gap-2 text-sm">
+                    <Spinner />
+                    <span>
+                        {t('dialog.avatar.performance.analysis_loading')}
+                    </span>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {platforms.map(({ key, label, platform, analysis }) => (
+                        <PlatformPerformanceSection
+                            key={key}
+                            label={label}
+                            platform={platform}
+                            analysis={analysis}
+                        />
+                    ))}
+                </div>
+            )}
         </EntityDialogTabContent>
     );
 }

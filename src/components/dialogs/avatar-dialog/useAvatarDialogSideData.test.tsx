@@ -6,11 +6,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
     getAvatarGallery: vi.fn(),
     getFileAnalysisForUnityPackages: vi.fn(),
+    hasFileAnalysisCandidates: vi.fn(),
     readAvatarCacheInfo: vi.fn()
 }));
 
 vi.mock('@/lib/fileAnalysis', () => ({
-    getFileAnalysisForUnityPackages: mocks.getFileAnalysisForUnityPackages
+    getFileAnalysisForUnityPackages: mocks.getFileAnalysisForUnityPackages,
+    hasFileAnalysisCandidates: mocks.hasFileAnalysisCandidates
 }));
 vi.mock('@/repositories/avatarProfileRepository', () => ({
     default: {
@@ -42,6 +44,7 @@ const avatar = {
 describe('useAvatarDialogSideData', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mocks.hasFileAnalysisCandidates.mockReturnValue(true);
         mocks.getFileAnalysisForUnityPackages.mockResolvedValue({});
         mocks.readAvatarCacheInfo.mockResolvedValue({
             inCache: true,
@@ -106,6 +109,7 @@ describe('useAvatarDialogSideData', () => {
 
         await waitFor(() => {
             expect(result.current.avatarSideData.cache.inCache).toBe(true);
+            expect(result.current.fileAnalysisStatus).toBe('running');
             expect(result.current.galleryStatus).toBe('running');
         });
         expect(mocks.getFileAnalysisForUnityPackages).toHaveBeenCalledOnce();
@@ -118,7 +122,27 @@ describe('useAvatarDialogSideData', () => {
         });
 
         await waitFor(() => {
+            expect(result.current.fileAnalysisStatus).toBe('error');
             expect(result.current.galleryStatus).toBe('ready');
         });
+    });
+
+    it('still reads cache when no file analysis package is available', async () => {
+        mocks.hasFileAnalysisCandidates.mockReturnValue(false);
+
+        const { result } = renderHook(() =>
+            useAvatarDialogSideData({
+                avatar,
+                currentEndpoint: 'https://api.example.test',
+                galleryActive: false,
+                sdkUnityVersion: '2022.3.22f1'
+            })
+        );
+
+        await waitFor(() => {
+            expect(result.current.avatarSideData.cache.inCache).toBe(true);
+        });
+        expect(result.current.fileAnalysisStatus).toBe('idle');
+        expect(mocks.getFileAnalysisForUnityPackages).not.toHaveBeenCalled();
     });
 });

@@ -20,6 +20,19 @@ vi.mock('../../EntityDialogScaffold', () => ({
 import { AvatarDialogPerformanceTab } from './AvatarDialogPerformanceTab';
 
 describe('AvatarDialogPerformanceTab', () => {
+    it('shows a loading state while detailed analysis is requested', () => {
+        render(
+            <AvatarDialogPerformanceTab
+                platformInfo={{ pc: {}, android: {}, ios: {} }}
+                fileAnalysis={{}}
+                loading
+            />
+        );
+
+        expect(screen.getByText('analysis_loading')).toBeTruthy();
+        expect(screen.queryByText('analysis_unavailable')).toBeNull();
+    });
+
     it('renders the platform rating, sizes, and detailed avatar stats', () => {
         render(
             <AvatarDialogPerformanceTab

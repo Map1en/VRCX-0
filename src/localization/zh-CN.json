@@ -4194,6 +4194,7 @@
                 "download_size": "下载大小",
                 "uncompressed_size": "解压后大小",
                 "texture_memory": "纹理内存",
+                "analysis_loading": "正在获取详细性能分析…",
                 "analysis_unavailable": "此平台暂无详细性能分析数据。",
                 "yes": "是",
                 "no": "否",

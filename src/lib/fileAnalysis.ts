@@ -29,6 +29,12 @@ type FileAnalysisOptions = {
     endpoint?: string;
 };
 
+type FileAnalysisRequest = {
+    fileId: string;
+    variant: string;
+    version: number;
+};
+
 function formatMiB(value: unknown) {
     const size = Number(value);
     return Number.isFinite(size) ? `${(size / 1048576).toFixed(2)} MB` : '';
@@ -87,17 +93,12 @@ function formatFileAnalysis(json: unknown): FileAnalysisRecord | null {
     };
 }
 
-export async function getFileAnalysisForUnityPackages({
+function collectFileAnalysisRequests({
     unityPackages = [],
-    sdkUnityVersion = '',
-    endpoint = ''
-}: FileAnalysisOptions = {}) {
-    const result: PlatformFileAnalysis = {};
+    sdkUnityVersion = ''
+}: FileAnalysisOptions = {}): Map<string, FileAnalysisRequest> {
+    const requests = new Map<string, FileAnalysisRequest>();
     const packages = Array.isArray(unityPackages) ? unityPackages : [];
-    const requests = new Map<
-        string,
-        { fileId: string; variant: string; version: number }
-    >();
 
     for (const unityPackage of packages) {
         if (!isAnalyzablePackage(unityPackage, sdkUnityVersion)) {
@@ -119,6 +120,26 @@ export async function getFileAnalysisForUnityPackages({
         }
         requests.set(platform, { fileId, variant, version });
     }
+
+    return requests;
+}
+
+export function hasFileAnalysisCandidates(
+    options: FileAnalysisOptions = {}
+): boolean {
+    return collectFileAnalysisRequests(options).size > 0;
+}
+
+export async function getFileAnalysisForUnityPackages({
+    unityPackages = [],
+    sdkUnityVersion = '',
+    endpoint = ''
+}: FileAnalysisOptions = {}) {
+    const result: PlatformFileAnalysis = {};
+    const requests = collectFileAnalysisRequests({
+        unityPackages,
+        sdkUnityVersion
+    });
 
     await Promise.all(
         Array.from(

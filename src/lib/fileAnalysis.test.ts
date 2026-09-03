@@ -14,7 +14,10 @@ vi.mock('@/repositories/vrchatAuthRepository', () => ({
     default: { getFileAnalysis: mocks.getFileAnalysis }
 }));
 
-import { getFileAnalysisForUnityPackages } from './fileAnalysis';
+import {
+    getFileAnalysisForUnityPackages,
+    hasFileAnalysisCandidates
+} from './fileAnalysis';
 
 describe('getFileAnalysisForUnityPackages', () => {
     beforeEach(() => {
@@ -63,5 +66,39 @@ describe('getFileAnalysisForUnityPackages', () => {
                 physBoneComponentCount: 12
             }
         });
+    });
+
+    it('identifies Unity packages that can request file analysis', () => {
+        expect(
+            hasFileAnalysisCandidates({
+                unityPackages: [
+                    {
+                        platform: 'standalonewindows',
+                        assetUrl:
+                            'https://api.vrchat.cloud/api/1/file/file_12345678-1234-1234-1234-1234567890ab/2/file'
+                    }
+                ]
+            })
+        ).toBe(true);
+    });
+
+    it('rejects packages without a usable file reference', () => {
+        expect(
+            hasFileAnalysisCandidates({
+                unityPackages: [
+                    {
+                        platform: 'standalonewindows',
+                        assetUrl: '',
+                        variant: 'standard'
+                    },
+                    {
+                        platform: 'android',
+                        assetUrl:
+                            'https://api.vrchat.cloud/api/1/file/file_12345678-1234-1234-1234-1234567890ab/2/file',
+                        variant: 'impostor'
+                    }
+                ]
+            })
+        ).toBe(false);
     });
 });

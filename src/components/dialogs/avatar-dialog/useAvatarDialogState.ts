@@ -81,13 +81,17 @@ export function useAvatarDialogState({
         activeTabState.endpoint === currentEndpoint
             ? activeTabState.tab
             : 'info';
-    const { avatarSideData, galleryStatus, setAvatarSideData } =
-        useAvatarDialogSideData({
-            avatar,
-            currentEndpoint,
-            galleryActive: activeTab === 'gallery',
-            sdkUnityVersion
-        });
+    const {
+        avatarSideData,
+        fileAnalysisStatus,
+        galleryStatus,
+        setAvatarSideData
+    } = useAvatarDialogSideData({
+        avatar,
+        currentEndpoint,
+        galleryActive: activeTab === 'gallery',
+        sdkUnityVersion
+    });
     const [imageCropRequest, setImageCropRequest] =
         useState<AvatarImageCropRequest | null>(null);
     const [ownerEditor, setOwnerEditor] = useState<AvatarOwnerEditor>(null);
@@ -430,6 +434,7 @@ export function useAvatarDialogState({
             canSelectFallbackAvatar,
             detail,
             fileAnalysis: avatarSideData.fileAnalysis,
+            fileAnalysisStatus,
             galleryStatus,
             isCurrentAvatar,
             memo

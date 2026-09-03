@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 
 import type { AvatarProfileRecord } from '@/domain/entities/avatar';
 import type { LoadStatus } from '@/domain/shared/types';
-import { getFileAnalysisForUnityPackages } from '@/lib/fileAnalysis';
+import {
+    getFileAnalysisForUnityPackages,
+    hasFileAnalysisCandidates
+} from '@/lib/fileAnalysis';
 import avatarProfileRepository from '@/repositories/avatarProfileRepository';
 
 import { avatarGalleryImageUrl, defaultAvatarSideData } from './avatarAssets';
@@ -30,13 +33,20 @@ export function useAvatarDialogSideData({
         defaultAvatarSideData()
     );
     const [galleryStatus, setGalleryStatus] = useState<LoadStatus>('idle');
+    const [fileAnalysisStatus, setFileAnalysisStatus] =
+        useState<LoadStatus>('idle');
     const avatarId = avatar?.id;
     const avatarAssetUrl = avatar?.assetUrl;
     const avatarUnityPackages = avatar?.unityPackages;
+    const hasAnalysisCandidates = hasFileAnalysisCandidates({
+        unityPackages: avatarUnityPackages,
+        sdkUnityVersion
+    });
 
     useEffect(() => {
         setAvatarSideData(defaultAvatarSideData());
         setGalleryStatus('idle');
+        setFileAnalysisStatus('idle');
     }, [avatarId, currentEndpoint]);
 
     useEffect(() => {
@@ -75,27 +85,38 @@ export function useAvatarDialogSideData({
                     }));
                 }
             });
-        void getFileAnalysisForUnityPackages({
-            unityPackages: avatarUnityPackages,
-            sdkUnityVersion,
-            endpoint: currentEndpoint
-        })
-            .then((fileAnalysis) => {
-                if (active) {
-                    setAvatarSideData((current) => ({
-                        ...current,
-                        fileAnalysis
-                    }));
-                }
+        if (hasAnalysisCandidates) {
+            setFileAnalysisStatus('running');
+            void getFileAnalysisForUnityPackages({
+                unityPackages: avatarUnityPackages,
+                sdkUnityVersion,
+                endpoint: currentEndpoint
             })
-            .catch(() => {
-                if (active) {
-                    setAvatarSideData((current) => ({
-                        ...current,
-                        fileAnalysis: {}
-                    }));
-                }
-            });
+                .then((fileAnalysis) => {
+                    if (active) {
+                        setAvatarSideData((current) => ({
+                            ...current,
+                            fileAnalysis
+                        }));
+                        setFileAnalysisStatus(
+                            Object.keys(fileAnalysis).length > 0
+                                ? 'ready'
+                                : 'error'
+                        );
+                    }
+                })
+                .catch(() => {
+                    if (active) {
+                        setAvatarSideData((current) => ({
+                            ...current,
+                            fileAnalysis: {}
+                        }));
+                        setFileAnalysisStatus('error');
+                    }
+                });
+        } else {
+            setFileAnalysisStatus('idle');
+        }
 
         return () => {
             active = false;
@@ -107,6 +128,7 @@ export function useAvatarDialogSideData({
         avatarId,
         avatarUnityPackages,
         currentEndpoint,
+        hasAnalysisCandidates,
         sdkUnityVersion
     ]);
 
@@ -160,6 +182,7 @@ export function useAvatarDialogSideData({
 
     return {
         avatarSideData,
+        fileAnalysisStatus,
         galleryStatus,
         setAvatarSideData
     };
