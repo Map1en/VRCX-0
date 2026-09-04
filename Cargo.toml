@@ -102,7 +102,7 @@ tracing = "0.1"
 url = "2"
 uuid = { version = "1", features = ["v4"] }
 walkdir = "2"
-zip = { version = "4", default-features = false }
+zip = { version = "8", default-features = false }
 zstd = { version = "0.13", features = ["zstdmt"] }
 
 [profile.dev]
