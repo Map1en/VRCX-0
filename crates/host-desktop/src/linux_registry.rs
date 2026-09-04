@@ -508,8 +508,7 @@ mod tests {
     #[test]
     fn parses_registry_backup_binary_without_ascii_loss() {
         assert_eq!(
-            parse_registry_backup_value("hex:00,41,80,e4,b8,ad,ff,00")
-                .map(|(_, value)| value),
+            parse_registry_backup_value("hex:00,41,80,e4,b8,ad,ff,00").map(|(_, value)| value),
             Some(serde_json::json!([0, 65, 128, 228, 184, 173, 255, 0]))
         );
     }
@@ -525,11 +524,8 @@ mod tests {
             Ok("hex:41,42,3f")
         );
         assert_eq!(
-            format_registry_value(
-                &serde_json::json!([0, 65, 128, 228, 184, 173, 255, 0]),
-                3
-            )
-            .as_deref(),
+            format_registry_value(&serde_json::json!([0, 65, 128, 228, 184, 173, 255, 0]), 3)
+                .as_deref(),
             Ok("hex:00,41,80,e4,b8,ad,ff,00")
         );
     }

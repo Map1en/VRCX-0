@@ -292,6 +292,14 @@ export function useSettingsPageState() {
     });
     useSettingsEffects({
         applyAvatarProviderConfig,
+        notificationTtsVoiceNative: prefs.notificationTTSVoiceNative,
+        resetNotificationTtsVoice: () => {
+            void saveStringPreference(
+                'notificationTTSVoiceNative',
+                'notificationTTSVoiceNative',
+                ''
+            );
+        },
         setAppDataDirState,
         setTtsVoices,
         setZoomInput,

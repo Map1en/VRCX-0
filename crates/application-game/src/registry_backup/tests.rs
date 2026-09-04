@@ -127,12 +127,7 @@ fn restore_accepts_lossless_binary_backup_and_records_completion() {
     .unwrap();
     let key = registry_backup_list(&db).unwrap()[0].key.clone();
 
-    let restored = registry_backup_restore(
-        &db,
-        &StubHost::with_registry(json!({})),
-        &key,
-    )
-    .unwrap();
+    let restored = registry_backup_restore(&db, &StubHost::with_registry(json!({})), &key).unwrap();
 
     assert_eq!(restored.name, "Binary Backup");
     assert_eq!(

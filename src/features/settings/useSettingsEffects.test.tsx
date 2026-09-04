@@ -43,12 +43,15 @@ describe('useSettingsEffects', () => {
     it('loads only auxiliary settings data outside the preference store', async () => {
         const applyAvatarProviderConfig = vi.fn();
         const setAppDataDirState = vi.fn();
+        const resetNotificationTtsVoice = vi.fn();
         const setTtsVoices = vi.fn();
         const setZoomInput = vi.fn();
 
         renderHook(() =>
             useSettingsEffects({
                 applyAvatarProviderConfig,
+                notificationTtsVoiceNative: '',
+                resetNotificationTtsVoice,
                 setAppDataDirState,
                 setTtsVoices,
                 setZoomInput,
@@ -66,6 +69,76 @@ describe('useSettingsEffects', () => {
             expect(setTtsVoices).toHaveBeenCalledWith([]);
         });
         expect(setZoomInput).toHaveBeenCalledWith('125');
+        expect(resetNotificationTtsVoice).not.toHaveBeenCalled();
+    });
+
+    it('resets a saved TTS voice that is missing from a successful voice list', async () => {
+        mocks.appHostTtsVoices.mockResolvedValue([
+            { id: 'new-voice', name: 'New Voice', language: 'en-US' }
+        ]);
+        const resetNotificationTtsVoice = vi.fn();
+
+        renderHook(() =>
+            useSettingsEffects({
+                applyAvatarProviderConfig: vi.fn(),
+                notificationTtsVoiceNative: 'legacy-voice',
+                resetNotificationTtsVoice,
+                setAppDataDirState: vi.fn(),
+                setTtsVoices: vi.fn(),
+                setZoomInput: vi.fn(),
+                zoomLevel: 100
+            })
+        );
+
+        await waitFor(() => {
+            expect(resetNotificationTtsVoice).toHaveBeenCalledOnce();
+        });
+    });
+
+    it('preserves a saved TTS voice when the voice list is empty', async () => {
+        mocks.appHostTtsVoices.mockResolvedValue([]);
+        const resetNotificationTtsVoice = vi.fn();
+        const setTtsVoices = vi.fn();
+
+        renderHook(() =>
+            useSettingsEffects({
+                applyAvatarProviderConfig: vi.fn(),
+                notificationTtsVoiceNative: 'saved-voice',
+                resetNotificationTtsVoice,
+                setAppDataDirState: vi.fn(),
+                setTtsVoices,
+                setZoomInput: vi.fn(),
+                zoomLevel: 100
+            })
+        );
+
+        await waitFor(() => {
+            expect(setTtsVoices).toHaveBeenCalledWith([]);
+        });
+        expect(resetNotificationTtsVoice).not.toHaveBeenCalled();
+    });
+
+    it('preserves a saved TTS voice when loading the voice list fails', async () => {
+        mocks.appHostTtsVoices.mockRejectedValue(new Error('unavailable'));
+        const resetNotificationTtsVoice = vi.fn();
+        const setTtsVoices = vi.fn();
+
+        renderHook(() =>
+            useSettingsEffects({
+                applyAvatarProviderConfig: vi.fn(),
+                notificationTtsVoiceNative: 'saved-voice',
+                resetNotificationTtsVoice,
+                setAppDataDirState: vi.fn(),
+                setTtsVoices,
+                setZoomInput: vi.fn(),
+                zoomLevel: 100
+            })
+        );
+
+        await waitFor(() => {
+            expect(setTtsVoices).toHaveBeenCalledWith([]);
+        });
+        expect(resetNotificationTtsVoice).not.toHaveBeenCalled();
     });
 
     it('ignores an auxiliary response after unmount', async () => {
@@ -83,6 +156,8 @@ describe('useSettingsEffects', () => {
         const { unmount } = renderHook(() =>
             useSettingsEffects({
                 applyAvatarProviderConfig,
+                notificationTtsVoiceNative: '',
+                resetNotificationTtsVoice: vi.fn(),
                 setAppDataDirState: vi.fn(),
                 setTtsVoices: vi.fn(),
                 setZoomInput: vi.fn(),

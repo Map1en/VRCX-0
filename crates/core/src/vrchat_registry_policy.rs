@@ -110,9 +110,7 @@ pub fn registry_backup_binary_bytes(
                 .as_u64()
                 .and_then(|value| u8::try_from(value).ok())
                 .ok_or_else(|| {
-                    RegistryPolicyError::Invalid(format!(
-                        "Invalid registry binary data for {key}."
-                    ))
+                    RegistryPolicyError::Invalid(format!("Invalid registry binary data for {key}."))
                 })
         })
         .collect()
@@ -236,12 +234,9 @@ mod tests {
             r#"{"VRC_BINARY":{"type":3,"data":[0,65,128,228,184,173,255,0]}}"#
         )
         .is_ok());
-        assert!(validate_registry_json(r#"{"VRC_BINARY":{"type":3,"data":"legacy"}}"#)
-            .is_err());
-        assert!(validate_registry_json(r#"{"VRC_BINARY":{"type":3,"data":[256]}}"#)
-            .is_err());
-        assert!(validate_registry_json(r#"{"VRC_BINARY":{"type":3,"data":[1.5]}}"#)
-            .is_err());
+        assert!(validate_registry_json(r#"{"VRC_BINARY":{"type":3,"data":"legacy"}}"#).is_err());
+        assert!(validate_registry_json(r#"{"VRC_BINARY":{"type":3,"data":[256]}}"#).is_err());
+        assert!(validate_registry_json(r#"{"VRC_BINARY":{"type":3,"data":[1.5]}}"#).is_err());
     }
 
     #[test]

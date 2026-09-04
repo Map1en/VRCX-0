@@ -1,4 +1,9 @@
-import { useEffect, type Dispatch, type SetStateAction } from 'react';
+import {
+    useEffect,
+    useEffectEvent,
+    type Dispatch,
+    type SetStateAction
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -15,6 +20,8 @@ import type { AvatarProviderConfig } from './useAvatarProviderConfig';
 
 type SettingsEffectsDeps = {
     applyAvatarProviderConfig: (config: AvatarProviderConfig) => void;
+    notificationTtsVoiceNative: string;
+    resetNotificationTtsVoice: () => void;
     setAppDataDirState: Dispatch<SetStateAction<AppDataDirState | null>>;
     setTtsVoices: Dispatch<SetStateAction<TtsVoice[]>>;
     setZoomInput: Dispatch<SetStateAction<string>>;
@@ -23,12 +30,25 @@ type SettingsEffectsDeps = {
 
 export function useSettingsEffects({
     applyAvatarProviderConfig,
+    notificationTtsVoiceNative,
+    resetNotificationTtsVoice,
     setAppDataDirState,
     setTtsVoices,
     setZoomInput,
     zoomLevel
 }: SettingsEffectsDeps) {
     const { t } = useTranslation();
+    const resetMissingNotificationTtsVoice = useEffectEvent(
+        (voices: TtsVoice[]) => {
+            if (
+                voices.length > 0 &&
+                notificationTtsVoiceNative &&
+                !voices.some((voice) => voice.id === notificationTtsVoiceNative)
+            ) {
+                resetNotificationTtsVoice();
+            }
+        }
+    );
     useEffect(() => {
         let active = true;
         avatarSearchProviderRepository
@@ -81,6 +101,7 @@ export function useSettingsEffects({
             .then((voices) => {
                 if (active) {
                     setTtsVoices(voices);
+                    resetMissingNotificationTtsVoice(voices);
                 }
             })
             .catch(() => {

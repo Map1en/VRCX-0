@@ -237,10 +237,7 @@ pub fn get_registry() -> Result<HashMap<String, HashMap<String, serde_json::Valu
                 match val.vtype {
                     REG_BINARY => {
                         entry.insert("type".to_string(), serde_json::json!(3));
-                        entry.insert(
-                            "data".to_string(),
-                            registry_backup_binary_data(&val.bytes),
-                        );
+                        entry.insert("data".to_string(), registry_backup_binary_data(&val.bytes));
                     }
                     REG_DWORD => {
                         if val.bytes.len() >= 8 {
