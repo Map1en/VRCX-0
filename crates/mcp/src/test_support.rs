@@ -582,6 +582,7 @@ fn test_runtime_with_database_and_event_bus(
         remote_mutations,
         Arc::new(UnavailableLocalGameContextSource),
         None,
+        None,
         world_cache,
         Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new()),
         Arc::new(NoopPrintCleanupInputSink),

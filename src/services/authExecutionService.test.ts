@@ -428,6 +428,7 @@ describe('authExecutionService characterization', () => {
             {
                 userId: 'usr_friend',
                 location: 'wrld_test:1',
+                source: 'realtime',
                 sinceMs: 1_700_000_000_000
             }
         ]);

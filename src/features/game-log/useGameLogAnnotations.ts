@@ -3,20 +3,10 @@ import { useMemo } from 'react';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 
-import {
-    annotateGameLogSessionEvent,
-    buildGameLogFavoriteIdSet,
-    normalizeGameLogId
-} from './gameLogRows';
-import type { GameLogRow, GameLogSession } from './gameLogTypes';
+import { buildGameLogFavoriteIdSet, normalizeGameLogId } from './gameLogRows';
+import type { GameLogRow } from './gameLogTypes';
 
-export function useGameLogAnnotations({
-    rows,
-    sessions
-}: {
-    rows: GameLogRow[];
-    sessions: GameLogSession[];
-}) {
+export function useGameLogAnnotations({ rows }: { rows: GameLogRow[] }) {
     const localFriendFavorites = useFavoriteStore(
         (state) => state.localFriendFavorites
     );
@@ -38,19 +28,9 @@ export function useGameLogAnnotations({
         () => new Set(friendIdSignature ? friendIdSignature.split(',') : []),
         [friendIdSignature]
     );
-    const annotatedSessions = useMemo(
-        () =>
-            sessions.map((session) => ({
-                ...session,
-                events: (session.events ?? []).map((event) =>
-                    annotateGameLogSessionEvent(
-                        event,
-                        favoriteIdSet,
-                        friendIdSet
-                    )
-                )
-            })),
-        [favoriteIdSet, friendIdSet, sessions]
+    const affinity = useMemo(
+        () => ({ favoriteIdSet, friendIdSet }),
+        [favoriteIdSet, friendIdSet]
     );
     const annotatedRows = useMemo(
         () =>
@@ -71,6 +51,6 @@ export function useGameLogAnnotations({
 
     return {
         annotatedRows,
-        annotatedSessions
+        affinity
     };
 }

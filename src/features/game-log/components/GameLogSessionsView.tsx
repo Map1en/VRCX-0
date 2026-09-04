@@ -1,17 +1,5 @@
-import {
-    ChevronRightIcon,
-    ChevronsDownUpIcon,
-    ChevronsUpDownIcon
-} from 'lucide-react';
-import {
-    Fragment,
-    memo,
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState
-} from 'react';
+import { ChevronRightIcon } from 'lucide-react';
+import { Fragment, memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Location } from '@/components/Location';
@@ -43,6 +31,7 @@ import {
     resolveGameLogSessionDuration as resolveSessionDuration,
     resolveGameLogWorldTarget as resolveWorldTarget
 } from '../gameLogRows';
+import { useGameLogSessionAffinity } from '../gameLogSessionAffinity';
 import { buildGameLogSessionDurationDetails } from '../gameLogSessionDurations';
 import type { GameLogSession, GameLogSessionEvent } from '../gameLogTypes';
 import { SessionEventGroups } from './GameLogSessionEventRow';
@@ -317,6 +306,7 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
     onOpenChange
 }: GameLogSessionSegmentProps) {
     const { t } = useTranslation();
+    const { favoriteIdSet, friendIdSet } = useGameLogSessionAffinity();
     const worldTarget = resolveWorldTarget(session);
     const durationMs = resolveSessionDuration(session);
     const sessionStartedAt = Date.parse(session?.created_at || '');
@@ -356,8 +346,13 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
         session.created_at || ''
     );
     const sessionFriends = useMemo(
-        () => collectGameLogSessionFriends(session?.events ?? []),
-        [session?.events]
+        () =>
+            collectGameLogSessionFriends(
+                session?.events ?? [],
+                favoriteIdSet,
+                friendIdSet
+            ),
+        [session?.events, favoriteIdSet, friendIdSet]
     );
     const durationByKey = playerDurationDetails.durationByKey;
     const handleOpenChange = (nextOpen: boolean) => {
@@ -455,6 +450,9 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
 
 type GameLogSessionsViewProps = {
     sessions: GameLogSession[];
+    defaultOpen: boolean;
+    sessionOpenOverrides: ReadonlyMap<string, boolean>;
+    onSessionOpenChange: (sessionKey: string, nextOpen: boolean) => void;
     isGameRunning: boolean;
     hasMore?: boolean;
     isLoadingMore?: boolean;
@@ -465,6 +463,9 @@ type GameLogSessionsViewProps = {
 
 export function GameLogSessionsView({
     sessions,
+    defaultOpen,
+    sessionOpenOverrides,
+    onSessionOpenChange,
     isGameRunning,
     hasMore = false,
     isLoadingMore = false,
@@ -476,45 +477,6 @@ export function GameLogSessionsView({
     const scrollRef = useRef<HTMLDivElement | null>(null);
     const sentinelRef = useRef<HTMLDivElement | null>(null);
     const [autoFillAttempts, setAutoFillAttempts] = useState(0);
-    const [sessionOpenOverrides, setSessionOpenOverrides] = useState(
-        () => new Map<string, boolean>()
-    );
-    const [defaultOpen, setDefaultOpen] = useState(true);
-    const collapseAll = useCallback(() => {
-        setSessionOpenOverrides(new Map());
-        setDefaultOpen(false);
-    }, []);
-    const expandAll = useCallback(() => {
-        setSessionOpenOverrides(new Map());
-        setDefaultOpen(true);
-    }, []);
-    const allSessionsOpen = useMemo(
-        () =>
-            sessions.every((session) => {
-                const sessionKey = getGameLogSessionKey(session);
-                return sessionKey
-                    ? (sessionOpenOverrides.get(sessionKey) ?? defaultOpen)
-                    : defaultOpen;
-            }),
-        [defaultOpen, sessionOpenOverrides, sessions]
-    );
-    const handleSessionOpenChange = useCallback(
-        (sessionKey: string, nextOpen: boolean) => {
-            if (!sessionKey) {
-                return;
-            }
-            setSessionOpenOverrides((current) => {
-                if (current.get(sessionKey) === nextOpen) {
-                    return current;
-                }
-
-                const next = new Map(current);
-                next.set(sessionKey, nextOpen);
-                return next;
-            });
-        },
-        []
-    );
 
     useEffect(() => {
         setAutoFillAttempts(0);
@@ -589,28 +551,6 @@ export function GameLogSessionsView({
 
     return (
         <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-md border">
-            {sessions.length ? (
-                <div className="border-border/70 flex shrink-0 items-center justify-end border-b px-2 py-0.5">
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="text-muted-foreground h-7 gap-1.5"
-                        onClick={allSessionsOpen ? collapseAll : expandAll}
-                    >
-                        {allSessionsOpen ? (
-                            <ChevronsDownUpIcon data-icon="inline-start" />
-                        ) : (
-                            <ChevronsUpDownIcon data-icon="inline-start" />
-                        )}
-                        {t(
-                            allSessionsOpen
-                                ? 'view.game_log.sessions.collapse_all'
-                                : 'view.game_log.sessions.expand_all'
-                        )}
-                    </Button>
-                </div>
-            ) : null}
             <div
                 ref={scrollRef}
                 className="flex-1 overflow-x-hidden overflow-y-auto"
@@ -638,7 +578,7 @@ export function GameLogSessionsView({
                                 isLast={index === sessions.length - 1}
                                 isGameRunning={isGameRunning}
                                 isOpen={isOpen}
-                                onOpenChange={handleSessionOpenChange}
+                                onOpenChange={onSessionOpenChange}
                             />
                         </Fragment>
                     );

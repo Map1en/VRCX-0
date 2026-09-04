@@ -1,6 +1,7 @@
 import { PanelLeftIcon, SettingsIcon, PlusIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { ShortcutKey } from '@/components/keyboard/ShortcutHintPanel';
 import {
     SidebarContent,
     SidebarFooter,
@@ -8,6 +9,7 @@ import {
     SidebarGroupContent,
     SidebarHeader,
     SidebarMenu,
+    SidebarMenuBadge,
     SidebarMenuButton,
     SidebarMenuItem
 } from '@/ui/shadcn/sidebar';
@@ -43,7 +45,7 @@ function AppNavCreateDashboardHeader({
                         type="button"
                         tooltip={t('dashboard.new_dashboard')}
                         disabled={disabled}
-                        className="border-primary/40 text-primary hover:bg-primary/10 border border-dashed"
+                        className="text-sidebar-foreground/65 border border-dashed"
                         onClick={() => {
                             onCreateDashboard();
                         }}
@@ -60,6 +62,8 @@ function AppNavCreateDashboardHeader({
 function AppNavMenuContent({
     menuItems,
     isCollapsed,
+    shortcutHintsVisible,
+    shortcutPositionByIndex,
     activeIndex,
     pathname,
     notifiedKeys,
@@ -74,6 +78,8 @@ function AppNavMenuContent({
 }: NavMenuActionHandlers & {
     menuItems: NavMenuItem[];
     isCollapsed: boolean;
+    shortcutHintsVisible: boolean;
+    shortcutPositionByIndex: ReadonlyMap<string, number>;
     activeIndex: string;
     pathname: string;
     notifiedKeys: ReadonlySet<string>;
@@ -101,6 +107,12 @@ function AppNavMenuContent({
                                         key={item.index}
                                         item={item}
                                         isCollapsed={isCollapsed}
+                                        shortcutHintsVisible={
+                                            shortcutHintsVisible
+                                        }
+                                        shortcutPositionByIndex={
+                                            shortcutPositionByIndex
+                                        }
                                         activeIndex={activeIndex}
                                         pathname={pathname}
                                         notifiedKeys={notifiedKeys}
@@ -116,6 +128,12 @@ function AppNavMenuContent({
                                     <NavMenuEntryItem
                                         key={item.index}
                                         item={item}
+                                        shortcutHintsVisible={
+                                            shortcutHintsVisible
+                                        }
+                                        shortcutPositionByIndex={
+                                            shortcutPositionByIndex
+                                        }
                                         activeIndex={activeIndex}
                                         notifiedKeys={notifiedKeys}
                                         hasNotifications={hasNotifications}
@@ -138,10 +156,14 @@ function AppNavMenuContent({
 
 function AppNavFooter({
     sidebarOpen,
+    settingsActive,
+    shortcutHintsVisible,
     onNavigateSettings,
     onToggleSidebar
 }: {
     sidebarOpen: boolean;
+    settingsActive: boolean;
+    shortcutHintsVisible: boolean;
     onNavigateSettings: () => void;
     onToggleSidebar: () => void;
 }) {
@@ -153,7 +175,9 @@ function AppNavFooter({
                 <SidebarMenuItem>
                     <SidebarMenuButton
                         type="button"
+                        isActive={settingsActive}
                         tooltip={t('nav_tooltip.settings')}
+                        className={shortcutHintsVisible ? 'pr-8' : undefined}
                         onClick={onNavigateSettings}
                     >
                         <span className="relative inline-flex size-4 items-center justify-center">
@@ -161,6 +185,11 @@ function AppNavFooter({
                         </span>
                         <span>{t('nav_tooltip.settings')}</span>
                     </SidebarMenuButton>
+                    {shortcutHintsVisible ? (
+                        <SidebarMenuBadge className="p-0">
+                            <ShortcutKey keys="," />
+                        </SidebarMenuBadge>
+                    ) : null}
                 </SidebarMenuItem>
 
                 <SidebarMenuItem>
@@ -171,6 +200,7 @@ function AppNavFooter({
                                 ? t('nav_tooltip.collapse_nav')
                                 : t('nav_tooltip.expand_nav')
                         }
+                        className={shortcutHintsVisible ? 'pr-8' : undefined}
                         onClick={() => {
                             onToggleSidebar();
                         }}
@@ -182,6 +212,11 @@ function AppNavFooter({
                                 : t('nav_tooltip.expand_nav')}
                         </span>
                     </SidebarMenuButton>
+                    {shortcutHintsVisible ? (
+                        <SidebarMenuBadge className="p-0">
+                            <ShortcutKey keys="B" />
+                        </SidebarMenuBadge>
+                    ) : null}
                 </SidebarMenuItem>
             </SidebarMenu>
         </SidebarFooter>

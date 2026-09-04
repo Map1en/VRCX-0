@@ -1,12 +1,8 @@
-import {
-    ArrowDownIcon,
-    ArrowUpDownIcon,
-    ArrowUpIcon,
-    CameraIcon
-} from 'lucide-react';
+import { CameraIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { ComponentProps } from 'react';
 
+import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
 import { EmptyState as AppEmptyState } from '@/components/layout/PageScaffold';
 import type { AuthorDetail } from '@/platform/tauri/bindings';
 import userProfileRepository from '@/repositories/userProfileRepository';
@@ -38,31 +34,25 @@ export function SearchSortHead({
     label,
     sortKey,
     sort,
-    onToggle
+    onToggle,
+    className = ''
 }: {
     label: string;
     sortKey: string;
     sort: ScreenshotSearchSort;
     onToggle: (key: string) => void;
+    className?: string;
 }) {
     const active = sort?.key === sortKey;
-    const Icon = active
-        ? sort.asc
-            ? ArrowUpIcon
-            : ArrowDownIcon
-        : ArrowUpDownIcon;
 
     return (
-        <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-foreground h-auto justify-start px-0 py-0 text-left text-xs font-medium tracking-wide uppercase"
-            onClick={() => onToggle(sortKey)}
-        >
-            <span>{label}</span>
-            <Icon data-icon="inline-end" />
-        </Button>
+        <DataTableSortButton
+            active={active}
+            direction={active ? (sort.asc ? 'asc' : 'desc') : false}
+            label={label}
+            onSort={() => onToggle(sortKey)}
+            className={className}
+        />
     );
 }
 

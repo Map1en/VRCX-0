@@ -7,6 +7,7 @@ import { getNavIconComponent } from '@/components/layout/navIconRegistry';
 import { cn } from '@/lib/utils';
 import configRepository from '@/repositories/configRepository';
 import { refreshFriendAndFavoriteSnapshots } from '@/services/backgroundMaintenanceService';
+import { restoreNormalWindowModeForIntent } from '@/services/windowModeService';
 import { SECOND_MS } from '@/shared/constants/time';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
@@ -63,6 +64,7 @@ const FRIEND_REFRESH_COOLDOWN_MS = 30 * SECOND_MS;
 type SidePanelProps = {
     className?: string;
     style?: CSSProperties;
+    sidebarWindowMode?: boolean;
 };
 
 function parseConfigArray(value: unknown): string[] {
@@ -103,7 +105,10 @@ function toSidePanelSortMethod(value: string): SidePanelSortMethod {
 }
 
 export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
-    function SidePanel({ className = '', style = undefined }, ref) {
+    function SidePanel(
+        { className = '', style = undefined, sidebarWindowMode = false },
+        ref
+    ) {
         const { t } = useTranslation();
         const [activeTab, setActiveTab] = useState('friends');
         const [prefs, setPrefs] = useState(defaultPrefs);
@@ -114,6 +119,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
         const [customTabsAutoAdd, setCustomTabsAutoAdd] = useState(false);
 
         function openCustomTabsDialog(autoAdd = false) {
+            restoreNormalWindowModeForIntent();
             setCustomTabsAutoAdd(autoAdd);
             setCustomTabsDialogOpen(true);
         }
@@ -345,6 +351,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                 data-vrcx-0-surface="side-panel"
                 className={cn(
                     'vrcx-0-side-panel flex h-full min-h-0 w-80 shrink-0 flex-col overflow-hidden border-l',
+                    sidebarWindowMode && 'border-l-0',
                     className
                 )}
                 style={style}
@@ -352,7 +359,10 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                 <Tabs
                     value={activeTab}
                     onValueChange={setActiveTab}
-                    className="flex min-h-0 flex-1 flex-col overflow-hidden px-2 pt-4.5 pb-2"
+                    className={cn(
+                        'flex min-h-0 flex-1 flex-col overflow-hidden px-2 pt-4.5 pb-2',
+                        sidebarWindowMode && 'pt-2'
+                    )}
                 >
                     <div className="flex min-w-0 shrink-0 items-center gap-2">
                         <div
@@ -411,7 +421,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                                                         >
                                                             {item.label}
                                                         </span>
-                                                        <span className="shrink-0 tabular-nums">
+                                                        <span className="text-muted-foreground shrink-0 text-[11px] leading-none font-medium tabular-nums">
                                                             {item.countLabel}
                                                         </span>
                                                     </TabsTrigger>
@@ -495,9 +505,10 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
                             orderedFavoriteGroupItemsLength={
                                 orderedFavoriteGroupItems.length
                             }
-                            onOpenFavoriteGroupOrderDialog={() =>
-                                setFavoriteGroupOrderDialogOpen(true)
-                            }
+                            onOpenFavoriteGroupOrderDialog={() => {
+                                restoreNormalWindowModeForIntent();
+                                setFavoriteGroupOrderDialogOpen(true);
+                            }}
                             onOpenCustomTabsDialog={() =>
                                 openCustomTabsDialog()
                             }

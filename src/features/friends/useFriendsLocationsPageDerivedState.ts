@@ -14,6 +14,7 @@ import {
     type InviteLocationCurrentUserSnapshot,
     type InviteLocationGameState
 } from '@/shared/utils/invite';
+import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
 
 import {
     buildFriendsLocationsSegmentOptions,
@@ -173,6 +174,7 @@ export function useFriendsLocationsPageDerivedState({
     sidebarSortMethods
 }: FriendsLocationsPageDerivedStateInput) {
     const { t } = useTranslation();
+    const locationTimes = useFriendLocationTimeStore((state) => state.byUserId);
     const densityConfig = useMemo(
         () => getFriendsLocationsDensityConfig(density),
         [density]
@@ -328,13 +330,40 @@ export function useFriendsLocationsPageDerivedState({
             ),
         [onlineFavoriteExclusionIds, onlineFriends]
     );
-    const sameInstanceGroups = useMemo<FriendsLocationsSameInstanceGroup[]>(
-        () =>
-            buildSameInstanceGroups(onlineFriends, currentLocationSnapshot, {
-                includeCurrentUser: showCurrentUserInSameInstance
-            }),
-        [currentLocationSnapshot, onlineFriends, showCurrentUserInSameInstance]
-    );
+    const sameInstanceGroups = useMemo<
+        FriendsLocationsSameInstanceGroup[]
+    >(() => {
+        const onlineFriendIds = new Set(
+            onlineFriends.map((friend) => normalizeId(friend.id))
+        );
+        const localFriends: FriendRecord[] = [];
+        for (const [userId, time] of Object.entries(locationTimes)) {
+            if (time.source !== 'gameLog' || onlineFriendIds.has(userId)) {
+                continue;
+            }
+            const friend = friendsById[userId];
+            if (friend) {
+                localFriends.push(friend);
+            }
+        }
+        const candidates = localFriends.length
+            ? sortFriendsBySidebarPrefs(
+                  [...onlineFriends, ...localFriends],
+                  sidebarSortMethods
+              )
+            : onlineFriends;
+        return buildSameInstanceGroups(candidates, currentLocationSnapshot, {
+            includeCurrentUser: showCurrentUserInSameInstance,
+            locationTimes
+        });
+    }, [
+        currentLocationSnapshot,
+        friendsById,
+        locationTimes,
+        onlineFriends,
+        showCurrentUserInSameInstance,
+        sidebarSortMethods
+    ]);
     const sameInstanceFriends = useMemo<FriendRecord[]>(
         () => sameInstanceGroups.flatMap((group) => group.friends),
         [sameInstanceGroups]
@@ -361,8 +390,12 @@ export function useFriendsLocationsPageDerivedState({
             onlineNonFavorite: onlineNonFavoriteFriends,
             favorite: favoriteFriends,
             'same-instance': sameInstanceFriends,
-            active: activeFriends,
-            offline: offlineFriends
+            active: activeFriends.filter(
+                (friend) => !sameInstanceFriendIds.has(normalizeId(friend.id))
+            ),
+            offline: offlineFriends.filter(
+                (friend) => !sameInstanceFriendIds.has(normalizeId(friend.id))
+            )
         }),
         [
             activeFriends,
@@ -370,7 +403,8 @@ export function useFriendsLocationsPageDerivedState({
             offlineFriends,
             onlineFriends,
             onlineNonFavoriteFriends,
-            sameInstanceFriends
+            sameInstanceFriends,
+            sameInstanceFriendIds
         ]
     );
     const segmentOptions = useMemo(
@@ -381,15 +415,14 @@ export function useFriendsLocationsPageDerivedState({
                     (showSameInstanceInOnline ? sameInstanceFriends.length : 0),
                 favorite: favoriteFriends.length,
                 'same-instance': sameInstanceFriends.length,
-                active: activeFriends.length,
-                offline: offlineFriends.length
+                active: segmentMap.active.length,
+                offline: segmentMap.offline.length
             }),
         [
-            activeFriends.length,
             favoriteFriends.length,
-            offlineFriends.length,
             onlineWithoutSameInstanceFriends.length,
             sameInstanceFriends.length,
+            segmentMap,
             showSameInstanceInOnline
         ]
     );
@@ -718,7 +751,7 @@ export function useFriendsLocationsPageDerivedState({
                 (cardGridMinWidth + cardGridGap)
         ) || 1
     );
-    const sectionHeaderGap = cardGridGap;
+    const sectionHeaderGap = 4;
     const virtualRows = useMemo<FriendsLocationsVirtualRow[]>(() => {
         const rows: FriendsLocationsVirtualRow[] = [];
         for (const section of visibleSections) {
@@ -735,7 +768,7 @@ export function useFriendsLocationsPageDerivedState({
                 rows.push({
                     type: 'group-header',
                     key: `group-header:${section.key}`,
-                    height: 42,
+                    height: 40,
                     section
                 });
                 if (section.collapsed) {
@@ -754,7 +787,7 @@ export function useFriendsLocationsPageDerivedState({
                 rows.push({
                     type: 'header',
                     key: `header:${section.key}`,
-                    height: 48,
+                    height: 40,
                     section
                 });
             }

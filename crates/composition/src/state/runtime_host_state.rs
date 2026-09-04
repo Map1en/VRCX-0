@@ -484,6 +484,10 @@ impl RuntimeHostStateBuilder {
             Arc::clone(&self.runtime_context.remote_mutations),
             local_game_context,
             Some(Arc::new(self.runtime_context.overlay_activity())),
+            Some(Arc::new(
+                self.runtime_context
+                    .realtime_notification_projection_observer_registry(),
+            )),
             Arc::clone(&self.runtime_context.world_cache),
             Arc::clone(&self.runtime_context.instance_dwell),
             Arc::new(PrintCleanupQueueSink::new(

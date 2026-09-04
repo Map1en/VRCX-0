@@ -108,12 +108,16 @@ describe('gameLogState', () => {
         expect(
             sanitizeGameLogSorting([
                 { id: 'created_at', desc: true },
+                { id: 'type', desc: false },
                 { id: 'unknown', desc: false },
-                { id: 'detail', desc: false }
+                { id: 'detail', desc: false },
+                { id: 'displayName', desc: false },
+                { id: 'spacer', desc: false },
+                { id: 'action', desc: true }
             ])
         ).toEqual([
             { id: 'created_at', desc: true },
-            { id: 'detail', desc: false }
+            { id: 'type', desc: false }
         ]);
 
         expect(sanitizeGameLogPageSizes(['50', 10, 25, 10])).toEqual([
@@ -122,6 +126,17 @@ describe('gameLogState', () => {
         expect(resolveGameLogPageSize('50', [10, 25, 50], 25)).toBe(50);
         expect(resolveGameLogPageSize('999', [10, 25, 50], 25)).toBe(50);
         expect(resolveGameLogPageSize('bad', [], 25)).toBe(10);
+    });
+
+    it('restores default sorting when saved columns cannot sort', () => {
+        expect(sanitizeGameLogSorting([])).toBe(GAME_LOG_DEFAULT_SORTING);
+        expect(
+            sanitizeGameLogSorting([
+                { id: 'detail', desc: false },
+                { id: 'spacer', desc: false },
+                { id: 'action', desc: true }
+            ])
+        ).toBe(GAME_LOG_DEFAULT_SORTING);
     });
 
     it('sanitizes saved columns while keeping the spacer column first', () => {

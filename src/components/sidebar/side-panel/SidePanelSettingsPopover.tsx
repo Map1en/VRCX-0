@@ -4,13 +4,12 @@ import {
     RefreshCwIcon,
     SlidersHorizontalIcon
 } from 'lucide-react';
-import { cloneElement, isValidElement, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
-import { Field, FieldContent, FieldLabel } from '@/ui/shadcn/field';
+import { Field, FieldLabel } from '@/ui/shadcn/field';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import {
     Select,
@@ -24,7 +23,9 @@ import { Separator } from '@/ui/shadcn/separator';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Switch } from '@/ui/shadcn/switch';
 
+import { SidebarAutoHideSetting } from './SidebarAutoHideSetting';
 import type { FavoriteGroupItem } from './sidebarTabLayout';
+import { SidePanelSettingRow as SettingRow } from './SidePanelSettingRow';
 import type {
     SidePanelBooleanPreferenceKey,
     SidePanelFavoriteLoadStatus,
@@ -62,36 +63,6 @@ const sortOptions = [
 
 function normalizeSortSelectValue(value: string): SidePanelSortMethod {
     return sortOptions.find(([option]) => option === value)?.[0] ?? '';
-}
-
-type SettingRowControlProps = {
-    id?: string;
-};
-
-function SettingRow({
-    id,
-    label,
-    children
-}: {
-    id?: string;
-    label: ReactNode;
-    children: ReactNode;
-}) {
-    const control =
-        id && isValidElement<SettingRowControlProps>(children)
-            ? cloneElement(children, { id })
-            : children;
-
-    return (
-        <Field orientation="horizontal" className="gap-3 text-xs">
-            <FieldContent>
-                <FieldLabel htmlFor={id} className="text-xs">
-                    {label}
-                </FieldLabel>
-            </FieldContent>
-            {control}
-        </Field>
-    );
 }
 
 function SortSelect({
@@ -235,6 +206,7 @@ export function SidePanelSettingsPopover({
                     <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                         {t('side_panel.settings.display')}
                     </span>
+                    <SidebarAutoHideSetting />
                     <SettingRow
                         id="side-panel-group-by-instance"
                         label={t('side_panel.settings.group_by_instance')}

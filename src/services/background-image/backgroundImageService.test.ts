@@ -14,6 +14,8 @@ const mocks = vi.hoisted(() => ({
     convertFileSrc: vi.fn(
         (path: string, protocol: string) => `${protocol}://localhost/${path}`
     ),
+    configGetString: vi.fn(),
+    configSetString: vi.fn(),
     disableCommunityThemesForBackgroundImage: vi.fn(),
     registerBackgroundImageAppearanceHandlers: vi.fn(),
     syncBackgroundImageAppearance: vi.fn()
@@ -32,6 +34,13 @@ vi.mock('@/platform/tauri/bindings', () => ({
 
 vi.mock('@/platform/tauri/assets', () => ({
     convertFileSrc: mocks.convertFileSrc
+}));
+
+vi.mock('@/repositories/configRepository', () => ({
+    default: {
+        getString: mocks.configGetString,
+        setString: mocks.configSetString
+    }
 }));
 
 vi.mock('@/services/appearanceConflictCoordinator', () => ({
@@ -86,9 +95,12 @@ describe('backgroundImageService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mocks.syncBackgroundImageAppearance.mockResolvedValue(undefined);
+        mocks.configGetString.mockResolvedValue('');
+        mocks.configSetString.mockResolvedValue(null);
         mocks.disableCommunityThemesForBackgroundImage.mockResolvedValue(
             undefined
         );
+        useBackgroundImageStore.getState().setDecorationImageUrl('');
         useBackgroundImageStore.getState().applyProjection({
             mode: 'off',
             enabled: false,
@@ -111,6 +123,25 @@ describe('backgroundImageService', () => {
             'https://epic.gsfc.nasa.gov/a.jpg'
         );
         expect(mocks.syncBackgroundImageAppearance).toHaveBeenCalledWith(false);
+    });
+
+    it('loads a saved grid decoration without rewriting it', async () => {
+        mocks.appBackgroundImageStateGet.mockResolvedValue(
+            dailyProjection({ enabled: false, mode: 'off', snapshot: null })
+        );
+        mocks.configGetString.mockResolvedValue(
+            'https://assets.vrchat.com/www/profile_decorations/profile_backgrounds/BG_Grid.png'
+        );
+
+        await initializeBackgroundImage();
+
+        const state = useBackgroundImageStore.getState();
+        expect(state.enabled).toBe(true);
+        expect(state.snapshot).toBeNull();
+        expect(state.decorationImageUrl).toBe(
+            'https://assets.vrchat.com/www/profile_decorations/profile_backgrounds/BG_Grid.png'
+        );
+        expect(mocks.configSetString).not.toHaveBeenCalled();
     });
 
     it('materializes a local image URL for custom snapshots', async () => {
@@ -194,6 +225,29 @@ describe('backgroundImageService', () => {
             mocks.disableCommunityThemesForBackgroundImage
         ).toHaveBeenCalledTimes(1);
         expect(useBackgroundImageStore.getState().enabled).toBe(true);
+    });
+
+    it('uses the first profile decoration when the mode has no saved source', async () => {
+        mocks.appBackgroundImageConfigure.mockResolvedValue(
+            dailyProjection({
+                enabled: false,
+                mode: 'off',
+                snapshot: null
+            })
+        );
+
+        await expect(setBackgroundImageMode('decoration')).resolves.toBe(true);
+
+        expect(mocks.appBackgroundImageConfigure).toHaveBeenCalledWith({
+            kind: 'disable'
+        });
+        expect(mocks.configSetString).toHaveBeenCalledWith(
+            'backgroundImageDecorationUrl',
+            'https://assets.vrchat.com/www/profile_decorations/profile_backgrounds/BG_Grid.png'
+        );
+        expect(useBackgroundImageStore.getState().decorationImageUrl).toContain(
+            'BG_Grid.png'
+        );
     });
 
     it('keeps the community theme untouched when disabling and records errors', async () => {

@@ -4,6 +4,7 @@ import {
     BellIcon,
     BellOffIcon,
     CalendarIcon,
+    CheckCheckIcon,
     CheckIcon,
     ExternalLinkIcon,
     GlobeIcon,
@@ -105,7 +106,7 @@ export function getResponseIcon(
     }
     switch (response?.icon) {
         case 'check':
-            return CheckIcon;
+            return response?.type === 'delete' ? CheckCheckIcon : CheckIcon;
         case 'cancel':
             return XIcon;
         case 'ban':
@@ -245,7 +246,7 @@ export function buildOrderedActions({
         actions.push({
             key: 'mark-seen',
             label: t('view.notification.action.mark_seen'),
-            Icon: CheckIcon,
+            Icon: CheckCheckIcon,
             onClick: () => handlers.onMarkSeen(notification)
         });
     }

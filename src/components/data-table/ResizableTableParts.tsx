@@ -19,6 +19,10 @@ import { TableCell, TableHead } from '@/ui/shadcn/table';
 
 import type { AppCell, AppHeader } from './appTable';
 import { useDataTableColumnDnd } from './dataTableColumnDndContext';
+import {
+    DATA_TABLE_CELL_CLASS_NAME,
+    DATA_TABLE_HEAD_CLASS_NAME
+} from './dataTableStyles';
 import { getStretchColumnId, isColumnReorderable } from './tableColumnLayout';
 
 type DragHandleProps = Partial<ComponentProps<typeof Button>>;
@@ -212,7 +216,11 @@ function ResizableTableHeadBase<TData extends RowData>({
 }) {
     return (
         <TableHead
-            className={cn('group relative select-none', className)}
+            className={cn(
+                DATA_TABLE_HEAD_CLASS_NAME,
+                'group relative select-none',
+                className
+            )}
             style={style}
         >
             <ResizableTableHeadContent header={header} />
@@ -251,6 +259,7 @@ function SortableResizableTableHead<TData extends RowData>({
         <TableHead
             ref={setNodeRef}
             className={cn(
+                DATA_TABLE_HEAD_CLASS_NAME,
                 'group relative select-none',
                 isDragging ? 'z-20 opacity-60' : '',
                 className
@@ -309,19 +318,26 @@ export function ResizableTableCell<TData extends RowData>({
     style?: CSSProperties;
 }) {
     const columnDnd = useDataTableColumnDnd();
+    const resolvedClassName = cn(
+        cell.column.columnDef.meta?.tableCellClassName,
+        className
+    );
 
     if (columnDnd.enabled && isColumnReorderable(cell?.column)) {
         return (
             <SortableResizableTableCell
                 cell={cell}
-                className={className}
+                className={resolvedClassName}
                 style={style}
             />
         );
     }
 
     return (
-        <TableCell className={className} style={style}>
+        <TableCell
+            className={cn(DATA_TABLE_CELL_CLASS_NAME, resolvedClassName)}
+            style={style}
+        >
             {flexRender(cell.column.columnDef.cell, cell.getContext())}
         </TableCell>
     );
@@ -344,6 +360,7 @@ function SortableResizableTableCell<TData extends RowData>({
         <TableCell
             ref={setNodeRef}
             className={cn(
+                DATA_TABLE_CELL_CLASS_NAME,
                 isDragging ? 'relative z-10 opacity-60' : 'relative',
                 className
             )}

@@ -3,7 +3,13 @@ import { useShallow } from 'zustand/react/shallow';
 
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { Button } from '@/ui/shadcn/button';
-import { Input } from '@/ui/shadcn/input';
+import {
+    NumberField,
+    NumberFieldDecrement,
+    NumberFieldGroup,
+    NumberFieldIncrement,
+    NumberFieldInput
+} from '@/ui/shadcn/number-field';
 import { Switch } from '@/ui/shadcn/switch';
 
 import { useSettingsPageSection } from '../../SettingsPageStateContext';
@@ -201,21 +207,31 @@ export function SettingsMediaTab() {
                         'view.settings.advanced.advanced.auto_delete_prints.limit_description'
                     )}
                 >
-                    <Input
-                        type="number"
+                    <NumberField
                         min={30}
                         max={60}
                         step={1}
-                        className="w-24"
-                        value={String(prefs.autoDeletePrintsLimit ?? 60)}
+                        allowOutOfRange
+                        className="w-32"
+                        value={prefs.autoDeletePrintsLimit ?? 60}
                         disabled={!prefs.autoDeleteOldPrints}
-                        onChange={(event) =>
-                            onAutoDeletePrintsLimitChange(event.target.value)
+                        onValueChange={(value) =>
+                            onAutoDeletePrintsLimitChange(
+                                value === null ? '' : String(value)
+                            )
                         }
-                        onBlur={(event) =>
-                            onAutoDeletePrintsLimitBlur(event.target.value)
+                        onValueCommitted={(value) =>
+                            onAutoDeletePrintsLimitBlur(
+                                value === null ? '' : String(value)
+                            )
                         }
-                    />
+                    >
+                        <NumberFieldGroup>
+                            <NumberFieldDecrement />
+                            <NumberFieldInput />
+                            <NumberFieldIncrement />
+                        </NumberFieldGroup>
+                    </NumberField>
                 </Field>
             </SettingsGroup>
             <SettingsGroup

@@ -484,6 +484,7 @@
             "doNotDisturbUntilStopped": "Jusqu'à désactivation",
             "doNotDisturbTurnOff": "Désactiver",
             "rebuildUi": "Recharger l'interface",
+            "sidebarMode": "Mode barre latérale",
             "disableTheme": "Désactiver le thème",
             "exit": "Quitter"
         },

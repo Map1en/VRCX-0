@@ -8,7 +8,9 @@ import {
     DataTableColumnDndProvider,
     DataTableColumnSizeColGroup,
     DataTableColumnSortableContext,
+    DataTableHeaderRow,
     DataTablePagination,
+    DataTableRow,
     DataTableScrollArea,
     DataTableSurface,
     getDataTableSizingStyle
@@ -27,7 +29,7 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
-import { Table, TableBody, TableHeader, TableRow } from '@/ui/shadcn/table';
+import { Table, TableBody, TableHeader } from '@/ui/shadcn/table';
 
 import type { MyAvatarActionHandler, MyAvatarRow } from '../myAvatarsTypes';
 import { AvatarActionMenuItems, openAvatarDetails } from './MyAvatarsViewParts';
@@ -67,7 +69,7 @@ function MyAvatarsTableHeader({ table }: { table: AppTable<MyAvatarRow> }) {
                     key={headerGroup.id}
                     table={table}
                 >
-                    <TableRow className="hover:bg-transparent">
+                    <DataTableHeaderRow>
                         {headerGroup.headers.map((header) => (
                             <ResizableTableHead
                                 key={header.id}
@@ -79,7 +81,7 @@ function MyAvatarsTableHeader({ table }: { table: AppTable<MyAvatarRow> }) {
                                 }
                             />
                         ))}
-                    </TableRow>
+                    </DataTableHeaderRow>
                 </DataTableColumnSortableContext>
             ))}
         </TableHeader>
@@ -121,16 +123,14 @@ export function MyAvatarsTableView({
                                     >
                                         <ContextMenuTrigger
                                             render={
-                                                <TableRow
-                                                    className={[
-                                                        'group h-8 cursor-pointer',
+                                                <DataTableRow
+                                                    data-state={
                                                         row.original?.id ===
                                                         currentAvatarId
-                                                            ? 'bg-primary/10'
-                                                            : ''
-                                                    ]
-                                                        .filter(Boolean)
-                                                        .join(' ')}
+                                                            ? 'selected'
+                                                            : undefined
+                                                    }
+                                                    className="group cursor-pointer"
                                                     tabIndex={0}
                                                     aria-label={t(
                                                         'view.my_avatars.dynamic.open_value',
@@ -189,24 +189,17 @@ export function MyAvatarsTableView({
                                                                         cell.id
                                                                     }
                                                                     cell={cell}
-                                                                    className={[
+                                                                    className={
                                                                         cell
                                                                             .column
                                                                             .columnDef
                                                                             .meta
-                                                                            ?.tableCellClassName,
-                                                                        'px-2 py-0.5'
-                                                                    ]
-                                                                        .filter(
-                                                                            Boolean
-                                                                        )
-                                                                        .join(
-                                                                            ' '
-                                                                        )}
+                                                                            ?.tableCellClassName
+                                                                    }
                                                                 />
                                                             ))}
                                                     </DataTableColumnSortableContext>
-                                                </TableRow>
+                                                </DataTableRow>
                                             }
                                         />
                                         <ContextMenuContent className="bg-popover! w-max max-w-[90vw] min-w-52">

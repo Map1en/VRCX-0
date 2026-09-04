@@ -23,6 +23,7 @@ import {
 } from '@/shared/utils/location';
 import { isRecord } from '@/shared/utils/record';
 import { normalizeString as normalizeId } from '@/shared/utils/string';
+import type { FriendLocationTimeEntry } from '@/state/friendLocationTimeStore';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
@@ -83,19 +84,31 @@ function friendGroupHint(
 export function resolveFriendRowLocationState({
     friend,
     isCurrentUser = false,
-    isGroupByInstance = false
+    isGroupByInstance = false,
+    locationTime
 }: {
     friend: SidebarFriendRecord;
     isCurrentUser?: boolean;
     isGroupByInstance?: boolean;
+    locationTime?: FriendLocationTimeEntry | null;
 }) {
     const displaySource = readFriendRef(friend);
     const statusSource = readFriendStatusSource(friend);
-    const friendState = normalizeStateBucket(statusSource?.state);
+    const localLocation =
+        !isCurrentUser &&
+        isGroupByInstance &&
+        locationTime?.source === 'gameLog'
+            ? locationTime.location
+            : '';
+    const friendState = localLocation
+        ? 'online'
+        : normalizeStateBucket(statusSource?.state);
     const friendStateBucket = friendState;
-    const rawFriendLocation = isCurrentUser
-        ? resolvePresenceLocation(friend)
-        : readFriendRefLocation(friend);
+    const rawFriendLocation =
+        localLocation ||
+        (isCurrentUser
+            ? resolvePresenceLocation(friend)
+            : readFriendRefLocation(friend));
     const friendLocation = clearStaleOfflineLocation(
         rawFriendLocation,
         friendState

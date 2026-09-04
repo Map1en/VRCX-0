@@ -122,6 +122,7 @@ import {
     addFeedHiddenUserPreference,
     removeFeedHiddenUserPreference,
     setAvatarFeedPersistenceDisabledPreference,
+    setBoolConfigPreference,
     setFeedPersistenceDisabledPreference,
     setIntConfigPreference,
     setStartAtWindowsStartupPreference,
@@ -135,6 +136,10 @@ describe('preferenceGenericSetters', () => {
         usePreferencesStore.getState().hydratePreferences(DEFAULT_PREFERENCES);
         useShellStore.setState({
             notificationIconDot: true,
+            taskbarIconDot: true,
+            notifiedMenus: [],
+            trayIconNotify: false,
+            taskbarIconNotify: false,
             dateCulture: 'en',
             dateIsoFormat: false,
             dateHour12: false
@@ -336,6 +341,21 @@ describe('preferenceGenericSetters', () => {
         expect(mocks.publishPreferenceChanged).toHaveBeenCalledWith(
             'notificationTimeout',
             10000
+        );
+    });
+
+    it('clears an existing Friend Log dot when the preference is disabled', async () => {
+        useShellStore.setState({ notifiedMenus: ['friend-log'] });
+
+        await setBoolConfigPreference('friendLogNotificationDot', false);
+
+        expect(mocks.setBool).toHaveBeenCalledWith(
+            'friendLogNotificationDot',
+            false
+        );
+        expect(useShellStore.getState().notifiedMenus).toEqual([]);
+        expect(usePreferencesStore.getState().friendLogNotificationDot).toBe(
+            false
         );
     });
 

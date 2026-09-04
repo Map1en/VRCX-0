@@ -203,6 +203,80 @@ describe('vrcNotificationStore', () => {
         ).toHaveBeenCalledWith({ userId: 'usr_other' });
     });
 
+    it('preserves a realtime notification received while persisted rows load', async () => {
+        const persistedRows = createDeferred<NotificationRow[]>();
+        notificationRepositoryMock.queryNotifications.mockReturnValueOnce(
+            persistedRows.promise
+        );
+        const load = useVrcNotificationStore.getState().loadForCurrentUser();
+        useVrcNotificationStore.getState().upsertNotification({
+            id: 'notif_live',
+            type: 'invite',
+            version: 2,
+            seen: false,
+            created_at: '2026-09-01T00:01:00.000Z',
+            message: 'Live update'
+        });
+
+        persistedRows.resolve([
+            {
+                id: 'notif_live',
+                type: 'invite',
+                version: 2,
+                seen: true,
+                created_at: '2026-09-01T00:00:30.000Z',
+                senderUsername: 'Persisted Sender'
+            },
+            {
+                id: 'notif_persisted',
+                type: 'friendRequest',
+                version: 1,
+                seen: false,
+                created_at: '2026-09-01T00:00:00.000Z'
+            }
+        ]);
+        await load;
+
+        expect(useVrcNotificationStore.getState()).toMatchObject({
+            rows: [
+                expect.objectContaining({
+                    id: 'notif_live',
+                    seen: false,
+                    message: 'Live update',
+                    senderUsername: 'Persisted Sender'
+                }),
+                expect.objectContaining({ id: 'notif_persisted' })
+            ],
+            unseenCount: 2,
+            loadStatus: 'ready'
+        });
+    });
+
+    it('preserves a realtime notification when the concurrent persisted load fails', async () => {
+        const persistedRows = createDeferred<NotificationRow[]>();
+        notificationRepositoryMock.queryNotifications.mockReturnValueOnce(
+            persistedRows.promise
+        );
+        const load = useVrcNotificationStore.getState().loadForCurrentUser();
+        useVrcNotificationStore.getState().upsertNotification({
+            id: 'notif_live',
+            type: 'invite',
+            version: 2,
+            seen: false,
+            created_at: '2026-09-01T00:01:00.000Z'
+        });
+
+        persistedRows.reject(new Error('query failed'));
+        await expect(load).rejects.toThrow('query failed');
+
+        expect(useVrcNotificationStore.getState()).toMatchObject({
+            rows: [expect.objectContaining({ id: 'notif_live' })],
+            unseenCount: 1,
+            loadStatus: 'error',
+            detail: 'query failed'
+        });
+    });
+
     it('ignores a refresh error from a previous account', async () => {
         const previousSync = createDeferred<{
             v1Count: number;

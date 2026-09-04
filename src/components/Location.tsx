@@ -12,7 +12,6 @@ import { directAccessParse } from '@/services/directAccessService';
 import { selfInviteToInstance } from '@/services/launchService';
 import { vrchatWorldUrl } from '@/shared/constants/vrchatWebUrls';
 import { normalizeString } from '@/shared/utils/string';
-import { useLaunchStore } from '@/state/launchStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 export type LocationNewInstanceTarget = {
@@ -75,7 +74,6 @@ export function Location({
     worldNameClassName = ''
 }: LocationProps) {
     const { t } = useTranslation();
-    const showLaunchDialog = useLaunchStore((state) => state.showLaunchDialog);
     const isGameRunning = useRuntimeStore(
         (state) => state.gameState.isGameRunning === true
     );
@@ -179,15 +177,6 @@ export function Location({
         });
     }
 
-    function launchCurrentInstance() {
-        if (!canUseCurrentInstance) {
-            return;
-        }
-        showLaunchDialog(currentLocation, parsedLocation.shortName || '', '', {
-            worldName: worldName || worldNameHint
-        });
-    }
-
     async function selfInviteCurrentInstance() {
         if (!canUseCurrentInstance) {
             return;
@@ -281,8 +270,9 @@ export function Location({
             canOpenInstanceInGame={isGameRunning}
             canUseCurrentInstance={canUseCurrentInstance}
             isOpenPreviousInstanceInfoDialog={isOpenPreviousInstanceInfoDialog}
+            launchLocation={currentLocation}
+            launchShortName={parsedLocation.shortName || ''}
             onCopyShareLink={copyShareLink}
-            onLaunchCurrentInstance={launchCurrentInstance}
             onNewInstance={newInstance}
             onOpenWorld={openWorld}
             onSelfInviteCurrentInstance={selfInviteCurrentInstance}

@@ -21,7 +21,13 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
-import { Input } from '@/ui/shadcn/input';
+import {
+    NumberField,
+    NumberFieldDecrement,
+    NumberFieldGroup,
+    NumberFieldIncrement,
+    NumberFieldInput
+} from '@/ui/shadcn/number-field';
 import {
     Select,
     SelectContent,
@@ -69,7 +75,7 @@ type SettingsInterfaceAppearanceCardProps = {
     onFontFamilyChange: (value: string) => void;
     onCjkFontPackChange: (value: string) => void;
     onZoomInputChange: (value: string) => void;
-    onZoomBlur: () => void;
+    onZoomBlur: (value: string) => void;
     notificationLayoutOptions: readonly SettingsOption[];
     onNotificationLayoutChange: (value: NotificationLayout) => void;
     onNotificationIconDotChange: (value: boolean) => void;
@@ -331,21 +337,30 @@ export function SettingsInterfaceAppearanceCard({
                 controlId="settings-zoom"
             >
                 <div className="flex items-center gap-2">
-                    <Input
+                    <NumberField
                         id="settings-zoom"
                         name="zoom"
-                        inputMode="numeric"
-                        type="number"
                         min={30}
                         max={300}
                         step={1}
-                        className="w-28"
-                        value={zoomInput}
-                        onChange={(event) =>
-                            onZoomInputChange(event.target.value)
+                        allowOutOfRange
+                        className="w-36"
+                        value={zoomInput === '' ? null : Number(zoomInput)}
+                        onValueChange={(value) =>
+                            onZoomInputChange(
+                                value === null ? '' : String(value)
+                            )
                         }
-                        onBlur={onZoomBlur}
-                    />
+                        onValueCommitted={(value) =>
+                            onZoomBlur(value === null ? '' : String(value))
+                        }
+                    >
+                        <NumberFieldGroup>
+                            <NumberFieldDecrement />
+                            <NumberFieldInput />
+                            <NumberFieldIncrement />
+                        </NumberFieldGroup>
+                    </NumberField>
                 </div>
             </Field>
 

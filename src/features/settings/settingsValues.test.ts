@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { settingsTabs } from './settingsOptions';
+import { resolveActiveSettingsTab, settingsTabs } from './settingsOptions';
 import {
     buildTablePageSizeOptions,
     composeCustomFontFamily,
@@ -34,6 +34,11 @@ describe('settingsValues', () => {
             'advanced',
             'feedback'
         ]);
+    });
+
+    it('restores the last settings tab while preserving explicit tab links', () => {
+        expect(resolveActiveSettingsTab('', 'social')).toBe('social');
+        expect(resolveActiveSettingsTab('media', 'social')).toBe('media');
     });
 
     it('normalizes table page sizes to the sorted usable choices users can save', () => {

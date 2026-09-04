@@ -306,4 +306,85 @@ describe('favoriteImportService typed worker adapter', () => {
         );
         expect(useFavoriteImportStore.getState().loading).toBe(false);
     });
+
+    it('reattaches an active backend import after the WebView is rebuilt', async () => {
+        const { useFavoriteImportStore } =
+            await import('@/state/favoriteImportStore');
+        const { useRuntimeStore } = await import('@/state/runtimeStore');
+        const {
+            handleFavoriteImportStatusEvent,
+            hydrateFavoriteImportRuntimeStatus,
+            openFavoriteImportDialog
+        } = await import('./favoriteImportService');
+        const input: FavoriteImportStartInput = {
+            kind: 'avatar',
+            operation: 'hydrate',
+            ids: [AVATAR_ID],
+            target: null
+        };
+        const runningStatus: FavoriteImportStatus = {
+            ...completedStatus(input),
+            status: 'running',
+            processed: 1,
+            finishedAt: null
+        };
+        mocks.favoriteImportStatus.mockResolvedValue(runningStatus);
+        useRuntimeStore.getState().setAuthenticatedSessionProjection({
+            revision: 1,
+            session: {
+                authScopeGeneration: 1,
+                userId: 'usr_self',
+                displayName: 'Self',
+                endpoint: 'https://api.example.test',
+                websocket: 'wss://pipeline.example.test',
+                currentUserSnapshot: { id: 'usr_self' }
+            }
+        });
+        openFavoriteImportDialog({ type: 'avatar' });
+
+        await hydrateFavoriteImportRuntimeStatus();
+
+        expect(useFavoriteImportStore.getState()).toMatchObject({
+            loading: true,
+            progress: 1,
+            progressTotal: 1,
+            rows: [{ id: AVATAR_ID, name: 'Avatar' }]
+        });
+
+        handleFavoriteImportStatusEvent(completedStatus(input));
+
+        await vi.waitFor(() => {
+            expect(useFavoriteImportStore.getState().loading).toBe(false);
+            expect(mocks.favoriteImportDismiss).toHaveBeenCalledWith(
+                'favorite-test-1'
+            );
+        });
+    });
+
+    it('dismisses an orphaned terminal result instead of replaying it into a later dialog', async () => {
+        const { useFavoriteImportStore } =
+            await import('@/state/favoriteImportStore');
+        const { hydrateFavoriteImportRuntimeStatus, openFavoriteImportDialog } =
+            await import('./favoriteImportService');
+        const terminal = completedStatus({
+            kind: 'avatar',
+            operation: 'hydrate',
+            ids: [AVATAR_ID],
+            target: null
+        });
+        mocks.favoriteImportStatus.mockResolvedValue(terminal);
+
+        await hydrateFavoriteImportRuntimeStatus();
+        openFavoriteImportDialog({ type: 'avatar' });
+
+        expect(mocks.favoriteImportDismiss).toHaveBeenCalledWith(
+            terminal.runId
+        );
+        expect(useFavoriteImportStore.getState()).toMatchObject({
+            open: true,
+            loading: false,
+            rows: []
+        });
+        expect(mocks.bootstrapFavorites).not.toHaveBeenCalled();
+    });
 });

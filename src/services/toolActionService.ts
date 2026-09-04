@@ -14,7 +14,8 @@ import {
     toolDefinitionMap,
     type ToolAppApiMethod,
     type ToolDialogKey,
-    type ToolDefinition
+    type ToolDefinition,
+    type ToolRouteName
 } from '@/shared/constants/tools';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
@@ -45,7 +46,7 @@ const toolRouteMap = {
     'vrchat-log': '/tools/vrchat-log',
     'group-moderation': '/tools/group-moderation',
     'my-groups': '/tools/my-groups'
-} satisfies Record<string, string>;
+} satisfies Record<ToolRouteName, string>;
 
 const toolDialogHostMap: Record<ToolDialogKey, ToolDialogHostKey> = {
     'app-launcher': 'appLauncherOpen',

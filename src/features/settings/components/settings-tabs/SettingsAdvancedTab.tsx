@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 
 import { commands } from '@/platform/tauri/bindings';
 import { normalizeAvatarAutoCleanupPreference } from '@/shared/constants/settings';
+import { dataDirectoryPathForDisplay } from '@/shared/utils/dataDirectoryPath';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Alert, AlertDescription, AlertTitle } from '@/ui/shadcn/alert';
 import { Button } from '@/ui/shadcn/button';
@@ -41,21 +42,6 @@ type DataDirectoryPathProps = {
     value?: string | null;
 };
 
-const WINDOWS_EXTENDED_PATH_PREFIX = '\\\\?\\';
-const WINDOWS_EXTENDED_UNC_PATH_PREFIX = `${WINDOWS_EXTENDED_PATH_PREFIX}UNC\\`;
-
-function dataDirectoryPathForDisplay(value?: string | null) {
-    if (!value) {
-        return '-';
-    }
-    if (value.startsWith(WINDOWS_EXTENDED_UNC_PATH_PREFIX)) {
-        return `\\\\${value.slice(WINDOWS_EXTENDED_UNC_PATH_PREFIX.length)}`;
-    }
-    if (value.startsWith(WINDOWS_EXTENDED_PATH_PREFIX)) {
-        return value.slice(WINDOWS_EXTENDED_PATH_PREFIX.length);
-    }
-    return value;
-}
 function DataDirectoryPath({ value }: DataDirectoryPathProps) {
     return (
         <div className="bg-muted/40 text-muted-foreground w-full min-w-0 rounded-md border px-2 py-1 font-mono text-xs break-all">

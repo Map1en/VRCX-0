@@ -32,7 +32,9 @@ pub use async_runtime_policy::{
     recommended_tokio_max_blocking_threads, recommended_tokio_max_blocking_threads_for,
     recommended_tokio_worker_threads, recommended_tokio_worker_threads_for,
 };
-pub use auth_scope::{RuntimeAuthIdentity, RuntimeAuthScope, RuntimeAuthScopeSnapshot};
+pub use auth_scope::{
+    RuntimeAuthIdentity, RuntimeAuthScope, RuntimeAuthScopeObserver, RuntimeAuthScopeSnapshot,
+};
 pub use avatar_cache::{AvatarCache, AvatarCachePort};
 pub use backend_runtime::{
     BackendRuntime, BackendRuntimeAuthStatus, BackendRuntimeGameLogStatus, BackendRuntimeMode,
@@ -69,7 +71,7 @@ pub use events::{
 };
 pub use favorite_kind::{FavoriteChangeScope, FavoriteEntityKind, VrchatFavoriteType};
 pub use image_cache::{save_ugc_image_to_file, ImageCache, ImageCachePort};
-pub use instance_dwell::{FriendLocationTime, InstanceDwellRegistry};
+pub use instance_dwell::{FriendLocationTime, FriendLocationTimeSource, InstanceDwellRegistry};
 pub use interruptible_sleep::sleep_interruptibly;
 pub use ports::{
     BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity, CurrentUserSnapshot,
@@ -77,7 +79,8 @@ pub use ports::{
     HostSessionGameProcessStatus, HostSessionProjection, HostSessionRuntime, InstanceRosterMember,
     InstanceRosterObserver, InstanceRosterSnapshot, LocalGameContextSnapshot,
     LocalGameContextSource, NoopPrintCleanupInputSink, NoopUpdaterPort, OverlayActivityInputSink,
-    PrintCleanupInputSink, PrintCleanupTrigger, SessionHostRuntime,
+    PrintCleanupInputSink, PrintCleanupTrigger, RealtimeNotificationProjectionObserver,
+    RealtimeNotificationProjectionObserverRegistry, SessionHostRuntime,
     UnavailableLocalGameContextSource, UpdaterCheckRequest, UpdaterDownloadOutcome,
     UpdaterDownloadProgress, UpdaterInstallHandle, UpdaterMetadata, UpdaterPort,
     UpdaterProgressCallback,

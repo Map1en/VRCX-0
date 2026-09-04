@@ -13,7 +13,7 @@ import remarkGfm from 'remark-gfm';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import {
     fetchChangelogRelease,
-    parseChangelog,
+    parseReleaseChangelog,
     resolvePreferredChangelogLanguage,
     type LocalizedChangelogEntry
 } from '@/services/changelogService';
@@ -163,7 +163,7 @@ export function ChangelogDialog({
                     return;
                 }
 
-                const parsedChangelog = parseChangelog(release?.body || '');
+                const parsedChangelog = parseReleaseChangelog(release);
                 const nextEntries = parsedChangelog.entries;
                 setLatestRelease(release);
                 setEntries(nextEntries);
@@ -209,7 +209,17 @@ export function ChangelogDialog({
         t('dialog.change_log.latest_release');
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog
+            open={open}
+            onOpenChange={onOpenChange}
+            onOpenChangeComplete={(nextOpen) => {
+                if (!nextOpen && !open) {
+                    setLatestRelease(null);
+                    setEntries([]);
+                    setNote('');
+                }
+            }}
+        >
             <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>{t('dialog.change_log.header')}</DialogTitle>

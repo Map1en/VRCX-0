@@ -40,7 +40,6 @@ import {
     FieldGroup,
     FieldLabel
 } from '@/ui/shadcn/field';
-import { Input } from '@/ui/shadcn/input';
 import {
     InputGroup,
     InputGroupAddon,
@@ -48,6 +47,13 @@ import {
     InputGroupInput,
     InputGroupText
 } from '@/ui/shadcn/input-group';
+import {
+    NumberField,
+    NumberFieldDecrement,
+    NumberFieldGroup,
+    NumberFieldIncrement,
+    NumberFieldInput
+} from '@/ui/shadcn/number-field';
 import { Progress } from '@/ui/shadcn/progress';
 import { Separator } from '@/ui/shadcn/separator';
 import { Switch } from '@/ui/shadcn/switch';
@@ -411,30 +417,47 @@ export function ProfileBackupDialog({
                                         {t('profile_backup.interval')}
                                     </FieldLabel>
                                     <InputGroup>
-                                        <InputGroupInput
+                                        <NumberField
                                             id="profile-backup-interval"
-                                            type="number"
                                             min={1}
                                             max={30}
+                                            allowOutOfRange
                                             disabled={disabled}
-                                            value={numericDraftValue(
-                                                'autoIntervalDays'
-                                            )}
-                                            onChange={(event) =>
+                                            value={
+                                                numericDraftValue(
+                                                    'autoIntervalDays'
+                                                ) === ''
+                                                    ? null
+                                                    : Number(
+                                                          numericDraftValue(
+                                                              'autoIntervalDays'
+                                                          )
+                                                      )
+                                            }
+                                            onValueChange={(value) =>
                                                 setNumericDraft(
                                                     'autoIntervalDays',
-                                                    event.currentTarget.value
+                                                    value === null
+                                                        ? ''
+                                                        : String(value)
                                                 )
                                             }
-                                            onBlur={() => {
+                                            onValueCommitted={(value) => {
                                                 void commitNumericDraft(
-                                                    'autoIntervalDays'
+                                                    'autoIntervalDays',
+                                                    value === null
+                                                        ? ''
+                                                        : String(value)
                                                 );
                                             }}
-                                            aria-label={t(
-                                                'profile_backup.interval'
-                                            )}
-                                        />
+                                        >
+                                            <NumberFieldInput
+                                                className="text-left"
+                                                aria-label={t(
+                                                    'profile_backup.interval'
+                                                )}
+                                            />
+                                        </NumberField>
                                         <InputGroupAddon align="inline-end">
                                             <InputGroupText>
                                                 {t('profile_backup.days')}
@@ -446,30 +469,50 @@ export function ProfileBackupDialog({
                                     <FieldLabel htmlFor="profile-backup-keep-count">
                                         {t('profile_backup.keep_count')}
                                     </FieldLabel>
-                                    <Input
+                                    <NumberField
                                         id="profile-backup-keep-count"
-                                        type="number"
                                         min={2}
                                         max={6}
+                                        allowOutOfRange
                                         disabled={disabled}
-                                        value={numericDraftValue(
-                                            'autoRetainExtra'
-                                        )}
-                                        onChange={(event) =>
+                                        value={
+                                            numericDraftValue(
+                                                'autoRetainExtra'
+                                            ) === ''
+                                                ? null
+                                                : Number(
+                                                      numericDraftValue(
+                                                          'autoRetainExtra'
+                                                      )
+                                                  )
+                                        }
+                                        onValueChange={(value) =>
                                             setNumericDraft(
                                                 'autoRetainExtra',
-                                                event.currentTarget.value
+                                                value === null
+                                                    ? ''
+                                                    : String(value)
                                             )
                                         }
-                                        onBlur={() => {
+                                        onValueCommitted={(value) => {
                                             void commitNumericDraft(
-                                                'autoRetainExtra'
+                                                'autoRetainExtra',
+                                                value === null
+                                                    ? ''
+                                                    : String(value)
                                             );
                                         }}
-                                        aria-label={t(
-                                            'profile_backup.keep_count'
-                                        )}
-                                    />
+                                    >
+                                        <NumberFieldGroup>
+                                            <NumberFieldDecrement />
+                                            <NumberFieldInput
+                                                aria-label={t(
+                                                    'profile_backup.keep_count'
+                                                )}
+                                            />
+                                            <NumberFieldIncrement />
+                                        </NumberFieldGroup>
+                                    </NumberField>
                                 </Field>
                             </div>
                         </FieldGroup>

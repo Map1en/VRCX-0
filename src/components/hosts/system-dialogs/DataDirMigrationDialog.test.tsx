@@ -5,7 +5,8 @@ import {
     cleanup,
     fireEvent,
     render,
-    screen
+    screen,
+    waitFor
 } from '@testing-library/react';
 import type { ComponentProps, PropsWithChildren } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -76,7 +77,11 @@ vi.mock('@/ui/shadcn/button', () => ({
 
 vi.mock('@/ui/shadcn/progress', () => ({
     Progress: ({ value }: { value: number }) => (
-        <div aria-label="migration-progress" data-value={value} />
+        <div
+            role="progressbar"
+            aria-label="migration-progress"
+            aria-valuenow={value}
+        />
     )
 }));
 
@@ -148,10 +153,16 @@ describe('DataDirMigrationDialog', () => {
         expect(
             (
                 screen.getByRole('button', {
-                    name: 'data_dir_migration.start'
+                    name: 'data_dir_migration.start_fresh'
                 }) as HTMLButtonElement
             ).disabled
         ).toBe(false);
+        expect(
+            screen.queryByText('data_dir_migration.space_summary')
+        ).toBeNull();
+        expect(
+            screen.getByText('data_dir_migration.mode_description.freshStart')
+        ).toBeTruthy();
     });
 
     it('allows cancellation only during the copying phase', () => {
@@ -172,11 +183,8 @@ describe('DataDirMigrationDialog', () => {
                 }) as HTMLButtonElement
             ).disabled
         ).toBe(true);
-        expect(
-            screen
-                .getByLabelText('migration-progress')
-                .getAttribute('data-value')
-        ).toBe('80');
+        expect(screen.queryByRole('progressbar')).toBeNull();
+        expect(screen.queryByText('80%')).toBeNull();
 
         act(() => {
             useDataDirMigrationStore.getState().applyStatus({
@@ -193,9 +201,173 @@ describe('DataDirMigrationDialog', () => {
                 }) as HTMLButtonElement
             ).disabled
         ).toBe(false);
+        expect(
+            screen.getByRole('progressbar').getAttribute('aria-valuenow')
+        ).toBe('40');
     });
 
-    it('replaces migration controls with restart choices after completion', () => {
+    it.each([
+        ['preparing', 0],
+        ['freezing', undefined],
+        ['verifying', 100],
+        ['committing', 100]
+    ] as const)(
+        'does not show copy percentages during %s',
+        (phase, percent) => {
+            const store = useDataDirMigrationStore.getState();
+            store.openDialog(plan);
+            store.applyStatus({
+                revision: 1,
+                state: 'running',
+                phase,
+                percent
+            });
+            render(<DataDirMigrationDialog />);
+
+            expect(screen.queryByRole('progressbar')).toBeNull();
+            expect(screen.queryByText(/\d+%/)).toBeNull();
+            expect(
+                screen.getByText(`data_dir_migration.phase.${phase}`)
+            ).toBeTruthy();
+            expect(
+                screen.getByText('data_dir_migration.running_description')
+            ).toBeTruthy();
+        }
+    );
+
+    it('shows cancellation in progress and prevents repeated cancellation', () => {
+        const store = useDataDirMigrationStore.getState();
+        store.openDialog(plan);
+        store.applyStatus({
+            revision: 1,
+            state: 'cancelling',
+            phase: 'copying',
+            percent: 40
+        });
+        render(<DataDirMigrationDialog />);
+
+        const cancel = screen.getByRole('button', {
+            name: 'data_dir_migration.cancelling'
+        }) as HTMLButtonElement;
+        expect(cancel.disabled).toBe(true);
+        fireEvent.click(cancel);
+        expect(mocks.cancelMigration).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        ['\\\\?\\D:\\VRCX-0', 'D:\\VRCX-0'],
+        ['\\\\?\\UNC\\server\\share\\VRCX-0', '\\\\server\\share\\VRCX-0']
+    ])(
+        'keeps the original path %s when requesting a copy',
+        async (targetPath, displayedPath) => {
+            useDataDirMigrationStore
+                .getState()
+                .openDialog({ ...plan, targetPath, availableBytes: 4096 });
+            mocks.requestMigration.mockResolvedValue({
+                accepted: true,
+                status: { revision: 1, state: 'completed' }
+            });
+            render(<DataDirMigrationDialog />);
+
+            expect(screen.getByText(displayedPath)).toBeTruthy();
+            expect(screen.queryByText(targetPath)).toBeNull();
+            fireEvent.click(
+                screen.getByRole('button', { name: 'data_dir_migration.start' })
+            );
+            await waitFor(() =>
+                expect(mocks.requestMigration).toHaveBeenCalledWith(
+                    targetPath,
+                    'migrate'
+                )
+            );
+        }
+    );
+
+    it('only warns about replacing existing data when copying into that folder', async () => {
+        useDataDirMigrationStore
+            .getState()
+            .openDialog({ ...plan, targetState: 'existingProfile' });
+        mocks.requestMigration.mockResolvedValue({
+            accepted: true,
+            status: { revision: 1, state: 'completed' }
+        });
+        render(<DataDirMigrationDialog />);
+
+        expect(
+            screen.getByText('data_dir_migration.target.existingProfile')
+        ).toBeTruthy();
+        expect(
+            screen.queryByRole('radio', {
+                name: 'data_dir_migration.mode.freshStart'
+            })
+        ).toBeNull();
+        fireEvent.click(
+            screen.getByRole('radio', {
+                name: 'data_dir_migration.mode.adoptExisting'
+            })
+        );
+        expect(
+            screen.queryByText('data_dir_migration.target.existingProfile')
+        ).toBeNull();
+        expect(
+            screen.queryByText('data_dir_migration.space_summary')
+        ).toBeNull();
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'data_dir_migration.start_existing'
+            })
+        );
+        await waitFor(() =>
+            expect(mocks.requestMigration).toHaveBeenCalledWith(
+                plan.targetPath,
+                'adoptExisting'
+            )
+        );
+    });
+
+    it('starts fresh without requesting a data copy', async () => {
+        useDataDirMigrationStore.getState().openDialog(plan);
+        mocks.requestMigration.mockResolvedValue({
+            accepted: true,
+            status: { revision: 1, state: 'completed' }
+        });
+        render(<DataDirMigrationDialog />);
+
+        fireEvent.click(
+            screen.getByText('data_dir_migration.mode_description.freshStart')
+        );
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'data_dir_migration.start_fresh'
+            })
+        );
+        await waitFor(() =>
+            expect(mocks.requestMigration).toHaveBeenCalledWith(
+                plan.targetPath,
+                'freshStart'
+            )
+        );
+    });
+
+    it('opens the backup tool without starting a migration', () => {
+        useDataDirMigrationStore.getState().openDialog(plan);
+        render(<DataDirMigrationDialog />);
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'data_dir_migration.create_backup_first'
+            })
+        );
+        expect(mocks.setSystemHostOpen).toHaveBeenCalledWith(
+            'profileBackupOpen',
+            true
+        );
+        expect(useDataDirMigrationStore.getState().dialogOpen).toBe(false);
+        expect(mocks.requestMigration).not.toHaveBeenCalled();
+    });
+
+    it('replaces migration controls with restart choices after completion', async () => {
         const store = useDataDirMigrationStore.getState();
         store.openDialog({ ...plan, availableBytes: 4096 });
         store.applyStatus({ revision: 1, state: 'completed' });
@@ -213,5 +385,22 @@ describe('DataDirMigrationDialog', () => {
                     .disabled
             ).toBe(false);
         }
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'data_dir_migration.restart_now'
+            })
+        );
+        await waitFor(() =>
+            expect(mocks.restartApplication).toHaveBeenCalledOnce()
+        );
+        expect(mocks.requestMigration).not.toHaveBeenCalled();
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'data_dir_migration.restart_later'
+            })
+        );
+        expect(useDataDirMigrationStore.getState().dialogOpen).toBe(false);
     });
 });

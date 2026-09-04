@@ -2,6 +2,7 @@ mod delivery;
 mod desktop;
 mod dispatcher;
 mod do_not_disturb;
+mod indicator;
 mod overlay_transport;
 #[cfg(any(windows, target_os = "linux"))]
 mod ovrt;
@@ -21,6 +22,7 @@ pub use dispatcher::{NotificationDispatcher, NotificationDispatcherDeps};
 pub use do_not_disturb::{
     NotificationDoNotDisturbMode, NotificationDoNotDisturbRuntime, NotificationDoNotDisturbSnapshot,
 };
+pub(crate) use indicator::RealtimeNotificationIndicator;
 pub use preferences::{
     config_tts_name_mode, load_preferences, notification_tts_name_mode,
     seed_hmd_notifications_default,

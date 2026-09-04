@@ -1,17 +1,12 @@
 import { ClipboardCopyIcon, FileSearchIcon, XIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router';
 
 import {
     EmptyState,
-    PageBackButton,
     PageBody,
-    PageHeader,
-    PageScaffold,
-    PageTitle,
-    PageToolbar,
-    PageToolbarRow
+    PageScaffold
 } from '@/components/layout/PageScaffold';
+import { ToolPageHeader } from '@/components/layout/ToolPageHeader';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
@@ -21,7 +16,6 @@ import { VrchatLogToolbar } from './vrchat-log/components/VrchatLogToolbar';
 import { useVrchatLogController } from './vrchat-log/useVrchatLogController';
 
 export function VrchatLogPage() {
-    const navigate = useNavigate();
     const { t } = useTranslation();
     const {
         vrchatPathStatus,
@@ -62,19 +56,7 @@ export function VrchatLogPage() {
         loadEntries
     } = useVrchatLogController();
 
-    const header = (
-        <PageToolbar>
-            <PageToolbarRow className="items-center">
-                <PageBackButton
-                    label={t('nav_tooltip.tools')}
-                    onClick={() => navigate('/tools')}
-                />
-                <PageHeader className="min-w-0 p-0">
-                    <PageTitle>{t('view.tools.vrchat_log.title')}</PageTitle>
-                </PageHeader>
-            </PageToolbarRow>
-        </PageToolbar>
-    );
+    const header = <ToolPageHeader toolKey="vrchat-log" />;
 
     if (vrchatPathUnavailable) {
         return (

@@ -55,6 +55,11 @@ export type PreviousInstancePlayerRow = PreviousInstanceRow & {
     display_name?: string;
 };
 
+export type PreviousInstanceVisitWindow = {
+    endMs: number;
+    startMs: number;
+};
+
 export type PreviousInstanceKnownUser = {
     [key: string]: unknown;
     displayName?: string;
@@ -177,6 +182,30 @@ export function rowDuration(row: PreviousInstanceRow | null | undefined) {
 export function rowDurationValue(row: PreviousInstanceRow | null | undefined) {
     const value = Number(row?.time || row?.duration || 0);
     return Number.isFinite(value) ? value : 0;
+}
+
+export function previousInstanceVisitWindow(
+    row: PreviousInstanceRow | null | undefined
+): PreviousInstanceVisitWindow | null {
+    const createdAtMs = createdTime(row);
+    if (!createdAtMs) {
+        return null;
+    }
+
+    const durationMs = Math.max(0, rowDurationValue(row));
+    const groupedLeaveMs = timestampMs(row?.last_ts ?? row?.lastTs ?? 0);
+    const explicitLeaveMs = timestampMs(row?.left_at || row?.leftAt || 0);
+    const endMs =
+        groupedLeaveMs ||
+        explicitLeaveMs ||
+        (durationMs > 0 ? createdAtMs + durationMs : createdAtMs);
+    const durationStartMs =
+        durationMs > 0 ? Math.max(0, endMs - durationMs) : createdAtMs;
+
+    return {
+        startMs: Math.min(createdAtMs, durationStartMs),
+        endMs: Math.max(createdAtMs, endMs)
+    };
 }
 
 export function playerJoinMs(
@@ -343,7 +372,7 @@ export function normalizeInfoChartRows(
                 dateInputValue(row?.created_at || row?.createdAt || 0)
             ).getTime();
             const userId = playerUserId(row);
-            if (!Number.isFinite(leaveMs) || !userId) {
+            if (!Number.isFinite(leaveMs) || !userId || durationMs <= 0) {
                 return null;
             }
             const rowDisplayName = playerDisplayName(row);
@@ -357,6 +386,7 @@ export function normalizeInfoChartRows(
                 joinMs: leaveMs - durationMs,
                 leaveMs,
                 durationMs,
+                isSelf: userId === currentUserId,
                 isFriend:
                     userId === currentUserId
                         ? null

@@ -6,7 +6,7 @@ use vrcx_0_application::profile::{
 };
 use vrcx_0_application::social::MutualGraphFetchStatus;
 use vrcx_0_application_core::HostSessionProjection;
-use vrcx_0_application_game::DebugLoggingOutcome;
+use vrcx_0_application_game::{DebugLoggingOutcome, NowPlayingSnapshot};
 use vrcx_0_host_desktop::host_capabilities::{is_host_capability_available, HostCapability};
 
 use crate::notification::NotificationDoNotDisturbSnapshot;
@@ -23,6 +23,7 @@ pub struct AncillaryRuntimeSnapshot {
     pub app_update_download_status: AppUpdateDownloadStatusSnapshot,
     pub game_client_debug_logging_status: Option<DebugLoggingOutcome>,
     pub game_process_snapshot: Option<HostSessionProjection>,
+    pub now_playing: NowPlayingSnapshot,
     pub background_image_state: BackgroundImageProjection,
     pub notification_do_not_disturb_state: NotificationDoNotDisturbSnapshot,
 }
@@ -56,6 +57,7 @@ pub async fn ancillary_runtime_snapshot(
         app_update_download_status: state.app_update_download_status(),
         game_client_debug_logging_status: state.game_client_debug_logging_status(),
         game_process_snapshot,
+        now_playing: state.now_playing_snapshot(),
         background_image_state: state.background_image_projection(),
         notification_do_not_disturb_state: state.notification_do_not_disturb_snapshot(),
     }

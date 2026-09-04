@@ -4,12 +4,7 @@ import friendLogHistoryRepository from '@/repositories/friendLogHistoryRepositor
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-import {
-    matchesSearch,
-    normalizeUserId,
-    sortRows,
-    type FriendLogRow
-} from './friendLogRows';
+import { normalizeUserId, sortRows, type FriendLogRow } from './friendLogRows';
 import { useFriendLogResolvedNames } from './useFriendLogResolvedNames';
 
 export function useFriendLogRows({
@@ -87,6 +82,7 @@ export function useFriendLogRows({
         const activeTypeSet = selectedTypes.length
             ? new Set(selectedTypes)
             : null;
+        const query = searchQuery.trim().toLowerCase();
 
         const result: FriendLogRow[] = [];
         for (const row of rows) {
@@ -100,14 +96,13 @@ export function useFriendLogRows({
             if (activeTypeSet && !activeTypeSet.has(row?.type)) {
                 continue;
             }
-            const enrichedRow = {
-                ...row,
-                resolvedDisplayName: resolveDisplayName(row)
-            };
-            if (!matchesSearch(enrichedRow, searchQuery)) {
+            if (
+                query &&
+                !resolveDisplayName(row).toLowerCase().includes(query)
+            ) {
                 continue;
             }
-            result.push(enrichedRow);
+            result.push(row);
         }
         return result;
     }, [hideUnfriends, rows, resolveDisplayName, searchQuery, selectedTypes]);
@@ -120,6 +115,7 @@ export function useFriendLogRows({
         hideUnfriends,
         loadStatus,
         orderedRows,
+        resolveDisplayName,
         rows,
         rowsOwnerUserId,
         rowsOwnerUserIdRef,

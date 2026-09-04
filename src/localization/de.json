@@ -194,65 +194,65 @@
     },
     "language": "Deutsch (de)",
     "data_dir_migration": {
-        "title": "VRCX-0-Daten verschieben",
-        "description": "Wähle, wie VRCX-0 den ausgewählten Ordner verwenden soll.",
-        "completed_title": "Daten wurden verschoben",
-        "completed_description": "Starte VRCX-0 neu, um den neuen Datenordner zu verwenden.",
-        "error_short": "Verschieben fehlgeschlagen",
-        "start": "Verschieben",
+        "title": "Datenordner ändern",
+        "description": "Wähle, welche Daten du im neuen Ordner verwenden möchtest.",
+        "completed_title": "Zum Abschließen neu starten",
+        "completed_description": "Starte VRCX-0 neu, um den neuen Ordner zu verwenden.",
+        "error_short": "Datenordner konnte nicht geändert werden",
+        "start": "Kopieren und wechseln",
         "restart_now": "Jetzt neu starten",
         "restart_later": "Später",
-        "create_backup_first": "Zuerst Sicherung erstellen",
-        "space_summary": "Benötigt: {required} · Verfügbar: {available}",
-        "insufficient_space": "Nicht genügend freier Speicherplatz.",
-        "contents_notice": "Datenbank, App-Einstellungen sowie Galerieindex und Vorschaubilder werden kopiert. Bild-Caches werden neu geladen. Die alten Daten bleiben bis zur Bereinigung erhalten.",
-        "unsupported_storage_warning": "Keine Netzlaufwerke, Cloud-Synchronisationsordner (z. B. OneDrive oder iCloud) oder Wechseldatenträger verwenden. Datenbanken können dort beschädigt werden; solche Konfigurationen werden nicht unterstützt.",
+        "create_backup_first": "Datensicherung öffnen",
+        "space_summary": "Benötigter Speicherplatz: {required} · Verfügbar: {available}",
+        "insufficient_space": "Zum Kopieren ist nicht genug Speicherplatz frei. Wähle einen Ordner auf einem anderen Laufwerk oder gib Speicherplatz frei.",
+        "contents_notice": "Deine bisherigen Aufzeichnungen und Einstellungen werden in den neuen Ordner kopiert. Die Daten im alten Ordner bleiben erhalten.",
+        "unsupported_storage_warning": "Netzlaufwerke, mit der Cloud synchronisierte Ordner und Wechseldatenträger werden nicht unterstützt. Dort können Daten beschädigt werden.",
         "mode": {
-            "migrate": "Aktuelle Daten verschieben (empfohlen)",
-            "adoptExisting": "Vorhandenes VRCX-0-Profil in diesem Ordner verwenden",
-            "freshStart": "Neues Profil in diesem Ordner erstellen"
+            "migrate": "Aktuelle Daten behalten (empfohlen)",
+            "adoptExisting": "Daten aus diesem Ordner verwenden",
+            "freshStart": "Neu anfangen"
         },
         "target": {
             "empty": "Der ausgewählte Ordner ist leer.",
-            "existingProfile": "Der Ordner enthält bereits ein VRCX-0-Profil. Es wird vor dem Ersetzen gesichert.",
-            "foreignContent": "Der Ordner enthält andere Dateien. VRCX-0 verwaltet nur eigene Dateien."
+            "existingProfile": "Die VRCX-0-Daten in diesem Ordner werden ersetzt. Vorher wird eine Kopie davon aufbewahrt.",
+            "foreignContent": "Dieser Ordner enthält auch andere Dateien. VRCX-0 ändert nur seine eigenen Dateien."
         },
         "phase": {
-            "preparing": "Verschieben wird vorbereitet",
-            "freezing": "Datenbank wird angehalten",
-            "copying": "Datenbank wird kopiert",
-            "verifying": "Kopie wird geprüft",
-            "committing": "Verschieben wird abgeschlossen"
+            "preparing": "Daten werden vorbereitet…",
+            "freezing": "Daten werden vorbereitet…",
+            "copying": "Daten werden kopiert…",
+            "verifying": "Kopierte Daten werden geprüft…",
+            "committing": "Änderung wird abgeschlossen…"
         },
         "error": {
             "operationBusy": "Eine andere Sicherung, Wiederherstellung oder Verschiebung läuft bereits.",
-            "databaseUnavailable": "Die Datenbank kann derzeit nicht verschoben werden.",
+            "databaseUnavailable": "Die Daten können gerade nicht kopiert werden. Versuche es später noch einmal.",
             "pendingRestore": "Schließe zuerst die ausstehende Profilwiederherstellung ab oder brich sie ab.",
             "pendingLegacyMigration": "Schließe zuerst die ausstehende Altdatenmigration ab.",
             "pendingMigration": "Ein Datenordnerwechsel steht aus. Starte VRCX-0 neu.",
             "cleanupConflict": "Verarbeite zuerst die alten Daten, bevor du zu diesem Ordner zurückkehrst.",
             "insufficientSpace": "Zum Verschieben der Daten ist nicht genügend freier Speicherplatz verfügbar.",
-            "invalidAdoptionTarget": "Nur ein Ordner mit einem vorhandenen VRCX-0-Profil kann übernommen werden.",
-            "invalidFreshStartTarget": "Ein Ordner mit einem vorhandenen VRCX-0-Profil kann nicht für einen Neustart verwendet werden.",
-            "copyFailed": "Die Datenbank konnte nicht kopiert werden. Die ursprünglichen Daten werden weiter verwendet.",
-            "commitFailed": "Die Datenbankkopie konnte nicht installiert werden. Die ursprünglichen Daten werden weiter verwendet.",
+            "invalidAdoptionTarget": "Dieser Ordner enthält keine verwendbaren VRCX-0-Daten. Wähle einen anderen Ordner.",
+            "invalidFreshStartTarget": "Dieser Ordner enthält bereits VRCX-0-Daten. Wähle einen anderen Ordner, um neu anzufangen.",
+            "copyFailed": "Die Daten konnten nicht kopiert werden. VRCX-0 verwendet weiterhin den bisherigen Ordner.",
+            "commitFailed": "Die kopierten Daten konnten nicht gespeichert werden. VRCX-0 verwendet weiterhin den bisherigen Ordner.",
             "pointerCommitFailed": "Der neue Datenordner konnte nicht aktiviert werden. Starte VRCX-0 neu, um sicher fortzufahren.",
             "io": "Eine Datei im Datenordner konnte nicht gelesen oder geschrieben werden."
         },
         "warning": {
             "configCopyFailed": "Einige App-Einstellungen konnten nicht kopiert werden.",
-            "galleryCopyFailed": "Einige Galeriedaten konnten nicht kopiert werden und werden bei Bedarf neu erstellt.",
+            "galleryCopyFailed": "Einige Galeriedaten konnten nicht kopiert werden. Sie werden bei Bedarf neu erstellt.",
             "cacheCleanupFailed": "Einige alte Cache-Dateien konnten nicht entfernt werden."
         },
         "result": {
-            "succeeded": "Datenordner wurde verschoben",
+            "succeeded": "Datenordner geändert",
             "failed_title": "Der neue Datenordner konnte nicht verwendet werden",
             "database_open_failed": "VRCX-0 verwendet weiterhin den ursprünglichen Ordner. Deine Daten sind unverändert.",
-            "interrupted_title": "Verschieben wurde unterbrochen",
+            "interrupted_title": "Ordnerwechsel unterbrochen",
             "interrupted": "VRCX-0 verwendet weiterhin den ursprünglichen Ordner. Du kannst es erneut versuchen."
         },
         "cleanup": {
-            "ready_title": "Datenordner wurde verschoben",
+            "ready_title": "Datenordner geändert",
             "ready_description": "Die alten Daten liegen noch unter {path}.",
             "action": "Alte Daten bereinigen",
             "action_with_size": "Alte Daten bereinigen ({size})",
@@ -265,6 +265,16 @@
             "settings_description": "Alte VRCX-0-Daten liegen noch unter {path} ({size} Byte).",
             "dismiss": "Behalten und nicht mehr erinnern",
             "dismissed": "Bereinigungserinnerungen deaktiviert"
+        },
+        "running_title": "Datenordner wird geändert",
+        "running_description": "Lass VRCX-0 geöffnet, bis der Vorgang abgeschlossen ist.",
+        "start_existing": "Vorhandene Daten verwenden",
+        "start_fresh": "Neuen Ordner verwenden",
+        "new_folder": "Neuer Ordner",
+        "cancelling": "Wird abgebrochen…",
+        "mode_description": {
+            "adoptExisting": "Verwende die Aufzeichnungen und Einstellungen aus diesem Ordner. Deine aktuellen Daten werden nicht kopiert.",
+            "freshStart": "Fange im neuen Ordner neu an, ohne deine aktuellen Daten zu kopieren. Im alten Ordner wird nichts gelöscht."
         }
     },
     "profile_backup": {
@@ -412,6 +422,13 @@
             "m": "Min",
             "s": "Sek"
         },
+        "time_units_short": {
+            "y": "J",
+            "d": "T",
+            "h": "h",
+            "m": "min",
+            "s": "s"
+        },
         "days": {
             "sunday": "Sonntag",
             "monday": "Montag",
@@ -484,6 +501,7 @@
             "doNotDisturbUntilStopped": "Bis zum Ausschalten",
             "doNotDisturbTurnOff": "Ausschalten",
             "rebuildUi": "UI neu laden",
+            "sidebarMode": "Seitenleistenmodus",
             "disableTheme": "Theme deaktivieren",
             "exit": "Beenden"
         },
@@ -706,6 +724,8 @@
         "notification_center": "Benachrichtigungszentrale",
         "show_friends_sidebar": "Freundesleiste anzeigen",
         "hide_friends_sidebar": "Freundesleiste ausblenden",
+        "enter_sidebar_mode": "Seitenleistenmodus",
+        "restore_full_window": "Zum vollständigen Fenster zurückkehren",
         "zoom_in": "Vergrößern",
         "zoom_out": "Verkleinern",
         "reset_zoom": "Zoom zurücksetzen",
@@ -765,6 +785,9 @@
         "search_fav_worlds": "Favorisierte Welten",
         "search_groups": "Gruppen",
         "search_own_groups": "Eigene Gruppen",
+        "search_direct_access": "Link oder ID einfügen",
+        "search_scope_direct_access": "wrld_ · usr_ · vrchat.com/…",
+        "search_open_direct": "Diesen Link bzw. diese ID öffnen",
         "search_joined_groups": "Beigetretene Gruppen",
         "refresh_tooltip": "Freunde aktualisieren",
         "refresh_available_in_seconds": "Kürzlich synchronisiert. Bitte in {count} Sek. erneut versuchen.",
@@ -784,6 +807,12 @@
             "presets": "Voreinstellungen"
         },
         "settings": {
+            "auto_hide": {
+                "label": "Automatisch ausblenden, wenn am Desktoprand angedockt",
+                "description": "Ziehe das Seitenleistenfenster an den oberen, linken oder rechten Desktoprand. Es wird ausgeblendet, sobald du den Mauszeiger wegbewegst. Fahre über den Rand oder öffne es über das Tray-Symbol, um es wieder einzublenden.",
+                "save_failed": "Die Einstellung zum automatischen Ausblenden konnte nicht gespeichert werden.",
+                "paused": "Das automatische Ausblenden wurde wegen eines Fensterfehlers pausiert. Öffne das Fenster erneut über das Tray-Symbol oder wechsle erneut in den Seitenleistenmodus, um es noch einmal zu versuchen."
+            },
             "display": "Anzeige",
             "sort": "Sortieren",
             "advanced": "Erweitert",
@@ -922,9 +951,22 @@
                 "Avatar": "Avatar",
                 "Bio": "Bio"
             },
+            "toolbar": {
+                "all_types": "Alle",
+                "type_summary": "Typ: {types}",
+                "more_types": "{type} +{count}",
+                "grouped_friends_only": "Nur gruppierte Freunde",
+                "view_summary": "Ansicht: {view}",
+                "view_label": "Ansicht"
+            },
             "modes": {
                 "table": "Tabelle",
                 "columns": "Spalten"
+            },
+            "actions": {
+                "back_to_top": "Nach oben",
+                "expand_entry": "Eintrag aufklappen",
+                "collapse_entry": "Eintrag einklappen"
             },
             "columns": {
                 "add": "Spalte hinzufügen",
@@ -1708,10 +1750,16 @@
                 },
                 "legend": {
                     "circles": "Communitys",
-                    "more_circles": "+{count} weitere",
+                    "more_circles": "{count} kleinere in Grau",
                     "size_means_degree": "Größerer Punkt = mehr gemeinsame Freunde",
+                    "hollow_means_unknown": "Hohler Punkt = gemeinsame Freunde nicht geteilt",
+                    "coverage": "Abgerufen",
+                    "coverage_value": "{fetched}/{total} Freunde",
+                    "coverage_unavailable": "Nicht geteilt",
+                    "coverage_updated": "Aktualisiert",
                     "min_degree": "Min. Verbindungen",
-                    "isolated_nodes": "{count} ohne Verbindungen"
+                    "isolated_nodes": "{count} ohne gemeinsame Freunde",
+                    "unavailable_nodes": "{count} nicht geteilt oder nicht abgerufen"
                 }
             },
             "loading": {
@@ -2481,7 +2529,8 @@
                 },
                 "friend_log": {
                     "header": "Freundesverlauf",
-                    "hide_unfriends": "Entfreundungen ausblenden"
+                    "hide_unfriends": "Entfreundungen ausblenden",
+                    "show_notification_dot": "Benachrichtigungspunkt für Freundesverlauf anzeigen"
                 }
             },
             "notifications": {
@@ -2754,7 +2803,7 @@
                     },
                     "data_directory": {
                         "header": "Datenverzeichnis",
-                        "description": "Aktive Quelle: {source}. Ändert nur den gespeicherten Pfad — vorhandene Daten werden nicht verschoben.",
+                        "description": "Aktuell verwendet: {source}.",
                         "current": "Aktuelles Verzeichnis",
                         "actions": "Aktionen für Datenverzeichnis",
                         "choose": "Ordner wählen",
@@ -2762,16 +2811,10 @@
                         "restart": "Neu starten",
                         "restart_hint": "Änderungen werden nach einem Neustart von VRCX-0 wirksam.",
                         "source_cli": "Kommandozeilen-Override",
-                        "source_persisted": "gespeichertes benutzerdefiniertes Verzeichnis",
-                        "source_default": "Standardverzeichnis",
+                        "source_persisted": "eigener Ordner",
+                        "source_default": "Standardordner",
                         "cli_override": "Dieser Start verwendet --data-dir. Starte ohne den Kommandozeilen-Override, um das gespeicherte Verzeichnis zu ändern.",
-                        "confirm_title": "VRCX-0-Datenverzeichnis wechseln?",
-                        "confirm_description": "VRCX-0 kopiert die aktuellen Daten nicht. Um Login, Datenbank, Konfiguration und Cache zu behalten, kopiere das aktuelle Datenverzeichnis selbst nach {path}, bevor du neu startest. Speichere dieses Verzeichnis und starte neu, um es anzuwenden.",
-                        "confirm_empty": "Der ausgewählte Ordner ist leer und startet als neues Profil, sofern du keine Daten hineinkopierst.",
-                        "confirm_missing_profile": "Der ausgewählte Ordner enthält keine VRCX-0.sqlite3 oder VRCX-0.json und startet möglicherweise als neues Profil.",
                         "saved_restart_required": "Datenverzeichnis gespeichert. Starte VRCX-0 neu, um es anzuwenden.",
-                        "reset_confirm_title": "VRCX-0-Datenverzeichnis zurücksetzen?",
-                        "reset_confirm_description": "VRCX-0 verwendet nach dem Neustart das Standarddatenverzeichnis. Es werden keine Dateien kopiert.",
                         "reset_saved": "Datenverzeichnis zurückgesetzt. Starte VRCX-0 neu, um es anzuwenden.",
                         "failed_to_load": "Einstellungen für das Datenverzeichnis konnten nicht geladen werden."
                     },
@@ -3307,7 +3350,8 @@
             },
             "mode": {
                 "daily": "Tägliches Bild",
-                "custom": "Lokales Bild"
+                "custom": "Lokales Bild",
+                "decoration": "Profil-Dekoration"
             },
             "rotation": {
                 "minutes": "Min.",
@@ -4942,8 +4986,8 @@
                     "example": "Beitritte, Verlassen"
                 },
                 "favoriteMovement": {
-                    "label": "Favoriten-Bewegung",
-                    "description": "Online-, Offline-, Standort- und Statusänderungen für favorisierte Freunde.",
+                    "label": "Freunde-Aktivität",
+                    "description": "Online-, Offline-, Standort- und Statusänderungen für Freunde.",
                     "example": "Online, GPS"
                 },
                 "profileChange": {
@@ -5161,7 +5205,17 @@
         },
         "vrcx_updater": {
             "latest_version": "VRCX-0 ist auf dem neuesten Stand",
-            "ready_for_update": "Update {value} ist bereit"
+            "ready_for_update": "Update {value} ist bereit",
+            "channel": {
+                "label": "Update-Kanal",
+                "stable": "Stabil",
+                "beta": "Beta",
+                "description": "VRCX-0 sucht nur im derzeit installierten Kanal nach Updates.",
+                "switch_description": "Um zu {channel} zu wechseln, lade die neueste Version dieses Kanals von GitHub herunter und installiere sie.",
+                "download_stable": "Neueste stabile Version herunterladen",
+                "download_beta": "Neueste Beta herunterladen",
+                "no_release": "In diesem Kanal ist keine Version verfügbar."
+            }
         },
         "change_log": {
             "header": "Änderungsprotokoll",

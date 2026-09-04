@@ -58,18 +58,3 @@ export function getFriendLogRowKey(row: FriendLogRow, ownerUserId = '') {
 
     return `${owner}:composite:${row.created_at}:${row.type}:${row.userId}`;
 }
-
-export function matchesSearch(row: FriendLogRow, searchQuery: string) {
-    if (!searchQuery) {
-        return true;
-    }
-
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) {
-        return true;
-    }
-
-    return (row.resolvedDisplayName ?? row.displayName)
-        .toLowerCase()
-        .includes(query);
-}

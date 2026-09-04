@@ -71,7 +71,13 @@ pub struct GameLogProcessorDeps {
 }
 
 impl GameLogProcessorDeps {
-    fn set_game_log_snapshot(&self, snapshot: RuntimeSnapshot, publish_roster: bool) {
+    fn set_game_log_snapshot(
+        &self,
+        snapshot: RuntimeSnapshot,
+        output: &mut GameLogIngestOutput,
+        origin: GameLogEventOrigin,
+    ) {
+        let publish_roster = output.instance_roster_changed;
         let current_instance_presence = publish_roster.then(|| {
             (
                 snapshot.location.clone(),
@@ -90,6 +96,10 @@ impl GameLogProcessorDeps {
                     world_name: snapshot.world_name.clone(),
                     destination: snapshot.destination.clone(),
                     entered_at: snapshot.started_at.clone(),
+                    departed_user_ids: match origin {
+                        GameLogEventOrigin::Live => std::mem::take(&mut output.departed_user_ids),
+                        GameLogEventOrigin::InitialScan => Vec::new(),
+                    },
                     members: snapshot
                         .players
                         .iter()
@@ -223,7 +233,7 @@ impl GameLogProcessor {
             self.resume_cutoff_prefix_len(events)
         };
         let events = if resume_prefix_len > 0 {
-            let (output, snapshot) = self.with_engine(|engine| {
+            let (mut output, snapshot) = self.with_engine(|engine| {
                 let output = engine.ingest_events(
                     &events[..resume_prefix_len],
                     GameLogIngestOptions { log_resource_load },
@@ -231,7 +241,7 @@ impl GameLogProcessor {
                 (output, engine.runtime_snapshot())
             })?;
             self.deps
-                .set_game_log_snapshot(snapshot, output.instance_roster_changed);
+                .set_game_log_snapshot(snapshot, &mut output, GameLogEventOrigin::InitialScan);
             self.apply_without_core_persistence(output, origin)?;
             if resume_prefix_len == events.len() {
                 return Ok(());
@@ -240,12 +250,12 @@ impl GameLogProcessor {
         } else {
             events
         };
-        let (output, snapshot) = self.with_engine(|engine| {
+        let (mut output, snapshot) = self.with_engine(|engine| {
             let output = engine.ingest_events(events, GameLogIngestOptions { log_resource_load });
             (output, engine.runtime_snapshot())
         })?;
         self.deps
-            .set_game_log_snapshot(snapshot, output.instance_roster_changed);
+            .set_game_log_snapshot(snapshot, &mut output, origin);
         if persistence_disabled {
             return self.apply_without_core_persistence(output, origin);
         }
@@ -254,12 +264,12 @@ impl GameLogProcessor {
 
     fn handle_game_process_event_now(&self, event: GameLogProcessEvent) -> Result<()> {
         let before_resume_cutoff = self.is_before_resume_cutoff(&event.changed_at);
-        let (output, snapshot) = self.with_engine(|engine| {
+        let (mut output, snapshot) = self.with_engine(|engine| {
             let output = engine.handle_process_event(event);
             (output, engine.runtime_snapshot())
         })?;
         self.deps
-            .set_game_log_snapshot(snapshot, output.instance_roster_changed);
+            .set_game_log_snapshot(snapshot, &mut output, GameLogEventOrigin::Live);
         if self.deps.store.get_bool("gameLogDisabled", false)? || before_resume_cutoff {
             return self.apply_without_core_persistence(output, GameLogEventOrigin::Live);
         }

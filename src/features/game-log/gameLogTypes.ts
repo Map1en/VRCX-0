@@ -37,17 +37,9 @@ export type GameLogSessionMember = GeneratedGameLogSessionMember & {
     isFriend?: boolean;
 };
 
-export type GameLogSessionEvent = Omit<
-    GeneratedGameLogSessionEvent,
-    'members'
-> & {
-    isFriend?: boolean;
-    members?: GameLogSessionMember[] | null;
-};
+export type GameLogSessionEvent = GeneratedGameLogSessionEvent;
 
-export type GameLogSession = Omit<GeneratedGameLogSession, 'events'> & {
-    events: GameLogSessionEvent[];
-};
+export type GameLogSession = GeneratedGameLogSession;
 
 export type GameLogDetailValue = {
     primary?: string;

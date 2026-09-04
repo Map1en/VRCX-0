@@ -14,6 +14,7 @@ pub mod log_scanner;
 pub mod overlay_notifications;
 pub mod process_status;
 pub mod shell_actions;
+pub mod sidebar_window;
 pub mod system_fonts;
 pub mod system_theme;
 pub mod taskbar_overlay;

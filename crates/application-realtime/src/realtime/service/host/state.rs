@@ -6,8 +6,8 @@ use serde_json::Value;
 use tokio::sync::{broadcast, watch};
 use vrcx_0_application_core::{
     HostSessionRuntime, InstanceDwellRegistry, LocalGameContextSource, OverlayActivityInputSink,
-    PrintCleanupInputSink, RemoteMutationGate, RuntimeAuthScope, RuntimeEventBus,
-    RuntimeSyncEngine, TaskSupervisor, WebClient, WorldCache,
+    PrintCleanupInputSink, RealtimeNotificationProjectionObserver, RemoteMutationGate,
+    RuntimeAuthScope, RuntimeEventBus, RuntimeSyncEngine, TaskSupervisor, WebClient, WorldCache,
 };
 use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_core::friends::FriendRecord;
@@ -221,6 +221,7 @@ pub struct RealtimeHostRuntimeDeps {
     pub remote_mutations: Arc<RemoteMutationGate>,
     pub local_game_context: Arc<dyn LocalGameContextSource>,
     pub activity_sink: Option<Arc<dyn OverlayActivityInputSink>>,
+    pub notification_projection_observer: Option<Arc<dyn RealtimeNotificationProjectionObserver>>,
     pub world_cache: Arc<WorldCache>,
     pub instance_dwell: Arc<InstanceDwellRegistry>,
     pub print_cleanup: Arc<dyn PrintCleanupInputSink>,
@@ -244,6 +245,7 @@ impl RealtimeHostRuntimeDeps {
         remote_mutations: Arc<RemoteMutationGate>,
         local_game_context: Arc<dyn LocalGameContextSource>,
         activity_sink: Option<Arc<dyn OverlayActivityInputSink>>,
+        notification_projection_observer: Option<Arc<dyn RealtimeNotificationProjectionObserver>>,
         world_cache: Arc<WorldCache>,
         instance_dwell: Arc<InstanceDwellRegistry>,
         print_cleanup: Arc<dyn PrintCleanupInputSink>,
@@ -264,6 +266,7 @@ impl RealtimeHostRuntimeDeps {
             remote_mutations,
             local_game_context,
             activity_sink,
+            notification_projection_observer,
             world_cache,
             instance_dwell,
             print_cleanup,

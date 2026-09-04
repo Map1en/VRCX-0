@@ -52,7 +52,7 @@ export function ToolbarActions({ className, children }: ToolbarSlotProps) {
 
 export function ToolbarStatus({ className, children }: ToolbarSlotProps) {
     return (
-        <div className={cn('text-muted-foreground text-xs', className)}>
+        <div className={cn('text-content-tertiary text-xs', className)}>
             {children}
         </div>
     );
@@ -64,6 +64,7 @@ export function ToolbarSearch({
     onClear,
     onCommit,
     commitOnBlur = true,
+    disabled = false,
     placeholder,
     ariaLabel,
     trailing,
@@ -74,6 +75,7 @@ export function ToolbarSearch({
     onClear?: () => void;
     onCommit?: () => void;
     commitOnBlur?: boolean;
+    disabled?: boolean;
     placeholder?: string;
     ariaLabel?: string;
     trailing?: ReactNode;
@@ -83,7 +85,13 @@ export function ToolbarSearch({
     const resolvedPlaceholder = placeholder ?? t('common.actions.search');
 
     return (
-        <InputGroup className={cn('w-40 shrink-0 sm:w-64', className)}>
+        <InputGroup
+            data-vrcx-0-control="toolbar"
+            className={cn(
+                'vrcx-0-toolbar-control w-40 shrink-0 sm:w-64',
+                className
+            )}
+        >
             <InputGroupAddon>
                 <SearchIcon />
             </InputGroupAddon>
@@ -91,6 +99,7 @@ export function ToolbarSearch({
                 value={value}
                 placeholder={resolvedPlaceholder}
                 aria-label={ariaLabel ?? resolvedPlaceholder}
+                disabled={disabled}
                 onChange={(event) => onValueChange(event.target.value)}
                 onBlur={commitOnBlur ? onCommit : undefined}
                 onKeyDown={(event) => {
@@ -100,12 +109,13 @@ export function ToolbarSearch({
                 }}
             />
             {value || trailing ? (
-                <InputGroupAddon align="inline-end" className="gap-1">
+                <InputGroupAddon align="inline-end" className="gap-1 py-0">
                     {value ? (
                         <InputGroupButton
                             type="button"
                             size="icon-xs"
                             aria-label={t('common.actions.clear')}
+                            disabled={disabled}
                             onMouseDown={(event) => event.preventDefault()}
                             onClick={() => {
                                 if (onClear) {
@@ -145,7 +155,8 @@ export function ToolbarSegmented<TValue extends string>({
 }) {
     return (
         <ToggleGroup
-            variant="outline"
+            variant="default"
+            spacing={0.5}
             value={value ? [value] : []}
             onValueChange={(next) => {
                 const selected = options.find(
@@ -155,7 +166,10 @@ export function ToolbarSegmented<TValue extends string>({
                     onValueChange(selected.value);
                 }
             }}
-            className="shrink-0"
+            className={cn(
+                'vrcx-0-segmented-control shrink-0',
+                iconOnly && 'vrcx-0-icon-segmented-control'
+            )}
         >
             {options.map((option) => {
                 const Icon = option.icon;
@@ -164,11 +178,14 @@ export function ToolbarSegmented<TValue extends string>({
                         key={option.value}
                         value={option.value}
                         aria-label={option.label}
+                        className={
+                            iconOnly ? 'vrcx-0-icon-segmented-item' : undefined
+                        }
                     >
                         {Icon ? <Icon data-icon="inline-start" /> : null}
                         {iconOnly ? null : option.label}
                         {option.count === undefined ? null : (
-                            <span className="text-muted-foreground text-[11px] leading-none font-medium tabular-nums">
+                            <span className="text-content-tertiary text-[11px] leading-none font-medium tabular-nums">
                                 {option.count}
                             </span>
                         )}
@@ -204,6 +221,8 @@ export function toolbarDateRangeTrigger({
                 variant="outline"
                 size="icon"
                 aria-label={label}
+                data-vrcx-0-control="toolbar"
+                className="vrcx-0-toolbar-control"
             >
                 <CalendarRangeIcon data-icon="icon" />
             </Button>
@@ -215,7 +234,8 @@ export function toolbarDateRangeTrigger({
             type="button"
             variant="secondary"
             aria-label={label}
-            className="max-w-56 shrink-0"
+            data-vrcx-0-control="toolbar"
+            className="vrcx-0-toolbar-control vrcx-0-toolbar-control-active max-w-56 shrink-0"
         >
             <CalendarRangeIcon data-icon="inline-start" />
             <span className="truncate">{label}</span>
@@ -241,7 +261,8 @@ export function ToolbarFilterChips<TValue extends string>({
     return (
         <ToggleGroup
             multiple
-            variant="outline"
+            variant="default"
+            spacing={0.5}
             value={pressed}
             onValueChange={(next) => {
                 if (next.includes(ALL_CHIP_VALUE) && value.length) {
@@ -259,7 +280,7 @@ export function ToolbarFilterChips<TValue extends string>({
                 }
                 onValueChange(picked.length === options.length ? [] : picked);
             }}
-            className="max-w-full shrink-0 overflow-x-auto"
+            className="vrcx-0-segmented-control max-w-full shrink-0 overflow-x-auto"
         >
             <ToggleGroupItem value={ALL_CHIP_VALUE} aria-label={allLabel}>
                 {allLabel}
@@ -303,6 +324,14 @@ function ToolbarTooltipButton({
                         variant={variant}
                         size="icon"
                         aria-label={label}
+                        data-vrcx-0-control="toolbar"
+                        className={cn(
+                            variant === 'ghost'
+                                ? 'vrcx-0-quiet-control'
+                                : 'vrcx-0-toolbar-control',
+                            variant === 'secondary' &&
+                                'vrcx-0-toolbar-control-active'
+                        )}
                         disabled={disabled || loading}
                         onClick={onClick}
                     >
@@ -423,6 +452,8 @@ function ToolbarMenu({
                                     variant="ghost"
                                     size="icon"
                                     aria-label={label}
+                                    data-vrcx-0-control="toolbar"
+                                    className="vrcx-0-quiet-control"
                                 >
                                     <Icon data-icon="icon" />
                                 </Button>
@@ -491,16 +522,17 @@ export function toolbarFilterTrigger({ label }: { label: string }) {
             type="button"
             variant="outline"
             aria-label={label}
-            className="max-w-56 min-w-40 shrink-0 justify-between"
+            data-vrcx-0-control="toolbar"
+            className="vrcx-0-toolbar-control max-w-56 min-w-40 shrink-0 justify-between"
         >
             <ListFilterIcon
                 data-icon="inline-start"
-                className="text-muted-foreground"
+                className="text-content-tertiary"
             />
             <span className="min-w-0 flex-1 truncate text-left">{label}</span>
             <ChevronDownIcon
                 data-icon="inline-end"
-                className="text-muted-foreground"
+                className="text-content-tertiary"
             />
         </Button>
     );

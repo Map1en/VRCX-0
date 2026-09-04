@@ -3,6 +3,32 @@ use super::*;
 use vrcx_0_core::OwnerId;
 
 #[test]
+fn persisted_notification_output_reaches_its_dedicated_observer_without_overlay_work() -> Result<()>
+{
+    let (_dir, runtime, active_session) =
+        runtime_with_active_session("notification-dedicated-observer")?;
+    runtime
+        .runtime()
+        .apply_notification_output(RealtimeNotificationOutput {
+            owner_user_id: OwnerId::new(active_session.user_id),
+            projection: RealtimeNotificationProjection {
+                generation: 7,
+                ..RealtimeNotificationProjection::default()
+            },
+            ..RealtimeNotificationOutput::default()
+        });
+
+    let projections = runtime.notification_projection_observer_for_test().take();
+    assert_eq!(projections.len(), 1);
+    assert_eq!(projections[0].generation, 7);
+    assert!(runtime
+        .activity_sink_for_test()
+        .notification_by_id("missing")
+        .is_none());
+    Ok(())
+}
+
+#[test]
 fn notification_cache_hits_enrich_projection_and_persistence() -> Result<()> {
     let (_dir, runtime, active_session) = runtime_with_active_session("notification-cache-hit")?;
     runtime.cache_world_for_test("wrld_cached", "Cached World", "2026-01-01T00:00:00.000Z");

@@ -25,7 +25,6 @@ import {
 type FriendCommandsView = {
     onOpenFriend: (friend: SidebarFriendRecord) => void;
     onToggleSection: (id: FriendsSidebarGroupKey) => void;
-    onLaunch?: (location: string) => void;
     onSelfInvite?: (location: string) => void;
     onInvite?: (friend: SidebarFriendRecord) => void;
     onRequestInvite?: (friend: SidebarFriendRecord) => void;
@@ -158,7 +157,6 @@ function FriendVirtualRow({
             }}
             rowCommands={{
                 onOpen: () => friendCommands.onOpenFriend(friend),
-                onLaunch: friendCommands.onLaunch,
                 onSelfInvite: friendCommands.onSelfInvite,
                 onInvite: friendCommands.onInvite,
                 onRequestInvite: friendCommands.onRequestInvite,

@@ -17,6 +17,9 @@ describe('friendLogState', () => {
                 { id: 'created_at', desc: true },
                 { id: 'displayName', desc: false },
                 { id: 'type', desc: false },
+                { id: 'spacer', desc: false },
+                { id: 'action', desc: true },
+                { id: 'trailing', desc: true },
                 { id: 'unknown', desc: true },
                 null,
                 { id: 123, desc: true }
@@ -25,6 +28,17 @@ describe('friendLogState', () => {
             { id: 'created_at', desc: true },
             { id: 'type', desc: false }
         ]);
+    });
+
+    it('keeps empty sorting when saved columns cannot sort', () => {
+        expect(sanitizeSorting([])).toEqual([]);
+        expect(
+            sanitizeSorting([
+                { id: 'spacer', desc: false },
+                { id: 'action', desc: true },
+                { id: 'trailing', desc: true }
+            ])
+        ).toEqual([]);
     });
 
     it('normalizes page sizes from dirty storage values', () => {

@@ -263,4 +263,23 @@ describe('preferenceSnapshotLoader', () => {
             usePreferencesStore.getState().showUserDialogProfileDecorations
         ).toBe(false);
     });
+
+    it('loads an explicit Friend Log notification dot opt-out', async () => {
+        mocks.getBool.mockImplementation((key: string, fallback = false) =>
+            Promise.resolve(
+                key === 'friendLogNotificationDot' ? false : Boolean(fallback)
+            )
+        );
+
+        const snapshot = await loadPreferenceSnapshot();
+
+        expect(mocks.getBool).toHaveBeenCalledWith(
+            'friendLogNotificationDot',
+            true
+        );
+        expect(snapshot.friendLogNotificationDot).toBe(false);
+        expect(usePreferencesStore.getState().friendLogNotificationDot).toBe(
+            false
+        );
+    });
 });

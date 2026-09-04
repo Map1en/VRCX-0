@@ -60,7 +60,7 @@ function tauriRelease() {
         manifestUrl:
             'https://github.com/Map1en/VRCX-0/releases/latest/download/latest_windows.json',
         target: 'windows-x86_64-stable',
-        channel: 'Stable' as const,
+        channel: 'stable' as const,
         htmlUrl: 'https://github.com/Map1en/VRCX-0/releases/tag/v2.7.0',
         canonicalVersion: '2.7.0',
         displayVersion: '2.7.0',
@@ -69,7 +69,6 @@ function tauriRelease() {
         title: 'VRCX-0 2.7.0',
         currentVersion: '2.6.0',
         latestVersion: '2.7.0',
-        prerelease: false,
         publishedAt: '2026-06-22T00:00:00Z',
         body: ''
     };
@@ -101,6 +100,7 @@ describe('openOrInstallLatestAvailableUpdate', () => {
                 htmlUrl: 'https://github.com/Map1en/VRCX-0/releases/tag/v2.7.0',
                 canonicalVersion: '2.7.0',
                 displayVersion: '2.7.0',
+                channel: 'stable',
                 tagName: 'v2.7.0',
                 displayName: 'VRCX-0 2.7.0',
                 publishedAt: '',
@@ -130,6 +130,7 @@ describe('openOrInstallLatestAvailableUpdate', () => {
                 htmlUrl: 'https://github.com/Map1en/VRCX-0/releases/tag/v2.7.0',
                 canonicalVersion: '2.7.0',
                 displayVersion: '2.7.0',
+                channel: 'stable',
                 tagName: 'v2.7.0',
                 displayName: 'VRCX-0 2.7.0',
                 publishedAt: '',
@@ -184,13 +185,12 @@ describe('openOrInstallLatestAvailableUpdate', () => {
     it('rejects a passed manual update release without installing', async () => {
         const installed = await installUpdateRelease({
             updaterType: 'manual',
-            channel: 'Stable',
+            channel: 'stable',
             htmlUrl: 'https://github.com/Map1en/VRCX-0/releases/tag/v2.7.0',
             canonicalVersion: '2.7.0',
             displayVersion: '2.7.0',
             tagName: 'v2.7.0',
             displayName: 'VRCX-0 2.7.0',
-            prerelease: false,
             publishedAt: '2026-06-22T00:00:00Z',
             body: ''
         });

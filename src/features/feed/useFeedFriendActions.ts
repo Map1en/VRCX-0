@@ -13,7 +13,6 @@ import type {
     FeedLocationActionPayload
 } from '@/components/feed/feedTypes';
 import { openWorldDialog } from '@/services/dialogService';
-import { tryOpenLaunchLocation } from '@/services/directAccessService';
 import {
     sendBoopToUser,
     sendInviteToLocation,
@@ -149,42 +148,6 @@ export function useFeedFriendActions(): FeedFriendActions {
             });
         },
         [friendsMap, normalizedCurrentUserId]
-    );
-
-    const launchFeedFriendLocation = useCallback(
-        async (location: string) => {
-            const normalizedLocation = normalizeId(location);
-            const parsedLocation = parseLocation(normalizedLocation);
-            if (
-                !parsedLocation.isRealInstance ||
-                !parsedLocation.worldId ||
-                !parsedLocation.instanceId
-            ) {
-                return;
-            }
-            try {
-                const opened = await tryOpenLaunchLocation(
-                    normalizedLocation,
-                    parsedLocation.shortName || ''
-                );
-                if (opened) {
-                    toast.success(
-                        t('view.feed.success.vrchat_launch_request_sent')
-                    );
-                    return;
-                }
-                toast.error(
-                    t('view.feed.error.unable_to_open_this_instance_in_vrchat')
-                );
-            } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('view.feed.toast.failed_to_launch_instance')
-                );
-            }
-        },
-        [t]
     );
 
     const selfInviteFeedFriendLocation = useCallback(
@@ -398,7 +361,6 @@ export function useFeedFriendActions(): FeedFriendActions {
             canUseFeedFriendLocation,
             addFeedHiddenUser,
             isFeedUserHidden,
-            launchFeedFriendLocation,
             openFeedNewInstance,
             removeFeedHiddenUser,
             requestFeedFriendInvite,
@@ -412,7 +374,6 @@ export function useFeedFriendActions(): FeedFriendActions {
             canUseFeedFriendLocation,
             addFeedHiddenUser,
             isFeedUserHidden,
-            launchFeedFriendLocation,
             openFeedNewInstance,
             removeFeedHiddenUser,
             requestFeedFriendInvite,

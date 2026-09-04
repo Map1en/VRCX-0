@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Weak};
 
 use vrcx_0_core::text::normalize_text;
 
@@ -29,9 +29,22 @@ impl RuntimeAuthScopeSnapshot {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+pub trait RuntimeAuthScopeObserver: Send + Sync {
+    fn runtime_auth_scope_changed(&self, snapshot: &RuntimeAuthScopeSnapshot);
+}
+
+#[derive(Clone, Default)]
 pub struct RuntimeAuthScope {
     state: Arc<Mutex<RuntimeAuthScopeState>>,
+    observers: Arc<Mutex<Vec<Weak<dyn RuntimeAuthScopeObserver>>>>,
+}
+
+impl std::fmt::Debug for RuntimeAuthScope {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("RuntimeAuthScope")
+            .finish_non_exhaustive()
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -72,32 +85,50 @@ impl RuntimeAuthScope {
         display_name: Option<&str>,
         endpoint: &str,
     ) -> RuntimeAuthScopeSnapshot {
-        let mut state = self.lock_state();
-        let current_user_id = normalize_text(user_id);
-        let endpoint = normalize_endpoint(endpoint);
-        let active = !current_user_id.is_empty();
-        if state.snapshot.current_user_id == current_user_id
-            && state.snapshot.endpoint == endpoint
-            && state.snapshot.active == active
-        {
-            if let Some(display_name) = display_name {
-                state.display_name = normalize_display_name(display_name, &current_user_id);
+        let (snapshot, changed) = {
+            let mut state = self.lock_state();
+            let current_user_id = normalize_text(user_id);
+            let endpoint = normalize_endpoint(endpoint);
+            let active = !current_user_id.is_empty();
+            if state.snapshot.current_user_id == current_user_id
+                && state.snapshot.endpoint == endpoint
+                && state.snapshot.active == active
+            {
+                if let Some(display_name) = display_name {
+                    state.display_name = normalize_display_name(display_name, &current_user_id);
+                }
+                (state.snapshot.clone(), false)
+            } else {
+                state.snapshot.generation = state.snapshot.generation.saturating_add(1);
+                state.snapshot.current_user_id = current_user_id;
+                state.snapshot.endpoint = endpoint;
+                state.snapshot.active = active;
+                state.display_name = if active {
+                    normalize_display_name(
+                        display_name.unwrap_or_default(),
+                        &state.snapshot.current_user_id,
+                    )
+                } else {
+                    String::new()
+                };
+                (state.snapshot.clone(), true)
             }
-            return state.snapshot.clone();
-        }
-        state.snapshot.generation = state.snapshot.generation.saturating_add(1);
-        state.snapshot.current_user_id = current_user_id;
-        state.snapshot.endpoint = endpoint;
-        state.snapshot.active = active;
-        state.display_name = if active {
-            normalize_display_name(
-                display_name.unwrap_or_default(),
-                &state.snapshot.current_user_id,
-            )
-        } else {
-            String::new()
         };
-        state.snapshot.clone()
+        if changed {
+            self.notify_observers(&snapshot);
+        }
+        snapshot
+    }
+
+    pub fn add_observer(&self, observer: Arc<dyn RuntimeAuthScopeObserver>) {
+        match self.observers.lock() {
+            Ok(mut observers) => observers.push(Arc::downgrade(&observer)),
+            Err(error) => {
+                tracing::warn!(error = %error, "failed to register runtime auth scope observer");
+                return;
+            }
+        }
+        observer.runtime_auth_scope_changed(&self.snapshot());
     }
 
     pub fn snapshot(&self) -> RuntimeAuthScopeSnapshot {
@@ -122,6 +153,26 @@ impl RuntimeAuthScope {
     fn lock_state(&self) -> std::sync::MutexGuard<'_, RuntimeAuthScopeState> {
         self.state.lock().unwrap_or_else(|error| error.into_inner())
     }
+
+    fn notify_observers(&self, snapshot: &RuntimeAuthScopeSnapshot) {
+        let observers = match self.observers.lock() {
+            Ok(mut observers) => {
+                let active = observers
+                    .iter()
+                    .filter_map(Weak::upgrade)
+                    .collect::<Vec<_>>();
+                observers.retain(|observer| observer.strong_count() > 0);
+                active
+            }
+            Err(error) => {
+                tracing::warn!(error = %error, "failed to read runtime auth scope observers");
+                return;
+            }
+        };
+        for observer in observers {
+            observer.runtime_auth_scope_changed(snapshot);
+        }
+    }
 }
 
 fn normalize_endpoint(value: impl AsRef<str>) -> String {
@@ -139,7 +190,20 @@ fn normalize_display_name(value: &str, user_id: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::RuntimeAuthScope;
+    use std::sync::{Arc, Mutex};
+
+    use super::{RuntimeAuthScope, RuntimeAuthScopeObserver, RuntimeAuthScopeSnapshot};
+
+    #[derive(Default)]
+    struct TestObserver {
+        snapshots: Mutex<Vec<RuntimeAuthScopeSnapshot>>,
+    }
+
+    impl RuntimeAuthScopeObserver for TestObserver {
+        fn runtime_auth_scope_changed(&self, snapshot: &RuntimeAuthScopeSnapshot) {
+            self.snapshots.lock().unwrap().push(snapshot.clone());
+        }
+    }
 
     #[test]
     fn tracks_active_auth_scope() {
@@ -251,5 +315,22 @@ mod tests {
         assert!(active.active);
         assert!(!cleared.active);
         assert!(cleared.generation > active.generation);
+    }
+
+    #[test]
+    fn observer_receives_initial_and_changed_scopes_only() {
+        let scope = RuntimeAuthScope::new();
+        let observer = Arc::new(TestObserver::default());
+        scope.add_observer(observer.clone());
+
+        scope.set("usr_a", "");
+        scope.set_identity("usr_a", "Renamed", "");
+        scope.set("", "");
+
+        let snapshots = observer.snapshots.lock().unwrap();
+        assert_eq!(snapshots.len(), 3);
+        assert!(!snapshots[0].active);
+        assert_eq!(snapshots[1].current_user_id, "usr_a");
+        assert!(!snapshots[2].active);
     }
 }

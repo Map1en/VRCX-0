@@ -1,4 +1,5 @@
 import type {
+    AvatarStatsRecord,
     FileAnalysisRecord,
     PlatformFileAnalysis
 } from '@/domain/entities/world';
@@ -18,10 +19,6 @@ type UnityPackage = Record<string, unknown> & {
     platform?: string;
     unitySortNumber?: string | number;
     variant?: string;
-};
-
-type RepositoryResponse = {
-    json?: unknown;
 };
 
 type FileAnalysisOptions = {
@@ -50,6 +47,42 @@ function normalizePlatform(value: unknown) {
     return typeof value === 'string' ? value.trim() : '';
 }
 
+const AVATAR_STAT_KEYS = [
+    'animatorCount',
+    'audioSourceCount',
+    'blendShapeCount',
+    'boneCount',
+    'bounds',
+    'cameraCount',
+    'clothCount',
+    'constraintCount',
+    'constraintDepth',
+    'contactCount',
+    'lightCount',
+    'lineRendererCount',
+    'materialCount',
+    'materialSlotsUsed',
+    'meshCount',
+    'meshParticleMaxPolygons',
+    'particleCollisionEnabled',
+    'particleSystemCount',
+    'particleTrailsEnabled',
+    'physBoneColliderCount',
+    'physBoneCollisionCheckCount',
+    'physBoneComponentCount',
+    'physBoneTransformCount',
+    'physicsColliders',
+    'physicsRigidbodies',
+    'skinnedMeshCount',
+    'totalClothVertices',
+    'totalMaxParticles',
+    'totalPolygons',
+    'totalTextureUsage',
+    'totalVertices',
+    'trailRendererCount',
+    'writeDefaultsUsed'
+] as const satisfies readonly (keyof AvatarStatsRecord)[];
+
 function isAnalyzablePackage(
     unityPackage: unknown,
     sdkUnityVersion: string
@@ -75,27 +108,40 @@ function isAnalyzablePackage(
     return true;
 }
 
+function pickAvatarStats(value: unknown): AvatarStatsRecord | undefined {
+    if (!isRecord(value)) {
+        return undefined;
+    }
+    const entries = AVATAR_STAT_KEYS.flatMap((key) =>
+        typeof value[key] === 'undefined' ? [] : [[key, value[key]]]
+    );
+    return entries.length
+        ? (Object.fromEntries(entries) as AvatarStatsRecord)
+        : undefined;
+}
+
 function formatFileAnalysis(json: unknown): FileAnalysisRecord | null {
-    if (!isRecord(json)) {
+    if (!isRecord(json) || !json.success) {
         return null;
     }
-    const source = json;
-    const avatarStats = isRecord(source.avatarStats)
-        ? source.avatarStats
-        : null;
+    const avatarStats = pickAvatarStats(json.avatarStats);
     return {
-        ...source,
-        ...(typeof source.fileSize !== 'undefined'
-            ? { _fileSize: formatMiB(source.fileSize) }
-            : {}),
-        ...(typeof source.uncompressedSize !== 'undefined'
-            ? { _uncompressedSize: formatMiB(source.uncompressedSize) }
-            : {}),
-        ...(typeof avatarStats?.totalTextureUsage !== 'undefined'
+        _fileSize:
+            typeof json.fileSize === 'undefined'
+                ? ''
+                : formatMiB(json.fileSize),
+        ...(typeof json.uncompressedSize === 'undefined'
+            ? {}
+            : { _uncompressedSize: formatMiB(json.uncompressedSize) }),
+        ...(avatarStats && typeof avatarStats.totalTextureUsage !== 'undefined'
             ? {
                   _totalTextureUsage: formatMiB(avatarStats.totalTextureUsage)
               }
-            : {})
+            : {}),
+        ...(typeof json.performanceRating === 'string'
+            ? { performanceRating: json.performanceRating }
+            : {}),
+        ...(avatarStats ? { avatarStats } : {})
     };
 }
 
@@ -136,6 +182,10 @@ export function hasFileAnalysisCandidates(
     return collectFileAnalysisRequests(options).size > 0;
 }
 
+export function isPendingFileAnalysisError(error: unknown): boolean {
+    return isVrchatRequestError(error) && error.status === 202;
+}
+
 export async function loadFileAnalysisForUnityPackages({
     unityPackages = [],
     sdkUnityVersion = '',
@@ -152,26 +202,29 @@ export async function loadFileAnalysisForUnityPackages({
         Array.from(
             requests,
             async ([platform, { fileId, variant, version }]) => {
+                const queryKey = queryKeys.fileAnalysis(
+                    { fileId, version, variant },
+                    endpoint
+                );
                 try {
-                    const response = await fetchCachedData<RepositoryResponse>({
-                        queryKey: queryKeys.fileAnalysis(
-                            { fileId, version, variant },
-                            endpoint
-                        ),
+                    const analysis = await fetchCachedData({
+                        queryKey,
                         policy: entityQueryPolicies.fileAnalysis,
-                        queryFn: () =>
-                            vrchatAuthRepository.getFileAnalysis({
-                                fileId,
-                                version,
-                                variant
-                            })
+                        queryFn: async () => {
+                            const response =
+                                await vrchatAuthRepository.getFileAnalysis({
+                                    fileId,
+                                    version,
+                                    variant
+                                });
+                            return formatFileAnalysis(response.json);
+                        }
                     });
-                    const analysis = formatFileAnalysis(response.json);
-                    if (analysis?.success) {
+                    if (analysis !== null) {
                         result[platform] = analysis;
                     }
                 } catch (error) {
-                    if (isVrchatRequestError(error) && error.status === 202) {
+                    if (isPendingFileAnalysisError(error)) {
                         pending = true;
                     }
                 }

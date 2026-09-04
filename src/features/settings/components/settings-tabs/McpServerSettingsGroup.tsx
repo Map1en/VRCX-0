@@ -11,6 +11,13 @@ import {
 import { copyTextToClipboard } from '@/services/clipboardService';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
+import {
+    NumberField,
+    NumberFieldDecrement,
+    NumberFieldGroup,
+    NumberFieldIncrement,
+    NumberFieldInput
+} from '@/ui/shadcn/number-field';
 import { Switch } from '@/ui/shadcn/switch';
 
 import { Field, SettingsGroup } from '../SettingsField';
@@ -225,15 +232,23 @@ export function McpServerSettingsGroup() {
                 )}
             >
                 <div className="flex items-center gap-2">
-                    <Input
-                        type="number"
+                    <NumberField
                         min={1024}
                         max={65535}
-                        value={portInput}
+                        allowOutOfRange
+                        value={portInput === '' ? null : Number(portInput)}
                         disabled={mcpBusy}
-                        onChange={(event) => setPortInput(event.target.value)}
-                        className="w-28"
-                    />
+                        onValueChange={(value) =>
+                            setPortInput(value === null ? '' : String(value))
+                        }
+                        className="w-40"
+                    >
+                        <NumberFieldGroup>
+                            <NumberFieldDecrement />
+                            <NumberFieldInput />
+                            <NumberFieldIncrement />
+                        </NumberFieldGroup>
+                    </NumberField>
                     <Button
                         type="button"
                         variant="outline"

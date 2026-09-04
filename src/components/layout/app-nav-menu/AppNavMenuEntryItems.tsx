@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router';
 
+import { ShortcutKey } from '@/components/keyboard/ShortcutHintPanel';
 import { cn } from '@/lib/utils';
 import {
     DropdownMenu,
@@ -22,6 +23,7 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 import {
     SidebarMenuButton,
+    SidebarMenuBadge,
     SidebarMenuItem,
     SidebarMenuSub,
     SidebarMenuSubButton,
@@ -140,6 +142,8 @@ function CollapsedFolderDropdownEntry({
 function NavMenuFolderItem({
     item,
     isCollapsed,
+    shortcutHintsVisible,
+    shortcutPositionByIndex,
     activeIndex,
     pathname,
     notifiedKeys,
@@ -153,6 +157,8 @@ function NavMenuFolderItem({
 }: NavMenuActionHandlers & {
     item: NavMenuItem;
     isCollapsed: boolean;
+    shortcutHintsVisible: boolean;
+    shortcutPositionByIndex: ReadonlyMap<string, number>;
     activeIndex: string;
     pathname: string;
     notifiedKeys: ReadonlySet<string>;
@@ -168,6 +174,17 @@ function NavMenuFolderItem({
         (entry) => entry.index === activeIndex || isEntryActive(entry, pathname)
     );
     const isNotified = isNavItemNotified(item, notifiedKeys);
+    const shortcutPositions = children
+        .map((entry) => shortcutPositionByIndex.get(entry.index))
+        .filter((position): position is number => position !== undefined);
+    const firstShortcutPosition = shortcutPositions[0];
+    const lastShortcutPosition = shortcutPositions.at(-1);
+    const folderShortcutLabel =
+        firstShortcutPosition === undefined
+            ? ''
+            : firstShortcutPosition === lastShortcutPosition
+              ? String(firstShortcutPosition)
+              : `${firstShortcutPosition}–${lastShortcutPosition}`;
 
     useEffect(() => {
         if (isActive) {
@@ -247,63 +264,90 @@ function NavMenuFolderItem({
                 >
                     <NotifiedNavIcon entry={item} isNotified={isNotified} />
                     <span>{label}</span>
-                    <ChevronRightIcon
-                        className={cn(
-                            'ml-auto transition-transform',
-                            open && 'rotate-90'
-                        )}
-                    />
+                    {shortcutHintsVisible && !open && folderShortcutLabel ? (
+                        <ShortcutKey
+                            keys={folderShortcutLabel}
+                            className="ml-auto"
+                        />
+                    ) : (
+                        <ChevronRightIcon
+                            className={cn(
+                                'ml-auto transition-transform',
+                                open && 'rotate-90'
+                            )}
+                        />
+                    )}
                 </SidebarMenuButton>
                 {open ? (
                     <SidebarMenuSub>
-                        {children.map((entry) => (
-                            <NavItemContextMenu
-                                key={entry.index}
-                                entry={entry}
-                                hasNotifications={hasNotifications}
-                                onMarkAllRead={onMarkAllRead}
-                                onEditDashboard={onEditDashboard}
-                                onDeleteDashboard={onDeleteDashboard}
-                                onUnpinTool={onUnpinTool}
-                                onOpenCustomNav={onOpenCustomNav}
-                            >
-                                <SidebarMenuSubItem>
-                                    <SidebarMenuSubButton
-                                        type="button"
-                                        className={
-                                            isDashboardEntry(entry) ||
-                                            isToolEntry(entry)
-                                                ? 'pr-8'
-                                                : undefined
-                                        }
-                                        isActive={
-                                            entry.index === activeIndex ||
-                                            isEntryActive(entry, pathname)
-                                        }
-                                        onClick={() => {
-                                            onSelect(entry);
-                                        }}
-                                    >
-                                        <NotifiedNavIcon
-                                            entry={entry}
-                                            isNotified={isEntryNotified(
-                                                entry,
-                                                notifiedKeys
+                        {children.map((entry) => {
+                            const shortcutPosition =
+                                shortcutPositionByIndex.get(entry.index);
+                            const showShortcut =
+                                shortcutHintsVisible &&
+                                shortcutPosition !== undefined;
+                            return (
+                                <NavItemContextMenu
+                                    key={entry.index}
+                                    entry={entry}
+                                    hasNotifications={hasNotifications}
+                                    onMarkAllRead={onMarkAllRead}
+                                    onEditDashboard={onEditDashboard}
+                                    onDeleteDashboard={onDeleteDashboard}
+                                    onUnpinTool={onUnpinTool}
+                                    onOpenCustomNav={onOpenCustomNav}
+                                >
+                                    <SidebarMenuSubItem>
+                                        <SidebarMenuSubButton
+                                            type="button"
+                                            className={cn(
+                                                (isDashboardEntry(entry) ||
+                                                    isToolEntry(entry)) &&
+                                                    'pr-8',
+                                                showShortcut && 'pr-8'
                                             )}
-                                            className="size-4"
-                                        />
-                                        <span>{labelForEntry(entry, t)}</span>
-                                    </SidebarMenuSubButton>
-                                    <DashboardEntryAction
-                                        entry={entry}
-                                        onEditDashboard={onEditDashboard}
-                                        onDeleteDashboard={onDeleteDashboard}
-                                        onUnpinTool={onUnpinTool}
-                                        compact
-                                    />
-                                </SidebarMenuSubItem>
-                            </NavItemContextMenu>
-                        ))}
+                                            isActive={
+                                                entry.index === activeIndex ||
+                                                isEntryActive(entry, pathname)
+                                            }
+                                            onClick={() => {
+                                                onSelect(entry);
+                                            }}
+                                        >
+                                            <NotifiedNavIcon
+                                                entry={entry}
+                                                isNotified={isEntryNotified(
+                                                    entry,
+                                                    notifiedKeys
+                                                )}
+                                                className="size-4"
+                                            />
+                                            <span>
+                                                {labelForEntry(entry, t)}
+                                            </span>
+                                        </SidebarMenuSubButton>
+                                        {showShortcut ? (
+                                            <ShortcutKey
+                                                keys={String(shortcutPosition)}
+                                                className="absolute top-1 right-1"
+                                            />
+                                        ) : (
+                                            <DashboardEntryAction
+                                                entry={entry}
+                                                onEditDashboard={
+                                                    onEditDashboard
+                                                }
+                                                onDeleteDashboard={
+                                                    onDeleteDashboard
+                                                }
+                                                onUnpinTool={onUnpinTool}
+                                                compact
+                                            />
+                                        )}
+                                    </SidebarMenuSubItem>
+                                </NavItemContextMenu>
+                            );
+                        })}
                     </SidebarMenuSub>
                 ) : null}
             </SidebarMenuItem>
@@ -313,6 +357,8 @@ function NavMenuFolderItem({
 
 function NavMenuEntryItem({
     item,
+    shortcutHintsVisible,
+    shortcutPositionByIndex,
     activeIndex,
     notifiedKeys,
     hasNotifications,
@@ -324,12 +370,16 @@ function NavMenuEntryItem({
     onOpenCustomNav
 }: NavMenuActionHandlers & {
     item: NavMenuItem;
+    shortcutHintsVisible: boolean;
+    shortcutPositionByIndex: ReadonlyMap<string, number>;
     activeIndex: string;
     notifiedKeys: ReadonlySet<string>;
     hasNotifications: boolean;
 }) {
     const { t } = useTranslation();
     const itemPath = getPathForNavEntry(item);
+    const shortcutPosition = shortcutPositionByIndex.get(item.index);
+    const showShortcut = shortcutHintsVisible && shortcutPosition !== undefined;
 
     return (
         <NavItemContextMenu
@@ -346,11 +396,10 @@ function NavMenuEntryItem({
                     render={itemPath ? <NavLink to={itemPath} /> : undefined}
                     isActive={item.index === activeIndex}
                     tooltip={labelForEntry(item, t)}
-                    className={
-                        isDashboardEntry(item) || isToolEntry(item)
-                            ? 'pr-8'
-                            : undefined
-                    }
+                    className={cn(
+                        (isDashboardEntry(item) || isToolEntry(item)) && 'pr-8',
+                        showShortcut && 'pr-8'
+                    )}
                     onClick={
                         itemPath
                             ? undefined
@@ -365,12 +414,18 @@ function NavMenuEntryItem({
                     />
                     <span>{labelForEntry(item, t)}</span>
                 </SidebarMenuButton>
-                <DashboardEntryAction
-                    entry={item}
-                    onEditDashboard={onEditDashboard}
-                    onDeleteDashboard={onDeleteDashboard}
-                    onUnpinTool={onUnpinTool}
-                />
+                {showShortcut ? (
+                    <SidebarMenuBadge className="p-0">
+                        <ShortcutKey keys={String(shortcutPosition)} />
+                    </SidebarMenuBadge>
+                ) : (
+                    <DashboardEntryAction
+                        entry={item}
+                        onEditDashboard={onEditDashboard}
+                        onDeleteDashboard={onDeleteDashboard}
+                        onUnpinTool={onUnpinTool}
+                    />
+                )}
             </SidebarMenuItem>
         </NavItemContextMenu>
     );

@@ -2,6 +2,10 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
+vi.mock('@/services/launchService', () => ({
+    launchVrchat: vi.fn()
+}));
+
 vi.mock('@/ui/shadcn/context-menu', async () => {
     const React = await import('react');
 
@@ -64,8 +68,9 @@ function renderContextMenu(props: ContextMenuTestProps = {}) {
                 canOpenInstanceInGame: false,
                 canUseCurrentInstance: true,
                 isOpenPreviousInstanceInfoDialog: false,
+                launchLocation: 'wrld_test:123',
+                launchShortName: '',
                 onCopyShareLink: vi.fn(),
-                onLaunchCurrentInstance: vi.fn(),
                 onNewInstance: vi.fn(),
                 onOpenWorld: vi.fn(),
                 onSelfInviteCurrentInstance: vi.fn(),

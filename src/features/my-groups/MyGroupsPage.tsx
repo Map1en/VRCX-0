@@ -12,7 +12,7 @@ import {
     sortableKeyboardCoordinates,
     SortableContext
 } from '@dnd-kit/sortable';
-import { RefreshCwIcon, UsersRoundIcon } from 'lucide-react';
+import { ArrowUpDownIcon, UsersRoundIcon } from 'lucide-react';
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -25,16 +25,21 @@ import {
     EmptyState,
     LoadingState,
     PageBody,
-    PageHeader,
     PageScaffold,
-    PageTitle,
     PageToolbar,
     PageToolbarRow
 } from '@/components/layout/PageScaffold';
+import {
+    ToolbarActions,
+    ToolbarRefreshButton,
+    ToolbarSearch,
+    ToolbarStatus,
+    ToolbarViews
+} from '@/components/layout/ToolbarControls';
+import { ToolPageHeader } from '@/components/layout/ToolPageHeader';
 import { cn } from '@/lib/utils';
 import type { GroupMemberVisibility } from '@/platform/tauri/bindings';
 import { Button } from '@/ui/shadcn/button';
-import { Input } from '@/ui/shadcn/input';
 import { ScrollArea } from '@/ui/shadcn/scroll-area';
 import {
     Select,
@@ -44,7 +49,6 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
-import { Spinner } from '@/ui/shadcn/spinner';
 
 import { MyGroupCard } from './components/MyGroupCard';
 import { MyGroupsSelectionBar } from './components/MyGroupsSelectionBar';
@@ -104,43 +108,10 @@ export function MyGroupsPage() {
 
     return (
         <PageScaffold className="relative">
-            <PageHeader>
-                <PageTitle>{t('view.my_groups.title')}</PageTitle>
-                <p className="text-muted-foreground text-sm">
-                    {t('view.my_groups.description')}
-                </p>
-            </PageHeader>
+            <ToolPageHeader toolKey="my-groups" />
             <PageToolbar>
-                <PageToolbarRow className="justify-between">
-                    <div className="flex min-w-0 flex-wrap items-center gap-2">
-                        <Button
-                            type="button"
-                            size="icon-sm"
-                            variant="ghost"
-                            aria-label={t('common.actions.refresh')}
-                            disabled={state.status === 'running' || batch.busy}
-                            onClick={() => void state.load(true)}
-                        >
-                            {state.status === 'running' ? (
-                                <Spinner className="size-4" />
-                            ) : (
-                                <RefreshCwIcon data-icon="icon" />
-                            )}
-                        </Button>
-                        <span className="text-muted-foreground text-sm tabular-nums">
-                            {t('view.my_groups.group_count', {
-                                count: state.groups.length
-                            })}
-                        </span>
-                        <Input
-                            value={state.search}
-                            placeholder={t('dialog.user.action.search_groups')}
-                            className="h-8 w-48"
-                            disabled={state.editMode}
-                            onChange={(event) =>
-                                state.setSearch(event.target.value)
-                            }
-                        />
+                <PageToolbarRow>
+                    <ToolbarViews className="min-w-0 flex-wrap">
                         <Select<UserDialogGroupSort>
                             value={state.sort}
                             onValueChange={(value) => {
@@ -156,11 +127,13 @@ export function MyGroupsPage() {
                             )}
                         >
                             <SelectTrigger
-                                size="sm"
-                                className="w-36"
+                                className="max-w-56 min-w-40 shrink-0"
                                 disabled={state.editMode}
                             >
-                                <SelectValue />
+                                <span className="flex min-w-0 items-center gap-2">
+                                    <ArrowUpDownIcon className="text-muted-foreground size-4 shrink-0" />
+                                    <SelectValue />
+                                </span>
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
@@ -181,22 +154,40 @@ export function MyGroupsPage() {
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
-                    </div>
-                    <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={batch.busy || state.orderSaving}
-                        onClick={
-                            state.editMode
-                                ? state.exitEditMode
-                                : state.enterEditMode
-                        }
-                    >
-                        {state.editMode
-                            ? t('view.my_groups.exit_edit_mode')
-                            : t('view.my_groups.edit_mode')}
-                    </Button>
+                        <ToolbarStatus className="whitespace-nowrap tabular-nums">
+                            {t('view.my_groups.group_count', {
+                                count: state.groups.length
+                            })}
+                        </ToolbarStatus>
+                    </ToolbarViews>
+                    <ToolbarSearch
+                        value={state.search}
+                        onValueChange={state.setSearch}
+                        placeholder={t('dialog.user.action.search_groups')}
+                        disabled={state.editMode}
+                    />
+                    <ToolbarActions>
+                        <ToolbarRefreshButton
+                            onRefresh={() => void state.load(true)}
+                            loading={state.status === 'running'}
+                            disabled={batch.busy}
+                        />
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={batch.busy || state.orderSaving}
+                            onClick={
+                                state.editMode
+                                    ? state.exitEditMode
+                                    : state.enterEditMode
+                            }
+                        >
+                            {state.editMode
+                                ? t('view.my_groups.exit_edit_mode')
+                                : t('view.my_groups.edit_mode')}
+                        </Button>
+                    </ToolbarActions>
                 </PageToolbarRow>
                 {state.editMode ? (
                     <p className="text-muted-foreground px-1.5 text-xs">
@@ -247,8 +238,8 @@ export function MyGroupsPage() {
                             >
                                 <div
                                     className={cn(
-                                        'grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2 p-0.5',
-                                        selectedGroups.length && 'pb-14'
+                                        'grid grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-2 p-0.5',
+                                        state.editMode && 'pb-14'
                                     )}
                                 >
                                     {state.visibleGroups.map((group, index) => {
@@ -314,7 +305,7 @@ export function MyGroupsPage() {
                     />
                 )}
             </PageBody>
-            {state.editMode ? (
+            {state.editMode && state.visibleGroups.length > 0 ? (
                 <MyGroupsSelectionBar
                     selectedCount={selectedGroups.length}
                     leavableCount={leavableSelected.length}

@@ -18,6 +18,13 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppColumnDef, AppRow } from '@/components/data-table/appTable';
+import { DataTableHeaderLabel } from '@/components/data-table/DataTableSortButton';
+import {
+    DATA_TABLE_CONTROL_CELL_CLASS_NAME,
+    DATA_TABLE_NUMERIC_CELL_CLASS_NAME,
+    DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
+    DATA_TABLE_PRIMARY_CELL_CLASS_NAME
+} from '@/components/data-table/DataTableView';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
@@ -34,14 +41,6 @@ import {
 } from '../playerListDisplay';
 import type { PlayerListLanguageRow, PlayerListRow } from '../playerListTypes';
 import { SortButton } from './PlayerListViewParts';
-
-function HeaderLabel({ children }: { children: ReactNode }) {
-    return (
-        <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-            {children}
-        </span>
-    );
-}
 
 function AvatarCell({ row }: { row: AppRow<PlayerListRow> }) {
     return row.original.avatarUrl ? (
@@ -356,7 +355,9 @@ export function usePlayerListColumns(): AppColumnDef<PlayerListRow>[] {
                 enableResizing: false,
                 meta: { label: t('table.playerList.avatar') },
                 header: () => (
-                    <HeaderLabel>{t('table.playerList.avatar')}</HeaderLabel>
+                    <DataTableHeaderLabel>
+                        {t('table.playerList.avatar')}
+                    </DataTableHeaderLabel>
                 ),
                 accessorFn: (row) => row.avatarUrl,
                 enableSorting: false,
@@ -365,12 +366,17 @@ export function usePlayerListColumns(): AppColumnDef<PlayerListRow>[] {
             {
                 id: 'timer',
                 size: 96,
-                meta: { label: t('table.playerList.timer') },
+                meta: {
+                    label: t('table.playerList.timer'),
+                    tableHeadClassName: DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
+                    tableCellClassName: DATA_TABLE_NUMERIC_CELL_CLASS_NAME
+                },
                 accessorFn: (row) => row.timerMs,
                 header: ({ column }) => (
                     <SortButton
                         column={column}
                         label={t('table.playerList.timer')}
+                        className="ml-auto"
                     />
                 ),
                 cell: ({ row }) => (
@@ -387,7 +393,8 @@ export function usePlayerListColumns(): AppColumnDef<PlayerListRow>[] {
                 enableHiding: false,
                 meta: {
                     label: t('table.playerList.displayName'),
-                    stretch: true
+                    stretch: true,
+                    tableCellClassName: DATA_TABLE_PRIMARY_CELL_CLASS_NAME
                 },
                 accessorFn: (row) => row.displayName,
                 header: ({ column }) => (
@@ -435,7 +442,9 @@ export function usePlayerListColumns(): AppColumnDef<PlayerListRow>[] {
                 meta: { label: t('table.playerList.status') },
                 accessorFn: (row) => resolveStatusMeta(row).label,
                 header: () => (
-                    <HeaderLabel>{t('table.playerList.status')}</HeaderLabel>
+                    <DataTableHeaderLabel>
+                        {t('table.playerList.status')}
+                    </DataTableHeaderLabel>
                 ),
                 enableSorting: false,
                 cell: ({ row }) => <StatusCell row={row} />
@@ -445,7 +454,9 @@ export function usePlayerListColumns(): AppColumnDef<PlayerListRow>[] {
                 size: 160,
                 meta: { label: t('table.playerList.icon') },
                 header: () => (
-                    <HeaderLabel>{t('table.playerList.icon')}</HeaderLabel>
+                    <DataTableHeaderLabel>
+                        {t('table.playerList.icon')}
+                    </DataTableHeaderLabel>
                 ),
                 enableSorting: false,
                 cell: ({ row }) => <PlayerIconCell row={row} />
@@ -472,7 +483,9 @@ export function usePlayerListColumns(): AppColumnDef<PlayerListRow>[] {
                         .map((entry) => entry?.value || entry?.key || '')
                         .join('\u0000'),
                 header: () => (
-                    <HeaderLabel>{t('table.playerList.language')}</HeaderLabel>
+                    <DataTableHeaderLabel>
+                        {t('table.playerList.language')}
+                    </DataTableHeaderLabel>
                 ),
                 enableSorting: false,
                 cell: ({ row }) => <LanguageCell row={row} />
@@ -480,10 +493,15 @@ export function usePlayerListColumns(): AppColumnDef<PlayerListRow>[] {
             {
                 id: 'bioLink',
                 size: 120,
-                meta: { label: t('table.playerList.bioLink') },
+                meta: {
+                    label: t('table.playerList.bioLink'),
+                    tableCellClassName: DATA_TABLE_CONTROL_CELL_CLASS_NAME
+                },
                 accessorFn: (row) => row.bioLinks.join('\u0000'),
                 header: () => (
-                    <HeaderLabel>{t('table.playerList.bioLink')}</HeaderLabel>
+                    <DataTableHeaderLabel>
+                        {t('table.playerList.bioLink')}
+                    </DataTableHeaderLabel>
                 ),
                 enableSorting: false,
                 cell: ({ row }) => <BioLinksCell row={row} />
@@ -494,7 +512,9 @@ export function usePlayerListColumns(): AppColumnDef<PlayerListRow>[] {
                 meta: { label: t('table.playerList.note') },
                 accessorFn: (row) => row.note || '',
                 header: () => (
-                    <HeaderLabel>{t('table.playerList.note')}</HeaderLabel>
+                    <DataTableHeaderLabel>
+                        {t('table.playerList.note')}
+                    </DataTableHeaderLabel>
                 ),
                 enableSorting: false,
                 cell: ({ row }) => (

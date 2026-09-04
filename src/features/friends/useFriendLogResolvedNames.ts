@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
 import { commands } from '@/platform/tauri/bindings';
 import { getKnownUserFact } from '@/services/userFactAccessService';
@@ -21,7 +22,31 @@ export function useFriendLogResolvedNames(
     rows: FriendLogRow[]
 ): ResolveDisplayName {
     const endpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
-    const friendsById = useFriendRosterStore((state) => state.friendsById);
+    const missingNameUserIds = useMemo(() => {
+        const userIds = new Set<string>();
+        for (const row of rows) {
+            const userId = normalizeUserId(row.userId);
+            if (
+                userId &&
+                !resolveDisplayNameCandidate(row.displayName, userId)
+            ) {
+                userIds.add(userId);
+            }
+        }
+        return [...userIds];
+    }, [rows]);
+    const rosterNamesById = useFriendRosterStore(
+        useShallow((state) => {
+            const names: Record<string, string> = {};
+            for (const userId of missingNameUserIds) {
+                names[userId] = resolveDisplayNameCandidate(
+                    state.friendsById[userId]?.displayName,
+                    userId
+                );
+            }
+            return names;
+        })
+    );
     const [namesById, setNamesById] = useState<Record<string, string>>({});
     const attemptedRef = useRef<Set<string>>(new Set());
 
@@ -31,17 +56,14 @@ export function useFriendLogResolvedNames(
             if (own) {
                 return own;
             }
-            const rosterName = resolveDisplayNameCandidate(
-                friendsById[userId]?.displayName,
-                userId
-            );
+            const rosterName = rosterNamesById[userId];
             if (rosterName) {
                 return rosterName;
             }
             const fact = getKnownUserFact(endpoint, userId);
             return resolveDisplayNameCandidate(fact?.displayName, userId);
         },
-        [friendsById, endpoint]
+        [rosterNamesById, endpoint]
     );
 
     useEffect(() => {

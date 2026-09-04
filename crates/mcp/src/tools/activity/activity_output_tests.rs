@@ -148,6 +148,7 @@ fn test_server(
         remote_mutations,
         Arc::new(UnavailableLocalGameContextSource),
         None,
+        None,
         world_cache,
         Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new()),
         Arc::new(NoopPrintCleanupInputSink),

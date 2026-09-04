@@ -2,7 +2,16 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppColumn, AppColumnDef } from '@/components/data-table/appTable';
-import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
+import {
+    DataTableHeaderLabel,
+    DataTableSortButton
+} from '@/components/data-table/DataTableSortButton';
+import {
+    DATA_TABLE_METADATA_CELL_CLASS_NAME,
+    DATA_TABLE_PRIMARY_CELL_CLASS_NAME,
+    DATA_TABLE_STICKY_ACTION_CELL_CLASS_NAME,
+    DATA_TABLE_STICKY_ACTION_HEADER_CLASS_NAME
+} from '@/components/data-table/DataTableView';
 import type { GroupProfileRecord } from '@/domain/entities/group';
 import type { EntityRecord } from '@/domain/entities/shared';
 import { formatDateFilter } from '@/lib/dateTime';
@@ -25,11 +34,7 @@ import {
 import { ModerationStatusBadge } from './ModerationStatusBadge';
 
 function columnHeaderLabel(label: string) {
-    return (
-        <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-            {label}
-        </span>
-    );
+    return <DataTableHeaderLabel>{label}</DataTableHeaderLabel>;
 }
 
 const DANGER_ACTION_KEYS = new Set(['ban', 'block-request']);
@@ -152,7 +157,10 @@ export function useGroupModerationColumns({
             size: 220,
             minSize: 140,
             enableSorting: sortable,
-            meta: { label: userLabel },
+            meta: {
+                label: userLabel,
+                tableCellClassName: DATA_TABLE_PRIMARY_CELL_CLASS_NAME
+            },
             header: ({ column }) =>
                 renderColumnHeader(column, userLabel, sortable),
             cell: ({ row }) => {
@@ -237,7 +245,10 @@ export function useGroupModerationColumns({
             size: 170,
             minSize: 120,
             enableSorting: sortable,
-            meta: { label: dateLabel },
+            meta: {
+                label: dateLabel,
+                tableCellClassName: DATA_TABLE_METADATA_CELL_CLASS_NAME
+            },
             sortFn: (rowA, rowB) => {
                 const leftTs = Date.parse(moderationRowDate(rowA.original));
                 const rightTs = Date.parse(moderationRowDate(rowB.original));
@@ -255,7 +266,7 @@ export function useGroupModerationColumns({
             cell: ({ row }) => {
                 const date = moderationRowDate(row.original);
                 return (
-                    <span className="text-muted-foreground text-xs tabular-nums">
+                    <span className="text-xs">
                         {date ? formatDateFilter(date, 'long') : '—'}
                     </span>
                 );
@@ -269,11 +280,15 @@ export function useGroupModerationColumns({
             enableSorting: false,
             enableHiding: false,
             enableResizing: false,
-            meta: { disableReorder: true },
+            meta: {
+                disableReorder: true,
+                tableHeadClassName: DATA_TABLE_STICKY_ACTION_HEADER_CLASS_NAME,
+                tableCellClassName: DATA_TABLE_STICKY_ACTION_CELL_CLASS_NAME
+            },
             header: () => (
-                <span className="text-muted-foreground block text-right text-xs font-medium tracking-wide uppercase">
+                <DataTableHeaderLabel className="block text-right">
                     {t('dialog.group.label.actions')}
-                </span>
+                </DataTableHeaderLabel>
             ),
             cell: ({ row }) => {
                 const userId = moderationRowUserId(row.original);

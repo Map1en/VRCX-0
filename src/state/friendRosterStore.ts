@@ -1,3 +1,4 @@
+import { replaceEqualDeep } from '@tanstack/react-query';
 import { create } from 'zustand';
 
 import type {
@@ -49,17 +50,33 @@ function normalizeOptionalTimestamp(
     return value === null ? null : undefined;
 }
 
-function normalizeOptionalStringArray(value: unknown): string[] | undefined {
+function normalizeOptionalStringArray(
+    value: unknown,
+    previous?: string[]
+): string[] | undefined {
+    if (value === previous) {
+        return previous;
+    }
     return Array.isArray(value) ? value.map(String) : undefined;
 }
 
-function normalizeOptionalArray(value: unknown): unknown[] | undefined {
+function normalizeOptionalArray(
+    value: unknown,
+    previous?: unknown[]
+): unknown[] | undefined {
+    if (value === previous) {
+        return previous;
+    }
     return Array.isArray(value) ? [...value] : undefined;
 }
 
 function normalizeOptionalLocationProjection(
-    value: unknown
+    value: unknown,
+    previous?: FriendLocationProjection | null
 ): FriendLocationProjection | null | undefined {
+    if (value === previous) {
+        return previous;
+    }
     if (value === null) {
         return null;
     }
@@ -67,11 +84,15 @@ function normalizeOptionalLocationProjection(
 }
 
 function normalizeFriendProfileFields(
-    source: FriendRecordInput
+    source: FriendRecordInput,
+    previous?: FriendRecord | null
 ): FriendProfileFields {
     const profile: FriendProfileFields = {};
 
-    const location = normalizeOptionalLocationProjection(source.$location);
+    const location = normalizeOptionalLocationProjection(
+        source.$location,
+        previous?.$location
+    );
     if (location !== undefined) {
         profile.$location = location;
     }
@@ -90,7 +111,8 @@ function normalizeFriendProfileFields(
         profile.$previousLocation_at = previousLocationAt;
     }
     const travelingToLocation = normalizeOptionalLocationProjection(
-        source.$travelingToLocation
+        source.$travelingToLocation,
+        previous?.$travelingToLocation
     );
     if (travelingToLocation !== undefined) {
         profile.$travelingToLocation = travelingToLocation;
@@ -115,7 +137,7 @@ function normalizeFriendProfileFields(
     if (allowAvatarCopying !== undefined) {
         profile.allowAvatarCopying = allowAvatarCopying;
     }
-    const badges = normalizeOptionalArray(source.badges);
+    const badges = normalizeOptionalArray(source.badges, previous?.badges);
     if (badges !== undefined) {
         profile.badges = badges;
     }
@@ -135,7 +157,10 @@ function normalizeFriendProfileFields(
     if (bio !== undefined) {
         profile.bio = bio;
     }
-    const bioLinks = normalizeOptionalStringArray(source.bioLinks);
+    const bioLinks = normalizeOptionalStringArray(
+        source.bioLinks,
+        previous?.bioLinks
+    );
     if (bioLinks !== undefined) {
         profile.bioLinks = bioLinks;
     }
@@ -156,7 +181,8 @@ function normalizeFriendProfileFields(
         profile.currentAvatarName = currentAvatarName;
     }
     const currentAvatarTags = normalizeOptionalStringArray(
-        source.currentAvatarTags
+        source.currentAvatarTags,
+        previous?.currentAvatarTags
     );
     if (currentAvatarTags !== undefined) {
         profile.currentAvatarTags = currentAvatarTags;
@@ -274,6 +300,9 @@ function createFallbackFriendUser(
 function normalizePlatformAliases(
     friend: FriendRecordInput
 ): FriendRecordInput {
+    if (!Object.hasOwn(friend, 'lastPlatform')) {
+        return friend;
+    }
     const normalizedFriend = { ...friend };
     const lastPlatform = normalizeUserId(normalizedFriend.lastPlatform);
     if (lastPlatform) {
@@ -294,7 +323,8 @@ function normalizeFriendEntry(
     const source = normalizePlatformAliases(
         friend ?? createFallbackFriendUser(fallbackUserId, existingRow)
     );
-    const tags = Array.isArray(source.tags) ? source.tags.map(String) : [];
+    const tags =
+        normalizeOptionalStringArray(source.tags, existingRow?.tags) ?? [];
     const trust = computeTrustLevel(tags, String(source.developerType || ''));
     const explicitTrustLevel = String(
         source.$trustLevel || source.trustLevel || ''
@@ -324,9 +354,9 @@ function normalizeFriendEntry(
         normalizeUserId(existingRow?.displayName) ||
         normalizeUserId(source.id);
 
-    return {
+    return replaceEqualDeep(existingRow, {
         ...source,
-        ...normalizeFriendProfileFields(source),
+        ...normalizeFriendProfileFields(source, existingRow),
         id: normalizeUserId(source.id),
         displayName,
         tags,
@@ -344,7 +374,7 @@ function normalizeFriendEntry(
             typeof source.platform === 'string' ? source.platform : '',
             typeof source.last_platform === 'string' ? source.last_platform : ''
         )
-    };
+    });
 }
 
 function compareFriendEntries(
@@ -455,16 +485,6 @@ function friendEntryNeedsOrderingUpdate(
     }
 
     return compareFriendEntries(existingEntry, nextEntry) !== 0;
-}
-
-function friendEntryIsUnchanged(
-    existingEntry: FriendRecord | null | undefined,
-    nextEntry: FriendRecord
-): boolean {
-    if (!existingEntry) {
-        return false;
-    }
-    return JSON.stringify(existingEntry) === JSON.stringify(nextEntry);
 }
 
 const initialState: FriendRosterState = {
@@ -641,10 +661,7 @@ export const useFriendRosterStore = create<FriendRosterStore>((set) => ({
                 existingEntry,
                 normalizedEntry
             );
-            if (
-                !orderingDirty &&
-                friendEntryIsUnchanged(existingEntry, normalizedEntry)
-            ) {
+            if (!orderingDirty && existingEntry === normalizedEntry) {
                 return state;
             }
             const friendsById: FriendRosterById = {
@@ -713,10 +730,7 @@ export const useFriendRosterStore = create<FriendRosterStore>((set) => ({
                     existingEntry,
                     normalizedEntry
                 );
-                if (
-                    !entryOrderingDirty &&
-                    friendEntryIsUnchanged(existingEntry, normalizedEntry)
-                ) {
+                if (!entryOrderingDirty && existingEntry === normalizedEntry) {
                     continue;
                 }
                 if (!changed) {

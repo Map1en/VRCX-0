@@ -1,4 +1,13 @@
-import { LogsIcon, StarIcon, Table2Icon } from 'lucide-react';
+import {
+    CalendarRangeIcon,
+    ChevronDownIcon,
+    ChevronsDownUpIcon,
+    ChevronsUpDownIcon,
+    LogsIcon,
+    StarIcon,
+    Table2Icon,
+    XIcon
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppTable } from '@/components/data-table/appTable';
@@ -9,9 +18,9 @@ import {
 } from '@/components/date-time-range-picker/DateTimeRangePicker';
 import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
 import {
-    toolbarDateRangeTrigger,
     ToolbarActions,
     ToolbarFilterChips,
+    ToolbarIconButton,
     ToolbarRefreshButton,
     ToolbarSearch,
     ToolbarSegmented,
@@ -21,6 +30,18 @@ import {
     type ToolbarSegmentOption
 } from '@/components/layout/ToolbarControls';
 import { formatCompactDateTime } from '@/lib/dateTime';
+import { cn } from '@/lib/utils';
+import { Button } from '@/ui/shadcn/button';
+import {
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
+} from '@/ui/shadcn/dropdown-menu';
+import { InputGroupButton } from '@/ui/shadcn/input-group';
 
 import { GAME_LOG_SESSION_DATE_RANGE_MAX_DAYS } from '../gameLogDateRange';
 import type {
@@ -30,11 +51,148 @@ import type {
     GameLogViewMode
 } from '../gameLogTypes';
 
+function GameLogTypeFilterMenu({
+    value,
+    options,
+    onValueChange
+}: {
+    value: readonly GameLogFilterType[];
+    options: readonly ToolbarSegmentOption<GameLogFilterType>[];
+    onValueChange(value: GameLogFilterType[]): void;
+}) {
+    const { t } = useTranslation();
+    const selected = options.filter((option) => value.includes(option.value));
+    const first = selected[0];
+    const allLabel = t('view.search.avatar.all');
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger
+                render={
+                    <Button
+                        variant={selected.length ? 'secondary' : 'outline'}
+                        aria-label={t('table.gameLog.type')}
+                    />
+                }
+            >
+                <span className="max-w-32 truncate">
+                    {first?.label ?? allLabel}
+                </span>
+                {selected.length > 1 ? (
+                    <span className="tabular-nums">+{selected.length - 1}</span>
+                ) : null}
+                <ChevronDownIcon data-icon="inline-end" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56">
+                <DropdownMenuGroup>
+                    <DropdownMenuLabel>
+                        {t('table.gameLog.type')}
+                    </DropdownMenuLabel>
+                    <DropdownMenuCheckboxItem
+                        checked={!value.length}
+                        closeOnClick={false}
+                        onCheckedChange={() => onValueChange([])}
+                    >
+                        {allLabel}
+                    </DropdownMenuCheckboxItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                    {options.map((option) => (
+                        <DropdownMenuCheckboxItem
+                            key={option.value}
+                            checked={value.includes(option.value)}
+                            closeOnClick={false}
+                            onCheckedChange={(checked) => {
+                                const picked = options
+                                    .filter((entry) =>
+                                        entry.value === option.value
+                                            ? checked
+                                            : value.includes(entry.value)
+                                    )
+                                    .map((entry) => entry.value);
+                                onValueChange(
+                                    picked.length === options.length
+                                        ? []
+                                        : picked
+                                );
+                            }}
+                        >
+                            {option.label}
+                        </DropdownMenuCheckboxItem>
+                    ))}
+                </DropdownMenuGroup>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
+
+function GameLogDateRangeFilter({
+    value,
+    todayDate,
+    onChange
+}: {
+    value: DateTimeRangeValue;
+    todayDate: Date;
+    onChange(value: DateTimeRangeValue): void;
+}) {
+    const { t } = useTranslation();
+    const dateRangeLabel = t('view.game_log.label.session_date_range');
+    const hasRange = Boolean(value.from || value.to);
+
+    return (
+        <>
+            <DateTimeRangePicker
+                value={value}
+                onChange={onChange}
+                placeholder={dateRangeLabel}
+                startLabel={t('view.game_log.label.start')}
+                endLabel={t('view.game_log.label.end')}
+                clearLabel={t('common.actions.clear')}
+                confirmLabel={t('common.actions.confirm')}
+                formatValue={formatCompactDateTime}
+                maxDays={GAME_LOG_SESSION_DATE_RANGE_MAX_DAYS}
+                minuteStep={15}
+                align="end"
+                disabled={{ after: todayDate }}
+                renderTrigger={({ active, label }) => (
+                    <InputGroupButton
+                        variant={active ? 'secondary' : 'ghost'}
+                        size={active ? 'xs' : 'icon-xs'}
+                        aria-label={
+                            active ? `${dateRangeLabel}: ${label}` : label
+                        }
+                        title={label}
+                    >
+                        <CalendarRangeIcon data-icon="inline-start" />
+                        {active ? (
+                            <span className="hidden max-w-52 truncate tabular-nums @min-5xl/game-log-toolbar:inline">
+                                {label}
+                            </span>
+                        ) : null}
+                    </InputGroupButton>
+                )}
+            />
+            {hasRange ? (
+                <InputGroupButton
+                    size="icon-xs"
+                    aria-label={`${dateRangeLabel}: ${t('common.actions.clear')}`}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => onChange({ from: null, to: null })}
+                >
+                    <XIcon data-icon="icon" />
+                </InputGroupButton>
+            ) : null}
+        </>
+    );
+}
+
 export function GameLogToolbar({
     detail,
     filterModel,
     refreshModel,
-    table
+    table,
+    sessionControls
 }: {
     detail?: string;
     filterModel: {
@@ -59,6 +217,11 @@ export function GameLogToolbar({
         onRefresh(): void;
     };
     table: AppTable<GameLogRow>;
+    sessionControls: {
+        allOpen: boolean;
+        canToggle: boolean;
+        onToggle(): void;
+    };
 }) {
     const { t } = useTranslation();
     const {
@@ -79,6 +242,11 @@ export function GameLogToolbar({
     } = filterModel;
     const { canRefresh, loadStatus, onRefresh } = refreshModel;
     const isTableView = viewMode === 'table';
+    const hasDateRange = Boolean(sessionDateRange.from || sessionDateRange.to);
+    const typeOptions = availableFilterTypes.map((type) => ({
+        value: type,
+        label: t(`view.game_log.filters.${type}`)
+    }));
     const viewModeOptions: ToolbarSegmentOption<GameLogViewMode>[] = [
         {
             value: 'sessions',
@@ -93,9 +261,9 @@ export function GameLogToolbar({
     ];
 
     return (
-        <PageToolbar>
+        <PageToolbar className="@container/game-log-toolbar">
             <PageToolbarRow>
-                <ToolbarViews>
+                <ToolbarViews className="min-w-0 flex-initial flex-wrap @min-4xl/game-log-toolbar:flex-1">
                     <ToolbarSegmented
                         iconOnly
                         value={viewMode}
@@ -109,53 +277,74 @@ export function GameLogToolbar({
                         label={t('view.game_log.label.favorites_only')}
                         onClick={toggleFavoritesOnly}
                     />
-                    <ToolbarFilterChips
-                        value={queryFilterTypes}
-                        allLabel={t('view.search.avatar.all')}
-                        options={availableFilterTypes.map((type) => ({
-                            value: type,
-                            label: t(`view.game_log.filters.${type}`)
-                        }))}
-                        onValueChange={setActiveSelectedTypes}
-                    />
-                    {isTableView ? null : (
-                        <DateTimeRangePicker
-                            value={sessionDateRange}
-                            onChange={setSessionDateTimeRange}
-                            placeholder={t(
-                                'view.game_log.label.session_date_range'
-                            )}
-                            startLabel={t('view.game_log.label.start')}
-                            endLabel={t('view.game_log.label.end')}
-                            clearLabel={t('common.actions.clear')}
-                            confirmLabel={t('common.actions.confirm')}
-                            formatValue={formatCompactDateTime}
-                            maxDays={GAME_LOG_SESSION_DATE_RANGE_MAX_DAYS}
-                            minuteStep={15}
-                            align="start"
-                            disabled={{ after: todayDate }}
-                            renderTrigger={toolbarDateRangeTrigger}
+                    <div className="@min-4xl/game-log-toolbar:hidden">
+                        <GameLogTypeFilterMenu
+                            value={queryFilterTypes}
+                            options={typeOptions}
+                            onValueChange={setActiveSelectedTypes}
                         />
-                    )}
+                    </div>
+                    <div className="hidden min-w-0 flex-1 @min-4xl/game-log-toolbar:block">
+                        <ToolbarFilterChips
+                            value={queryFilterTypes}
+                            allLabel={t('view.search.avatar.all')}
+                            options={typeOptions}
+                            onValueChange={setActiveSelectedTypes}
+                        />
+                    </div>
                 </ToolbarViews>
 
-                <ToolbarSearch
-                    value={searchDraft}
-                    onValueChange={setSearchDraft}
-                    onCommit={commitSearchDraft}
-                    onClear={clearSearch}
-                />
-
-                <ToolbarActions>
-                    <ToolbarRefreshButton
-                        onRefresh={onRefresh}
-                        loading={loadStatus === 'running'}
-                        disabled={!canRefresh}
+                <div
+                    className={cn(
+                        'ms-auto flex min-w-0 grow items-center gap-2',
+                        !isTableView && hasDateRange
+                            ? 'max-w-[30rem] basis-80'
+                            : 'max-w-96 basis-64'
+                    )}
+                >
+                    <ToolbarSearch
+                        value={searchDraft}
+                        onValueChange={setSearchDraft}
+                        onCommit={commitSearchDraft}
+                        onClear={clearSearch}
+                        className="w-auto min-w-0 flex-1 shrink sm:w-auto"
+                        trailing={
+                            isTableView ? undefined : (
+                                <GameLogDateRangeFilter
+                                    value={sessionDateRange}
+                                    todayDate={todayDate}
+                                    onChange={setSessionDateTimeRange}
+                                />
+                            )
+                        }
                     />
-                    {isTableView ? (
-                        <TableColumnVisibilityMenu table={table} />
-                    ) : null}
-                </ToolbarActions>
+                    <ToolbarActions>
+                        {isTableView ? null : (
+                            <ToolbarIconButton
+                                icon={
+                                    sessionControls.allOpen
+                                        ? ChevronsDownUpIcon
+                                        : ChevronsUpDownIcon
+                                }
+                                label={t(
+                                    sessionControls.allOpen
+                                        ? 'view.game_log.sessions.collapse_all'
+                                        : 'view.game_log.sessions.expand_all'
+                                )}
+                                disabled={!sessionControls.canToggle}
+                                onClick={sessionControls.onToggle}
+                            />
+                        )}
+                        <ToolbarRefreshButton
+                            onRefresh={onRefresh}
+                            loading={loadStatus === 'running'}
+                            disabled={!canRefresh}
+                        />
+                        {isTableView ? (
+                            <TableColumnVisibilityMenu table={table} />
+                        ) : null}
+                    </ToolbarActions>
+                </div>
             </PageToolbarRow>
 
             {detail ? <ToolbarStatus>{detail}</ToolbarStatus> : null}

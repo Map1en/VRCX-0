@@ -50,7 +50,7 @@ pub fn validate_update_request(
 ) -> Result<url::Url, Error> {
     if allow_downgrades {
         return Err(Error::Custom(
-            "Stable updater commands do not allow downgrades.".into(),
+            "Updater commands do not allow downgrades.".into(),
         ));
     }
 

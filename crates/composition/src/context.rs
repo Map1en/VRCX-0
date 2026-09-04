@@ -25,8 +25,9 @@ use vrcx_0_application_activity::{
 };
 use vrcx_0_application_core::RemoteMutationGate;
 use vrcx_0_application_core::{
-    AvatarCache, HostSessionRuntime, ImageCache, InstanceDwellRegistry, RuntimeAuthScope,
-    RuntimeBackgroundJobs, RuntimeDiagnostics, RuntimeEventBus, RuntimeLifecycle,
+    AvatarCache, HostSessionRuntime, ImageCache, InstanceDwellRegistry,
+    RealtimeNotificationProjectionObserver, RealtimeNotificationProjectionObserverRegistry,
+    RuntimeAuthScope, RuntimeBackgroundJobs, RuntimeDiagnostics, RuntimeEventBus, RuntimeLifecycle,
     RuntimeSyncEngine, TaskSupervisor, WebClient, WorldCache,
 };
 use vrcx_0_persistence::config::ConfigRepository;
@@ -72,6 +73,7 @@ pub(crate) struct RuntimeHostContext {
     notification_config: Arc<dyn NotificationConfig>,
     overlay_activity: OverlayActivityRuntime,
     overlay_activity_sinks: OverlayActivitySinkRegistry,
+    notification_projection_observers: RealtimeNotificationProjectionObserverRegistry,
     auth_webhook_queue: AuthWebhookQueue,
     webhook_delivery_monitor: WebhookDeliveryMonitor,
 }
@@ -194,6 +196,21 @@ impl RuntimeHostDesktopAssemblyDeps {
         self.context.overlay_activity_sink_registry()
     }
 
+    pub fn add_realtime_notification_projection_observer(
+        &self,
+        observer: Arc<dyn RealtimeNotificationProjectionObserver>,
+    ) {
+        self.context
+            .add_realtime_notification_projection_observer(observer);
+    }
+
+    pub fn realtime_notification_projection_observer_registry(
+        &self,
+    ) -> RealtimeNotificationProjectionObserverRegistry {
+        self.context
+            .realtime_notification_projection_observer_registry()
+    }
+
     pub fn notification_config(&self) -> Arc<dyn NotificationConfig> {
         self.context.notification_config()
     }
@@ -275,6 +292,8 @@ impl RuntimeHostContext {
             notification_config.as_ref(),
         ));
         let overlay_activity_sinks = OverlayActivitySinkRegistry::default();
+        let notification_projection_observers =
+            RealtimeNotificationProjectionObserverRegistry::default();
         let notification_user_image_cache = Arc::new(UserImageCache::new());
         let webhook_delivery_monitor = WebhookDeliveryMonitor::default();
         let notification_remote =
@@ -371,6 +390,7 @@ impl RuntimeHostContext {
             notification_config,
             overlay_activity,
             overlay_activity_sinks,
+            notification_projection_observers,
             auth_webhook_queue,
             webhook_delivery_monitor,
         }
@@ -474,6 +494,19 @@ impl RuntimeHostContext {
 
     pub fn overlay_activity_sink_registry(&self) -> OverlayActivitySinkRegistry {
         self.overlay_activity_sinks.clone()
+    }
+
+    pub fn add_realtime_notification_projection_observer(
+        &self,
+        observer: Arc<dyn RealtimeNotificationProjectionObserver>,
+    ) {
+        self.notification_projection_observers.add(observer);
+    }
+
+    pub fn realtime_notification_projection_observer_registry(
+        &self,
+    ) -> RealtimeNotificationProjectionObserverRegistry {
+        self.notification_projection_observers.clone()
     }
 
     pub fn notification_config(&self) -> Arc<dyn NotificationConfig> {

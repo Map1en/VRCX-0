@@ -24,6 +24,9 @@ use vrcx_0_persistence::data_dir_migration::{
 use vrcx_0_persistence::profile_backup::has_pending_profile_restore;
 use vrcx_0_persistence::DatabaseService;
 
+#[cfg(test)]
+mod tests;
+
 const PROGRESS_EVENT_INTERVAL: Duration = Duration::from_millis(20);
 
 #[derive(Clone)]
@@ -192,7 +195,7 @@ impl LocalDataDirMigrationPort {
         let frozen = match self.inner.db.freeze_for_migration() {
             Ok(frozen) => frozen,
             Err(error) => {
-                tracing::warn!(error = %error, "failed to freeze database for data directory migration");
+                tracing::error!(error = %error, "failed to freeze database for data directory migration");
                 let _ = remove_pending_data_dir_migration(&self.inner.control_dir);
                 return self.failed(DataDirMigrationErrorCode::DatabaseUnavailable, None);
             }

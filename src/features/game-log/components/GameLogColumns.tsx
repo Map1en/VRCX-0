@@ -10,6 +10,11 @@ import { useTranslation } from 'react-i18next';
 
 import { AffinityBadge } from '@/components/affinity/AffinityBadge';
 import type { AppRow } from '@/components/data-table/appTable';
+import {
+    DATA_TABLE_CONTROL_CELL_CLASS_NAME,
+    DATA_TABLE_METADATA_CELL_CLASS_NAME,
+    DATA_TABLE_PRIMARY_CELL_CLASS_NAME
+} from '@/components/data-table/DataTableView';
 import { formatDateFilter } from '@/lib/dateTime';
 import { openWorldDialog } from '@/services/dialogService';
 import { openExternalLink } from '@/services/entityMediaService';
@@ -91,38 +96,15 @@ export function useGameLogColumns({
                 id: 'created_at',
                 size: 140,
                 accessorFn: (row: GameLogRow) => row?.created_at || '',
+                meta: {
+                    tableCellClassName: DATA_TABLE_METADATA_CELL_CLASS_NAME
+                },
                 header: ({ column }) => (
                     <SortButton
                         column={column}
                         label={t('table.gameLog.date')}
                     />
                 ),
-                sortFn: (rowA, rowB) => {
-                    const leftTs = Date.parse(
-                        String(rowA.original?.created_at ?? '')
-                    );
-                    const rightTs = Date.parse(
-                        String(rowB.original?.created_at ?? '')
-                    );
-                    if (
-                        Number.isFinite(leftTs) &&
-                        Number.isFinite(rightTs) &&
-                        leftTs !== rightTs
-                    ) {
-                        return leftTs - rightTs;
-                    }
-
-                    return (
-                        (Number.parseInt(
-                            String(rowA.original?.rowId ?? 0),
-                            10
-                        ) || 0) -
-                        (Number.parseInt(
-                            String(rowB.original?.rowId ?? 0),
-                            10
-                        ) || 0)
-                    );
-                },
                 cell: ({ row }) => <DateCell row={row} />
             },
             {
@@ -185,6 +167,9 @@ export function useGameLogColumns({
                 accessorFn: (row: GameLogRow) =>
                     row?.displayName || row?.userId || '',
                 enableSorting: false,
+                meta: {
+                    tableCellClassName: DATA_TABLE_PRIMARY_CELL_CLASS_NAME
+                },
                 header: () => t('table.gameLog.user'),
                 cell: ({ row }) => {
                     const displayName = normalizeId(row.original?.displayName);
@@ -376,6 +361,9 @@ export function useGameLogColumns({
                 minSize: 90,
                 maxSize: 90,
                 enableResizing: false,
+                meta: {
+                    tableCellClassName: DATA_TABLE_CONTROL_CELL_CLASS_NAME
+                },
                 header: () => t('table.gameLog.action'),
                 enableSorting: false,
                 cell: ({ row }) => {

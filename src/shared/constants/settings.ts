@@ -22,15 +22,6 @@ const VRChatCameraResolutions: VRChatResolution[] = [
 const GITHUB_RELEASES_URL =
     'https://api.github.com/repos/Map1en/VRCX-0/releases';
 
-const branches = {
-    Stable: {
-        name: 'Stable',
-        urlReleases: GITHUB_RELEASES_URL
-    }
-} as const;
-
-type ReleaseBranchKey = keyof typeof branches;
-
 const TABLE_MAX_SIZE_MIN = 100;
 const TABLE_MAX_SIZE_MAX = 10000;
 
@@ -62,7 +53,7 @@ function normalizeAvatarAutoCleanupPreference(
 export {
     VRChatScreenshotResolutions,
     VRChatCameraResolutions,
-    branches,
+    GITHUB_RELEASES_URL,
     TABLE_MAX_SIZE_MIN,
     TABLE_MAX_SIZE_MAX,
     SEARCH_LIMIT_MIN,
@@ -73,4 +64,4 @@ export {
     AVATAR_AUTO_CLEANUP_OPTIONS,
     normalizeAvatarAutoCleanupPreference
 };
-export type { AvatarAutoCleanupPreference, ReleaseBranchKey, VRChatResolution };
+export type { AvatarAutoCleanupPreference, VRChatResolution };

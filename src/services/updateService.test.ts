@@ -43,7 +43,6 @@ describe('updateService facade', () => {
             'formatReleaseDisplayVersion',
             'getDownloadStatus',
             'getPreviewStableReleaseUpdateMode',
-            'sanitizeBranch',
             'toNormalizedReleaseFromSnapshot'
         ]);
     });
@@ -54,13 +53,13 @@ describe('updateService branch release fetching', () => {
         vi.clearAllMocks();
     });
 
-    it('fetches and normalizes releases for the Stable branch', async () => {
+    it('fetches and normalizes releases for the stable branch', async () => {
         mocks.fetchGithubReleases.mockResolvedValue({
             status: 200,
             data: [release({ publishedAt: '2026-06-21T07:00:00Z' })]
         });
 
-        const releases = await updateService.fetchBranchReleases('Stable');
+        const releases = await updateService.fetchBranchReleases('stable');
 
         expect(releases).toHaveLength(1);
         expect(releases[0].canonicalVersion).toBe('2.7.0');
@@ -73,8 +72,28 @@ describe('updateService branch release fetching', () => {
         });
 
         await expect(
-            updateService.fetchLatestBranchRelease('Stable')
+            updateService.fetchLatestBranchRelease('stable')
         ).rejects.toThrow('GitHub release request failed (500).');
+    });
+
+    it('keeps only matching GitHub prereleases in the beta branch', async () => {
+        mocks.fetchGithubReleases.mockResolvedValue({
+            status: 200,
+            data: [
+                release({ publishedAt: '2026-06-21T07:00:00Z' }),
+                {
+                    ...release({ publishedAt: '2026-06-22T07:00:00Z' }),
+                    tag_name: 'v2.8.0-beta.2',
+                    prerelease: true
+                }
+            ]
+        });
+
+        const releases = await updateService.fetchBranchReleases('beta');
+
+        expect(releases.map((item) => item.canonicalVersion)).toEqual([
+            '2.8.0-beta.2'
+        ]);
     });
 });
 

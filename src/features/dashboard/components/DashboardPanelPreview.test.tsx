@@ -58,6 +58,7 @@ describe('DashboardPanelPreview', () => {
 
         expect(docked?.classList.contains('rounded-none')).toBe(true);
         expect(docked?.classList.contains('border-0')).toBe(true);
+        expect(docked?.classList.contains('is-compact-table')).toBe(true);
 
         view.rerender(
             <DashboardPanelPreview
@@ -71,5 +72,6 @@ describe('DashboardPanelPreview', () => {
 
         expect(card?.classList.contains('rounded-md')).toBe(true);
         expect(card?.classList.contains('border')).toBe(true);
+        expect(card?.classList.contains('is-compact-table')).toBe(true);
     });
 });

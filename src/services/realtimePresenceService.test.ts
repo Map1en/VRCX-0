@@ -164,6 +164,7 @@ describe('realtimePresenceService projection boundary', () => {
                 {
                     userId: 'usr_friend',
                     location: 'wrld_test:1',
+                    source: 'realtime',
                     sinceMs: 1_700_000_000_000
                 }
             ]
@@ -171,6 +172,7 @@ describe('realtimePresenceService projection boundary', () => {
         expect(useFriendLocationTimeStore.getState().byUserId).toEqual({
             usr_friend: {
                 location: 'wrld_test:1',
+                source: 'realtime',
                 sinceMs: 1_700_000_000_000
             }
         });

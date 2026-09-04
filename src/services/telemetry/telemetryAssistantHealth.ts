@@ -90,6 +90,7 @@ function classifyToolResult(summary?: string): string | undefined {
             normalized
         ) ||
         /\b(missing field|invalid type|unknown variant)\b/.test(normalized) ||
+        /\brequires query or target\b/.test(normalized) ||
         /\b(unrecognized timewindow|timewindow(?:\.[a-z]+| calendar year)? must be)\b/.test(
             normalized
         )

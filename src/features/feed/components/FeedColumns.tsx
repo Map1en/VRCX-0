@@ -3,11 +3,13 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppCellContext, AppRow } from '@/components/data-table/appTable';
+import { DataTableHeaderLabel } from '@/components/data-table/DataTableSortButton';
 import {
-    getFeedRowCreatedAtMs,
-    resolveFeedUserDisplayName,
-    resolveFeedUserId
-} from '@/components/feed/feedRows';
+    DATA_TABLE_CONTROL_CELL_CLASS_NAME,
+    DATA_TABLE_METADATA_CELL_CLASS_NAME,
+    DATA_TABLE_PRIMARY_CELL_CLASS_NAME
+} from '@/components/data-table/DataTableView';
+import { resolveFeedUserId } from '@/components/feed/feedRows';
 import { FeedTypeIndicator } from '@/components/feed/FeedTypeIndicator';
 import type {
     FeedColumns,
@@ -18,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { getFeedTableSortValue } from '../feedTableRows';
 import {
     FeedDetailCell,
     FeedUserLink,
@@ -56,13 +59,9 @@ function DateCell({ row }: { row: AppRow<FeedRow> }) {
         <Tooltip>
             <TooltipTrigger
                 render={
-                    <span className="text-sm font-normal tabular-nums">
-                        <span className="text-muted-foreground/80">{date}</span>
-                        {time ? (
-                            <span className="text-foreground/75 ml-1">
-                                {time}
-                            </span>
-                        ) : null}
+                    <span className="text-sm">
+                        <span>{date}</span>
+                        {time ? <span className="ml-1">{time}</span> : null}
                     </span>
                 }
             />
@@ -97,14 +96,12 @@ function DetailCell({ row, table }: AppCellContext<FeedRow>) {
     }
 
     return (
-        <div className="text-foreground/80 font-normal">
-            <FeedDetailCell
-                loadingHistoryKey={meta.loadingPreviousInstancesKey}
-                onNewInstance={meta.actions.openFeedNewInstance}
-                onOpenPreviousInstances={meta.onOpenPreviousInstances}
-                row={row.original}
-            />
-        </div>
+        <FeedDetailCell
+            loadingHistoryKey={meta.loadingPreviousInstancesKey}
+            onNewInstance={meta.actions.openFeedNewInstance}
+            onOpenPreviousInstances={meta.onOpenPreviousInstances}
+            row={row.original}
+        />
     );
 }
 
@@ -115,28 +112,52 @@ export function useFeedColumns(meta: FeedTableMeta): FeedColumns {
         () => [
             {
                 id: 'expander',
-                size: 50,
-                minSize: 50,
-                maxSize: 50,
+                size: 40,
+                minSize: 40,
+                maxSize: 40,
                 enableResizing: false,
                 enableSorting: false,
                 enableHiding: false,
-                meta: { label: '' },
+                meta: {
+                    label: '',
+                    tableCellClassName: DATA_TABLE_CONTROL_CELL_CLASS_NAME
+                },
                 header: () => null,
                 cell: ({ row }) => <ExpanderCell row={row} />
             },
             {
                 id: 'created_at',
-                accessorFn: getFeedRowCreatedAtMs,
-                meta: { label: t('table.feed.date') },
+                enableHiding: false,
+                accessorFn: (row: FeedRow) =>
+                    getFeedTableSortValue(row, 'created_at', meta),
+                meta: {
+                    label: t('table.feed.date'),
+                    tableCellClassName: DATA_TABLE_METADATA_CELL_CLASS_NAME
+                },
                 header: ({ column }) => (
                     <SortButton column={column} label={t('table.feed.date')} />
                 ),
                 cell: ({ row }) => <DateCell row={row} />
             },
             {
+                id: 'displayName',
+                enableHiding: false,
+                accessorFn: (row: FeedRow) =>
+                    getFeedTableSortValue(row, 'displayName', meta),
+                meta: {
+                    label: t('table.feed.user'),
+                    tableCellClassName: DATA_TABLE_PRIMARY_CELL_CLASS_NAME
+                },
+                header: ({ column }) => (
+                    <SortButton column={column} label={t('table.feed.user')} />
+                ),
+                cell: UserCell
+            },
+            {
                 id: 'type',
-                accessorFn: (row: FeedRow) => row.type || '',
+                enableHiding: false,
+                accessorFn: (row: FeedRow) =>
+                    getFeedTableSortValue(row, 'type', meta),
                 meta: { label: t('table.feed.type') },
                 header: ({ column }) => (
                     <SortButton column={column} label={t('table.feed.type')} />
@@ -154,22 +175,6 @@ export function useFeedColumns(meta: FeedTableMeta): FeedColumns {
                 }
             },
             {
-                id: 'displayName',
-                accessorFn: (row: FeedRow) => {
-                    const userId = resolveFeedUserId(row);
-                    return resolveFeedUserDisplayName(
-                        row,
-                        meta.knownUsersById[userId],
-                        meta.friendLogNamesById[userId]
-                    );
-                },
-                meta: { label: t('table.feed.user') },
-                header: ({ column }) => (
-                    <SortButton column={column} label={t('table.feed.user')} />
-                ),
-                cell: UserCell
-            },
-            {
                 id: 'detail',
                 accessorFn: (row: FeedRow) =>
                     [
@@ -185,9 +190,9 @@ export function useFeedColumns(meta: FeedTableMeta): FeedColumns {
                 enableHiding: false,
                 meta: { label: t('table.feed.detail'), stretch: true },
                 header: () => (
-                    <span className="text-muted-foreground text-xs tracking-wide uppercase">
+                    <DataTableHeaderLabel>
                         {t('table.feed.detail')}
-                    </span>
+                    </DataTableHeaderLabel>
                 ),
                 minSize: 100,
                 cell: DetailCell

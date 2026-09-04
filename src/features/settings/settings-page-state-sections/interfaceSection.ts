@@ -101,8 +101,8 @@ export function buildInterfaceSection({
         onZoomInputChange: (value: string) => {
             setZoomInput(value);
         },
-        onZoomBlur: () => {
-            saveInterfaceZoomLevel(zoomInput);
+        onZoomBlur: (value: string) => {
+            saveInterfaceZoomLevel(value);
         },
         onNotificationLayoutChange: (value: NotificationLayout) => {
             commit(

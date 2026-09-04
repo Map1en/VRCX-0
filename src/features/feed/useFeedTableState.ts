@@ -13,13 +13,11 @@ import {
 import { usePreferencesStore } from '@/state/preferencesStore';
 
 import {
-    FEED_TABLE_ORDER_COLUMN_IDS,
+    FEED_RESIZABLE_COLUMN_IDS,
     FEED_TABLE_DEFAULT_PAGE_SIZES as DEFAULT_PAGE_SIZES,
     readPersistedFeedTableState as readPersistedState,
     resolveFeedPageSize as resolvePageSize,
     safeJsonParse,
-    sanitizeFeedColumnOrder as sanitizeColumnOrder,
-    sanitizeFeedColumnVisibility as sanitizeColumnVisibility,
     sanitizeFeedPageSizes as sanitizePageSizes,
     sanitizeFeedSorting as sanitizeSorting,
     writePersistedFeedTableState as writePersistedState
@@ -59,28 +57,17 @@ export function useFeedTableState({
     );
     const hasWrittenSortingRef = useRef(false);
     const hasWrittenPageSizeRef = useRef(false);
-    const hasWrittenColumnVisibilityRef = useRef(false);
-    const hasWrittenTableLayoutRef = useRef(false);
     const [preferencesReady, setPreferencesReady] = useState(false);
     const [expanded, setExpanded] = useState({});
     const [pageSizes, setPageSizes] = useState(DEFAULT_PAGE_SIZES);
     const [sorting, setSorting] = useState(() =>
         sanitizeSorting(persistedState.sorting)
     );
-    const [columnVisibility, setColumnVisibility] = useState(() =>
-        sanitizeColumnVisibility(persistedState.columnVisibility)
-    );
-    const [columnOrder, setColumnOrder] = useState(() =>
-        sanitizeColumnOrder(persistedState.columnOrder)
-    );
     const [columnSizing, setColumnSizing] = usePersistedTableColumnSizing({
-        columnIds: FEED_TABLE_ORDER_COLUMN_IDS,
+        columnIds: FEED_RESIZABLE_COLUMN_IDS,
         initialValue: persistedState.columnSizing,
         writePersistedState
     });
-    const [columnOrderLocked, setColumnOrderLocked] = useState(
-        () => persistedState.columnOrderLocked === true
-    );
     const [pagination, setPagination] = useState<PaginationState>({
         pageIndex: 0,
         pageSize: resolvePageSize(persistedPageSize, DEFAULT_PAGE_SIZES)
@@ -192,27 +179,6 @@ export function useFeedTableState({
     }, [pagination.pageSize]);
 
     useEffect(() => {
-        if (!hasWrittenColumnVisibilityRef.current) {
-            hasWrittenColumnVisibilityRef.current = true;
-            return;
-        }
-        writePersistedState({
-            columnVisibility: sanitizeColumnVisibility(columnVisibility)
-        });
-    }, [columnVisibility]);
-
-    useEffect(() => {
-        if (!hasWrittenTableLayoutRef.current) {
-            hasWrittenTableLayoutRef.current = true;
-            return;
-        }
-        writePersistedState({
-            columnOrder: sanitizeColumnOrder(columnOrder),
-            columnOrderLocked
-        });
-    }, [columnOrder, columnOrderLocked]);
-
-    useEffect(() => {
         setPagination((current) => ({
             ...current,
             pageIndex: 0
@@ -227,18 +193,12 @@ export function useFeedTableState({
     ]);
 
     return {
-        columnOrder,
-        columnOrderLocked,
         columnSizing,
-        columnVisibility,
         expanded,
         pageSizes,
         pagination,
         preferencesReady,
-        setColumnOrder,
-        setColumnOrderLocked,
         setColumnSizing,
-        setColumnVisibility,
         setExpanded,
         setPagination,
         setSorting,

@@ -179,7 +179,7 @@ function formatStatusDate(value: string | null | undefined) {
     });
 }
 
-export function AppStatusBar() {
+export function AppStatusBar({ className }: { className?: string }) {
     const { t } = useTranslation();
     const [appStartedAt] = useState(Date.now);
     const observedMutualGraphRunRef = useRef(0);
@@ -826,7 +826,11 @@ export function AppStatusBar() {
 
     return (
         <ContextMenu>
-            <ContextMenuTrigger render={<StatusBarFooter footer={footer} />} />
+            <ContextMenuTrigger
+                render={
+                    <StatusBarFooter className={className} footer={footer} />
+                }
+            />
             <StatusBarContextMenuContent
                 clockCount={clockCount}
                 onOpenProxySettings={openProxyEditorWithToast}

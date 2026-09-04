@@ -67,3 +67,72 @@ describe('directAccessService', () => {
         expect(mocks.openWorldDialog).not.toHaveBeenCalled();
     });
 });
+
+describe('directAccessParse detect mode', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('recognises links and prefixed ids without side effects', async () => {
+        const cases = [
+            `https://vrchat.com/home/world/${WORLD_ID}`,
+            `https://vrchat.com/home/launch?worldId=${WORLD_ID}`,
+            `https://vrchat.com/home/launch?worldId=${WORLD_ID}&instanceId=x`,
+            'https://vrchat.com/home/user/usr_id',
+            'https://vrchat.com/home/avatar/avtr_id',
+            'https://vrchat.com/home/group/grp_id',
+            'https://vrch.at/abcd1234',
+            'https://vrc.group/vrcx.1234',
+            `vrchat://launch?id=${encodeURIComponent(LOCATION)}`,
+            WORLD_ID,
+            'usr_12345678-1234-1234-1234-1234567890ab',
+            'avtr_12345678-1234-1234-1234-1234567890ab',
+            'grp_12345678-1234-1234-1234-1234567890ab',
+            'vrcx.1234'
+        ];
+
+        for (const value of cases) {
+            await expect(directAccessParse(value, 'detect')).resolves.toBe(
+                true
+            );
+        }
+
+        expect(mocks.openInstanceInGame).not.toHaveBeenCalled();
+        expect(mocks.openWorldDialog).not.toHaveBeenCalled();
+    });
+
+    it('rejects bare tokens that collide with name searches', async () => {
+        await expect(directAccessParse('Kagamine', 'detect')).resolves.toBe(
+            false
+        );
+        await expect(directAccessParse('abcd1234', 'detect')).resolves.toBe(
+            false
+        );
+        await expect(directAccessParse('MapleNagis', 'detect')).resolves.toBe(
+            false
+        );
+    });
+
+    it('rejects plain queries and malformed links', async () => {
+        for (const value of [
+            '',
+            '   ',
+            'hello world',
+            'https://vrchat.com/home',
+            'https://example.com/x'
+        ]) {
+            await expect(directAccessParse(value, 'detect')).resolves.toBe(
+                false
+            );
+        }
+    });
+
+    it('keeps mixed case payloads intact', async () => {
+        await expect(
+            directAccessParse('https://vrc.group/VRCX.1234', 'detect')
+        ).resolves.toBe(true);
+        await expect(directAccessParse('VRCX.1234', 'detect')).resolves.toBe(
+            true
+        );
+    });
+});

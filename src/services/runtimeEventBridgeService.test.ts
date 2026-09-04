@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
     initializeCommunityThemes: vi.fn(),
     applyVrcStatusSnapshot: vi.fn(),
     handleFavoriteImportStatusEvent: vi.fn(),
+    hydrateFavoriteImportRuntimeStatus: vi.fn(),
     handleMutualGraphFetchStatusEvent: vi.fn(),
     handleScreenshotLibraryScanStatusEvent: vi.fn(),
     handleGameRunningUpdate: vi.fn<() => Promise<void>>(),
@@ -41,7 +42,8 @@ const mocks = vi.hoisted(() => ({
     desktopNotificationActivationUnsubscribe: vi.fn(),
     handleRuntimeAuthFailure: vi.fn(),
     applyAuthenticatedSessionProjection:
-        vi.fn<(projection: unknown) => Promise<boolean>>()
+        vi.fn<(projection: unknown) => Promise<boolean>>(),
+    loadVrcNotifications: vi.fn()
 }));
 
 vi.mock('@/platform/tauri/bindings', () => ({
@@ -78,7 +80,8 @@ vi.mock('./community-theme/installedThemes', () => ({
 }));
 
 vi.mock('./favoriteImportService', () => ({
-    handleFavoriteImportStatusEvent: mocks.handleFavoriteImportStatusEvent
+    handleFavoriteImportStatusEvent: mocks.handleFavoriteImportStatusEvent,
+    hydrateFavoriteImportRuntimeStatus: mocks.hydrateFavoriteImportRuntimeStatus
 }));
 
 vi.mock('./mutualGraphFetchService', () => ({
@@ -130,6 +133,14 @@ vi.mock('./desktopNotificationActivationService', () => ({
 
 vi.mock('./authSessionRecoveryService', () => ({
     handleRuntimeAuthFailure: mocks.handleRuntimeAuthFailure
+}));
+
+vi.mock('@/state/vrcNotificationStore', () => ({
+    useVrcNotificationStore: {
+        getState: () => ({
+            loadForCurrentUser: mocks.loadVrcNotifications
+        })
+    }
 }));
 
 import { useDataDirMigrationStore } from '@/state/dataDirMigrationStore';
@@ -297,6 +308,24 @@ function createAncillaryRuntimeSnapshot(
         },
         gameClientDebugLoggingStatus: null,
         gameProcessSnapshot: createGameProcessProjection(),
+        nowPlaying: {
+            url: '',
+            name: '',
+            source: '',
+            displayName: '',
+            userId: null,
+            location: null,
+            thumbnailUrl: '',
+            length: 0,
+            position: 0,
+            startedAt: null,
+            created_at: null,
+            type: null,
+            videoUrl: null,
+            videoName: null,
+            videoId: null,
+            updatedAt: null
+        },
         backgroundImageState: {
             revision: 0,
             enabled: false,
@@ -450,6 +479,9 @@ describe('runtimeEventBridgeService', () => {
         );
         mocks.runtimeGroupInstancesRefresh.mockResolvedValue(null);
         mocks.handleGameRunningUpdate.mockResolvedValue(undefined);
+        mocks.loadVrcNotifications.mockResolvedValue([]);
+        mocks.hydrateFavoriteImportRuntimeStatus.mockResolvedValue(undefined);
+        mocks.pushSharedFeedNotification.mockResolvedValue(undefined);
         mocks.bindDeepLinkEvents.mockResolvedValue(mocks.deepLinkUnsubscribe);
         mocks.drainPendingDeepLinks.mockResolvedValue(undefined);
         mocks.bindDesktopNotificationActivationEvents.mockResolvedValue(
@@ -840,6 +872,136 @@ describe('runtimeEventBridgeService', () => {
         expect(mocks.handleGameRunningUpdate).toHaveBeenCalledWith(
             liveProjection
         );
+    });
+
+    it('hydrates now playing from the ancillary runtime snapshot', async () => {
+        mocks.getAncillaryRuntimeSnapshot.mockResolvedValue(
+            createAncillaryRuntimeSnapshot({
+                nowPlaying: {
+                    ...createAncillaryRuntimeSnapshot().nowPlaying,
+                    url: 'https://example.test/current',
+                    name: 'Current Track',
+                    position: 42
+                }
+            })
+        );
+
+        await bindRuntimeEvents();
+
+        expect(useRuntimeStore.getState().nowPlaying).toMatchObject({
+            url: 'https://example.test/current',
+            name: 'Current Track',
+            position: 42
+        });
+    });
+
+    it('does not overwrite a now-playing event received during hydration', async () => {
+        mocks.isHostCapabilityAvailable.mockImplementation(
+            (name) => name === 'runtimeGameLogSideEffects'
+        );
+        let sideEffect: (payload: unknown) => void = () => {
+            throw new Error('GameLog side-effect event was not subscribed.');
+        };
+        mocks.subscribe.mockImplementation(async (name, handler) => {
+            if (name === 'gameLogSideEffect') {
+                sideEffect = handler;
+            }
+            return () => {};
+        });
+        let finishAncillarySnapshot: (
+            snapshot: ReturnType<typeof createAncillaryRuntimeSnapshot>
+        ) => void = () => {
+            throw new Error('Ancillary runtime snapshot was not requested.');
+        };
+        mocks.getAncillaryRuntimeSnapshot.mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    finishAncillarySnapshot = resolve;
+                })
+        );
+        const binding = bindRuntimeEvents();
+        await vi.waitFor(() => {
+            expect(mocks.getAncillaryRuntimeSnapshot).toHaveBeenCalledTimes(1);
+        });
+        sideEffect({
+            kind: 'nowPlaying',
+            payload: {
+                url: 'https://example.test/live',
+                name: 'Live Track',
+                position: 7,
+                startedAt: '2026-09-01T00:00:00Z'
+            }
+        });
+
+        finishAncillarySnapshot(
+            createAncillaryRuntimeSnapshot({
+                nowPlaying: {
+                    ...createAncillaryRuntimeSnapshot().nowPlaying,
+                    url: 'https://example.test/stale',
+                    name: 'Stale Track'
+                }
+            })
+        );
+        await binding;
+
+        expect(useRuntimeStore.getState().nowPlaying).toMatchObject({
+            url: 'https://example.test/live',
+            name: 'Live Track',
+            position: 7
+        });
+    });
+
+    it('still hydrates now playing after an unrelated GameLog side effect', async () => {
+        mocks.isHostCapabilityAvailable.mockImplementation(
+            (name) => name === 'runtimeGameLogSideEffects'
+        );
+        let sideEffect: (payload: unknown) => void = () => {
+            throw new Error('GameLog side-effect event was not subscribed.');
+        };
+        mocks.subscribe.mockImplementation(async (name, handler) => {
+            if (name === 'gameLogSideEffect') {
+                sideEffect = handler;
+            }
+            return () => {};
+        });
+        let finishAncillarySnapshot: (
+            snapshot: ReturnType<typeof createAncillaryRuntimeSnapshot>
+        ) => void = () => {
+            throw new Error('Ancillary runtime snapshot was not requested.');
+        };
+        mocks.getAncillaryRuntimeSnapshot.mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    finishAncillarySnapshot = resolve;
+                })
+        );
+        const binding = bindRuntimeEvents();
+        await vi.waitFor(() => {
+            expect(mocks.getAncillaryRuntimeSnapshot).toHaveBeenCalledTimes(1);
+        });
+        sideEffect({
+            kind: 'screenshotProcessed',
+            payload: {
+                path: 'C:\\Screenshots\\capture.png',
+                createdAt: '2026-09-01T00:00:00Z'
+            }
+        });
+
+        finishAncillarySnapshot(
+            createAncillaryRuntimeSnapshot({
+                nowPlaying: {
+                    ...createAncillaryRuntimeSnapshot().nowPlaying,
+                    url: 'https://example.test/current',
+                    name: 'Current Track'
+                }
+            })
+        );
+        await binding;
+
+        expect(useRuntimeStore.getState().nowPlaying).toMatchObject({
+            url: 'https://example.test/current',
+            name: 'Current Track'
+        });
     });
 
     it('unsubscribes every successful runtime event when one subscription fails', async () => {

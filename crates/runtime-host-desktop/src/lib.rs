@@ -28,6 +28,7 @@ mod process_monitor;
 mod profile_backup;
 mod registry_backup;
 mod screenshot;
+pub mod sidebar_auto_hide;
 mod social;
 mod startup_bootstrap;
 mod state;

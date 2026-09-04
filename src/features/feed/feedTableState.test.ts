@@ -6,9 +6,6 @@ import {
     readPersistedFeedTableState,
     resolveFeedPageSize,
     safeJsonParse,
-    sanitizeFeedColumnOrder,
-    sanitizeFeedColumnSizing,
-    sanitizeFeedColumnVisibility,
     sanitizeFeedPageSizes,
     sanitizeFeedSorting,
     writePersistedFeedTableState
@@ -51,7 +48,9 @@ describe('feed table state helpers', () => {
         expect(safeJsonParse('bad')).toBeNull();
         expect(readPersistedFeedTableState()).toEqual({ pageSize: 25 });
 
-        writePersistedFeedTableState({ columnOrder: ['type'] });
+        writePersistedFeedTableState({
+            sorting: [{ id: 'type', desc: false }]
+        });
 
         expect(localStorage.setItem).toHaveBeenCalledWith(
             'vrcx-0:table:feed',
@@ -59,7 +58,7 @@ describe('feed table state helpers', () => {
         );
         expect(JSON.parse(values.get('vrcx-0:table:feed') ?? '')).toEqual({
             pageSize: 25,
-            columnOrder: ['type'],
+            sorting: [{ id: 'type', desc: false }],
             updatedAt: new Date('2026-02-03T04:05:06Z').getTime()
         });
     });
@@ -85,7 +84,7 @@ describe('feed table state helpers', () => {
         ).not.toThrow();
     });
 
-    it('sanitizes sorting, page sizes, columns, and page size selection', () => {
+    it('sanitizes sorting, page sizes, and page size selection', () => {
         expect(
             sanitizeFeedSorting([
                 { id: 'type', desc: false },
@@ -97,31 +96,6 @@ describe('feed table state helpers', () => {
         );
         expect(sanitizeFeedPageSizes(['50', 10, 'bad', 10])).toEqual([10, 50]);
         expect(sanitizeFeedPageSizes(null)).toBe(FEED_TABLE_DEFAULT_PAGE_SIZES);
-        expect(
-            sanitizeFeedColumnVisibility({
-                type: false,
-                displayName: true,
-                bad: false,
-                detail: 'yes'
-            })
-        ).toEqual({
-            type: false,
-            displayName: true
-        });
-        expect(
-            sanitizeFeedColumnOrder(['expander', 'detail', 'bad', 'type'])
-        ).toEqual(['expander', 'detail', 'type']);
-        expect(
-            sanitizeFeedColumnSizing({
-                expander: 40,
-                detail: '320',
-                bad: 50,
-                type: -1
-            })
-        ).toEqual({
-            expander: 40,
-            detail: 320
-        });
         expect(resolveFeedPageSize(50, [10, 25, 50], 25)).toBe(50);
         expect(resolveFeedPageSize(100, [10, 25, 50], 25)).toBe(50);
     });

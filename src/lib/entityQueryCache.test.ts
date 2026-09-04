@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { QueryObserver } from '@tanstack/react-query';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
     clearEntityQueryCache,
@@ -7,10 +8,12 @@ import {
     queryKeys,
     setCachedQueryData
 } from '@/lib/entityQueryCache';
+import { queryClient } from '@/lib/queryClient';
 
 describe('entityQueryCache', () => {
     afterEach(async () => {
         await clearEntityQueryCache();
+        vi.useRealTimers();
     });
 
     it('builds stable query keys with sorted params and normalized endpoints', () => {
@@ -70,5 +73,24 @@ describe('entityQueryCache', () => {
         expect(entityQueryPolicies.fileAnalysis.staleTime).toBe(
             2 * 60 * 60 * 1000
         );
+    });
+
+    it('retains observed user profiles and releases them five minutes after the last observer leaves', async () => {
+        vi.useFakeTimers();
+        const key = queryKeys.user('usr_observed');
+        const observer = new QueryObserver(queryClient, {
+            queryKey: key,
+            queryFn: async () => ({ id: 'usr_observed' }),
+            ...entityQueryPolicies.userAvatarLookup
+        });
+        const unsubscribe = observer.subscribe(() => {});
+        await observer.refetch();
+        await vi.advanceTimersByTimeAsync(10 * 60_000);
+        expect(queryClient.getQueryData(key)).toEqual({ id: 'usr_observed' });
+        unsubscribe();
+        await vi.advanceTimersByTimeAsync(5 * 60_000 - 1);
+        expect(queryClient.getQueryData(key)).toBeDefined();
+        await vi.advanceTimersByTimeAsync(1);
+        expect(queryClient.getQueryData(key)).toBeUndefined();
     });
 });

@@ -1,8 +1,6 @@
-import { useEffect } from 'react';
+import { lazy, useEffect } from 'react';
 import { toast } from 'sonner';
 
-import { KeyboardShortcutsDialog } from '@/components/keyboard/KeyboardShortcutsDialog';
-import { ProxySettingsDialog } from '@/components/proxy/ProxySettingsDialog';
 import {
     getHostCapabilityUnavailableReason,
     isHostCapabilityAvailable,
@@ -12,17 +10,45 @@ import {
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { DataDirCleanupHost } from './DataDirCleanupHost';
+import { MountOnFirstOpen } from './MountOnFirstOpen';
 import { ProfileRestoreResultHost } from './ProfileRestoreResultHost';
-import { ChangelogDialog } from './system-dialogs/ChangelogDialog';
 import { DatabaseMaintenanceDialog } from './system-dialogs/DatabaseMaintenanceDialog';
 import { DatabaseUpgradeDialog } from './system-dialogs/DatabaseUpgradeDialog';
 import { DataDirMigrationDialog } from './system-dialogs/DataDirMigrationDialog';
-import { LaunchOptionsDialog } from './system-dialogs/LaunchOptionsDialog';
 import { ProfileBackupDialogs } from './system-dialogs/ProfileBackupDialogs';
-import { RegistryBackupDialog } from './system-dialogs/RegistryBackupDialog';
 import { UpdaterDialog } from './system-dialogs/UpdaterDialog';
-import { VRChatConfigDialog } from './system-dialogs/VRChatConfigDialog';
 import { UpdateAvailableToastHost } from './UpdateAvailableToastHost';
+
+const ChangelogDialog = lazy(() =>
+    import('./system-dialogs/ChangelogDialog').then((module) => ({
+        default: module.ChangelogDialog
+    }))
+);
+const RegistryBackupDialog = lazy(() =>
+    import('./system-dialogs/RegistryBackupDialog').then((module) => ({
+        default: module.RegistryBackupDialog
+    }))
+);
+const LaunchOptionsDialog = lazy(() =>
+    import('./system-dialogs/LaunchOptionsDialog').then((module) => ({
+        default: module.LaunchOptionsDialog
+    }))
+);
+const VRChatConfigDialog = lazy(() =>
+    import('./system-dialogs/VRChatConfigDialog').then((module) => ({
+        default: module.VRChatConfigDialog
+    }))
+);
+const KeyboardShortcutsDialog = lazy(() =>
+    import('@/components/keyboard/KeyboardShortcutsDialog').then((module) => ({
+        default: module.KeyboardShortcutsDialog
+    }))
+);
+const ProxySettingsDialog = lazy(() =>
+    import('@/components/proxy/ProxySettingsDialog').then((module) => ({
+        default: module.ProxySettingsDialog
+    }))
+);
 
 export function SystemDialogsHost() {
     const updaterOpen = useRuntimeStore(
@@ -106,51 +132,63 @@ export function SystemDialogsHost() {
                     setSystemHostOpen('updaterOpen', open)
                 }
             />
-            <ChangelogDialog
-                open={changelogOpen}
-                targetVersion={changelogTargetVersion}
-                onOpenChange={(open: boolean) => {
-                    setSystemHostOpen('changelogOpen', open);
-                    if (!open) {
-                        setChangelogTargetVersion('');
+            <MountOnFirstOpen open={changelogOpen}>
+                <ChangelogDialog
+                    open={changelogOpen}
+                    targetVersion={changelogTargetVersion}
+                    onOpenChange={(open: boolean) => {
+                        setSystemHostOpen('changelogOpen', open);
+                        if (!open) {
+                            setChangelogTargetVersion('');
+                        }
+                    }}
+                />
+            </MountOnFirstOpen>
+            <MountOnFirstOpen open={registryBackupOpen}>
+                <RegistryBackupDialog
+                    open={registryBackupOpen}
+                    onOpenChange={(open: boolean) =>
+                        setSystemHostOpen('registryBackupOpen', open)
                     }
-                }}
-            />
-            <RegistryBackupDialog
-                open={registryBackupOpen}
-                onOpenChange={(open: boolean) =>
-                    setSystemHostOpen('registryBackupOpen', open)
-                }
-            />
-            <LaunchOptionsDialog
-                open={launchOptionsOpen}
-                onOpenChange={(open: boolean) =>
-                    setSystemHostOpen('launchOptionsOpen', open)
-                }
-            />
-            <VRChatConfigDialog
-                open={vrchatConfigOpen}
-                onOpenChange={(open: boolean) =>
-                    setSystemHostOpen('vrchatConfigOpen', open)
-                }
-            />
+                />
+            </MountOnFirstOpen>
+            <MountOnFirstOpen open={launchOptionsOpen}>
+                <LaunchOptionsDialog
+                    open={launchOptionsOpen}
+                    onOpenChange={(open: boolean) =>
+                        setSystemHostOpen('launchOptionsOpen', open)
+                    }
+                />
+            </MountOnFirstOpen>
+            <MountOnFirstOpen open={vrchatConfigOpen}>
+                <VRChatConfigDialog
+                    open={vrchatConfigOpen}
+                    onOpenChange={(open: boolean) =>
+                        setSystemHostOpen('vrchatConfigOpen', open)
+                    }
+                />
+            </MountOnFirstOpen>
             <DatabaseUpgradeDialog
                 open={databaseUpgradeOpen || systemHostDatabaseUpgradeOpen}
             />
             <DatabaseMaintenanceDialog />
             <ProfileBackupDialogs />
-            <KeyboardShortcutsDialog
-                open={keyboardShortcutsOpen}
-                onOpenChange={(open: boolean) =>
-                    setSystemHostOpen('keyboardShortcutsOpen', open)
-                }
-            />
-            <ProxySettingsDialog
-                open={proxySettingsOpen}
-                onOpenChange={(open: boolean) =>
-                    setSystemHostOpen('proxySettingsOpen', open)
-                }
-            />
+            <MountOnFirstOpen open={keyboardShortcutsOpen}>
+                <KeyboardShortcutsDialog
+                    open={keyboardShortcutsOpen}
+                    onOpenChange={(open: boolean) =>
+                        setSystemHostOpen('keyboardShortcutsOpen', open)
+                    }
+                />
+            </MountOnFirstOpen>
+            <MountOnFirstOpen open={proxySettingsOpen}>
+                <ProxySettingsDialog
+                    open={proxySettingsOpen}
+                    onOpenChange={(open: boolean) =>
+                        setSystemHostOpen('proxySettingsOpen', open)
+                    }
+                />
+            </MountOnFirstOpen>
         </>
     );
 }

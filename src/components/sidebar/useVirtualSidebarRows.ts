@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState
+} from 'react';
 
 const DEFAULT_ROW_SIZE = 48;
 const DEFAULT_OVERSCAN = 8;
@@ -16,9 +23,50 @@ type VirtualSidebarViewport = {
 
 type VirtualSidebarOptions = {
     overscan?: number;
+    preserveScrollAnchor?: boolean;
+    resetKey?: string;
+};
+
+type VirtualRowMetrics = {
+    indexesByKey: Map<VirtualRowKey, number>;
+    offsets: number[];
+    sizes: number[];
+    totalSize: number;
 };
 
 type RowRefCallback = (element: HTMLElement | null) => void;
+
+function findFirstVisibleIndex(
+    offsets: number[],
+    sizes: number[],
+    scrollTop: number
+) {
+    let start = 0;
+    let end = offsets.length;
+    while (start < end) {
+        const index = Math.floor((start + end) / 2);
+        if (offsets[index] + sizes[index] <= scrollTop) {
+            start = index + 1;
+        } else {
+            end = index;
+        }
+    }
+    return start;
+}
+
+function findVisibleEndIndex(offsets: number[], viewportBottom: number) {
+    let start = 0;
+    let end = offsets.length;
+    while (start < end) {
+        const index = Math.floor((start + end) / 2);
+        if (offsets[index] < viewportBottom) {
+            start = index + 1;
+        } else {
+            end = index;
+        }
+    }
+    return start;
+}
 
 export function useVirtualSidebarRows<T extends VirtualSidebarRow>(
     rows: T[],
@@ -46,14 +94,18 @@ export function useVirtualSidebarRows<T extends VirtualSidebarRow>(
         Number.isFinite(options.overscan)
             ? options.overscan
             : DEFAULT_OVERSCAN;
+    const preserveScrollAnchor = options.preserveScrollAnchor === true;
+    const resetKey = options.resetKey ?? '';
 
     const rowMetrics = useMemo(() => {
         let totalSize = 0;
+        const indexesByKey = new Map<VirtualRowKey, number>();
         const offsets: number[] = [];
         const sizes: number[] = [];
 
         rows.forEach((row, index) => {
             const key = row?.key ?? index;
+            indexesByKey.set(key, index);
             const measuredSize = Number(measuredSizes.get(key));
             const estimatedSize = Number(estimateSize?.(row, index));
             const size =
@@ -67,8 +119,68 @@ export function useVirtualSidebarRows<T extends VirtualSidebarRow>(
             totalSize += size;
         });
 
-        return { offsets, sizes, totalSize };
+        return { indexesByKey, offsets, sizes, totalSize };
     }, [estimateSize, measuredSizes, rows]);
+    const previousLayoutRef = useRef<{
+        metrics: VirtualRowMetrics;
+        resetKey: string;
+        rows: T[];
+    } | null>(null);
+
+    useLayoutEffect(() => {
+        const element = viewportElementRef.current;
+        const previousLayout = previousLayoutRef.current;
+        previousLayoutRef.current = { metrics: rowMetrics, resetKey, rows };
+        if (!element || !previousLayout) {
+            return;
+        }
+        if (previousLayout.resetKey !== resetKey) {
+            element.scrollTop = 0;
+            setViewport((current) =>
+                current.scrollTop === 0 ? current : { ...current, scrollTop: 0 }
+            );
+            return;
+        }
+        if (
+            !preserveScrollAnchor ||
+            element.scrollTop <= 0 ||
+            previousLayout.rows.length === 0
+        ) {
+            return;
+        }
+
+        const previousIndex = findFirstVisibleIndex(
+            previousLayout.metrics.offsets,
+            previousLayout.metrics.sizes,
+            element.scrollTop
+        );
+        if (previousIndex >= previousLayout.rows.length) {
+            return;
+        }
+
+        const previousRow = previousLayout.rows[previousIndex];
+        const anchorKey = previousRow?.key ?? previousIndex;
+        const nextIndex = rowMetrics.indexesByKey.get(anchorKey) ?? -1;
+        if (nextIndex < 0) {
+            return;
+        }
+
+        const previousStart = previousLayout.metrics.offsets[previousIndex];
+        const nextStart = rowMetrics.offsets[nextIndex];
+        if (
+            Number.isFinite(previousStart) &&
+            Number.isFinite(nextStart) &&
+            previousStart !== nextStart
+        ) {
+            const scrollTop = element.scrollTop + nextStart - previousStart;
+            element.scrollTop = scrollTop;
+            setViewport((current) =>
+                current.scrollTop === scrollTop
+                    ? current
+                    : { ...current, scrollTop }
+            );
+        }
+    }, [preserveScrollAnchor, resetKey, rowMetrics, rows]);
 
     const measureElement = useCallback(
         (key: VirtualRowKey, element: HTMLElement | null) => {
@@ -226,18 +338,15 @@ export function useVirtualSidebarRows<T extends VirtualSidebarRow>(
         const { offsets, sizes } = rowMetrics;
         const viewportBottom =
             viewport.scrollTop + Math.max(viewport.height, DEFAULT_ROW_SIZE);
-        let firstIndex = 0;
-        while (
-            firstIndex < rows.length &&
-            offsets[firstIndex] + sizes[firstIndex] < viewport.scrollTop
-        ) {
-            firstIndex += 1;
-        }
-
-        let lastIndex = firstIndex;
-        while (lastIndex < rows.length && offsets[lastIndex] < viewportBottom) {
-            lastIndex += 1;
-        }
+        const firstIndex = findFirstVisibleIndex(
+            offsets,
+            sizes,
+            viewport.scrollTop
+        );
+        const lastIndex = Math.max(
+            firstIndex,
+            findVisibleEndIndex(offsets, viewportBottom)
+        );
 
         return { firstIndex, lastIndex };
     }, [rowMetrics, rows, viewport.height, viewport.scrollTop]);
@@ -272,9 +381,7 @@ export function useVirtualSidebarRows<T extends VirtualSidebarRow>(
             if (!element) {
                 return;
             }
-            const index = rows.findIndex(
-                (row, idx) => (row?.key ?? idx) === key
-            );
+            const index = rowMetrics.indexesByKey.get(key) ?? -1;
             if (index < 0) {
                 return;
             }
@@ -291,8 +398,13 @@ export function useVirtualSidebarRows<T extends VirtualSidebarRow>(
                 element.scrollTop = offset + size - element.clientHeight;
             }
         },
-        [rowMetrics, rows]
+        [rowMetrics]
     );
+    const scrollToStart = useCallback(() => {
+        if (viewportElementRef.current) {
+            viewportElementRef.current.scrollTop = 0;
+        }
+    }, []);
 
     return {
         getRowRef,
@@ -300,6 +412,8 @@ export function useVirtualSidebarRows<T extends VirtualSidebarRow>(
         virtualItems,
         totalSize: rowMetrics.totalSize,
         firstVisibleIndex: visibleWindow.firstIndex,
-        scrollKeyToView
+        scrollKeyToView,
+        scrollToStart,
+        scrollTop: viewport.scrollTop
     };
 }

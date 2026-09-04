@@ -21,10 +21,15 @@ import {
 import {
     INFO_CHART_BAR_WIDTH,
     buildInfoChartOption,
+    buildInfoTimelineRows,
     buildInfoChartTooltipParts,
     type InfoChartRow
 } from './previousInstancesChart';
-import { normalizeInfoChartRows, playerUserId } from './previousInstancesRows';
+import {
+    normalizeInfoChartRows,
+    playerUserId,
+    type PreviousInstanceVisitWindow
+} from './previousInstancesRows';
 
 function InfoChartEmptyState({
     title,
@@ -70,9 +75,11 @@ function createInfoChartTooltipElement(
 }
 
 export function PreviousInstanceInfoChart({
-    rows
+    rows,
+    visitWindow
 }: {
     rows: NonNullable<Parameters<typeof normalizeInfoChartRows>[0]>;
+    visitWindow: PreviousInstanceVisitWindow | null;
 }) {
     const { t } = useTranslation();
 
@@ -137,14 +144,18 @@ export function PreviousInstanceInfoChart({
             ),
         [currentUserId, favoriteIdSet, friendsById, knownUsersById, rows]
     );
+    const timelineRows = useMemo(
+        () => buildInfoTimelineRows({ rows: chartRows, visitWindow }),
+        [chartRows, visitWindow]
+    );
     const chartPayload = useMemo(
         () =>
             buildInfoChartOption({
-                rows: chartRows,
+                rows: timelineRows,
                 hour12,
                 tooltipFormatter: createInfoChartTooltipElement
             }),
-        [chartRows, hour12]
+        [hour12, timelineRows]
     );
 
     const setInfoChartElementRef = useCallback(
@@ -204,7 +215,7 @@ export function PreviousInstanceInfoChart({
                     chartElement,
                     themeName || undefined,
                     {
-                        useDirtyRect: chartRows.length > 80
+                        useDirtyRect: timelineRows.length > 80
                     }
                 );
                 chart = nextChart;
@@ -222,7 +233,7 @@ export function PreviousInstanceInfoChart({
             }
 
             const chartRowCount =
-                chartPayload?.firstEntries.length || chartRows.length;
+                chartPayload?.firstEntries.length || timelineRows.length;
             const chartHeight = Math.max(
                 220,
                 chartRowCount * (INFO_CHART_BAR_WIDTH + 10) + 200
@@ -270,12 +281,12 @@ export function PreviousInstanceInfoChart({
     }, [
         chartElement,
         chartPayload,
-        chartRows.length,
         knownUsersById,
-        resolvedTheme
+        resolvedTheme,
+        timelineRows.length
     ]);
 
-    if (!chartRows.length) {
+    if (!timelineRows.length) {
         return (
             <InfoChartEmptyState
                 title={t(

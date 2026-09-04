@@ -79,8 +79,9 @@ export function MutualFriendsPage() {
                 {graph.baseNodeCount > 0 && graph.nodeCount > 0 ? (
                     <MutualFriendsLegend
                         communities={graph.communities}
+                        coverage={graph.coverage}
                         focusedCommunity={view.filters.focusedCommunity}
-                        isolatedCount={graph.isolatedCount}
+                        isolatedCounts={graph.isolatedCounts}
                         minDegree={view.filters.minDegree}
                         onMinDegreeChange={actions.setMinDegree}
                         onToggleFocusedCommunity={

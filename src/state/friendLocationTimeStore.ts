@@ -2,10 +2,7 @@ import { create } from 'zustand';
 
 import type { FriendLocationTime } from '@/platform/tauri/bindings';
 
-export type FriendLocationTimeEntry = {
-    location: string;
-    sinceMs: number | null;
-};
+export type FriendLocationTimeEntry = Omit<FriendLocationTime, 'userId'>;
 
 type FriendLocationTimeState = {
     byUserId: Record<string, FriendLocationTimeEntry>;
@@ -30,6 +27,7 @@ export const useFriendLocationTimeStore = create<FriendLocationTimeState>(
                 const sinceMs = Number(entry.sinceMs);
                 byUserId[userId] = {
                     location: entry.location.trim(),
+                    source: entry.source,
                     sinceMs:
                         Number.isFinite(sinceMs) && sinceMs > 0 ? sinceMs : null
                 };

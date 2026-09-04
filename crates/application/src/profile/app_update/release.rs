@@ -1,9 +1,11 @@
 use std::cmp::Ordering;
 
 use chrono::{DateTime, FixedOffset, NaiveDate, TimeZone};
+use semver::Version;
 
 use super::{
-    AppUpdateCatalogAsset, AppUpdateCatalogRelease, AppUpdateDeliveryKind, AppUpdateReleaseSnapshot,
+    AppUpdateCatalogAsset, AppUpdateCatalogRelease, AppUpdateChannel, AppUpdateDeliveryKind,
+    AppUpdateReleaseSnapshot,
 };
 
 const PREVIEW_LABELS: [&str; 2] = ["preview", "test"];
@@ -11,51 +13,57 @@ pub(super) const TOKYO_UTC_OFFSET_SECONDS: i32 = 9 * 3600;
 const MAX_MAJOR_VERSION: u32 = 99;
 const MAX_MINOR_VERSION: u32 = 999;
 const MAX_PATCH_VERSION: u32 = 999;
+const MAX_BETA_VERSION: u64 = 999_999;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct ParsedReleaseVersion {
-    pub(super) major: u32,
-    pub(super) minor: u32,
-    pub(super) patch: u32,
+    pub(super) channel: AppUpdateChannel,
     pub(super) canonical_version: String,
+    version: Version,
 }
 
-fn parse_numeric_component(component: &str, allow_zero: bool) -> Option<u32> {
-    if component.is_empty() || !component.bytes().all(|byte| byte.is_ascii_digit()) {
-        return None;
+fn has_supported_beta_prerelease(version: &Version) -> bool {
+    let mut identifiers = version.pre.as_str().split('.');
+    if identifiers.next() != Some("beta") {
+        return false;
     }
-    if component.len() > 1 && component.starts_with('0') {
-        return None;
+    let Some(number) = identifiers.next().and_then(|value| value.parse().ok()) else {
+        return false;
+    };
+    if identifiers.next().is_some() {
+        return false;
     }
-    let value: u32 = component.parse().ok()?;
-    if !allow_zero && value == 0 {
-        return None;
-    }
-    Some(value)
+    (1..=MAX_BETA_VERSION).contains(&number)
 }
 
 pub(super) fn parse_release_version(version: &str) -> Option<ParsedReleaseVersion> {
     let trimmed = version.trim();
     let trimmed = trimmed.strip_prefix('v').unwrap_or(trimmed);
-    let mut parts = trimmed.split('.');
-    let major_str = parts.next()?;
-    let minor_str = parts.next()?;
-    let patch_str = parts.next()?;
-    if parts.next().is_some() {
+    let version = Version::parse(trimmed).ok()?;
+    if version.major == 0
+        || version.major > u64::from(MAX_MAJOR_VERSION)
+        || version.minor > u64::from(MAX_MINOR_VERSION)
+        || version.patch > u64::from(MAX_PATCH_VERSION)
+        || !version.build.is_empty()
+    {
         return None;
     }
-    let major = parse_numeric_component(major_str, false)?;
-    let minor = parse_numeric_component(minor_str, true)?;
-    let patch = parse_numeric_component(patch_str, true)?;
-    if major > MAX_MAJOR_VERSION || minor > MAX_MINOR_VERSION || patch > MAX_PATCH_VERSION {
+    let channel = if version.pre.is_empty() {
+        AppUpdateChannel::Stable
+    } else if has_supported_beta_prerelease(&version) {
+        AppUpdateChannel::Beta
+    } else {
         return None;
-    }
+    };
     Some(ParsedReleaseVersion {
-        major,
-        minor,
-        patch,
-        canonical_version: format!("{major}.{minor}.{patch}"),
+        channel,
+        canonical_version: version.to_string(),
+        version,
     })
+}
+
+pub(super) fn release_channel_for_version(version: &str) -> Option<AppUpdateChannel> {
+    parse_release_version(version).map(|parsed| parsed.channel)
 }
 
 pub(super) fn compare_release_versions(left: &str, right: &str) -> Ordering {
@@ -63,9 +71,7 @@ pub(super) fn compare_release_versions(left: &str, right: &str) -> Ordering {
         (None, None) => Ordering::Equal,
         (None, Some(_)) => Ordering::Less,
         (Some(_), None) => Ordering::Greater,
-        (Some(left), Some(right)) => {
-            (left.major, left.minor, left.patch).cmp(&(right.major, right.minor, right.patch))
-        }
+        (Some(left), Some(right)) => left.version.cmp(&right.version),
     }
 }
 
@@ -169,6 +175,9 @@ pub(super) fn normalize_release(
 ) -> Option<AppUpdateReleaseSnapshot> {
     let tag_name = release.tag_name.clone().unwrap_or_default();
     let parsed = parse_release_version(&tag_name)?;
+    if release.prerelease != (parsed.channel == AppUpdateChannel::Beta) {
+        return None;
+    }
     let manifest = target.and_then(|target| {
         resolve_manifest_asset(&release.assets, target).map(|url| (url, target.to_string()))
     });
@@ -193,25 +202,9 @@ pub(super) fn normalize_release(
         body: release.body.clone().unwrap_or_default(),
         canonical_version: parsed.canonical_version.clone(),
         display_version: parsed.canonical_version,
+        channel: parsed.channel,
         manifest_url,
         target: resolved_target,
         updater_type,
     })
-}
-
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
-pub(super) struct ReleaseVersionSortKey {
-    pub(super) major: u32,
-    pub(super) minor: u32,
-    pub(super) patch: u32,
-}
-
-pub(super) fn version_sort_key(canonical_version: &str) -> ReleaseVersionSortKey {
-    parse_release_version(canonical_version)
-        .map(|parsed| ReleaseVersionSortKey {
-            major: parsed.major,
-            minor: parsed.minor,
-            patch: parsed.patch,
-        })
-        .unwrap_or_default()
 }

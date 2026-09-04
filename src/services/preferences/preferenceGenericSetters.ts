@@ -307,6 +307,8 @@ export async function setBoolConfigPreference(
         useShellStore.getState().setNotificationIconDot(enabled);
     } else if (normalizedKey === 'taskbarIconDot') {
         useShellStore.getState().setTaskbarIconDot(enabled);
+    } else if (normalizedKey === 'friendLogNotificationDot' && !enabled) {
+        useShellStore.getState().removeNotify('friend-log');
     } else if (normalizedKey === 'displayVRCPlusIconsAsAvatar') {
         useShellStore.getState().setAppearancePreferences({
             displayVRCPlusIconsAsAvatar: enabled

@@ -39,6 +39,7 @@ export function NotificationHost() {
             }}
         >
             <SheetContent
+                variant="inset"
                 showCloseButton={false}
                 className="w-full sm:max-w-lg"
             >

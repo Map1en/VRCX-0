@@ -38,7 +38,6 @@ function createActions(): FeedFriendActions {
         addFeedHiddenUser: async () => {},
         removeFeedHiddenUser: async () => {},
         canUseFeedFriendLocation: () => false,
-        launchFeedFriendLocation: async () => {},
         selfInviteFeedFriendLocation: async () => {},
         sendFeedFriendInvite: async () => {},
         requestFeedFriendInvite: async () => {},
@@ -58,6 +57,21 @@ function createMeta(): FeedTableMeta {
 }
 
 describe('useFeedColumns', () => {
+    it('keeps the fixed time, user, type, detail order without hide controls', () => {
+        const { result } = renderHook(() => useFeedColumns(createMeta()));
+
+        expect(result.current.map((column) => column.id)).toEqual([
+            'expander',
+            'created_at',
+            'displayName',
+            'type',
+            'detail'
+        ]);
+        expect(
+            result.current.every((column) => column.enableHiding === false)
+        ).toBe(true);
+    });
+
     it('keeps the columns array reference stable when meta contents change', () => {
         const meta = createMeta();
         const { result, rerender } = renderHook(() => useFeedColumns(meta));

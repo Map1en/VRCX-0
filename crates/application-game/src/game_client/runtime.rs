@@ -111,14 +111,6 @@ impl GameClientRuntime {
         }
     }
 
-    pub fn set_runtime_state(&self, current_location: &str) {
-        let Ok(mut state) = self.state.lock() else {
-            tracing::warn!("failed to lock GameClient runtime state");
-            return;
-        };
-        state.current_location = current_location.trim().to_string();
-    }
-
     pub fn on_game_process_event(&self, event: GameProcessEvent) -> Result<()> {
         if let Some(observer) = &self.instance_roster_observer {
             observer.on_game_running(event.is_game_running);

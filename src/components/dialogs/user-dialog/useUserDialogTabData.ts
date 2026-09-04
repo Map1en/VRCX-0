@@ -198,6 +198,10 @@ export function useUserDialogTabData({
         reloadToken
     });
     const avatarSortLoadVersionRef = useRef(0);
+    const loadRequestIdRef = useRef(0);
+    const tabRequestIdsRef = useRef<Partial<Record<UserDialogDataTab, number>>>(
+        {}
+    );
     const handledReloadTokenRef = useRef(reloadToken);
     const handledCountReloadTokenRef = useRef(reloadToken);
     countContextRef.current = {
@@ -245,6 +249,7 @@ export function useUserDialogTabData({
     );
 
     const resetForTarget = useEffectEvent(() => {
+        tabRequestIdsRef.current = {};
         loadContextRef.current = {
             endpoint: currentEndpoint,
             userId: profileUserId,
@@ -412,6 +417,8 @@ export function useUserDialogTabData({
             previousAvatarSwapTime,
             avatarReleaseStatus: effectiveAvatarReleaseStatus
         };
+        const requestId = ++loadRequestIdRef.current;
+        tabRequestIdsRef.current[tab] = requestId;
         setRemoteStatus((current) => ({ ...current, [tab]: 'running' }));
         setRemoteErrors((current) => ({ ...current, [tab]: '' }));
         try {
@@ -434,7 +441,10 @@ export function useUserDialogTabData({
                     .bumpRevision(currentUserId || '');
             }
 
-            if (!isCurrentLoadContext(loadContext)) {
+            if (
+                tabRequestIdsRef.current[tab] !== requestId ||
+                !isCurrentLoadContext(loadContext)
+            ) {
                 return;
             }
             const dataKey = userDialogDataKeyForTab(tab);
@@ -448,8 +458,12 @@ export function useUserDialogTabData({
                     : {})
             }));
             setRemoteStatus((current) => ({ ...current, [tab]: 'ready' }));
+            setRemoteErrors((current) => ({ ...current, [tab]: '' }));
         } catch (error) {
-            if (!isCurrentLoadContext(loadContext)) {
+            if (
+                tabRequestIdsRef.current[tab] !== requestId ||
+                !isCurrentLoadContext(loadContext)
+            ) {
                 return;
             }
             setRemoteStatus((current) => ({ ...current, [tab]: 'error' }));

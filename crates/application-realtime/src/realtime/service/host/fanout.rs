@@ -44,11 +44,16 @@ impl RealtimeHostRuntime {
         let Some(snapshot) = self.friends.snapshot() else {
             return;
         };
+        if !self
+            .deps
+            .auth_scope
+            .matches(&snapshot.current_user_id, &snapshot.endpoint)
+        {
+            return;
+        }
         let mut projection = FriendProjection::new(snapshot.generation, snapshot.baseline_revision);
         projection.location_time_snapshot = Some(self.deps.instance_dwell.snapshot());
-        if self.is_friend_projection_current(&projection) {
-            self.emit_friend_projection(projection);
-        }
+        self.emit_friend_projection(projection);
     }
 
     pub fn set_feed_persistence_disabled(&self, disabled: bool) -> Result<()> {
@@ -305,6 +310,9 @@ impl RealtimeHostRuntime {
                     "Realtime notification projection persisted by Rust.",
                     0,
                 );
+                if let Some(observer) = &self.deps.notification_projection_observer {
+                    observer.observe_realtime_notification_projection(&projection);
+                }
             }
             Err(error) => {
                 tracing::warn!("Realtime notification persistence failed: {error}");

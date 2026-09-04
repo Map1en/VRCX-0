@@ -302,7 +302,7 @@ function PhotoGalleryRows({
             className="gap-2"
         >
             <TabsList
-                variant="line"
+                variant="underline"
                 className="h-auto w-full justify-start overflow-x-auto rounded-none border-b px-0 pb-1"
             >
                 {galleryEntries.map(({ gallery, rows: galleryRows }) => (

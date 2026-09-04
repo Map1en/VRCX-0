@@ -14,7 +14,9 @@ import { GameLogSessionsView } from './components/GameLogSessionsView';
 import { GameLogEmptyState } from './components/GameLogTableParts';
 import { GameLogTableShell } from './components/GameLogTableShell';
 import { GameLogToolbar } from './components/GameLogToolbar';
+import { GameLogSessionAffinityContext } from './gameLogSessionAffinity';
 import { useGameLogPageController } from './useGameLogPageController';
+import { useGameLogSessionExpansion } from './useGameLogSessionExpansion';
 
 export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
     const { t } = useTranslation();
@@ -32,8 +34,17 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
         table,
         tableState
     } = useGameLogPageController();
-    const hasSessions = annotations.annotatedSessions.length > 0;
-    const hasRows = annotations.annotatedRows.length > 0;
+    const hasSessions = rowsState.sessions.length > 0;
+    const hasRows = rowsState.rows.length > 0;
+    const sessionsVisible =
+        filters.viewMode === 'sessions' &&
+        hasSessions &&
+        !isLoading &&
+        !isError;
+    const sessionExpansion = useGameLogSessionExpansion(
+        rowsState.sessions,
+        sessionsVisible
+    );
     const hasActiveFilters = Boolean(
         filters.deferredSearchQuery.trim() ||
         filters.favoritesOnly ||
@@ -60,7 +71,7 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
 
     return (
         <PageScaffold embedded={embedded}>
-            <div className="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
+            <div className="flex h-full min-h-0 flex-col overflow-hidden">
                 <GameLogToolbar
                     detail={
                         rowsState.detail
@@ -77,10 +88,15 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
                         onRefresh: filters.refreshGameLog
                     }}
                     table={table}
+                    sessionControls={{
+                        allOpen: sessionExpansion.allSessionsOpen,
+                        canToggle: sessionsVisible,
+                        onToggle: sessionExpansion.toggleAll
+                    }}
                 />
 
                 {rowsState.gameLogDisabled ? (
-                    <Alert>
+                    <Alert className="mb-3">
                         <AlertTitle>
                             {t('view.game_log.label.game_log_is_disabled')}
                         </AlertTitle>
@@ -111,21 +127,32 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
                         />
                     ) : filters.viewMode === 'sessions' ? (
                         hasSessions ? (
-                            <GameLogSessionsView
-                                sessions={annotations.annotatedSessions}
-                                isGameRunning={isGameRunning}
-                                hasMore={hasMoreSessions}
-                                isLoadingMore={isLoadingMoreSessions}
-                                autoFill={
-                                    Boolean(
-                                        filters.deferredSearchQuery.trim()
-                                    ) &&
-                                    !filters.sessionDateFrom &&
-                                    !filters.sessionDateTo
-                                }
-                                autoFillKey={`${filters.deferredSearchQuery}:${filters.sessionDateFrom}:${filters.sessionDateTo}:${filters.queryFilterTypes.join(',')}:${filters.favoritesOnly}`}
-                                onLoadMore={tableState.loadMoreSessions}
-                            />
+                            <GameLogSessionAffinityContext
+                                value={annotations.affinity}
+                            >
+                                <GameLogSessionsView
+                                    sessions={rowsState.sessions}
+                                    defaultOpen={sessionExpansion.defaultOpen}
+                                    sessionOpenOverrides={
+                                        sessionExpansion.sessionOpenOverrides
+                                    }
+                                    onSessionOpenChange={
+                                        sessionExpansion.onSessionOpenChange
+                                    }
+                                    isGameRunning={isGameRunning}
+                                    hasMore={hasMoreSessions}
+                                    isLoadingMore={isLoadingMoreSessions}
+                                    autoFill={
+                                        Boolean(
+                                            filters.deferredSearchQuery.trim()
+                                        ) &&
+                                        !filters.sessionDateFrom &&
+                                        !filters.sessionDateTo
+                                    }
+                                    autoFillKey={`${filters.deferredSearchQuery}:${filters.sessionDateFrom}:${filters.sessionDateTo}:${filters.queryFilterTypes.join(',')}:${filters.favoritesOnly}`}
+                                    onLoadMore={tableState.loadMoreSessions}
+                                />
+                            </GameLogSessionAffinityContext>
                         ) : (
                             <GameLogEmptyState
                                 icon={emptyIcon}
@@ -143,7 +170,7 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
                     ) : hasRows ? (
                         <GameLogTableShell
                             table={table}
-                            rows={annotations.annotatedRows}
+                            rows={rowsState.rows}
                             pageCount={pageCount}
                             pageSizes={tableState.pageSizes}
                             setPagination={tableState.setPagination}

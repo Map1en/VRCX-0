@@ -1,0 +1,29 @@
+@layer utilities {
+    .tools-page__tool[data-slot='button'][data-variant='secondary'] {
+        border-color: transparent;
+        background-color: var(--surface-interactive);
+        color: var(--foreground);
+        transition-duration: var(--motion-fast);
+        transition-timing-function: var(--ease-out-ui);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .tools-page__tool[data-slot='button'][data-variant='secondary']:where(
+                :not([data-editing]):not(:disabled):hover
+            ) {
+            border-color: var(--border-hover);
+            background-color: var(--surface-interactive-hover);
+        }
+    }
+
+    .tools-page__tool[data-slot='button'][data-variant='secondary']:focus-visible {
+        border-color: var(--ring);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .tools-page__tool[data-slot='button'][data-variant='secondary'] {
+            transition: none;
+            translate: none;
+        }
+    }
+}

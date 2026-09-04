@@ -21,7 +21,9 @@ pub fn app__notification_add_v1(
         .runtime_host()
         .local_data()
         .notification_add_v1(user_id, notification)
-        .map_err(AppError::from)
+        .map_err(AppError::from)?;
+    state.runtime_host().refresh_tray_notification();
+    Ok(())
 }
 
 #[tauri::command]
@@ -35,7 +37,9 @@ pub fn app__notification_add_v2(
         .runtime_host()
         .local_data()
         .notification_add_v2(user_id, notification)
-        .map_err(AppError::from)
+        .map_err(AppError::from)?;
+    state.runtime_host().refresh_tray_notification();
+    Ok(())
 }
 
 #[tauri::command]
@@ -49,7 +53,9 @@ pub fn app__notification_delete(
         .runtime_host()
         .local_data()
         .notification_delete(user_id, id)
-        .map_err(AppError::from)
+        .map_err(AppError::from)?;
+    state.runtime_host().refresh_tray_notification();
+    Ok(())
 }
 
 #[tauri::command]
@@ -63,7 +69,9 @@ pub fn app__notification_expire(
         .runtime_host()
         .local_data()
         .notification_expire(user_id, id)
-        .map_err(AppError::from)
+        .map_err(AppError::from)?;
+    state.runtime_host().refresh_tray_notification();
+    Ok(())
 }
 
 #[tauri::command]
@@ -91,7 +99,9 @@ pub fn app__notification_update_expired(
         .runtime_host()
         .local_data()
         .notification_update_expired(user_id, id, expired)
-        .map_err(AppError::from)
+        .map_err(AppError::from)?;
+    state.runtime_host().refresh_tray_notification();
+    Ok(())
 }
 
 #[tauri::command]
@@ -105,7 +115,9 @@ pub fn app__notification_v2_expire(
         .runtime_host()
         .local_data()
         .notification_v2_expire(user_id, id)
-        .map_err(AppError::from)
+        .map_err(AppError::from)?;
+    state.runtime_host().refresh_tray_notification();
+    Ok(())
 }
 
 #[tauri::command]
@@ -119,5 +131,7 @@ pub fn app__notification_v2_mark_seen(
         .runtime_host()
         .local_data()
         .notification_v2_mark_seen(user_id, id)
-        .map_err(AppError::from)
+        .map_err(AppError::from)?;
+    state.runtime_host().refresh_tray_notification();
+    Ok(())
 }

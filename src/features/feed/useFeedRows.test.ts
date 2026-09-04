@@ -10,6 +10,7 @@ import type {
 
 const mocks = vi.hoisted(() => ({
     queryFeedLatest: vi.fn(),
+    queryFeedPage: vi.fn(),
     queryFeed: vi.fn(),
     getFriendLogCurrent: vi.fn(),
     getAllUserStats: vi.fn(),
@@ -32,6 +33,7 @@ vi.mock('@/repositories/feedRepository', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@/repositories/feedRepository')>()),
     default: {
         queryFeedLatest: mocks.queryFeedLatest,
+        queryFeedPage: mocks.queryFeedPage,
         queryFeed: mocks.queryFeed
     }
 }));
@@ -110,11 +112,13 @@ describe('useFeedRows', () => {
         vi.useFakeTimers();
         vi.clearAllMocks();
         mocks.preferences.feedPersistenceDisabled = false;
+        mocks.preferences.tableLimits.maxTableSize = 100;
         mocks.friendLog.revision = 0;
         useFeedLiveStore.getState().resetFeedLive();
         mocks.getFriendLogCurrent.mockResolvedValue([]);
         mocks.getAllUserStats.mockResolvedValue([]);
         mocks.queryFeedLatest.mockResolvedValue({ rows: [], maxSequence: 0 });
+        mocks.queryFeedPage.mockResolvedValue([]);
         mocks.queryFeed.mockResolvedValue([]);
     });
 
@@ -140,6 +144,158 @@ describe('useFeedRows', () => {
         ]);
         expect(mocks.queryFeedLatest).toHaveBeenCalledTimes(1);
         expect(mocks.queryFeed).not.toHaveBeenCalled();
+    });
+
+    it('loads older cursor pages without trimming them when realtime rows arrive', async () => {
+        const persistedCursor = {
+            createdAt: '2026-05-15T00:00:00.000Z',
+            sourceRank: 60,
+            rowId: 80
+        };
+        mocks.queryFeedLatest.mockResolvedValue({
+            rows: [
+                {
+                    created_at: persistedCursor.createdAt,
+                    rowId: persistedCursor.rowId,
+                    sourceRank: persistedCursor.sourceRank,
+                    type: 'GPS',
+                    userId: 'usr_base'
+                }
+            ],
+            maxSequence: 0,
+            persistedCursor,
+            persistedHasMore: true
+        });
+        const olderRows = Array.from({ length: 80 }, (_, index) => ({
+            created_at: `2026-05-14T00:${String(59 - (index % 60)).padStart(2, '0')}:00.000Z`,
+            rowId: 100 + index,
+            sourceRank: 60,
+            type: 'GPS',
+            userId: `usr_older_${index}`
+        }));
+        mocks.queryFeedPage.mockResolvedValue(olderRows);
+        const { result } = renderFeedRows();
+        await flush();
+
+        expect(mocks.queryFeedLatest).toHaveBeenCalledWith(
+            expect.objectContaining({ maxRows: 80 })
+        );
+        act(() => result.current.loadOlder());
+        await flush();
+        expect(mocks.queryFeedPage).toHaveBeenCalledWith(
+            expect.objectContaining({ cursor: persistedCursor, maxEntries: 80 })
+        );
+        expect(result.current.rows).toHaveLength(81);
+
+        pushLiveEntry('live-after-older');
+        await flush();
+
+        expect(result.current.rows).toHaveLength(82);
+        expect(result.current.rows[0].userId).toBe('usr_live-after-older');
+        expect(result.current.rows.at(-1)?.userId).toBe('usr_older_79');
+    });
+
+    it('caps the latest window and pages from the retained tail', async () => {
+        const rows = Array.from({ length: 80 }, (_, index) => ({
+            created_at: `2026-05-15T00:${String(59 - (index % 60)).padStart(2, '0')}:00.000Z`,
+            rowId: index + 1,
+            sourceRank: 60,
+            type: 'GPS',
+            userId: `usr_base_${index}`
+        }));
+        mocks.queryFeedLatest.mockResolvedValue({
+            rows,
+            maxSequence: 0,
+            persistedCursor: {
+                createdAt: rows[79].created_at,
+                sourceRank: 60,
+                rowId: 80
+            },
+            persistedHasMore: false
+        });
+        const { result } = renderFeedRows();
+        await flush();
+
+        for (let index = 0; index < 21; index += 1) {
+            pushLiveEntry(`latest_${index}`);
+        }
+        await act(async () => {
+            vi.advanceTimersByTime(250);
+        });
+        await flush();
+
+        expect(result.current.rows).toHaveLength(100);
+        expect(result.current.rows[0].userId).toBe('usr_latest_20');
+        expect(result.current.rows.at(-1)?.rowId).toBe(79);
+        expect(result.current.hasMore).toBe(true);
+
+        act(() => result.current.loadOlder());
+        await flush();
+        expect(mocks.queryFeedPage).toHaveBeenCalledWith(
+            expect.objectContaining({
+                cursor: {
+                    createdAt: rows[78].created_at,
+                    sourceRank: 60,
+                    rowId: 79
+                }
+            })
+        );
+    });
+
+    it('drops newer rows while browsing old pages and reloads latest on demand', async () => {
+        const initialRows = Array.from({ length: 80 }, (_, index) => ({
+            created_at: `2026-05-15T00:${String(59 - (index % 60)).padStart(2, '0')}:00.000Z`,
+            rowId: index + 1,
+            sourceRank: 60,
+            type: 'GPS',
+            userId: `usr_initial_${index}`
+        }));
+        const olderRows = Array.from({ length: 80 }, (_, index) => ({
+            created_at: `2026-05-14T00:${String(59 - (index % 60)).padStart(2, '0')}:00.000Z`,
+            rowId: 100 + index,
+            sourceRank: 60,
+            type: 'GPS',
+            userId: `usr_older_${index}`
+        }));
+        mocks.queryFeedLatest
+            .mockResolvedValueOnce({
+                rows: initialRows,
+                maxSequence: 0,
+                persistedCursor: {
+                    createdAt: initialRows[79].created_at,
+                    sourceRank: 60,
+                    rowId: 80
+                },
+                persistedHasMore: true
+            })
+            .mockResolvedValueOnce({
+                rows: [{ userId: 'usr_reloaded_latest' }],
+                maxSequence: 0,
+                persistedHasMore: false
+            });
+        mocks.queryFeedPage.mockResolvedValue(olderRows);
+        const { result } = renderFeedRows();
+        await flush();
+
+        act(() => {
+            result.current.setViewingLatest(false);
+            result.current.loadOlder();
+        });
+        await flush();
+
+        expect(result.current.rows).toHaveLength(100);
+        expect(result.current.rows[0].userId).toBe('usr_initial_60');
+        expect(result.current.rows.at(-1)?.userId).toBe('usr_older_79');
+        expect(result.current.hasUnloadedLatest).toBe(true);
+
+        act(() => result.current.reloadLatest());
+        await flush();
+
+        expect(result.current.rows).toEqual([
+            { userId: 'usr_reloaded_latest' }
+        ]);
+        expect(result.current.hasUnloadedLatest).toBe(false);
+        expect(mocks.queryFeedLatest).toHaveBeenCalledTimes(2);
     });
 
     it('applies a correction event even when no upsert remains in the frontend buffer', async () => {

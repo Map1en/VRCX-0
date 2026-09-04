@@ -8,13 +8,20 @@ import {
     type BackgroundImageProviderId,
     type BackgroundImageSnapshot
 } from '@/platform/tauri/bindings';
+import configRepository from '@/repositories/configRepository';
 import {
     disableCommunityThemesForBackgroundImage,
     registerBackgroundImageAppearanceHandlers
 } from '@/services/appearanceConflictCoordinator';
+import { profileBackgroundTextures } from '@/shared/constants/profileBackgrounds';
 import { useBackgroundImageStore } from '@/state/backgroundImageStore';
 
 import { syncBackgroundImageAppearance } from './appearanceService';
+
+const BACKGROUND_IMAGE_DECORATION_URL_CONFIG_KEY =
+    'backgroundImageDecorationUrl';
+
+export type BackgroundImageSelectionMode = BackgroundImageMode | 'decoration';
 
 export const backgroundImageRemoteProviders: {
     id: BackgroundImageProviderId;
@@ -125,21 +132,76 @@ export async function initializeBackgroundImage(
     const projection =
         prefetchedProjection ?? (await commands.appBackgroundImageStateGet());
     applyProjectionState(projection);
+    const decorationImageUrl = (
+        await configRepository.getString(
+            BACKGROUND_IMAGE_DECORATION_URL_CONFIG_KEY,
+            ''
+        )
+    ).trim();
+    if (decorationImageUrl) {
+        useBackgroundImageStore
+            .getState()
+            .setDecorationImageUrl(decorationImageUrl);
+    }
     await syncBackgroundImageAppearance(false);
 }
 
 export async function setBackgroundImageMode(
-    nextMode: BackgroundImageMode
+    nextMode: BackgroundImageSelectionMode
 ): Promise<boolean> {
     if (nextMode === 'off') {
         await disableBackgroundImage();
         return true;
     }
     if (nextMode === 'daily') {
+        await clearBackgroundImageDecoration();
         return enableBackgroundImageDaily();
     }
+    if (nextMode === 'decoration') {
+        const source =
+            profileBackgroundTextures.find(
+                (texture) =>
+                    texture.imageUrl ===
+                    useBackgroundImageStore.getState().decorationImageUrl
+            ) ?? profileBackgroundTextures[0];
+        return setBackgroundImageDecoration(source.imageUrl);
+    }
+    await clearBackgroundImageDecoration();
     const projection = await configureBackgroundImage({ kind: 'enableCustom' });
     return projection.enabled;
+}
+
+export async function setBackgroundImageDecoration(
+    imageUrl: string
+): Promise<boolean> {
+    const nextImageUrl = imageUrl.trim();
+    if (!nextImageUrl) {
+        return false;
+    }
+    if (!useBackgroundImageStore.getState().decorationImageUrl) {
+        await configureBackgroundImage(
+            { kind: 'disable' },
+            { restoreAppTheme: false }
+        );
+    }
+    await configRepository.setString(
+        BACKGROUND_IMAGE_DECORATION_URL_CONFIG_KEY,
+        nextImageUrl
+    );
+    useBackgroundImageStore.getState().setDecorationImageUrl(nextImageUrl);
+    await syncBackgroundImageAppearance(false);
+    return true;
+}
+
+async function clearBackgroundImageDecoration(): Promise<void> {
+    if (!useBackgroundImageStore.getState().decorationImageUrl) {
+        return;
+    }
+    await configRepository.setString(
+        BACKGROUND_IMAGE_DECORATION_URL_CONFIG_KEY,
+        ''
+    );
+    useBackgroundImageStore.getState().setDecorationImageUrl('');
 }
 
 export async function enableBackgroundImageDaily(
@@ -226,6 +288,11 @@ export async function disableBackgroundImage({
 }: {
     restoreAppTheme?: boolean;
 } = {}): Promise<void> {
+    if (useBackgroundImageStore.getState().decorationImageUrl) {
+        await clearBackgroundImageDecoration();
+        await syncBackgroundImageAppearance(restoreAppTheme);
+        return;
+    }
     await configureBackgroundImage({ kind: 'disable' }, { restoreAppTheme });
 }
 

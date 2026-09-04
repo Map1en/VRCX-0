@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { FriendRosterById } from '@/domain/friends/types';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import myAvatarRepository from '@/repositories/myAvatarRepository';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
@@ -22,14 +23,19 @@ type ExportDialogProps = {
     onOpenChange(open: boolean): void;
 };
 
+const EMPTY_FRIENDS: FriendRosterById = {};
+const EMPTY_FRIEND_IDS: string[] = [];
+
 export function ExportDiscordNamesDialog({
     open,
     onOpenChange
 }: ExportDialogProps) {
     const { t } = useTranslation();
-    const friendsById = useFriendRosterStore((state) => state.friendsById);
-    const orderedFriendIds = useFriendRosterStore(
-        (state) => state.orderedFriendIds
+    const friendsById = useFriendRosterStore((state) =>
+        open ? state.friendsById : EMPTY_FRIENDS
+    );
+    const orderedFriendIds = useFriendRosterStore((state) =>
+        open ? state.orderedFriendIds : EMPTY_FRIEND_IDS
     );
     const [content, setContent] = useState('');
 
@@ -54,7 +60,15 @@ export function ExportDiscordNamesDialog({
     }, [friendsById, open, orderedFriendIds]);
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog
+            open={open}
+            onOpenChange={onOpenChange}
+            onOpenChangeComplete={(nextOpen) => {
+                if (!nextOpen && !open) {
+                    setContent('');
+                }
+            }}
+        >
             <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>
@@ -75,9 +89,11 @@ export function ExportFriendsListDialog({
     onOpenChange
 }: ExportDialogProps) {
     const { t } = useTranslation();
-    const friendsById = useFriendRosterStore((state) => state.friendsById);
-    const orderedFriendIds = useFriendRosterStore(
-        (state) => state.orderedFriendIds
+    const friendsById = useFriendRosterStore((state) =>
+        open ? state.friendsById : EMPTY_FRIENDS
+    );
+    const orderedFriendIds = useFriendRosterStore((state) =>
+        open ? state.orderedFriendIds : EMPTY_FRIEND_IDS
     );
     const [csv, setCsv] = useState('');
     const [json, setJson] = useState('');
@@ -124,7 +140,16 @@ export function ExportFriendsListDialog({
     }, [friendsById, open, orderedFriendIds, t]);
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog
+            open={open}
+            onOpenChange={onOpenChange}
+            onOpenChangeComplete={(nextOpen) => {
+                if (!nextOpen && !open) {
+                    setCsv('');
+                    setJson('');
+                }
+            }}
+        >
             <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>
@@ -204,7 +229,15 @@ export function ExportAvatarsListDialog({
     }, [open, t]);
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog
+            open={open}
+            onOpenChange={onOpenChange}
+            onOpenChangeComplete={(nextOpen) => {
+                if (!nextOpen && !open) {
+                    setContent('');
+                }
+            }}
+        >
             <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>

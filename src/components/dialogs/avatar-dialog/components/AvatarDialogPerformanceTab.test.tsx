@@ -57,7 +57,6 @@ describe('AvatarDialogPerformanceTab', () => {
                 }}
                 fileAnalysis={{
                     standalonewindows: {
-                        success: true,
                         performanceRating: 'VeryPoor',
                         _fileSize: '12.50 MB',
                         _uncompressedSize: '48.25 MB',

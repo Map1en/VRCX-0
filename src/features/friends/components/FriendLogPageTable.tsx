@@ -8,13 +8,14 @@ import {
     DataTableColumnSortableContext,
     DataTableHeader,
     DataTablePagination,
+    DataTableRow,
     DataTableScrollArea,
     DataTableSurface,
     getDataTableSizingStyle
 } from '@/components/data-table/DataTableView';
 import { ResizableTableCell } from '@/components/data-table/ResizableTableParts';
 import { PageFooter } from '@/components/layout/PageScaffold';
-import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
+import { Table, TableBody } from '@/ui/shadcn/table';
 
 import type { FriendLogRow } from '../friendLogRows';
 
@@ -46,7 +47,7 @@ export function FriendLogPageTable({
                             <DataTableHeader table={table} />
                             <TableBody>
                                 {table.getRowModel().rows.map((row) => (
-                                    <TableRow
+                                    <DataTableRow
                                         key={row.original?.rowId || row.id}
                                     >
                                         <DataTableColumnSortableContext
@@ -61,7 +62,7 @@ export function FriendLogPageTable({
                                                     />
                                                 ))}
                                         </DataTableColumnSortableContext>
-                                    </TableRow>
+                                    </DataTableRow>
                                 ))}
                             </TableBody>
                         </Table>

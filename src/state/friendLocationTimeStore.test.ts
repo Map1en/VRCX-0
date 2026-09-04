@@ -12,11 +12,13 @@ describe('friendLocationTimeStore', () => {
             {
                 userId: ' usr_first ',
                 location: ' wrld_first:1 ',
+                source: 'gameLog',
                 sinceMs: 1_700_000_000_000
             },
             {
                 userId: 'usr_second',
                 location: 'private',
+                source: 'realtime',
                 sinceMs: null
             }
         ]);
@@ -24,15 +26,21 @@ describe('friendLocationTimeStore', () => {
         expect(useFriendLocationTimeStore.getState().byUserId).toEqual({
             usr_first: {
                 location: 'wrld_first:1',
+                source: 'gameLog',
                 sinceMs: 1_700_000_000_000
             },
-            usr_second: { location: 'private', sinceMs: null }
+            usr_second: {
+                location: 'private',
+                source: 'realtime',
+                sinceMs: null
+            }
         });
 
         useFriendLocationTimeStore.getState().replaceSnapshot([
             {
                 userId: 'usr_second',
                 location: 'wrld_second:2',
+                source: 'realtime',
                 sinceMs: 1_700_000_100_000
             }
         ]);
@@ -40,6 +48,7 @@ describe('friendLocationTimeStore', () => {
         expect(useFriendLocationTimeStore.getState().byUserId).toEqual({
             usr_second: {
                 location: 'wrld_second:2',
+                source: 'realtime',
                 sinceMs: 1_700_000_100_000
             }
         });
@@ -50,6 +59,7 @@ describe('friendLocationTimeStore', () => {
             {
                 userId: 'usr_friend',
                 location: 'wrld_test:1',
+                source: 'realtime',
                 sinceMs: 1_700_000_000_000
             }
         ]);

@@ -34,6 +34,11 @@ import {
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
 
+import { getGameLogSessionPlayerAffinity } from '../gameLogRows';
+import {
+    useGameLogSessionAffinity,
+    type GameLogSessionAffinity
+} from '../gameLogSessionAffinity';
 import { getGameLogSessionPlayerDuration } from '../gameLogSessionDurations';
 import type {
     GameLogSessionEvent,
@@ -43,6 +48,11 @@ import type {
 const VIDEO_SOURCE_WITHOUT_LINK = new Set(['LSMedia', 'PopcornPalace']);
 const PLAYER_EVENT_GRID_CLASS =
     'grid-cols-[4.75rem_1rem_1rem_minmax(0,1fr)_5.5rem_5rem]';
+
+type SessionPlayerInput = Pick<
+    GameLogSessionEvent,
+    'created_at' | 'displayName' | 'userId'
+>;
 
 function getEventLabel(event: GameLogSessionEvent, t: TFunction) {
     if (event?.type === 'JoinGroup') {
@@ -57,7 +67,8 @@ function getEventLabel(event: GameLogSessionEvent, t: TFunction) {
 }
 
 function normalizeSessionMember(
-    member: GameLogSessionEvent | GameLogSessionMember,
+    member: SessionPlayerInput,
+    { favoriteIdSet, friendIdSet }: GameLogSessionAffinity,
     fallbackCreatedAt = ''
 ): GameLogSessionMember {
     const userId = normalizeId(member?.userId);
@@ -65,31 +76,27 @@ function normalizeSessionMember(
         created_at: member?.created_at || fallbackCreatedAt || '',
         displayName: member?.displayName || '',
         userId,
-        isFriend: Boolean(member?.isFriend),
-        isFavorite: Boolean(member?.isFavorite)
+        ...getGameLogSessionPlayerAffinity(member, favoriteIdSet, friendIdSet)
     };
 }
 
-function getGroupMembers(event: GameLogSessionEvent) {
+function getGroupMembers(
+    event: GameLogSessionEvent
+): readonly SessionPlayerInput[] {
     if (Array.isArray(event?.members) && event.members.length > 0) {
-        return event.members.map((member) =>
-            normalizeSessionMember(member, event?.created_at)
-        );
+        return event.members;
     }
 
     if (event?.displayName || event?.userId) {
-        return [normalizeSessionMember(event, event?.created_at)];
+        return [event];
     }
 
     return [];
 }
 
-function getGroupCount(
-    event: GameLogSessionEvent,
-    members: readonly GameLogSessionMember[]
-) {
-    if (members.length > 0) {
-        return members.length;
+function getGroupCount(event: GameLogSessionEvent, memberCount: number) {
+    if (memberCount > 0) {
+        return memberCount;
     }
     return typeof event.count === 'number' &&
         Number.isFinite(event.count) &&
@@ -211,7 +218,8 @@ function SinglePlayerActivityRow({
     event: GameLogSessionEvent;
     showDuration: boolean;
 }) {
-    const item = normalizeSessionMember(event, event?.created_at);
+    const affinity = useGameLogSessionAffinity();
+    const item = normalizeSessionMember(event, affinity, event?.created_at);
 
     return (
         <div
@@ -240,6 +248,39 @@ function SinglePlayerActivityRow({
     );
 }
 
+function GroupMemberRows({
+    members,
+    createdAt,
+    durationByKey,
+    showDuration
+}: {
+    members: readonly SessionPlayerInput[];
+    createdAt: string;
+    durationByKey: Map<string, number>;
+    showDuration: boolean;
+}) {
+    const affinity = useGameLogSessionAffinity();
+    return (
+        <div className="border-border/70 ml-6 border-l pl-3">
+            {members.map((member, index) => {
+                const item = normalizeSessionMember(
+                    member,
+                    affinity,
+                    createdAt
+                );
+                return (
+                    <PlayerActivityRow
+                        key={`${item.userId}:${item.created_at}:${item.displayName}:${index}`}
+                        durationByKey={durationByKey}
+                        item={item}
+                        showDuration={showDuration}
+                    />
+                );
+            })}
+        </div>
+    );
+}
+
 function GroupActivityRow({
     durationByKey,
     event
@@ -248,10 +289,21 @@ function GroupActivityRow({
     event: GameLogSessionEvent;
 }) {
     const { t } = useTranslation();
+    const { favoriteIdSet, friendIdSet } = useGameLogSessionAffinity();
     const [isExpanded, setIsExpanded] = useState(false);
     const members = getGroupMembers(event);
-    const count = getGroupCount(event, members);
-    const friendCount = members.filter((member) => member.isFriend).length;
+    const count = getGroupCount(event, members.length);
+    let friendCount = 0;
+    for (const member of members) {
+        const { isFriend } = getGameLogSessionPlayerAffinity(
+            member,
+            favoriteIdSet,
+            friendIdSet
+        );
+        if (isFriend) {
+            friendCount += 1;
+        }
+    }
 
     return (
         <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
@@ -293,16 +345,12 @@ function GroupActivityRow({
             />
             {members.length ? (
                 <CollapsibleContent>
-                    <div className="border-border/70 ml-6 border-l pl-3">
-                        {members.map((member, index) => (
-                            <PlayerActivityRow
-                                key={`${member.userId}:${member.created_at}:${member.displayName}:${index}`}
-                                durationByKey={durationByKey}
-                                item={member}
-                                showDuration={event?.type === 'LeftGroup'}
-                            />
-                        ))}
-                    </div>
+                    <GroupMemberRows
+                        members={members}
+                        createdAt={event.created_at}
+                        durationByKey={durationByKey}
+                        showDuration={event?.type === 'LeftGroup'}
+                    />
                 </CollapsibleContent>
             ) : null}
         </Collapsible>

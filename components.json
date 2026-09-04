@@ -21,5 +21,8 @@
     "rtl": false,
     "menuColor": "inverted-translucent",
     "menuAccent": "subtle",
-    "registries": {}
+    "registries": {
+        "@coss": "https://coss.com/ui/r/{name}.json",
+        "@magicui": "https://magicui.design/r/{name}"
+    }
 }

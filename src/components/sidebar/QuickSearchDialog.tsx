@@ -1,6 +1,7 @@
 import {
     CompassIcon,
     GlobeIcon,
+    LinkIcon,
     PersonStandingIcon,
     UsersIcon
 } from 'lucide-react';
@@ -9,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
 import { cn } from '@/lib/utils';
+import { directAccessParse } from '@/services/directAccessService';
 import { triggerToolByKey } from '@/services/toolActionService';
 import { setRgb } from '@/services/vrcx0CssLayerService';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -31,8 +33,10 @@ import {
 
 import {
     normalizeSearchQuery,
+    normalizeSearchValue,
     USER_QUERY_MIN_LENGTH
 } from './quick-search/quickSearchResultModel';
+import { useDirectAccessCandidate } from './quick-search/useDirectAccessCandidate';
 import { useQuickSearchHistory } from './quick-search/useQuickSearchHistory';
 import { useQuickSearchResults } from './quick-search/useQuickSearchResults';
 import { useQuickSearchSelectResult } from './quick-search/useQuickSearchSelectResult';
@@ -58,6 +62,8 @@ export function QuickSearchDialog({
     const navigate = useNavigate();
     const [query, setQuery] = useState('');
     const normalizedQuery = normalizeSearchQuery(query);
+    const directAccessInput = normalizeSearchValue(query);
+    const canDirectAccess = useDirectAccessCandidate(directAccessInput);
     const showSearchOverview = normalizedQuery.length < USER_QUERY_MIN_LENGTH;
     const navCommands = useNavCommands(normalizedQuery);
     const results = useQuickSearchResults({
@@ -73,6 +79,7 @@ export function QuickSearchDialog({
     });
 
     const hasResults =
+        canDirectAccess ||
         navCommands.length ||
         results.friends.length ||
         results.ownAvatars.length ||
@@ -101,6 +108,15 @@ export function QuickSearchDialog({
         setRgb(value === '/rgb-mode:on');
         setQuery('');
         onOpenChange(false);
+    }
+
+    function selectDirectAccess() {
+        const input = directAccessInput;
+        onOpenChange(false);
+        setQuery('');
+        directAccessParse(input).catch((error: unknown) => {
+            console.warn('Direct access failed:', error);
+        });
     }
 
     async function selectNavCommand(item: QuickSearchNavCommand) {
@@ -156,6 +172,27 @@ export function QuickSearchDialog({
                                 items={history.items}
                                 onSelect={selectResult}
                             />
+                        ) : null}
+                        {showSearchOverview ? (
+                            <CommandGroup
+                                heading={t('prompt.direct_access_omni.header')}
+                            >
+                                <CommandItem
+                                    value="hint-direct-access"
+                                    disabled
+                                    className="gap-3 opacity-70"
+                                >
+                                    <LinkIcon />
+                                    <span className="min-w-0 flex-1 truncate">
+                                        {t('side_panel.search_direct_access')}
+                                    </span>
+                                    <CommandShortcut className="max-w-[45%] truncate tracking-normal">
+                                        {t(
+                                            'side_panel.search_scope_direct_access'
+                                        )}
+                                    </CommandShortcut>
+                                </CommandItem>
+                            </CommandGroup>
                         ) : null}
                         {showSearchOverview ? (
                             <CommandGroup
@@ -231,6 +268,31 @@ export function QuickSearchDialog({
                             </CommandGroup>
                         ) : hasResults ? (
                             <>
+                                {canDirectAccess ? (
+                                    <CommandGroup
+                                        heading={t(
+                                            'prompt.direct_access_omni.header'
+                                        )}
+                                    >
+                                        <CommandItem
+                                            value={`direct-access:${directAccessInput}`}
+                                            className="gap-3"
+                                            onSelect={selectDirectAccess}
+                                        >
+                                            <LinkIcon className="size-4 shrink-0" />
+                                            <div className="flex min-w-0 flex-1 flex-col">
+                                                <span className="truncate">
+                                                    {t(
+                                                        'side_panel.search_open_direct'
+                                                    )}
+                                                </span>
+                                                <span className="text-muted-foreground truncate text-xs">
+                                                    {directAccessInput}
+                                                </span>
+                                            </div>
+                                        </CommandItem>
+                                    </CommandGroup>
+                                ) : null}
                                 <NavResultGroup
                                     title={t(
                                         'side_panel.search_pages_and_tools'

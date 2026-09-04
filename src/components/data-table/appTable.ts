@@ -22,6 +22,7 @@ import {
     rowExpandingFeature,
     rowPaginationFeature,
     rowSortingFeature,
+    sortFn_basic,
     tableFeatures,
     useTable
 } from '@tanstack/react-table';
@@ -113,6 +114,10 @@ export function useAppTable<TData extends RowData>(
 ): AppTable<TData> {
     const columns = options.columns;
     const columnVisibility = options.state?.columnVisibility;
+    const defaultColumn = useMemo(
+        () => ({ sortFn: sortFn_basic, ...options.defaultColumn }),
+        [options.defaultColumn]
+    );
     const state = useMemo(() => {
         if (!options.state || !columnVisibility) {
             return options.state;
@@ -126,5 +131,10 @@ export function useAppTable<TData extends RowData>(
             : { ...options.state, columnVisibility: resolvedVisibility };
     }, [columns, columnVisibility, options.state]);
 
-    return useTable({ ...options, state, features: appTableFeatures });
+    return useTable({
+        ...options,
+        defaultColumn,
+        state,
+        features: appTableFeatures
+    });
 }

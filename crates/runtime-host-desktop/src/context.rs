@@ -10,7 +10,8 @@ use vrcx_0_application_activity::{
     OverlayActivitySurface,
 };
 use vrcx_0_application_core::{
-    FriendProjection, HostSessionRuntime, ImageCache, RuntimeAuthScope, RuntimeEventBus,
+    FriendProjection, HostSessionRuntime, ImageCache,
+    RealtimeNotificationProjectionObserverRegistry, RuntimeAuthScope, RuntimeEventBus,
     TaskSupervisor, WebClient, WorldCache,
 };
 use vrcx_0_application_game::{
@@ -27,7 +28,7 @@ use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
 use crate::host_actions::RuntimeHost;
 use crate::notification::{
     seed_hmd_notifications_default, DesktopNotifier, DesktopNotifierSlot, NotificationDispatcher,
-    NotificationDispatcherDeps, NotificationDoNotDisturbRuntime,
+    NotificationDispatcherDeps, NotificationDoNotDisturbRuntime, RealtimeNotificationIndicator,
 };
 
 const AVATAR_PREFETCH_MAX_PATCHES: usize = 8;
@@ -45,6 +46,7 @@ pub(crate) struct DesktopRuntimeServicesDeps {
     pub event_bus: RuntimeEventBus,
     pub overlay_activity: OverlayActivityRuntime,
     pub overlay_activity_sinks: OverlayActivitySinkRegistry,
+    pub notification_projection_observers: RealtimeNotificationProjectionObserverRegistry,
 }
 
 pub struct DesktopRuntimeServices {
@@ -59,6 +61,7 @@ pub struct DesktopRuntimeServices {
     overlay_activity: OverlayActivityRuntime,
     overlay_activity_sinks: OverlayActivitySinkRegistry,
     notification_do_not_disturb: NotificationDoNotDisturbRuntime,
+    notification_indicator: Arc<RealtimeNotificationIndicator>,
     pub host: RuntimeHost,
     tts: Arc<dyn TtsEngine>,
     notification_desktop_notifier: DesktopNotifierSlot,
@@ -81,6 +84,17 @@ impl DesktopRuntimeServices {
             deps.event_bus,
             deps.tasks.clone(),
         )?;
+        let host = RuntimeHost::new();
+        let notification_indicator = Arc::new(RealtimeNotificationIndicator::new(
+            Arc::clone(&deps.db),
+            deps.config.clone(),
+            deps.auth_scope.clone(),
+            host.clone(),
+            deps.tasks.clone(),
+        ));
+        deps.notification_projection_observers
+            .add(notification_indicator.clone());
+        deps.auth_scope.add_observer(notification_indicator.clone());
         let notification_sink: Arc<dyn OverlayActivitySink> =
             Arc::new(NotificationDispatcher::new(NotificationDispatcherDeps {
                 session: deps.session.clone(),
@@ -107,7 +121,8 @@ impl DesktopRuntimeServices {
             overlay_activity: deps.overlay_activity,
             overlay_activity_sinks: deps.overlay_activity_sinks,
             notification_do_not_disturb,
-            host: RuntimeHost::new(),
+            notification_indicator,
+            host,
             tts,
             notification_desktop_notifier,
             realtime_user_image_resolver,
@@ -130,6 +145,14 @@ impl DesktopRuntimeServices {
 
     pub fn set_notification_desktop_notifier(&self, desktop: Arc<dyn DesktopNotifier>) {
         self.notification_desktop_notifier.set(desktop);
+    }
+
+    pub fn set_frontend_tray_notification(&self, notify: bool) {
+        self.notification_indicator.set_frontend_notify(notify);
+    }
+
+    pub fn refresh_tray_notification(&self) {
+        self.notification_indicator.refresh();
     }
 
     pub fn set_realtime_user_image_resolver(&self, realtime_runtime: &Arc<RealtimeHostRuntime>) {

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
     normalizeInfoChartRows,
+    previousInstanceVisitWindow,
     playerJoinMs,
     playerLeaveMs,
     normalizePlayerRows,
@@ -161,12 +162,14 @@ describe('previousInstancesRows', () => {
             userId: 'usr_self',
             displayName: 'Self',
             durationMs: 60 * 60 * 1000,
+            isSelf: true,
             isFriend: null,
             isFavorite: null
         });
         expect(rows[1]).toMatchObject({
             userId: 'usr_friend',
             displayName: 'Friend',
+            isSelf: false,
             isFriend: true,
             isFavorite: false
         });
@@ -179,6 +182,19 @@ describe('previousInstancesRows', () => {
         expect(rows[0].joinMs).toBe(
             new Date('2024-01-02T01:00:00.000Z').getTime()
         );
+    });
+
+    it('derives the selected visit window from its closed grouped duration', () => {
+        expect(
+            previousInstanceVisitWindow({
+                created_at: '2026-08-28T01:23:00.000Z',
+                last_ts: Date.parse('2026-08-28T06:23:00.000Z'),
+                time: 4 * 60 * 60 * 1000
+            })
+        ).toEqual({
+            startMs: Date.parse('2026-08-28T01:23:00.000Z'),
+            endMs: Date.parse('2026-08-28T06:23:00.000Z')
+        });
     });
 
     it('uses known user facts for missing chart display names', () => {

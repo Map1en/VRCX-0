@@ -290,6 +290,35 @@ pub fn notification_rows_query(
     })
 }
 
+pub fn notification_has_unseen_action_required(
+    db: &DatabaseService,
+    user_id: impl AsRef<str>,
+) -> Result<bool, Error> {
+    let user_id = normalize_text(user_id.as_ref());
+    if user_id.is_empty() {
+        return Ok(false);
+    }
+
+    let user_prefix = normalize_user_table_prefix(&user_id)?;
+    ensure_realtime_tables(db, &user_prefix)?;
+    let rows = db.execute(
+        &format!(
+            "SELECT EXISTS(\
+                SELECT 1 FROM {user_prefix}_notifications \
+                WHERE type = 'friendRequest' AND COALESCE(seen, 0) = 0 AND COALESCE(expired, 0) = 0 \
+                UNION ALL \
+                SELECT 1 FROM {user_prefix}_notifications_v2 \
+                WHERE COALESCE(seen, 0) = 0 AND (expires_at IS NULL OR expires_at = '' OR expires_at > @now)\
+            )"
+        ),
+        &ParamsBuilder::new().set("now", now_iso()).build(),
+    )?;
+    rows.first()
+        .map(|row| strict_row_i64(row, 0).map(|value| value != 0))
+        .transpose()
+        .map(|value| value.unwrap_or(false))
+}
+
 fn query_notification_list(
     db: &DatabaseService,
     query: NotificationListQueryInput,

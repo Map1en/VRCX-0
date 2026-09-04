@@ -23,6 +23,7 @@ import { useShellStore } from '@/state/shellStore';
 
 const pendingSeenIds = new Set<string>();
 let notificationScopeGeneration = 0;
+let notificationRowsRevision = 0;
 
 import type { LoadStatus } from '@/domain/shared/types';
 
@@ -207,6 +208,30 @@ function createNotificationState(
     );
 }
 
+function mergeLoadedNotificationRows(
+    loadedRows: NotificationRow[],
+    currentRows: NotificationRow[]
+): NotificationRow[] {
+    const loadedRowsById = new Map<string, NotificationRow>();
+    for (const row of loadedRows) {
+        if (row.id) {
+            loadedRowsById.set(row.id, row);
+        }
+    }
+    const currentIds = new Set<string>();
+    const mergedCurrentRows = currentRows.map((row) => {
+        if (!row.id) {
+            return row;
+        }
+        currentIds.add(row.id);
+        return { ...loadedRowsById.get(row.id), ...row };
+    });
+    return [
+        ...mergedCurrentRows,
+        ...loadedRows.filter((row) => !row.id || !currentIds.has(row.id))
+    ];
+}
+
 function getCurrentAuth(): RuntimeAuthSnapshot {
     return useRuntimeStore.getState().auth;
 }
@@ -288,8 +313,11 @@ function applyPendingSeenRows(rows: NotificationRow[]): NotificationRow[] {
     );
 }
 
-function syncShellUnseenCount(unseenCount: number) {
+function syncShellUnseenCount(unseenCount: number, force = false) {
     useShellStore.getState().setVrcUnseenNotificationCount(unseenCount);
+    if (force) {
+        useShellStore.getState().updateTrayIconNotification(true);
+    }
 }
 
 export const useVrcNotificationStore = create<VrcNotificationStore>(
@@ -310,13 +338,15 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                     loadStatus: 'idle',
                     detail: 'No current user session is available.'
                 });
-                syncShellUnseenCount(0);
+                notificationRowsRevision += 1;
+                syncShellUnseenCount(0, true);
                 return [];
             }
 
             set({ loadStatus: 'running', detail: '' });
+            const rowsRevision = notificationRowsRevision;
             try {
-                const rows = applyPendingSeenRows(
+                let rows = applyPendingSeenRows(
                     await notificationPersistenceRepository.queryNotifications({
                         userId: scope.currentUserId
                     })
@@ -324,11 +354,15 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                 if (!isCurrentNotificationScope(scope)) {
                     return rows;
                 }
+                if (notificationRowsRevision !== rowsRevision) {
+                    rows = mergeLoadedNotificationRows(rows, get().rows);
+                }
                 set({
                     ...createNotificationState(rows),
                     loadStatus: 'ready'
                 });
-                syncShellUnseenCount(get().unseenCount);
+                notificationRowsRevision += 1;
+                syncShellUnseenCount(get().unseenCount, true);
                 return rows;
             } catch (error) {
                 if (!isCurrentNotificationScope(scope)) {
@@ -338,6 +372,11 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                     error instanceof Error
                         ? error.message
                         : 'Failed to load VRChat notifications.';
+                if (notificationRowsRevision !== rowsRevision) {
+                    set({ loadStatus: 'error', detail: message });
+                    syncShellUnseenCount(get().unseenCount, true);
+                    throw error;
+                }
                 set({
                     rows: [],
                     categories: createEmptyCategories(),
@@ -345,7 +384,8 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                     loadStatus: 'error',
                     detail: message
                 });
-                syncShellUnseenCount(0);
+                notificationRowsRevision += 1;
+                syncShellUnseenCount(0, true);
                 throw error;
             }
         },
@@ -418,6 +458,7 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                     state.detail
                 );
             });
+            notificationRowsRevision += 1;
             syncShellUnseenCount(get().unseenCount);
         },
         patchNotification(id, fields) {
@@ -450,6 +491,7 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                     ? createNotificationStateFromSortedRows(rows, state.detail)
                     : state;
             });
+            notificationRowsRevision += 1;
             syncShellUnseenCount(get().unseenCount);
         },
         expireNotifications(ids) {
@@ -474,6 +516,7 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                     state.detail
                 );
             });
+            notificationRowsRevision += 1;
             syncShellUnseenCount(get().unseenCount);
         },
         markNotificationsSeen(ids) {
@@ -495,6 +538,7 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                     state.detail
                 );
             });
+            notificationRowsRevision += 1;
             syncShellUnseenCount(get().unseenCount);
         },
         async markNotificationSeen(notification?: NotificationRow | null) {
@@ -528,6 +572,7 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                         state.detail
                     )
                 );
+                notificationRowsRevision += 1;
                 syncShellUnseenCount(get().unseenCount);
                 if (failedCount > 0) {
                     await get().loadForCurrentUser();
@@ -583,6 +628,7 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                         state.detail
                     )
                 );
+                notificationRowsRevision += 1;
                 syncShellUnseenCount(get().unseenCount);
                 for (const item of result.items) {
                     if (item.state === 'failed') {
@@ -616,6 +662,7 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
         },
         resetVrcNotificationState() {
             notificationScopeGeneration += 1;
+            notificationRowsRevision += 1;
             set({
                 rows: [],
                 categories: createEmptyCategories(),

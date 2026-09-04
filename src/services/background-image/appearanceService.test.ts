@@ -7,6 +7,7 @@ import type { BackgroundImageSnapshot } from '@/platform/tauri/bindings';
 const mocks = vi.hoisted(() => ({
     backgroundState: {
         enabled: false,
+        decorationImageUrl: '',
         snapshot: null as BackgroundImageSnapshot | null
     },
     setCommunityThemeAppearanceControl: vi.fn(),
@@ -81,6 +82,7 @@ describe('background image appearance', () => {
         document.body.innerHTML =
             '<div class="vrcx-0-background-image-transition-layer"></div>';
         mocks.backgroundState.enabled = false;
+        mocks.backgroundState.decorationImageUrl = '';
         mocks.backgroundState.snapshot = null;
         await syncBackgroundImageAppearance(false);
         vi.clearAllMocks();
@@ -118,6 +120,10 @@ describe('background image appearance', () => {
             'background-image',
             expect.stringContaining('https://example.com/b.jpg')
         );
+        expect(mocks.setVrcxCssLayer).toHaveBeenCalledWith(
+            'background-image',
+            expect.stringContaining('--vrcx-0-app-surface: transparent;')
+        );
         expect(transitionLayer?.hasAttribute('data-active')).toBe(false);
         expect(transitionLayer?.style.backgroundImage).toBe('');
     });
@@ -135,6 +141,21 @@ describe('background image appearance', () => {
         expect(mocks.setVrcxCssLayer).toHaveBeenCalledWith(
             'background-image',
             expect.stringContaining('https://example.com/b.jpg')
+        );
+    });
+
+    it('applies a decoration URL without a backend snapshot', async () => {
+        mocks.backgroundState.enabled = true;
+        mocks.backgroundState.decorationImageUrl =
+            'https://assets.vrchat.com/profile-background.png';
+
+        await syncBackgroundImageAppearance(false);
+
+        expect(mocks.setVrcxCssLayer).toHaveBeenCalledWith(
+            'background-image',
+            expect.stringMatching(
+                /https:\/\/assets\.vrchat\.com\/profile-background\.png[\s\S]*--vrcx-0-app-surface: var\(--background\);/
+            )
         );
     });
 });

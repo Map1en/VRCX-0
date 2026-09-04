@@ -1,21 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 
 import { PageScaffold } from '@/components/layout/PageScaffold';
+import { ToolPageHeader } from '@/components/layout/ToolPageHeader';
 import { convertFileSrc } from '@/platform/tauri/assets';
 import mediaRepository from '@/repositories/mediaRepository';
 import { withUploadTimeout } from '@/shared/utils/imageUpload';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
+import { Badge } from '@/ui/shadcn/badge';
 
 import { ScreenshotGalleryView } from './components/ScreenshotGalleryView';
 import {
     ScreenshotDetailActions,
     ScreenshotMetadataDetailsCard,
-    ScreenshotMetadataHeader,
     ScreenshotMetadataPreviewCard,
     ScreenshotSearchToolbar
 } from './components/ScreenshotMetadataSections';
@@ -45,7 +46,6 @@ function recordFromUnknown(value: unknown): Record<string, unknown> {
 }
 
 export function ScreenshotMetadataPage() {
-    const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const { i18n, t } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
@@ -583,17 +583,7 @@ export function ScreenshotMetadataPage() {
     if (!screenshotCacheStatus?.available) {
         return (
             <PageScaffold className="screenshot-metadata-page flex-1">
-                <ScreenshotMetadataHeader
-                    backLabel={t('nav_tooltip.tools')}
-                    title={t('dialog.screenshot_metadata.header')}
-                    deleting={false}
-                    uploading={false}
-                    deletingLabel={t('view.tools.loading.deleting_metadata')}
-                    uploadingLabel={t(
-                        'view.tools.loading.uploading_screenshot'
-                    )}
-                    onBack={() => navigate('/tools')}
-                />
+                <ToolPageHeader toolKey="screenshot-metadata" />
                 <div className="text-muted-foreground mt-4 rounded-md border p-4 text-sm">
                     {screenshotCacheStatus?.reason ||
                         'Screenshot cache is unavailable on this platform.'}
@@ -604,28 +594,26 @@ export function ScreenshotMetadataPage() {
 
     return (
         <PageScaffold className="screenshot-metadata-page flex-1">
-            <ScreenshotMetadataHeader
-                backLabel={t('nav_tooltip.tools')}
-                title={t('dialog.screenshot_metadata.header')}
-                deleting={isDeletingMetadata || isDeletingFile}
-                uploading={isUploadingScreenshot}
-                deletingLabel={
-                    isDeletingFile
-                        ? t('view.tools.loading.deleting_screenshot')
-                        : t('view.tools.loading.deleting_metadata')
+            <ToolPageHeader
+                toolKey="screenshot-metadata"
+                status={
+                    <>
+                        {isDeletingMetadata || isDeletingFile ? (
+                            <Badge variant="outline">
+                                {isDeletingFile
+                                    ? t(
+                                          'view.tools.loading.deleting_screenshot'
+                                      )
+                                    : t('view.tools.loading.deleting_metadata')}
+                            </Badge>
+                        ) : null}
+                        {isUploadingScreenshot ? (
+                            <Badge variant="outline">
+                                {t('view.tools.loading.uploading_screenshot')}
+                            </Badge>
+                        ) : null}
+                    </>
                 }
-                uploadingLabel={t('view.tools.loading.uploading_screenshot')}
-                onBack={() => {
-                    if (showSearchResults) {
-                        resetSearchContext({ clearQuery: true });
-                        return;
-                    }
-                    if (isGalleryMode) {
-                        navigate('/tools');
-                        return;
-                    }
-                    openGalleryRoute();
-                }}
             />
 
             <ScreenshotSearchToolbar
@@ -707,6 +695,7 @@ export function ScreenshotMetadataPage() {
                         isUploadingScreenshot={isUploadingScreenshot}
                         isDeletingMetadata={isDeletingMetadata}
                         isDeletingFile={isDeletingFile}
+                        onBackToGallery={openGalleryRoute}
                         onOpenFolder={() => {
                             openFolder();
                         }}

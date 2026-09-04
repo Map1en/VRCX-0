@@ -407,7 +407,7 @@ export const AvatarInfoLine = memo(function AvatarInfoLine({
                 type="button"
                 variant="ghost"
                 className={cn(
-                    'text-muted-foreground hover:text-primary h-auto w-fit justify-start p-0 text-left font-normal',
+                    'text-muted-foreground hover:text-content-primary h-auto w-fit justify-start p-0 text-left font-normal',
                     compact && 'text-xs leading-snug'
                 )}
                 disabled={!imageUrl}

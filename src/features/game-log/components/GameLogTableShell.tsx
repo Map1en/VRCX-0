@@ -7,13 +7,14 @@ import {
     DataTableColumnSortableContext,
     DataTableHeader,
     DataTablePagination,
+    DataTableRow,
     DataTableScrollArea,
     DataTableSurface,
     getDataTableSizingStyle
 } from '@/components/data-table/DataTableView';
 import { ResizableTableCell } from '@/components/data-table/ResizableTableParts';
 import { PageFooter } from '@/components/layout/PageScaffold';
-import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
+import { Table, TableBody } from '@/ui/shadcn/table';
 
 import { resolveGameLogPageSize } from '../gameLogState';
 import type { GameLogPaginationSetter, GameLogRow } from '../gameLogTypes';
@@ -51,7 +52,7 @@ export function GameLogTableShell({
                             <DataTableHeader table={table} />
                             <TableBody>
                                 {table.getRowModel().rows.map((row) => (
-                                    <TableRow
+                                    <DataTableRow
                                         key={
                                             row.original?.rowId != null
                                                 ? `${String(row.original.type)}:${String(row.original.rowId)}`
@@ -70,7 +71,7 @@ export function GameLogTableShell({
                                                     />
                                                 ))}
                                         </DataTableColumnSortableContext>
-                                    </TableRow>
+                                    </DataTableRow>
                                 ))}
                             </TableBody>
                         </Table>

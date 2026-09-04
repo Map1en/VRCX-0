@@ -84,7 +84,6 @@ pub struct GameClientProcessorDeps {
 #[derive(Default)]
 pub struct GameClientState {
     pub last_crash_at_ms: Option<i64>,
-    pub current_location: String,
     pub debug_logging_outcome: Option<DebugLoggingOutcome>,
     pub debug_logging_check_id: u64,
     pub debug_logging_generation: u64,
@@ -302,18 +301,7 @@ impl GameClientProcessor {
     }
 
     fn current_location(&self) -> String {
-        if let Ok(state) = self.state.lock() {
-            let current_location = state.current_location.trim();
-            if !current_location.is_empty() {
-                return current_location.to_string();
-            }
-        }
-
-        self.deps
-            .location_source
-            .current_location_snapshot()
-            .map(|snapshot| snapshot.location)
-            .unwrap_or_default()
+        current_location_from_source(self.deps.location_source.as_ref())
     }
 
     fn emit_crash_relaunch_decision(&self, plan: Option<&CrashRelaunchPlan>, location: &str) {
@@ -379,6 +367,13 @@ impl GameClientProcessor {
     }
 }
 
+fn current_location_from_source(location_source: &dyn GameClientLocationSource) -> String {
+    location_source
+        .current_location_snapshot()
+        .map(|snapshot| snapshot.location)
+        .unwrap_or_default()
+}
+
 fn resolve_debug_logging_outcome(
     actions: &dyn GameClientDebugLoggingActions,
 ) -> (DebugLoggingOutcomeKind, Option<String>) {
@@ -429,6 +424,35 @@ mod tests {
             self.repair_attempts.fetch_add(1, Ordering::AcqRel);
             Ok(self.repair_succeeds)
         }
+    }
+
+    struct FakeLocationSource {
+        snapshot: Option<LogLocationSnapshot>,
+    }
+
+    impl GameClientLocationSource for FakeLocationSource {
+        fn vrc_closed_gracefully(&self) -> bool {
+            false
+        }
+
+        fn current_location_snapshot(&self) -> Option<LogLocationSnapshot> {
+            self.snapshot.clone()
+        }
+    }
+
+    #[test]
+    fn crash_relaunch_location_comes_from_the_game_log_source() {
+        let location = "wrld_current:instance";
+        let source = FakeLocationSource {
+            snapshot: Some(LogLocationSnapshot {
+                location: location.into(),
+                world_name: "Current World".into(),
+                created_at: "2026-09-01T00:00:00Z".into(),
+                file_name: "output_log_current.txt".into(),
+            }),
+        };
+
+        assert_eq!(current_location_from_source(&source), location);
     }
 
     #[test]

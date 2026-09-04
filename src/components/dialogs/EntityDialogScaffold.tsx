@@ -28,13 +28,7 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 import { Spinner } from '@/ui/shadcn/spinner';
-import {
-    Tabs,
-    TabsContent,
-    TabsIndicator,
-    TabsList,
-    TabsTrigger
-} from '@/ui/shadcn/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { Textarea } from '@/ui/shadcn/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
@@ -163,7 +157,7 @@ function EntityDialogTabs({
             className="flex min-h-0 flex-1 flex-col gap-0"
         >
             <TabsList
-                variant="line"
+                variant="underline"
                 className="relative flex h-11 min-h-11 w-full justify-start overflow-x-auto overflow-y-hidden rounded-none border-b bg-transparent p-0"
             >
                 {tabs.map((tab) => (
@@ -175,7 +169,6 @@ function EntityDialogTabs({
                         {tab.label}
                     </TabsTrigger>
                 ))}
-                <TabsIndicator />
             </TabsList>
             {children}
         </Tabs>

@@ -118,7 +118,7 @@ export function useSidePanelTabData({
             visibleTabLayout.map((item) => {
                 if (item.type === 'favoriteCollection') {
                     const count = customTabCountById.get(item.id) || 0;
-                    const countLabel = `(${count})`;
+                    const countLabel = String(count);
                     const title = `${item.name} ${countLabel}`;
                     return {
                         value: item.id,
@@ -131,14 +131,8 @@ export function useSidePanelTabData({
                 }
                 if (item.systemTab === 'groups') {
                     const label = t('side_panel.groups');
-                    const countLabel = `(${groupInstances.length})`;
-                    const title = t(
-                        'component.side_panel.dynamic.value_value',
-                        {
-                            value: label,
-                            value2: groupInstances.length
-                        }
-                    );
+                    const countLabel = String(groupInstances.length);
+                    const title = `${label} ${countLabel}`;
                     return {
                         value: 'groups',
                         label,
@@ -149,15 +143,8 @@ export function useSidePanelTabData({
                     };
                 }
                 const label = t('side_panel.friends');
-                const countLabel = `(${onlineIds.length}/${totalFriendCount})`;
-                const title = t(
-                    'component.side_panel.dynamic.value_value_value',
-                    {
-                        value: label,
-                        value2: onlineIds.length,
-                        value3: totalFriendCount
-                    }
-                );
+                const countLabel = `${onlineIds.length}/${totalFriendCount}`;
+                const title = `${label} ${countLabel}`;
                 return {
                     value: 'friends',
                     label,

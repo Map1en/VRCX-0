@@ -16,16 +16,23 @@ import {
 import type { DragEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { KeyboardShortcut } from '@/components/keyboard/KeyboardShortcut';
 import {
-    PageBackButton,
-    PageHeader,
-    PageToolbar,
-    PageToolbarRow,
-    PageTitle
-} from '@/components/layout/PageScaffold';
-import { ToolbarSegmented } from '@/components/layout/ToolbarControls';
-import { Badge } from '@/ui/shadcn/badge';
+    DATA_TABLE_CONTROL_CELL_CLASS_NAME,
+    DATA_TABLE_NUMERIC_CELL_CLASS_NAME,
+    DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
+    DataTableCell,
+    DataTableHead,
+    DataTableHeaderRow,
+    DataTableRow
+} from '@/components/data-table/DataTableView';
+import { KeyboardShortcut } from '@/components/keyboard/KeyboardShortcut';
+import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
+import {
+    ToolbarActions,
+    ToolbarSegmented,
+    ToolbarStatus,
+    ToolbarViews
+} from '@/components/layout/ToolbarControls';
 import { Button } from '@/ui/shadcn/button';
 import {
     Card,
@@ -47,14 +54,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow
-} from '@/ui/shadcn/table';
+import { Table, TableBody, TableHeader } from '@/ui/shadcn/table';
 
 import {
     SCREENSHOT_METADATA_SEARCH_TYPES,
@@ -81,47 +81,13 @@ const SEARCH_LAYOUT_OPTIONS = [
     }
 ] as const;
 
-export function ScreenshotMetadataHeader({
-    backLabel,
-    title,
-    deleting,
-    uploading,
-    deletingLabel,
-    uploadingLabel,
-    onBack
-}: {
-    backLabel: string;
-    title: string;
-    deleting: boolean;
-    uploading: boolean;
-    deletingLabel: string;
-    uploadingLabel: string;
-    onBack: () => void;
-}) {
-    return (
-        <PageToolbar>
-            <PageToolbarRow className="items-center">
-                <PageBackButton label={backLabel} onClick={onBack} />
-                <PageHeader className="min-w-0 p-0">
-                    <PageTitle>{title}</PageTitle>
-                </PageHeader>
-                {deleting ? (
-                    <Badge variant="outline">{deletingLabel}</Badge>
-                ) : null}
-                {uploading ? (
-                    <Badge variant="outline">{uploadingLabel}</Badge>
-                ) : null}
-            </PageToolbarRow>
-        </PageToolbar>
-    );
-}
-
 export function ScreenshotDetailActions({
     metadata,
     isVrcPlusSupporter,
     isUploadingScreenshot,
     isDeletingMetadata,
     isDeletingFile,
+    onBackToGallery,
     onOpenFolder,
     onCopyImage,
     onUpload,
@@ -133,6 +99,7 @@ export function ScreenshotDetailActions({
     isUploadingScreenshot: boolean;
     isDeletingMetadata: boolean;
     isDeletingFile: boolean;
+    onBackToGallery: () => void;
     onOpenFolder: () => void;
     onCopyImage: () => void;
     onUpload: () => void;
@@ -143,6 +110,10 @@ export function ScreenshotDetailActions({
 
     return (
         <div className="mb-2 flex flex-wrap gap-2">
+            <Button variant="ghost" size="sm" onClick={onBackToGallery}>
+                <ArrowLeftIcon data-icon="inline-start" />
+                {t('dialog.screenshot_metadata.gallery')}
+            </Button>
             <Button
                 variant="outline"
                 size="sm"
@@ -226,93 +197,113 @@ export function ScreenshotSearchToolbar({
     const { t } = useTranslation();
 
     return (
-        <div className="my-2 flex flex-col gap-2 lg:flex-row lg:items-center">
-            <InputGroup className="min-w-0 flex-1 lg:max-w-sm">
-                <InputGroupAddon>
-                    <SearchIcon />
-                </InputGroupAddon>
-                <InputGroupInput
-                    value={searchQuery}
-                    placeholder={t(
-                        'dialog.screenshot_metadata.search_placeholder'
-                    )}
-                    onChange={(event) =>
-                        onSearchQueryChange(event.target.value)
-                    }
-                    onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
-                            event.preventDefault();
-                            onSearch();
-                        }
-                    }}
-                />
-                <InputGroupAddon align="inline-end">
-                    <KeyboardShortcut keys="Enter" />
-                </InputGroupAddon>
-            </InputGroup>
-            <Select
-                value={searchType}
-                items={SCREENSHOT_METADATA_SEARCH_TYPES.map((type) => ({
-                    value: type.value,
-                    label: t(type.labelKey)
-                }))}
-                onValueChange={onSearchTypeChange}
-            >
-                <SelectTrigger className="w-full lg:w-52">
-                    <SelectValue
-                        placeholder={t(
-                            'dialog.screenshot_metadata.search_type_placeholder'
-                        )}
-                    />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectGroup>
-                        {SCREENSHOT_METADATA_SEARCH_TYPES.map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
-                                {t(type.labelKey)}
-                            </SelectItem>
-                        ))}
-                    </SelectGroup>
-                </SelectContent>
-            </Select>
-            <Button onClick={onSearch}>{t('common.actions.search')}</Button>
-            {showResultControls ? (
-                <>
-                    {searchRowsCount > 0 ? (
-                        <span className="text-xs whitespace-pre-wrap">
-                            {t('dialog.screenshot_metadata.result_count', {
-                                count: searchRowsCount
-                            })}
-                        </span>
+        <PageToolbar>
+            <PageToolbarRow>
+                <ToolbarViews className="min-w-0 flex-wrap">
+                    {showResultControls ? (
+                        <>
+                            {searchRowsCount > 0 ? (
+                                <ToolbarStatus>
+                                    {t(
+                                        'dialog.screenshot_metadata.result_count',
+                                        {
+                                            count: searchRowsCount
+                                        }
+                                    )}
+                                </ToolbarStatus>
+                            ) : null}
+                            <ToolbarSegmented
+                                iconOnly
+                                value={searchLayout}
+                                onValueChange={onSearchLayoutChange}
+                                options={SEARCH_LAYOUT_OPTIONS.map(
+                                    (option) => ({
+                                        value: option.value,
+                                        label: t(option.labelKey),
+                                        icon: option.icon
+                                    })
+                                )}
+                            />
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={onClearSearch}
+                            >
+                                <XIcon data-icon="inline-start" />
+                                {t('dialog.screenshot_metadata.clear_search')}
+                            </Button>
+                        </>
+                    ) : searchNavigationCount && selectedPathIndex >= 0 ? (
+                        <ToolbarStatus>
+                            {selectedPathIndex + 1}/{searchNavigationCount}
+                        </ToolbarStatus>
                     ) : null}
-                    <div className="flex items-center gap-2 lg:ml-auto">
-                        <ToolbarSegmented
-                            iconOnly
-                            value={searchLayout}
-                            onValueChange={onSearchLayoutChange}
-                            options={SEARCH_LAYOUT_OPTIONS.map((option) => ({
-                                value: option.value,
-                                label: t(option.labelKey),
-                                icon: option.icon
-                            }))}
+                </ToolbarViews>
+
+                <ToolbarActions className="w-full max-w-full flex-wrap justify-end sm:ml-auto sm:w-auto">
+                    <InputGroup className="min-w-48 flex-1 sm:w-72 sm:flex-none">
+                        <InputGroupAddon>
+                            <SearchIcon />
+                        </InputGroupAddon>
+                        <InputGroupInput
+                            value={searchQuery}
+                            placeholder={t(
+                                'dialog.screenshot_metadata.search_placeholder'
+                            )}
+                            aria-label={t(
+                                'dialog.screenshot_metadata.search_placeholder'
+                            )}
+                            onChange={(event) =>
+                                onSearchQueryChange(event.target.value)
+                            }
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter') {
+                                    event.preventDefault();
+                                    onSearch();
+                                }
+                            }}
                         />
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={onClearSearch}
-                        >
-                            <XIcon data-icon="inline-start" />
-                            {t('dialog.screenshot_metadata.clear_search')}
-                        </Button>
-                    </div>
-                </>
-            ) : searchNavigationCount && selectedPathIndex >= 0 ? (
-                <span className="text-xs whitespace-pre-wrap">
-                    {selectedPathIndex + 1}/{searchNavigationCount}
-                </span>
-            ) : null}
-        </div>
+                        <InputGroupAddon align="inline-end">
+                            <KeyboardShortcut keys="Enter" />
+                        </InputGroupAddon>
+                    </InputGroup>
+                    <Select
+                        value={searchType}
+                        items={SCREENSHOT_METADATA_SEARCH_TYPES.map((type) => ({
+                            value: type.value,
+                            label: t(type.labelKey)
+                        }))}
+                        onValueChange={onSearchTypeChange}
+                    >
+                        <SelectTrigger className="w-full sm:w-52">
+                            <SelectValue
+                                placeholder={t(
+                                    'dialog.screenshot_metadata.search_type_placeholder'
+                                )}
+                            />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectGroup>
+                                {SCREENSHOT_METADATA_SEARCH_TYPES.map(
+                                    (type) => (
+                                        <SelectItem
+                                            key={type.value}
+                                            value={type.value}
+                                        >
+                                            {t(type.labelKey)}
+                                        </SelectItem>
+                                    )
+                                )}
+                            </SelectGroup>
+                        </SelectContent>
+                    </Select>
+                    <Button onClick={onSearch}>
+                        {t('common.actions.search')}
+                    </Button>
+                </ToolbarActions>
+            </PageToolbarRow>
+        </PageToolbar>
     );
 }
 
@@ -334,19 +325,19 @@ export function ScreenshotMetadataResultsTable({
     const { t } = useTranslation();
 
     return (
-        <div className="min-h-0 flex-1 overflow-auto">
-            <Table className="app-data-table">
+        <div className="app-data-table min-h-0 flex-1 overflow-auto">
+            <Table>
                 <TableHeader>
-                    <TableRow>
-                        <TableHead>
+                    <DataTableHeaderRow>
+                        <DataTableHead>
                             <SearchSortHead
                                 label={t('dialog.screenshot_metadata.col_date')}
                                 sortKey="dateTime"
                                 sort={searchSort}
                                 onToggle={onToggleSearchSort}
                             />
-                        </TableHead>
-                        <TableHead>
+                        </DataTableHead>
+                        <DataTableHead>
                             <SearchSortHead
                                 label={t(
                                     'dialog.screenshot_metadata.col_world'
@@ -355,9 +346,9 @@ export function ScreenshotMetadataResultsTable({
                                 sort={searchSort}
                                 onToggle={onToggleSearchSort}
                             />
-                        </TableHead>
+                        </DataTableHead>
                         {currentSearchType.index <= 1 ? (
-                            <TableHead>
+                            <DataTableHead>
                                 <SearchSortHead
                                     label={t(
                                         'dialog.screenshot_metadata.col_match'
@@ -366,9 +357,9 @@ export function ScreenshotMetadataResultsTable({
                                     sort={searchSort}
                                     onToggle={onToggleSearchSort}
                                 />
-                            </TableHead>
+                            </DataTableHead>
                         ) : null}
-                        <TableHead>
+                        <DataTableHead>
                             <SearchSortHead
                                 label={t(
                                     'dialog.screenshot_metadata.col_author'
@@ -377,8 +368,10 @@ export function ScreenshotMetadataResultsTable({
                                 sort={searchSort}
                                 onToggle={onToggleSearchSort}
                             />
-                        </TableHead>
-                        <TableHead>
+                        </DataTableHead>
+                        <DataTableHead
+                            className={DATA_TABLE_NUMERIC_HEADER_CLASS_NAME}
+                        >
                             <SearchSortHead
                                 label={t(
                                     'dialog.screenshot_metadata.col_players'
@@ -386,17 +379,18 @@ export function ScreenshotMetadataResultsTable({
                                 sortKey="playerCount"
                                 sort={searchSort}
                                 onToggle={onToggleSearchSort}
+                                className="ml-auto"
                             />
-                        </TableHead>
-                        <TableHead>
+                        </DataTableHead>
+                        <DataTableHead>
                             {t('dialog.screenshot_metadata.col_resolution')}
-                        </TableHead>
-                        <TableHead className="w-8" />
-                    </TableRow>
+                        </DataTableHead>
+                        <DataTableHead className="w-8" />
+                    </DataTableHeaderRow>
                 </TableHeader>
                 <TableBody>
                     {sortedSearchRows.map((row) => (
-                        <TableRow
+                        <DataTableRow
                             key={row.filePath}
                             data-state={
                                 row.filePath === selectedPath
@@ -404,20 +398,24 @@ export function ScreenshotMetadataResultsTable({
                                     : undefined
                             }
                         >
-                            <TableCell>{row.dateLabel}</TableCell>
-                            <TableCell>{row.world}</TableCell>
+                            <DataTableCell>{row.dateLabel}</DataTableCell>
+                            <DataTableCell>{row.world}</DataTableCell>
                             {currentSearchType.index <= 1 ? (
-                                <TableCell>{row.match}</TableCell>
+                                <DataTableCell>{row.match}</DataTableCell>
                             ) : null}
-                            <TableCell>{row.author}</TableCell>
-                            <TableCell>
+                            <DataTableCell>{row.author}</DataTableCell>
+                            <DataTableCell
+                                className={DATA_TABLE_NUMERIC_CELL_CLASS_NAME}
+                            >
                                 <span className="inline-flex items-center gap-1">
                                     <UsersIcon className="text-muted-foreground size-3" />
                                     {row.playerCount}
                                 </span>
-                            </TableCell>
-                            <TableCell>{row.resolution}</TableCell>
-                            <TableCell className="text-right">
+                            </DataTableCell>
+                            <DataTableCell>{row.resolution}</DataTableCell>
+                            <DataTableCell
+                                className={`${DATA_TABLE_CONTROL_CELL_CLASS_NAME} text-right`}
+                            >
                                 <Button
                                     type="button"
                                     variant="ghost"
@@ -427,8 +425,8 @@ export function ScreenshotMetadataResultsTable({
                                 >
                                     <ArrowRightIcon data-icon="inline-start" />
                                 </Button>
-                            </TableCell>
-                        </TableRow>
+                            </DataTableCell>
+                        </DataTableRow>
                     ))}
                 </TableBody>
             </Table>

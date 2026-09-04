@@ -194,65 +194,65 @@
     },
     "language": "日本語 (ja)",
     "data_dir_migration": {
-        "title": "VRCX-0 のデータを移動",
-        "description": "選択したフォルダの使用方法を選んでください。",
-        "completed_title": "データの移動が完了しました",
-        "completed_description": "VRCX-0 を再起動すると、新しいデータフォルダが使用されます。",
-        "error_short": "データの移動に失敗",
-        "start": "移動を開始",
+        "title": "データの保存先を変更",
+        "description": "新しい保存先で使うデータを選んでください。",
+        "completed_title": "再起動して変更を完了",
+        "completed_description": "VRCX-0 を再起動すると、新しい保存先に切り替わります。",
+        "error_short": "保存先を変更できませんでした",
+        "start": "コピーして切り替え",
         "restart_now": "今すぐ再起動",
         "restart_later": "後で",
-        "create_backup_first": "先にバックアップを作成",
-        "space_summary": "必要：{required}・空き：{available}",
-        "insufficient_space": "データを移動するための空き容量が不足しています。",
-        "contents_notice": "データベース、アプリ設定、ギャラリーの索引とサムネイルをコピーします。画像キャッシュは新しい場所で再取得されます。古いデータは削除を選ぶまで保持されます。",
-        "unsupported_storage_warning": "ネットワークドライブ、クラウド同期フォルダ（OneDrive、iCloud など）、リムーバブルドライブは選択しないでください。これらの場所にあるデータベースは破損する可能性があり、サポート対象外です。",
+        "create_backup_first": "バックアップ画面を開く",
+        "space_summary": "必要な容量：{required} · 空き容量：{available}",
+        "insufficient_space": "データをコピーする空き容量が足りません。別のドライブのフォルダを選ぶか、空き容量を増やしてください。",
+        "contents_notice": "これまでの記録や設定を新しい保存先にコピーします。元のフォルダのデータは残ります。",
+        "unsupported_storage_warning": "ネットワークドライブ、クラウド同期フォルダ、USB メモリなどの外付けドライブはサポート対象外です。データが破損するおそれがあります。",
         "mode": {
-            "migrate": "現在のデータを移動（推奨）",
-            "adoptExisting": "このフォルダにある VRCX-0 プロファイルを使用",
-            "freshStart": "このフォルダで新しいプロファイルを作成"
+            "migrate": "今のデータを引き継ぐ（おすすめ）",
+            "adoptExisting": "このフォルダにあるデータを使う",
+            "freshStart": "最初から始める"
         },
         "target": {
             "empty": "選択したフォルダは空です。",
-            "existingProfile": "VRCX-0 プロファイルが既にあります。置き換える前に退避されます。",
-            "foreignContent": "他のファイルがあります。VRCX-0 は自身のファイルだけを管理します。"
+            "existingProfile": "このフォルダにある VRCX-0 のデータは置き換えられます。置き換える前にコピーを残します。",
+            "foreignContent": "このフォルダには他のファイルもあります。VRCX-0 に関係のないファイルは変更しません。"
         },
         "phase": {
-            "preparing": "移動を準備中",
-            "freezing": "データベースを停止中",
-            "copying": "データベースをコピー中",
-            "verifying": "コピーを検証中",
-            "committing": "移動を完了中"
+            "preparing": "データを準備中…",
+            "freezing": "データを準備中…",
+            "copying": "データをコピー中…",
+            "verifying": "コピーしたデータを確認中…",
+            "committing": "保存先を切り替え中…"
         },
         "error": {
             "operationBusy": "別のバックアップ、復元、またはデータ移動が実行中です。",
-            "databaseUnavailable": "現在データベースを移動できません。",
+            "databaseUnavailable": "今はデータをコピーできません。しばらくしてからもう一度お試しください。",
             "pendingRestore": "保留中のプロファイル復元を先に完了またはキャンセルしてください。",
             "pendingLegacyMigration": "保留中の旧データ移行を先に完了してください。",
             "pendingMigration": "データフォルダの移動が保留中です。VRCX-0 を再起動してください。",
             "cleanupConflict": "このフォルダへ戻す前に古いデータを処理してください。",
             "insufficientSpace": "データを移動するための空き容量が不足しています。",
-            "invalidAdoptionTarget": "既存の VRCX-0 プロファイルを含むフォルダだけを引き継げます。",
-            "invalidFreshStartTarget": "既存の VRCX-0 プロファイルを含むフォルダは新規開始に使用できません。",
-            "copyFailed": "データベースをコピーできませんでした。元のデータはそのまま使用されています。",
-            "commitFailed": "コピーしたデータベースを配置できませんでした。元のデータはそのまま使用されています。",
+            "invalidAdoptionTarget": "このフォルダには使用できる VRCX-0 のデータがありません。別のフォルダを選んでください。",
+            "invalidFreshStartTarget": "このフォルダには VRCX-0 のデータがあります。最初から始めるには、別のフォルダを選んでください。",
+            "copyFailed": "データをコピーできませんでした。VRCX-0 は引き続き元のフォルダを使用しています。",
+            "commitFailed": "コピーしたデータを保存できませんでした。VRCX-0 は引き続き元のフォルダを使用しています。",
             "pointerCommitFailed": "新しいデータフォルダを有効にできませんでした。再起動して安全に再試行してください。",
             "io": "データフォルダのファイルを読み書きできませんでした。"
         },
         "warning": {
             "configCopyFailed": "一部のアプリ設定をコピーできず、既定値に戻る場合があります。",
-            "galleryCopyFailed": "一部のギャラリー索引またはサムネイルをコピーできませんでした。必要に応じて再構築されます。",
+            "galleryCopyFailed": "ギャラリーの一部のデータをコピーできませんでした。必要に応じて自動で作り直されます。",
             "cacheCleanupFailed": "一部の古いキャッシュを削除できませんでした。"
         },
         "result": {
-            "succeeded": "データフォルダの移動が完了しました",
+            "succeeded": "データの保存先を変更しました",
             "failed_title": "新しいデータフォルダを使用できませんでした",
             "database_open_failed": "元のフォルダを引き続き使用しています。データへの影響はありません。",
-            "interrupted_title": "データフォルダの移動が中断されました",
+            "interrupted_title": "保存先の変更が中断されました",
             "interrupted": "元のフォルダを引き続き使用しています。もう一度試せます。"
         },
         "cleanup": {
-            "ready_title": "データフォルダの移動が完了しました",
+            "ready_title": "データの保存先を変更しました",
             "ready_description": "古いデータは {path} に残っています。",
             "action": "古いデータを削除",
             "action_with_size": "古いデータを削除（{size}）",
@@ -265,6 +265,16 @@
             "settings_description": "古い VRCX-0 データが {path} に残っています（{size} バイト）。",
             "dismiss": "保持して今後通知しない",
             "dismissed": "削除の通知を無効にしました"
+        },
+        "running_title": "保存先を変更中",
+        "running_description": "完了するまで VRCX-0 を閉じずにお待ちください。",
+        "start_existing": "既存のデータを使う",
+        "start_fresh": "このフォルダを使う",
+        "new_folder": "新しい保存先",
+        "cancelling": "キャンセル中…",
+        "mode_description": {
+            "adoptExisting": "このフォルダにある記録や設定を使います。現在のデータはコピーしません。",
+            "freshStart": "現在のデータをコピーせず、新しい保存先で最初から始めます。元のデータは削除されません。"
         }
     },
     "profile_backup": {
@@ -412,6 +422,13 @@
             "m": "分",
             "s": "秒"
         },
+        "time_units_short": {
+            "y": "年",
+            "d": "日",
+            "h": "時間",
+            "m": "分",
+            "s": "秒"
+        },
         "days": {
             "sunday": "日曜日",
             "monday": "月曜日",
@@ -484,6 +501,7 @@
             "doNotDisturbUntilStopped": "オフにするまで",
             "doNotDisturbTurnOff": "一時停止を解除",
             "rebuildUi": "UI を再読み込み",
+            "sidebarMode": "サイドバーモード",
             "disableTheme": "テーマを無効化",
             "exit": "終了"
         },
@@ -706,6 +724,8 @@
         "notification_center": "通知センター",
         "show_friends_sidebar": "フレンドサイドバーを表示",
         "hide_friends_sidebar": "フレンドサイドバーを非表示",
+        "enter_sidebar_mode": "サイドバーモード",
+        "restore_full_window": "通常のウィンドウに戻す",
         "zoom_in": "拡大",
         "zoom_out": "縮小",
         "reset_zoom": "ズームをリセット",
@@ -765,6 +785,9 @@
         "search_fav_worlds": "お気に入りのワールド",
         "search_groups": "グループ",
         "search_own_groups": "自分のグループ",
+        "search_direct_access": "リンクやIDを貼り付け",
+        "search_scope_direct_access": "wrld_ · usr_ · vrchat.com/…",
+        "search_open_direct": "このリンク・IDを開く",
         "search_joined_groups": "参加したグループ",
         "refresh_tooltip": "フレンドを更新",
         "refresh_available_in_seconds": "同期したばかりです。あと {count} 秒後にもう一度お試しください",
@@ -784,6 +807,12 @@
             "presets": "プリセット"
         },
         "settings": {
+            "auto_hide": {
+                "label": "デスクトップの端に寄せているときは自動的に隠す",
+                "description": "サイドバーのウインドウをデスクトップの上端または左右の端に移動すると、ポインターを離したときに隠れます。端にポインターを合わせるか、トレイから開くと再表示できます。",
+                "save_failed": "自動非表示の設定を保存できませんでした。",
+                "paused": "ウインドウの操作に失敗したため、自動非表示を一時停止しました。トレイから開き直すか、サイドバーモードに切り替え直すと再試行できます。"
+            },
             "display": "表示",
             "sort": "ソート",
             "advanced": "高度な設定",
@@ -922,9 +951,22 @@
                 "Avatar": "アバター",
                 "Bio": "自己紹介"
             },
+            "toolbar": {
+                "all_types": "すべて",
+                "type_summary": "種類：{types}",
+                "more_types": "{type} +{count}",
+                "grouped_friends_only": "グループ分けしたフレンドのみ",
+                "view_summary": "表示：{view}",
+                "view_label": "表示"
+            },
             "modes": {
                 "table": "テーブル",
                 "columns": "カラム"
+            },
+            "actions": {
+                "back_to_top": "先頭に戻る",
+                "expand_entry": "詳細を開く",
+                "collapse_entry": "詳細を閉じる"
             },
             "columns": {
                 "add": "カラムを追加",
@@ -1704,10 +1746,16 @@
                 },
                 "legend": {
                     "circles": "コミュニティ",
-                    "more_circles": "ほか {count} 件",
+                    "more_circles": "ほかに小さなグループが {count} 件（グレー表示）",
                     "size_means_degree": "円が大きいほど共通のフレンドが多い",
+                    "hollow_means_unknown": "白抜きの円 = 共通のフレンドが非公開",
+                    "coverage": "取得済み",
+                    "coverage_value": "{fetched}/{total} 人",
+                    "coverage_unavailable": "非公開",
+                    "coverage_updated": "更新日時",
                     "min_degree": "つながり数の下限",
-                    "isolated_nodes": "つながりのない {count} 人"
+                    "isolated_nodes": "共通のフレンドがいない人 {count} 人",
+                    "unavailable_nodes": "非公開または未取得 {count} 人"
                 }
             },
             "loading": {
@@ -2477,7 +2525,8 @@
                 },
                 "friend_log": {
                     "header": "フレンドログ",
-                    "hide_unfriends": "フレンド解除を非表示にする"
+                    "hide_unfriends": "フレンド解除を非表示にする",
+                    "show_notification_dot": "フレンドログの通知ドットを表示"
                 }
             },
             "notifications": {
@@ -2750,7 +2799,7 @@
                     },
                     "data_directory": {
                         "header": "データディレクトリ",
-                        "description": "現在のソース: {source}。保存先パスのみ変更します。既存のデータは移動されません。",
+                        "description": "現在の保存先：{source}",
                         "current": "現在のディレクトリ",
                         "actions": "データディレクトリ操作",
                         "choose": "フォルダを選択",
@@ -2758,16 +2807,10 @@
                         "restart": "再起動",
                         "restart_hint": "変更は VRCX-0 の再起動後に適用されます。",
                         "source_cli": "コマンドライン指定",
-                        "source_persisted": "保存済みのカスタムディレクトリ",
-                        "source_default": "既定のディレクトリ",
+                        "source_persisted": "指定したフォルダ",
+                        "source_default": "標準のフォルダ",
                         "cli_override": "この起動では --data-dir が使われています。保存済みディレクトリを変更するには、コマンドライン指定なしで起動してください。",
-                        "confirm_title": "VRCX-0 のデータディレクトリを切り替えますか？",
-                        "confirm_description": "VRCX-0 は現在のデータをコピーしません。ログイン、データベース、設定、キャッシュを保持するには、再起動前に現在のデータディレクトリの内容を {path} に手動でコピーしてください。このディレクトリを保存し、再起動後に適用します。",
-                        "confirm_empty": "選択したフォルダは空です。手動でデータをコピーしない限り、新しいプロファイルとして起動します。",
-                        "confirm_missing_profile": "選択したフォルダには VRCX-0.sqlite3 または VRCX-0.json がなく、新しいプロファイルとして起動する可能性があります。",
                         "saved_restart_required": "データディレクトリを保存しました。適用するには VRCX-0 を再起動してください。",
-                        "reset_confirm_title": "VRCX-0 のデータディレクトリを既定に戻しますか？",
-                        "reset_confirm_description": "再起動後、VRCX-0 は既定のデータディレクトリを使用します。ファイルはコピーされません。",
                         "reset_saved": "データディレクトリを既定に戻しました。適用するには VRCX-0 を再起動してください。",
                         "failed_to_load": "データディレクトリ設定の読み込みに失敗しました。"
                     },
@@ -3303,7 +3346,8 @@
             },
             "mode": {
                 "daily": "デイリー画像",
-                "custom": "ローカル画像"
+                "custom": "ローカル画像",
+                "decoration": "プロフィール装飾"
             },
             "rotation": {
                 "minutes": "分",
@@ -4862,7 +4906,7 @@
             "header": "翻訳サービスプロバイダー設定",
             "description": "コンテンツの翻訳に使用するプロバイダーを選択して設定します。",
             "guide": "設定方法",
-            "mode": "翻訳サービスプロバイダ",
+            "mode": "翻訳サービスプロバイダー",
             "mode_google": "Google 翻訳",
             "mode_deepl": "DeepL Free API",
             "test": "テスト",
@@ -4937,8 +4981,8 @@
                     "example": "参加、退出"
                 },
                 "favoriteMovement": {
-                    "label": "お気に入りの動き",
-                    "description": "お気に入りフレンドのオンライン、オフライン、位置、ステータスの変化です。",
+                    "label": "フレンドの動き",
+                    "description": "フレンドのオンライン、オフライン、位置、ステータスの変化です。",
                     "example": "オンライン、位置"
                 },
                 "profileChange": {
@@ -5154,7 +5198,17 @@
         },
         "vrcx_updater": {
             "latest_version": "VRCX-0は最新版です。",
-            "ready_for_update": "アップデート {value} の準備ができました"
+            "ready_for_update": "アップデート {value} の準備ができました",
+            "channel": {
+                "label": "アップデートチャンネル",
+                "stable": "安定版",
+                "beta": "ベータ版",
+                "description": "VRCX-0 は、現在インストールされているチャンネルの更新のみ確認します。",
+                "switch_description": "{channel}に切り替えるには、GitHub から最新リリースをダウンロードしてインストールしてください。",
+                "download_stable": "最新の安定版をダウンロード",
+                "download_beta": "最新のベータ版をダウンロード",
+                "no_release": "このチャンネルには利用可能なリリースがありません。"
+            }
         },
         "change_log": {
             "header": "更新履歴",

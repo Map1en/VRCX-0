@@ -37,6 +37,10 @@ pub struct TelemetryConfigSnapshot {
     pub auto_accept_invite_requests: String,
     pub avatar_auto_cleanup: String,
     pub theme_mode: String,
+    pub db_size_bucket: String,
+    pub feed_rows_bucket: String,
+    pub gamelog_rows_bucket: String,
+    pub friend_log_rows_bucket: String,
 }
 
 #[derive(Clone, Debug, Serialize)]

@@ -7,6 +7,74 @@ describe('friendRosterStore', () => {
         useFriendRosterStore.getState().resetRoster();
     });
 
+    it('retains unchanged profile references when a presence field changes', () => {
+        const store = useFriendRosterStore.getState();
+        store.applyFriendPatch({
+            userId: 'usr_shared',
+            patch: {
+                state: 'online',
+                tags: ['system_trust_basic'],
+                bioLinks: ['https://example.com'],
+                badges: [{ badgeId: 'badge_one' }],
+                currentAvatarTags: ['avatar_tag'],
+                $location: { worldId: 'wrld_one' },
+                externalMetadata: { nested: ['preserved'] }
+            }
+        });
+        const previous = useFriendRosterStore.getState().friendsById.usr_shared;
+        store.applyFriendPatch({
+            userId: 'usr_shared',
+            patch: { statusDescription: 'new status' },
+            stateBucketAuthority: 'preserve'
+        });
+        const next = useFriendRosterStore.getState().friendsById.usr_shared;
+        expect(next).not.toBe(previous);
+        expect(next.statusDescription).toBe('new status');
+        expect(next.state).toBe('online');
+        expect(next.tags).toBe(previous.tags);
+        expect(next.bioLinks).toBe(previous.bioLinks);
+        expect(next.badges).toBe(previous.badges);
+        expect(next.currentAvatarTags).toBe(previous.currentAvatarTags);
+        expect(next.$location).toBe(previous.$location);
+        expect(next.externalMetadata).toBe(previous.externalMetadata);
+    });
+
+    it('preserves open nested fields and reuses equal patch data', () => {
+        const store = useFriendRosterStore.getState();
+        const patch = {
+            bioLinks: ['https://example.com'],
+            externalMetadata: { nested: { value: 'before' }, unchanged: [1, 2] }
+        };
+        store.applyFriendPatch({ userId: 'usr_extra', patch });
+        const previousState = useFriendRosterStore.getState();
+        store.applyFriendPatches([
+            { userId: 'usr_extra', patch: structuredClone(patch) }
+        ]);
+        expect(useFriendRosterStore.getState()).toBe(previousState);
+        store.applyFriendPatch({
+            userId: 'usr_extra',
+            patch: {
+                externalMetadata: {
+                    nested: null,
+                    unchanged: [1, 2],
+                    added: true
+                }
+            }
+        });
+        const next = useFriendRosterStore.getState().friendsById.usr_extra;
+        expect(next.externalMetadata).toEqual({
+            nested: null,
+            unchanged: [1, 2],
+            added: true
+        });
+        expect(previousState.friendsById.usr_extra.externalMetadata).toEqual(
+            patch.externalMetadata
+        );
+        expect(next.bioLinks).toBe(
+            previousState.friendsById.usr_extra.bioLinks
+        );
+    });
+
     it('moves from loading to ready and orders friends within state buckets', () => {
         const store = useFriendRosterStore.getState();
 

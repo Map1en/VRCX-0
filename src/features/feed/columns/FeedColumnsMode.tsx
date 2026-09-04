@@ -37,11 +37,17 @@ import {
     AlertDialogHeader,
     AlertDialogTitle
 } from '@/ui/shadcn/alert-dialog';
-import { Button } from '@/ui/shadcn/button';
-import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
-import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
+import {
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuSeparator
+} from '@/ui/shadcn/dropdown-menu';
 
 import { FeedPersistenceDisabledIndicator } from '../components/FeedPersistenceDisabledIndicator';
+import { FeedViewModeToggle } from '../components/FeedViewModeToggle';
 import {
     FEED_COLUMN_DENSITY_OPTIONS,
     type FeedColumnDensity,
@@ -50,7 +56,8 @@ import {
 } from '../feedColumnsDensity';
 import {
     createFeedColumnsPresetConfig,
-    type FeedColumnConfig
+    type FeedColumnConfig,
+    type FeedViewMode
 } from '../feedColumnsState';
 import { useFeedFriendActions } from '../useFeedFriendActions';
 import { useFeedPreviousInstancesDialog } from '../useFeedPreviousInstancesDialog';
@@ -61,7 +68,7 @@ import { FeedColumnsManagerDialog } from './FeedColumnsManagerDialog';
 type FeedColumnsModeProps = {
     columns: FeedColumnConfig[];
     density: FeedColumnDensity;
-    modeToggle: ReactNode;
+    onViewModeChange(value: FeedViewMode): void;
     onColumnsChange(columns: FeedColumnConfig[]): void;
     onDensityChange(value: FeedColumnDensity): void;
 };
@@ -125,47 +132,45 @@ function useFeedTimeTicker() {
 
 function FeedColumnsSettingsMenu({
     density,
-    onDensityChange
+    onDensityChange,
+    onManageColumns
 }: {
     density: FeedColumnDensity;
     onDensityChange(value: FeedColumnDensity): void;
+    onManageColumns(): void;
 }) {
     const { t } = useTranslation();
 
     return (
-        <ToolbarViewMenu contentClassName="p-3">
-            <FieldGroup>
-                <Field>
-                    <FieldLabel>{t('view.feed.columns.density')}</FieldLabel>
-                    <ToggleGroup
-                        variant="outline"
-                        size="sm"
-                        spacing={1}
-                        value={density ? [density] : []}
-                        onValueChange={(nextValue) => {
-                            if (nextValue[0]) {
-                                onDensityChange(
-                                    sanitizeFeedColumnDensity(nextValue[0])
-                                );
-                            }
-                        }}
-                        className="grid w-full grid-cols-2"
-                    >
-                        {FEED_COLUMN_DENSITY_OPTIONS.map((option) => (
-                            <ToggleGroupItem
-                                key={option.value}
-                                value={option.value}
-                                aria-label={t(option.labelKey)}
-                                className="w-full min-w-0 justify-center px-2"
-                            >
-                                <span className="truncate">
-                                    {t(option.labelKey)}
-                                </span>
-                            </ToggleGroupItem>
-                        ))}
-                    </ToggleGroup>
-                </Field>
-            </FieldGroup>
+        <ToolbarViewMenu>
+            <DropdownMenuGroup>
+                <DropdownMenuLabel>
+                    {t('view.feed.columns.density')}
+                </DropdownMenuLabel>
+                <DropdownMenuRadioGroup
+                    value={density}
+                    onValueChange={(value: unknown) =>
+                        onDensityChange(sanitizeFeedColumnDensity(value))
+                    }
+                >
+                    {FEED_COLUMN_DENSITY_OPTIONS.map((option) => (
+                        <DropdownMenuRadioItem
+                            key={option.value}
+                            value={option.value}
+                            closeOnClick={false}
+                        >
+                            {t(option.labelKey)}
+                        </DropdownMenuRadioItem>
+                    ))}
+                </DropdownMenuRadioGroup>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+                <DropdownMenuItem onClick={onManageColumns}>
+                    <ListPlusIcon />
+                    {t('view.feed.columns.manage_list')}
+                </DropdownMenuItem>
+            </DropdownMenuGroup>
         </ToolbarViewMenu>
     );
 }
@@ -173,7 +178,7 @@ function FeedColumnsSettingsMenu({
 export function FeedColumnsMode({
     columns,
     density,
-    modeToggle,
+    onViewModeChange,
     onColumnsChange,
     onDensityChange
 }: FeedColumnsModeProps) {
@@ -254,15 +259,20 @@ export function FeedColumnsMode({
         <>
             <PageToolbar>
                 <PageToolbarRow>
-                    <ToolbarViews>{modeToggle}</ToolbarViews>
+                    <ToolbarViews>
+                        <FeedViewModeToggle
+                            value="columns"
+                            onValueChange={onViewModeChange}
+                        />
+                    </ToolbarViews>
                     <ToolbarActions>
                         {feedPersistenceDisabled ? (
                             <FeedPersistenceDisabledIndicator />
                         ) : null}
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => {
+                        <FeedColumnsSettingsMenu
+                            density={density}
+                            onDensityChange={onDensityChange}
+                            onManageColumns={() => {
                                 setSelectedColumnId(
                                     selectedColumnId ||
                                         orderedColumns[0]?.id ||
@@ -270,13 +280,6 @@ export function FeedColumnsMode({
                                 );
                                 setManagerOpen(true);
                             }}
-                        >
-                            <ListPlusIcon data-icon="inline-start" />
-                            {t('view.feed.columns.manage_list')}
-                        </Button>
-                        <FeedColumnsSettingsMenu
-                            density={density}
-                            onDensityChange={onDensityChange}
                         />
                     </ToolbarActions>
                 </PageToolbarRow>

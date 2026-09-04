@@ -1,20 +1,22 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-    annotateGameLogSessionEvent,
     buildGameLogFavoriteIdSet,
     canDeleteGameLogRow,
+    collectGameLogSessionFriends,
     describeGameLogDetail,
     getGameLogCopyTarget,
     getGameLogExternalTarget,
     getGameLogLocationTarget,
     getGameLogRowKey,
     getGameLogSessionKey,
+    getGameLogSessionPlayerAffinity,
     resolveGameLogSessionDuration,
     resolveGameLogWorldId,
     resolveGameLogWorldTarget,
     shouldLinkGameLogPrimaryDetailToWorld
 } from './gameLogRows';
+import type { GameLogSessionEvent, GameLogSessionMember } from './gameLogTypes';
 
 describe('gameLogRows', () => {
     it('builds the detail text users see for common game-log row types', () => {
@@ -144,7 +146,7 @@ describe('gameLogRows', () => {
         ).toBe('1:2026-04-16T00:00:00.000Z:wrld_session:1');
     });
 
-    it('marks session members and normalizes the visible session duration', () => {
+    it('resolves session affinity from local and remote favorites', () => {
         const favoriteIds = buildGameLogFavoriteIdSet(
             ['usr_remote', ' usr_trimmed '],
             {
@@ -153,56 +155,151 @@ describe('gameLogRows', () => {
         );
         const friendIds = new Set(['usr_friend', 'usr_member']);
 
-        const annotated = annotateGameLogSessionEvent(
+        const event: GameLogSessionEvent = {
+            type: 'OnPlayerJoined',
+            created_at: '2026-04-16T00:00:00.000Z',
+            userId: 'usr_friend'
+        };
+        const members: GameLogSessionMember[] = [
+            {
+                created_at: '2026-04-16T00:00:00.000Z',
+                displayName: 'Remote',
+                userId: 'usr_remote',
+                isFavorite: false
+            },
+            {
+                created_at: '2026-04-16T00:00:00.000Z',
+                displayName: 'Favorite',
+                userId: 'usr_favorite',
+                isFavorite: false
+            },
+            {
+                created_at: '2026-04-16T00:00:00.000Z',
+                displayName: 'Member',
+                userId: 'usr_member',
+                isFavorite: false
+            },
+            {
+                created_at: '2026-04-16T00:00:00.000Z',
+                displayName: '',
+                userId: '',
+                isFavorite: false
+            }
+        ];
+
+        expect(
+            getGameLogSessionPlayerAffinity(event, favoriteIds, friendIds)
+        ).toEqual({
+            isFriend: true,
+            isFavorite: false
+        });
+        expect(
+            members.map((member) =>
+                getGameLogSessionPlayerAffinity(member, favoriteIds, friendIds)
+            )
+        ).toEqual([
+            { isFavorite: true, isFriend: false },
+            { isFavorite: true, isFriend: false },
+            { isFavorite: false, isFriend: true },
+            { isFavorite: false, isFriend: false }
+        ]);
+    });
+
+    it.each([undefined, null, '', ' '])(
+        'ignores embedded flags without a valid user ID: %j',
+        (userId) => {
+            const player = {
+                type: 'OnPlayerLeft',
+                userId,
+                isFavorite: true,
+                isFriend: true
+            };
+            const ids = new Set(['']);
+
+            expect(getGameLogSessionPlayerAffinity(player, ids, ids)).toEqual({
+                isFavorite: false,
+                isFriend: false
+            });
+        }
+    );
+
+    it('ignores stale flags for users removed from the current sets', () => {
+        const player = {
+            userId: 'usr_removed',
+            isFavorite: true,
+            isFriend: true
+        };
+        expect(
+            getGameLogSessionPlayerAffinity(player, new Set(), new Set())
+        ).toEqual({
+            isFavorite: false,
+            isFriend: false
+        });
+    });
+
+    it('deduplicates session friends and sorts favorites from the current sets', () => {
+        const alice = {
+            userId: ' usr_alice ',
+            displayName: 'Alice',
+            created_at: '',
+            isFavorite: false
+        };
+        const bob = {
+            userId: 'usr_bob',
+            displayName: 'Bob',
+            created_at: '',
+            isFavorite: false
+        };
+        const events: GameLogSessionEvent[] = [
+            { ...alice, type: 'OnPlayerJoined' },
+            { type: 'JoinGroup', created_at: '', members: [alice, bob] },
+            {
+                type: 'OnPlayerJoined',
+                created_at: '',
+                displayName: 'No ID',
+                userId: '',
+                isFavorite: false
+            },
             {
                 type: 'JoinGroup',
-                created_at: '2026-04-16T00:00:00.000Z',
-                userId: 'usr_friend',
+                created_at: '',
                 members: [
                     {
-                        created_at: '2026-04-16T00:00:00.000Z',
-                        displayName: 'Remote',
-                        userId: 'usr_remote',
-                        isFavorite: false
-                    },
-                    {
-                        created_at: '2026-04-16T00:00:00.000Z',
-                        displayName: 'Favorite',
-                        userId: 'usr_favorite',
-                        isFavorite: false
-                    },
-                    {
-                        created_at: '2026-04-16T00:00:00.000Z',
-                        displayName: 'Member',
-                        userId: 'usr_member',
-                        isFavorite: false
-                    },
-                    {
-                        created_at: '2026-04-16T00:00:00.000Z',
-                        displayName: '',
                         userId: '',
+                        displayName: 'Ignored member',
+                        created_at: '',
                         isFavorite: false
                     }
                 ]
-            },
-            favoriteIds,
-            friendIds
+            }
+        ];
+        const friends = collectGameLogSessionFriends(
+            events,
+            new Set(['usr_bob']),
+            new Set(['usr_alice', 'usr_bob'])
         );
 
-        expect(annotated.isFriend).toBe(true);
-        expect(annotated.isFavorite).toBe(false);
         expect(
-            annotated.members.map((member) => [
-                member.isFavorite,
-                member.isFriend
+            friends.map(({ userId, displayName, isFavorite }) => [
+                userId,
+                displayName,
+                isFavorite
             ])
         ).toEqual([
-            [true, false],
-            [true, false],
-            [false, true],
-            [false, false]
+            ['usr_bob', 'Bob', true],
+            ['usr_alice', 'Alice', false]
         ]);
+        expect(
+            collectGameLogSessionFriends(
+                events,
+                new Set(),
+                new Set(['usr_alice'])
+            ).map(({ displayName }) => displayName)
+        ).toEqual(['Alice']);
+        expect(alice.isFavorite).toBe(false);
+    });
 
+    it('normalizes the visible session duration', () => {
         expect(resolveGameLogSessionDuration({ duration: 120000 })).toBe(
             120000
         );

@@ -90,11 +90,6 @@ const generatedCommands = {
     async appIsGameRunning(): Promise<boolean> {
         return await TAURI_INVOKE('app__is_game_running');
     },
-    async appSetGameClientRuntimeState(currentLocation: string): Promise<void> {
-        await TAURI_INVOKE('app__set_game_client_runtime_state', {
-            currentLocation
-        });
-    },
     async appStartGame(launchArguments: string): Promise<boolean> {
         return await TAURI_INVOKE('app__start_game', { launchArguments });
     },
@@ -194,6 +189,9 @@ const generatedCommands = {
         input: FavoriteImportStartInput
     ): Promise<FavoriteImportStatus> {
         return await TAURI_INVOKE('app__favorite_import_start', { input });
+    },
+    async appFavoriteImportStatus(): Promise<FavoriteImportStatus> {
+        return await TAURI_INVOKE('app__favorite_import_status');
     },
     async appFavoriteImportCancel(): Promise<FavoriteImportStatus> {
         return await TAURI_INVOKE('app__favorite_import_cancel');
@@ -2341,6 +2339,24 @@ const generatedCommands = {
     async appOpenDevtools(): Promise<null> {
         return await TAURI_INVOKE('app__open_devtools');
     },
+    async appGetSidebarAutoHide(): Promise<SidebarAutoHideSnapshot> {
+        return await TAURI_INVOKE('app__get_sidebar_auto_hide');
+    },
+    async appSetSidebarAutoHide(enabled: boolean): Promise<boolean> {
+        return await TAURI_INVOKE('app__set_sidebar_auto_hide', { enabled });
+    },
+    async appSetSidebarAutoHideContext(
+        context: SidebarAutoHideContext
+    ): Promise<null> {
+        return await TAURI_INVOKE('app__set_sidebar_auto_hide_context', {
+            context
+        });
+    },
+    async appSuspendSidebarAutoHide(suspended: boolean): Promise<null> {
+        return await TAURI_INVOKE('app__suspend_sidebar_auto_hide', {
+            suspended
+        });
+    },
     async appRestartApplication(): Promise<null> {
         return await TAURI_INVOKE('app__restart_application');
     },
@@ -2349,6 +2365,11 @@ const generatedCommands = {
     },
     async appAppUpdateCheckRun(): Promise<AppUpdateStatusSnapshot> {
         return await TAURI_INVOKE('app__app_update_check_run');
+    },
+    async appAppUpdateReleaseGet(
+        channel: AppUpdateChannel
+    ): Promise<AppUpdateReleaseSnapshot | null> {
+        return await TAURI_INVOKE('app__app_update_release_get', { channel });
     },
     async appAppUpdateDownloadStatusGet(): Promise<AppUpdateDownloadStatusSnapshot> {
         return await TAURI_INVOKE('app__app_update_download_status_get');
@@ -2818,6 +2839,7 @@ export type AncillaryRuntimeSnapshot = {
     appUpdateDownloadStatus: AppUpdateDownloadStatusSnapshot;
     gameClientDebugLoggingStatus: DebugLoggingOutcome | null;
     gameProcessSnapshot: HostSessionProjection | null;
+    nowPlaying: NowPlayingSnapshot;
     backgroundImageState: BackgroundImageProjection;
     notificationDoNotDisturbState: NotificationDoNotDisturbSnapshot;
 };
@@ -2918,6 +2940,7 @@ export type AppLauncherSnapshot = {
 export type AppLauncherSnapshotEvent = { snapshot: AppLauncherSnapshot };
 export type AppLauncherStopPolicy = 'keepRunning' | 'closeByVrcx';
 export type AppLauncherTargetPickKind = 'auto' | 'localApp';
+export type AppUpdateChannel = 'stable' | 'beta';
 export type AppUpdateDeliveryKind = 'tauri' | 'manual';
 export type AppUpdateDownloadPhase =
     | 'idle'
@@ -2954,6 +2977,7 @@ export type AppUpdateReleaseSnapshot = {
     body: string;
     canonicalVersion: string;
     displayVersion: string;
+    channel: AppUpdateChannel;
     manifestUrl: string;
     target: string;
     updaterType: AppUpdateDeliveryKind;
@@ -4124,7 +4148,9 @@ export type FriendLocationTime = {
     userId: string;
     location: string;
     sinceMs: number | null;
+    source: FriendLocationTimeSource;
 };
+export type FriendLocationTimeSource = 'gameLog' | 'realtime';
 export type FriendLogCurrentOutput = {
     userId: string;
     displayName: string;
@@ -5409,6 +5435,24 @@ export type NowPlayingPayload = {
     videoId?: string | null;
     updatedAt: string;
 };
+export type NowPlayingSnapshot = {
+    url: string;
+    name: string;
+    source: string;
+    displayName: string;
+    userId?: string | null;
+    location?: string | null;
+    thumbnailUrl: string;
+    length: number;
+    position: number;
+    startedAt: string | null;
+    created_at?: string | null;
+    type?: string | null;
+    videoUrl?: string | null;
+    videoName?: string | null;
+    videoId?: string | null;
+    updatedAt: string | null;
+};
 export type OverlayActivityCategory =
     | 'actionRequired'
     | 'currentInstance'
@@ -6042,6 +6086,13 @@ export type SharedCollectionImportStatus = {
     finishedAt: string | null;
     lastError: string | null;
 };
+export type SidebarAutoHideContext = {
+    sidebarMode: boolean;
+    blocked: boolean;
+    reducedMotion: boolean;
+    frameInset: number;
+};
+export type SidebarAutoHideSnapshot = { enabled: boolean; failed: boolean };
 export type SocialBaselineRefreshOutput = {
     stale: boolean;
     friendCount: number;

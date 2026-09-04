@@ -54,6 +54,11 @@ function publishNowPlayingSharedFeed(payload: NowPlayingPayload): void {
 }
 
 let lastDebugLoggingCheckId = 0;
+let nowPlayingEventRevision = 0;
+
+export function getNowPlayingEventRevision(): number {
+    return nowPlayingEventRevision;
+}
 
 export function handleGameLogPersistenceFallback(
     payload: RuntimeEventPayloadMap['gameLogPersistenceFallback']
@@ -81,6 +86,9 @@ export function handleGameLogSideEffect(
 ): void {
     if (!isHostCapabilityAvailable('runtimeGameLogSideEffects')) {
         return;
+    }
+    if (event.kind === 'nowPlaying' || event.kind === 'nowPlayingReset') {
+        nowPlayingEventRevision += 1;
     }
     const runtimeStore = useRuntimeStore.getState();
     switch (event.kind) {

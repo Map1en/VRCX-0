@@ -1,7 +1,8 @@
-import { CopyIcon, MoveRightIcon, Trash2Icon, XIcon } from 'lucide-react';
+import { CopyIcon, MoveRightIcon, Trash2Icon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { SelectionActionBar } from '@/components/layout/SelectionActionBar';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -130,78 +131,63 @@ function FavoritesSelectionBar({
     }
 
     return (
-        <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 flex justify-center px-2">
-            <div className="bg-popover text-popover-foreground pointer-events-auto flex max-w-full flex-wrap items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm shadow-lg">
-                <span className="text-muted-foreground px-1.5 font-medium whitespace-nowrap">
-                    {t('view.favorite.selection.count', {
-                        count: selectedCount
-                    })}
-                </span>
-                <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={onSelectAll}
-                >
-                    {isAllSelected
-                        ? t('view.favorite.deselect_all')
-                        : t('view.favorite.select_all')}
-                </Button>
-                {showCopyIdsButton ? (
-                    <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        disabled={actionsDisabled}
-                        onClick={onCopyIds}
-                    >
-                        <CopyIcon data-icon="inline-start" />
-                        {t('view.favorite.action.copy_ids')}
-                    </Button>
-                ) : null}
-                <FavoriteTransferTargetsMenu
-                    icon={<CopyIcon data-icon="inline-start" />}
-                    triggerLabel={t('view.favorite.action.copy_to')}
-                    triggerTitle={t(
-                        'view.favorite.label.online_favorites_copy_hint'
-                    )}
-                    listLabel={t('view.favorite.action.copy_to')}
-                    targets={copyTargets}
-                    selectedCount={selectedCount}
-                    actionsDisabled={actionsDisabled}
-                    onSelect={onCopySelection}
-                />
-                <FavoriteTransferTargetsMenu
-                    icon={<MoveRightIcon data-icon="inline-start" />}
-                    triggerLabel={t('view.favorite.action.move')}
-                    listLabel={t('view.favorite.action.move_to')}
-                    targets={moveTargets}
-                    selectedCount={selectedCount}
-                    actionsDisabled={actionsDisabled}
-                    onSelect={onMoveSelection}
-                />
+        <SelectionActionBar
+            status={t('view.favorite.selection.count', {
+                count: selectedCount
+            })}
+            selectAllLabel={
+                isAllSelected
+                    ? t('view.favorite.deselect_all')
+                    : t('view.favorite.select_all')
+            }
+            clearLabel={t('common.actions.clear')}
+            onSelectAll={onSelectAll}
+            onClearSelection={onClearSelection}
+        >
+            {showCopyIdsButton ? (
                 <Button
                     type="button"
                     size="sm"
                     variant="ghost"
                     disabled={actionsDisabled}
-                    onClick={onBulkRemove}
+                    onClick={onCopyIds}
                 >
-                    <Trash2Icon data-icon="inline-start" />
-                    {t('view.favorite.bulk_unfavorite')}
+                    <CopyIcon data-icon="inline-start" />
+                    {t('view.favorite.action.copy_ids')}
                 </Button>
-                <Button
-                    type="button"
-                    size="icon-xs"
-                    variant="ghost"
-                    className="rounded-full"
-                    aria-label={t('common.actions.clear')}
-                    onClick={onClearSelection}
-                >
-                    <XIcon data-icon="icon" />
-                </Button>
-            </div>
-        </div>
+            ) : null}
+            <FavoriteTransferTargetsMenu
+                icon={<CopyIcon data-icon="inline-start" />}
+                triggerLabel={t('view.favorite.action.copy_to')}
+                triggerTitle={t(
+                    'view.favorite.label.online_favorites_copy_hint'
+                )}
+                listLabel={t('view.favorite.action.copy_to')}
+                targets={copyTargets}
+                selectedCount={selectedCount}
+                actionsDisabled={actionsDisabled}
+                onSelect={onCopySelection}
+            />
+            <FavoriteTransferTargetsMenu
+                icon={<MoveRightIcon data-icon="inline-start" />}
+                triggerLabel={t('view.favorite.action.move')}
+                listLabel={t('view.favorite.action.move_to')}
+                targets={moveTargets}
+                selectedCount={selectedCount}
+                actionsDisabled={actionsDisabled}
+                onSelect={onMoveSelection}
+            />
+            <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                disabled={actionsDisabled}
+                onClick={onBulkRemove}
+            >
+                <Trash2Icon data-icon="inline-start" />
+                {t('view.favorite.bulk_unfavorite')}
+            </Button>
+        </SelectionActionBar>
     );
 }
 

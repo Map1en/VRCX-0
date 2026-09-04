@@ -1,4 +1,7 @@
-import { buildSameInstanceFriendGroups } from '@/domain/friends/sameInstanceFriends';
+import {
+    buildSameInstanceFriendGroups,
+    type SameInstanceFriendGroupOptions
+} from '@/domain/friends/sameInstanceFriends';
 import {
     parseLocation,
     resolveFriendPresenceLocation
@@ -17,10 +20,6 @@ import type {
     FriendsLocationsLastLocation,
     SameInstanceGroup
 } from './types';
-
-type SameInstanceGroupOptions = {
-    includeCurrentUser?: boolean;
-};
 
 export function resolveFriendWorldName(
     friend: FriendLocationFriend | null | undefined
@@ -122,7 +121,7 @@ export function isShareableInstanceLocation(location: unknown) {
 export function buildSameInstanceGroups<TFriend extends FriendLocationFriend>(
     friends: TFriend[] | null,
     lastLocation: FriendsLocationsLastLocation | null = null,
-    options: SameInstanceGroupOptions = {}
+    options: SameInstanceFriendGroupOptions = {}
 ): SameInstanceGroup<TFriend>[] {
     return buildSameInstanceFriendGroups(
         friends ?? [],

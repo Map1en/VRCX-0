@@ -1,39 +1,39 @@
 import { useTranslation } from 'react-i18next';
 
+import { formatDateFilter } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 
 import { MUTUAL_GRAPH_MIN_DEGREE_LIMITS } from '../../mutual-friends/mutualFriendsFilters';
-import type { MutualFriendCommunity } from '../../mutual-friends/mutualFriendsTypes';
+import type {
+    MutualFriendCommunity,
+    MutualFriendsCoverage,
+    MutualFriendsIsolatedCounts
+} from '../../mutual-friends/mutualFriendsTypes';
 import { CommitSlider } from './CommitSlider';
 import { MutualFriendsSurface } from './MutualFriendsSurface';
 
-const VISIBLE_COMMUNITY_LIMIT = 6;
-
 export function MutualFriendsLegend({
     communities,
+    coverage,
     focusedCommunity,
-    isolatedCount,
+    isolatedCounts,
     minDegree,
     onMinDegreeChange,
     onToggleFocusedCommunity
 }: {
     communities: MutualFriendCommunity[];
+    coverage: MutualFriendsCoverage;
     focusedCommunity: number | null;
-    isolatedCount: number;
+    isolatedCounts: MutualFriendsIsolatedCounts;
     minDegree: number;
     onMinDegreeChange: (value: number) => void;
     onToggleFocusedCommunity: (communityIndex: number) => void;
 }) {
     const { t } = useTranslation();
     const namedCommunities = communities.filter(
-        (community) => community.size > 1
+        (community) => community.isNamed
     );
-    const visibleCommunities = namedCommunities.slice(
-        0,
-        VISIBLE_COMMUNITY_LIMIT
-    );
-    const hiddenCommunityCount =
-        namedCommunities.length - visibleCommunities.length;
+    const groupedCommunityCount = communities.length - namedCommunities.length;
 
     return (
         <MutualFriendsSurface className="animate-in fade-in-0 slide-in-from-bottom-2 pointer-events-auto absolute bottom-3 left-3 z-10 w-64 p-3 duration-200 ease-out">
@@ -47,7 +47,7 @@ export function MutualFriendsLegend({
             </div>
 
             <div className="mt-2 flex flex-col gap-0.5">
-                {visibleCommunities.map((community) => {
+                {namedCommunities.map((community) => {
                     const isFocused = focusedCommunity === community.index;
                     return (
                         <button
@@ -79,10 +79,10 @@ export function MutualFriendsLegend({
                         </button>
                     );
                 })}
-                {hiddenCommunityCount > 0 ? (
+                {groupedCommunityCount > 0 ? (
                     <span className="text-muted-foreground px-1.5 py-1 text-xs">
                         {t('view.charts.mutual_friend.legend.more_circles', {
-                            count: hiddenCommunityCount
+                            count: groupedCommunityCount
                         })}
                     </span>
                 ) : null}
@@ -98,17 +98,85 @@ export function MutualFriendsLegend({
                     </span>
                     {t('view.charts.mutual_friend.legend.size_means_degree')}
                 </li>
+                <li className="flex items-center gap-2">
+                    <span className="flex w-4 shrink-0 items-center justify-center">
+                        <span className="border-muted-foreground/70 size-2.5 rounded-full border-[1.5px]" />
+                    </span>
+                    {t('view.charts.mutual_friend.legend.hollow_means_unknown')}
+                </li>
             </ul>
+
+            <div className="bg-border my-2.5 h-px" />
+
+            <dl className="flex flex-col gap-1 text-xs">
+                {coverage.friendCount > 0 ? (
+                    <div className="flex items-baseline justify-between gap-2">
+                        <dt className="text-muted-foreground">
+                            {t('view.charts.mutual_friend.legend.coverage')}
+                        </dt>
+                        <dd className="text-foreground tabular-nums">
+                            {t(
+                                'view.charts.mutual_friend.legend.coverage_value',
+                                {
+                                    fetched: coverage.fetchedCount,
+                                    total: coverage.friendCount
+                                }
+                            )}
+                        </dd>
+                    </div>
+                ) : null}
+                {coverage.unavailableCount > 0 ? (
+                    <div className="flex items-baseline justify-between gap-2">
+                        <dt className="text-muted-foreground">
+                            {t(
+                                'view.charts.mutual_friend.legend.coverage_unavailable'
+                            )}
+                        </dt>
+                        <dd className="text-foreground tabular-nums">
+                            {coverage.unavailableCount}
+                        </dd>
+                    </div>
+                ) : null}
+                {coverage.lastFetchedAt ? (
+                    <div className="flex items-baseline justify-between gap-2">
+                        <dt className="text-muted-foreground">
+                            {t(
+                                'view.charts.mutual_friend.legend.coverage_updated'
+                            )}
+                        </dt>
+                        <dd className="text-foreground truncate">
+                            {formatDateFilter(coverage.lastFetchedAt, 'long')}
+                        </dd>
+                    </div>
+                ) : null}
+            </dl>
 
             <div className="mt-3 text-xs">
                 <CommitSlider
                     label={t('view.charts.mutual_friend.legend.min_degree')}
                     help={
-                        isolatedCount > 0
-                            ? t(
-                                  'view.charts.mutual_friend.legend.isolated_nodes',
-                                  { count: isolatedCount }
-                              )
+                        isolatedCounts.noConnections > 0 ||
+                        isolatedCounts.unavailable > 0
+                            ? [
+                                  isolatedCounts.noConnections > 0
+                                      ? t(
+                                            'view.charts.mutual_friend.legend.isolated_nodes',
+                                            {
+                                                count: isolatedCounts.noConnections
+                                            }
+                                        )
+                                      : '',
+                                  isolatedCounts.unavailable > 0
+                                      ? t(
+                                            'view.charts.mutual_friend.legend.unavailable_nodes',
+                                            {
+                                                count: isolatedCounts.unavailable
+                                            }
+                                        )
+                                      : ''
+                              ]
+                                  .filter(Boolean)
+                                  .join(' · ')
                             : undefined
                     }
                     min={MUTUAL_GRAPH_MIN_DEGREE_LIMITS.min}

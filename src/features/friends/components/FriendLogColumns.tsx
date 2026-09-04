@@ -4,6 +4,11 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppColumnDef } from '@/components/data-table/appTable';
+import {
+    DATA_TABLE_CONTROL_CELL_CLASS_NAME,
+    DATA_TABLE_METADATA_CELL_CLASS_NAME,
+    DATA_TABLE_PRIMARY_CELL_CLASS_NAME
+} from '@/components/data-table/DataTableView';
 import { formatDateFilter } from '@/lib/dateTime';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
@@ -53,28 +58,15 @@ export function useFriendLogColumns({
                 id: 'created_at',
                 size: 120,
                 accessorFn: (row) => row?.created_at || '',
+                meta: {
+                    tableCellClassName: DATA_TABLE_METADATA_CELL_CLASS_NAME
+                },
                 header: ({ column }) => (
                     <SortButton
                         column={column}
                         label={t('table.friendLog.date')}
                     />
                 ),
-                sortFn: (rowA, rowB) => {
-                    const leftTs = Date.parse(rowA.original?.created_at ?? '');
-                    const rightTs = Date.parse(rowB.original?.created_at ?? '');
-                    if (
-                        Number.isFinite(leftTs) &&
-                        Number.isFinite(rightTs) &&
-                        leftTs !== rightTs
-                    ) {
-                        return leftTs - rightTs;
-                    }
-
-                    return (
-                        (Number(rowA.original?.rowId ?? 0) || 0) -
-                        (Number(rowB.original?.rowId ?? 0) || 0)
-                    );
-                },
                 cell: ({ row }) => {
                     const createdAt = row.original?.created_at || '';
                     return (
@@ -111,12 +103,10 @@ export function useFriendLogColumns({
                 id: 'displayName',
                 size: 260,
                 minSize: 80,
-                meta: { stretch: true },
-                accessorFn: (row) =>
-                    row?.resolvedDisplayName ||
-                    row?.displayName ||
-                    row?.userId ||
-                    '',
+                meta: {
+                    stretch: true,
+                    tableCellClassName: DATA_TABLE_PRIMARY_CELL_CLASS_NAME
+                },
                 enableSorting: false,
                 header: () => t('table.friendLog.user'),
                 cell: ({ row }) => renderUserCell(row.original)
@@ -128,7 +118,9 @@ export function useFriendLogColumns({
                 maxSize: 64,
                 enableResizing: false,
                 enableSorting: false,
-                accessorFn: (row) => getFriendLogRowKey(row, rowsOwnerUserId),
+                meta: {
+                    tableCellClassName: DATA_TABLE_CONTROL_CELL_CLASS_NAME
+                },
                 header: () => t('table.friendLog.action'),
                 cell: ({ row }) => {
                     const rowKey = getFriendLogRowKey(

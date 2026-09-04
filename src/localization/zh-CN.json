@@ -194,65 +194,65 @@
     },
     "language": "中文（简体） (zh-CN)",
     "data_dir_migration": {
-        "title": "迁移 VRCX-0 数据",
-        "description": "选择 VRCX-0 如何使用所选文件夹。",
-        "completed_title": "数据迁移完成",
-        "completed_description": "重启 VRCX-0 后将开始使用新的数据目录。",
-        "error_short": "数据迁移失败",
-        "start": "开始迁移",
+        "title": "更换数据文件夹",
+        "description": "选择在新文件夹中使用哪些数据。",
+        "completed_title": "请重启以完成更换",
+        "completed_description": "重启 VRCX-0 后将开始使用新文件夹。",
+        "error_short": "更换数据文件夹失败",
+        "start": "复制并更换",
         "restart_now": "立即重启",
         "restart_later": "稍后重启",
-        "create_backup_first": "先创建备份",
-        "space_summary": "需要：{required} · 可用：{available}",
-        "insufficient_space": "可用空间不足，无法迁移数据。",
-        "contents_notice": "将复制数据库、应用设置以及相册索引和缩略图；图片缓存会在新目录重新下载。旧数据会保留，直到你确认清理。",
-        "unsupported_storage_warning": "请勿选择网络盘、云同步文件夹（如 OneDrive 或 iCloud）或可移动磁盘。数据库在这些位置可能损坏，此类配置不受支持。",
+        "create_backup_first": "打开备份工具",
+        "space_summary": "所需空间：{required} · 可用空间：{available}",
+        "insufficient_space": "空间不足，无法复制数据。请选择其他磁盘上的文件夹，或先释放一些空间。",
+        "contents_notice": "将现有记录和设置复制到新文件夹，原文件夹中的数据会保留。",
+        "unsupported_storage_warning": "不支持网络盘、云同步文件夹、U 盘或移动硬盘，使用这些位置可能导致数据损坏。",
         "mode": {
-            "migrate": "迁移当前数据（推荐）",
-            "adoptExisting": "使用此文件夹中已有的 VRCX-0 配置",
-            "freshStart": "在此文件夹中创建全新配置"
+            "migrate": "保留当前数据（推荐）",
+            "adoptExisting": "使用这里已有的数据",
+            "freshStart": "重新开始"
         },
         "target": {
             "empty": "所选文件夹为空。",
-            "existingProfile": "所选文件夹已有 VRCX-0 配置；覆盖迁移前会先完整保留它。",
-            "foreignContent": "所选文件夹还包含其他文件；VRCX-0 只会管理自己的文件。"
+            "existingProfile": "这里已有的 VRCX-0 数据会被替换，替换前会保留一份副本。",
+            "foreignContent": "此文件夹中还有其他文件，VRCX-0 只会改动自己的文件。"
         },
         "phase": {
-            "preparing": "正在准备迁移",
-            "freezing": "正在冻结数据库",
-            "copying": "正在复制数据库",
-            "verifying": "正在校验副本",
-            "committing": "正在完成迁移"
+            "preparing": "正在准备数据…",
+            "freezing": "正在准备数据…",
+            "copying": "正在复制数据…",
+            "verifying": "正在检查复制结果…",
+            "committing": "正在完成更换…"
         },
         "error": {
             "operationBusy": "另一个备份、恢复或数据迁移任务正在运行。",
-            "databaseUnavailable": "数据库当前无法迁移。",
+            "databaseUnavailable": "暂时无法复制数据，请稍后重试。",
             "pendingRestore": "请先完成或取消待处理的配置恢复。",
             "pendingLegacyMigration": "请先完成待处理的旧版数据迁移。",
             "pendingMigration": "已有待完成的数据目录迁移，请重启 VRCX-0 完成。",
             "cleanupConflict": "迁回该文件夹前，请先清理旧数据或选择保留且不再提醒。",
             "insufficientSpace": "可用空间不足，无法迁移数据。",
-            "invalidAdoptionTarget": "只有包含现有 VRCX-0 配置的文件夹才能直接采用。",
-            "invalidFreshStartTarget": "包含现有 VRCX-0 配置的文件夹不能用于全新开始。",
-            "copyFailed": "无法复制数据库，VRCX-0 仍在使用原目录。",
-            "commitFailed": "无法安装数据库副本，VRCX-0 仍在使用原目录。",
+            "invalidAdoptionTarget": "此文件夹中没有可用的 VRCX-0 数据，请选择其他文件夹。",
+            "invalidFreshStartTarget": "此文件夹中已有 VRCX-0 数据。若要重新开始，请选择其他文件夹。",
+            "copyFailed": "无法复制数据，VRCX-0 仍在使用原文件夹。",
+            "commitFailed": "无法保存复制的数据，VRCX-0 仍在使用原文件夹。",
             "pointerCommitFailed": "无法启用新数据目录。请重启 VRCX-0 以安全重试。",
             "io": "无法读取或写入数据目录中的文件。"
         },
         "warning": {
             "configCopyFailed": "部分应用设置未能复制，可能会恢复为默认值。",
-            "galleryCopyFailed": "部分相册索引或缩略图未能复制，将在需要时自动重建。",
+            "galleryCopyFailed": "部分相册数据未能复制，将在需要时自动重新生成。",
             "cacheCleanupFailed": "部分旧缓存文件未能删除。"
         },
         "result": {
-            "succeeded": "数据目录迁移完成",
+            "succeeded": "数据文件夹已更换",
             "failed_title": "无法使用新的数据目录",
             "database_open_failed": "VRCX-0 已继续使用原目录，你的数据未受影响。",
-            "interrupted_title": "数据目录迁移已中断",
+            "interrupted_title": "更换文件夹已中断",
             "interrupted": "VRCX-0 已继续使用原目录，你可以稍后重试。"
         },
         "cleanup": {
-            "ready_title": "数据目录迁移完成",
+            "ready_title": "数据文件夹已更换",
             "ready_description": "旧数据仍保留在 {path}。",
             "action": "清理旧数据",
             "action_with_size": "清理旧数据（{size}）",
@@ -265,6 +265,16 @@
             "settings_description": "旧的 VRCX-0 数据仍位于 {path}（{size} 字节）。",
             "dismiss": "保留旧数据，不再提醒",
             "dismissed": "已关闭清理提醒"
+        },
+        "running_title": "正在更换数据文件夹",
+        "running_description": "请保持 VRCX-0 开启，等待操作完成。",
+        "start_existing": "使用已有数据",
+        "start_fresh": "使用新文件夹",
+        "new_folder": "新文件夹",
+        "cancelling": "正在取消…",
+        "mode_description": {
+            "adoptExisting": "使用此文件夹中的记录和设置，不复制当前数据。",
+            "freshStart": "不复制当前数据，在新文件夹中重新开始。原有数据不会删除。"
         }
     },
     "profile_backup": {
@@ -412,6 +422,13 @@
             "m": "分钟",
             "s": "秒"
         },
+        "time_units_short": {
+            "y": "年",
+            "d": "天",
+            "h": "小时",
+            "m": "分",
+            "s": "秒"
+        },
         "days": {
             "sunday": "星期日",
             "monday": "星期一",
@@ -484,6 +501,7 @@
             "doNotDisturbUntilStopped": "持续开启",
             "doNotDisturbTurnOff": "关闭勿扰",
             "rebuildUi": "重载界面",
+            "sidebarMode": "侧栏模式",
             "disableTheme": "禁用主题",
             "exit": "退出"
         },
@@ -585,14 +603,14 @@
         "edit_dashboard": "编辑仪表板",
         "delete_dashboard": "删除仪表板",
         "custom_nav": {
-            "dialog_description": "拖动可排序,把条目拖进文件夹即可分组。隐藏的条目会进入「已隐藏」列表,随时可以放回来。仪表盘的改动立即生效。",
+            "dialog_description": "拖动可排序，把条目拖进文件夹即可分组。隐藏的条目会进入「已隐藏」列表，随时可以放回来。仪表盘的改动立即生效。",
             "visible_items": "菜单中",
             "hidden_empty": "没有隐藏的条目",
             "folder_item_count": "{count} 项",
             "ungroup_folder": "解散文件夹",
             "move_into_folder": "把条目移入此文件夹",
             "restore_default_description": "会用默认排列覆盖你当前的排列。",
-            "applies_immediately": "此操作立即生效,取消也无法撤销。",
+            "applies_immediately": "此操作立即生效，取消也无法撤销。",
             "header": "自定义导航栏",
             "dialog_title": "自定义导航栏",
             "new_folder": "添加文件夹",
@@ -706,6 +724,8 @@
         "notification_center": "通知中心",
         "show_friends_sidebar": "显示好友侧栏",
         "hide_friends_sidebar": "隐藏好友侧栏",
+        "enter_sidebar_mode": "侧栏模式",
+        "restore_full_window": "返回完整窗口",
         "zoom_in": "放大",
         "zoom_out": "缩小",
         "reset_zoom": "重置缩放",
@@ -765,6 +785,9 @@
         "search_fav_worlds": "我收藏的世界",
         "search_groups": "群组",
         "search_own_groups": "我创建的群组",
+        "search_direct_access": "粘贴链接或 ID",
+        "search_scope_direct_access": "wrld_ · usr_ · vrchat.com/…",
+        "search_open_direct": "打开这个链接或 ID",
         "search_joined_groups": "我加入的群组",
         "refresh_tooltip": "刷新好友列表",
         "refresh_available_in_seconds": "你刚刚才同步过，请 {count} 秒后再试",
@@ -784,6 +807,12 @@
             "presets": "预设"
         },
         "settings": {
+            "auto_hide": {
+                "label": "停靠在桌面边缘时自动隐藏",
+                "description": "将侧栏窗口拖到桌面顶部或两侧，移开鼠标自动隐藏，悬停边缘展开。也可从托盘唤回。",
+                "save_failed": "无法保存自动隐藏设置。",
+                "paused": "窗口操作失败，自动隐藏已暂停。从托盘重新打开窗口或重新进入侧栏模式即可重试。"
+            },
             "display": "显示",
             "sort": "排序",
             "advanced": "高级",
@@ -922,9 +951,22 @@
                 "Avatar": "模型变动",
                 "Bio": "简介变更"
             },
+            "toolbar": {
+                "all_types": "全部",
+                "type_summary": "类型：{types}",
+                "more_types": "{type} +{count}",
+                "grouped_friends_only": "仅已分组好友",
+                "view_summary": "视图：{view}",
+                "view_label": "视图"
+            },
             "modes": {
                 "table": "表格",
                 "columns": "分栏"
+            },
+            "actions": {
+                "back_to_top": "回到顶部",
+                "expand_entry": "展开动态",
+                "collapse_entry": "收起动态"
             },
             "columns": {
                 "add": "添加栏",
@@ -1405,8 +1447,8 @@
                     "forget_success": "记录已移除",
                     "forget_failed": "移除记录失败",
                     "no_worlds": "此分组没有可分享的世界 ID",
-                    "too_many": "单次分享最多 {cap} 个世界,请先拆分该分组。",
-                    "skipped": "已分享,跳过 {count} 个世界(未同步或非公开)。"
+                    "too_many": "单次分享最多 {cap} 个世界，请先拆分该分组。",
+                    "skipped": "已分享，跳过 {count} 个世界（未同步或非公开）。"
                 }
             }
         },
@@ -1708,10 +1750,16 @@
                 },
                 "legend": {
                     "circles": "圈子",
-                    "more_circles": "另有 {count} 个圈子",
+                    "more_circles": "另有 {count} 个小圈子，显示为灰色",
                     "size_means_degree": "点越大，共同好友越多",
+                    "hollow_means_unknown": "空心点 = 对方未公开共同好友",
+                    "coverage": "已获取",
+                    "coverage_value": "{fetched}/{total} 位好友",
+                    "coverage_unavailable": "未公开",
+                    "coverage_updated": "更新于",
                     "min_degree": "最少连接数",
-                    "isolated_nodes": "{count} 人没有任何连接"
+                    "isolated_nodes": "{count} 人没有共同好友",
+                    "unavailable_nodes": "{count} 人未公开或未获取"
                 }
             },
             "loading": {
@@ -2122,15 +2170,15 @@
             },
             "feedback": {
                 "title": "发送反馈",
-                "description": "反馈将匿名提交。我们会阅读每一条消息,但无法直接回复。",
+                "description": "反馈将匿名提交。我们会阅读每一条消息，但无法直接回复。",
                 "privacy_note": "不会附带任何账号信息。",
-                "placeholder": "告诉我们哪些好用、哪些不好用,或者你希望看到什么新功能……",
+                "placeholder": "告诉我们哪些好用、哪些不好用，或者你希望看到什么新功能……",
                 "submit": "发送",
                 "submitting": "发送中…",
                 "thanks": "感谢你的反馈！",
                 "cooldown": "{{seconds}} 秒后可再次发送",
-                "more_help": "需要回复,或者想附上日志?",
-                "error_generic": "发送失败,请稍后重试。"
+                "more_help": "需要回复，或者想附上日志？",
+                "error_generic": "发送失败，请稍后重试。"
             },
             "ai": {
                 "header": "AI 助手",
@@ -2231,7 +2279,7 @@
                     "status_label": "状态",
                     "port_active_connections": "端口 {port}；活动连接 {count}",
                     "client_config": "客户端配置",
-                    "client_config_description": "按客户端选择: Claude Code：执行一次性 `claude mcp add` 命令。\nHTTP 方式：直连 HTTP 的 JSON 配置，无需额外工具。mcp-remote 方式：经 Node.js 代理隧道的 JSON 配置,适用于不支持原生 HTTP 的客户端（如 Claude Desktop）；需 PATH 中有 Node.js。开启局域网连接后，复制出的配置会使用 `YOUR-LAN-IP`；在其他设备上使用前请替换为本机局域网 IP。",
+                    "client_config_description": "按客户端选择：Claude Code：执行一次性 `claude mcp add` 命令。\nHTTP 方式：直连 HTTP 的 JSON 配置，无需额外工具。mcp-remote 方式：经 Node.js 代理隧道的 JSON 配置，适用于不支持原生 HTTP 的客户端（如 Claude Desktop）；需 PATH 中有 Node.js。开启局域网连接后，复制出的配置会使用 `YOUR-LAN-IP`；在其他设备上使用前请替换为本机局域网 IP。",
                     "copy_mcp_remote": "mcp-remote 方式",
                     "copy_generic": "HTTP 方式",
                     "security_note": "客户端配置包含明文 token，应只提供给你信任的工具或设备。",
@@ -2481,7 +2529,8 @@
                 },
                 "friend_log": {
                     "header": "好友日志",
-                    "hide_unfriends": "隐藏 “删除好友” （或被删好友）事件"
+                    "hide_unfriends": "隐藏 “删除好友” （或被删好友）事件",
+                    "show_notification_dot": "显示好友日志通知红点"
                 }
             },
             "notifications": {
@@ -2754,7 +2803,7 @@
                     },
                     "data_directory": {
                         "header": "数据目录",
-                        "description": "当前来源：{source}。这里只保存目录位置，VRCX-0 不会复制数据。",
+                        "description": "当前使用：{source}。",
                         "current": "当前目录",
                         "actions": "数据目录操作",
                         "choose": "选择目录",
@@ -2762,16 +2811,10 @@
                         "restart": "重启",
                         "restart_hint": "更改会在重启 VRCX-0 后生效。",
                         "source_cli": "命令行覆盖",
-                        "source_persisted": "已保存的自定义目录",
-                        "source_default": "默认目录",
+                        "source_persisted": "自定义文件夹",
+                        "source_default": "默认文件夹",
                         "cli_override": "本次启动正在使用 --data-dir 进行命令行目录覆盖。要修改持久化目录，请不要携带命令行启动。",
-                        "confirm_title": "切换 VRCX-0 数据目录？",
-                        "confirm_description": "VRCX-0 不会复制当前数据。要保留登录、数据库、配置和缓存，请在重启前自行把当前数据目录复制到 {path} 并保存，重启后生效。",
-                        "confirm_empty": "所选目录为空；除非你手动复制数据进去，否则会作为新的 profile 启动。",
-                        "confirm_missing_profile": "所选目录不包含 VRCX-0.sqlite3 或 VRCX-0.json，可能会作为新的 profile 启动。",
                         "saved_restart_required": "数据目录已保存，请重启 VRCX-0 以生效。",
-                        "reset_confirm_title": "重置 VRCX-0 数据目录的位置？",
-                        "reset_confirm_description": "重启后 VRCX-0 将使用默认数据目录，不会复制任何文件。",
                         "reset_saved": "数据目录已重置，请重启 VRCX-0 以生效。",
                         "failed_to_load": "读取数据目录设置失败。"
                     },
@@ -3307,7 +3350,8 @@
             },
             "mode": {
                 "daily": "每日图片",
-                "custom": "本地图片"
+                "custom": "本地图片",
+                "decoration": "装饰背景"
             },
             "rotation": {
                 "minutes": "分钟",
@@ -4991,8 +5035,8 @@
                     "example": "加入、离开"
                 },
                 "favoriteMovement": {
-                    "label": "分组好友动态",
-                    "description": "分组好友的上线、离线、位置和状态变化。",
+                    "label": "好友动态",
+                    "description": "好友的上线、离线、位置和状态变化。",
                     "example": "上线通知、位置变动"
                 },
                 "profileChange": {
@@ -5148,13 +5192,13 @@
             "bulk_action_completed": "已对 {count} 名成员完成{value}",
             "import_bans": "导入封禁",
             "import_bans_description": "粘贴包含 usr_ ID 的用户 ID、个人资料链接或 CSV 数据以批量封禁。",
-            "import_bans_warning": "此操作将立即封禁所有匹配到的用户,且不可撤销。",
+            "import_bans_warning": "此操作将立即封禁所有匹配到的用户，且不可撤销。",
             "import_bans_placeholder": "usr_11111111-1111-1111-1111-111111111111\nusr_22222222-2222-2222-2222-222222222222",
             "import_bans_start": "开始导入",
             "import_bans_clear_errors": "清除错误",
             "import_bans_no_ids_found": "未找到有效的用户 ID(usr_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)。",
-            "import_bans_done": "已完成,共封禁 {success}/{total} 名用户。",
-            "import_bans_cancelled": "已取消,共封禁 {success}/{total} 名用户。",
+            "import_bans_done": "已完成，共封禁 {success}/{total} 名用户。",
+            "import_bans_cancelled": "已取消，共封禁 {success}/{total} 名用户。",
             "export_logs": "导出 CSV",
             "export_logs_copied": "审核日志 CSV 已复制到剪贴板",
             "inspector_empty": "选择一行以查看详情",
@@ -5210,7 +5254,17 @@
         },
         "vrcx_updater": {
             "latest_version": "VRCX-0 已是最新版本",
-            "ready_for_update": "新版本 {value} 已就绪"
+            "ready_for_update": "新版本 {value} 已就绪",
+            "channel": {
+                "label": "更新通道",
+                "stable": "正式版",
+                "beta": "测试版",
+                "description": "VRCX-0 只会检查当前安装通道中的更新。",
+                "switch_description": "要切换到{channel}，请从 GitHub 下载并安装该通道的最新版本。",
+                "download_stable": "下载最新正式版",
+                "download_beta": "下载最新测试版",
+                "no_release": "此通道暂无可用版本。"
+            }
         },
         "change_log": {
             "header": "更新日志",
@@ -6096,11 +6150,11 @@
                 "loading": "正在加载你有管理权限的群组...",
                 "empty_title": "没有可管理的群组",
                 "empty_description": "你目前在任何群组中都没有管理权限。",
-                "permissions_degraded": "部分群组权限无法验证,以下列表可能不完整。",
+                "permissions_degraded": "部分群组权限无法验证，以下列表可能不完整。",
                 "member_count": "{count} 名成员",
                 "rail_title": "你管理的群组",
                 "select_a_group_title": "选择群组",
-                "select_a_group_description": "从列表中选择一个群组,以管理成员、封禁、邀请与加入申请。",
+                "select_a_group_description": "从列表中选择一个群组，以管理成员、封禁、邀请与加入申请。",
                 "moderator_hint": "你在此群组拥有管理权限",
                 "member_online_count": "{members} 名成员 · 在线 {online}"
             }
@@ -6182,7 +6236,7 @@
         "show_original": "显示原文",
         "source_to_target": "{source} → {target}",
         "error_generic": "翻译失败",
-        "error_network": "网络错误,请重试",
+        "error_network": "网络错误，请重试",
         "error_unsupported": "翻译功能未配置"
     },
     "saved_group_favorites": {

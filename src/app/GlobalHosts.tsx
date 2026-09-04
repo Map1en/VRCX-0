@@ -9,7 +9,7 @@ import { NotificationHost } from '@/components/hosts/NotificationHost';
 import { PostUpdateChangelogToastHost } from '@/components/hosts/PostUpdateChangelogToastHost';
 import { SystemDialogsHost } from '@/components/hosts/SystemDialogsHost';
 import { ToolsDialogsHost } from '@/components/hosts/ToolsDialogsHost';
-import { AssistantDialog } from '@/features/assistant/AssistantDialog';
+import { AssistantDialogHost } from '@/features/assistant/AssistantDialogHost';
 import { VrcNotificationCenterHost } from '@/features/notifications/VrcNotificationCenterHost';
 
 export function GlobalHosts() {
@@ -27,7 +27,7 @@ export function GlobalHosts() {
             <LaunchDialogHost />
             <SystemDialogsHost />
             <ToolsDialogsHost />
-            <AssistantDialog />
+            <AssistantDialogHost />
         </>
     );
 }

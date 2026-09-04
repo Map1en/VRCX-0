@@ -426,12 +426,34 @@ describe('FavoriteCard selection and avatar actions', () => {
 });
 
 describe('FavoriteCard compact layout', () => {
+    it('keeps the friend selection control inside the ring and aligns media padding', () => {
+        const item: FavoriteCardItem = {
+            id: USER_ID,
+            key: 'friend:compact',
+            kind: 'friend',
+            source: 'remote',
+            title: 'friend card'
+        };
+        const html = renderToStaticMarkup(
+            <FavoriteCard
+                item={item}
+                densityConfig={getFavoritesDensityConfig('friend', 'compact')}
+                selected
+            />
+        );
+
+        expect(html).toContain('absolute top-2 left-2 z-20');
+        expect(html).toContain(
+            'relative ml-2 flex shrink-0 items-center justify-center'
+        );
+        expect(html).not.toContain('object-row');
+    });
+
     it.each([
-        ['friend', USER_ID],
         ['world', WORLD_ID],
         ['avatar', AVATAR_ID]
     ] as const)(
-        'keeps the %s selection control inside the ring and aligns media padding',
+        'uses the compact object surface for a %s without changing the cover layout',
         (kind, id) => {
             const item: FavoriteCardItem = {
                 id,
@@ -449,9 +471,16 @@ describe('FavoriteCard compact layout', () => {
             );
 
             expect(html).toContain('absolute top-2 left-2 z-20');
-            expect(html).toContain(
-                'relative ml-2 flex shrink-0 items-center justify-center'
+            expect(html).toContain('object-row object-row--interactive');
+            expect(html).toContain('object-row__media');
+
+            const coverHtml = renderToStaticMarkup(
+                <FavoriteCard
+                    item={item}
+                    densityConfig={getFavoritesDensityConfig(kind, 'standard')}
+                />
             );
+            expect(coverHtml).not.toContain('object-row');
         }
     );
 });

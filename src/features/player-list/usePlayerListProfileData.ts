@@ -1,7 +1,8 @@
 import { useQueries } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
-import { queryKeys } from '@/lib/entityQueryCache';
+import type { UserProfileRecord } from '@/domain/entities/user';
+import { entityQueryPolicies, queryKeys } from '@/lib/entityQueryCache';
 import { useKnownUserFacts } from '@/lib/useKnownUser';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import vrchatFriendRepository from '@/repositories/vrchatFriendRepository';
@@ -15,7 +16,7 @@ import type {
     PlayerListSourceRow
 } from './playerListTypes';
 
-type ProfileQueryResult = { data?: unknown };
+type ProfileQueryResult = { data?: UserProfileRecord };
 
 function buildPlayerProfileIds(
     playerRows: readonly PlayerListSourceRow[],
@@ -48,9 +49,9 @@ function mapProfileQueryResults(
             continue;
         }
 
-        const profile = userProfileRepository.normalize(result.data);
-        const userId = normalizeString(profile?.id || userIds[index]);
-        if (userId && profile) {
+        const profile = result.data;
+        const userId = normalizeString(profile.id || userIds[index]);
+        if (userId) {
             profilesByUserId[userId] = profile;
         }
     }
@@ -84,11 +85,16 @@ export function usePlayerListProfileData({
     const knownUsersById = useKnownUserFacts(playerProfileIds, {
         endpoint: currentUserEndpoint
     });
+    const combineProfiles = useCallback(
+        (results: ProfileQueryResult[]) =>
+            mapProfileQueryResults(playerProfileIds, results),
+        [playerProfileIds]
+    );
     const profilesByUserId = useQueries({
         queries: playerProfileIds.map((userId) => {
             return {
                 enabled: Boolean(userId),
-                gcTime: 300_000,
+                gcTime: entityQueryPolicies.userAvatarLookup.gcTime,
                 queryFn: async () => {
                     const response = await vrchatFriendRepository.getUser({
                         userId,
@@ -105,8 +111,7 @@ export function usePlayerListProfileData({
                 staleTime: 0
             };
         }),
-        combine: (results: ProfileQueryResult[]) =>
-            mapProfileQueryResults(playerProfileIds, results)
+        combine: combineProfiles
     });
 
     return {

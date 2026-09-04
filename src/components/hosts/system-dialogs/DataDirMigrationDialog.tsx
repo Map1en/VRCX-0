@@ -1,7 +1,11 @@
-import { useState } from 'react';
+import { Radio } from '@base-ui/react/radio';
+import { RadioGroup } from '@base-ui/react/radio-group';
+import { FolderOpenIcon, TriangleAlertIcon } from 'lucide-react';
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { cn } from '@/lib/utils';
 import {
     dataDirMigrationErrorKey,
     dataDirMigrationModes,
@@ -10,9 +14,11 @@ import {
 } from '@/services/dataDirMigrationI18n';
 import {
     cancelDataDirMigration,
-    requestDataDirMigration
+    requestDataDirMigration,
+    type DataDirMigrationMode
 } from '@/services/dataDirMigrationService';
 import { restartApplication } from '@/services/shellIntegrationService';
+import { dataDirectoryPathForDisplay } from '@/shared/utils/dataDirectoryPath';
 import { useDataDirMigrationStore } from '@/state/dataDirMigrationStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import {
@@ -25,6 +31,12 @@ import {
 } from '@/ui/shadcn/alert-dialog';
 import { Button } from '@/ui/shadcn/button';
 import { Progress } from '@/ui/shadcn/progress';
+
+const START_LABEL_KEYS: Record<DataDirMigrationMode, string> = {
+    migrate: 'data_dir_migration.start',
+    adoptExisting: 'data_dir_migration.start_existing',
+    freshStart: 'data_dir_migration.start_fresh'
+};
 
 export function DataDirMigrationDialog() {
     const { t, i18n } = useTranslation();
@@ -39,6 +51,7 @@ export function DataDirMigrationDialog() {
         (state) => state.setSystemHostOpen
     );
     const [submitting, setSubmitting] = useState(false);
+    const id = useId();
 
     if (!plan) {
         return null;
@@ -52,6 +65,18 @@ export function DataDirMigrationDialog() {
     const insufficientSpace = plan.availableBytes < plan.requiredBytes;
     const canStart = mode !== 'migrate' || !insufficientSpace;
     const modes = dataDirMigrationModes(plan.targetState);
+    const copying = status.phase === 'copying';
+    const cancelling = status.state === 'cancelling';
+    const copyPercent = copying ? status.percent : null;
+    let titleKey = 'data_dir_migration.title';
+    let descriptionKey = 'data_dir_migration.description';
+    if (completed) {
+        titleKey = 'data_dir_migration.completed_title';
+        descriptionKey = 'data_dir_migration.completed_description';
+    } else if (running) {
+        titleKey = 'data_dir_migration.running_title';
+        descriptionKey = 'data_dir_migration.running_description';
+    }
 
     async function startMigration() {
         if (!canStart || !plan) {
@@ -103,153 +128,216 @@ export function DataDirMigrationDialog() {
                 }
             }}
         >
-            <AlertDialogContent className="sm:max-w-lg">
+            <AlertDialogContent className="data-[size=default]:max-w-[calc(100vw-2rem)] data-[size=default]:sm:max-w-lg">
                 <AlertDialogHeader>
-                    <AlertDialogTitle>
-                        {completed
-                            ? t('data_dir_migration.completed_title')
-                            : t('data_dir_migration.title')}
+                    <AlertDialogTitle className="text-balance">
+                        {t(titleKey)}
                     </AlertDialogTitle>
                     <AlertDialogDescription>
-                        {completed
-                            ? t('data_dir_migration.completed_description')
-                            : t('data_dir_migration.description')}
+                        {t(descriptionKey)}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
 
-                {running ? (
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between text-sm">
-                            <span>
-                                {t(dataDirMigrationPhaseKey(status.phase))}
-                            </span>
-                            <span className="text-muted-foreground tabular-nums">
-                                {status.percent ?? 0}%
-                            </span>
-                        </div>
-                        <Progress value={status.percent ?? 0} />
-                        <p className="text-muted-foreground text-xs break-all">
-                            {plan.targetPath}
+                <div className="bg-muted/30 flex min-w-0 items-start gap-3 rounded-md p-3">
+                    <FolderOpenIcon
+                        aria-hidden="true"
+                        className="text-muted-foreground mt-0.5 size-4 shrink-0"
+                    />
+                    <div className="min-w-0 space-y-1">
+                        <p className="text-muted-foreground text-xs">
+                            {t('data_dir_migration.new_folder')}
                         </p>
+                        <p className="font-mono text-sm break-all">
+                            {dataDirectoryPathForDisplay(plan.targetPath)}
+                        </p>
+                        {!running &&
+                        !completed &&
+                        plan.targetState === 'foreignContent' ? (
+                            <p className="text-muted-foreground text-xs text-pretty">
+                                {t('data_dir_migration.target.foreignContent')}
+                            </p>
+                        ) : null}
                     </div>
-                ) : completed ? (
-                    <p className="text-muted-foreground text-sm break-all">
-                        {plan.targetPath}
-                    </p>
-                ) : (
-                    <div className="space-y-4 text-sm">
-                        <div className="bg-muted/30 space-y-1 rounded-md border p-3">
-                            <p className="font-medium break-all">
-                                {plan.targetPath}
-                            </p>
-                            <p className="text-muted-foreground">
-                                {t('data_dir_migration.space_summary', {
-                                    required: formatDataDirMigrationBytes(
-                                        plan.requiredBytes,
-                                        i18n.language
-                                    ),
-                                    available: formatDataDirMigrationBytes(
-                                        plan.availableBytes,
-                                        i18n.language
-                                    )
-                                })}
-                            </p>
-                            <p className="text-muted-foreground">
-                                {t(
-                                    `data_dir_migration.target.${plan.targetState}`
-                                )}
-                            </p>
-                        </div>
+                </div>
 
-                        <div className="grid gap-2">
+                {running ? (
+                    <div
+                        className="space-y-3 py-2"
+                        role="status"
+                        aria-live="polite"
+                    >
+                        <div className="flex items-center justify-between gap-3 text-sm">
+                            <span className="font-medium">
+                                {cancelling
+                                    ? t('data_dir_migration.cancelling')
+                                    : t(dataDirMigrationPhaseKey(status.phase))}
+                            </span>
+                            {copyPercent != null ? (
+                                <span className="text-muted-foreground tabular-nums">
+                                    {copyPercent}%
+                                </span>
+                            ) : null}
+                        </div>
+                        {copyPercent != null ? (
+                            <Progress
+                                value={copyPercent}
+                                aria-label={t(
+                                    'data_dir_migration.phase.copying'
+                                )}
+                            />
+                        ) : null}
+                    </div>
+                ) : null}
+
+                {!running && !completed ? (
+                    <div className="space-y-4 text-sm">
+                        <RadioGroup
+                            value={mode}
+                            onValueChange={setMode}
+                            aria-label={t('data_dir_migration.description')}
+                            className="grid gap-2"
+                        >
                             {modes.map(([value, labelKey]) => (
                                 <label
                                     key={value}
-                                    className="hover:bg-muted/40 flex cursor-pointer items-start gap-3 rounded-md border p-3"
+                                    htmlFor={`${id}-${value}`}
+                                    className={cn(
+                                        'hover:bg-muted/40 flex cursor-pointer items-start gap-3 rounded-md border p-3',
+                                        mode === value &&
+                                            'border-primary bg-primary/5'
+                                    )}
                                 >
-                                    <input
-                                        type="radio"
-                                        name="data-dir-migration-mode"
+                                    <Radio.Root
+                                        id={`${id}-${value}`}
                                         value={value}
-                                        checked={mode === value}
-                                        onChange={() => setMode(value)}
-                                        className="mt-0.5"
-                                    />
-                                    <span>{t(labelKey)}</span>
+                                        aria-labelledby={`${id}-${value}-label`}
+                                        aria-describedby={`${id}-${value}-description`}
+                                        className="border-input data-checked:border-primary data-checked:bg-primary focus-visible:ring-ring mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border focus-visible:ring-2 focus-visible:ring-offset-2"
+                                    >
+                                        <Radio.Indicator className="bg-primary-foreground size-1.5 rounded-full" />
+                                    </Radio.Root>
+                                    <span className="min-w-0 space-y-1">
+                                        <span
+                                            id={`${id}-${value}-label`}
+                                            className="block font-medium"
+                                        >
+                                            {t(labelKey)}
+                                        </span>
+                                        <span
+                                            id={`${id}-${value}-description`}
+                                            className="text-muted-foreground block text-xs leading-relaxed text-pretty"
+                                        >
+                                            {t(
+                                                value === 'migrate'
+                                                    ? 'data_dir_migration.contents_notice'
+                                                    : `data_dir_migration.mode_description.${value}`
+                                            )}
+                                        </span>
+                                    </span>
                                 </label>
                             ))}
-                        </div>
+                        </RadioGroup>
 
-                        {insufficientSpace && mode === 'migrate' ? (
-                            <p className="text-destructive">
-                                {t('data_dir_migration.insufficient_space')}
-                            </p>
+                        {mode === 'migrate' ? (
+                            <div className="space-y-2">
+                                <p className="text-muted-foreground text-xs tabular-nums">
+                                    {t('data_dir_migration.space_summary', {
+                                        required: formatDataDirMigrationBytes(
+                                            plan.requiredBytes,
+                                            i18n.language
+                                        ),
+                                        available: formatDataDirMigrationBytes(
+                                            plan.availableBytes,
+                                            i18n.language
+                                        )
+                                    })}
+                                </p>
+                                {insufficientSpace ? (
+                                    <p
+                                        className="text-destructive text-pretty"
+                                        role="alert"
+                                    >
+                                        {t(
+                                            'data_dir_migration.insufficient_space'
+                                        )}
+                                    </p>
+                                ) : null}
+                                {plan.targetState === 'existingProfile' ? (
+                                    <p className="text-destructive text-xs leading-relaxed text-pretty">
+                                        {t(
+                                            'data_dir_migration.target.existingProfile'
+                                        )}
+                                    </p>
+                                ) : null}
+                            </div>
                         ) : null}
-                        <p className="text-muted-foreground">
-                            {t('data_dir_migration.contents_notice')}
-                        </p>
-                        <p className="text-destructive font-medium">
-                            {t(
-                                'data_dir_migration.unsupported_storage_warning'
-                            )}
-                        </p>
+                        <div className="flex items-start gap-2">
+                            <TriangleAlertIcon
+                                aria-hidden="true"
+                                className="text-destructive mt-0.5 size-4 shrink-0"
+                            />
+                            <p className="text-destructive text-xs leading-relaxed text-pretty">
+                                {t(
+                                    'data_dir_migration.unsupported_storage_warning'
+                                )}
+                            </p>
+                        </div>
+                        <Button
+                            type="button"
+                            variant="link"
+                            size="sm"
+                            className="text-muted-foreground h-auto p-0"
+                            onClick={() => {
+                                closeDialog();
+                                setSystemHostOpen('profileBackupOpen', true);
+                            }}
+                        >
+                            {t('data_dir_migration.create_backup_first')}
+                        </Button>
                     </div>
-                )}
+                ) : null}
 
-                <AlertDialogFooter>
+                <AlertDialogFooter className="sm:flex-wrap">
                     {running ? (
                         <Button
                             type="button"
                             variant="outline"
-                            disabled={status.phase !== 'copying'}
+                            disabled={!copying || cancelling}
                             onClick={() => void cancelMigration()}
                         >
-                            {t('common.actions.cancel')}
+                            {t(
+                                cancelling
+                                    ? 'data_dir_migration.cancelling'
+                                    : 'common.actions.cancel'
+                            )}
                         </Button>
-                    ) : completed ? (
-                        <>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={closeDialog}
-                            >
-                                {t('data_dir_migration.restart_later')}
-                            </Button>
-                            <Button
-                                type="button"
-                                onClick={() => void restart()}
-                            >
-                                {t('data_dir_migration.restart_now')}
-                            </Button>
-                        </>
                     ) : (
                         <>
                             <Button
                                 type="button"
-                                variant="ghost"
-                                onClick={() => {
-                                    closeDialog();
-                                    setSystemHostOpen(
-                                        'profileBackupOpen',
-                                        true
-                                    );
-                                }}
-                            >
-                                {t('data_dir_migration.create_backup_first')}
-                            </Button>
-                            <Button
-                                type="button"
                                 variant="outline"
                                 onClick={closeDialog}
                             >
-                                {t('common.actions.cancel')}
+                                {t(
+                                    completed
+                                        ? 'data_dir_migration.restart_later'
+                                        : 'common.actions.cancel'
+                                )}
                             </Button>
                             <Button
                                 type="button"
-                                disabled={!canStart}
-                                onClick={() => void startMigration()}
+                                disabled={!completed && !canStart}
+                                onClick={() =>
+                                    void (completed
+                                        ? restart()
+                                        : startMigration())
+                                }
                             >
-                                {t('data_dir_migration.start')}
+                                {t(
+                                    completed
+                                        ? 'data_dir_migration.restart_now'
+                                        : START_LABEL_KEYS[mode]
+                                )}
                             </Button>
                         </>
                     )}

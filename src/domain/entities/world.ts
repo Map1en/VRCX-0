@@ -51,15 +51,9 @@ export type AvatarStatsRecord = EntityRecord & {
     writeDefaultsUsed?: boolean;
 };
 
-export type FileAnalysisRecord = EntityRecord & {
+export type FileAnalysisRecord = {
     avatarStats?: AvatarStatsRecord;
-    created_at?: string;
-    encryptionKey?: string;
-    fileSize?: number;
     performanceRating?: string;
-    success?: boolean;
-    uncompressedSize?: number;
-    worldSignature?: string;
     _fileSize?: string;
     _totalTextureUsage?: string;
     _uncompressedSize?: string;

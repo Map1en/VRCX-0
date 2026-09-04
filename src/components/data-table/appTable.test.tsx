@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
 import type { ColumnSizingState } from '@tanstack/react-table';
-import { act, renderHook } from '@testing-library/react';
+import { act, cleanup, renderHook } from '@testing-library/react';
 import { useState } from 'react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { useAppTable, type AppColumnDef } from './appTable';
 
@@ -19,6 +19,107 @@ const columns: AppColumnDef<Row>[] = [
 ];
 
 describe('useAppTable', () => {
+    afterEach(() => {
+        cleanup();
+        vi.unstubAllEnvs();
+        vi.restoreAllMocks();
+    });
+
+    it.each([
+        {
+            columnId: 'updated_at',
+            values: ['2026-08-30T10:00:00Z', '2026-08-31T09:00:00Z'],
+            desc: true,
+            expected: ['2026-08-31T09:00:00Z', '2026-08-30T10:00:00Z']
+        },
+        {
+            columnId: 'name',
+            values: ['item2', 'item10', 'Item3'],
+            desc: false,
+            expected: ['Item3', 'item10', 'item2']
+        },
+        {
+            columnId: 'count',
+            values: [10, 2, 1],
+            desc: false,
+            expected: [1, 2, 10]
+        },
+        {
+            columnId: 'date',
+            values: [new Date('2026-08-31'), new Date('2026-08-30')],
+            desc: false,
+            expected: [new Date('2026-08-30'), new Date('2026-08-31')]
+        }
+    ])(
+        'preserves $columnId ordering without unregistered sort function warnings',
+        ({ columnId, values, desc, expected }) => {
+            vi.stubEnv('NODE_ENV', 'development');
+            const warn = vi
+                .spyOn(console, 'warn')
+                .mockImplementation(() => undefined);
+            const data = values.map((value) => ({ value }));
+            const sortColumns: AppColumnDef<(typeof data)[number]>[] = [
+                { id: columnId, accessorKey: 'value' }
+            ];
+            const { result } = renderHook(() =>
+                useAppTable({
+                    columns: sortColumns,
+                    defaultColumn: { size: 280 },
+                    data,
+                    state: { sorting: [{ id: columnId, desc }] }
+                })
+            );
+
+            expect(
+                result.current
+                    .getRowModel()
+                    .rows.map((row) => row.original.value)
+            ).toEqual(expected);
+            expect(warn).not.toHaveBeenCalled();
+        }
+    );
+
+    it('preserves table defaults and lets column comparators override them', () => {
+        const data = [{ detail: 'xx' }, { detail: 'z' }, { detail: 'aaa' }];
+        const defaultColumn: Partial<AppColumnDef<Row>> = {
+            size: 280,
+            sortFn: (left, right) =>
+                left.original.detail.length - right.original.detail.length
+        };
+        const { result, rerender } = renderHook(
+            ({ sortColumns }) =>
+                useAppTable({
+                    columns: sortColumns,
+                    defaultColumn,
+                    data,
+                    state: { sorting: [{ id: 'detail', desc: false }] }
+                }),
+            { initialProps: { sortColumns: columns } }
+        );
+
+        expect(result.current.getColumn('detail')?.getSize()).toBe(280);
+        expect(
+            result.current.getRowModel().rows.map((row) => row.original.detail)
+        ).toEqual(['z', 'xx', 'aaa']);
+
+        rerender({
+            sortColumns: [
+                {
+                    accessorKey: 'detail',
+                    id: 'detail',
+                    sortFn: (left, right) =>
+                        right.original.detail.length -
+                        left.original.detail.length
+                }
+            ]
+        });
+
+        expect(result.current.getColumn('detail')?.getSize()).toBe(280);
+        expect(
+            result.current.getRowModel().rows.map((row) => row.original.detail)
+        ).toEqual(['aaa', 'xx', 'z']);
+    });
+
     it('applies controlled column sizing on mount and after updates', () => {
         const { result } = renderHook(() => {
             const [columnSizing, setColumnSizing] = useState<ColumnSizingState>(

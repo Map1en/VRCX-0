@@ -45,7 +45,7 @@ export function UserDetailContent({
                     )}
                 </span>
                 {subline ? (
-                    <span className="text-muted-foreground block truncate text-xs">
+                    <span className="text-content-secondary block truncate text-xs">
                         {subline}
                     </span>
                 ) : null}

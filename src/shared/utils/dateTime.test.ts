@@ -4,12 +4,25 @@ import {
     formatClockWithPreferences,
     formatDateFilterWithPreferences,
     formatDateTimeWithPreferences,
-    formatRelativeTimeWithPreferences
+    formatRelativeTimeWithPreferences,
+    timeToTextWithLabels
 } from './dateTime';
 
 const LOCAL_DATE = '2026-06-04T09:20:02';
 
 describe('dateTime utils', () => {
+    it('supports compact unit spacing without changing duration precision or default spacing', () => {
+        const duration = ((24 + 1) * 60 + 37) * 60_000;
+        const units = { d: '天', h: '时', m: '分', s: '秒' };
+        expect(timeToTextWithLabels(duration, false, units)).toBe(
+            '1天 1时 37分'
+        );
+        expect(timeToTextWithLabels(duration, false, units, '')).toBe(
+            '1天1时37分'
+        );
+        expect(timeToTextWithLabels(30_000, true, units, '')).toBe('30秒');
+    });
+
     it('formats visible dates with the app locale before date culture', () => {
         expect(
             formatDateFilterWithPreferences(LOCAL_DATE, 'long', {

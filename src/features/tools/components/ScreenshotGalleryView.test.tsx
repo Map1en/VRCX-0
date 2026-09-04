@@ -113,11 +113,9 @@ describe('ScreenshotGalleryView folder tree', () => {
         );
 
         await waitFor(() => {
-            expect(
-                container.querySelectorAll(
-                    'aside [data-slot="card-content"] button'
-                )
-            ).toHaveLength(3);
+            expect(container.querySelectorAll('aside nav button')).toHaveLength(
+                3
+            );
         });
         const selectedFolder = screen.getByRole('button', {
             name: '2026-07'

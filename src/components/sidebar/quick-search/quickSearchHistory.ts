@@ -51,6 +51,7 @@ function parseEntry(value: unknown): QuickSearchHistoryEntry | null {
         typeof value.id !== 'string' ||
         !value.id.trim() ||
         !isEntityType(value.type) ||
+        value.id.trim().startsWith('fvrt_') ||
         typeof value.name !== 'string'
     ) {
         return null;

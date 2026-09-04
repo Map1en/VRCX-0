@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import {
-    getFeedRowId,
-    normalizeFeedId as normalizeId
-} from '@/components/feed/feedRows';
+import { normalizeFeedId as normalizeId } from '@/components/feed/feedRows';
 import type { FeedLoadStatus, FeedRow } from '@/components/feed/feedTypes';
 import type { FeedCursor } from '@/repositories/feedPersistenceRepository';
 import feedRepository from '@/repositories/feedRepository';
@@ -24,52 +21,14 @@ import {
 } from '../feedColumnScope';
 import type { FeedColumnConfig } from '../feedColumnsState';
 import { subscribeFeedLiveMerge } from '../feedLiveMergeScheduler';
-
-const FEED_COLUMN_PAGE_SIZE = 80;
+import {
+    appendUniqueFeedRows,
+    FEED_PAGE_SIZE,
+    resolveLastFeedCursor
+} from '../feedPaging';
 
 export function resolveFeedColumnInitialLiveSequence(value: number) {
     return Number.isFinite(value) && value > 0 ? value : 0;
-}
-
-function resolveFeedCursor(row: FeedRow): FeedCursor | null {
-    const createdAt = normalizeId(row.created_at);
-    const sourceRank = row.sourceRank;
-    const rowId = row.rowId;
-    if (
-        !createdAt ||
-        typeof sourceRank !== 'number' ||
-        typeof rowId !== 'number'
-    ) {
-        return null;
-    }
-    return {
-        createdAt,
-        sourceRank,
-        rowId
-    };
-}
-
-function resolveLastFeedCursor(rows: FeedRow[]): FeedCursor | null {
-    for (let index = rows.length - 1; index >= 0; index -= 1) {
-        const cursor = resolveFeedCursor(rows[index]);
-        if (cursor) {
-            return cursor;
-        }
-    }
-    return null;
-}
-
-function appendUniqueRows(currentRows: FeedRow[], nextRows: FeedRow[]) {
-    const seen = new Set(currentRows.map(getFeedRowId));
-    const output = [...currentRows];
-    for (const row of nextRows) {
-        const key = getFeedRowId(row);
-        if (!seen.has(key)) {
-            seen.add(key);
-            output.push(row);
-        }
-    }
-    return output;
 }
 
 export function useFeedColumnRows(column: FeedColumnConfig) {
@@ -167,7 +126,7 @@ export function useFeedColumnRows(column: FeedColumnConfig) {
             favoritesOnly: column.friendScope.kind === 'favorites',
             maxRows: Math.max(
                 rows.length + liveEntries.length,
-                rows.length + FEED_COLUMN_PAGE_SIZE
+                rows.length + FEED_PAGE_SIZE
             )
         }),
         [
@@ -213,7 +172,7 @@ export function useFeedColumnRows(column: FeedColumnConfig) {
                 excludedFavoriteUserIds,
                 favoriteUserIds,
                 favoritesOnly: column.friendScope.kind === 'favorites',
-                maxRows: FEED_COLUMN_PAGE_SIZE
+                maxRows: FEED_PAGE_SIZE
             })
             .then(async (readModel) => {
                 if (!requestIsCurrent()) {
@@ -332,7 +291,7 @@ export function useFeedColumnRows(column: FeedColumnConfig) {
                 filters: column.feedTypes,
                 excludedFavoriteUserIds,
                 favoriteUserIds,
-                maxEntries: FEED_COLUMN_PAGE_SIZE,
+                maxEntries: FEED_PAGE_SIZE,
                 cursor
             })
             .then((pageRows) => {
@@ -340,9 +299,12 @@ export function useFeedColumnRows(column: FeedColumnConfig) {
                     return;
                 }
                 cursorRef.current = resolveLastFeedCursor(pageRows);
-                setHasMore(pageRows.length >= FEED_COLUMN_PAGE_SIZE);
+                setHasMore(pageRows.length >= FEED_PAGE_SIZE);
                 setRows((currentRows) => {
-                    const nextRows = appendUniqueRows(currentRows, pageRows);
+                    const nextRows = appendUniqueFeedRows(
+                        currentRows,
+                        pageRows
+                    );
                     rowsRef.current = nextRows;
                     return nextRows;
                 });

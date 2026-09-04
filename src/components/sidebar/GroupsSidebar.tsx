@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import { LaunchModeContextMenuGroup } from '@/components/launch/LaunchModeContextMenuGroup';
 import { Location } from '@/components/Location';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows';
@@ -17,7 +18,6 @@ import {
 } from '@/platform/tauri/bindings';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { openGroupDialog } from '@/services/dialogService';
-import { tryOpenLaunchLocation } from '@/services/directAccessService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { selfInviteToInstance } from '@/services/launchService';
 import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
@@ -34,6 +34,7 @@ import {
     ContextMenuContent,
     ContextMenuGroup,
     ContextMenuItem,
+    ContextMenuSeparator,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
 import { Skeleton } from '@/ui/shadcn/skeleton';
@@ -344,35 +345,6 @@ function GroupInstanceRow({
         })
     );
 
-    async function launchInstance() {
-        if (!canUseInstanceAction) {
-            return;
-        }
-        try {
-            const opened = await tryOpenLaunchLocation(
-                location,
-                parsedLocation.shortName
-            );
-            if (opened) {
-                toast.success(
-                    t('side_panel.success.vrchat_launch_request_sent')
-                );
-                return;
-            }
-            toast.error(
-                t('side_panel.error.unable_to_open_this_instance_in_vrchat')
-            );
-        } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.groups_sidebar.toast.failed_to_launch_instance'
-                      )
-            );
-        }
-    }
-
     async function sendSelfInvite() {
         if (!canUseInstanceAction) {
             return;
@@ -458,15 +430,16 @@ function GroupInstanceRow({
                 }
             />
             <ContextMenuContent className="w-52">
+                <LaunchModeContextMenuGroup
+                    disabled={!canUseInstanceAction}
+                    errorMessage={t(
+                        'component.groups_sidebar.toast.failed_to_launch_instance'
+                    )}
+                    location={location}
+                    shortName={parsedLocation.shortName}
+                />
+                <ContextMenuSeparator />
                 <ContextMenuGroup>
-                    <ContextMenuItem
-                        disabled={!canUseInstanceAction}
-                        onClick={() => {
-                            launchInstance();
-                        }}
-                    >
-                        {t('dialog.user.info.launch_invite_tooltip')}
-                    </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!canUseInstanceAction}
                         onClick={() => {

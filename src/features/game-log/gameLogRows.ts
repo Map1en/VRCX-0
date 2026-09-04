@@ -4,8 +4,7 @@ import { parseLocation } from '@/shared/utils/location';
 import type {
     GameLogRowView,
     GameLogSession,
-    GameLogSessionEvent,
-    GameLogSessionMember
+    GameLogSessionEvent
 } from './gameLogTypes';
 
 export const GAME_LOG_DETAILLESS_TYPES = new Set([
@@ -218,45 +217,22 @@ export function getGameLogRowKey(row: GameLogRowView | null | undefined) {
         .join(':');
 }
 
-export function annotateGameLogSessionMember(
-    member: GameLogSessionMember,
+export function getGameLogSessionPlayerAffinity(
+    player: { userId?: string | null },
     favoriteIdSet: ReadonlySet<string>,
     friendIdSet: ReadonlySet<string>
-) {
-    const userId = normalizeGameLogId(member?.userId);
+): { isFavorite: boolean; isFriend: boolean } {
+    const userId = normalizeGameLogId(player?.userId);
     return {
-        ...member,
-        isFavorite: userId ? favoriteIdSet.has(userId) : false,
-        isFriend: userId ? friendIdSet.has(userId) : false
-    };
-}
-
-export function annotateGameLogSessionEvent(
-    event: GameLogSessionEvent,
-    favoriteIdSet: ReadonlySet<string>,
-    friendIdSet: ReadonlySet<string>
-) {
-    const userId = normalizeGameLogId(event?.userId);
-    return {
-        ...event,
-        isFavorite: userId
-            ? favoriteIdSet.has(userId)
-            : Boolean(event?.isFavorite),
-        isFriend: userId ? friendIdSet.has(userId) : Boolean(event?.isFriend),
-        members: Array.isArray(event?.members)
-            ? event.members.map((member) =>
-                  annotateGameLogSessionMember(
-                      member,
-                      favoriteIdSet,
-                      friendIdSet
-                  )
-              )
-            : []
+        isFavorite: Boolean(userId) && favoriteIdSet.has(userId),
+        isFriend: Boolean(userId) && friendIdSet.has(userId)
     };
 }
 
 export function collectGameLogSessionFriends(
-    events: readonly GameLogSessionEvent[] = []
+    events: readonly GameLogSessionEvent[],
+    favoriteIdSet: ReadonlySet<string>,
+    friendIdSet: ReadonlySet<string>
 ) {
     const seen = new Map<
         string,
@@ -274,21 +250,25 @@ export function collectGameLogSessionFriends(
                 ? event.members
                 : [event];
         for (const candidate of candidates) {
-            if (!candidate?.isFriend) {
+            const { isFavorite, isFriend } = getGameLogSessionPlayerAffinity(
+                candidate,
+                favoriteIdSet,
+                friendIdSet
+            );
+            if (!isFriend) {
                 continue;
             }
             const userId = normalizeGameLogId(candidate.userId);
             const displayName = String(candidate.displayName || '');
-            const key = userId || displayName;
-            if (!key || seen.has(key)) {
+            if (seen.has(userId)) {
                 continue;
             }
-            seen.set(key, {
-                key,
+            seen.set(userId, {
+                key: userId,
                 id: userId,
                 userId,
                 displayName,
-                isFavorite: Boolean(candidate.isFavorite)
+                isFavorite
             });
         }
     }

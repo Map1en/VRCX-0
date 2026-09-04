@@ -20,6 +20,13 @@ import {
 } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
 import {
+    NumberField,
+    NumberFieldDecrement,
+    NumberFieldGroup,
+    NumberFieldIncrement,
+    NumberFieldInput
+} from '@/ui/shadcn/number-field';
+import {
     Select,
     SelectContent,
     SelectGroup,
@@ -336,27 +343,32 @@ export function ContextRulesTab({
                                     <FieldLabel>
                                         {t(`${I18N_ROOT}.minimum_friends`)}
                                     </FieldLabel>
-                                    <Input
-                                        type="number"
-                                        min="1"
+                                    <NumberField
+                                        min={1}
                                         value={
                                             selectedRule.friendCountValue || 1
                                         }
                                         disabled={loading}
-                                        onChange={(event) =>
+                                        onValueChange={(value) =>
                                             update(
                                                 selectedRule.id,
                                                 (current) => ({
                                                     ...current,
                                                     friendCountValue:
                                                         Number.parseInt(
-                                                            event.target.value,
+                                                            String(value),
                                                             10
                                                         ) || 1
                                                 })
                                             )
                                         }
-                                    />
+                                    >
+                                        <NumberFieldGroup>
+                                            <NumberFieldDecrement />
+                                            <NumberFieldInput />
+                                            <NumberFieldIncrement />
+                                        </NumberFieldGroup>
+                                    </NumberField>
                                 </Field>
                             ) : null}
                             {selectedRule.preset === 'playerCountAtLeast' ? (
@@ -364,27 +376,32 @@ export function ContextRulesTab({
                                     <FieldLabel>
                                         {t(`${I18N_ROOT}.minimum_players`)}
                                     </FieldLabel>
-                                    <Input
-                                        type="number"
-                                        min="1"
+                                    <NumberField
+                                        min={1}
                                         value={
                                             selectedRule.playerCountValue || 1
                                         }
                                         disabled={loading}
-                                        onChange={(event) =>
+                                        onValueChange={(value) =>
                                             update(
                                                 selectedRule.id,
                                                 (current) => ({
                                                     ...current,
                                                     playerCountValue:
                                                         Number.parseInt(
-                                                            event.target.value,
+                                                            String(value),
                                                             10
                                                         ) || 1
                                                 })
                                             )
                                         }
-                                    />
+                                    >
+                                        <NumberFieldGroup>
+                                            <NumberFieldDecrement />
+                                            <NumberFieldInput />
+                                            <NumberFieldIncrement />
+                                        </NumberFieldGroup>
+                                    </NumberField>
                                 </Field>
                             ) : null}
                             {selectedRule.preset === 'withSelectedFriend' ? (

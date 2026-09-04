@@ -79,11 +79,17 @@ function controllerValue(currentUserId: string, friendCount: number) {
         graph: {
             baseNodeCount: 0,
             communities: [],
+            coverage: {
+                friendCount,
+                fetchedCount: 0,
+                unavailableCount: 0,
+                lastFetchedAt: null
+            },
             currentUserId,
             detail: '',
             edgeCount: 0,
             friendCount,
-            isolatedCount: 0,
+            isolatedCounts: { noConnections: 0, unavailable: 0 },
             isLayoutRunning: false,
             nodeCount: 0,
             setGraphElementRef: noop,

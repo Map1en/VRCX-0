@@ -10,6 +10,7 @@ import {
     DataTableEmptyRow,
     DataTableHeader,
     DataTablePagination,
+    DataTableRow,
     DataTableScrollArea,
     DataTableSurface,
     getDataTableSizingStyle
@@ -28,7 +29,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
-import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
+import { Table, TableBody } from '@/ui/shadcn/table';
 import { TabsContent } from '@/ui/shadcn/tabs';
 
 import { downloadJsonFile } from './groupDialogDownloads';
@@ -327,15 +328,15 @@ export function GroupModerationTabPanel({
                                                 selectedIds?.has(userId)
                                             );
                                             return (
-                                                <TableRow
+                                                <DataTableRow
                                                     key={row.id}
-                                                    data-selected={
-                                                        isSelected || undefined
+                                                    data-state={
+                                                        isSelected
+                                                            ? 'selected'
+                                                            : undefined
                                                     }
                                                     className={cn(
                                                         'border-l-2 border-l-transparent',
-                                                        isSelected &&
-                                                            'bg-muted/40',
                                                         isSelected &&
                                                             SELECTED_ROW_ACCENT_CLASS[
                                                                 moderationStatusTone(
@@ -360,7 +361,7 @@ export function GroupModerationTabPanel({
                                                                 />
                                                             ))}
                                                     </DataTableColumnSortableContext>
-                                                </TableRow>
+                                                </DataTableRow>
                                             );
                                         })
                                     ) : (

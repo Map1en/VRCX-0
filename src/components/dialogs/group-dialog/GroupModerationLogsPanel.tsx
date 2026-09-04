@@ -3,7 +3,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppColumnDef } from '@/components/data-table/appTable';
-import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
+import {
+    DataTableHeaderLabel,
+    DataTableSortButton
+} from '@/components/data-table/DataTableSortButton';
 import {
     DataTableColumnDndProvider,
     DataTableColumnSizeColGroup,
@@ -11,6 +14,7 @@ import {
     DataTableEmptyRow,
     DataTableHeader,
     DataTablePagination,
+    DataTableRow,
     DataTableScrollArea,
     DataTableSurface,
     getDataTableSizingStyle
@@ -28,7 +32,7 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 import { Input } from '@/ui/shadcn/input';
-import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
+import { Table, TableBody } from '@/ui/shadcn/table';
 import { TabsContent } from '@/ui/shadcn/tabs';
 
 import { downloadJsonFile } from './groupDialogDownloads';
@@ -222,11 +226,7 @@ export function openGroupAuditLogActor(row: GroupModerationLogRow) {
 }
 
 function auditLogHeaderLabel(label: string) {
-    return (
-        <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-            {label}
-        </span>
-    );
+    return <DataTableHeaderLabel>{label}</DataTableHeaderLabel>;
 }
 
 export function createGroupAuditLogColumns(
@@ -533,7 +533,7 @@ export function GroupModerationLogsTable({
                                 <TableBody>
                                     {table.getRowModel().rows.length ? (
                                         table.getRowModel().rows.map((row) => (
-                                            <TableRow key={row.id}>
+                                            <DataTableRow key={row.id}>
                                                 <DataTableColumnSortableContext
                                                     table={table}
                                                 >
@@ -546,7 +546,7 @@ export function GroupModerationLogsTable({
                                                             />
                                                         ))}
                                                 </DataTableColumnSortableContext>
-                                            </TableRow>
+                                            </DataTableRow>
                                         ))
                                     ) : (
                                         <DataTableEmptyRow
