@@ -3,6 +3,15 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
+import {
+    DATA_TABLE_CONTROL_CELL_CLASS_NAME,
+    DATA_TABLE_NUMERIC_CELL_CLASS_NAME,
+    DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
+    DataTableCell,
+    DataTableHead,
+    DataTableHeaderRow,
+    DataTableRow
+} from '@/components/data-table/DataTableView';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { normalizeLocationText } from '@/components/location/locationModel';
 import { StaticLocation } from '@/components/location/StaticLocation';
@@ -18,14 +27,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow
-} from '@/ui/shadcn/table';
+import { Table, TableBody, TableHeader } from '@/ui/shadcn/table';
 
 import {
     formatPreviousInstanceCount,
@@ -145,7 +147,11 @@ export function PreviousInstancesListTable<TRow extends PreviousInstanceRow>({
         onSortChange?.(nextKey);
     }
 
-    function sortableHeader(label: ReactNode, key: PreviousInstanceSortKey) {
+    function sortableHeader(
+        label: ReactNode,
+        key: PreviousInstanceSortKey,
+        className = ''
+    ) {
         const active = sortKey === key;
         return (
             <DataTableSortButton
@@ -153,7 +159,7 @@ export function PreviousInstancesListTable<TRow extends PreviousInstanceRow>({
                 direction={active ? (sortDesc ? 'desc' : 'asc') : false}
                 label={label}
                 onSort={() => changeSort(key)}
-                className="px-1"
+                className={`px-1 ${className}`}
             />
         );
     }
@@ -214,62 +220,65 @@ export function PreviousInstancesListTable<TRow extends PreviousInstanceRow>({
                 </div>
             </div>
             {visibleRows.length ? (
-                <div className="min-h-0 flex-1 overflow-auto rounded-md border">
+                <div className="app-data-table min-h-0 flex-1 overflow-auto rounded-md border">
                     <Table>
                         <TableHeader className="vrcx-0-table-header sticky top-0">
-                            <TableRow>
-                                <TableHead className="w-44">
+                            <DataTableHeaderRow>
+                                <DataTableHead className="w-44">
                                     {sortableHeader(
                                         t('table.previous_instances.date'),
                                         'date'
                                     )}
-                                </TableHead>
-                                <TableHead>
+                                </DataTableHead>
+                                <DataTableHead>
                                     {sortableHeader(
                                         t(
                                             'dialog.previous_instances.label.location'
                                         ),
                                         'location'
                                     )}
-                                </TableHead>
-                                <TableHead className="w-48">
+                                </DataTableHead>
+                                <DataTableHead className="w-48">
                                     {t('table.previous_instances.world')} /{' '}
                                     {t('dialog.new_instance.group')}
-                                </TableHead>
-                                <TableHead className="w-44">
+                                </DataTableHead>
+                                <DataTableHead className="w-44">
                                     {sortableHeader(
                                         t(
                                             'table.previous_instances.instance_creator'
                                         ),
                                         'creator'
                                     )}
-                                </TableHead>
-                                <TableHead className="w-24">
+                                </DataTableHead>
+                                <DataTableHead
+                                    className={`w-24 ${DATA_TABLE_NUMERIC_HEADER_CLASS_NAME}`}
+                                >
                                     {sortableHeader(
                                         t('table.previous_instances.time'),
-                                        'duration'
+                                        'duration',
+                                        'ml-auto'
                                     )}
-                                </TableHead>
-                                <TableHead className="w-64 text-right">
+                                </DataTableHead>
+                                <DataTableHead className="w-64 text-right">
                                     {t('table.previous_instances.action')}
-                                </TableHead>
-                            </TableRow>
+                                </DataTableHead>
+                            </DataTableHeaderRow>
                         </TableHeader>
                         <TableBody>
                             {visibleRows.map((row, index) => {
                                 const location = rowLocation(row);
                                 return (
-                                    <TableRow
+                                    <DataTableRow
                                         key={`${location}:${row?.id || row?.created_at || row?.createdAt || index}`}
                                     >
-                                        <TableCell className="text-muted-foreground align-middle text-xs leading-5">
+                                        <DataTableCell className="text-muted-foreground align-middle text-xs leading-5">
                                             {formatDateFilterOrFallback(
                                                 row?.created_at ||
                                                     row?.createdAt,
                                                 'long'
                                             )}
-                                        </TableCell>
-                                        <TableCell className="relative max-w-[26rem] align-middle text-xs">
+                                        </DataTableCell>
+                                        <DataTableCell className="relative max-w-[26rem] align-middle text-xs">
                                             <Button
                                                 type="button"
                                                 variant="ghost"
@@ -284,7 +293,7 @@ export function PreviousInstancesListTable<TRow extends PreviousInstanceRow>({
                                                     )}
                                                 </span>
                                             </Button>
-                                            <div className="pointer-events-none relative z-10 flex min-h-9 max-w-full items-center text-left">
+                                            <div className="pointer-events-none relative z-10 flex max-w-full items-center text-left">
                                                 {location
                                                     ? renderLocationCell(row, {
                                                           variant,
@@ -292,25 +301,29 @@ export function PreviousInstancesListTable<TRow extends PreviousInstanceRow>({
                                                       })
                                                     : '-'}
                                             </div>
-                                        </TableCell>
-                                        <TableCell className="text-muted-foreground align-middle text-xs leading-5">
+                                        </DataTableCell>
+                                        <DataTableCell className="text-muted-foreground align-middle text-xs leading-5">
                                             {[row?.worldName, row?.groupName]
                                                 .filter(Boolean)
                                                 .join(' / ') || '-'}
-                                        </TableCell>
-                                        <TableCell className="align-middle text-xs">
-                                            <div className="flex min-h-9 items-center">
+                                        </DataTableCell>
+                                        <DataTableCell className="align-middle text-xs">
+                                            <div className="flex items-center">
                                                 <InstanceOwnerCell
                                                     userId={rowOwnerUserId(row)}
                                                     endpoint={currentEndpoint}
                                                 />
                                             </div>
-                                        </TableCell>
-                                        <TableCell className="align-middle text-xs tabular-nums">
+                                        </DataTableCell>
+                                        <DataTableCell
+                                            className={`${DATA_TABLE_NUMERIC_CELL_CLASS_NAME} align-middle text-xs`}
+                                        >
                                             {rowDuration(row)}
-                                        </TableCell>
-                                        <TableCell className="align-middle">
-                                            <div className="flex min-h-9 items-center justify-end gap-2">
+                                        </DataTableCell>
+                                        <DataTableCell
+                                            className={`${DATA_TABLE_CONTROL_CELL_CLASS_NAME} align-middle`}
+                                        >
+                                            <div className="flex items-center justify-end gap-2">
                                                 <InstanceActionBar
                                                     target={{
                                                         location,
@@ -348,8 +361,8 @@ export function PreviousInstancesListTable<TRow extends PreviousInstanceRow>({
                                                     {t('common.actions.delete')}
                                                 </Button>
                                             </div>
-                                        </TableCell>
-                                    </TableRow>
+                                        </DataTableCell>
+                                    </DataTableRow>
                                 );
                             })}
                         </TableBody>

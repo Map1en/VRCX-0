@@ -133,7 +133,7 @@ export function Field({
             data-disabled={disabled || undefined}
             data-invalid={isInvalid || undefined}
             className={cn(
-                'grid gap-3 border-b py-3 last:border-b-0 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-center',
+                'border-stroke-subtle grid gap-3 border-b py-3 last:border-b-0 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-center',
                 className
             )}
         >
@@ -183,7 +183,7 @@ export function SettingsGroup({
                     {action}
                 </div>
             ) : null}
-            <Card className="py-2.5">
+            <Card className="bg-surface-panel ring-stroke-subtle py-2.5 shadow-none">
                 <CardContent className={bodyClassName}>{children}</CardContent>
             </Card>
         </section>
@@ -195,7 +195,7 @@ export function SettingsSectionHeading({
     description
 }: SettingsSectionHeadingProps) {
     return (
-        <div className="flex flex-col gap-1 border-b pt-2 pb-2 first:pt-0">
+        <div className="border-stroke-subtle flex flex-col gap-1 border-b pt-2 pb-2 first:pt-0">
             <FieldTitle>{title}</FieldTitle>
             {description ? (
                 <FieldDescription>{description}</FieldDescription>

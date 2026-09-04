@@ -9,7 +9,6 @@ import type {
 } from '@/platform/tauri/bindings';
 import currentUserProfileService from '@/services/currentUserProfileService';
 import { openUserDialog } from '@/services/dialogService';
-import { tryOpenLaunchLocation } from '@/services/directAccessService';
 import {
     sendBoopToUser,
     sendInviteToLocation,
@@ -74,40 +73,6 @@ export function useFriendsSidebarActions({
             title: friend.displayName || friend.username || undefined,
             seedData: friend
         });
-    }
-
-    async function launchFriendLocation(location: string) {
-        const parsedLocation = parseLocation(location);
-        if (
-            !parsedLocation.isRealInstance ||
-            !parsedLocation.worldId ||
-            !parsedLocation.instanceId
-        ) {
-            return;
-        }
-        try {
-            const opened = await tryOpenLaunchLocation(
-                parsedLocation.tag,
-                parsedLocation.shortName
-            );
-            if (opened) {
-                toast.success(
-                    t('side_panel.success.vrchat_launch_request_sent')
-                );
-                return;
-            }
-            toast.error(
-                t('side_panel.error.unable_to_open_this_instance_in_vrchat')
-            );
-        } catch (error) {
-            toast.error(
-                error instanceof Error
-                    ? error.message
-                    : t(
-                          'component.friends_sidebar.toast.failed_to_launch_instance'
-                      )
-            );
-        }
     }
 
     async function selfInviteToFriendLocation(location: string) {
@@ -344,7 +309,6 @@ export function useFriendsSidebarActions({
         applyCurrentUserStatusPreset,
         changeCurrentUserStatus,
         editCurrentUserSocialStatus,
-        launchFriendLocation,
         openFriend,
         requestFriendInvite,
         selfInviteToFriendLocation,

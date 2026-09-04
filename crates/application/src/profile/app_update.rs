@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 use vrcx_0_application_core::RuntimeOperationStatus;
 
 use futures_util::future::BoxFuture;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tokio::sync::Notify;
 
 use vrcx_0_application_core::sleep_until_due_or_stopped;
@@ -24,8 +24,9 @@ mod release;
 mod tests;
 
 use self::release::{
-    is_release_newer_than_current, is_stable_release_newer_than_preview_build, normalize_release,
-    parse_preview_build_timestamp_ms, version_sort_key,
+    compare_release_versions, is_release_newer_than_current,
+    is_stable_release_newer_than_preview_build, normalize_release,
+    parse_preview_build_timestamp_ms, release_channel_for_version,
 };
 
 const APP_UPDATE_CHECK_JOB: &str = "appUpdateCheck";
@@ -46,6 +47,13 @@ const CONFIG_AUTO_INSTALL_ON_STARTUP: &str = "autoInstallUpdatesOnStartup";
 pub enum AppUpdateDeliveryKind {
     Tauri,
     Manual,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum AppUpdateChannel {
+    Stable,
+    Beta,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -82,6 +90,7 @@ pub struct AppUpdateReleaseSnapshot {
     pub body: String,
     pub canonical_version: String,
     pub display_version: String,
+    pub channel: AppUpdateChannel,
     pub manifest_url: String,
     pub target: String,
     pub updater_type: AppUpdateDeliveryKind,
@@ -126,6 +135,7 @@ pub struct AppUpdateCheckContext<'a> {
     pub app_version: &'a str,
     pub build_label: &'a str,
     pub build_badge: &'a str,
+    pub channel: AppUpdateChannel,
     pub target: Option<&'a str>,
     pub port: &'a Arc<dyn UpdaterPort>,
     pub proxy: Option<&'a str>,
@@ -169,17 +179,18 @@ fn update_available_outcome(
 
 async fn fetch_latest_release(
     release_catalog: &dyn AppUpdateReleaseCatalogPort,
+    channel: AppUpdateChannel,
     target: Option<&str>,
     require_installer_asset: bool,
 ) -> Result<Option<AppUpdateReleaseSnapshot>> {
     let releases = release_catalog.list_releases().await?;
     let mut normalized: Vec<AppUpdateReleaseSnapshot> = releases
         .iter()
-        .filter(|release| !release.prerelease)
         .filter_map(|release| normalize_release(release, target, require_installer_asset))
+        .filter(|release| release.channel == channel)
         .collect();
     normalized.sort_by(|left, right| {
-        version_sort_key(&right.canonical_version).cmp(&version_sort_key(&left.canonical_version))
+        compare_release_versions(&right.canonical_version, &left.canonical_version)
     });
     Ok(normalized.into_iter().next())
 }
@@ -188,7 +199,13 @@ async fn run_check_inner(context: &AppUpdateCheckContext<'_>) -> Result<CheckOut
     if let Some(preview_build_timestamp_ms) =
         parse_preview_build_timestamp_ms(context.build_label, context.build_badge)
     {
-        let release = fetch_latest_release(context.release_catalog, context.target, false).await?;
+        let release = fetch_latest_release(
+            context.release_catalog,
+            AppUpdateChannel::Stable,
+            context.target,
+            false,
+        )
+        .await?;
         return Ok(
             match release.filter(|release| {
                 is_stable_release_newer_than_preview_build(release, preview_build_timestamp_ms)
@@ -203,7 +220,9 @@ async fn run_check_inner(context: &AppUpdateCheckContext<'_>) -> Result<CheckOut
     }
 
     if let Some(target) = context.target {
-        let release = fetch_latest_release(context.release_catalog, Some(target), true).await?;
+        let release =
+            fetch_latest_release(context.release_catalog, context.channel, Some(target), true)
+                .await?;
         let Some(release) = release else {
             return Ok(no_update_outcome("No newer installable release was found."));
         };
@@ -219,6 +238,8 @@ async fn run_check_inner(context: &AppUpdateCheckContext<'_>) -> Result<CheckOut
             .check(UpdaterCheckRequest {
                 manifest_url: release.manifest_url.clone(),
                 target: target.to_string(),
+                current_version: context.app_version.to_string(),
+                expected_version: release.canonical_version.clone(),
                 allow_downgrades: false,
                 proxy: context.proxy.map(str::to_string),
             })
@@ -240,7 +261,8 @@ async fn run_check_inner(context: &AppUpdateCheckContext<'_>) -> Result<CheckOut
         });
     }
 
-    let release = fetch_latest_release(context.release_catalog, None, false).await?;
+    let release =
+        fetch_latest_release(context.release_catalog, context.channel, None, false).await?;
     Ok(match release {
         Some(release) if is_release_newer_than_current(&release, context.app_version) => {
             update_available_outcome(
@@ -369,6 +391,7 @@ struct AppUpdateRuntimeInner {
     event_bus: RuntimeEventBus,
     background_jobs: RuntimeBackgroundJobs,
     build: AppUpdateBuildInfo,
+    channel: AppUpdateChannel,
     target_resolver: AppUpdateTargetResolver,
     port: Arc<dyn UpdaterPort>,
     tasks: TaskSupervisor,
@@ -423,6 +446,8 @@ pub struct AppUpdateRuntime {
 
 impl AppUpdateRuntime {
     pub fn new(deps: AppUpdateRuntimeDeps) -> Self {
+        let channel = release_channel_for_version(&deps.build.app_version)
+            .unwrap_or(AppUpdateChannel::Stable);
         Self {
             inner: Arc::new(AppUpdateRuntimeInner {
                 release_catalog: deps.release_catalog,
@@ -430,6 +455,7 @@ impl AppUpdateRuntime {
                 event_bus: deps.event_bus,
                 background_jobs: deps.background_jobs,
                 build: deps.build,
+                channel,
                 target_resolver: deps.target_resolver,
                 port: deps.port,
                 tasks: deps.tasks,
@@ -484,6 +510,20 @@ impl AppUpdateRuntime {
 
     pub async fn check_now(&self) -> AppUpdateStatusSnapshot {
         self.run_check_cycle().await
+    }
+
+    pub async fn latest_release_for_channel(
+        &self,
+        channel: AppUpdateChannel,
+    ) -> Result<Option<AppUpdateReleaseSnapshot>> {
+        let target = (self.inner.target_resolver)();
+        fetch_latest_release(
+            self.inner.release_catalog.as_ref(),
+            channel,
+            target.as_deref(),
+            false,
+        )
+        .await
     }
 
     pub async fn install(&self, version: &str) -> Result<UpdaterMetadata> {
@@ -639,6 +679,8 @@ impl AppUpdateRuntime {
         let request = UpdaterCheckRequest {
             manifest_url: release.manifest_url.clone(),
             target: release.target.clone(),
+            current_version: self.inner.build.app_version.clone(),
+            expected_version: release.canonical_version.clone(),
             allow_downgrades: false,
             proxy,
         };
@@ -912,6 +954,7 @@ impl AppUpdateRuntime {
             app_version: &self.inner.build.app_version,
             build_label: &self.inner.build.build_label,
             build_badge: &self.inner.build.build_badge,
+            channel: self.inner.channel,
             target: target.as_deref(),
             port: &self.inner.port,
             proxy: proxy.as_deref(),

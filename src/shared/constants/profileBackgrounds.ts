@@ -39,4 +39,24 @@ const profileBackgroundFileList: Readonly<Record<string, string>> =
         escape: 'BG_Escape.png'
     });
 
-export { profileBackgroundAssetUrl, profileBackgroundFileList };
+function profileBackgroundTextureLabel(textureId: string): string {
+    return textureId
+        .split('-')
+        .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
+        .join(' ');
+}
+
+const profileBackgroundTextures = Object.entries(profileBackgroundFileList).map(
+    ([textureId, fileName]) => ({
+        textureId,
+        label: profileBackgroundTextureLabel(textureId),
+        imageUrl: `${profileBackgroundAssetUrl}${fileName}`
+    })
+);
+
+export {
+    profileBackgroundAssetUrl,
+    profileBackgroundFileList,
+    profileBackgroundTextureLabel,
+    profileBackgroundTextures
+};

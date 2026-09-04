@@ -1,6 +1,9 @@
 import { formatClock as formatAppClock, timeToText } from '@/lib/dateTime';
 
+import type { PreviousInstanceVisitWindow } from './previousInstancesRows';
+
 export const INFO_CHART_BAR_WIDTH = 12;
+const VISIT_BOUNDARY_TOLERANCE_MS = 60 * 1000;
 
 export interface InfoChartRow {
     userId: string;
@@ -8,6 +11,7 @@ export interface InfoChartRow {
     joinMs: number;
     leaveMs: number;
     durationMs: number;
+    isSelf?: boolean;
     isFavorite?: boolean;
     isFriend?: boolean;
 }
@@ -50,6 +54,80 @@ function richMarkerForEntry(entry: InfoChartTooltipRow) {
         return '{friend|\u2661}';
     }
     return '{empty| }';
+}
+
+function isValidInterval(row: InfoChartRow) {
+    return (
+        Number.isFinite(row.joinMs) &&
+        Number.isFinite(row.leaveMs) &&
+        row.leaveMs > row.joinMs &&
+        row.durationMs > 0
+    );
+}
+
+function overlapsWindow(
+    row: InfoChartRow,
+    window: PreviousInstanceVisitWindow,
+    toleranceMs = 0
+) {
+    return (
+        row.joinMs <= window.endMs + toleranceMs &&
+        row.leaveMs >= window.startMs
+    );
+}
+
+function clipRowToWindow(
+    row: InfoChartRow,
+    window: PreviousInstanceVisitWindow
+): InfoChartRow | null {
+    const joinMs = Math.max(row.joinMs, window.startMs);
+    const leaveMs = Math.min(row.leaveMs, window.endMs);
+    if (leaveMs <= joinMs) {
+        return null;
+    }
+    return {
+        ...row,
+        joinMs,
+        leaveMs,
+        durationMs: leaveMs - joinMs
+    };
+}
+
+export function buildInfoTimelineRows({
+    rows,
+    visitWindow
+}: {
+    rows: InfoChartRow[];
+    visitWindow: PreviousInstanceVisitWindow | null;
+}): InfoChartRow[] {
+    if (!visitWindow) {
+        return [];
+    }
+
+    const validRows = rows.filter(isValidInterval);
+    const selfRows = validRows.filter(
+        (row) =>
+            row.isSelf &&
+            overlapsWindow(row, visitWindow, VISIT_BOUNDARY_TOLERANCE_MS)
+    );
+    if (!selfRows.length) {
+        return [];
+    }
+
+    const peerRows = validRows
+        .filter((row) => !row.isSelf)
+        .flatMap((row) =>
+            selfRows
+                .map((selfRow) =>
+                    clipRowToWindow(row, {
+                        startMs: selfRow.joinMs,
+                        endMs: selfRow.leaveMs
+                    })
+                )
+                .filter((entry): entry is InfoChartRow => entry !== null)
+        );
+
+    return [...selfRows, ...peerRows];
 }
 
 export function buildInfoChartTooltipParts(

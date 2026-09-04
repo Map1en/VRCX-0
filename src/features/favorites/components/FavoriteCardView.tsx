@@ -199,6 +199,84 @@ export function FavoriteCardView({
         );
     }
 
+    if (!isFriend && density.value === 'compact') {
+        return (
+            <div
+                className={cn(
+                    'object-row object-row--interactive object-row--focusable group/fav-card flex h-full w-full cursor-pointer text-sm',
+                    selected && TILE_SELECTED
+                )}
+                {...interactions.shell}
+            >
+                {slots.selection}
+                <div className="object-row__media">
+                    <span className="flex size-full items-center justify-center overflow-hidden">
+                        {item.imageSmallUrl || item.imageUrl ? (
+                            <FadeInImage
+                                src={item.imageSmallUrl || item.imageUrl}
+                                alt={item.title || ''}
+                                loading="lazy"
+                                className="size-full object-cover"
+                                fallback={
+                                    <Icon className="text-muted-foreground size-4" />
+                                }
+                            />
+                        ) : (
+                            <Icon className="text-muted-foreground size-4" />
+                        )}
+                    </span>
+                    <span
+                        aria-hidden="true"
+                        className="object-row__media-blend"
+                    />
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col justify-center px-2.5">
+                    <div className="flex min-w-0 items-center gap-1.5">
+                        <span
+                            className="object-row__title truncate"
+                            style={
+                                item.titleColor
+                                    ? { color: item.titleColor }
+                                    : undefined
+                            }
+                        >
+                            {item.title}
+                        </span>
+                        {item.isUnavailable ? (
+                            <TriangleAlertIcon className="text-destructive size-4 shrink-0" />
+                        ) : item.isDeleted ? (
+                            <Trash2Icon className="text-muted-foreground size-4 shrink-0" />
+                        ) : null}
+                        {item.isPrivate ? (
+                            <LockIcon className="text-muted-foreground size-4 shrink-0" />
+                        ) : null}
+                    </div>
+                    <div className="object-row__meta truncate">
+                        {showPlayerCountBadge ? (
+                            <>
+                                <span className="inline-flex items-baseline gap-1">
+                                    <span className="size-1.5 shrink-0 self-center rounded-full bg-[var(--status-online)]" />
+                                    {item.playerCount}
+                                </span>
+                                {item.subtitle ? ' · ' : ''}
+                            </>
+                        ) : null}
+                        {item.subtitle}
+                    </div>
+                    {slots.groupLabel}
+                </div>
+                <div
+                    className={cn(
+                        'object-row__context-action',
+                        'mr-1 flex size-8 shrink-0 items-center justify-center'
+                    )}
+                >
+                    {slots.actions}
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div
             className={cn(

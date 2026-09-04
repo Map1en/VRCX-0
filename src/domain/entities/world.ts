@@ -15,15 +15,8 @@ export type UnityPackageRecord = EntityRecord & {
     worldSignature?: string;
 };
 
-export type FileAnalysisRecord = EntityRecord & {
-    created_at?: string;
-    encryptionKey?: string;
-    fileSize?: number;
-    success?: boolean;
-    uncompressedSize?: number;
-    worldSignature?: string;
+export type FileAnalysisRecord = {
     _fileSize?: string;
-    _uncompressedSize?: string;
 };
 
 export type PlatformFileAnalysis = Record<string, FileAnalysisRecord>;

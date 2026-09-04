@@ -6,7 +6,13 @@ import { emojiAnimationStyleList } from '@/shared/constants/emoji';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
-import { Input } from '@/ui/shadcn/input';
+import {
+    NumberField,
+    NumberFieldDecrement,
+    NumberFieldGroup,
+    NumberFieldIncrement,
+    NumberFieldInput
+} from '@/ui/shadcn/number-field';
 import {
     Select,
     SelectContent,
@@ -111,16 +117,22 @@ export function GalleryEmojiUploadSettings({
                         <FieldLabel htmlFor="gallery-emoji-animation-fps">
                             {t('dialog.gallery_icons.emoji_animation_fps')}
                         </FieldLabel>
-                        <Input
+                        <NumberField
                             id="gallery-emoji-animation-fps"
-                            type="number"
                             min={1}
                             max={64}
+                            allowOutOfRange
                             value={emojiAnimFps}
-                            onChange={(event) =>
-                                onEmojiAnimFpsChange(Number(event.target.value))
+                            onValueChange={(value) =>
+                                onEmojiAnimFpsChange(value ?? 0)
                             }
-                        />
+                        >
+                            <NumberFieldGroup>
+                                <NumberFieldDecrement />
+                                <NumberFieldInput />
+                                <NumberFieldIncrement />
+                            </NumberFieldGroup>
+                        </NumberField>
                     </Field>
                     <Field className="w-28">
                         <FieldLabel htmlFor="gallery-emoji-animation-frame-count">
@@ -128,18 +140,22 @@ export function GalleryEmojiUploadSettings({
                                 'dialog.gallery_icons.emoji_animation_frame_count'
                             )}
                         </FieldLabel>
-                        <Input
+                        <NumberField
                             id="gallery-emoji-animation-frame-count"
-                            type="number"
                             min={2}
                             max={64}
+                            allowOutOfRange
                             value={emojiAnimFrameCount}
-                            onChange={(event) =>
-                                onEmojiAnimFrameCountChange(
-                                    Number(event.target.value)
-                                )
+                            onValueChange={(value) =>
+                                onEmojiAnimFrameCountChange(value ?? 0)
                             }
-                        />
+                        >
+                            <NumberFieldGroup>
+                                <NumberFieldDecrement />
+                                <NumberFieldInput />
+                                <NumberFieldIncrement />
+                            </NumberFieldGroup>
+                        </NumberField>
                     </Field>
                     <Field orientation="horizontal" className="h-9 w-auto">
                         <Checkbox

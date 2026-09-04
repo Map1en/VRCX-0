@@ -22,6 +22,7 @@ interface SigmaLifecycleOptions {
     graph: MutualFriendGraph;
     layoutSettings: MutualFriendsLayoutSettings;
     communityIndexById: Map<string, number>;
+    namedCommunityIndexes: ReadonlySet<number>;
     resolvedTheme: string;
     selectedNodeId: string;
     selectedNodeIdRef: { current: string };
@@ -33,6 +34,7 @@ export function useMutualFriendsSigmaLifecycle({
     graph,
     layoutSettings,
     communityIndexById,
+    namedCommunityIndexes,
     resolvedTheme,
     selectedNodeId,
     selectedNodeIdRef,
@@ -143,6 +145,7 @@ export function useMutualFriendsSigmaLifecycle({
                 layoutSpacing
             },
             communityIndexById,
+            namedCommunityIndexes,
             theme: themeRef.current
         })
             .then((builtGraph) => {
@@ -188,6 +191,7 @@ export function useMutualFriendsSigmaLifecycle({
     }, [
         graph,
         communityIndexById,
+        namedCommunityIndexes,
         layoutIterations,
         layoutSpacing,
         renderRetryToken,

@@ -35,7 +35,6 @@ export type FeedFriendActions = {
     addFeedHiddenUser(userId: string): Promise<void>;
     removeFeedHiddenUser(userId: string): Promise<void>;
     canUseFeedFriendLocation(location: string): boolean;
-    launchFeedFriendLocation(location: string): Promise<void>;
     selfInviteFeedFriendLocation(location: string): Promise<void>;
     sendFeedFriendInvite(friend: FeedFriendActionTarget): Promise<void>;
     requestFeedFriendInvite(friend: FeedFriendActionTarget): Promise<void>;

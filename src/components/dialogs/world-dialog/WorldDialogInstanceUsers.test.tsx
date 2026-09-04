@@ -255,6 +255,7 @@ describe('InstanceUserTiles', () => {
             {
                 userId: 'usr_friend_owner',
                 location: 'wrld_test:123',
+                source: 'realtime',
                 sinceMs: Date.now() - 600_000
             }
         ]);
@@ -329,6 +330,7 @@ describe('InstanceUserTiles', () => {
             {
                 userId: 'usr_friend',
                 location: 'wrld_test:123',
+                source: 'realtime',
                 sinceMs: Date.now() - 600_000
             }
         ]);
@@ -368,6 +370,7 @@ describe('InstanceUserTiles', () => {
             {
                 userId: 'usr_friend',
                 location: 'wrld_test:123',
+                source: 'realtime',
                 sinceMs: Date.now() - 600_000
             }
         ]);

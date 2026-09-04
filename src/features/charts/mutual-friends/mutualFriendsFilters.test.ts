@@ -7,14 +7,22 @@ import {
 } from './mutualFriendsFilters';
 import type { MutualFriendGraph } from './mutualFriendsTypes';
 
-function buildNode(id: string, label: string, degree: number) {
+function buildNode(
+    id: string,
+    label: string,
+    degree: number,
+    meta: { lastFetchedAt?: string | null; optedOut?: boolean } = {}
+) {
     return {
         id,
         label,
         degree,
         mutualCount: degree,
-        lastFetchedAt: null,
-        optedOut: false
+        lastFetchedAt:
+            meta.lastFetchedAt === undefined
+                ? '2026-09-01T00:00:00.000Z'
+                : meta.lastFetchedAt,
+        optedOut: meta.optedOut ?? false
     };
 }
 
@@ -97,6 +105,27 @@ describe('applyMutualFriendsViewFilters', () => {
     });
 
     it('counts people who have no connections at all', () => {
-        expect(countIsolatedMutualFriendNodes(graph)).toBe(1);
+        expect(countIsolatedMutualFriendNodes(graph)).toEqual({
+            noConnections: 1,
+            unavailable: 0
+        });
+    });
+
+    it('separates people whose mutuals were never available from people who truly have none', () => {
+        const graphWithGaps: MutualFriendGraph = {
+            nodes: [
+                buildNode('usr_a', 'Ava', 1),
+                buildNode('usr_b', 'Ben', 1),
+                buildNode('usr_c', 'Cora', 0),
+                buildNode('usr_d', 'Dana', 0, { optedOut: true }),
+                buildNode('usr_e', 'Eli', 0, { lastFetchedAt: null })
+            ],
+            links: [{ source: 'usr_a', target: 'usr_b' }]
+        };
+
+        expect(countIsolatedMutualFriendNodes(graphWithGaps)).toEqual({
+            noConnections: 1,
+            unavailable: 2
+        });
     });
 });

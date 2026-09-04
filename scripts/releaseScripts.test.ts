@@ -41,13 +41,24 @@ afterEach(() => {
 });
 
 describe('prepare-release-version', () => {
-    it('builds stable and prerelease metadata without changing manifests', () => {
-        expect(buildReleaseMeta('v2.31.4-preview.2')).toEqual({
+    it('builds stable and beta metadata without changing manifests', () => {
+        expect(buildReleaseMeta('v2.31.4-beta.2')).toEqual({
             base_version: '2.31.4',
-            build_version: '2.31.4-preview.2',
-            display_version: '2.31.4-preview.2',
-            tag: 'v2.31.4-preview.2'
+            build_version: '2.31.4-beta.2',
+            channel: 'beta',
+            prerelease: 'true',
+            beta_number: '2',
+            display_version: '2.31.4-beta.2',
+            tag: 'v2.31.4-beta.2'
         });
+        expect(buildReleaseMeta('2.31.4')).toMatchObject({
+            channel: 'stable',
+            prerelease: 'false',
+            beta_number: ''
+        });
+        expect(() => buildReleaseMeta('2.31.4-preview.2')).toThrow(
+            'Invalid release version: 2.31.4-preview.2'
+        );
         expect(() => buildReleaseMeta('2.031.4')).toThrow(
             'Invalid release version: 2.031.4'
         );
@@ -59,7 +70,7 @@ describe('prepare-release-version', () => {
             [
                 path.join(import.meta.dirname, 'prepare-release-version.ts'),
                 '--version',
-                'v2.31.4-preview.2',
+                'v2.31.4-beta.2',
                 '--dry-run'
             ],
             { encoding: 'utf8', env: releaseScriptEnvironment() }
@@ -69,9 +80,12 @@ describe('prepare-release-version', () => {
         expect(result.stderr).toBe('');
         expect(result.stdout.trim().split(/\r?\n/)).toEqual([
             'base_version=2.31.4',
-            'build_version=2.31.4-preview.2',
-            'display_version=2.31.4-preview.2',
-            'tag=v2.31.4-preview.2'
+            'build_version=2.31.4-beta.2',
+            'channel=beta',
+            'prerelease=true',
+            'beta_number=2',
+            'display_version=2.31.4-beta.2',
+            'tag=v2.31.4-beta.2'
         ]);
     });
 });

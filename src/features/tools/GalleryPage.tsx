@@ -22,7 +22,6 @@ export function GalleryPage() {
                 }}
                 gridDensity={pageState.gridDensity}
                 onGridDensityChange={pageState.changeGridDensity}
-                onBack={() => pageState.navigate('/tools')}
                 onRefreshAll={() => {
                     pageState.refreshAll();
                 }}

@@ -1,13 +1,16 @@
 use std::{path::PathBuf, sync::Arc};
 
 use vrcx_0_application::telemetry::{
-    TelemetryClientErrorInput, TelemetryEnvironment, TelemetryPostFuture, TelemetryTransport,
+    TelemetryClientErrorInput, TelemetryDatabaseScale, TelemetryEnvironment, TelemetryPostFuture,
+    TelemetryTransport,
 };
 use vrcx_0_integrations::telemetry::TelemetryClient;
 use vrcx_0_persistence::config::ConfigRepository;
+use vrcx_0_persistence::{database_scale_estimate, DatabaseService};
 
 pub struct LocalTelemetryEnvironment {
     config: ConfigRepository,
+    database: Arc<DatabaseService>,
     app_data: PathBuf,
     system_theme_category: Arc<dyn Fn() -> String + Send + Sync>,
 }
@@ -15,11 +18,13 @@ pub struct LocalTelemetryEnvironment {
 impl LocalTelemetryEnvironment {
     pub fn new(
         config: ConfigRepository,
+        database: Arc<DatabaseService>,
         app_data: PathBuf,
         system_theme_category: Arc<dyn Fn() -> String + Send + Sync>,
     ) -> Self {
         Self {
             config,
+            database,
             app_data,
             system_theme_category,
         }
@@ -89,6 +94,21 @@ impl TelemetryEnvironment for LocalTelemetryEnvironment {
 
     fn system_theme_category(&self) -> String {
         (self.system_theme_category)()
+    }
+
+    fn database_scale(&self) -> TelemetryDatabaseScale {
+        match database_scale_estimate(&self.database) {
+            Ok(estimate) => TelemetryDatabaseScale {
+                db_bytes: estimate.db_bytes,
+                feed_rows: estimate.feed_rows,
+                gamelog_rows: estimate.gamelog_rows,
+                friend_log_rows: estimate.friend_log_rows,
+            },
+            Err(error) => {
+                tracing::debug!("failed to estimate telemetry database scale: {error}");
+                TelemetryDatabaseScale::default()
+            }
+        }
     }
 }
 

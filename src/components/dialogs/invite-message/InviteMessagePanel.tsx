@@ -10,7 +10,15 @@ import {
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-import { cn } from '@/lib/utils';
+import {
+    DATA_TABLE_CONTROL_CELL_CLASS_NAME,
+    DATA_TABLE_NUMERIC_CELL_CLASS_NAME,
+    DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
+    DataTableCell,
+    DataTableHead,
+    DataTableHeaderRow,
+    DataTableRow
+} from '@/components/data-table/DataTableView';
 import type { InviteMessageType } from '@/platform/tauri/bindings';
 import vrchatToolsRepository from '@/repositories/vrchatToolsRepository';
 import {
@@ -23,14 +31,7 @@ import { Button } from '@/ui/shadcn/button';
 import { DialogFooter } from '@/ui/shadcn/dialog';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow
-} from '@/ui/shadcn/table';
+import { Table, TableBody, TableHeader } from '@/ui/shadcn/table';
 import { Textarea } from '@/ui/shadcn/textarea';
 
 import {
@@ -369,30 +370,32 @@ export function InviteMessagePanel({
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
             ) : null}
-            <div className="min-h-0 flex-1 overflow-auto rounded-md border">
+            <div className="app-data-table min-h-0 flex-1 overflow-auto rounded-md border">
                 <Table>
                     <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-20">
+                        <DataTableHeaderRow>
+                            <DataTableHead
+                                className={`w-20 ${DATA_TABLE_NUMERIC_HEADER_CLASS_NAME}`}
+                            >
                                 {t('table.profile.invite_messages.slot')}
-                            </TableHead>
-                            <TableHead>
+                            </DataTableHead>
+                            <DataTableHead>
                                 {t('table.profile.invite_messages.message')}
-                            </TableHead>
-                            <TableHead className="w-32 text-right">
+                            </DataTableHead>
+                            <DataTableHead className="w-32 text-right">
                                 {t('table.profile.invite_messages.cool_down')}
-                            </TableHead>
+                            </DataTableHead>
                             {showActionColumn ? (
-                                <TableHead className="w-28 text-right">
+                                <DataTableHead className="w-28 text-right">
                                     {t('table.profile.invite_messages.action')}
-                                </TableHead>
+                                </DataTableHead>
                             ) : null}
-                        </TableRow>
+                        </DataTableHeaderRow>
                     </TableHeader>
                     <TableBody>
                         {loading ? (
-                            <TableRow>
-                                <TableCell
+                            <DataTableRow>
+                                <DataTableCell
                                     colSpan={showActionColumn ? 4 : 3}
                                     className="text-muted-foreground h-24 text-center"
                                 >
@@ -400,8 +403,8 @@ export function InviteMessagePanel({
                                         <Spinner data-icon="inline-start" />
                                         {t('common.loading')}
                                     </span>
-                                </TableCell>
-                            </TableRow>
+                                </DataTableCell>
+                            </DataTableRow>
                         ) : rows.length ? (
                             rows.map((row) => {
                                 const cooldownLabel = getInviteCooldownLabel(
@@ -413,23 +416,27 @@ export function InviteMessagePanel({
                                     confirmRow?.slot === row.slot ||
                                     editingRow?.slot === row.slot;
                                 return (
-                                    <TableRow
+                                    <DataTableRow
                                         key={`${resolvedMessageType}:${row.slot}`}
-                                        className={cn(
-                                            selected && 'bg-muted/70'
-                                        )}
+                                        data-state={
+                                            selected ? 'selected' : undefined
+                                        }
                                     >
-                                        <TableCell className="font-mono text-xs">
+                                        <DataTableCell
+                                            className={`${DATA_TABLE_NUMERIC_CELL_CLASS_NAME} font-mono text-xs`}
+                                        >
                                             {row.slot}
-                                        </TableCell>
-                                        <TableCell className="whitespace-normal">
+                                        </DataTableCell>
+                                        <DataTableCell className="whitespace-normal">
                                             {row.message || '-'}
-                                        </TableCell>
-                                        <TableCell className="text-muted-foreground text-right text-xs">
+                                        </DataTableCell>
+                                        <DataTableCell className="text-muted-foreground text-right text-xs">
                                             {cooldownLabel || '-'}
-                                        </TableCell>
+                                        </DataTableCell>
                                         {showActionColumn ? (
-                                            <TableCell className="text-right">
+                                            <DataTableCell
+                                                className={`${DATA_TABLE_CONTROL_CELL_CLASS_NAME} text-right`}
+                                            >
                                                 <div className="flex justify-end gap-1">
                                                     {allowEdit ? (
                                                         <Button
@@ -493,20 +500,20 @@ export function InviteMessagePanel({
                                                         </Button>
                                                     ) : null}
                                                 </div>
-                                            </TableCell>
+                                            </DataTableCell>
                                         ) : null}
-                                    </TableRow>
+                                    </DataTableRow>
                                 );
                             })
                         ) : (
-                            <TableRow>
-                                <TableCell
+                            <DataTableRow>
+                                <DataTableCell
                                     colSpan={showActionColumn ? 4 : 3}
                                     className="text-muted-foreground h-24 text-center"
                                 >
                                     {t('common.no_data')}
-                                </TableCell>
-                            </TableRow>
+                                </DataTableCell>
+                            </DataTableRow>
                         )}
                     </TableBody>
                 </Table>

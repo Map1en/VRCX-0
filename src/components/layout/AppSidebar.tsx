@@ -16,7 +16,13 @@ import {
     useSidebarInstantTransition
 } from './navMenuCollapse';
 
-export function AppSidebar({ children }: { children: ReactNode }) {
+export function AppSidebar({
+    children,
+    sidebarWindowMode = false
+}: {
+    children: ReactNode;
+    sidebarWindowMode?: boolean;
+}) {
     const sidebarOpen = useShellStore((state) => state.sidebarOpen);
     const navWidth = useShellStore((state) => state.navWidth);
     const reducedMotionAndBlur = usePreferencesStore(
@@ -159,27 +165,34 @@ export function AppSidebar({ children }: { children: ReactNode }) {
 
     return (
         <SidebarProvider
-            open={sidebarOpen}
+            open={sidebarWindowMode ? false : sidebarOpen}
             data-vrcx-0-surface="sidebar-layout"
             className="vrcx-0-sidebar-layout relative h-full min-h-0 w-full overflow-hidden"
             style={{ '--sidebar-width': `${navWidth}px` }}
             instantSidebarTransition={instantSidebarTransition}
-            onKeyboardShortcutToggle={toggleSidebarFromKeyboard}
+            onKeyboardShortcutToggle={
+                sidebarWindowMode ? undefined : toggleSidebarFromKeyboard
+            }
             onOpenChange={(open) => {
+                if (sidebarWindowMode) {
+                    return;
+                }
                 setKeyboardSidebarToggleTargetOpen(null);
                 void setNavbarCollapsedPreference(!open);
             }}
         >
-            <Sidebar
-                side="left"
-                variant="sidebar"
-                collapsible="icon"
-                data-vrcx-0-surface="sidebar"
-                className="absolute h-auto"
-            >
-                <AppNavMenu isCollapsed={navMenuCollapsed} />
-            </Sidebar>
-            {sidebarOpen ? (
+            {sidebarWindowMode ? null : (
+                <Sidebar
+                    side="left"
+                    variant="sidebar"
+                    collapsible="icon"
+                    data-vrcx-0-surface="sidebar"
+                    className="absolute h-auto"
+                >
+                    <AppNavMenu isCollapsed={navMenuCollapsed} />
+                </Sidebar>
+            )}
+            {!sidebarWindowMode && sidebarOpen ? (
                 <div
                     className="absolute top-0 bottom-0 z-30 w-1 cursor-ew-resize select-none"
                     style={{ left: 'var(--sidebar-width)' }}

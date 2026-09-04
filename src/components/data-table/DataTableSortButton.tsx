@@ -72,7 +72,7 @@ export function DataTableSortButton<TData extends RowData>({
             variant="ghost"
             size="sm"
             className={cn(
-                'text-muted-foreground hover:text-foreground h-auto min-w-0 justify-start gap-1 p-0 text-left text-xs font-medium tracking-wide uppercase',
+                'text-muted-foreground hover:text-foreground h-auto min-w-0 justify-start gap-1 p-0 text-left text-xs font-medium',
                 className
             )}
             onClick={handleSort}
@@ -91,5 +91,24 @@ export function DataTableSortButton<TData extends RowData>({
                 />
             )}
         </Button>
+    );
+}
+
+export function DataTableHeaderLabel({
+    children,
+    className = ''
+}: {
+    children: ReactNode;
+    className?: string;
+}) {
+    return (
+        <span
+            className={cn(
+                'text-muted-foreground text-xs font-medium',
+                className
+            )}
+        >
+            {children}
+        </span>
     );
 }

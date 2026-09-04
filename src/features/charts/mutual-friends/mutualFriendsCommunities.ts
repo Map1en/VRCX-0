@@ -1,7 +1,10 @@
 import Graph from 'graphology';
 import louvain from 'graphology-communities-louvain';
 
-import { communityColor } from './mutualFriendsPalette';
+import {
+    communityColor,
+    MUTUAL_GRAPH_NAMED_COMMUNITY_LIMIT
+} from './mutualFriendsPalette';
 import type {
     MutualFriendCommunity,
     MutualFriendCommunityAssignment,
@@ -9,6 +12,7 @@ import type {
 } from './mutualFriendsTypes';
 
 const LOUVAIN_SEED = 0x9e3779b9;
+const MIN_NAMED_COMMUNITY_SIZE = 2;
 
 function createSeededRandom(seed: number) {
     let state = seed >>> 0;
@@ -22,7 +26,8 @@ function createSeededRandom(seed: number) {
 
 export function assignMutualFriendCommunities(
     graph: MutualFriendGraph,
-    palette: string[]
+    palette: string[],
+    neutralColor: string
 ): MutualFriendCommunityAssignment {
     const communityIndexById = new Map<string, number>();
     if (!graph.nodes.length) {
@@ -78,6 +83,11 @@ export function assignMutualFriendCommunities(
         return left[0].localeCompare(right[0]);
     });
 
+    const namedLimit = Math.min(
+        MUTUAL_GRAPH_NAMED_COMMUNITY_LIMIT,
+        palette.length
+    );
+
     const communities: MutualFriendCommunity[] = ranked.map(
         ([, memberIds], index) => {
             for (const memberId of memberIds) {
@@ -88,11 +98,15 @@ export function assignMutualFriendCommunities(
                     ? candidate
                     : best
             );
+            const isNamed =
+                index < namedLimit &&
+                memberIds.length >= MIN_NAMED_COMMUNITY_SIZE;
             return {
                 index,
                 size: memberIds.length,
-                color: communityColor(palette, index),
-                label: labelById.get(anchorId) ?? anchorId
+                color: communityColor(palette, index, isNamed, neutralColor),
+                label: labelById.get(anchorId) ?? anchorId,
+                isNamed
             };
         }
     );

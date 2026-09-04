@@ -8,10 +8,18 @@ export function useThemesRuntimeState() {
     const backgroundImageEnabled = useBackgroundImageStore(
         (state) => state.enabled
     );
-    const backgroundImageMode = useBackgroundImageStore((state) => state.mode);
+    const backgroundImageProjectionMode = useBackgroundImageStore(
+        (state) => state.mode
+    );
     const backgroundImageCustomSource = useBackgroundImageStore(
         (state) => state.customSource
     );
+    const decorationImageUrl = useBackgroundImageStore(
+        (state) => state.decorationImageUrl
+    );
+    const backgroundImageMode = decorationImageUrl
+        ? 'decoration'
+        : backgroundImageProjectionMode;
     const catalog = useCommunityThemeStore((state) => state.catalog);
     const enabled = useCommunityThemeStore((state) => state.enabled);
     const installedTheme = useCommunityThemeStore(

@@ -14,6 +14,8 @@ import { navDefinitions } from '@/shared/constants/ui';
 import {
     NAV_CUSTOMIZE_REQUESTED_EVENT,
     NAV_LAYOUT_UPDATED_EVENT,
+    NAV_SHORTCUT_POSITION_LIMIT,
+    NAV_SHORTCUT_REQUESTED_EVENT,
     publishNavCustomizeRequested,
     publishNavLayoutUpdated
 } from '@/shared/events/navLayoutEvents';
@@ -72,10 +74,16 @@ export type NavMenuModel = {
     menuItems: NavMenuItem[];
 };
 
+export type NavShortcutEntry = {
+    entry: NavMenuItem;
+    position: number;
+};
+
 export const NAV_CONFIG_KEY = 'VRCX_customNavMenuLayoutList';
 export {
     NAV_CUSTOMIZE_REQUESTED_EVENT,
     NAV_LAYOUT_UPDATED_EVENT,
+    NAV_SHORTCUT_REQUESTED_EVENT,
     publishNavCustomizeRequested
 };
 
@@ -478,6 +486,24 @@ export function buildMenuItems(
         }
     }
     return items;
+}
+
+export function getNavShortcutEntries(
+    menuItems: readonly NavMenuItem[]
+): NavShortcutEntry[] {
+    const shortcutEntries: NavShortcutEntry[] = [];
+    for (const item of menuItems) {
+        for (const entry of item.children ?? [item]) {
+            shortcutEntries.push({
+                entry,
+                position: shortcutEntries.length + 1
+            });
+            if (shortcutEntries.length === NAV_SHORTCUT_POSITION_LIMIT) {
+                return shortcutEntries;
+            }
+        }
+    }
+    return shortcutEntries;
 }
 
 export async function loadNavMenuModel({

@@ -36,6 +36,7 @@ fn restore_or_ensure_main_window(app: &tauri::AppHandle, failure_message: &'stat
 }
 
 fn hide_window_to_tray(window: &tauri::Window) {
+    bootstrap::sidebar_auto_hide::park(window.app_handle(), true);
     let _ = window.hide();
     let _ = window.set_skip_taskbar(true);
 }
@@ -82,6 +83,16 @@ fn disable_community_theme_from_tray(app: &tauri::AppHandle) {
             tracing::warn!(error = %error, "failed to refresh tray menu after disabling community theme");
         }
     });
+}
+
+fn toggle_sidebar_mode_from_tray(app: &tauri::AppHandle) {
+    restore_or_ensure_main_window(
+        app,
+        "failed to show main window before toggling sidebar mode",
+    );
+    if let Err(error) = app.emit("sidebarModeToggleRequested", serde_json::json!({})) {
+        tracing::warn!(error = %error, "failed to emit sidebar mode toggle request");
+    }
 }
 
 fn start_background_mode_from_shell(app: tauri::AppHandle) {
@@ -304,6 +315,9 @@ pub fn run() {
                         start_background_mode_from_shell(app.clone());
                     }
                 }
+            }
+            "tray-toggle-sidebar-mode" => {
+                toggle_sidebar_mode_from_tray(app);
             }
             "tray-disable-theme" => {
                 disable_community_theme_from_tray(app);

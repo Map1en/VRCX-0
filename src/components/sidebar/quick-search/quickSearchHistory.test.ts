@@ -109,6 +109,32 @@ describe('quickSearchHistory', () => {
         ]);
     });
 
+    it('drops cached favorite record ids', async () => {
+        mocks.contents = JSON.stringify({
+            version: 1,
+            accounts: {
+                [JSON.stringify([firstAccount.endpoint, firstAccount.userId])]:
+                    [
+                        {
+                            id: 'fvrt_wrong',
+                            type: 'world',
+                            name: 'Wrong favorite id'
+                        },
+                        {
+                            id: 'wrld_valid',
+                            type: 'world',
+                            name: 'Valid world'
+                        }
+                    ]
+            }
+        });
+        mocks.missing = false;
+
+        const history = await loadQuickSearchHistory(firstAccount);
+
+        expect(history.map((entry) => entry.id)).toEqual(['wrld_valid']);
+    });
+
     it('serializes concurrent records without dropping an entry', async () => {
         await Promise.all([
             recordQuickSearchHistory(firstAccount, result(1)),

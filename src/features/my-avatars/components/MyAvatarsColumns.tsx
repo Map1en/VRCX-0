@@ -3,6 +3,15 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppColumnDef } from '@/components/data-table/appTable';
+import { DataTableHeaderLabel } from '@/components/data-table/DataTableSortButton';
+import {
+    DATA_TABLE_METADATA_CELL_CLASS_NAME,
+    DATA_TABLE_NUMERIC_CELL_CLASS_NAME,
+    DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
+    DATA_TABLE_PRIMARY_CELL_CLASS_NAME,
+    DATA_TABLE_STICKY_ACTION_CELL_CLASS_NAME,
+    DATA_TABLE_STICKY_ACTION_HEADER_CLASS_NAME
+} from '@/components/data-table/DataTableView';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { formatDateFilter, timeToText } from '@/lib/dateTime';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -57,9 +66,9 @@ export function useMyAvatarsColumns({
                     disableReorder: true
                 },
                 header: () => (
-                    <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    <DataTableHeaderLabel>
                         {t('table.playerList.avatar')}
-                    </span>
+                    </DataTableHeaderLabel>
                 ),
                 enableSorting: false,
                 enableResizing: false,
@@ -134,7 +143,10 @@ export function useMyAvatarsColumns({
                 size: 240,
                 minSize: 160,
                 accessorFn: (row) => row.name || '',
-                meta: { label: t('dialog.avatar.info.name') },
+                meta: {
+                    label: t('dialog.avatar.info.name'),
+                    tableCellClassName: DATA_TABLE_PRIMARY_CELL_CLASS_NAME
+                },
                 header: ({ column }) => (
                     <SortButton
                         column={column}
@@ -206,9 +218,9 @@ export function useMyAvatarsColumns({
                 accessorFn: (row) => (row.unityPackages?.length ? 1 : 0),
                 meta: { label: t('dialog.avatar.info.platform') },
                 header: () => (
-                    <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    <DataTableHeaderLabel>
                         {t('dialog.avatar.info.platform')}
-                    </span>
+                    </DataTableHeaderLabel>
                 ),
                 enableSorting: false,
                 cell: ({ row }) => (
@@ -244,8 +256,8 @@ export function useMyAvatarsColumns({
                 accessorFn: (row) => Number(row.$timeSpent) || 0,
                 meta: {
                     label: t('dialog.avatar.info.time_spent'),
-                    tableHeadClassName: 'text-right',
-                    tableCellClassName: 'text-right tabular-nums'
+                    tableHeadClassName: DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
+                    tableCellClassName: DATA_TABLE_NUMERIC_CELL_CLASS_NAME
                 },
                 header: ({ column }) => (
                     <div className="flex w-full min-w-0 justify-end overflow-hidden">
@@ -271,8 +283,8 @@ export function useMyAvatarsColumns({
                 accessorFn: (row) => Number(row.version) || 0,
                 meta: {
                     label: t('dialog.avatar.info.version'),
-                    tableHeadClassName: 'text-right',
-                    tableCellClassName: 'text-right tabular-nums'
+                    tableHeadClassName: DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
+                    tableCellClassName: DATA_TABLE_NUMERIC_CELL_CLASS_NAME
                 },
                 header: ({ column }) => (
                     <div className="flex w-full min-w-0 justify-end overflow-hidden">
@@ -369,7 +381,8 @@ export function useMyAvatarsColumns({
                 accessorFn: (row) => row.updated_at || '',
                 meta: {
                     label: t('dialog.avatar.info.last_updated'),
-                    stretch: true
+                    stretch: true,
+                    tableCellClassName: DATA_TABLE_METADATA_CELL_CLASS_NAME
                 },
                 header: ({ column }) => (
                     <SortButton
@@ -391,7 +404,10 @@ export function useMyAvatarsColumns({
                 size: 170,
                 minSize: 130,
                 accessorFn: (row) => row.created_at || '',
-                meta: { label: t('dialog.avatar.info.created_at') },
+                meta: {
+                    label: t('dialog.avatar.info.created_at'),
+                    tableCellClassName: DATA_TABLE_METADATA_CELL_CLASS_NAME
+                },
                 header: ({ column }) => (
                     <SortButton
                         column={column}
@@ -419,14 +435,13 @@ export function useMyAvatarsColumns({
                     disableReorder: true,
                     disableVisibilityToggle: true,
                     tableHeadClassName:
-                        'vrcx-0-table-header sticky top-0 right-0 z-20',
-                    tableCellClassName:
-                        'bg-[var(--vrcx-0-table-surface)] group-hover:bg-muted/50 sticky right-0 z-10'
+                        DATA_TABLE_STICKY_ACTION_HEADER_CLASS_NAME,
+                    tableCellClassName: DATA_TABLE_STICKY_ACTION_CELL_CLASS_NAME
                 },
                 header: () => (
-                    <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    <DataTableHeaderLabel>
                         {t('table.import.action')}
-                    </span>
+                    </DataTableHeaderLabel>
                 ),
                 cell: ({ row }) => {
                     const isUpdating =

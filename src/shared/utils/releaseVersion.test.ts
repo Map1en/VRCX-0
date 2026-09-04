@@ -13,8 +13,7 @@ describe('releaseVersion utilities', () => {
             minor: 0,
             patchNumber: 0,
             betaNumber: null,
-            alphaNumber: null,
-            channel: 'Stable',
+            channel: 'stable',
             buildVersion: '1.0.0',
             canonicalVersion: '1.0.0',
             displayVersion: '1.0.0'
@@ -23,19 +22,32 @@ describe('releaseVersion utilities', () => {
             major: 1,
             minor: 0,
             patchNumber: 1,
-            channel: 'Stable',
+            channel: 'stable',
             buildVersion: '1.0.1',
             canonicalVersion: '1.0.1',
             displayVersion: '1.0.1'
         });
     });
 
-    it('formats internal build versions for app display', () => {
+    it('parses and formats beta SemVer release tags', () => {
+        expect(parseReleaseVersion('v1.1.0-beta.12')).toMatchObject({
+            major: 1,
+            minor: 1,
+            patchNumber: 0,
+            betaNumber: 12,
+            channel: 'beta',
+            canonicalVersion: '1.1.0-beta.12',
+            displayVersion: '1.1.0-beta.12'
+        });
         expect(formatReleaseDisplayVersion('1.0.0')).toBe('1.0.0');
+        expect(formatReleaseDisplayVersion('1.1.0-beta.12')).toBe(
+            '1.1.0-beta.12'
+        );
     });
 
-    it('rejects beta, old date versions, and malformed values', () => {
-        expect(parseReleaseVersion('v1.1.0-beta.1')).toBeNull();
+    it('rejects unsupported prereleases, old date versions, and malformed values', () => {
+        expect(parseReleaseVersion('v1.1.0-beta.0')).toBeNull();
+        expect(parseReleaseVersion('v1.1.0-beta.1000000')).toBeNull();
         expect(parseReleaseVersion('v1.1.0-alpha.1')).toBeNull();
         expect(parseReleaseVersion('v01.1.0')).toBeNull();
         expect(parseReleaseVersion('v1.01.0')).toBeNull();
@@ -49,11 +61,21 @@ describe('releaseVersion utilities', () => {
     });
 
     it('orders stable releases by major, minor, then patch', () => {
-        const versions = ['1.1.0', '1.2.0', '1.1.1', '1.0.0', 'bad'];
+        const versions = [
+            '1.1.0',
+            '1.2.0',
+            '1.1.1',
+            '1.0.0',
+            '1.1.0-beta.10',
+            '1.1.0-beta.2',
+            'bad'
+        ];
 
         expect(versions.sort(compareReleaseVersions)).toEqual([
             'bad',
             '1.0.0',
+            '1.1.0-beta.2',
+            '1.1.0-beta.10',
             '1.1.0',
             '1.1.1',
             '1.2.0'

@@ -1,4 +1,4 @@
-import { CheckIcon, MoreHorizontalIcon, Trash2Icon } from 'lucide-react';
+import { CheckCheckIcon, MoreHorizontalIcon, Trash2Icon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -298,7 +298,7 @@ export function NotificationDrawerRow({
                                                                     )
                                                                 }
                                                             >
-                                                                <CheckIcon data-icon="inline-start" />
+                                                                <CheckCheckIcon data-icon="inline-start" />
                                                                 {t(
                                                                     'side_panel.notification_center.mark_as_read'
                                                                 )}

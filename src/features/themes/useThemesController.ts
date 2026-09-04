@@ -8,8 +8,8 @@ import type {
     CommunityThemeStatsById
 } from '@/domain/themes/types';
 import { commands } from '@/platform/tauri/bindings';
-import type { BackgroundImageMode } from '@/platform/tauri/bindings';
 import {
+    type BackgroundImageSelectionMode,
     disableBackgroundImage,
     setBackgroundImageMode
 } from '@/services/background-image/backgroundImageService';
@@ -262,10 +262,23 @@ export function useThemesController() {
     async function selectBackgroundSource() {
         setSelectedSource('background');
         try {
-            const nextMode: BackgroundImageMode =
-                backgroundImageMode === 'custom' && backgroundImageCustomSource
-                    ? 'custom'
-                    : 'daily';
+            let nextMode: BackgroundImageSelectionMode = 'daily';
+            if (
+                backgroundImageMode === 'custom' &&
+                backgroundImageCustomSource
+            ) {
+                nextMode = 'custom';
+            } else if (backgroundImageMode === 'decoration') {
+                nextMode = 'decoration';
+            }
+            if (nextMode === 'decoration') {
+                if (enabled) {
+                    await disableInstalledCommunityTheme();
+                }
+                if (localPreview) {
+                    await stopLocalCommunityThemePreview();
+                }
+            }
             await setBackgroundImageMode(nextMode);
         } catch (sourceError) {
             toast.error(

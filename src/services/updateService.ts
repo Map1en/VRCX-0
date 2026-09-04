@@ -9,7 +9,6 @@ export type {
 } from './update-service/appUpdateSnapshot';
 export { toNormalizedReleaseFromSnapshot } from './update-service/appUpdateSnapshot';
 
-export { sanitizeBranch } from './update-service/release';
 export {
     fetchBranchReleases,
     fetchLatestBranchRelease,

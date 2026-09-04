@@ -1,9 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 import { useAppTable } from '@/components/data-table/appTable';
+import { sortTableRowsByDateAndType } from '@/components/data-table/sortRowsByDateAndType';
 import { useFriendLogStore } from '@/state/friendLogStore';
 
 import { useFriendLogColumns } from './components/FriendLogColumns';
+import { getFriendLogRowKey } from './friendLogRows';
 import { useFriendLogFilters } from './useFriendLogFilters';
 import { useFriendLogRowActions } from './useFriendLogRowActions';
 import { useFriendLogRows } from './useFriendLogRows';
@@ -53,8 +55,21 @@ export function useFriendLogPageController() {
         rowsOwnerUserId: rows.rowsOwnerUserId,
         shiftHeld
     });
+    const sortedRows = useMemo(
+        () => sortTableRowsByDateAndType(rows.orderedRows, tableState.sorting),
+        [rows.orderedRows, tableState.sorting]
+    );
+    const { resolveDisplayName } = rows;
+    const { pageIndex, pageSize } = tableState.pagination;
+    const pageRows = useMemo(() => {
+        const start = pageIndex * pageSize;
+        return sortedRows.slice(start, start + pageSize).map((row) => ({
+            ...row,
+            resolvedDisplayName: resolveDisplayName(row)
+        }));
+    }, [sortedRows, pageIndex, pageSize, resolveDisplayName]);
     const table = useAppTable({
-        data: rows.orderedRows,
+        data: pageRows,
         columns,
         state: {
             columnOrder: tableState.columnOrder,
@@ -68,6 +83,10 @@ export function useFriendLogPageController() {
         onColumnVisibilityChange: tableState.setColumnVisibility,
         onColumnOrderChange: tableState.setColumnOrder,
         onColumnSizingChange: tableState.setColumnSizing,
+        getRowId: (row) => getFriendLogRowKey(row, rows.rowsOwnerUserId),
+        manualPagination: true,
+        manualSorting: true,
+        rowCount: rows.orderedRows.length,
         autoResetPageIndex: false,
         enableColumnResizing: true,
         columnResizeMode: 'onChange',

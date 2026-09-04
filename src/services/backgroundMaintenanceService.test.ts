@@ -70,6 +70,7 @@ type ReleaseSnapshotFixture = {
     body: string;
     canonicalVersion: string;
     displayVersion: string;
+    channel: 'stable' | 'beta';
     manifestUrl: string;
     target: string;
     updaterType: AppUpdateDeliveryKind;
@@ -83,6 +84,7 @@ const TAURI_RELEASE_SNAPSHOT: ReleaseSnapshotFixture = {
     body: '',
     canonicalVersion: '2.7.0',
     displayVersion: '2.7.0',
+    channel: 'stable',
     manifestUrl:
         'https://github.com/Map1en/VRCX-0/releases/latest/download/latest_windows.json',
     target: 'windows-x86_64-stable',
@@ -97,12 +99,11 @@ function toNormalizedRelease(release: ReleaseSnapshotFixture | null) {
         manifestUrl: release.manifestUrl || undefined,
         target: release.target || undefined,
         canonicalVersion: release.canonicalVersion,
-        channel: 'Stable' as const,
+        channel: release.channel,
         displayVersion: release.displayVersion,
         htmlUrl: release.htmlUrl,
         tagName: release.tagName,
         displayName: release.displayName,
-        prerelease: false,
         publishedAt: release.publishedAt,
         body: release.body,
         updaterType: release.updaterType === 'tauri' ? 'tauri' : 'manual'

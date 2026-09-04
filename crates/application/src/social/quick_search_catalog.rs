@@ -732,7 +732,7 @@ fn project_row(
     source: &'static str,
 ) -> Option<QuickSearchCandidate> {
     let object = row.as_object()?;
-    let id = first_text_field(object, &["favoriteId", "objectId", "id"]);
+    let id = first_text_field(object, &["id"]);
     if id.is_empty() {
         return None;
     }
@@ -1042,5 +1042,19 @@ mod tests {
         assert_eq!(projected.id, "avtr_1");
         assert_eq!(projected.name, "Avatar");
         assert!(projected.seed_data.get("largeUnusedPayload").is_none());
+    }
+
+    #[test]
+    fn favorite_world_projection_uses_world_id_instead_of_favorite_record_id() {
+        let row = json!({
+            "favoriteId": "fvrt_1",
+            "id": "wrld_1",
+            "name": "Favorite World",
+        });
+
+        let projected = project_row(row, QuickSearchEntityType::World, "favorite").unwrap();
+
+        assert_eq!(projected.id, "wrld_1");
+        assert_eq!(projected.seed_data["id"], json!("wrld_1"));
     }
 }

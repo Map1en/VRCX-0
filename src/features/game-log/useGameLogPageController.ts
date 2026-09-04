@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { useAppTable } from '@/components/data-table/appTable';
+import { sortTableRowsByDateAndType } from '@/components/data-table/sortRowsByDateAndType';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { useGameLogColumns } from './components/GameLogColumns';
@@ -36,9 +37,17 @@ export function useGameLogPageController() {
         sessionLimit: tableState.sessionLimit,
         viewMode: filters.viewMode
     });
+    const { pagination, setPagination, sorting } = tableState;
+    const sortedRows = useMemo(
+        () => sortTableRowsByDateAndType(rowsState.rows, sorting),
+        [rowsState.rows, sorting]
+    );
+    const pageRows = useMemo(() => {
+        const start = pagination.pageIndex * pagination.pageSize;
+        return sortedRows.slice(start, start + pagination.pageSize);
+    }, [sortedRows, pagination.pageIndex, pagination.pageSize]);
     const annotations = useGameLogAnnotations({
-        rows: rowsState.rows,
-        sessions: rowsState.sessions
+        rows: pageRows
     });
     const rowActions = useGameLogRowActions({
         removeRowByKey: rowsState.removeRowByKey
@@ -60,6 +69,10 @@ export function useGameLogPageController() {
     const table = useAppTable({
         data: annotations.annotatedRows,
         columns,
+        manualPagination: true,
+        manualSorting: true,
+        rowCount: rowsState.rows.length,
+        getRowId: (row) => `${row.type}:${row.rowId}`,
         state: {
             columnOrder: tableState.columnOrder,
             columnSizing: tableState.columnSizing,
@@ -79,22 +92,27 @@ export function useGameLogPageController() {
             setColumnOrderLocked: tableState.setColumnOrderLocked
         }
     });
-    const { pagination, setPagination } = tableState;
+
+    useEffect(() => {
+        setPagination((current) =>
+            current.pageIndex === 0 ? current : { ...current, pageIndex: 0 }
+        );
+    }, [rowsState.rows, sorting, annotations.affinity, setPagination]);
 
     useEffect(() => {
         const maxPageIndex = Math.max(
             0,
-            Math.ceil(annotations.annotatedRows.length / pagination.pageSize) -
-                1
+            Math.ceil(rowsState.rows.length / pagination.pageSize) - 1
         );
         if (pagination.pageIndex > maxPageIndex) {
-            setPagination((current) => ({
-                ...current,
-                pageIndex: maxPageIndex
-            }));
+            setPagination((current) =>
+                current.pageIndex > maxPageIndex
+                    ? { ...current, pageIndex: maxPageIndex }
+                    : current
+            );
         }
     }, [
-        annotations.annotatedRows.length,
+        rowsState.rows.length,
         pagination.pageIndex,
         pagination.pageSize,
         setPagination

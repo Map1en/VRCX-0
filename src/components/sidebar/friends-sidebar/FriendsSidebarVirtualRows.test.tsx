@@ -56,6 +56,7 @@ function renderFriendRow({
                 ? {
                       usr_friend: {
                           location: projectedLocation,
+                          source: 'realtime',
                           sinceMs: 1_700_000_000_000
                       }
                   }

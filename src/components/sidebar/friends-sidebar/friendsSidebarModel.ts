@@ -7,6 +7,7 @@ import {
     type FriendSortMethod
 } from '@/shared/utils/friend';
 import { isRecord } from '@/shared/utils/record';
+import type { FriendLocationTimeEntry } from '@/state/friendLocationTimeStore';
 export { resolveCurrentInviteLocation } from '@/shared/utils/invite';
 import {
     buildSameInstanceFriendGroups,
@@ -420,10 +421,12 @@ export function sameInstanceLocationTag(
 export function buildSameInstanceGroups(
     rows: readonly SidebarFriendRecord[],
     prefs: SidebarPreferences,
-    lastLocation: LastLocationSnapshot | null | undefined
+    lastLocation: LastLocationSnapshot | null | undefined,
+    locationTimes?: Readonly<Record<string, FriendLocationTimeEntry>>
 ) {
     return buildSameInstanceFriendGroups(sortRows(rows, prefs), lastLocation, {
-        includeCurrentUser: prefs.isShowCurrentUserInSameInstance !== false
+        includeCurrentUser: prefs.isShowCurrentUserInSameInstance !== false,
+        locationTimes
     }).map(({ location, friends, isCurrentInstance }): SameInstanceGroup => ({
         location,
         rows: friends,

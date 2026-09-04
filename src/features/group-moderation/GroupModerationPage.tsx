@@ -12,9 +12,9 @@ import {
     LoadingState,
     PageBody,
     PageHeader,
-    PageScaffold,
-    PageTitle
+    PageScaffold
 } from '@/components/layout/PageScaffold';
+import { ToolPageHeader } from '@/components/layout/ToolPageHeader';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import type { GroupProfileRecord } from '@/domain/entities/group';
 import type { LoadStatus } from '@/domain/shared/types';
@@ -216,9 +216,9 @@ function GroupModerationMain({
                     )}
                 </span>
                 <div className="min-w-0">
-                    <PageTitle className="truncate">
+                    <h2 className="font-heading text-foreground truncate text-base leading-5 font-medium">
                         {profile.name || profile.id}
-                    </PageTitle>
+                    </h2>
                     {canModerate ? (
                         <p className="text-muted-foreground truncate text-xs tabular-nums">
                             {t(
@@ -303,6 +303,7 @@ export function GroupModerationPage() {
 
     return (
         <PageScaffold className="group-moderation" flushBottom>
+            <ToolPageHeader toolKey="group-moderation" />
             <PageBody className="min-h-0 flex-1 flex-row gap-0 overflow-hidden">
                 <GroupModerationRail
                     activeGroupId={groupId}

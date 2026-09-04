@@ -129,7 +129,7 @@ export const entityQueryPolicies = Object.freeze({
     }),
     userAvatarLookup: Object.freeze({
         staleTime: 30 * MINUTE_MS,
-        gcTime: 120 * MINUTE_MS,
+        gcTime: 5 * MINUTE_MS,
         retry: 0,
         refetchOnWindowFocus: false
     })

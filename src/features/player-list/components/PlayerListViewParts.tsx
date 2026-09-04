@@ -10,6 +10,7 @@ import {
     DataTableColumnSortableContext,
     DataTableEmptyRow,
     DataTableHeader,
+    DataTableRow,
     DataTableScrollArea,
     DataTableSurface,
     getDataTableSizingStyle
@@ -31,7 +32,7 @@ import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
-import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
+import { Table, TableBody } from '@/ui/shadcn/table';
 
 import {
     fileAnalysisSizeForPlatform,
@@ -310,7 +311,7 @@ export function PlayerListTableShell({
             <DataTableScrollArea>
                 <DataTableColumnDndProvider table={table}>
                     <Table
-                        className="app-data-table table-fixed"
+                        className="table-fixed"
                         style={getDataTableSizingStyle(table)}
                     >
                         <DataTableColumnSizeColGroup table={table} />
@@ -351,7 +352,7 @@ export function PlayerListRows({
     }
 
     return table.getRowModel().rows.map((row) => (
-        <TableRow
+        <DataTableRow
             key={row.id}
             className={cn(
                 'cursor-pointer border-l-2 border-l-transparent',
@@ -383,7 +384,7 @@ export function PlayerListRows({
                     <ResizableTableCell key={cell.id} cell={cell} />
                 ))}
             </DataTableColumnSortableContext>
-        </TableRow>
+        </DataTableRow>
     ));
 }
 

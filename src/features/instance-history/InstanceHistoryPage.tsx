@@ -591,7 +591,7 @@ export function InstanceHistoryPage({
         <PageScaffold embedded={embedded}>
             <PageToolbar>
                 <PageToolbarRow>
-                    <ToolbarViews>
+                    <ToolbarViews className="min-w-0 flex-wrap">
                         <Popover
                             open={targetPickerOpen}
                             onOpenChange={setTargetPickerOpen}
@@ -601,7 +601,7 @@ export function InstanceHistoryPage({
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        className="max-w-72 min-w-48 shrink-0 justify-between"
+                                        className="w-48 shrink-0 justify-between"
                                     >
                                         <UserRoundIcon
                                             data-icon="inline-start"
@@ -703,6 +703,7 @@ export function InstanceHistoryPage({
                                 <ToolbarSearch
                                     value={search}
                                     onValueChange={setSearch}
+                                    className="ml-auto w-48 sm:w-56"
                                     placeholder={t(
                                         'dialog.previous_instances.search_placeholder'
                                     )}
@@ -899,9 +900,9 @@ export function InstanceHistoryPage({
                     >
                         <ResizablePanel
                             id="instance-history-list"
-                            defaultSize={36}
+                            defaultSize={34}
                             minSize={28}
-                            className="min-h-0 min-w-0 pr-3"
+                            className="min-h-0 min-w-0 pr-2"
                         >
                             <InstanceHistoryList
                                 {...instanceHistoryListProps}
@@ -910,9 +911,9 @@ export function InstanceHistoryPage({
                         <ResizableHandle withHandle />
                         <ResizablePanel
                             id="instance-history-details"
-                            defaultSize={64}
+                            defaultSize={66}
                             minSize={40}
-                            className="min-h-0 min-w-0 pl-3"
+                            className="min-h-0 min-w-0 pl-2"
                         >
                             <PreviousInstanceDetailsPanel
                                 row={visibleDetailRow}

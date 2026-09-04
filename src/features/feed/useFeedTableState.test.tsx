@@ -57,23 +57,39 @@ describe('useFeedTableState', () => {
         });
     });
 
-    it('restores resized columns after the Feed table remounts', () => {
+    it('restores search sorting and shared list widths after remount', () => {
         const first = renderHook(() => useFeedTableState(options));
 
         act(() => {
-            first.result.current.setColumnSizing({ detail: 384 });
-            first.unmount();
+            first.result.current.setSorting([{ id: 'type', desc: false }]);
+            first.result.current.setColumnSizing({
+                created_at: 144,
+                displayName: 208
+            });
         });
 
         expect(
             JSON.parse(
                 window.localStorage.getItem(getDataTableStorageKey('feed')) ||
                     '{}'
+            ).sorting
+        ).toEqual([{ id: 'type', desc: false }]);
+        expect(
+            JSON.parse(
+                window.localStorage.getItem(getDataTableStorageKey('feed')) ||
+                    '{}'
             ).columnSizing
-        ).toEqual({ detail: 384 });
+        ).toEqual({ created_at: 144, displayName: 208 });
+        first.unmount();
 
         const second = renderHook(() => useFeedTableState(options));
 
-        expect(second.result.current.columnSizing).toEqual({ detail: 384 });
+        expect(second.result.current.sorting).toEqual([
+            { id: 'type', desc: false }
+        ]);
+        expect(second.result.current.columnSizing).toEqual({
+            created_at: 144,
+            displayName: 208
+        });
     });
 });

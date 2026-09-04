@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
+import type { FriendRosterById } from '@/domain/friends/types';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
 import { commands, type NoteExportStatus } from '@/platform/tauri/bindings';
@@ -43,6 +44,8 @@ import {
 const NOTE_CHAR_LIMIT = 256;
 const NOTE_CHAR_WARN = 230;
 const LIMITATION_KEYS = [3, 4, 5, 6, 7, 8];
+const EMPTY_FRIENDS: FriendRosterById = {};
+const EMPTY_FRIEND_IDS: string[] = [];
 
 type NoteExportRow = {
     id: string;
@@ -75,13 +78,16 @@ export function NoteExportDialog({
     onOpenChange
 }: NoteExportDialogProps) {
     const { t } = useTranslation();
-    const friendsById = useFriendRosterStore((state) => state.friendsById);
-    const orderedFriendIds = useFriendRosterStore(
-        (state) => state.orderedFriendIds
+    const friendsById = useFriendRosterStore((state) =>
+        open ? state.friendsById : EMPTY_FRIENDS
+    );
+    const orderedFriendIds = useFriendRosterStore((state) =>
+        open ? state.orderedFriendIds : EMPTY_FRIEND_IDS
     );
     const openImagePreview = useModalStore((state) => state.openImagePreview);
     const activeRunIdRef = useRef('');
     const terminalRunIdRef = useRef('');
+    const sessionRef = useRef(0);
     const refreshRequestRef = useRef(0);
     const [rows, setRows] = useState<NoteExportRow[]>([]);
     const [loading, setLoading] = useState(false);
@@ -121,7 +127,17 @@ export function NoteExportDialog({
                         id: userId,
                         name: friend.displayName || friend.name || userId,
                         memo,
-                        ref
+                        ref: {
+                            userIcon: ref.userIcon,
+                            profilePicOverrideThumbnail:
+                                ref.profilePicOverrideThumbnail,
+                            profilePicOverride: ref.profilePicOverride,
+                            thumbnailUrl: ref.thumbnailUrl,
+                            currentAvatarThumbnailImageUrl:
+                                ref.currentAvatarThumbnailImageUrl,
+                            currentAvatarImageUrl: ref.currentAvatarImageUrl,
+                            note: ref.note
+                        }
                     });
                 }
             }
@@ -242,6 +258,7 @@ export function NoteExportDialog({
         return () => {
             disposed = true;
             unsubscribe?.();
+            sessionRef.current += 1;
             refreshRequestRef.current += 1;
         };
     });
@@ -249,6 +266,7 @@ export function NoteExportDialog({
     useEffect(() => initializeExportDialog(), [open]);
 
     async function exportNotes() {
+        const sessionId = sessionRef.current;
         const snapshot = [...rows]
             .reverse()
             .filter((row) => !skippedIds.has(row.id));
@@ -267,9 +285,18 @@ export function NoteExportDialog({
                     note: truncateExportMemo(row.memo)
                 }))
             });
+            if (sessionId !== sessionRef.current) {
+                return;
+            }
             applyExportStatus(status);
-            applyExportStatus(await commands.appNoteExportStatus());
+            const latestStatus = await commands.appNoteExportStatus();
+            if (sessionId === sessionRef.current) {
+                applyExportStatus(latestStatus);
+            }
         } catch (error) {
+            if (sessionId !== sessionRef.current) {
+                return;
+            }
             setErrors(
                 userFacingErrorMessage(
                     error,
@@ -277,6 +304,18 @@ export function NoteExportDialog({
                 )
             );
             setLoading(false);
+        }
+    }
+
+    async function cancelExport() {
+        const sessionId = sessionRef.current;
+        try {
+            const status = await commands.appNoteExportCancel();
+            if (sessionId === sessionRef.current) {
+                applyExportStatus(status);
+            }
+        } catch (error) {
+            toast.error(userFacingErrorMessage(error));
         }
     }
 
@@ -290,7 +329,17 @@ export function NoteExportDialog({
     );
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog
+            open={open}
+            onOpenChange={onOpenChange}
+            onOpenChangeComplete={(nextOpen) => {
+                if (!nextOpen && !open) {
+                    setRows([]);
+                    setErrors('');
+                    setSkippedIds(new Set());
+                }
+            }}
+        >
             <DialogContent className="flex max-h-[85vh] flex-col gap-4 sm:max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>{t('dialog.note_export.header')}</DialogTitle>
@@ -358,14 +407,7 @@ export function NoteExportDialog({
                                 type="button"
                                 variant="outline"
                                 onClick={() => {
-                                    void commands
-                                        .appNoteExportCancel()
-                                        .then(applyExportStatus)
-                                        .catch((error: unknown) => {
-                                            toast.error(
-                                                userFacingErrorMessage(error)
-                                            );
-                                        });
+                                    void cancelExport();
                                 }}
                             >
                                 {t('dialog.note_export.cancel')}

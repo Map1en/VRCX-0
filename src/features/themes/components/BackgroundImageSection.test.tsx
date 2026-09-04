@@ -33,6 +33,7 @@ vi.mock('@/services/background-image/backgroundImageService', () => ({
     isBackgroundImageCustomSourceRotating: vi.fn(() => false),
     refreshBackgroundImage: vi.fn(),
     setBackgroundImageCustomRotationIntervalMinutes: vi.fn(),
+    setBackgroundImageDecoration: vi.fn(),
     setBackgroundImageMode: vi.fn(),
     setBackgroundImageProvider: vi.fn()
 }));
@@ -80,6 +81,7 @@ function setFolderBackground(imagePath: string | null): void {
         enabled: true,
         providerId: 'nasa-epic',
         customSource: folderSource,
+        decorationImageUrl: '',
         snapshot: imagePath ? customSnapshot(imagePath) : null,
         loading: false,
         error: null
@@ -186,5 +188,44 @@ describe('BackgroundImageSection current folder image', () => {
                 'view.background_image.toast.failed_to_open_folder'
             );
         });
+    });
+
+    it('shows menu previews while keeping the selected decoration text-only', async () => {
+        const user = userEvent.setup();
+        useBackgroundImageStore.setState({
+            mode: 'off',
+            enabled: true,
+            customSource: null,
+            decorationImageUrl:
+                'https://assets.vrchat.com/www/profile_decorations/profile_backgrounds/BG_Grid.png',
+            snapshot: null
+        });
+
+        const { container } = render(<BackgroundImageSection />);
+
+        const triggers = container.querySelectorAll<HTMLElement>(
+            '[data-slot="select-trigger"]'
+        );
+        const decorationTrigger = triggers[1];
+        expect(decorationTrigger.textContent).toContain('Grid');
+        expect(decorationTrigger.querySelector('img')).toBeNull();
+        await user.click(decorationTrigger);
+
+        expect(screen.getByText('Bit Mountain')).toBeTruthy();
+        const gridItem = screen
+            .getAllByText('Grid')
+            .map((label) => label.closest('[data-slot="select-item"]'))
+            .find((item) => item !== null);
+        expect(
+            gridItem?.querySelector('img[src*="BG_Grid.png"]')
+        ).not.toBeNull();
+        expect(
+            screen.getAllByText('view.background_image.mode.decoration').length
+        ).toBeGreaterThan(0);
+        expect(
+            screen.queryByRole('button', {
+                name: 'view.background_image.action.refresh'
+            })
+        ).toBeNull();
     });
 });

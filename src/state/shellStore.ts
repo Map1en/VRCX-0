@@ -17,6 +17,38 @@ const MAX_NAV_WIDTH = 480;
 export type ThemeMode = 'system' | 'light' | 'dark';
 export type TableDensity = 'standard' | 'compact';
 export type NotificationLayout = 'notification-center' | 'table';
+export type WindowDisplayMode = 'normal' | 'sidebar';
+
+const WINDOW_DISPLAY_MODE_STORAGE_KEY = 'vrcx-main-window-display-mode';
+
+function loadWindowDisplayMode(): WindowDisplayMode {
+    if (typeof window === 'undefined') {
+        return 'normal';
+    }
+    try {
+        return window.localStorage.getItem(WINDOW_DISPLAY_MODE_STORAGE_KEY) ===
+            'sidebar'
+            ? 'sidebar'
+            : 'normal';
+    } catch {
+        return 'normal';
+    }
+}
+
+function saveWindowDisplayMode(windowDisplayMode: WindowDisplayMode): void {
+    if (typeof window === 'undefined') {
+        return;
+    }
+    try {
+        window.localStorage.setItem(
+            WINDOW_DISPLAY_MODE_STORAGE_KEY,
+            windowDisplayMode
+        );
+    } catch {
+        return;
+    }
+}
+
 type ShellStore = {
     sidebarOpen: boolean;
     rightSidebarOpen: boolean;
@@ -26,6 +58,7 @@ type ShellStore = {
     themeColor: string;
     tableDensity: TableDensity;
     notificationLayout: NotificationLayout;
+    windowDisplayMode: WindowDisplayMode;
     notificationIconDot: boolean;
     taskbarIconDot: boolean;
     displayVRCPlusIconsAsAvatar: boolean;
@@ -36,6 +69,8 @@ type ShellStore = {
     dateHour12: boolean;
     timeUnitLabels: TimeUnitLabels;
     notifiedMenus: string[];
+    lastSettingsTab: string;
+    shortcutHintsVisible: boolean;
     vrcUnseenNotificationCount: number;
     trayIconNotify: boolean;
     taskbarIconNotify: boolean;
@@ -49,6 +84,10 @@ type ShellStore = {
     setThemeColor(themeColor: string): void;
     setTableDensity(tableDensity: TableDensity): void;
     setNotificationLayout(notificationLayout: NotificationLayout): void;
+    setWindowDisplayMode(
+        windowDisplayMode: WindowDisplayMode,
+        remember?: boolean
+    ): void;
     setNotificationIconDot(notificationIconDot: boolean): void;
     setTaskbarIconDot(taskbarIconDot: boolean): void;
     setAppearancePreferences(options?: {
@@ -62,6 +101,8 @@ type ShellStore = {
         dateHour12: boolean;
     }): void;
     setTimeUnitLabels(labels: TimeUnitLabels): void;
+    setLastSettingsTab(lastSettingsTab: string): void;
+    setShortcutHintsVisible(visible: boolean): void;
     setVrcUnseenNotificationCount(unseenCount: number): void;
     updateTrayIconNotification(force?: boolean): void;
     notifyMenu(index: string): void;
@@ -81,12 +122,15 @@ type ShellStoreState = Omit<
     | 'setThemeColor'
     | 'setTableDensity'
     | 'setNotificationLayout'
+    | 'setWindowDisplayMode'
     | 'setNotificationIconDot'
     | 'setTaskbarIconDot'
     | 'setAppearancePreferences'
     | 'setZoomLevel'
     | 'setDatePreferences'
     | 'setTimeUnitLabels'
+    | 'setLastSettingsTab'
+    | 'setShortcutHintsVisible'
     | 'setVrcUnseenNotificationCount'
     | 'updateTrayIconNotification'
     | 'notifyMenu'
@@ -103,6 +147,7 @@ const initialState: ShellStoreState = {
     themeColor: DEFAULT_THEME_COLOR_KEY,
     tableDensity: 'standard',
     notificationLayout: 'notification-center',
+    windowDisplayMode: loadWindowDisplayMode(),
     notificationIconDot: true,
     taskbarIconDot: true,
     displayVRCPlusIconsAsAvatar: true,
@@ -113,15 +158,14 @@ const initialState: ShellStoreState = {
     dateHour12: false,
     timeUnitLabels: DEFAULT_TIME_UNIT_LABELS,
     notifiedMenus: [],
+    lastSettingsTab: 'system',
+    shortcutHintsVisible: false,
     vrcUnseenNotificationCount: 0,
     trayIconNotify: false,
     taskbarIconNotify: false
 };
 
 export function normalizeTableDensity(value: unknown): TableDensity {
-    if (value === 'comfortable') {
-        return 'standard';
-    }
     return value === 'standard' || value === 'compact' ? value : 'standard';
 }
 
@@ -201,6 +245,12 @@ export const useShellStore = create<ShellStore>((set, get) => ({
         set({ notificationLayout });
         get().updateTrayIconNotification(true);
     },
+    setWindowDisplayMode(windowDisplayMode, remember = true) {
+        if (remember) {
+            saveWindowDisplayMode(windowDisplayMode);
+        }
+        set({ windowDisplayMode });
+    },
     setNotificationIconDot(notificationIconDot) {
         set({ notificationIconDot });
         get().updateTrayIconNotification(true);
@@ -236,6 +286,12 @@ export const useShellStore = create<ShellStore>((set, get) => ({
     },
     setTimeUnitLabels(labels) {
         set({ timeUnitLabels: labels });
+    },
+    setLastSettingsTab(lastSettingsTab) {
+        set({ lastSettingsTab });
+    },
+    setShortcutHintsVisible(shortcutHintsVisible) {
+        set({ shortcutHintsVisible });
     },
     setVrcUnseenNotificationCount(unseenCount) {
         set({ vrcUnseenNotificationCount: unseenCount });

@@ -26,6 +26,8 @@ pub(super) use crate::{
     FriendProjection, RealtimeInstanceClosedProjection, RealtimeInstanceQueueProjection,
     RealtimeNotificationProjection,
 };
+#[cfg(test)]
+pub(super) use vrcx_0_application_core::RealtimeNotificationProjectionObserver;
 pub(super) use vrcx_0_application_core::{
     HostSessionRuntime, LocalGameContextSource, RuntimeEventBus, RuntimeSyncEngine, TaskSupervisor,
     UnavailableLocalGameContextSource, WebClient,
@@ -76,6 +78,8 @@ pub struct TestRealtimeHostRuntime {
     world_cache_port: MemoryWorldCachePort,
     #[cfg(test)]
     activity_sink: Arc<TestActivitySink>,
+    #[cfg(test)]
+    notification_projection_observer: Arc<TestNotificationProjectionObserver>,
     #[cfg(test)]
     local_game_context: Option<Arc<TestLocalGameContextSource>>,
 }
@@ -178,6 +182,13 @@ impl TestRealtimeHostRuntime {
     #[cfg(test)]
     pub(super) fn activity_sink_for_test(&self) -> &TestActivitySink {
         self.activity_sink.as_ref()
+    }
+
+    #[cfg(test)]
+    pub(super) fn notification_projection_observer_for_test(
+        &self,
+    ) -> &TestNotificationProjectionObserver {
+        self.notification_projection_observer.as_ref()
     }
 
     #[cfg(test)]
@@ -307,6 +318,37 @@ impl OverlayActivityInputSink for TestActivitySink {
     fn ingest_instance_queue_projection(&self, _projection: &RealtimeInstanceQueueProjection) {}
 
     fn ingest_instance_closed_projection(&self, _projection: &RealtimeInstanceClosedProjection) {}
+}
+
+#[cfg(test)]
+#[derive(Default)]
+pub(super) struct TestNotificationProjectionObserver {
+    projections: Mutex<Vec<RealtimeNotificationProjection>>,
+}
+
+#[cfg(test)]
+impl TestNotificationProjectionObserver {
+    pub(super) fn take(&self) -> Vec<RealtimeNotificationProjection> {
+        std::mem::take(
+            &mut *self
+                .projections
+                .lock()
+                .unwrap_or_else(|error| error.into_inner()),
+        )
+    }
+}
+
+#[cfg(test)]
+impl RealtimeNotificationProjectionObserver for TestNotificationProjectionObserver {
+    fn observe_realtime_notification_projection(
+        &self,
+        projection: &RealtimeNotificationProjection,
+    ) {
+        self.projections
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .push(projection.clone());
+    }
 }
 
 #[cfg(test)]
@@ -581,6 +623,8 @@ fn runtime_with_active_session_game_context(
     };
     #[cfg(test)]
     let activity_sink = Arc::new(TestActivitySink::default());
+    #[cfg(test)]
+    let notification_projection_observer = Arc::new(TestNotificationProjectionObserver::default());
     let auth_scope = RuntimeAuthScope::new();
     auth_scope.set("usr_self", "https://api.vrchat.cloud/api/1");
     let event_bus = RuntimeEventBus::new();
@@ -607,6 +651,10 @@ fn runtime_with_active_session_game_context(
         activity_sink: Some(activity_sink.clone()),
         #[cfg(not(test))]
         activity_sink: None,
+        #[cfg(test)]
+        notification_projection_observer: Some(notification_projection_observer.clone()),
+        #[cfg(not(test))]
+        notification_projection_observer: None,
         world_cache,
         instance_dwell: Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new()),
         print_cleanup: Arc::new(NoopPrintCleanupInputSink),
@@ -637,6 +685,8 @@ fn runtime_with_active_session_game_context(
             world_cache_port,
             #[cfg(test)]
             activity_sink,
+            #[cfg(test)]
+            notification_projection_observer,
             #[cfg(test)]
             local_game_context: test_local_game_context,
         },

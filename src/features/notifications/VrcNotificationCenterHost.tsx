@@ -15,9 +15,11 @@ import { useNotificationActions } from '@/features/notifications/useNotification
 import { useNotificationTypeLabel } from '@/features/notifications/useNotificationTypeLabel';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { preserveAppTitleBarOnOpenChange } from '@/lib/overlayTitlebar';
+import { cn } from '@/lib/utils';
 import { openWorldDialog } from '@/services/dialogService';
 import { checkCanInvite } from '@/shared/utils/invite';
 import { useRuntimeStore } from '@/state/runtimeStore';
+import { useShellStore } from '@/state/shellStore';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -82,6 +84,9 @@ export function VrcNotificationCenterHost() {
     );
     const groupInstances = useRuntimeStore(
         (state) => state.groupInstances.instances
+    );
+    const sidebarWindowMode = useShellStore(
+        (state) => state.windowDisplayMode === 'sidebar'
     );
     const isCenterOpen = useVrcNotificationStore((state) => state.isCenterOpen);
     const categories = useVrcNotificationStore((state) => state.categories);
@@ -205,8 +210,13 @@ export function VrcNotificationCenterHost() {
             >
                 <SheetContent
                     side="right"
+                    variant="inset"
                     showCloseButton={false}
-                    className="flex w-full! flex-col gap-0 p-0 sm:max-w-[40rem]!"
+                    className={cn(
+                        'flex w-full! flex-col gap-0 p-0 sm:max-w-[40rem]!',
+                        sidebarWindowMode &&
+                            'm-4 w-[calc(100%-(--spacing(8)))]! rounded-2xl border'
+                    )}
                 >
                     <SheetHeader className="border-b px-4 py-3">
                         <div className="flex items-center justify-between gap-3">

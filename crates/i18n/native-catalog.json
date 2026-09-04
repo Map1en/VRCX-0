@@ -377,6 +377,10 @@
                     "source": "nativeShell.tray.rebuildUi"
                 },
                 {
+                    "key": "nativeShell.tray.sidebarMode",
+                    "source": "nativeShell.tray.sidebarMode"
+                },
+                {
                     "key": "nativeShell.tray.disableTheme",
                     "source": "nativeShell.tray.disableTheme"
                 },

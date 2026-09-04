@@ -2,13 +2,7 @@ import { RefreshCwIcon, SettingsIcon } from 'lucide-react';
 import type { ChangeEvent, RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import {
-    PageBackButton,
-    PageHeader,
-    PageTitle,
-    PageToolbar,
-    PageToolbarRow
-} from '@/components/layout/PageScaffold';
+import { ToolPageHeader } from '@/components/layout/ToolPageHeader';
 import { IMAGE_UPLOAD_ACCEPT } from '@/shared/utils/imageUpload';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -96,7 +90,6 @@ export function GalleryHeader({
     onUploadChange,
     gridDensity,
     onGridDensityChange,
-    onBack,
     onRefreshAll
 }: {
     uploadInputRef: RefObject<HTMLInputElement | null>;
@@ -104,7 +97,6 @@ export function GalleryHeader({
     onUploadChange: (event: ChangeEvent<HTMLInputElement>) => void;
     gridDensity: GalleryGridDensity;
     onGridDensityChange: (value: GalleryGridDensity) => void;
-    onBack: () => void;
     onRefreshAll: () => void;
 }) {
     const { t } = useTranslation();
@@ -118,23 +110,17 @@ export function GalleryHeader({
                 className="hidden"
                 onChange={onUploadChange}
             />
-            <PageToolbar>
-                <PageToolbarRow className="items-center">
-                    <PageBackButton
-                        label={t('nav_tooltip.tools')}
-                        onClick={onBack}
-                    />
-                    <PageHeader className="min-w-0 p-0">
-                        <PageTitle>
-                            {t('dialog.gallery_icons.header')}
-                        </PageTitle>
-                    </PageHeader>
-                    {uploadingTab ? (
+            <ToolPageHeader
+                toolKey="gallery"
+                status={
+                    uploadingTab ? (
                         <Badge variant="outline">
                             {t('message.upload.loading')} {uploadingTab}
                         </Badge>
-                    ) : null}
-                    <div className="ml-auto flex flex-wrap items-center gap-1">
+                    ) : null
+                }
+                actions={
+                    <>
                         <GalleryGridSettingsMenu
                             gridDensity={gridDensity}
                             onGridDensityChange={onGridDensityChange}
@@ -147,9 +133,9 @@ export function GalleryHeader({
                             <RefreshCwIcon data-icon="inline-start" />
                             {t('dialog.gallery_icons.refresh')}
                         </Button>
-                    </div>
-                </PageToolbarRow>
-            </PageToolbar>
+                    </>
+                }
+            />
         </>
     );
 }

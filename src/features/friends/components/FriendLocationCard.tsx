@@ -2,18 +2,19 @@ import {
     ExternalLinkIcon,
     GlobeIcon,
     MoreHorizontalIcon,
-    PencilIcon,
     UserIcon
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { FriendInstanceTimer } from '@/components/friends/FriendInstanceTimer';
+import { LaunchModeContextMenuGroup } from '@/components/launch/LaunchModeContextMenuGroup';
 import { Location } from '@/components/Location';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserStatusDot } from '@/components/UserStatusDot';
 import type { FriendRecord } from '@/domain/friends/types';
 import { useFriendLocationTimeEpoch } from '@/lib/useFriendLocationTimeEpoch';
 import { cn } from '@/lib/utils';
+import type { FriendLocationTimeSource } from '@/platform/tauri/bindings';
 import { userImage } from '@/services/entityMediaService';
 import {
     normalizeUserStatus,
@@ -306,8 +307,8 @@ const DEFAULT_CARD_DENSITY_CONFIG: FriendLocationCardDensity = {
     dotSize: 15,
     titleFontSize: 14,
     cardPadding: 8,
-    cardGap: 8,
-    cardInnerGap: 5,
+    cardGap: 6,
+    cardInnerGap: 4,
     locationLineClamp: 1,
     statusLineClamp: 1,
     showStatusDescription: true
@@ -318,6 +319,7 @@ function resolveLineClampClass(lineClamp: number) {
 }
 
 export interface FriendLocationCardLocationModel {
+    source?: FriendLocationTimeSource;
     label?: string;
     groupHint?: string;
     raw?: string | null;
@@ -403,13 +405,19 @@ export function FriendLocationCard({
     const tone = resolveStatusTone(friend, currentUserSnapshot);
     const canOpenUser = typeof onOpenUser === 'function';
     const canOpenWorld = typeof onOpenWorld === 'function';
-    const cardLocation = resolveCardLocation(rawLocation, friend);
+    const localLocation =
+        location.source === 'gameLog'
+            ? normalizeLocationValue(rawLocation)
+            : '';
+    const cardLocation =
+        localLocation || resolveCardLocation(rawLocation, friend);
     const source = readFriendRef(friend);
     const hasRef = hasFriendRef(friend);
     const sourceState = normalizeStatusText(
         source?.stateBucket || source?.state
     );
-    const rawSourceLocation = resolveRawCardLocation(rawLocation, friend);
+    const rawSourceLocation =
+        localLocation || resolveRawCardLocation(rawLocation, friend);
     const sourceLocation = isStaleOfflineLocationForLiveState(
         rawSourceLocation,
         sourceState
@@ -433,6 +441,8 @@ export function FriendLocationCard({
     const isDense = resolvedDensityConfig.layout === 'item';
     const resolvedWorldActionLabel =
         worldActionLabel || t('view.friend_list.label.world');
+    const launchLocation = normalizeLocationValue(rawLocation);
+    const launchShortName = parseLocation(launchLocation).shortName || '';
     const locationLineClampClass = resolveLineClampClass(
         resolvedDensityConfig.locationLineClamp
     );
@@ -448,7 +458,8 @@ export function FriendLocationCard({
                 normalizeStatusText(locationLabel) !== 'offline'));
     const showStatusDescription =
         contentMode !== 'identity' &&
-        resolvedDensityConfig.showStatusDescription;
+        resolvedDensityConfig.showStatusDescription &&
+        Boolean(friend.statusDescription);
     const hoverUserId = normalizeString(source?.id || friend?.id);
     const instanceEpoch = useFriendLocationTimeEpoch(
         hoverUserId,
@@ -497,46 +508,49 @@ export function FriendLocationCard({
         locationLabel
     );
     const titleNode = (
-        <div className="flex min-w-0 items-center gap-2">
+        <div
+            className={cn(
+                'flex min-w-0',
+                isDense ? 'items-center gap-2' : 'flex-col items-start'
+            )}
+        >
             <UserHoverCard userId={hoverUserId} seed={source}>
                 <CardTitle
                     className={cn(
-                        'min-w-0 flex-1 truncate text-[length:var(--friend-card-title-font-size)]',
-                        isDense && 'leading-5'
+                        'min-w-0 truncate text-[length:var(--friend-card-title-font-size)]',
+                        isDense ? 'flex-1 leading-5' : 'w-full'
                     )}
                 >
                     {friend?.displayName || ''}
                 </CardTitle>
             </UserHoverCard>
             {instanceEpoch ? (
-                <span className="text-muted-foreground shrink-0 text-xs font-normal">
+                <span className="text-muted-foreground shrink-0 text-xs leading-4 font-normal tabular-nums">
                     <FriendInstanceTimer
                         epoch={instanceEpoch}
-                        traveling={isCardTraveling}
+                        traveling={false}
+                        format={isDense ? 'short' : 'default'}
                     />
                 </span>
             ) : null}
         </div>
     );
     const statusDescriptionNode = showStatusDescription ? (
-        <CardDescription className="text-muted-foreground/70 flex min-w-0 items-start gap-2">
-            {friend?.statusDescription ? (
-                <PencilIcon className="mt-0.5 size-4 shrink-0" />
-            ) : null}
+        <CardDescription className="min-w-0">
             <span
                 className={cn(
                     'min-w-0 text-xs leading-5 break-words',
                     statusLineClampClass
                 )}
             >
-                {friend?.statusDescription || '\u00a0'}
+                {friend.statusDescription}
             </span>
         </CardDescription>
     ) : null;
     const cardActions = (
         <div
             role="presentation"
-            className="pointer-events-none absolute top-[var(--friend-card-padding)] right-[var(--friend-card-padding)] z-20 flex items-center gap-0.5 opacity-0 transition-opacity duration-150 ease-out group-focus-within/card:pointer-events-auto group-focus-within/card:opacity-100 group-hover/card:pointer-events-auto group-hover/card:opacity-100 motion-reduce:transition-none"
+            className="pointer-events-none absolute top-[var(--friend-card-padding)] right-[var(--friend-card-padding)] z-20 flex items-center gap-0.5 opacity-0 transition-opacity duration-(--motion-fast) ease-(--ease-out-ui) group-focus-within/card:pointer-events-auto group-focus-within/card:opacity-100 group-hover/card:pointer-events-auto group-hover/card:opacity-100 motion-reduce:transition-none"
             onClick={(event) => event.stopPropagation()}
             onKeyDown={(event) => event.stopPropagation()}
         >
@@ -620,7 +634,7 @@ export function FriendLocationCard({
                     <Card
                         size="sm"
                         className={cn(
-                            'border-border/45 hover:bg-muted/30 focus-visible:border-ring focus-visible:ring-ring/50 relative h-full overflow-hidden bg-transparent backdrop-blur transition-[background-color,border-color,box-shadow,transform] duration-150 ease-out outline-none focus-visible:ring-3 active:scale-[0.985] motion-reduce:transform-none motion-reduce:transition-colors',
+                            'bg-object-surface ring-border hover:bg-object-surface-hover focus-visible:ring-ring/50 relative h-full rounded-lg transition-colors duration-(--motion-fast) ease-(--ease-out-ui) outline-none focus-visible:ring-3 motion-reduce:transition-none',
                             canOpenUser && 'cursor-pointer',
                             isDense
                                 ? 'flex-row items-center gap-[calc(var(--friend-card-gap)+2px)] rounded-lg p-[var(--friend-card-padding)]'
@@ -655,10 +669,10 @@ export function FriendLocationCard({
                         {cardActions}
                         {isDense ? (
                             <>
-                                <CardHeader className="flex shrink-0 p-0">
+                                <CardHeader className="flex w-[var(--friend-card-avatar-size)] shrink-0 p-0">
                                     {avatarNode}
                                 </CardHeader>
-                                <CardContent className="flex min-w-0 flex-1 flex-col gap-0.5 px-0 transition-[padding] duration-150 group-focus-within/card:pr-8 group-hover/card:pr-8 motion-reduce:transition-none">
+                                <CardContent className="flex min-w-0 flex-1 flex-col gap-0.5 px-0 group-focus-within/card:pr-8 group-hover/card:pr-8">
                                     {titleNode}
                                     {showLocationInfo ? (
                                         <div
@@ -686,16 +700,9 @@ export function FriendLocationCard({
                             </>
                         ) : (
                             <>
-                                <CardHeader
-                                    className={cn(
-                                        'flex flex-row gap-[var(--friend-card-gap)] px-[var(--friend-card-padding)]',
-                                        !showLocationInfo &&
-                                            !showStatusDescription &&
-                                            'items-center'
-                                    )}
-                                >
+                                <CardHeader className="flex flex-row items-center gap-[var(--friend-card-gap)] px-[var(--friend-card-padding)]">
                                     {avatarNode}
-                                    <div className="flex min-w-0 flex-1 flex-col gap-1 transition-[padding] duration-150 group-focus-within/card:pr-8 group-hover/card:pr-8 motion-reduce:transition-none">
+                                    <div className="flex min-w-0 flex-1 flex-col gap-1 group-focus-within/card:pr-8 group-hover/card:pr-8">
                                         {titleNode}
                                     </div>
                                 </CardHeader>
@@ -750,16 +757,16 @@ export function FriendLocationCard({
                     </ContextMenuItem>
                 </ContextMenuGroup>
                 <ContextMenuSeparator />
+                <LaunchModeContextMenuGroup
+                    disabled={!canUseFriendLocation}
+                    errorMessage={t(
+                        'view.friends.toast.failed_to_launch_instance'
+                    )}
+                    location={launchLocation}
+                    shortName={launchShortName}
+                />
+                <ContextMenuSeparator />
                 <ContextMenuGroup>
-                    <ContextMenuItem
-                        disabled={!canUseFriendLocation}
-                        onClick={() => {
-                            onLaunchLocation?.();
-                        }}
-                    >
-                        <ExternalLinkIcon />
-                        {t('dialog.launch.open_ingame')}
-                    </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!canUseFriendLocation}
                         onClick={() => {

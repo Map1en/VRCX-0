@@ -1,4 +1,4 @@
-import type { FriendRecord, FriendRosterById } from '@/domain/friends/types';
+import type { FriendRecord } from '@/domain/friends/types';
 
 import {
     isValidMutualFriendId,
@@ -9,6 +9,7 @@ import type {
     MutualFriendLink,
     MutualFriendMeta,
     MutualFriendNode,
+    MutualFriendsCoverage,
     MutualFriendSnapshot
 } from './mutualFriendsTypes';
 
@@ -16,17 +17,57 @@ export function mutualFriendUsername(friend: FriendRecord | null | undefined) {
     return typeof friend?.username === 'string' ? friend.username : '';
 }
 
+export function buildMutualFriendsCoverage(
+    meta: MutualFriendMeta | null | undefined,
+    friendIds: readonly string[] | null | undefined
+): MutualFriendsCoverage {
+    const metaMap = meta instanceof Map ? meta : new Map();
+    const coverage: MutualFriendsCoverage = {
+        friendCount: 0,
+        fetchedCount: 0,
+        unavailableCount: 0,
+        lastFetchedAt: null
+    };
+    let latestFetchedTime = Number.NEGATIVE_INFINITY;
+
+    for (const friendId of friendIds ?? []) {
+        const normalizedId = normalizeMutualFriendId(friendId);
+        if (!isValidMutualFriendId(normalizedId)) {
+            continue;
+        }
+        coverage.friendCount += 1;
+
+        const metadata = metaMap.get(normalizedId);
+        if (!metadata) {
+            continue;
+        }
+        if (metadata.optedOut) {
+            coverage.unavailableCount += 1;
+        }
+        if (!metadata.lastFetchedAt) {
+            continue;
+        }
+        coverage.fetchedCount += 1;
+        const fetchedTime = Date.parse(metadata.lastFetchedAt);
+        if (Number.isFinite(fetchedTime) && fetchedTime > latestFetchedTime) {
+            latestFetchedTime = fetchedTime;
+            coverage.lastFetchedAt = metadata.lastFetchedAt;
+        }
+    }
+
+    return coverage;
+}
+
 export function buildMutualFriendsBaseGraph(
     snapshot: MutualFriendSnapshot | null | undefined,
     meta: MutualFriendMeta | null | undefined,
-    friendsById: FriendRosterById | null | undefined,
+    friendLabelsById: Readonly<Record<string, string>> | null | undefined,
     excludedFriendIds: readonly string[] = []
 ): MutualFriendGraph {
     const nodeMap = new Map<string, MutualFriendNode>();
     const totalCountById = new Map<string, number>();
     const edgeMap = new Map<string, MutualFriendLink>();
     const metaMap = meta instanceof Map ? meta : new Map();
-    const friends = friendsById ?? {};
     const excluded = new Set(
         excludedFriendIds.map(normalizeMutualFriendId).filter(Boolean)
     );
@@ -43,14 +84,10 @@ export function buildMutualFriendsBaseGraph(
         if (existing) {
             return existing;
         }
-        const friend = friends[normalizedId];
         const metadata = metaMap.get(normalizedId);
         const node: MutualFriendNode = {
             id: normalizedId,
-            label:
-                friend?.displayName ||
-                mutualFriendUsername(friend) ||
-                normalizedId,
+            label: friendLabelsById?.[normalizedId] || normalizedId,
             lastFetchedAt: metadata?.lastFetchedAt ?? null,
             optedOut: Boolean(metadata?.optedOut),
             degree: 0,

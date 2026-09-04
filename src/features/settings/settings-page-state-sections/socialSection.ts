@@ -54,6 +54,13 @@ export function buildSocialSection({
         onHideUnfriendsChange: (checked: boolean) => {
             saveBoolPreference('hideUnfriends', 'hideUnfriends', checked);
         },
+        onFriendLogNotificationDotChange: (checked: boolean) => {
+            saveBoolPreference(
+                'friendLogNotificationDot',
+                'friendLogNotificationDot',
+                checked
+            );
+        },
         onRecentActionCooldownEnabledChange: (checked: boolean) => {
             savePreferenceValue('recentActionCooldownEnabled', checked, () =>
                 setRecentActionCooldownEnabledPreference(checked)

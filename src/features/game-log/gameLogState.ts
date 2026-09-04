@@ -8,6 +8,7 @@ import {
     sanitizeTableColumnVisibility,
     writePersistedTableState
 } from '@/components/data-table/dataTablePersistence';
+import { DATE_AND_TYPE_SORT_COLUMN_IDS } from '@/components/data-table/sortRowsByDateAndType';
 import { isRecord } from '@/shared/utils/record';
 
 export { safeJsonParse };
@@ -24,9 +25,6 @@ export const GAME_LOG_COLUMN_IDS: string[] = [
     'detail',
     'action'
 ];
-const GAME_LOG_SORTING_COLUMN_IDS = GAME_LOG_COLUMN_IDS.filter(
-    (columnId) => columnId !== 'displayName'
-);
 
 const STORAGE_KEY = getDataTableStorageKey('gameLog');
 
@@ -48,7 +46,7 @@ export function sanitizeGameLogSorting(value: unknown): SortingState {
             isRecord(entry) &&
             typeof entry.id === 'string' &&
             typeof entry.desc === 'boolean' &&
-            GAME_LOG_SORTING_COLUMN_IDS.includes(entry.id)
+            DATE_AND_TYPE_SORT_COLUMN_IDS.includes(entry.id)
     );
     return filtered.length ? filtered : GAME_LOG_DEFAULT_SORTING;
 }

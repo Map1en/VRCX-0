@@ -1,7 +1,16 @@
-import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    expectTypeOf,
+    it,
+    vi
+} from 'vitest';
 
 const tauriMock = vi.hoisted(() => ({
     commands: {
+        appVrchatCurrentUserUpdate: vi.fn(),
         appVrchatCurrentUserProfileUpdate: vi.fn(),
         appVrchatFriendStatusGet: vi.fn(),
         appVrchatUserProfileGet: vi.fn(),
@@ -11,16 +20,49 @@ const tauriMock = vi.hoisted(() => ({
 
 vi.mock('@/platform/tauri/bindings', () => ({ commands: tauriMock.commands }));
 
+import {
+    clearEntityQueryCache,
+    getCachedQueryData,
+    queryKeys,
+    setCachedQueryData
+} from '@/lib/entityQueryCache';
+import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
+
 import userProfileRepository from './userProfileRepository';
 
 describe('UserProfileRepository', () => {
+    afterEach(() => clearEntityQueryCache());
     beforeEach(() => {
+        tauriMock.commands.appVrchatCurrentUserUpdate.mockReset();
         vi.mocked(
             tauriMock.commands.appVrchatCurrentUserProfileUpdate
         ).mockReset();
         vi.mocked(tauriMock.commands.appVrchatFriendStatusGet).mockReset();
         vi.mocked(tauriMock.commands.appVrchatUserProfileGet).mockReset();
         vi.mocked(tauriMock.commands.appUserMutualFriendsListGet).mockReset();
+    });
+
+    it('stores the normalized mutation result in the shared user query', async () => {
+        const key = queryKeys.user('usr_current', DEFAULT_VRCHAT_API_ENDPOINT);
+        setCachedQueryData(key, { badges: [{ badgeId: 'badge_one' }] });
+        tauriMock.commands.appVrchatCurrentUserUpdate.mockResolvedValue({
+            status: 200,
+            data: JSON.stringify({
+                id: 'usr_current',
+                displayName: 'Current',
+                tags: ['system_trust_basic']
+            })
+        });
+        const user = await userProfileRepository.updateCurrentUser({
+            userId: 'usr_current',
+            params: { statusDescription: 'updated' }
+        });
+        expect(getCachedQueryData(key)).toEqual(user);
+        expect(user).toMatchObject({
+            statusDescription: 'updated',
+            badges: [{ badgeId: 'badge_one' }],
+            $trustClass: 'x-tag-basic'
+        });
     });
 
     it('reads and normalizes the friend relationship status', async () => {

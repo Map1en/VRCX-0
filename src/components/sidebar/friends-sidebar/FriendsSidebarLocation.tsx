@@ -94,7 +94,15 @@ export function resolveFriendRowLocationState({
 }) {
     const displaySource = readFriendRef(friend);
     const statusSource = readFriendStatusSource(friend);
-    const friendState = normalizeStateBucket(statusSource?.state);
+    const localLocation =
+        !isCurrentUser &&
+        isGroupByInstance &&
+        locationTime?.source === 'gameLog'
+            ? locationTime.location
+            : '';
+    const friendState = localLocation
+        ? 'online'
+        : normalizeStateBucket(statusSource?.state);
     const friendStateBucket = friendState;
     const apiFriendLocation = isCurrentUser
         ? resolvePresenceLocation(friend)
@@ -105,9 +113,11 @@ export function resolveFriendRowLocationState({
         locationSentinel(apiFriendLocation) === 'private' &&
         parseLocation(projectedFriendLocation).isRealInstance
     );
-    const rawFriendLocation = useProjectedFriendLocation
-        ? projectedFriendLocation
-        : apiFriendLocation;
+    const rawFriendLocation =
+        localLocation ||
+        (useProjectedFriendLocation
+            ? projectedFriendLocation
+            : apiFriendLocation);
     const friendLocation = clearStaleOfflineLocation(
         rawFriendLocation,
         friendState

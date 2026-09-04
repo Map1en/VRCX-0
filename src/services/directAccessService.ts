@@ -18,8 +18,18 @@ import { parseLocation } from '@/shared/utils/location';
 import { isRecord } from '@/shared/utils/record';
 import { normalizeString } from '@/shared/utils/string';
 
+export type DirectAccessMode = 'open' | 'detect';
+
 type LooseRecord = Record<string, unknown>;
 type ParsedLocation = ReturnType<typeof parseLocation>;
+
+function parseUrlOrNull(value: string) {
+    try {
+        return new URL(value);
+    } catch {
+        return null;
+    }
+}
 
 function emptyRecordArray(value: unknown): LooseRecord[] {
     return Array.isArray(value) ? value : [];
@@ -175,7 +185,7 @@ async function openGroupByShortCode(shortCode: string) {
     return true;
 }
 
-async function directAccessWorld(rawInput: unknown) {
+async function directAccessWorld(rawInput: unknown, mode: DirectAccessMode) {
     let input = normalizeString(rawInput);
     if (!input) {
         return false;
@@ -190,6 +200,9 @@ async function directAccessWorld(rawInput: unknown) {
         if (!parsed.worldId || !parsed.instanceId) {
             return false;
         }
+        if (mode === 'detect') {
+            return true;
+        }
         const location = `${parsed.worldId}:${parsed.instanceId}`;
         if (await tryOpenLaunchLocation(location, parsed.shortName)) {
             return true;
@@ -199,20 +212,30 @@ async function directAccessWorld(rawInput: unknown) {
     }
 
     if (/^[A-Za-z0-9]{8}$/.test(input)) {
-        return verifyShortName('', input);
+        return mode === 'detect' ? false : verifyShortName('', input);
     }
 
     if (input.startsWith('https://vrch.at/')) {
-        const shortName = new URL(input).pathname
-            .replace(/^\//, '')
-            .slice(0, 8);
-        return shortName ? verifyShortName('', shortName) : false;
+        const url = parseUrlOrNull(input);
+        const shortName = url
+            ? url.pathname.replace(/^\//, '').slice(0, 8)
+            : '';
+        if (!shortName) {
+            return false;
+        }
+        return mode === 'detect' ? true : verifyShortName('', shortName);
     }
 
     if (input.startsWith('https://vrchat.')) {
-        const url = new URL(input);
+        const url = parseUrlOrNull(input);
+        if (!url) {
+            return false;
+        }
         const pathParts = url.pathname.split('/');
         if (pathParts.length >= 4 && pathParts[2] === 'world') {
+            if (mode === 'detect') {
+                return true;
+            }
             openWorldLocation(decodeURIComponent(pathParts[3]));
             return true;
         }
@@ -222,6 +245,9 @@ async function directAccessWorld(rawInput: unknown) {
             const instanceId = url.searchParams.get('instanceId');
             const shortName = url.searchParams.get('shortName');
             if (worldId && instanceId) {
+                if (mode === 'detect') {
+                    return true;
+                }
                 const location = `${worldId}:${instanceId}`;
                 if (await tryOpenLaunchLocation(location, shortName || '')) {
                     return true;
@@ -242,6 +268,9 @@ async function directAccessWorld(rawInput: unknown) {
                 return true;
             }
             if (worldId) {
+                if (mode === 'detect') {
+                    return true;
+                }
                 openWorldLocation(worldId);
                 return true;
             }
@@ -255,10 +284,14 @@ async function directAccessWorld(rawInput: unknown) {
     ) {
         if (input.includes('&instanceId=')) {
             return directAccessWorld(
-                `${VRCHAT_WEB_BASE}/home/launch?worldId=${input}`
+                `${VRCHAT_WEB_BASE}/home/launch?worldId=${input}`,
+                mode
             );
         }
 
+        if (mode === 'detect') {
+            return true;
+        }
         openWorldLocation(input.trim());
         return true;
     }
@@ -266,60 +299,88 @@ async function directAccessWorld(rawInput: unknown) {
     return false;
 }
 
-export async function directAccessParse(input: unknown) {
+export async function directAccessParse(
+    input: unknown,
+    mode: DirectAccessMode = 'open'
+) {
     const value = normalizeString(input).trim();
     if (!value) {
         return false;
     }
 
-    if (await directAccessWorld(value)) {
+    if (await directAccessWorld(value, mode)) {
         return true;
     }
 
     if (value.startsWith('https://vrchat.')) {
-        const url = new URL(value);
+        const url = parseUrlOrNull(value);
+        if (!url) {
+            return false;
+        }
         const pathParts = url.pathname.split('/');
         if (pathParts.length < 4) {
             return false;
         }
 
         const type = pathParts[2];
-        const id = decodeURIComponent(pathParts[3]);
-        if (type === 'user') {
-            openUserDialog({ userId: id });
-            return true;
-        }
-        if (type === 'avatar') {
-            openAvatarDialog({ avatarId: id });
-            return true;
-        }
-        if (type === 'group') {
+        if (type === 'user' || type === 'avatar' || type === 'group') {
+            if (mode === 'detect') {
+                return true;
+            }
+            const id = decodeURIComponent(pathParts[3]);
+            if (type === 'user') {
+                openUserDialog({ userId: id });
+                return true;
+            }
+            if (type === 'avatar') {
+                openAvatarDialog({ avatarId: id });
+                return true;
+            }
             openGroupDialog({ groupId: id });
             return true;
         }
     }
 
     if (value.startsWith('https://vrc.group/')) {
-        return openGroupByShortCode(
-            value.substring('https://vrc.group/'.length)
-        );
+        const shortCode = value.substring('https://vrc.group/'.length);
+        if (mode === 'detect') {
+            return Boolean(shortCode);
+        }
+        return openGroupByShortCode(shortCode);
     }
 
     if (/^[A-Za-z0-9]{3,6}\.[0-9]{4}$/.test(value)) {
-        return openGroupByShortCode(value);
+        return mode === 'detect' ? true : openGroupByShortCode(value);
     }
 
-    if (hasUserIdPrefix(value) || /^[A-Za-z0-9]{10}$/.test(value)) {
+    if (hasUserIdPrefix(value)) {
+        if (mode === 'detect') {
+            return true;
+        }
+        openUserDialog({ userId: value });
+        return true;
+    }
+
+    if (/^[A-Za-z0-9]{10}$/.test(value)) {
+        if (mode === 'detect') {
+            return false;
+        }
         openUserDialog({ userId: value });
         return true;
     }
 
     if (hasAvatarIdPrefix(value) || value.startsWith('b_')) {
+        if (mode === 'detect') {
+            return true;
+        }
         openAvatarDialog({ avatarId: value });
         return true;
     }
 
     if (hasGroupIdPrefix(value)) {
+        if (mode === 'detect') {
+            return true;
+        }
         openGroupDialog({ groupId: value });
         return true;
     }

@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-    startRuntimeGameClientSync: vi.fn(),
     getTimeUnitLabels: vi.fn(),
     setI18nLanguage: vi.fn(),
     bindRuntimeEvents: vi.fn(),
@@ -9,10 +8,6 @@ const mocks = vi.hoisted(() => ({
     applyThemeMode: vi.fn(),
     startRuntimeUpdateLoop: vi.fn(),
     hydrateVrcStatus: vi.fn()
-}));
-
-vi.mock('./gameClientLifecycle', () => ({
-    startRuntimeGameClientSync: mocks.startRuntimeGameClientSync
 }));
 
 vi.mock('./i18nService', () => ({
@@ -85,7 +80,6 @@ describe('runtimeBootstrapService', () => {
         mocks.setI18nLanguage.mockResolvedValue(undefined);
         mocks.initializeReactRuntime.mockResolvedValue(undefined);
         mocks.bindRuntimeEvents.mockResolvedValue(undefined);
-        mocks.startRuntimeGameClientSync.mockReturnValue(undefined);
         mocks.startRuntimeUpdateLoop.mockReturnValue(undefined);
         mocks.hydrateVrcStatus.mockResolvedValue(undefined);
     });
@@ -136,11 +130,9 @@ describe('runtimeBootstrapService', () => {
     it('shares React runtime startup across consumers', async () => {
         const initialization = deferred<void>();
         const eventCleanup = vi.fn();
-        const gameClientCleanup = vi.fn();
         const updateLoopCleanup = vi.fn();
         mocks.initializeReactRuntime.mockReturnValue(initialization.promise);
         mocks.bindRuntimeEvents.mockResolvedValue(eventCleanup);
-        mocks.startRuntimeGameClientSync.mockReturnValue(gameClientCleanup);
         mocks.startRuntimeUpdateLoop.mockReturnValue(updateLoopCleanup);
 
         const cleanupFirst = startReactRuntimeServices();
@@ -156,7 +148,6 @@ describe('runtimeBootstrapService', () => {
         cleanupSecond();
 
         expect(eventCleanup).toHaveBeenCalledTimes(1);
-        expect(gameClientCleanup).toHaveBeenCalledTimes(1);
         expect(updateLoopCleanup).toHaveBeenCalledTimes(1);
         expect(mocks.hydrateVrcStatus).toHaveBeenCalledTimes(1);
     });

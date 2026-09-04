@@ -22,8 +22,14 @@ const LIGHT_COMMUNITY_PALETTE = [
     '#c85aa0'
 ];
 
+export const MUTUAL_GRAPH_NAMED_COMMUNITY_LIMIT = 6;
+
+const DARK_NEUTRAL_COMMUNITY_COLOR = '#6b7280';
+const LIGHT_NEUTRAL_COMMUNITY_COLOR = '#a1a8b3';
+
 export interface MutualFriendsGraphTheme {
     communityPalette: string[];
+    neutralCommunityColor: string;
     backgroundColor: string;
     edgeColor: string;
     edgeActiveColor: string;
@@ -50,14 +56,25 @@ export function mutualFriendsCommunityPalette(isDarkMode: boolean) {
     return isDarkMode ? DARK_COMMUNITY_PALETTE : LIGHT_COMMUNITY_PALETTE;
 }
 
-export function communityColor(palette: string[], communityIndex: number) {
-    if (!palette.length) {
-        return LIGHT_COMMUNITY_PALETTE[0];
+export function mutualFriendsNeutralCommunityColor(isDarkMode: boolean) {
+    return isDarkMode
+        ? DARK_NEUTRAL_COMMUNITY_COLOR
+        : LIGHT_NEUTRAL_COMMUNITY_COLOR;
+}
+
+export function communityColor(
+    palette: string[],
+    communityIndex: number,
+    isNamed: boolean,
+    neutralColor: string
+) {
+    if (!isNamed || !palette.length) {
+        return neutralColor;
     }
     const index = Number.isFinite(communityIndex)
         ? Math.max(0, Math.trunc(communityIndex))
         : 0;
-    return palette[index % palette.length];
+    return palette[index] ?? neutralColor;
 }
 
 export function buildMutualFriendsGraphTheme(
@@ -66,6 +83,7 @@ export function buildMutualFriendsGraphTheme(
 ): MutualFriendsGraphTheme {
     return {
         communityPalette: mutualFriendsCommunityPalette(isDarkMode),
+        neutralCommunityColor: mutualFriendsNeutralCommunityColor(isDarkMode),
         backgroundColor: isDarkMode ? '#0a0a0a' : '#ffffff',
         edgeColor: isDarkMode ? '#2b3440' : '#d3dae3',
         edgeActiveColor: isDarkMode ? '#8fa3bd' : '#64748b',

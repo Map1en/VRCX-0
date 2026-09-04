@@ -53,9 +53,6 @@ impl VrcxMcpServer {
             .query
             .map(|value| value.trim().to_string())
             .filter(|value| !value.is_empty());
-        if query.is_none() && target_user_id.is_none() {
-            return Err("search_friend_feed requires query or target".into());
-        }
         if query
             .as_deref()
             .is_some_and(|value| value.chars().count() > MAX_QUERY_CHARACTERS)
@@ -361,7 +358,7 @@ impl From<FriendFeedEventTypeParam> for FeedFilter {
 #[derive(Clone, Debug, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]
 struct SearchFriendFeedParams {
-    /// Literal text in names, locations/worlds/groups, current or previous status/bio, or avatar names. At least query or target is required.
+    /// Literal text in names, locations/worlds/groups, current or previous status/bio, or avatar names. Omit for event- or time-filtered history.
     query: Option<String>,
     /// VRChat user id (usr_...) or display name to scope the search to one friend.
     target: Option<String>,

@@ -126,9 +126,9 @@ export function MyGroupCard({
                 {...attributes}
                 {...listeners}
                 type="button"
-                variant="outline"
+                variant="ghost"
                 className={cn(
-                    'h-full w-full min-w-0 flex-col items-stretch gap-0 overflow-hidden rounded-lg p-0 text-left font-normal whitespace-normal transition-colors',
+                    'object-row bg-object-surface hover:bg-object-surface-hover dark:hover:bg-object-surface-hover h-full w-full min-w-0 flex-col items-stretch gap-0 overflow-hidden rounded-lg border-[var(--object-border)] p-0 text-left font-normal whitespace-normal hover:border-[var(--object-border-hover)]',
                     !dragDisabled &&
                         'cursor-grab touch-none active:cursor-grabbing',
                     selected && TILE_SELECTED
@@ -164,8 +164,8 @@ export function MyGroupCard({
                         </span>
                     ) : null}
                 </div>
-                <div className="flex h-12 min-w-0 items-start gap-2 px-2.5 pb-2.5">
-                    <span className="bg-muted relative z-10 -mt-4 flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border shadow-sm">
+                <div className="flex h-14 min-w-0 items-center gap-2 px-2.5 py-2">
+                    <span className="bg-muted relative z-10 flex size-11 shrink-0 -translate-y-4 items-center justify-center overflow-hidden rounded-md border">
                         {iconUrl ? (
                             <FadeInImage
                                 src={iconUrl}
@@ -180,11 +180,16 @@ export function MyGroupCard({
                             <UsersRoundIcon className="text-muted-foreground size-4" />
                         )}
                     </span>
-                    <span className="min-w-0 flex-1 pt-1">
-                        <span className="flex min-w-0 items-center gap-1">
-                            <span className="text-foreground min-w-0 truncate text-sm leading-tight font-medium">
-                                {group.name || groupId}
-                            </span>
+                    <span className="min-w-0 flex-1">
+                        <span className="object-row__title block truncate text-sm leading-tight">
+                            {group.name || groupId}
+                        </span>
+                        <span className="object-row__meta block truncate leading-tight">
+                            {subtitle}
+                        </span>
+                    </span>
+                    {isOwner || visibility !== 'visible' ? (
+                        <span className="flex shrink-0 items-center gap-1">
                             {isOwner ? (
                                 <span
                                     className="shrink-0 text-amber-400"
@@ -221,10 +226,7 @@ export function MyGroupCard({
                                 </span>
                             ) : null}
                         </span>
-                        <span className="text-muted-foreground block truncate text-xs leading-tight">
-                            {subtitle}
-                        </span>
-                    </span>
+                    ) : null}
                 </div>
             </Button>
             {editMode ? (

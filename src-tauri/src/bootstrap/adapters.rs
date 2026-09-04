@@ -303,6 +303,10 @@ impl RuntimeHostActions for TauriRuntimeHostActions {
             let _ = window.set_focus();
         }
     }
+
+    fn set_tray_icon_notification(&self, notify: bool) {
+        crate::commands::host::window::set_tray_icon_notification(&self.app_handle, notify);
+    }
 }
 
 #[derive(Clone)]
@@ -506,13 +510,28 @@ async fn find_update(
         request.allow_downgrades,
     )
     .map_err(|error| ApplicationError::Custom(error.to_string()))?;
+    let current_version = semver::Version::parse(&request.current_version).map_err(|error| {
+        ApplicationError::Custom(format!("Invalid current update version: {error}"))
+    })?;
+    let expected_version = semver::Version::parse(&request.expected_version).map_err(|error| {
+        ApplicationError::Custom(format!("Invalid expected update version: {error}"))
+    })?;
+    if expected_version <= current_version {
+        return Err(ApplicationError::Custom(
+            "Expected update version must be newer than the current version.".into(),
+        ));
+    }
+    let expected_manifest_version = expected_version.clone();
     let mut builder = app_handle
         .updater_builder()
         .endpoints(vec![endpoint])
         .map_err(|error| {
             ApplicationError::Custom(format!("Failed to configure update endpoint: {error}"))
         })?
-        .target(request.target.clone());
+        .target(request.target.clone())
+        .version_comparator(move |_native_version, release| {
+            release.version == expected_manifest_version
+        });
 
     if let Some(proxy_url) = request
         .proxy

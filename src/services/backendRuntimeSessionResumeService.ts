@@ -6,6 +6,7 @@ import { isRecord } from '@/shared/utils/record';
 import { normalizeString } from '@/shared/utils/string';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
+import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 
 import { beginAuthAttempt, isAuthAttemptSupersededError } from './authAttempt';
 import {
@@ -51,6 +52,18 @@ async function restoreVrchatConfigSnapshot(): Promise<void> {
             error
         );
     });
+}
+
+async function restoreVrcNotifications(): Promise<void> {
+    await useVrcNotificationStore
+        .getState()
+        .loadForCurrentUser()
+        .catch((error: unknown) => {
+            console.warn(
+                'Failed to restore VRChat notifications for the authenticated session:',
+                error
+            );
+        });
 }
 
 function buildCurrentUserSnapshotForResume({
@@ -164,6 +177,7 @@ export async function applyAuthenticatedSessionProjection(
         });
         recordCurrentUserSnapshot(currentUserSnapshot, { endpoint });
         await restoreVrchatConfigSnapshot();
+        await restoreVrcNotifications();
         return true;
     }
 
@@ -193,5 +207,6 @@ export async function applyAuthenticatedSessionProjection(
         }
         throw error;
     }
+    await restoreVrcNotifications();
     return true;
 }

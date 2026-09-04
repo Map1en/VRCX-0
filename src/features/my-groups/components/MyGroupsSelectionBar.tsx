@@ -1,6 +1,7 @@
-import { EyeIcon, LogOutIcon, XIcon } from 'lucide-react';
+import { EyeIcon, LogOutIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { SelectionActionBar } from '@/components/layout/SelectionActionBar';
 import type { GroupMemberVisibility } from '@/platform/tauri/bindings';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -9,7 +10,6 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
-import { Spinner } from '@/ui/shadcn/spinner';
 
 const visibilityLabelKeys: Record<GroupMemberVisibility, string> = {
     visible: 'dialog.group.actions.visibility_everyone',
@@ -46,93 +46,73 @@ export function MyGroupsSelectionBar({
 }) {
     const { t } = useTranslation();
 
-    if (selectedCount === 0) {
-        return null;
-    }
-
     return (
-        <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 flex justify-center px-2">
-            <div className="bg-popover text-popover-foreground pointer-events-auto flex max-w-full flex-wrap items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm shadow-lg">
-                <span className="text-muted-foreground px-1.5 font-medium whitespace-nowrap tabular-nums">
-                    {busy && progress
-                        ? t('view.my_groups.batch_progress', {
-                              current: progress.current,
-                              total: progress.total
-                          })
-                        : t('view.my_groups.selected_count', {
-                              count: selectedCount
-                          })}
-                </span>
-                {busy ? (
-                    <Spinner className="size-4" />
-                ) : (
-                    <>
+        <SelectionActionBar
+            status={
+                busy && progress
+                    ? t('view.my_groups.batch_progress', {
+                          current: progress.current,
+                          total: progress.total
+                      })
+                    : t('view.my_groups.selected_count', {
+                          count: selectedCount
+                      })
+            }
+            selectAllLabel={
+                allSelected
+                    ? t('view.tools.gallery_selection.deselect_all')
+                    : t('view.tools.gallery_selection.select_all')
+            }
+            clearLabel={t('common.actions.clear')}
+            pending={busy}
+            clearDisabled={selectedCount === 0}
+            onSelectAll={onSelectAll}
+            onClearSelection={onClearSelection}
+        >
+            <DropdownMenu>
+                <DropdownMenuTrigger
+                    render={
                         <Button
                             type="button"
                             size="sm"
                             variant="ghost"
-                            onClick={onSelectAll}
+                            disabled={selectedCount === 0}
                         >
-                            {allSelected
-                                ? t('view.tools.gallery_selection.deselect_all')
-                                : t('view.tools.gallery_selection.select_all')}
+                            <EyeIcon data-icon="inline-start" />
+                            {t('dialog.group.actions.visibility')}
                         </Button>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger
-                                render={
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="ghost"
-                                    >
-                                        <EyeIcon data-icon="inline-start" />
-                                        {t('dialog.group.actions.visibility')}
-                                    </Button>
-                                }
-                            />
-                            <DropdownMenuContent side="top" align="center">
-                                {visibilityOptions.map((option) => (
-                                    <DropdownMenuItem
-                                        key={option}
-                                        onClick={() => onSetVisibility(option)}
-                                    >
-                                        {t(visibilityLabelKeys[option])}
-                                    </DropdownMenuItem>
-                                ))}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            disabled={leavableCount === 0}
-                            title={
-                                leavableCount === 0
-                                    ? t('view.my_groups.leave_owner_locked')
-                                    : undefined
-                            }
-                            onClick={onLeave}
+                    }
+                />
+                <DropdownMenuContent side="top" align="center">
+                    {visibilityOptions.map((option) => (
+                        <DropdownMenuItem
+                            key={option}
+                            onClick={() => onSetVisibility(option)}
                         >
-                            <LogOutIcon data-icon="inline-start" />
-                            {leavableCount < selectedCount
-                                ? t('view.my_groups.leave_partial', {
-                                      count: leavableCount
-                                  })
-                                : t('view.my_groups.leave')}
-                        </Button>
-                        <Button
-                            type="button"
-                            size="icon-xs"
-                            variant="ghost"
-                            className="rounded-full"
-                            aria-label={t('common.actions.clear')}
-                            onClick={onClearSelection}
-                        >
-                            <XIcon data-icon="icon" />
-                        </Button>
-                    </>
-                )}
-            </div>
-        </div>
+                            {t(visibilityLabelKeys[option])}
+                        </DropdownMenuItem>
+                    ))}
+                </DropdownMenuContent>
+            </DropdownMenu>
+            <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                disabled={leavableCount === 0}
+                title={
+                    leavableCount === 0
+                        ? t('view.my_groups.leave_owner_locked')
+                        : undefined
+                }
+                onClick={onLeave}
+            >
+                <LogOutIcon data-icon="inline-start" />
+                {leavableCount < selectedCount
+                    ? t('view.my_groups.leave_partial', {
+                          count: leavableCount
+                      })
+                    : t('view.my_groups.leave')}
+            </Button>
+        </SelectionActionBar>
     );
 }

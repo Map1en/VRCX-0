@@ -3,6 +3,12 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppColumnDef } from '@/components/data-table/appTable';
+import { DataTableHeaderLabel } from '@/components/data-table/DataTableSortButton';
+import {
+    DATA_TABLE_CONTROL_CELL_CLASS_NAME,
+    DATA_TABLE_METADATA_CELL_CLASS_NAME,
+    DATA_TABLE_PRIMARY_CELL_CLASS_NAME
+} from '@/components/data-table/DataTableView';
 import { formatDateFilter } from '@/lib/dateTime';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Badge } from '@/ui/shadcn/badge';
@@ -56,7 +62,8 @@ export function useModerationColumns({
                 id: 'created',
                 size: 120,
                 meta: {
-                    label: t('table.moderation.date')
+                    label: t('table.moderation.date'),
+                    tableCellClassName: DATA_TABLE_METADATA_CELL_CLASS_NAME
                 },
                 accessorFn: (row) => row.created,
                 header: ({ column }) => (
@@ -119,19 +126,20 @@ export function useModerationColumns({
                 size: 120,
                 enableSorting: false,
                 meta: {
-                    label: t('table.moderation.source')
+                    label: t('table.moderation.source'),
+                    tableCellClassName: DATA_TABLE_PRIMARY_CELL_CLASS_NAME
                 },
                 accessorFn: (row) => row.sourceDisplayName || row.sourceUserId,
                 header: () => (
-                    <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    <DataTableHeaderLabel>
                         {t('table.moderation.source')}
-                    </span>
+                    </DataTableHeaderLabel>
                 ),
                 cell: ({ row }) => (
                     <Button
                         type="button"
                         variant="ghost"
-                        className="hover:text-primary block h-auto w-full min-w-0 truncate p-0 pr-2.5 text-left text-sm font-normal"
+                        className="hover:text-primary block h-auto w-full min-w-0 truncate p-0 pr-2.5 text-left text-sm font-medium"
                         disabled={!row.original.sourceUserId}
                         onClick={() =>
                             onOpenUser({
@@ -155,19 +163,20 @@ export function useModerationColumns({
                 enableHiding: false,
                 meta: {
                     label: t('table.moderation.target'),
-                    stretch: true
+                    stretch: true,
+                    tableCellClassName: DATA_TABLE_PRIMARY_CELL_CLASS_NAME
                 },
                 accessorFn: (row) => row.targetDisplayName || row.targetUserId,
                 header: () => (
-                    <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    <DataTableHeaderLabel>
                         {t('table.moderation.target')}
-                    </span>
+                    </DataTableHeaderLabel>
                 ),
                 cell: ({ row }) => (
                     <Button
                         type="button"
                         variant="ghost"
-                        className="hover:text-primary block h-auto w-full min-w-0 p-0 pr-2.5 text-left text-sm font-normal break-words whitespace-normal"
+                        className="hover:text-primary block h-auto w-full min-w-0 p-0 pr-2.5 text-left text-sm font-medium break-words whitespace-normal"
                         disabled={!row.original.targetUserId}
                         onClick={() =>
                             onOpenUser({
@@ -191,13 +200,14 @@ export function useModerationColumns({
                 enableResizing: false,
                 enableSorting: false,
                 meta: {
-                    label: t('table.moderation.action')
+                    label: t('table.moderation.action'),
+                    tableCellClassName: DATA_TABLE_CONTROL_CELL_CLASS_NAME
                 },
                 accessorFn: (row) => getModerationRowKey(row),
                 header: () => (
-                    <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    <DataTableHeaderLabel>
                         {t('table.moderation.action')}
-                    </span>
+                    </DataTableHeaderLabel>
                 ),
                 cell: ({ row }) => {
                     const original = row.original;

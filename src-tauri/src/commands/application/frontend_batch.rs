@@ -26,6 +26,12 @@ pub fn app__favorite_import_start(
 
 #[tauri::command]
 #[specta::specta]
+pub fn app__favorite_import_status(state: State<'_, AppState>) -> FavoriteImportStatus {
+    state.runtime_host().favorite_import_status()
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn app__favorite_import_cancel(state: State<'_, AppState>) -> FavoriteImportStatus {
     state.runtime_host().favorite_import_cancel()
 }

@@ -6,6 +6,7 @@ import {
 } from '@/repositories/browseHistoryRepository';
 import i18n from '@/services/i18nService';
 import { recordUserProfile } from '@/services/userFactAccessService';
+import { restoreNormalWindowModeForIntent } from '@/services/windowModeService';
 import { isRecord } from '@/shared/utils/record';
 import {
     useDialogStore,
@@ -279,6 +280,7 @@ function openEntityDialog({
     if (!kind || !normalizedEntityId) {
         return;
     }
+    restoreNormalWindowModeForIntent();
 
     const store = useDialogStore.getState();
     if (

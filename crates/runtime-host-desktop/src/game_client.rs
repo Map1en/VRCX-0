@@ -190,10 +190,6 @@ impl GameClientHostRuntime {
         Self { inner }
     }
 
-    pub fn set_runtime_state(&self, current_location: &str) {
-        self.inner.set_runtime_state(current_location);
-    }
-
     pub fn stop(&self) {
         self.inner.stop();
     }

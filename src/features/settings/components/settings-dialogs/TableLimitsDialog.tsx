@@ -16,7 +16,13 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
-import { Input } from '@/ui/shadcn/input';
+import {
+    NumberField,
+    NumberFieldDecrement,
+    NumberFieldGroup,
+    NumberFieldIncrement,
+    NumberFieldInput
+} from '@/ui/shadcn/number-field';
 
 import { Field, FieldGroup } from '../SettingsField';
 
@@ -82,21 +88,31 @@ export function TableLimitsDialog({
                         error={tableMaxSizeError}
                         invalid={Boolean(tableMaxSizeError)}
                     >
-                        <Input
+                        <NumberField
                             id="settings-table-max-entries"
-                            type="number"
                             name="maxTableSize"
-                            inputMode="numeric"
                             min={TABLE_MAX_SIZE_MIN}
                             max={TABLE_MAX_SIZE_MAX}
-                            value={tableLimitsDraft.maxTableSize}
-                            onChange={(event) =>
+                            allowOutOfRange
+                            value={
+                                tableLimitsDraft.maxTableSize === ''
+                                    ? null
+                                    : Number(tableLimitsDraft.maxTableSize)
+                            }
+                            onValueChange={(value) =>
                                 setTableLimitsDraft((current) => ({
                                     ...current,
-                                    maxTableSize: event.target.value
+                                    maxTableSize:
+                                        value === null ? '' : String(value)
                                 }))
                             }
-                        />
+                        >
+                            <NumberFieldGroup>
+                                <NumberFieldDecrement />
+                                <NumberFieldInput />
+                                <NumberFieldIncrement />
+                            </NumberFieldGroup>
+                        </NumberField>
                     </Field>
                     <Field
                         label={t(
@@ -130,21 +146,31 @@ export function TableLimitsDialog({
                         error={searchLimitError}
                         invalid={Boolean(searchLimitError)}
                     >
-                        <Input
+                        <NumberField
                             id="settings-search-limit"
-                            type="number"
                             name="searchLimit"
-                            inputMode="numeric"
                             min={SEARCH_LIMIT_MIN}
                             max={SEARCH_LIMIT_MAX}
-                            value={tableLimitsDraft.searchLimit}
-                            onChange={(event) =>
+                            allowOutOfRange
+                            value={
+                                tableLimitsDraft.searchLimit === ''
+                                    ? null
+                                    : Number(tableLimitsDraft.searchLimit)
+                            }
+                            onValueChange={(value) =>
                                 setTableLimitsDraft((current) => ({
                                     ...current,
-                                    searchLimit: event.target.value
+                                    searchLimit:
+                                        value === null ? '' : String(value)
                                 }))
                             }
-                        />
+                        >
+                            <NumberFieldGroup>
+                                <NumberFieldDecrement />
+                                <NumberFieldInput />
+                                <NumberFieldIncrement />
+                            </NumberFieldGroup>
+                        </NumberField>
                     </Field>
                 </FieldGroup>
                 <DialogFooter>

@@ -302,6 +302,9 @@ impl RealtimeFriendsRuntime {
                 .retain(|user_id, _recent| baseline.friends_by_id.contains_key(user_id));
         } else {
             state.pending_offline.clear();
+            for record in baseline.friends_by_id.values_mut() {
+                record.extra.remove("pendingOffline");
+            }
             state.recent_gps.clear();
             state.friend_state_sequence_by_user.clear();
         }

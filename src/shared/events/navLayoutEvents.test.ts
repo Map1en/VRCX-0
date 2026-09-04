@@ -5,8 +5,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
     NAV_CUSTOMIZE_REQUESTED_EVENT,
     NAV_LAYOUT_UPDATED_EVENT,
+    NAV_SHORTCUT_REQUESTED_EVENT,
     publishNavCustomizeRequested,
-    publishNavLayoutUpdated
+    publishNavLayoutUpdated,
+    publishNavShortcutRequested
 } from './navLayoutEvents';
 
 describe('navLayoutEvents', () => {
@@ -71,6 +73,31 @@ describe('navLayoutEvents', () => {
         window.removeEventListener(
             NAV_CUSTOMIZE_REQUESTED_EVENT,
             customizeDialogOpenHandler
+        );
+    });
+
+    it('publishes only valid one-based navigation shortcut positions', () => {
+        const positions: number[] = [];
+        const handleShortcut = (event: Event) => {
+            if (
+                event instanceof CustomEvent &&
+                typeof event.detail === 'number'
+            ) {
+                positions.push(event.detail);
+            }
+        };
+        window.addEventListener(NAV_SHORTCUT_REQUESTED_EVENT, handleShortcut);
+
+        publishNavShortcutRequested(1);
+        publishNavShortcutRequested(9);
+        publishNavShortcutRequested(0);
+        publishNavShortcutRequested(10);
+
+        expect(positions).toEqual([1, 9]);
+
+        window.removeEventListener(
+            NAV_SHORTCUT_REQUESTED_EVENT,
+            handleShortcut
         );
     });
 });

@@ -4,6 +4,14 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppColumnDef } from '@/components/data-table/appTable';
+import { DataTableHeaderLabel } from '@/components/data-table/DataTableSortButton';
+import {
+    DATA_TABLE_CONTROL_CELL_CLASS_NAME,
+    DATA_TABLE_METADATA_CELL_CLASS_NAME,
+    DATA_TABLE_NUMERIC_CELL_CLASS_NAME,
+    DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
+    DATA_TABLE_PRIMARY_CELL_CLASS_NAME
+} from '@/components/data-table/DataTableView';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { formatDateFilter, timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
@@ -116,7 +124,11 @@ export function useFriendListColumns({
             {
                 id: 'friendNumber',
                 size: 100,
-                meta: { label: t('table.friendList.no') },
+                meta: {
+                    label: t('table.friendList.no'),
+                    tableHeadClassName: DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
+                    tableCellClassName: DATA_TABLE_NUMERIC_CELL_CLASS_NAME
+                },
                 accessorFn: (row) =>
                     parseListNumber(row?.$friendNumber ?? row?.friendNumber),
                 header: ({ column }) => (
@@ -124,6 +136,7 @@ export function useFriendListColumns({
                         column={column}
                         label={t('table.friendList.no')}
                         descFirst
+                        className="ml-auto"
                     />
                 ),
                 cell: ({ row }) => {
@@ -146,9 +159,9 @@ export function useFriendListColumns({
                 accessorFn: (row) => userImage(row, true),
                 enableSorting: false,
                 header: () => (
-                    <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    <DataTableHeaderLabel>
                         {t('table.friendList.avatar')}
-                    </span>
+                    </DataTableHeaderLabel>
                 ),
                 cell: ({ row }) => {
                     const imageUrl = userImage(row.original, true);
@@ -181,14 +194,15 @@ export function useFriendListColumns({
                 enableHiding: false,
                 meta: {
                     label: t('table.friendList.displayName'),
-                    stretch: true
+                    stretch: true,
+                    tableCellClassName: DATA_TABLE_PRIMARY_CELL_CLASS_NAME
                 },
                 accessorFn: (row) => row?.displayName || '',
                 enableSorting: false,
                 header: () => (
-                    <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    <DataTableHeaderLabel>
                         {t('table.friendList.displayName')}
-                    </span>
+                    </DataTableHeaderLabel>
                 ),
                 cell: ({ row }) => {
                     const friendId = normalizeId(row.original?.id);
@@ -320,11 +334,14 @@ export function useFriendListColumns({
                 accessorFn: (row) => bioLinks(row).join('\u0000'),
                 size: 140,
                 enableSorting: false,
-                meta: { label: t('table.friendList.bioLink') },
+                meta: {
+                    label: t('table.friendList.bioLink'),
+                    tableCellClassName: DATA_TABLE_CONTROL_CELL_CLASS_NAME
+                },
                 header: () => (
-                    <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    <DataTableHeaderLabel>
                         {t('table.friendList.bioLink')}
-                    </span>
+                    </DataTableHeaderLabel>
                 ),
                 cell: ({ row }) => {
                     const links = bioLinks(row.original);
@@ -365,15 +382,20 @@ export function useFriendListColumns({
                 id: 'joinCount',
                 accessorFn: (row) => parseListNumber(row?.$joinCount),
                 size: 120,
-                meta: { label: t('table.friendList.joinCount') },
+                meta: {
+                    label: t('table.friendList.joinCount'),
+                    tableHeadClassName: DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
+                    tableCellClassName: DATA_TABLE_NUMERIC_CELL_CLASS_NAME
+                },
                 header: ({ column }) => (
                     <SortButton
                         column={column}
                         label={t('table.friendList.joinCount')}
+                        className="ml-auto"
                     />
                 ),
                 cell: ({ row }) => (
-                    <span className="block text-right">
+                    <span className="block">
                         {row.original?.$joinCount || ''}
                     </span>
                 )
@@ -382,17 +404,22 @@ export function useFriendListColumns({
                 id: 'timeTogether',
                 accessorFn: (row) => parseListNumber(row?.$timeSpent),
                 size: 150,
-                meta: { label: t('table.friendList.timeTogether') },
+                meta: {
+                    label: t('table.friendList.timeTogether'),
+                    tableHeadClassName: DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
+                    tableCellClassName: DATA_TABLE_NUMERIC_CELL_CLASS_NAME
+                },
                 header: ({ column }) => (
                     <SortButton
                         column={column}
                         label={t('table.friendList.timeTogether')}
+                        className="ml-auto"
                     />
                 ),
                 cell: ({ row }) => {
                     const timeSpent = parseListNumber(row.original?.$timeSpent);
                     return (
-                        <span className="block text-right">
+                        <span className="block">
                             {timeSpent ? timeToText(timeSpent) : ''}
                         </span>
                     );
@@ -402,7 +429,10 @@ export function useFriendListColumns({
                 id: 'lastSeen',
                 accessorFn: (row) => row?.$lastSeen || '',
                 size: 180,
-                meta: { label: t('table.friendList.lastSeen') },
+                meta: {
+                    label: t('table.friendList.lastSeen'),
+                    tableCellClassName: DATA_TABLE_METADATA_CELL_CLASS_NAME
+                },
                 header: ({ column }) => (
                     <SortButton
                         column={column}
@@ -421,11 +451,16 @@ export function useFriendListColumns({
                 id: 'mutualFriends',
                 accessorFn: (row) => parseListNumber(row?.$mutualCount),
                 size: 140,
-                meta: { label: t('table.friendList.mutualFriends') },
+                meta: {
+                    label: t('table.friendList.mutualFriends'),
+                    tableHeadClassName: DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
+                    tableCellClassName: DATA_TABLE_NUMERIC_CELL_CLASS_NAME
+                },
                 header: ({ column }) => (
                     <SortButton
                         column={column}
                         label={t('table.friendList.mutualFriends')}
+                        className="ml-auto"
                     />
                 ),
                 cell: ({ row }) => {
@@ -456,7 +491,10 @@ export function useFriendListColumns({
                 id: 'lastActivity',
                 accessorFn: (row) => textValue(row?.last_activity),
                 size: 200,
-                meta: { label: t('table.friendList.lastActivity') },
+                meta: {
+                    label: t('table.friendList.lastActivity'),
+                    tableCellClassName: DATA_TABLE_METADATA_CELL_CLASS_NAME
+                },
                 header: ({ column }) => (
                     <SortButton
                         column={column}
@@ -475,7 +513,10 @@ export function useFriendListColumns({
                 id: 'lastLogin',
                 accessorFn: (row) => textValue(row?.last_login),
                 size: 200,
-                meta: { label: t('table.friendList.lastLogin') },
+                meta: {
+                    label: t('table.friendList.lastLogin'),
+                    tableCellClassName: DATA_TABLE_METADATA_CELL_CLASS_NAME
+                },
                 header: ({ column }) => (
                     <SortButton
                         column={column}
@@ -494,7 +535,10 @@ export function useFriendListColumns({
                 id: 'dateJoined',
                 accessorFn: (row) => textValue(row?.date_joined),
                 size: 140,
-                meta: { label: t('table.friendList.dateJoined') },
+                meta: {
+                    label: t('table.friendList.dateJoined'),
+                    tableCellClassName: DATA_TABLE_METADATA_CELL_CLASS_NAME
+                },
                 header: ({ column }) => (
                     <SortButton
                         column={column}
@@ -512,11 +556,14 @@ export function useFriendListColumns({
                 maxSize: 100,
                 enableResizing: false,
                 enableSorting: false,
-                meta: { label: t('table.friendList.unfriend') },
+                meta: {
+                    label: t('table.friendList.unfriend'),
+                    tableCellClassName: DATA_TABLE_CONTROL_CELL_CLASS_NAME
+                },
                 header: () => (
-                    <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    <DataTableHeaderLabel>
                         {t('table.friendList.unfriend')}
-                    </span>
+                    </DataTableHeaderLabel>
                 ),
                 cell: ({ row }) => {
                     const friendId = normalizeId(row.original?.id);

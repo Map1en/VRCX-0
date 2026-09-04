@@ -15,30 +15,32 @@ import { formatDateFilter, formatRelativeTime } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import type {
     BackgroundImageCustomSource,
-    BackgroundImageMode,
     BackgroundImageProviderId,
     BackgroundImageSnapshot
 } from '@/platform/tauri/bindings';
 import {
     backgroundImageRemoteProviders,
+    type BackgroundImageSelectionMode,
     chooseBackgroundImageFiles,
     chooseBackgroundImageFolder,
     isBackgroundImageCustomSourceRotating,
     refreshBackgroundImage,
     setBackgroundImageCustomRotationIntervalMinutes,
+    setBackgroundImageDecoration,
     setBackgroundImageMode,
     setBackgroundImageProvider
 } from '@/services/background-image/backgroundImageService';
 import { openFolderAndSelectItem } from '@/services/shellIntegrationService';
+import { profileBackgroundTextures } from '@/shared/constants/profileBackgrounds';
 import { useBackgroundImageStore } from '@/state/backgroundImageStore';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent } from '@/ui/shadcn/card';
 import {
     InputGroup,
     InputGroupAddon,
-    InputGroupInput,
     InputGroupText
 } from '@/ui/shadcn/input-group';
+import { NumberField, NumberFieldInput } from '@/ui/shadcn/number-field';
 import {
     Select,
     SelectContent,
@@ -100,20 +102,43 @@ function resolveProviderName(providerId?: BackgroundImageProviderId): string {
     );
 }
 
+type ProfileDecorationBackgroundTexture =
+    (typeof profileBackgroundTextures)[number];
+
+function DecorationBackgroundOption({
+    texture
+}: {
+    texture: ProfileDecorationBackgroundTexture;
+}) {
+    return (
+        <span className="flex min-w-0 items-center gap-2">
+            <img
+                src={texture.imageUrl}
+                alt=""
+                loading="lazy"
+                className="h-9 w-16 shrink-0 rounded-sm object-cover ring-1 ring-black/10 dark:ring-white/10"
+            />
+            <span className="truncate">{texture.label}</span>
+        </span>
+    );
+}
+
 function CurrentBackgroundImageSummary({
     enabled,
     loading,
     mode,
     providerId,
     customSource,
+    decorationImageUrl,
     snapshot,
     onRefresh
 }: {
     enabled: boolean;
     loading: boolean;
-    mode: BackgroundImageMode;
+    mode: BackgroundImageSelectionMode;
     providerId: BackgroundImageProviderId;
     customSource: BackgroundImageCustomSource | null;
+    decorationImageUrl: string;
     snapshot: BackgroundImageSnapshot | null;
     onRefresh: () => void;
 }) {
@@ -124,7 +149,7 @@ function CurrentBackgroundImageSummary({
     useEffect(() => {
         setImageFailed(false);
         setImageReady(false);
-    }, [snapshot?.imageUrl]);
+    }, [decorationImageUrl, snapshot?.imageUrl]);
 
     async function showCurrentImageInFolder() {
         if (!snapshot?.imagePath) {
@@ -146,47 +171,55 @@ function CurrentBackgroundImageSummary({
         (customSource?.kind === 'folder'
             ? customSource.folderPath
             : customSource?.paths[0]);
-    const title =
-        snapshot?.mode === 'custom'
-            ? snapshot.title || fileNameFromPath(snapshot.imagePath)
-            : snapshot?.title;
     const isCustom = snapshot?.mode === 'custom' || mode === 'custom';
-    const sourceType = !isCustom
-        ? providerName
-        : customSource?.kind === 'folder'
-          ? t('view.background_image.settings.source_type_folder')
-          : imageCount > 1
-            ? t('view.background_image.settings.source_type_files')
-            : t('view.background_image.settings.source_type_file');
+    const isDecoration = mode === 'decoration';
+    const imageUrl = decorationImageUrl || snapshot?.imageUrl || '';
+    const title = isDecoration
+        ? profileBackgroundTextures.find(
+              (texture) => texture.imageUrl === imageUrl
+          )?.label
+        : snapshot?.mode === 'custom'
+          ? snapshot.title || fileNameFromPath(snapshot.imagePath)
+          : snapshot?.title;
+    const sourceType = isDecoration
+        ? t('view.background_image.mode.decoration')
+        : !isCustom
+          ? providerName
+          : customSource?.kind === 'folder'
+            ? t('view.background_image.settings.source_type_folder')
+            : imageCount > 1
+              ? t('view.background_image.settings.source_type_files')
+              : t('view.background_image.settings.source_type_file');
     const isFolderSource = mode === 'custom' && customSource?.kind === 'folder';
     const relativeResolvedAt = snapshot
         ? formatRelativeTime(snapshot.resolvedAt)
         : '';
-    const metaParts = !snapshot
-        ? []
-        : (isCustom
-              ? [
-                    imageCount > 1
-                        ? t('view.background_image.settings.image_count', {
-                              count: imageCount
-                          })
-                        : '',
-                    relativeResolvedAt
-                ]
-              : [
-                    snapshot.author,
-                    snapshot.license,
-                    snapshot.source,
-                    relativeResolvedAt
-                ]
-          ).filter((part) => part && part !== sourceType);
+    const metaParts =
+        !snapshot || isDecoration
+            ? []
+            : (isCustom
+                  ? [
+                        imageCount > 1
+                            ? t('view.background_image.settings.image_count', {
+                                  count: imageCount
+                              })
+                            : '',
+                        relativeResolvedAt
+                    ]
+                  : [
+                        snapshot.author,
+                        snapshot.license,
+                        snapshot.source,
+                        relativeResolvedAt
+                    ]
+              ).filter((part) => part && part !== sourceType);
 
     return (
         <div className="border-border/70 bg-muted/20 flex min-w-0 flex-col gap-3 rounded-lg border p-2.5 sm:flex-row">
             <div className="bg-muted text-muted-foreground grid size-24 shrink-0 place-items-center overflow-hidden rounded-md border">
-                {snapshot?.imageUrl && !imageFailed ? (
+                {imageUrl && !imageFailed ? (
                     <img
-                        src={snapshot.imageUrl}
+                        src={imageUrl}
                         alt={
                             title ||
                             t('view.background_image.settings.current_image')
@@ -226,7 +259,7 @@ function CurrentBackgroundImageSummary({
                             {sourceType}
                         </span>
                     </div>
-                    {enabled ? (
+                    {enabled && !isDecoration ? (
                         <div className="flex shrink-0 flex-wrap gap-2 self-start">
                             {isFolderSource && snapshot?.imagePath ? (
                                 <Button
@@ -265,7 +298,7 @@ function CurrentBackgroundImageSummary({
                         </div>
                     ) : null}
                 </div>
-                {snapshot ? (
+                {snapshot || isDecoration ? (
                     <>
                         {isCustom && localPath ? (
                             <div
@@ -275,12 +308,18 @@ function CurrentBackgroundImageSummary({
                                 {directoryFromPath(localPath)}
                             </div>
                         ) : null}
-                        <div
-                            className="text-muted-foreground truncate text-xs"
-                            title={`${t('view.background_image.settings.resolved_at')}: ${formatResolvedAt(snapshot.resolvedAt)}`}
-                        >
-                            {metaParts.join(' · ')}
-                        </div>
+                        {metaParts.length > 0 ? (
+                            <div
+                                className="text-muted-foreground truncate text-xs"
+                                title={
+                                    snapshot
+                                        ? `${t('view.background_image.settings.resolved_at')}: ${formatResolvedAt(snapshot.resolvedAt)}`
+                                        : undefined
+                                }
+                            >
+                                {metaParts.join(' · ')}
+                            </div>
+                        ) : null}
                     </>
                 ) : (
                     <div className="text-muted-foreground text-xs">
@@ -300,6 +339,12 @@ export function BackgroundImageSection() {
     const enabled = useBackgroundImageStore((state) => state.enabled);
     const providerId = useBackgroundImageStore((state) => state.providerId);
     const customSource = useBackgroundImageStore((state) => state.customSource);
+    const decorationImageUrl = useBackgroundImageStore(
+        (state) => state.decorationImageUrl
+    );
+    const selectedMode: BackgroundImageSelectionMode = decorationImageUrl
+        ? 'decoration'
+        : mode;
     const snapshot = useBackgroundImageStore((state) => state.snapshot);
     const loading = useBackgroundImageStore((state) => state.loading);
     const rotationIntervalMinutes =
@@ -315,13 +360,17 @@ export function BackgroundImageSection() {
         customSource,
         snapshot?.imageCount
     );
+    const decorationTextureId =
+        profileBackgroundTextures.find(
+            (texture) => texture.imageUrl === decorationImageUrl
+        )?.textureId ?? '';
 
     useEffect(() => {
         setRotationChoice(rotationChoiceFromMinutes(rotationIntervalMinutes));
         setRotationIntervalDraft(String(rotationIntervalMinutes));
     }, [rotationIntervalMinutes]);
 
-    async function updateMode(nextMode: BackgroundImageMode) {
+    async function updateMode(nextMode: BackgroundImageSelectionMode) {
         try {
             const updated = await setBackgroundImageMode(nextMode);
             if (updated) {
@@ -344,6 +393,25 @@ export function BackgroundImageSection() {
                 return;
             }
             toast.success(t('common.settings_saved'));
+        } catch (error) {
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : t('view.background_image.toast.failed')
+            );
+        }
+    }
+
+    async function updateDecoration(textureId: string) {
+        const source = profileBackgroundTextures.find(
+            (texture) => texture.textureId === textureId
+        );
+        if (!source) {
+            return;
+        }
+        try {
+            await setBackgroundImageDecoration(source.imageUrl);
+            toast.success(t('view.background_image.toast.enabled'));
         } catch (error) {
             toast.error(
                 error instanceof Error
@@ -419,8 +487,10 @@ export function BackgroundImageSection() {
         }
     }
 
-    async function commitRotationIntervalDraft() {
-        const value = Number(rotationIntervalDraft);
+    async function commitRotationIntervalDraft(
+        committedValue = rotationIntervalDraft
+    ) {
+        const value = Number(committedValue);
         if (
             !Number.isInteger(value) ||
             value < MIN_ROTATION_INTERVAL_MINUTES ||
@@ -443,8 +513,10 @@ export function BackgroundImageSection() {
                         {t('view.background_image.settings.header')}
                     </div>
                     <div className="flex min-w-0 flex-wrap gap-2">
-                        <Select<BackgroundImageMode>
-                            value={mode === 'custom' ? 'custom' : 'daily'}
+                        <Select<BackgroundImageSelectionMode>
+                            value={
+                                selectedMode === 'off' ? 'daily' : selectedMode
+                            }
                             items={[
                                 {
                                     value: 'daily',
@@ -454,6 +526,12 @@ export function BackgroundImageSection() {
                                     value: 'custom',
                                     label: t(
                                         'view.background_image.mode.custom'
+                                    )
+                                },
+                                {
+                                    value: 'decoration',
+                                    label: t(
+                                        'view.background_image.mode.decoration'
                                     )
                                 }
                             ]}
@@ -475,10 +553,15 @@ export function BackgroundImageSection() {
                                     <SelectItem value="custom">
                                         {t('view.background_image.mode.custom')}
                                     </SelectItem>
+                                    <SelectItem value="decoration">
+                                        {t(
+                                            'view.background_image.mode.decoration'
+                                        )}
+                                    </SelectItem>
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
-                        {mode === 'daily' ? (
+                        {selectedMode === 'daily' ? (
                             <Select<BackgroundImageProviderId>
                                 value={providerId}
                                 items={backgroundImageRemoteProviders.map(
@@ -512,10 +595,47 @@ export function BackgroundImageSection() {
                                     </SelectGroup>
                                 </SelectContent>
                             </Select>
+                        ) : selectedMode === 'decoration' ? (
+                            <Select<string>
+                                value={decorationTextureId}
+                                items={profileBackgroundTextures.map(
+                                    (texture) => ({
+                                        value: texture.textureId,
+                                        label: texture.label
+                                    })
+                                )}
+                                disabled={loading}
+                                onValueChange={(value) => {
+                                    if (value) {
+                                        updateDecoration(value);
+                                    }
+                                }}
+                            >
+                                <SelectTrigger size="sm" className="min-w-52">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="min-w-64">
+                                    <SelectGroup>
+                                        {profileBackgroundTextures.map(
+                                            (texture) => (
+                                                <SelectItem
+                                                    key={texture.textureId}
+                                                    value={texture.textureId}
+                                                    className="py-1.5"
+                                                >
+                                                    <DecorationBackgroundOption
+                                                        texture={texture}
+                                                    />
+                                                </SelectItem>
+                                            )
+                                        )}
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
                         ) : null}
                     </div>
                 </div>
-                {providerId === 'nasa-apod-safe' && mode === 'daily' ? (
+                {providerId === 'nasa-apod-safe' && selectedMode === 'daily' ? (
                     <p className="text-muted-foreground text-xs italic">
                         {t('view.background_image.settings.apod_note')}
                     </p>
@@ -523,13 +643,14 @@ export function BackgroundImageSection() {
                 <CurrentBackgroundImageSummary
                     enabled={enabled}
                     loading={loading}
-                    mode={mode}
+                    mode={selectedMode}
                     providerId={providerId}
                     customSource={customSource}
+                    decorationImageUrl={decorationImageUrl}
                     snapshot={enabled ? snapshot : null}
                     onRefresh={refreshBackground}
                 />
-                {mode === 'custom' ? (
+                {selectedMode === 'custom' ? (
                     <div className="border-border/70 flex min-w-0 flex-wrap items-center gap-2 border-t pt-3">
                         <Button
                             type="button"
@@ -628,30 +749,46 @@ export function BackgroundImageSection() {
                                 </Select>
                                 {rotationChoice === 'custom' ? (
                                     <InputGroup className="w-32">
-                                        <InputGroupInput
-                                            type="number"
+                                        <NumberField
                                             min={MIN_ROTATION_INTERVAL_MINUTES}
                                             max={MAX_ROTATION_INTERVAL_MINUTES}
                                             step={1}
+                                            allowOutOfRange
                                             disabled={loading}
-                                            value={rotationIntervalDraft}
-                                            onChange={(event) =>
+                                            value={
+                                                rotationIntervalDraft === ''
+                                                    ? null
+                                                    : Number(
+                                                          rotationIntervalDraft
+                                                      )
+                                            }
+                                            onValueChange={(value) =>
                                                 setRotationIntervalDraft(
-                                                    event.currentTarget.value
+                                                    value === null
+                                                        ? ''
+                                                        : String(value)
                                                 )
                                             }
-                                            onBlur={() => {
-                                                void commitRotationIntervalDraft();
+                                            onValueCommitted={(value) => {
+                                                void commitRotationIntervalDraft(
+                                                    value === null
+                                                        ? ''
+                                                        : String(value)
+                                                );
                                             }}
-                                            onKeyDown={(event) => {
-                                                if (event.key === 'Enter') {
-                                                    event.currentTarget.blur();
-                                                }
-                                            }}
-                                            aria-label={t(
-                                                'view.background_image.settings.rotation'
-                                            )}
-                                        />
+                                        >
+                                            <NumberFieldInput
+                                                className="text-left"
+                                                onKeyDown={(event) => {
+                                                    if (event.key === 'Enter') {
+                                                        event.currentTarget.blur();
+                                                    }
+                                                }}
+                                                aria-label={t(
+                                                    'view.background_image.settings.rotation'
+                                                )}
+                                            />
+                                        </NumberField>
                                         <InputGroupAddon align="inline-end">
                                             <InputGroupText>
                                                 {t(

@@ -18,14 +18,6 @@ pub fn app__is_game_running(state: State<'_, AppState>) -> Result<bool, AppError
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__set_game_client_runtime_state(state: State<'_, AppState>, current_location: String) {
-    state
-        .runtime_host()
-        .set_game_client_runtime_state(&current_location);
-}
-
-#[tauri::command]
-#[specta::specta]
 pub fn app__start_game(launch_arguments: String) -> Result<bool, AppError> {
     require_host_capability(HostCapability::GameLaunch)?;
     Ok(game_launch::start_game(&launch_arguments)?)

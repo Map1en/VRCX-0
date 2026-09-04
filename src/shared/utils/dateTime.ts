@@ -269,7 +269,8 @@ export function formatRelativeTimeWithPreferences(
 export function timeToTextWithLabels(
     sec: unknown,
     isNeedSeconds = false,
-    unitLabels: Partial<TimeUnitLabels> | undefined = undefined
+    unitLabels: Partial<TimeUnitLabels> | undefined = undefined,
+    separator = ' '
 ) {
     let n = Number(sec);
     if (!Number.isFinite(n)) {
@@ -307,7 +308,7 @@ export function timeToTextWithLabels(
     if (isNeedSeconds || (arr.length === 0 && n < SECONDS_PER_MINUTE)) {
         arr.push(`${n}${labels.s}`);
     }
-    return arr.join(' ');
+    return arr.join(separator);
 }
 
 export type {

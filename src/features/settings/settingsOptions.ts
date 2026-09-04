@@ -132,3 +132,16 @@ export const settingsTabs = [
     ['advanced', 'view.settings.category.advanced'],
     ['feedback', 'view.settings.category.feedback']
 ];
+
+export function resolveActiveSettingsTab(
+    requestedTab: string,
+    lastSettingsTab: string
+): string {
+    if (settingsTabs.some(([value]) => value === requestedTab)) {
+        return requestedTab;
+    }
+    if (settingsTabs.some(([value]) => value === lastSettingsTab)) {
+        return lastSettingsTab;
+    }
+    return 'system';
+}

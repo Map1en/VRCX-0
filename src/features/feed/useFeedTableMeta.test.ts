@@ -25,7 +25,6 @@ function createActions(): FeedFriendActions {
         addFeedHiddenUser: async () => {},
         removeFeedHiddenUser: async () => {},
         canUseFeedFriendLocation: () => false,
-        launchFeedFriendLocation: async () => {},
         selfInviteFeedFriendLocation: async () => {},
         sendFeedFriendInvite: async () => {},
         requestFeedFriendInvite: async () => {},

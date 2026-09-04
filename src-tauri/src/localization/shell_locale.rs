@@ -10,6 +10,7 @@ pub(crate) struct TrayLabels {
     pub(crate) do_not_disturb_until_stopped: String,
     pub(crate) do_not_disturb_turn_off: String,
     pub(crate) rebuild_ui: String,
+    pub(crate) sidebar_mode: String,
     pub(crate) disable_theme: String,
     pub(crate) exit: String,
 }
@@ -185,6 +186,7 @@ pub(crate) fn tray_labels_for_language(language: &str) -> TrayLabels {
         ),
         do_not_disturb_turn_off: text(language, ShellKey::NativeShellTrayDoNotDisturbTurnOff),
         rebuild_ui: text(language, ShellKey::NativeShellTrayRebuildUi),
+        sidebar_mode: text(language, ShellKey::NativeShellTraySidebarMode),
         disable_theme: text(language, ShellKey::NativeShellTrayDisableTheme),
         exit: text(language, ShellKey::NativeShellTrayExit),
     }

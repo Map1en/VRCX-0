@@ -181,8 +181,11 @@ export function useProfileBackupSettings(enabled: boolean) {
         setNumericDrafts((drafts) => ({ ...drafts, [key]: value }));
     }
 
-    async function commitNumericDraft(key: NumericProfileBackupSetting) {
-        const draft = numericDrafts[key];
+    async function commitNumericDraft(
+        key: NumericProfileBackupSetting,
+        committedValue?: string
+    ) {
+        const draft = committedValue ?? numericDrafts[key];
         if (draft === undefined) {
             return;
         }

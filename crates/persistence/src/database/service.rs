@@ -76,6 +76,7 @@ impl WalCheckpointResult {
 #[derive(Clone, Copy)]
 enum WalCheckpointMode {
     Passive,
+    Full,
     Truncate,
 }
 
@@ -83,6 +84,7 @@ impl WalCheckpointMode {
     fn sql(self) -> &'static str {
         match self {
             Self::Passive => "PRAGMA wal_checkpoint(PASSIVE);",
+            Self::Full => "PRAGMA wal_checkpoint(FULL);",
             Self::Truncate => "PRAGMA wal_checkpoint(TRUNCATE);",
         }
     }
@@ -141,15 +143,10 @@ impl DatabaseService {
                 .writer
                 .lock()
                 .map_err(|error| Error::Database(error.to_string()))?;
-            checkpoint(&writer)?;
+            let status = checkpoint_status(&writer, WalCheckpointMode::Full)?;
+            ensure_checkpoint_completed(status)?;
         }
         let db_bytes = fs::metadata(&self.db_path)?.len();
-        let wal_path = super::sidecar::sidecar_path(&self.db_path, "wal");
-        let wal_bytes = fs::metadata(&wal_path)
-            .ok()
-            .map(|metadata| metadata.len())
-            .filter(|bytes| *bytes > 0);
-        let wal_path = wal_bytes.map(|_| wal_path);
 
         let main = match std::mem::replace(&mut *inner, DatabaseMode::Closed) {
             DatabaseMode::Main(main) => main,
@@ -159,8 +156,8 @@ impl DatabaseService {
         Ok(FrozenDatabase {
             db_path: self.db_path.clone(),
             db_bytes,
-            wal_path,
-            wal_bytes,
+            wal_path: None,
+            wal_bytes: None,
         })
     }
 

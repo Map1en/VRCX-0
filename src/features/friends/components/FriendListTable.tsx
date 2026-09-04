@@ -9,6 +9,7 @@ import {
     DataTableColumnSortableContext,
     DataTableHeader,
     DataTablePagination,
+    DataTableRow,
     DataTableScrollArea,
     DataTableSurface,
     getDataTableSizingStyle
@@ -19,7 +20,7 @@ import {
     PageBody,
     PageFooter
 } from '@/components/layout/PageScaffold';
-import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
+import { Table, TableBody } from '@/ui/shadcn/table';
 
 import type { FriendListRow } from '../friendListRows';
 import { FriendListEmptyState } from './FriendListViewParts';
@@ -39,7 +40,7 @@ const FriendListTableRow = memo(
         const { t } = useTranslation();
 
         return (
-            <TableRow
+            <DataTableRow
                 className="cursor-pointer"
                 tabIndex={0}
                 aria-label={t('view.friend_list.dynamic.open_value', {
@@ -62,7 +63,7 @@ const FriendListTableRow = memo(
                         <ResizableTableCell key={cell.id} cell={cell} />
                     ))}
                 </DataTableColumnSortableContext>
-            </TableRow>
+            </DataTableRow>
         );
     },
     (previous, next) =>

@@ -1,8 +1,13 @@
-import { useEffect, useState } from 'react';
+import { PanelLeftIcon, PanelLeftOpenIcon, SettingsIcon } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
+import {
+    ShortcutHintPanel,
+    type ShortcutHintItem
+} from '@/components/keyboard/ShortcutHintPanel';
 import type { Dashboard } from '@/repositories/dashboardRepository';
 import { setNavbarCollapsedPreference } from '@/services/preferencesService';
 import { triggerToolByKey } from '@/services/toolActionService';
@@ -15,10 +20,12 @@ import { useSessionStore, type SessionPhase } from '@/state/sessionStore';
 import { useShellStore } from '@/state/shellStore';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 
+import { NavIcon } from './app-nav-menu/AppNavMenuIcons';
 import {
     isDashboardEntry,
     isEntryActive,
     isToolEntry,
+    labelForEntry,
     removeNavKeyFromLayout
 } from './AppNavMenuParts';
 import {
@@ -30,9 +37,11 @@ import type { CustomNavLayout } from './custom-nav-dialog/customNavLayout';
 import { CustomNavDialog } from './CustomNavDialog';
 import {
     getPathForNavEntry,
+    getNavShortcutEntries,
     loadNavMenuModel,
     NAV_CUSTOMIZE_REQUESTED_EVENT,
     NAV_LAYOUT_UPDATED_EVENT,
+    NAV_SHORTCUT_REQUESTED_EVENT,
     routePathByName,
     saveNavMenuModel,
     type NavDefinition,
@@ -364,6 +373,9 @@ export function AppNavMenu({ isCollapsed }: { isCollapsed: boolean }) {
     const location = useLocation();
     const { t } = useTranslation();
     const sidebarOpen = useShellStore((state) => state.sidebarOpen);
+    const shortcutHintsVisible = useShellStore(
+        (state) => state.shortcutHintsVisible
+    );
     const dashboards = useDashboardStore((state) => state.dashboards);
     const ensureDashboardsLoaded = useDashboardStore(
         (state) => state.ensureLoaded
@@ -392,6 +404,20 @@ export function AppNavMenu({ isCollapsed }: { isCollapsed: boolean }) {
         notificationLayout,
         preferencesHydrated
     });
+    const navShortcutEntries = useMemo(
+        () => getNavShortcutEntries(menuItems),
+        [menuItems]
+    );
+    const shortcutPositionByIndex = useMemo(
+        () =>
+            new Map(
+                navShortcutEntries.map(({ entry, position }) => [
+                    entry.index,
+                    position
+                ])
+            ),
+        [navShortcutEntries]
+    );
     const activeIndex = resolveActiveIndex(menuItems, location.pathname);
     const { hasNotifications, markAllRead, notifiedKeys } =
         useAppNavNotifications({
@@ -434,19 +460,71 @@ export function AppNavMenu({ isCollapsed }: { isCollapsed: boolean }) {
 
     const shouldShowCreateDashboard = showNewDashboardButton;
 
-    async function handleSelectEntry(entry: NavMenuItem) {
-        if (!entry) {
-            return;
+    const handleSelectEntry = useCallback(
+        async (entry: NavMenuItem) => {
+            if (entry.action?.type === 'tool') {
+                await triggerToolByKey(entry.action.toolKey, { navigate, t });
+                return;
+            }
+            const path = getPathForNavEntry(entry);
+            if (path) {
+                navigate(path);
+            }
+        },
+        [navigate, t]
+    );
+
+    useEffect(() => {
+        function handleNavShortcutRequested(event: Event) {
+            if (
+                !(event instanceof CustomEvent) ||
+                typeof event.detail !== 'number'
+            ) {
+                return;
+            }
+            const entry = navShortcutEntries[event.detail - 1]?.entry;
+            if (entry) {
+                void handleSelectEntry(entry);
+            }
         }
-        if (entry.action?.type === 'tool') {
-            await triggerToolByKey(entry.action.toolKey, { navigate, t });
-            return;
+
+        window.addEventListener(
+            NAV_SHORTCUT_REQUESTED_EVENT,
+            handleNavShortcutRequested
+        );
+        return () => {
+            window.removeEventListener(
+                NAV_SHORTCUT_REQUESTED_EVENT,
+                handleNavShortcutRequested
+            );
+        };
+    }, [handleSelectEntry, navShortcutEntries]);
+
+    const collapsedNavShortcutItems: ShortcutHintItem[] =
+        navShortcutEntries.map(({ entry, position }) => ({
+            icon: <NavIcon entry={entry} />,
+            id: `nav-${entry.index}`,
+            keys: String(position),
+            label: labelForEntry(entry, t)
+        }));
+    const collapsedNavUtilityItems: ShortcutHintItem[] = [
+        {
+            icon: <SettingsIcon />,
+            id: 'nav-settings',
+            keys: ',',
+            label: t('nav_tooltip.settings')
+        },
+        {
+            icon: sidebarOpen ? <PanelLeftIcon /> : <PanelLeftOpenIcon />,
+            id: 'nav-toggle',
+            keys: 'B',
+            label: t(
+                sidebarOpen
+                    ? 'nav_tooltip.collapse_nav'
+                    : 'nav_tooltip.expand_nav'
+            )
         }
-        const path = getPathForNavEntry(entry);
-        if (path) {
-            navigate(path);
-        }
-    }
+    ];
 
     async function handleCustomNavSave(
         nextLayout: CustomNavLayout,
@@ -499,6 +577,8 @@ export function AppNavMenu({ isCollapsed }: { isCollapsed: boolean }) {
             <AppNavMenuContent
                 menuItems={menuItems}
                 isCollapsed={isCollapsed}
+                shortcutHintsVisible={shortcutHintsVisible && !isCollapsed}
+                shortcutPositionByIndex={shortcutPositionByIndex}
                 activeIndex={activeIndex}
                 pathname={location.pathname}
                 notifiedKeys={notifiedKeys}
@@ -514,11 +594,22 @@ export function AppNavMenu({ isCollapsed }: { isCollapsed: boolean }) {
 
             <AppNavFooter
                 sidebarOpen={sidebarOpen}
+                settingsActive={location.pathname === routePathByName.settings}
+                shortcutHintsVisible={shortcutHintsVisible && !isCollapsed}
                 onNavigateSettings={() => navigate(routePathByName.settings)}
                 onToggleSidebar={() =>
                     setNavbarCollapsedPreference(sidebarOpen)
                 }
             />
+            {shortcutHintsVisible && isCollapsed ? (
+                <ShortcutHintPanel
+                    className="motion-safe:slide-in-from-left-1 fixed bottom-3 left-[calc(var(--sidebar-width-icon)+0.5rem)] origin-bottom-left"
+                    groups={[
+                        collapsedNavShortcutItems,
+                        collapsedNavUtilityItems
+                    ]}
+                />
+            ) : null}
             <CustomNavDialog
                 open={customNavDialogOpen}
                 layout={navLayout}

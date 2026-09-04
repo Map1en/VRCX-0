@@ -11,6 +11,41 @@ use crate::state::AppState;
 use vrcx_0_runtime_host_desktop::AutostartPlatform;
 
 const TRAY_ICON_DEFAULT: &[u8] = include_bytes!("../../../icons/icon.png");
+
+#[tauri::command]
+#[specta::specta]
+pub fn app__get_sidebar_auto_hide(
+    app_handle: AppHandle,
+) -> vrcx_0_runtime_host_desktop::sidebar_auto_hide::SidebarAutoHideSnapshot {
+    crate::bootstrap::sidebar_auto_hide::snapshot(&app_handle)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__set_sidebar_auto_hide(
+    app_handle: AppHandle,
+    enabled: bool,
+) -> Result<bool, AppError> {
+    crate::bootstrap::sidebar_auto_hide::set_enabled(app_handle, enabled).await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__set_sidebar_auto_hide_context(
+    app_handle: AppHandle,
+    context: vrcx_0_runtime_host_desktop::sidebar_auto_hide::SidebarAutoHideContext,
+) -> Result<(), AppError> {
+    crate::bootstrap::sidebar_auto_hide::set_context(app_handle, context).await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__suspend_sidebar_auto_hide(
+    app_handle: AppHandle,
+    suspended: bool,
+) -> Result<(), AppError> {
+    crate::bootstrap::sidebar_auto_hide::set_suspended(app_handle, suspended).await
+}
 const TRAY_ICON_NOTIFY: &[u8] = include_bytes!("../../../icons/icon_notify.png");
 static APPLICATION_EXIT_STARTED: AtomicBool = AtomicBool::new(false);
 static TRAY_ICON_DEFAULT_IMAGE: OnceLock<Option<tauri::image::Image<'static>>> = OnceLock::new();
@@ -45,6 +80,8 @@ fn request_application_exit_with(
 
 pub(crate) fn request_application_exit(app_handle: &AppHandle) {
     use tauri::Manager;
+
+    crate::bootstrap::sidebar_auto_hide::park(app_handle, true);
 
     request_application_exit_with(
         &APPLICATION_EXIT_STARTED,
@@ -81,6 +118,7 @@ fn finish_application_exit(app_handle: &AppHandle) {
 
 pub(crate) fn stop_runtime_services(app_handle: &AppHandle) {
     use tauri::Manager;
+    crate::bootstrap::sidebar_auto_hide::park(app_handle, true);
     if let Some(state) = app_handle.try_state::<AppState>() {
         state.log_watcher_compat_bridge().stop();
         state
@@ -117,8 +155,13 @@ pub fn app__language_changed(app_handle: AppHandle, language: String) -> Result<
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__set_tray_icon_notification(app_handle: AppHandle, notify: Option<bool>) {
-    let notify = notify.unwrap_or(false);
+pub fn app__set_tray_icon_notification(state: State<'_, AppState>, notify: Option<bool>) {
+    state
+        .runtime_host()
+        .set_frontend_tray_notification(notify.unwrap_or(false));
+}
+
+pub(crate) fn set_tray_icon_notification(app_handle: &AppHandle, notify: bool) {
     if let Some(tray) = app_handle.tray_by_id("main") {
         if let Some(icon) = tray_icon_image(notify) {
             let _ = tray.set_icon(Some(tauri::image::Image::new(

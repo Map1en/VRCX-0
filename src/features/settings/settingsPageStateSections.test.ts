@@ -387,7 +387,7 @@ describe('settingsPageStateSections', () => {
         );
     });
 
-    it('routes the hide-unfriend-event preference through the social section', () => {
+    it('routes Friend Log preferences through the social section', () => {
         const saveBoolPreference = vi.fn();
         const sections = buildSettingsPageStateSections(
             createInput({
@@ -398,8 +398,15 @@ describe('settingsPageStateSections', () => {
 
         expect('onHideUnfriendsChange' in sections.interface).toBe(false);
 
+        sections.social.onFriendLogNotificationDotChange(false);
         sections.social.onHideUnfriendsChange(true);
 
+        expect(saveBoolPreference).toHaveBeenNthCalledWith(
+            1,
+            'friendLogNotificationDot',
+            'friendLogNotificationDot',
+            false
+        );
         expect(saveBoolPreference).toHaveBeenCalledWith(
             'hideUnfriends',
             'hideUnfriends',

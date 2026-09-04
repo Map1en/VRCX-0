@@ -139,6 +139,7 @@ export function MutualFriendsSettingsSheet({
             />
             <SheetContent
                 side="right"
+                variant="inset"
                 showCloseButton={false}
                 className="w-90 gap-0"
             >

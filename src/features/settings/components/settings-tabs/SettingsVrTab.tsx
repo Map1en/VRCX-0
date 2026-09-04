@@ -2,7 +2,13 @@ import { useTranslation } from 'react-i18next';
 
 import type { PreferencesSnapshot } from '@/state/preferencesStore';
 import { Button } from '@/ui/shadcn/button';
-import { Input } from '@/ui/shadcn/input';
+import {
+    NumberField,
+    NumberFieldDecrement,
+    NumberFieldGroup,
+    NumberFieldIncrement,
+    NumberFieldInput
+} from '@/ui/shadcn/number-field';
 import {
     Select,
     SelectContent,
@@ -244,20 +250,25 @@ export function SettingsVrTabContent({
                     controlId="settings-notification-timeout"
                 >
                     <div className="flex items-center justify-end gap-2">
-                        <Input
+                        <NumberField
                             id="settings-notification-timeout"
-                            type="number"
                             min={0}
                             max={600}
                             step={1}
                             value={notificationTimeoutSeconds}
-                            className="w-24"
-                            onChange={(event) =>
+                            className="w-32"
+                            onValueChange={(value) =>
                                 onNotificationTimeoutSecondsChange(
-                                    event.target.value
+                                    value === null ? '' : String(value)
                                 )
                             }
-                        />
+                        >
+                            <NumberFieldGroup>
+                                <NumberFieldDecrement />
+                                <NumberFieldInput />
+                                <NumberFieldIncrement />
+                            </NumberFieldGroup>
+                        </NumberField>
                         <span className="text-muted-foreground w-8 text-sm">
                             s
                         </span>
@@ -382,21 +393,26 @@ export function SettingsVrTabContent({
                     disabled={!hmdNotificationsEnabled}
                 >
                     <div className="flex items-center justify-end gap-2">
-                        <Input
+                        <NumberField
                             id="settings-hmd-notification-timeout"
-                            type="number"
                             min={1}
                             max={30}
                             step={1}
                             value={hmdNotificationTimeoutSeconds}
                             disabled={!hmdNotificationsEnabled}
-                            className="w-24"
-                            onChange={(event) =>
+                            className="w-32"
+                            onValueChange={(value) =>
                                 onHmdNotificationTimeoutSecondsChange(
-                                    event.target.value
+                                    value === null ? '' : String(value)
                                 )
                             }
-                        />
+                        >
+                            <NumberFieldGroup>
+                                <NumberFieldDecrement />
+                                <NumberFieldInput />
+                                <NumberFieldIncrement />
+                            </NumberFieldGroup>
+                        </NumberField>
                         <span className="text-muted-foreground w-8 text-sm">
                             s
                         </span>

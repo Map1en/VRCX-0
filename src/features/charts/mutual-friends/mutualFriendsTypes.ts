@@ -48,11 +48,24 @@ export interface MutualFriendCommunity {
     size: number;
     color: string;
     label: string;
+    isNamed: boolean;
 }
 
 export interface MutualFriendCommunityAssignment {
     communityIndexById: Map<string, number>;
     communities: MutualFriendCommunity[];
+}
+
+export interface MutualFriendsIsolatedCounts {
+    noConnections: number;
+    unavailable: number;
+}
+
+export interface MutualFriendsCoverage {
+    friendCount: number;
+    fetchedCount: number;
+    unavailableCount: number;
+    lastFetchedAt: string | null;
 }
 
 export interface MutualFriendPickerOption {

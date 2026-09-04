@@ -6,6 +6,7 @@ import {
     safeJsonParse,
     writePersistedTableState
 } from '@/components/data-table/dataTablePersistence';
+import { DATE_AND_TYPE_SORT_COLUMN_IDS } from '@/components/data-table/sortRowsByDateAndType';
 import {
     FRIEND_LOG_TYPES,
     type FriendLogType
@@ -20,9 +21,6 @@ export const COLUMN_IDS = [
     'action',
     'trailing'
 ];
-const SORTING_COLUMN_IDS = COLUMN_IDS.filter(
-    (columnId) => columnId !== 'displayName'
-);
 
 const DEFAULT_SORTING: SortingState = [];
 const STORAGE_KEY = getDataTableStorageKey('friendLog');
@@ -47,7 +45,7 @@ export function sanitizeSorting(value: unknown): SortingState {
         const candidate = Object.fromEntries(Object.entries(entry));
         return (
             typeof candidate.id === 'string' &&
-            SORTING_COLUMN_IDS.includes(candidate.id)
+            DATE_AND_TYPE_SORT_COLUMN_IDS.includes(candidate.id)
         );
     });
 }

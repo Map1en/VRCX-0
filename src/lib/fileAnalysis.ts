@@ -1,7 +1,4 @@
-import type {
-    FileAnalysisRecord,
-    PlatformFileAnalysis
-} from '@/domain/entities/world';
+import type { PlatformFileAnalysis } from '@/domain/entities/world';
 import {
     entityQueryPolicies,
     fetchCachedData,
@@ -17,10 +14,6 @@ type UnityPackage = Record<string, unknown> & {
     platform?: string;
     unitySortNumber?: string | number;
     variant?: string;
-};
-
-type RepositoryResponse = {
-    json?: unknown;
 };
 
 type FileAnalysisOptions = {
@@ -63,28 +56,11 @@ function isAnalyzablePackage(
     return true;
 }
 
-function formatFileAnalysis(json: unknown): FileAnalysisRecord | null {
-    if (!isRecord(json)) {
+function fileAnalysisSize(json: unknown): string | null {
+    if (!isRecord(json) || !json.success) {
         return null;
     }
-    const source = json;
-    const avatarStats = isRecord(source.avatarStats)
-        ? source.avatarStats
-        : null;
-    return {
-        ...source,
-        ...(typeof source.fileSize !== 'undefined'
-            ? { _fileSize: formatMiB(source.fileSize) }
-            : {}),
-        ...(typeof source.uncompressedSize !== 'undefined'
-            ? { _uncompressedSize: formatMiB(source.uncompressedSize) }
-            : {}),
-        ...(typeof avatarStats?.totalTextureUsage !== 'undefined'
-            ? {
-                  _totalTextureUsage: formatMiB(avatarStats.totalTextureUsage)
-              }
-            : {})
-    };
+    return typeof json.fileSize === 'undefined' ? '' : formatMiB(json.fileSize);
 }
 
 export async function getFileAnalysisForUnityPackages({
@@ -125,22 +101,24 @@ export async function getFileAnalysisForUnityPackages({
             requests,
             async ([platform, { fileId, variant, version }]) => {
                 try {
-                    const response = await fetchCachedData<RepositoryResponse>({
+                    const fileSize = await fetchCachedData({
                         queryKey: queryKeys.fileAnalysis(
                             { fileId, version, variant },
                             endpoint
                         ),
                         policy: entityQueryPolicies.fileAnalysis,
-                        queryFn: () =>
-                            vrchatAuthRepository.getFileAnalysis({
-                                fileId,
-                                version,
-                                variant
-                            })
+                        queryFn: async () => {
+                            const response =
+                                await vrchatAuthRepository.getFileAnalysis({
+                                    fileId,
+                                    version,
+                                    variant
+                                });
+                            return fileAnalysisSize(response.json);
+                        }
                     });
-                    const analysis = formatFileAnalysis(response.json);
-                    if (analysis?.success) {
-                        result[platform] = analysis;
+                    if (fileSize !== null) {
+                        result[platform] = { _fileSize: fileSize };
                     }
                 } catch {
                     // no-op

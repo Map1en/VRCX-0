@@ -9,6 +9,17 @@ import {
 } from './preferencesStore';
 
 describe('preferencesStore normalizers', () => {
+    it('shows Friend Log notification dots by default and preserves an explicit opt-out', () => {
+        expect(DEFAULT_PREFERENCES.friendLogNotificationDot).toBe(true);
+        expect(normalizePreferenceSnapshot({}).friendLogNotificationDot).toBe(
+            true
+        );
+        expect(
+            normalizePreferenceSnapshot({ friendLogNotificationDot: false })
+                .friendLogNotificationDot
+        ).toBe(false);
+    });
+
     it('shows user dialog profile decorations by default and preserves an explicit opt-out', () => {
         expect(DEFAULT_PREFERENCES.showUserDialogProfileDecorations).toBe(true);
         expect(

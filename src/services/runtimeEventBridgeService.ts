@@ -30,7 +30,10 @@ import {
     bindDesktopNotificationActivationEvents,
     takePendingDesktopNotificationActivation
 } from './desktopNotificationActivationService';
-import { handleFavoriteImportStatusEvent } from './favoriteImportService';
+import {
+    handleFavoriteImportStatusEvent,
+    hydrateFavoriteImportRuntimeStatus
+} from './favoriteImportService';
 import { applyFriendProfileLoadStatusPayload } from './friendProfileLoadService';
 import { handleGroupBanImportStatusEvent } from './groupBanImportService';
 import { isHostCapabilityAvailable } from './hostCapabilityService';
@@ -64,6 +67,7 @@ import {
     handleGameClientEvent,
     handleGameLogPersistenceFallback,
     handleGameLogSideEffect,
+    getNowPlayingEventRevision,
     handleRuntimeGameLogProjection,
     handleUpdateIsGameRunning
 } from './runtime-event-bridge/gameRuntimeEventHandlers';
@@ -318,21 +322,29 @@ function gameRunningEventCount(): number {
 
 async function hydrateAncillaryRuntimeState(): Promise<void> {
     const gameRunningEventCountBeforeSnapshot = gameRunningEventCount();
+    const nowPlayingEventRevisionBeforeSnapshot = getNowPlayingEventRevision();
     const snapshot = await loadAncillaryRuntimeSnapshot();
     const gameProcessSnapshotIsStale =
         gameRunningEventCount() !== gameRunningEventCountBeforeSnapshot;
+    const nowPlayingSnapshotIsStale =
+        getNowPlayingEventRevision() !== nowPlayingEventRevisionBeforeSnapshot;
 
     const maintenance = hydrateRuntimeState(
         'Failed to run registry backup maintenance during hydration:',
         runForegroundUpdateRegistryBackupMaintenance
     );
+    const favoriteImport = hydrateRuntimeState(
+        'Failed to hydrate favorite import status:',
+        hydrateFavoriteImportRuntimeStatus
+    );
     if (!snapshot) {
-        await maintenance;
+        await Promise.all([maintenance, favoriteImport]);
         return;
     }
 
     await Promise.all([
         maintenance,
+        favoriteImport,
         hydrateRuntimeState(
             'Failed to hydrate community theme projection:',
             async () => {
@@ -392,6 +404,13 @@ async function hydrateAncillaryRuntimeState(): Promise<void> {
                 }
             }
         ),
+        hydrateRuntimeState('Failed to hydrate now playing state:', () => {
+            if (!nowPlayingSnapshotIsStale) {
+                useRuntimeStore
+                    .getState()
+                    .setNowPlayingState(snapshot.nowPlaying);
+            }
+        }),
         hydrateRuntimeState('Failed to hydrate background image state:', () =>
             initializeBackgroundImage(snapshot.backgroundImageState)
         ),

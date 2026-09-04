@@ -2,6 +2,15 @@ name: Release
 
 on:
     workflow_dispatch:
+        inputs:
+            expected_channel:
+                description: Release channel expected from the committed version
+                required: true
+                type: choice
+                default: stable
+                options:
+                    - stable
+                    - beta
 
 concurrency:
     group: ${{ github.ref }}-package
@@ -17,6 +26,9 @@ jobs:
         outputs:
             base_version: ${{ steps.version.outputs.base_version }}
             build_version: ${{ steps.version.outputs.build_version }}
+            channel: ${{ steps.version.outputs.channel }}
+            prerelease: ${{ steps.version.outputs.prerelease }}
+            beta_number: ${{ steps.version.outputs.beta_number }}
             display_version: ${{ steps.version.outputs.display_version }}
             tag: ${{ steps.version.outputs.tag }}
         steps:
@@ -39,6 +51,13 @@ jobs:
                   node scripts/prepare-release-version.ts \
                       --version "$version" \
                       --dry-run
+
+            - name: Validate selected release channel
+              run: |
+                  if [[ "${{ steps.version.outputs.channel }}" != "${{ inputs.expected_channel }}" ]]; then
+                      echo "Committed version belongs to ${{ steps.version.outputs.channel }}, not ${{ inputs.expected_channel }}." >&2
+                      exit 1
+                  fi
 
     package:
         name: ${{ matrix.label }}
@@ -123,6 +142,15 @@ jobs:
                   TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
                   VRCX_0_WEBKIT_BUILD_TARGET: ${{ matrix.webkit_build_target }}
               run: |
+                  override_config="${RUNNER_TEMP}/tauri-release-override.json"
+                  if [[ "${{ needs.prepare.outputs.channel }}" == "beta" ]]; then
+                      if [[ "$RUNNER_OS" == "Linux" ]]; then
+                          node -e "require('node:fs').writeFileSync(process.argv[1], JSON.stringify({ version: process.argv[2], bundle: { linux: { rpm: { release: '0.beta.' + process.argv[3] } } } }))" "$override_config" "${{ needs.prepare.outputs.base_version }}" "${{ needs.prepare.outputs.beta_number }}"
+                      else
+                          node -e "require('node:fs').writeFileSync(process.argv[1], JSON.stringify({ version: process.argv[2], bundle: { macOS: { bundleVersion: process.argv[3] } } }))" "$override_config" "${{ needs.prepare.outputs.base_version }}" "${{ github.run_number }}"
+                      fi
+                  fi
+
                   if [[ "$RUNNER_OS" == "Linux" ]]; then
                       VRCX_0_WEBKIT_BUILD_TARGET=safari17 \
                           npm run tauri:build -- \
@@ -131,10 +159,25 @@ jobs:
                       VRCX_0_WEBKIT_BUILD_TARGET=safari18.2 \
                           npm run tauri:build -- \
                           --config src-tauri/tauri.linux.conf.json \
-                          --bundles deb,rpm
+                          --bundles deb
+                      if [[ "${{ needs.prepare.outputs.channel }}" == "beta" ]]; then
+                          VRCX_0_WEBKIT_BUILD_TARGET=safari18.2 \
+                              npm run tauri:build -- \
+                              --config "$override_config" \
+                              --bundles rpm
+                      else
+                          VRCX_0_WEBKIT_BUILD_TARGET=safari18.2 \
+                              npm run tauri:build -- \
+                              --config src-tauri/tauri.linux.conf.json \
+                              --bundles rpm
+                      fi
                       exit 0
                   fi
-                  ${{ matrix.build_command }}
+                  if [[ "${{ needs.prepare.outputs.channel }}" == "beta" ]]; then
+                      ${{ matrix.build_command }} --config "$override_config"
+                  else
+                      ${{ matrix.build_command }}
+                  fi
 
             - name: Prepare Linux release and updater assets
               if: runner.os == 'Linux'
@@ -333,6 +376,7 @@ jobs:
                   name: ${{ needs.prepare.outputs.display_version }}
                   body: Draft release for ${{ needs.prepare.outputs.display_version }}.
                   draft: true
+                  prerelease: ${{ needs.prepare.outputs.prerelease }}
                   files: release-assets/*
                   fail_on_unmatched_files: true
                   overwrite_files: true

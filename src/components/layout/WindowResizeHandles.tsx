@@ -1,5 +1,6 @@
 import type { WindowResizeDirection } from '@/platform/tauri/webview';
 import { startResizeDraggingWindow } from '@/services/shellIntegrationService';
+import { useShellStore } from '@/state/shellStore';
 
 import { useWindowChromeState } from './useWindowChromeState';
 
@@ -48,8 +49,11 @@ const EDGE_HANDLES: ResizeHandle[] = [
 
 export function WindowResizeHandles() {
     const { docked } = useWindowChromeState();
+    const sidebarWindowMode = useShellStore(
+        (state) => state.windowDisplayMode === 'sidebar'
+    );
 
-    if (docked) {
+    if (docked && !sidebarWindowMode) {
         return null;
     }
 

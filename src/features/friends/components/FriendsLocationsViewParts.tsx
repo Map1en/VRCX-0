@@ -13,6 +13,7 @@ import type { FriendRecord } from '@/domain/friends/types';
 import { isSameInstanceLocation } from '@/domain/instances/instanceRoster';
 import { cn } from '@/lib/utils';
 import { normalizeLocationValue, parseLocation } from '@/shared/utils/location';
+import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 
@@ -98,11 +99,11 @@ export function FriendsLocationsSectionHeader({
     const { t } = useTranslation();
 
     return (
-        <div className="border-border/70 flex h-full min-h-0 flex-col gap-1.5 overflow-hidden rounded-lg border-b px-2 py-2 md:flex-row md:items-center md:justify-between">
+        <div className="flex h-full min-h-0 items-center justify-between gap-1.5 overflow-hidden px-2 py-2">
             <div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
                 <div className="flex min-w-0 items-center gap-2">
                     <LayersIcon className="text-muted-foreground size-4 shrink-0" />
-                    <div className="min-w-0 flex-1 truncate font-medium">
+                    <div className="min-w-0 truncate text-sm font-semibold">
                         {section.rawLocation &&
                         !section.key.startsWith('instance:offline') ? (
                             <Location
@@ -123,7 +124,10 @@ export function FriendsLocationsSectionHeader({
                     ) ? (
                         <CurrentInstanceBadge className="shrink-0" />
                     ) : null}
-                    <Badge variant="outline" className="shrink-0">
+                    <Badge
+                        variant="outline"
+                        className="text-muted-foreground shrink-0 font-normal tabular-nums"
+                    >
                         {section.friends.length}
                     </Badge>
                 </div>
@@ -168,7 +172,8 @@ export function FriendsLocationsCollapsibleGroupHeader({
         <Button
             type="button"
             variant="ghost"
-            className="h-auto w-full cursor-pointer justify-start gap-1.5 px-1 py-1.5 text-left text-sm font-semibold select-none"
+            className="aria-expanded:hover:bg-muted h-auto w-full cursor-pointer justify-start gap-2 px-2 py-1.5 text-left text-sm font-semibold select-none aria-expanded:bg-transparent"
+            aria-expanded={!section.collapsed}
             onClick={() => onToggle(section.groupKey)}
         >
             <ChevronDownIcon
@@ -178,10 +183,13 @@ export function FriendsLocationsCollapsibleGroupHeader({
                     section.collapsed && '-rotate-90'
                 )}
             />
-            <span className="min-w-0 truncate">{section.title}</span>
-            <span className="text-xs font-normal opacity-70">
-                ({section.friends.length})
-            </span>
+            <span className="min-w-0 truncate">{section.title}</span>{' '}
+            <Badge
+                variant="outline"
+                className="text-muted-foreground shrink-0 font-normal tabular-nums"
+            >
+                {section.friends.length}
+            </Badge>
         </Button>
     );
 }
@@ -203,16 +211,25 @@ export function FriendsLocationCardItem({
     onSendBoop
 }: FriendsLocationCardItemProps) {
     const { t } = useTranslation();
-    const location = resolveLocationSummary(friend, t);
-    const target = resolveLocationTarget(friend);
+    const locationTime = useFriendLocationTimeStore(
+        (state) => state.byUserId[friend.id]
+    );
+    const localLocation =
+        locationTime?.source === 'gameLog' ? locationTime.location : '';
+    const locationSource = localLocation ? { location: localLocation } : friend;
+    const location = resolveLocationSummary(locationSource, t);
+    const target = resolveLocationTarget(locationSource);
     const rawLocation = target.rawLocation;
-    const groupHint = resolveFriendGroupName(friend);
+    const groupHint = localLocation ? '' : resolveFriendGroupName(friend);
     const source = isFriendLocationSource(friend.ref) ? friend.ref : friend;
     const isTravelingLocation =
+        !localLocation &&
         normalizeId(source?.location).toLowerCase() === 'traveling';
-    const travelingLocation = normalizeLocationValue(
-        source?.travelingToLocation || source?.$travelingToLocation
-    );
+    const travelingLocation = localLocation
+        ? ''
+        : normalizeLocationValue(
+              source?.travelingToLocation || source?.$travelingToLocation
+          );
     const friendIsCurrentUser =
         normalizeId(friend?.id || friend?.userId) ===
         normalizeId(currentUserId);
@@ -223,7 +240,7 @@ export function FriendsLocationCardItem({
         .isRealInstance
         ? sectionLocation
         : '';
-    const timerLocation =
+    const fallbackTimerLocation =
         friendIsOnline &&
         (sectionInstanceLocation ||
             target.parsed.isRealInstance ||
@@ -232,11 +249,19 @@ export function FriendsLocationCardItem({
                 ? travelingLocation
                 : sectionInstanceLocation || rawLocation
             : '';
+    let timerLocation = fallbackTimerLocation;
+    if (locationTime) {
+        timerLocation =
+            locationTime.sinceMs !== null && (localLocation || friendIsOnline)
+                ? locationTime.location
+                : '';
+    }
 
     return (
         <FriendLocationCard
             friend={friend}
             location={{
+                source: locationTime?.source,
                 label: location.label,
                 groupHint,
                 raw: rawLocation,

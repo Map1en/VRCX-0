@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import {
+    act,
     cleanup,
     fireEvent,
     render,
@@ -13,7 +14,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     setRgb: vi.fn(),
-    triggerToolByKey: vi.fn(() => Promise.resolve())
+    triggerToolByKey: vi.fn(() => Promise.resolve()),
+    directAccessParse: vi.fn(() => Promise.resolve(false))
 }));
 
 class ResizeObserverMock {
@@ -46,6 +48,10 @@ vi.mock('@/services/vrcx0CssLayerService', () => ({
 
 vi.mock('@/services/toolActionService', () => ({
     triggerToolByKey: mocks.triggerToolByKey
+}));
+
+vi.mock('@/services/directAccessService', () => ({
+    directAccessParse: mocks.directAccessParse
 }));
 
 vi.mock('./quick-search/useQuickSearchHistory', () => ({
@@ -92,6 +98,8 @@ describe('QuickSearchDialog', () => {
     beforeEach(() => {
         mocks.setRgb.mockReset();
         mocks.triggerToolByKey.mockClear();
+        mocks.directAccessParse.mockReset();
+        mocks.directAccessParse.mockResolvedValue(false);
     });
 
     afterEach(() => {
@@ -157,6 +165,43 @@ describe('QuickSearchDialog', () => {
 
         expect(commandList?.className).toContain('max-h-[min(400px,50vh)]');
         expect(commandList?.className).not.toContain('max-h-none');
+    });
+
+    it('advertises direct access in the empty search slot', () => {
+        renderQuickSearch(vi.fn());
+
+        expect(
+            screen.getByText('side_panel.search_direct_access')
+        ).toBeTruthy();
+        expect(
+            screen.getByText('side_panel.search_scope_direct_access')
+        ).toBeTruthy();
+    });
+
+    it('offers a recognised link only after input settles', async () => {
+        vi.useFakeTimers({ shouldAdvanceTime: true });
+        mocks.directAccessParse.mockResolvedValue(true);
+        const onOpenChange = vi.fn();
+        const input = renderQuickSearch(onOpenChange);
+        const link =
+            'https://vrchat.com/home/world/wrld_12345678-1234-1234-1234-1234567890AB';
+
+        fireEvent.change(input, { target: { value: `  ${link}  ` } });
+        expect(screen.queryByText('side_panel.search_open_direct')).toBeNull();
+        expect(mocks.directAccessParse).not.toHaveBeenCalled();
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(600);
+        });
+
+        expect(mocks.directAccessParse).toHaveBeenCalledWith(link, 'detect');
+
+        fireEvent.click(screen.getByText('side_panel.search_open_direct'));
+
+        expect(mocks.directAccessParse).toHaveBeenLastCalledWith(link);
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+        expect(input.value).toBe('');
+        vi.useRealTimers();
     });
 
     it.each([

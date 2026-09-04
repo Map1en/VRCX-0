@@ -69,13 +69,18 @@ describe('friends locations config helpers', () => {
             value: 'standard',
             avatarSize: 44,
             gridMinWidth: 200,
-            rowHeight: 132,
-            statusOnlyRowHeight: 112,
+            rowHeight: 116,
+            statusOnlyRowHeight: 96,
             identityRowHeight: 64,
             locationLineClamp: 2,
             statusLineClamp: 1,
             showStatusDescription: true,
             layout: 'card'
+        });
+        expect(getFriendsLocationsDensityConfig('compact')).toMatchObject({
+            rowHeight: 104,
+            statusOnlyRowHeight: 80,
+            identityRowHeight: 56
         });
         expect(getFriendsLocationsDensityConfig('dense')).toMatchObject({
             value: 'dense',
@@ -90,8 +95,8 @@ describe('friends locations config helpers', () => {
         });
 
         const standard = getFriendsLocationsDensityConfig('standard');
-        expect(getFriendsLocationsCardRowHeight(standard, 'full')).toBe(132);
-        expect(getFriendsLocationsCardRowHeight(standard, 'status')).toBe(112);
+        expect(getFriendsLocationsCardRowHeight(standard, 'full')).toBe(116);
+        expect(getFriendsLocationsCardRowHeight(standard, 'status')).toBe(96);
         expect(getFriendsLocationsCardRowHeight(standard, 'identity')).toBe(64);
     });
 });

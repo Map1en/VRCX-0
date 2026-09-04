@@ -1,14 +1,14 @@
 import {
     BellIcon,
     CompassIcon,
-    MoonIcon,
+    KeyboardIcon,
     PanelLeftIcon,
     PanelLeftOpenIcon,
+    PanelRightDashedIcon,
     PanelRightIcon,
     PanelRightOpenIcon,
     SearchIcon,
-    SparklesIcon,
-    SunIcon
+    SparklesIcon
 } from 'lucide-react';
 import {
     type ComponentProps,
@@ -18,20 +18,27 @@ import {
     type ReactNode
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
 import { KeyboardShortcut } from '@/components/keyboard/KeyboardShortcut';
+import { ShortcutHintPanel } from '@/components/keyboard/ShortcutHintPanel';
 import { QuickSearchDialog } from '@/components/sidebar/QuickSearchDialog';
 import { cn } from '@/lib/utils';
 import {
     setNavbarCollapsedPreference,
     setThemeModePreference
 } from '@/services/preferencesService';
+import { useResolvedThemeMode } from '@/services/themeService';
 import {
     openOrInstallLatestAvailableUpdate,
     shouldShowUpdateUi
 } from '@/services/updateInstallService';
+import {
+    enterSidebarWindowMode,
+    restoreNormalWindowMode,
+    runAfterRestoringNormalWindow
+} from '@/services/windowModeService';
 import { getBuildBadgeLabel } from '@/shared/buildLabel';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
 import { useBackgroundImageStore } from '@/state/backgroundImageStore';
@@ -44,8 +51,9 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 import { useShellStore } from '@/state/shellStore';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
+import { AnimatedThemeToggler } from '@/ui/shadcn/animated-theme-toggler';
 import { Badge } from '@/ui/shadcn/badge';
-import { Button } from '@/ui/shadcn/button';
+import { Button, buttonVariants } from '@/ui/shadcn/button';
 import {
     ContextMenu,
     ContextMenuContent,
@@ -69,6 +77,9 @@ export function TitleBarButton({
 }: Omit<ComponentProps<typeof Button>, 'aria-label' | 'type' | 'variant'> & {
     label: string;
 }) {
+    const shortcutHintsVisible = useShellStore(
+        (state) => state.shortcutHintsVisible
+    );
     return (
         <Tooltip>
             <TooltipTrigger
@@ -89,7 +100,9 @@ export function TitleBarButton({
                     </Button>
                 }
             />
-            <TooltipContent>{label}</TooltipContent>
+            <TooltipContent hidden={shortcutHintsVisible}>
+                {label}
+            </TooltipContent>
         </Tooltip>
     );
 }
@@ -128,6 +141,9 @@ function formatTitleBarShortcutLabel(value: string, shortcutLabel: string) {
 interface TitleBarActionsResult {
     isSessionReady: boolean;
     actions: ReactNode;
+    sidebarWindowModeButton: ReactNode;
+    notificationAction: ReactNode;
+    themeToggleAction: ReactNode;
     quickSearchDialog: ReactNode;
     openQuickSearch: () => void;
     openDirectAccessFromClipboard: () => void;
@@ -141,6 +157,7 @@ export function useTitleBarActions(
 ): TitleBarActionsResult {
     const { t } = useTranslation();
     const location = useLocation();
+    const navigate = useNavigate();
     const [quickSearchOpen, setQuickSearchOpen] = useState(false);
     const { openDirectAccessFromClipboard } = useDirectAccessAction();
     const isSessionReady = useSessionStore(
@@ -172,7 +189,13 @@ export function useTitleBarActions(
         shouldShowUpdateUi(state.updateLoop)
     );
     const navbarOpen = useShellStore((state) => state.sidebarOpen);
-    const themeMode = useShellStore((state) => state.themeMode);
+    const sidebarWindowMode = useShellStore(
+        (state) => state.windowDisplayMode === 'sidebar'
+    );
+    const shortcutHintsVisible = useShellStore(
+        (state) => state.shortcutHintsVisible
+    );
+    const resolvedThemeMode = useResolvedThemeMode();
     const communityThemeEnabled = useCommunityThemeStore(
         (state) => state.enabled
     );
@@ -191,8 +214,9 @@ export function useTitleBarActions(
     } = useRightSidePanelVisibility(location.pathname);
 
     const isMacHost = hostPlatform === 'macos';
+    const notificationCenterEnabled = notificationLayout !== 'table';
     const notificationActionVisible =
-        isSessionReady && notificationLayout !== 'table';
+        isSessionReady && (sidebarWindowMode || notificationCenterEnabled);
     const themeToggleVisible =
         !backgroundImageEnabled &&
         !communityThemeControlsAppearance(
@@ -211,10 +235,33 @@ export function useTitleBarActions(
     const directAccessShortcutLabel = getTitleBarShortcutLabel(isMacHost, 'D');
     const quickSearchLabel = t('app_menu.quick_search');
     const directAccessLabel = t('prompt.direct_access_omni.header');
+    const sidebarWindowModeLabel = sidebarWindowMode
+        ? t('app_menu.restore_full_window')
+        : t('app_menu.enter_sidebar_mode');
 
     const openQuickSearch = useCallback(() => {
         setQuickSearchOpen(true);
     }, []);
+
+    const toggleSidebarWindowMode = useCallback(() => {
+        const transition = sidebarWindowMode
+            ? restoreNormalWindowMode()
+            : enterSidebarWindowMode();
+        void transition.catch((error: unknown) => {
+            console.warn('Failed to change the window display mode:', error);
+        });
+    }, [sidebarWindowMode]);
+
+    const sidebarWindowModeButton = (
+        <TitleBarButton
+            label={sidebarWindowModeLabel}
+            aria-pressed={sidebarWindowMode}
+            className="ml-1 size-7 min-w-7 rounded-md px-0"
+            onClick={toggleSidebarWindowMode}
+        >
+            <PanelRightDashedIcon data-icon="icon" />
+        </TitleBarButton>
+    );
 
     useEffect(() => {
         if (!isSessionReady) {
@@ -266,15 +313,21 @@ export function useTitleBarActions(
         }
     }
 
-    function toggleVrcNotificationCenter() {
-        setVrcNotificationCenterOpen(!isVrcNotificationCenterOpen);
+    function openNotifications() {
+        if (notificationCenterEnabled) {
+            setVrcNotificationCenterOpen(!isVrcNotificationCenterOpen);
+            return;
+        }
+        runAfterRestoringNormalWindow(() => {
+            void navigate('/notification');
+        });
     }
 
     const notificationButton = (
         <TitleBarButton
             label={t('side_panel.notification_center.title')}
             className="relative size-7 min-w-7 rounded-md px-0"
-            onClick={toggleVrcNotificationCenter}
+            onClick={openNotifications}
             onContextMenu={
                 vrcUnseenNotificationCount > 0
                     ? undefined
@@ -299,10 +352,66 @@ export function useTitleBarActions(
         </TitleBarButton>
     );
 
+    const notificationAction = notificationActionVisible ? (
+        vrcUnseenNotificationCount > 0 ? (
+            <ContextMenu>
+                <ContextMenuTrigger render={notificationButton} />
+                <ContextMenuContent className="w-48">
+                    <ContextMenuGroup>
+                        <ContextMenuItem
+                            onClick={() => {
+                                markAllNotificationsRead();
+                            }}
+                        >
+                            {t('nav_menu.mark_all_read')}
+                        </ContextMenuItem>
+                    </ContextMenuGroup>
+                </ContextMenuContent>
+            </ContextMenu>
+        ) : (
+            notificationButton
+        )
+    ) : null;
+
+    const themeToggleAction = themeToggleVisible ? (
+        <Tooltip>
+            <TooltipTrigger
+                render={
+                    <span className="inline-flex">
+                        <AnimatedThemeToggler
+                            theme={resolvedThemeMode}
+                            onThemeChange={(nextThemeMode) => {
+                                void setThemeModePreference(
+                                    nextThemeMode
+                                ).catch((error: unknown) => {
+                                    console.warn(
+                                        'Theme mode change failed:',
+                                        error
+                                    );
+                                });
+                            }}
+                            aria-label={themeToggleLabel}
+                            className={cn(
+                                buttonVariants({
+                                    variant: 'ghost',
+                                    size: 'icon-sm'
+                                }),
+                                'text-muted-foreground hover:bg-muted/40 hover:text-foreground size-7 min-w-7 rounded-md px-0'
+                            )}
+                        />
+                    </span>
+                }
+            />
+            <TooltipContent hidden={shortcutHintsVisible}>
+                {themeToggleLabel}
+            </TooltipContent>
+        </Tooltip>
+    ) : null;
+
     const actions = isSessionReady ? (
         <div
             className={cn(
-                'flex h-full min-w-0 shrink-0 items-center gap-1',
+                'relative flex h-full min-w-0 shrink-0 items-center gap-1',
                 actionsClassName
             )}
         >
@@ -349,7 +458,7 @@ export function useTitleBarActions(
                             </Button>
                         }
                     />
-                    <TooltipContent>
+                    <TooltipContent hidden={shortcutHintsVisible}>
                         {formatTitleBarShortcutLabel(
                             quickSearchLabel,
                             quickSearchShortcutLabel
@@ -367,26 +476,7 @@ export function useTitleBarActions(
                     <CompassIcon data-icon="icon" />
                 </TitleBarButton>
             </div>
-            {notificationActionVisible ? (
-                vrcUnseenNotificationCount > 0 ? (
-                    <ContextMenu>
-                        <ContextMenuTrigger render={notificationButton} />
-                        <ContextMenuContent className="w-48">
-                            <ContextMenuGroup>
-                                <ContextMenuItem
-                                    onClick={() => {
-                                        markAllNotificationsRead();
-                                    }}
-                                >
-                                    {t('nav_menu.mark_all_read')}
-                                </ContextMenuItem>
-                            </ContextMenuGroup>
-                        </ContextMenuContent>
-                    </ContextMenu>
-                ) : (
-                    notificationButton
-                )
-            ) : null}
+            {notificationAction}
             <TitleBarButton
                 label={t('assistant.title')}
                 className="size-7 min-w-7 rounded-md px-0"
@@ -394,23 +484,7 @@ export function useTitleBarActions(
             >
                 <SparklesIcon data-icon="icon" />
             </TitleBarButton>
-            {themeToggleVisible ? (
-                <TitleBarButton
-                    label={themeToggleLabel}
-                    className="size-7 min-w-7 rounded-md px-0"
-                    onClick={() => {
-                        setThemeModePreference(
-                            themeMode === 'light' ? 'dark' : 'light'
-                        );
-                    }}
-                >
-                    {themeMode === 'light' ? (
-                        <MoonIcon data-icon="icon" />
-                    ) : (
-                        <SunIcon data-icon="icon" />
-                    )}
-                </TitleBarButton>
-            ) : null}
+            {themeToggleAction}
             <TitleBarButton
                 label={leftSidebarLabel}
                 className="size-7 min-w-7 rounded-md px-0"
@@ -435,6 +509,54 @@ export function useTitleBarActions(
                     <PanelRightOpenIcon data-icon="icon" />
                 )}
             </TitleBarButton>
+            {sidebarWindowModeButton}
+            {shortcutHintsVisible ? (
+                <ShortcutHintPanel
+                    className="motion-safe:slide-in-from-top-1 absolute top-[calc(100%+0.5rem)] right-1 origin-top-right"
+                    groups={[
+                        [
+                            {
+                                icon: <SearchIcon />,
+                                id: 'titlebar-quick-search',
+                                keys: 'K',
+                                label: quickSearchLabel
+                            },
+                            {
+                                icon: <CompassIcon />,
+                                id: 'titlebar-direct-access',
+                                keys: 'D',
+                                label: directAccessLabel
+                            },
+                            {
+                                icon: navbarOpen ? (
+                                    <PanelLeftIcon />
+                                ) : (
+                                    <PanelLeftOpenIcon />
+                                ),
+                                id: 'titlebar-left-sidebar',
+                                keys: 'B',
+                                label: leftSidebarLabel
+                            },
+                            {
+                                icon: rightSidebarOpen ? (
+                                    <PanelRightIcon />
+                                ) : (
+                                    <PanelRightOpenIcon />
+                                ),
+                                id: 'titlebar-right-sidebar',
+                                keys: ['Shift', 'B'],
+                                label: rightSidebarLabel
+                            },
+                            {
+                                icon: <KeyboardIcon />,
+                                id: 'titlebar-keyboard-shortcuts',
+                                keys: '/',
+                                label: t('app_menu.keyboard_shortcuts')
+                            }
+                        ]
+                    ]}
+                />
+            ) : null}
         </div>
     ) : null;
 
@@ -453,6 +575,9 @@ export function useTitleBarActions(
         openDirectAccessFromClipboard,
         openNotificationCenter: openVrcNotificationCenter,
         toggleRightSidebar,
-        rightSidebarOpen
+        rightSidebarOpen,
+        sidebarWindowModeButton,
+        notificationAction,
+        themeToggleAction
     };
 }

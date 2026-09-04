@@ -1,25 +1,75 @@
+import { lazy } from 'react';
+
 import { InviteMessageTemplatesDialog } from '@/components/dialogs/InviteMessageDialog';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-import { AppLauncherDialog } from './tools-dialogs/AppLauncherDialog';
-import {
-    ExportAvatarsListDialog,
-    ExportDiscordNamesDialog,
-    ExportFriendsListDialog
-} from './tools-dialogs/ExportListDialogs';
-import { GroupCalendarDialog } from './tools-dialogs/GroupCalendarDialog';
-import { LlmEndpointsDialog } from './tools-dialogs/LlmEndpointsDialog';
-import { NoteExportDialog } from './tools-dialogs/NoteExportDialog';
-import {
-    PresenceInviteRequestsDialog,
-    PresenceRoomRulesDialog,
-    PresenceScheduleDialog
-} from './tools-dialogs/presence-automation/PresenceAutomationDialog';
-import { ProfileBackupDialog } from './tools-dialogs/ProfileBackupDialog';
+import { MountOnFirstOpen } from './MountOnFirstOpen';
 import {
     getCurrentUserId,
     getEndpoint
 } from './tools-dialogs/toolsDialogUtils';
+
+const AppLauncherDialog = lazy(() =>
+    import('./tools-dialogs/AppLauncherDialog').then((module) => ({
+        default: module.AppLauncherDialog
+    }))
+);
+const PresenceScheduleDialog = lazy(() =>
+    import('./tools-dialogs/presence-automation/PresenceAutomationDialog').then(
+        (module) => ({
+            default: module.PresenceScheduleDialog
+        })
+    )
+);
+const PresenceRoomRulesDialog = lazy(() =>
+    import('./tools-dialogs/presence-automation/PresenceAutomationDialog').then(
+        (module) => ({
+            default: module.PresenceRoomRulesDialog
+        })
+    )
+);
+const PresenceInviteRequestsDialog = lazy(() =>
+    import('./tools-dialogs/presence-automation/PresenceAutomationDialog').then(
+        (module) => ({
+            default: module.PresenceInviteRequestsDialog
+        })
+    )
+);
+const GroupCalendarDialog = lazy(() =>
+    import('./tools-dialogs/GroupCalendarDialog').then((module) => ({
+        default: module.GroupCalendarDialog
+    }))
+);
+const ExportDiscordNamesDialog = lazy(() =>
+    import('./tools-dialogs/ExportListDialogs').then((module) => ({
+        default: module.ExportDiscordNamesDialog
+    }))
+);
+const NoteExportDialog = lazy(() =>
+    import('./tools-dialogs/NoteExportDialog').then((module) => ({
+        default: module.NoteExportDialog
+    }))
+);
+const ExportFriendsListDialog = lazy(() =>
+    import('./tools-dialogs/ExportListDialogs').then((module) => ({
+        default: module.ExportFriendsListDialog
+    }))
+);
+const ExportAvatarsListDialog = lazy(() =>
+    import('./tools-dialogs/ExportListDialogs').then((module) => ({
+        default: module.ExportAvatarsListDialog
+    }))
+);
+const LlmEndpointsDialog = lazy(() =>
+    import('./tools-dialogs/LlmEndpointsDialog').then((module) => ({
+        default: module.LlmEndpointsDialog
+    }))
+);
+const ProfileBackupDialog = lazy(() =>
+    import('./tools-dialogs/ProfileBackupDialog').then((module) => ({
+        default: module.ProfileBackupDialog
+    }))
+);
 
 export function ToolsDialogsHost() {
     const presenceScheduleOpen = useRuntimeStore(
@@ -64,80 +114,104 @@ export function ToolsDialogsHost() {
 
     return (
         <>
-            <AppLauncherDialog
-                open={appLauncherOpen}
-                onOpenChange={(open: boolean) =>
-                    setSystemHostOpen('appLauncherOpen', open)
-                }
-            />
-            <PresenceScheduleDialog
-                open={presenceScheduleOpen}
-                onOpenChange={(open: boolean) =>
-                    setSystemHostOpen('presenceScheduleOpen', open)
-                }
-            />
-            <PresenceRoomRulesDialog
-                open={presenceRoomRulesOpen}
-                onOpenChange={(open: boolean) =>
-                    setSystemHostOpen('presenceRoomRulesOpen', open)
-                }
-            />
-            <PresenceInviteRequestsDialog
-                open={presenceInviteRequestsOpen}
-                onOpenChange={(open: boolean) =>
-                    setSystemHostOpen('presenceInviteRequestsOpen', open)
-                }
-            />
-            <GroupCalendarDialog
-                open={groupCalendarOpen}
-                onOpenChange={(open: boolean) =>
-                    setSystemHostOpen('groupCalendarOpen', open)
-                }
-            />
-            <ExportDiscordNamesDialog
-                open={exportDiscordNamesOpen}
-                onOpenChange={(open: boolean) =>
-                    setSystemHostOpen('exportDiscordNamesOpen', open)
-                }
-            />
-            <NoteExportDialog
-                open={noteExportOpen}
-                onOpenChange={(open: boolean) =>
-                    setSystemHostOpen('noteExportOpen', open)
-                }
-            />
-            <ExportFriendsListDialog
-                open={exportFriendsListOpen}
-                onOpenChange={(open: boolean) =>
-                    setSystemHostOpen('exportFriendsListOpen', open)
-                }
-            />
-            <ExportAvatarsListDialog
-                open={exportAvatarsListOpen}
-                onOpenChange={(open: boolean) =>
-                    setSystemHostOpen('exportAvatarsListOpen', open)
-                }
-            />
-            <InviteMessageTemplatesDialog
-                open={editInviteMessagesOpen}
-                onOpenChange={(open) =>
-                    setSystemHostOpen('editInviteMessagesOpen', open)
-                }
-                currentUserId={getCurrentUserId()}
-                endpoint={getEndpoint()}
-            />
-            <LlmEndpointsDialog
-                open={llmEndpointsOpen}
-                onOpenChange={(open) =>
-                    setSystemHostOpen('llmEndpointsOpen', open)
-                }
-            />
-            <ProfileBackupDialog
-                open={profileBackupOpen}
-                onOpenChange={(open) =>
-                    setSystemHostOpen('profileBackupOpen', open)
-                }
-            />
+            <MountOnFirstOpen open={appLauncherOpen}>
+                <AppLauncherDialog
+                    open={appLauncherOpen}
+                    onOpenChange={(open: boolean) =>
+                        setSystemHostOpen('appLauncherOpen', open)
+                    }
+                />
+            </MountOnFirstOpen>
+            <MountOnFirstOpen open={presenceScheduleOpen}>
+                <PresenceScheduleDialog
+                    open={presenceScheduleOpen}
+                    onOpenChange={(open: boolean) =>
+                        setSystemHostOpen('presenceScheduleOpen', open)
+                    }
+                />
+            </MountOnFirstOpen>
+            <MountOnFirstOpen open={presenceRoomRulesOpen}>
+                <PresenceRoomRulesDialog
+                    open={presenceRoomRulesOpen}
+                    onOpenChange={(open: boolean) =>
+                        setSystemHostOpen('presenceRoomRulesOpen', open)
+                    }
+                />
+            </MountOnFirstOpen>
+            <MountOnFirstOpen open={presenceInviteRequestsOpen}>
+                <PresenceInviteRequestsDialog
+                    open={presenceInviteRequestsOpen}
+                    onOpenChange={(open: boolean) =>
+                        setSystemHostOpen('presenceInviteRequestsOpen', open)
+                    }
+                />
+            </MountOnFirstOpen>
+            <MountOnFirstOpen open={groupCalendarOpen}>
+                <GroupCalendarDialog
+                    open={groupCalendarOpen}
+                    onOpenChange={(open: boolean) =>
+                        setSystemHostOpen('groupCalendarOpen', open)
+                    }
+                />
+            </MountOnFirstOpen>
+            <MountOnFirstOpen open={exportDiscordNamesOpen}>
+                <ExportDiscordNamesDialog
+                    open={exportDiscordNamesOpen}
+                    onOpenChange={(open: boolean) =>
+                        setSystemHostOpen('exportDiscordNamesOpen', open)
+                    }
+                />
+            </MountOnFirstOpen>
+            <MountOnFirstOpen open={noteExportOpen}>
+                <NoteExportDialog
+                    open={noteExportOpen}
+                    onOpenChange={(open: boolean) =>
+                        setSystemHostOpen('noteExportOpen', open)
+                    }
+                />
+            </MountOnFirstOpen>
+            <MountOnFirstOpen open={exportFriendsListOpen}>
+                <ExportFriendsListDialog
+                    open={exportFriendsListOpen}
+                    onOpenChange={(open: boolean) =>
+                        setSystemHostOpen('exportFriendsListOpen', open)
+                    }
+                />
+            </MountOnFirstOpen>
+            <MountOnFirstOpen open={exportAvatarsListOpen}>
+                <ExportAvatarsListDialog
+                    open={exportAvatarsListOpen}
+                    onOpenChange={(open: boolean) =>
+                        setSystemHostOpen('exportAvatarsListOpen', open)
+                    }
+                />
+            </MountOnFirstOpen>
+            <MountOnFirstOpen open={editInviteMessagesOpen}>
+                <InviteMessageTemplatesDialog
+                    open={editInviteMessagesOpen}
+                    onOpenChange={(open) =>
+                        setSystemHostOpen('editInviteMessagesOpen', open)
+                    }
+                    currentUserId={getCurrentUserId()}
+                    endpoint={getEndpoint()}
+                />
+            </MountOnFirstOpen>
+            <MountOnFirstOpen open={llmEndpointsOpen}>
+                <LlmEndpointsDialog
+                    open={llmEndpointsOpen}
+                    onOpenChange={(open) =>
+                        setSystemHostOpen('llmEndpointsOpen', open)
+                    }
+                />
+            </MountOnFirstOpen>
+            <MountOnFirstOpen open={profileBackupOpen}>
+                <ProfileBackupDialog
+                    open={profileBackupOpen}
+                    onOpenChange={(open) =>
+                        setSystemHostOpen('profileBackupOpen', open)
+                    }
+                />
+            </MountOnFirstOpen>
         </>
     );
 }

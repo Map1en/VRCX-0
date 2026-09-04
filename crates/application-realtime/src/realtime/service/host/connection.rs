@@ -216,7 +216,13 @@ impl RealtimeHostRuntime {
             state.automation.invite.clear_all();
             let friend_user_ids =
                 if let Some(friends_by_id) = pending_friends.or_else(|| supplied_friends.take()) {
-                    self.friends.clear();
+                    if self
+                        .friends
+                        .session_context()
+                        .is_some_and(|previous| previous != session)
+                    {
+                        self.friends.clear();
+                    }
                     let friend_user_ids = friends_by_id.keys().cloned().collect::<Vec<_>>();
                     self.friends.set_baseline(
                         FriendRosterBaseline {
@@ -228,8 +234,6 @@ impl RealtimeHostRuntime {
                         generation,
                         0,
                     );
-                    pending_projection.location_time_snapshot =
-                        Some(self.deps.instance_dwell.snapshot());
                     friend_user_ids
                 } else {
                     let Some(friend_user_ids) = self
@@ -246,6 +250,7 @@ impl RealtimeHostRuntime {
                     };
                     friend_user_ids
                 };
+            pending_projection.location_time_snapshot = Some(self.deps.instance_dwell.snapshot());
             state.connection.active_context = Some(ActiveRealtimeContext {
                 session: session.clone(),
                 auth_scope_generation,
@@ -265,21 +270,15 @@ impl RealtimeHostRuntime {
             .baseline_causal_watermark()
             .baseline_revision
             .unwrap_or(0);
-        if !pending_projection.patches.is_empty()
-            || !pending_projection.removals.is_empty()
-            || pending_projection.friend_log_changed
-            || pending_projection.location_time_snapshot.is_some()
-        {
-            pending_projection.generation = generation;
-            pending_projection.baseline_revision = baseline_revision;
-            self.apply_friend_output_owned(
-                &friend_owner,
-                RealtimeFriendOutput::from_projection(
-                    OwnerId::new(session.user_id.clone()),
-                    pending_projection,
-                ),
-            );
-        }
+        pending_projection.generation = generation;
+        pending_projection.baseline_revision = baseline_revision;
+        self.apply_friend_output_owned(
+            &friend_owner,
+            RealtimeFriendOutput::from_projection(
+                OwnerId::new(session.user_id.clone()),
+                pending_projection,
+            ),
+        );
         self.apply_reconciled_friend_feed_entries_owned(
             &friend_owner,
             &OwnerId::new(session.user_id.clone()),
@@ -569,7 +568,17 @@ impl RealtimeHostRuntime {
                 None => {
                     if !request.has_scope() {
                         state.connection.generation = state.connection.generation.saturating_add(1);
+                        state.friend_baseline.pending = None;
+                        state.friend_profile.refetches.clear();
+                        state.world_enrichment.fetches.clear();
+                        state.world_enrichment.inflight.clear();
+                        state.world_enrichment.pending_corrections.clear();
                         let _ = self.cancel_tx.send(state.connection.generation);
+                        self.deps.session.clear_realtime_context();
+                        if self.friends.session_context().is_some() {
+                            self.friends.clear();
+                        }
+                        self.current_user.clear();
                     }
                     None
                 }
@@ -622,6 +631,12 @@ impl RealtimeHostRuntime {
         )) = stopped
         else {
             self.cancel_friend_profile_bulk_load_for_stop_request(&request);
+            if !request.has_scope() {
+                self.user_cache.clear();
+                self.user_query_cache.clear();
+                self.world_cache.clear_working();
+                self.reset_feed_live_cache();
+            }
             return;
         };
         self.cancel_friend_profile_bulk_load_for_session(&stopped_active.session);

@@ -50,7 +50,8 @@ pub use database::schema::{
     VRCX0_SCHEMA_VERSION_KEY,
 };
 pub use database::{
-    optimize_database, DatabaseService, DatabaseUpgradeStatus, FrozenDatabase, WalCheckpointResult,
+    database_scale_estimate, optimize_database, DatabaseScaleEstimate, DatabaseService,
+    DatabaseUpgradeStatus, FrozenDatabase, WalCheckpointResult,
 };
 pub use error::{Error, SqliteErrorCategory};
 

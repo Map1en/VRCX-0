@@ -2,7 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useNavigate, useParams } from 'react-router';
 
-import { DataTableScrollArea } from '@/components/data-table/DataTableView';
+import {
+    DATA_TABLE_CONTROL_CELL_CLASS_NAME,
+    DataTableCell,
+    DataTableHead,
+    DataTableHeaderRow,
+    DataTableRow,
+    DataTableScrollArea
+} from '@/components/data-table/DataTableView';
 import { useLocalWorldFavorites } from '@/components/favorites/useLocalWorldFavorites';
 import {
     PageBackButton,
@@ -47,14 +54,7 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow
-} from '@/ui/shadcn/table';
+import { Table, TableBody, TableHeader } from '@/ui/shadcn/table';
 import { Textarea } from '@/ui/shadcn/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 
@@ -388,40 +388,40 @@ export function FavoriteImportPage() {
                     ) : null}
                 </div>
 
-                <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border">
+                <div className="app-data-table flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border">
                     <DataTableScrollArea className="[scrollbar-gutter:stable]">
                         <Table>
                             <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-16">
+                                <DataTableHeaderRow>
+                                    <DataTableHead className="w-16">
                                         {t(
                                             'dialog.favorite_import.label.image'
                                         )}
-                                    </TableHead>
-                                    <TableHead>
+                                    </DataTableHead>
+                                    <DataTableHead>
                                         {t('dialog.favorite_import.label.name')}
-                                    </TableHead>
-                                    <TableHead>
+                                    </DataTableHead>
+                                    <DataTableHead>
                                         {t(
                                             'dialog.favorite_import.label.detail'
                                         )}
-                                    </TableHead>
-                                    <TableHead>ID</TableHead>
-                                    <TableHead className="w-36 text-right">
+                                    </DataTableHead>
+                                    <DataTableHead>ID</DataTableHead>
+                                    <DataTableHead className="w-36 text-right">
                                         {t(
                                             'dialog.favorite_import.label.actions'
                                         )}
-                                    </TableHead>
-                                </TableRow>
+                                    </DataTableHead>
+                                </DataTableHeaderRow>
                             </TableHeader>
                             <TableBody>
                                 {rows.length > 0 ? (
                                     rows.map((row) => (
-                                        <TableRow
+                                        <DataTableRow
                                             key={row.id}
                                             className="animate-in fade-in slide-in-from-bottom-1 duration-200 ease-out motion-reduce:animate-none"
                                         >
-                                            <TableCell>
+                                            <DataTableCell>
                                                 {getRowImage(row) ? (
                                                     <FadeInImage
                                                         alt=""
@@ -434,17 +434,19 @@ export function FavoriteImportPage() {
                                                 ) : (
                                                     <div className="bg-muted size-10 rounded" />
                                                 )}
-                                            </TableCell>
-                                            <TableCell>
+                                            </DataTableCell>
+                                            <DataTableCell>
                                                 {getRowName(activeKind, row)}
-                                            </TableCell>
-                                            <TableCell className="max-w-72 truncate">
+                                            </DataTableCell>
+                                            <DataTableCell className="max-w-72 truncate">
                                                 {getRowDetail(activeKind, row)}
-                                            </TableCell>
-                                            <TableCell className="font-mono text-xs">
+                                            </DataTableCell>
+                                            <DataTableCell className="font-mono text-xs">
                                                 {row.id}
-                                            </TableCell>
-                                            <TableCell className="text-right">
+                                            </DataTableCell>
+                                            <DataTableCell
+                                                className={`${DATA_TABLE_CONTROL_CELL_CLASS_NAME} text-right`}
+                                            >
                                                 <div className="flex justify-end gap-2">
                                                     <Button
                                                         size="xs"
@@ -472,12 +474,12 @@ export function FavoriteImportPage() {
                                                         )}
                                                     </Button>
                                                 </div>
-                                            </TableCell>
-                                        </TableRow>
+                                            </DataTableCell>
+                                        </DataTableRow>
                                     ))
                                 ) : (
-                                    <TableRow>
-                                        <TableCell
+                                    <DataTableRow>
+                                        <DataTableCell
                                             colSpan={5}
                                             className="text-muted-foreground h-24 text-center"
                                         >
@@ -488,8 +490,8 @@ export function FavoriteImportPage() {
                                             {t(
                                                 'dialog.favorite_import.label.rows_yet'
                                             )}
-                                        </TableCell>
-                                    </TableRow>
+                                        </DataTableCell>
+                                    </DataTableRow>
                                 )}
                             </TableBody>
                         </Table>

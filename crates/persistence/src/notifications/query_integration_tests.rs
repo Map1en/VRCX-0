@@ -4,8 +4,8 @@ use serde_json::json;
 
 use super::{
     notification_add_v1, notification_add_v2, notification_friend_requests_sync,
-    notification_list_query, notification_mark_seen, NotificationListItemOutput,
-    NotificationListQueryInput,
+    notification_has_unseen_action_required, notification_list_query, notification_mark_seen,
+    NotificationListItemOutput, NotificationListQueryInput,
 };
 use crate::{DatabaseService, Error};
 
@@ -266,5 +266,56 @@ fn seen_v1_friend_request_stays_seen_when_remote_sync_keeps_it_active() -> Resul
     assert_eq!(rows.len(), 1);
     assert!(rows[0].seen);
     assert!(!rows[0].expired);
+    Ok(())
+}
+
+#[test]
+fn unseen_indicator_matches_frontend_action_required_rules() -> Result<(), Error> {
+    let (_dir, db) = test_db("unseen-indicator")?;
+    let user_id = "usr_owner";
+    add_v1(
+        &db,
+        user_id,
+        "legacy_invite",
+        "2026-09-01T00:00:00Z",
+        "invite",
+    )?;
+    assert!(!notification_has_unseen_action_required(&db, user_id)?);
+
+    notification_add_v1(
+        &db,
+        user_id.into(),
+        json!({
+            "id": "friend_request",
+            "createdAt": "2026-09-01T00:00:01Z",
+            "type": "friendRequest",
+            "senderUserId": "usr_sender"
+        }),
+    )?;
+    assert!(notification_has_unseen_action_required(&db, user_id)?);
+
+    notification_mark_seen(&db, user_id.into(), "friend_request".into(), 1)?;
+    assert!(!notification_has_unseen_action_required(&db, user_id)?);
+
+    add_v2(
+        &db,
+        user_id,
+        "unseen_v2",
+        "2026-09-01T00:00:02Z",
+        false,
+        "2099-01-01T00:00:00Z",
+    )?;
+    assert!(notification_has_unseen_action_required(&db, user_id)?);
+
+    notification_mark_seen(&db, user_id.into(), "unseen_v2".into(), 2)?;
+    add_v2(
+        &db,
+        user_id,
+        "expired_v2",
+        "2026-09-01T00:00:03Z",
+        false,
+        "2000-01-01T00:00:00Z",
+    )?;
+    assert!(!notification_has_unseen_action_required(&db, user_id)?);
     Ok(())
 }

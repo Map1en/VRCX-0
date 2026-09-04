@@ -447,7 +447,18 @@ export function GroupCalendarDialog({
     }
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog
+            open={open}
+            onOpenChange={onOpenChange}
+            onOpenChangeComplete={(nextOpen) => {
+                if (!nextOpen && !open) {
+                    setEvents([]);
+                    setFollowingIds([]);
+                    setGroupNames({});
+                    setGroupProfiles({});
+                }
+            }}
+        >
             <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-5xl">
                 <DialogHeader>
                     <DialogTitle>

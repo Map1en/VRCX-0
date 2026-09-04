@@ -100,11 +100,13 @@ describe('realtimeRosterUpdateQueue', () => {
             {
                 userId: 'usr_friend',
                 location: 'wrld_first:1',
+                source: 'realtime',
                 sinceMs: 1_700_000_000_000
             },
             {
                 userId: 'usr_removed',
                 location: 'wrld_removed:1',
+                source: 'realtime',
                 sinceMs: 1_700_000_000_000
             }
         ]);
@@ -112,6 +114,7 @@ describe('realtimeRosterUpdateQueue', () => {
             {
                 userId: 'usr_friend',
                 location: 'wrld_second:2',
+                source: 'realtime',
                 sinceMs: 1_700_000_100_000
             }
         ]);
@@ -124,6 +127,7 @@ describe('realtimeRosterUpdateQueue', () => {
         expect(useFriendLocationTimeStore.getState().byUserId).toEqual({
             usr_friend: {
                 location: 'wrld_second:2',
+                source: 'realtime',
                 sinceMs: 1_700_000_100_000
             }
         });
@@ -134,6 +138,7 @@ describe('realtimeRosterUpdateQueue', () => {
             {
                 userId: 'usr_friend',
                 location: 'wrld_old:1',
+                source: 'realtime',
                 sinceMs: 1_700_000_000_000
             }
         ]);

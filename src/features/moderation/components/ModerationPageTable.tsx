@@ -7,13 +7,14 @@ import {
     DataTableColumnSortableContext,
     DataTableHeader,
     DataTablePagination,
+    DataTableRow,
     DataTableScrollArea,
     DataTableSurface,
     getDataTableSizingStyle
 } from '@/components/data-table/DataTableView';
 import { ResizableTableCell } from '@/components/data-table/ResizableTableParts';
 import { PageFooter } from '@/components/layout/PageScaffold';
-import { Table, TableBody, TableRow } from '@/ui/shadcn/table';
+import { Table, TableBody } from '@/ui/shadcn/table';
 
 import type {
     ModerationPaginationState,
@@ -43,14 +44,14 @@ export function ModerationPageTable({
                 <DataTableScrollArea>
                     <DataTableColumnDndProvider table={table}>
                         <Table
-                            className="app-data-table table-fixed"
+                            className="table-fixed"
                             style={getDataTableSizingStyle(table)}
                         >
                             <DataTableColumnSizeColGroup table={table} />
                             <DataTableHeader table={table} />
                             <TableBody>
                                 {table.getRowModel().rows.map((row) => (
-                                    <TableRow key={row.id}>
+                                    <DataTableRow key={row.id}>
                                         <DataTableColumnSortableContext
                                             table={table}
                                         >
@@ -63,7 +64,7 @@ export function ModerationPageTable({
                                                     />
                                                 ))}
                                         </DataTableColumnSortableContext>
-                                    </TableRow>
+                                    </DataTableRow>
                                 ))}
                             </TableBody>
                         </Table>

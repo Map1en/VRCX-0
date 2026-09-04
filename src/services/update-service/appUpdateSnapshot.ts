@@ -18,12 +18,11 @@ export function toNormalizedReleaseFromSnapshot(
         manifestUrl: release.manifestUrl || undefined,
         target: release.target || undefined,
         canonicalVersion: release.canonicalVersion,
-        channel: 'Stable',
+        channel: release.channel,
         displayVersion: release.displayVersion,
         htmlUrl: release.htmlUrl,
         tagName: release.tagName,
         displayName: release.displayName,
-        prerelease: false,
         publishedAt: release.publishedAt,
         body: release.body,
         updaterType: release.updaterType === 'tauri' ? 'tauri' : 'manual'

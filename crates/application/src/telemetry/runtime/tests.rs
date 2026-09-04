@@ -8,6 +8,7 @@ struct FakeEnvironment {
     values: Mutex<HashMap<String, String>>,
     errors: Mutex<Vec<TelemetryClientErrorInput>>,
     unavailable: AtomicBool,
+    scale: Mutex<TelemetryDatabaseScale>,
 }
 
 impl FakeEnvironment {
@@ -90,6 +91,10 @@ impl TelemetryEnvironment for FakeEnvironment {
         Some("UTC".into())
     }
 
+    fn database_scale(&self) -> TelemetryDatabaseScale {
+        *self.scale.lock().unwrap()
+    }
+
     fn system_theme_category(&self) -> String {
         "dark".into()
     }
@@ -133,12 +138,20 @@ impl TelemetryTransport for FakeTransport {
 }
 
 fn runtime(environment: Arc<FakeEnvironment>, transport: Arc<FakeTransport>) -> TelemetryRuntime {
+    runtime_with_version(environment, transport, "2.2.0")
+}
+
+fn runtime_with_version(
+    environment: Arc<FakeEnvironment>,
+    transport: Arc<FakeTransport>,
+    app_version: &str,
+) -> TelemetryRuntime {
     TelemetryRuntime::new(TelemetryRuntimeDeps {
         environment,
         transport,
         tasks: TaskSupervisor::new(),
         backend_runtime: BackendRuntime::new(vrcx_0_application_core::RuntimeHostProfile::Desktop),
-        app_version: "2.2.0".into(),
+        app_version: app_version.into(),
     })
 }
 
@@ -212,6 +225,20 @@ fn helpers_normalize_config_and_dimension_values() {
     assert_eq!(normalize_app_version(""), "unknown");
 }
 
+#[tokio::test]
+async fn feedback_includes_the_full_beta_app_version() {
+    let environment = Arc::new(FakeEnvironment::default());
+    let transport = Arc::new(FakeTransport::new(None));
+    let runtime = runtime_with_version(environment, transport.clone(), "2.3.0-beta.12");
+
+    runtime.submit_feedback("Beta feedback").await.unwrap();
+
+    let payloads = transport.payloads.lock().unwrap();
+    assert_eq!(payloads.len(), 1);
+    assert_eq!(payloads[0].0, "/api/v1/telemetry/feedback");
+    assert_eq!(payloads[0].1["appVersion"], "2.3.0-beta.12");
+}
+
 #[test]
 fn cursor_acknowledgement_only_clears_the_matching_snapshot() {
     let mut pending = Some("2026-07-13T10:00:00Z".to_string());
@@ -281,7 +308,7 @@ async fn immediate_rust_error_flush_only_sends_sanitized_client_errors() {
         .unwrap()
         .push(TelemetryClientErrorInput {
             ts_iso: "2026-07-01T00:00:00.000Z".into(),
-            app_version: Some("2.2.0".into()),
+            app_version: Some("2.2.0-beta.3".into()),
             source: "rust:tracing".into(),
             fingerprint_message:
                 "database upgrade failed: C:\\Users\\alice\\AppData\\secret.sqlite3".into(),
@@ -298,6 +325,7 @@ async fn immediate_rust_error_flush_only_sends_sanitized_client_errors() {
     assert_eq!(payloads[0].0, "/api/v1/telemetry/client-error");
     let encoded = payloads[0].1.to_string();
     assert!(encoded.contains("database upgrade failed"));
+    assert!(encoded.contains("2.2.0-beta.3"));
     assert!(!encoded.contains("alice"));
     assert!(!encoded.contains("secret.sqlite3"));
     assert_eq!(

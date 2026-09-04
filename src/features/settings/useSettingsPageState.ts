@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -42,7 +42,7 @@ import {
 import { useShellStore } from '@/state/shellStore';
 
 import { buildFavoriteFriendGroupOptions } from './settingsFavoriteGroupOptions';
-import { settingsTabs } from './settingsOptions';
+import { resolveActiveSettingsTab } from './settingsOptions';
 import { buildSettingsPageStateSections } from './settingsPageStateSections';
 import {
     useAvatarProviderConfig,
@@ -75,6 +75,10 @@ type SettingsIntegrationBoolKey = Extract<
 export function useSettingsPageState() {
     const locale = useShellStore((state) => state.locale);
     const zoomLevel = useShellStore((state) => state.zoomLevel);
+    const lastSettingsTab = useShellStore((state) => state.lastSettingsTab);
+    const setLastSettingsTab = useShellStore(
+        (state) => state.setLastSettingsTab
+    );
     const favoriteFriendGroups = useFavoriteStore(
         (state) => state.favoriteFriendGroups
     );
@@ -139,13 +143,22 @@ export function useSettingsPageState() {
         useState(false);
     const [searchParams, setSearchParams] = useSearchParams();
     const requestedTab = searchParams.get('tab') ?? '';
-    const activeSettingsTab = settingsTabs.some(
-        ([value]) => value === requestedTab
-    )
-        ? requestedTab
-        : 'system';
+    const activeSettingsTab = resolveActiveSettingsTab(
+        requestedTab,
+        lastSettingsTab
+    );
+
+    useEffect(() => {
+        if (
+            requestedTab === activeSettingsTab &&
+            requestedTab !== lastSettingsTab
+        ) {
+            setLastSettingsTab(requestedTab);
+        }
+    }, [activeSettingsTab, lastSettingsTab, requestedTab, setLastSettingsTab]);
 
     function setActiveSettingsTab(tab: string) {
+        setLastSettingsTab(tab);
         setSearchParams(
             (current) => {
                 current.set('tab', tab);

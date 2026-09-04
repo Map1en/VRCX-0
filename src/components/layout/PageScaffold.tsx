@@ -91,7 +91,7 @@ export function PageTitle({
     return (
         <h1
             className={cn(
-                'font-heading text-foreground text-base leading-5 font-medium',
+                'font-heading text-foreground text-base leading-5 font-medium text-balance',
                 className
             )}
         >
@@ -105,7 +105,12 @@ export function PageDescription({
     children
 }: ComponentPropsWithoutRef<'p'>) {
     return (
-        <p className={cn('text-muted-foreground text-sm', className)}>
+        <p
+            className={cn(
+                'text-content-secondary text-sm text-pretty',
+                className
+            )}
+        >
             {children}
         </p>
     );
@@ -176,7 +181,7 @@ export function PageFooter({
     return (
         <div
             className={cn(
-                'flex shrink-0 flex-col gap-3 md:flex-row md:items-center md:justify-between',
+                'text-content-tertiary flex shrink-0 flex-col gap-3 tabular-nums md:flex-row md:items-center md:justify-between',
                 className
             )}
         >

@@ -1,6 +1,6 @@
 [package]
 name = "vrcx-0"
-version = "2.27.0"
+version = "2.27.2"
 edition = "2021"
 license.workspace = true
 description = "VRCX-0 desktop shell"
@@ -16,6 +16,7 @@ async-trait = { workspace = true }
 tauri = { version = "2", features = ["tray-icon", "image-ico", "macos-proxy"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
+semver = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

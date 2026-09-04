@@ -1,4 +1,4 @@
-import { CheckIcon, MoreHorizontalIcon, Trash2Icon } from 'lucide-react';
+import { CheckCheckIcon, MoreHorizontalIcon, Trash2Icon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -274,7 +274,7 @@ export function NotificationRow({
                                                     )
                                                 }
                                             >
-                                                <CheckIcon data-icon="inline-start" />
+                                                <CheckCheckIcon data-icon="inline-start" />
                                                 {t(
                                                     'view.notification.action.mark_seen'
                                                 )}

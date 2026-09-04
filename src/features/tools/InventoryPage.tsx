@@ -13,19 +13,14 @@ import {
     XIcon
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router';
 
 import {
     EmptyState,
     LoadingState,
-    PageBackButton,
     PageBody,
-    PageHeader,
-    PageScaffold,
-    PageTitle,
-    PageToolbar,
-    PageToolbarRow
+    PageScaffold
 } from '@/components/layout/PageScaffold';
+import { ToolPageHeader } from '@/components/layout/ToolPageHeader';
 import { ImageCropDialog } from '@/components/media/ImageCropDialog';
 import {
     isArchivedInventoryItem,
@@ -438,7 +433,6 @@ function InventoryRows({
 }
 
 export function InventoryPage() {
-    const navigate = useNavigate();
     const { t } = useTranslation();
     const inventory = useInventoryPageState();
 
@@ -451,22 +445,18 @@ export function InventoryPage() {
                 className="hidden"
                 onChange={inventory.uploadSelectedFile}
             />
-            <PageToolbar>
-                <PageToolbarRow className="items-center">
-                    <PageBackButton
-                        label={t('nav_tooltip.tools')}
-                        onClick={() => navigate('/tools')}
-                    />
-                    <PageHeader className="min-w-0 p-0">
-                        <PageTitle>{t('dialog.inventory.header')}</PageTitle>
-                    </PageHeader>
-                    {inventory.uploadingTarget ? (
+            <ToolPageHeader
+                toolKey="inventory"
+                status={
+                    inventory.uploadingTarget ? (
                         <Badge variant="outline">
                             {t('message.upload.loading')}{' '}
                             {inventory.uploadingTarget}
                         </Badge>
-                    ) : null}
-                    <div className="ml-auto flex flex-wrap items-center gap-1">
+                    ) : null
+                }
+                actions={
+                    <>
                         <GridSettingsMenu
                             gridDensity={inventory.gridDensity}
                             onGridDensityChange={inventory.changeGridDensity}
@@ -497,9 +487,9 @@ export function InventoryPage() {
                             <GiftIcon data-icon="inline-start" />
                             {t('dialog.gallery_icons.redeem')}
                         </Button>
-                    </div>
-                </PageToolbarRow>
-            </PageToolbar>
+                    </>
+                }
+            />
             <PageBody>
                 <Tabs
                     value={inventory.activeCategory}
@@ -507,7 +497,7 @@ export function InventoryPage() {
                     className="min-h-0 flex-1"
                 >
                     <TabsList
-                        variant="line"
+                        variant="underline"
                         className="flex h-auto w-full flex-wrap justify-start"
                     >
                         {CATEGORY_ORDER.map((category) => (

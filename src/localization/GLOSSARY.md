@@ -199,6 +199,7 @@ the app and across releases.
 | App Launcher                       | 应用启动器                 | 應用程式啟動器        | アプリランチャー                     |
 | Auto-Login Delay                   | 自动登录延迟               | 自動登入延遲          | 自動ログイン遅延                     |
 | Avatar Database Provider           | 数据库提供方设置           | 角色資料庫提供方      | アバターデータベースプロバイダー     |
+| Beta                               | 测试版                     | 測試版                | ベータ版                             |
 | Bio Links                          | 社交链接                   | 社交連結              | 自己紹介リンク                       |
 | Change Banner and Icon             | 更换横幅和头像             | 更換橫幅和頭像        | プロフィール写真とアイコン画像を変更 |
 | Change Image                       | 更改图片                   | 變更圖片              | 画像を変更                           |

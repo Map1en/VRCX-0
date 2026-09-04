@@ -139,7 +139,7 @@ async fn start_background_mode_after_delay(
         && current.mode == BackendRuntimeMode::Background
         && current.phase == BackendRuntimePhase::Running
     {
-        if destroy_main_window_for_background_mode_if_hidden(app) {
+        if destroy_main_window_for_background_mode_if_hidden(app, state) {
             super::show_background_mode_started_notification(app, state);
         } else if let Err(error) = super::restore_foreground_window_from_background_mode(app, state)
         {
@@ -178,13 +178,18 @@ fn resolve_delay_minutes(enabled: bool, raw: Option<&str>) -> Option<u64> {
     Some(minutes.clamp(MIN_DELAY_MINUTES, MAX_DELAY_MINUTES))
 }
 
-fn destroy_main_window_for_background_mode_if_hidden(app: &tauri::AppHandle) -> bool {
+fn destroy_main_window_for_background_mode_if_hidden(
+    app: &tauri::AppHandle,
+    state: &AppState,
+) -> bool {
     let Some(window) = app.get_webview_window("main") else {
+        state.runtime_host().set_frontend_tray_notification(false);
         return true;
     };
     if window.is_visible().unwrap_or(true) {
         return false;
     }
+    state.runtime_host().set_frontend_tray_notification(false);
     if let Err(error) = window.destroy() {
         tracing::warn!(error = %error, "failed to destroy main window for background mode");
         let _ = window.hide();

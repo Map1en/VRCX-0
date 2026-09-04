@@ -23,9 +23,9 @@ import {
 import {
     InputGroup,
     InputGroupAddon,
-    InputGroupButton,
-    InputGroupInput
+    InputGroupButton
 } from '@/ui/shadcn/input-group';
+import { NumberField, NumberFieldInput } from '@/ui/shadcn/number-field';
 import { TabsContent } from '@/ui/shadcn/tabs';
 
 import {
@@ -219,27 +219,32 @@ export function TablePageSizesDialog({
                         controlId="settings-table-page-size-input"
                     >
                         <InputGroup>
-                            <InputGroupInput
+                            <NumberField
                                 id="settings-table-page-size-input"
-                                type="number"
                                 name="tablePageSize"
-                                inputMode="numeric"
                                 min={1}
                                 max={1000}
-                                value={input}
-                                placeholder={t(
-                                    'view.settings.appearance.appearance.table_page_sizes'
-                                )}
-                                onChange={(event) =>
-                                    setInput(event.target.value)
+                                allowOutOfRange
+                                value={input === '' ? null : Number(input)}
+                                onValueChange={(value) =>
+                                    setInput(
+                                        value === null ? '' : String(value)
+                                    )
                                 }
-                                onKeyDown={(event) => {
-                                    if (event.key === 'Enter') {
-                                        event.preventDefault();
-                                        addPageSize();
-                                    }
-                                }}
-                            />
+                            >
+                                <NumberFieldInput
+                                    className="text-left"
+                                    placeholder={t(
+                                        'view.settings.appearance.appearance.table_page_sizes'
+                                    )}
+                                    onKeyDown={(event) => {
+                                        if (event.key === 'Enter') {
+                                            event.preventDefault();
+                                            addPageSize();
+                                        }
+                                    }}
+                                />
+                            </NumberField>
                             <InputGroupAddon align="inline-end">
                                 <InputGroupButton
                                     type="button"

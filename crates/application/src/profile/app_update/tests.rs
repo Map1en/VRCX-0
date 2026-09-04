@@ -19,9 +19,10 @@ use super::release::{
 };
 use super::{
     run_check_inner, up_to_date_outcome, AppUpdateBuildInfo, AppUpdateCatalogAsset,
-    AppUpdateCatalogRelease, AppUpdateCheckContext, AppUpdateDeliveryKind, AppUpdateDownloadPhase,
-    AppUpdateReleaseCatalogFuture, AppUpdateReleaseCatalogPort, AppUpdateReleaseSnapshot,
-    AppUpdateRuntime, AppUpdateRuntimeDeps, AppUpdateStatusSnapshot, DownloadState,
+    AppUpdateCatalogRelease, AppUpdateChannel, AppUpdateCheckContext, AppUpdateDeliveryKind,
+    AppUpdateDownloadPhase, AppUpdateReleaseCatalogFuture, AppUpdateReleaseCatalogPort,
+    AppUpdateReleaseSnapshot, AppUpdateRuntime, AppUpdateRuntimeDeps, AppUpdateStatusSnapshot,
+    DownloadState,
 };
 use crate::profile::test_support::MemoryProfileConfigStore;
 
@@ -133,6 +134,7 @@ fn update_release_snapshot() -> AppUpdateReleaseSnapshot {
         body: String::new(),
         canonical_version: TEST_UPDATE_VERSION.into(),
         display_version: TEST_UPDATE_VERSION.into(),
+        channel: AppUpdateChannel::Stable,
         manifest_url: "https://example.test/latest.json".into(),
         target: "windows-x86_64-stable".into(),
         updater_type: AppUpdateDeliveryKind::Tauri,
@@ -211,6 +213,7 @@ async fn update_check_uses_semantic_release_catalog_without_a_web_client() {
         app_version: "2.14.0",
         build_label: "stable",
         build_badge: "",
+        channel: AppUpdateChannel::Stable,
         target: None,
         port: &updater,
         proxy: None,
@@ -219,6 +222,60 @@ async fn update_check_uses_semantic_release_catalog_without_a_web_client() {
     let outcome = run_check_inner(&context).await.unwrap();
 
     assert!(outcome.has_available_update);
+    assert_eq!(
+        outcome.release.unwrap().canonical_version,
+        TEST_UPDATE_VERSION
+    );
+}
+
+#[tokio::test]
+async fn beta_update_check_ignores_stable_releases() {
+    let release_catalog = TestAppUpdateReleaseCatalog {
+        releases: vec![
+            release("v2.16.0", false, Vec::new()),
+            release("v2.15.0-beta.2", true, Vec::new()),
+        ],
+    };
+    let updater: Arc<dyn UpdaterPort> = Arc::new(MockUpdaterPort::new([]));
+    let context = AppUpdateCheckContext {
+        release_catalog: &release_catalog,
+        app_version: "2.15.0-beta.1",
+        build_label: "stable",
+        build_badge: "",
+        channel: AppUpdateChannel::Beta,
+        target: None,
+        port: &updater,
+        proxy: None,
+    };
+
+    let outcome = run_check_inner(&context).await.unwrap();
+
+    assert!(outcome.has_available_update);
+    assert_eq!(outcome.release.unwrap().canonical_version, "2.15.0-beta.2");
+}
+
+#[tokio::test]
+async fn stable_update_check_ignores_beta_releases() {
+    let release_catalog = TestAppUpdateReleaseCatalog {
+        releases: vec![
+            release("v3.0.0-beta.1", true, Vec::new()),
+            release("v2.15.0", false, Vec::new()),
+        ],
+    };
+    let updater: Arc<dyn UpdaterPort> = Arc::new(MockUpdaterPort::new([]));
+    let context = AppUpdateCheckContext {
+        release_catalog: &release_catalog,
+        app_version: "2.14.0",
+        build_label: "stable",
+        build_badge: "",
+        channel: AppUpdateChannel::Stable,
+        target: None,
+        port: &updater,
+        proxy: None,
+    };
+
+    let outcome = run_check_inner(&context).await.unwrap();
+
     assert_eq!(
         outcome.release.unwrap().canonical_version,
         TEST_UPDATE_VERSION
@@ -333,11 +390,15 @@ fn release(
 #[test]
 fn parses_valid_release_versions() {
     let parsed = parse_release_version("v1.2.3").expect("valid version parses");
-    assert_eq!((parsed.major, parsed.minor, parsed.patch), (1, 2, 3));
     assert_eq!(parsed.canonical_version, "1.2.3");
+    assert_eq!(parsed.channel, AppUpdateChannel::Stable);
 
     let parsed = parse_release_version("2.0.0").expect("valid version parses");
-    assert_eq!((parsed.major, parsed.minor, parsed.patch), (2, 0, 0));
+    assert_eq!(parsed.canonical_version, "2.0.0");
+
+    let parsed = parse_release_version("v2.1.0-beta.12").expect("valid beta parses");
+    assert_eq!(parsed.channel, AppUpdateChannel::Beta);
+    assert_eq!(parsed.canonical_version, "2.1.0-beta.12");
 }
 
 #[test]
@@ -348,6 +409,9 @@ fn rejects_invalid_release_versions() {
     assert!(parse_release_version("01.2.3").is_none());
     assert!(parse_release_version("1.02.3").is_none());
     assert!(parse_release_version("0.1.0").is_none());
+    assert!(parse_release_version("1.2.3-beta.0").is_none());
+    assert!(parse_release_version("1.2.3-beta.1000000").is_none());
+    assert!(parse_release_version("1.2.3-alpha.1").is_none());
     assert!(parse_release_version("abc").is_none());
 }
 
@@ -359,6 +423,14 @@ fn compares_release_versions_numerically() {
         Ordering::Greater
     );
     assert_eq!(compare_release_versions("1.2.3", "1.2.4"), Ordering::Less);
+    assert_eq!(
+        compare_release_versions("1.2.3-beta.10", "1.2.3-beta.2"),
+        Ordering::Greater
+    );
+    assert_eq!(
+        compare_release_versions("1.2.3", "1.2.3-beta.10"),
+        Ordering::Greater
+    );
     assert_eq!(compare_release_versions("bad", "1.0.0"), Ordering::Less);
     assert_eq!(compare_release_versions("1.0.0", "bad"), Ordering::Greater);
 }
@@ -437,6 +509,16 @@ fn normalize_release_requires_matching_installer_asset_when_required() {
 fn normalize_release_rejects_unparseable_tag_names() {
     let release = release("not-a-version", false, Vec::new());
     assert!(normalize_release(&release, None, false).is_none());
+}
+
+#[test]
+fn normalize_release_requires_github_prerelease_state_to_match_the_channel() {
+    assert!(normalize_release(&release("v1.2.3-beta.1", false, Vec::new()), None, false).is_none());
+    assert!(normalize_release(&release("v1.2.3", true, Vec::new()), None, false).is_none());
+
+    let beta = normalize_release(&release("v1.2.3-beta.1", true, Vec::new()), None, false)
+        .expect("matching beta release normalizes");
+    assert_eq!(beta.channel, AppUpdateChannel::Beta);
 }
 
 #[test]

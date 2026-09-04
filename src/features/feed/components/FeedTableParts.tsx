@@ -24,6 +24,7 @@ import type {
     FeedFriendActionTarget,
     FeedRow
 } from '@/components/feed/feedTypes';
+import { LaunchModeContextMenuGroup } from '@/components/launch/LaunchModeContextMenuGroup';
 import { formatDateFilter, formatDateTime } from '@/lib/dateTime';
 import { useKnownUserFact } from '@/lib/useKnownUser';
 import { cn } from '@/lib/utils';
@@ -181,7 +182,7 @@ function FeedUserLink({
                         type="button"
                         variant="ghost"
                         className={cn(
-                            'hover:text-primary h-auto max-w-full justify-start self-start text-left font-medium',
+                            'hover:text-content-primary h-auto max-w-full justify-start self-start text-left font-medium',
                             showAvatar && 'gap-2',
                             className
                         )}
@@ -276,16 +277,16 @@ function FeedUserLink({
                     </ContextMenuItem>
                 </ContextMenuGroup>
                 <ContextMenuSeparator />
+                <LaunchModeContextMenuGroup
+                    disabled={!canUseFriendLocation}
+                    errorMessage={t(
+                        'view.feed.toast.failed_to_launch_instance'
+                    )}
+                    location={location}
+                    shortName={parsedLocation.shortName || ''}
+                />
+                <ContextMenuSeparator />
                 <ContextMenuGroup>
-                    <ContextMenuItem
-                        disabled={!canUseFriendLocation}
-                        onClick={() => {
-                            actions.launchFeedFriendLocation(location);
-                        }}
-                    >
-                        <ExternalLinkIcon />
-                        {t('dialog.launch.open_ingame')}
-                    </ContextMenuItem>
                     <ContextMenuItem
                         disabled={!canUseFriendLocation}
                         onClick={() => {

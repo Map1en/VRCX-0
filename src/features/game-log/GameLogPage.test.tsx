@@ -1,9 +1,17 @@
 // @vitest-environment jsdom
 
 import { cleanup, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { GameLogPage } from './GameLogPage';
+import { getGameLogSessionKey } from './gameLogRows';
+import type { GameLogSession, GameLogViewMode } from './gameLogTypes';
+
+const mocks = vi.hoisted<{
+    viewMode: GameLogViewMode;
+    sessions: GameLogSession[];
+}>(() => ({ viewMode: 'table', sessions: [] }));
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -23,11 +31,28 @@ vi.mock('@/components/dialogs/PreviousInstancesTableDialog', () => ({
 
 vi.mock('./components/GameLogToolbar', () => ({
     GameLogToolbar: ({
-        refreshModel
+        refreshModel,
+        filterModel,
+        sessionControls
     }: {
         refreshModel: { canRefresh: boolean };
+        filterModel: { viewMode: GameLogViewMode };
+        sessionControls: {
+            allOpen: boolean;
+            canToggle: boolean;
+            onToggle(): void;
+        };
     }) => (
-        <div data-testid="toolbar" data-can-refresh={refreshModel.canRefresh} />
+        <div data-testid="toolbar" data-can-refresh={refreshModel.canRefresh}>
+            {filterModel.viewMode === 'sessions' ? (
+                <button
+                    disabled={!sessionControls.canToggle}
+                    onClick={sessionControls.onToggle}
+                >
+                    {sessionControls.allOpen ? 'Collapse all' : 'Expand all'}
+                </button>
+            ) : null}
+        </div>
     )
 }));
 
@@ -38,7 +63,33 @@ vi.mock('./components/GameLogTableShell', () => ({
 }));
 
 vi.mock('./components/GameLogSessionsView', () => ({
-    GameLogSessionsView: () => <div>Sessions</div>
+    GameLogSessionsView: ({
+        sessions,
+        defaultOpen,
+        sessionOpenOverrides,
+        onSessionOpenChange
+    }: {
+        sessions: GameLogSession[];
+        defaultOpen: boolean;
+        sessionOpenOverrides: ReadonlyMap<string, boolean>;
+        onSessionOpenChange(key: string, open: boolean): void;
+    }) => (
+        <div>
+            {sessions.map((session) => {
+                const key = getGameLogSessionKey(session);
+                const open = sessionOpenOverrides.get(key) ?? defaultOpen;
+                return (
+                    <button
+                        key={key}
+                        data-open={open}
+                        onClick={() => onSessionOpenChange(key, !open)}
+                    >
+                        {session.worldName}
+                    </button>
+                );
+            })}
+        </div>
+    )
 }));
 
 vi.mock('./components/GameLogTableParts', () => ({
@@ -49,7 +100,7 @@ vi.mock('./useGameLogPageController', () => ({
     useGameLogPageController: () => ({
         annotations: {
             annotatedRows: [{ id: 1 }],
-            annotatedSessions: []
+            affinity: { favoriteIdSet: new Set(), friendIdSet: new Set() }
         },
         filters: {
             deferredSearchQuery: '',
@@ -58,7 +109,7 @@ vi.mock('./useGameLogPageController', () => ({
             refreshGameLog: vi.fn(),
             sessionDateFrom: '',
             sessionDateTo: '',
-            viewMode: 'rows'
+            viewMode: mocks.viewMode
         },
         hasMoreSessions: false,
         isError: false,
@@ -78,7 +129,9 @@ vi.mock('./useGameLogPageController', () => ({
             detail: '',
             gameLogDisabled: true,
             isFavoritesLoaded: true,
-            loadStatus: 'ready'
+            loadStatus: 'ready',
+            rows: [{ rowId: 1 }, { rowId: 2 }],
+            sessions: mocks.sessions
         },
         table: {},
         tableState: {
@@ -91,7 +144,11 @@ vi.mock('./useGameLogPageController', () => ({
 }));
 
 describe('GameLogPage', () => {
-    afterEach(cleanup);
+    afterEach(() => {
+        cleanup();
+        mocks.viewMode = 'table';
+        mocks.sessions = [];
+    });
 
     it('keeps history and refresh available while showing the write warning', () => {
         render(<GameLogPage />);
@@ -104,9 +161,53 @@ describe('GameLogPage', () => {
                 'New records are not saved; history remains available.'
             )
         ).toBeTruthy();
-        expect(screen.getByText('History rows: 1')).toBeTruthy();
+        expect(screen.getByText('History rows: 2')).toBeTruthy();
         expect(
             screen.getByTestId('toolbar').getAttribute('data-can-refresh')
         ).toBe('true');
+    });
+
+    it('shares expansion between toolbar and sessions without persisting it across modes', async () => {
+        mocks.viewMode = 'sessions';
+        mocks.sessions = [1, 2].map((id) => ({
+            id,
+            created_at: '2026-09-03T00:00:00.000Z',
+            duration: 0,
+            location: `wrld_test:${id}`,
+            worldId: 'wrld_test',
+            worldName: `World ${id}`,
+            groupName: '',
+            playerDurationRows: [],
+            events: []
+        }));
+        const view = render(<GameLogPage />);
+        const user = userEvent.setup();
+
+        await user.click(screen.getByRole('button', { name: 'Collapse all' }));
+        expect(
+            screen.getByRole('button', { name: 'World 1' }).dataset.open
+        ).toBe('false');
+        expect(
+            screen.getByRole('button', { name: 'World 2' }).dataset.open
+        ).toBe('false');
+
+        await user.click(screen.getByRole('button', { name: 'World 1' }));
+        expect(screen.getByRole('button', { name: 'Expand all' })).toBeTruthy();
+        await user.click(screen.getByRole('button', { name: 'Expand all' }));
+        expect(
+            screen.getByRole('button', { name: 'World 2' }).dataset.open
+        ).toBe('true');
+
+        await user.click(screen.getByRole('button', { name: 'Collapse all' }));
+        mocks.viewMode = 'table';
+        view.rerender(<GameLogPage />);
+        mocks.viewMode = 'sessions';
+        view.rerender(<GameLogPage />);
+        expect(
+            screen.getByRole('button', { name: 'World 1' }).dataset.open
+        ).toBe('true');
+        expect(
+            screen.getByRole('button', { name: 'Collapse all' })
+        ).toBeTruthy();
     });
 });

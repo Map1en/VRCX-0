@@ -106,11 +106,11 @@ export function InstanceHistoryRow({
         <div
             className={cn(
                 'group relative flex min-h-9 items-center rounded-md',
-                selected ? 'bg-muted' : 'hover:bg-muted/60'
+                selected ? 'bg-muted/80' : 'hover:bg-muted/60'
             )}
         >
             {selected ? (
-                <span className="bg-foreground absolute inset-y-1.5 left-0 w-0.5 rounded-full" />
+                <span className="bg-primary absolute inset-y-1.5 left-0 w-0.5 rounded-full" />
             ) : null}
             <button
                 type="button"
@@ -280,8 +280,8 @@ export function InstanceHistoryList({
     }, [entries, grouped, scrollKeyToView, selectedRow]);
 
     return (
-        <div className="flex h-full min-h-0 flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-2 text-xs">
+        <div className="flex h-full min-h-0 flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-2 px-1 text-xs">
                 <span className="text-muted-foreground">
                     {filteredCount === totalCount
                         ? t(
@@ -308,7 +308,7 @@ export function InstanceHistoryList({
             </div>
 
             {visibleRows.length ? (
-                <div className="relative min-h-0 flex-1 overflow-hidden rounded-md border">
+                <div className="relative min-h-0 flex-1 overflow-hidden">
                     {pinnedLabel ? (
                         <div className="bg-background/95 text-muted-foreground absolute inset-x-0 top-0 z-20 px-3 pt-2 pb-1 text-[11px] font-semibold tracking-wide uppercase backdrop-blur">
                             {pinnedLabel}

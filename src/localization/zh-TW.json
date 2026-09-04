@@ -194,65 +194,65 @@
     },
     "language": "中文（繁體） (zh-TW)",
     "data_dir_migration": {
-        "title": "移轉 VRCX-0 資料",
-        "description": "選擇 VRCX-0 要如何使用所選資料夾。",
-        "completed_title": "資料移轉完成",
-        "completed_description": "重新啟動 VRCX-0 後會開始使用新的資料目錄。",
-        "error_short": "資料移轉失敗",
-        "start": "開始移轉",
+        "title": "更換資料夾",
+        "description": "選擇要在新資料夾中使用的資料。",
+        "completed_title": "請重新啟動以完成更換",
+        "completed_description": "重新啟動 VRCX-0 後，就會開始使用新資料夾。",
+        "error_short": "無法更換資料夾",
+        "start": "複製並更換",
         "restart_now": "立即重新啟動",
         "restart_later": "稍後再說",
-        "create_backup_first": "先建立備份",
-        "space_summary": "需要：{required} · 可用：{available}",
-        "insufficient_space": "可用空間不足，無法移轉資料。",
-        "contents_notice": "將複製資料庫、應用程式設定、相簿索引與縮圖；圖片快取會在新目錄重新下載。舊資料會保留到你確認清理為止。",
-        "unsupported_storage_warning": "請勿選擇網路磁碟、雲端同步資料夾（例如 OneDrive 或 iCloud）或卸除式磁碟。資料庫在這些位置可能損毀，且不在支援範圍內。",
+        "create_backup_first": "開啟備份工具",
+        "space_summary": "所需空間：{required} · 可用空間：{available}",
+        "insufficient_space": "空間不足，無法複製資料。請選擇其他磁碟上的資料夾，或先釋放一些空間。",
+        "contents_notice": "將現有紀錄與設定複製到新資料夾，原資料夾中的資料會保留。",
+        "unsupported_storage_warning": "不支援網路磁碟、雲端同步資料夾、隨身碟或外接硬碟，使用這些位置可能導致資料損毀。",
         "mode": {
-            "migrate": "移轉目前資料（建議）",
-            "adoptExisting": "使用此資料夾中現有的 VRCX-0 設定檔",
-            "freshStart": "在此資料夾建立全新設定檔"
+            "migrate": "保留目前資料（建議）",
+            "adoptExisting": "使用這裡現有的資料",
+            "freshStart": "重新開始"
         },
         "target": {
             "empty": "所選資料夾是空的。",
-            "existingProfile": "所選資料夾已有 VRCX-0 設定檔；覆寫前會先完整保留。",
-            "foreignContent": "所選資料夾含有其他檔案；VRCX-0 只會管理自己的檔案。"
+            "existingProfile": "這裡現有的 VRCX-0 資料將被取代，取代前會保留一份副本。",
+            "foreignContent": "此資料夾中還有其他檔案，VRCX-0 只會變更自己的檔案。"
         },
         "phase": {
-            "preparing": "正在準備移轉",
-            "freezing": "正在凍結資料庫",
-            "copying": "正在複製資料庫",
-            "verifying": "正在驗證副本",
-            "committing": "正在完成移轉"
+            "preparing": "正在準備資料…",
+            "freezing": "正在準備資料…",
+            "copying": "正在複製資料…",
+            "verifying": "正在檢查複製結果…",
+            "committing": "正在完成更換…"
         },
         "error": {
             "operationBusy": "另一個備份、還原或資料移轉作業正在執行。",
-            "databaseUnavailable": "資料庫目前無法移轉。",
+            "databaseUnavailable": "目前無法複製資料，請稍後再試。",
             "pendingRestore": "請先完成或取消待處理的設定檔還原。",
             "pendingLegacyMigration": "請先完成待處理的舊版資料移轉。",
             "pendingMigration": "已有待完成的資料目錄移轉，請重新啟動 VRCX-0。",
             "cleanupConflict": "移回此資料夾前，請先處理保留的舊資料。",
             "insufficientSpace": "可用空間不足，無法移轉資料。",
-            "invalidAdoptionTarget": "只有包含現有 VRCX-0 設定檔的資料夾才能直接採用。",
-            "invalidFreshStartTarget": "包含現有 VRCX-0 設定檔的資料夾不能用於全新開始。",
-            "copyFailed": "無法複製資料庫，VRCX-0 仍使用原目錄。",
-            "commitFailed": "無法安裝資料庫副本，VRCX-0 仍使用原目錄。",
+            "invalidAdoptionTarget": "此資料夾中沒有可用的 VRCX-0 資料，請選擇其他資料夾。",
+            "invalidFreshStartTarget": "此資料夾中已有 VRCX-0 資料。若要重新開始，請選擇其他資料夾。",
+            "copyFailed": "無法複製資料，VRCX-0 仍在使用原資料夾。",
+            "commitFailed": "無法儲存複製的資料，VRCX-0 仍在使用原資料夾。",
             "pointerCommitFailed": "無法啟用新資料目錄。請重新啟動 VRCX-0 安全重試。",
             "io": "無法讀取或寫入資料目錄檔案。"
         },
         "warning": {
             "configCopyFailed": "部分應用程式設定未能複製，可能會使用預設值。",
-            "galleryCopyFailed": "部分相簿索引或縮圖未能複製，將視需要自動重建。",
+            "galleryCopyFailed": "部分相簿資料未能複製，會在需要時自動重新產生。",
             "cacheCleanupFailed": "部分舊快取檔案未能移除。"
         },
         "result": {
-            "succeeded": "資料目錄移轉完成",
+            "succeeded": "已更換資料夾",
             "failed_title": "無法使用新的資料目錄",
             "database_open_failed": "VRCX-0 已繼續使用原目錄，你的資料未受影響。",
-            "interrupted_title": "資料目錄移轉已中斷",
+            "interrupted_title": "更換資料夾的操作已中斷",
             "interrupted": "VRCX-0 已繼續使用原目錄，你可以稍後重試。"
         },
         "cleanup": {
-            "ready_title": "資料目錄移轉完成",
+            "ready_title": "已更換資料夾",
             "ready_description": "舊資料仍保留在 {path}。",
             "action": "清理舊資料",
             "action_with_size": "清理舊資料（{size}）",
@@ -265,6 +265,16 @@
             "settings_description": "舊的 VRCX-0 資料仍位於 {path}（{size} 位元組）。",
             "dismiss": "保留舊資料，不再提醒",
             "dismissed": "已停用清理提醒"
+        },
+        "running_title": "正在更換資料夾",
+        "running_description": "請勿關閉 VRCX-0，並等候操作完成。",
+        "start_existing": "使用現有資料",
+        "start_fresh": "使用新資料夾",
+        "new_folder": "新資料夾",
+        "cancelling": "正在取消…",
+        "mode_description": {
+            "adoptExisting": "使用此資料夾中的紀錄與設定，不複製目前的資料。",
+            "freshStart": "不複製目前的資料，在新資料夾中重新開始。原有資料不會刪除。"
         }
     },
     "profile_backup": {
@@ -412,6 +422,13 @@
             "m": "分",
             "s": "秒"
         },
+        "time_units_short": {
+            "y": "年",
+            "d": "天",
+            "h": "小時",
+            "m": "分",
+            "s": "秒"
+        },
         "days": {
             "sunday": "星期日",
             "monday": "星期一",
@@ -484,6 +501,7 @@
             "doNotDisturbUntilStopped": "持續開啟",
             "doNotDisturbTurnOff": "關閉勿擾",
             "rebuildUi": "重新載入用戶介面",
+            "sidebarMode": "側欄模式",
             "disableTheme": "停用佈景主題",
             "exit": "退出"
         },
@@ -706,6 +724,8 @@
         "notification_center": "通知中心",
         "show_friends_sidebar": "顯示好友側邊欄",
         "hide_friends_sidebar": "隱藏好友側邊欄",
+        "enter_sidebar_mode": "側邊欄模式",
+        "restore_full_window": "返回完整視窗",
         "zoom_in": "放大",
         "zoom_out": "縮小",
         "reset_zoom": "重設縮放",
@@ -765,6 +785,9 @@
         "search_fav_worlds": "收藏世界",
         "search_groups": "群組",
         "search_own_groups": "自己的群組",
+        "search_direct_access": "貼上連結或 ID",
+        "search_scope_direct_access": "wrld_ · usr_ · vrchat.com/…",
+        "search_open_direct": "開啟這個連結或 ID",
         "search_joined_groups": "已加入群組",
         "refresh_tooltip": "重新整理好友",
         "refresh_available_in_seconds": "已同步，請 {count} 秒後再試",
@@ -784,6 +807,12 @@
             "presets": "預設"
         },
         "settings": {
+            "auto_hide": {
+                "label": "停駐在桌面邊緣時自動隱藏",
+                "description": "將側欄視窗拖到桌面頂端或兩側，移開滑鼠後自動隱藏，停留在邊緣即可展開。也可從系統匣開啟。",
+                "save_failed": "無法儲存自動隱藏設定。",
+                "paused": "視窗操作失敗，自動隱藏已暫停。請從系統匣重新開啟視窗，或重新進入側欄模式以重試。"
+            },
             "display": "顯示",
             "sort": "排序",
             "advanced": "進階",
@@ -922,9 +951,22 @@
                 "Avatar": "角色",
                 "Bio": "自我介紹"
             },
+            "toolbar": {
+                "all_types": "全部",
+                "type_summary": "類型：{types}",
+                "more_types": "{type} +{count}",
+                "grouped_friends_only": "僅已分組好友",
+                "view_summary": "檢視：{view}",
+                "view_label": "檢視"
+            },
             "modes": {
                 "table": "表格",
                 "columns": "分欄"
+            },
+            "actions": {
+                "back_to_top": "回到頂部",
+                "expand_entry": "展開動態",
+                "collapse_entry": "收起動態"
             },
             "columns": {
                 "add": "新增欄",
@@ -1708,10 +1750,16 @@
                 },
                 "legend": {
                     "circles": "社群",
-                    "more_circles": "另有 {count} 個圈子",
+                    "more_circles": "另有 {count} 個小圈子，顯示為灰色",
                     "size_means_degree": "點越大，共同好友越多",
+                    "hollow_means_unknown": "空心點 = 對方未公開共同好友",
+                    "coverage": "已取得",
+                    "coverage_value": "{fetched}/{total} 位好友",
+                    "coverage_unavailable": "未公開",
+                    "coverage_updated": "更新於",
                     "min_degree": "最少連線數",
-                    "isolated_nodes": "{count} 人沒有任何連線"
+                    "isolated_nodes": "{count} 人沒有共同好友",
+                    "unavailable_nodes": "{count} 人未公開或未取得"
                 }
             },
             "loading": {
@@ -2481,7 +2529,8 @@
                 },
                 "friend_log": {
                     "header": "好友紀錄",
-                    "hide_unfriends": "隱藏解除好友"
+                    "hide_unfriends": "隱藏解除好友",
+                    "show_notification_dot": "顯示好友紀錄通知紅點"
                 }
             },
             "notifications": {
@@ -2754,7 +2803,7 @@
                     },
                     "data_directory": {
                         "header": "資料目錄",
-                        "description": "目前來源：{source}。這裡只儲存目錄位置，VRCX-0 不會複製資料。",
+                        "description": "目前使用：{source}。",
                         "current": "目前目錄",
                         "actions": "資料目錄操作",
                         "choose": "選擇目錄",
@@ -2762,16 +2811,10 @@
                         "restart": "重新啟動",
                         "restart_hint": "更改會在重新啟動 VRCX-0 後生效。",
                         "source_cli": "命令行覆蓋",
-                        "source_persisted": "已儲存的自訂目錄",
-                        "source_default": "預設目錄",
+                        "source_persisted": "自訂資料夾",
+                        "source_default": "預設資料夾",
                         "cli_override": "本次啟動正在使用 --data-dir。要修改持久化目錄，請不帶命令行覆蓋啟動。",
-                        "confirm_title": "切換 VRCX-0 資料目錄？",
-                        "confirm_description": "VRCX-0 不會複製目前資料。要保留登入、資料庫、設定和快取，請在重新啟動前自行把目前資料目錄複製到 {path}。儲存此目錄並重新啟動後生效。",
-                        "confirm_empty": "所選目錄為空；除非你手動複製資料進去，否則會作為新的 profile 啟動。",
-                        "confirm_missing_profile": "所選目錄不包含 VRCX-0.sqlite3 或 VRCX-0.json，可能會作為新的 profile 啟動。",
                         "saved_restart_required": "資料目錄已儲存。請重新啟動 VRCX-0 以生效。",
-                        "reset_confirm_title": "重設 VRCX-0 資料目錄？",
-                        "reset_confirm_description": "重新啟動後 VRCX-0 將使用預設資料目錄。不會複製任何檔案。",
                         "reset_saved": "資料目錄已重設。請重新啟動 VRCX-0 以生效。",
                         "failed_to_load": "讀取資料目錄設定失敗。"
                     },
@@ -3307,7 +3350,8 @@
             },
             "mode": {
                 "daily": "每日圖片",
-                "custom": "本機圖片"
+                "custom": "本機圖片",
+                "decoration": "裝飾背景"
             },
             "rotation": {
                 "minutes": "分鐘",
@@ -4943,8 +4987,8 @@
                     "example": "加入、離開"
                 },
                 "favoriteMovement": {
-                    "label": "收藏好友動態",
-                    "description": "收藏好友的上線、離線、位置和狀態變更。",
+                    "label": "好友動態",
+                    "description": "好友的上線、離線、位置和狀態變更。",
                     "example": "上線、位置"
                 },
                 "profileChange": {
@@ -5162,7 +5206,17 @@
         },
         "vrcx_updater": {
             "latest_version": "VRCX-0 已是最新版本",
-            "ready_for_update": "版本 {value} 已可供安裝"
+            "ready_for_update": "版本 {value} 已可供安裝",
+            "channel": {
+                "label": "更新通道",
+                "stable": "正式版",
+                "beta": "測試版",
+                "description": "VRCX-0 只會檢查目前安裝通道中的更新。",
+                "switch_description": "若要切換至{channel}，請從 GitHub 下載並安裝該通道的最新版本。",
+                "download_stable": "下載最新正式版",
+                "download_beta": "下載最新測試版",
+                "no_release": "此通道目前沒有可用版本。"
+            }
         },
         "change_log": {
             "header": "更新日誌",

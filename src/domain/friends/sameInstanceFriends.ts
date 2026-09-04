@@ -31,8 +31,17 @@ type SameInstanceFriendGroup<TFriend> = {
 
 const OTHER_INSTANCE_MIN_FRIENDS = 2;
 
-type SameInstanceFriendGroupOptions = {
+export type SameInstanceFriendGroupOptions = {
     includeCurrentUser?: boolean;
+    locationTimes?: Readonly<
+        Record<
+            string,
+            {
+                location: string;
+                source: 'gameLog' | 'realtime';
+            }
+        >
+    >;
 };
 
 function asRecord(value: unknown): FriendPresenceRecord | null {
@@ -165,7 +174,10 @@ function resolveSameInstanceFriendLocation(
 function buildSameInstanceFriendGroups<TFriend>(
     friends: readonly TFriend[],
     lastLocation: SameInstanceLastLocation | null | undefined,
-    { includeCurrentUser = false }: SameInstanceFriendGroupOptions = {}
+    {
+        includeCurrentUser = false,
+        locationTimes
+    }: SameInstanceFriendGroupOptions = {}
 ): SameInstanceFriendGroup<TFriend>[] {
     const groupsByLocation = new Map<string, TFriend[]>();
     const currentLocation = normalizeLocationValue(lastLocation?.location);
@@ -174,14 +186,18 @@ function buildSameInstanceFriendGroups<TFriend>(
         : OTHER_INSTANCE_MIN_FRIENDS;
 
     for (const friend of friends) {
-        if (!isOnlineSameInstanceFriend(friend)) {
+        const source = friendPresenceSource(friend);
+        const time =
+            locationTimes?.[
+                firstUserId(source?.id, source?.userId, source?.user_id)
+            ];
+        if (time?.source !== 'gameLog' && !isOnlineSameInstanceFriend(friend)) {
             continue;
         }
-        const location = resolveSameInstanceFriendLocation(
-            friend,
-            lastLocation
-        );
-        if (!location) {
+        const location =
+            time?.location ??
+            resolveSameInstanceFriendLocation(friend, lastLocation);
+        if (!isRealInstance(location)) {
             continue;
         }
         const group = groupsByLocation.get(location);

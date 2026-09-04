@@ -9,6 +9,7 @@ import type { ComponentType, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { SocialStatusPreset } from '@/components/dialogs/user-dialog/userProfileFields';
+import { LaunchModeContextMenuGroup } from '@/components/launch/LaunchModeContextMenuGroup';
 import type { UserStatus } from '@/platform/tauri/bindings';
 import { isActionRecent } from '@/services/recentActionService';
 import { userStatusIndicatorClassName } from '@/shared/utils/userStatus';
@@ -27,6 +28,7 @@ export type StatusPreset = SocialStatusPreset;
 type ContextMenuItemComponent = ComponentType<{
     children?: ReactNode;
     checked?: boolean;
+    closeOnClick?: boolean;
     disabled?: boolean;
     onClick?: () => void;
 }>;
@@ -146,6 +148,7 @@ export function CurrentUserActionItems({
                                 <CheckboxItem
                                     key={`${item}:${index}`}
                                     checked={friend?.statusDescription === item}
+                                    closeOnClick
                                     onClick={() => {
                                         onSetStatusDescription?.(String(item));
                                     }}
@@ -196,7 +199,6 @@ export function FriendActionItems({
     canRequestInvite,
     canBoop,
     onOpen,
-    onLaunch,
     onSelfInvite,
     onInvite,
     onRequestInvite,
@@ -213,7 +215,6 @@ export function FriendActionItems({
     canRequestInvite?: boolean;
     canBoop?: boolean;
     onOpen?: () => void;
-    onLaunch?: (location: string) => void;
     onSelfInvite?: (location: string) => void;
     onInvite?: (friend: SidebarFriendRecord) => void;
     onRequestInvite?: (friend: SidebarFriendRecord) => void;
@@ -235,15 +236,15 @@ export function FriendActionItems({
                 <MenuItem onClick={onOpen}>{t('common.actions.open')}</MenuItem>
             </Group>
             <Separator />
+            <LaunchModeContextMenuGroup
+                disabled={!canUseFriendLocation}
+                errorMessage={t(
+                    'component.friends_sidebar.toast.failed_to_launch_instance'
+                )}
+                location={friendLocation}
+            />
+            <Separator />
             <Group>
-                <MenuItem
-                    disabled={!canUseFriendLocation}
-                    onClick={() => {
-                        onLaunch?.(friendLocation);
-                    }}
-                >
-                    {t('dialog.user.info.launch_invite_tooltip')}
-                </MenuItem>
                 <MenuItem
                     disabled={!canUseFriendLocation}
                     onClick={() => {

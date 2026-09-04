@@ -1,11 +1,7 @@
 import { ArrowLeftIcon } from 'lucide-react';
-import { Fragment } from 'react';
+import { Fragment, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { AvatarDialogContent } from '@/components/dialogs/AvatarDialogContent';
-import { GroupDialogContent } from '@/components/dialogs/GroupDialogContent';
-import { UserDialogContent } from '@/components/dialogs/UserDialogContent';
-import { WorldDialogContent } from '@/components/dialogs/WorldDialogContent';
 import { cn } from '@/lib/utils';
 import { OWNER_USER_ID } from '@/shared/constants/user';
 import { useDialogStore } from '@/state/dialogStore';
@@ -25,6 +21,28 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
+import { Spinner } from '@/ui/shadcn/spinner';
+
+const AvatarDialogContent = lazy(() =>
+    import('@/components/dialogs/AvatarDialogContent').then((module) => ({
+        default: module.AvatarDialogContent
+    }))
+);
+const GroupDialogContent = lazy(() =>
+    import('@/components/dialogs/GroupDialogContent').then((module) => ({
+        default: module.GroupDialogContent
+    }))
+);
+const UserDialogContent = lazy(() =>
+    import('@/components/dialogs/UserDialogContent').then((module) => ({
+        default: module.UserDialogContent
+    }))
+);
+const WorldDialogContent = lazy(() =>
+    import('@/components/dialogs/WorldDialogContent').then((module) => ({
+        default: module.WorldDialogContent
+    }))
+);
 
 export function DialogHost() {
     const { t } = useTranslation();
@@ -135,44 +153,49 @@ export function DialogHost() {
                         </Breadcrumb>
                     </div>
                 ) : null}
-                {isUserDialog ? (
-                    <UserDialogContent
-                        key={`user:${activeDialog?.entityId ?? ''}:${
-                            activeDialog?.openNonce ?? 0
-                        }`}
-                        userId={activeDialog?.entityId}
-                        seedData={dialogPayload?.seedData ?? null}
-                        initialAction={dialogPayload?.initialAction ?? ''}
-                        openNonce={activeDialog?.openNonce ?? 0}
-                    />
-                ) : isWorldDialog ? (
-                    <WorldDialogContent
-                        worldId={activeDialog?.entityId}
-                        seedData={dialogPayload?.seedData ?? null}
-                        initialAction={dialogPayload?.initialAction ?? ''}
-                        openNonce={activeDialog?.openNonce ?? 0}
-                        initialActionNonce={
-                            dialogPayload?.initialActionNonce ?? 0
-                        }
-                        initialNewInstanceDefaults={
-                            dialogPayload?.initialNewInstanceDefaults ?? null
-                        }
-                    />
-                ) : isAvatarDialog ? (
-                    <AvatarDialogContent
-                        avatarId={activeDialog?.entityId}
-                        seedData={dialogPayload?.seedData ?? null}
-                    />
-                ) : isGroupDialog ? (
-                    <GroupDialogContent
-                        groupId={activeDialog?.entityId}
-                        seedData={dialogPayload?.seedData ?? null}
-                    />
-                ) : (
-                    <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">
-                        {activeDialog?.body ?? 'Unsupported dialog type.'}
-                    </div>
-                )}
+                <Suspense
+                    fallback={<Spinner className="mx-auto my-8 size-6" />}
+                >
+                    {isUserDialog ? (
+                        <UserDialogContent
+                            key={`user:${activeDialog?.entityId ?? ''}:${
+                                activeDialog?.openNonce ?? 0
+                            }`}
+                            userId={activeDialog?.entityId}
+                            seedData={dialogPayload?.seedData ?? null}
+                            initialAction={dialogPayload?.initialAction ?? ''}
+                            openNonce={activeDialog?.openNonce ?? 0}
+                        />
+                    ) : isWorldDialog ? (
+                        <WorldDialogContent
+                            worldId={activeDialog?.entityId}
+                            seedData={dialogPayload?.seedData ?? null}
+                            initialAction={dialogPayload?.initialAction ?? ''}
+                            openNonce={activeDialog?.openNonce ?? 0}
+                            initialActionNonce={
+                                dialogPayload?.initialActionNonce ?? 0
+                            }
+                            initialNewInstanceDefaults={
+                                dialogPayload?.initialNewInstanceDefaults ??
+                                null
+                            }
+                        />
+                    ) : isAvatarDialog ? (
+                        <AvatarDialogContent
+                            avatarId={activeDialog?.entityId}
+                            seedData={dialogPayload?.seedData ?? null}
+                        />
+                    ) : isGroupDialog ? (
+                        <GroupDialogContent
+                            groupId={activeDialog?.entityId}
+                            seedData={dialogPayload?.seedData ?? null}
+                        />
+                    ) : (
+                        <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">
+                            {activeDialog?.body ?? 'Unsupported dialog type.'}
+                        </div>
+                    )}
+                </Suspense>
             </DialogContent>
         </Dialog>
     );

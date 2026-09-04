@@ -9,7 +9,6 @@ import {
     type GameLogDetailValue,
     type GameLogRow
 } from '../gameLogTypes';
-import { GameLogSessionsView } from './GameLogSessionsView';
 
 const SESSION_FILTER_TYPES = GAME_LOG_SESSION_FILTER_TYPES;
 
@@ -98,7 +97,6 @@ export {
     EmptyTableValue,
     GameLogEmptyState,
     GameLogLocationDetail,
-    GameLogSessionsView,
     SESSION_FILTER_TYPES,
     DataTableSortButton as SortButton
 };

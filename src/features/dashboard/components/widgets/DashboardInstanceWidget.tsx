@@ -11,6 +11,10 @@ import type { LucideIcon } from 'lucide-react';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+    DataTableCell,
+    DataTableRow
+} from '@/components/data-table/DataTableView';
 import { LocationWorld } from '@/components/LocationWorld';
 import type { FriendRecordInput } from '@/domain/friends/types';
 import type { CurrentInstanceRosterPlayer } from '@/domain/instances/currentInstanceRoster';
@@ -35,7 +39,7 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { Table, TableBody, TableCell, TableRow } from '@/ui/shadcn/table';
+import { Table, TableBody } from '@/ui/shadcn/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
@@ -349,13 +353,13 @@ function DashboardInstancePlayersTable({
     rows: DashboardInstancePlayerRow[];
 }) {
     return (
-        <div className="min-h-0 flex-1 overflow-auto">
-            <Table className="app-data-table table-fixed">
+        <div className="app-data-table min-h-0 flex-1 overflow-auto">
+            <Table className="table-fixed">
                 <TableBody>
                     {rows.map((row) => (
-                        <TableRow key={row.id}>
+                        <DataTableRow key={row.id}>
                             {activeColumns.includes('icon') ? (
-                                <TableCell className="w-20 align-top">
+                                <DataTableCell className="w-20 align-top">
                                     <div className="flex items-center gap-1">
                                         {row.isFavorite ? (
                                             <Badge
@@ -382,9 +386,9 @@ function DashboardInstancePlayersTable({
                                             </Badge>
                                         ) : null}
                                     </div>
-                                </TableCell>
+                                </DataTableCell>
                             ) : null}
-                            <TableCell className="align-top">
+                            <DataTableCell className="align-top">
                                 <div className="flex flex-col gap-1">
                                     <div className="text-sm font-medium">
                                         {row.displayName}
@@ -409,16 +413,16 @@ function DashboardInstancePlayersTable({
                                         ) : null}
                                     </div>
                                 </div>
-                            </TableCell>
+                            </DataTableCell>
                             {activeColumns.includes('timer') ? (
-                                <TableCell className="text-muted-foreground w-24 text-right align-top text-xs tabular-nums">
+                                <DataTableCell className="text-muted-foreground w-24 text-right align-top text-xs tabular-nums">
                                     {row.joinedAtMs > 0
                                         ? timeToText(row.timerMs, true)
                                         : ''}
-                                </TableCell>
+                                </DataTableCell>
                             ) : null}
                             {activeColumns.includes('platform') ? (
-                                <TableCell className="w-24 align-top">
+                                <DataTableCell className="w-24 align-top">
                                     {(() => {
                                         const PlatformIcon = row.platformIcon;
                                         return (
@@ -435,10 +439,10 @@ function DashboardInstancePlayersTable({
                                             </div>
                                         );
                                     })()}
-                                </TableCell>
+                                </DataTableCell>
                             ) : null}
                             {activeColumns.includes('language') ? (
-                                <TableCell className="text-muted-foreground w-28 align-top text-xs">
+                                <DataTableCell className="text-muted-foreground w-28 align-top text-xs">
                                     <span className="inline-flex items-center gap-1">
                                         {row.languageEntries
                                             .slice(0, 2)
@@ -460,9 +464,9 @@ function DashboardInstancePlayersTable({
                                                 </Tooltip>
                                             ))}
                                     </span>
-                                </TableCell>
+                                </DataTableCell>
                             ) : null}
-                        </TableRow>
+                        </DataTableRow>
                     ))}
                 </TableBody>
             </Table>

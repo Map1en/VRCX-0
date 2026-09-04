@@ -4,9 +4,6 @@ import {
     getDataTableStorageKey,
     readPersistedTableState,
     safeJsonParse,
-    sanitizeTableColumnOrder,
-    sanitizeTableColumnSizing,
-    sanitizeTableColumnVisibility,
     writePersistedTableState
 } from '@/components/data-table/dataTablePersistence';
 
@@ -14,15 +11,12 @@ export { safeJsonParse };
 
 export const FEED_TABLE_DEFAULT_PAGE_SIZES = [10, 15, 20, 25, 50, 100];
 export const FEED_TABLE_DEFAULT_SORTING: SortingState = [];
-export const FEED_TABLE_COLUMN_IDS = [
+const FEED_TABLE_SORT_COLUMN_IDS = ['created_at', 'type', 'displayName'];
+export const FEED_RESIZABLE_COLUMN_IDS = [
     'created_at',
     'type',
     'displayName',
     'detail'
-];
-export const FEED_TABLE_ORDER_COLUMN_IDS = [
-    'expander',
-    ...FEED_TABLE_COLUMN_IDS
 ];
 
 const STORAGE_KEY = getDataTableStorageKey('feed');
@@ -40,7 +34,7 @@ function isFeedSortingEntry(value: unknown): value is SortingState[number] {
         return false;
     }
     const id = 'id' in value ? value.id : undefined;
-    return typeof id === 'string' && FEED_TABLE_COLUMN_IDS.includes(id);
+    return typeof id === 'string' && FEED_TABLE_SORT_COLUMN_IDS.includes(id);
 }
 
 export function sanitizeFeedSorting(value: unknown): SortingState {
@@ -65,22 +59,6 @@ export function sanitizeFeedPageSizes(value: unknown): number[] {
     return sizes.length
         ? [...new Set(sizes)].sort((left, right) => left - right)
         : FEED_TABLE_DEFAULT_PAGE_SIZES;
-}
-
-export function sanitizeFeedColumnVisibility(
-    value: unknown
-): Record<string, boolean> {
-    return sanitizeTableColumnVisibility(value, FEED_TABLE_COLUMN_IDS);
-}
-
-export function sanitizeFeedColumnOrder(value: unknown): string[] {
-    return sanitizeTableColumnOrder(value, FEED_TABLE_ORDER_COLUMN_IDS, []);
-}
-
-export function sanitizeFeedColumnSizing(
-    value: unknown
-): Record<string, number> {
-    return sanitizeTableColumnSizing(value, FEED_TABLE_ORDER_COLUMN_IDS);
 }
 
 export function resolveFeedPageSize(

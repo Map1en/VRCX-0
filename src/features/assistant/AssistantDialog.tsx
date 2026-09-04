@@ -68,7 +68,6 @@ import { Composer } from './components/Composer';
 import { EntityPanel } from './components/EntityPanel';
 import { RuntimeModelSelect } from './components/RuntimeModelSelect';
 import { SessionSidebar } from './components/SessionSidebar';
-import { useAssistantEvents } from './useAssistantEvents';
 import type { AssistantHealth } from './useAssistantHealth';
 import { useAssistantHealth } from './useAssistantHealth';
 import { useAssistantRuntimeStatus } from './useAssistantRuntimeStatus';
@@ -109,7 +108,6 @@ function isEndpointRemovedError(error: unknown): boolean {
 export function AssistantDialog() {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    useAssistantEvents();
     const runtimeStatus = useAssistantRuntimeStatus();
     const endpoints = useLlmEndpointsStore((state) => state.endpoints);
     const loadEndpoints = useLlmEndpointsStore((state) => state.load);

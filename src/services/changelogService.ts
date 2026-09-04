@@ -3,8 +3,10 @@ import {
     fetchBranchReleases,
     fetchLatestBranchRelease
 } from '@/services/updateService';
+import type { NormalizedRelease } from '@/services/updateService';
+import { parseReleaseVersion } from '@/shared/utils/releaseVersion';
 
-const STABLE_BRANCH = 'Stable';
+const STABLE_BRANCH = 'stable';
 const DEFAULT_CHANGELOG_LANG = 'en';
 const DEFAULT_CHANGELOG_LABEL = 'English';
 const MARKER_BLOCK_PATTERN =
@@ -133,6 +135,25 @@ export function parseChangelog(body: unknown): ParsedLocalizedChangelog {
     };
 }
 
+export function parseReleaseChangelog(
+    release: NormalizedRelease | null
+): ParsedLocalizedChangelog {
+    if (release?.channel !== 'beta') {
+        return parseChangelog(release?.body || '');
+    }
+    return {
+        note: '',
+        entries: [
+            {
+                lang: DEFAULT_CHANGELOG_LANG,
+                label: DEFAULT_CHANGELOG_LABEL,
+                tag: '',
+                markdown: sanitizeChangelogMarkdown(release.body)
+            }
+        ]
+    };
+}
+
 export function parseLocalizedChangelog(body: unknown) {
     return parseChangelog(body).entries;
 }
@@ -189,7 +210,9 @@ function getCurrentVersion() {
 }
 
 export async function fetchLatestChangelogRelease() {
-    return fetchLatestBranchRelease(STABLE_BRANCH);
+    const branch =
+        parseReleaseVersion(getCurrentVersion())?.channel ?? STABLE_BRANCH;
+    return fetchLatestBranchRelease(branch);
 }
 
 export async function fetchChangelogRelease(version?: string) {
@@ -198,7 +221,8 @@ export async function fetchChangelogRelease(version?: string) {
         return fetchLatestChangelogRelease();
     }
 
-    const releases = await fetchBranchReleases(STABLE_BRANCH);
+    const branch = parseReleaseVersion(targetVersion)?.channel ?? STABLE_BRANCH;
+    const releases = await fetchBranchReleases(branch);
     return (
         releases.find((release) => {
             const canonicalVersion = normalizeReleaseLookupVersion(

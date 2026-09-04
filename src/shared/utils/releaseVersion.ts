@@ -1,12 +1,11 @@
-const RELEASE_CHANNEL = 'Stable';
+export type ReleaseChannel = 'stable' | 'beta';
 
 export interface ReleaseVersionInfo {
     major: number;
     minor: number;
     patchNumber: number;
-    betaNumber: null;
-    alphaNumber: number | null;
-    channel: typeof RELEASE_CHANNEL;
+    betaNumber: number | null;
+    channel: ReleaseChannel;
     buildVersion: string;
     canonicalVersion: string;
     displayVersion: string;
@@ -15,8 +14,9 @@ export interface ReleaseVersionInfo {
 const MAX_MAJOR_VERSION = 99;
 const MAX_MINOR_VERSION = 999;
 const MAX_PATCH_VERSION = 999;
+const MAX_BETA_VERSION = 999999;
 const RELEASE_VERSION_PATTERN =
-    /^v?(?<major>[1-9][0-9]*)\.(?<minor>0|[1-9][0-9]*)\.(?<patch>0|[1-9][0-9]*)$/;
+    /^v?(?<major>[1-9][0-9]*)\.(?<minor>0|[1-9][0-9]*)\.(?<patch>0|[1-9][0-9]*)(?:-beta\.(?<beta>[1-9][0-9]*))?$/;
 
 function isBoundedInteger(value: number, max: number): boolean {
     return Number.isInteger(value) && value >= 1 && value <= max;
@@ -25,17 +25,19 @@ function isBoundedInteger(value: number, max: number): boolean {
 function buildVersionInfo(
     major: number,
     minor: number,
-    patch: number
+    patch: number,
+    betaNumber: number | null
 ): ReleaseVersionInfo {
-    const canonicalVersion = `${major}.${minor}.${patch}`;
+    const baseVersion = `${major}.${minor}.${patch}`;
+    const canonicalVersion =
+        betaNumber === null ? baseVersion : `${baseVersion}-beta.${betaNumber}`;
 
     return {
         major,
         minor,
         patchNumber: patch,
-        betaNumber: null,
-        alphaNumber: null,
-        channel: RELEASE_CHANNEL,
+        betaNumber,
+        channel: betaNumber === null ? 'stable' : 'beta',
         buildVersion: canonicalVersion,
         canonicalVersion,
         displayVersion: canonicalVersion
@@ -54,6 +56,9 @@ export function parseReleaseVersion(
     const major = Number.parseInt(match.groups.major, 10);
     const minor = Number.parseInt(match.groups.minor, 10);
     const patch = Number.parseInt(match.groups.patch, 10);
+    const betaNumber = match.groups.beta
+        ? Number.parseInt(match.groups.beta, 10)
+        : null;
     if (
         !isBoundedInteger(major, MAX_MAJOR_VERSION) ||
         !Number.isInteger(minor) ||
@@ -61,16 +66,23 @@ export function parseReleaseVersion(
         minor > MAX_MINOR_VERSION ||
         !Number.isInteger(patch) ||
         patch < 0 ||
-        patch > MAX_PATCH_VERSION
+        patch > MAX_PATCH_VERSION ||
+        (betaNumber !== null && !isBoundedInteger(betaNumber, MAX_BETA_VERSION))
     ) {
         return null;
     }
 
-    return buildVersionInfo(major, minor, patch);
+    return buildVersionInfo(major, minor, patch, betaNumber);
 }
 
 export function formatReleaseDisplayVersion(version: string): string {
     return parseReleaseVersion(version)?.displayVersion ?? version.trim();
+}
+
+export function releaseChannelForVersion(
+    version: string
+): ReleaseChannel | null {
+    return parseReleaseVersion(version)?.channel ?? null;
 }
 
 export function compareReleaseVersions(
@@ -92,9 +104,18 @@ export function compareReleaseVersions(
         return 1;
     }
 
-    return (
+    const coreComparison =
         parsedLeft.major - parsedRight.major ||
         parsedLeft.minor - parsedRight.minor ||
-        parsedLeft.patchNumber - parsedRight.patchNumber
-    );
+        parsedLeft.patchNumber - parsedRight.patchNumber;
+    if (coreComparison !== 0) {
+        return coreComparison;
+    }
+    if (parsedLeft.betaNumber === null) {
+        return parsedRight.betaNumber === null ? 0 : 1;
+    }
+    if (parsedRight.betaNumber === null) {
+        return -1;
+    }
+    return parsedLeft.betaNumber - parsedRight.betaNumber;
 }

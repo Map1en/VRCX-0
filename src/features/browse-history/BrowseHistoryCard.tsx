@@ -2,9 +2,9 @@ import {
     Globe2Icon,
     ImageOffIcon,
     PersonStandingIcon,
-    Trash2Icon,
     UserRoundIcon,
-    UsersRoundIcon
+    UsersRoundIcon,
+    XIcon
 } from 'lucide-react';
 import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -95,16 +95,16 @@ export const BrowseHistoryCard = memo(function BrowseHistoryCard({
     return (
         <div
             className={cn(
-                'border-border bg-card group hover:bg-accent/40 relative h-16 min-w-0 overflow-hidden rounded-lg border p-2 transition-[background-color,opacity] duration-150 ease-out',
+                'object-row h-16',
                 removing && 'pointer-events-none opacity-0'
             )}
         >
             <button
                 type="button"
-                className="focus-visible:ring-ring flex size-full min-w-0 cursor-pointer items-center gap-2.5 rounded-md text-left transition-transform duration-100 ease-out outline-none focus-visible:ring-2 active:scale-[0.99]"
+                className="object-row__pressable flex size-full min-w-0 cursor-pointer items-stretch rounded-lg text-left"
                 onClick={() => openHistoryItem(item)}
             >
-                <div className="bg-muted size-12 shrink-0 overflow-hidden rounded-md">
+                <div className="object-row__media">
                     {imageUrl ? (
                         <FadeInImage
                             src={imageUrl}
@@ -115,37 +115,46 @@ export const BrowseHistoryCard = memo(function BrowseHistoryCard({
                     ) : (
                         imageFallback
                     )}
+                    <div
+                        aria-hidden="true"
+                        className="object-row__media-blend"
+                    />
                 </div>
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5 pr-6">
+                <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-2.5 pr-8">
                     <div className="flex items-center gap-1.5">
                         <Icon className="text-muted-foreground size-3 shrink-0" />
-                        <span className="truncate text-[13px] leading-tight font-medium">
+                        <span className="object-row__title truncate text-[13px] leading-tight">
                             {title}
                         </span>
                     </div>
-                    <p className="text-muted-foreground truncate text-[11px] leading-tight tabular-nums">
+                    <p className="object-row__meta truncate text-[11px] leading-tight">
                         {formatClock(item.lastViewedAt)}
                         {item.viewCount > 1 ? ` · ×${item.viewCount}` : ''}
                     </p>
                 </div>
             </button>
-            <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                className="absolute top-1 right-1 z-10 opacity-0 transition-opacity duration-150 ease-out group-focus-within:opacity-100 group-hover:opacity-100"
-                aria-label={t('browse_history.actions.remove')}
-                onClick={() => {
-                    setRemoving(true);
-                    void onRemove(item).then((removed) => {
-                        if (!removed) {
-                            setRemoving(false);
-                        }
-                    });
-                }}
-            >
-                <Trash2Icon />
-            </Button>
+            <div className="absolute inset-y-0 right-1 z-10 flex items-center">
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className={cn(
+                        'object-row__context-action',
+                        'text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive'
+                    )}
+                    aria-label={t('browse_history.actions.remove')}
+                    onClick={() => {
+                        setRemoving(true);
+                        void onRemove(item).then((removed) => {
+                            if (!removed) {
+                                setRemoving(false);
+                            }
+                        });
+                    }}
+                >
+                    <XIcon className="size-3.5" />
+                </Button>
+            </div>
         </div>
     );
 });

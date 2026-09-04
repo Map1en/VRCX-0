@@ -218,6 +218,24 @@ async fn friend_feed_search_resolves_target_pages_results_and_guards_global_hist
     assert_eq!(target_history["rows"].as_array().unwrap().len(), 1);
     assert_eq!(target_history["rows"][0]["bio"], "new needle text");
 
+    let bounded_global_history = tools
+        .call_tool(
+            "search_friend_feed",
+            Some(Map::from_iter([
+                ("allHistory".into(), json!(true)),
+                ("eventTypes".into(), json!(["bio"])),
+                ("limit".into(), json!(10)),
+                ("timeWindow".into(), json!("24h")),
+            ])),
+        )
+        .await
+        .unwrap();
+    assert!(
+        !bounded_global_history.is_error,
+        "{}",
+        bounded_global_history.text
+    );
+
     let string_window = tools
         .call_tool(
             "search_friend_feed",

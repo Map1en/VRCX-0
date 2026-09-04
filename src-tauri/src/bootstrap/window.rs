@@ -62,6 +62,7 @@ pub(crate) async fn rebuild_main_window(
     super::capture_background_resume_route(app, &state);
 
     if let Some(window) = app.get_webview_window("main") {
+        super::sidebar_auto_hide::park(app, true);
         window.destroy()?;
         wait_for_main_window_destroyed(app).await?;
         vrcx_0_host_desktop::taskbar_overlay::forget_taskbar_overlay_notification();
@@ -96,6 +97,7 @@ async fn wait_for_main_window_destroyed(
 }
 
 pub fn destroy_main_window_for_background_mode(app: &tauri::AppHandle) {
+    super::sidebar_auto_hide::park(app, true);
     if let Some(window) = app.get_webview_window("main") {
         if let Err(error) = window.destroy() {
             tracing::warn!(error = %error, "failed to destroy main window for background mode");
@@ -153,6 +155,7 @@ pub async fn start_background_mode_for_current_session(
         && current.phase == BackendRuntimePhase::Running
     {
         show_background_mode_started_notification(app, state);
+        state.runtime_host().set_frontend_tray_notification(false);
         super::destroy_main_window_for_background_mode(app);
     }
     let _ = refresh_tray_menu(app, state);
@@ -194,6 +197,7 @@ fn normalize_background_resume_route(raw: &str) -> Option<String> {
 }
 
 fn present_main_window(app: &tauri::AppHandle) {
+    super::sidebar_auto_hide::park(app, false);
     if let Some(state) = app.try_state::<AppState>() {
         cancel_background_delay(&state);
     }
@@ -274,6 +278,7 @@ pub(super) fn create_main_window(
     builder = builder.browser_extensions_enabled(false);
 
     let main_window = builder.build()?;
+    super::sidebar_auto_hide::attach(&main_window);
     #[cfg(target_os = "windows")]
     if let Ok(handle) = main_window.hwnd() {
         vrcx_0_host_desktop::window_icon::apply_window_icon(handle.0 as isize);
@@ -303,6 +308,10 @@ fn attach_window_chrome_state_events(window: &tauri::WebviewWindow) {
 #[cfg(target_os = "windows")]
 fn emit_window_chrome_state(window: &tauri::WebviewWindow, focused: bool) {
     use tauri::Emitter;
+
+    if super::sidebar_auto_hide::is_animating(window.app_handle()) {
+        return;
+    }
 
     let maximized = window.is_maximized().unwrap_or(false);
     let state = WindowChromeState {
@@ -431,6 +440,14 @@ pub fn refresh_tray_menu(app: &tauri::AppHandle, state: &AppState) -> Result<(),
             !background_mode_active,
             None::<&str>,
         )?;
+        let sidebar_mode_item = CheckMenuItem::with_id(
+            app,
+            "tray-toggle-sidebar-mode",
+            labels.sidebar_mode,
+            !background_mode_active,
+            super::sidebar_auto_hide::sidebar_mode(),
+            None::<&str>,
+        )?;
         let disable_theme_item = MenuItem::with_id(
             app,
             "tray-disable-theme",
@@ -445,6 +462,7 @@ pub fn refresh_tray_menu(app: &tauri::AppHandle, state: &AppState) -> Result<(),
         menu.append(&do_not_disturb_menu)?;
         #[cfg(target_os = "linux")]
         menu.append(&rebuild_ui_item)?;
+        menu.append(&sidebar_mode_item)?;
         if community_theme_enabled {
             menu.append(&disable_theme_item)?;
         }

@@ -14,16 +14,7 @@ import type {
     ScreenshotLibraryImage,
     ScreenshotLibraryScanStatus
 } from '@/platform/tauri/bindings';
-import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
-import {
-    Card,
-    CardAction,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle
-} from '@/ui/shadcn/card';
 import {
     Collapsible,
     CollapsibleContent,
@@ -306,79 +297,92 @@ export function ScreenshotGalleryView({
 }) {
     const { t } = useTranslation();
     const root = useMemo(() => buildFolderTree(folderTree), [folderTree]);
+    const activeFolder =
+        folderTree?.folders.find((folder) => folder.path === selectedFolder) ||
+        root;
+    const activeFolderPath =
+        selectedFolder || activeFolder?.path || folderTree?.rootPath || '';
     useClearSelectionOnEscape(selection.hasSelection, selection.clearSelection);
 
     return (
-        <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(160px,240px)_minmax(0,1fr)] gap-4 overflow-hidden lg:grid-cols-[minmax(200px,260px)_minmax(0,1fr)] lg:grid-rows-none xl:grid-cols-[minmax(220px,280px)_minmax(0,1fr)]">
-            <aside className="min-h-0">
-                <Card size="sm" className="h-full min-h-0">
-                    <CardHeader className="border-b">
-                        <CardTitle>
-                            {t('dialog.screenshot_metadata.folders')}
-                        </CardTitle>
-                        <CardDescription className="truncate">
-                            {error
-                                ? t(
-                                      'dialog.screenshot_metadata.gallery_load_failed'
-                                  )
-                                : scanStatus?.running
-                                  ? t('dialog.screenshot_metadata.scanning')
-                                  : t('dialog.screenshot_metadata.gallery')}
-                        </CardDescription>
-                        <CardAction>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                aria-label={t('common.actions.refresh')}
-                                onClick={onRefresh}
-                            >
-                                <RefreshCwIcon
-                                    data-icon="inline-start"
-                                    className={cn(
-                                        scanStatus?.running && 'animate-spin'
-                                    )}
-                                />
-                            </Button>
-                        </CardAction>
-                    </CardHeader>
-                    <CardContent className="min-h-0 flex-1 overflow-auto">
-                        {isTreeLoading ? (
-                            <div className="flex flex-col gap-2">
-                                <Skeleton className="h-7 w-full" />
-                                <Skeleton className="h-7 w-10/12" />
-                                <Skeleton className="h-7 w-8/12" />
-                            </div>
-                        ) : root ? (
-                            <FolderTreeNode
-                                node={root}
-                                selectedFolder={selectedFolder}
-                                onSelectFolder={onSelectFolder}
-                            />
-                        ) : (
-                            <EmptyState
-                                title={t(
-                                    'dialog.screenshot_metadata.empty_folders'
-                                )}
-                                description={t(
-                                    'dialog.screenshot_metadata.empty_folders_description'
-                                )}
-                            />
-                        )}
-                    </CardContent>
-                </Card>
+        <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(160px,240px)_minmax(0,1fr)] overflow-hidden lg:grid-cols-[minmax(200px,260px)_minmax(0,1fr)] lg:grid-rows-none xl:grid-cols-[minmax(220px,280px)_minmax(0,1fr)]">
+            <aside className="border-border flex min-h-0 min-w-0 flex-col overflow-hidden border-b pb-3 lg:border-r lg:border-b-0 lg:pr-3 lg:pb-0">
+                <div className="flex shrink-0 items-center gap-2 px-1 pb-2">
+                    <div className="text-sm font-medium">
+                        {t('dialog.screenshot_metadata.folders')}
+                    </div>
+                    {scanStatus?.running ? (
+                        <div className="text-muted-foreground truncate text-xs">
+                            {t('dialog.screenshot_metadata.scanning')}
+                        </div>
+                    ) : null}
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        className="ml-auto"
+                        aria-label={t('common.actions.refresh')}
+                        onClick={onRefresh}
+                    >
+                        <RefreshCwIcon
+                            data-icon="inline-start"
+                            className={cn(
+                                scanStatus?.running && 'animate-spin'
+                            )}
+                        />
+                    </Button>
+                </div>
+                <nav
+                    aria-label={t('dialog.screenshot_metadata.folders')}
+                    className="min-h-0 flex-1 overflow-auto pr-1"
+                >
+                    {isTreeLoading ? (
+                        <div className="flex flex-col gap-2">
+                            <Skeleton className="h-7 w-full" />
+                            <Skeleton className="h-7 w-10/12" />
+                            <Skeleton className="h-7 w-8/12" />
+                        </div>
+                    ) : root ? (
+                        <FolderTreeNode
+                            node={root}
+                            selectedFolder={selectedFolder}
+                            onSelectFolder={onSelectFolder}
+                        />
+                    ) : (
+                        <EmptyState
+                            title={t(
+                                'dialog.screenshot_metadata.empty_folders'
+                            )}
+                            description={t(
+                                'dialog.screenshot_metadata.empty_folders_description'
+                            )}
+                        />
+                    )}
+                </nav>
             </aside>
-            <section className="relative flex min-h-0 min-w-0 flex-col gap-3">
+            <section className="relative flex min-h-0 min-w-0 flex-col gap-3 pt-3 lg:pt-0 lg:pl-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="min-w-0">
-                        <div className="text-sm font-medium">
-                            {t('dialog.screenshot_metadata.gallery')}
+                        <div
+                            className="truncate text-sm font-medium"
+                            title={activeFolderPath}
+                        >
+                            {activeFolder?.name ||
+                                t('dialog.screenshot_metadata.gallery')}
                         </div>
-                        <div className="text-muted-foreground truncate text-xs">
-                            {selectedFolder || folderTree?.rootPath || '—'}
+                        <div
+                            className="text-muted-foreground truncate text-xs"
+                            title={activeFolderPath}
+                        >
+                            {activeFolderPath || '—'}
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground text-xs tabular-nums">
+                            {t('dialog.screenshot_metadata.image_count', {
+                                count: images.length
+                            })}
+                        </span>
                         <Button
                             type="button"
                             variant="outline"
@@ -396,11 +400,6 @@ export function ScreenshotGalleryView({
                             <DicesIcon data-icon="inline-start" />
                             {t('dialog.screenshot_metadata.feeling_lucky')}
                         </Button>
-                        <Badge variant="outline">
-                            {t('dialog.screenshot_metadata.image_count', {
-                                count: images.length
-                            })}
-                        </Badge>
                     </div>
                 </div>
                 <ScreenshotGalleryGrid

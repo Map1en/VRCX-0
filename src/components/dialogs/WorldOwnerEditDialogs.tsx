@@ -27,6 +27,13 @@ import {
     InputGroupButton,
     InputGroupInput
 } from '@/ui/shadcn/input-group';
+import {
+    NumberField,
+    NumberFieldDecrement,
+    NumberFieldGroup,
+    NumberFieldIncrement,
+    NumberFieldInput
+} from '@/ui/shadcn/number-field';
 import { ScrollArea } from '@/ui/shadcn/scroll-area';
 import { Textarea } from '@/ui/shadcn/textarea';
 
@@ -302,19 +309,31 @@ function WorldDetailsDialog({
                                 <FieldLabel htmlFor="world-details-capacity">
                                     {t('dialog.world.info.capacity')}
                                 </FieldLabel>
-                                <Input
+                                <NumberField
                                     id="world-details-capacity"
-                                    type="number"
-                                    min="1"
-                                    inputMode="numeric"
-                                    value={draft.capacity}
+                                    min={1}
+                                    allowOutOfRange
+                                    value={
+                                        draft.capacity === ''
+                                            ? null
+                                            : Number(draft.capacity)
+                                    }
                                     disabled={saving}
-                                    onChange={(event) =>
+                                    onValueChange={(value) =>
                                         updateDraft({
-                                            capacity: event.target.value
+                                            capacity:
+                                                value === null
+                                                    ? ''
+                                                    : String(value)
                                         })
                                     }
-                                />
+                                >
+                                    <NumberFieldGroup>
+                                        <NumberFieldDecrement />
+                                        <NumberFieldInput />
+                                        <NumberFieldIncrement />
+                                    </NumberFieldGroup>
+                                </NumberField>
                             </Field>
                             <Field>
                                 <FieldLabel htmlFor="world-details-recommended-capacity">
@@ -322,20 +341,31 @@ function WorldDetailsDialog({
                                         'dialog.world.label.recommended_capacity'
                                     )}
                                 </FieldLabel>
-                                <Input
+                                <NumberField
                                     id="world-details-recommended-capacity"
-                                    type="number"
-                                    min="1"
-                                    inputMode="numeric"
-                                    value={draft.recommendedCapacity}
+                                    min={1}
+                                    allowOutOfRange
+                                    value={
+                                        draft.recommendedCapacity === ''
+                                            ? null
+                                            : Number(draft.recommendedCapacity)
+                                    }
                                     disabled={saving}
-                                    onChange={(event) =>
+                                    onValueChange={(value) =>
                                         updateDraft({
                                             recommendedCapacity:
-                                                event.target.value
+                                                value === null
+                                                    ? ''
+                                                    : String(value)
                                         })
                                     }
-                                />
+                                >
+                                    <NumberFieldGroup>
+                                        <NumberFieldDecrement />
+                                        <NumberFieldInput />
+                                        <NumberFieldIncrement />
+                                    </NumberFieldGroup>
+                                </NumberField>
                             </Field>
                         </div>
                         <Field>

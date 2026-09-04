@@ -7,8 +7,13 @@ import { cn } from '@/lib/utils';
 function ScrollArea({
     className,
     children,
+    scrollFade = false,
+    overscrollContain = false,
     ...props
-}: ScrollAreaPrimitive.Root.Props) {
+}: ScrollAreaPrimitive.Root.Props & {
+    scrollFade?: boolean;
+    overscrollContain?: boolean;
+}) {
     return (
         <ScrollAreaPrimitive.Root
             data-slot="scroll-area"
@@ -17,7 +22,13 @@ function ScrollArea({
         >
             <ScrollAreaPrimitive.Viewport
                 data-slot="scroll-area-viewport"
-                className="focus-visible:ring-ring/50 size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1"
+                className={cn(
+                    'focus-visible:ring-ring/50 size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1',
+                    overscrollContain &&
+                        'data-has-overflow-x:overscroll-x-contain data-has-overflow-y:overscroll-y-contain',
+                    scrollFade &&
+                        'mask-t-from-[calc(100%-min(var(--fade-size),var(--scroll-area-overflow-y-start)))] mask-r-from-[calc(100%-min(var(--fade-size),var(--scroll-area-overflow-x-end)))] mask-b-from-[calc(100%-min(var(--fade-size),var(--scroll-area-overflow-y-end)))] mask-l-from-[calc(100%-min(var(--fade-size),var(--scroll-area-overflow-x-start)))] [--fade-size:1.5rem]'
+                )}
             >
                 {children}
             </ScrollAreaPrimitive.Viewport>

@@ -2,6 +2,7 @@ import type {
     MutualFriendGraph,
     MutualFriendLink,
     MutualFriendNode,
+    MutualFriendsIsolatedCounts,
     MutualFriendsViewFilters
 } from './mutualFriendsTypes';
 
@@ -79,9 +80,24 @@ export function applyMutualFriendsViewFilters(
     return { nodes, links };
 }
 
-export function countIsolatedMutualFriendNodes(graph: MutualFriendGraph) {
-    return graph.nodes.reduce(
-        (total, node) => (node.degree === 0 ? total + 1 : total),
-        0
-    );
+export function isMutualFriendNodeUnavailable(node: MutualFriendNode) {
+    return node.optedOut || node.lastFetchedAt === null;
+}
+
+export function countIsolatedMutualFriendNodes(
+    graph: MutualFriendGraph
+): MutualFriendsIsolatedCounts {
+    let noConnections = 0;
+    let unavailable = 0;
+    for (const node of graph.nodes) {
+        if (node.degree !== 0) {
+            continue;
+        }
+        if (isMutualFriendNodeUnavailable(node)) {
+            unavailable += 1;
+        } else {
+            noConnections += 1;
+        }
+    }
+    return { noConnections, unavailable };
 }

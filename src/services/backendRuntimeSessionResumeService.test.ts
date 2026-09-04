@@ -29,6 +29,7 @@ vi.mock('./vrchatConfigService', () => ({
 
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
+import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 
 import { AuthAttemptSupersededError } from './authAttempt';
 import { applyAuthenticatedSessionProjection } from './backendRuntimeSessionResumeService';
@@ -212,6 +213,9 @@ describe('backendRuntimeSessionResumeService', () => {
     });
 
     it('bootstraps a matching backend session when the frontend is not ready', async () => {
+        const loadNotifications = vi
+            .spyOn(useVrcNotificationStore.getState(), 'loadForCurrentUser')
+            .mockResolvedValue([]);
         useSessionStore.getState().setSessionPhase('authenticated');
 
         await expect(
@@ -234,6 +238,7 @@ describe('backendRuntimeSessionResumeService', () => {
             authenticatedSession().currentUserSnapshot,
             expect.any(Number)
         );
+        expect(loadNotifications).toHaveBeenCalledOnce();
     });
 
     it('returns false when bootstrap is superseded by a newer auth attempt', async () => {

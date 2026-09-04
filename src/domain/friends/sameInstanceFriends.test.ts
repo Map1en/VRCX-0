@@ -11,6 +11,76 @@ describe('sameInstanceFriends', () => {
     const currentLocation = 'wrld_current:123';
     const otherLocation = 'wrld_other:456';
 
+    it('groups a locally observed friend independently of remote presence and releases it on leave', () => {
+        const friend = {
+            id: 'usr_friend',
+            state: 'offline',
+            location: otherLocation
+        };
+        const locationTimes = {
+            usr_friend: {
+                location: currentLocation,
+                sinceMs: 1_000,
+                source: 'gameLog' as const
+            }
+        };
+
+        expect(
+            buildSameInstanceFriendGroups(
+                [friend],
+                { location: currentLocation },
+                {
+                    includeCurrentUser: true,
+                    locationTimes
+                }
+            )
+        ).toEqual([
+            {
+                location: currentLocation,
+                friends: [friend],
+                isCurrentInstance: true
+            }
+        ]);
+        expect(
+            buildSameInstanceFriendGroups(
+                [friend],
+                { location: currentLocation },
+                {
+                    includeCurrentUser: true,
+                    locationTimes: {
+                        usr_friend: {
+                            ...locationTimes.usr_friend,
+                            source: 'realtime'
+                        }
+                    }
+                }
+            )
+        ).toEqual([]);
+    });
+
+    it('does not restore a departed local friend from an older UI player list', () => {
+        const friend = {
+            id: 'usr_friend',
+            state: 'online',
+            location: 'private'
+        };
+        expect(
+            buildSameInstanceFriendGroups(
+                [friend],
+                {
+                    location: currentLocation,
+                    friendList: new Set(['usr_friend'])
+                },
+                {
+                    includeCurrentUser: true,
+                    locationTimes: {
+                        usr_friend: { location: 'private', source: 'realtime' }
+                    }
+                }
+            )
+        ).toEqual([]);
+    });
+
     it('keeps the original two-friend threshold outside the current instance', () => {
         const first = {
             id: 'usr_1',

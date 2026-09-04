@@ -36,16 +36,18 @@ export type ToolHostCapabilityKey =
     | 'screenshotCache'
     | 'vrchatPathDiscovery';
 
+export type ToolRouteName =
+    | 'screenshot-metadata'
+    | 'gallery'
+    | 'inventory'
+    | 'vrchat-log'
+    | 'group-moderation'
+    | 'my-groups';
+
 type ToolAction =
     | {
           type: 'route';
-          routeName:
-              | 'screenshot-metadata'
-              | 'gallery'
-              | 'inventory'
-              | 'vrchat-log'
-              | 'group-moderation'
-              | 'my-groups';
+          routeName: ToolRouteName;
       }
     | {
           type: 'app-api';

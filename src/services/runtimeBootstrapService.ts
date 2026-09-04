@@ -4,7 +4,6 @@ import { useNotificationStore } from '@/state/notificationStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { DEFAULT_TIME_UNIT_LABELS, useShellStore } from '@/state/shellStore';
 
-import { startRuntimeGameClientSync } from './gameClientLifecycle';
 import { getTimeUnitLabels, setI18nLanguage } from './i18nService';
 import { bindRuntimeEvents } from './runtimeEventBridgeService';
 import { initializeReactRuntime } from './startupService';
@@ -49,7 +48,6 @@ function createReactRuntimeStartPromise() {
         .then(() => bindRuntimeEvents())
         .then((cleanup) => {
             cleanups.push(cleanup ?? null);
-            cleanups.push(startRuntimeGameClientSync());
             cleanups.push(startRuntimeUpdateLoop());
             void hydrateVrcStatus();
             reactRuntimeCleanup = () => {

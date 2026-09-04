@@ -10,8 +10,8 @@ export function resolveFriendLocationTimeEpoch(
     const expectedLocation = location.trim();
     if (
         !friend ||
-        friend.state !== 'online' ||
         !entry ||
+        (entry.source !== 'gameLog' && friend.state !== 'online') ||
         entry.location !== expectedLocation ||
         !entry.sinceMs
     ) {

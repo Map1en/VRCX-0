@@ -375,7 +375,7 @@ async function updateCurrentUser({
     ).json;
     const mergedJson = mergeCurrentUserUpdateResponse(json, cachedUser, params);
     const nextUser = normalize(mergedJson);
-    setCachedQueryData(queryKey, mergedJson);
+    setCachedQueryData(queryKey, nextUser);
     return nextUser;
 }
 

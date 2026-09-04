@@ -139,6 +139,8 @@ interface FavoriteImportWatcher {
 }
 
 let favoriteImportWatcher: FavoriteImportWatcher | null = null;
+let pendingFavoriteImportStatus: FavoriteImportStatus | null = null;
+let favoriteImportStatusEventRevision = 0;
 
 function dismissFavoriteImportStatus(status: FavoriteImportStatus): void {
     if (!status.runId || isBackendActive(status)) {
@@ -161,9 +163,14 @@ function requestFavoriteImportCancel(): void {
 export function handleFavoriteImportStatusEvent(
     status: FavoriteImportStatus
 ): void {
+    favoriteImportStatusEventRevision += 1;
     const watcher = favoriteImportWatcher;
     if (!watcher || status.runId !== watcher.runId) {
-        dismissFavoriteImportStatus(status);
+        pendingFavoriteImportStatus =
+            status.runId && isBackendActive(status) ? status : null;
+        if (status.runId && !isBackendActive(status)) {
+            dismissFavoriteImportStatus(status);
+        }
         return;
     }
     if (!isActiveDialogSession(watcher.sessionId, watcher.type)) {
@@ -191,12 +198,66 @@ export function handleFavoriteImportStatusEvent(
     }
 }
 
+function attachPendingFavoriteImportStatus(): void {
+    const status = pendingFavoriteImportStatus;
+    if (!status?.runId) {
+        return;
+    }
+    if (!isBackendActive(status)) {
+        pendingFavoriteImportStatus = null;
+        dismissFavoriteImportStatus(status);
+        return;
+    }
+    const state = useFavoriteImportStore.getState();
+    if (!state.open || state.type !== status.kind) {
+        return;
+    }
+    const authScopeGeneration =
+        useRuntimeStore.getState().authenticatedSession.session
+            ?.authScopeGeneration;
+    if (authScopeGeneration !== status.authScopeGeneration) {
+        pendingFavoriteImportStatus = null;
+        requestFavoriteImportCancel();
+        return;
+    }
+    pendingFavoriteImportStatus = null;
+    state.setLoading(true);
+    favoriteImportWatcher = {
+        runId: status.runId,
+        sessionId: state.sessionId,
+        type: status.kind,
+        appliedItems: 0,
+        resolve: (terminalStatus) => {
+            void finishResumedFavoriteImport(
+                terminalStatus,
+                state.sessionId,
+                status.kind
+            );
+        }
+    };
+    handleFavoriteImportStatusEvent(status);
+}
+
+export async function hydrateFavoriteImportRuntimeStatus(): Promise<void> {
+    const eventRevision = favoriteImportStatusEventRevision;
+    const status = await commands.appFavoriteImportStatus();
+    if (favoriteImportStatusEventRevision === eventRevision) {
+        pendingFavoriteImportStatus =
+            status.runId && isBackendActive(status) ? status : null;
+        if (status.runId && !isBackendActive(status)) {
+            dismissFavoriteImportStatus(status);
+        }
+    }
+    attachPendingFavoriteImportStatus();
+}
+
 function waitForFavoriteImport(
     initialStatus: FavoriteImportStatus,
     sessionId: number,
     type: FavoriteImportKind
 ): Promise<FavoriteImportStatus> {
     return new Promise<FavoriteImportStatus>((resolve) => {
+        pendingFavoriteImportStatus = null;
         favoriteImportWatcher = {
             runId: initialStatus.runId,
             sessionId,
@@ -205,6 +266,52 @@ function waitForFavoriteImport(
             resolve
         };
         handleFavoriteImportStatusEvent(initialStatus);
+    });
+}
+
+async function finishResumedFavoriteImport(
+    status: FavoriteImportStatus,
+    sessionId: number,
+    type: FavoriteImportKind
+): Promise<void> {
+    if (!isActiveDialogSession(sessionId, type)) {
+        return;
+    }
+    const store = useFavoriteImportStore.getState();
+    if (status.status === 'error' && status.lastError) {
+        store.appendError(buildError(type, '', status.lastError));
+    }
+    store.setLoading(false);
+    setProgress(status.operation, 0, 0);
+    await completeFavoriteImport(status, sessionId, type);
+}
+
+async function completeFavoriteImport(
+    status: FavoriteImportStatus,
+    sessionId: number,
+    type: FavoriteImportKind
+): Promise<void> {
+    if (
+        status.operation !== 'import' ||
+        status.succeeded === 0 ||
+        !isActiveDialogSession(sessionId, type)
+    ) {
+        return;
+    }
+    await refreshFavoritesSnapshot();
+    if (!isActiveDialogSession(sessionId, type)) {
+        return;
+    }
+    useNotificationStore.getState().pushNotification({
+        level: 'success',
+        title: i18n.t(
+            'service.favorite_import_service.dynamic.value_import_complete',
+            { value: TYPE_CONFIG[type].label }
+        ),
+        message: i18n.t(
+            'service.favorite_import_service.dynamic.value_item_s_imported',
+            { value: status.succeeded }
+        )
     });
 }
 
@@ -304,6 +411,7 @@ export function openFavoriteImportDialog({
         type,
         input: normalizedInput
     });
+    attachPendingFavoriteImportStatus();
     if (normalizedInput) {
         void processFavoriteImportList();
     }
@@ -376,25 +484,7 @@ export async function importFavoriteImportRows(): Promise<void> {
         appendFavoriteImportError(type, sessionId, error);
         return;
     }
-    if (!isActiveDialogSession(sessionId, type)) {
-        return;
-    }
-    if (status.succeeded > 0) {
-        await refreshFavoritesSnapshot();
-        if (isActiveDialogSession(sessionId, type)) {
-            useNotificationStore.getState().pushNotification({
-                level: 'success',
-                title: i18n.t(
-                    'service.favorite_import_service.dynamic.value_import_complete',
-                    { value: TYPE_CONFIG[type].label }
-                ),
-                message: i18n.t(
-                    'service.favorite_import_service.dynamic.value_item_s_imported',
-                    { value: status.succeeded }
-                )
-            });
-        }
-    }
+    await completeFavoriteImport(status, sessionId, type);
 }
 
 export function clearFavoriteImportRows(): void {
@@ -407,6 +497,7 @@ export function cancelFavoriteImport(): void {
 }
 
 export function closeFavoriteImportDialog(): void {
+    pendingFavoriteImportStatus = null;
     useFavoriteImportStore.getState().closeDialog();
     requestFavoriteImportCancel();
 }

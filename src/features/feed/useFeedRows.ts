@@ -13,6 +13,7 @@ import type {
     FeedLoadStatus,
     FeedRow
 } from '@/components/feed/feedTypes';
+import type { FeedCursor } from '@/repositories/feedPersistenceRepository';
 import feedRepository from '@/repositories/feedRepository';
 import friendLogRepository from '@/repositories/friendLogRepository';
 import gameLogRepository from '@/repositories/gameLogRepository';
@@ -29,6 +30,12 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
 import { subscribeFeedLiveMerge } from './feedLiveMergeScheduler';
+import {
+    appendUniqueFeedRows,
+    FEED_PAGE_SIZE,
+    retainFeedRowWindow,
+    resolveLastFeedCursor
+} from './feedPaging';
 
 type UseFeedRowsOptions = {
     activeFilters: FeedFilterType[];
@@ -73,15 +80,25 @@ export function useFeedRows({
     );
     const friendLogRevision = useFriendLogStore((state) => state.revision);
     const [rows, setRows] = useState<FeedRow[]>([]);
-    const [friendLogNamesById, setFriendLogNamesById] = useState<
+    const [friendLogSeedNamesById, setFriendLogSeedNamesById] = useState<
+        Record<string, string>
+    >({});
+    const [resolvedGameLogNamesById, setResolvedGameLogNamesById] = useState<
         Record<string, string>
     >({});
     const [loadStatus, setLoadStatus] = useState<FeedLoadStatus>('idle');
+    const [hasMore, setHasMore] = useState(false);
+    const [hasUnloadedLatest, setHasUnloadedLatest] = useState(false);
+    const [latestReloadToken, setLatestReloadToken] = useState(0);
+    const [loadingOlder, setLoadingOlder] = useState(false);
+    const cursorRef = useRef<FeedCursor | null>(null);
     const requestIdRef = useRef(0);
     const lastLiveFeedSequenceRef = useRef(0);
     const rowsRef = useRef(rows);
     const liveMergeRequestIdRef = useRef(0);
     const unresolvedUserIdsRef = useRef<Set<string>>(new Set());
+    const viewingLatestRef = useRef(true);
+    const hasUnloadedLatestRef = useRef(false);
 
     const favoriteIdSet = useMemo(
         () =>
@@ -96,15 +113,92 @@ export function useFeedRows({
     const searchMode = Boolean(
         deferredSearchQuery.trim() || scopedUserIds.length || dateFrom || dateTo
     );
+    const favoriteUserIds = useMemo(
+        () => (favoritesOnly ? Array.from(favoriteIdSet) : []),
+        [favoriteIdSet, favoritesOnly]
+    );
+    const normalQueryKey = useMemo(
+        () =>
+            JSON.stringify({
+                activeFilters,
+                currentUserId,
+                favoriteUserIds,
+                feedPersistenceDisabled,
+                hiddenUserIds,
+                latestReloadToken,
+                maxFeedRows
+            }),
+        [
+            activeFilters,
+            currentUserId,
+            favoriteUserIds,
+            feedPersistenceDisabled,
+            hiddenUserIds,
+            latestReloadToken,
+            maxFeedRows
+        ]
+    );
+    const friendLogNamesById = useMemo(
+        () => ({ ...friendLogSeedNamesById, ...resolvedGameLogNamesById }),
+        [friendLogSeedNamesById, resolvedGameLogNamesById]
+    );
 
     useEffect(() => {
         rowsRef.current = rows;
     }, [rows]);
 
+    const updateHasUnloadedLatest = useCallback((value: boolean) => {
+        hasUnloadedLatestRef.current = value;
+        setHasUnloadedLatest((current) =>
+            current === value ? current : value
+        );
+    }, []);
+
+    const setViewingLatest = useCallback((value: boolean) => {
+        viewingLatestRef.current = value && !hasUnloadedLatestRef.current;
+    }, []);
+
+    const reloadLatest = useCallback(() => {
+        viewingLatestRef.current = true;
+        updateHasUnloadedLatest(false);
+        setLatestReloadToken((current) => current + 1);
+    }, [updateHasUnloadedLatest]);
+
+    const commitRowsToWindow = useCallback(
+        (nextRows: FeedRow[], edge: 'latest' | 'oldest') => {
+            const retainedRows = retainFeedRowWindow(
+                nextRows,
+                maxFeedRows,
+                edge
+            );
+            if (retainedRows !== nextRows) {
+                if (edge === 'latest') {
+                    cursorRef.current = resolveLastFeedCursor(retainedRows);
+                    if (
+                        !feedPersistenceDisabled &&
+                        cursorRef.current !== null
+                    ) {
+                        setHasMore(true);
+                    }
+                } else {
+                    updateHasUnloadedLatest(true);
+                }
+            }
+            rowsRef.current = retainedRows;
+            setRows(retainedRows);
+        },
+        [feedPersistenceDisabled, maxFeedRows, updateHasUnloadedLatest]
+    );
+
     useEffect(() => {
         rowsRef.current = [];
+        cursorRef.current = null;
+        viewingLatestRef.current = true;
         setRows([]);
-    }, [feedPersistenceDisabled]);
+        setHasMore(false);
+        setLoadingOlder(false);
+        updateHasUnloadedLatest(false);
+    }, [feedPersistenceDisabled, updateHasUnloadedLatest]);
 
     const createMergeOptionsBuilder = useCallback(
         ({
@@ -114,7 +208,7 @@ export function useFeedRows({
             excludedUserIds: string[];
             favoriteUserIds: string[];
         }): FeedLiveMergeOptionsBuilder =>
-            ({ rows }) => ({
+            ({ liveEntries, rows }) => ({
                 rows,
                 userId: currentUserId || '',
                 search: deferredSearchQuery,
@@ -125,7 +219,10 @@ export function useFeedRows({
                 dateFrom: toIsoRangeStart(dateFrom),
                 dateTo: toIsoRangeEnd(dateTo),
                 favoritesOnly,
-                maxRows: maxFeedRows
+                maxRows: Math.max(
+                    rows.length + liveEntries.length,
+                    rows.length + FEED_PAGE_SIZE
+                )
             }),
         [
             activeFilters,
@@ -134,7 +231,6 @@ export function useFeedRows({
             dateTo,
             deferredSearchQuery,
             favoritesOnly,
-            maxFeedRows,
             scopedUserIds
         ]
     );
@@ -146,9 +242,10 @@ export function useFeedRows({
     useEffect(() => {
         let active = true;
         unresolvedUserIdsRef.current = new Set();
+        setResolvedGameLogNamesById({});
         const normalizedCurrentUserId = normalizeId(currentUserId);
         if (!normalizedCurrentUserId) {
-            setFriendLogNamesById({});
+            setFriendLogSeedNamesById({});
             return () => {
                 active = false;
             };
@@ -170,11 +267,11 @@ export function useFeedRows({
                         nextNamesById[userId] = displayName;
                     }
                 }
-                setFriendLogNamesById(nextNamesById);
+                setFriendLogSeedNamesById(nextNamesById);
             })
             .catch(() => {
                 if (active) {
-                    setFriendLogNamesById({});
+                    setFriendLogSeedNamesById({});
                 }
             });
         return () => {
@@ -232,7 +329,7 @@ export function useFeedRows({
                         unresolvedUserIdsRef.current.add(userId);
                     }
                 }
-                setFriendLogNamesById((current) => {
+                setResolvedGameLogNamesById((current) => {
                     let changed = false;
                     const nextNamesById = {
                         ...current
@@ -255,24 +352,53 @@ export function useFeedRows({
     }, [friendLogNamesById, rows]);
 
     useEffect(() => {
+        const currentUserIds = new Set(
+            rows.map(resolveFeedUserId).filter(Boolean)
+        );
+        unresolvedUserIdsRef.current = new Set(
+            Array.from(unresolvedUserIdsRef.current).filter((userId) =>
+                currentUserIds.has(userId)
+            )
+        );
+        setResolvedGameLogNamesById((current) => {
+            const retainedEntries = Object.entries(current).filter(([userId]) =>
+                currentUserIds.has(userId)
+            );
+            return retainedEntries.length === Object.keys(current).length
+                ? current
+                : Object.fromEntries(retainedEntries);
+        });
+    }, [rows]);
+
+    useEffect(() => {
         if (!preferencesReady) {
             return;
         }
         if (!currentUserId) {
             requestIdRef.current += 1;
+            viewingLatestRef.current = true;
+            updateHasUnloadedLatest(false);
             setRows([]);
             setLoadStatus('idle');
             return;
         }
         if (favoritesOnly && !isFavoritesLoaded) {
             requestIdRef.current += 1;
+            viewingLatestRef.current = true;
+            updateHasUnloadedLatest(false);
             setLoadStatus('idle');
             setRows([]);
             return;
         }
         const requestId = requestIdRef.current + 1;
         requestIdRef.current = requestId;
-        const favoriteUserIds = favoritesOnly ? Array.from(favoriteIdSet) : [];
+        cursorRef.current = null;
+        setHasMore(false);
+        setLoadingOlder(false);
+        if (!searchMode) {
+            viewingLatestRef.current = true;
+            updateHasUnloadedLatest(false);
+        }
         const liveFeedSequenceAtRequestStart =
             useFeedLiveStore.getState().version;
         setLoadStatus('running');
@@ -315,7 +441,7 @@ export function useFeedRows({
                 favoriteUserIds,
                 scopedUserIds,
                 favoritesOnly,
-                maxRows: maxFeedRows
+                maxRows: FEED_PAGE_SIZE
             })
             .then(async (result) => {
                 if (requestIdRef.current !== requestId) {
@@ -325,6 +451,12 @@ export function useFeedRows({
                     excludedUserIds: hiddenUserIds,
                     favoriteUserIds
                 });
+                cursorRef.current = result.persistedCursor ?? null;
+                setHasMore(
+                    !feedPersistenceDisabled &&
+                        result.persistedHasMore === true &&
+                        cursorRef.current !== null
+                );
                 const mergedResult = await mergeFeedRowsWithLiveEntries({
                     buildMergeOptions,
                     minLiveSequence: result.maxSequence,
@@ -350,8 +482,7 @@ export function useFeedRows({
                     liveFeedSequenceAtRequestStart
                 );
                 lastLiveFeedSequenceRef.current = maxSequence;
-                rowsRef.current = commitResult.rows;
-                setRows(commitResult.rows);
+                commitRowsToWindow(commitResult.rows, 'latest');
                 setLoadStatus('ready');
             })
             .catch((error: unknown) => {
@@ -364,20 +495,22 @@ export function useFeedRows({
             });
     }, [
         activeFilters,
+        commitRowsToWindow,
         createMergeOptionsBuilder,
         currentUserId,
         dateFrom,
         dateTo,
         deferredSearchQuery,
-        favoriteIdSet,
+        favoriteUserIds,
         favoritesOnly,
         feedPersistenceDisabled,
         hiddenUserIds,
         isFavoritesLoaded,
-        maxFeedRows,
+        latestReloadToken,
         preferencesReady,
         searchMode,
-        scopedUserIds
+        scopedUserIds,
+        updateHasUnloadedLatest
     ]);
 
     useEffect(() => {
@@ -392,9 +525,7 @@ export function useFeedRows({
             mergeFeedRowsWithLiveEntries({
                 buildMergeOptions: createMergeOptionsBuilder({
                     excludedUserIds: hiddenUserIds,
-                    favoriteUserIds: favoritesOnly
-                        ? Array.from(favoriteIdSet)
-                        : []
+                    favoriteUserIds
                 }),
                 minLiveSequence,
                 requestIsCurrent: () =>
@@ -411,33 +542,101 @@ export function useFeedRows({
                     if (result.maxSequence > lastLiveFeedSequenceRef.current) {
                         lastLiveFeedSequenceRef.current = result.maxSequence;
                     }
-                    rowsRef.current = result.rows;
-                    setRows(result.rows);
+                    commitRowsToWindow(
+                        result.rows,
+                        viewingLatestRef.current ? 'latest' : 'oldest'
+                    );
                 })
                 .catch((error: unknown) => {
                     console.error(error);
                 });
         });
     }, [
-        activeFilters,
+        commitRowsToWindow,
         createMergeOptionsBuilder,
         currentUserId,
-        dateFrom,
-        dateTo,
-        deferredSearchQuery,
-        favoriteIdSet,
-        favoritesOnly,
+        favoriteUserIds,
         hiddenUserIds,
-        maxFeedRows,
         preferencesReady,
-        searchMode,
-        scopedUserIds
+        searchMode
+    ]);
+
+    const loadOlder = useCallback(() => {
+        const cursor = cursorRef.current;
+        if (
+            searchMode ||
+            loadingOlder ||
+            loadStatus !== 'ready' ||
+            !hasMore ||
+            feedPersistenceDisabled ||
+            !cursor ||
+            !currentUserId
+        ) {
+            return;
+        }
+        const requestId = requestIdRef.current;
+        setLoadingOlder(true);
+        feedRepository
+            .queryFeedPage({
+                userId: currentUserId,
+                filters: activeFilters,
+                excludedFavoriteUserIds: hiddenUserIds,
+                favoriteUserIds,
+                favoritesOnly,
+                maxEntries: FEED_PAGE_SIZE,
+                cursor
+            })
+            .then((pageRows) => {
+                if (requestIdRef.current !== requestId) {
+                    return;
+                }
+                const nextCursor = resolveLastFeedCursor(pageRows);
+                cursorRef.current = nextCursor;
+                setHasMore(
+                    nextCursor !== null && pageRows.length >= FEED_PAGE_SIZE
+                );
+                commitRowsToWindow(
+                    appendUniqueFeedRows(rowsRef.current, pageRows),
+                    'oldest'
+                );
+            })
+            .catch((error: unknown) => {
+                if (requestIdRef.current === requestId) {
+                    setHasMore(false);
+                }
+                console.error(error);
+            })
+            .finally(() => {
+                if (requestIdRef.current === requestId) {
+                    setLoadingOlder(false);
+                }
+            });
+    }, [
+        activeFilters,
+        commitRowsToWindow,
+        currentUserId,
+        favoriteUserIds,
+        favoritesOnly,
+        feedPersistenceDisabled,
+        hasMore,
+        hiddenUserIds,
+        loadingOlder,
+        loadStatus,
+        searchMode
     ]);
 
     return {
         friendLogNamesById,
+        hasMore,
+        hasUnloadedLatest,
         isFavoritesLoaded,
+        loadOlder,
         loadStatus,
+        loadingOlder,
+        normalQueryKey,
+        reloadLatest,
+        searchMode,
+        setViewingLatest,
         rows
     };
 }

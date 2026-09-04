@@ -22,6 +22,10 @@ import {
     restartApplication
 } from '@/services/shellIntegrationService';
 import { normalizeZoomLevel } from '@/services/themeService';
+import {
+    restoreNormalWindowModeForIntent,
+    runAfterRestoringNormalWindow
+} from '@/services/windowModeService';
 import { links } from '@/shared/constants/link';
 import { publishNavCustomizeRequested } from '@/shared/events/navLayoutEvents';
 import { usePreferencesStore } from '@/state/preferencesStore';
@@ -32,6 +36,17 @@ import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 
 const MAC_NATIVE_MENU_ACTION_EVENT = 'macNativeMenuAction';
 const ZOOM_STEP = 10;
+const FULL_WINDOW_MENU_ACTIONS = new Set([
+    'settings',
+    'check-updates',
+    'notification-center',
+    'toggle-nav',
+    'toggle-friends-sidebar',
+    'themes',
+    'tools',
+    'keyboard-shortcuts',
+    'about'
+]);
 
 function readMenuAction(payload: unknown): string {
     if (!payload || typeof payload !== 'object') {
@@ -160,6 +175,9 @@ export function MacNativeMenuActionHost() {
             if (protectedAction && !sessionReady) {
                 return;
             }
+            if (FULL_WINDOW_MENU_ACTIONS.has(action)) {
+                restoreNormalWindowModeForIntent();
+            }
 
             switch (action) {
                 case 'settings':
@@ -196,7 +214,7 @@ export function MacNativeMenuActionHost() {
                     toggleFriendsSidebar();
                     break;
                 case 'custom-nav':
-                    publishNavCustomizeRequested();
+                    runAfterRestoringNormalWindow(publishNavCustomizeRequested);
                     break;
                 case 'themes':
                     navigate('/themes');

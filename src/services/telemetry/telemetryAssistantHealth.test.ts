@@ -76,6 +76,10 @@ describe('assistant health telemetry', () => {
             summary:
                 'This tool requires an active realtime VRChat session (current user unknown).'
         });
+        mod.recordAssistantToolError({
+            source: 'search_friend_feed',
+            summary: 'search_friend_feed requires query or target'
+        });
 
         expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(1, {
             type: 'assistantToolError',
@@ -111,6 +115,11 @@ describe('assistant health telemetry', () => {
             type: 'assistantToolError',
             source: 'get_activity_timeline',
             summary: 'result=precondition'
+        });
+        expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(8, {
+            type: 'assistantToolError',
+            source: 'search_friend_feed',
+            summary: 'result=invalid_args'
         });
     });
 

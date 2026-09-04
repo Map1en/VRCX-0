@@ -37,7 +37,7 @@ export function GalleryTabs({
             className="min-h-0 flex-1"
         >
             <TabsList
-                variant="line"
+                variant="underline"
                 className="flex h-auto w-full flex-wrap justify-start"
             >
                 {TAB_ORDER.map((tab: GalleryTab) => {

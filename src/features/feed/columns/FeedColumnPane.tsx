@@ -29,12 +29,11 @@ import { Spinner } from '@/ui/shadcn/spinner';
 
 import type { FeedColumnDensityConfig } from '../feedColumnsDensity';
 import type { FeedColumnConfig } from '../feedColumnsState';
+import { useFeedNewTopRowKeys } from '../useFeedNewTopRowKeys';
 import { FeedColumnItem } from './FeedColumnItem';
 import { useFeedColumnRows } from './useFeedColumnRows';
 
 const OVERSCAN = 8;
-const NEW_ROW_FEEDBACK_MS = 180;
-const NEW_ROW_ANIMATION_LIMIT = 6;
 
 type FeedColumnPaneProps = {
     actions: FeedFriendActions;
@@ -176,60 +175,6 @@ function useColumnViewport(
     };
 }
 
-function useNewTopRowKeys(rows: FeedRow[], resetKey: string) {
-    const previousRowKeysRef = useRef<string[]>([]);
-    const previousResetKeyRef = useRef(resetKey);
-    const clearTimerRef = useRef<number | null>(null);
-    const [newRowKeys, setNewRowKeys] = useState<Set<string>>(() => new Set());
-
-    useEffect(() => {
-        const nextKeys = rows.map(getFeedRowId).filter(Boolean);
-        if (previousResetKeyRef.current !== resetKey) {
-            previousResetKeyRef.current = resetKey;
-            previousRowKeysRef.current = nextKeys;
-            setNewRowKeys(new Set());
-            return;
-        }
-
-        const previousKeys = previousRowKeysRef.current;
-        previousRowKeysRef.current = nextKeys;
-
-        if (!previousKeys.length || !nextKeys.length) {
-            return;
-        }
-
-        const previousFirstIndex = nextKeys.indexOf(previousKeys[0]);
-        if (previousFirstIndex <= 0) {
-            return;
-        }
-
-        const incomingKeys = nextKeys.slice(
-            0,
-            Math.min(previousFirstIndex, NEW_ROW_ANIMATION_LIMIT)
-        );
-        setNewRowKeys(new Set(incomingKeys));
-
-        if (clearTimerRef.current) {
-            window.clearTimeout(clearTimerRef.current);
-        }
-        clearTimerRef.current = window.setTimeout(() => {
-            clearTimerRef.current = null;
-            setNewRowKeys(new Set());
-        }, NEW_ROW_FEEDBACK_MS);
-    }, [resetKey, rows]);
-
-    useEffect(
-        () => () => {
-            if (clearTimerRef.current) {
-                window.clearTimeout(clearTimerRef.current);
-            }
-        },
-        []
-    );
-
-    return newRowKeys;
-}
-
 export function FeedColumnPane({
     actions,
     column,
@@ -254,7 +199,7 @@ export function FeedColumnPane({
             }),
         [column.feedTypes, column.friendScope, column.id]
     );
-    const newRowKeys = useNewTopRowKeys(rows, columnRowsResetKey);
+    const newRowKeys = useFeedNewTopRowKeys(rows, columnRowsResetKey);
     const {
         scrollToLatest,
         showLatestButton,

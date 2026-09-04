@@ -8,6 +8,7 @@ import {
 import type { ReactNode, SyntheticEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { LaunchModeContextMenuGroup } from '@/components/launch/LaunchModeContextMenuGroup';
 import {
     ContextMenu,
     ContextMenuContent,
@@ -23,8 +24,9 @@ export function LocationContextMenu({
     canUseCurrentInstance,
     children,
     isOpenPreviousInstanceInfoDialog,
+    launchLocation,
+    launchShortName,
     onCopyShareLink,
-    onLaunchCurrentInstance,
     onNewInstance,
     onOpenWorld,
     onSelfInviteCurrentInstance,
@@ -42,8 +44,9 @@ export function LocationContextMenu({
     canUseCurrentInstance: boolean;
     children?: ReactNode;
     isOpenPreviousInstanceInfoDialog: boolean;
+    launchLocation: string;
+    launchShortName: string;
     onCopyShareLink(): void;
-    onLaunchCurrentInstance(): void;
     onNewInstance(selfInvite?: boolean): void;
     onOpenWorld(event: SyntheticEvent<HTMLElement>): void;
     onSelfInviteCurrentInstance(): void;
@@ -128,14 +131,16 @@ export function LocationContextMenu({
                     {showLaunchActions ? (
                         <>
                             <ContextMenuSeparator />
+                            <LaunchModeContextMenuGroup
+                                disabled={!canUseCurrentInstance}
+                                errorMessage={t(
+                                    'host.launch_dialog.toast.launch_action_failed'
+                                )}
+                                location={launchLocation}
+                                shortName={launchShortName}
+                            />
+                            <ContextMenuSeparator />
                             <ContextMenuGroup>
-                                <ContextMenuItem
-                                    disabled={!canUseCurrentInstance}
-                                    onClick={onLaunchCurrentInstance}
-                                >
-                                    <ExternalLinkIcon />
-                                    {t('dialog.launch.open_ingame')}
-                                </ContextMenuItem>
                                 <ContextMenuItem
                                     disabled={!canUseCurrentInstance}
                                     onClick={() => {

@@ -4,6 +4,7 @@ import Graph from 'graphology';
 import Sigma from 'sigma';
 
 import { runGraphLayoutWorker } from './graphLayoutWorkerClient';
+import { isMutualFriendNodeUnavailable } from './mutualFriendsFilters';
 import {
     communityColor,
     type MutualFriendsGraphTheme
@@ -42,9 +43,11 @@ type MutualFriendsNodeAttributes = Record<string, unknown> & {
     baseY?: number;
     color?: string;
     community: number;
+    communityNamed: boolean;
     degree: number;
     forceLabel?: boolean;
     fullLabel: string;
+    holeColor?: string;
     label: string;
     lastFetchedAt: string | null;
     mutualCount: number;
@@ -78,6 +81,13 @@ const NodeBorderProgram = createNodeBorderProgram({
     borders: [
         { size: { value: 0.1 }, color: { value: '#f2f2f2' } },
         { size: { fill: true }, color: { attribute: 'color' } }
+    ]
+});
+
+const NodeHollowProgram = createNodeBorderProgram({
+    borders: [
+        { size: { value: 0.34 }, color: { attribute: 'color' } },
+        { size: { fill: true }, color: { attribute: 'holeColor' } }
     ]
 });
 
@@ -284,8 +294,11 @@ export function applyMutualFriendsGraphTheme(
         graph.mergeNodeAttributes(node, {
             baseColor: communityColor(
                 theme.communityPalette,
-                attributes.community
-            )
+                attributes.community,
+                attributes.communityNamed,
+                theme.neutralCommunityColor
+            ),
+            holeColor: theme.backgroundColor
         });
     });
 }
@@ -294,11 +307,13 @@ export async function buildSigmaGraph({
     graph: sourceGraph,
     layoutSettings,
     communityIndexById,
+    namedCommunityIndexes,
     theme
 }: {
     graph: MutualFriendGraph;
     layoutSettings: MutualFriendsLayoutSettings;
     communityIndexById: Map<string, number>;
+    namedCommunityIndexes: ReadonlySet<number>;
     theme: MutualFriendsGraphTheme;
 }) {
     const graph = new Graph<
@@ -316,6 +331,7 @@ export async function buildSigmaGraph({
 
     for (const node of sourceGraph.nodes) {
         const baseSize = 4 + (maxDegree ? (node.degree / maxDegree) * 18 : 0);
+        const community = communityIndexById.get(node.id) ?? 0;
         graph.addNode(node.id, {
             label: truncateMutualFriendLabel(node.label, 20),
             fullLabel: node.label,
@@ -325,8 +341,9 @@ export async function buildSigmaGraph({
             mutualCount: node.mutualCount,
             optedOut: node.optedOut,
             lastFetchedAt: node.lastFetchedAt,
-            community: communityIndexById.get(node.id) ?? 0,
-            type: 'border',
+            community,
+            communityNamed: namedCommunityIndexes.has(community),
+            type: isMutualFriendNodeUnavailable(node) ? 'hollow' : 'border',
             zIndex: 1
         });
     }
@@ -417,7 +434,10 @@ export function renderSigmaGraph({
             labelGridCellSize: LABEL_GRID_CELL_SIZE,
             zIndex: true,
             defaultNodeType: 'border',
-            nodeProgramClasses: { border: NodeBorderProgram },
+            nodeProgramClasses: {
+                border: NodeBorderProgram,
+                hollow: NodeHollowProgram
+            },
             edgeProgramClasses: { curve: EdgeCurveProgram }
         });
         instanceRef.current = sigma;
