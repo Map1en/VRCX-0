@@ -8,7 +8,7 @@ description = "Shared domain primitives"
 [dependencies]
 chrono = { workspace = true }
 compact_str = { workspace = true }
-quick-xml = "0.41"
+quick-xml = "0.42"
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 specta.workspace = true
