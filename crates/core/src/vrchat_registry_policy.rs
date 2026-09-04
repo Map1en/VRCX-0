@@ -80,9 +80,42 @@ pub fn validate_registry_json(json: &str) -> Result<(), RegistryPolicyError> {
         let value = props.get("data").ok_or_else(|| {
             RegistryPolicyError::Invalid(format!("Missing registry data for {key}"))
         })?;
-        validate_registry_entry(&key, value, type_int)?;
+        if type_int == 3 {
+            validate_registry_key(&key)?;
+            registry_backup_binary_bytes(&key, value)?;
+        } else {
+            validate_registry_entry(&key, value, type_int)?;
+        }
     }
     Ok(())
+}
+
+pub fn registry_backup_binary_data(bytes: &[u8]) -> Value {
+    Value::Array(bytes.iter().copied().map(Value::from).collect())
+}
+
+pub fn registry_backup_binary_bytes(
+    key: &str,
+    value: &Value,
+) -> Result<Vec<u8>, RegistryPolicyError> {
+    let Some(values) = value.as_array() else {
+        return Err(RegistryPolicyError::Invalid(format!(
+            "Invalid registry binary data for {key}."
+        )));
+    };
+    values
+        .iter()
+        .map(|value| {
+            value
+                .as_u64()
+                .and_then(|value| u8::try_from(value).ok())
+                .ok_or_else(|| {
+                    RegistryPolicyError::Invalid(format!(
+                        "Invalid registry binary data for {key}."
+                    ))
+                })
+        })
+        .collect()
 }
 
 pub fn validate_registry_entry(
@@ -192,8 +225,34 @@ mod tests {
 
     #[test]
     fn validate_registry_json_reports_missing_fields() {
-        assert!(validate_registry_json(r#"{"VRC_X":{"type":3,"data":"v"}}"#).is_ok());
+        assert!(validate_registry_json(r#"{"VRC_X":{"type":4,"data":1}}"#).is_ok());
         assert!(validate_registry_json(r#"{"VRC_X":{"data":"v"}}"#).is_err());
         assert!(validate_registry_json(r#"{"VRC_X":{"type":3}}"#).is_err());
+    }
+
+    #[test]
+    fn registry_backup_json_requires_lossless_binary_byte_arrays() {
+        assert!(validate_registry_json(
+            r#"{"VRC_BINARY":{"type":3,"data":[0,65,128,228,184,173,255,0]}}"#
+        )
+        .is_ok());
+        assert!(validate_registry_json(r#"{"VRC_BINARY":{"type":3,"data":"legacy"}}"#)
+            .is_err());
+        assert!(validate_registry_json(r#"{"VRC_BINARY":{"type":3,"data":[256]}}"#)
+            .is_err());
+        assert!(validate_registry_json(r#"{"VRC_BINARY":{"type":3,"data":[1.5]}}"#)
+            .is_err());
+    }
+
+    #[test]
+    fn registry_backup_binary_data_round_trips_every_byte() {
+        let bytes = [0, 65, 128, 228, 184, 173, 255, 0];
+
+        let data = registry_backup_binary_data(&bytes);
+
+        assert_eq!(
+            registry_backup_binary_bytes("VRC_BINARY", &data).unwrap(),
+            bytes
+        );
     }
 }

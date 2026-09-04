@@ -3,6 +3,10 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+#[cfg(target_os = "windows")]
+use vrcx_0_core::vrchat_registry_policy::{
+    registry_backup_binary_bytes, registry_backup_binary_data,
+};
 use vrcx_0_platform::Error;
 
 pub fn get_registry_key(key: &str) -> Result<serde_json::Value, Error> {
@@ -232,9 +236,11 @@ pub fn get_registry() -> Result<HashMap<String, HashMap<String, serde_json::Valu
                 let mut entry = HashMap::new();
                 match val.vtype {
                     REG_BINARY => {
-                        let s = ascii_decode(&val.bytes);
                         entry.insert("type".to_string(), serde_json::json!(3));
-                        entry.insert("data".to_string(), serde_json::json!(s));
+                        entry.insert(
+                            "data".to_string(),
+                            registry_backup_binary_data(&val.bytes),
+                        );
                     }
                     REG_DWORD => {
                         if val.bytes.len() >= 8 {
@@ -308,15 +314,13 @@ pub fn set_registry(json: &str) -> Result<(), Error> {
 
             match vtype_int {
                 3 => {
-                    let s = value
-                        .as_str()
-                        .ok_or_else(|| Error::Custom(format!("invalid binary data: {name}")))?;
+                    let bytes = registry_backup_binary_bytes(&name, value)?;
                     vrc_key
                         .set_raw_value(
                             &normalized_name,
                             &winreg::RegValue {
                                 vtype: REG_BINARY,
-                                bytes: Cow::Owned(ascii_encode(s)),
+                                bytes: Cow::Owned(bytes),
                             },
                         )
                         .map_err(|e| Error::Custom(format!("set binary: {e}")))?;
@@ -470,7 +474,7 @@ mod validation_tests {
         let valid = json!({
             "VRC_TEST": {
                 "type": 3,
-                "data": "enabled"
+                "data": [101, 110, 97, 98, 108, 101, 100]
             },
             "playerHeight_h56066313": {
                 "type": 4,

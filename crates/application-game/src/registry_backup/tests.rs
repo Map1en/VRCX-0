@@ -107,6 +107,41 @@ fn export_preparation_preserves_the_missing_backup_error() {
 }
 
 #[test]
+fn restore_accepts_lossless_binary_backup_and_records_completion() {
+    let dir = TestDir::new("restore-binary");
+    let db = dir.open_db();
+    let backup_date = "2026-09-04T00:00:00.000Z";
+    write_backups(
+        &db,
+        &[StoredRegistryBackup {
+            name: "Binary Backup".into(),
+            date: backup_date.into(),
+            data: json!({
+                "VRC_BINARY": {
+                    "type": 3,
+                    "data": [0, 65, 128, 228, 184, 173, 255, 0]
+                }
+            }),
+        }],
+    )
+    .unwrap();
+    let key = registry_backup_list(&db).unwrap()[0].key.clone();
+
+    let restored = registry_backup_restore(
+        &db,
+        &StubHost::with_registry(json!({})),
+        &key,
+    )
+    .unwrap();
+
+    assert_eq!(restored.name, "Binary Backup");
+    assert_eq!(
+        db.get_string(CONFIG_LAST_RESTORE_CHECK, "").unwrap(),
+        backup_date
+    );
+}
+
+#[test]
 fn restore_prompt_acknowledgement_persists_the_shown_backup_date() {
     let dir = TestDir::new("ack");
     let db = dir.open_db();

@@ -3,6 +3,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use serde_json::Value;
+use vrcx_0_core::vrchat_registry_policy::registry_backup_binary_data;
 
 use crate::vrchat_paths::quoted_tokens;
 
@@ -85,7 +86,7 @@ pub fn get_registry() -> Result<HashMap<String, HashMap<String, Value>>, String>
         let Some(name) = strip_hash_from_key_name(&key) else {
             continue;
         };
-        let Some((type_int, data)) = parse_registry_value(&raw) else {
+        let Some((type_int, data)) = parse_registry_backup_value(&raw) else {
             continue;
         };
 
@@ -340,6 +341,14 @@ fn parse_registry_value(value: &str) -> Option<(i32, Value)> {
     None
 }
 
+fn parse_registry_backup_value(value: &str) -> Option<(i32, Value)> {
+    if let Some(hex) = value.strip_prefix("hex:") {
+        let bytes = parse_hex_bytes(hex)?;
+        return Some((3, registry_backup_binary_data(&bytes)));
+    }
+    parse_registry_value(value)
+}
+
 fn parse_hex_bytes(value: &str) -> Option<Vec<u8>> {
     value
         .split(',')
@@ -462,7 +471,7 @@ mod tests {
 
     use super::{
         discover_wine_path, find_section_range, format_registry_value, is_vrchat_registry_section,
-        parse_compat_tool_mapping, parse_registry_value,
+        parse_compat_tool_mapping, parse_registry_backup_value, parse_registry_value,
     };
 
     static ENV_LOCK: Mutex<()> = Mutex::new(());
@@ -497,6 +506,15 @@ mod tests {
     }
 
     #[test]
+    fn parses_registry_backup_binary_without_ascii_loss() {
+        assert_eq!(
+            parse_registry_backup_value("hex:00,41,80,e4,b8,ad,ff,00")
+                .map(|(_, value)| value),
+            Some(serde_json::json!([0, 65, 128, 228, 184, 173, 255, 0]))
+        );
+    }
+
+    #[test]
     fn formats_registry_value_shapes() {
         assert_eq!(
             format_registry_value(&serde_json::json!(-1), 4).as_deref(),
@@ -505,6 +523,14 @@ mod tests {
         assert_eq!(
             format_registry_value(&serde_json::json!("ABé"), 3).as_deref(),
             Ok("hex:41,42,3f")
+        );
+        assert_eq!(
+            format_registry_value(
+                &serde_json::json!([0, 65, 128, 228, 184, 173, 255, 0]),
+                3
+            )
+            .as_deref(),
+            Ok("hex:00,41,80,e4,b8,ad,ff,00")
         );
     }
 
