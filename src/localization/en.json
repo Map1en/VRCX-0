@@ -4269,6 +4269,7 @@
                     "mesh_particle_triangles": "Mesh particle triangles",
                     "lights": "Lights",
                     "audio_sources": "Audio sources",
+                    "raycasts": "Raycasts",
                     "cloths": "Cloths",
                     "cloth_vertices": "Cloth vertices",
                     "trail_renderers": "Trail renderers",

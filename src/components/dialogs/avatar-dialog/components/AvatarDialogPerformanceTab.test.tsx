@@ -87,6 +87,7 @@ describe('AvatarDialogPerformanceTab', () => {
                         avatarStats: {
                             totalPolygons: 123456,
                             totalVertices: 65432,
+                            raycastCount: 4,
                             particleTrailsEnabled: true,
                             particleCollisionEnabled: false
                         }
@@ -102,6 +103,7 @@ describe('AvatarDialogPerformanceTab', () => {
         expect(screen.getByText('32.00 MB')).toBeTruthy();
         expect(screen.getByText('123,456')).toBeTruthy();
         expect(screen.getByText('65,432')).toBeTruthy();
+        expect(screen.getByText('4')).toBeTruthy();
         expect(screen.getAllByText('yes')).toHaveLength(1);
         expect(screen.getAllByText('no')).toHaveLength(1);
     });

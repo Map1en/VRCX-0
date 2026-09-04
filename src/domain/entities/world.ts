@@ -41,6 +41,7 @@ export type AvatarStatsRecord = EntityRecord & {
     physBoneTransformCount?: number;
     physicsColliders?: number;
     physicsRigidbodies?: number;
+    raycastCount?: number;
     skinnedMeshCount?: number;
     totalClothVertices?: number;
     totalMaxParticles?: number;

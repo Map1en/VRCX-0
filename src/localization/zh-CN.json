@@ -4270,6 +4270,7 @@
                     "mesh_particle_triangles": "网格粒子三角面",
                     "lights": "灯光",
                     "audio_sources": "音频源",
+                    "raycasts": "射线检测",
                     "cloths": "布料组件",
                     "cloth_vertices": "布料顶点",
                     "trail_renderers": "拖尾渲染器",

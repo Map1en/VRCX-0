@@ -66,6 +66,7 @@ const PERFORMANCE_STAT_GROUPS: PerformanceStatGroup[] = [
             },
             { key: 'lightCount', label: 'lights' },
             { key: 'audioSourceCount', label: 'audio_sources' },
+            { key: 'raycastCount', label: 'raycasts' },
             { key: 'clothCount', label: 'cloths' },
             { key: 'totalClothVertices', label: 'cloth_vertices' },
             { key: 'trailRendererCount', label: 'trail_renderers' },

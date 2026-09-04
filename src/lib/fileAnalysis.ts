@@ -73,6 +73,7 @@ const AVATAR_STAT_KEYS = [
     'physBoneTransformCount',
     'physicsColliders',
     'physicsRigidbodies',
+    'raycastCount',
     'skinnedMeshCount',
     'totalClothVertices',
     'totalMaxParticles',

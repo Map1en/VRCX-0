@@ -33,7 +33,8 @@ describe('getFileAnalysisForUnityPackages', () => {
                 avatarStats: {
                     totalPolygons: 123456,
                     totalTextureUsage: 5242880,
-                    physBoneComponentCount: 12
+                    physBoneComponentCount: 12,
+                    raycastCount: 4
                 }
             }
         });
@@ -62,7 +63,8 @@ describe('getFileAnalysisForUnityPackages', () => {
             avatarStats: {
                 totalPolygons: 123456,
                 totalTextureUsage: 5242880,
-                physBoneComponentCount: 12
+                physBoneComponentCount: 12,
+                raycastCount: 4
             }
         });
     });
