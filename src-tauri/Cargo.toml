@@ -1,6 +1,6 @@
 [package]
 name = "vrcx-0"
-version = "2.27.2"
+version = "2.27.3"
 edition = "2021"
 license.workspace = true
 description = "VRCX-0 desktop shell"
