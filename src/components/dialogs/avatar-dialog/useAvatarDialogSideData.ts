@@ -100,10 +100,10 @@ export function useAvatarDialogSideData({
                             fileAnalysis
                         }));
                         setFileAnalysisStatus(
-                            Object.keys(fileAnalysis).length > 0
-                                ? 'ready'
-                                : pending
-                                  ? 'pending'
+                            pending
+                                ? 'pending'
+                                : Object.keys(fileAnalysis).length > 0
+                                  ? 'ready'
                                   : 'error'
                         );
                     }

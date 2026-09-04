@@ -172,4 +172,30 @@ describe('useAvatarDialogSideData', () => {
         });
         expect(result.current.avatarSideData.fileAnalysis).toEqual({});
     });
+
+    it('preserves pending when another platform analysis is already available', async () => {
+        const fileAnalysis = {
+            standalonewindows: { _fileSize: '12.50 MB' }
+        };
+        mocks.loadFileAnalysisForUnityPackages.mockResolvedValue({
+            fileAnalysis,
+            pending: true
+        });
+
+        const { result } = renderHook(() =>
+            useAvatarDialogSideData({
+                avatar,
+                currentEndpoint: 'https://api.example.test',
+                galleryActive: false,
+                sdkUnityVersion: '2022.3.22f1'
+            })
+        );
+
+        await waitFor(() => {
+            expect(result.current.fileAnalysisStatus).toBe('pending');
+        });
+        expect(result.current.avatarSideData.fileAnalysis).toEqual(
+            fileAnalysis
+        );
+    });
 });

@@ -258,30 +258,36 @@ export function AvatarDialogPerformanceTab({
             analysis: fileAnalysis.ios
         }
     ].filter(({ platform, analysis }) => platform.platform || analysis);
+    const displayedPlatforms = pending
+        ? platforms.filter(({ analysis }) => Boolean(analysis))
+        : platforms;
 
     return (
         <EntityDialogTabContent value="performance">
-            {loading || pending ? (
+            {loading ? (
                 <div className="text-muted-foreground flex min-h-40 items-center justify-center gap-2 text-sm">
-                    {loading ? <Spinner /> : null}
+                    <Spinner />
                     <span>
-                        {t(
-                            loading
-                                ? 'dialog.avatar.performance.analysis_loading'
-                                : 'dialog.avatar.performance.analysis_pending'
-                        )}
+                        {t('dialog.avatar.performance.analysis_loading')}
                     </span>
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {platforms.map(({ key, label, platform, analysis }) => (
-                        <PlatformPerformanceSection
-                            key={key}
-                            label={label}
-                            platform={platform}
-                            analysis={analysis}
-                        />
-                    ))}
+                    {pending ? (
+                        <div className="text-muted-foreground rounded-md border border-dashed px-3 py-2 text-sm">
+                            {t('dialog.avatar.performance.analysis_pending')}
+                        </div>
+                    ) : null}
+                    {displayedPlatforms.map(
+                        ({ key, label, platform, analysis }) => (
+                            <PlatformPerformanceSection
+                                key={key}
+                                label={label}
+                                platform={platform}
+                                analysis={analysis}
+                            />
+                        )
+                    )}
                 </div>
             )}
         </EntityDialogTabContent>

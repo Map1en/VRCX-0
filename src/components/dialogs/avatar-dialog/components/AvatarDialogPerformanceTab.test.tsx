@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
-import { render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -18,6 +18,8 @@ vi.mock('../../EntityDialogScaffold', () => ({
 }));
 
 import { AvatarDialogPerformanceTab } from './AvatarDialogPerformanceTab';
+
+afterEach(cleanup);
 
 describe('AvatarDialogPerformanceTab', () => {
     it('shows a loading state while detailed analysis is requested', () => {
@@ -42,6 +44,27 @@ describe('AvatarDialogPerformanceTab', () => {
         );
 
         expect(screen.getByText('analysis_pending')).toBeTruthy();
+    });
+
+    it('renders completed platforms while another platform is pending', () => {
+        render(
+            <AvatarDialogPerformanceTab
+                platformInfo={{
+                    pc: { platform: 'standalonewindows' },
+                    android: { platform: 'android' },
+                    ios: {}
+                }}
+                fileAnalysis={{
+                    standalonewindows: { _fileSize: '12.50 MB' }
+                }}
+                pending
+            />
+        );
+
+        expect(screen.getByText('analysis_pending')).toBeTruthy();
+        expect(screen.getByText('PC')).toBeTruthy();
+        expect(screen.getByText('12.50 MB')).toBeTruthy();
+        expect(screen.queryByText('Android')).toBeNull();
     });
 
     it('renders the platform rating, sizes, and detailed avatar stats', () => {
