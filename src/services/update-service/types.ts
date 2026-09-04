@@ -1,3 +1,5 @@
+import type { ReleaseChannel } from '@/shared/utils/releaseVersion';
+
 export type UpdateDownloadProgress = {
     downloadedBytes: number;
     totalBytes: number;
@@ -17,12 +19,11 @@ export type NormalizedRelease = {
     manifestUrl?: string;
     target?: string;
     canonicalVersion: string;
-    channel: 'Stable';
+    channel: ReleaseChannel;
     displayVersion: string;
     htmlUrl: string;
     tagName: string;
     displayName: string;
-    prerelease: boolean;
     publishedAt: string;
     body: string;
     updaterType: 'tauri' | 'manual';

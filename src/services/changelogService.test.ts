@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 
 import {
     parseChangelog,
+    parseReleaseChangelog,
     parseLocalizedChangelog,
     resolvePostUpdateChangelogToastState,
     resolvePreferredChangelogLanguage
@@ -55,6 +56,37 @@ This release focuses on the changelog page.
                 markdown: body
             }
         ]);
+    });
+
+    test('uses the complete beta release note as one English changelog', () => {
+        const body = `<!-- vrcx-0-changelog:note hidden -->
+### Beta changes
+
+- Fixed the updater.`;
+
+        expect(
+            parseReleaseChangelog({
+                canonicalVersion: '2.8.0-beta.1',
+                channel: 'beta',
+                displayVersion: '2.8.0-beta.1',
+                htmlUrl: 'https://example.test/v2.8.0-beta.1',
+                tagName: 'v2.8.0-beta.1',
+                displayName: 'VRCX-0 2.8.0-beta.1',
+                publishedAt: '2026-09-04T00:00:00Z',
+                body,
+                updaterType: 'manual'
+            })
+        ).toEqual({
+            note: '',
+            entries: [
+                {
+                    lang: 'en',
+                    label: 'English',
+                    tag: '',
+                    markdown: body
+                }
+            ]
+        });
     });
 
     test('merges duplicate language blocks into one tab entry', () => {

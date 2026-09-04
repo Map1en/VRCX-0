@@ -32,6 +32,7 @@ const MAX_FEEDBACK_LENGTH: usize = 2000;
 #[serde(rename_all = "camelCase")]
 struct FeedbackPayload<'a> {
     install_id: &'a str,
+    app_version: &'a str,
     content: &'a str,
 }
 
@@ -198,6 +199,7 @@ impl TelemetryRuntime {
         };
         let payload = FeedbackPayload {
             install_id: &session.install_id,
+            app_version: &self.inner.app_version,
             content: trimmed,
         };
         if self

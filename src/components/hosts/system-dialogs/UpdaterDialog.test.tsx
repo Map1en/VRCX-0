@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
     previewStableReleaseCheck: vi.fn(),
     getPreviewStableReleaseUpdateMode: vi.fn(),
     appAppUpdateCheckRun: vi.fn(),
+    appAppUpdateReleaseGet: vi.fn(),
     toNormalizedReleaseFromSnapshot: vi.fn(),
     confirmInstall: vi.fn(),
     updateCheckDisabled: false
@@ -34,7 +35,8 @@ vi.mock('@/shared/buildLabel', () => ({
 
 vi.mock('@/platform/tauri/bindings', () => ({
     commands: {
-        appAppUpdateCheckRun: mocks.appAppUpdateCheckRun
+        appAppUpdateCheckRun: mocks.appAppUpdateCheckRun,
+        appAppUpdateReleaseGet: mocks.appAppUpdateReleaseGet
     }
 }));
 
@@ -87,8 +89,54 @@ vi.mock('@/ui/shadcn/field', async () => {
     const React = await import('react');
 
     return {
+        Field: ({ children }: React.PropsWithChildren) =>
+            React.createElement('div', null, children),
+        FieldDescription: ({ children }: React.PropsWithChildren) =>
+            React.createElement('p', null, children),
         FieldGroup: ({ children }: React.PropsWithChildren) =>
-            React.createElement('div', null, children)
+            React.createElement('div', null, children),
+        FieldLabel: ({ children }: React.PropsWithChildren) =>
+            React.createElement('label', null, children)
+    };
+});
+
+vi.mock('@/ui/shadcn/select', async () => {
+    const React = await import('react');
+
+    return {
+        Select: ({
+            children,
+            value,
+            onValueChange
+        }: React.PropsWithChildren<{
+            value: string;
+            onValueChange: (value: string) => void;
+        }>) =>
+            React.createElement(
+                'div',
+                null,
+                React.createElement(
+                    'button',
+                    {
+                        type: 'button',
+                        onClick: () =>
+                            onValueChange(
+                                value === 'stable' ? 'beta' : 'stable'
+                            )
+                    },
+                    `select:${value}`
+                ),
+                children
+            ),
+        SelectContent: ({ children }: React.PropsWithChildren) =>
+            React.createElement('div', null, children),
+        SelectGroup: ({ children }: React.PropsWithChildren) =>
+            React.createElement('div', null, children),
+        SelectItem: ({ children }: React.PropsWithChildren) =>
+            React.createElement('div', null, children),
+        SelectTrigger: ({ children }: React.PropsWithChildren) =>
+            React.createElement('div', null, children),
+        SelectValue: () => null
     };
 });
 
@@ -124,6 +172,7 @@ describe('UpdaterDialog', () => {
             release: null,
             shouldNotify: false
         });
+        mocks.appAppUpdateReleaseGet.mockResolvedValue(null);
         mocks.toNormalizedReleaseFromSnapshot.mockReturnValue(null);
     });
 
@@ -276,5 +325,31 @@ describe('UpdaterDialog', () => {
         ).toBeTruthy();
         expect(screen.queryByRole('button')).toBeNull();
         expect(mocks.appAppUpdateCheckRun).not.toHaveBeenCalled();
+    });
+
+    it('requires downloading the target channel release to switch channels', async () => {
+        const betaRelease = {
+            canonicalVersion: '2.7.0-beta.1',
+            displayVersion: '2.7.0-beta.1',
+            channel: 'beta',
+            updaterType: 'manual'
+        };
+        mocks.appAppUpdateReleaseGet.mockResolvedValue(betaRelease);
+        mocks.toNormalizedReleaseFromSnapshot.mockImplementation(
+            (release: unknown) => release
+        );
+
+        render(<UpdaterDialog open onOpenChange={vi.fn()} />);
+        await screen.findByText('select:stable');
+        screen.getByRole('button', { name: 'select:stable' }).click();
+
+        expect(
+            await screen.findByText('dialog.vrcx_updater.channel.download_beta')
+        ).toBeTruthy();
+        expect(mocks.appAppUpdateReleaseGet).toHaveBeenCalledWith('beta');
+        expect(screen.getByText('2.6.0 -> 2.7.0-beta.1')).toBeTruthy();
+        expect(
+            screen.queryByText('dialog.system.action.install_and_restart')
+        ).toBeNull();
     });
 });

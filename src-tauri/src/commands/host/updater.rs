@@ -1,7 +1,10 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application::profile::{AppUpdateDownloadStatusSnapshot, AppUpdateStatusSnapshot};
+use vrcx_0_application::profile::{
+    AppUpdateChannel, AppUpdateDownloadStatusSnapshot, AppUpdateReleaseSnapshot,
+    AppUpdateStatusSnapshot,
+};
 use vrcx_0_application_core::UpdaterMetadata;
 
 use crate::error::AppError;
@@ -13,6 +16,19 @@ pub async fn app__app_update_check_run(
     state: State<'_, AppState>,
 ) -> Result<AppUpdateStatusSnapshot, AppError> {
     Ok(state.runtime_host().check_for_app_update().await)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__app_update_release_get(
+    state: State<'_, AppState>,
+    channel: AppUpdateChannel,
+) -> Result<Option<AppUpdateReleaseSnapshot>, AppError> {
+    state
+        .runtime_host()
+        .latest_app_update_release_for_channel(channel)
+        .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]

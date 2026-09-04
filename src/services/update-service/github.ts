@@ -1,9 +1,9 @@
 import externalApiRepository from '@/repositories/externalApiRepository';
 import { isPreviewBuildLabel } from '@/shared/buildLabel';
-import { branches } from '@/shared/constants/settings';
-import type { ReleaseBranchKey } from '@/shared/constants/settings';
+import { GITHUB_RELEASES_URL } from '@/shared/constants/settings';
+import type { ReleaseChannel } from '@/shared/utils/releaseVersion';
 
-import { normalizeReleaseList, sanitizeBranch } from './release';
+import { normalizeReleaseList } from './release';
 import type { NormalizedRelease } from './types';
 
 type PreviewStableReleaseUpdateMode = {
@@ -17,11 +17,10 @@ export function getPreviewStableReleaseUpdateMode(): PreviewStableReleaseUpdateM
 }
 
 export async function fetchBranchReleases(
-    branch: ReleaseBranchKey
+    channel: ReleaseChannel
 ): Promise<NormalizedRelease[]> {
-    const normalizedBranch = sanitizeBranch(branch);
     const response = await externalApiRepository.fetchGithubReleases({
-        url: branches[normalizedBranch].urlReleases,
+        url: GITHUB_RELEASES_URL,
         headers: {
             Accept: 'application/vnd.github+json'
         }
@@ -38,12 +37,12 @@ export async function fetchBranchReleases(
         throw new Error(data.message);
     }
 
-    return normalizeReleaseList(normalizedBranch, data);
+    return normalizeReleaseList(channel, data);
 }
 
 export async function fetchLatestBranchRelease(
-    branch: ReleaseBranchKey
+    channel: ReleaseChannel
 ): Promise<NormalizedRelease | null> {
-    const releases = await fetchBranchReleases(branch);
+    const releases = await fetchBranchReleases(channel);
     return releases[0] || null;
 }

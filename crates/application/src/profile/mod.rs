@@ -13,10 +13,11 @@ mod test_support;
 mod vrc_status;
 
 pub use app_update::{
-    AppUpdateBuildInfo, AppUpdateCatalogAsset, AppUpdateCatalogRelease, AppUpdateDownloadPhase,
-    AppUpdateDownloadProgressPayload, AppUpdateDownloadStatusSnapshot, AppUpdateInstalledPayload,
-    AppUpdateReleaseCatalogFuture, AppUpdateReleaseCatalogPort, AppUpdateReleaseSnapshot,
-    AppUpdateRuntime, AppUpdateRuntimeDeps, AppUpdateStatusSnapshot, AppUpdateTargetResolver,
+    AppUpdateBuildInfo, AppUpdateCatalogAsset, AppUpdateCatalogRelease, AppUpdateChannel,
+    AppUpdateDownloadPhase, AppUpdateDownloadProgressPayload, AppUpdateDownloadStatusSnapshot,
+    AppUpdateInstalledPayload, AppUpdateReleaseCatalogFuture, AppUpdateReleaseCatalogPort,
+    AppUpdateReleaseSnapshot, AppUpdateRuntime, AppUpdateRuntimeDeps, AppUpdateStatusSnapshot,
+    AppUpdateTargetResolver,
 };
 pub use background_image::{
     BackgroundImageConfigureInput, BackgroundImageCustomSource, BackgroundImageCustomSourceKind,

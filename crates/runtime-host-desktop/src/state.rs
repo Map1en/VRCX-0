@@ -853,6 +853,17 @@ impl DesktopRuntimeHostState {
         self.desktop.app_update.check_now().await
     }
 
+    pub async fn latest_app_update_release_for_channel(
+        &self,
+        channel: vrcx_0_application::profile::AppUpdateChannel,
+    ) -> Result<Option<vrcx_0_application::profile::AppUpdateReleaseSnapshot>> {
+        Ok(self
+            .desktop
+            .app_update
+            .latest_release_for_channel(channel)
+            .await?)
+    }
+
     pub fn app_update_download_status(
         &self,
     ) -> vrcx_0_application::profile::AppUpdateDownloadStatusSnapshot {

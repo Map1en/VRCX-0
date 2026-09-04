@@ -21,6 +21,7 @@ moka = { version = "0.12", features = ["future"] }
 regex = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
+semver = { workspace = true }
 sha2 = { workspace = true }
 tokio = { workspace = true, features = [
     "rt",

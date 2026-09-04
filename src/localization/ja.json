@@ -5156,7 +5156,17 @@
         },
         "vrcx_updater": {
             "latest_version": "VRCX-0は最新版です。",
-            "ready_for_update": "アップデート {value} の準備ができました"
+            "ready_for_update": "アップデート {value} の準備ができました",
+            "channel": {
+                "label": "アップデートチャンネル",
+                "stable": "安定版",
+                "beta": "ベータ版",
+                "description": "VRCX-0 は、現在インストールされているチャンネルの更新のみ確認します。",
+                "switch_description": "{channel}に切り替えるには、GitHub から最新リリースをダウンロードしてインストールしてください。",
+                "download_stable": "最新の安定版をダウンロード",
+                "download_beta": "最新のベータ版をダウンロード",
+                "no_release": "このチャンネルには利用可能なリリースがありません。"
+            }
         },
         "change_log": {
             "header": "更新履歴",

@@ -5111,7 +5111,17 @@
         },
         "vrcx_updater": {
             "latest_version": "VRCX-0이 최신 버전입니다",
-            "ready_for_update": "{value} 업데이트가 준비되었습니다"
+            "ready_for_update": "{value} 업데이트가 준비되었습니다",
+            "channel": {
+                "label": "업데이트 채널",
+                "stable": "안정 버전",
+                "beta": "베타",
+                "description": "VRCX-0은 현재 설치된 채널의 업데이트만 확인합니다.",
+                "switch_description": "{channel}(으)로 전환하려면 GitHub에서 해당 채널의 최신 릴리스를 다운로드하여 설치하세요.",
+                "download_stable": "최신 안정 버전 다운로드",
+                "download_beta": "최신 베타 다운로드",
+                "no_release": "이 채널에는 사용 가능한 릴리스가 없습니다."
+            }
         },
         "change_log": {
             "header": "변경사항"

@@ -2345,6 +2345,11 @@ const generatedCommands = {
     async appAppUpdateCheckRun(): Promise<AppUpdateStatusSnapshot> {
         return await TAURI_INVOKE('app__app_update_check_run');
     },
+    async appAppUpdateReleaseGet(
+        channel: AppUpdateChannel
+    ): Promise<AppUpdateReleaseSnapshot | null> {
+        return await TAURI_INVOKE('app__app_update_release_get', { channel });
+    },
     async appAppUpdateDownloadStatusGet(): Promise<AppUpdateDownloadStatusSnapshot> {
         return await TAURI_INVOKE('app__app_update_download_status_get');
     },
@@ -2913,6 +2918,7 @@ export type AppLauncherSnapshot = {
 export type AppLauncherSnapshotEvent = { snapshot: AppLauncherSnapshot };
 export type AppLauncherStopPolicy = 'keepRunning' | 'closeByVrcx';
 export type AppLauncherTargetPickKind = 'auto' | 'localApp';
+export type AppUpdateChannel = 'stable' | 'beta';
 export type AppUpdateDeliveryKind = 'tauri' | 'manual';
 export type AppUpdateDownloadPhase =
     | 'idle'
@@ -2949,6 +2955,7 @@ export type AppUpdateReleaseSnapshot = {
     body: string;
     canonicalVersion: string;
     displayVersion: string;
+    channel: AppUpdateChannel;
     manifestUrl: string;
     target: string;
     updaterType: AppUpdateDeliveryKind;

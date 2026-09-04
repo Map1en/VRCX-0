@@ -57,12 +57,11 @@ function readLatestUpdateRelease(): NormalizedRelease | null {
         manifestUrl: release.manifestUrl.trim() || undefined,
         target: release.target.trim() || undefined,
         canonicalVersion: release.canonicalVersion,
-        channel: 'Stable',
+        channel: release.channel,
         displayVersion: release.displayVersion,
         htmlUrl: release.htmlUrl,
         tagName: release.tagName,
         displayName: release.displayName || release.title,
-        prerelease: false,
         publishedAt: release.publishedAt,
         body: '',
         updaterType: release.updaterType

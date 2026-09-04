@@ -28,7 +28,7 @@ vi.mock('react-i18next', () => {
 
 vi.mock('@/services/changelogService', () => ({
     fetchChangelogRelease: vi.fn(),
-    parseChangelog: () => ({
+    parseReleaseChangelog: () => ({
         entries: [] as unknown[],
         note: ''
     }),

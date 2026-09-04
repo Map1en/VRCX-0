@@ -11,6 +11,8 @@ use crate::{Error, Result};
 pub struct UpdaterCheckRequest {
     pub manifest_url: String,
     pub target: String,
+    pub current_version: String,
+    pub expected_version: String,
     pub allow_downgrades: bool,
     pub proxy: Option<String>,
 }

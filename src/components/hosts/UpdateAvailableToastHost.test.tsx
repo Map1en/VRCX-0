@@ -39,6 +39,7 @@ function updateRelease(
         body: '',
         canonicalVersion: '2.7.0',
         displayVersion: '2.7.0',
+        channel: 'stable',
         manifestUrl: '',
         target: '',
         updaterType: 'manual',

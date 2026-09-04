@@ -5164,7 +5164,17 @@
         },
         "vrcx_updater": {
             "latest_version": "VRCX-0 已是最新版本",
-            "ready_for_update": "版本 {value} 已可供安裝"
+            "ready_for_update": "版本 {value} 已可供安裝",
+            "channel": {
+                "label": "更新通道",
+                "stable": "正式版",
+                "beta": "測試版",
+                "description": "VRCX-0 只會檢查目前安裝通道中的更新。",
+                "switch_description": "若要切換至{channel}，請從 GitHub 下載並安裝該通道的最新版本。",
+                "download_stable": "下載最新正式版",
+                "download_beta": "下載最新測試版",
+                "no_release": "此通道目前沒有可用版本。"
+            }
         },
         "change_log": {
             "header": "更新日誌",

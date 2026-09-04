@@ -5163,7 +5163,17 @@
         },
         "vrcx_updater": {
             "latest_version": "VRCX-0 está actualizado.",
-            "ready_for_update": "La actualización {value} está lista"
+            "ready_for_update": "La actualización {value} está lista",
+            "channel": {
+                "label": "Canal de actualizaciones",
+                "stable": "Estable",
+                "beta": "Beta",
+                "description": "VRCX-0 solo busca actualizaciones en el canal instalado.",
+                "switch_description": "Para cambiar a {channel}, descarga e instala la versión más reciente de ese canal desde GitHub.",
+                "download_stable": "Descargar la última versión estable",
+                "download_beta": "Descargar la última beta",
+                "no_release": "No hay ninguna versión disponible en este canal."
+            }
         },
         "change_log": {
             "header": "Registro de Cambios",

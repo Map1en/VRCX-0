@@ -31,6 +31,7 @@ function toUpdaterReleaseSnapshot(release: UpdaterReleaseSnapshotSource) {
         htmlUrl: release.htmlUrl || '',
         tagName: release.tagName || '',
         displayName: release.displayName || '',
+        channel: release.channel,
         body: release.body || '',
         updaterType: release.updaterType || 'manual'
     };
@@ -60,9 +61,14 @@ function setUpdaterCheckResult(
 
 function notifyAvailableUpdate(release: NormalizedRelease, version: string) {
     const displayVersion = formatReleaseDisplayVersion(version);
+    const channelLabel = i18n.t(
+        release.channel === 'beta'
+            ? 'dialog.vrcx_updater.channel.beta'
+            : 'dialog.vrcx_updater.channel.stable'
+    );
     const message = i18n.t(
         'service.background_maintenance_service.dynamic.version_value_is_available_on_the_value_branch',
-        { value: displayVersion, value2: 'Stable' }
+        { value: displayVersion, value2: channelLabel }
     );
     useNotificationStore.getState().pushNotification({
         level: 'info',
