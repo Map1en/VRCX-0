@@ -124,9 +124,6 @@ pub fn prepare_share_collection_payload(
             });
             continue;
         };
-        if !row.release_status.as_str().eq_ignore_ascii_case("public") {
-            continue;
-        }
         if row.id.trim().is_empty()
             || row.name.trim().is_empty()
             || row.author_id.trim().is_empty()
@@ -143,7 +140,7 @@ pub fn prepare_share_collection_payload(
     }
     if worlds.is_empty() {
         return Err(Error::Custom(
-            "Share collection has no complete public cached worlds to upload.".into(),
+            "Share collection has no complete cached worlds to upload.".into(),
         ));
     }
 

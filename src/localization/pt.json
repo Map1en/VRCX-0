@@ -1424,7 +1424,7 @@
                     "title": "Coleção compartilhada",
                     "description": "{count} mundos estão prontos para compartilhar.",
                     "ready": "Sua página compartilhada está pronta",
-                    "skipped": "{count} mundos indisponíveis ou não públicos não foram incluídos.",
+                    "skipped": "{count} mundos indisponíveis ou incompletos não foram incluídos.",
                     "skipped_incomplete": "{world} foi ignorado porque faltam informações obrigatórias."
                 },
                 "coachmark": {
@@ -1444,7 +1444,7 @@
                     "forget_failed": "Não foi possível remover o compartilhamento salvo",
                     "no_worlds": "Este grupo não tem IDs de mundos para compartilhar",
                     "too_many": "Você pode compartilhar até {cap} mundos por vez. Divida este grupo primeiro.",
-                    "skipped": "Compartilhado. {count} mundos ignorados (não sincronizados ou não públicos)."
+                    "skipped": "Compartilhado. {count} mundos ignorados (não sincronizados ou incompletos)."
                 }
             }
         },

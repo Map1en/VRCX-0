@@ -1424,7 +1424,7 @@
                     "title": "合集已分享",
                     "description": "已有 {count} 个世界可以分享。",
                     "ready": "分享页面已准备好",
-                    "skipped": "有 {count} 个不可用或非公开世界未被加入。",
+                    "skipped": "有 {count} 个不可用或信息不完整的世界未被加入。",
                     "skipped_incomplete": "{world} 因信息不完整被跳过。"
                 },
                 "coachmark": {
@@ -1444,7 +1444,7 @@
                     "forget_failed": "移除记录失败",
                     "no_worlds": "此分组没有可分享的世界 ID",
                     "too_many": "单次分享最多 {cap} 个世界，请先拆分该分组。",
-                    "skipped": "已分享，跳过 {count} 个世界（未同步或非公开）。"
+                    "skipped": "已分享，跳过 {count} 个世界（未同步或信息不完整）。"
                 }
             }
         },
