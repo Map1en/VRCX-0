@@ -1426,7 +1426,7 @@
                     "title": "Sbírka sdílena",
                     "description": "Ke sdílení je připraveno {count} světů.",
                     "ready": "Sdílená stránka je připravena",
-                    "skipped": "{count} nedostupných nebo neveřejných světů nebylo zahrnuto.",
+                    "skipped": "{count} nedostupných nebo neúplných světů nebylo zahrnuto.",
                     "skipped_incomplete": "Svět {world} byl přeskočen, protože mu chybí povinné údaje."
                 },
                 "coachmark": {
@@ -1446,7 +1446,7 @@
                     "forget_failed": "Uložené sdílení se nepodařilo odebrat",
                     "no_worlds": "Tato skupina nemá žádné ID světů ke sdílení",
                     "too_many": "Najednou můžeš sdílet nejvýše {cap} světů. Nejdřív tuto skupinu rozděl.",
-                    "skipped": "Sdíleno. Přeskočeno {count} světů (nesynchronizované nebo neveřejné)."
+                    "skipped": "Sdíleno. Přeskočeno {count} světů (nesynchronizované nebo neúplné)."
                 }
             }
         },

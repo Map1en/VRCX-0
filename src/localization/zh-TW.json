@@ -1424,7 +1424,7 @@
                     "title": "集合已分享",
                     "description": "{count} 個世界已可分享。",
                     "ready": "你的分享頁面已就緒",
-                    "skipped": "未包含 {count} 個無法使用或非公開的世界。",
+                    "skipped": "未包含 {count} 個無法使用或資訊不完整的世界。",
                     "skipped_incomplete": "已略過 {world}，因為缺少必要資訊。"
                 },
                 "coachmark": {
@@ -1444,7 +1444,7 @@
                     "forget_failed": "無法移除儲存的分享",
                     "no_worlds": "這個群組沒有可分享的世界 ID",
                     "too_many": "你一次最多可以分享 {cap} 個世界。請先拆分這個群組。",
-                    "skipped": "已分享。已跳過 {count} 個世界（未同步或未公開）。"
+                    "skipped": "已分享。已跳過 {count} 個世界（未同步或資訊不完整）。"
                 }
             }
         },

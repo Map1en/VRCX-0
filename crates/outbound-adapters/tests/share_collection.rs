@@ -114,7 +114,7 @@ fn owner_hint_is_deterministic_and_isolated_across_users() {
 }
 
 #[test]
-fn prepare_payload_keeps_only_public_worlds_in_input_order() {
+fn prepare_payload_keeps_public_and_private_worlds_in_input_order() {
     let (_dir, db, adapter) = test_services("payload");
     world_cache_upsert(
         &db,
@@ -177,7 +177,7 @@ fn prepare_payload_keeps_only_public_worlds_in_input_order() {
     assert_eq!(prepared.payload.access, "open");
     assert_eq!(prepared.payload.author_name, "Scenic Curator");
     assert!(prepared.payload.updated_at > 0);
-    assert_eq!(prepared.payload.worlds.len(), 2);
+    assert_eq!(prepared.payload.worlds.len(), 3);
     assert!(prepared.skipped_worlds.is_empty());
     assert_eq!(
         prepared.payload.worlds[0].world_id,
@@ -197,12 +197,20 @@ fn prepare_payload_keeps_only_public_worlds_in_input_order() {
     assert_eq!(prepared.payload.worlds[0].comment, "Bring friends");
     assert_eq!(
         prepared.payload.worlds[1].world_id,
+        "wrld_22222222-2222-2222-2222-222222222222"
+    );
+    assert_eq!(
+        prepared.payload.worlds[1].release_status,
+        vrcx_0_core::ReleaseStatus::Private
+    );
+    assert_eq!(
+        prepared.payload.worlds[2].world_id,
         "wrld_11111111-1111-1111-1111-111111111111"
     );
-    assert_eq!(prepared.payload.worlds[1].comment, "");
+    assert_eq!(prepared.payload.worlds[2].comment, "");
     assert_eq!(
-        prepared.payload.worlds[1].thumbnail_image_url,
-        prepared.payload.worlds[1].image_url
+        prepared.payload.worlds[2].thumbnail_image_url,
+        prepared.payload.worlds[2].image_url
     );
 }
 
