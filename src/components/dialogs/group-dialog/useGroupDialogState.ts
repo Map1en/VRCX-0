@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
+import type { GroupInstanceRecord } from '@/domain/entities/group';
 import type { EntityRecord } from '@/domain/entities/shared';
 import type { LoadStatus } from '@/domain/shared/types';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
@@ -41,6 +42,8 @@ const groupDialogStatus: {
     ready: 'ready'
 };
 
+const EMPTY_GROUP_INSTANCES: GroupInstanceRecord[] = [];
+
 export type GroupPreviousInstanceRow =
     Awaited<
         ReturnType<typeof gameLogRepository.getPreviousInstancesByGroupId>
@@ -69,6 +72,14 @@ export function useGroupDialogState({
     const currentLocation = useRuntimeStore(
         (state) => state.gameState.currentLocation
     );
+    const groupInstancesState = useRuntimeStore(
+        (state) => state.groupInstances
+    );
+    const groupInstances =
+        groupInstancesState.userId === currentUserId &&
+        groupInstancesState.endpoint === currentEndpoint
+            ? groupInstancesState.instances
+            : EMPTY_GROUP_INSTANCES;
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const confirm = useModalStore((state) => state.confirm);
     const updateEntityDialogMetadata = useDialogStore(
@@ -90,13 +101,10 @@ export function useGroupDialogState({
         groupId: normalizedGroupId,
         endpoint: currentEndpoint
     });
-    const activeInstancesTargetRef = useRef<ActiveGroupTarget>({
-        groupId: '',
-        endpoint: ''
-    });
-    const { activeInstances, rawActiveInstances, setRawActiveInstances } =
+    const { activeInstances, rawActiveInstances } =
         useGroupDialogActiveInstances({
             groupId: normalizedGroupId,
+            groupInstances,
             friendsById,
             currentUserSnapshot,
             currentLocation
@@ -157,7 +165,6 @@ export function useGroupDialogState({
 
         setGroup(seedData ? groupProfileRepository.normalize(seedData) : null);
         setPreviousInstances([]);
-        setRawActiveInstances([]);
         setLoadStatus('running');
         setDetail('');
 
@@ -206,13 +213,7 @@ export function useGroupDialogState({
         return () => {
             active = false;
         };
-    }, [
-        currentEndpoint,
-        normalizedGroupId,
-        seedData,
-        setRawActiveInstances,
-        t
-    ]);
+    }, [currentEndpoint, normalizedGroupId, seedData, t]);
 
     useEffect(() => {
         let active = true;
@@ -246,62 +247,7 @@ export function useGroupDialogState({
     }, [normalizedGroupId]);
 
     useEffect(() => {
-        let active = true;
-        activeInstancesTargetRef.current = {
-            groupId: '',
-            endpoint: ''
-        };
-
-        if (!normalizedGroupId || !currentUserId) {
-            setRawActiveInstances([]);
-            return () => {
-                active = false;
-            };
-        }
-
-        groupProfileRepository
-            .getGroupInstances({
-                groupId: normalizedGroupId,
-                userId: currentUserId
-            })
-            .then((response) => {
-                if (!active) {
-                    return;
-                }
-                const rows = Array.isArray(response.json)
-                    ? response.json
-                    : Array.isArray(response.json.instances)
-                      ? response.json.instances
-                      : [];
-                activeInstancesTargetRef.current = {
-                    endpoint: currentEndpoint,
-                    groupId: normalizedGroupId
-                };
-                setRawActiveInstances(rows);
-            })
-            .catch(() => {
-                if (active) {
-                    setRawActiveInstances([]);
-                }
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [
-        currentEndpoint,
-        currentUserId,
-        normalizedGroupId,
-        setRawActiveInstances
-    ]);
-
-    useEffect(() => {
-        const target = activeInstancesTargetRef.current;
-        if (
-            !rawActiveInstances.length ||
-            target.endpoint !== currentEndpoint ||
-            target.groupId !== normalizedGroupId
-        ) {
+        if (!rawActiveInstances.length || !currentEndpoint) {
             return;
         }
 

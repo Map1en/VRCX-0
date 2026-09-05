@@ -39,6 +39,7 @@ import type {
     SidePanelPreferences,
     SidePanelSortMethod
 } from './side-panel/sidePanelTypes';
+import { useSidePanelActiveTab } from './side-panel/useSidePanelActiveTab';
 import { useSidePanelSettingsState } from './useSidePanelSettingsState';
 import { useSidePanelTabData } from './useSidePanelTabData';
 
@@ -107,7 +108,7 @@ export const SidePanel = forwardRef<HTMLElement, SidePanelProps>(
         ref
     ) {
         const { t } = useTranslation();
-        const [activeTab, setActiveTab] = useState('friends');
+        const { activeTab, setActiveTab } = useSidePanelActiveTab();
         const [prefs, setPrefs] = useState(defaultPrefs);
         const [isRefreshing, setIsRefreshing] = useState(false);
         const [friendRefreshCooldownUntil, setFriendRefreshCooldownUntil] =

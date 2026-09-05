@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const tauriMock = vi.hoisted(() => ({
     commands: {
         appVrchatGroupGet: vi.fn(),
-        appVrchatGroupInstancesGet: vi.fn(),
         appVrchatGroupUserInstancesGet: vi.fn(),
         appVrchatGroupUserGroupsGet: vi.fn(),
         appVrchatGroupLogsGet: vi.fn()
@@ -130,34 +129,18 @@ describe('GroupProfileRepository', () => {
         });
     });
 
-    it('preserves direct-array and wrapped group instance response shapes', async () => {
-        const directRows = [
-            {
-                id: 'instance_direct',
-                location: 'wrld_redacted:instance_direct~group(grp_redacted)'
-            }
-        ];
+    it('preserves the wrapped group instance response shape', async () => {
         const wrappedRows = [
             {
                 id: 'instance_wrapped',
                 location: 'wrld_redacted:instance_wrapped~group(grp_redacted)'
             }
         ];
-        tauriMock.commands.appVrchatGroupInstancesGet.mockResolvedValue({
-            status: 200,
-            data: JSON.stringify(directRows)
-        });
         tauriMock.commands.appVrchatGroupUserInstancesGet.mockResolvedValue({
             status: 200,
             data: JSON.stringify({ instances: wrappedRows })
         });
 
-        await expect(
-            groupProfileRepository.getGroupInstances({
-                groupId: 'grp_redacted',
-                userId: 'usr_redacted'
-            })
-        ).resolves.toMatchObject({ json: directRows });
         await expect(
             groupProfileRepository.getUsersGroupInstances({
                 userId: 'usr_redacted'

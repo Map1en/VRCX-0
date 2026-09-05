@@ -23,7 +23,6 @@ pub enum GroupRemoteRequest {
     GetMembers(VrchatGroupMembersInput),
     SearchMembers(VrchatGroupMembersSearchInput),
     GetGallery(VrchatGroupGalleryInput),
-    GetGroupInstances(VrchatGroupUserInput),
     GetBans(VrchatGroupPagedInput),
     GetInvites(VrchatGroupPagedInput),
     GetJoinRequests(VrchatGroupJoinRequestsInput),
@@ -261,26 +260,6 @@ pub async fn get_gallery(
             "Getting gallery {} for group {}.",
             built.secondary_id.as_deref().unwrap_or_default(),
             built.primary_id
-        ),
-        built.request,
-    )
-    .await
-}
-
-pub async fn get_group_instances(
-    deps: GroupApiDeps,
-    input: VrchatGroupUserInput,
-) -> Result<VrchatApiResponse> {
-    let built = deps
-        .remote_requests
-        .build(GroupRemoteRequest::GetGroupInstances(input))?;
-    execute_group_api(
-        &deps,
-        "app__vrchat_group_instances_get",
-        format!(
-            "Getting group {} instances for user {}.",
-            built.primary_id,
-            built.secondary_id.as_deref().unwrap_or_default()
         ),
         built.request,
     )

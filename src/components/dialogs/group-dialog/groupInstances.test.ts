@@ -29,7 +29,7 @@ describe('groupInstances', () => {
         ).toBe('wrld_fallback:fallback~group(grp_target)');
     });
 
-    it('merges base instances with friends and the current user for the target group only', () => {
+    it('enriches projected instances without creating presence-only rows', () => {
         const currentLocation = 'wrld_current:current~group(grp_target)';
         const rows = mergeGroupInstances(
             [
@@ -75,26 +75,20 @@ describe('groupInstances', () => {
         );
 
         expect(rows.map((row) => row.location)).toEqual([
-            currentLocation,
             'wrld_base:base~group(grp_target)'
         ]);
-        expect(rows[0]).toMatchObject({
-            worldId: 'wrld_current',
-            instanceId: 'current~group(grp_target)',
-            friendCount: 1
-        });
         expect(rows[0].users.map((user) => user.id)).toEqual([
-            'usr_self',
-            'usr_traveling'
-        ]);
-        expect(rows[1].users.map((user) => user.id)).toEqual([
             'usr_existing',
             'usr_friend'
         ]);
-        expect(rows[1].friendCount).toBe(3);
+        expect(rows[0].friendCount).toBe(3);
         expect(
             rows.some((row) =>
-                row.users.some((user) => user.id === 'usr_wrong_group')
+                row.users.some((user) =>
+                    ['usr_self', 'usr_traveling', 'usr_wrong_group'].includes(
+                        String(user.id || '')
+                    )
+                )
             )
         ).toBe(false);
     });

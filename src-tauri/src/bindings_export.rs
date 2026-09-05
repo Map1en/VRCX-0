@@ -416,7 +416,6 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::vrchat::groups::service::app__vrchat_group_block,
             commands::vrchat::groups::service::app__vrchat_group_gallery_get,
             commands::vrchat::groups::service::app__vrchat_group_get,
-            commands::vrchat::groups::service::app__vrchat_group_instances_get,
             commands::vrchat::groups::service::app__vrchat_group_invite_delete,
             commands::vrchat::groups::service::app__vrchat_group_invite_send,
             commands::vrchat::groups::service::app__vrchat_group_invites_get,

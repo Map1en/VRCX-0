@@ -144,10 +144,6 @@ impl DesktopGroupRuntime {
         Ok(application::get_gallery(self.api_deps(), input).await?)
     }
 
-    pub async fn instances(&self, input: VrchatGroupUserInput) -> Result<VrchatApiResponse> {
-        Ok(application::get_group_instances(self.api_deps(), input).await?)
-    }
-
     pub async fn bans(&self, input: VrchatGroupPagedInput) -> Result<VrchatApiResponse> {
         Ok(application::get_bans(self.api_deps(), input).await?)
     }
