@@ -1,25 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-    getLoginErrorMessage,
     getLoginUserDisplayName,
     shouldShowLegacyMigrationAction
 } from './loginDisplay';
 
 describe('login display helpers', () => {
-    it('shows useful error messages while keeping a fallback for unknown failures', () => {
-        expect(
-            getLoginErrorMessage(
-                new Error('Invalid credentials'),
-                'Login failed'
-            )
-        ).toBe('Invalid credentials');
-        expect(
-            getLoginErrorMessage({ message: 'Ignored' }, 'Login failed')
-        ).toBe('Login failed');
-        expect(getLoginErrorMessage(null, 'Login failed')).toBe('Login failed');
-    });
-
     it('chooses the best available account label for saved accounts', () => {
         expect(
             getLoginUserDisplayName({

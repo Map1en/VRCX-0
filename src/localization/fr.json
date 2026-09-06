@@ -3037,6 +3037,12 @@
                 "failed_to_load_proxy_settings": "Échec du chargement des paramètres de proxy",
                 "failed_to_save_proxy_settings": "Échec de l'enregistrement des paramètres de proxy",
                 "failed_to_remove_saved_account": "Échec de la suppression du compte enregistré",
+                "invalid_credentials": "Nom d’utilisateur, adresse e-mail ou mot de passe incorrect.",
+                "missing_credentials": "Les identifiants de connexion valides sont manquants. Veuillez vous reconnecter.",
+                "session_verification_required": "Cette session nécessite une vérification supplémentaire. Veuillez vous connecter manuellement.",
+                "two_factor_unavailable": "Ce compte nécessite une authentification à deux facteurs, mais aucune méthode de vérification prise en charge n’a été renvoyée.",
+                "saved_credentials_invalid": "Les identifiants enregistrés ne sont plus valides. Le compte enregistré a été supprimé. Veuillez vous reconnecter.",
+                "new_location_login": "Il semble que vous vous connectiez depuis un nouvel endroit ! Consultez votre boîte mail pour y trouver un message de VRChat.",
                 "failed_to_authenticate": "Échec de l'authentification",
                 "failed_to_restore_the_saved_account": "Échec de la restauration du compte enregistré"
             },

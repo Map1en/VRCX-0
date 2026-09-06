@@ -3085,6 +3085,12 @@
                 "failed_to_load_proxy_settings": "No se pudieron cargar los ajustes del proxy",
                 "failed_to_save_proxy_settings": "No se pudieron guardar los ajustes del proxy",
                 "failed_to_remove_saved_account": "No se pudo quitar la cuenta guardada",
+                "invalid_credentials": "Nombre de usuario, correo electrónico o contraseña incorrectos.",
+                "missing_credentials": "Faltan credenciales de inicio de sesión válidas. Vuelve a iniciar sesión.",
+                "session_verification_required": "Esta sesión requiere una verificación adicional. Inicia sesión manualmente.",
+                "two_factor_unavailable": "Esta cuenta requiere autenticación de dos factores, pero no se ha recibido ningún método de verificación compatible.",
+                "saved_credentials_invalid": "Las credenciales guardadas ya no son válidas. Se ha eliminado la cuenta guardada. Vuelve a iniciar sesión.",
+                "new_location_login": "¡Parece que estás iniciando sesión desde un lugar nuevo! Revisa tu correo electrónico para ver si has recibido un mensaje de VRChat.",
                 "failed_to_authenticate": "No se pudo autenticar",
                 "failed_to_restore_the_saved_account": "No se pudo restaurar la cuenta guardada"
             },

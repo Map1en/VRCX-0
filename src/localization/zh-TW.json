@@ -3085,6 +3085,12 @@
                 "failed_to_load_proxy_settings": "載入代理設定失敗",
                 "failed_to_save_proxy_settings": "儲存代理設定失敗",
                 "failed_to_remove_saved_account": "移除已儲存帳號失敗",
+                "invalid_credentials": "使用者名稱、電子郵件或密碼錯誤。",
+                "missing_credentials": "缺少有效的登入憑證，請重新登入。",
+                "session_verification_required": "此工作階段需要完成額外驗證，請手動登入。",
+                "two_factor_unavailable": "此帳號需要雙重驗證，但未找到支援的驗證方式。",
+                "saved_credentials_invalid": "儲存的登入憑證已失效，已移除此儲存帳號，請重新登入。",
+                "new_location_login": "你似乎正在從新的地點登入！請檢查信箱，查看 VRChat 寄來的郵件。",
                 "failed_to_authenticate": "認證失敗",
                 "failed_to_restore_the_saved_account": "恢復已儲存帳號失敗"
             },

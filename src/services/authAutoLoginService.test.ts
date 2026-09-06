@@ -335,6 +335,23 @@ describe('authAutoLoginService', () => {
         expect(mocks.finalizeSuccessfulLogin).toHaveBeenCalledTimes(1);
     });
 
+    it('localizes new-location errors in the automatic login failure toast', async () => {
+        mocks.autoLoginStart.mockResolvedValueOnce({
+            status: 'failed',
+            reason: '"It looks like you\'re logging in from somewhere new! Check your email for a message from VRChat."',
+            kind: 'sessionInvalidated',
+            snapshot: snapshot()
+        });
+
+        await expect(executeReactAutoLogin(snapshot())).resolves.toMatchObject({
+            status: 'failed'
+        });
+        expect(mocks.toastError).toHaveBeenCalledExactlyOnceWith(
+            'view.auth.toast.new_location_login',
+            { duration: Infinity, closeButton: true }
+        );
+    });
+
     it('does not show a system auth notification when auto-login fails offline', async () => {
         Object.defineProperty(navigator, 'onLine', {
             configurable: true,
