@@ -194,58 +194,58 @@
     },
     "language": "Français (fr)",
     "data_dir_migration": {
-        "title": "Déplacer les données VRCX-0",
-        "description": "Choisissez comment VRCX-0 doit utiliser le dossier sélectionné.",
-        "completed_title": "Déplacement terminé",
+        "title": "Changer le fichier des données",
+        "description": "Choisissez quelles données utiliser dans le nouveau fichier.",
+        "completed_title": "Redémarrez pour utiliser le nouveau dossier",
         "completed_description": "Redémarrez VRCX-0 pour utiliser le nouveau dossier de données.",
-        "error_short": "Échec du déplacement",
-        "start": "Démarrer",
+        "error_short": "Échec du changement du fichier des données",
+        "start": "Copier et changer",
         "restart_now": "Redémarrer maintenant",
         "restart_later": "Plus tard",
-        "create_backup_first": "Créer d’abord une sauvegarde",
-        "space_summary": "Requis : {required} · Disponible : {available}",
-        "insufficient_space": "L’espace disponible est insuffisant.",
-        "contents_notice": "La base de données, les réglages, l’index de la galerie et les miniatures seront copiés. Les caches d’images seront retéléchargés. Les anciennes données restent disponibles jusqu’à leur nettoyage.",
-        "unsupported_storage_warning": "N’utilisez pas de lecteur réseau, de dossier synchronisé dans le cloud (OneDrive, iCloud, etc.) ni de lecteur amovible. Les bases de données peuvent y être endommagées et ces configurations ne sont pas prises en charge.",
+        "create_backup_first": "Ouvrir les outils de sauvegarde",
+        "space_summary": "Espace requis : {required} · Disponible : {available}",
+        "insufficient_space": "L’espace disponible pour copier vos données est insuffisante. Libérez de l’espace ou choisissez un autre dossier.",
+        "contents_notice": "Copiez vos données et paramètres dans le nouveau dossier. Les anciennes données resteront dans le dossier d’origine.",
+        "unsupported_storage_warning": "Les lecteurs réseau, dossiers synchronisés dans le cloud, et lecteurs amovibles ne sont pas pris en charge. Vos données pourraient être corrompues.",
         "mode": {
-            "migrate": "Déplacer mes données actuelles (recommandé)",
-            "adoptExisting": "Utiliser le profil VRCX-0 déjà présent",
-            "freshStart": "Créer un nouveau profil dans ce dossier"
+            "migrate": "Garder mes données actuelles (recommandé)",
+            "adoptExisting": "Utiliser les données déjà présentes",
+            "freshStart": "Supprimer"
         },
         "target": {
             "empty": "Le dossier sélectionné est vide.",
-            "existingProfile": "Ce dossier contient déjà un profil VRCX-0. Il sera conservé avant son remplacement.",
+            "existingProfile": "Les données existantes seront remplacées. Une copie sera créée avant le remplacement.",
             "foreignContent": "Ce dossier contient d’autres fichiers. VRCX-0 ne gérera que les siens."
         },
         "phase": {
-            "preparing": "Préparation du déplacement",
-            "freezing": "Arrêt de la base de données",
-            "copying": "Copie de la base de données",
-            "verifying": "Vérification de la copie",
-            "committing": "Finalisation du déplacement"
+            "preparing": "Préparation des données…",
+            "freezing": "Préparation des données…",
+            "copying": "Copie des données…",
+            "verifying": "Vérification des données copiées…",
+            "committing": "Finalisation…"
         },
         "error": {
             "operationBusy": "Une sauvegarde, une restauration ou un déplacement est déjà en cours.",
-            "databaseUnavailable": "La base de données ne peut pas être déplacée actuellement.",
+            "databaseUnavailable": "Les données ne peuvent pas êtres copiées pour le moment. Veuillez réessayer plus tard.",
             "pendingRestore": "Terminez ou annulez d’abord la restauration en attente.",
             "pendingLegacyMigration": "Terminez d’abord la migration des anciennes données.",
             "pendingMigration": "Un déplacement du dossier de données est en attente. Redémarrez VRCX-0.",
             "cleanupConflict": "Traitez d’abord les anciennes données avant de revenir à ce dossier.",
             "insufficientSpace": "L’espace libre est insuffisant pour déplacer les données.",
-            "invalidAdoptionTarget": "Seul un dossier contenant un profil VRCX-0 existant peut être adopté.",
-            "invalidFreshStartTarget": "Un dossier contenant un profil VRCX-0 existant ne peut pas servir à repartir de zéro.",
-            "copyFailed": "La base de données n’a pas pu être copiée. Les données d’origine restent utilisées.",
-            "commitFailed": "La copie n’a pas pu être installée. Les données d’origine restent utilisées.",
+            "invalidAdoptionTarget": "Ce dossier ne contient aucune donnée VRCX-0 existante qui puisse être utilisée. Choisissez un autre dossier.",
+            "invalidFreshStartTarget": "Ce dossier contient déjà des données. Choisissez un autre dossier.",
+            "copyFailed": "Les données n’ont pas pu être copiées. Le fichier d'origine continue d'être utilisé.",
+            "commitFailed": "La copie des données n'a pas pu être sauvegardée. Le fichier d'origine continue d'être utilisé.",
             "pointerCommitFailed": "Le nouveau dossier n’a pas pu être activé. Redémarrez VRCX-0 pour réessayer en toute sécurité.",
             "io": "Impossible de lire ou d’écrire un fichier du dossier de données."
         },
         "warning": {
             "configCopyFailed": "Certains réglages n’ont pas pu être copiés.",
-            "galleryCopyFailed": "Certaines données de galerie n’ont pas pu être copiées et seront recréées si nécessaire.",
+            "galleryCopyFailed": "Certaines données n’ont pas pu être copiées et seront recréées si nécessaire.",
             "cacheCleanupFailed": "Certains anciens fichiers de cache n’ont pas pu être supprimés."
         },
         "result": {
-            "succeeded": "Dossier de données déplacé",
+            "succeeded": "Dossier de données changé",
             "failed_title": "Le nouveau dossier de données n’a pas pu être utilisé",
             "database_open_failed": "VRCX-0 continue d’utiliser le dossier d’origine. Vos données n’ont pas été affectées.",
             "interrupted_title": "Déplacement interrompu",
@@ -265,6 +265,16 @@
             "settings_description": "Les anciennes données VRCX-0 sont encore dans {path} ({size} octets).",
             "dismiss": "Les conserver et ne plus me le rappeler",
             "dismissed": "Rappels de nettoyage désactivés"
+        },
+        "running_title": "Changing data folder",
+        "running_description": "Garder VRCX-0 ouvert jusqu’à la fin de l’opération.",
+        "start_existing": "Utiliser des données existantes",
+        "start_fresh": "Utiliser un nouveau dossier",
+        "new_folder": "Nouveau dossier",
+        "cancelling": "Annulation…",
+        "mode_description": {
+            "adoptExisting": "Utiliser les données et paramètres dans ce dossier sans copier vos données actuelles.",
+            "freshStart": "Recommencer sans copier vos données actuelles. Rien dans l’ancien dossier ne sera supprimé."
         }
     },
     "profile_backup": {
@@ -406,8 +416,15 @@
         },
         "sort_by": "Trier par :",
         "time_units": {
-            "y": "y",
-            "d": "d",
+            "y": "a",
+            "d": "j",
+            "h": "h",
+            "m": "m",
+            "s": "s"
+        },
+        "time_units_short": {
+            "y": "a",
+            "d": "j",
             "h": "h",
             "m": "m",
             "s": "s"
@@ -691,8 +708,6 @@
         }
     },
     "app_menu": {
-        "view": "Affichage",
-        "tools": "Outils",
         "help": "Aide",
         "preview_build_badge": "Version d'aperçu",
         "devkit_build_badge": "Dev Kit",
@@ -704,13 +719,13 @@
         "quit": "Quitter VRCX-0",
         "quick_search": "Recherche rapide",
         "keyboard_shortcuts": "Raccourcis clavier",
-        "notification_center": "Centre de notifications",
         "show_friends_sidebar": "Afficher la barre latérale des amis",
         "hide_friends_sidebar": "Masquer la barre latérale des amis",
+        "enter_sidebar_mode": "Mode Barre Latérale",
+        "restore_full_window": "Retour en plein écran",
         "zoom_in": "Zoom avant",
         "zoom_out": "Zoom arrière",
         "reset_zoom": "Réinitialiser le zoom",
-        "all_tools": "Tous les outils...",
         "open_devtools": "Ouvrir les DevTools",
         "report_issue": "Signaler un problème",
         "community": "Communauté",
@@ -766,6 +781,9 @@
         "search_fav_worlds": "Mondes favoris",
         "search_groups": "Groupes",
         "search_own_groups": "Mes groupes",
+        "search_direct_access": "Coller un lien ou un ID",
+        "search_scope_direct_access": "wrld_ · usr_ · vrchat.com/…",
+        "search_open_direct": "Ouvrir ce lien ou cet ID",
         "search_joined_groups": "Groupes rejoints",
         "refresh_tooltip": "Actualiser les amis",
         "refresh_available_in_seconds": "Synchronisation récente. Veuillez réessayer dans {count} s.",
@@ -785,6 +803,12 @@
             "presets": "Préréglages"
         },
         "settings": {
+            "auto_hide": {
+                "label": "Masquer automatiquement lorsqu'ancré à un bord du bureau",
+                "description": "Faites glisser la fenêtre du panneau latéral vers le haut ou vers l'un des côtés du bureau. Déplacez le pointeur pour la cacher ; survolez ce bord ou utilisez le bac à ordures pour la faire réapparaître.",
+                "save_failed": "Impossible de sauvegarder le paramètre de masquage automatique.",
+                "paused": "Masquage automatique mis en pause après une erreur de fenêtre. Réouvrez la fenêtre depuis le côté ou retentez le mode panneau latéral pour réessayer."
+            },
             "display": "Affichage",
             "sort": "Trier",
             "advanced": "Avancé",
@@ -923,9 +947,22 @@
                 "Avatar": "Avatar",
                 "Bio": "Bio"
             },
+            "toolbar": {
+                "all_types": "Tout",
+                "type_summary": "Type : {types}",
+                "more_types": "{type} +{count}",
+                "grouped_friends_only": "Amis favoris seulement",
+                "view_summary": "Afficher : {view}",
+                "view_label": "Afficher"
+            },
             "modes": {
                 "table": "Tableau",
                 "columns": "Colonnes"
+            },
+            "actions": {
+                "back_to_top": "Retour en haut",
+                "expand_entry": "Développer l'entrée",
+                "collapse_entry": "Réduire l'entrée"
             },
             "columns": {
                 "add": "Ajouter une colonne",
@@ -1709,10 +1746,18 @@
                 },
                 "legend": {
                     "circles": "Communautés",
-                    "more_circles": "+{count} autres",
+                    "more_circles": "+{count} plus petits, affichés en gris",
                     "size_means_degree": "Point plus grand = plus d'amis communs",
+                    "hollow_means_unknown": "Point vide = amis communs non partagés",
+                    "cross_edges": "Lignes plus claires traversent les cercles",
+                    "cross_edges_only": "Liens muets à l'intérieur des cercles",
+                    "coverage": "Récupérés",
+                    "coverage_value": "{fetched}/{total} amis",
+                    "coverage_unavailable": "Non partagés",
+                    "coverage_updated": "Mis à jour",
                     "min_degree": "Connexions min.",
-                    "isolated_nodes": "{count} sans connexion"
+                    "isolated_nodes": "{count} sans amis en commun",
+                    "unavailable_nodes": "{count} non partagés ou non récupérés"
                 }
             },
             "loading": {
@@ -2455,8 +2500,16 @@
                 },
                 "user_dialog": {
                     "header": "Fenêtre utilisateur",
-                    "profile_decorations": "Décorations du profil",
-                    "profile_decorations_description": "Affiche les décorations du profil VRChat dans la fenêtre utilisateur.",
+                    "profile_appearance": "Apparence du profil",
+                    "profile_background": "Arrière-plan du profil",
+                    "profile_background_description": "Afficher le gradient ou la texture sélectionnée pour le profil VRChat.",
+                    "avatar_frame": "Cadre de l'icône de profil",
+                    "avatar_frame_description": "Affiche le cadre autour de l'icône de profil.",
+                    "profile_effect": "Effet de profil",
+                    "profile_effect_description": "Afficher l'effet appliqué sur le profil utilisateur.",
+                    "nameplate_effect": "Effet du cadre",
+                    "nameplate_effect_description": "Afficher l'effet appliqué derrière le nom d'affichage.",
+                    "additional_information": "Informations supplémentaires",
                     "vrchat_notes": "Notes VRChat",
                     "vrchat_notes_description": "Affiche les notes enregistrées dans VRChat",
                     "vrcx_memos": "Notes locales VRCX-0",
@@ -2482,7 +2535,8 @@
                 },
                 "friend_log": {
                     "header": "Historique des amis",
-                    "hide_unfriends": "Masquer les suppressions d'amis"
+                    "hide_unfriends": "Masquer les suppressions d'amis",
+                    "show_notification_dot": "Afficher le point de notification de l'historique des amis"
                 }
             },
             "notifications": {
@@ -2755,7 +2809,7 @@
                     },
                     "data_directory": {
                         "header": "Répertoire de données",
-                        "description": "Source active : {source}. Modifie uniquement l'emplacement du dossier — les données existantes ne sont pas déplacées.",
+                        "description": "Actuellement utilisé: {source}.",
                         "current": "Répertoire actuel",
                         "actions": "Actions sur le répertoire de données",
                         "choose": "Choisir un dossier",
@@ -2763,18 +2817,12 @@
                         "restart": "Redémarrer",
                         "restart_hint": "Les modifications s'appliquent après le redémarrage de VRCX-0.",
                         "source_cli": "Remplacement en ligne de commande",
-                        "source_persisted": "répertoire personnalisé enregistré",
-                        "source_default": "répertoire par défaut",
+                        "source_persisted": "fichier personalisé",
+                        "source_default": "fichier par défaut",
                         "cli_override": "Ce lancement utilise --data-dir. Démarrez sans le remplacement en ligne de commande pour modifier le répertoire enregistré.",
-                        "confirm_title": "Changer le répertoire de données de VRCX-0 ?",
-                        "confirm_description": "VRCX-0 ne copiera pas les données actuelles. Pour conserver votre connexion, votre base de données, votre configuration et votre cache, copiez vous-même le répertoire de données actuel vers {path} avant de redémarrer. Enregistrez ce répertoire et redémarrez pour l'appliquer.",
-                        "confirm_empty": "Le dossier sélectionné est vide et démarrera comme un nouveau profil tant que vous n'y copiez pas de données.",
-                        "confirm_missing_profile": "Le dossier sélectionné ne contient pas VRCX-0.sqlite3 ni VRCX-0.json et pourrait démarrer comme un nouveau profil.",
-                        "saved_restart_required": "Répertoire de données enregistré. Redémarrez VRCX-0 pour l'appliquer.",
-                        "reset_confirm_title": "Réinitialiser le répertoire de données de VRCX-0 ?",
-                        "reset_confirm_description": "VRCX-0 utilisera le répertoire de données par défaut après le redémarrage. Aucun fichier ne sera copié.",
-                        "reset_saved": "Répertoire de données réinitialisé. Redémarrez VRCX-0 pour l'appliquer.",
-                        "failed_to_load": "Échec du chargement des paramètres du répertoire de données."
+                        "saved_restart_required": "Fichier enregistré. Redémarrez VRCX-0 pour l'appliquer.",
+                        "reset_saved": "Fichier de données réinitialisé. Redémarrez VRCX-0 pour l'appliquer.",
+                        "failed_to_load": "Échec du chargement des paramètres du fichier de données."
                     },
                     "cache_debug": {
                         "header": "Cache",
@@ -2988,7 +3036,7 @@
             },
             "label": {
                 "instance_master": "Maître de l'instance",
-                "moderator": "Modérateur",
+                "moderator": "Équipe VRChat",
                 "favorite": "Favori",
                 "muted": "Microphone désactivé",
                 "avatar_interaction_disabled": "Interaction d'avatar désactivée",
@@ -3308,7 +3356,8 @@
             },
             "mode": {
                 "daily": "Image quotidienne",
-                "custom": "Image locale"
+                "custom": "Image locale",
+                "decoration": "Décoration de profil"
             },
             "rotation": {
                 "minutes": "Chaque minute",
@@ -3778,7 +3827,7 @@
                 "visibility_everyone": "Tout le monde",
                 "visibility_friends": "Amis",
                 "visibility_hidden": "Masqué",
-                "moderator": "Modérateur",
+                "moderator": "Équipe VRChat",
                 "muted": "Microphone désactivé",
                 "order_by": "Trier par",
                 "group_by": "Grouper par",
@@ -3981,8 +4030,10 @@
                 "platform": "Plateforme",
                 "restrictions": "Restrictions",
                 "last_visited": "Dernière visite",
-                "visit_count": "Nombre de visites",
+                "visit_count": "Visites",
                 "time_spent": "Temps passé",
+                "friends_visited": "Amis qui ont visité",
+                "friends_last_visited": "Dernière visite d'un ami",
                 "persistent_data": "Données persistantes",
                 "cache_size": "Taille du cache"
             },
@@ -4185,6 +4236,55 @@
                 "memo_placeholder": "Cliquez pour ajouter une note locale",
                 "listings": "Listes",
                 "gallery": "Galerie"
+            },
+            "performance": {
+                "header": "Performance",
+                "rating": "Rang",
+                "download_size": "Taille de téléchargement",
+                "uncompressed_size": "Taille non compressée",
+                "texture_memory": "Mémoire texture",
+                "analysis_loading": "Chargement de l'analyse de performance détaillée…",
+                "analysis_pending": "L'analyse de performance détaillée n'est pas encore prête. Actualisez l'avatar pour réessayer.",
+                "analysis_unavailable": "L'analyse de performance détaillée n'est pas disponible pour cette plateforme.",
+                "yes": "Oui",
+                "no": "Non",
+                "group": {
+                    "geometry": "Géométrie",
+                    "dynamics": "Dynamique et contraintes",
+                    "components": "Composants et effets"
+                },
+                "stat": {
+                    "triangles": "Triangles",
+                    "vertices": "Vertices",
+                    "skinned_meshes": "Skinned meshes",
+                    "basic_meshes": "Basic meshes",
+                    "material_slots": "Material slots",
+                    "bones": "Bones",
+                    "blend_shapes": "Blend shapes",
+                    "bounds": "Bounds",
+                    "physbone_components": "PhysBone components",
+                    "affected_transforms": "PhysBone affected transforms",
+                    "physbone_colliders": "PhysBone colliders",
+                    "collision_checks": "PhysBone collision checks",
+                    "contacts": "Contacts",
+                    "constraints": "Constraints",
+                    "constraint_depth": "Constraint depth",
+                    "animators": "Animators",
+                    "particle_systems": "Particle systems",
+                    "max_particles": "Total particles active",
+                    "mesh_particle_triangles": "Mesh particle triangles",
+                    "lights": "Lights",
+                    "audio_sources": "Audio sources",
+                    "raycasts": "Raycasts",
+                    "cloths": "Cloths",
+                    "cloth_vertices": "Cloth vertices",
+                    "trail_renderers": "Trail renderers",
+                    "line_renderers": "Line renderers",
+                    "physics_colliders": "Physics colliders",
+                    "rigidbodies": "Physics rigidbodies",
+                    "particle_trails": "Particle trails enabled",
+                    "particle_collision": "Particle collision enabled"
+                }
             },
             "json": {
                 "header": "JSON"
@@ -4941,7 +5041,7 @@
                     "example": "Arrivées, départs"
                 },
                 "favoriteMovement": {
-                    "label": "Activité des favoris",
+                    "label": "Activité des amis",
                     "description": "Changements de connexion, déconnexion, position et statut des amis favoris.",
                     "example": "En ligne, position"
                 },
@@ -5160,7 +5260,17 @@
         },
         "vrcx_updater": {
             "latest_version": "VRCX-0 est à jour.",
-            "ready_for_update": "La mise à jour {value} est prête"
+            "ready_for_update": "La mise à jour {value} est prête",
+            "channel": {
+                "label": "Canal de mise à jour",
+                "stable": "Stable",
+                "beta": "Beta",
+                "description": "VRCX-0 ne vérifie les mises à jour que dans le canal installé.",
+                "switch_description": "Pour basculer vers {channel}, téléchargez et installez sa dernière version depuis GitHub.",
+                "download_stable": "Télécharger la dernière version stable",
+                "download_beta": "Télécharger la dernière version beta",
+                "no_release": "Aucune version disponible dans ce canal."
+            }
         },
         "change_log": {
             "header": "Historique des modifications",
