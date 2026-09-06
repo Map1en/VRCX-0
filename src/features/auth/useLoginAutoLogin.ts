@@ -4,9 +4,8 @@ import { toast } from 'sonner';
 
 import type { SavedAuthSnapshot } from '@/repositories/authRepository';
 import { executeReactAutoLogin } from '@/services/authAutoLoginService';
+import { getLoginErrorMessage as getErrorMessage } from '@/services/authErrorDisplayService';
 import { useRuntimeStore } from '@/state/runtimeStore';
-
-import { getLoginErrorMessage as getErrorMessage } from './loginDisplay';
 
 type LoginAutoLoginOptions = {
     activeSavedUserId: string;

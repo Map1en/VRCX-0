@@ -6,17 +6,6 @@ type LoginUserRecord = {
     username?: string | null;
 };
 
-export function getLoginErrorMessage(
-    error: unknown,
-    fallbackMessage: string
-): string {
-    if (error instanceof Error && error.message) {
-        return error.message;
-    }
-
-    return fallbackMessage;
-}
-
 export function getLoginUserDisplayName(
     user: LoginUserRecord | null | undefined
 ): string {

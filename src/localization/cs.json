@@ -3079,6 +3079,12 @@
                 "failed_to_load_proxy_settings": "Nepodařilo se načíst nastavení proxy",
                 "failed_to_save_proxy_settings": "Nepodařilo se uložit nastavení proxy",
                 "failed_to_remove_saved_account": "Nepodařilo se odebrat uložený účet",
+                "invalid_credentials": "Nesprávné uživatelské jméno, e-mail nebo heslo.",
+                "missing_credentials": "Chybí platné přihlašovací údaje. Přihlaste se znovu.",
+                "session_verification_required": "Tato relace vyžaduje další ověření. Přihlaste se ručně.",
+                "two_factor_unavailable": "Tento účet vyžaduje dvoufaktorové ověření, ale nebyla vrácena žádná podporovaná metoda ověření.",
+                "saved_credentials_invalid": "Uložené přihlašovací údaje již nejsou platné. Uložený účet byl odebrán. Přihlaste se znovu.",
+                "new_location_login": "Zdá se, že se přihlašujete z nového místa! Zkontrolujte svou e-mailovou schránku a vyhledejte zprávu od VRChat.",
                 "failed_to_authenticate": "Ověření se nezdařilo",
                 "failed_to_restore_the_saved_account": "Nepodařilo se obnovit uložený účet"
             },

@@ -16,6 +16,7 @@ import {
     isAuthAttemptSupersededError,
     isCurrentAuthAttempt
 } from './authAttempt';
+import { getLoginErrorMessage as getErrorMessage } from './authErrorDisplayService';
 import {
     finalizeSuccessfulLogin,
     resolveLoginSessionState,
@@ -67,13 +68,6 @@ function shouldShowManualAuthFailureNotification(
         typeof error.kind === 'string' &&
         NOTIFY_ON_FAILURE_KINDS.has(error.kind)
     );
-}
-
-function getErrorMessage(error: unknown, fallbackMessage: string) {
-    if (error instanceof Error && error.message) {
-        return error.message;
-    }
-    return fallbackMessage;
 }
 
 function normalizeAutoLoginDelaySeconds(seconds: number) {

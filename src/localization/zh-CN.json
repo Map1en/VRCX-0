@@ -3077,6 +3077,12 @@
                 "failed_to_load_proxy_settings": "加载代理设置失败",
                 "failed_to_save_proxy_settings": "保存代理设置失败",
                 "failed_to_remove_saved_account": "移除已保存账号失败",
+                "invalid_credentials": "用户名、邮箱或密码错误。",
+                "missing_credentials": "缺少有效的登录凭据，请重新登录。",
+                "session_verification_required": "此会话需要完成额外验证，请手动登录。",
+                "two_factor_unavailable": "此账号需要双重验证，但未找到支持的验证方式。",
+                "saved_credentials_invalid": "保存的登录凭据已失效，已移除此保存账号，请重新登录。",
+                "new_location_login": "你似乎正在从新的地点登录！请检查邮箱，查看 VRChat 发来的邮件。",
                 "failed_to_authenticate": "登录失败",
                 "failed_to_restore_the_saved_account": "恢复已保存账号失败"
             },

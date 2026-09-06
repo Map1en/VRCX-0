@@ -7,6 +7,7 @@ import type {
     SavedAuthSnapshot,
     SavedCredentialRecord
 } from '@/repositories/authRepository';
+import { getLoginErrorMessage as getErrorMessage } from '@/services/authErrorDisplayService';
 import {
     executeManualLogin,
     executeSavedCredentialLogin,
@@ -35,7 +36,6 @@ import { useSessionStore } from '@/state/sessionStore';
 import { useShellStore } from '@/state/shellStore';
 
 import {
-    getLoginErrorMessage as getErrorMessage,
     getLoginUserDisplayName as getUserDisplayName,
     shouldShowLegacyMigrationAction
 } from './loginDisplay';

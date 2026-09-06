@@ -3073,6 +3073,12 @@
                 "failed_to_load_proxy_settings": "プロキシ設定の読み込みに失敗しました",
                 "failed_to_save_proxy_settings": "プロキシ設定の保存に失敗しました",
                 "failed_to_remove_saved_account": "保存済みアカウントの削除に失敗しました",
+                "invalid_credentials": "ユーザー名、メールアドレス、またはパスワードが正しくありません。",
+                "missing_credentials": "有効なログイン情報がありません。もう一度ログインしてください。",
+                "session_verification_required": "このセッションには追加の認証が必要です。手動でログインしてください。",
+                "two_factor_unavailable": "このアカウントには二要素認証が必要ですが、対応する認証方法が返されませんでした。",
+                "saved_credentials_invalid": "保存されたログイン情報は無効になりました。保存済みアカウントを削除しました。もう一度ログインしてください。",
+                "new_location_login": "新しい場所からログインしているようです！VRChat からのメールが届いていないか確認してください。",
                 "failed_to_authenticate": "認証に失敗しました",
                 "failed_to_restore_the_saved_account": "保存済みアカウントの復元に失敗しました"
             },

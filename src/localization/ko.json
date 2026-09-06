@@ -3030,6 +3030,12 @@
                 "failed_to_load_proxy_settings": "프록시 설정을 로드하지 못했습니다.",
                 "failed_to_save_proxy_settings": "프록시 설정을 저장하지 못했습니다.",
                 "failed_to_remove_saved_account": "저장된 계정을 삭제하지 못했습니다.",
+                "invalid_credentials": "사용자 이름, 이메일 또는 비밀번호가 올바르지 않습니다.",
+                "missing_credentials": "유효한 로그인 정보가 없습니다. 다시 로그인해 주세요.",
+                "session_verification_required": "이 세션에는 추가 인증이 필요합니다. 수동으로 로그인해 주세요.",
+                "two_factor_unavailable": "이 계정에는 2단계 인증이 필요하지만 지원되는 인증 방법이 반환되지 않았습니다.",
+                "saved_credentials_invalid": "저장된 로그인 정보가 더 이상 유효하지 않아 저장된 계정을 제거했습니다. 다시 로그인해 주세요.",
+                "new_location_login": "새로운 위치에서 로그인하는 것 같습니다! 이메일에서 VRChat이 보낸 메시지를 확인해 주세요.",
                 "failed_to_authenticate": "인증 실패",
                 "failed_to_restore_the_saved_account": "저장된 계정을 복원하지 못했습니다."
             },

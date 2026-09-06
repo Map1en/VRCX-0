@@ -3077,6 +3077,12 @@
                 "failed_to_load_proxy_settings": "Proxy-Einstellungen konnten nicht geladen werden",
                 "failed_to_save_proxy_settings": "Proxy-Einstellungen konnten nicht gespeichert werden",
                 "failed_to_remove_saved_account": "Gespeichertes Konto konnte nicht entfernt werden",
+                "invalid_credentials": "Benutzername, E-Mail-Adresse oder Passwort ist falsch.",
+                "missing_credentials": "Gültige Anmeldedaten fehlen. Bitte melde dich erneut an.",
+                "session_verification_required": "Diese Sitzung erfordert eine zusätzliche Verifizierung. Bitte melde dich manuell an.",
+                "two_factor_unavailable": "Dieses Konto erfordert eine Zwei-Faktor-Authentifizierung, aber es wurde keine unterstützte Verifizierungsmethode zurückgegeben.",
+                "saved_credentials_invalid": "Die gespeicherten Anmeldedaten sind nicht mehr gültig. Das gespeicherte Konto wurde entfernt. Bitte melde dich erneut an.",
+                "new_location_login": "Du scheinst dich von einem neuen Ort aus anzumelden! Schau in deinem E-Mail-Postfach nach einer Nachricht von VRChat.",
                 "failed_to_authenticate": "Authentifizierung fehlgeschlagen",
                 "failed_to_restore_the_saved_account": "Gespeichertes Konto konnte nicht wiederhergestellt werden"
             },
