@@ -11,6 +11,12 @@ import type {
     GroupInstanceRecord,
     GroupProfileRecord
 } from '@/domain/entities/group';
+import {
+    groupInstanceGroupId,
+    groupInstanceLocation,
+    groupInstanceOccupancy,
+    isOpenGroupInstance
+} from '@/domain/instances/groupInstanceFacts';
 import { cn } from '@/lib/utils';
 import {
     commands,
@@ -20,7 +26,6 @@ import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { openGroupDialog } from '@/services/dialogService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { selfInviteToInstance } from '@/services/launchService';
-import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
 import { checkCanInviteSelf } from '@/shared/utils/invite';
 import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
@@ -168,39 +173,6 @@ function GroupHeaderRow({
     );
 }
 
-function firstGroupId(...values: unknown[]) {
-    for (const value of values) {
-        const text =
-            typeof value === 'string'
-                ? value.trim()
-                : String(value ?? '').trim();
-        if (hasGroupIdPrefix(text)) {
-            return text;
-        }
-    }
-    return '';
-}
-
-function normalizeGroupId(instance: GroupInstanceRecord) {
-    const location = resolveLocation(instance);
-    const parsedLocation = parseLocation(location);
-    return firstGroupId(
-        instance?.group?.groupId ||
-            instance?.group?.id ||
-            instance?.instance?.group?.groupId ||
-            instance?.instance?.group?.id,
-        instance?.groupId,
-        instance?.group_id,
-        instance?.instance?.groupId,
-        instance?.instance?.group_id,
-        instance?.ownerId,
-        instance?.owner_id,
-        instance?.instance?.ownerId,
-        instance?.instance?.owner_id,
-        parsedLocation.groupId
-    );
-}
-
 function resolveGroupName(instance: GroupInstanceRecord, groupId: string) {
     return (
         instance?.group?.name ||
@@ -209,15 +181,6 @@ function resolveGroupName(instance: GroupInstanceRecord, groupId: string) {
         instance?.name ||
         groupId ||
         'Group'
-    );
-}
-
-function resolveLocation(instance: GroupInstanceRecord) {
-    return (
-        instance?.location ||
-        instance?.instance?.location ||
-        instance?.instanceId ||
-        ''
     );
 }
 
@@ -264,7 +227,7 @@ function isAgeGatedInstance(instance: GroupInstanceRecord) {
         instance?.instance?.ageGate ||
         instance?.location?.includes?.('~ageGate') ||
         instance?.instance?.location?.includes?.('~ageGate') ||
-        resolveLocation(instance).includes('~ageGate')
+        groupInstanceLocation(instance).includes('~ageGate')
     );
 }
 
@@ -274,7 +237,7 @@ function groupInstances(
 ) {
     const groups = new Map<string, GroupInstanceRecord[]>();
     for (const instance of instances) {
-        const groupId = normalizeGroupId(instance);
+        const groupId = groupInstanceGroupId(instance);
         if (!groupId) {
             continue;
         }
@@ -316,19 +279,14 @@ function GroupInstanceRow({
     >;
 }) {
     const { t } = useTranslation();
-    const groupId = normalizeGroupId(instance);
+    const groupId = groupInstanceGroupId(instance);
     const name = resolveGroupName(instance, groupId);
     const iconUrl = convertFileUrlToImageUrl(
         resolveGroupIconUrl(instance),
         128
     );
-    const location = resolveLocation(instance);
-    const userCount =
-        instance?.userCount ??
-        instance?.n_users ??
-        instance?.instance?.userCount ??
-        '';
-    const capacity = instance?.capacity ?? instance?.instance?.capacity ?? '';
+    const location = groupInstanceLocation(instance);
+    const { userCount, capacity } = groupInstanceOccupancy(instance);
     const worldHint =
         normalizeString(instance?.world?.name) || instance?.worldName || '';
     const parsedLocation = parseLocation(location);
@@ -403,10 +361,10 @@ function GroupInstanceRow({
                             <span className="min-w-0 flex-1">
                                 <span className="block truncate leading-5 font-medium">
                                     {name}
-                                    {userCount !== '' || capacity !== '' ? (
+                                    {userCount !== null || capacity !== null ? (
                                         <span className="ml-1 font-normal">
-                                            ({userCount || '?'}/
-                                            {capacity || '?'})
+                                            ({userCount ?? '?'}/
+                                            {capacity ?? '?'})
                                         </span>
                                     ) : null}
                                 </span>
@@ -500,11 +458,11 @@ export function GroupsSidebar() {
     );
     const visibleInstances = useMemo(
         () =>
-            showAgeGatedInstances
-                ? instances
-                : (instances || []).filter(
-                      (instance) => !isAgeGatedInstance(instance)
-                  ),
+            (instances || []).filter(
+                (instance) =>
+                    isOpenGroupInstance(instance) &&
+                    (showAgeGatedInstances || !isAgeGatedInstance(instance))
+            ),
         [instances, showAgeGatedInstances]
     );
     const groups = useMemo(
@@ -614,7 +572,7 @@ export function GroupsSidebar() {
                         groupRows.forEach((instance, instanceIndex) => {
                             nextRows.push({
                                 type: 'group-instance',
-                                key: `saved-group:${groupId}:${resolveLocation(instance)}:${instanceIndex}`,
+                                key: `saved-group:${groupId}:${groupInstanceLocation(instance)}:${instanceIndex}`,
                                 instance
                             });
                         });
@@ -650,7 +608,7 @@ export function GroupsSidebar() {
                 groupRows.forEach((instance, instanceIndex) => {
                     nextRows.push({
                         type: 'group-instance',
-                        key: `group:${groupId}:${resolveLocation(instance)}:${instanceIndex}`,
+                        key: `group:${groupId}:${groupInstanceLocation(instance)}:${instanceIndex}`,
                         instance
                     });
                 });

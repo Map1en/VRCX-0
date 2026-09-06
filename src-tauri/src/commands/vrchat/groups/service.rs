@@ -100,20 +100,6 @@ pub async fn app__vrchat_group_gallery_get(
 
 #[tauri::command]
 #[specta::specta]
-pub async fn app__vrchat_group_instances_get(
-    state: State<'_, AppState>,
-    input: VrchatGroupUserInput,
-) -> Result<VrchatApiResponse, AppError> {
-    state
-        .runtime_host()
-        .groups()
-        .instances(input)
-        .await
-        .map_err(AppError::from)
-}
-
-#[tauri::command]
-#[specta::specta]
 pub async fn app__vrchat_group_bans_get(
     state: State<'_, AppState>,
     input: VrchatGroupPagedInput,

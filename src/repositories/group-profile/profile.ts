@@ -210,24 +210,6 @@ export async function getUserGroupsOverview({
     });
 }
 
-export async function getGroupInstances({ groupId, userId }: GroupUserInput) {
-    const normalizedGroupId = normalizeEntityId(groupId);
-    const normalizedUserId = normalizeEntityId(userId);
-    if (!normalizedGroupId || !normalizedUserId) {
-        throw new Error(
-            'GroupProfileRepository.getGroupInstances requires group and user ids.'
-        );
-    }
-
-    return unwrapVrchatGroupResponse<GroupInstancesResponse>(
-        await commands.appVrchatGroupInstancesGet({
-            groupId: normalizedGroupId,
-            userId: normalizedUserId
-        }),
-        `users/${encodeURIComponent(normalizedUserId)}/instances/groups/${encodeURIComponent(normalizedGroupId)}`
-    );
-}
-
 export async function getUsersGroupInstances({
     userId
 }: Pick<GroupUserInput, 'userId'>) {

@@ -4,6 +4,7 @@ import type {
 } from '@/domain/entities/group';
 import type { EntityRecord } from '@/domain/entities/shared';
 import type { FriendRosterById } from '@/domain/friends/types';
+import { groupInstanceLocation } from '@/domain/instances/groupInstanceFacts';
 import { parseLocation } from '@/shared/utils/location';
 import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 
@@ -62,7 +63,9 @@ export function userGroupLocation(user: InstanceUser | null | undefined) {
 export function instanceLocation(instance: GroupInstanceRecord) {
     const projectedLocation = entityRecord(instance.$location);
     const directLocation = normalizeLocation(
-        instance.location || instance.tag || projectedLocation?.tag
+        groupInstanceLocation(instance) ||
+            instance.tag ||
+            projectedLocation?.tag
     );
     if (directLocation) {
         return directLocation;
@@ -96,7 +99,9 @@ export function mergeGroupInstances(
             return null;
         }
         const parsed = parseLocation(normalizedLocation);
-        const world = entityRecord(seed.world);
+        const embeddedInstance = entityRecord(seed.instance);
+        const world =
+            entityRecord(seed.world) || entityRecord(embeddedInstance?.world);
         const existing = byLocation.get(normalizedLocation);
         if (existing) {
             const worldId = normalizeEntityId(
@@ -108,8 +113,9 @@ export function mergeGroupInstances(
                     parsed.instanceId ||
                     existing.instanceId
             );
-            const ref = entityRecord(seed.ref) || existing.ref || seed;
-            return Object.assign(existing, seed, {
+            const ref =
+                entityRecord(seed.ref) || embeddedInstance || existing.ref;
+            return Object.assign(existing, embeddedInstance, seed, {
                 worldId,
                 instanceId,
                 ref,
@@ -121,9 +127,13 @@ export function mergeGroupInstances(
         }
 
         const instanceId = normalizeEntityId(
-            seed.instanceId || seed.id || parsed.instanceId
+            seed.instanceId ||
+                embeddedInstance?.instanceId ||
+                seed.id ||
+                parsed.instanceId
         );
         const row: GroupDialogInstanceRow = {
+            ...embeddedInstance,
             ...seed,
             id: instanceId || normalizedLocation,
             location: normalizedLocation,
@@ -134,7 +144,7 @@ export function mergeGroupInstances(
             instanceId,
             users: entityRows(seed.users),
             friendCount: Number(seed.friendCount || seed.userCount || 0) || 0,
-            ref: entityRecord(seed.ref) || seed
+            ref: entityRecord(seed.ref) || embeddedInstance || seed
         };
         byLocation.set(normalizedLocation, row);
         return row;
@@ -153,7 +163,7 @@ export function mergeGroupInstances(
         if (normalizedGroupId && parsed.groupId !== normalizedGroupId) {
             return;
         }
-        const row = ensureInstance(location);
+        const row = byLocation.get(location);
         const userId = normalizeEntityId(user.id || user.userId);
         if (
             !row ||

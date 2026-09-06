@@ -1529,11 +1529,6 @@ const generatedCommands = {
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_group_get', { input });
     },
-    async appVrchatGroupInstancesGet(
-        input: VrchatGroupUserInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE('app__vrchat_group_instances_get', { input });
-    },
     async appVrchatGroupInviteDelete(
         input: VrchatGroupUserInput
     ): Promise<HttpApiExecuteResponse> {

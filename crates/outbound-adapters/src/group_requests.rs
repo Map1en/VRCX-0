@@ -11,8 +11,7 @@ use vrcx_0_vrchat_client::groups::{
     member_ban_input, member_kick_input, member_props_set_input, member_role_add_input,
     member_role_remove_input, member_unban_input, members_get_input, members_search_input,
     post_create_input, post_delete_input, post_edit_input, profile_get_input,
-    representation_set_input, request_cancel_input, unblock_input, user_group_instances_get_input,
-    user_groups_get_input,
+    representation_set_input, request_cancel_input, unblock_input, user_groups_get_input,
 };
 
 pub struct VrchatGroupRemoteRequests;
@@ -65,11 +64,6 @@ impl GroupRemoteRequests for VrchatGroupRemoteRequests {
                 let (group_id, gallery_id, request) =
                     gallery_get_input(input.group_id, input.gallery_id, input.n, input.offset)?;
                 Ok(built2(group_id, gallery_id, request))
-            }
-            GroupRemoteRequest::GetGroupInstances(input) => {
-                let (group_id, user_id, request) =
-                    user_group_instances_get_input(input.group_id, input.user_id)?;
-                Ok(built2(group_id, user_id, request))
             }
             GroupRemoteRequest::GetBans(input) => {
                 let (group_id, request) = group_paged_get_input(

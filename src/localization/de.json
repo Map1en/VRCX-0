@@ -1424,7 +1424,7 @@
                     "title": "Sammlung geteilt",
                     "description": "{count} Welten können jetzt geteilt werden.",
                     "ready": "Deine Freigabeseite ist bereit",
-                    "skipped": "{count} nicht verfügbare oder nicht öffentliche Welten wurden nicht aufgenommen.",
+                    "skipped": "{count} nicht verfügbare oder unvollständige Welten wurden nicht aufgenommen.",
                     "skipped_incomplete": "{world} wurde übersprungen, weil erforderliche Informationen fehlen."
                 },
                 "coachmark": {
@@ -1444,7 +1444,7 @@
                     "forget_failed": "Gespeicherte Freigabe konnte nicht entfernt werden",
                     "no_worlds": "Diese Gruppe enthält keine Welt-IDs zum Teilen",
                     "too_many": "Du kannst höchstens {cap} Welten auf einmal teilen. Bitte teile diese Gruppe zuerst auf.",
-                    "skipped": "Geteilt. {count} Welten übersprungen (nicht synchronisiert oder nicht öffentlich)."
+                    "skipped": "Geteilt. {count} Welten übersprungen (nicht synchronisiert oder unvollständig)."
                 }
             }
         },

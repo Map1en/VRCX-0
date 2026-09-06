@@ -204,17 +204,6 @@ pub fn gallery_get_input(
     ))
 }
 
-pub fn user_group_instances_get_input(
-    group_id: String,
-    user_id: String,
-) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
-    user_group_instances_get_input_for_endpoint(
-        VRCHAT_API_DEFAULT_ENDPOINT.into(),
-        group_id,
-        user_id,
-    )
-}
-
 pub fn user_group_instances_get_input_for_endpoint(
     endpoint: String,
     group_id: String,

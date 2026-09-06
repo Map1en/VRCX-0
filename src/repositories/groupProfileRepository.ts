@@ -39,7 +39,6 @@ import {
 } from './group-profile/moderation';
 import {
     fetchGroupProfile,
-    getGroupInstances,
     getGroupProfile,
     getUsersGroupInstances,
     getUserGroups,
@@ -75,7 +74,6 @@ const groupProfileRepository = Object.freeze({
     deleteBlockedGroupRequest,
     addGroupMemberRole,
     removeGroupMemberRole,
-    getGroupInstances,
     getGroupBans,
     getAllGroupBans,
     getGroupInvites,
@@ -118,7 +116,6 @@ export {
     deleteBlockedGroupRequest,
     addGroupMemberRole,
     removeGroupMemberRole,
-    getGroupInstances,
     getGroupBans,
     getAllGroupBans,
     getGroupInvites,

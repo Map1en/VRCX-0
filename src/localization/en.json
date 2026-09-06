@@ -1424,7 +1424,7 @@
                     "title": "Collection shared",
                     "description": "{count} worlds are ready to share.",
                     "ready": "Your share page is ready",
-                    "skipped": "{count} unavailable or non-public worlds were not included.",
+                    "skipped": "{count} unavailable or incomplete worlds were not included.",
                     "skipped_incomplete": "{world} was skipped because required information is missing."
                 },
                 "coachmark": {
@@ -1444,7 +1444,7 @@
                     "forget_failed": "Couldn't remove saved share",
                     "no_worlds": "This group has no world IDs to share",
                     "too_many": "You can share up to {cap} worlds at once. Please split this group first.",
-                    "skipped": "Shared. Skipped {count} worlds (not synced or not public)."
+                    "skipped": "Shared. Skipped {count} worlds (not synced or incomplete)."
                 }
             }
         },

@@ -8,7 +8,6 @@ import type { EntityRecord } from '@/domain/entities/shared';
 
 const mocks = vi.hoisted(() => ({
     enrichEntityDialogHistory: vi.fn(),
-    getGroupInstances: vi.fn(),
     getGroupProfile: vi.fn(),
     getPreviousInstancesByGroupId: vi.fn(),
     normalize: vi.fn(),
@@ -37,7 +36,6 @@ vi.mock('@/repositories/gameLogRepository', () => ({
 
 vi.mock('@/repositories/groupProfileRepository', () => ({
     default: {
-        getGroupInstances: mocks.getGroupInstances,
         getGroupProfile: mocks.getGroupProfile,
         normalize: mocks.normalize
     }
@@ -87,6 +85,11 @@ vi.mock('@/state/runtimeStore', () => ({
                 currentUserSnapshot: null;
             };
             gameState: { currentLocation: string };
+            groupInstances: {
+                endpoint: string;
+                instances: Array<Record<string, unknown>>;
+                userId: string;
+            };
         }) => T
     ): T =>
         selector({
@@ -95,7 +98,30 @@ vi.mock('@/state/runtimeStore', () => ({
                 currentUserId: 'usr_current',
                 currentUserSnapshot: null
             },
-            gameState: { currentLocation: '' }
+            gameState: { currentLocation: '' },
+            groupInstances: {
+                endpoint: 'https://api.example.test',
+                instances: [
+                    {
+                        group: { id: 'grp_test' },
+                        instance: {
+                            capacity: 60,
+                            location: 'wrld_open:1~group(grp_test)',
+                            userCount: 0
+                        }
+                    },
+                    {
+                        active: false,
+                        group: { id: 'grp_test' },
+                        location: 'wrld_closed:1~group(grp_test)'
+                    },
+                    {
+                        group: { id: 'grp_other' },
+                        location: 'wrld_other:1~group(grp_other)'
+                    }
+                ],
+                userId: 'usr_current'
+            }
         })
 }));
 
@@ -138,12 +164,11 @@ describe('useGroupDialogState instance loading', () => {
             displayName: 'Remote group',
             name: 'Remote group'
         });
-        mocks.getGroupInstances.mockResolvedValue({ json: [] });
         mocks.getPreviousInstancesByGroupId.mockResolvedValue(new Map());
     });
 
-    it('does not refetch live instances when the group profile name hydrates', async () => {
-        renderHook(() =>
+    it('uses the shared runtime group instance projection', async () => {
+        const { result } = renderHook(() =>
             useGroupDialogState({
                 groupId: 'grp_test',
                 seedData: baseGroup
@@ -152,15 +177,19 @@ describe('useGroupDialogState instance loading', () => {
 
         await waitFor(() => {
             expect(mocks.getGroupProfile).toHaveBeenCalledOnce();
-            expect(mocks.getGroupInstances).toHaveBeenCalledOnce();
             expect(mocks.updateEntityDialogMetadata).toHaveBeenCalledWith(
                 expect.objectContaining({ title: 'Remote group' })
             );
         });
 
-        expect(mocks.getGroupInstances).toHaveBeenCalledWith({
-            groupId: 'grp_test',
-            userId: 'usr_current'
+        expect(result.current).toMatchObject({
+            activeInstances: [
+                {
+                    capacity: 60,
+                    location: 'wrld_open:1~group(grp_test)',
+                    userCount: 0
+                }
+            ]
         });
     });
 });
