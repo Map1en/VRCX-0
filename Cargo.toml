@@ -103,7 +103,7 @@ url = "2"
 uuid = { version = "1", features = ["v4"] }
 walkdir = "2"
 zip = { version = "8", default-features = false }
-zstd = { version = "0.13", features = ["zstdmt"] }
+zstd = { version = "0.14", features = ["zstdmt"] }
 
 [profile.dev]
 incremental = true
