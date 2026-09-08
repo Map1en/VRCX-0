@@ -94,7 +94,7 @@
         "@types/react": "^19.2.18",
         "@types/react-dom": "^19.2.7",
         "@vitejs/plugin-react": "^6.1.1",
-        "@vitest/coverage-v8": "^4.1.11",
+        "@vitest/coverage-v8": "^5.0.0",
         "browserslist": "^4.28.9",
         "husky": "^9.1.7",
         "jsdom": "^30.0.1",
