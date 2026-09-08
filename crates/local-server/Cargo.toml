@@ -7,7 +7,7 @@ description = "Shared local server primitives"
 
 [dependencies]
 base64 = { workspace = true }
-constant_time_eq = "0.5"
+constant_time_eq = "0.6"
 getrandom = "0.4"
 http = "1"
 socket2 = "0.6"
