@@ -59,8 +59,12 @@ pub(super) fn friend_count_bucket(count: Option<i64>) -> String {
         "500_1k"
     } else if count < 2_000 {
         "1k_2k"
+    } else if count < 5_000 {
+        "2k_5k"
+    } else if count < 10_000 {
+        "5k_10k"
     } else {
-        "gte2k"
+        "gte10k"
     };
     bucket.to_string()
 }
@@ -130,6 +134,8 @@ mod tests {
         assert_eq!(friend_count_bucket(Some(186)), "100_500");
         assert_eq!(friend_count_bucket(Some(500)), "500_1k");
         assert_eq!(friend_count_bucket(Some(1_999)), "1k_2k");
-        assert_eq!(friend_count_bucket(Some(2_000)), "gte2k");
+        assert_eq!(friend_count_bucket(Some(2_000)), "2k_5k");
+        assert_eq!(friend_count_bucket(Some(5_000)), "5k_10k");
+        assert_eq!(friend_count_bucket(Some(20_000)), "gte10k");
     }
 }
