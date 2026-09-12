@@ -222,40 +222,22 @@ export function SidePanelSettingsPopover({
                         />
                     </SettingRow>
                     {prefs.sidebarGroupByInstance ? (
-                        <>
-                            <SettingRow
-                                id="side-panel-hide-friends-in-same-instance"
-                                label={t(
-                                    'side_panel.settings.show_grouped_friends'
-                                )}
-                            >
-                                <Switch
-                                    checked={!prefs.isHideFriendsInSameInstance}
-                                    onCheckedChange={(value) =>
-                                        onUpdateBoolPreference(
-                                            'isHideFriendsInSameInstance',
-                                            !value
-                                        )
-                                    }
-                                />
-                            </SettingRow>
-                            <SettingRow
-                                id="side-panel-same-instance-above-favorites"
-                                label={t(
-                                    'side_panel.settings.same_instance_above_favorites'
-                                )}
-                            >
-                                <Switch
-                                    checked={prefs.isSameInstanceAboveFavorites}
-                                    onCheckedChange={(value) =>
-                                        onUpdateBoolPreference(
-                                            'isSameInstanceAboveFavorites',
-                                            value
-                                        )
-                                    }
-                                />
-                            </SettingRow>
-                        </>
+                        <SettingRow
+                            id="side-panel-same-instance-above-favorites"
+                            label={t(
+                                'side_panel.settings.same_instance_above_favorites'
+                            )}
+                        >
+                            <Switch
+                                checked={prefs.isSameInstanceAboveFavorites}
+                                onCheckedChange={(value) =>
+                                    onUpdateBoolPreference(
+                                        'isSameInstanceAboveFavorites',
+                                        value
+                                    )
+                                }
+                            />
+                        </SettingRow>
                     ) : null}
                     <SettingRow
                         id="side-panel-split-favorite-friends"

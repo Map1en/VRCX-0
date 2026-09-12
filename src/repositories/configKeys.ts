@@ -37,7 +37,6 @@ export const ConfigKeys = defineConfigKeys({
     sidebarGroupByInstance: { type: 'bool', default: true },
     sidebarGroupByInstanceCollapsed: { type: 'bool', default: false },
     sidebarFavoriteGroups: { type: 'string', default: null },
-    isHideFriendsInSameInstance: { type: 'bool', default: false },
     isSameInstanceAboveFavorites: { type: 'bool', default: false },
     isSidebarDivideByFriendGroup: { type: 'bool', default: false },
     rightSidebarOpen: { type: 'bool', default: true },

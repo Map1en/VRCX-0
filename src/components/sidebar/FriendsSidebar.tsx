@@ -508,10 +508,7 @@ export function FriendsSidebar({
                 return (
                     selectedFavoriteIds.has(normalizeId(friend?.id)) &&
                     state === 'online' &&
-                    !(
-                        prefs.isHideFriendsInSameInstance &&
-                        sameInstanceIds.has(friend.id)
-                    )
+                    !sameInstanceIds.has(friend.id)
                 );
             }),
             prefs
@@ -531,10 +528,7 @@ export function FriendsSidebar({
             rowsByIds(visibleOnlineIds, friendsById).filter(
                 (friend) =>
                     !excludedFavoriteIds.has(normalizeId(friend.id)) &&
-                    !(
-                        prefs.isHideFriendsInSameInstance &&
-                        sameInstanceIds.has(friend.id)
-                    )
+                    !sameInstanceIds.has(friend.id)
             ),
             prefs
         );
@@ -552,11 +546,7 @@ export function FriendsSidebar({
         }
         return sortActiveRows(
             rowsByIds(activeIds, friendsById).filter(
-                (friend) =>
-                    !(
-                        prefs.isHideFriendsInSameInstance &&
-                        sameInstanceIds.has(friend.id)
-                    )
+                (friend) => !sameInstanceIds.has(friend.id)
             ),
             prefs
         );
@@ -567,11 +557,7 @@ export function FriendsSidebar({
         }
         return sortRows(
             rowsByIds(offlineIds, friendsById).filter(
-                (friend) =>
-                    !(
-                        prefs.isHideFriendsInSameInstance &&
-                        sameInstanceIds.has(friend.id)
-                    )
+                (friend) => !sameInstanceIds.has(friend.id)
             ),
             prefs
         );
