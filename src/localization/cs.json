@@ -2218,14 +2218,15 @@
             },
             "feedback": {
                 "title": "Odeslat zpětnou vazbu",
-                "description": "Zpětná vazba se ve výchozím nastavení odesílá anonymně. Každou zprávu čteme. Pokud potřebujete odpověď, uveďte ve zprávě svou e-mailovou adresu.",
+                "description": "Zpětná vazba se ve výchozím nastavení odesílá anonymně. Každou zprávu čteme.",
                 "privacy_note": "Nepřipojují se žádné údaje o účtu.",
                 "placeholder": "Řekněte nám, co funguje, co ne, nebo co byste chtěli vidět…",
                 "submit": "Odeslat",
                 "submitting": "Odesílání…",
                 "thanks": "Děkujeme za zpětnou vazbu!",
                 "cooldown": "Znovu odeslat můžete za {{seconds}} s",
-                "more_help": "Potřebujete odpověď nebo chcete přiložit logy?",
+                "reply_note": "Chcete odpověď? Uveďte ve zprávě svou e-mailovou adresu.",
+                "more_help": "Kontaktovat nás nebo přiložit logy můžete také zde:",
                 "error_generic": "Zpětnou vazbu se nepodařilo odeslat. Zkuste to prosím později."
             },
             "ai": {

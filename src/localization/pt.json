@@ -2216,14 +2216,15 @@
             },
             "feedback": {
                 "title": "Enviar feedback",
-                "description": "O feedback é enviado de forma anónima por predefinição. Lemos todas as mensagens. Se precisares de uma resposta, inclui o teu endereço de e-mail no feedback.",
+                "description": "O feedback é enviado de forma anónima por predefinição. Lemos todas as mensagens.",
                 "privacy_note": "Não é incluída nenhuma informação da conta.",
                 "placeholder": "Diga-nos o que funciona, o que não funciona ou o que gostaria de ver…",
                 "submit": "Enviar",
                 "submitting": "A enviar…",
                 "thanks": "Obrigado pelo seu feedback!",
                 "cooldown": "Pode enviar novamente dentro de {{seconds}} s",
-                "more_help": "Precisa de resposta ou quer anexar registros?",
+                "reply_note": "Se precisares de uma resposta, inclui o teu e-mail no feedback.",
+                "more_help": "Também podes contactar-nos ou anexar registos aqui:",
                 "error_generic": "Não foi possível enviar o feedback. Tente novamente mais tarde."
             },
             "ai": {

@@ -2216,14 +2216,15 @@
             },
             "feedback": {
                 "title": "Enviar comentarios",
-                "description": "Los comentarios se envían de forma anónima por defecto. Leemos todos los mensajes. Si necesitas una respuesta, incluye tu dirección de correo electrónico en el comentario.",
+                "description": "Los comentarios se envían de forma anónima por defecto. Leemos todos los mensajes.",
                 "privacy_note": "No se adjuntan datos de la cuenta.",
                 "placeholder": "Cuéntanos qué funciona, qué no, o qué te gustaría ver…",
                 "submit": "Enviar",
                 "submitting": "Enviando…",
                 "thanks": "¡Gracias por tu opinión!",
                 "cooldown": "Podrás enviar otro en {{seconds}} s",
-                "more_help": "¿Necesitas respuesta o quieres adjuntar registros?",
+                "reply_note": "Si necesitas una respuesta, incluye tu correo electrónico en el comentario.",
+                "more_help": "También puedes contactarnos o adjuntar registros aquí:",
                 "error_generic": "No se pudieron enviar los comentarios. Inténtalo de nuevo más tarde."
             },
             "ai": {

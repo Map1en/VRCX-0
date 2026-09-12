@@ -2216,14 +2216,15 @@
             },
             "feedback": {
                 "title": "Send feedback",
-                "description": "Feedback is anonymous by default. We read every message. If you need a reply, please include your email address in your feedback.",
+                "description": "Feedback is anonymous by default. We read every message.",
                 "privacy_note": "No account info is attached.",
                 "placeholder": "Tell us what's working, what's not, or what you'd like to see...",
                 "submit": "Send",
                 "submitting": "Sending…",
                 "thanks": "Thanks for your feedback!",
                 "cooldown": "You can send again in {{seconds}}s",
-                "more_help": "Need a reply, or want to attach logs?",
+                "reply_note": "Need a reply? Include your email address in your feedback.",
+                "more_help": "You can also contact us or attach logs via:",
                 "error_generic": "Couldn't send feedback. Please try again later."
             },
             "ai": {

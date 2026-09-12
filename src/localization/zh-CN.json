@@ -2216,14 +2216,15 @@
             },
             "feedback": {
                 "title": "发送反馈",
-                "description": "反馈默认匿名提交。我们会阅读每一条消息。如需回复，请在反馈中附上你的邮箱。",
+                "description": "反馈默认匿名提交。我们会阅读每一条消息。",
                 "privacy_note": "不会附带任何账号信息。",
                 "placeholder": "告诉我们哪些好用、哪些不好用，或者你希望看到什么新功能……",
                 "submit": "发送",
                 "submitting": "发送中…",
                 "thanks": "感谢你的反馈！",
                 "cooldown": "{{seconds}} 秒后可再次发送",
-                "more_help": "需要回复，或者想附上日志？",
+                "reply_note": "如需回复，请在反馈中留下邮箱。",
+                "more_help": "也可以通过以下渠道联系我们或附上日志：",
                 "error_generic": "发送失败，请稍后重试。"
             },
             "ai": {

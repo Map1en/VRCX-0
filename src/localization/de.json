@@ -2216,14 +2216,15 @@
             },
             "feedback": {
                 "title": "Feedback senden",
-                "description": "Feedback wird standardmäßig anonym gesendet. Wir lesen jede Nachricht. Wenn du eine Antwort möchtest, gib bitte deine E-Mail-Adresse im Feedback an.",
+                "description": "Feedback wird standardmäßig anonym gesendet. Wir lesen jede Nachricht.",
                 "privacy_note": "Es werden keine Kontodaten übermittelt.",
                 "placeholder": "Erzähl uns, was gut läuft, was nicht, oder was du dir wünschst…",
                 "submit": "Senden",
                 "submitting": "Wird gesendet…",
                 "thanks": "Danke für dein Feedback!",
                 "cooldown": "In {{seconds}} s kannst du erneut senden",
-                "more_help": "Du brauchst eine Antwort oder möchtest Logs anhängen?",
+                "reply_note": "Wenn du eine Antwort möchtest, gib deine E-Mail-Adresse im Feedback an.",
+                "more_help": "Du kannst uns auch hier kontaktieren oder Logs anhängen:",
                 "error_generic": "Feedback konnte nicht gesendet werden. Bitte versuche es später erneut."
             },
             "ai": {
