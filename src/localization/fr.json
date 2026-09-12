@@ -10,7 +10,7 @@
         "app_launcher_title": "Choisir quelle application démarrer avec VRCX-0",
         "app_launcher_description": "Ajoutez une application ou un raccourci et choisissez quand vous voulez qu'elle s'ouvre.",
         "app_launcher_selection_title": "Choisissez une application ou un raccourci",
-        "app_launcher_selection_description": "Sélectionnez un élément de la liste pour le voir ou modifier son comportement.",
+        "app_launcher_selection_description": "Sélectionnez une application à modifier au lancement.",
         "game_log_title": "Aucune activité enregistrée",
         "game_log_description": "Les mondes visités, les utilisateurs et autres activités de VRChat apparaîtront ici pendant que vous jouez.",
         "my_avatars_title": "Aucun avatar mis en ligne",
@@ -279,7 +279,7 @@
     },
     "profile_backup": {
         "header": "Sauvegarde et restauration",
-        "tools_description": "Sauvegarder et restaurer vos données VRCX-0 .",
+        "tools_description": "Sauvegarder et restaurer vos données VRCX-0",
         "automatic": "Sauvegardes automatiques",
         "automatic_description": "Enregistrez régulièrement des sauvegardes dans le dossier sélectionné.",
         "automatic_on": "Activées",
@@ -724,6 +724,7 @@
         "hide_friends_sidebar": "Masquer la barre latérale des amis",
         "enter_sidebar_mode": "Mode Barre Latérale",
         "restore_full_window": "Retour en plein écran",
+        "always_on_top": "Toujours au premier plan",
         "zoom_in": "Zoom avant",
         "zoom_out": "Zoom arrière",
         "reset_zoom": "Réinitialiser le zoom",
@@ -815,6 +816,7 @@
         "search_direct_access": "Coller un lien ou un ID",
         "search_scope_direct_access": "wrld_ · usr_ · vrchat.com/…",
         "search_open_direct": "Ouvrir ce lien ou cet ID",
+        "search_clipboard_detected": "Lien ou ID détecté dans le presse-papier. Appuyez sur Entrée pour ouvrir.",
         "search_joined_groups": "Groupes rejoints",
         "refresh_tooltip": "Actualiser les amis",
         "refresh_available_in_seconds": "Synchronisation récente. Veuillez réessayer dans {count} s.",
@@ -1344,7 +1346,7 @@
                 "new_group": "Nouveau groupe",
                 "local_history": "Historique local",
                 "styles": "Styles",
-                "almost_nuisance": "Presque nuisible"
+                "almost_nuisance": "Presque nuisance"
             },
             "select_all": "Tout sélectionner",
             "deselect_all": "Tout désélectionner",
@@ -1540,9 +1542,8 @@
                 "moderation_snapshot_failed_to_load": "Impossible de charger l'historique de modération"
             },
             "label": {
-                "showing": "Affichage de",
-                "of": "sur",
                 "moderation_row": "ligne de modération",
+                "back_to_top": "Retour en haut",
                 "moderation_rows": "lignes de modération",
                 "broaden_the_type_filters_or_search_query_to_see_more_results": "Élargissez les filtres de type ou la recherche pour afficher plus de résultats"
             },
@@ -1559,7 +1560,7 @@
                 "accept": "Accepter",
                 "invite": "Inviter",
                 "decline": "Décliner",
-                "delete_log": "Supprimer le journal",
+                "delete_log": "Supprimer les notifications",
                 "decline_with_message": "Décliner avec un message"
             },
             "filters": {
@@ -1659,6 +1660,10 @@
                     "moderation": "Modération",
                     "other": "Autre"
                 }
+            },
+            "responses": {
+                "acknowledge_and_dismiss": "Supprimer",
+                "unsubscribe_announcements": "Se désabonner"
             }
         },
         "friend_list": {
@@ -1723,7 +1728,8 @@
             "dynamic": {
                 "open_value": "Ouvrir {value}"
             },
-            "bulk_selected": "{count} sélectionné(s)"
+            "bulk_selected": "{count} sélectionné(s)",
+            "search_scope": "Recherche dans : {scope}"
         },
         "charts": {
             "instance_activity": {
@@ -1846,16 +1852,13 @@
             "header": "Outils",
             "recent": "Récemment utilisés",
             "status": {
-                "rules_enabled": "Règle activée : {count}",
-                "rules_enabled_of_total": "{enabled} sur {total} règles activées",
-                "rules_configured_off": "Règles configurées : {count} · Désactivées",
-                "auto_reply_enabled": "Réponse automatique activée",
-                "apps_enabled": "Applications configurées : {count} · Activées",
-                "apps_configured_off": "Applications configurées : {count} · Désactivées",
+                "rules_enabled": "{count} règles · activées",
+                "rules_enabled_of_total": "{enabled}/{total} règles · activées",
+                "rules_configured_off": "{count} règles · Désactivées",
                 "last_backup": "Dernière sauvegarde : {date}",
-                "automatic_backup_enabled": "Sauvegarde automatique activée",
-                "automatic_backup_configured_off": "Sauvegarde automatique configurée · Désactivée",
-                "connections_configured": "Connexions IA configurées : {count}"
+                "connections_configured": "{count} connexions",
+                "apps_count": "{count} applications",
+                "automatic_backup": "Sauvegarde automatique"
             },
             "quick_access": {
                 "header": "Accès rapide",
@@ -1864,11 +1867,10 @@
                 "add": "Ajouter à l'accès rapide",
                 "remove": "Retirer de l'accès rapide",
                 "already_added": "Déjà ajouté à l'accès rapide",
-                "empty": "Glissez des outils ici, ou ajoutez-les depuis un menu d'outils.",
+                "empty": "Glissez des outils ici",
                 "actions": "Actions de l'outil",
-                "shortcut_menu": "Ajouter un raccourci…",
-                "tools_page_shortcut": "Accès rapide à la page des outils",
-                "sidebar_shortcut": "Navigation dans la barre latérale"
+                "tools_page_shortcut": "Épingler dans l'accès rapide",
+                "sidebar_shortcut": "Épingler dans la barre latérale"
             },
             "category": {
                 "automation": "Automatisation",
@@ -1882,9 +1884,9 @@
                 "calendar": "Calendrier",
                 "calendar_description": "Calendrier des évènements du groupe",
                 "moderation": "Modération du groupe",
-                "moderation_description": "Gérez les membres, bannissements, invitations et demandes d'adhésion des groupes que vous modérez.",
+                "moderation_description": "Membres, bannissements et demandes d'invitation.",
                 "my_groups": "Mes groupes",
-                "my_groups_description": "Réorganiser, masquer et quitter les groupes que vous avez rejoint."
+                "my_groups_description": "Réorganiser, masquer et quitter les groupes que vous avez rejoint"
             },
             "user": {
                 "discord_names_description": "Trouvez les noms d'utilisateur Discord de vos amis VRChat",
@@ -1910,7 +1912,7 @@
                 "screenshot": "Capture d'écran",
                 "screenshot_description": "Parcourir vos photos et détails de capture d'écran",
                 "gallery": "Galerie",
-                "gallery_description": "Gérer votre galerie — photos, icônes de profil, et imprimés",
+                "gallery_description": "Photos, icônes de profil et imprimés",
                 "inventory": "Inventaire",
                 "inventory_description": "Gérer les emojis, autocollants, objets et cosmétiques"
             },
@@ -1931,23 +1933,22 @@
                 "vrchat_log_description": "Lire les journaux de sortie locaux de VRChat",
                 "launch_options_description": "Modifier les options de lancement de VRChat",
                 "app_launcher": "Lanceur d'applications",
-                "app_launcher_description": "Lancer les applications automatiquement au démarrage de VRChat.",
+                "app_launcher_description": "Lancer les applications au démarrage de VRChat",
                 "registry_backup": "Sauvegarde du registre VRChat",
                 "registry_backup_description": "Créer ou restaurer une sauvegarde du registre VRChat",
                 "llm_endpoints": "Connexion IA",
-                "llm_endpoints_description": "Gérez les connexions du service IA pour Social AI et la traduction."
+                "llm_endpoints_description": "Connexions du service IA pour Social AI et la traduction."
             },
             "vrchat_log": {
                 "title": "Visionneuse de journaux VRChat",
                 "latest": "le plus récent",
                 "file_placeholder": "Sélectionner un fichier journal",
-                "search_placeholder": "Rechercher un message, une catégorie ou une trace d'appels",
-                "follow_latest": "Suivre le plus récent",
+                "search_placeholder": "Rechercher les journaux",
+                "follow_latest": "Suivre",
                 "clear_categories": "Effacer les catégories",
                 "copy_selected": "Copier la sélection",
                 "copy_entry": "Copier la ligne",
                 "copy_message": "Copier le message",
-                "clear_selected": "Effacer la sélection",
                 "copied": "Texte du journal copié dans le presse-papiers",
                 "copy_failed": "Échec de la copie du texte du journal",
                 "continuation_count": "+{count} lignes",
@@ -1956,13 +1957,18 @@
                 "column_category": "Catégorie",
                 "column_message": "Message",
                 "loading": "Chargement des entrées du journal",
-                "load_more": "Charger plus",
+                "load_older": "Charger le plus ancien",
+                "matched_count": "{loaded} / {total} correspondants",
+                "match_case": "Respecter la case",
+                "use_regex": "Expression régulière",
+                "column_line": "Ligne",
+                "select_all": "Tout sélectionner",
+                "deselect_all": "Tout déselectionner",
                 "unavailable": "Le dossier de données VRChat est indisponible",
                 "no_files": "Aucun journal de sortie VRChat trouvé",
                 "no_files_description": "Lancez VRChat une fois et actualisez cette page après l'apparition de output_log_*.txt.",
                 "no_entries": "Aucune entrée ne correspond aux filtres actuels",
                 "no_entries_description": "Ajustez les niveaux, la catégorie ou le texte de recherche.",
-                "no_category": "Aucune catégorie",
                 "error_load_files": "Échec du chargement des fichiers journaux VRChat.",
                 "error_load_entries": "Échec du chargement des entrées du journal VRChat.",
                 "error_tail": "Échec de la lecture des nouvelles entrées du journal.",
@@ -1972,11 +1978,11 @@
             "social_automation": {
                 "header": "Automatisation sociale",
                 "status_schedule": "Planification du statut",
-                "status_schedule_description": "Planifier le changement de statut, avec l'option d'appliquer uniquement lorsque VRChat est en cours d'exécution.",
+                "status_schedule_description": "Changer le statut selon un calendrier",
                 "room_status_rules": "Règles de statut selon l'instance et le monde",
-                "room_status_rules_description": "Modifier automatiquement le statut selon l'instance, le monde ou les amis présents.",
+                "room_status_rules_description": "Changer le statut selon l'instance, le monde ou les amis présents",
                 "invite_request_auto_reply": "Réponse auto aux demandes d'invitation",
-                "invite_request_auto_reply_description": "Invite automatiquement les amis autorisés qui demandent à rejoindre, lorsque VRChat est en cours d'exécution.",
+                "invite_request_auto_reply_description": "Invite automatiquement les amis autorisés qui demandent à rejoindre",
                 "schedule_rules": "Règles de planification",
                 "schedule_rules_description": "Les plages horaires peuvent modifier le statut, le message de statut, ou les deux.",
                 "add_rule": "Ajouter une règle",
@@ -2182,7 +2188,10 @@
                 "detect_failed": "Échec de la détection des modèles",
                 "deleted": "Endpoint supprimé",
                 "delete_failed": "Échec de la suppression de l'endpoint"
-            }
+            },
+            "filter_placeholder": "Filtrer les outils",
+            "filter_empty": "Aucun outil ne correspond",
+            "sections": "Sections"
         },
         "profile": {
             "game_info": {
@@ -2208,7 +2217,7 @@
             },
             "feedback": {
                 "title": "Envoyer un retour d'expérience",
-                "description": "Le retour d'expérience est soumis de manière anonyme. Nous lisons chaque message, mais ne pouvons pas y répondre directement.",
+                "description": "Le retour d'expérience est anonyme. Nous lisons chaque message, mais ne pouvons pas y répondre directement.",
                 "privacy_note": "Aucune information concernant le compte n'est attachée.",
                 "placeholder": "Dites-nous ce qui fonctionne, ce qui ne fonctionne pas, ou ce que vous aimeriez voir...",
                 "submit": "Envoyer",
@@ -3548,38 +3557,28 @@
         },
         "app_launcher": {
             "header": "Lanceur d'applications",
-            "global_enabled": "Activé",
-            "add_app": "Ajouter une application ou un raccourci",
+            "global_enabled": "Démarrer des applications avec VRChat",
+            "add_app": "Ajouter une application",
             "choose_target": "Choisir la cible",
-            "loading": "Chargement du lanceur d'applications",
-            "empty": "Aucune règle de lancement",
-            "details": "Détails de la règle",
-            "no_selection": "Sélectionnez une règle",
+            "loading": "Chargement…",
             "enabled": "Activé",
             "name": "Nom",
             "scope": "Portée",
             "target": "Cible",
-            "policy": "Politique",
-            "run": "Exécuter",
-            "stop": "Arrêter",
-            "actions": "Actions",
+            "run": "Quand VRChat démarre",
+            "stop": "Quand VRChat se ferme",
             "scope_all": "Tous",
             "scope_desktop": "Bureau",
             "scope_vr": "VR",
-            "run_policy_always": "À chaque démarrage de VRChat",
-            "run_policy_skipIfRunning": "Ignorer si déjà en cours",
-            "run_policy_short_always": "Chaque démarrage",
-            "run_policy_short_skipIfRunning": "Ignorer si en cours",
-            "stop_policy_keepRunning": "Garder en cours",
-            "stop_policy_closeByVrcx": "Fermé par VRCX-0",
-            "stop_policy_short_keepRunning": "Garder",
-            "stop_policy_short_closeByVrcx": "Fermer",
-            "delete": "Supprimer",
+            "run_policy_short_always": "Lancer à chaque fois",
+            "run_policy_short_skipIfRunning": "Seulement si non en cours",
+            "stop_policy_short_keepRunning": "Continuer à exécuter",
+            "stop_policy_short_closeByVrcx": "Fermer avec VRCX",
             "steam_app_id": "Steam App ID",
             "delay_seconds": "Délai de lancement (secondes)",
             "args": "Arguments",
             "run_as_administrator": "Exécuter en tant qu’administrateur",
-            "run_as_administrator_description": "Windows demandera une autorisation au lancement de cette application. Les applications lancées avec des privilèges élevés resteront ouvertes après la fermeture de VRChat.",
+            "run_as_administrator_description": "Windows demandera une autorisation au lancement.",
             "run_status_waiting": "En attente de lancement",
             "run_status_running": "En cours d’exécution",
             "run_status_skipped": "Ignoré",
@@ -3589,13 +3588,15 @@
             "run_error_elevation_required": "Des droits d’administrateur sont requis (erreur Windows {code}). Activez « Exécuter en tant qu’administrateur » pour cette règle.",
             "run_error_elevation_cancelled": "La demande de droits d’administrateur a été annulée (erreur Windows {code}).",
             "run_error_failed": "Impossible de lancer l’application.",
-            "close": "Fermer",
-            "save": "Enregistrer",
+            "stop_locked_steam": "Launched by Steam; VRCX-0 can’t close it.",
+            "stop_locked_admin": "Runs as administrator; VRCX-0 can’t close it.",
+            "remove_app": "Retirer l'application",
+            "remove_confirm": "Retirer {name} du lanceur d'applications?",
+            "name_required": "Le nom est requis",
             "toast": {
                 "load_failed": "Échec du chargement du lanceur d'applications",
                 "save_failed": "Échec de l'enregistrement du lanceur d'applications",
-                "pick_failed": "Échec de la sélection de l'application ou du raccourci",
-                "name_target_required": "Le nom et la cible sont obligatoires"
+                "pick_failed": "Échec de la sélection de l'application ou du raccourci"
             }
         },
         "user": {
@@ -4970,7 +4971,15 @@
             "scan_failed": "Échec de l'analyse de la bibliothèque de captures d'écran",
             "thumbnail_failed": "Miniature indisponible",
             "hide_details": "Masquer les informations",
-            "show_details": "Afficher les informations"
+            "show_details": "Afficher les informations",
+            "search_in": "Rechercher {scope}",
+            "grid_density": "Taille de la miniature",
+            "sort": "Trier",
+            "year_group": "Année {year}",
+            "sort_options": {
+                "captured_desc": "Les plus récents",
+                "captured_asc": "Les plus anciens"
+            }
         },
         "set_avatar_styles": {
             "header": "Définir les styles d'avatar",
@@ -4984,12 +4993,15 @@
             "header": "Configuration de VRChat",
             "description1": "Ces options sont réservées aux utilisateurs avancés.",
             "description2": "Laissez le champ vide pour utiliser la valeur par défaut. Le redémarrage du jeu est nécessaire pour appliquer les paramètres.",
-            "cache_size": "Taille du cache :",
+            "cache_size": "Taille du cache",
+            "section_cache": "Cache",
+            "section_pictures": "Photos",
+            "section_camera": "Appareil photo",
             "refresh": "Actualiser",
             "delete_cache": "Supprimer le cache",
             "sweep_cache": "Balayer le cache",
-            "max_cache_size": "Taille maximale du cache [Go] (min 30)",
-            "cache_expiry_delay": "Expiration du cache [jours] (min 30)",
+            "max_cache_size": "Taille maximale du cache (Go)",
+            "cache_expiry_delay": "Expiration du cache (jours)",
             "cache_directory": "Emplacement du dossier de cache personnalisé",
             "cache_location_changed": "Modifier l’emplacement du cache VRChat",
             "old_cache_cleanup_description": "L’ancien cache occupe {size}. VRChat ne l’utilisera plus après le changement. Voulez-vous le nettoyer ?",
@@ -5018,8 +5030,8 @@
             "msg_test_failed": "Clé API YouTube invalide"
         },
         "translation_api": {
-            "header": "Configuration du fournisseur de traduction",
-            "description": "Choisissez et configurez le fournisseur utilisé pour la traduction du contenu.",
+            "header": "Fournisseur de traduction",
+            "description": "Configurez le fournisseur utilisé pour la traduction du contenu.",
             "guide": "Guide",
             "mode": "Fournisseur",
             "mode_google": "Google Translate",
@@ -5033,7 +5045,7 @@
             "openai": {
                 "model": "Nom du modèle",
                 "prompt_optional": "Prompt (facultatif)",
-                "prompt_optional_description": "Prompt système facultatif. Veillez à inclure la variable de langue cible {targetLang}.",
+                "prompt_optional_description": "Prompt système facultatif. Doit inclure la variable {targetLang}.",
                 "connection": "Endpoint LLM",
                 "connection_description": "Seuls les endpoints compatibles avec OpenAI sont pris en charge.",
                 "connection_placeholder": "Sélectionner un endpoint",
@@ -5321,7 +5333,7 @@
                 "stable": "Stable",
                 "beta": "Beta",
                 "description": "VRCX-0 ne vérifie les mises à jour que dans le canal installé.",
-                "switch_description": "Pour basculer vers {channel}, téléchargez et installez sa dernière version depuis GitHub.",
+                "switch_description": "Pour basculer vers {channel}, téléchargez et installez sa dernière version.",
                 "download_stable": "Télécharger la dernière version stable",
                 "download_beta": "Télécharger la dernière version beta",
                 "no_release": "Aucune version disponible dans ce canal."
@@ -5836,7 +5848,8 @@
             "rows_per_page": "Lignes par page",
             "previous": "Précédent",
             "next": "Suivant",
-            "more_pages": "Plus de pages"
+            "more_pages": "Plus de pages",
+            "page_number": "Page {page}"
         },
         "feed": {
             "date": "Date",
@@ -6369,5 +6382,16 @@
             "themes": "Thèmes",
             "themes_description": "Gestion des sources de thèmes et du CSS personnalisé."
         }
+    },
+    "linux_rendering": {
+        "title": "Accélération matérielle (expérimental)",
+        "description": "S'applique une fois VRCX-0 redémarré. Une fois activée, confirmez dans les 30 secondes suivant le démarrage ; autrement, l'accélération est désactivée et VRCX-0 redémarre.",
+        "saved": "Enregistré. Redémarrez VRCX-0 pour appliquer.",
+        "restart_now": "Redémarrer maintenant",
+        "confirm_title": "L'interface s'affiche-t-elle correctement ?",
+        "confirm_description": "Sans confirmation dans les 30 secondes suivant le démarrage, VRCX-0 désactive l'accélération matérielle et redémarre.",
+        "restore": "Restaurer et redémarrer",
+        "keep": "L'affichage est normal, conserver",
+        "failed": "Impossible de modifier le paramètre de rendu. Veuillez réessayer."
     }
 }
