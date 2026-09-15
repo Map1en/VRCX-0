@@ -1,12 +1,12 @@
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
+import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
 
 import {
     createLocationGroupRow,
     createLocationUserRow,
     groupSeed,
-    hasGroupProfileDetails,
-    isGroupId
+    hasGroupProfileDetails
 } from './userDialogContentHelpers';
 import { normalizeUserId } from './userProfileFields';
 
@@ -70,7 +70,7 @@ export function resolveOwnerSeed(
         return null;
     }
 
-    if (isGroupId(ownerId)) {
+    if (hasGroupIdPrefix(ownerId)) {
         return (
             source.group ||
             source.ownerGroup ||
@@ -123,7 +123,7 @@ export async function loadLocationOwner({
         return { ownerUser: null, ownerGroup: null };
     }
 
-    if (isGroupId(ownerId)) {
+    if (hasGroupIdPrefix(ownerId)) {
         const cachedOwnerGroup = ownerSeed
             ? createLocationGroupRow(ownerSeed, groupFallback)
             : null;

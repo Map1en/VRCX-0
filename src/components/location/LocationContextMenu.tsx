@@ -32,7 +32,6 @@ export function LocationContextMenu({
     onSelfInviteCurrentInstance,
     onShowExactPreviousInstanceInfo,
     onShowPreviousInstances,
-    previousInstancesDialog,
     previousInstancesDisabled,
     previousInstancesLoading,
     shareUrl,
@@ -52,7 +51,6 @@ export function LocationContextMenu({
     onSelfInviteCurrentInstance(): void;
     onShowExactPreviousInstanceInfo(): void;
     onShowPreviousInstances(): void;
-    previousInstancesDialog: ReactNode;
     previousInstancesDisabled: boolean;
     previousInstancesLoading: boolean;
     shareUrl: string;
@@ -65,97 +63,94 @@ export function LocationContextMenu({
         : 'dialog.world.actions.new_instance_and_self_invite';
 
     return (
-        <>
-            <ContextMenu>
-                <ContextMenuTrigger
-                    render={
-                        <span className="inline-flex max-w-full min-w-0">
-                            {children}
-                        </span>
-                    }
-                />
-                <ContextMenuContent className="w-max max-w-[calc(100vw-1rem)] min-w-56">
-                    <ContextMenuGroup>
-                        <ContextMenuItem
-                            disabled={!canOpenWorld}
-                            onClick={onOpenWorld}
-                        >
-                            <ExternalLinkIcon />
-                            {t('common.actions.view_details')}
-                        </ContextMenuItem>
-                        <ContextMenuItem
-                            disabled={!shareUrl}
-                            onClick={onCopyShareLink}
-                        >
-                            <Share2Icon />
-                            {t('dialog.world.actions.share')}
-                        </ContextMenuItem>
-                    </ContextMenuGroup>
-                    <ContextMenuSeparator />
-                    <ContextMenuGroup>
-                        <ContextMenuItem
-                            disabled={!worldId}
-                            onClick={() => onNewInstance(false)}
-                        >
-                            <FlagIcon />
-                            {t('dialog.world.actions.new_instance')}
-                        </ContextMenuItem>
-                        <ContextMenuItem
-                            disabled={!worldId}
-                            onClick={() => onNewInstance(true)}
-                        >
-                            <MessageSquareIcon />
-                            {t(newInstanceFollowUpLabelKey)}
-                        </ContextMenuItem>
-                    </ContextMenuGroup>
-                    <ContextMenuSeparator />
-                    <ContextMenuGroup>
-                        <ContextMenuItem
-                            disabled={
-                                previousInstancesDisabled ||
-                                previousInstancesLoading ||
-                                (!worldId && !isOpenPreviousInstanceInfoDialog)
+        <ContextMenu>
+            <ContextMenuTrigger
+                render={
+                    <span className="inline-flex max-w-full min-w-0">
+                        {children}
+                    </span>
+                }
+            />
+            <ContextMenuContent className="w-max max-w-[calc(100vw-1rem)] min-w-56">
+                <ContextMenuGroup>
+                    <ContextMenuItem
+                        disabled={!canOpenWorld}
+                        onClick={onOpenWorld}
+                    >
+                        <ExternalLinkIcon />
+                        {t('common.actions.view_details')}
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                        disabled={!shareUrl}
+                        onClick={onCopyShareLink}
+                    >
+                        <Share2Icon />
+                        {t('dialog.world.actions.share')}
+                    </ContextMenuItem>
+                </ContextMenuGroup>
+                <ContextMenuSeparator />
+                <ContextMenuGroup>
+                    <ContextMenuItem
+                        disabled={!worldId}
+                        onClick={() => onNewInstance(false)}
+                    >
+                        <FlagIcon />
+                        {t('dialog.world.actions.new_instance')}
+                    </ContextMenuItem>
+                    <ContextMenuItem
+                        disabled={!worldId}
+                        onClick={() => onNewInstance(true)}
+                    >
+                        <MessageSquareIcon />
+                        {t(newInstanceFollowUpLabelKey)}
+                    </ContextMenuItem>
+                </ContextMenuGroup>
+                <ContextMenuSeparator />
+                <ContextMenuGroup>
+                    <ContextMenuItem
+                        disabled={
+                            previousInstancesDisabled ||
+                            previousInstancesLoading ||
+                            (!worldId && !isOpenPreviousInstanceInfoDialog)
+                        }
+                        onClick={() => {
+                            if (isOpenPreviousInstanceInfoDialog) {
+                                onShowExactPreviousInstanceInfo();
+                                return;
                             }
-                            onClick={() => {
-                                if (isOpenPreviousInstanceInfoDialog) {
-                                    onShowExactPreviousInstanceInfo();
-                                    return;
-                                }
-                                onShowPreviousInstances();
-                            }}
-                        >
-                            <HistoryIcon />
-                            {t('dialog.world.actions.show_previous_instances')}
-                        </ContextMenuItem>
-                    </ContextMenuGroup>
-                    {showLaunchActions ? (
-                        <>
-                            <ContextMenuSeparator />
-                            <LaunchModeContextMenuGroup
+                            onShowPreviousInstances();
+                        }}
+                    >
+                        <HistoryIcon />
+                        {t('dialog.world.actions.show_previous_instances')}
+                    </ContextMenuItem>
+                </ContextMenuGroup>
+                {showLaunchActions ? (
+                    <>
+                        <ContextMenuSeparator />
+                        <LaunchModeContextMenuGroup
+                            disabled={!canUseCurrentInstance}
+                            errorMessage={t(
+                                'host.launch_dialog.toast.launch_action_failed'
+                            )}
+                            location={launchLocation}
+                            shortName={launchShortName}
+                        />
+                        <ContextMenuSeparator />
+                        <ContextMenuGroup>
+                            <ContextMenuItem
                                 disabled={!canUseCurrentInstance}
-                                errorMessage={t(
-                                    'host.launch_dialog.toast.launch_action_failed'
-                                )}
-                                location={launchLocation}
-                                shortName={launchShortName}
-                            />
-                            <ContextMenuSeparator />
-                            <ContextMenuGroup>
-                                <ContextMenuItem
-                                    disabled={!canUseCurrentInstance}
-                                    onClick={() => {
-                                        onSelfInviteCurrentInstance();
-                                    }}
-                                >
-                                    <MessageSquareIcon />
-                                    {t('dialog.launch.self_invite')}
-                                </ContextMenuItem>
-                            </ContextMenuGroup>
-                        </>
-                    ) : null}
-                </ContextMenuContent>
-            </ContextMenu>
-            {previousInstancesDialog}
-        </>
+                                onClick={() => {
+                                    onSelfInviteCurrentInstance();
+                                }}
+                            >
+                                <MessageSquareIcon />
+                                {t('dialog.launch.self_invite')}
+                            </ContextMenuItem>
+                        </ContextMenuGroup>
+                    </>
+                ) : null}
+            </ContextMenuContent>
+        </ContextMenu>
     );
 }

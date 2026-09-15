@@ -32,7 +32,7 @@ export function hydrateIntegrationApiStatus(
     requestIntegrationApiStatusRefresh();
 }
 
-export function requestIntegrationApiStatusRefresh(): void {
+function requestIntegrationApiStatusRefresh(): void {
     for (const listener of statusRefreshListeners) {
         listener();
     }

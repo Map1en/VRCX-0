@@ -10,7 +10,7 @@ import type {
     FeedLiveEntry,
     FeedLiveEntryPayload,
     FeedLivePatch
-} from '@/components/feed/feedLiveTypes';
+} from '@/state/feedLiveTypes';
 
 import { feedEntryCorrectionId, useFeedLiveStore } from './feedLiveStore';
 import { usePreferencesStore } from './preferencesStore';

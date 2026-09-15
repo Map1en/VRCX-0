@@ -9,6 +9,7 @@ use super::{
     FeedRowsQueryInput,
 };
 use crate::database::DatabaseService;
+use crate::feed::test_support::seed_feed_gps_rows;
 use crate::ownership::OwnerId;
 use crate::realtime::{write_realtime_batch, RealtimePersistenceBatch};
 
@@ -846,5 +847,120 @@ fn search_matches_previous_values_and_escapes_like_wildcards() -> Result<(), cra
     let literal_percent = search("%")?;
     assert_eq!(literal_percent.len(), 1);
     assert_eq!(literal_percent[0].user_id.as_deref(), Some("usr_percent"));
+    Ok(())
+}
+
+fn lookup_page(
+    db: &DatabaseService,
+    max_entries: i64,
+    cursor: Option<FeedCursorInput>,
+) -> Result<Vec<FeedRowOutput>, crate::Error> {
+    feed_rows_query(
+        db,
+        FeedRowsQueryInput {
+            user_id: "usr_self".into(),
+            mode: FeedQueryMode::Lookup,
+            search: String::new(),
+            filters: Vec::new(),
+            vip_list: Vec::new(),
+            scoped_user_ids: Vec::new(),
+            excluded_user_ids: Vec::new(),
+            max_entries,
+            date_from: String::new(),
+            date_to: String::new(),
+            cursor,
+        },
+    )
+}
+
+fn cursor_after(row: &FeedRowOutput) -> FeedCursorInput {
+    FeedCursorInput {
+        created_at: row.created_at.clone().unwrap(),
+        source_rank: row.source_rank.unwrap(),
+        row_id: row.row_id.unwrap(),
+    }
+}
+
+#[test]
+fn cursor_pagination_walks_same_timestamp_rows_across_tables_in_full_page_order(
+) -> Result<(), crate::Error> {
+    let dir = TestDir::new("feed-cursor-ties");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+    let tie = "2026-05-15T00:10:00Z";
+    write_realtime_batch(
+        &db,
+        &OwnerId::new("usr_self"),
+        &RealtimePersistenceBatch {
+            feed_entries: vec![
+                bio_entry(tie, "usr_bio", "bio-20", "new bio", "old bio"),
+                avatar_entry(tie, "usr_avatar", "avatar-30", "usr_owner", "Avatar"),
+                status_entry(tie, "usr_status", "status-40", "join me"),
+                gps_entry(tie, "usr_gps_a", "gps-60-a", "wrld_1:a"),
+                gps_entry(tie, "usr_gps_b", "gps-60-b", "wrld_1:b"),
+                gps_entry("2026-05-15T00:00:00Z", "usr_older", "older", "wrld_1:c"),
+            ],
+            ..RealtimePersistenceBatch::default()
+        },
+    )?;
+
+    let full_page: Vec<String> = lookup_page(&db, 10, None)?
+        .into_iter()
+        .filter_map(|row| row.display_name)
+        .collect();
+    assert_eq!(
+        full_page,
+        [
+            "gps-60-b",
+            "gps-60-a",
+            "status-40",
+            "avatar-30",
+            "bio-20",
+            "older"
+        ]
+    );
+
+    let mut walked = Vec::new();
+    let mut cursor = None;
+    loop {
+        let page = lookup_page(&db, 1, cursor.take())?;
+        let Some(row) = page.into_iter().next() else {
+            break;
+        };
+        cursor = Some(cursor_after(&row));
+        walked.push(row.display_name.unwrap());
+    }
+    assert_eq!(walked, full_page);
+    Ok(())
+}
+
+#[test]
+#[ignore = "500k-row feed baseline fixture; run with --ignored --nocapture"]
+fn deep_cursor_page_costs_the_same_as_the_first_page_on_the_baseline_fixture(
+) -> Result<(), crate::Error> {
+    let dir = TestDir::new("feed-baseline");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+    seed_feed_gps_rows(&db, "usr_self", 500_000)?;
+    let deep_row = db.execute(
+        "SELECT created_at FROM usrself_feed_gps WHERE id = 1000",
+        &Default::default(),
+    )?;
+    let deep_cursor = FeedCursorInput {
+        created_at: deep_row[0][0].as_str().unwrap().to_string(),
+        source_rank: 60,
+        row_id: 1000,
+    };
+
+    let started = std::time::Instant::now();
+    let first_page = lookup_page(&db, 100, None)?;
+    let first_page_elapsed = started.elapsed();
+    let started = std::time::Instant::now();
+    let deep_page = lookup_page(&db, 100, Some(deep_cursor))?;
+    let deep_page_elapsed = started.elapsed();
+    println!("first page {first_page_elapsed:?}, deep page {deep_page_elapsed:?}");
+
+    assert_eq!(first_page.len(), 100);
+    assert_eq!(deep_page.len(), 100);
+    assert_eq!(deep_page[0].row_id, Some(999));
+    assert!(deep_page_elapsed < std::time::Duration::from_millis(20));
     Ok(())
 }

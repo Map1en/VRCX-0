@@ -1,6 +1,6 @@
 import type { EntityRecord } from './shared';
 
-export type GroupRoleRecord = EntityRecord & {
+type GroupRoleRecord = EntityRecord & {
     id?: string;
     name?: string;
     description?: string;
@@ -9,7 +9,7 @@ export type GroupRoleRecord = EntityRecord & {
     permissions?: string[];
 };
 
-export type GroupGallerySummary = EntityRecord & {
+type GroupGallerySummary = EntityRecord & {
     createdAt?: string;
     description?: string;
     id: string;
@@ -22,7 +22,7 @@ export type GroupGallerySummary = EntityRecord & {
     updatedAt?: string;
 };
 
-export type GroupMemberSummary = EntityRecord & {
+type GroupMemberSummary = EntityRecord & {
     id?: string;
     groupId?: string;
     userId?: string;

@@ -18,7 +18,7 @@ pub struct CommunityThemeDebugLocalThemeOutput {
     css: String,
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__community_theme_debug_load_local_theme(
     state: State<'_, AppState>,

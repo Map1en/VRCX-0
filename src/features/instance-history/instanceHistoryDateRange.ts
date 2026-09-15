@@ -1,13 +1,9 @@
 import type { DateTimeRangeValue } from '@/components/date-time-range-picker/DateTimeRangePicker';
 import { DAY_MS } from '@/shared/constants/time';
 
-export const INSTANCE_HISTORY_DEFAULT_DAYS = 30;
+const INSTANCE_HISTORY_DEFAULT_DAYS = 30;
 
-export type InstanceHistoryDateRangeSource =
-    | 'none'
-    | 'default'
-    | 'unbounded'
-    | 'user';
+type InstanceHistoryDateRangeSource = 'none' | 'default' | 'unbounded' | 'user';
 
 export type InstanceHistoryDateRangeState = {
     range: DateTimeRangeValue;

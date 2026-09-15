@@ -9,11 +9,7 @@ import { moderationRowUserId } from './groupModerationRows';
 
 const PAGE_SIZE = VRCHAT_API_DEFAULT_PAGE_SIZE;
 
-export type GroupMembersPaginationStatus =
-    | 'idle'
-    | 'loading'
-    | 'ready'
-    | 'error';
+type GroupMembersPaginationStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 export interface UseGroupMembersPaginationParams {
     groupId: string;

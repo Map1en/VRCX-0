@@ -17,7 +17,7 @@ pub async fn app__current_user_refresh(
     Ok(state.runtime_host().refresh_current_user().await?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__ingest_user_facts(
     state: State<'_, AppState>,
@@ -35,7 +35,7 @@ pub async fn app__friend_profile_load_start(
     Ok(state.runtime_host().start_friend_profile_bulk_load()?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__friend_profile_load_cancel(
     state: State<'_, AppState>,

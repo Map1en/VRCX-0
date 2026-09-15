@@ -365,6 +365,23 @@
     );
 }
 
+.entity-dialog {
+    --entity-dialog-ground: var(--surface-panel);
+    --card: var(--background);
+}
+
+.dark .entity-dialog {
+    --entity-dialog-ground: var(--popover);
+    --card: color-mix(in oklch, var(--popover) 97.5%, var(--foreground));
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .entity-dialog {
+        --entity-dialog-ground: var(--popover);
+        --card: color-mix(in oklch, var(--popover) 97.5%, var(--foreground));
+    }
+}
+
 :root[data-theme-color]:not([data-theme-color='default']) {
     --primary: var(--vrcx-theme-primary);
     --primary-foreground: var(--vrcx-theme-primary-foreground);
@@ -1198,31 +1215,36 @@
     }
 
     @keyframes feed-column-row-enter {
-        0% {
-            background-color: var(--vrcx-0-feed-row-arrival-surface);
+        0%,
+        40% {
+            opacity: 1;
         }
 
         100% {
-            background-color: color-mix(
-                in oklab,
-                var(--background) 20%,
-                transparent
-            );
+            opacity: 0;
         }
     }
 
     .feed-column-row-new {
-        animation: feed-column-row-enter 180ms ease-out both;
+        position: relative;
     }
 
-    .reduce-effects .feed-column-row-new {
-        background-color: var(--vrcx-0-feed-row-arrival-surface) !important;
+    .feed-column-row-new::after {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        content: '';
+        background-color: var(--vrcx-0-feed-row-arrival-surface);
+        animation: feed-column-row-enter 1400ms ease-out both;
+    }
+
+    .reduce-effects .feed-column-row-new::after {
+        animation: none;
     }
 
     @media (prefers-reduced-motion: reduce) {
-        .feed-column-row-new {
+        .feed-column-row-new::after {
             animation: none;
-            background-color: var(--vrcx-0-feed-row-arrival-surface) !important;
         }
     }
 
@@ -1470,20 +1492,6 @@
 .lucide-person-standing {
     transform: scale(1.45);
     stroke-width: 0.1rem;
-}
-
-@layer utilities {
-    :is(
-            [data-slot='dropdown-menu-content'],
-            [data-slot='dropdown-menu-sub-content'],
-            [data-slot='context-menu-content'],
-            [data-slot='context-menu-sub-content'],
-            [data-slot='menubar-content'],
-            [data-slot='menubar-sub-content']
-        )
-        :is([data-variant='destructive'], [data-variant='destructive'] svg) {
-        color: var(--destructive) !important;
-    }
 }
 
 html[data-magicui-theme-vt='active']::view-transition-old(root),

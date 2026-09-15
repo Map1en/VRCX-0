@@ -16,7 +16,6 @@ import {
     NAV_LAYOUT_UPDATED_EVENT,
     NAV_SHORTCUT_POSITION_LIMIT,
     NAV_SHORTCUT_REQUESTED_EVENT,
-    publishNavCustomizeRequested,
     publishNavLayoutUpdated
 } from '@/shared/events/navLayoutEvents';
 import { isRecord } from '@/shared/utils/record';
@@ -36,7 +35,7 @@ export type NavDefinition = {
     action?: { type: 'tool'; toolKey: string } | null;
 };
 
-export type NavLayoutItem = {
+type NavLayoutItem = {
     type: 'item';
     key: string;
     icon?: string;
@@ -44,7 +43,7 @@ export type NavLayoutItem = {
 
 export type NavFolderItem = string | { key: string; icon?: string };
 
-export type NavLayoutFolder = {
+type NavLayoutFolder = {
     type: 'folder';
     id: string;
     name: string;
@@ -79,12 +78,11 @@ export type NavShortcutEntry = {
     position: number;
 };
 
-export const NAV_CONFIG_KEY = 'VRCX_customNavMenuLayoutList';
+const NAV_CONFIG_KEY = 'VRCX_customNavMenuLayoutList';
 export {
     NAV_CUSTOMIZE_REQUESTED_EVENT,
     NAV_LAYOUT_UPDATED_EVENT,
-    NAV_SHORTCUT_REQUESTED_EVENT,
-    publishNavCustomizeRequested
+    NAV_SHORTCUT_REQUESTED_EVENT
 };
 
 export const routePathByName = Object.freeze({
@@ -118,7 +116,7 @@ export const routePathByName = Object.freeze({
     settings: '/settings'
 });
 
-export function buildDashboardNavDefinitions(
+function buildDashboardNavDefinitions(
     dashboards: Dashboard[] = []
 ): NavDefinition[] {
     return dashboards
@@ -173,7 +171,7 @@ export function createBaseDefaultNavLayout(t: TranslateKey): NavLayoutEntry[] {
     ];
 }
 
-export function insertDashboardEntries(
+function insertDashboardEntries(
     layout: unknown,
     dashboardDefinitions: NavDefinition[] = [],
     hiddenKeys: string[] = []
@@ -200,7 +198,7 @@ export function insertDashboardEntries(
     return [...nextLayout, ...dashboardEntries];
 }
 
-export function createNavDefinitionMap(
+function createNavDefinitionMap(
     definitions: NavDefinition[] = []
 ): Map<string, NavDefinition> {
     return new Map(
@@ -298,7 +296,7 @@ function buildAppendDefinitions(
     return [...visibleBaseDefinitions, ...visibleDashboardDefinitions];
 }
 
-export function sanitizeNavLayout({
+function sanitizeNavLayout({
     layout,
     hiddenKeys,
     definitions,
@@ -424,7 +422,7 @@ export function sanitizeNavLayout({
     return normalized;
 }
 
-export function buildMenuItems(
+function buildMenuItems(
     layout: NavLayoutEntry[],
     definitionMap: Map<string, NavDefinition>,
     t: TranslateKey

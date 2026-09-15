@@ -4,8 +4,8 @@ mod restore;
 mod types;
 
 pub(crate) use archive::sha256_hex;
-pub(crate) use fsutil::replace_file_atomically;
 pub(crate) use restore::{create_private_file, hash_file_with_progress, sync_directory_durable};
+pub(crate) use vrcx_0_platform::path_utils::replace_file_atomically;
 
 pub use archive::{
     commit_file_without_overwrite, create_backup_archive, create_backup_archive_with_progress,

@@ -542,14 +542,8 @@ function locationSentinel(value: unknown): LocationSentinel | '' {
     return isLocationSentinel(status) ? status : '';
 }
 
-export {
-    isLocationSentinel,
-    LOCATION_SENTINELS,
-    locationSentinel,
-    normalizeLocationStatus,
-    normalizeLocationValue
-};
-export type { FriendListMembership, LocationSentinel };
+export { locationSentinel, normalizeLocationStatus, normalizeLocationValue };
+export type { FriendListMembership };
 
 function getObject(value: unknown): LocationRecord | null {
     return value && typeof value === 'object'

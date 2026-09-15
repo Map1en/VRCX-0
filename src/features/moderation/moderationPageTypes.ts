@@ -5,11 +5,6 @@ export type ModerationLoadStatus = LoadStatus;
 
 export type ModerationRow = RemoteModerationRow;
 
-export type ModerationPaginationState = {
-    pageIndex: number;
-    pageSize: number;
-};
-
 export type ModerationUserTarget = {
     userId?: string;
     title?: string;

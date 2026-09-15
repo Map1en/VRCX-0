@@ -1,10 +1,8 @@
-import { ChevronDownIcon } from 'lucide-react';
+import { MapPinIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import type { LocationMetadata } from '@/components/location/useLocationMetadata';
-import { cn } from '@/lib/utils';
 import { Badge } from '@/ui/shadcn/badge';
-import { Button } from '@/ui/shadcn/button';
-import { Collapsible, CollapsibleTrigger } from '@/ui/shadcn/collapsible';
 
 import { StaticSidebarLocation } from './FriendsSidebarLocation';
 import type { SidebarVirtualRow } from './friendsSidebarVirtualRowBuilder';
@@ -40,61 +38,6 @@ export function estimateFriendSidebarRowSize(
     }
 }
 
-export function FriendSectionHeader({
-    id,
-    title,
-    count,
-    open,
-    isFirst = false,
-    onToggle
-}: {
-    id?: string;
-    title?: string;
-    count?: number;
-    open?: boolean;
-    isFirst?: boolean;
-    onToggle: (id: string) => void;
-}) {
-    const isOpen = Boolean(open);
-
-    return (
-        <Collapsible
-            open={isOpen}
-            onOpenChange={(nextOpen) => {
-                if (nextOpen !== isOpen) {
-                    onToggle(id || '');
-                }
-            }}
-            className={isFirst ? undefined : 'pt-2'}
-        >
-            <CollapsibleTrigger
-                render={
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="aria-expanded:hover:text-foreground w-full justify-between aria-expanded:bg-transparent aria-expanded:text-inherit aria-expanded:hover:bg-(--state-hover-surface) dark:aria-expanded:bg-transparent"
-                    >
-                        <span className="min-w-0 flex-1 truncate text-left">
-                            {title}
-                            {count !== null && count !== undefined
-                                ? ` \u2014 ${count}`
-                                : ''}
-                        </span>
-                        <ChevronDownIcon
-                            data-icon="inline-end"
-                            className={cn(
-                                'transition-transform',
-                                !isOpen && '-rotate-90'
-                            )}
-                        />
-                    </Button>
-                }
-            />
-        </Collapsible>
-    );
-}
-
 export function InstanceHeaderRow({
     location,
     count,
@@ -110,15 +53,10 @@ export function InstanceHeaderRow({
     showInstanceIdInLocation?: boolean;
     ageGatedInstancesVisible?: boolean;
 }) {
+    const { t } = useTranslation();
+
     return (
-        <div
-            className={cn(
-                'mb-1 flex min-w-0 items-center px-1.5 text-xs',
-                isCurrentInstance
-                    ? 'text-foreground font-medium'
-                    : 'text-muted-foreground'
-            )}
-        >
+        <div className="text-muted-foreground mb-1 flex min-w-0 items-center px-1.5 text-xs">
             <StaticSidebarLocation
                 className="min-w-0 flex-1 text-xs"
                 location={location}
@@ -129,6 +67,12 @@ export function InstanceHeaderRow({
                 showInstanceIdInLocation={showInstanceIdInLocation}
                 ageGatedInstancesVisible={ageGatedInstancesVisible}
             />
+            {isCurrentInstance ? (
+                <MapPinIcon
+                    className="ml-1 size-3 shrink-0"
+                    aria-label={t('side_panel.you_are_here')}
+                />
+            ) : null}
             <Badge variant="outline" className="ml-1.5">
                 {count}
             </Badge>

@@ -112,8 +112,3 @@ export const useFavoriteRevisionStore = create<FavoriteRevisionStoreState>(
         }
     })
 );
-
-export type {
-    FavoriteChangeScope as FavoriteRevisionKind,
-    FavoritePendingRevision
-};

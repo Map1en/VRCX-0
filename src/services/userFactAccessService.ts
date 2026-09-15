@@ -147,6 +147,5 @@ export {
     normalizeEndpoint,
     normalizeUserId,
     recordUserProfile,
-    resetPendingUserFactEntries,
-    userFactKey
+    resetPendingUserFactEntries
 };

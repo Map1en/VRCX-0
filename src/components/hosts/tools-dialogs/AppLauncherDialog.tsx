@@ -9,7 +9,6 @@ import { Fragment, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
-    DATA_TABLE_CONTROL_CELL_CLASS_NAME,
     DataTableCell,
     DataTableHead,
     DataTableHeaderRow,
@@ -31,6 +30,7 @@ import {
 } from '@/services/appLauncherSnapshotService';
 import { toast } from '@/services/toastService';
 import { publishToolsStatusUpdated } from '@/shared/constants/tools';
+import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -52,7 +52,8 @@ import {
     FieldDescription,
     FieldError,
     FieldGroup,
-    FieldLabel
+    FieldLabel,
+    FieldSeparator
 } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
 import {
@@ -63,7 +64,6 @@ import {
     NumberFieldInput
 } from '@/ui/shadcn/number-field';
 import { ScrollArea } from '@/ui/shadcn/scroll-area';
-import { Separator } from '@/ui/shadcn/separator';
 import { Switch } from '@/ui/shadcn/switch';
 import { Table, TableBody, TableHeader } from '@/ui/shadcn/table';
 import {
@@ -213,11 +213,16 @@ function runErrorKey(run: AppLauncherRun): string | null {
     return 'dialog.app_launcher.run_error_failed';
 }
 
+function entriesEqual(left: AppLauncherEntry, right: AppLauncherEntry) {
+    return JSON.stringify(left) === JSON.stringify(right);
+}
+
 export function AppLauncherDialog({
     open,
     onOpenChange
 }: AppLauncherDialogProps) {
     const { t } = useTranslation();
+    const confirm = useModalStore((state) => state.confirm);
     const hostPlatform = useRuntimeStore(
         (state) => state.hostCapabilities.platform
     );
@@ -242,7 +247,7 @@ export function AppLauncherDialog({
             .then((next) => {
                 if (active) {
                     setSnapshot(next);
-                    setEditing(next.entries[0] ?? null);
+                    setEditing((current) => current ?? next.entries[0] ?? null);
                 }
             })
             .catch((error) =>
@@ -274,17 +279,13 @@ export function AppLauncherDialog({
         }
     }, [editing, entries, snapshot]);
 
-    const updateSnapshot = (next: AppLauncherSnapshot) => {
-        setSnapshot(next);
-    };
-
     const saveEntries = async (
         nextEntries: AppLauncherEntry[]
     ): Promise<AppLauncherSnapshot | null> => {
         setSaving(true);
         try {
             const next = await appLauncherRepository.setEntries(nextEntries);
-            updateSnapshot(next);
+            setSnapshot(next);
             publishToolsStatusUpdated();
             return next;
         } catch (error) {
@@ -304,7 +305,7 @@ export function AppLauncherDialog({
     const updateEnabled = async (enabled: boolean) => {
         setSaving(true);
         try {
-            updateSnapshot(await appLauncherRepository.setEnabled(enabled));
+            setSnapshot(await appLauncherRepository.setEnabled(enabled));
             publishToolsStatusUpdated();
         } catch (error) {
             toast.add({
@@ -317,6 +318,49 @@ export function AppLauncherDialog({
         } finally {
             setSaving(false);
         }
+    };
+
+    const commitEntry = async (draft: AppLauncherEntry) => {
+        const normalized = normalizeEntry(draft);
+        const saved = entries.find((entry) => entry.id === normalized.id);
+        if (!normalized.name || !normalized.target) {
+            setEditing(draft);
+            return;
+        }
+        if (saved && entriesEqual(saved, normalized)) {
+            setEditing({ ...saved, args: saved.args ?? '' });
+            return;
+        }
+        const next = await saveEntries(
+            entries.map((entry) =>
+                entry.id === normalized.id ? normalized : entry
+            )
+        );
+        if (!next) {
+            return;
+        }
+        const savedEntry =
+            next.entries.find((entry) => entry.id === normalized.id) ??
+            normalized;
+        setEditing((current) =>
+            current?.id === normalized.id
+                ? { ...savedEntry, args: savedEntry.args ?? '' }
+                : current
+        );
+    };
+
+    const toggleEntryEnabled = async (
+        entry: AppLauncherEntry,
+        enabled: boolean
+    ) => {
+        setEditing((current) =>
+            current?.id === entry.id ? { ...current, enabled } : current
+        );
+        await saveEntries(
+            entries.map((item) =>
+                item.id === entry.id ? { ...item, enabled } : item
+            )
+        );
     };
 
     const addApp = async () => {
@@ -363,7 +407,7 @@ export function AppLauncherDialog({
             if (!picked) {
                 return;
             }
-            setEditing(applyPickedTarget(editing, picked));
+            await commitEntry(applyPickedTarget(editing, picked));
         } catch (error) {
             toast.add({
                 type: 'error',
@@ -377,37 +421,23 @@ export function AppLauncherDialog({
         }
     };
 
-    const saveEditing = async () => {
-        if (!editing) {
-            return;
-        }
-        const normalized = normalizeEntry(editing);
-        if (!normalized.name || !normalized.target) {
-            toast.add({
-                type: 'error',
-                title: t('dialog.app_launcher.toast.name_target_required')
-            });
+    const removeEntry = async (entry: AppLauncherEntry) => {
+        const result = await confirm({
+            title: t('dialog.app_launcher.remove_app'),
+            description: t('dialog.app_launcher.remove_confirm', {
+                name: entry.name || shortTarget(entry)
+            }),
+            confirmText: t('dialog.app_launcher.remove_app'),
+            cancelText: t('confirm.cancel_button'),
+            destructive: true
+        });
+        if (!result.ok) {
             return;
         }
         const next = await saveEntries(
-            entries.map((entry) =>
-                entry.id === normalized.id ? normalized : entry
-            )
+            entries.filter((item) => item.id !== entry.id)
         );
-        if (!next) {
-            return;
-        }
-        const savedEntry =
-            next.entries.find((entry) => entry.id === normalized.id) ??
-            normalized;
-        setEditing({ ...savedEntry, args: savedEntry.args ?? '' });
-    };
-
-    const deleteEntry = async (entryId: string) => {
-        const next = await saveEntries(
-            entries.filter((entry) => entry.id !== entryId)
-        );
-        if (next && editing?.id === entryId) {
+        if (next && editing?.id === entry.id) {
             setEditing(next.entries[0] ?? null);
         }
     };
@@ -419,203 +449,187 @@ export function AppLauncherDialog({
                     <DialogTitle>{t('dialog.app_launcher.header')}</DialogTitle>
                 </DialogHeader>
 
-                <div className="flex shrink-0 flex-wrap items-center gap-3">
-                    <div className="flex items-center gap-2">
-                        <Switch
-                            checked={snapshot?.enabled ?? false}
-                            disabled={loading || saving}
-                            onCheckedChange={updateEnabled}
-                        />
-                        <span className="text-sm font-medium">
-                            {t('dialog.app_launcher.global_enabled')}
-                        </span>
-                    </div>
-                    <Button
-                        type="button"
-                        className="ml-auto"
-                        variant="outline"
-                        size="sm"
-                        disabled={saving}
-                        onClick={addApp}
-                    >
-                        <PlusIcon data-icon="inline-start" />
-                        {t('dialog.app_launcher.add_app')}
-                    </Button>
-                </div>
+                <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_360px] gap-4">
+                    <div className="flex min-h-0 flex-col gap-3">
+                        <div className="flex shrink-0 flex-wrap items-center gap-3">
+                            <label className="flex items-center gap-2">
+                                <Switch
+                                    checked={snapshot?.enabled ?? false}
+                                    disabled={loading || saving}
+                                    onCheckedChange={updateEnabled}
+                                />
+                                <span className="text-sm font-medium">
+                                    {t('dialog.app_launcher.global_enabled')}
+                                </span>
+                            </label>
+                            <Button
+                                type="button"
+                                className="ml-auto"
+                                variant="outline"
+                                size="sm"
+                                disabled={saving}
+                                onClick={addApp}
+                            >
+                                <PlusIcon data-icon="inline-start" />
+                                {t('dialog.app_launcher.add_app')}
+                            </Button>
+                        </div>
 
-                <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_360px] gap-3">
-                    <ScrollArea className="app-data-table min-h-0 rounded-lg border">
-                        {entries.length === 0 ? (
-                            <Empty className="min-h-[360px] border-0">
-                                <EmptyHeader>
-                                    {!loading ? (
-                                        <EmptyMedia variant="icon">
-                                            <AppWindowIcon />
-                                        </EmptyMedia>
-                                    ) : null}
-                                    <EmptyTitle>
-                                        {loading
-                                            ? t('dialog.app_launcher.loading')
-                                            : t(
-                                                  'empty_state.app_launcher_title'
-                                              )}
-                                    </EmptyTitle>
-                                    {!loading ? (
-                                        <EmptyDescription>
-                                            {t(
-                                                'empty_state.app_launcher_description'
-                                            )}
-                                        </EmptyDescription>
-                                    ) : null}
-                                </EmptyHeader>
-                                {!loading ? (
-                                    <EmptyContent>
-                                        <Button
-                                            type="button"
-                                            variant="link"
-                                            onClick={addApp}
-                                        >
-                                            {t('dialog.app_launcher.add_app')}
-                                        </Button>
-                                    </EmptyContent>
-                                ) : null}
-                            </Empty>
-                        ) : (
-                            <Table>
-                                <TableHeader>
-                                    <DataTableHeaderRow>
-                                        <DataTableHead>
-                                            {t('dialog.app_launcher.name')}
-                                        </DataTableHead>
-                                        <DataTableHead className="w-24">
-                                            {t('dialog.app_launcher.scope')}
-                                        </DataTableHead>
-                                        <DataTableHead>
-                                            {t('dialog.app_launcher.target')}
-                                        </DataTableHead>
-                                        <DataTableHead className="w-44">
-                                            {t('dialog.app_launcher.policy')}
-                                        </DataTableHead>
-                                        <DataTableHead className="w-16 text-right">
-                                            {t('dialog.app_launcher.actions')}
-                                        </DataTableHead>
-                                    </DataTableHeaderRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {entries.map((entry) => {
-                                        const selected =
-                                            editing?.id === entry.id;
-                                        const run = activeRunForEntry(
-                                            snapshot,
-                                            entry.id
-                                        );
-                                        return (
-                                            <DataTableRow
-                                                key={entry.id}
-                                                className={cn(
-                                                    'cursor-pointer',
-                                                    !entry.enabled &&
-                                                        'opacity-60'
+                        <ScrollArea className="app-data-table min-h-0 flex-1 rounded-lg border">
+                            {entries.length === 0 ? (
+                                <Empty className="min-h-[360px] border-0">
+                                    <EmptyHeader>
+                                        {!loading ? (
+                                            <EmptyMedia variant="icon">
+                                                <AppWindowIcon />
+                                            </EmptyMedia>
+                                        ) : null}
+                                        <EmptyTitle>
+                                            {loading
+                                                ? t(
+                                                      'dialog.app_launcher.loading'
+                                                  )
+                                                : t(
+                                                      'empty_state.app_launcher_title'
+                                                  )}
+                                        </EmptyTitle>
+                                        {!loading ? (
+                                            <EmptyDescription>
+                                                {t(
+                                                    'empty_state.app_launcher_description'
                                                 )}
-                                                data-state={
-                                                    selected
-                                                        ? 'selected'
-                                                        : undefined
-                                                }
-                                                onClick={() =>
-                                                    setEditing({
-                                                        ...entry,
-                                                        args: entry.args ?? ''
-                                                    })
-                                                }
+                                            </EmptyDescription>
+                                        ) : null}
+                                    </EmptyHeader>
+                                    {!loading ? (
+                                        <EmptyContent>
+                                            <Button
+                                                type="button"
+                                                variant="link"
+                                                onClick={addApp}
                                             >
-                                                <DataTableCell className="min-w-0">
-                                                    <div className="flex min-w-0 flex-col gap-0.5">
-                                                        <span className="truncate font-medium">
-                                                            {entry.name}
-                                                        </span>
-                                                        {run ? (
-                                                            <span
-                                                                className={cn(
-                                                                    'text-muted-foreground text-xs',
-                                                                    run.status ===
-                                                                        'failed' &&
-                                                                        'text-destructive'
-                                                                )}
-                                                            >
-                                                                {t(
-                                                                    `dialog.app_launcher.run_status_${run.status}`
-                                                                )}
-                                                            </span>
-                                                        ) : null}
-                                                    </div>
-                                                </DataTableCell>
-                                                <DataTableCell>
-                                                    {t(
-                                                        `dialog.app_launcher.scope_${entry.scope}`
-                                                    )}
-                                                </DataTableCell>
-                                                <DataTableCell className="max-w-80 truncate font-mono text-xs">
-                                                    {shortTarget(entry)}
-                                                </DataTableCell>
-                                                <DataTableCell>
-                                                    <div className="flex flex-col gap-1 text-xs">
-                                                        <span>
-                                                            {t(
-                                                                `dialog.app_launcher.run_policy_${entry.runPolicy}`
-                                                            )}
-                                                        </span>
-                                                        <span className="text-muted-foreground">
-                                                            {t(
-                                                                `dialog.app_launcher.stop_policy_${entry.stopPolicy}`
-                                                            )}
-                                                            {entry.launchDelaySeconds
-                                                                ? ` / ${entry.launchDelaySeconds}s`
-                                                                : ''}
-                                                        </span>
-                                                    </div>
-                                                </DataTableCell>
-                                                <DataTableCell
-                                                    className={cn(
-                                                        DATA_TABLE_CONTROL_CELL_CLASS_NAME,
-                                                        'text-right'
-                                                    )}
+                                                {t(
+                                                    'dialog.app_launcher.add_app'
+                                                )}
+                                            </Button>
+                                        </EmptyContent>
+                                    ) : null}
+                                </Empty>
+                            ) : (
+                                <Table>
+                                    <TableHeader>
+                                        <DataTableHeaderRow>
+                                            <DataTableHead className="w-12" />
+                                            <DataTableHead>
+                                                {t('dialog.app_launcher.name')}
+                                            </DataTableHead>
+                                            <DataTableHead className="w-24">
+                                                {t('dialog.app_launcher.scope')}
+                                            </DataTableHead>
+                                            <DataTableHead>
+                                                {t(
+                                                    'dialog.app_launcher.target'
+                                                )}
+                                            </DataTableHead>
+                                        </DataTableHeaderRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {entries.map((entry) => {
+                                            const selected =
+                                                editing?.id === entry.id;
+                                            const run = activeRunForEntry(
+                                                snapshot,
+                                                entry.id
+                                            );
+                                            return (
+                                                <DataTableRow
+                                                    key={entry.id}
+                                                    className="cursor-pointer"
+                                                    data-state={
+                                                        selected
+                                                            ? 'selected'
+                                                            : undefined
+                                                    }
+                                                    onClick={() =>
+                                                        setEditing({
+                                                            ...entry,
+                                                            args:
+                                                                entry.args ?? ''
+                                                        })
+                                                    }
                                                 >
-                                                    <div
-                                                        role="presentation"
-                                                        className="flex justify-end"
+                                                    <DataTableCell
                                                         onClick={(event) =>
                                                             event.stopPropagation()
                                                         }
-                                                        onKeyDown={(event) =>
-                                                            event.stopPropagation()
-                                                        }
                                                     >
-                                                        <Button
-                                                            type="button"
-                                                            variant="destructive"
-                                                            size="icon-sm"
-                                                            disabled={saving}
+                                                        <Switch
+                                                            size="sm"
                                                             aria-label={t(
-                                                                'dialog.app_launcher.delete'
+                                                                'dialog.app_launcher.enabled'
                                                             )}
-                                                            onClick={() =>
-                                                                deleteEntry(
-                                                                    entry.id
+                                                            checked={
+                                                                entry.enabled
+                                                            }
+                                                            disabled={saving}
+                                                            onCheckedChange={(
+                                                                enabled
+                                                            ) =>
+                                                                toggleEntryEnabled(
+                                                                    entry,
+                                                                    enabled
                                                                 )
                                                             }
-                                                        >
-                                                            <Trash2Icon />
-                                                        </Button>
-                                                    </div>
-                                                </DataTableCell>
-                                            </DataTableRow>
-                                        );
-                                    })}
-                                </TableBody>
-                            </Table>
-                        )}
-                    </ScrollArea>
+                                                        />
+                                                    </DataTableCell>
+                                                    <DataTableCell
+                                                        className={cn(
+                                                            'min-w-0',
+                                                            !entry.enabled &&
+                                                                'text-muted-foreground'
+                                                        )}
+                                                    >
+                                                        <div className="flex min-w-0 flex-col gap-0.5">
+                                                            <span className="truncate font-medium">
+                                                                {entry.name}
+                                                            </span>
+                                                            {run ? (
+                                                                <span
+                                                                    className={cn(
+                                                                        'text-muted-foreground text-xs',
+                                                                        run.status ===
+                                                                            'failed' &&
+                                                                            'text-destructive'
+                                                                    )}
+                                                                >
+                                                                    {t(
+                                                                        `dialog.app_launcher.run_status_${run.status}`
+                                                                    )}
+                                                                </span>
+                                                            ) : null}
+                                                        </div>
+                                                    </DataTableCell>
+                                                    <DataTableCell
+                                                        className={cn(
+                                                            !entry.enabled &&
+                                                                'text-muted-foreground'
+                                                        )}
+                                                    >
+                                                        {t(
+                                                            `dialog.app_launcher.scope_${entry.scope}`
+                                                        )}
+                                                    </DataTableCell>
+                                                    <DataTableCell className="text-muted-foreground max-w-96 truncate font-mono text-xs">
+                                                        {shortTarget(entry)}
+                                                    </DataTableCell>
+                                                </DataTableRow>
+                                            );
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            )}
+                        </ScrollArea>
+                    </div>
 
                     <EntryDetailsPanel
                         entry={editing}
@@ -626,10 +640,10 @@ export function AppLauncherDialog({
                                 ? activeRunForEntry(snapshot, editing.id)
                                 : null
                         }
-                        onChange={setEditing}
-                        onClose={() => onOpenChange?.(false)}
-                        onSave={saveEditing}
+                        onDraftChange={setEditing}
+                        onCommit={commitEntry}
                         onBrowseTarget={browseEditingTarget}
+                        onRemove={removeEntry}
                     />
                 </div>
             </DialogContent>
@@ -642,29 +656,25 @@ function EntryDetailsPanel({
     saving,
     isWindows,
     run,
-    onChange,
-    onClose,
-    onSave,
-    onBrowseTarget
+    onDraftChange,
+    onCommit,
+    onBrowseTarget,
+    onRemove
 }: {
     entry: AppLauncherEntry | null;
     saving: boolean;
     isWindows: boolean;
     run: AppLauncherRun | null;
-    onChange: (entry: AppLauncherEntry) => void;
-    onClose: () => void;
-    onSave: () => void;
+    onDraftChange: (entry: AppLauncherEntry) => void;
+    onCommit: (entry: AppLauncherEntry) => void;
     onBrowseTarget: () => void;
+    onRemove: (entry: AppLauncherEntry) => void;
 }) {
     const { t } = useTranslation();
 
     if (!entry) {
         return (
-            <div className="flex min-h-0 flex-col rounded-lg border">
-                <div className="px-3 py-2 text-sm font-medium">
-                    {t('dialog.app_launcher.details')}
-                </div>
-                <Separator />
+            <div className="flex min-h-0 flex-col border-l pl-4">
                 <Empty className="min-h-[320px] border-0">
                     <EmptyHeader>
                         <EmptyMedia variant="icon">
@@ -685,64 +695,21 @@ function EntryDetailsPanel({
     }
 
     const errorKey = run ? runErrorKey(run) : null;
-    const stopPolicyLocked =
-        entry.kind === 'steamApp' || Boolean(entry.runAsAdministrator);
+    const stopLockedKey =
+        entry.kind === 'steamApp'
+            ? 'dialog.app_launcher.stop_locked_steam'
+            : entry.runAsAdministrator
+              ? 'dialog.app_launcher.stop_locked_admin'
+              : null;
+    const nameMissing = !entry.name.trim();
 
     return (
-        <div className="flex min-h-0 flex-col rounded-lg border">
-            <div className="px-3 py-2 text-sm font-medium">
-                {t('dialog.app_launcher.details')}
+        <div className="flex min-h-0 flex-col border-l pl-4">
+            <div className="truncate pb-3 text-sm font-medium">
+                {entry.name || shortTarget(entry)}
             </div>
-            <Separator />
             <ScrollArea className="min-h-0 flex-1">
-                <FieldGroup className="gap-3 p-3">
-                    <Field orientation="horizontal">
-                        <FieldLabel>
-                            {t('dialog.app_launcher.enabled')}
-                        </FieldLabel>
-                        <Switch
-                            checked={entry.enabled}
-                            disabled={saving}
-                            onCheckedChange={(enabled) =>
-                                onChange({
-                                    ...entry,
-                                    enabled
-                                })
-                            }
-                        />
-                    </Field>
-                    {isWindows && entry.kind === 'localApp' ? (
-                        <Field>
-                            <div className="flex items-center gap-2">
-                                <FieldLabel className="flex-1">
-                                    {t(
-                                        'dialog.app_launcher.run_as_administrator'
-                                    )}
-                                </FieldLabel>
-                                <Switch
-                                    aria-label={t(
-                                        'dialog.app_launcher.run_as_administrator'
-                                    )}
-                                    checked={Boolean(entry.runAsAdministrator)}
-                                    disabled={saving}
-                                    onCheckedChange={(runAsAdministrator) =>
-                                        onChange({
-                                            ...entry,
-                                            runAsAdministrator,
-                                            stopPolicy: runAsAdministrator
-                                                ? 'keepRunning'
-                                                : entry.stopPolicy
-                                        })
-                                    }
-                                />
-                            </div>
-                            <FieldDescription>
-                                {t(
-                                    'dialog.app_launcher.run_as_administrator_description'
-                                )}
-                            </FieldDescription>
-                        </Field>
-                    ) : null}
+                <FieldGroup className="gap-4 pr-1">
                     {errorKey && run ? (
                         <Field>
                             <FieldError>
@@ -757,17 +724,33 @@ function EntryDetailsPanel({
                             ) : null}
                         </Field>
                     ) : null}
-                    <Field>
-                        <FieldLabel>{t('dialog.app_launcher.name')}</FieldLabel>
+                    <Field data-invalid={nameMissing || undefined}>
+                        <FieldLabel htmlFor="app-launcher-name">
+                            {t('dialog.app_launcher.name')}
+                        </FieldLabel>
                         <Input
+                            id="app-launcher-name"
                             value={entry.name}
+                            aria-invalid={nameMissing || undefined}
+                            disabled={saving}
                             onChange={(event) =>
-                                onChange({
+                                onDraftChange({
                                     ...entry,
                                     name: event.target.value
                                 })
                             }
+                            onBlur={() => onCommit(entry)}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter') {
+                                    event.currentTarget.blur();
+                                }
+                            }}
                         />
+                        {nameMissing ? (
+                            <FieldError>
+                                {t('dialog.app_launcher.name_required')}
+                            </FieldError>
+                        ) : null}
                     </Field>
                     <Field>
                         <FieldLabel>
@@ -798,20 +781,17 @@ function EntryDetailsPanel({
                     <ToggleField
                         label={t('dialog.app_launcher.scope')}
                         value={entry.scope}
+                        disabled={saving}
                         options={APP_LAUNCHER_SCOPES.map((value) => ({
                             value,
                             label: t(`dialog.app_launcher.scope_${value}`)
                         }))}
-                        onValueChange={(scope) =>
-                            onChange({
-                                ...entry,
-                                scope
-                            })
-                        }
+                        onValueChange={(scope) => onCommit({ ...entry, scope })}
                     />
                     <ToggleField
                         label={t('dialog.app_launcher.run')}
                         value={entry.runPolicy}
+                        disabled={saving}
                         options={APP_LAUNCHER_RUN_POLICIES.map((value) => ({
                             value,
                             label: t(
@@ -819,18 +799,14 @@ function EntryDetailsPanel({
                             )
                         }))}
                         onValueChange={(runPolicy) =>
-                            onChange({
-                                ...entry,
-                                runPolicy
-                            })
+                            onCommit({ ...entry, runPolicy })
                         }
                     />
                     <ToggleField
                         label={t('dialog.app_launcher.stop')}
-                        value={
-                            stopPolicyLocked ? 'keepRunning' : entry.stopPolicy
-                        }
-                        disabled={stopPolicyLocked}
+                        value={stopLockedKey ? 'keepRunning' : entry.stopPolicy}
+                        disabled={saving || Boolean(stopLockedKey)}
+                        description={stopLockedKey ? t(stopLockedKey) : null}
                         options={APP_LAUNCHER_STOP_POLICIES.map((value) => ({
                             value,
                             label: t(
@@ -838,12 +814,41 @@ function EntryDetailsPanel({
                             )
                         }))}
                         onValueChange={(stopPolicy) =>
-                            onChange({
-                                ...entry,
-                                stopPolicy
-                            })
+                            onCommit({ ...entry, stopPolicy })
                         }
                     />
+                    {isWindows && entry.kind === 'localApp' ? (
+                        <Field>
+                            <div className="flex items-center gap-2">
+                                <FieldLabel className="flex-1">
+                                    {t(
+                                        'dialog.app_launcher.run_as_administrator'
+                                    )}
+                                </FieldLabel>
+                                <Switch
+                                    aria-label={t(
+                                        'dialog.app_launcher.run_as_administrator'
+                                    )}
+                                    checked={Boolean(entry.runAsAdministrator)}
+                                    disabled={saving}
+                                    onCheckedChange={(runAsAdministrator) =>
+                                        onCommit({
+                                            ...entry,
+                                            runAsAdministrator,
+                                            stopPolicy: runAsAdministrator
+                                                ? 'keepRunning'
+                                                : entry.stopPolicy
+                                        })
+                                    }
+                                />
+                            </div>
+                            <FieldDescription>
+                                {t(
+                                    'dialog.app_launcher.run_as_administrator_description'
+                                )}
+                            </FieldDescription>
+                        </Field>
+                    ) : null}
                     <Field>
                         <FieldLabel>
                             {t('dialog.app_launcher.delay_seconds')}
@@ -852,8 +857,9 @@ function EntryDetailsPanel({
                             min={0}
                             max={MAX_LAUNCH_DELAY_SECONDS}
                             value={entry.launchDelaySeconds}
+                            disabled={saving}
                             onValueChange={(value) =>
-                                onChange({
+                                onCommit({
                                     ...entry,
                                     launchDelaySeconds:
                                         normalizeLaunchDelaySeconds(value ?? 0)
@@ -869,42 +875,43 @@ function EntryDetailsPanel({
                     </Field>
                     {entry.kind === 'localApp' ? (
                         <Field>
-                            <FieldLabel>
+                            <FieldLabel htmlFor="app-launcher-args">
                                 {t('dialog.app_launcher.args')}
                             </FieldLabel>
                             <Input
+                                id="app-launcher-args"
+                                className="font-mono text-xs"
                                 value={entry.args ?? ''}
+                                disabled={saving}
                                 onChange={(event) =>
-                                    onChange({
+                                    onDraftChange({
                                         ...entry,
                                         args: event.target.value
                                     })
                                 }
+                                onBlur={() => onCommit(entry)}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter') {
+                                        event.currentTarget.blur();
+                                    }
+                                }}
                             />
                         </Field>
                     ) : null}
+                    <FieldSeparator />
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        disabled={saving}
+                        className="self-start"
+                        onClick={() => onRemove(entry)}
+                    >
+                        <Trash2Icon data-icon="inline-start" />
+                        {t('dialog.app_launcher.remove_app')}
+                    </Button>
                 </FieldGroup>
             </ScrollArea>
-            <Separator />
-            <div className="flex justify-end gap-2 p-3">
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={saving}
-                    onClick={onClose}
-                >
-                    {t('dialog.app_launcher.close')}
-                </Button>
-                <Button
-                    type="button"
-                    size="sm"
-                    disabled={saving}
-                    onClick={onSave}
-                >
-                    {t('dialog.app_launcher.save')}
-                </Button>
-            </div>
         </div>
     );
 }
@@ -914,12 +921,14 @@ function ToggleField<Value extends string>({
     value,
     options,
     disabled,
+    description,
     onValueChange
 }: {
     label: string;
     value: Value;
     options: ReadonlyArray<{ value: Value; label: string }>;
     disabled?: boolean;
+    description?: string | null;
     onValueChange: (value: Value) => void;
 }) {
     return (
@@ -952,6 +961,9 @@ function ToggleField<Value extends string>({
                     </Fragment>
                 ))}
             </ToggleGroup>
+            {description ? (
+                <FieldDescription>{description}</FieldDescription>
+            ) : null}
         </Field>
     );
 }

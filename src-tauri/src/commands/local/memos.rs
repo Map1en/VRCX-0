@@ -72,7 +72,7 @@ pub fn app__memo_list_users(state: State<'_, AppState>) -> Result<Vec<UserMemoOu
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__memo_save_avatar(
     state: State<'_, AppState>,
@@ -86,7 +86,7 @@ pub fn app__memo_save_avatar(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__memo_save_user(
     state: State<'_, AppState>,
@@ -100,7 +100,7 @@ pub fn app__memo_save_user(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__memo_save_world(
     state: State<'_, AppState>,

@@ -17,7 +17,7 @@ pub async fn app__ancillary_runtime_snapshot_get(
     Ok(state.runtime_host().ancillary_runtime_snapshot().await)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__notification_do_not_disturb_mode_set(
     state: State<'_, AppState>,
@@ -37,13 +37,13 @@ pub async fn app__runtime_group_instances_refresh(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__runtime_discord_reconcile_request(state: State<'_, AppState>) -> u64 {
     state.runtime_host().request_discord_reconcile()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__runtime_background_job_record(
     state: State<'_, AppState>,

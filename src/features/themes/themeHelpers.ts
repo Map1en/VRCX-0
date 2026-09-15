@@ -43,7 +43,7 @@ export function resolveActiveThemeSource(
     return 'built-in';
 }
 
-export function normalizeVersionForThemeCompatibility(version: string): string {
+function normalizeVersionForThemeCompatibility(version: string): string {
     return version.trim().replace(/^v/i, '');
 }
 

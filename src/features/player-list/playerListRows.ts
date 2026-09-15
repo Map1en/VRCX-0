@@ -1,4 +1,3 @@
-import type { FavoriteGroupMap } from '@/domain/favorites/types';
 import { hasUserIdPrefix } from '@/shared/constants/vrchatIds';
 import { parseLocation } from '@/shared/utils/location';
 import { isRecord } from '@/shared/utils/record';
@@ -11,7 +10,7 @@ import type {
     PlayerListSourceRow
 } from './playerListTypes';
 
-export function normalizePlayerUserId(value: unknown) {
+function normalizePlayerUserId(value: unknown) {
     const normalized = normalizeString(value);
     return hasUserIdPrefix(normalized) ? normalized : '';
 }
@@ -84,31 +83,6 @@ export function isLiveLocation(location: unknown) {
         !parsed.isPrivate &&
         !parsed.isTraveling
     );
-}
-
-export function buildFavoriteIdSet(
-    remoteFavoriteIds: Iterable<string> | null | undefined,
-    localFriendFavorites: FavoriteGroupMap | null | undefined
-) {
-    const set = new Set<string>();
-
-    for (const id of remoteFavoriteIds ?? []) {
-        const normalized = normalizeString(id);
-        if (normalized) {
-            set.add(normalized);
-        }
-    }
-
-    for (const values of Object.values(localFriendFavorites ?? {})) {
-        for (const id of values) {
-            const normalized = normalizeString(id);
-            if (normalized) {
-                set.add(normalized);
-            }
-        }
-    }
-
-    return set;
 }
 
 export function buildPlayerSourceRows({

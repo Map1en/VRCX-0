@@ -208,7 +208,37 @@ describe('AppLauncherDialog Windows launch diagnostics', () => {
         ).toBeNull();
     });
 
-    it('offers elevation only for Windows local apps and keeps them running', async () => {
+    it('keeps a row toggle in the draft so the next field commit does not revert it', async () => {
+        const initial = appSnapshot();
+        mocks.snapshot.mockResolvedValue(initial);
+        mocks.setEntries.mockImplementation(
+            async (entries: AppLauncherEntry[]) => ({
+                ...initial,
+                entries
+            })
+        );
+
+        render(<AppLauncherDialog open onOpenChange={vi.fn()} />);
+
+        fireEvent.click(
+            await screen.findByRole('switch', {
+                name: 'dialog.app_launcher.enabled'
+            })
+        );
+        await waitFor(() => expect(mocks.setEntries).toHaveBeenCalledTimes(1));
+
+        const name = screen.getByLabelText('dialog.app_launcher.name');
+        fireEvent.change(name, { target: { value: 'Renamed' } });
+        fireEvent.blur(name);
+        await waitFor(() => expect(mocks.setEntries).toHaveBeenCalledTimes(2));
+
+        const [entries] = mocks.setEntries.mock.calls[1] as [
+            AppLauncherEntry[]
+        ];
+        expect(entries[0]).toMatchObject({ enabled: false, name: 'Renamed' });
+    });
+
+    it('offers elevation only for Windows local apps, saves on toggle and keeps them running', async () => {
         const initial = appSnapshot();
         mocks.snapshot.mockResolvedValue(initial);
         mocks.setEntries.mockImplementation(
@@ -224,11 +254,6 @@ describe('AppLauncherDialog Windows launch diagnostics', () => {
             name: 'dialog.app_launcher.run_as_administrator'
         });
         fireEvent.click(elevation);
-        fireEvent.click(
-            screen.getByRole('button', {
-                name: 'dialog.app_launcher.save'
-            })
-        );
 
         await waitFor(() => expect(mocks.setEntries).toHaveBeenCalledTimes(1));
         const [entries] = mocks.setEntries.mock.calls[0] as [
@@ -251,18 +276,21 @@ describe('AppLauncherDialog Windows launch diagnostics', () => {
             ]
         });
         render(<AppLauncherDialog open onOpenChange={vi.fn()} />);
-        await screen.findByText('Tool');
+        await screen.findAllByText('Tool');
         expect(
             screen.queryByRole('switch', {
                 name: 'dialog.app_launcher.run_as_administrator'
             })
         ).toBeNull();
+        expect(
+            screen.getByText('dialog.app_launcher.stop_locked_steam')
+        ).toBeTruthy();
 
         cleanup();
         mocks.platform = 'linux';
         mocks.snapshot.mockResolvedValue(initial);
         render(<AppLauncherDialog open onOpenChange={vi.fn()} />);
-        await screen.findByText('Tool');
+        await screen.findAllByText('Tool');
         expect(
             screen.queryByRole('switch', {
                 name: 'dialog.app_launcher.run_as_administrator'

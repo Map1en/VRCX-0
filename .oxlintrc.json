@@ -3,7 +3,7 @@
     "categories": {
         "correctness": "error"
     },
-    "plugins": ["unicorn", "typescript", "oxc", "react", "jsx-a11y"],
+    "plugins": ["unicorn", "typescript", "oxc", "react", "jsx-a11y", "import"],
     "ignorePatterns": ["node_modules/**", "src/ui/shadcn/**"],
     "options": {
         "reportUnusedDisableDirectives": "error"
@@ -20,6 +20,7 @@
     "rules": {
         "no-unused-vars": "warn",
         "no-control-regex": "warn",
+        "import/no-cycle": "error",
         "react/button-has-type": "error",
         "react/rules-of-hooks": "error",
         "react/exhaustive-deps": "error",
@@ -147,6 +148,20 @@
             "files": ["src/components/media/FullscreenImageViewer.tsx"],
             "rules": {
                 "jsx-a11y/no-noninteractive-element-interactions": "off"
+            }
+        },
+        {
+            "files": [
+                "src/features/charts/mutual-friends/graphLayoutWorkerClient.ts"
+            ],
+            "rules": {
+                "import/default": "off"
+            }
+        },
+        {
+            "files": ["src/repositories/avatarProfileRepository.test.ts"],
+            "rules": {
+                "import/namespace": "off"
             }
         }
     ]

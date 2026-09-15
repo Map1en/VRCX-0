@@ -18,8 +18,7 @@ import {
     validateImageUploadFile,
     withUploadTimeout
 } from '@/shared/utils/imageUpload';
-
-import { normalizeEntityId } from './worldInstances';
+import { normalizeString } from '@/shared/utils/string';
 
 interface UseWorldImageUploadInput {
     world: WorldProfileRecord | null;
@@ -102,7 +101,7 @@ export function useWorldImageUpload({
         if (!selectedWorld) {
             return;
         }
-        const selectedWorldId = normalizeEntityId(selectedWorld?.id);
+        const selectedWorldId = normalizeString(selectedWorld?.id);
         const requestEndpoint = currentEndpoint;
         if (!blob || !selectedWorldId) {
             return;

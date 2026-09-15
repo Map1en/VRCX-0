@@ -1,22 +1,18 @@
 import { ConfigKeys, type ConfigKeyName } from '@/repositories/configKeys';
 import type {
     PreferencesSnapshot,
-    TableLimitsPreference,
     TranslationApiType
 } from '@/state/preferencesStore';
 
-export type ConfigKeyOfType<
-    ValueType extends 'string' | 'int' | 'bool' | 'float'
-> = {
+type ConfigKeyOfType<ValueType extends 'string' | 'int' | 'bool' | 'float'> = {
     [Key in ConfigKeyName]: (typeof ConfigKeys)[Key]['type'] extends ValueType
         ? Key
         : never;
 }[ConfigKeyName];
 export type PreferenceKey = Extract<keyof PreferencesSnapshot, string>;
-export type PreferenceConfigKeyOfType<
-    ValueType extends 'string' | 'int' | 'bool'
-> = Extract<ConfigKeyOfType<ValueType>, PreferenceKey>;
-export type ConfigKeyAlias<Key extends string> = Key | `VRCX_${Key}`;
+type PreferenceConfigKeyOfType<ValueType extends 'string' | 'int' | 'bool'> =
+    Extract<ConfigKeyOfType<ValueType>, PreferenceKey>;
+type ConfigKeyAlias<Key extends string> = Key | `VRCX_${Key}`;
 
 export type BoolConfigPreferenceKey = ConfigKeyAlias<
     PreferenceConfigKeyOfType<'bool'>
@@ -47,5 +43,3 @@ export type TranslationApiConfigPreferenceInput = {
     translationAPIPrompt?: string | null;
     translationAPIReasoningEffort?: string;
 };
-
-export type { PreferencesSnapshot, TableLimitsPreference };

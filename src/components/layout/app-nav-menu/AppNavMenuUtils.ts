@@ -34,10 +34,6 @@ function labelForEntry(entry: NavMenuItem | null | undefined, t: Translate) {
     );
 }
 
-function themeModeLabel(themeMode: string, t: Translate) {
-    return t(`view.settings.appearance.appearance.theme_mode_${themeMode}`);
-}
-
 function isEntryActive(
     entry: NavMenuItem | null | undefined,
     pathname: string
@@ -127,6 +123,5 @@ export {
     isNavItemNotified,
     isToolEntry,
     labelForEntry,
-    removeNavKeyFromLayout,
-    themeModeLabel
+    removeNavKeyFromLayout
 };

@@ -1,4 +1,4 @@
-import { CheckIcon, MoreHorizontalIcon } from 'lucide-react';
+import { CheckIcon, LockIcon, MoreHorizontalIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -13,6 +13,7 @@ import {
 } from '@/services/accountSwitchService';
 import { logoutFromReactShell } from '@/services/authExecutionService';
 import { userImage } from '@/services/entityMediaService';
+import { requestPrivacyLock } from '@/services/privacyLockService';
 import { toast } from '@/services/toastService';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
@@ -80,6 +81,19 @@ export function SidePanelSelfAccountMenu() {
     function handleSwitch(entry: SavedCredentialRecord) {
         setOpen(false);
         void switchToSavedAccount(entry);
+    }
+
+    function handleLock() {
+        setOpen(false);
+        requestPrivacyLock().catch((error: unknown) => {
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('privacy_lock.error.failed')
+            });
+        });
     }
 
     function handleUseOtherAccount() {
@@ -175,6 +189,11 @@ export function SidePanelSelfAccountMenu() {
                         })
                     )}
                 </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLock}>
+                    <LockIcon />
+                    {t('privacy_lock.action.lock')}
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleUseOtherAccount}>
                     {t('view.login.useOtherAccount')}

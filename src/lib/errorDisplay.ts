@@ -15,7 +15,7 @@ function normalizeErrorText(error: unknown) {
     return String(error ?? '').trim();
 }
 
-export function isInternalErrorText(value: unknown) {
+function isInternalErrorText(value: unknown) {
     const text = normalizeErrorText(value);
     return internalErrorPatterns.some((pattern) => pattern.test(text));
 }

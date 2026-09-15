@@ -19,7 +19,7 @@ pub fn app__config_list_values(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__config_remove_value(state: State<'_, AppState>, key: String) -> Result<i64, AppError> {
     state
@@ -29,7 +29,7 @@ pub fn app__config_remove_value(state: State<'_, AppState>, key: String) -> Resu
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__config_set_values(
     state: State<'_, AppState>,

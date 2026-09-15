@@ -207,7 +207,7 @@ function compactAuditLogDiffValue(value: unknown): string {
     return truncateAuditLogDiffText(String(value));
 }
 
-export function describeGroupAuditLogDataDiff(data: unknown): string[] | null {
+function describeGroupAuditLogDataDiff(data: unknown): string[] | null {
     if (!isAuditLogDiffShape(data)) {
         return null;
     }
@@ -304,7 +304,7 @@ export function createGroupAuditLogColumns(
                     <Button
                         type="button"
                         variant="ghost"
-                        className="hover:text-primary h-auto w-full min-w-0 justify-start truncate p-0 text-left font-medium"
+                        className="hover:text-primary h-auto w-full min-w-0 justify-start truncate p-0 text-left font-medium hover:bg-transparent"
                         onClick={() => openGroupAuditLogActor(row.original)}
                     >
                         {actorArgs.title}
@@ -368,7 +368,7 @@ export function createGroupAuditLogColumns(
     ];
 }
 
-export function GroupModerationLogsTable({
+function GroupModerationLogsTable({
     auditLogTypes,
     error,
     group,

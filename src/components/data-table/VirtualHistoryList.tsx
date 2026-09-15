@@ -23,7 +23,7 @@ export function VirtualHistoryList<TRow extends { key: string }>({
     hasMore,
     loadingOlder,
     onLoadOlder,
-    hasUnloadedLatest,
+    hasUnloadedLatest = false,
     onReloadLatest,
     onViewingLatestChange,
     latestLabel
@@ -40,9 +40,9 @@ export function VirtualHistoryList<TRow extends { key: string }>({
     hasMore: boolean;
     loadingOlder: boolean;
     onLoadOlder(): void;
-    hasUnloadedLatest: boolean;
-    onReloadLatest(): void;
-    onViewingLatestChange(value: boolean): void;
+    hasUnloadedLatest?: boolean;
+    onReloadLatest?(): void;
+    onViewingLatestChange?(value: boolean): void;
     latestLabel: string;
 }) {
     const [focusedRowKey, setFocusedRowKey] = useState<string | null>(null);
@@ -81,7 +81,7 @@ export function VirtualHistoryList<TRow extends { key: string }>({
                 headerViewportRef.current.scrollLeft =
                     viewportElement.scrollLeft;
             }
-            onViewingLatestChange(
+            onViewingLatestChange?.(
                 viewportElement.scrollTop <= estimatedRowHeight
             );
         };

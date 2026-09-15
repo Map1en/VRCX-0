@@ -126,18 +126,18 @@ function formatAspect(aspect: number): string {
     return aspect.toFixed(2);
 }
 
-export interface ImageCropDialogNoteField {
+interface ImageCropDialogNoteField {
     label: string;
     placeholder?: string;
     maxLength?: number;
 }
 
-export interface ImageCropDialogCropWhiteBorderField {
+interface ImageCropDialogCropWhiteBorderField {
     label: string;
     defaultChecked?: boolean;
 }
 
-export interface ImageCropDialogConfirmOptions {
+interface ImageCropDialogConfirmOptions {
     note?: string;
     cropWhiteBorder?: boolean;
 }

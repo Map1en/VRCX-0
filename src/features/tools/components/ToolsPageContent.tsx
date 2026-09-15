@@ -6,29 +6,30 @@ import {
 } from '@dnd-kit/core';
 import {
     SortableContext,
-    rectSortingStrategy,
-    useSortable
+    useSortable,
+    verticalListSortingStrategy
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-    BotIcon,
-    BugIcon,
-    ChevronDownIcon,
+    ChevronRightIcon,
     Clock3Icon,
-    DatabaseBackupIcon,
-    FolderOpenIcon,
-    ImageIcon,
     MinusIcon,
     MoreHorizontalIcon,
     PanelLeftIcon,
     PlusIcon,
-    SettingsIcon,
     StarIcon,
-    UsersRoundIcon,
-    WrenchIcon,
     type LucideIcon
 } from 'lucide-react';
-import type { ComponentProps, CSSProperties, ReactNode, Ref } from 'react';
+import {
+    useEffect,
+    useRef,
+    useState,
+    type ComponentProps,
+    type CSSProperties,
+    type ReactNode,
+    type Ref,
+    type RefObject
+} from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getNavIconComponent } from '@/components/layout/navIconRegistry';
@@ -37,6 +38,8 @@ import {
     PageToolbar,
     PageToolbarRow
 } from '@/components/layout/PageScaffold';
+import { ToolbarSearch } from '@/components/layout/ToolbarControls';
+import { SettingsCard } from '@/features/settings/components/SettingsCard';
 import { cn } from '@/lib/utils';
 import type { ToolDefinition } from '@/shared/constants/tools';
 import { Button } from '@/ui/shadcn/button';
@@ -44,11 +47,9 @@ import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
+import { Switch } from '@/ui/shadcn/switch';
 
 import {
     getCatalogDragId,
@@ -60,30 +61,16 @@ import {
 import { useToolsPageState } from '../useToolsPageState';
 import type { ToolStatusSummary } from '../useToolStatusSummaries';
 
-import './ToolsPageContent.css';
-
 type EditQuickAccessAction = 'add' | 'remove';
 type DragRenderProps = {
     itemRef: Ref<HTMLDivElement>;
     itemStyle: CSSProperties;
     isDragging: boolean;
-    dragProps: ComponentProps<typeof Button>;
+    dragProps: ComponentProps<'div'>;
 };
 type RenderToolItemOptions = {
-    compact?: boolean;
     dragProps?: Partial<DragRenderProps>;
     editQuickAccessAction?: EditQuickAccessAction;
-};
-
-const categoryIconByKey: Record<string, LucideIcon> = {
-    image: ImageIcon,
-    shortcuts: FolderOpenIcon,
-    automation: BotIcon,
-    group: UsersRoundIcon,
-    vrchat: SettingsIcon,
-    data: DatabaseBackupIcon,
-    debug: BugIcon,
-    other: MoreHorizontalIcon
 };
 
 function useToolsLabel() {
@@ -102,13 +89,12 @@ function useToolsLabel() {
     };
 }
 
-function ToolItem({
+function ToolRow({
     icon: Icon,
     title,
     description,
     status,
     actionsLabel,
-    shortcutMenuLabel,
     toolsPageShortcutLabel,
     sidebarShortcutLabel,
     addQuickAccessLabel,
@@ -118,7 +104,6 @@ function ToolItem({
     isQuickAccess,
     editMode,
     editQuickAccessAction,
-    compact,
     itemRef,
     itemStyle,
     isDragging,
@@ -134,7 +119,6 @@ function ToolItem({
     description: string;
     status?: ToolStatusSummary;
     actionsLabel: string;
-    shortcutMenuLabel: string;
     toolsPageShortcutLabel: string;
     sidebarShortcutLabel: string;
     addQuickAccessLabel: string;
@@ -144,11 +128,10 @@ function ToolItem({
     isQuickAccess: boolean;
     editMode: boolean;
     editQuickAccessAction: EditQuickAccessAction;
-    compact: boolean;
     itemRef?: Ref<HTMLDivElement>;
     itemStyle?: CSSProperties;
     isDragging?: boolean;
-    dragProps?: ComponentProps<typeof Button>;
+    dragProps?: ComponentProps<'div'>;
     onClick: () => void;
     onPin: () => void;
     onUnpin: () => void;
@@ -165,147 +148,155 @@ function ToolItem({
         <div
             ref={itemRef}
             style={itemStyle}
-            className={cn('relative h-full', isDragging && 'opacity-50')}
+            className={cn(
+                'group/tool bg-background grid h-9 grid-cols-[1.25rem_16rem_minmax(0,1fr)_auto_1.5rem] items-center gap-3 px-4 text-sm',
+                '[&:has([aria-expanded=true])]:bg-[var(--vrcx-0-table-row-hover-surface)]',
+                'has-[>button:focus-visible]:bg-[var(--vrcx-0-table-row-hover-surface)]',
+                editMode
+                    ? 'cursor-grab touch-none active:cursor-grabbing'
+                    : 'hover:bg-[var(--vrcx-0-table-row-hover-surface)]',
+                isDragging && 'opacity-50'
+            )}
+            {...(editMode && dragProps ? dragProps : {})}
         >
-            <Button
+            <button
                 type="button"
-                variant="secondary"
-                className={cn(
-                    'tools-page__tool h-full w-full min-w-0 justify-start gap-2.5 text-left font-normal whitespace-normal',
-                    compact
-                        ? 'min-h-14 items-center px-3 py-2.5'
-                        : 'items-start p-3',
-                    'pr-10',
-                    editMode
-                        ? dragProps
-                            ? 'cursor-grab touch-none active:cursor-grabbing'
-                            : 'cursor-default'
-                        : null
-                )}
-                data-editing={editMode || undefined}
+                className="col-span-3 grid h-full grid-cols-subgrid items-center gap-3 text-left outline-none"
                 aria-disabled={editMode ? true : undefined}
                 onClick={editMode ? undefined : onClick}
-                {...(editMode && dragProps ? dragProps : {})}
             >
-                <div className="text-muted-foreground flex size-8 flex-none items-center justify-center">
-                    <Icon aria-hidden="true" data-icon="inline-start" />
-                </div>
-                <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium">{title}</div>
-                    {!compact ? (
-                        <div className="text-muted-foreground mt-0.5 line-clamp-2 text-xs leading-snug">
-                            {description}
-                        </div>
-                    ) : null}
-                    {!compact && status ? (
-                        <div
-                            className={cn(
-                                'mt-1.5 flex items-center gap-1.5 truncate text-xs',
-                                status.tone === 'active'
-                                    ? 'text-primary'
-                                    : 'text-muted-foreground'
-                            )}
-                        >
+                <Icon
+                    aria-hidden="true"
+                    className="text-muted-foreground size-4"
+                />
+                <span className="truncate font-medium">{title}</span>
+                <span className="text-muted-foreground truncate text-xs">
+                    {description}
+                </span>
+            </button>
+            <div className="flex items-center justify-end gap-3">
+                {status?.label ? (
+                    <span
+                        className={cn(
+                            'flex items-center gap-1.5 text-xs whitespace-nowrap tabular-nums',
+                            status.tone === 'active'
+                                ? 'text-primary'
+                                : 'text-muted-foreground'
+                        )}
+                    >
+                        {status.toggle ? null : (
                             <span
                                 aria-hidden="true"
                                 className={cn(
-                                    'size-1.5 flex-none rounded-full',
+                                    'size-1.5 rounded-full',
                                     status.tone === 'active'
                                         ? 'bg-primary'
                                         : 'bg-muted-foreground/70'
                                 )}
                             />
-                            <span className="truncate">{status.label}</span>
-                        </div>
-                    ) : null}
-                </div>
-            </Button>
-            {editMode ? (
-                <Button
-                    type="button"
-                    size="icon-xs"
-                    variant="secondary"
-                    className="absolute top-2 right-2 size-7"
-                    aria-label={editQuickAccessLabel}
-                    onPointerDown={(event) => {
-                        event.stopPropagation();
-                    }}
-                    onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        if (isEditRemoveAction) {
-                            onRemoveQuickAccess?.();
-                        } else {
-                            onAddQuickAccess?.();
-                        }
-                    }}
-                >
-                    <EditQuickAccessIcon data-icon="inline-start" />
-                </Button>
-            ) : (
-                <DropdownMenu>
-                    <DropdownMenuTrigger
-                        render={
-                            <Button
-                                type="button"
-                                size="icon-xs"
-                                variant="ghost"
-                                className={cn(
-                                    'text-muted-foreground absolute right-2 size-7',
-                                    compact
-                                        ? 'top-1/2 -translate-y-1/2'
-                                        : 'top-2'
-                                )}
-                                aria-label={actionsLabel}
-                                onClick={(event) => {
-                                    event.preventDefault();
-                                    event.stopPropagation();
+                        )}
+                        {status.label}
+                    </span>
+                ) : null}
+                {status?.toggle ? (
+                    <Switch
+                        size="sm"
+                        checked={status.toggle.enabled}
+                        disabled={editMode}
+                        aria-label={title}
+                        onCheckedChange={(checked) => {
+                            void status.toggle?.setEnabled(checked);
+                        }}
+                    />
+                ) : null}
+                {isPinned ? (
+                    <PanelLeftIcon
+                        aria-label={sidebarShortcutLabel}
+                        className="text-muted-foreground size-4"
+                    />
+                ) : null}
+            </div>
+            <div className="flex size-6 items-center justify-center">
+                {editMode ? (
+                    <Button
+                        type="button"
+                        size="icon-xs"
+                        variant="secondary"
+                        className="size-6"
+                        aria-label={editQuickAccessLabel}
+                        onPointerDown={(event) => {
+                            event.stopPropagation();
+                        }}
+                        onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            if (isEditRemoveAction) {
+                                onRemoveQuickAccess?.();
+                            } else {
+                                onAddQuickAccess?.();
+                            }
+                        }}
+                    >
+                        <EditQuickAccessIcon data-icon="inline-start" />
+                    </Button>
+                ) : (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    size="icon-xs"
+                                    className="text-muted-foreground hidden size-6 group-focus-within/tool:flex group-hover/tool:flex aria-expanded:flex"
+                                    variant="ghost"
+                                    aria-label={actionsLabel}
+                                    onClick={(event) => {
+                                        event.preventDefault();
+                                        event.stopPropagation();
+                                    }}
+                                >
+                                    <MoreHorizontalIcon data-icon="inline-start" />
+                                </Button>
+                            }
+                        />
+                        <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuCheckboxItem
+                                checked={isQuickAccess}
+                                onCheckedChange={(checked) => {
+                                    if (checked) {
+                                        onAddQuickAccess?.();
+                                    } else {
+                                        onRemoveQuickAccess?.();
+                                    }
                                 }}
                             >
-                                <MoreHorizontalIcon data-icon="inline-start" />
-                            </Button>
-                        }
-                    />
-                    <DropdownMenuContent align="end" className="w-52">
-                        <DropdownMenuSub>
-                            <DropdownMenuSubTrigger>
-                                <PlusIcon data-icon="inline-start" />
-                                {shortcutMenuLabel}
-                            </DropdownMenuSubTrigger>
-                            <DropdownMenuSubContent className="w-60">
+                                <StarIcon data-icon="inline-start" />
+                                {toolsPageShortcutLabel}
+                            </DropdownMenuCheckboxItem>
+                            {navEligible ? (
                                 <DropdownMenuCheckboxItem
-                                    checked={isQuickAccess}
+                                    checked={isPinned}
                                     onCheckedChange={(checked) => {
                                         if (checked) {
-                                            onAddQuickAccess?.();
+                                            onPin?.();
                                         } else {
-                                            onRemoveQuickAccess?.();
+                                            onUnpin?.();
                                         }
                                     }}
                                 >
-                                    <StarIcon data-icon="inline-start" />
-                                    {toolsPageShortcutLabel}
+                                    <PanelLeftIcon data-icon="inline-start" />
+                                    {sidebarShortcutLabel}
                                 </DropdownMenuCheckboxItem>
-                                {navEligible ? (
-                                    <DropdownMenuCheckboxItem
-                                        checked={isPinned}
-                                        onCheckedChange={(checked) => {
-                                            if (checked) {
-                                                onPin?.();
-                                            } else {
-                                                onUnpin?.();
-                                            }
-                                        }}
-                                    >
-                                        <PanelLeftIcon data-icon="inline-start" />
-                                        {sidebarShortcutLabel}
-                                    </DropdownMenuCheckboxItem>
-                                ) : null}
-                            </DropdownMenuSubContent>
-                        </DropdownMenuSub>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            )}
+                            ) : null}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
+                {editMode ? null : (
+                    <ChevronRightIcon
+                        aria-hidden="true"
+                        className="text-muted-foreground/50 size-4 group-focus-within/tool:hidden group-hover/tool:hidden [.group\/tool:has([aria-expanded=true])_&]:hidden"
+                    />
+                )}
+            </div>
         </div>
     );
 }
@@ -334,20 +325,15 @@ function SortableQuickAccessTool({
             toolKey
         }
     });
-    const itemStyle: CSSProperties = {
-        transform: CSS.Transform.toString(transform),
-        transition
-    };
-    const cardDragProps: ComponentProps<typeof Button> = {
-        ...attributes,
-        ...listeners
-    };
 
     return children({
         itemRef: setNodeRef,
-        itemStyle,
+        itemStyle: {
+            transform: CSS.Transform.toString(transform),
+            transition
+        },
         isDragging,
-        dragProps: cardDragProps
+        dragProps: { ...attributes, ...listeners }
     });
 }
 
@@ -369,34 +355,53 @@ function DraggableCatalogTool({
                 toolKey
             }
         });
-    const itemStyle: CSSProperties = {
-        transform: CSS.Translate.toString(transform)
-    };
-    const cardDragProps: ComponentProps<typeof Button> = {
-        ...attributes,
-        ...listeners
-    };
 
     return children({
         itemRef: setNodeRef,
-        itemStyle,
+        itemStyle: { transform: CSS.Translate.toString(transform) },
         isDragging,
-        dragProps: cardDragProps
+        dragProps: { ...attributes, ...listeners }
     });
+}
+
+function ToolSection({
+    id,
+    title,
+    children
+}: {
+    id: string;
+    title: string;
+    children: ReactNode;
+}) {
+    return (
+        <div data-tools-section={id}>
+            <SettingsCard
+                cardId={id}
+                title={title}
+                bodyClassName="flex flex-col p-0"
+            >
+                {children}
+            </SettingsCard>
+        </div>
+    );
+}
+
+function ToolList({ children }: { children: ReactNode }) {
+    return (
+        <div className="divide-stroke-subtle divide-y overflow-hidden rounded-b-xl">
+            {children}
+        </div>
+    );
 }
 
 function QuickAccessDropZone({
     editMode,
     isEmpty,
-    isHidden,
-    title,
     emptyDescription,
     children
 }: {
     editMode: boolean;
     isEmpty: boolean;
-    isHidden: boolean;
-    title: string;
     emptyDescription: string;
     children: ReactNode;
 }) {
@@ -408,37 +413,24 @@ function QuickAccessDropZone({
         }
     });
 
-    if (isHidden) {
-        return null;
-    }
-
     return (
-        <section className="flex flex-col gap-2.5">
-            <div className="flex min-h-8 items-center gap-2 px-1">
-                <StarIcon
-                    aria-hidden="true"
-                    className="text-muted-foreground size-4"
-                />
-                <span className="text-sm font-semibold">{title}</span>
-            </div>
-            <div
-                ref={setNodeRef}
-                className={cn(
-                    editMode
-                        ? 'bg-muted/15 border-muted-foreground/40 rounded-lg border border-dashed p-3 transition-colors duration-150 motion-reduce:transition-none'
-                        : '',
-                    editMode && isOver && 'border-primary/70 bg-primary/5'
-                )}
-            >
-                {isEmpty ? (
-                    <div className="text-muted-foreground flex min-h-20 items-center justify-center rounded-md px-4 text-center text-sm">
-                        {emptyDescription}
-                    </div>
-                ) : (
-                    children
-                )}
-            </div>
-        </section>
+        <div
+            ref={setNodeRef}
+            className={cn(
+                'transition-colors duration-150 motion-reduce:transition-none',
+                editMode &&
+                    'outline-muted-foreground/50 m-2 overflow-hidden rounded-lg outline-2 -outline-offset-1 outline-dashed',
+                editMode && isOver && 'outline-primary/70 bg-primary/5'
+            )}
+        >
+            {isEmpty ? (
+                <div className="text-muted-foreground flex min-h-16 items-center justify-center px-4 text-center text-sm">
+                    {emptyDescription}
+                </div>
+            ) : (
+                children
+            )}
+        </div>
     );
 }
 
@@ -461,9 +453,8 @@ function ToolCatalogDropZone({
         <div
             ref={setNodeRef}
             className={cn(
-                'flex flex-col gap-5 rounded-lg border border-transparent px-4 py-2 transition-colors duration-150 motion-reduce:transition-none',
-                editMode && 'border-muted-foreground/30 border-dashed py-4',
-                editMode && isOver && 'border-primary/60 bg-primary/5'
+                'flex flex-col gap-4 rounded-xl transition-colors duration-150 motion-reduce:transition-none',
+                editMode && isOver && 'bg-primary/5'
             )}
         >
             {children}
@@ -471,11 +462,108 @@ function ToolCatalogDropZone({
     );
 }
 
+const QUICK_ACCESS_SECTION_ID = 'tools-section-quick-access';
+const RECENT_SECTION_ID = 'tools-section-recent';
+const SECTION_SCROLL_OFFSET = 8;
+
+function categorySectionId(categoryKey: string) {
+    return `tools-section-${categoryKey}`;
+}
+
+type PinnedSection = {
+    id: string;
+    targetTop: number;
+    settled: boolean;
+};
+
+function sectionElement(container: HTMLElement, id: string) {
+    return container.querySelector<HTMLElement>(`[data-tools-section="${id}"]`);
+}
+
+function useActiveSection(
+    scrollRef: RefObject<HTMLDivElement | null>,
+    sectionKey: string
+) {
+    const [activeId, setActiveId] = useState<string | null>(null);
+    const pinnedRef = useRef<PinnedSection | null>(null);
+
+    useEffect(() => {
+        const sectionIds = sectionKey ? sectionKey.split('\n') : [];
+        const container = scrollRef.current;
+        if (!container) {
+            return undefined;
+        }
+        const compute = () => {
+            const atBottom =
+                container.scrollTop + container.clientHeight >=
+                container.scrollHeight - 1;
+            if (atBottom) {
+                return sectionIds[sectionIds.length - 1] ?? null;
+            }
+            const threshold = container.scrollTop + SECTION_SCROLL_OFFSET + 1;
+            let current: string | null = sectionIds[0] ?? null;
+            for (const id of sectionIds) {
+                const element = sectionElement(container, id);
+                if (element && element.offsetTop <= threshold) {
+                    current = id;
+                }
+            }
+            return current;
+        };
+        const update = () => {
+            const pinned = pinnedRef.current;
+            if (pinned) {
+                const reached =
+                    Math.abs(container.scrollTop - pinned.targetTop) <= 1;
+                if (!pinned.settled) {
+                    if (reached) {
+                        pinned.settled = true;
+                    }
+                    return;
+                }
+                if (reached) {
+                    return;
+                }
+                pinnedRef.current = null;
+            }
+            setActiveId(compute());
+        };
+        update();
+        container.addEventListener('scroll', update, { passive: true });
+        return () => {
+            container.removeEventListener('scroll', update);
+        };
+    }, [scrollRef, sectionKey]);
+
+    function scrollTo(id: string) {
+        const container = scrollRef.current;
+        const element = container ? sectionElement(container, id) : null;
+        if (!container || !element) {
+            return;
+        }
+        const targetTop = Math.max(
+            0,
+            Math.min(
+                element.offsetTop - SECTION_SCROLL_OFFSET,
+                container.scrollHeight - container.clientHeight
+            )
+        );
+        pinnedRef.current = {
+            id,
+            targetTop,
+            settled: Math.abs(container.scrollTop - targetTop) <= 1
+        };
+        setActiveId(id);
+        container.scrollTo({ top: targetTop, behavior: 'smooth' });
+    }
+
+    return { activeId, scrollTo };
+}
+
 export function ToolsPageContent({ embedded = false }: { embedded?: boolean }) {
     const {
         addQuickAccessToolByKeyWithFeedback,
         categories,
-        collapsed,
         handleQuickAccessDragEnd,
         isQuickAccessEditing,
         pinToolToNav,
@@ -488,23 +576,53 @@ export function ToolsPageContent({ embedded = false }: { embedded?: boolean }) {
         setIsQuickAccessEditing,
         shouldShowQuickAccess,
         statusByToolKey,
-        toggleCategoryCollapsed,
         triggerTool,
         unpinToolFromNav
     } = useToolsPageState();
     const label = useToolsLabel();
+    const [filterText, setFilterText] = useState('');
+    const normalizedFilter = filterText.trim().toLocaleLowerCase();
+    const isFiltering = normalizedFilter.length > 0;
 
-    function renderToolItem(
+    const showQuickAccess = !isFiltering && shouldShowQuickAccess;
+    const hidePinnedTools = !isFiltering && !isQuickAccessEditing;
+    const isListedInQuickAccess = (tool: ToolDefinition) => {
+        if (!hidePinnedTools) {
+            return false;
+        }
+        const key = normalizePinnedToolKey(tool.key);
+        return (
+            (showQuickAccess && quickAccessKeySet.has(key)) ||
+            pinnedToolKeys.has(key)
+        );
+    };
+    const visibleCategories = categories
+        .map((category) => ({
+            ...category,
+            tools: category.tools.filter(
+                (tool) =>
+                    !isListedInQuickAccess(tool) &&
+                    (!isFiltering ||
+                        `${label(tool.titleKey)}\n${label(tool.descriptionKey)}`
+                            .toLocaleLowerCase()
+                            .includes(normalizedFilter))
+            )
+        }))
+        .filter((category) => category.tools.length > 0);
+    const visibleRecentTools = recentTools.filter(
+        (tool) => !isListedInQuickAccess(tool)
+    );
+
+    function renderToolRow(
         tool: ToolDefinition,
         {
-            compact = false,
             dragProps = {},
             editQuickAccessAction = 'add'
         }: RenderToolItemOptions = {}
     ) {
         const normalizedToolKey = normalizePinnedToolKey(tool.key);
         return (
-            <ToolItem
+            <ToolRow
                 icon={getNavIconComponent(tool.navIcon, 'lucide:Wrench')}
                 title={label(tool.titleKey)}
                 description={label(tool.descriptionKey)}
@@ -515,10 +633,6 @@ export function ToolsPageContent({ embedded = false }: { embedded?: boolean }) {
                 isQuickAccess={quickAccessKeySet.has(normalizedToolKey)}
                 editMode={isQuickAccessEditing}
                 editQuickAccessAction={editQuickAccessAction}
-                compact={compact}
-                shortcutMenuLabel={label(
-                    'view.tools.quick_access.shortcut_menu'
-                )}
                 toolsPageShortcutLabel={label(
                     'view.tools.quick_access.tools_page_shortcut'
                 )}
@@ -545,17 +659,52 @@ export function ToolsPageContent({ embedded = false }: { embedded?: boolean }) {
         );
     }
 
+    const showRecent =
+        !isFiltering && !isQuickAccessEditing && visibleRecentTools.length > 0;
+    const scrollRef = useRef<HTMLDivElement | null>(null);
+    const railItems = [
+        ...(showQuickAccess
+            ? [
+                  {
+                      id: QUICK_ACCESS_SECTION_ID,
+                      icon: StarIcon,
+                      title: label('view.tools.quick_access.header')
+                  }
+              ]
+            : []),
+        ...(showRecent
+            ? [
+                  {
+                      id: RECENT_SECTION_ID,
+                      icon: Clock3Icon,
+                      title: label('view.tools.recent')
+                  }
+              ]
+            : []),
+        ...visibleCategories.map((category) => ({
+            id: categorySectionId(category.key),
+            icon: undefined,
+            title: label(category.labelKey)
+        }))
+    ];
+    const { activeId: activeSectionId, scrollTo: scrollToSection } =
+        useActiveSection(
+            scrollRef,
+            railItems.map((item) => item.id).join('\n')
+        );
+
     return (
-        <PageScaffold
-            id="chart"
-            embedded={embedded}
-            className="flex-1"
-            style={{ overflowY: 'auto' }}
-        >
+        <PageScaffold id="chart" embedded={embedded} className="flex-1">
             <PageToolbar>
-                <PageToolbarRow className="justify-end">
+                <PageToolbarRow>
+                    <ToolbarSearch
+                        value={filterText}
+                        onValueChange={setFilterText}
+                        placeholder={label('view.tools.filter_placeholder')}
+                    />
                     <Button
                         type="button"
+                        className="ml-auto"
                         variant={isQuickAccessEditing ? 'secondary' : 'outline'}
                         size="sm"
                         onClick={() =>
@@ -569,125 +718,135 @@ export function ToolsPageContent({ embedded = false }: { embedded?: boolean }) {
                 </PageToolbarRow>
             </PageToolbar>
 
-            <div className="flex flex-col gap-4 px-1 pb-4">
-                <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleQuickAccessDragEnd}
-                >
-                    {shouldShowQuickAccess ||
-                    (!isQuickAccessEditing && recentTools.length > 0) ? (
-                        <div
-                            className={cn(
-                                'flex flex-col px-4 text-sm',
-                                shouldShowQuickAccess
-                                    ? 'gap-5 py-4'
-                                    : 'gap-2 py-3'
-                            )}
-                        >
-                            <QuickAccessDropZone
-                                editMode={isQuickAccessEditing}
-                                isEmpty={quickAccessTools.length === 0}
-                                isHidden={!shouldShowQuickAccess}
-                                title={label('view.tools.quick_access.header')}
-                                emptyDescription={label(
-                                    'view.tools.quick_access.empty'
-                                )}
-                            >
-                                <SortableContext
-                                    items={quickAccessTools.map((tool) =>
-                                        getQuickAccessDragId(tool.key)
+            <div
+                ref={scrollRef}
+                className="relative mt-4 min-h-0 flex-1 overflow-y-auto"
+            >
+                <div className="mx-auto grid w-full max-w-5xl grid-cols-[11rem_minmax(0,1fr)] gap-6 pb-6">
+                    <nav
+                        aria-label={label('view.tools.sections')}
+                        className="sticky top-0 flex flex-col gap-0.5 self-start"
+                    >
+                        {railItems.map((item) => {
+                            const RailIcon = item.icon;
+                            const active = item.id === activeSectionId;
+                            return (
+                                <button
+                                    key={item.id}
+                                    type="button"
+                                    className={cn(
+                                        'focus-visible:ring-ring flex h-7 w-full items-center gap-2 rounded-md px-2.5 text-left text-sm outline-none focus-visible:ring-2',
+                                        active
+                                            ? 'text-foreground bg-(--state-selected-surface)'
+                                            : 'text-muted-foreground hover:text-foreground'
                                     )}
-                                    strategy={rectSortingStrategy}
+                                    aria-current={active ? 'true' : undefined}
+                                    onClick={() => scrollToSection(item.id)}
                                 >
-                                    <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2 xl:grid-cols-3">
-                                        {quickAccessTools.map((tool) => (
-                                            <SortableQuickAccessTool
-                                                key={tool.key}
-                                                toolKey={tool.key}
-                                                disabled={!isQuickAccessEditing}
-                                            >
-                                                {(dragProps) =>
-                                                    renderToolItem(tool, {
-                                                        dragProps,
-                                                        editQuickAccessAction:
-                                                            'remove'
-                                                    })
-                                                }
-                                            </SortableQuickAccessTool>
-                                        ))}
-                                    </div>
-                                </SortableContext>
-                            </QuickAccessDropZone>
-
-                            {!isQuickAccessEditing && recentTools.length > 0 ? (
-                                <section className="flex flex-col gap-2">
-                                    <div className="flex min-h-7 items-center gap-2 px-1">
-                                        <Clock3Icon
+                                    {RailIcon ? (
+                                        <RailIcon
                                             aria-hidden="true"
-                                            className="text-muted-foreground size-4"
+                                            className="size-4 shrink-0"
                                         />
-                                        <h2 className="text-sm font-semibold">
-                                            {label('view.tools.recent')}
-                                        </h2>
-                                    </div>
-                                    <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2 xl:grid-cols-3">
-                                        {recentTools.map((tool) => (
-                                            <div
-                                                key={tool.key}
-                                                className="h-full"
-                                            >
-                                                {renderToolItem(tool, {
-                                                    compact: true
-                                                })}
+                                    ) : null}
+                                    <span className="truncate">
+                                        {item.title}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </nav>
+
+                    <div className="flex min-w-0 flex-col gap-4">
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleQuickAccessDragEnd}
+                        >
+                            {showQuickAccess ? (
+                                <ToolSection
+                                    id={QUICK_ACCESS_SECTION_ID}
+                                    title={label(
+                                        'view.tools.quick_access.header'
+                                    )}
+                                >
+                                    <QuickAccessDropZone
+                                        editMode={isQuickAccessEditing}
+                                        isEmpty={quickAccessTools.length === 0}
+                                        emptyDescription={label(
+                                            'view.tools.quick_access.empty'
+                                        )}
+                                    >
+                                        <SortableContext
+                                            items={quickAccessTools.map(
+                                                (tool) =>
+                                                    getQuickAccessDragId(
+                                                        tool.key
+                                                    )
+                                            )}
+                                            strategy={
+                                                verticalListSortingStrategy
+                                            }
+                                        >
+                                            <ToolList>
+                                                {quickAccessTools.map(
+                                                    (tool) => (
+                                                        <SortableQuickAccessTool
+                                                            key={tool.key}
+                                                            toolKey={tool.key}
+                                                            disabled={
+                                                                !isQuickAccessEditing
+                                                            }
+                                                        >
+                                                            {(dragProps) =>
+                                                                renderToolRow(
+                                                                    tool,
+                                                                    {
+                                                                        dragProps,
+                                                                        editQuickAccessAction:
+                                                                            'remove'
+                                                                    }
+                                                                )
+                                                            }
+                                                        </SortableQuickAccessTool>
+                                                    )
+                                                )}
+                                            </ToolList>
+                                        </SortableContext>
+                                    </QuickAccessDropZone>
+                                </ToolSection>
+                            ) : null}
+
+                            {showRecent ? (
+                                <ToolSection
+                                    id={RECENT_SECTION_ID}
+                                    title={label('view.tools.recent')}
+                                >
+                                    <ToolList>
+                                        {visibleRecentTools.map((tool) => (
+                                            <div key={tool.key}>
+                                                {renderToolRow(tool)}
                                             </div>
                                         ))}
-                                    </div>
-                                </section>
+                                    </ToolList>
+                                </ToolSection>
                             ) : null}
-                        </div>
-                    ) : null}
 
-                    <ToolCatalogDropZone editMode={isQuickAccessEditing}>
-                        {categories.map((category) => {
-                            const CategoryIcon =
-                                categoryIconByKey[category.key] || WrenchIcon;
-
-                            return (
-                                <section
-                                    key={category.key}
-                                    className="flex flex-col gap-2.5"
-                                >
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        className="h-8 w-fit justify-start gap-2 px-1.5 text-left"
-                                        onClick={() =>
-                                            toggleCategoryCollapsed(
-                                                category.key
-                                            )
-                                        }
+                            <ToolCatalogDropZone
+                                editMode={isQuickAccessEditing}
+                            >
+                                {visibleCategories.length === 0 ? (
+                                    <div className="text-muted-foreground flex min-h-32 items-center justify-center text-sm">
+                                        {label('view.tools.filter_empty')}
+                                    </div>
+                                ) : null}
+                                {visibleCategories.map((category) => (
+                                    <ToolSection
+                                        key={category.key}
+                                        id={categorySectionId(category.key)}
+                                        title={label(category.labelKey)}
                                     >
-                                        <ChevronDownIcon
-                                            aria-hidden="true"
-                                            className={cn(
-                                                'transition-transform duration-150 motion-reduce:transition-none',
-                                                collapsed[category.key]
-                                                    ? '-rotate-90'
-                                                    : ''
-                                            )}
-                                        />
-                                        <CategoryIcon
-                                            aria-hidden="true"
-                                            className="text-muted-foreground"
-                                        />
-                                        <span className="text-sm font-semibold">
-                                            {label(category.labelKey)}
-                                        </span>
-                                    </Button>
-
-                                    {!collapsed[category.key] ? (
-                                        <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-2 xl:grid-cols-3">
+                                        <ToolList>
                                             {category.tools.map((tool) => (
                                                 <DraggableCatalogTool
                                                     key={tool.key}
@@ -697,19 +856,19 @@ export function ToolsPageContent({ embedded = false }: { embedded?: boolean }) {
                                                     }
                                                 >
                                                     {(dragProps) =>
-                                                        renderToolItem(tool, {
+                                                        renderToolRow(tool, {
                                                             dragProps
                                                         })
                                                     }
                                                 </DraggableCatalogTool>
                                             ))}
-                                        </div>
-                                    ) : null}
-                                </section>
-                            );
-                        })}
-                    </ToolCatalogDropZone>
-                </DndContext>
+                                        </ToolList>
+                                    </ToolSection>
+                                ))}
+                            </ToolCatalogDropZone>
+                        </DndContext>
+                    </div>
+                </div>
             </div>
         </PageScaffold>
     );

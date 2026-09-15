@@ -111,12 +111,9 @@ function sortStatus(
 }
 
 export {
-    FRIEND_STATUSES,
     SOLID_USER_STATUS_DOT_CLASS_NAMES,
     USER_STATUS_INDICATOR_CLASS_NAMES,
-    isFriendStatus,
     normalizeUserStatus,
     sortStatus,
     userStatusFromValue
 };
-export type { FriendStatus };

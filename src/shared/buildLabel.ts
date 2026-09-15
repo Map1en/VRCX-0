@@ -1,19 +1,19 @@
 const PREVIEW_LABELS = new Set(['preview', 'test']);
 const DEVKIT_LABEL = 'devkit';
 
-export function getVrcxBuildLabel(): string {
+function getVrcxBuildLabel(): string {
     return typeof VRCX_0_BUILD_LABEL === 'string'
         ? VRCX_0_BUILD_LABEL.trim().toLowerCase()
         : '';
 }
 
-export function getVrcxBuildBadge(): string {
+function getVrcxBuildBadge(): string {
     return typeof VRCX_0_BUILD_BADGE === 'string'
         ? VRCX_0_BUILD_BADGE.trim()
         : '';
 }
 
-export function isLocalDevBuild(): boolean {
+function isLocalDevBuild(): boolean {
     return import.meta.env.DEV;
 }
 
@@ -40,7 +40,7 @@ export function isDevToolsBuild(): boolean {
     return isLocalDevBuild() || isDevKitBuild();
 }
 
-export function getBuildBadgeI18nKey(): string | null {
+function getBuildBadgeI18nKey(): string | null {
     const label = getVrcxBuildLabel();
     if (isDevKitBuild(label)) {
         return 'app_menu.devkit_build_badge';

@@ -31,7 +31,6 @@ import {
 import { getRecentToolKeys } from '@/services/toolRecentService';
 import {
     publishToolsQuickAccessUpdated,
-    TOOLS_RECENT_UPDATED_EVENT,
     type ToolDefinition
 } from '@/shared/constants/tools';
 import { useDashboardStore } from '@/state/dashboardStore';
@@ -39,9 +38,7 @@ import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import {
-    categoryConfigKey,
     collectLayoutKeys,
-    defaultCollapsedState,
     getEquivalentToolNavKeys,
     insertToolNavItem,
     knownToolKeys,
@@ -55,56 +52,6 @@ import {
     toolsPageCategories
 } from './toolsPageHelpers';
 import { useToolStatusSummaries } from './useToolStatusSummaries';
-
-type CollapsedByCategory = Record<string, boolean>;
-
-function useToolsCollapsedState() {
-    const [collapsed, setCollapsed] = useState<CollapsedByCategory>({
-        ...defaultCollapsedState
-    });
-
-    useEffect(() => {
-        let active = true;
-        configRepository
-            .getString(categoryConfigKey, '{}')
-            .then((value) => {
-                if (!active) {
-                    return;
-                }
-                const parsed = JSON.parse(value || '{}');
-                setCollapsed((current) => ({
-                    ...current,
-                    ...Object.fromEntries(
-                        Object.keys(defaultCollapsedState).map((key) => [
-                            key,
-                            Boolean(parsed[key])
-                        ])
-                    )
-                }));
-            })
-            .catch(() => {});
-
-        return () => {
-            active = false;
-        };
-    }, []);
-
-    function toggleCategoryCollapsed(categoryKey: string) {
-        setCollapsed((current) => {
-            const nextState: CollapsedByCategory = {
-                ...current,
-                [categoryKey]: !current[categoryKey]
-            };
-            configRepository.setString(
-                categoryConfigKey,
-                JSON.stringify(nextState)
-            );
-            return nextState;
-        });
-    }
-
-    return { collapsed, toggleCategoryCollapsed };
-}
 
 function useToolsQuickAccessState() {
     const [quickAccessKeys, setQuickAccessKeysState] = useState<string[]>([]);
@@ -166,13 +113,8 @@ function useRecentTools(availableToolMap: Map<string, ToolDefinition>) {
                 });
         };
         loadRecentTools();
-        window.addEventListener(TOOLS_RECENT_UPDATED_EVENT, loadRecentTools);
         return () => {
             active = false;
-            window.removeEventListener(
-                TOOLS_RECENT_UPDATED_EVENT,
-                loadRecentTools
-            );
         };
     }, []);
 
@@ -230,7 +172,6 @@ export function useToolsPageState() {
             ),
         [categories]
     );
-    const { collapsed, toggleCategoryCollapsed } = useToolsCollapsedState();
     const { quickAccessKeys, setQuickAccessKeys } = useToolsQuickAccessState();
     const [isQuickAccessEditing, setIsQuickAccessEditing] = useState(false);
     const [navLayout, setNavLayout] = useState<NavLayoutEntry[]>([]);
@@ -493,7 +434,6 @@ export function useToolsPageState() {
     return {
         addQuickAccessToolByKeyWithFeedback,
         categories,
-        collapsed,
         handleQuickAccessDragEnd,
         isQuickAccessEditing,
         pinToolToNav,
@@ -506,7 +446,6 @@ export function useToolsPageState() {
         setIsQuickAccessEditing,
         shouldShowQuickAccess,
         statusByToolKey,
-        toggleCategoryCollapsed,
         triggerTool,
         unpinToolFromNav
     };

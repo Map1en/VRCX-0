@@ -10,6 +10,7 @@ use vrcx_0_application_game::{DebugLoggingOutcome, NowPlayingSnapshot};
 use vrcx_0_host_desktop::host_capabilities::{is_host_capability_available, HostCapability};
 
 use crate::notification::NotificationDoNotDisturbSnapshot;
+use crate::privacy_lock::PrivacyLockSnapshot;
 use crate::state::DesktopRuntimeHostState;
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
@@ -26,6 +27,7 @@ pub struct AncillaryRuntimeSnapshot {
     pub now_playing: NowPlayingSnapshot,
     pub background_image_state: BackgroundImageProjection,
     pub notification_do_not_disturb_state: NotificationDoNotDisturbSnapshot,
+    pub privacy_lock_state: PrivacyLockSnapshot,
 }
 
 pub async fn ancillary_runtime_snapshot(
@@ -60,5 +62,6 @@ pub async fn ancillary_runtime_snapshot(
         now_playing: state.now_playing_snapshot(),
         background_image_state: state.background_image_projection(),
         notification_do_not_disturb_state: state.notification_do_not_disturb_snapshot(),
+        privacy_lock_state: state.privacy_lock().snapshot(),
     }
 }

@@ -262,7 +262,7 @@ export const queryKeys = Object.freeze({
     ) => withEndpoint(['world', worldId, 'persistData', userId], endpoint)
 });
 
-export function toQueryOptions(
+function toQueryOptions(
     policy: EntityQueryPolicy,
     overrides: Record<string, unknown> = {}
 ) {
@@ -275,7 +275,7 @@ export function toQueryOptions(
     };
 }
 
-export async function fetchWithEntityPolicy<TData = unknown>({
+async function fetchWithEntityPolicy<TData = unknown>({
     queryKey,
     policy,
     queryFn,

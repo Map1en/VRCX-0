@@ -29,8 +29,8 @@ import {
     EntityMemoTextarea,
     EntityRawJson
 } from '../EntityDialogScaffold';
+import { InstanceHistoryListPanel } from '../previous-instances-table/InstanceHistoryListPanel';
 import { formatPreviousInstanceCount } from '../previous-instances-table/previousInstancesRows';
-import { PreviousInstancesPanel } from '../PreviousInstancesTableDialog';
 import type {
     WorldDialogTabCommands,
     WorldDialogTabModel,
@@ -122,7 +122,7 @@ function WorldScreenshotsGrid({
         viewportRef,
         visibleRows
     } = useScreenshotGalleryGrid({
-        compact: true,
+        density: 'compact',
         items: safeScreenshots,
         resetKey: worldId
     });
@@ -374,8 +374,7 @@ export function WorldDialogTabPanels({
                 value="visit-history"
                 className="flex min-h-0 flex-col"
             >
-                <PreviousInstancesPanel
-                    title={t('dialog.world.actions.show_previous_instances')}
+                <InstanceHistoryListPanel
                     instances={previousInstances}
                     variant="world"
                     onRowsChange={onPreviousInstancesChange}

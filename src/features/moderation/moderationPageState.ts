@@ -14,7 +14,6 @@ import { isRecord } from '@/shared/utils/record';
 
 import type { ModerationRow } from './moderationPageTypes';
 
-export const MODERATION_DEFAULT_PAGE_SIZES = [10, 15, 20, 25, 50, 100];
 export const MODERATION_DEFAULT_SORTING = [
     {
         id: 'created',
@@ -82,23 +81,6 @@ export function sanitizeModerationSorting(value: unknown): SortingState {
     return filtered.length ? filtered : MODERATION_DEFAULT_SORTING;
 }
 
-export function sanitizeModerationPageSizes(value: unknown): number[] {
-    if (!Array.isArray(value)) {
-        return MODERATION_DEFAULT_PAGE_SIZES;
-    }
-    const normalized = Array.from(
-        new Set(
-            value
-                .map((entry) => Number.parseInt(String(entry), 10))
-                .filter(
-                    (entry) =>
-                        Number.isFinite(entry) && entry > 0 && entry <= 1000
-                )
-        )
-    ).sort((left, right) => left - right);
-    return normalized.length ? normalized : MODERATION_DEFAULT_PAGE_SIZES;
-}
-
 export function sanitizeModerationColumnVisibility(
     value: unknown
 ): ColumnVisibilityState {
@@ -127,32 +109,6 @@ export function sanitizeModerationColumnOrder(value: unknown): string[] {
         (columnId) => !orderedColumns.includes(columnId)
     );
     return [...orderedColumns, ...missingColumns];
-}
-
-export function resolveModerationPageSize(
-    candidate: unknown,
-    pageSizes: readonly number[],
-    fallback: number = MODERATION_DEFAULT_PAGE_SIZES[1]
-): number {
-    const fallbackPageSize = pageSizes.length
-        ? pageSizes[0]
-        : MODERATION_DEFAULT_PAGE_SIZES[0];
-    const nearestPageSize = (value: number) =>
-        pageSizes.length
-            ? pageSizes.reduce((previous, size) =>
-                  Math.abs(size - value) < Math.abs(previous - value)
-                      ? size
-                      : previous
-              )
-            : fallbackPageSize;
-    const parsed = Number.parseInt(String(candidate), 10);
-    if (Number.isFinite(parsed) && parsed > 0) {
-        return pageSizes.includes(parsed) ? parsed : nearestPageSize(parsed);
-    }
-    if (pageSizes.includes(fallback)) {
-        return fallback;
-    }
-    return nearestPageSize(fallback);
 }
 
 export function normalizeModerationSelectedTypes(value: unknown): string[] {

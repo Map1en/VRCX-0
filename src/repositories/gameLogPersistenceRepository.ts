@@ -595,5 +595,4 @@ const gameLog = {
     }
 };
 
-export { gameLog };
 export default gameLog;

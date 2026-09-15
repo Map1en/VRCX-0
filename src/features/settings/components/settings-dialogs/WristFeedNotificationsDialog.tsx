@@ -498,7 +498,7 @@ function OverlayActivityFilterDialog({
                                 <TabsTrigger
                                     key={category}
                                     value={category}
-                                    className="h-auto w-full justify-between gap-3 px-3 py-2.5 text-left whitespace-normal"
+                                    className="h-auto w-full justify-between gap-3 px-3 py-2.5 text-left whitespace-normal sm:h-auto"
                                 >
                                     <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
                                         <span className="font-medium">

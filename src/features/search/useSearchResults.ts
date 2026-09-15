@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
@@ -9,6 +9,7 @@ import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { toast } from '@/services/toastService';
 import { isAvatarSearchQueryLongEnough } from '@/shared/utils/avatarSearchQuery';
 
+import { useSearchPageField, useSearchPageStore } from './searchPageStore';
 import {
     buildAvatarSearchRequest,
     buildGroupSearchRequest,
@@ -21,11 +22,7 @@ import type {
     AvatarSearchRequest,
     GroupSearchRequest,
     SearchActiveTab,
-    SearchAvatarResult,
-    SearchGroupResult,
-    SearchUserResult,
     SearchWorldCategory,
-    SearchWorldResult,
     UserSearchRequest,
     WorldSearchRequest
 } from './searchTypes';
@@ -57,38 +54,30 @@ export function useSearchResults({
     worldCategories: SearchWorldCategory[];
 }) {
     const { t } = useTranslation();
-    const searchSequenceRef = useRef<Record<SearchActiveTab, number>>({
-        avatar: 0,
-        group: 0,
-        user: 0,
-        world: 0
-    });
-    const [userRequest, setUserRequest] = useState<UserSearchRequest | null>(
-        null
-    );
-    const [worldRequest, setWorldRequest] = useState<WorldSearchRequest | null>(
-        null
-    );
-    const [groupRequest, setGroupRequest] = useState<GroupSearchRequest | null>(
-        null
-    );
+    const searchSequence = useSearchPageStore((state) => state.searchSequence);
+    const [userRequest, setUserRequest] = useSearchPageField('userRequest');
+    const [userResults, setUserResults] = useSearchPageField('userResults');
+    const [isUserLoading, setIsUserLoading] =
+        useSearchPageField('isUserLoading');
+    const [worldRequest, setWorldRequest] = useSearchPageField('worldRequest');
+    const [worldResults, setWorldResults] = useSearchPageField('worldResults');
+    const [isWorldLoading, setIsWorldLoading] =
+        useSearchPageField('isWorldLoading');
+    const [groupRequest, setGroupRequest] = useSearchPageField('groupRequest');
+    const [groupResults, setGroupResults] = useSearchPageField('groupResults');
+    const [isGroupLoading, setIsGroupLoading] =
+        useSearchPageField('isGroupLoading');
     const [avatarRequest, setAvatarRequest] =
-        useState<AvatarSearchRequest | null>(null);
-    const [userResults, setUserResults] = useState<SearchUserResult[]>([]);
-    const [worldResults, setWorldResults] = useState<SearchWorldResult[]>([]);
-    const [groupResults, setGroupResults] = useState<SearchGroupResult[]>([]);
-    const [avatarResults, setAvatarResults] = useState<SearchAvatarResult[]>(
-        []
-    );
-    const [isUserLoading, setIsUserLoading] = useState(false);
-    const [isWorldLoading, setIsWorldLoading] = useState(false);
-    const [isGroupLoading, setIsGroupLoading] = useState(false);
-    const [isAvatarLoading, setIsAvatarLoading] = useState(false);
+        useSearchPageField('avatarRequest');
+    const [avatarResults, setAvatarResults] =
+        useSearchPageField('avatarResults');
+    const [isAvatarLoading, setIsAvatarLoading] =
+        useSearchPageField('isAvatarLoading');
 
     const runUserSearch = useCallback(
         async (nextRequest: UserSearchRequest) => {
-            const sequence = searchSequenceRef.current.user + 1;
-            searchSequenceRef.current.user = sequence;
+            const sequence = searchSequence.user + 1;
+            searchSequence.user = sequence;
             setIsUserLoading(true);
             setUserRequest(nextRequest);
 
@@ -96,7 +85,7 @@ export function useSearchResults({
                 const response = await vrchatSearchRepository.getUsers(
                     nextRequest.params
                 );
-                if (searchSequenceRef.current.user !== sequence) {
+                if (searchSequence.user !== sequence) {
                     return;
                 }
                 setUserResults(
@@ -105,7 +94,7 @@ export function useSearchResults({
                     )
                 );
             } catch (error) {
-                if (searchSequenceRef.current.user === sequence) {
+                if (searchSequence.user === sequence) {
                     toast.add({
                         type: 'error',
                         title:
@@ -115,18 +104,18 @@ export function useSearchResults({
                     });
                 }
             } finally {
-                if (searchSequenceRef.current.user === sequence) {
+                if (searchSequence.user === sequence) {
                     setIsUserLoading(false);
                 }
             }
         },
-        [t]
+        [searchSequence, setIsUserLoading, setUserRequest, setUserResults, t]
     );
 
     const runWorldSearch = useCallback(
         async (nextRequest: WorldSearchRequest) => {
-            const sequence = searchSequenceRef.current.world + 1;
-            searchSequenceRef.current.world = sequence;
+            const sequence = searchSequence.world + 1;
+            searchSequence.world = sequence;
             setIsWorldLoading(true);
             setWorldRequest(nextRequest);
 
@@ -135,7 +124,7 @@ export function useSearchResults({
                     nextRequest.params,
                     nextRequest.option
                 );
-                if (searchSequenceRef.current.world !== sequence) {
+                if (searchSequence.world !== sequence) {
                     return;
                 }
                 setWorldResults(
@@ -144,7 +133,7 @@ export function useSearchResults({
                     )
                 );
             } catch (error) {
-                if (searchSequenceRef.current.world === sequence) {
+                if (searchSequence.world === sequence) {
                     toast.add({
                         type: 'error',
                         title:
@@ -154,18 +143,18 @@ export function useSearchResults({
                     });
                 }
             } finally {
-                if (searchSequenceRef.current.world === sequence) {
+                if (searchSequence.world === sequence) {
                     setIsWorldLoading(false);
                 }
             }
         },
-        [t]
+        [searchSequence, setIsWorldLoading, setWorldRequest, setWorldResults, t]
     );
 
     const runGroupSearch = useCallback(
         async (nextRequest: GroupSearchRequest) => {
-            const sequence = searchSequenceRef.current.group + 1;
-            searchSequenceRef.current.group = sequence;
+            const sequence = searchSequence.group + 1;
+            searchSequence.group = sequence;
             setIsGroupLoading(true);
             setGroupRequest(nextRequest);
 
@@ -173,12 +162,12 @@ export function useSearchResults({
                 const response = await vrchatSearchRepository.getGroups(
                     nextRequest.params
                 );
-                if (searchSequenceRef.current.group !== sequence) {
+                if (searchSequence.group !== sequence) {
                     return;
                 }
                 setGroupResults(dedupeById(response.json));
             } catch (error) {
-                if (searchSequenceRef.current.group === sequence) {
+                if (searchSequence.group === sequence) {
                     toast.add({
                         type: 'error',
                         title:
@@ -188,25 +177,25 @@ export function useSearchResults({
                     });
                 }
             } finally {
-                if (searchSequenceRef.current.group === sequence) {
+                if (searchSequence.group === sequence) {
                     setIsGroupLoading(false);
                 }
             }
         },
-        [t]
+        [searchSequence, setIsGroupLoading, setGroupRequest, setGroupResults, t]
     );
 
     const runAvatarSearch = useCallback(
         async (nextRequest: AvatarSearchRequest) => {
-            const sequence = searchSequenceRef.current.avatar + 1;
-            searchSequenceRef.current.avatar = sequence;
+            const sequence = searchSequence.avatar + 1;
+            searchSequence.avatar = sequence;
             setIsAvatarLoading(true);
             setAvatarRequest(nextRequest);
 
             try {
                 const response =
                     await avatarSearchProviderRepository.search(nextRequest);
-                if (searchSequenceRef.current.avatar !== sequence) {
+                if (searchSequence.avatar !== sequence) {
                     return;
                 }
                 setAvatarResults(response.avatars);
@@ -215,7 +204,7 @@ export function useSearchResults({
                     offset: 0
                 });
             } catch (error) {
-                if (searchSequenceRef.current.avatar === sequence) {
+                if (searchSequence.avatar === sequence) {
                     toast.add({
                         type: 'error',
                         title: userFacingErrorMessage(
@@ -225,12 +214,18 @@ export function useSearchResults({
                     });
                 }
             } finally {
-                if (searchSequenceRef.current.avatar === sequence) {
+                if (searchSequence.avatar === sequence) {
                     setIsAvatarLoading(false);
                 }
             }
         },
-        [t]
+        [
+            searchSequence,
+            setIsAvatarLoading,
+            setAvatarRequest,
+            setAvatarResults,
+            t
+        ]
     );
 
     const handleSearch = useCallback(() => {
@@ -301,11 +296,29 @@ export function useSearchResults({
         worldCategories
     ]);
 
+    const activeTabRef = useRef(activeTab);
+    useEffect(() => {
+        if (activeTabRef.current === activeTab) {
+            return;
+        }
+        activeTabRef.current = activeTab;
+        if (!searchText.trim()) {
+            return;
+        }
+        if (
+            activeTab === 'avatar' &&
+            !isAvatarSearchQueryLongEnough(searchText)
+        ) {
+            return;
+        }
+        handleSearch();
+    }, [activeTab, handleSearch, searchText]);
+
     const handleClearSearch = useCallback(() => {
-        searchSequenceRef.current.user += 1;
-        searchSequenceRef.current.world += 1;
-        searchSequenceRef.current.group += 1;
-        searchSequenceRef.current.avatar += 1;
+        searchSequence.user += 1;
+        searchSequence.world += 1;
+        searchSequence.group += 1;
+        searchSequence.avatar += 1;
         setIsUserLoading(false);
         setIsWorldLoading(false);
         setIsGroupLoading(false);
@@ -319,7 +332,22 @@ export function useSearchResults({
         setWorldRequest(null);
         setGroupRequest(null);
         setAvatarRequest(null);
-    }, [setSearchText]);
+    }, [
+        searchSequence,
+        setSearchText,
+        setIsUserLoading,
+        setIsWorldLoading,
+        setIsGroupLoading,
+        setIsAvatarLoading,
+        setUserResults,
+        setWorldResults,
+        setGroupResults,
+        setAvatarResults,
+        setUserRequest,
+        setWorldRequest,
+        setGroupRequest,
+        setAvatarRequest
+    ]);
 
     const handleWorldCategoryChange = useCallback(
         (value: string | null) => {

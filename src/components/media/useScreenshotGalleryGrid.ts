@@ -7,14 +7,14 @@ import {
 import { useScrollViewportMetrics } from '@/lib/useScrollViewportMetrics';
 import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
 
+import {
+    DEFAULT_SCREENSHOT_GRID_DENSITY,
+    getScreenshotGridDensityConfig,
+    type ScreenshotGridDensity
+} from './screenshotGridPreferences';
+
 const GALLERY_GRID_HORIZONTAL_INSET = 8;
 const GALLERY_GRID_OVERSCAN_MIN = 520;
-const GALLERY_CARD_MIN_WIDTH = 208;
-const GALLERY_CARD_HEIGHT = 196;
-const GALLERY_GRID_GAP = 12;
-const COMPACT_CARD_MIN_WIDTH = 150;
-const COMPACT_CARD_HEIGHT = 156;
-const COMPACT_GRID_GAP = 8;
 
 type ScreenshotGalleryGridRow = Record<string, unknown> & {
     key: string;
@@ -48,23 +48,22 @@ function buildGalleryGridRows({
 }
 
 export function useScreenshotGalleryGrid({
-    compact = false,
+    density = DEFAULT_SCREENSHOT_GRID_DENSITY,
     initialScrollTop = 0,
     items,
     resetKey
 }: {
-    compact?: boolean;
+    density?: ScreenshotGridDensity;
     initialScrollTop?: number;
     items: readonly ScreenshotLibraryImage[];
     resetKey: string;
 }) {
     const { setScrollTop, viewportMetrics, viewportRef } =
         useScrollViewportMetrics();
-    const cardHeight = compact ? COMPACT_CARD_HEIGHT : GALLERY_CARD_HEIGHT;
-    const gridGap = compact ? COMPACT_GRID_GAP : GALLERY_GRID_GAP;
-    const gridMinWidth = compact
-        ? COMPACT_CARD_MIN_WIDTH
-        : GALLERY_CARD_MIN_WIDTH;
+    const densityConfig = getScreenshotGridDensityConfig(density);
+    const cardHeight = densityConfig.cardHeight;
+    const gridGap = densityConfig.gridGap;
+    const gridMinWidth = densityConfig.cardMinWidth;
 
     useEffect(() => {
         setScrollTop(initialScrollTop);

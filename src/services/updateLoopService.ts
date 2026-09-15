@@ -127,7 +127,7 @@ export function startRuntimeUpdateLoop() {
     return stopRuntimeUpdateLoop;
 }
 
-export function stopRuntimeUpdateLoop() {
+function stopRuntimeUpdateLoop() {
     stopped = true;
     activeTickToken += 1;
     if (updateLoopTimer !== null) {

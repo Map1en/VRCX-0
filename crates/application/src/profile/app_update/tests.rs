@@ -40,6 +40,7 @@ struct MockUpdaterPort {
     download_count: AtomicUsize,
     install_count: AtomicUsize,
     install_outcomes: Mutex<VecDeque<InstallOutcome>>,
+    download_requests: Mutex<Vec<UpdaterCheckRequest>>,
 }
 
 impl MockUpdaterPort {
@@ -49,6 +50,7 @@ impl MockUpdaterPort {
             download_count: AtomicUsize::new(0),
             install_count: AtomicUsize::new(0),
             install_outcomes: Mutex::new(install_outcomes.into_iter().collect()),
+            download_requests: Mutex::new(Vec::new()),
         }
     }
 }
@@ -65,7 +67,7 @@ impl UpdaterPort for MockUpdaterPort {
 
     async fn download(
         &self,
-        _request: UpdaterCheckRequest,
+        request: UpdaterCheckRequest,
         on_progress: UpdaterProgressCallback,
     ) -> vrcx_0_application_core::Result<UpdaterDownloadOutcome> {
         self.download_count.fetch_add(1, AtomicOrdering::Relaxed);
@@ -74,8 +76,15 @@ impl UpdaterPort for MockUpdaterPort {
         });
         on_progress(UpdaterDownloadProgress::Progress { chunk_length: 10 });
         on_progress(UpdaterDownloadProgress::Finished);
+        let metadata = UpdaterMetadata {
+            current_version: request.current_version.clone(),
+            version: request.expected_version.clone(),
+            date: None,
+            body: None,
+        };
+        self.download_requests.lock().unwrap().push(request);
         Ok(UpdaterDownloadOutcome {
-            metadata: updater_metadata(),
+            metadata,
             handle: UpdaterInstallHandle(Box::new(())),
         })
     }
@@ -113,15 +122,6 @@ impl AppUpdateReleaseCatalogPort for TestAppUpdateReleaseCatalog {
     fn list_releases(&self) -> AppUpdateReleaseCatalogFuture<'_> {
         let releases = self.releases.clone();
         Box::pin(async move { Ok(releases) })
-    }
-}
-
-fn updater_metadata() -> UpdaterMetadata {
-    UpdaterMetadata {
-        current_version: "2.14.0".into(),
-        version: TEST_UPDATE_VERSION.into(),
-        date: None,
-        body: None,
     }
 }
 
@@ -527,6 +527,146 @@ fn is_release_newer_than_current_compares_canonical_versions() {
     assert!(is_release_newer_than_current(&newer, "1.9.9"));
     assert!(!is_release_newer_than_current(&newer, "2.0.0"));
     assert!(!is_release_newer_than_current(&newer, "2.0.1"));
+}
+
+#[tokio::test]
+async fn install_switches_channels_using_the_verified_target_release() {
+    for (current, target) in [
+        ("2.14.0", "2.16.0-beta.1"),
+        ("2.16.0-beta.1", "2.15.0"),
+        ("2.17.0", "2.16.0-beta.1"),
+    ] {
+        let mut context = app_update_test_context([]);
+        let inner = Arc::get_mut(&mut context.runtime.inner).unwrap();
+        inner.build.app_version = current.into();
+        inner.channel = super::release_channel_for_version(current).unwrap();
+        inner.release_catalog = Arc::new(TestAppUpdateReleaseCatalog {
+            releases: vec![release(
+                &format!("v{target}"),
+                target.contains("beta"),
+                vec![asset(
+                    "latest_windows.json",
+                    "uploaded",
+                    "https://example.test/latest_windows.json",
+                )],
+            )],
+        });
+        let before = context.runtime.snapshot();
+
+        let metadata = context
+            .runtime
+            .install(target)
+            .await
+            .expect("channel switch installs");
+
+        assert_eq!(metadata.version, target);
+        assert_eq!(context.port.install_count.load(AtomicOrdering::Relaxed), 1);
+        let requests = context.port.download_requests.lock().unwrap();
+        assert_eq!(requests.len(), 1);
+        assert_eq!(requests[0].expected_version, target);
+        assert!(requests[0].allow_downgrades);
+        assert_eq!(
+            requests[0].manifest_url,
+            "https://example.test/latest_windows.json"
+        );
+        assert_eq!(
+            context
+                .runtime
+                .snapshot()
+                .release
+                .map(|release| release.canonical_version),
+            before.release.map(|release| release.canonical_version)
+        );
+    }
+}
+
+#[tokio::test]
+async fn channel_release_selection_uses_the_platform_installation_policy() {
+    for target in [Some("windows-x86_64-stable"), None] {
+        let mut context = app_update_test_context([]);
+        let inner = Arc::get_mut(&mut context.runtime.inner).unwrap();
+        inner.target_resolver = Arc::new(move || target.map(str::to_string));
+        inner.release_catalog = Arc::new(TestAppUpdateReleaseCatalog {
+            releases: vec![
+                release(
+                    "v2.16.0-beta.3",
+                    true,
+                    vec![asset(
+                        "latest_linux_and_macos.json",
+                        "uploaded",
+                        "https://example.test/linux.json",
+                    )],
+                ),
+                release(
+                    "v2.16.0-beta.2",
+                    true,
+                    vec![asset(
+                        "latest_windows.json",
+                        "uploading",
+                        "https://example.test/pending.json",
+                    )],
+                ),
+                release(
+                    "v2.16.0-beta.1",
+                    true,
+                    vec![asset(
+                        "latest_windows.json",
+                        "uploaded",
+                        "https://example.test/windows.json",
+                    )],
+                ),
+            ],
+        });
+
+        let release = context
+            .runtime
+            .latest_release_for_channel(AppUpdateChannel::Beta)
+            .await
+            .unwrap()
+            .expect("channel has a release");
+        if target.is_some() {
+            assert_eq!(release.canonical_version, "2.16.0-beta.1");
+            assert_eq!(release.updater_type, AppUpdateDeliveryKind::Tauri);
+            let installed = context
+                .runtime
+                .install(&release.canonical_version)
+                .await
+                .expect("older installable release can be installed");
+            assert_eq!(installed.version, "2.16.0-beta.1");
+        } else {
+            assert_eq!(release.canonical_version, "2.16.0-beta.3");
+            assert_eq!(release.updater_type, AppUpdateDeliveryKind::Manual);
+        }
+    }
+}
+
+#[tokio::test]
+async fn install_waits_for_another_download_before_switching() {
+    let context = app_update_test_context([]);
+    context.runtime.with_download_state(|state| {
+        state.phase = AppUpdateDownloadPhase::Downloading;
+        state.version = Some("2.16.0-beta.1".into());
+    });
+    let install = context.runtime.install(TEST_UPDATE_VERSION);
+    tokio::pin!(install);
+    assert!(futures_util::poll!(install.as_mut()).is_pending());
+    context
+        .runtime
+        .with_download_state(|state| *state = DownloadState::idle());
+    context.runtime.inner.download_notify.notify_waiters();
+
+    install
+        .await
+        .expect("install resumes after the other download");
+    assert_eq!(context.port.install_count.load(AtomicOrdering::Relaxed), 1);
+    assert!(!context.port.download_requests.lock().unwrap()[0].allow_downgrades);
+}
+
+#[tokio::test]
+async fn install_rejects_a_cross_channel_version_missing_from_the_catalog() {
+    let context = app_update_test_context([]);
+    assert!(context.runtime.install("2.16.0-beta.1").await.is_err());
+    assert_eq!(context.port.download_count.load(AtomicOrdering::Relaxed), 0);
 }
 
 #[tokio::test]

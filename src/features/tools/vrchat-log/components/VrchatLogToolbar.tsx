@@ -1,24 +1,24 @@
-import { ArrowDownToLineIcon } from 'lucide-react';
+import { CaseSensitiveIcon, ChevronsDownIcon, RegexIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
 import {
     ToolbarActions,
     ToolbarFilterMenu,
-    ToolbarIconButton,
     ToolbarRefreshButton,
     ToolbarSearch,
     ToolbarViews
 } from '@/components/layout/ToolbarControls';
-import { formatDateFilter } from '@/lib/dateTime';
+import { cn } from '@/lib/utils';
 import type { VrchatLogFileOutput } from '@/platform/tauri/bindings';
-import { Checkbox } from '@/ui/shadcn/checkbox';
+import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenuCheckboxItem,
     DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuSeparator
 } from '@/ui/shadcn/dropdown-menu';
+import { InputGroupButton } from '@/ui/shadcn/input-group';
 import {
     Select,
     SelectContent,
@@ -27,9 +27,10 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import type { useVrchatLogController } from '../useVrchatLogController';
-import { fileLabel, LOG_LEVELS } from '../vrchatLogHelpers';
+import { fileLabel, levelChipClassName, LOG_LEVELS } from '../vrchatLogHelpers';
 
 type VrchatLogController = ReturnType<typeof useVrchatLogController>;
 type VrchatLogToolbarProps = Pick<
@@ -38,19 +39,25 @@ type VrchatLogToolbarProps = Pick<
     | 'setSelectedFileName'
     | 'files'
     | 'isFilesLoading'
-    | 'selectedFile'
     | 'isEntriesLoading'
     | 'refresh'
     | 'followLatest'
     | 'setFollowLatest'
     | 'searchQuery'
     | 'setSearchQuery'
+    | 'searchCaseSensitive'
+    | 'setSearchCaseSensitive'
+    | 'searchRegex'
+    | 'setSearchRegex'
     | 'levels'
+    | 'levelCounts'
     | 'toggleLevel'
     | 'categoryOptions'
     | 'selectedCategories'
     | 'setSelectedCategories'
     | 'toggleCategory'
+    | 'visibleLoadedCount'
+    | 'totalEntries'
 >;
 
 export function VrchatLogToolbar({
@@ -58,21 +65,28 @@ export function VrchatLogToolbar({
     setSelectedFileName,
     files,
     isFilesLoading,
-    selectedFile,
     isEntriesLoading,
     refresh,
     followLatest,
     setFollowLatest,
     searchQuery,
     setSearchQuery,
+    searchCaseSensitive,
+    setSearchCaseSensitive,
+    searchRegex,
+    setSearchRegex,
     levels,
+    levelCounts,
     toggleLevel,
     categoryOptions,
     selectedCategories,
     setSelectedCategories,
-    toggleCategory
+    toggleCategory,
+    visibleLoadedCount,
+    totalEntries
 }: VrchatLogToolbarProps) {
     const { t } = useTranslation();
+    const hasQuery = Boolean(searchQuery.trim());
 
     return (
         <PageToolbar>
@@ -92,7 +106,7 @@ export function VrchatLogToolbar({
                             )
                         }))}
                     >
-                        <SelectTrigger className="max-w-140 min-w-72 flex-1">
+                        <SelectTrigger className="max-w-120 min-w-64 flex-1">
                             <SelectValue
                                 placeholder={t(
                                     'view.tools.vrchat_log.file_placeholder'
@@ -115,30 +129,141 @@ export function VrchatLogToolbar({
                             </SelectGroup>
                         </SelectContent>
                     </Select>
-                    {selectedFile?.modifiedAt ? (
+                    {totalEntries ? (
                         <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-                            {formatDateFilter(selectedFile.modifiedAt, 'long')}
+                            {t(
+                                hasQuery
+                                    ? 'view.tools.vrchat_log.matched_count'
+                                    : 'view.tools.vrchat_log.loaded_count',
+                                {
+                                    loaded: visibleLoadedCount,
+                                    total: totalEntries
+                                }
+                            )}
                         </span>
                     ) : null}
                 </ToolbarViews>
 
                 <ToolbarActions>
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant={followLatest ? 'secondary' : 'ghost'}
+                        disabled={!selectedFileName}
+                        aria-pressed={followLatest}
+                        onClick={() => setFollowLatest((value) => !value)}
+                    >
+                        <ChevronsDownIcon data-icon="inline-start" />
+                        {t('view.tools.vrchat_log.follow_latest')}
+                    </Button>
                     <ToolbarRefreshButton
                         onRefresh={refresh}
                         loading={isFilesLoading || isEntriesLoading}
-                    />
-                    <ToolbarIconButton
-                        icon={ArrowDownToLineIcon}
-                        active={followLatest}
-                        disabled={!selectedFileName}
-                        label={t('view.tools.vrchat_log.follow_latest')}
-                        onClick={() => setFollowLatest((value) => !value)}
                     />
                 </ToolbarActions>
             </PageToolbarRow>
 
             <PageToolbarRow>
-                <ToolbarViews>
+                <ToolbarSearch
+                    className="w-auto min-w-64 flex-1 shrink sm:w-auto"
+                    value={searchQuery}
+                    onValueChange={setSearchQuery}
+                    placeholder={t('view.tools.vrchat_log.search_placeholder')}
+                    trailing={
+                        <>
+                            <Tooltip>
+                                <TooltipTrigger
+                                    render={
+                                        <InputGroupButton
+                                            type="button"
+                                            size="icon-xs"
+                                            variant={
+                                                searchCaseSensitive
+                                                    ? 'secondary'
+                                                    : 'ghost'
+                                            }
+                                            aria-pressed={searchCaseSensitive}
+                                            aria-label={t(
+                                                'view.tools.vrchat_log.match_case'
+                                            )}
+                                            onClick={() =>
+                                                setSearchCaseSensitive(
+                                                    (value) => !value
+                                                )
+                                            }
+                                        >
+                                            <CaseSensitiveIcon data-icon="icon" />
+                                        </InputGroupButton>
+                                    }
+                                />
+                                <TooltipContent>
+                                    {t('view.tools.vrchat_log.match_case')}
+                                </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger
+                                    render={
+                                        <InputGroupButton
+                                            type="button"
+                                            size="icon-xs"
+                                            variant={
+                                                searchRegex
+                                                    ? 'secondary'
+                                                    : 'ghost'
+                                            }
+                                            aria-pressed={searchRegex}
+                                            aria-label={t(
+                                                'view.tools.vrchat_log.use_regex'
+                                            )}
+                                            onClick={() =>
+                                                setSearchRegex(
+                                                    (value) => !value
+                                                )
+                                            }
+                                        >
+                                            <RegexIcon data-icon="icon" />
+                                        </InputGroupButton>
+                                    }
+                                />
+                                <TooltipContent>
+                                    {t('view.tools.vrchat_log.use_regex')}
+                                </TooltipContent>
+                            </Tooltip>
+                        </>
+                    }
+                />
+
+                <ToolbarActions>
+                    <div className="flex shrink-0 items-center gap-1">
+                        {LOG_LEVELS.map((level) => {
+                            const active = levels.includes(level);
+                            const count =
+                                levelCounts.find(
+                                    (entry) => entry.level === level
+                                )?.count ?? 0;
+
+                            return (
+                                <Button
+                                    key={level}
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    aria-pressed={active}
+                                    className={cn(
+                                        'gap-1.5 tabular-nums',
+                                        levelChipClassName(level, active)
+                                    )}
+                                    onClick={() => toggleLevel(level, !active)}
+                                >
+                                    {level}
+                                    <span className="text-[11px] opacity-70">
+                                        {count}
+                                    </span>
+                                </Button>
+                            );
+                        })}
+                    </div>
+
                     <ToolbarFilterMenu
                         activeCount={selectedCategories.length}
                         contentClassName="w-72"
@@ -184,30 +309,7 @@ export function VrchatLogToolbar({
                             </>
                         ) : null}
                     </ToolbarFilterMenu>
-
-                    <div className="flex shrink-0 items-center gap-1.5">
-                        {LOG_LEVELS.map((level) => (
-                            <label
-                                key={level}
-                                className="border-border bg-background text-foreground flex h-8 items-center gap-2 rounded-lg border px-2.5 text-sm"
-                            >
-                                <Checkbox
-                                    checked={levels.includes(level)}
-                                    onCheckedChange={(checked) =>
-                                        toggleLevel(level, checked === true)
-                                    }
-                                />
-                                <span>{level}</span>
-                            </label>
-                        ))}
-                    </div>
-                </ToolbarViews>
-
-                <ToolbarSearch
-                    value={searchQuery}
-                    onValueChange={setSearchQuery}
-                    placeholder={t('view.tools.vrchat_log.search_placeholder')}
-                />
+                </ToolbarActions>
             </PageToolbarRow>
         </PageToolbar>
     );

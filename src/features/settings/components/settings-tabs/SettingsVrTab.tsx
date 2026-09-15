@@ -128,7 +128,7 @@ export function SettingsVrTab() {
     return <SettingsVrTabContent {...state} />;
 }
 
-export function SettingsVrTabContent({
+function SettingsVrTabContent({
     prefs,
     overlayTestMode,
     overlayTestModeDisabled,

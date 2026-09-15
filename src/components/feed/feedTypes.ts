@@ -60,4 +60,4 @@ export type FeedTableInstance = AppTable<FeedRow>;
 
 export type FeedPaginationSetter = Dispatch<SetStateAction<PaginationState>>;
 
-export type { FeedFilterType, PaginationState };
+export type { FeedFilterType };

@@ -101,11 +101,9 @@ describe('friend request notification rows', () => {
                     'view.notification.actions.accept',
                     'view.notification.actions.decline',
                     'view.notification.action.mark_seen'
-                ].includes(button.getAttribute('aria-label') || '')
+                ].includes(button.textContent || '')
             );
-        expect(
-            actionButtons.map((button) => button.getAttribute('aria-label'))
-        ).toEqual([
+        expect(actionButtons.map((button) => button.textContent)).toEqual([
             'view.notification.actions.accept',
             'view.notification.actions.decline',
             'view.notification.action.mark_seen'
@@ -139,11 +137,9 @@ describe('friend request notification rows', () => {
                     'view.notification.actions.accept',
                     'view.notification.actions.decline',
                     'view.notification.action.mark_seen'
-                ].includes(button.getAttribute('aria-label') || '')
+                ].includes(button.textContent || '')
             );
-        expect(
-            actionButtons.map((button) => button.getAttribute('aria-label'))
-        ).toEqual([
+        expect(actionButtons.map((button) => button.textContent)).toEqual([
             'view.notification.actions.accept',
             'view.notification.actions.decline',
             'view.notification.action.mark_seen'

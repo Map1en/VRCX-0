@@ -405,7 +405,7 @@ function UserDialogHeaderFacts({
         typeof profile.discordId === 'string' ? profile.discordId : '';
 
     return (
-        <EntityFactList className="border-t pt-3">
+        <EntityFactList className="bg-card border-stroke-subtle -mx-(--card-spacing) -mb-(--card-spacing) border-t px-(--card-spacing) pt-3 pb-(--card-spacing)">
             <HeaderPreferenceRow
                 label={t('dialog.user.info.avatar_cloning')}
                 checked={Boolean(profile.allowAvatarCopying)}
@@ -912,7 +912,7 @@ export function UserDialogHeaderSection({
                         <Button
                             type="button"
                             variant="ghost"
-                            className="text-muted-foreground hover:text-primary h-auto max-h-24 w-full min-w-0 justify-start overflow-auto p-0 text-left text-sm whitespace-pre-wrap"
+                            className="text-muted-foreground hover:text-primary h-auto max-h-24 w-full min-w-0 justify-start overflow-auto p-0 text-left text-sm whitespace-pre-wrap hover:bg-transparent"
                             title={t('dialog.user.actions.edit_status')}
                             onClick={onEditSelfStatus}
                         >

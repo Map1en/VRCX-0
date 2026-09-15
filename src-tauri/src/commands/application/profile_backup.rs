@@ -10,7 +10,7 @@ use vrcx_0_application::profile::{
 use crate::error::AppError;
 use crate::state::AppState;
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__profile_backup_get_settings(
     state: State<'_, AppState>,
@@ -70,7 +70,7 @@ pub async fn app__profile_backup_discard_pending(
         .map_err(|error| AppError::Custom(format!("profile backup discard task: {error}")))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__profile_backup_dismiss_error(
     state: State<'_, AppState>,
@@ -78,7 +78,7 @@ pub fn app__profile_backup_dismiss_error(
     Ok(state.runtime_host().profile_backup().dismiss_error())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__profile_backup_current_status(
     state: State<'_, AppState>,

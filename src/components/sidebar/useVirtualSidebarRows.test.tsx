@@ -62,6 +62,48 @@ describe('useVirtualSidebarRows scroll anchoring', () => {
         expect(viewport.scrollTop).toBe(160);
     });
 
+    it('anchors on the first surviving row when leading rows are dropped', () => {
+        const { result, rerender } = renderHook(
+            ({ resetKey, rows }: { resetKey: string; rows: Row[] }) =>
+                useVirtualSidebarRows(rows, () => 40, {
+                    preserveScrollAnchor: true,
+                    resetKey
+                }),
+            {
+                initialProps: {
+                    resetKey: 'normal',
+                    rows: [
+                        { key: 'a' },
+                        { key: 'b' },
+                        { key: 'c' },
+                        { key: 'd' },
+                        { key: 'e' },
+                        { key: 'f' },
+                        { key: 'g' },
+                        { key: 'h' }
+                    ]
+                }
+            }
+        );
+        const viewport = document.createElement('div');
+        Object.defineProperty(viewport, 'clientHeight', { value: 80 });
+        act(() => result.current.viewportRef(viewport));
+        viewport.scrollTop = 120;
+
+        rerender({
+            resetKey: 'normal',
+            rows: [
+                { key: 'f' },
+                { key: 'g' },
+                { key: 'h' },
+                { key: 'i' },
+                { key: 'j' }
+            ]
+        });
+
+        expect(viewport.scrollTop).toBe(0);
+    });
+
     it('returns to the start when the data set changes', () => {
         const { result, rerender } = renderHook(
             ({ resetKey, rows }: { resetKey: string; rows: Row[] }) =>

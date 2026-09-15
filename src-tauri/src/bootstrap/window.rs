@@ -233,6 +233,7 @@ pub(super) fn create_main_window(
 
     let mut builder = WebviewWindowBuilder::from_config(app, window_config)?;
     let state = app.state::<AppState>();
+    super::linux_rendering::resolve(app, &state);
     #[cfg(target_os = "windows")]
     {
         let system_frame = state
@@ -380,6 +381,7 @@ pub fn refresh_tray_menu(app: &tauri::AppHandle, state: &AppState) -> Result<(),
         let background_mode_active = is_background_mode_active(state);
         let community_theme_enabled = is_community_theme_enabled(state);
         let do_not_disturb = state.runtime_host().notification_do_not_disturb_snapshot();
+        let privacy_lock = state.runtime_host().privacy_lock().snapshot();
         let open_item = MenuItem::with_id(app, "tray-open", labels.open, true, None::<&str>)?;
         let background_item = CheckMenuItem::with_id(
             app,
@@ -455,16 +457,23 @@ pub fn refresh_tray_menu(app: &tauri::AppHandle, state: &AppState) -> Result<(),
             true,
             None::<&str>,
         )?;
+        let lock_item =
+            MenuItem::with_id(app, "tray-privacy-lock", labels.lock, true, None::<&str>)?;
         let exit_item = MenuItem::with_id(app, "tray-exit", labels.exit, true, None::<&str>)?;
         let menu = Menu::new(app)?;
         menu.append(&open_item)?;
         menu.append(&background_item)?;
-        menu.append(&sidebar_mode_item)?;
-        menu.append(&do_not_disturb_menu)?;
-        #[cfg(target_os = "linux")]
-        menu.append(&rebuild_ui_item)?;
-        if community_theme_enabled {
-            menu.append(&disable_theme_item)?;
+        if !privacy_lock.locked {
+            if !privacy_lock.user_id.is_empty() {
+                menu.append(&lock_item)?;
+            }
+            menu.append(&sidebar_mode_item)?;
+            menu.append(&do_not_disturb_menu)?;
+            #[cfg(target_os = "linux")]
+            menu.append(&rebuild_ui_item)?;
+            if community_theme_enabled {
+                menu.append(&disable_theme_item)?;
+            }
         }
         menu.append(&exit_item)?;
         let _ = tray.set_menu(Some(menu));

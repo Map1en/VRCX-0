@@ -3,15 +3,12 @@ import type { SortingState } from '@tanstack/react-table';
 import {
     getDataTableStorageKey,
     readPersistedTableState,
-    safeJsonParse,
     sanitizeTableColumnSizing,
     sanitizeTableColumnVisibility,
     writePersistedTableState
 } from '@/components/data-table/dataTablePersistence';
 import { DATE_AND_TYPE_SORT_COLUMN_IDS } from '@/components/data-table/sortRowsByDateAndType';
 import { isRecord } from '@/shared/utils/record';
-
-export { safeJsonParse };
 
 export const GAME_LOG_DEFAULT_PAGE_SIZES: number[] = [10, 15, 20, 25, 50, 100];
 export const GAME_LOG_DEFAULT_SORTING: SortingState = [

@@ -81,7 +81,7 @@ export function isLlmEndpointProviderId(
     );
 }
 
-export function normalizeLlmEndpointPresetBaseUrl(raw: string): string {
+function normalizeLlmEndpointPresetBaseUrl(raw: string): string {
     let value = raw.trim().replace(/\/+$/, '');
     if (value.toLowerCase().endsWith('/chat/completions')) {
         value = value.slice(0, -'/chat/completions'.length);
@@ -105,7 +105,7 @@ export function findLlmEndpointProviderId(
     );
 }
 
-export function getLlmEndpointProviderPreset(
+function getLlmEndpointProviderPreset(
     providerId: LlmEndpointProviderId
 ): LlmEndpointProviderPreset | null {
     return (

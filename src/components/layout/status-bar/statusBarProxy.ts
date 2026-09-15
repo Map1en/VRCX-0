@@ -1,4 +1,11 @@
-export type ProxyIndicatorTone = 'disabled' | 'direct' | 'enabled' | 'warning';
+import { cn } from '@/lib/utils';
+
+import {
+    STATUS_BAR_TOGGLE_ACTIVE,
+    STATUS_BAR_TOGGLE_IDLE
+} from './statusBarToggle';
+
+type ProxyIndicatorTone = 'disabled' | 'direct' | 'enabled' | 'warning';
 
 export type ProxyIndicatorInput = {
     enabled: boolean;
@@ -24,7 +31,7 @@ export function resolveProxyIndicatorState({
     const normalizedServer = server.trim();
     if (!enabled) {
         return {
-            className: 'text-muted-foreground hover:text-muted-foreground',
+            className: STATUS_BAR_TOGGLE_IDLE,
             server: normalizedServer,
             tone: 'disabled',
             tooltipKey: 'status_bar.proxy_disabled'
@@ -32,8 +39,10 @@ export function resolveProxyIndicatorState({
     }
     if (hasNetworkIssue) {
         return {
-            className:
-                'text-[var(--status-askme)] hover:text-[var(--status-askme)]',
+            className: cn(
+                STATUS_BAR_TOGGLE_ACTIVE,
+                'text-[var(--status-askme)] hover:text-[var(--status-askme)]'
+            ),
             server: normalizedServer,
             tone: 'warning',
             tooltipKey: 'status_bar.proxy_network_issue'
@@ -41,14 +50,14 @@ export function resolveProxyIndicatorState({
     }
     if (!normalizedServer) {
         return {
-            className: 'text-primary hover:text-primary',
+            className: STATUS_BAR_TOGGLE_ACTIVE,
             server: normalizedServer,
             tone: 'direct',
             tooltipKey: 'status_bar.proxy_enabled_direct'
         };
     }
     return {
-        className: 'text-primary hover:text-primary',
+        className: STATUS_BAR_TOGGLE_ACTIVE,
         server: normalizedServer,
         tone: 'enabled',
         tooltipKey: 'status_bar.proxy_enabled_server',

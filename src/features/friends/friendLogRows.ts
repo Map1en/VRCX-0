@@ -29,7 +29,7 @@ export function normalizeUserId(value: unknown) {
 
 export const UNKNOWN_FRIEND_LOG_DISPLAY_NAME = 'Unknown';
 
-export function isUserIdLike(value: unknown) {
+function isUserIdLike(value: unknown) {
     return isUserId(normalizeUserId(value));
 }
 

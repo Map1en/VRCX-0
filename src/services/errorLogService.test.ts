@@ -1,19 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const commandMocks = vi.hoisted(() => ({
-    appAppendErrorLog: vi.fn()
+const mocks = vi.hoisted(() => ({
+    invokeTauri: vi.fn()
 }));
 
-vi.mock('@/platform/tauri/bindings', () => ({
-    commands: commandMocks
+vi.mock('@/platform/tauri/invoke', () => ({
+    invokeTauri: mocks.invokeTauri
 }));
 
 import { recordErrorLog } from './errorLogService';
 
+function appendedEntry(text: string) {
+    return ['app__append_error_log', { entry: expect.stringContaining(text) }];
+}
+
 describe('errorLogService', () => {
     beforeEach(() => {
         vi.resetAllMocks();
-        commandMocks.appAppendErrorLog.mockResolvedValue(null);
+        mocks.invokeTauri.mockResolvedValue(null);
     });
 
     it('skips VRChat world fetch transport failures from the client error log', async () => {
@@ -24,7 +28,7 @@ describe('errorLogService', () => {
             )
         ]);
 
-        expect(commandMocks.appAppendErrorLog).not.toHaveBeenCalled();
+        expect(mocks.invokeTauri).not.toHaveBeenCalled();
     });
 
     it('still records non-network command failures', async () => {
@@ -35,9 +39,9 @@ describe('errorLogService', () => {
             )
         ]);
 
-        expect(commandMocks.appAppendErrorLog).toHaveBeenCalledTimes(1);
-        expect(commandMocks.appAppendErrorLog).toHaveBeenCalledWith(
-            expect.stringContaining('unexpected payload shape')
+        expect(mocks.invokeTauri).toHaveBeenCalledTimes(1);
+        expect(mocks.invokeTauri).toHaveBeenCalledWith(
+            ...appendedEntry('unexpected payload shape')
         );
     });
 
@@ -52,11 +56,11 @@ describe('errorLogService', () => {
             error
         ]);
 
-        expect(commandMocks.appAppendErrorLog).toHaveBeenCalledWith(
-            expect.stringContaining('code: persistence_invalid_data')
+        expect(mocks.invokeTauri).toHaveBeenCalledWith(
+            ...appendedEntry('code: persistence_invalid_data')
         );
-        expect(commandMocks.appAppendErrorLog).toHaveBeenCalledWith(
-            expect.stringContaining('sqliteCategory: malformed')
+        expect(mocks.invokeTauri).toHaveBeenCalledWith(
+            ...appendedEntry('sqliteCategory: malformed')
         );
     });
 });

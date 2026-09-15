@@ -6,9 +6,9 @@ import type {
     InstanceCreateMinimumAvatarPerformance
 } from '@/platform/tauri/bindings';
 import { isRecord } from '@/shared/utils/record';
+import { normalizeString } from '@/shared/utils/string';
 import type { WorldNewInstanceDefaults } from '@/state/dialogStore';
 
-import { normalizeEntityId } from './worldInstances';
 import type {
     InstanceGroupOption,
     WorldInstanceAccessType,
@@ -16,14 +16,14 @@ import type {
     WorldNewInstanceForm
 } from './worldNewInstanceTypes';
 
-export function isWorldNotFoundMessage(message: unknown, worldId: string) {
-    const normalizedMessage = normalizeEntityId(message);
-    const normalizedWorldId = normalizeEntityId(worldId);
+function isWorldNotFoundMessage(message: unknown, worldId: string) {
+    const normalizedMessage = normalizeString(message);
+    const normalizedWorldId = normalizeString(worldId);
     const match = /^World\s+(.+?)\s+not found\.?$/i.exec(normalizedMessage);
 
     return (
         Boolean(normalizedWorldId) &&
-        normalizeEntityId(match?.[1]) === normalizedWorldId
+        normalizeString(match?.[1]) === normalizedWorldId
     );
 }
 
@@ -146,14 +146,14 @@ export function groupOptionId(group: unknown) {
     if (!isRecord(group)) {
         return '';
     }
-    return normalizeEntityId(group.groupId || group.id);
+    return normalizeString(group.groupId || group.id);
 }
 
 export function findGroupOption(
     groups: unknown,
     groupId: string
 ): InstanceGroupOption | null {
-    const normalizedGroupId = normalizeEntityId(groupId);
+    const normalizedGroupId = normalizeString(groupId);
     if (!normalizedGroupId) {
         return null;
     }
@@ -166,13 +166,13 @@ export function findGroupOption(
     const { id, groupId: optionGroupId, displayName, ...rest } = group;
     return {
         ...rest,
-        ...(id === undefined ? {} : { id: normalizeEntityId(id) }),
+        ...(id === undefined ? {} : { id: normalizeString(id) }),
         ...(optionGroupId === undefined
             ? {}
-            : { groupId: normalizeEntityId(optionGroupId) }),
-        name: normalizeEntityId(group.name),
+            : { groupId: normalizeString(optionGroupId) }),
+        name: normalizeString(group.name),
         ...(displayName === undefined
             ? {}
-            : { displayName: normalizeEntityId(displayName) })
+            : { displayName: normalizeString(displayName) })
     };
 }

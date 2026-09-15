@@ -17,6 +17,7 @@ import groupProfileRepository from '@/repositories/groupProfileRepository';
 import memoPersistenceRepository from '@/repositories/memoPersistenceRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { persistFavoriteWorldDetails } from '@/services/favoriteWorldCacheService';
+import { normalizeString } from '@/shared/utils/string';
 import { useVrchatConfigStore } from '@/state/vrchatConfigStore';
 
 import {
@@ -24,7 +25,6 @@ import {
     groupOptionId,
     worldLoadErrorDescription
 } from './worldDialogHelpers';
-import { normalizeEntityId } from './worldInstances';
 
 type WorldDialogNewInstanceGroups = Awaited<
     ReturnType<typeof groupProfileRepository.getUserGroups>
@@ -124,8 +124,8 @@ export function useWorldDialogData({
             const nextGroups = (Array.isArray(groups) ? groups : [])
                 .filter((group) => groupOptionId(group))
                 .sort((left, right) =>
-                    normalizeEntityId(left?.name).localeCompare(
-                        normalizeEntityId(right?.name)
+                    normalizeString(left?.name).localeCompare(
+                        normalizeString(right?.name)
                     )
                 );
             if (newInstanceGroupsLoadGenerationRef.current !== generation) {

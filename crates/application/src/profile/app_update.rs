@@ -521,7 +521,7 @@ impl AppUpdateRuntime {
             self.inner.release_catalog.as_ref(),
             channel,
             target.as_deref(),
-            false,
+            target.is_some(),
         )
         .await
     }
@@ -580,8 +580,12 @@ impl AppUpdateRuntime {
                     notified.await;
                 }
                 Action::NeedDownload => {
-                    let release = self.release_for_version(version)?;
+                    let release = self.release_for_version(version).await?;
                     let status = self.ensure_downloaded(&release).await?;
+                    if status.phase == AppUpdateDownloadPhase::Downloading {
+                        notified.await;
+                        continue;
+                    }
                     if status.phase != AppUpdateDownloadPhase::Downloaded {
                         return Err(Error::Custom(
                             status
@@ -594,8 +598,15 @@ impl AppUpdateRuntime {
         }
     }
 
-    fn release_for_version(&self, version: &str) -> Result<AppUpdateReleaseSnapshot> {
-        match self.snapshot().release {
+    async fn release_for_version(&self, version: &str) -> Result<AppUpdateReleaseSnapshot> {
+        let channel = release_channel_for_version(version)
+            .ok_or_else(|| Error::Custom("no-pending-update".into()))?;
+        let release = if channel != self.inner.channel {
+            self.latest_release_for_channel(channel).await?
+        } else {
+            self.snapshot().release
+        };
+        match release {
             Some(release)
                 if release.canonical_version == version
                     && release.updater_type == AppUpdateDeliveryKind::Tauri =>
@@ -681,7 +692,7 @@ impl AppUpdateRuntime {
             target: release.target.clone(),
             current_version: self.inner.build.app_version.clone(),
             expected_version: release.canonical_version.clone(),
-            allow_downgrades: false,
+            allow_downgrades: release.channel != self.inner.channel,
             proxy,
         };
         let progress_runtime = self.clone();

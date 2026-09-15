@@ -19,7 +19,7 @@ export interface MutualFriendGraph {
     links: MutualFriendLink[];
 }
 
-export interface MutualFriendNodeMeta {
+interface MutualFriendNodeMeta {
     lastFetchedAt: string | null;
     optedOut: boolean;
     totalCount: number | null;

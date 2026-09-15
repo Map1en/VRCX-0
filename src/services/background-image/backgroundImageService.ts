@@ -204,7 +204,7 @@ async function clearBackgroundImageDecoration(): Promise<void> {
     useBackgroundImageStore.getState().setDecorationImageUrl('');
 }
 
-export async function enableBackgroundImageDaily(
+async function enableBackgroundImageDaily(
     providerId?: BackgroundImageProviderId
 ): Promise<boolean> {
     const projection = await configureBackgroundImage({
@@ -220,7 +220,7 @@ export async function setBackgroundImageProvider(
     await configureBackgroundImage({ kind: 'setProvider', providerId });
 }
 
-export async function setBackgroundImageCustomFiles(
+async function setBackgroundImageCustomFiles(
     paths: string[]
 ): Promise<boolean> {
     const projection = await configureBackgroundImage({
@@ -230,7 +230,7 @@ export async function setBackgroundImageCustomFiles(
     return projection.enabled;
 }
 
-export async function setBackgroundImageCustomFolder(
+async function setBackgroundImageCustomFolder(
     folderPath: string
 ): Promise<boolean> {
     const projection = await configureBackgroundImage({
@@ -303,7 +303,7 @@ export async function refreshBackgroundImage(): Promise<boolean> {
     return projection.enabled;
 }
 
-export function isBackgroundImageActive(): boolean {
+function isBackgroundImageActive(): boolean {
     return useBackgroundImageStore.getState().enabled;
 }
 

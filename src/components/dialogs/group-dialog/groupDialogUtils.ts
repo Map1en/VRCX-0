@@ -178,7 +178,7 @@ export type GroupModerationTabValue =
     | 'blocked'
     | 'logs';
 
-export const GROUP_MODERATION_TAB_PERMISSIONS: Record<
+const GROUP_MODERATION_TAB_PERMISSIONS: Record<
     GroupModerationTabValue,
     readonly string[]
 > = Object.freeze({

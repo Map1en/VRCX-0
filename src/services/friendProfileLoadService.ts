@@ -43,7 +43,7 @@ function scheduleTerminalReset(runId: number): void {
     }, TERMINAL_RESET_DELAY_MS);
 }
 
-export function isFriendProfileLoadTerminalStatus(
+function isFriendProfileLoadTerminalStatus(
     status: FriendProfileLoadState['status']
 ): boolean {
     return TERMINAL_STATUSES.has(status);

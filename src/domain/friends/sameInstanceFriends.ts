@@ -228,9 +228,8 @@ function buildSameInstanceFriendGroups<TFriend>(
 export {
     buildSameInstanceFriendGroups,
     isExplicitlyOfflineFriend,
-    isOnlineSameInstanceFriend,
     resolveObservedPlayerUserId,
     resolveObservedPlayerUserIds,
     resolveSameInstanceFriendLocation
 };
-export type { SameInstanceFriendGroup, SameInstanceLastLocation };
+export type { SameInstanceLastLocation };

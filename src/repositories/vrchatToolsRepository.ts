@@ -265,14 +265,5 @@ const vrchatToolsRepository = Object.freeze({
     editInviteMessage
 });
 
-export {
-    getGroupCalendar,
-    getFollowingGroupCalendars,
-    followGroupEvent,
-    getGroupCalendarIcs,
-    saveUserNote,
-    reportUser,
-    getInviteMessages,
-    editInviteMessage
-};
+export { saveUserNote };
 export default vrchatToolsRepository;

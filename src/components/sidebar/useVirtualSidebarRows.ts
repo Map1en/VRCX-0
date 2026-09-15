@@ -150,18 +150,22 @@ export function useVirtualSidebarRows<T extends VirtualSidebarRow>(
             return;
         }
 
-        const previousIndex = findFirstVisibleIndex(
+        let previousIndex = findFirstVisibleIndex(
             previousLayout.metrics.offsets,
             previousLayout.metrics.sizes,
             element.scrollTop
         );
-        if (previousIndex >= previousLayout.rows.length) {
-            return;
+        let nextIndex = -1;
+        while (previousIndex < previousLayout.rows.length) {
+            const previousRow = previousLayout.rows[previousIndex];
+            const anchorKey = previousRow?.key ?? previousIndex;
+            const anchorIndex = rowMetrics.indexesByKey.get(anchorKey);
+            if (anchorIndex !== undefined) {
+                nextIndex = anchorIndex;
+                break;
+            }
+            previousIndex += 1;
         }
-
-        const previousRow = previousLayout.rows[previousIndex];
-        const anchorKey = previousRow?.key ?? previousIndex;
-        const nextIndex = rowMetrics.indexesByKey.get(anchorKey) ?? -1;
         if (nextIndex < 0) {
             return;
         }
@@ -173,7 +177,10 @@ export function useVirtualSidebarRows<T extends VirtualSidebarRow>(
             Number.isFinite(nextStart) &&
             previousStart !== nextStart
         ) {
-            const scrollTop = element.scrollTop + nextStart - previousStart;
+            const scrollTop = Math.max(
+                0,
+                element.scrollTop + nextStart - previousStart
+            );
             element.scrollTop = scrollTop;
             setViewport((current) =>
                 current.scrollTop === scrollTop

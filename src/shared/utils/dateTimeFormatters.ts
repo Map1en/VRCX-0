@@ -55,7 +55,7 @@ export function normalizeDateLocale(
     return dateLocale || fallback;
 }
 
-export function toValidDate(value: unknown): Date | null {
+function toValidDate(value: unknown): Date | null {
     if (!value) {
         return null;
     }

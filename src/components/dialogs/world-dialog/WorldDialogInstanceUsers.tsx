@@ -12,7 +12,6 @@ import { UserDetailTile } from '@/components/UserDetailTile';
 import {
     createInstanceUserRow,
     firstText,
-    isGroupId,
     mergeInstanceUserRows,
     mergeInstanceUsers,
     normalizeInstanceUsers,
@@ -23,6 +22,7 @@ import { useKnownUserFact } from '@/lib/useKnownUser';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import { openUserDialog } from '@/services/dialogService';
 import { userImage } from '@/services/entityMediaService';
+import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
 import {
     locationSentinel,
     resolveFriendPresenceLocation
@@ -31,7 +31,7 @@ import { isRecord } from '@/shared/utils/record';
 import { userStatusLabel } from '@/shared/utils/userStatus';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-export { firstText, isGroupId, mergeInstanceUsers, normalizeInstanceUsers };
+export { firstText, mergeInstanceUsers, normalizeInstanceUsers };
 
 type InstanceUserSource = Record<string, unknown> | string | null | undefined;
 type Translate = NonNullable<Parameters<typeof userStatusLabel>[1]>;
@@ -121,7 +121,7 @@ export function InstanceUserTiles({
             }),
         enabled:
             Boolean(creatorUserId) &&
-            !isGroupId(creatorUserId) &&
+            !hasGroupIdPrefix(creatorUserId) &&
             !creatorHasDisplayMedia,
         staleTime: entityQueryPolicies.userAvatarLookup.staleTime,
         gcTime: entityQueryPolicies.userAvatarLookup.gcTime,
@@ -158,7 +158,7 @@ export function InstanceUserTiles({
         );
     };
 
-    if (creatorUserId && !isGroupId(creatorUserId)) {
+    if (creatorUserId && !hasGroupIdPrefix(creatorUserId)) {
         const creatorProfile = record(creatorProfileQuery.data);
         pushUser({
             ...knownCreatorUserRecord,

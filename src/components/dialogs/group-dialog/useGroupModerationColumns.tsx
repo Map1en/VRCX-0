@@ -173,7 +173,7 @@ export function useGroupModerationColumns({
                     <Button
                         type="button"
                         variant="ghost"
-                        className="hover:text-primary h-auto w-full min-w-0 justify-start truncate p-0 text-left font-medium"
+                        className="hover:text-primary h-auto w-full min-w-0 justify-start truncate p-0 text-left font-medium hover:bg-transparent"
                         onClick={() => onOpenUser(row.original)}
                     >
                         {label}

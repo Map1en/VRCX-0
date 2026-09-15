@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { formatScreenshotDateTime } from '@/lib/dateTime';
+import { resolveScreenshotCapturedTime } from '@/shared/utils/screenshot';
 
 import {
     buildScreenshotSearchRow,
@@ -394,6 +395,33 @@ describe('searchResultToLibraryImage', () => {
             capturedAt: '2026-04-16T01:02:03.000Z',
             error: null
         });
+    });
+
+    it('falls back to the capture time encoded in the file name', () => {
+        expect(
+            resolveScreenshotCapturedTime(
+                searchResultToLibraryImage({
+                    filePath:
+                        'C:\\VRChat\\2025-01\\VRChat_2025-01-05_02-24-53.276_3840x2160.png',
+                    fileName: 'VRChat_2025-01-05_02-24-53.276_3840x2160.png',
+                    fileSizeBytes: 2048,
+                    creationDate: '2025-03-31T20:15:00.000Z',
+                    width: 3840,
+                    height: 2160,
+                    metadata: null
+                })
+            )
+        ).toBe(new Date(2025, 0, 5, 2, 24, 53, 276).getTime());
+    });
+
+    it('prefers the file name capture time over a rewritten file date', () => {
+        expect(
+            resolveScreenshotCapturedTime({
+                capturedAt: null,
+                fileName: 'VRChat_2025-01-23_02-13-33.451_1920x1080.png',
+                modifiedAt: Date.parse('2025-03-31T20:26:00.000Z')
+            })
+        ).toBe(new Date(2025, 0, 23, 2, 13, 33, 451).getTime());
     });
 
     it('keeps posix folders and degrades missing metadata and dates', () => {

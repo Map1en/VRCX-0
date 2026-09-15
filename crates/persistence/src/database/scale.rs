@@ -15,6 +15,7 @@ const FEED_TABLE_SUFFIXES: [&str; 4] = [
     "feed_status",
 ];
 const FRIEND_LOG_TABLE_SUFFIX: &str = "friend_log_history";
+const FRIEND_CURRENT_TABLE_SUFFIX: &str = "friend_log_current";
 const GAMELOG_TABLE: &str = "gamelog_join_leave";
 const PREFIX_PROBE_SUFFIX: &str = "feed_gps";
 
@@ -24,16 +25,19 @@ pub struct DatabaseScaleEstimate {
     pub feed_rows: Option<i64>,
     pub gamelog_rows: Option<i64>,
     pub friend_log_rows: Option<i64>,
+    pub friend_count: Option<i64>,
 }
 
 pub fn database_scale_estimate(db: &DatabaseService) -> Result<DatabaseScaleEstimate, Error> {
     let db_bytes = fs::metadata(db.db_path())
         .map(|metadata| metadata.len())
         .unwrap_or(0);
+    let friend_count = largest_friend_count(db)?;
     let analyzed_rows = analyzed_row_counts(db)?;
     if analyzed_rows.is_empty() {
         return Ok(DatabaseScaleEstimate {
             db_bytes,
+            friend_count,
             ..DatabaseScaleEstimate::default()
         });
     }
@@ -61,7 +65,27 @@ pub fn database_scale_estimate(db: &DatabaseService) -> Result<DatabaseScaleEsti
         feed_rows,
         gamelog_rows: analyzed_rows.get(GAMELOG_TABLE).copied(),
         friend_log_rows,
+        friend_count,
     })
+}
+
+fn largest_friend_count(db: &DatabaseService) -> Result<Option<i64>, Error> {
+    let mut largest = None;
+    for table in select_table_names(
+        db,
+        &format!("name GLOB 'usr*_{FRIEND_CURRENT_TABLE_SUFFIX}'"),
+    )? {
+        let rows = db.execute(
+            &format!("SELECT COUNT(*) FROM {table}"),
+            &Default::default(),
+        )?;
+        let count = rows
+            .first()
+            .and_then(|row| row.first())
+            .and_then(Value::as_i64);
+        largest = larger(largest, count);
+    }
+    Ok(largest)
 }
 
 fn larger(current: Option<i64>, candidate: Option<i64>) -> Option<i64> {

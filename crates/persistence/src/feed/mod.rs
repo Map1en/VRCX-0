@@ -1,4 +1,6 @@
 mod query;
+#[cfg(test)]
+pub(crate) mod test_support;
 mod types;
 mod write;
 

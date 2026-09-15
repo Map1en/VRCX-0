@@ -34,12 +34,12 @@ export type AvatarImposterAction = 'create' | 'delete' | 'regenerate';
 export type AvatarReleaseStatus = GeneratedAvatarReleaseStatus;
 export type AvatarDialogTab = 'info' | 'performance' | 'gallery' | 'json';
 
-export type AvatarTarget = {
+type AvatarTarget = {
     avatarId: string;
     endpoint: string;
 };
 
-export type AvatarCacheInfo = {
+type AvatarCacheInfo = {
     inCache: boolean;
     cacheSize: string;
     cacheLocked: boolean;

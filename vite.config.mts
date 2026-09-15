@@ -140,7 +140,7 @@ export default defineConfig(({ mode }) => {
             },
             copyPublicDir: false,
             reportCompressedSize: false,
-            chunkSizeWarningLimit: 3000,
+            chunkSizeWarningLimit: 700,
             assetsInlineLimit: 0
         }
     };

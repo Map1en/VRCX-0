@@ -246,7 +246,7 @@ export function GroupDialogHeaderSection({
                                         <Button
                                             type="button"
                                             variant="ghost"
-                                            className="hover:text-primary h-auto min-w-0 flex-1 justify-start overflow-hidden p-0 text-left text-lg leading-tight font-semibold whitespace-normal"
+                                            className="hover:text-primary h-auto min-w-0 flex-1 justify-start overflow-hidden p-0 text-left text-lg leading-tight font-semibold whitespace-normal hover:bg-transparent"
                                             onClick={onCopyGroupName}
                                         >
                                             <span className="line-clamp-2 min-w-0 break-words">
@@ -264,11 +264,15 @@ export function GroupDialogHeaderSection({
                                 {groupTitle}
                             </span>
                         )}
-                        <GroupTitleLanguages
-                            languages={languageRows}
-                            limit={2}
-                        />
                     </CardTitle>
+                    {languageRows.length ? (
+                        <div className="flex min-w-0 flex-wrap items-center gap-1">
+                            <GroupTitleLanguages
+                                languages={languageRows}
+                                limit={2}
+                            />
+                        </div>
+                    ) : null}
                     {subtitle ? (
                         <div className="text-muted-foreground font-mono text-xs break-all">
                             {subtitle}
@@ -281,7 +285,7 @@ export function GroupDialogHeaderSection({
                                     <Button
                                         type="button"
                                         variant="ghost"
-                                        className="text-muted-foreground hover:text-primary h-auto max-w-full justify-start gap-1 p-0 text-xs font-normal"
+                                        className="text-muted-foreground hover:text-primary h-auto max-w-full justify-start gap-1 p-0 text-xs font-normal hover:bg-transparent"
                                         onClick={onOpenOwner}
                                     >
                                         <UserIcon data-icon="inline-start" />
@@ -372,9 +376,6 @@ export function GroupDialogHeaderSection({
                             {canInviteToGroup ? (
                                 <EntityActionItem
                                     icon={MessageSquareIcon}
-                                    disabled={
-                                        remoteStatus.members === 'running'
-                                    }
                                     onClick={() => {
                                         onInviteUserToGroup();
                                     }}

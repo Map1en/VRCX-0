@@ -80,6 +80,7 @@ fn notification_v1_params(notification: &Value, force_active: bool) -> Result<Db
             "response_message",
             object_field_string(details, &["responseMessage"]),
         )
+        .set("location", object_field_string(notification, &["location"]))
         .set("expired", if expired { 1 } else { 0 })
         .set("seen", if seen { 1 } else { 0 })
         .build())

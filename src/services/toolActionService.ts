@@ -99,7 +99,7 @@ export function isToolCapabilityAvailable(
     return capabilities.every(isHostCapabilityAvailable);
 }
 
-export function getToolCapabilityUnavailableReason(
+function getToolCapabilityUnavailableReason(
     tool?: ToolDefinition | null
 ): string {
     const capabilities = [

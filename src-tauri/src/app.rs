@@ -122,6 +122,20 @@ fn disable_community_theme_from_tray(app: &tauri::AppHandle) {
     });
 }
 
+fn engage_privacy_lock_from_tray(app: &tauri::AppHandle) {
+    let Some(state) = app.try_state::<AppState>() else {
+        return;
+    };
+    if state.runtime_host().privacy_lock().snapshot().has_password {
+        if let Err(error) = commands::application::privacy_lock::engage_privacy_lock(app, &state) {
+            tracing::warn!(error = %error, "failed to engage privacy lock from tray");
+        }
+        return;
+    }
+    restore_or_ensure_main_window(app, "failed to show main window for privacy lock setup");
+    commands::application::privacy_lock::request_privacy_lock_setup(app, &state);
+}
+
 fn toggle_sidebar_mode_from_tray(app: &tauri::AppHandle) {
     restore_or_ensure_main_window(
         app,
@@ -196,10 +210,11 @@ pub fn run() {
 
     bootstrap::init_tls_crypto_provider();
     let _async_runtime = install_adaptive_tauri_async_runtime();
-    bootstrap::apply_linux_webkit_workaround();
+    bootstrap::linux_rendering::apply_webkit_workaround();
 
     let setup_app_data_dir = app_data_dir.clone();
     let builder = tauri::Builder::default()
+        .manage(bootstrap::linux_rendering::LinuxRenderingState::default())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             // Spawn onto a worker thread so run_on_main_thread actually defers the window
             // rebuild; running it inline here would block the second instance and leave two
@@ -350,6 +365,9 @@ pub fn run() {
                         start_background_mode_from_shell(app.clone());
                     }
                 }
+            }
+            "tray-privacy-lock" => {
+                engage_privacy_lock_from_tray(app);
             }
             "tray-toggle-sidebar-mode" => {
                 toggle_sidebar_mode_from_tray(app);

@@ -7,11 +7,9 @@ import { isRecord } from '@/shared/utils/record';
 const SYSTEM_TAB_FRIENDS = 'friends';
 const SYSTEM_TAB_GROUPS = 'groups';
 
-export type SidebarSystemTabId =
-    | typeof SYSTEM_TAB_FRIENDS
-    | typeof SYSTEM_TAB_GROUPS;
+type SidebarSystemTabId = typeof SYSTEM_TAB_FRIENDS | typeof SYSTEM_TAB_GROUPS;
 
-export interface SidebarSystemTabLayoutItem {
+interface SidebarSystemTabLayoutItem {
     id: SidebarSystemTabId;
     type: 'system';
     systemTab: SidebarSystemTabId;

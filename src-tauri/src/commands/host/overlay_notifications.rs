@@ -30,7 +30,7 @@ pub async fn app__webhook_send_test(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__webhook_delivery_snapshot_get(
     state: State<'_, AppState>,

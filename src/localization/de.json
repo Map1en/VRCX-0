@@ -10,7 +10,7 @@
         "app_launcher_title": "Lege fest, was mit VRChat startet",
         "app_launcher_description": "Füge eine App oder Verknüpfung hinzu und lege fest, wann sie geöffnet werden soll.",
         "app_launcher_selection_title": "App oder Verknüpfung auswählen",
-        "app_launcher_selection_description": "Wähle einen Eintrag aus der Liste, um seine Startbedingungen anzusehen oder zu ändern.",
+        "app_launcher_selection_description": "App auswählen, um den Startzeitpunkt zu bearbeiten.",
         "game_log_title": "Noch keine VRChat-Aktivität",
         "game_log_description": "Besuchte Welten, Spieler und andere VRChat-Aktivitäten erscheinen hier, während du spielst.",
         "my_avatars_title": "Noch keine hochgeladenen Avatare",
@@ -279,7 +279,7 @@
     },
     "profile_backup": {
         "header": "Sichern & Wiederherstellen",
-        "tools_description": "VRCX-0-Daten sichern und wiederherstellen.",
+        "tools_description": "VRCX-0-Daten sichern und wiederherstellen",
         "automatic": "Automatische Sicherungen",
         "automatic_description": "Sicherungen regelmäßig im ausgewählten Ordner speichern.",
         "automatic_on": "Ein",
@@ -496,6 +496,7 @@
         "tray": {
             "open": "VRCX-0 öffnen",
             "backgroundMode": "Hintergrundmodus",
+            "lock": "Sperren",
             "doNotDisturb": "Nicht stören",
             "doNotDisturbOneHour": "1 Stunde",
             "doNotDisturbThreeHours": "3 Stunden",
@@ -724,6 +725,7 @@
         "hide_friends_sidebar": "Freundesleiste ausblenden",
         "enter_sidebar_mode": "Seitenleistenmodus",
         "restore_full_window": "Zum vollständigen Fenster zurückkehren",
+        "always_on_top": "Immer im Vordergrund",
         "zoom_in": "Vergrößern",
         "zoom_out": "Verkleinern",
         "reset_zoom": "Zoom zurücksetzen",
@@ -788,6 +790,63 @@
         "hold_for_hints": "Tastenkürzel anzeigen (gedrückt halten)",
         "toggle_details": "Details ein-/ausblenden",
         "clear_selection": "Auswahl aufheben"
+    },
+    "privacy_lock": {
+        "locked_title": "Gesperrt",
+        "field": {
+            "password": "Sperrpasswort",
+            "current_password": "Aktuelles Sperrpasswort",
+            "new_password": "Neues Sperrpasswort",
+            "confirm_password": "Neues Sperrpasswort bestätigen",
+            "account_password": "VRChat-Kontopasswort"
+        },
+        "action": {
+            "lock": "Sperren",
+            "unlock": "Entsperren",
+            "forgot": "Sperrpasswort vergessen?",
+            "back": "Zurück",
+            "set": "Passwort festlegen",
+            "change": "Passwort ändern",
+            "clear": "Passwort entfernen",
+            "clear_link": "Sperrpasswort entfernen",
+            "clear_and_unlock": "Sperre entfernen",
+            "background_mode": "Hintergrundmodus",
+            "logout": "Abmelden"
+        },
+        "setup": {
+            "create_title": "Sperrpasswort festlegen",
+            "create_description": "Die Sperre verbirgt VRCX-0 hinter diesem 4-stelligen Code, während weiter aufgezeichnet wird. Das ist keine Verschlüsselung – es hindert nur andere am PC daran, sich umzusehen.",
+            "change_title": "Sperrpasswort ändern",
+            "change_description": "Gib dein aktuelles Sperrpasswort ein und wähle dann ein neues.",
+            "clear_title": "Sperrpasswort entfernen",
+            "clear_description": "Gib dein VRChat-Kontopasswort ein, um den Sperrcode zu entfernen. Es wird nur mit dem lokal in VRCX-0 gespeicherten Passwort verglichen; nichts wird an die VRChat-Server gesendet."
+        },
+        "recover": {
+            "description": "Gib dein VRChat-Kontopasswort ein, um die Sperre zu entfernen. Es wird nur mit dem lokal in VRCX-0 gespeicherten Passwort verglichen; nichts wird an die VRChat-Server gesendet."
+        },
+        "settings": {
+            "label": "Privatsphäre-Sperre",
+            "description": "Verbirgt das Fenster hinter einem Sperrpasswort, während VRCX-0 weiter aufzeichnet. Sperren über das Tray-Menü oder das Kontomenü in der Seitenleiste.",
+            "status_set": "Passwort festgelegt",
+            "status_unset": "Kein Passwort"
+        },
+        "toast": {
+            "set": "Sperrpasswort festgelegt",
+            "changed": "Sperrpasswort geändert",
+            "cleared": "Sperrpasswort entfernt"
+        },
+        "error": {
+            "wrong_password": "Falsches Passwort",
+            "incomplete": "Alle {count} Ziffern eingeben",
+            "mismatch": "Die Passwörter stimmen nicht überein",
+            "current_required": "Gib dein aktuelles Sperrpasswort ein",
+            "account_password_required": "Gib dein VRChat-Kontopasswort ein",
+            "account_password_unavailable": "Für dieses Konto ist kein Passwort gespeichert, daher kann die Sperre hier nicht entfernt werden. Entferne sie manuell aus den App-Daten.",
+            "password_not_set": "Es ist kein Sperrpasswort festgelegt",
+            "password_already_set": "Es ist bereits ein Sperrpasswort festgelegt",
+            "no_session": "Melde dich an, bevor du die Sperre verwendest",
+            "failed": "Der Sperrvorgang ist fehlgeschlagen"
+        }
     },
     "side_panel": {
         "search_placeholder": "Schnellsuche...",
@@ -854,7 +913,6 @@
             "favorites_section": "Favoriten",
             "group_by_instance": "Nach Instanz gruppieren",
             "split_favorite_friends": "Favoritengruppen anzeigen",
-            "show_grouped_friends": "Gruppierte Freunde anzeigen",
             "same_instance_above_favorites": "Gleiche Instanz priorisieren",
             "sort_secondary": "Dann nach",
             "sort_tertiary": "Dann nach",
@@ -1541,9 +1599,8 @@
                 "moderation_snapshot_failed_to_load": "Moderationsverlauf konnte nicht geladen werden"
             },
             "label": {
-                "showing": "Zeige",
-                "of": "von",
                 "moderation_row": "Moderationseintrag",
+                "back_to_top": "Nach oben",
                 "moderation_rows": "Moderationseinträge",
                 "broaden_the_type_filters_or_search_query_to_see_more_results": "Erweitere die Typfilter oder die Suchanfrage, um mehr Ergebnisse zu sehen"
             },
@@ -1560,7 +1617,7 @@
                 "accept": "Annehmen",
                 "invite": "Einladen",
                 "decline": "Ablehnen",
-                "delete_log": "Protokoll löschen",
+                "delete_log": "Benachrichtigung löschen",
                 "decline_with_message": "Mit Nachricht ablehnen"
             },
             "filters": {
@@ -1660,6 +1717,10 @@
                     "moderation": "Moderation",
                     "other": "Sonstiges"
                 }
+            },
+            "responses": {
+                "acknowledge_and_dismiss": "Ausblenden",
+                "unsubscribe_announcements": "Abbestellen"
             }
         },
         "friend_list": {
@@ -1724,7 +1785,8 @@
             "dynamic": {
                 "open_value": "{value} öffnen"
             },
-            "bulk_selected": "{count} ausgewählt"
+            "bulk_selected": "{count} ausgewählt",
+            "search_scope": "Suchen in"
         },
         "charts": {
             "instance_activity": {
@@ -1847,16 +1909,13 @@
             "header": "Werkzeuge",
             "recent": "Zuletzt verwendet",
             "status": {
-                "rules_enabled": "Aktivierte Regeln: {count}",
-                "rules_enabled_of_total": "{enabled} von {total} Regeln aktiviert",
-                "rules_configured_off": "Konfigurierte Regeln: {count} · Deaktiviert",
-                "auto_reply_enabled": "Automatische Antwort aktiviert",
-                "apps_enabled": "Konfigurierte Apps: {count} · Aktiviert",
-                "apps_configured_off": "Konfigurierte Apps: {count} · Deaktiviert",
-                "last_backup": "Letzte Sicherung: {date}",
-                "automatic_backup_enabled": "Automatische Sicherung aktiviert",
-                "automatic_backup_configured_off": "Automatische Sicherung konfiguriert · Deaktiviert",
-                "connections_configured": "Konfigurierte KI-Verbindungen: {count}"
+                "rules_enabled": "{count} Regeln · An",
+                "rules_enabled_of_total": "{enabled}/{total} Regeln · An",
+                "rules_configured_off": "{count} Regeln · Aus",
+                "last_backup": "Gesichert {date}",
+                "connections_configured": "{count} Verbindungen",
+                "apps_count": "{count} Apps",
+                "automatic_backup": "Auto-Backup"
             },
             "quick_access": {
                 "header": "Schnellzugriff",
@@ -1864,12 +1923,11 @@
                 "done": "Fertig",
                 "add": "Zum Schnellzugriff hinzufügen",
                 "remove": "Aus Schnellzugriff entfernen",
-                "already_added": "Bereits zum Schnellzugriff hinzugefügt",
-                "empty": "Ziehe Werkzeuge hierher oder füge sie über ein Werkzeugmenü hinzu.",
+                "already_added": "Bereits im Schnellzugriff",
+                "empty": "Werkzeuge hierher ziehen",
                 "actions": "Werkzeugaktionen",
-                "shortcut_menu": "Verknüpfung hinzufügen…",
-                "tools_page_shortcut": "Schnellzugriff auf der Werkzeugseite",
-                "sidebar_shortcut": "Seitennavigation"
+                "tools_page_shortcut": "An Schnellzugriff anheften",
+                "sidebar_shortcut": "An Seitenleiste anheften"
             },
             "category": {
                 "automation": "Automatisierung",
@@ -1883,9 +1941,9 @@
                 "calendar": "Kalender",
                 "calendar_description": "Kalender für Gruppen-Events",
                 "moderation": "Gruppenmoderation",
-                "moderation_description": "Verwalte Mitglieder, Sperren, Einladungen und Beitrittsanfragen für Gruppen, die du moderierst.",
+                "moderation_description": "Mitglieder, Sperren, Einladungen und Beitrittsanfragen",
                 "my_groups": "Meine Gruppen",
-                "my_groups_description": "Beigetretene Gruppen sortieren, verbergen und verlassen."
+                "my_groups_description": "Beigetretene Gruppen sortieren, ausblenden und verlassen"
             },
             "user": {
                 "discord_names_description": "Finde die Discord-Benutzernamen deiner VRChat-Freunde",
@@ -1911,7 +1969,7 @@
                 "screenshot": "Screenshot",
                 "screenshot_description": "Deine VRChat-Fotos und Aufnahmedetails durchsuchen",
                 "gallery": "Galerie",
-                "gallery_description": "Deine VRChat-Galerie verwalten — Fotos, Profilsymbole und Prints",
+                "gallery_description": "Fotos, Profilsymbole und Prints",
                 "inventory": "Inventar",
                 "inventory_description": "Emojis, Sticker, Items und Kosmetik verwalten"
             },
@@ -1932,23 +1990,22 @@
                 "vrchat_log_description": "Lokale VRChat-Ausgabeprotokolle lesen",
                 "launch_options_description": "VRChat-Startoptionen bearbeiten",
                 "app_launcher": "App-Launcher",
-                "app_launcher_description": "Apps beim Start von VRChat automatisch starten.",
+                "app_launcher_description": "Apps beim Start von VRChat starten",
                 "registry_backup": "VRChat-Registrierungs-Backup",
                 "registry_backup_description": "Ein VRChat-Registrierungs-Backup erstellen oder wiederherstellen",
                 "llm_endpoints": "KI-Verbindungen",
-                "llm_endpoints_description": "Verwalte KI-Dienstverbindungen für Social AI und Übersetzung."
+                "llm_endpoints_description": "KI-Verbindungen für Social AI und Übersetzung"
             },
             "vrchat_log": {
                 "title": "VRChat-Log-Viewer",
                 "latest": "neueste",
                 "file_placeholder": "Logdatei auswählen",
-                "search_placeholder": "Nachricht, Kategorie oder Stacktrace durchsuchen",
-                "follow_latest": "Neuesten folgen",
+                "search_placeholder": "Log durchsuchen",
+                "follow_latest": "Folgen",
                 "clear_categories": "Kategorien leeren",
                 "copy_selected": "Auswahl kopieren",
                 "copy_entry": "Zeile kopieren",
                 "copy_message": "Nachricht kopieren",
-                "clear_selected": "Auswahl leeren",
                 "copied": "Log-Text in die Zwischenablage kopiert",
                 "copy_failed": "Log-Text konnte nicht kopiert werden",
                 "continuation_count": "+{count} Zeilen",
@@ -1957,13 +2014,18 @@
                 "column_category": "Kategorie",
                 "column_message": "Nachricht",
                 "loading": "Log-Einträge werden geladen",
-                "load_more": "Mehr laden",
+                "load_older": "Ältere laden",
+                "matched_count": "{loaded} / {total} Treffer",
+                "match_case": "Groß-/Kleinschreibung beachten",
+                "use_regex": "Regulärer Ausdruck",
+                "column_line": "Zeile",
+                "select_all": "Alle auswählen",
+                "deselect_all": "Auswahl aufheben",
                 "unavailable": "VRChat-Datenordner ist nicht verfügbar",
                 "no_files": "Keine VRChat-Ausgabelogs gefunden",
                 "no_files_description": "Starte VRChat einmal und aktualisiere diese Seite, nachdem output_log_*.txt erscheint.",
                 "no_entries": "Keine Einträge entsprechen den aktuellen Filtern",
                 "no_entries_description": "Passe Stufen, Kategorie oder Suchtext an.",
-                "no_category": "Keine Kategorie",
                 "error_load_files": "VRChat-Logdateien konnten nicht geladen werden.",
                 "error_load_entries": "VRChat-Log-Einträge konnten nicht geladen werden.",
                 "error_tail": "Neue Log-Einträge konnten nicht gelesen werden.",
@@ -1973,11 +2035,11 @@
             "social_automation": {
                 "header": "Soziale Automatisierung",
                 "status_schedule": "Statuszeitplan",
-                "status_schedule_description": "Statusänderungen planen, optional nur während VRChat läuft.",
+                "status_schedule_description": "Status nach Zeitplan ändern",
                 "room_status_rules": "Instanz- & Welt-Statusregeln",
-                "room_status_rules_description": "Status je nach Instanz, Welt oder Freunden automatisch ändern.",
+                "room_status_rules_description": "Status nach Instanz, Welt oder Freunden ändern",
                 "invite_request_auto_reply": "Automatische Antwort auf Einladungsanfragen",
-                "invite_request_auto_reply_description": "Zugelassene Freunde automatisch einladen, wenn sie beitreten möchten, während VRChat läuft.",
+                "invite_request_auto_reply_description": "Genehmigte Freunde bei Beitrittsanfrage automatisch einladen",
                 "schedule_rules": "Zeitplanregeln",
                 "schedule_rules_description": "Zeitfenster können Status, Statusnachricht oder beides ändern.",
                 "add_rule": "Regel hinzufügen",
@@ -2183,7 +2245,10 @@
                 "detect_failed": "Modelle konnten nicht erkannt werden",
                 "deleted": "Endpunkt gelöscht",
                 "delete_failed": "Endpunkt konnte nicht gelöscht werden"
-            }
+            },
+            "filter_placeholder": "Werkzeuge filtern",
+            "filter_empty": "Keine passenden Werkzeuge",
+            "sections": "Abschnitte"
         },
         "profile": {
             "game_info": {
@@ -2209,14 +2274,15 @@
             },
             "feedback": {
                 "title": "Feedback senden",
-                "description": "Feedback wird standardmäßig anonym gesendet. Wir lesen jede Nachricht. Wenn du eine Antwort möchtest, gib bitte deine E-Mail-Adresse im Feedback an.",
+                "description": "Feedback wird standardmäßig anonym gesendet. Wir lesen jede Nachricht.",
                 "privacy_note": "Es werden keine Kontodaten übermittelt.",
                 "placeholder": "Erzähl uns, was gut läuft, was nicht, oder was du dir wünschst…",
                 "submit": "Senden",
                 "submitting": "Wird gesendet…",
                 "thanks": "Danke für dein Feedback!",
                 "cooldown": "In {{seconds}} s kannst du erneut senden",
-                "more_help": "Du brauchst eine Antwort oder möchtest Logs anhängen?",
+                "reply_note": "Wenn du eine Antwort möchtest, gib deine E-Mail-Adresse im Feedback an.",
+                "more_help": "Du kannst uns auch hier kontaktieren oder Logs anhängen:",
                 "error_generic": "Feedback konnte nicht gesendet werden. Bitte versuche es später erneut."
             },
             "ai": {
@@ -3549,54 +3615,46 @@
         },
         "app_launcher": {
             "header": "App-Launcher",
-            "global_enabled": "Aktiviert",
-            "add_app": "App oder Verknüpfung hinzufügen",
+            "global_enabled": "Apps mit VRChat starten",
+            "add_app": "App hinzufügen",
             "choose_target": "Ziel auswählen",
-            "loading": "App-Launcher wird geladen",
-            "empty": "Keine Launcher-Einträge",
-            "details": "Regeldetails",
-            "no_selection": "Wähle eine Regel aus",
+            "loading": "Wird geladen…",
             "enabled": "Aktiviert",
             "name": "Name",
             "scope": "Bereich",
             "target": "Ziel",
-            "policy": "Richtlinie",
-            "run": "Starten",
-            "stop": "Stoppen",
-            "actions": "Aktionen",
+            "run": "Wenn VRChat startet",
+            "stop": "Wenn VRChat beendet wird",
             "scope_all": "Alle",
             "scope_desktop": "Desktop",
             "scope_vr": "VR",
-            "run_policy_always": "Bei jedem VRChat-Start",
-            "run_policy_skipIfRunning": "Überspringen, wenn bereits läuft",
-            "run_policy_short_always": "Jeder Start",
-            "run_policy_short_skipIfRunning": "Läuft bereits überspringen",
-            "stop_policy_keepRunning": "Weiterlaufen lassen",
-            "stop_policy_closeByVrcx": "Von VRCX-0 geschlossen",
-            "stop_policy_short_keepRunning": "Behalten",
-            "stop_policy_short_closeByVrcx": "Schließen",
-            "delete": "Löschen",
+            "run_policy_short_always": "Jedes Mal starten",
+            "run_policy_short_skipIfRunning": "Nur wenn nicht aktiv",
+            "stop_policy_short_keepRunning": "Weiterlaufen lassen",
+            "stop_policy_short_closeByVrcx": "App schließen",
             "steam_app_id": "Steam-App-ID",
             "delay_seconds": "Startverzögerung (Sekunden)",
             "args": "Argumente",
             "run_as_administrator": "Als Administrator ausführen",
-            "run_as_administrator_description": "Windows fragt beim Start dieser App nach einer Bestätigung. Mit erhöhten Rechten gestartete Apps bleiben nach dem Beenden von VRChat geöffnet.",
+            "run_as_administrator_description": "Windows fragt beim Start nach der Berechtigung.",
             "run_status_waiting": "Wartet auf Start",
             "run_status_running": "Wird ausgeführt",
             "run_status_skipped": "Übersprungen",
             "run_status_failed": "Start fehlgeschlagen",
             "run_status_stopped": "Beendet",
             "run_status_completed": "Abgeschlossen",
-            "run_error_elevation_required": "Administratorrechte sind erforderlich (Windows-Fehler {code}). Aktiviere für diese Regel „Als Administrator ausführen“.",
+            "run_error_elevation_required": "Administratorrechte erforderlich (Windows-Fehler {code}). „Als Administrator ausführen“ aktivieren.",
             "run_error_elevation_cancelled": "Die Administratorbestätigung wurde abgebrochen (Windows-Fehler {code}).",
             "run_error_failed": "Die App konnte nicht gestartet werden.",
-            "close": "Schließen",
-            "save": "Speichern",
+            "stop_locked_steam": "Von Steam gestartet; VRCX-0 kann sie nicht schließen.",
+            "stop_locked_admin": "Läuft als Administrator; VRCX-0 kann sie nicht schließen.",
+            "remove_app": "App entfernen",
+            "remove_confirm": "{name} aus dem App-Launcher entfernen?",
+            "name_required": "Name ist erforderlich",
             "toast": {
                 "load_failed": "App-Launcher konnte nicht geladen werden",
                 "save_failed": "App-Launcher konnte nicht gespeichert werden",
-                "pick_failed": "App oder Verknüpfung konnte nicht ausgewählt werden",
-                "name_target_required": "Name und Ziel sind erforderlich"
+                "pick_failed": "App oder Verknüpfung konnte nicht ausgewählt werden"
             }
         },
         "user": {
@@ -4459,20 +4517,26 @@
                 "edited_by": "Bearbeitet von:",
                 "search_placeholder": "Suchen"
             },
+            "role_name": {
+                "group_owner": "Gruppenbesitzer",
+                "everyone": "Alle",
+                "member": "Mitglied"
+            },
             "members": {
                 "header": "Mitglieder",
                 "sorting": {
                     "joined_at_asc": "Beigetreten am (aufsteigend)",
                     "joined_at_desc": "Beigetreten am (absteigend)"
                 },
-                "filter": "Filter:",
-                "filters": {
-                    "everyone": "Alle",
-                    "users_with_no_role": "Nutzer ohne Rolle"
-                },
                 "unsubscribed_announcements": "Ankündigungen abbestellt",
                 "representing": "Repräsentiert",
-                "search": "Suchen"
+                "view_all": "Alle",
+                "friends": "Freunde",
+                "search": "Suchen",
+                "loaded_of_total": "{loaded} von {total} geladen",
+                "search_results": "{count} Treffer",
+                "export_loaded": "Geladene exportieren ({count})",
+                "export_all": "Alle exportieren ({count})"
             },
             "gallery": {
                 "header": "Fotos"
@@ -4524,15 +4588,12 @@
                 "group_join_request_cancelled": "Beitrittsanfrage abgebrochen",
                 "group_refreshed": "Gruppe aktualisiert",
                 "group_invite_sent": "Gruppeneinladung gesendet",
-                "group_post_deleted": "Gruppenbeitrag gelöscht",
-                "joined_newest": "Neueste zuerst beigetreten",
-                "joined_oldest": "Älteste zuerst beigetreten"
+                "group_post_deleted": "Gruppenbeitrag gelöscht"
             },
             "action": {
                 "refresh_to_load_gallery_images": "Aktualisieren, um Galeriebilder zu laden",
                 "open_group_owner_profile": "Profil des Gruppenbesitzers öffnen",
-                "join_state": "Beitrittsstatus",
-                "load_all": "Alle laden"
+                "join_state": "Beitrittsstatus"
             },
             "toast": {
                 "failed_to_join_group": "Gruppe konnte nicht beigetreten werden",
@@ -4929,7 +4990,15 @@
             "scan_failed": "Screenshot-Bibliothek konnte nicht gescannt werden",
             "thumbnail_failed": "Vorschaubild nicht verfügbar",
             "hide_details": "Bildinformationen ausblenden",
-            "show_details": "Bildinformationen einblenden"
+            "show_details": "Bildinformationen einblenden",
+            "search_in": "{scope} suchen",
+            "grid_density": "Vorschaugröße",
+            "sort": "Sortierung",
+            "year_group": "Jahr {year}",
+            "sort_options": {
+                "captured_desc": "Neueste",
+                "captured_asc": "Älteste"
+            }
         },
         "set_avatar_styles": {
             "header": "Avatar-Stile festlegen",
@@ -4943,12 +5012,15 @@
             "header": "VRChat Config JSON",
             "description1": "Diese Optionen sind nur für fortgeschrittene Nutzer gedacht.",
             "description2": "Lasse ein Feld leer, um den Standardwert zu verwenden. Ein Neustart des Spiels ist erforderlich, damit Änderungen wirksam werden.",
-            "cache_size": "Cache-Größe:",
+            "cache_size": "Cache-Größe",
+            "section_cache": "Cache",
+            "section_pictures": "Bilder",
+            "section_camera": "Kamera",
             "refresh": "Aktualisieren",
             "delete_cache": "Cache löschen",
             "sweep_cache": "Cache bereinigen",
-            "max_cache_size": "Max. Cache-Größe [GB] (min. 30)",
-            "cache_expiry_delay": "Cache-Ablauf [Tage] (min. 30)",
+            "max_cache_size": "Max. Cache-Größe (GB)",
+            "cache_expiry_delay": "Cache-Aufbewahrung (Tage)",
             "cache_directory": "Benutzerdefinierter Cache-Ordner",
             "cache_location_changed": "VRChat-Cache-Speicherort ändern",
             "old_cache_cleanup_description": "Der alte Cache belegt {size}. VRChat verwendet ihn nach der Änderung nicht mehr. Soll er bereinigt werden?",
@@ -5280,7 +5352,7 @@
                 "stable": "Stabil",
                 "beta": "Beta",
                 "description": "VRCX-0 sucht nur im derzeit installierten Kanal nach Updates.",
-                "switch_description": "Um zu {channel} zu wechseln, lade die neueste Version dieses Kanals von GitHub herunter und installiere sie.",
+                "switch_description": "Um zu {channel} zu wechseln, lade die neueste Version dieses Kanals herunter und installiere sie.",
                 "download_stable": "Neueste stabile Version herunterladen",
                 "download_beta": "Neueste Beta herunterladen",
                 "no_release": "In diesem Kanal ist keine Version verfügbar."
@@ -5791,7 +5863,8 @@
             "rows_per_page": "Zeilen pro Seite",
             "previous": "Zurück",
             "next": "Weiter",
-            "more_pages": "Weitere Seiten"
+            "more_pages": "Weitere Seiten",
+            "page_number": "Seite {page}"
         },
         "feed": {
             "date": "Datum",
@@ -6324,5 +6397,16 @@
             "themes": "Designs",
             "themes_description": "Verwaltung von Design-Quellen und eigenem CSS."
         }
+    },
+    "linux_rendering": {
+        "title": "Hardwarebeschleunigung (experimentell)",
+        "description": "Wird nach einem Neustart von VRCX-0 wirksam. Bestätigen Sie nach dem Aktivieren innerhalb von 30 Sekunden nach dem Start; andernfalls wird die Beschleunigung deaktiviert und VRCX-0 neu gestartet.",
+        "saved": "Gespeichert. Starten Sie VRCX-0 neu, um die Änderung zu übernehmen.",
+        "restart_now": "Jetzt neu starten",
+        "confirm_title": "Wird die Oberfläche korrekt dargestellt?",
+        "confirm_description": "Ohne Bestätigung innerhalb von 30 Sekunden nach dem Start deaktiviert VRCX-0 die Hardwarebeschleunigung und startet neu.",
+        "restore": "Wiederherstellen und neu starten",
+        "keep": "Darstellung korrekt, beibehalten",
+        "failed": "Die Darstellungseinstellung konnte nicht geändert werden. Versuche es erneut."
     }
 }

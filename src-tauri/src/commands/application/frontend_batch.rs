@@ -15,7 +15,7 @@ use vrcx_0_application::social::{
 
 use crate::{error::AppError, state::AppState};
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__favorite_import_start(
     state: State<'_, AppState>,
@@ -24,25 +24,25 @@ pub fn app__favorite_import_start(
     Ok(state.runtime_host().favorite_import_start(input)?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__favorite_import_status(state: State<'_, AppState>) -> FavoriteImportStatus {
     state.runtime_host().favorite_import_status()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__favorite_import_cancel(state: State<'_, AppState>) -> FavoriteImportStatus {
     state.runtime_host().favorite_import_cancel()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__favorite_import_dismiss(state: State<'_, AppState>, runId: String) -> bool {
     state.runtime_host().favorite_import_dismiss(&runId)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__group_ban_import_start(
     state: State<'_, AppState>,
@@ -51,13 +51,13 @@ pub fn app__group_ban_import_start(
     Ok(state.runtime_host().group_ban_import_start(input)?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__group_ban_import_status(state: State<'_, AppState>) -> GroupBanImportStatus {
     state.runtime_host().group_ban_import_status()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__group_ban_import_cancel(state: State<'_, AppState>) -> GroupBanImportStatus {
     state.runtime_host().group_ban_import_cancel()
@@ -72,7 +72,7 @@ pub async fn app__favorite_details_hydrate(
     state.hydrate_favorite_details(input).await
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__favorite_cache_snapshot(
     state: State<'_, AppState>,

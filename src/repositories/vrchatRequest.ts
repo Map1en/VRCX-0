@@ -1,7 +1,7 @@
 import type { HttpApiExecuteResponse } from '@/platform/tauri/bindings';
 import { isRecord } from '@/shared/utils/record';
 
-export type QueryValue = string | number | boolean | Date | null | undefined;
+type QueryValue = string | number | boolean | Date | null | undefined;
 export type QueryParams = Record<string, QueryValue | QueryValue[]>;
 
 export interface VrchatRequestResponse<TJson = unknown, TParams = QueryParams> {

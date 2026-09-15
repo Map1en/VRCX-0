@@ -190,8 +190,6 @@ export const useDialogStore = create<DialogStoreState>((set) => ({
 export type {
     ActiveDialog,
     DialogBreadcrumb,
-    DialogKind,
-    DialogMetadataPatch,
     DialogStoreState,
     WorldNewInstanceDefaults
 };

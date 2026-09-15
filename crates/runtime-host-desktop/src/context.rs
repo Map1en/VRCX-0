@@ -1,5 +1,6 @@
 use std::sync::{Arc, Mutex};
 
+use vrcx_0_application::auth::AuthCredentialStore;
 use vrcx_0_application_activity::notification::{
     extract_file_id, extract_file_version, fallback_file_version, load_overlay_activity_filters,
     normalize_avatar_image_url_128, CachedNotificationUserImageResolver, NotificationConfig,
@@ -30,6 +31,7 @@ use crate::notification::{
     seed_hmd_notifications_default, DesktopNotifier, DesktopNotifierSlot, NotificationDispatcher,
     NotificationDispatcherDeps, NotificationDoNotDisturbRuntime, RealtimeNotificationIndicator,
 };
+use crate::privacy_lock::PrivacyLockRuntime;
 
 const AVATAR_PREFETCH_MAX_PATCHES: usize = 8;
 
@@ -39,6 +41,7 @@ pub(crate) struct DesktopRuntimeServicesDeps {
     pub image_cache: Arc<ImageCache>,
     pub config: ConfigRepository,
     pub notification_config: Arc<dyn NotificationConfig>,
+    pub auth_credentials: Arc<dyn AuthCredentialStore>,
     pub auth_scope: RuntimeAuthScope,
     pub session: HostSessionRuntime,
     pub world_cache: Arc<WorldCache>,
@@ -62,6 +65,7 @@ pub struct DesktopRuntimeServices {
     overlay_activity_sinks: OverlayActivitySinkRegistry,
     notification_do_not_disturb: NotificationDoNotDisturbRuntime,
     notification_indicator: Arc<RealtimeNotificationIndicator>,
+    privacy_lock: Arc<PrivacyLockRuntime>,
     pub host: RuntimeHost,
     tts: Arc<dyn TtsEngine>,
     notification_desktop_notifier: DesktopNotifierSlot,
@@ -81,9 +85,14 @@ impl DesktopRuntimeServices {
         let realtime_user_image_resolver = RealtimeUserImageResolverSlot::default();
         let notification_do_not_disturb = NotificationDoNotDisturbRuntime::new(
             deps.config.clone(),
-            deps.event_bus,
+            deps.event_bus.clone(),
             deps.tasks.clone(),
         )?;
+        let privacy_lock = Arc::new(PrivacyLockRuntime::new(
+            deps.auth_credentials,
+            deps.event_bus,
+        )?);
+        deps.auth_scope.add_observer(privacy_lock.clone());
         let host = RuntimeHost::new();
         let notification_indicator = Arc::new(RealtimeNotificationIndicator::new(
             Arc::clone(&deps.db),
@@ -107,6 +116,7 @@ impl DesktopRuntimeServices {
                 tts: Arc::clone(&tts),
                 tasks: deps.tasks.clone(),
                 do_not_disturb: notification_do_not_disturb.clone(),
+                privacy_lock: privacy_lock.clone(),
             }));
         deps.overlay_activity_sinks.add(notification_sink);
         Ok(Self {
@@ -122,6 +132,7 @@ impl DesktopRuntimeServices {
             overlay_activity_sinks: deps.overlay_activity_sinks,
             notification_do_not_disturb,
             notification_indicator,
+            privacy_lock,
             host,
             tts,
             notification_desktop_notifier,
@@ -194,6 +205,10 @@ impl DesktopRuntimeServices {
 
     pub fn notification_do_not_disturb(&self) -> NotificationDoNotDisturbRuntime {
         self.notification_do_not_disturb.clone()
+    }
+
+    pub fn privacy_lock(&self) -> Arc<PrivacyLockRuntime> {
+        Arc::clone(&self.privacy_lock)
     }
 
     fn observe_game_log_side_effect(&self, event: &GameLogSideEffectEvent) {

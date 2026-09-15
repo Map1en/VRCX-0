@@ -10,7 +10,7 @@
         "app_launcher_title": "VRChat과 함께 실행할 항목을 선택하세요",
         "app_launcher_description": "앱이나 바로가기를 추가하고 언제 실행할지 선택하세요.",
         "app_launcher_selection_title": "앱 또는 바로가기 선택",
-        "app_launcher_selection_description": "목록에서 항목을 선택하면 실행 시점을 확인하거나 변경할 수 있습니다.",
+        "app_launcher_selection_description": "앱을 선택하면 실행 시점을 편집할 수 있습니다.",
         "game_log_title": "아직 VRChat 활동이 없습니다",
         "game_log_description": "플레이하면서 방문한 월드, 만난 플레이어와 그 밖의 VRChat 활동이 여기에 표시됩니다.",
         "my_avatars_title": "아직 업로드한 아바타가 없습니다",
@@ -279,7 +279,7 @@
     },
     "profile_backup": {
         "header": "백업 및 복원",
-        "tools_description": "VRCX-0 데이터를 백업하고 복원합니다.",
+        "tools_description": "VRCX-0 데이터 백업 및 복원",
         "automatic": "자동 백업",
         "automatic_description": "선택한 폴더에 정기적으로 백업을 저장합니다.",
         "automatic_on": "켜짐",
@@ -504,7 +504,8 @@
             "rebuildUi": "UI 새로고침",
             "sidebarMode": "사이드바 모드",
             "disableTheme": "테마 비활성화",
-            "exit": "종료"
+            "exit": "종료",
+            "lock": "잠금"
         },
         "notification": {
             "backgroundModeStarted": {
@@ -750,7 +751,8 @@
         },
         "action": {
             "close_window": "닫기"
-        }
+        },
+        "always_on_top": "항상 위에 표시"
     },
     "shortcuts": {
         "tray": {
@@ -854,7 +856,6 @@
             "favorites_section": "즐겨찾기",
             "group_by_instance": "인스턴스별로 그룹화",
             "split_favorite_friends": "즐겨찾는 그룹 표시",
-            "show_grouped_friends": "그룹화된 친구 표시",
             "same_instance_above_favorites": "동일한 인스턴스 우선순위 지정",
             "sort_secondary": "그런 다음",
             "sort_tertiary": "그런 다음",
@@ -1541,11 +1542,10 @@
                 "moderation_snapshot_failed_to_load": "모더레이션 기록을 불러오지 못했습니다."
             },
             "label": {
-                "showing": "표시",
-                "of": "의",
                 "moderation_row": "검토 행",
                 "moderation_rows": "검토 행",
-                "broaden_the_type_filters_or_search_query_to_see_more_results": "더 많은 결과를 보려면 유형 필터 또는 검색어를 확장하세요."
+                "broaden_the_type_filters_or_search_query_to_see_more_results": "더 많은 결과를 보려면 유형 필터 또는 검색어를 확장하세요.",
+                "back_to_top": "맨 위로"
             },
             "empty": {
                 "no_moderation_rows_match_the_current_filters": "현재 필터와 일치하는 검토 행이 없습니다."
@@ -1560,7 +1560,7 @@
                 "accept": "수락",
                 "invite": "초대",
                 "decline": "거절",
-                "delete_log": "로그 삭제",
+                "delete_log": "알림 삭제",
                 "decline_with_message": "메시지로 거절"
             },
             "filters": {
@@ -1660,6 +1660,10 @@
                     "moderation": "중재",
                     "other": "기타"
                 }
+            },
+            "responses": {
+                "acknowledge_and_dismiss": "닫기",
+                "unsubscribe_announcements": "구독 해제"
             }
         },
         "friend_list": {
@@ -1724,7 +1728,8 @@
             "dynamic": {
                 "open_value": "{value} 열기"
             },
-            "bulk_selected": "{count}개 선택됨"
+            "bulk_selected": "{count}개 선택됨",
+            "search_scope": "검색 범위"
         },
         "charts": {
             "instance_activity": {
@@ -1847,16 +1852,13 @@
             "header": "도구",
             "recent": "최근 사용",
             "status": {
-                "rules_enabled": "규칙 {count}개 활성화됨",
-                "rules_enabled_of_total": "규칙 {total}개 중 {enabled}개 활성화됨",
-                "rules_configured_off": "설정된 규칙 {count}개가 모두 꺼져 있음",
-                "auto_reply_enabled": "자동 답장 켜짐",
-                "apps_enabled": "앱 {count}개 설정됨 · 켜짐",
-                "apps_configured_off": "앱 {count}개 설정됨 · 꺼짐",
-                "last_backup": "마지막 백업: {date}",
-                "automatic_backup_enabled": "자동 백업 켜짐",
-                "automatic_backup_configured_off": "자동 백업 설정됨 · 꺼짐",
-                "connections_configured": "AI 연결 {count}개 설정됨"
+                "rules_enabled": "규칙 {count}개 · 켜짐",
+                "rules_enabled_of_total": "규칙 {enabled}/{total}개 · 켜짐",
+                "rules_configured_off": "규칙 {count}개 · 꺼짐",
+                "last_backup": "마지막 백업 {date}",
+                "connections_configured": "연결 {count}개",
+                "apps_count": "앱 {count}개",
+                "automatic_backup": "자동 백업"
             },
             "quick_access": {
                 "header": "빠른 액세스",
@@ -1864,12 +1866,11 @@
                 "done": "완료",
                 "add": "빠른 액세스에 추가",
                 "remove": "빠른 액세스에서 삭제",
-                "already_added": "빠른 액세스에 이미 추가됨",
-                "empty": "도구를 여기로 드래그하거나 도구 메뉴에서 추가하세요.",
+                "already_added": "이미 빠른 접근에 있습니다",
+                "empty": "도구를 여기로 끌어오세요",
                 "actions": "도구 작업",
-                "shortcut_menu": "바로가기 추가…",
-                "tools_page_shortcut": "도구 페이지 빠른 액세스",
-                "sidebar_shortcut": "사이드바 탐색"
+                "tools_page_shortcut": "빠른 접근에 고정",
+                "sidebar_shortcut": "사이드바에 고정"
             },
             "category": {
                 "automation": "자동화",
@@ -1883,9 +1884,9 @@
                 "calendar": "달력",
                 "calendar_description": "그룹 이벤트 캘린더",
                 "moderation": "그룹 중재",
-                "moderation_description": "회원님이 관리하는 그룹의 멤버, 밴, 초대, 가입 요청을 관리하세요.",
+                "moderation_description": "멤버, 차단, 초대, 가입 요청",
                 "my_groups": "내 그룹",
-                "my_groups_description": "가입한 그룹의 순서, 공개 범위, 탈퇴를 관리합니다."
+                "my_groups_description": "가입한 그룹 정렬, 숨기기, 탈퇴"
             },
             "user": {
                 "discord_names_description": "VRChat 친구의 Discord 사용자 이름 찾기",
@@ -1911,7 +1912,7 @@
                 "screenshot": "스크린샷",
                 "screenshot_description": "VRChat 사진과 촬영 정보 둘러보기",
                 "gallery": "갤러리",
-                "gallery_description": "VRChat 갤러리 관리 — 사진, 프로필 아이콘, 프린트",
+                "gallery_description": "사진, 프로필 아이콘, 프린트",
                 "inventory": "인벤토리",
                 "inventory_description": "이모티콘, 스티커, 아이템, 코스메틱 관리"
             },
@@ -1932,23 +1933,22 @@
                 "vrchat_log_description": "로컬 VRChat 출력 로그 읽기",
                 "launch_options_description": "VRChat 실행 옵션 편집",
                 "app_launcher": "앱 런처",
-                "app_launcher_description": "VRChat 시작 시 앱을 자동 실행합니다.",
+                "app_launcher_description": "VRChat 시작 시 앱 실행",
                 "registry_backup": "VRChat 레지스트리 백업",
                 "registry_backup_description": "VRChat 레지스트리 백업 생성 또는 복원",
                 "llm_endpoints": "AI 연결",
-                "llm_endpoints_description": "Social AI 및 번역에 사용하는 AI 서비스 연결을 관리합니다."
+                "llm_endpoints_description": "Social AI 및 번역용 AI 연결"
             },
             "vrchat_log": {
                 "title": "VRChat 로그 뷰어",
                 "latest": "최신",
                 "file_placeholder": "로그 파일 선택",
-                "search_placeholder": "메시지, 카테고리 또는 스택 추적 검색",
-                "follow_latest": "최신 항목 따라가기",
+                "search_placeholder": "로그 검색",
+                "follow_latest": "따라가기",
                 "clear_categories": "카테고리 지우기",
                 "copy_selected": "선택 항목 복사",
                 "copy_entry": "행 복사",
                 "copy_message": "메시지 복사",
-                "clear_selected": "선택 항목 지우기",
                 "copied": "로그 텍스트를 클립보드에 복사했습니다.",
                 "copy_failed": "로그 텍스트를 복사하지 못했습니다.",
                 "continuation_count": "+{count} 라인",
@@ -1957,27 +1957,32 @@
                 "column_category": "카테고리",
                 "column_message": "메시지",
                 "loading": "로그 항목 로드 중",
-                "load_more": "더 로드하기",
                 "unavailable": "VRChat 데이터 폴더를 사용할 수 없습니다.",
                 "no_files": "VRChat 출력 로그를 찾을 수 없습니다.",
                 "no_files_description": "VRChat을(를) 한 번 시작하고 output_log_*.txt가 나타난 후 이 페이지를 새로 고치세요.",
                 "no_entries": "현재 필터와 일치하는 항목이 없습니다.",
                 "no_entries_description": "수준, 카테고리 또는 검색 텍스트를 조정합니다.",
-                "no_category": "카테고리 없음",
                 "error_load_files": "VRChat 로그 파일을 로드하지 못했습니다.",
                 "error_load_entries": "VRChat 로그 항목을 로드하지 못했습니다.",
                 "error_tail": "새 로그 항목을 읽지 못했습니다.",
                 "loaded_count": "{loaded} / {total} 로드됨",
-                "selected_count": "{count} 선택됨"
+                "selected_count": "{count} 선택됨",
+                "load_older": "이전 항목 불러오기",
+                "matched_count": "{loaded} / {total} 일치",
+                "match_case": "대소문자 구분",
+                "use_regex": "정규식",
+                "column_line": "줄",
+                "select_all": "전체 선택",
+                "deselect_all": "전체 선택 해제"
             },
             "social_automation": {
                 "header": "소셜 자동화",
                 "status_schedule": "현황 일정",
-                "status_schedule_description": "상태 변경을 예약합니다. VRChat 실행 중에만 동작하도록 제한할 수 있습니다.",
+                "status_schedule_description": "일정에 따라 상태 변경",
                 "room_status_rules": "인스턴스·월드 상태 규칙",
-                "room_status_rules_description": "인스턴스, 월드, 친구에 따라 상태를 자동 변경합니다.",
+                "room_status_rules_description": "인스턴스, 월드, 친구에 따라 상태 변경",
                 "invite_request_auto_reply": "초대 요청 자동 응답",
-                "invite_request_auto_reply_description": "VRChat 실행 중 참여를 요청하는 승인된 친구를 자동으로 초대합니다.",
+                "invite_request_auto_reply_description": "참가를 요청한 승인된 친구를 자동 초대",
                 "schedule_rules": "일정 규칙",
                 "schedule_rules_description": "기간은 상태, 상태 메시지 또는 둘 다를 변경할 수 있습니다.",
                 "add_rule": "규칙 추가",
@@ -2183,7 +2188,10 @@
                 "detect_failed": "모델 감지에 실패했습니다",
                 "deleted": "엔드포인트가 삭제되었습니다",
                 "delete_failed": "엔드포인트 삭제에 실패했습니다"
-            }
+            },
+            "filter_placeholder": "도구 필터",
+            "filter_empty": "일치하는 도구가 없습니다",
+            "sections": "섹션"
         },
         "profile": {
             "game_info": {
@@ -2209,15 +2217,16 @@
             },
             "feedback": {
                 "title": "피드백 보내기",
-                "description": "피드백은 기본적으로 익명으로 전송되며, 모든 메시지를 읽고 있습니다. 답변이 필요하시면 피드백 내용에 이메일 주소를 함께 적어 주세요.",
+                "description": "피드백은 기본적으로 익명으로 전송되며, 모든 메시지를 읽고 있습니다.",
                 "privacy_note": "계정 정보는 포함되지 않습니다.",
                 "placeholder": "잘 되는 점, 불편한 점, 추가됐으면 하는 기능 등을 알려 주세요…",
                 "submit": "보내기",
                 "submitting": "전송 중…",
                 "thanks": "피드백 감사합니다!",
                 "cooldown": "{{seconds}}초 후에 다시 보낼 수 있습니다",
-                "more_help": "답변이 필요하거나 로그를 첨부하고 싶다면",
-                "error_generic": "피드백을 보내지 못했습니다. 잠시 후 다시 시도해 주세요."
+                "more_help": "아래 채널로 문의하거나 로그를 첨부하실 수도 있습니다:",
+                "error_generic": "피드백을 보내지 못했습니다. 잠시 후 다시 시도해 주세요.",
+                "reply_note": "답변이 필요하시면 피드백에 이메일 주소를 적어 주세요."
             },
             "ai": {
                 "header": "소셜 AI",
@@ -3549,55 +3558,47 @@
         },
         "app_launcher": {
             "header": "앱 런처",
-            "global_enabled": "활성화됨",
-            "add_app": "앱 또는 바로가기 추가",
+            "global_enabled": "VRChat과 함께 앱 실행",
+            "add_app": "앱 추가",
             "choose_target": "대상 선택",
-            "loading": "앱 실행기 로드 중",
-            "empty": "런처 항목 없음",
-            "details": "규칙 세부정보",
-            "no_selection": "규칙을 선택하세요",
+            "loading": "불러오는 중…",
             "enabled": "활성화됨",
             "name": "이름",
             "scope": "범위",
             "target": "대상",
-            "policy": "정책",
-            "run": "실행",
-            "stop": "중지",
-            "actions": "작업",
+            "run": "VRChat 시작 시",
+            "stop": "VRChat 종료 시",
             "scope_all": "모두",
             "scope_desktop": "데스크탑",
             "scope_vr": "VR",
-            "run_policy_always": "VRChat 시작마다",
-            "run_policy_skipIfRunning": "실행 중인 경우 건너뛰기",
-            "run_policy_short_always": "모든 시작",
-            "run_policy_short_skipIfRunning": "실행 중 건너뛰기",
-            "stop_policy_keepRunning": "계속 실행",
-            "stop_policy_closeByVrcx": "VRCX-0이 종료",
-            "stop_policy_short_keepRunning": "유지",
-            "stop_policy_short_closeByVrcx": "닫기",
-            "delete": "삭제",
+            "run_policy_short_always": "매번 실행",
+            "run_policy_short_skipIfRunning": "실행 중이 아닐 때만",
+            "stop_policy_short_keepRunning": "계속 실행",
+            "stop_policy_short_closeByVrcx": "앱 닫기",
             "steam_app_id": "Steam 앱 ID",
             "delay_seconds": "실행 지연 시간(초)",
             "args": "인수",
             "run_as_administrator": "관리자 권한으로 실행",
-            "run_as_administrator_description": "이 앱을 실행할 때 Windows에서 권한을 요청합니다. 관리자 권한으로 실행한 앱은 VRChat을 종료한 뒤에도 계속 실행됩니다.",
+            "run_as_administrator_description": "실행 시 Windows가 권한을 요청합니다.",
             "run_status_waiting": "실행 대기 중",
             "run_status_running": "실행 중",
             "run_status_skipped": "건너뜀",
             "run_status_failed": "실행 실패",
             "run_status_stopped": "중지됨",
             "run_status_completed": "완료됨",
-            "run_error_elevation_required": "관리자 권한이 필요합니다(Windows 오류 {code}). 이 규칙에서 ‘관리자 권한으로 실행’을 켜세요.",
+            "run_error_elevation_required": "관리자 권한이 필요합니다(Windows 오류 {code}). ‘관리자 권한으로 실행’을 켜세요.",
             "run_error_elevation_cancelled": "관리자 권한 요청을 취소했습니다(Windows 오류 {code}).",
             "run_error_failed": "앱을 실행하지 못했습니다.",
-            "close": "닫기",
-            "save": "저장",
             "toast": {
                 "load_failed": "앱 런처를 로드하지 못했습니다.",
                 "save_failed": "앱 런처를 저장하지 못했습니다.",
-                "pick_failed": "앱 또는 바로가기를 선택하지 못했습니다.",
-                "name_target_required": "이름과 대상은 필수 항목입니다."
-            }
+                "pick_failed": "앱 또는 바로가기를 선택하지 못했습니다."
+            },
+            "stop_locked_steam": "Steam이 실행하므로 VRCX-0에서 닫을 수 없습니다.",
+            "stop_locked_admin": "관리자 권한으로 실행 중이라 VRCX-0에서 닫을 수 없습니다.",
+            "remove_app": "앱 제거",
+            "remove_confirm": "앱 실행기에서 {name}을(를) 제거할까요?",
+            "name_required": "이름을 입력하세요"
         },
         "user": {
             "status": {
@@ -4509,14 +4510,16 @@
                     "joined_at_asc": "가입일 (오래된 순)",
                     "joined_at_desc": "가입일 (최근 순)"
                 },
-                "filter": "필터:",
-                "filters": {
-                    "everyone": "모두",
-                    "users_with_no_role": "역할이 없는 유저만"
-                },
+                "filters": {},
                 "unsubscribed_announcements": "공지사항 구독 취소됨",
                 "representing": "대표",
-                "search": "검색"
+                "search": "검색",
+                "view_all": "전체",
+                "friends": "친구",
+                "loaded_of_total": "{total}명 중 {loaded}명 불러옴",
+                "search_results": "결과 {count}개",
+                "export_loaded": "불러온 항목 내보내기({count})",
+                "export_all": "전체 내보내기({count})"
             },
             "gallery": {
                 "header": "갤러리"
@@ -4568,15 +4571,12 @@
                 "group_join_request_cancelled": "그룹 가입 요청이 취소되었습니다.",
                 "group_refreshed": "그룹이 새로고침되었습니다.",
                 "group_invite_sent": "그룹 초대가 전송되었습니다.",
-                "group_post_deleted": "그룹 게시물이 삭제되었습니다.",
-                "joined_newest": "최근에 가입함",
-                "joined_oldest": "가장 오래 가입함"
+                "group_post_deleted": "그룹 게시물이 삭제되었습니다."
             },
             "action": {
                 "refresh_to_load_gallery_images": "갤러리 이미지를 로드하려면 새로고침하세요.",
                 "open_group_owner_profile": "그룹 소유자 프로필 열기",
-                "join_state": "조인 상태",
-                "load_all": "모두 로드"
+                "join_state": "조인 상태"
             },
             "toast": {
                 "failed_to_join_group": "그룹에 가입하지 못했습니다.",
@@ -4613,6 +4613,11 @@
                 "search_value": "{value} 검색",
                 "no_value": "{value} 없음",
                 "value_copied": "{value} 복사됨"
+            },
+            "role_name": {
+                "group_owner": "그룹 소유자",
+                "everyone": "전체 인원",
+                "member": "멤버"
             }
         },
         "favorite": {
@@ -4973,7 +4978,15 @@
             "scan_failed": "스크린샷 라이브러리를 스캔하지 못했습니다.",
             "thumbnail_failed": "미리보기 이미지를 사용할 수 없습니다.",
             "hide_details": "이미지 정보 숨기기",
-            "show_details": "이미지 정보 표시"
+            "show_details": "이미지 정보 표시",
+            "search_in": "{scope} 검색",
+            "grid_density": "썸네일 크기",
+            "sort": "정렬",
+            "year_group": "{year}년",
+            "sort_options": {
+                "captured_desc": "최신순",
+                "captured_asc": "오래된순"
+            }
         },
         "set_avatar_styles": {
             "header": "아바타 스타일 설정",
@@ -4987,12 +5000,12 @@
             "header": "VRChat 설정 JSON",
             "description1": "이 설정은 전문가용입니다",
             "description2": "빈 값은 기본값으로 적용되며, VRChat 재시작 후에 설정이 반영됩니다",
-            "cache_size": "캐시 크기:",
+            "cache_size": "캐시 크기",
             "refresh": "새로고침",
             "delete_cache": "캐시 삭제",
             "sweep_cache": "캐시 정리",
-            "max_cache_size": "최대 캐시 크기 [GB] (최소 30)",
-            "cache_expiry_delay": "캐시 만료 일수 [Days] (최소 30)",
+            "max_cache_size": "최대 캐시 크기 (GB)",
+            "cache_expiry_delay": "캐시 보관 (일)",
             "cache_directory": "캐시 폴더 위치",
             "cache_location_changed": "VRChat 캐시 위치 변경",
             "old_cache_cleanup_description": "이전 캐시가 {size}를 사용 중입니다. 위치를 변경하면 VRChat에서 더 이상 사용하지 않습니다. 정리할까요?",
@@ -5008,7 +5021,10 @@
             "disable_discord_presence": "디스코드 연동 (Rich Presence) 끄기",
             "vrchat_docs": "VRChat 문서",
             "cancel": "취소",
-            "save": "저장"
+            "save": "저장",
+            "section_cache": "캐시",
+            "section_pictures": "사진",
+            "section_camera": "카메라"
         },
         "youtube_api": {
             "header": "YouTube API",
@@ -5324,7 +5340,7 @@
                 "stable": "안정 버전",
                 "beta": "베타",
                 "description": "VRCX-0은 현재 설치된 채널의 업데이트만 확인합니다.",
-                "switch_description": "{channel}(으)로 전환하려면 GitHub에서 해당 채널의 최신 릴리스를 다운로드하여 설치하세요.",
+                "switch_description": "{channel}(으)로 전환하려면 해당 채널의 최신 릴리스를 다운로드하여 설치하세요.",
                 "download_stable": "최신 안정 버전 다운로드",
                 "download_beta": "최신 베타 다운로드",
                 "no_release": "이 채널에는 사용 가능한 릴리스가 없습니다."
@@ -5839,7 +5855,8 @@
             "rows_per_page": "페이지당 행 수",
             "previous": "이전",
             "next": "다음",
-            "more_pages": "더 많은 페이지"
+            "more_pages": "더 많은 페이지",
+            "page_number": "{page}페이지"
         },
         "feed": {
             "date": "날짜",
@@ -6372,5 +6389,73 @@
             "themes": "테마",
             "themes_description": "테마 소스 및 사용자 정의 CSS 관리."
         }
+    },
+    "privacy_lock": {
+        "locked_title": "잠김",
+        "field": {
+            "password": "잠금 비밀번호",
+            "current_password": "현재 잠금 비밀번호",
+            "new_password": "새 잠금 비밀번호",
+            "confirm_password": "새 잠금 비밀번호 확인",
+            "account_password": "VRChat 계정 비밀번호"
+        },
+        "action": {
+            "lock": "잠금",
+            "unlock": "잠금 해제",
+            "forgot": "잠금 비밀번호를 잊으셨나요?",
+            "back": "뒤로",
+            "set": "비밀번호 설정",
+            "change": "비밀번호 변경",
+            "clear": "비밀번호 제거",
+            "clear_link": "잠금 비밀번호 제거",
+            "clear_and_unlock": "잠금 제거",
+            "background_mode": "백그라운드 모드",
+            "logout": "로그아웃"
+        },
+        "setup": {
+            "create_title": "잠금 비밀번호 설정",
+            "create_description": "잠그면 VRCX-0가 이 4자리 코드 뒤에 가려진 채로 계속 기록합니다. 암호화가 아니라 PC를 쓰는 다른 사람이 둘러보지 못하게 막는 기능입니다.",
+            "change_title": "잠금 비밀번호 변경",
+            "change_description": "현재 잠금 비밀번호를 입력한 뒤 새 비밀번호를 정하세요.",
+            "clear_title": "잠금 비밀번호 제거",
+            "clear_description": "VRChat 계정 비밀번호를 입력하면 잠금 코드를 제거합니다. 로컬에 저장된 비밀번호와만 비교하며 VRChat 서버에 연결하지 않습니다."
+        },
+        "recover": {
+            "description": "VRChat 계정 비밀번호를 입력하면 잠금을 제거합니다. 로컬에 저장된 비밀번호와만 비교하며 VRChat 서버에 연결하지 않습니다."
+        },
+        "settings": {
+            "label": "개인정보 잠금",
+            "description": "VRCX-0가 계속 기록하는 동안 창을 잠금 비밀번호로 가립니다. 트레이 메뉴나 사이드바의 계정 메뉴에서 잠글 수 있습니다.",
+            "status_set": "비밀번호 설정됨",
+            "status_unset": "비밀번호 없음"
+        },
+        "toast": {
+            "set": "잠금 비밀번호를 설정했습니다",
+            "changed": "잠금 비밀번호를 변경했습니다",
+            "cleared": "잠금 비밀번호를 제거했습니다"
+        },
+        "error": {
+            "wrong_password": "비밀번호가 올바르지 않습니다",
+            "incomplete": "{count}자리를 모두 입력하세요",
+            "mismatch": "비밀번호가 일치하지 않습니다",
+            "current_required": "현재 잠금 비밀번호를 입력하세요",
+            "account_password_required": "VRChat 계정 비밀번호를 입력하세요",
+            "account_password_unavailable": "이 계정은 비밀번호가 저장되어 있지 않아 여기서 잠금을 제거할 수 없습니다. 앱 데이터에서 직접 정리하세요.",
+            "password_not_set": "잠금 비밀번호가 설정되어 있지 않습니다",
+            "password_already_set": "잠금 비밀번호가 이미 설정되어 있습니다",
+            "no_session": "잠금을 사용하려면 먼저 로그인하세요",
+            "failed": "잠금 작업에 실패했습니다"
+        }
+    },
+    "linux_rendering": {
+        "title": "하드웨어 가속 (실험적)",
+        "description": "VRCX-0을 다시 시작하면 적용됩니다. 켠 뒤에는 시작 후 30초 이내에 화면을 확인하세요. 확인하지 않으면 하드웨어 가속을 끄고 다시 시작합니다.",
+        "saved": "저장되었습니다. VRCX-0을 다시 시작하면 적용됩니다.",
+        "restart_now": "지금 다시 시작",
+        "confirm_title": "화면이 정상적으로 표시되나요?",
+        "confirm_description": "시작 후 30초 이내에 확인하지 않으면 VRCX-0이 하드웨어 가속을 끄고 다시 시작합니다.",
+        "restore": "호환 모드로 복원하고 다시 시작",
+        "keep": "정상적으로 표시됨, 유지",
+        "failed": "렌더링 설정을 변경하지 못했습니다. 다시 시도하세요."
     }
 }

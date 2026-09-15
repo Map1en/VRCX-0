@@ -1189,3 +1189,55 @@ fn activity_page_persistence_does_not_own_page_policy() {
         }
     }
 }
+
+#[test]
+fn blocking_tauri_commands_are_limited_to_the_main_thread_allowlist() {
+    const MAIN_THREAD_COMMANDS: &[&str] = &[
+        "app__auth_failure_notification_show",
+        "app__confirm_linux_rendering",
+        "app__desktop_notification",
+        "app__devkit_panic",
+        "app__ensure_main_window",
+        "app__exit_application",
+        "app__get_clipboard",
+        "app__get_linux_rendering",
+        "app__get_sidebar_auto_hide",
+        "app__language_changed",
+        "app__open_devtools",
+        "app__refresh_tray_menu",
+        "app__restart_application",
+        "app__set_linux_rendering",
+        "app__set_startup",
+        "app__set_taskbar_overlay_notification",
+        "app__set_tray_icon_notification",
+    ];
+
+    let mut blocking = BTreeSet::new();
+    for path in rust_sources_below("src-tauri/src/commands") {
+        let source = std::fs::read_to_string(&path).expect("read command source");
+        let lines: Vec<&str> = source.lines().collect();
+        for (index, line) in lines.iter().enumerate() {
+            if line.trim() != "#[tauri::command]" {
+                continue;
+            }
+            let signature = lines[index + 1..]
+                .iter()
+                .map(|candidate| candidate.trim_start())
+                .find(|candidate| !candidate.starts_with("#["))
+                .unwrap_or_default();
+            if let Some(name) = signature.strip_prefix("pub fn ") {
+                let name = name.split(['(', '<']).next().unwrap_or_default();
+                blocking.insert(name.to_string());
+            }
+        }
+    }
+
+    let allowed: BTreeSet<String> = MAIN_THREAD_COMMANDS
+        .iter()
+        .map(|name| name.to_string())
+        .collect();
+    assert_eq!(
+        blocking, allowed,
+        "blocking Tauri commands run on the main thread; mark the command #[tauri::command(async)], make it an async fn that offloads through commands::blocking::run_blocking, or add it to the allowlist"
+    );
+}

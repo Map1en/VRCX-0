@@ -1,4 +1,4 @@
-import { HeartIcon, PlusIcon } from 'lucide-react';
+import { PlusIcon, StarIcon } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -500,7 +500,7 @@ export function FavoriteActionMenu({
                         {actionStatus !== 'idle' ? (
                             <Spinner data-icon="inline-start" />
                         ) : (
-                            <HeartIcon
+                            <StarIcon
                                 data-icon="inline-start"
                                 className={favorited ? 'fill-current' : ''}
                             />

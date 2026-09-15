@@ -6,7 +6,7 @@ use vrcx_0_application::telemetry::TelemetryClientEvent;
 use crate::error::AppError;
 use crate::state::AppState;
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__telemetry_record_event(
     state: State<'_, AppState>,

@@ -19,8 +19,7 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 
-export const SAVED_GROUP_FAVORITES_CHANGED_EVENT =
-    'saved-group-favorites-changed';
+const SAVED_GROUP_FAVORITES_CHANGED_EVENT = 'saved-group-favorites-changed';
 
 export function SavedGroupFavoriteButton({ groupId }: { groupId: string }) {
     const { t } = useTranslation();

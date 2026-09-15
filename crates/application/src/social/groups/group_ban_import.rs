@@ -341,13 +341,7 @@ fn ensure_scope_matches(
     current: &RuntimeAuthScopeSnapshot,
     expected: &RuntimeAuthScopeSnapshot,
 ) -> Result<()> {
-    if current.generation_matches(expected) {
-        Ok(())
-    } else {
-        Err(Error::Custom(
-            "Group ban import authentication scope changed.".into(),
-        ))
-    }
+    crate::scope_gate::ensure_snapshot_scope_matches(current, expected, "Group ban import")
 }
 
 fn is_active_state(state: GroupBanImportState) -> bool {

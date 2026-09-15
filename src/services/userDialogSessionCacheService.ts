@@ -1,12 +1,12 @@
 import type { InstanceHistoryEntryOutput } from '@/platform/tauri/bindings';
 import { normalizeString } from '@/shared/utils/string';
 
-export type UserDialogPreviousDisplayName = {
+type UserDialogPreviousDisplayName = {
     displayName: string;
     updated_at?: string;
 };
 
-export type UserDialogPreviousDisplayNameSources = {
+type UserDialogPreviousDisplayNameSources = {
     friendLog: UserDialogPreviousDisplayName[];
     gameLog: UserDialogPreviousDisplayName[];
 };

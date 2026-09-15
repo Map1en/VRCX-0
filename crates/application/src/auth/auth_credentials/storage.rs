@@ -73,6 +73,20 @@ pub fn saved_credential_session_data(
         }))
 }
 
+pub(crate) fn saved_credential_password(
+    config: &dyn AuthCredentialStore,
+    user_id: &str,
+) -> Result<Option<String>> {
+    let user_id = normalize_text(user_id);
+    if user_id.is_empty() {
+        return Ok(None);
+    }
+    let saved_credentials = read_saved_credentials(config)?;
+    Ok(saved_credentials
+        .get(&user_id)
+        .and_then(|record| record.login_params.password.clone()))
+}
+
 pub fn migrate_saved_credential_secrets(config: &dyn AuthCredentialStore) -> Result<bool> {
     if !config.is_encrypting_writes() {
         return Ok(false);

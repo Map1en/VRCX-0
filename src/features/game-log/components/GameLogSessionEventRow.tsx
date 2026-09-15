@@ -166,7 +166,7 @@ function PlayerNameButton({ item }: { item: GameLogSessionMember }) {
         <Button
             type="button"
             variant="ghost"
-            className="hover:text-primary h-auto min-w-0 justify-start p-0 text-left font-medium"
+            className="hover:text-primary h-auto min-w-0 justify-start p-0 text-left font-medium hover:bg-transparent"
             onClick={() => {
                 openGameLogUser(item, t);
             }}

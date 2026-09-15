@@ -21,6 +21,7 @@ import { WindowResizeHandles } from '@/components/layout/WindowResizeHandles';
 import { cn } from '@/lib/utils';
 import { recordRouteEnter } from '@/services/telemetry/telemetryPageReach';
 import {
+    initializeWindowAlwaysOnTop,
     initializeWindowDisplayMode,
     leaveSidebarWindowModeForLogin,
     restoreSidebarWindowModeAfterLogin,
@@ -157,6 +158,12 @@ function AppRouterContent() {
         void initializeWindowDisplayMode().catch((error: unknown) => {
             console.warn(
                 'Failed to initialize the window display mode:',
+                error
+            );
+        });
+        void initializeWindowAlwaysOnTop().catch((error: unknown) => {
+            console.warn(
+                'Failed to restore the always-on-top window state:',
                 error
             );
         });

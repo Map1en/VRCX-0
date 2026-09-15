@@ -79,7 +79,7 @@ export function FriendLogEmptyState({
     return <EmptyState {...props} title={title} description={description} />;
 }
 
-export function friendLogTypeLabel(type: string, t: TFunction) {
+function friendLogTypeLabel(type: string, t: TFunction) {
     return isFriendLogType(type) ? t(`view.friend_log.filters.${type}`) : '';
 }
 
@@ -165,7 +165,7 @@ export function renderUserCell(row: FriendLogRow) {
         <Button
             type="button"
             variant="ghost"
-            className="hover:text-primary h-auto justify-start p-0 text-left text-sm font-medium"
+            className="hover:text-primary h-auto justify-start p-0 text-left text-sm font-medium hover:bg-transparent"
             onClick={() =>
                 openUserDialog({
                     userId: row.userId,

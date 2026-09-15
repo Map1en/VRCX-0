@@ -85,6 +85,8 @@ fn reads_filtered_entries_with_stable_pagination_metadata() {
             offset: Some(1),
             limit: Some(1),
             query: Some("NEEDLE".into()),
+            query_case_sensitive: None,
+            query_regex: None,
             levels: Some(vec!["debug".into(), "error".into()]),
             categories: Some(vec!["Behaviour".into()]),
         },
@@ -100,6 +102,42 @@ fn reads_filtered_entries_with_stable_pagination_metadata() {
     assert_eq!(output.total_lines, 4);
     assert_eq!(output.last_line_number, 4);
     assert!(!output.reset_required);
+    assert_eq!(
+        output
+            .level_counts
+            .expect("level counts")
+            .into_iter()
+            .map(|entry| (entry.level, entry.count))
+            .collect::<Vec<_>>(),
+        vec![
+            ("Debug".to_string(), 1),
+            ("Warning".to_string(), 0),
+            ("Error".to_string(), 1)
+        ]
+    );
+}
+
+#[test]
+fn entries_read_rejects_an_invalid_regex_query() {
+    let dir = TestDir::new("entries-regex");
+    let file_name = "output_log_2026-08-11.txt";
+    dir.write(file_name, "2026.08.11 12:00:01 Debug - [Behaviour] first\n");
+
+    let result = read_log_entries(
+        dir.path(),
+        VrchatLogEntriesReadInput {
+            file_name: file_name.into(),
+            offset: None,
+            limit: None,
+            query: Some("[unclosed".into()),
+            query_case_sensitive: None,
+            query_regex: Some(true),
+            levels: None,
+            categories: None,
+        },
+    );
+
+    assert!(result.is_err());
 }
 
 #[test]
@@ -116,6 +154,8 @@ fn tail_requests_reset_after_the_file_shrinks() {
             file_size: Some(current_size + 10),
             limit: Some(10),
             query: None,
+            query_case_sensitive: None,
+            query_regex: None,
             levels: None,
             categories: None,
         },

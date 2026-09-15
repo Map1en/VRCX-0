@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 
 import { AffinityBadge } from '@/components/affinity/AffinityBadge';
 import { Location } from '@/components/Location';
+import { buildFavoriteIdSet } from '@/domain/favorites/favoriteIdSet';
 import type { LoadStatus } from '@/domain/shared/types';
 import { describeGameLogDetail } from '@/features/game-log/gameLogRows';
 import { GAME_LOG_LIVE_REFRESH_THROTTLE_MS } from '@/features/game-log/gameLogTypes';
@@ -41,7 +42,6 @@ import { DashboardWidgetEmptyState } from './DashboardWidgetEmptyState';
 import { DashboardWidgetHeader } from './DashboardWidgetHeader';
 import { DashboardWidgetTimelineRow } from './DashboardWidgetTimeline';
 import {
-    buildFavoriteIdSet,
     getNextDashboardWidgetFilterConfig,
     isDashboardWidgetFilterActive
 } from './dashboardWidgetUtils';

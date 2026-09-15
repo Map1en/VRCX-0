@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { DEFAULT_SCREENSHOT_GRID_DENSITY } from '@/components/media/screenshotGridPreferences';
 import { useTileSelectionState } from '@/lib/useTileSelectionState';
 import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
 
@@ -99,6 +100,7 @@ export function ScreenshotSearchResultsView({
     return (
         <div className="relative flex min-h-0 flex-1 flex-col">
             <ScreenshotSelectableImageGrid
+                density={DEFAULT_SCREENSHOT_GRID_DENSITY}
                 images={images}
                 initialScrollTop={0}
                 resetKey={searchQuery}

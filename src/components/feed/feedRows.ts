@@ -96,7 +96,7 @@ export function resolveFeedUserDisplayName(
     return logDisplayName || UNKNOWN_FEED_USER_DISPLAY_NAME;
 }
 
-export function normalizePresenceState(value: unknown) {
+function normalizePresenceState(value: unknown) {
     const state = normalizeFeedId(value).toLowerCase();
     if (state === 'offline:offline' || state.startsWith('offline ')) {
         return 'offline';

@@ -1,4 +1,3 @@
-import type { FavoriteGroupMap } from '@/domain/favorites/types';
 import { normalizeStateBucket } from '@/domain/users/userFacts';
 import {
     getFriendsSortFunction,
@@ -11,8 +10,6 @@ import type { FriendLocationTimeEntry } from '@/state/friendLocationTimeStore';
 export { resolveCurrentInviteLocation } from '@/shared/utils/invite';
 import {
     buildSameInstanceFriendGroups,
-    isOnlineSameInstanceFriend,
-    resolveSameInstanceFriendLocation,
     type SameInstanceLastLocation
 } from '@/domain/friends/sameInstanceFriends';
 import type {
@@ -64,7 +61,6 @@ export type SidebarFriendRecord = FriendRecordInput &
     };
 
 export type SidebarPreferences = {
-    isHideFriendsInSameInstance?: boolean;
     isSameInstanceAboveFavorites?: boolean;
     isSidebarDivideByFriendGroup?: boolean;
     sidebarFavoriteGroupOrder?: string[];
@@ -185,24 +181,6 @@ export function clearStaleOfflineLocation(location: string, state: unknown) {
     return location;
 }
 
-export function buildFavoriteIdSet(
-    remoteFavoriteIds: readonly string[] | null | undefined,
-    localFriendFavorites: FavoriteGroupMap | null | undefined
-) {
-    const ids = new Set(
-        (remoteFavoriteIds || []).map(normalizeId).filter(Boolean)
-    );
-    for (const values of Object.values(localFriendFavorites || {})) {
-        for (const id of values) {
-            const normalized = normalizeId(id);
-            if (normalized) {
-                ids.add(normalized);
-            }
-        }
-    }
-    return ids;
-}
-
 export function resolveTrustNameColour(
     friend: SidebarFriendRecord | null | undefined,
     trustColor: TrustColorMap
@@ -226,7 +204,7 @@ export function resolveTrustNameColour(
     return getTrustColor(friend, trustColor);
 }
 
-export function legacyStatusDotClassName(status: unknown) {
+function legacyStatusDotClassName(status: unknown) {
     const normalizedStatus = userStatusFromValue(status);
     if (normalizedStatus && normalizedStatus !== 'offline') {
         return SOLID_USER_STATUS_DOT_CLASS_NAMES[normalizedStatus];
@@ -431,17 +409,6 @@ export function sortActiveRows(
 ) {
     const sortedRows = sortRows(rows, prefs);
     return [...sortedRows].sort(compareByActiveStatus);
-}
-
-export function sameInstanceLocationTag(
-    friend: SidebarFriendRecord,
-    lastLocation: LastLocationSnapshot | null | undefined
-) {
-    const source = readFriendStatusSource(friend);
-    if (!isOnlineSameInstanceFriend(source)) {
-        return '';
-    }
-    return resolveSameInstanceFriendLocation(source, lastLocation);
 }
 
 export function buildSameInstanceGroups(

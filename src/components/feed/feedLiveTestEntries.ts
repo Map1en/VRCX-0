@@ -1,4 +1,4 @@
-import type { FeedLiveEntryPayload } from './feedLiveTypes';
+import type { FeedLiveEntryPayload } from '@/state/feedLiveTypes';
 
 type FeedLiveEntryOf<T extends FeedLiveEntryPayload['type']> = Extract<
     FeedLiveEntryPayload,

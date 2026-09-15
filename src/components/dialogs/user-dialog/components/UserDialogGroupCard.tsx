@@ -1,27 +1,62 @@
-import type { TFunction } from 'i18next';
-import { EyeIcon, TagIcon, UsersIcon, UsersRoundIcon } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import {
+    CrownIcon,
+    EyeOffIcon,
+    Link2Icon,
+    TagIcon,
+    UsersIcon,
+    UsersRoundIcon
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import type { EntityRecord } from '@/domain/entities/shared';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { groupMemberVisibility } from '../userDialogGroupRows';
 import { groupDisplayName } from '../userDialogRows';
 import { rowImage } from './userDialogEntityImages';
 import { openRow } from './userDialogEntityNavigation';
 
-function visibilityLabel(visibility: string, t: TFunction) {
-    if (visibility === 'friends') {
-        return t('dialog.user.label.visibility_friends');
-    }
-    if (visibility === 'hidden') {
-        return t('dialog.user.label.visibility_hidden');
-    }
-    return t('dialog.user.label.visibility_everyone');
+export type UserGroupCardMarkers = {
+    own: ReadonlySet<string>;
+    mutual: ReadonlySet<string>;
+};
+
+function MarkerIcon({
+    icon: Icon,
+    label,
+    className = 'text-muted-foreground'
+}: {
+    icon: LucideIcon;
+    label: string;
+    className?: string;
+}) {
+    return (
+        <Tooltip>
+            <TooltipTrigger
+                render={
+                    <Icon
+                        aria-label={label}
+                        className={`size-3.5 shrink-0 ${className}`}
+                    />
+                }
+            />
+            <TooltipContent>{label}</TooltipContent>
+        </Tooltip>
+    );
 }
 
-export function UserGroupCard({ group }: { group: EntityRecord }) {
+export function UserGroupCard({
+    group,
+    isOwner = false,
+    isMutual = false
+}: {
+    group: EntityRecord;
+    isOwner?: boolean;
+    isMutual?: boolean;
+}) {
     const { t } = useTranslation();
 
     const image = rowImage(group, 'group');
@@ -40,53 +75,60 @@ export function UserGroupCard({ group }: { group: EntityRecord }) {
         ) || 0;
 
     return (
-        <div className="flex min-w-0 items-center p-1 text-sm">
-            <Button
-                type="button"
-                variant="ghost"
-                className="h-auto min-w-0 flex-1 justify-start gap-2 px-1.5 py-1.5 text-left font-normal"
-                onClick={() => openRow(group, 'group')}
-            >
-                <Avatar className="size-9 rounded-md after:rounded-md">
-                    {image ? (
-                        <AvatarImage
-                            src={image}
-                            alt=""
-                            className="rounded-md"
+        <Button
+            type="button"
+            variant="ghost"
+            className="box-border h-auto w-full min-w-0 justify-start gap-2.5 p-1.5 text-left text-sm font-normal"
+            onClick={() => openRow(group, 'group')}
+        >
+            <Avatar className="size-9 rounded-md after:rounded-md">
+                {image ? (
+                    <AvatarImage src={image} alt="" className="rounded-md" />
+                ) : null}
+                <AvatarFallback className="rounded-md [&>svg]:size-4">
+                    <UsersRoundIcon aria-hidden="true" />
+                </AvatarFallback>
+            </Avatar>
+            <span className="min-w-0 flex-1 overflow-hidden">
+                <span className="flex min-w-0 items-center gap-1 leading-5 font-medium">
+                    <span className="truncate">{label || '—'}</span>
+                    {isOwner ? (
+                        <MarkerIcon
+                            icon={CrownIcon}
+                            label={t('dialog.group.label.owner_2')}
+                            className="text-amber-400"
                         />
                     ) : null}
-                    <AvatarFallback className="rounded-md [&>svg]:size-4">
-                        <UsersRoundIcon aria-hidden="true" />
-                    </AvatarFallback>
-                </Avatar>
-                <span className="min-w-0 flex-1 overflow-hidden">
-                    <span className="block truncate leading-snug font-medium">
-                        {label || '\u2014'}
-                    </span>
-                    <span className="text-muted-foreground flex max-w-full items-center gap-1.5 overflow-hidden text-xs">
-                        {isRepresenting ? (
-                            <span className="inline-flex min-w-0 shrink items-center gap-1 truncate">
-                                <TagIcon className="size-3.5 shrink-0" />
-                                <span className="truncate">
-                                    {t('dialog.group.members.representing')}
-                                </span>
-                            </span>
-                        ) : null}
-                        {visibility !== 'visible' ? (
-                            <span className="inline-flex min-w-0 shrink items-center gap-1 truncate">
-                                <EyeIcon className="size-3.5 shrink-0" />
-                                <span className="truncate">
-                                    {visibilityLabel(visibility, t)}
-                                </span>
-                            </span>
-                        ) : null}
-                        <span className="inline-flex shrink-0 items-center gap-1 tabular-nums">
-                            <UsersIcon className="size-3.5" />
-                            {memberCount}
-                        </span>
-                    </span>
+                    {isMutual ? (
+                        <MarkerIcon
+                            icon={Link2Icon}
+                            label={t('dialog.user.groups.mutual_groups')}
+                        />
+                    ) : null}
+                    {isRepresenting ? (
+                        <MarkerIcon
+                            icon={TagIcon}
+                            label={t('dialog.group.members.representing')}
+                        />
+                    ) : null}
+                    {visibility === 'friends' ? (
+                        <MarkerIcon
+                            icon={UsersIcon}
+                            label={t('dialog.user.label.visibility_friends')}
+                        />
+                    ) : visibility === 'hidden' ? (
+                        <MarkerIcon
+                            icon={EyeOffIcon}
+                            label={t('dialog.user.label.visibility_hidden')}
+                        />
+                    ) : null}
                 </span>
-            </Button>
-        </div>
+                <span className="text-muted-foreground block truncate text-xs tabular-nums">
+                    {t('host.tools_dialogs.group_moderation.member_count', {
+                        count: memberCount
+                    })}
+                </span>
+            </span>
+        </Button>
     );
 }

@@ -37,19 +37,6 @@ export function getNotificationRelativeTime(
     return formatRelativeTime(timestamp);
 }
 
-export function getGroupDisplayName(
-    notification: NotificationRow | null | undefined
-) {
-    return (
-        notification?.title ||
-        notification?.data?.groupName ||
-        notification?.groupName ||
-        notification?.details?.groupName ||
-        notification?.senderUsername ||
-        ''
-    );
-}
-
 export function getHoverTitle(
     notification: NotificationRow | null | undefined
 ) {

@@ -15,7 +15,7 @@ pub async fn app__host_tts_voices(state: State<'_, AppState>) -> Result<Vec<TtsV
         .map_err(|error| AppError::Custom(format!("TTS voice task failed: {error}")))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__host_tts_speak(
     state: State<'_, AppState>,

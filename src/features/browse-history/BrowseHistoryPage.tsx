@@ -1,11 +1,4 @@
-import {
-    FootprintsIcon,
-    Globe2Icon,
-    PersonStandingIcon,
-    Trash2Icon,
-    UserRoundIcon,
-    UsersRoundIcon
-} from 'lucide-react';
+import { FootprintsIcon, Trash2Icon } from 'lucide-react';
 import {
     useCallback,
     useDeferredValue,
@@ -30,6 +23,7 @@ import {
 import {
     toolbarSearchDateRangeTrigger,
     ToolbarActions,
+    ToolbarOverflowMenu,
     ToolbarRefreshButton,
     ToolbarSearch,
     ToolbarTabs,
@@ -51,6 +45,7 @@ import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
+import { DropdownMenuGroup, DropdownMenuItem } from '@/ui/shadcn/dropdown-menu';
 import { Separator } from '@/ui/shadcn/separator';
 import { Tabs, TabsContent } from '@/ui/shadcn/tabs';
 import { Tooltip } from '@/ui/shadcn/tooltip';
@@ -250,26 +245,10 @@ export function BrowseHistoryPage() {
     const filterOptions = useMemo<ToolbarSegmentOption<HistoryFilter>[]>(
         () => [
             { value: 'all', label: t('browse_history.filter.all') },
-            {
-                value: 'user',
-                label: t('browse_history.filter.user'),
-                icon: UserRoundIcon
-            },
-            {
-                value: 'world',
-                label: t('browse_history.filter.world'),
-                icon: Globe2Icon
-            },
-            {
-                value: 'avatar',
-                label: t('browse_history.filter.avatar'),
-                icon: PersonStandingIcon
-            },
-            {
-                value: 'group',
-                label: t('browse_history.filter.group'),
-                icon: UsersRoundIcon
-            }
+            { value: 'user', label: t('browse_history.filter.user') },
+            { value: 'world', label: t('browse_history.filter.world') },
+            { value: 'avatar', label: t('browse_history.filter.avatar') },
+            { value: 'group', label: t('browse_history.filter.group') }
         ],
         [t]
     );
@@ -407,20 +386,22 @@ export function BrowseHistoryPage() {
                                 loading={loading || refreshing}
                                 disabled={!ownerUserId}
                             />
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                disabled={!items.length}
-                                onClick={() => void clearHistory()}
-                            >
-                                <Trash2Icon />
-                                {t(
-                                    filter === 'all'
-                                        ? 'browse_history.actions.clear_all'
-                                        : 'browse_history.actions.clear_kind'
-                                )}
-                            </Button>
+                            <ToolbarOverflowMenu>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem
+                                        variant="destructive"
+                                        disabled={!items.length}
+                                        onClick={() => void clearHistory()}
+                                    >
+                                        <Trash2Icon data-icon="inline-start" />
+                                        {t(
+                                            filter === 'all'
+                                                ? 'browse_history.actions.clear_all'
+                                                : 'browse_history.actions.clear_kind'
+                                        )}
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
+                            </ToolbarOverflowMenu>
                         </ToolbarActions>
                     </PageToolbarRow>
                 </PageToolbar>

@@ -34,7 +34,7 @@ function isRawWorldReference(value: unknown) {
     return Boolean(normalizedValue && WORLD_ID_PATTERN.test(normalizedValue));
 }
 
-export function normalizeWorldNameHint(
+function normalizeWorldNameHint(
     hint: unknown,
     parsedLocation: ParsedLocation | Record<string, unknown> | null | undefined,
     currentLocation: string
@@ -54,7 +54,7 @@ export function normalizeWorldNameHint(
     return normalizedHint;
 }
 
-export function normalizeGroupNameHint(hint: unknown, groupId: string) {
+function normalizeGroupNameHint(hint: unknown, groupId: string) {
     const normalizedHint = normalizeString(hint);
     if (!normalizedHint) {
         return '';

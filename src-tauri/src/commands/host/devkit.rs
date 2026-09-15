@@ -5,7 +5,7 @@ use tauri::State;
 use crate::error::AppError;
 use crate::state::AppState;
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__devkit_read_file(
     state: State<'_, AppState>,

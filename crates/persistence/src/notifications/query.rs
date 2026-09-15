@@ -158,6 +158,7 @@ fn notification_v1_list_item(row: NotificationV1RowOutput) -> NotificationListIt
         data: json!({}),
         responses: json!([]),
         details,
+        location: row.location,
         expired: row.expired == 1,
     }
 }
@@ -199,6 +200,7 @@ fn notification_v2_list_item(
         } else {
             json!({})
         },
+        location: String::new(),
         expired,
     }
 }
@@ -453,8 +455,9 @@ fn notification_v1_from_row(row: &[Value]) -> Result<NotificationV1RowOutput, Er
         invite_message: strict_row_string(row, 10)?,
         request_message: strict_row_string(row, 11)?,
         response_message: strict_row_string(row, 12)?,
-        expired: strict_row_i64(row, 13)?,
-        seen: strict_row_i64(row, 14)?,
+        location: strict_row_string(row, 13)?,
+        expired: strict_row_i64(row, 14)?,
+        seen: strict_row_i64(row, 15)?,
     })
 }
 fn notification_v2_from_row(row: &[Value]) -> Result<NotificationV2RowOutput, Error> {
@@ -529,6 +532,7 @@ mod tests {
             invite_message: "Join here".into(),
             request_message: "Can I join?".into(),
             response_message: "Accepted".into(),
+            location: "wrld_invite:12345".into(),
             expired: 1,
             seen: 1,
         }

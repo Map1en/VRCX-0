@@ -4,7 +4,7 @@ import type { LoadStatus } from '../shared/types';
 
 export type FriendRosterBucket = 'online' | 'active' | 'offline';
 export type FriendStateBucketAuthority = 'explicit' | 'preserve';
-export type FriendRosterLoadStatus = LoadStatus;
+type FriendRosterLoadStatus = LoadStatus;
 
 export type FriendLocationProjection = Record<string, unknown> &
     Partial<ParsedLocation> & {
@@ -93,7 +93,7 @@ export type FriendRosterOrdering = {
     orderedFriendIds: string[];
 };
 
-export type FriendRosterSnapshot = FriendRosterOrdering & {
+type FriendRosterSnapshot = FriendRosterOrdering & {
     currentUserId: string | null;
     friendsById: FriendRosterById;
     detail?: string;

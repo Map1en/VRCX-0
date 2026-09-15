@@ -20,6 +20,11 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import {
+    STATUS_BAR_TOGGLE_ACTIVE,
+    STATUS_BAR_TOGGLE_IDLE
+} from './statusBarToggle';
+
 export function DoNotDisturbMenu(): ReactElement {
     const { t } = useTranslation();
     const [updating, setUpdating] = useState(false);
@@ -79,8 +84,8 @@ export function DoNotDisturbMenu(): ReactElement {
                                     className={cn(
                                         'size-6 shrink-0 rounded-none',
                                         active
-                                            ? 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary'
-                                            : 'text-muted-foreground hover:text-muted-foreground'
+                                            ? STATUS_BAR_TOGGLE_ACTIVE
+                                            : STATUS_BAR_TOGGLE_IDLE
                                     )}
                                 >
                                     <BellOffIcon data-icon="icon" />

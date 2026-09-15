@@ -1,23 +1,35 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 
+import { useSearchPageField } from './searchPageStore';
 import type { SearchActiveTab } from './searchTypes';
 
 export function useSearchFilters() {
     const [searchParams, setSearchParams] = useSearchParams();
+    const [rememberedTab, setRememberedTab] = useSearchPageField('activeTab');
     const requestedTab = searchParams.get('tab');
-    const activeTab: SearchActiveTab =
-        requestedTab === 'avatar' ||
-        requestedTab === 'group' ||
-        requestedTab === 'world'
-            ? requestedTab
-            : 'user';
-    const [searchText, setSearchText] = useState('');
-    const [searchUserByBio, setSearchUserByBio] = useState(false);
+    let activeTab: SearchActiveTab = rememberedTab;
+    if (requestedTab !== null) {
+        activeTab =
+            requestedTab === 'avatar' ||
+            requestedTab === 'group' ||
+            requestedTab === 'world'
+                ? requestedTab
+                : 'user';
+    }
+    const [searchText, setSearchText] = useSearchPageField('searchText');
+    const [searchUserByBio, setSearchUserByBio] =
+        useSearchPageField('searchUserByBio');
     const [searchUserSortByLastLoggedIn, setSearchUserSortByLastLoggedIn] =
-        useState(false);
-    const [selectedWorldCategory, setSelectedWorldCategory] = useState('');
-    const [includeCommunityLabs, setIncludeCommunityLabs] = useState(false);
+        useSearchPageField('searchUserSortByLastLoggedIn');
+    const [selectedWorldCategory, setSelectedWorldCategory] =
+        useSearchPageField('selectedWorldCategory');
+    const [includeCommunityLabs, setIncludeCommunityLabs] = useSearchPageField(
+        'includeCommunityLabs'
+    );
+    useEffect(() => {
+        setRememberedTab(activeTab);
+    }, [activeTab, setRememberedTab]);
     const setActiveTab = (value: string) => {
         if (
             value !== 'avatar' &&
@@ -28,6 +40,7 @@ export function useSearchFilters() {
             return;
         }
 
+        setRememberedTab(value);
         const nextSearchParams = new URLSearchParams(searchParams);
         if (value === 'user') {
             nextSearchParams.delete('tab');

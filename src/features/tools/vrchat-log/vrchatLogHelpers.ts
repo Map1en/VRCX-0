@@ -7,17 +7,18 @@ import storageRepository from '@/repositories/storageRepository';
 export type VrchatLogLevel = 'Debug' | 'Warning' | 'Error';
 
 export const LOG_LEVELS: VrchatLogLevel[] = ['Debug', 'Warning', 'Error'];
-export const ALL_CATEGORY_VALUE = '__all__';
+const ALL_CATEGORY_VALUE = '__all__';
 export const PREFS_KEY = 'prefs';
 export const PAGE_LIMIT = 350;
 export const TAIL_LIMIT = 300;
-export const MAX_CLIENT_ENTRIES = 2500;
+const MAX_CLIENT_ENTRIES = 2500;
 export const FOLLOW_INTERVAL_MS = 2000;
 export const LOG_ROW_HEIGHT = 30;
 export const LOG_HEADER_HEIGHT = 30;
 export const LOG_ROW_OVERSCAN = 18;
+export const LOG_LOAD_OLDER_HEIGHT = 40;
 export const LOG_TABLE_GRID_CLASS =
-    'grid-cols-[32px_172px_78px_minmax(136px,190px)_minmax(420px,1fr)]';
+    'grid-cols-[64px_172px_78px_minmax(136px,190px)_minmax(420px,1fr)]';
 
 export const logViewerStorage = storageRepository.withPrefix('tool:vrchatLog:');
 
@@ -26,6 +27,8 @@ export type VrchatLogViewerPrefs = {
     categories?: string[];
     category?: string;
     searchQuery?: string;
+    searchCaseSensitive?: boolean;
+    searchRegex?: boolean;
     followLatest?: boolean;
     recentFileName?: string;
 };
@@ -46,6 +49,8 @@ export function normalizePrefs(value: VrchatLogViewerPrefs | null) {
               ? [value.category]
               : [],
         searchQuery: value?.searchQuery || '',
+        searchCaseSensitive: value?.searchCaseSensitive ?? false,
+        searchRegex: value?.searchRegex ?? false,
         followLatest: value?.followLatest ?? true,
         recentFileName: value?.recentFileName || ''
     };
@@ -58,7 +63,7 @@ export function fileLabel(file: VrchatLogFileOutput, latestLabel: string) {
         : `${file.fileName} (${size})`;
 }
 
-export function formatBytes(value: number) {
+function formatBytes(value: number) {
     if (!Number.isFinite(value) || value <= 0) {
         return '0 B';
     }
@@ -70,6 +75,68 @@ export function formatBytes(value: number) {
         unitIndex += 1;
     }
     return `${size >= 10 || unitIndex === 0 ? size.toFixed(0) : size.toFixed(1)} ${units[unitIndex]}`;
+}
+
+export function levelChipClassName(level: string, active: boolean) {
+    if (!active) {
+        return 'text-muted-foreground';
+    }
+    if (level === 'Error') {
+        return 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300';
+    }
+    if (level === 'Warning') {
+        return 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300';
+    }
+    return 'bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300';
+}
+
+export function buildLogHighlightMatcher(
+    query: string,
+    { caseSensitive, useRegex }: { caseSensitive: boolean; useRegex: boolean }
+) {
+    const pattern = query.trim();
+    if (!pattern) {
+        return null;
+    }
+    const flags = caseSensitive ? 'g' : 'gi';
+    try {
+        return new RegExp(
+            useRegex ? pattern : pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+            flags
+        );
+    } catch {
+        return null;
+    }
+}
+
+export function splitLogHighlight(text: string, matcher: RegExp | null) {
+    if (!matcher || !text) {
+        return [{ text, match: false }];
+    }
+
+    const segments: Array<{ text: string; match: boolean }> = [];
+    matcher.lastIndex = 0;
+    let cursor = 0;
+    let found = matcher.exec(text);
+    while (found) {
+        if (found.index > cursor) {
+            segments.push({
+                text: text.slice(cursor, found.index),
+                match: false
+            });
+        }
+        if (found[0].length) {
+            segments.push({ text: found[0], match: true });
+            cursor = found.index + found[0].length;
+        } else {
+            matcher.lastIndex += 1;
+        }
+        found = matcher.lastIndex <= text.length ? matcher.exec(text) : null;
+    }
+    if (cursor < text.length) {
+        segments.push({ text: text.slice(cursor), match: false });
+    }
+    return segments.length ? segments : [{ text, match: false }];
 }
 
 export function levelClassName(level: string) {

@@ -1,12 +1,29 @@
 import {
+    CalendarRangeIcon,
     ChevronRightIcon,
     DicesIcon,
     FolderIcon,
     RefreshCwIcon
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useDefaultLayout } from 'react-resizable-panels';
 
+import { ToolbarViewMenu } from '@/components/layout/ToolbarControls';
+import { WorkspaceResizeHandle } from '@/components/layout/WorkspaceResizeHandle';
+import {
+    readScreenshotGridDensity,
+    readScreenshotGridSort,
+    sanitizeScreenshotGridDensity,
+    sanitizeScreenshotGridSort,
+    SCREENSHOT_GRID_DENSITY_OPTIONS,
+    SCREENSHOT_GRID_SORT_OPTIONS,
+    sortScreenshotGridImages,
+    writeScreenshotGridDensity,
+    writeScreenshotGridSort,
+    type ScreenshotGridDensity,
+    type ScreenshotGridSort
+} from '@/components/media/screenshotGridPreferences';
 import { cn } from '@/lib/utils';
 import type {
     ScreenshotFolderInfo,
@@ -20,7 +37,14 @@ import {
     CollapsibleContent,
     CollapsibleTrigger
 } from '@/ui/shadcn/collapsible';
+import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
+import { ResizablePanel, ResizablePanelGroup } from '@/ui/shadcn/resizable';
 import { Skeleton } from '@/ui/shadcn/skeleton';
+import {
+    ToggleGroup,
+    ToggleGroupItem,
+    ToggleGroupSeparator
+} from '@/ui/shadcn/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { pickRandomScreenshotPath } from '../screenshotMetadataValues';
@@ -35,6 +59,7 @@ type ScreenshotBrowseSelection = ReturnType<
 >;
 
 type FolderTreeNodeModel = ScreenshotFolderInfo & {
+    synthetic?: boolean;
     children: FolderTreeNodeModel[];
 };
 
@@ -77,9 +102,81 @@ function buildFolderTree(folderTree: ScreenshotFolderTree | null) {
         node.children.sort((left, right) =>
             String(left.name || '').localeCompare(String(right.name || ''))
         );
+        node.children = groupChildrenByYear(node);
     }
 
     return root;
+}
+
+const SCREENSHOT_GALLERY_LAYOUT_ID = 'screenshot-gallery-layout';
+const SCREENSHOT_GALLERY_FOLDER_PANEL_ID = 'screenshot-gallery-folders';
+const SCREENSHOT_GALLERY_CONTENT_PANEL_ID = 'screenshot-gallery-content';
+const SCREENSHOT_GALLERY_PANEL_IDS = [
+    SCREENSHOT_GALLERY_FOLDER_PANEL_ID,
+    SCREENSHOT_GALLERY_CONTENT_PANEL_ID
+];
+
+const MONTH_FOLDER_PATTERN = /^(\d{4})-(\d{2})$/;
+
+function groupChildrenByYear(
+    parent: FolderTreeNodeModel
+): FolderTreeNodeModel[] {
+    const monthsByYear = new Map<string, FolderTreeNodeModel[]>();
+    const passthrough: FolderTreeNodeModel[] = [];
+
+    for (const child of parent.children) {
+        const match = String(child.name || '').match(MONTH_FOLDER_PATTERN);
+        if (!match || child.children.length) {
+            passthrough.push(child);
+            continue;
+        }
+        const year = match[1];
+        const bucket = monthsByYear.get(year);
+        if (bucket) {
+            bucket.push(child);
+        } else {
+            monthsByYear.set(year, [child]);
+        }
+    }
+
+    const groups: FolderTreeNodeModel[] = [];
+    for (const [year, months] of monthsByYear) {
+        if (months.length < 2) {
+            passthrough.push(...months);
+            continue;
+        }
+        months.sort((left, right) =>
+            String(right.name || '').localeCompare(String(left.name || ''))
+        );
+        groups.push({
+            path: `${parent.path}::year:${year}`,
+            parentPath: parent.path,
+            name: year,
+            imageCount: months.reduce(
+                (total, month) => total + month.imageCount,
+                0
+            ),
+            totalImageCount: months.reduce(
+                (total, month) => total + month.totalImageCount,
+                0
+            ),
+            latestModifiedAt: null,
+            synthetic: true,
+            children: months
+        });
+    }
+
+    if (!groups.length) {
+        return parent.children;
+    }
+
+    groups.sort((left, right) =>
+        String(right.name || '').localeCompare(String(left.name || ''))
+    );
+    passthrough.sort((left, right) =>
+        String(left.name || '').localeCompare(String(right.name || ''))
+    );
+    return [...groups, ...passthrough];
 }
 
 function folderContainsSelected(
@@ -106,11 +203,15 @@ function FolderTreeNode({
     selectedFolder: string;
     onSelectFolder: (folder: string) => void;
 }) {
+    const { t } = useTranslation();
     const containsSelected = folderContainsSelected(node, selectedFolder);
     const [open, setOpen] = useState(() => containsSelected);
-    const selected = node.path === selectedFolder;
+    const selected = !node.synthetic && node.path === selectedFolder;
     const hasChildren = Boolean(node.children?.length);
     const selectedRowRef = useRef<HTMLButtonElement | null>(null);
+    const label = node.synthetic
+        ? t('dialog.screenshot_metadata.year_group', { year: node.name })
+        : node.name;
 
     useEffect(() => {
         if (containsSelected) {
@@ -135,7 +236,11 @@ function FolderTreeNode({
             size="sm"
             className="w-full min-w-0 justify-start transition-none"
             aria-current={selected ? 'location' : undefined}
-            onClick={() => onSelectFolder(node.path)}
+            onClick={
+                node.synthetic
+                    ? () => setOpen((current) => !current)
+                    : () => onSelectFolder(node.path)
+            }
         >
             {hasChildren ? (
                 <ChevronRightIcon
@@ -148,9 +253,22 @@ function FolderTreeNode({
             ) : (
                 <span aria-hidden="true" className="size-3.5 shrink-0" />
             )}
-            <FolderIcon data-icon="inline-start" />
-            <span className="truncate text-left" title={node.name}>
-                {node.name}
+            {node.synthetic ? (
+                <CalendarRangeIcon
+                    data-icon="inline-start"
+                    className="text-muted-foreground"
+                />
+            ) : (
+                <FolderIcon data-icon="inline-start" />
+            )}
+            <span
+                className={cn(
+                    'truncate text-left',
+                    node.synthetic && 'text-muted-foreground'
+                )}
+                title={label}
+            >
+                {label}
             </span>
             {node.imageCount > 0 && (
                 <span
@@ -187,6 +305,7 @@ function FolderTreeNode({
 }
 
 function ScreenshotGalleryGrid({
+    density,
     error,
     initialScrollTop,
     images,
@@ -198,6 +317,7 @@ function ScreenshotGalleryGrid({
     onToggleSelect,
     onScrollPositionChange
 }: {
+    density: ScreenshotGridDensity;
     error: string;
     initialScrollTop: number;
     images: ScreenshotLibraryImage[];
@@ -245,6 +365,7 @@ function ScreenshotGalleryGrid({
 
     return (
         <ScreenshotSelectableImageGrid
+            density={density}
             images={images}
             initialScrollTop={initialScrollTop}
             resetKey={selectedFolder}
@@ -258,6 +379,90 @@ function ScreenshotGalleryGrid({
                 }
             }}
         />
+    );
+}
+
+function ScreenshotGridOptionField<TValue extends string>({
+    label,
+    options,
+    value,
+    onValueChange
+}: {
+    label: string;
+    options: ReadonlyArray<{ value: TValue; labelKey: string }>;
+    value: TValue;
+    onValueChange: (next: string) => void;
+}) {
+    const { t } = useTranslation();
+
+    return (
+        <Field>
+            <FieldLabel>{label}</FieldLabel>
+            <ToggleGroup
+                variant="outline"
+                size="sm"
+                value={[value]}
+                onValueChange={(nextValue) => {
+                    const next = nextValue[0];
+                    if (next) {
+                        onValueChange(next);
+                    }
+                }}
+                className="w-full [&>[data-slot=toggle]]:min-w-0 [&>[data-slot=toggle]]:flex-1"
+            >
+                {options.map((option, index) => (
+                    <Fragment key={option.value}>
+                        {index > 0 ? <ToggleGroupSeparator /> : null}
+                        <ToggleGroupItem
+                            value={option.value}
+                            aria-label={t(option.labelKey)}
+                            className="w-full min-w-0 justify-center px-2"
+                        >
+                            <span className="truncate">
+                                {t(option.labelKey)}
+                            </span>
+                        </ToggleGroupItem>
+                    </Fragment>
+                ))}
+            </ToggleGroup>
+        </Field>
+    );
+}
+
+function ScreenshotGridSettingsMenu({
+    density,
+    sort,
+    onDensityChange,
+    onSortChange
+}: {
+    density: ScreenshotGridDensity;
+    sort: ScreenshotGridSort;
+    onDensityChange: (value: ScreenshotGridDensity) => void;
+    onSortChange: (value: ScreenshotGridSort) => void;
+}) {
+    const { t } = useTranslation();
+
+    return (
+        <ToolbarViewMenu contentClassName="p-3">
+            <FieldGroup>
+                <ScreenshotGridOptionField
+                    label={t('dialog.screenshot_metadata.grid_density')}
+                    options={SCREENSHOT_GRID_DENSITY_OPTIONS}
+                    value={density}
+                    onValueChange={(next) =>
+                        onDensityChange(sanitizeScreenshotGridDensity(next))
+                    }
+                />
+                <ScreenshotGridOptionField
+                    label={t('dialog.screenshot_metadata.sort')}
+                    options={SCREENSHOT_GRID_SORT_OPTIONS}
+                    value={sort}
+                    onValueChange={(next) =>
+                        onSortChange(sanitizeScreenshotGridSort(next))
+                    }
+                />
+            </FieldGroup>
+        </ToolbarViewMenu>
     );
 }
 
@@ -297,6 +502,16 @@ export function ScreenshotGalleryView({
     onExportSelection: (paths: string[], groupByFolder: boolean) => void;
 }) {
     const { t } = useTranslation();
+    const layout = useDefaultLayout({
+        id: SCREENSHOT_GALLERY_LAYOUT_ID,
+        panelIds: SCREENSHOT_GALLERY_PANEL_IDS
+    });
+    const [density, setDensity] = useState(readScreenshotGridDensity);
+    const [sort, setSort] = useState(readScreenshotGridSort);
+    const sortedImages = useMemo(
+        () => sortScreenshotGridImages(images, sort),
+        [images, sort]
+    );
     const root = useMemo(() => buildFolderTree(folderTree), [folderTree]);
     const activeFolder =
         folderTree?.folders.find((folder) => folder.path === selectedFolder) ||
@@ -305,9 +520,31 @@ export function ScreenshotGalleryView({
         selectedFolder || activeFolder?.path || folderTree?.rootPath || '';
     useClearSelectionOnEscape(selection.hasSelection, selection.clearSelection);
 
+    function onDensityChange(next: ScreenshotGridDensity) {
+        setDensity(next);
+        writeScreenshotGridDensity(next);
+    }
+
+    function onSortChange(next: ScreenshotGridSort) {
+        setSort(next);
+        writeScreenshotGridSort(next);
+    }
+
     return (
-        <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(160px,240px)_minmax(0,1fr)] overflow-hidden lg:grid-cols-[minmax(200px,260px)_minmax(0,1fr)] lg:grid-rows-none xl:grid-cols-[minmax(220px,280px)_minmax(0,1fr)]">
-            <aside className="border-border flex min-h-0 min-w-0 flex-col overflow-hidden border-b pb-3 lg:border-r lg:border-b-0 lg:pr-3 lg:pb-0">
+        <ResizablePanelGroup
+            id={SCREENSHOT_GALLERY_LAYOUT_ID}
+            orientation="horizontal"
+            className="min-h-0 flex-1 overflow-hidden"
+            defaultLayout={layout.defaultLayout}
+            onLayoutChanged={layout.onLayoutChanged}
+        >
+            <ResizablePanel
+                id={SCREENSHOT_GALLERY_FOLDER_PANEL_ID}
+                defaultSize="22"
+                minSize="14"
+                maxSize="40"
+                className="flex min-h-0 min-w-0 flex-col overflow-hidden pr-3"
+            >
                 <div className="flex shrink-0 items-center gap-2 px-1 pb-2">
                     <div className="text-sm font-medium">
                         {t('dialog.screenshot_metadata.folders')}
@@ -360,8 +597,13 @@ export function ScreenshotGalleryView({
                         />
                     )}
                 </nav>
-            </aside>
-            <section className="relative flex min-h-0 min-w-0 flex-col gap-3 pt-3 lg:pt-0 lg:pl-4">
+            </ResizablePanel>
+            <WorkspaceResizeHandle />
+            <ResizablePanel
+                id={SCREENSHOT_GALLERY_CONTENT_PANEL_ID}
+                minSize="40"
+                className="relative flex min-h-0 min-w-0 flex-col gap-3 pl-3"
+            >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <Tooltip disabled={!activeFolderPath}>
                         <TooltipTrigger render={<div className="min-w-0" />}>
@@ -398,12 +640,19 @@ export function ScreenshotGalleryView({
                             <DicesIcon data-icon="inline-start" />
                             {t('dialog.screenshot_metadata.feeling_lucky')}
                         </Button>
+                        <ScreenshotGridSettingsMenu
+                            density={density}
+                            sort={sort}
+                            onDensityChange={onDensityChange}
+                            onSortChange={onSortChange}
+                        />
                     </div>
                 </div>
                 <ScreenshotGalleryGrid
+                    density={density}
                     error={error}
                     initialScrollTop={restoreScrollTop}
-                    images={images}
+                    images={sortedImages}
                     isLoading={isImagesLoading}
                     selectedFolder={selectedFolder}
                     hasSelection={selection.hasSelection}
@@ -430,7 +679,7 @@ export function ScreenshotGalleryView({
                             )
                     }}
                 />
-            </section>
-        </div>
+            </ResizablePanel>
+        </ResizablePanelGroup>
     );
 }

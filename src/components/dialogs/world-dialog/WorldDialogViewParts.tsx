@@ -6,6 +6,7 @@ import type {
     WorldProfileRecord
 } from '@/domain/entities/world';
 import type { InstanceRosterRow } from '@/domain/instances/instanceRoster';
+import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
 import { parseLocation } from '@/shared/utils/location';
 import { isRecord } from '@/shared/utils/record';
 import {
@@ -15,19 +16,13 @@ import {
     EmptyTitle
 } from '@/ui/shadcn/empty';
 
-import {
-    firstText,
-    isGroupId,
-    normalizeInstanceUsers
-} from './WorldDialogInstanceUsers';
+import { firstText, normalizeInstanceUsers } from './WorldDialogInstanceUsers';
 import type { WorldInstanceRecord } from './worldInstances';
 
 export {
     firstText,
     InstanceUserTiles,
-    isGroupId,
-    mergeInstanceUsers,
-    normalizeInstanceUsers
+    mergeInstanceUsers
 } from './WorldDialogInstanceUsers';
 
 export type InstanceGroupRecord = EntityRecord & {
@@ -112,7 +107,7 @@ export function groupSeed(value: unknown) {
         return null;
     }
     const groupId = firstText(value.groupId, value.group_id, value.id);
-    return isGroupId(groupId) ? value : null;
+    return hasGroupIdPrefix(groupId) ? value : null;
 }
 
 export function normalizeInstanceGroup(
@@ -157,7 +152,7 @@ export function normalizeInstanceGroup(
         nestedGroup.id,
         nestedGroup.groupId,
         nestedGroup.group_id,
-        isGroupId(value.id) ? value.id : '',
+        hasGroupIdPrefix(value.id) ? value.id : '',
         fallbackId
     );
     if (!groupId) {
@@ -304,7 +299,7 @@ export function resolveInstanceRows(
                     group.groupId,
                     parsedEntryLocation.groupId
                 );
-                const creatorIsGroup = isGroupId(creatorId);
+                const creatorIsGroup = hasGroupIdPrefix(creatorId);
                 const creatorEntity = recordOrNull(
                     locationData.ownerUser ||
                         locationData.owner ||

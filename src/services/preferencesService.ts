@@ -12,7 +12,6 @@ export {
     setCloseToTrayPreference,
     setCropInstancePrintsPreference,
     setDataTableStripedPreference,
-    setFeedHiddenUsersPreference,
     setFeedPersistenceDisabledPreference,
     setGameLogPersistenceDisabledPreference,
     setIntConfigPreference,
@@ -64,17 +63,6 @@ export {
 export { loadPreferenceSnapshot } from './preferences/preferenceSnapshotLoader';
 export type {
     BoolConfigPreferenceKey,
-    ConfigKeyAlias,
-    ConfigKeyOfType,
     IntConfigPreferenceKey,
-    IntConfigPreferenceOptions,
-    PreferenceConfigKeyOfType,
-    PreferenceKey,
-    PreferencesSnapshot,
-    ProxyPreferenceOptions,
-    ProxyServerPreferenceOptions,
-    StorePreferenceConfigKey,
-    StringConfigPreferenceKey,
-    TableLimitsPreference,
-    TranslationApiConfigPreferenceInput
+    StringConfigPreferenceKey
 } from './preferences/preferencesTypes';

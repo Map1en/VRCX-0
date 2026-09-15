@@ -1,6 +1,5 @@
 import type { TFunction } from 'i18next';
 
-import type { GroupMemberRow } from '@/domain/entities/group';
 import type { EntityRecord } from '@/domain/entities/shared';
 
 import type { EntityDialogTab } from '../EntityDialogScaffold';
@@ -27,28 +26,6 @@ export function filterGroupPosts(posts: EntityRecord[], queryValue: string) {
     }
     return posts.filter((post) =>
         [post.title, post.text, post.authorId].some((value) =>
-            String(value || '')
-                .toLowerCase()
-                .includes(query)
-        )
-    );
-}
-
-export function filterGroupMembers(
-    members: GroupMemberRow[],
-    queryValue: string
-) {
-    const query = queryValue.trim().toLowerCase();
-    if (!query) {
-        return members;
-    }
-    return members.filter((member) =>
-        [
-            member?.user?.displayName,
-            member?.displayName,
-            member?.userId,
-            member?.user?.id
-        ].some((value) =>
             String(value || '')
                 .toLowerCase()
                 .includes(query)

@@ -25,11 +25,11 @@ import {
     DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
     DATA_TABLE_PRIMARY_CELL_CLASS_NAME
 } from '@/components/data-table/DataTableView';
+import { BioLinkFavicon } from '@/components/media/BioLinkFavicon';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { getNameColour, openExternalLink } from '@/services/entityMediaService';
-import { getFaviconUrl } from '@/shared/utils/urlUtils';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { Button } from '@/ui/shadcn/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
@@ -294,7 +294,6 @@ function BioLinksCell({ row }: { row: AppRow<PlayerListRow> }) {
         <div className="flex items-center gap-1">
             {row.original.bioLinks.length
                 ? row.original.bioLinks.map((link, index) => {
-                      const faviconUrl = getFaviconUrl(link);
                       const linkLabel = String(link ?? '');
 
                       return (
@@ -314,16 +313,12 @@ function BioLinksCell({ row }: { row: AppRow<PlayerListRow> }) {
                                               openExternalLink(link);
                                           }}
                                       >
-                                          {faviconUrl ? (
-                                              <FadeInImage
-                                                  src={faviconUrl}
-                                                  alt=""
-                                                  className="size-4"
-                                                  fallback={null}
-                                              />
-                                          ) : (
-                                              <ExternalLinkIcon data-icon="inline-start" />
-                                          )}
+                                          <BioLinkFavicon
+                                              link={link}
+                                              fallback={
+                                                  <ExternalLinkIcon data-icon="inline-start" />
+                                              }
+                                          />
                                       </Button>
                                   }
                               />

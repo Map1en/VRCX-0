@@ -165,7 +165,7 @@ export function SettingsSectionHeading({
     );
 }
 
-export { FieldDescription, FieldError, FieldGroup };
+export { FieldGroup };
 
 export function SegmentedPreference({
     options,

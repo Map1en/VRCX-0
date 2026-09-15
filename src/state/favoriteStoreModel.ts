@@ -8,7 +8,7 @@ import type {
     RemoteFavoriteCollections
 } from '@/domain/favorites/types';
 
-export const DEFAULT_FAVORITE_LIMITS = Object.freeze({
+const DEFAULT_FAVORITE_LIMITS = Object.freeze({
     maxFavoriteGroups: Object.freeze({
         avatar: 6,
         friend: 3,

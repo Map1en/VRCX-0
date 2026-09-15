@@ -92,7 +92,7 @@ export function DialogHost() {
                         isWorldDialog ||
                         isGroupDialog ||
                         isAvatarDialog
-                        ? 'sm:w-[min(96vw,72rem)] sm:!max-w-[min(96vw,72rem)]'
+                        ? 'entity-dialog bg-(--entity-dialog-ground) sm:w-[min(96vw,72rem)] sm:!max-w-[min(96vw,72rem)]'
                         : 'sm:w-[65rem] sm:!max-w-[65rem]',
                     isOwnerDialog && 'owner-dialog'
                 )}

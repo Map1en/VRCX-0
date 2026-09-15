@@ -270,6 +270,27 @@ fn seen_v1_friend_request_stays_seen_when_remote_sync_keeps_it_active() -> Resul
 }
 
 #[test]
+fn instance_closed_keeps_its_location_after_a_reload() -> Result<(), Error> {
+    let (_dir, db) = test_db("instance-closed-location")?;
+    let user_id = "usr_owner";
+    notification_add_v1(
+        &db,
+        user_id.into(),
+        json!({
+            "id": "notif_instance_closed",
+            "created_at": "2026-09-07T02:27:00Z",
+            "type": "instance.closed",
+            "location": "wrld_home:12345"
+        }),
+    )?;
+
+    let rows = query(&db, user_id, 10, 10, true)?;
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].location, "wrld_home:12345");
+    Ok(())
+}
+
+#[test]
 fn unseen_indicator_matches_frontend_action_required_rules() -> Result<(), Error> {
     let (_dir, db) = test_db("unseen-indicator")?;
     let user_id = "usr_owner";

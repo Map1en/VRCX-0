@@ -5,6 +5,7 @@ mod background_auth_recovery;
 mod cookie_session;
 mod login_session;
 mod noninteractive_auth;
+mod privacy_lock;
 mod runtime_phase;
 mod session_projection;
 #[cfg(test)]
@@ -41,6 +42,9 @@ pub use noninteractive_auth::{
     AuthenticatedRuntimeSession, CookieSessionProbe, NonInteractiveAuthActions,
     NonInteractiveAuthError, NonInteractiveAuthProbeFuture, NonInteractiveAuthResponseFuture,
     NonInteractiveAuthRuntime,
+};
+pub use privacy_lock::{
+    verify_saved_account_password, PrivacyLockPasswordCheck, PrivacyLockRecord, PrivacyLockStore,
 };
 pub use runtime_phase::{
     AuthenticatedRuntimePhase, AuthenticatedRuntimePhaseSnapshot, AuthenticatedRuntimeStepSnapshot,

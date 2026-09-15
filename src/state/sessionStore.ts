@@ -83,4 +83,4 @@ export const useSessionStore = create<SessionState>((set) => ({
         set({ transportStatus });
     }
 }));
-export type { BootStatus, SessionPhase, SessionState, TransportStatus };
+export type { SessionPhase, SessionState };

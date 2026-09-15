@@ -54,6 +54,7 @@ import {
 import { isFriendProfileLoadStatusVisible } from './statusBarFriendProfileLoad';
 import { StatusDot, StatusSegment } from './StatusBarParts';
 import { resolveProxyIndicatorState } from './statusBarProxy';
+import { STATUS_BAR_TOGGLE_IDLE } from './statusBarToggle';
 import type {
     StatusBarFooterProps,
     StatusBarFriendProfileLoad,
@@ -321,7 +322,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                                 )}
                                 className={cn(
                                     'size-6 shrink-0 rounded-none',
-                                    'text-muted-foreground hover:text-muted-foreground'
+                                    STATUS_BAR_TOGGLE_IDLE
                                 )}
                                 onClick={onStartBackgroundMode}
                             >
@@ -368,12 +369,6 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                 <div className="flex min-h-6 flex-col gap-1 overflow-hidden @2xl/statusbar:flex-row @2xl/statusbar:items-center @2xl/statusbar:justify-between">
                     <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
                         {connections}
-                        <StatusSegment
-                            visible={visibility.steamvr}
-                            active={Boolean(isSteamVRRunning)}
-                            dimWhenInactive
-                            label="SteamVR"
-                        />
                         <StatusSegment
                             visible={visibility.vrchat}
                             active={Boolean(isGameRunning)}
@@ -466,6 +461,12 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
                                     )}
                                 </div>
                             }
+                        />
+                        <StatusSegment
+                            visible={visibility.steamvr}
+                            active={Boolean(isSteamVRRunning)}
+                            dimWhenInactive
+                            label="SteamVR"
                         />
                         <StatusSegment
                             visible={

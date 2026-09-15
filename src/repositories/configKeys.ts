@@ -1,6 +1,6 @@
 import { DEFAULT_GENERIC_WEBHOOK_FIELDS } from '@/shared/constants/webhook';
 
-export type ConfigValueType = 'string' | 'int' | 'bool' | 'float';
+type ConfigValueType = 'string' | 'int' | 'bool' | 'float';
 export type ConfigDefaultValue = string | number | boolean | null;
 
 export interface ConfigKeyDefinition {
@@ -37,7 +37,6 @@ export const ConfigKeys = defineConfigKeys({
     sidebarGroupByInstance: { type: 'bool', default: true },
     sidebarGroupByInstanceCollapsed: { type: 'bool', default: false },
     sidebarFavoriteGroups: { type: 'string', default: null },
-    isHideFriendsInSameInstance: { type: 'bool', default: false },
     isSameInstanceAboveFavorites: { type: 'bool', default: false },
     isSidebarDivideByFriendGroup: { type: 'bool', default: false },
     rightSidebarOpen: { type: 'bool', default: true },

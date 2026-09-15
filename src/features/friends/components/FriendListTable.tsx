@@ -130,7 +130,7 @@ export function FriendListTable({
                 />
             ) : hasRows ? (
                 <>
-                    <DataTableSurface>
+                    <DataTableSurface className="is-compact-table">
                         <DataTableScrollArea>
                             <DataTableColumnDndProvider table={table}>
                                 <Table

@@ -15,6 +15,7 @@
         "core:window:allow-set-size",
         "core:window:allow-set-size-constraints",
         "core:window:allow-set-maximizable",
+        "core:window:allow-set-always-on-top",
         "core:window:allow-close",
         "core:window:allow-set-focus",
         "core:window:allow-request-user-attention",

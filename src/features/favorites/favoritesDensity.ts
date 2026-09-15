@@ -2,7 +2,7 @@ import type { FavoriteKind } from '@/domain/favorites/types';
 
 export type FavoritesDensity = 'standard' | 'compact';
 
-export const FAVORITES_GROUP_LABEL_EXTRA_HEIGHT = 16;
+const FAVORITES_GROUP_LABEL_EXTRA_HEIGHT = 16;
 
 export const FAVORITES_DENSITY_OPTIONS = Object.freeze([
     {
@@ -23,7 +23,7 @@ export const DEFAULT_FAVORITES_DENSITY_BY_KIND: Readonly<
     avatar: 'standard'
 });
 
-export type FavoritesCoverDensityConfig = Readonly<{
+type FavoritesCoverDensityConfig = Readonly<{
     value: FavoritesDensity;
     layout: 'cover';
     gridMinWidth: number;
@@ -32,7 +32,7 @@ export type FavoritesCoverDensityConfig = Readonly<{
     imageAspectRatio: number;
 }>;
 
-export type FavoritesRowDensityConfig = Readonly<{
+type FavoritesRowDensityConfig = Readonly<{
     value: FavoritesDensity;
     layout: 'row';
     gridMinWidth: number;

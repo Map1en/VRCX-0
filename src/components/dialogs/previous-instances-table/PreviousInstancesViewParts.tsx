@@ -6,14 +6,26 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { AffinityBadge } from '@/components/affinity/AffinityBadge';
+import type { AppColumnDef } from '@/components/data-table/appTable';
+import { useAppTable } from '@/components/data-table/appTable';
 import {
+    getDataTableStorageKey,
+    readPersistedTableState,
+    usePersistedTableColumnSizing,
+    writePersistedTableState
+} from '@/components/data-table/dataTablePersistence';
+import { DataTableHeaderLabel } from '@/components/data-table/DataTableSortButton';
+import {
+    DATA_TABLE_EMPTY_VALUE,
     DATA_TABLE_NUMERIC_CELL_CLASS_NAME,
-    DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
+    DATA_TABLE_PRIMARY_CELL_CLASS_NAME,
     DataTableCell,
-    DataTableHead,
-    DataTableHeaderRow,
-    DataTableRow
+    DataTableColumnSizeColGroup,
+    DataTableHeader,
+    DataTableRow,
+    getDataTableSizingStyle
 } from '@/components/data-table/DataTableView';
+import { ResizableTableCell } from '@/components/data-table/ResizableTableParts';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import {
     PageBackButton,
@@ -60,7 +72,7 @@ import {
     EmptyTitle
 } from '@/ui/shadcn/empty';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { Table, TableBody, TableHeader } from '@/ui/shadcn/table';
+import { Table, TableBody } from '@/ui/shadcn/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { PreviousInstanceInfoChart } from './PreviousInstanceInfoChart';
@@ -83,6 +95,24 @@ import type {
 } from './previousInstancesRows';
 
 const DETAILS_LOADING_INDICATOR_DELAY_MS = 150;
+
+const PREVIOUS_INSTANCE_PLAYERS_STORAGE_KEY = getDataTableStorageKey(
+    'previousInstancePlayers'
+);
+
+const PREVIOUS_INSTANCE_PLAYER_COLUMN_IDS = [
+    'displayName',
+    'visits',
+    'joined',
+    'left',
+    'time'
+];
+
+function writePersistedPreviousInstancePlayersState(
+    patch: Record<string, unknown>
+) {
+    writePersistedTableState(PREVIOUS_INSTANCE_PLAYERS_STORAGE_KEY, patch);
+}
 
 type PreviousInstancePlayerClockRow = Parameters<typeof playerJoinMs>[0];
 
@@ -226,14 +256,18 @@ export function InstanceOwnerCell({
     );
 
     if (!userId) {
-        return <span className="text-muted-foreground">-</span>;
+        return (
+            <span className="text-content-tertiary">
+                {DATA_TABLE_EMPTY_VALUE}
+            </span>
+        );
     }
 
     return (
         <Button
             type="button"
             variant="ghost"
-            className="hover:text-primary h-auto max-w-full justify-start p-0 text-left text-xs"
+            className="hover:text-primary h-auto max-w-full justify-start p-0 text-left text-xs hover:bg-transparent"
             onClick={() =>
                 openUserDialog({
                     userId,
@@ -265,7 +299,11 @@ function PreviousInstancePlayerNameButton({
     const canOpenUser = Boolean(userId || displayName);
 
     if (!canOpenUser) {
-        return <span className="text-muted-foreground">-</span>;
+        return (
+            <span className="text-content-tertiary">
+                {DATA_TABLE_EMPTY_VALUE}
+            </span>
+        );
     }
 
     return (
@@ -278,7 +316,7 @@ function PreviousInstancePlayerNameButton({
             <Button
                 type="button"
                 variant="ghost"
-                className="hover:text-primary h-auto max-w-full min-w-0 justify-start p-0 text-left font-normal"
+                className="hover:text-primary h-auto max-w-full min-w-0 justify-start p-0 text-left hover:bg-transparent"
                 onClick={() => {
                     if (userId) {
                         openUserDialog({
@@ -293,6 +331,224 @@ function PreviousInstancePlayerNameButton({
             >
                 <span className="truncate">{displayName || userId}</span>
             </Button>
+        </div>
+    );
+}
+
+function resolvePlayerDisplayName(
+    player: PreviousInstancePlayerRow,
+    knownPlayersById: Record<string, PreviousInstanceKnownUser>
+) {
+    const userId = playerUserId(player);
+    const displayName = playerDisplayName(player);
+    if (
+        displayName &&
+        displayName !== '-' &&
+        displayName !== '\u2014' &&
+        displayName !== userId
+    ) {
+        return displayName;
+    }
+    const knownUser = knownPlayersById[userId];
+    return (
+        knownUser?.displayName ||
+        knownUser?.username ||
+        displayName ||
+        userId ||
+        '-'
+    );
+}
+
+function usePreviousInstancePlayerColumns({
+    knownPlayersById,
+    friendsById,
+    favoriteIdSet,
+    instanceStartMs
+}: {
+    knownPlayersById: Record<string, PreviousInstanceKnownUser>;
+    friendsById: Record<string, unknown>;
+    favoriteIdSet: Set<string>;
+    instanceStartMs: number;
+}) {
+    const { t } = useTranslation();
+    return useMemo<AppColumnDef<PreviousInstancePlayerRow>[]>(
+        () => [
+            {
+                id: 'displayName',
+                enableSorting: false,
+                minSize: 120,
+                size: 220,
+                meta: {
+                    label: t('table.previous_instances.display_name'),
+                    stretch: true,
+                    tableCellClassName: DATA_TABLE_PRIMARY_CELL_CLASS_NAME
+                },
+                header: () => (
+                    <DataTableHeaderLabel>
+                        {t('table.previous_instances.display_name')}
+                    </DataTableHeaderLabel>
+                ),
+                cell: ({ row }) => (
+                    <PreviousInstancePlayerNameButton
+                        player={row.original}
+                        displayName={resolvePlayerDisplayName(
+                            row.original,
+                            knownPlayersById
+                        )}
+                        knownUser={knownPlayersById[playerUserId(row.original)]}
+                        isFriend={Boolean(
+                            friendsById[playerUserId(row.original)]
+                        )}
+                        isFavorite={favoriteIdSet.has(
+                            playerUserId(row.original)
+                        )}
+                    />
+                )
+            },
+            {
+                id: 'visits',
+                enableSorting: false,
+                minSize: 60,
+                size: 80,
+                meta: {
+                    label: t('dialog.world.info.visits'),
+                    tableCellClassName: DATA_TABLE_NUMERIC_CELL_CLASS_NAME
+                },
+                header: () => (
+                    <DataTableHeaderLabel>
+                        {t('dialog.world.info.visits')}
+                    </DataTableHeaderLabel>
+                ),
+                cell: ({ row }) => String(row.original?.count || '-')
+            },
+            {
+                id: 'joined',
+                enableSorting: false,
+                minSize: 80,
+                size: 128,
+                meta: { label: t('table.previous_instances.joined') },
+                header: () => (
+                    <DataTableHeaderLabel>
+                        {t('table.previous_instances.joined')}
+                    </DataTableHeaderLabel>
+                ),
+                cell: ({ row }) => (
+                    <span className="tabular-nums">
+                        {playerJoinTimestamp(row.original, instanceStartMs)}
+                    </span>
+                )
+            },
+            {
+                id: 'left',
+                enableSorting: false,
+                minSize: 80,
+                size: 128,
+                meta: { label: t('table.previous_instances.left') },
+                header: () => (
+                    <DataTableHeaderLabel>
+                        {t('table.previous_instances.left')}
+                    </DataTableHeaderLabel>
+                ),
+                cell: ({ row }) => (
+                    <span className="tabular-nums">
+                        {playerLeaveTimestamp(row.original, instanceStartMs)}
+                    </span>
+                )
+            },
+            {
+                id: 'time',
+                enableSorting: false,
+                minSize: 70,
+                size: 112,
+                meta: {
+                    label: t('table.previous_instances.time'),
+                    tableCellClassName: DATA_TABLE_NUMERIC_CELL_CLASS_NAME
+                },
+                header: () => (
+                    <DataTableHeaderLabel>
+                        {t('table.previous_instances.time')}
+                    </DataTableHeaderLabel>
+                ),
+                cell: ({ row }) =>
+                    Number(row.original?.time || 0) > 0
+                        ? timeToText(Number(row.original.time))
+                        : '-'
+            }
+        ],
+        [favoriteIdSet, friendsById, instanceStartMs, knownPlayersById, t]
+    );
+}
+
+function PreviousInstancePlayersTable({
+    players,
+    knownPlayersById,
+    friendsById,
+    favoriteIdSet,
+    instanceStartMs,
+    emptyState
+}: {
+    players: PreviousInstancePlayerRow[];
+    knownPlayersById: Record<string, PreviousInstanceKnownUser>;
+    friendsById: Record<string, unknown>;
+    favoriteIdSet: Set<string>;
+    instanceStartMs: number;
+    emptyState: ReactNode;
+}) {
+    const [persistedState] = useState(() =>
+        readPersistedTableState(PREVIOUS_INSTANCE_PLAYERS_STORAGE_KEY)
+    );
+    const [columnSizing, setColumnSizing] = usePersistedTableColumnSizing({
+        columnIds: PREVIOUS_INSTANCE_PLAYER_COLUMN_IDS,
+        initialValue: persistedState.columnSizing,
+        writePersistedState: writePersistedPreviousInstancePlayersState
+    });
+    const columns = usePreviousInstancePlayerColumns({
+        knownPlayersById,
+        friendsById,
+        favoriteIdSet,
+        instanceStartMs
+    });
+    const table = useAppTable<PreviousInstancePlayerRow>({
+        data: players,
+        columns,
+        state: { columnSizing },
+        onColumnSizingChange: setColumnSizing,
+        getRowId: (player, index) =>
+            `${playerDisplayName(player)}:${playerUserId(player)}:${index}`,
+        manualPagination: true,
+        enableColumnResizing: true,
+        columnResizeMode: 'onChange'
+    });
+
+    return (
+        <div className="app-data-table vrcx-0-data-table min-h-0">
+            <Table
+                className="table-fixed"
+                style={getDataTableSizingStyle(table)}
+            >
+                <DataTableColumnSizeColGroup table={table} />
+                <DataTableHeader table={table} enableColumnReorder={false} />
+                <TableBody>
+                    {players.length ? (
+                        table.getRowModel().rows.map((row) => (
+                            <DataTableRow key={row.id}>
+                                {row.getVisibleCells().map((cell) => (
+                                    <ResizableTableCell
+                                        key={cell.id}
+                                        cell={cell}
+                                    />
+                                ))}
+                            </DataTableRow>
+                        ))
+                    ) : (
+                        <DataTableRow>
+                            <DataTableCell colSpan={columns.length}>
+                                {emptyState}
+                            </DataTableCell>
+                        </DataTableRow>
+                    )}
+                </TableBody>
+            </Table>
         </div>
     );
 }
@@ -558,27 +814,6 @@ export function PreviousInstanceDetailsPanel({
         ).catch(() => {});
     }, [currentEndpoint, missingPlayerProfileIds]);
 
-    function resolvePlayerDisplayName(player: PreviousInstancePlayerRow) {
-        const userId = playerUserId(player);
-        const displayName = playerDisplayName(player);
-        if (
-            displayName &&
-            displayName !== '-' &&
-            displayName !== '\u2014' &&
-            displayName !== userId
-        ) {
-            return displayName;
-        }
-        const knownUser = knownPlayersById[userId];
-        return (
-            knownUser?.displayName ||
-            knownUser?.username ||
-            displayName ||
-            userId ||
-            '-'
-        );
-    }
-
     if (!row) {
         return (
             <DialogEmptyState
@@ -720,133 +955,23 @@ export function PreviousInstanceDetailsPanel({
                             >
                                 {detailsViewMode === 'players' ? (
                                     <div className="min-h-0 flex-1 overflow-auto pt-2">
-                                        <div className="app-data-table vrcx-0-data-table min-h-0">
-                                            <Table>
-                                                <TableHeader className="vrcx-0-table-header sticky top-0">
-                                                    <DataTableHeaderRow>
-                                                        <DataTableHead>
-                                                            {t(
-                                                                'table.previous_instances.display_name'
-                                                            )}
-                                                        </DataTableHead>
-                                                        <DataTableHead
-                                                            className={`w-20 ${DATA_TABLE_NUMERIC_HEADER_CLASS_NAME}`}
-                                                        >
-                                                            {t(
-                                                                'dialog.world.info.visits'
-                                                            )}
-                                                        </DataTableHead>
-                                                        <DataTableHead className="w-32">
-                                                            {t(
-                                                                'table.previous_instances.joined'
-                                                            )}
-                                                        </DataTableHead>
-                                                        <DataTableHead className="w-32">
-                                                            {t(
-                                                                'table.previous_instances.left'
-                                                            )}
-                                                        </DataTableHead>
-                                                        <DataTableHead
-                                                            className={`w-28 ${DATA_TABLE_NUMERIC_HEADER_CLASS_NAME}`}
-                                                        >
-                                                            {t(
-                                                                'table.previous_instances.time'
-                                                            )}
-                                                        </DataTableHead>
-                                                    </DataTableHeaderRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {infoData.players.length ? (
-                                                        infoData.players.map(
-                                                            (player, index) => (
-                                                                <DataTableRow
-                                                                    key={`${playerDisplayName(player)}:${playerUserId(player)}:${index}`}
-                                                                >
-                                                                    <DataTableCell className="align-top">
-                                                                        <PreviousInstancePlayerNameButton
-                                                                            player={
-                                                                                player
-                                                                            }
-                                                                            displayName={resolvePlayerDisplayName(
-                                                                                player
-                                                                            )}
-                                                                            knownUser={
-                                                                                knownPlayersById[
-                                                                                    playerUserId(
-                                                                                        player
-                                                                                    )
-                                                                                ]
-                                                                            }
-                                                                            isFriend={Boolean(
-                                                                                friendsById[
-                                                                                    playerUserId(
-                                                                                        player
-                                                                                    )
-                                                                                ]
-                                                                            )}
-                                                                            isFavorite={favoriteIdSet.has(
-                                                                                playerUserId(
-                                                                                    player
-                                                                                )
-                                                                            )}
-                                                                        />
-                                                                    </DataTableCell>
-                                                                    <DataTableCell
-                                                                        className={`${DATA_TABLE_NUMERIC_CELL_CLASS_NAME} align-top text-xs`}
-                                                                    >
-                                                                        {String(
-                                                                            player?.count ||
-                                                                                '-'
-                                                                        )}
-                                                                    </DataTableCell>
-                                                                    <DataTableCell className="text-muted-foreground align-top text-xs tabular-nums">
-                                                                        {playerJoinTimestamp(
-                                                                            player,
-                                                                            instanceStartMs
-                                                                        )}
-                                                                    </DataTableCell>
-                                                                    <DataTableCell className="text-muted-foreground align-top text-xs tabular-nums">
-                                                                        {playerLeaveTimestamp(
-                                                                            player,
-                                                                            instanceStartMs
-                                                                        )}
-                                                                    </DataTableCell>
-                                                                    <DataTableCell
-                                                                        className={`${DATA_TABLE_NUMERIC_CELL_CLASS_NAME} align-top text-xs`}
-                                                                    >
-                                                                        {Number(
-                                                                            player?.time ||
-                                                                                0
-                                                                        ) > 0
-                                                                            ? timeToText(
-                                                                                  Number(
-                                                                                      player.time
-                                                                                  )
-                                                                              )
-                                                                            : '-'}
-                                                                    </DataTableCell>
-                                                                </DataTableRow>
-                                                            )
-                                                        )
-                                                    ) : infoData.status ===
-                                                      'running' ? null : (
-                                                        <DataTableRow>
-                                                            <DataTableCell
-                                                                colSpan={5}
-                                                                className="py-6 text-center"
-                                                            >
-                                                                {t(
-                                                                    'dialog.previous_instances.empty.no_player_detail_rows_for_this_instance'
-                                                                )}
-                                                            </DataTableCell>
-                                                        </DataTableRow>
-                                                    )}
-                                                </TableBody>
-                                            </Table>
-                                        </div>
+                                        <PreviousInstancePlayersTable
+                                            players={infoData.players}
+                                            knownPlayersById={knownPlayersById}
+                                            friendsById={friendsById}
+                                            favoriteIdSet={favoriteIdSet}
+                                            instanceStartMs={instanceStartMs}
+                                            emptyState={
+                                                infoData.status === 'running'
+                                                    ? null
+                                                    : t(
+                                                          'dialog.previous_instances.empty.no_player_detail_rows_for_this_instance'
+                                                      )
+                                            }
+                                        />
                                     </div>
                                 ) : (
-                                    <div className="max-h-[52vh] min-h-0 flex-1 overflow-auto pt-2">
+                                    <div className="max-h-[52vh] min-h-0 flex-1 overflow-x-hidden overflow-y-auto pt-2">
                                         <PreviousInstanceInfoChart
                                             rows={infoData.details}
                                             visitWindow={visitWindow}

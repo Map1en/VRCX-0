@@ -12,7 +12,8 @@ import { commands } from '@/platform/tauri/bindings';
 import type {
     VrchatLogEntriesReadOutput,
     VrchatLogEntryOutput,
-    VrchatLogFileOutput
+    VrchatLogFileOutput,
+    VrchatLogLevelCountOutput
 } from '@/platform/tauri/bindings';
 import { copyTextToClipboard } from '@/services/clipboardService';
 import { toast } from '@/services/toastService';
@@ -24,6 +25,7 @@ import {
     FOLLOW_INTERVAL_MS,
     LOG_HEADER_HEIGHT,
     LOG_LEVELS,
+    LOG_LOAD_OLDER_HEIGHT,
     LOG_ROW_HEIGHT,
     LOG_ROW_OVERSCAN,
     logViewerStorage,
@@ -66,6 +68,11 @@ export function useVrchatLogController() {
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [knownCategories, setKnownCategories] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const [searchCaseSensitive, setSearchCaseSensitive] = useState(false);
+    const [searchRegex, setSearchRegex] = useState(false);
+    const [levelCounts, setLevelCounts] = useState<VrchatLogLevelCountOutput[]>(
+        []
+    );
     const [followLatest, setFollowLatest] = useState(true);
     const [tailReady, setTailReady] = useState(false);
     const [followScrollVersion, setFollowScrollVersion] = useState(0);
@@ -93,15 +100,19 @@ export function useVrchatLogController() {
     }, [knownCategories, selectedCategories]);
     const selectedCount = selectedLineNumbers.size;
     const visibleLoadedCount = entries.length;
+    const isAllSelected =
+        Boolean(entries.length) && selectedCount >= entries.length;
     const logTotalHeight = entries.length * LOG_ROW_HEIGHT;
-    const logVirtualHeight = LOG_HEADER_HEIGHT + logTotalHeight;
+    const logBodyOffset =
+        LOG_HEADER_HEIGHT + (olderOffset === null ? 0 : LOG_LOAD_OLDER_HEIGHT);
+    const logVirtualHeight = logBodyOffset + logTotalHeight;
     const visibleLogRows = useMemo(() => {
         if (!entries.length) {
             return [];
         }
         const bodyScrollTop = Math.max(
             0,
-            scrollMetrics.scrollTop - LOG_HEADER_HEIGHT
+            scrollMetrics.scrollTop - logBodyOffset
         );
         const overscanPx = LOG_ROW_HEIGHT * LOG_ROW_OVERSCAN;
         const startIndex = Math.max(
@@ -125,7 +136,12 @@ export function useVrchatLogController() {
                 start: index * LOG_ROW_HEIGHT
             };
         });
-    }, [entries, scrollMetrics.scrollTop, scrollMetrics.viewportHeight]);
+    }, [
+        entries,
+        logBodyOffset,
+        scrollMetrics.scrollTop,
+        scrollMetrics.viewportHeight
+    ]);
 
     const setLogScrollNode = useCallback((node: HTMLDivElement | null) => {
         logScrollRef.current = node;
@@ -214,6 +230,7 @@ export function useVrchatLogController() {
         setEntries([]);
         setSelectedLineNumbers(new Set());
         setKnownCategories([]);
+        setLevelCounts([]);
         setTailReady(false);
         setTotalEntries(0);
         setOlderOffset(null);
@@ -229,10 +246,19 @@ export function useVrchatLogController() {
             offset,
             limit,
             query: searchQuery.trim() || null,
+            queryCaseSensitive: searchCaseSensitive,
+            queryRegex: searchRegex,
             levels,
             categories: selectedCategories.length ? selectedCategories : null
         }),
-        [levels, searchQuery, selectedCategories, selectedFileName]
+        [
+            levels,
+            searchCaseSensitive,
+            searchQuery,
+            searchRegex,
+            selectedCategories,
+            selectedFileName
+        ]
     );
 
     const loadFiles = useCallback(
@@ -295,6 +321,7 @@ export function useVrchatLogController() {
             if (!levels.length) {
                 setEntries([]);
                 setTotalEntries(0);
+                setLevelCounts([]);
                 setOlderOffset(null);
                 lastLineNumberRef.current = 0;
                 setTailReady(false);
@@ -379,6 +406,9 @@ export function useVrchatLogController() {
                     setOlderOffset(pageOffset > 0 ? pageOffset : null);
                 }
                 setTotalEntries(response.totalEntries);
+                if (response.levelCounts) {
+                    setLevelCounts(response.levelCounts);
+                }
                 if (reset) {
                     lastLineNumberRef.current = response.lastLineNumber;
                     lastFileSizeRef.current = response.fileSize;
@@ -431,6 +461,8 @@ export function useVrchatLogController() {
                 setLevels(prefs.levels);
                 setSelectedCategories(prefs.categories);
                 setSearchQuery(prefs.searchQuery);
+                setSearchCaseSensitive(prefs.searchCaseSensitive);
+                setSearchRegex(prefs.searchRegex);
                 setFollowLatest(prefs.followLatest);
                 await loadFiles(prefs.recentFileName);
                 if (active) {
@@ -460,6 +492,8 @@ export function useVrchatLogController() {
                 levels,
                 categories: selectedCategories,
                 searchQuery,
+                searchCaseSensitive,
+                searchRegex,
                 followLatest,
                 recentFileName: selectedFileName
             } satisfies VrchatLogViewerPrefs)
@@ -468,7 +502,9 @@ export function useVrchatLogController() {
         followLatest,
         levels,
         prefsLoaded,
+        searchCaseSensitive,
         searchQuery,
+        searchRegex,
         selectedCategories,
         selectedFileName
     ]);
@@ -482,7 +518,9 @@ export function useVrchatLogController() {
         levels,
         loadEntries,
         prefsLoaded,
+        searchCaseSensitive,
         searchQuery,
+        searchRegex,
         selectedCategories,
         selectedFileName,
         vrchatPathUnavailable
@@ -549,6 +587,8 @@ export function useVrchatLogController() {
                         fileSize: lastFileSizeRef.current,
                         limit: TAIL_LIMIT,
                         query: searchQuery.trim() || null,
+                        queryCaseSensitive: searchCaseSensitive,
+                        queryRegex: searchRegex,
                         levels,
                         categories: selectedCategories.length
                             ? selectedCategories
@@ -633,7 +673,9 @@ export function useVrchatLogController() {
         levels,
         loadEntries,
         prefsLoaded,
+        searchCaseSensitive,
         searchQuery,
+        searchRegex,
         selectedCategories,
         selectedFileName,
         selectedIsLatest,
@@ -715,6 +757,14 @@ export function useVrchatLogController() {
         setSelectedLineNumbers(new Set());
     }
 
+    function toggleSelectAllEntries() {
+        setSelectedLineNumbers((current) =>
+            current.size >= entries.length
+                ? new Set()
+                : new Set(entries.map((entry) => entry.lineNumber))
+        );
+    }
+
     async function copyText(text: string) {
         if (!text.trim()) {
             return;
@@ -734,9 +784,11 @@ export function useVrchatLogController() {
         setSelectedFileName,
         entries,
         visibleLogRows,
+        logBodyOffset,
         logVirtualHeight,
         selectedLineNumbers,
         selectedCount,
+        isAllSelected,
         visibleLoadedCount,
         totalEntries,
         olderOffset,
@@ -748,6 +800,11 @@ export function useVrchatLogController() {
         toggleCategory,
         searchQuery,
         setSearchQuery,
+        searchCaseSensitive,
+        setSearchCaseSensitive,
+        searchRegex,
+        setSearchRegex,
+        levelCounts,
         followLatest,
         setFollowLatest,
         isFilesLoading,
@@ -760,6 +817,7 @@ export function useVrchatLogController() {
         refresh,
         copySelectedEntries,
         clearSelectedEntries,
+        toggleSelectAllEntries,
         copyText,
         loadEntries
     };

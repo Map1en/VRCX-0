@@ -213,13 +213,5 @@ const dashboardRepository = Object.freeze({
     generateNextDashboardName
 });
 
-export {
-    cloneRows,
-    generateDashboardRowId,
-    sanitizeDashboard,
-    getDashboards,
-    saveDashboards,
-    generateDashboardId,
-    generateNextDashboardName
-};
+export { cloneRows, generateDashboardRowId, sanitizeDashboard };
 export default dashboardRepository;

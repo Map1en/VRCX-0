@@ -182,7 +182,7 @@ function FeedUserLink({
                         type="button"
                         variant="ghost"
                         className={cn(
-                            'hover:text-content-primary h-auto max-w-full justify-start self-start text-left font-medium',
+                            'hover:text-content-primary h-auto max-w-full justify-start self-start p-0 text-left font-medium hover:bg-transparent',
                             showAvatar && 'gap-2',
                             className
                         )}

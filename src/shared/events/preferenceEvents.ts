@@ -1,5 +1,5 @@
 import { isRecord } from '@/shared/utils/record';
-export const PREFERENCE_CHANGED_EVENT = 'vrcx:preference-changed';
+const PREFERENCE_CHANGED_EVENT = 'vrcx:preference-changed';
 
 type PreferenceChangedValue =
     | string

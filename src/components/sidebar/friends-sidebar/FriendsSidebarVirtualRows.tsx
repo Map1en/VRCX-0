@@ -1,3 +1,4 @@
+import { ListSectionHeader } from '@/components/layout/ListSectionHeader';
 import type { LocationMetadata } from '@/components/location/useLocationMetadata';
 import { normalizeStateBucket } from '@/domain/users/userFacts';
 import { cn } from '@/lib/utils';
@@ -9,10 +10,7 @@ import { Skeleton } from '@/ui/shadcn/skeleton';
 
 import type { StatusPreset } from './FriendsSidebarActionItems';
 import { FriendRow } from './FriendsSidebarFriendRow';
-import {
-    FriendSectionHeader,
-    InstanceHeaderRow
-} from './FriendsSidebarHeaders';
+import { InstanceHeaderRow } from './FriendsSidebarHeaders';
 import {
     readFriendStatusSource,
     type SidebarFriendRecord
@@ -208,7 +206,7 @@ function FriendsSidebarVirtualRow({
     switch (row?.type) {
         case 'section':
             return (
-                <FriendSectionHeader
+                <ListSectionHeader
                     id={row.id}
                     title={row.title}
                     count={row.count}

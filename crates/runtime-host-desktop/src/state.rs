@@ -21,6 +21,7 @@ use crate::integration_api::{
 use crate::local_data::LocalDataRuntime;
 use crate::media::DesktopMediaRuntime;
 use crate::notification::{NotificationDoNotDisturbMode, NotificationDoNotDisturbSnapshot};
+use crate::privacy_lock::PrivacyLockRuntime;
 use crate::profile_backup::DesktopProfileBackupRuntime;
 use crate::screenshot::DesktopScreenshotRuntime;
 use crate::social::DesktopSocialRuntime;
@@ -118,6 +119,7 @@ pub(crate) fn build_desktop_runtime_services_deps(
         image_cache: Arc::clone(context.image_cache()),
         config: context.config().clone(),
         notification_config: context.notification_config(),
+        auth_credentials: context.auth_credentials_shared(),
         auth_scope: context.auth_scope().clone(),
         session: context.session().clone(),
         world_cache: Arc::clone(context.world_cache()),
@@ -2102,6 +2104,10 @@ impl DesktopRuntimeHostState {
 
     pub async fn ancillary_runtime_snapshot(&self) -> AncillaryRuntimeSnapshot {
         ancillary_runtime_snapshot(self).await
+    }
+
+    pub fn privacy_lock(&self) -> Arc<PrivacyLockRuntime> {
+        self.desktop.services.privacy_lock()
     }
 
     pub fn notification_do_not_disturb_snapshot(&self) -> NotificationDoNotDisturbSnapshot {

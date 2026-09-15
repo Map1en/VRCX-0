@@ -90,13 +90,13 @@ mod macos {
     }
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__drain_pending_deep_links(state: State<'_, AppState>) -> Vec<DeepLinkAction> {
     state.pending_deep_links().drain()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__deep_link_registration_status(app: AppHandle) -> Result<Option<bool>, AppError> {
     deep_link_registration_status(&app)
@@ -123,7 +123,7 @@ fn deep_link_registration_status(app: &AppHandle) -> Result<Option<bool>, AppErr
     }
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__deep_link_registration_repair(app: AppHandle) -> Result<Option<bool>, AppError> {
     #[cfg(any(windows, target_os = "linux"))]

@@ -118,6 +118,7 @@ fn finish_application_exit(app_handle: &AppHandle) {
 
 pub(crate) fn stop_runtime_services(app_handle: &AppHandle) {
     use tauri::Manager;
+    crate::bootstrap::linux_rendering::stop(app_handle);
     crate::bootstrap::sidebar_auto_hide::park(app_handle, true);
     if let Some(state) = app_handle.try_state::<AppState>() {
         state.log_watcher_compat_bridge().stop();
@@ -248,15 +249,19 @@ pub fn app__restart_application(app_handle: AppHandle) -> Result<(), AppError> {
 
     #[cfg(not(debug_assertions))]
     {
-        use tauri::Manager;
-
-        stop_runtime_services(&app_handle);
-        if let Some(state) = app_handle.try_state::<AppState>() {
-            state.runtime_host().release_profile_lock();
-        }
-        app_handle.request_restart();
+        restart_now(&app_handle);
         Ok(())
     }
+}
+
+pub(crate) fn restart_now(app_handle: &AppHandle) {
+    use tauri::Manager;
+
+    stop_runtime_services(app_handle);
+    if let Some(state) = app_handle.try_state::<AppState>() {
+        state.runtime_host().release_profile_lock();
+    }
+    app_handle.request_restart();
 }
 
 #[tauri::command]

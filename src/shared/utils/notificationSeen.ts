@@ -3,7 +3,7 @@ import { DAY_MS } from '@/shared/constants/time';
 import { getNotificationLifecycleBucket } from './notificationLifecycle';
 
 export const RECENT_WINDOW_MS = DAY_MS;
-export const ACTION_REQUIRED_V1_TYPES = new Set<string>(['friendRequest']);
+const ACTION_REQUIRED_V1_TYPES = new Set<string>(['friendRequest']);
 
 export type NotificationSeenLike = {
     $isExpired?: boolean;

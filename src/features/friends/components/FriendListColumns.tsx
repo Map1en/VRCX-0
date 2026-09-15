@@ -7,11 +7,13 @@ import type { AppColumnDef } from '@/components/data-table/appTable';
 import { DataTableHeaderLabel } from '@/components/data-table/DataTableSortButton';
 import {
     DATA_TABLE_CONTROL_CELL_CLASS_NAME,
+    DATA_TABLE_EMPTY_VALUE,
     DATA_TABLE_METADATA_CELL_CLASS_NAME,
     DATA_TABLE_NUMERIC_CELL_CLASS_NAME,
     DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
     DATA_TABLE_PRIMARY_CELL_CLASS_NAME
 } from '@/components/data-table/DataTableView';
+import { BioLinkFavicon } from '@/components/media/BioLinkFavicon';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { formatDateFilter, timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
@@ -20,7 +22,6 @@ import {
     openExternalLink,
     userImage
 } from '@/services/entityMediaService';
-import { getFaviconUrl } from '@/shared/utils/urlUtils';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
@@ -346,28 +347,22 @@ export function useFriendListColumns({
                 cell: ({ row }) => {
                     const links = bioLinks(row.original);
                     return links.length ? (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5">
                             {links.map((link) => (
                                 <Tooltip key={link}>
                                     <TooltipTrigger
                                         render={
                                             <Button
                                                 type="button"
-                                                variant="outline"
+                                                variant="ghost"
                                                 size="icon-sm"
-                                                className="size-7"
+                                                className="size-6 hover:bg-transparent hover:opacity-70"
                                                 onClick={(event) => {
                                                     event.stopPropagation();
                                                     openExternalLink(link);
                                                 }}
                                             >
-                                                <FadeInImage
-                                                    src={getFaviconUrl(link)}
-                                                    alt=""
-                                                    className="size-4"
-                                                    loading="lazy"
-                                                    fallback={null}
-                                                />
+                                                <BioLinkFavicon link={link} />
                                             </Button>
                                         }
                                     />
@@ -396,7 +391,7 @@ export function useFriendListColumns({
                 ),
                 cell: ({ row }) => (
                     <span className="block">
-                        {row.original?.$joinCount || ''}
+                        {row.original?.$joinCount || DATA_TABLE_EMPTY_VALUE}
                     </span>
                 )
             },
@@ -420,7 +415,9 @@ export function useFriendListColumns({
                     const timeSpent = parseListNumber(row.original?.$timeSpent);
                     return (
                         <span className="block">
-                            {timeSpent ? timeToText(timeSpent) : ''}
+                            {timeSpent
+                                ? timeToText(timeSpent)
+                                : DATA_TABLE_EMPTY_VALUE}
                         </span>
                     );
                 }
@@ -444,7 +441,11 @@ export function useFriendListColumns({
                         row.original?.$lastSeen,
                         'long'
                     );
-                    return <span>{text === '-' ? '' : text}</span>;
+                    return (
+                        <span>
+                            {text === '-' ? DATA_TABLE_EMPTY_VALUE : text}
+                        </span>
+                    );
                 }
             },
             {
@@ -506,7 +507,11 @@ export function useFriendListColumns({
                         row.original?.last_activity,
                         'long'
                     );
-                    return <span>{text === '-' ? '' : text}</span>;
+                    return (
+                        <span>
+                            {text === '-' ? DATA_TABLE_EMPTY_VALUE : text}
+                        </span>
+                    );
                 }
             },
             {
@@ -528,7 +533,11 @@ export function useFriendListColumns({
                         row.original?.last_login,
                         'long'
                     );
-                    return <span>{text === '-' ? '' : text}</span>;
+                    return (
+                        <span>
+                            {text === '-' ? DATA_TABLE_EMPTY_VALUE : text}
+                        </span>
+                    );
                 }
             },
             {

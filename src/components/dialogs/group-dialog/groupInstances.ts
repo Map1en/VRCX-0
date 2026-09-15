@@ -6,6 +6,7 @@ import type { EntityRecord } from '@/domain/entities/shared';
 import type { FriendRosterById } from '@/domain/friends/types';
 import { groupInstanceLocation } from '@/domain/instances/groupInstanceFacts';
 import { parseLocation } from '@/shared/utils/location';
+import { normalizeString } from '@/shared/utils/string';
 import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 
 type InstanceUser = EntityRecord & {
@@ -37,12 +38,6 @@ function entityRows(value: unknown): EntityRecord[] {
     return Array.isArray(value)
         ? value.filter((row): row is EntityRecord => Boolean(entityRecord(row)))
         : [];
-}
-
-export function normalizeEntityId(value: unknown) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
 }
 
 export function normalizeLocation(value: unknown) {
@@ -104,10 +99,10 @@ export function mergeGroupInstances(
             entityRecord(seed.world) || entityRecord(embeddedInstance?.world);
         const existing = byLocation.get(normalizedLocation);
         if (existing) {
-            const worldId = normalizeEntityId(
+            const worldId = normalizeString(
                 seed.worldId || world?.id || parsed.worldId || existing.worldId
             );
-            const instanceId = normalizeEntityId(
+            const instanceId = normalizeString(
                 seed.instanceId ||
                     seed.id ||
                     parsed.instanceId ||
@@ -126,7 +121,7 @@ export function mergeGroupInstances(
             });
         }
 
-        const instanceId = normalizeEntityId(
+        const instanceId = normalizeString(
             seed.instanceId ||
                 embeddedInstance?.instanceId ||
                 seed.id ||
@@ -138,7 +133,7 @@ export function mergeGroupInstances(
             id: instanceId || normalizedLocation,
             location: normalizedLocation,
             tag: normalizedLocation,
-            worldId: normalizeEntityId(
+            worldId: normalizeString(
                 seed.worldId || world?.id || parsed.worldId
             ),
             instanceId,
@@ -164,13 +159,13 @@ export function mergeGroupInstances(
             return;
         }
         const row = byLocation.get(location);
-        const userId = normalizeEntityId(user.id || user.userId);
+        const userId = normalizeString(user.id || user.userId);
         if (
             !row ||
             !userId ||
             row.users.some(
                 (existing) =>
-                    normalizeEntityId(existing.id || existing.userId) === userId
+                    normalizeString(existing.id || existing.userId) === userId
             )
         ) {
             return;

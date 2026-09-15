@@ -12,7 +12,7 @@ use vrcx_0_host_desktop::host_capabilities::{require_host_capability, HostCapabi
 use crate::error::AppError;
 use crate::state::AppState;
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__registry_backup_list(
     state: State<'_, AppState>,
@@ -21,7 +21,7 @@ pub fn app__registry_backup_list(
     Ok(state.runtime_host().registry_backup_list()?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__registry_backup_create(
     state: State<'_, AppState>,
@@ -31,7 +31,7 @@ pub fn app__registry_backup_create(
     Ok(state.runtime_host().registry_backup_create(&name)?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__registry_backup_restore(
     state: State<'_, AppState>,
@@ -41,7 +41,7 @@ pub fn app__registry_backup_restore(
     Ok(state.runtime_host().registry_backup_restore(&key)?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__registry_backup_delete(
     state: State<'_, AppState>,
@@ -107,7 +107,7 @@ pub async fn app__registry_backup_import_from_file(
     Ok(true)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__registry_backup_maintenance_run(
     state: State<'_, AppState>,
@@ -119,7 +119,7 @@ pub fn app__registry_backup_maintenance_run(
         .registry_backup_maintenance_run(&reason, RegistryBackupMaintenanceMode::Foreground)?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__registry_backup_restore_prompt_acknowledge(
     state: State<'_, AppState>,

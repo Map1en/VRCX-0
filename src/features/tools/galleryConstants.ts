@@ -32,7 +32,7 @@ export const FILE_TABS: Record<FileAssetTab, FileTabDefinition> = {
 };
 
 export const TAB_ORDER: GalleryTab[] = ['gallery', 'icons', 'prints'];
-export const DEFAULT_GALLERY_TAB = 'gallery';
+const DEFAULT_GALLERY_TAB = 'gallery';
 
 export type GalleryAssets = {
     gallery: MediaFileRecord[];

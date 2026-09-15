@@ -15,7 +15,7 @@ import {
 } from './useSelfStatusPresets';
 import type { UserDialogProfileRecord } from './useUserDialogProfileResource';
 
-export type SocialStatusPatch = {
+type SocialStatusPatch = {
     status: UserStatus;
     statusDescription: string;
 };

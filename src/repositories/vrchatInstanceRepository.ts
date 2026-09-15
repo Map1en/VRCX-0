@@ -352,11 +352,4 @@ const vrchatInstanceRepository = Object.freeze({
     closeInstance
 });
 
-export {
-    createInstance,
-    getInstance,
-    getInstanceShortName,
-    selfInvite,
-    closeInstance
-};
 export default vrchatInstanceRepository;

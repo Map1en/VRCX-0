@@ -50,17 +50,7 @@ export interface OverlayActivityFiltersPreference {
     };
 }
 
-export const OVERLAY_ACTIVITY_CATEGORIES: OverlayActivityCategory[] = [
-    'actionRequired',
-    'currentInstance',
-    'favoriteMovement',
-    'profileChange',
-    'groupSocial',
-    'systemSafety',
-    'media'
-];
-
-export const OVERLAY_ACTIVITY_SCOPES: OverlayActivityScope[] = [
+const OVERLAY_ACTIVITY_SCOPES: OverlayActivityScope[] = [
     'off',
     'on',
     'friends',
@@ -273,21 +263,6 @@ export const OVERLAY_ACTIVITY_TYPE_DEFINITIONS: OverlayActivityTypeDefinition[] 
         defineType('media', 'VideoPlay', BOOLEAN_SCOPES, 'on')
     ];
 
-export const OVERLAY_ACTIVITY_RAW_TYPES: Record<
-    OverlayActivityCategory,
-    string[]
-> = OVERLAY_ACTIVITY_CATEGORIES.reduce<
-    Record<OverlayActivityCategory, string[]>
->((result, category) => {
-    result[category] = OVERLAY_ACTIVITY_TYPE_DEFINITIONS.filter(
-        (definition) => definition.category === category
-    ).map((definition) => definition.key);
-    return result;
-}, createEmptyOverlayActivityCategoryMap());
-
-export const OVERLAY_ACTIVITY_TYPE_DEFINITION_BY_KEY =
-    overlayActivityDefinitionByKey(OVERLAY_ACTIVITY_TYPE_DEFINITIONS);
-
 export const HMD_DEFAULT_SCOPES: Record<string, OverlayActivityScope> =
     Object.fromEntries(
         Object.entries(hmdDefaultScopes).filter(
@@ -301,18 +276,16 @@ for (const definition of OVERLAY_ACTIVITY_TYPE_DEFINITIONS) {
         HMD_DEFAULT_SCOPES[definition.key] ?? definition.defaultScope;
 }
 
-export const DEFAULT_OVERLAY_ACTIVITY_TYPES: Record<
-    string,
-    OverlayActivityRule
-> = Object.fromEntries(
-    OVERLAY_ACTIVITY_TYPE_DEFINITIONS.map((definition) => [
-        definition.key,
-        {
-            scope: definition.defaultScope,
-            favoriteGroupKeys: 'all'
-        }
-    ])
-);
+const DEFAULT_OVERLAY_ACTIVITY_TYPES: Record<string, OverlayActivityRule> =
+    Object.fromEntries(
+        OVERLAY_ACTIVITY_TYPE_DEFINITIONS.map((definition) => [
+            definition.key,
+            {
+                scope: definition.defaultScope,
+                favoriteGroupKeys: 'all'
+            }
+        ])
+    );
 
 export const DEFAULT_OVERLAY_ACTIVITY_FILTER_PROFILE: OverlayActivityFilterProfilePreference =
     {
@@ -388,7 +361,7 @@ export function overlayActivityDefinitionByKeyFromDefinitions(
     return overlayActivityDefinitionByKey(definitions);
 }
 
-export function defaultOverlayActivityTypeRulesFromDefinitions(
+function defaultOverlayActivityTypeRulesFromDefinitions(
     definitions: OverlayActivityTypeDefinition[]
 ): Record<string, OverlayActivityRule> {
     return Object.fromEntries(
@@ -402,7 +375,7 @@ export function defaultOverlayActivityTypeRulesFromDefinitions(
     );
 }
 
-export function hmdDefaultOverlayActivityTypeRulesFromDefinitions(
+function hmdDefaultOverlayActivityTypeRulesFromDefinitions(
     definitions: OverlayActivityTypeDefinition[]
 ): Record<string, OverlayActivityRule> {
     return Object.fromEntries(

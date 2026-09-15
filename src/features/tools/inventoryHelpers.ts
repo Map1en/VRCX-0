@@ -20,7 +20,7 @@ import {
     type GalleryGridDensity
 } from './galleryDensity';
 
-export const INVENTORY_GRID_DENSITY_STORAGE_KEY = 'VRCX_InventoryGridDensity';
+const INVENTORY_GRID_DENSITY_STORAGE_KEY = 'VRCX_InventoryGridDensity';
 
 export const CATEGORY_ORDER = [
     'emojis',
@@ -269,9 +269,7 @@ export function getUsefulDisplayName(
     return visibleName;
 }
 
-export function resolveEmojiStyleName(
-    rawValue: unknown
-): EmojiAnimationStyleName {
+function resolveEmojiStyleName(rawValue: unknown): EmojiAnimationStyleName {
     const normalizedValue = String(rawValue || '').toLowerCase();
     const match = emojiAnimationStyleNames.find(
         (styleName) => styleName.toLowerCase() === normalizedValue

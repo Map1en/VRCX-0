@@ -27,7 +27,6 @@ fs4 = { workspace = true }
 sys-locale.workspace = true
 tokio = { workspace = true, features = ["time", "rt", "macros", "sync"] }
 tracing = { workspace = true }
-uuid = { workspace = true }
 vrcx-0-application = { path = "../application" }
 vrcx-0-application-activity = { path = "../application-activity" }
 vrcx-0-application-core = { path = "../application-core" }

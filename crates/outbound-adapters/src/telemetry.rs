@@ -103,6 +103,7 @@ impl TelemetryEnvironment for LocalTelemetryEnvironment {
                 feed_rows: estimate.feed_rows,
                 gamelog_rows: estimate.gamelog_rows,
                 friend_log_rows: estimate.friend_log_rows,
+                friend_count: estimate.friend_count,
             },
             Err(error) => {
                 tracing::debug!("failed to estimate telemetry database scale: {error}");

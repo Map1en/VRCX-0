@@ -3,6 +3,7 @@
 use serde_json::Value;
 use tauri::State;
 
+use crate::commands::blocking::run_blocking;
 use crate::error::AppError;
 use crate::state::AppState;
 
@@ -27,28 +28,28 @@ pub async fn app__avatar_get(
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__avatar_find_by_image_url(
+pub async fn app__avatar_find_by_image_url(
     state: State<'_, AppState>,
     image_url: String,
 ) -> Result<Option<vrcx_0_core::json::RawJson>, AppError> {
-    state
-        .runtime_host()
-        .local_data()
-        .avatar_find_by_image_url(image_url)
-        .map_err(AppError::from)
+    let local_data = state.runtime_host().local_data().clone();
+    run_blocking("avatar image url lookup", move || {
+        local_data.avatar_find_by_image_url(image_url)
+    })
+    .await
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__avatar_history_clear(
+pub async fn app__avatar_history_clear(
     state: State<'_, AppState>,
     user_id: String,
 ) -> Result<(), AppError> {
-    state
-        .runtime_host()
-        .local_data()
-        .avatar_history_clear(user_id)
-        .map_err(AppError::from)
+    let local_data = state.runtime_host().local_data().clone();
+    run_blocking("avatar history clear", move || {
+        local_data.avatar_history_clear(user_id)
+    })
+    .await
 }
 
 #[tauri::command(async)]
@@ -79,7 +80,7 @@ pub fn app__avatar_usage_ranking(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__avatar_tag_add(
     state: State<'_, AppState>,
@@ -94,7 +95,7 @@ pub fn app__avatar_tag_add(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__avatar_tag_remove(
     state: State<'_, AppState>,
@@ -108,7 +109,7 @@ pub fn app__avatar_tag_remove(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__avatar_tag_update_color(
     state: State<'_, AppState>,
@@ -156,7 +157,7 @@ pub fn app__avatar_tags_list(state: State<'_, AppState>) -> Result<Vec<AvatarTag
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__avatar_tags_patch(
     state: State<'_, AppState>,
@@ -170,7 +171,7 @@ pub fn app__avatar_tags_patch(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__avatar_tags_remove_all(
     state: State<'_, AppState>,
@@ -183,7 +184,7 @@ pub fn app__avatar_tags_remove_all(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__avatar_tags_replace(
     state: State<'_, AppState>,
@@ -197,7 +198,7 @@ pub fn app__avatar_tags_replace(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__avatar_time_spent_add(
     state: State<'_, AppState>,

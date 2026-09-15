@@ -15,6 +15,7 @@ import { tryOpenLaunchLocation } from '@/services/directAccessService';
 import { selfInviteToInstance } from '@/services/launchService';
 import { toast } from '@/services/toastService';
 import { parseLocation } from '@/shared/utils/location';
+import { normalizeString } from '@/shared/utils/string';
 import type { WorldNewInstanceDefaults } from '@/state/dialogStore';
 import type { LaunchStoreState } from '@/state/launchStore';
 
@@ -34,11 +35,7 @@ import {
     prependInstanceDialogDisplayNamePreset
 } from './worldInstanceDisplayNamePresets';
 import { resolveCreatedInstanceDetails } from './worldInstanceResolver';
-import {
-    normalizeEntityId,
-    parseRoleIds,
-    resolveInstanceLocation
-} from './worldInstances';
+import { parseRoleIds, resolveInstanceLocation } from './worldInstances';
 import type {
     CreatedWorldInstance,
     InstanceGroupOption,
@@ -135,7 +132,7 @@ export function useWorldInstanceActions({
         ]);
         const seedDefaults = normalizeNewInstanceSeed(seed);
         const selectedGroupId =
-            seedDefaults.groupId || normalizeEntityId(groupId) || '';
+            seedDefaults.groupId || normalizeString(groupId) || '';
         const selectedGroup = findGroupOption(groupOptions, selectedGroupId);
         return {
             accessType:
@@ -287,7 +284,7 @@ export function useWorldInstanceActions({
             newInstanceRequest.afterCreateAction === 'openInGame';
         const targetWorldId = world.id;
         const targetEndpoint = currentEndpoint;
-        if (form.accessType === 'group' && !normalizeEntityId(form.groupId)) {
+        if (form.accessType === 'group' && !normalizeString(form.groupId)) {
             toast.add({
                 type: 'error',
                 title: t(
@@ -349,7 +346,7 @@ export function useWorldInstanceActions({
                 queueEnabled: Boolean(form.queueEnabled),
                 ageGate: Boolean(form.ageGate),
                 roleIds: parseRoleIds(form.roleIds),
-                displayName: normalizeEntityId(form.displayName)
+                displayName: normalizeString(form.displayName)
             });
             const location = resolveInstanceLocation(
                 targetWorldId,
@@ -369,11 +366,11 @@ export function useWorldInstanceActions({
                     accessType: form.accessType || 'public',
                     ownerId:
                         form.accessType === 'group'
-                            ? normalizeEntityId(form.groupId)
+                            ? normalizeString(form.groupId)
                             : currentUserId,
                     groupId:
                         form.accessType === 'group'
-                            ? normalizeEntityId(form.groupId)
+                            ? normalizeString(form.groupId)
                             : '',
                     group: selectedGroup
                 }

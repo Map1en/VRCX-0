@@ -16,7 +16,7 @@ export interface GroupModerationTab {
     value: GroupModerationTabValue;
 }
 
-export type GroupModerationActionKey =
+type GroupModerationActionKey =
     | 'kick'
     | 'ban'
     | 'unban'

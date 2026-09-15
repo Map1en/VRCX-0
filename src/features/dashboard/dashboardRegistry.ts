@@ -77,7 +77,7 @@ export const DASHBOARD_INSTANCE_WIDGET_DEFAULT_COLUMNS = Object.freeze([
     'timer'
 ]);
 
-export const DASHBOARD_PAGE_DEFINITIONS: DashboardPanelDefinition[] = [
+const DASHBOARD_PAGE_DEFINITIONS: DashboardPanelDefinition[] = [
     {
         key: 'feed',
         category: 'page',

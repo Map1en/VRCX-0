@@ -67,7 +67,6 @@ vi.mock('@/components/location/useLocationMetadata', async () => {
 
 vi.mock('@/components/location/useLocationPreviousInstancesDialog', () => ({
     useLocationPreviousInstancesDialog: () => ({
-        previousInstancesDialog: null as React.ReactNode,
         previousInstancesLoading: false,
         showExactPreviousInstanceInfo: vi.fn(),
         showPreviousInstances: vi.fn()

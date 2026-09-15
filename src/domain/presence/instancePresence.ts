@@ -239,10 +239,6 @@ function sameInstance(user: unknown, location: string): boolean {
     return instanceLocationKey(explicit) === instanceLocationKey(location);
 }
 
-function isGroupId(value: unknown): boolean {
-    return hasGroupIdPrefix(value);
-}
-
 function buildInstancePresenceFact({
     endpoint = '',
     location = '',
@@ -345,11 +341,11 @@ function buildInstanceRosterModel({
     const ownerGroupId = firstText(
         record(ownerGroup).id,
         record(ownerGroup).groupId,
-        isGroupId(parsed.groupId) ? parsed.groupId : ''
+        hasGroupIdPrefix(parsed.groupId) ? parsed.groupId : ''
     );
     const ownerUserId = firstText(userId(ownerUser), parsed.userId);
     const ownerId = firstText(ownerGroupId, ownerUserId);
-    const ownerIsGroup = Boolean(ownerGroupId || isGroupId(ownerId));
+    const ownerIsGroup = Boolean(ownerGroupId || hasGroupIdPrefix(ownerId));
     const ownerRow =
         !ownerIsGroup && (ownerUser || ownerUserId)
             ? createRosterRow(
@@ -445,11 +441,4 @@ export {
     instancePresenceKey,
     sameInstancePresenceFact
 };
-export type {
-    InstancePlayerFact,
-    InstancePresenceFact,
-    InstancePresenceFactInput,
-    InstancePresenceSource,
-    InstanceRosterModelInput,
-    RosterUserRow
-};
+export type { InstancePresenceFact, InstancePresenceFactInput, RosterUserRow };

@@ -14,11 +14,11 @@ import { tryOpenLaunchLocation } from '@/services/directAccessService';
 import { persistFavoriteWorldDetails } from '@/services/favoriteWorldCacheService';
 import { openFolderAndSelectItem } from '@/services/shellIntegrationService';
 import { toast } from '@/services/toastService';
+import { normalizeString } from '@/shared/utils/string';
 import { useVrchatConfigStore } from '@/state/vrchatConfigStore';
 
 import type { WorldWorldSideData } from './useWorldDialogData';
 import type { useWorldDialogRuntimeState } from './useWorldDialogRuntimeState';
-import { normalizeEntityId } from './worldInstances';
 
 type WorldRecord = ReturnType<typeof worldProfileRepository.normalize>;
 type RuntimeState = ReturnType<typeof useWorldDialogRuntimeState>;
@@ -241,7 +241,7 @@ export function useWorldActions({
         if (!world) {
             return;
         }
-        const targetWorldId = normalizeEntityId(world.id);
+        const targetWorldId = normalizeString(world.id);
         const targetEndpoint = currentEndpoint;
         const revision = memoRevisionRef.current + 1;
         memoRevisionRef.current = revision;

@@ -1,4 +1,3 @@
-import type { FavoriteGroupMap } from '@/domain/favorites/types';
 import type { UserStatus } from '@/platform/tauri/bindings';
 import { normalizeUserStatus } from '@/shared/utils/friendStatus';
 
@@ -34,31 +33,6 @@ export function normalizeUserId(value: unknown) {
     return typeof value === 'string'
         ? value.trim()
         : String(value ?? '').trim();
-}
-
-export function buildFavoriteIdSet(
-    remoteFavoriteIds: readonly string[],
-    localFriendFavorites: FavoriteGroupMap
-) {
-    const set = new Set<string>();
-
-    for (const id of remoteFavoriteIds) {
-        const normalized = normalizeUserId(id);
-        if (normalized) {
-            set.add(normalized);
-        }
-    }
-
-    for (const values of Object.values(localFriendFavorites)) {
-        for (const id of values) {
-            const normalized = normalizeUserId(id);
-            if (normalized) {
-                set.add(normalized);
-            }
-        }
-    }
-
-    return set;
 }
 
 export function normalizeSelfStatusInput(value: unknown): UserStatus | '' {

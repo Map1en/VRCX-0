@@ -21,7 +21,7 @@ fn require_app_launcher_supported() -> Result<(), AppError> {
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__app_launcher_snapshot_get(
     state: State<'_, AppState>,
@@ -30,7 +30,7 @@ pub fn app__app_launcher_snapshot_get(
     Ok(state.runtime_host().app_launcher_snapshot())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__app_launcher_enabled_set(
     state: State<'_, AppState>,
@@ -40,7 +40,7 @@ pub fn app__app_launcher_enabled_set(
     Ok(state.runtime_host().set_app_launcher_enabled(enabled)?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__app_launcher_entries_set(
     state: State<'_, AppState>,
@@ -50,7 +50,7 @@ pub fn app__app_launcher_entries_set(
     Ok(state.runtime_host().set_app_launcher_entries(entries)?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__app_launcher_entry_test(
     state: State<'_, AppState>,
@@ -60,7 +60,7 @@ pub fn app__app_launcher_entry_test(
     Ok(state.runtime_host().test_app_launcher_entry(&entry_id)?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__app_launcher_test_run_stop(
     state: State<'_, AppState>,

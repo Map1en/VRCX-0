@@ -16,7 +16,7 @@ use vrcx_0_contracts::telemetry::{
 
 use super::accumulator::{TelemetryAccumulator, MAX_DETAILS_PER_PAYLOAD};
 use super::event::TelemetryClientEvent;
-use super::scale::{db_size_bucket, row_bucket, TelemetryDatabaseScale};
+use super::scale::{db_size_bucket, friend_count_bucket, row_bucket, TelemetryDatabaseScale};
 
 const TELEMETRY_INSTALL_ID_CONFIG_KEY: &str = "telemetryInstallId";
 const TELEMETRY_BASIC_INFO_REPORTED_VERSION_CONFIG_KEY: &str = "telemetryBasicInfoReportedVersion";
@@ -577,6 +577,7 @@ impl TelemetryRuntime {
             feed_rows_bucket: row_bucket(scale.feed_rows),
             gamelog_rows_bucket: row_bucket(scale.gamelog_rows),
             friend_log_rows_bucket: row_bucket(scale.friend_log_rows),
+            friend_count_bucket: friend_count_bucket(scale.friend_count),
         }
     }
 

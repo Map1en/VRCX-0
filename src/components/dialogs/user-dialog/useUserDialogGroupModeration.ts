@@ -33,7 +33,7 @@ function groupIdSet(groups: GroupQuickModerationGroup[]) {
     return new Set(groups.map((group) => group.groupId));
 }
 
-export function useDelayedGroupQuickModerationLoading(
+function useDelayedGroupQuickModerationLoading(
     loading: boolean,
     identity: string
 ) {

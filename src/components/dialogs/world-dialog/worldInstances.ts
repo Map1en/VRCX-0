@@ -2,6 +2,7 @@ import type { InstanceRosterRow } from '@/domain/instances/instanceRoster';
 import { buildLegacyInstanceTag, getLaunchURL } from '@/shared/utils/instance';
 import { parseLocation } from '@/shared/utils/location';
 import { isRecord } from '@/shared/utils/record';
+import { normalizeString } from '@/shared/utils/string';
 
 type DynamicRecord = Record<string, unknown>;
 
@@ -64,12 +65,6 @@ function record(value: unknown): DynamicRecord {
     return isRecord(value) ? value : {};
 }
 
-export function normalizeEntityId(value: unknown) {
-    return typeof value === 'string'
-        ? value.trim()
-        : String(value ?? '').trim();
-}
-
 export function parseRoleIds(value: unknown) {
     return String(value || '')
         .split(',')
@@ -82,12 +77,12 @@ export function resolveInstanceLocation(worldId: unknown, instance: unknown) {
     if (typeof source.location === 'string' && source.location.trim()) {
         return source.location.trim();
     }
-    const rawId = normalizeEntityId(source.id);
+    const rawId = normalizeString(source.id);
     if (rawId.includes(':')) {
         return rawId;
     }
-    const instanceId = normalizeEntityId(source.instanceId || rawId);
-    const normalizedWorldId = normalizeEntityId(worldId);
+    const instanceId = normalizeString(source.instanceId || rawId);
+    const normalizedWorldId = normalizeString(worldId);
     return normalizedWorldId && instanceId
         ? `${normalizedWorldId}:${instanceId}`
         : '';
@@ -100,10 +95,9 @@ export function buildLegacyCreatedInstance({
     legacySeed
 }: BuildLegacyCreatedInstanceInput) {
     const legacyUserId =
-        normalizeEntityId(form.legacyUserId) ||
-        normalizeEntityId(currentUserId);
+        normalizeString(form.legacyUserId) || normalizeString(currentUserId);
     const instanceName =
-        normalizeEntityId(form.instanceName).replace(/[^A-Za-z0-9]/g, '') ||
+        normalizeString(form.instanceName).replace(/[^A-Za-z0-9]/g, '') ||
         legacySeed;
     const accessType = form.accessType || 'public';
     const instanceId = buildLegacyInstanceTag({
@@ -147,32 +141,32 @@ export function buildCreatedInstanceDetails(
     const owner = record(source.owner);
     const group = record(source.group);
     const parsedLocation = parseLocation(location);
-    const shortName = normalizeEntityId(
+    const shortName = normalizeString(
         source.shortName || parsedLocation.shortName
     );
-    const secureOrShortName = shortName || normalizeEntityId(source.secureName);
-    const launchLocation = parsedLocation.tag || normalizeEntityId(location);
+    const secureOrShortName = shortName || normalizeString(source.secureName);
+    const launchLocation = parsedLocation.tag || normalizeString(location);
     const groupId =
-        normalizeEntityId(source.groupId) ||
-        normalizeEntityId(source.group_id) ||
-        normalizeEntityId(group.id) ||
-        normalizeEntityId(group.groupId) ||
-        normalizeEntityId(fallback.groupId) ||
-        normalizeEntityId(parsedLocation.groupId);
+        normalizeString(source.groupId) ||
+        normalizeString(source.group_id) ||
+        normalizeString(group.id) ||
+        normalizeString(group.groupId) ||
+        normalizeString(fallback.groupId) ||
+        normalizeString(parsedLocation.groupId);
     return {
         location: launchLocation,
         shortName,
         secureOrShortName,
         accessType:
-            normalizeEntityId(source.accessType) ||
-            normalizeEntityId(fallback.accessType) ||
+            normalizeString(source.accessType) ||
+            normalizeString(fallback.accessType) ||
             parsedLocation.accessType,
         ownerId:
-            normalizeEntityId(source.ownerId) ||
-            normalizeEntityId(owner.id) ||
-            normalizeEntityId(source.creatorId) ||
-            normalizeEntityId(fallback.ownerId) ||
-            normalizeEntityId(parsedLocation.userId),
+            normalizeString(source.ownerId) ||
+            normalizeString(owner.id) ||
+            normalizeString(source.creatorId) ||
+            normalizeString(fallback.ownerId) ||
+            normalizeString(parsedLocation.userId),
         groupId,
         group:
             source.group ||

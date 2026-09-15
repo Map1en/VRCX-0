@@ -30,7 +30,7 @@ function hasExplicitColumnLayoutLabel<TData extends RowData>(
     return typeof metaLabel === 'string' && Boolean(metaLabel.trim());
 }
 
-export function isSpacerColumn<TData extends RowData>(
+function isSpacerColumn<TData extends RowData>(
     column: AppColumn<TData> | null | undefined
 ) {
     if (!column) {

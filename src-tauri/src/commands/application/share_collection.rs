@@ -49,7 +49,7 @@ pub async fn app__world_open_register(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__shared_collection_import_start(
     state: State<'_, AppState>,
@@ -58,7 +58,7 @@ pub fn app__shared_collection_import_start(
     Ok(state.runtime_host().start_shared_collection_import(input)?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__shared_collection_import_status(
     state: State<'_, AppState>,

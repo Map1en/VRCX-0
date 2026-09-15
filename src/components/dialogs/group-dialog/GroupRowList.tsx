@@ -3,9 +3,7 @@ import {
     EyeIcon,
     ImageIcon,
     MessageSquareIcon,
-    PencilIcon,
-    TagIcon,
-    UserIcon
+    PencilIcon
 } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -13,7 +11,6 @@ import { useTranslation } from 'react-i18next';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import type {
     GroupGalleryPhotoRow,
-    GroupMemberRow,
     GroupPostRecord,
     GroupProfileRecord
 } from '@/domain/entities/group';
@@ -55,7 +52,6 @@ type RowListProps =
           rows: GroupPostRecord[];
           canManagePosts?: boolean;
       })
-    | (RowListBaseProps & { kind: 'members'; rows: GroupMemberRow[] })
     | (RowListBaseProps & { kind: 'photos'; rows: GroupGalleryPhotoRow[] });
 
 function text(value: unknown): string {
@@ -111,7 +107,7 @@ export function GroupPostUserButton({
         <Button
             type="button"
             variant="ghost"
-            className="hover:text-primary h-auto max-w-full justify-start gap-1 p-0 text-left text-xs"
+            className="hover:text-primary h-auto max-w-full justify-start gap-1 p-0 text-left text-xs hover:bg-transparent"
             onClick={() =>
                 openUserDialog({
                     userId,
@@ -401,76 +397,5 @@ export function RowList(props: RowListProps) {
         );
     }
 
-    const group = props.group ?? null;
-    return (
-        <div className="flex flex-wrap items-start">
-            {props.rows.map((row, index) => {
-                const label = getGroupRowLabel(row);
-                const image = getGroupRowImage(row, 'members');
-                const user = row.user ?? null;
-                const memberUserId = text(row.userId || user?.id);
-                const rolesById = getGroupRoleNameMap(group);
-                const memberRoles = Array.isArray(row.roleIds)
-                    ? row.roleIds
-                          .map((roleId) => rolesById.get(roleId) || 'Role')
-                          .filter(Boolean)
-                    : [];
-                const subtitle = memberRoles.join(', ') || '';
-                return (
-                    <Button
-                        key={`${label}:${index}`}
-                        type="button"
-                        variant="ghost"
-                        className="box-border h-auto w-44 justify-start p-1.5 text-left text-sm"
-                        onClick={() => {
-                            if (memberUserId) {
-                                openUserDialog({
-                                    userId: memberUserId,
-                                    title: user?.displayName || undefined,
-                                    seedData: user
-                                });
-                            }
-                        }}
-                    >
-                        {image ? (
-                            <FadeInImage
-                                src={image}
-                                alt=""
-                                className="mr-2.5 size-9 shrink-0 rounded-full object-cover"
-                            />
-                        ) : (
-                            <div className="bg-muted mr-2.5 flex size-9 shrink-0 items-center justify-center rounded-full">
-                                <UserIcon className="text-muted-foreground" />
-                            </div>
-                        )}
-                        <span className="min-w-0 flex-1 overflow-hidden">
-                            <span className="block truncate leading-5 font-medium">
-                                {label}
-                            </span>
-                            {subtitle ? (
-                                <span className="text-muted-foreground block truncate text-xs">
-                                    {subtitle}
-                                </span>
-                            ) : null}
-                            <span className="text-muted-foreground flex items-center gap-1 truncate text-xs">
-                                {row.isRepresenting ? (
-                                    <TagIcon data-icon="inline-start" />
-                                ) : null}
-                                {row.visibility &&
-                                row.visibility !== 'visible' ? (
-                                    <EyeIcon data-icon="inline-start" />
-                                ) : null}
-                                {row.isSubscribedToAnnouncements === false ? (
-                                    <MessageSquareIcon data-icon="inline-start" />
-                                ) : null}
-                                {row.managerNotes ? (
-                                    <PencilIcon data-icon="inline-start" />
-                                ) : null}
-                            </span>
-                        </span>
-                    </Button>
-                );
-            })}
-        </div>
-    );
+    return null;
 }

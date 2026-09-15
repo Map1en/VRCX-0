@@ -39,5 +39,4 @@ const vrchatFriendRepository = Object.freeze({
     getUser
 });
 
-export { getUser };
 export default vrchatFriendRepository;

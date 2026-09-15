@@ -18,8 +18,4 @@ function isAvatarSearchQueryLongEnough(query: string): boolean {
     );
 }
 
-export {
-    AVATAR_SEARCH_MINIMUM_ENGLISH_EQUIVALENT_LENGTH,
-    avatarSearchEnglishEquivalentLength,
-    isAvatarSearchQueryLongEnough
-};
+export { avatarSearchEnglishEquivalentLength, isAvatarSearchQueryLongEnough };

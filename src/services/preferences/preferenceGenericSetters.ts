@@ -545,7 +545,7 @@ export async function setLocalFavoriteFriendsGroupsPreference(value: string[]) {
     return localFavoriteFriendsGroups;
 }
 
-export async function setFeedHiddenUsersPreference(value: string[]) {
+async function setFeedHiddenUsersPreference(value: string[]) {
     const feedHiddenUsers = normalizeFeedHiddenUsers(value);
     await configRepository.setString(
         'feedHiddenUsers',

@@ -127,4 +127,4 @@ export const useLocationHintStore = create<LocationHintStoreState>((set) => ({
 }));
 
 export { hintKey as locationHintKey };
-export type { LocationHint, LocationHintInput, LocationHintStoreState };
+export type { LocationHintInput, LocationHintStoreState };

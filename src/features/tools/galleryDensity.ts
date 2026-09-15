@@ -18,7 +18,7 @@ export const GALLERY_GRID_DENSITY_OPTIONS = Object.freeze([
 export type GalleryGridDensity =
     (typeof GALLERY_GRID_DENSITY_OPTIONS)[number]['value'];
 
-export const DEFAULT_GALLERY_GRID_DENSITY: GalleryGridDensity = 'standard';
+const DEFAULT_GALLERY_GRID_DENSITY: GalleryGridDensity = 'standard';
 
 const DENSITY_CONFIGS = Object.freeze({
     standard: Object.freeze({

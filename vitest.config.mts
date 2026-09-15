@@ -7,8 +7,6 @@ const coverageExcludedPureConstants = [
     'src/shared/constants/accessType.ts',
     'src/shared/constants/dashboard.ts',
     'src/shared/constants/emoji.ts',
-    'src/shared/constants/group.ts',
-    'src/shared/constants/instance.ts',
     'src/shared/constants/language.ts',
     'src/shared/constants/link.ts',
     'src/shared/constants/moderation.ts',
@@ -17,8 +15,7 @@ const coverageExcludedPureConstants = [
     'src/shared/constants/themes.ts',
     'src/shared/constants/time.ts',
     'src/shared/constants/ui.ts',
-    'src/shared/constants/user.ts',
-    'src/shared/constants/world.ts'
+    'src/shared/constants/user.ts'
 ];
 
 export default defineConfig({

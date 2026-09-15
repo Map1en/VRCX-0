@@ -61,7 +61,7 @@ export interface WorldDetailsDraft {
     previewYoutubeId: string;
 }
 
-export type WorldTagsDraft = Record<FeatureTagKey, boolean> & {
+type WorldTagsDraft = Record<FeatureTagKey, boolean> & {
     authorTags: string;
     contentTags: string;
     debugAllowed: boolean;

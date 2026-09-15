@@ -97,7 +97,7 @@ export function MetadataAuthorLink({ author }: { author: AuthorDetail }) {
                     <Button
                         type="button"
                         variant="ghost"
-                        className="text-muted-foreground hover:text-primary h-auto justify-start gap-1 p-0 text-left"
+                        className="text-muted-foreground hover:text-primary h-auto justify-start gap-1 p-0 text-left hover:bg-transparent"
                         onClick={() =>
                             openUserDialog({
                                 userId,

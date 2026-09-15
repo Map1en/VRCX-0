@@ -1,10 +1,10 @@
-import { CheckIcon, PersonStandingIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppColumnDef } from '@/components/data-table/appTable';
 import { DataTableHeaderLabel } from '@/components/data-table/DataTableSortButton';
 import {
+    DATA_TABLE_EMPTY_VALUE,
     DATA_TABLE_METADATA_CELL_CLASS_NAME,
     DATA_TABLE_NUMERIC_CELL_CLASS_NAME,
     DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
@@ -12,26 +12,21 @@ import {
     DATA_TABLE_STICKY_ACTION_CELL_CLASS_NAME,
     DATA_TABLE_STICKY_ACTION_HEADER_CLASS_NAME
 } from '@/components/data-table/DataTableView';
-import { FadeInImage } from '@/components/media/FadeInImage';
 import { formatDateFilter, timeToText } from '@/lib/dateTime';
 import { useRuntimeStore } from '@/state/runtimeStore';
-import { Badge } from '@/ui/shadcn/badge';
-import { Button } from '@/ui/shadcn/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
-    MY_AVATAR_TAG_BADGE_CLASS_NAME,
     getMyAvatarPlatformInfo,
-    resolveMyAvatarPerformanceLabel,
-    resolveMyAvatarTagBadgeStyle
+    resolveMyAvatarPerformanceLabel
 } from '../myAvatarsDisplay';
 import type { MyAvatarRow } from '../myAvatarsTypes';
 import type { MyAvatarsTableMeta } from '../useMyAvatarsTableMeta';
 import {
     AvatarActionsDropdown,
+    AvatarVisibilityIndicator,
+    MyAvatarNameCell,
     PlatformBadges,
-    SortButton,
-    openAvatarDetails
+    SortButton
 } from './MyAvatarsViewParts';
 
 type MyAvatarsColumnsOptions = {
@@ -56,95 +51,13 @@ export function useMyAvatarsColumns({
     return useMemo<AppColumnDef<MyAvatarRow>[]>(
         () => [
             {
-                id: 'thumbnail',
-                size: 56,
-                minSize: 52,
-                maxSize: 64,
-                accessorFn: (row) => row.thumbnailImageUrl || '',
-                meta: {
-                    label: t('table.playerList.avatar'),
-                    disableReorder: true
-                },
-                header: () => (
-                    <DataTableHeaderLabel>
-                        {t('table.playerList.avatar')}
-                    </DataTableHeaderLabel>
-                ),
-                enableSorting: false,
-                enableResizing: false,
-                cell: ({ row }) => {
-                    const avatarName =
-                        row.original?.name ||
-                        t('view.my_avatars.label.untitled_avatar');
-                    const isActive = row.original?.id === currentAvatarId;
-
-                    return (
-                        <div className="relative w-fit">
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                className="bg-muted h-6 w-8 overflow-hidden rounded-sm border p-0"
-                                aria-label={t(
-                                    'view.my_avatars.dynamic.open_value',
-                                    { value: avatarName }
-                                )}
-                                onClick={() => openAvatarDetails(row.original)}
-                            >
-                                {row.original?.thumbnailImageUrl ? (
-                                    <FadeInImage
-                                        src={row.original.thumbnailImageUrl}
-                                        alt=""
-                                        className="h-full w-full object-cover"
-                                        loading="lazy"
-                                        fallback={
-                                            <PersonStandingIcon
-                                                aria-hidden="true"
-                                                className="text-muted-foreground size-3.5"
-                                            />
-                                        }
-                                    />
-                                ) : (
-                                    <PersonStandingIcon
-                                        aria-hidden="true"
-                                        className="text-muted-foreground size-3.5"
-                                    />
-                                )}
-                            </Button>
-                            {isActive ? (
-                                <Tooltip>
-                                    <TooltipTrigger
-                                        render={
-                                            <span className="bg-primary text-primary-foreground ring-background absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full ring-2">
-                                                <CheckIcon
-                                                    aria-hidden="true"
-                                                    className="size-2.5"
-                                                />
-                                                <span className="sr-only">
-                                                    {t(
-                                                        'dialog.avatar.actions.current_avatar'
-                                                    )}
-                                                </span>
-                                            </span>
-                                        }
-                                    />
-                                    <TooltipContent>
-                                        {t(
-                                            'dialog.avatar.actions.current_avatar'
-                                        )}
-                                    </TooltipContent>
-                                </Tooltip>
-                            ) : null}
-                        </div>
-                    );
-                }
-            },
-            {
                 id: 'name',
                 size: 240,
                 minSize: 160,
                 accessorFn: (row) => row.name || '',
                 meta: {
                     label: t('dialog.avatar.info.name'),
+                    disableReorder: true,
                     tableCellClassName: DATA_TABLE_PRIMARY_CELL_CLASS_NAME
                 },
                 header: ({ column }) => (
@@ -154,62 +67,12 @@ export function useMyAvatarsColumns({
                     />
                 ),
                 cell: ({ row }) => (
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        className="hover:text-primary h-auto max-w-full p-0 text-left text-sm font-medium"
-                        onClick={() => openAvatarDetails(row.original)}
-                    >
-                        <span className="truncate">
-                            {row.original?.name ||
-                                t('view.my_avatars.label.untitled_avatar')}
-                        </span>
-                    </Button>
-                )
-            },
-            {
-                id: 'customTags',
-                size: 180,
-                minSize: 120,
-                accessorFn: (row) =>
-                    (row?.$tags || []).map((entry) => entry.tag).join(', '),
-                meta: { label: t('dialog.avatar.info.tags') },
-                header: ({ column }) => (
-                    <SortButton
-                        column={column}
-                        label={t('dialog.avatar.info.tags')}
+                    <MyAvatarNameCell
+                        avatar={row.original}
+                        isPublic={row.original?.releaseStatus === 'public'}
+                        publicLabel={t('dialog.avatar.tags.public')}
                     />
-                ),
-                cell: ({ row }) => {
-                    const tags = row.original.$tags || [];
-                    const visibleTags = tags.slice(0, 2);
-                    const hiddenTagCount = Math.max(
-                        0,
-                        tags.length - visibleTags.length
-                    );
-                    return tags.length ? (
-                        <div className="flex min-w-0 items-center gap-1 overflow-hidden">
-                            {visibleTags.map((entry) => (
-                                <Badge
-                                    key={`${row.original.id}:${entry.tag}`}
-                                    variant="secondary"
-                                    className={`${MY_AVATAR_TAG_BADGE_CLASS_NAME} max-w-24 min-w-0 shrink truncate`}
-                                    style={resolveMyAvatarTagBadgeStyle(entry)}
-                                >
-                                    {entry.tag}
-                                </Badge>
-                            ))}
-                            {hiddenTagCount ? (
-                                <Badge
-                                    variant="outline"
-                                    className={`${MY_AVATAR_TAG_BADGE_CLASS_NAME} shrink-0 tabular-nums`}
-                                >
-                                    +{hiddenTagCount}
-                                </Badge>
-                            ) : null}
-                        </div>
-                    ) : null;
-                }
+                )
             },
             {
                 id: 'platforms',
@@ -241,13 +104,19 @@ export function useMyAvatarsColumns({
                         label={t('dialog.avatar.info.visibility')}
                     />
                 ),
-                cell: ({ row }) => (
-                    <Badge variant="outline">
-                        {row.original?.releaseStatus === 'public'
-                            ? t('dialog.avatar.tags.public')
-                            : t('dialog.avatar.tags.private')}
-                    </Badge>
-                )
+                cell: ({ row }) => {
+                    const isPublic = row.original?.releaseStatus === 'public';
+                    return (
+                        <AvatarVisibilityIndicator
+                            isPublic={isPublic}
+                            label={t(
+                                isPublic
+                                    ? 'dialog.avatar.tags.public'
+                                    : 'dialog.avatar.tags.private'
+                            )}
+                        />
+                    );
+                }
             },
             {
                 id: 'timeSpent',
@@ -272,7 +141,7 @@ export function useMyAvatarsColumns({
                     <span className="block">
                         {row.original?.$timeSpent
                             ? timeToText(row.original.$timeSpent)
-                            : '-'}
+                            : DATA_TABLE_EMPTY_VALUE}
                     </span>
                 )
             },
@@ -297,7 +166,7 @@ export function useMyAvatarsColumns({
                 ),
                 cell: ({ row }) => (
                     <span className="block">
-                        {row.original?.version ?? '-'}
+                        {row.original?.version ?? DATA_TABLE_EMPTY_VALUE}
                     </span>
                 )
             },
@@ -395,7 +264,7 @@ export function useMyAvatarsColumns({
                     <span>
                         {row.original?.updated_at
                             ? formatDateFilter(row.original.updated_at, 'long')
-                            : '-'}
+                            : DATA_TABLE_EMPTY_VALUE}
                     </span>
                 )
             },
@@ -419,7 +288,7 @@ export function useMyAvatarsColumns({
                     <span>
                         {row.original?.created_at
                             ? formatDateFilter(row.original.created_at, 'long')
-                            : '-'}
+                            : DATA_TABLE_EMPTY_VALUE}
                     </span>
                 )
             },

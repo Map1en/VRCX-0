@@ -41,6 +41,7 @@ pub struct TelemetryConfigSnapshot {
     pub feed_rows_bucket: String,
     pub gamelog_rows_bucket: String,
     pub friend_log_rows_bucket: String,
+    pub friend_count_bucket: String,
 }
 
 #[derive(Clone, Debug, Serialize)]

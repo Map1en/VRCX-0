@@ -8,6 +8,7 @@ use base64::{engine::general_purpose::STANDARD as B64, Engine};
 use serde::Serialize;
 
 use crate::{asset_bundle_cache, process_status, vrchat_paths};
+use vrcx_0_platform::path_utils::replace_file_atomically;
 use vrcx_0_platform::Error;
 
 static NEXT_ATOMIC_WRITE_ID: AtomicU64 = AtomicU64::new(0);
@@ -290,42 +291,6 @@ fn write_string_file_atomically(path: &Path, content: &str) -> Result<(), Error>
         let _ = std::fs::remove_file(&temporary_path);
     }
     result
-}
-
-#[cfg(windows)]
-fn replace_file_atomically(source: &Path, destination: &Path) -> Result<(), Error> {
-    use std::os::windows::ffi::OsStrExt;
-    use windows_sys::Win32::Storage::FileSystem::{
-        MoveFileExW, MOVEFILE_REPLACE_EXISTING, MOVEFILE_WRITE_THROUGH,
-    };
-
-    let source = source
-        .as_os_str()
-        .encode_wide()
-        .chain(std::iter::once(0))
-        .collect::<Vec<_>>();
-    let destination = destination
-        .as_os_str()
-        .encode_wide()
-        .chain(std::iter::once(0))
-        .collect::<Vec<_>>();
-    let result = unsafe {
-        MoveFileExW(
-            source.as_ptr(),
-            destination.as_ptr(),
-            MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH,
-        )
-    };
-    if result == 0 {
-        return Err(std::io::Error::last_os_error().into());
-    }
-    Ok(())
-}
-
-#[cfg(not(windows))]
-fn replace_file_atomically(source: &Path, destination: &Path) -> Result<(), Error> {
-    std::fs::rename(source, destination)?;
-    Ok(())
 }
 
 #[cfg(target_os = "linux")]

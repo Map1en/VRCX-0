@@ -1,9 +1,4 @@
-import {
-    DownloadIcon,
-    ExternalLinkIcon,
-    EyeIcon,
-    ImageIcon
-} from 'lucide-react';
+import { ExternalLinkIcon, EyeIcon, ImageIcon } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -18,14 +13,6 @@ import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/ui/shadcn/select';
 import { Skeleton } from '@/ui/shadcn/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
@@ -49,12 +36,8 @@ import {
     announcementUserLabel
 } from './groupDialogUtils';
 import { GroupInstanceRows } from './GroupInstanceRows';
+import { GroupMembersPanel } from './GroupMembersPanel';
 import { GroupPostUserButton, RowList } from './GroupRowList';
-
-type GroupRoleOption = {
-    id?: string;
-    name?: string;
-};
 
 function GroupBannerFallback() {
     return (
@@ -229,7 +212,6 @@ export function GroupDialogTabPanels({
         bannerUrl,
         canManagePosts,
         currentUserId,
-        filteredMembers,
         filteredPosts,
         group,
         groupEvents,
@@ -238,8 +220,7 @@ export function GroupDialogTabPanels({
         groupTitle,
         groupUrl,
         joinState,
-        memberRoleId,
-        memberSort,
+        members,
         memberStatus,
         ownerLabel,
         photos,
@@ -253,11 +234,9 @@ export function GroupDialogTabPanels({
     const {
         onChangeTab,
         onDeletePost,
-        onDownloadMembersJson,
         onEditPost,
-        onLoadAllMembers,
-        onMemberRoleChange,
-        onMemberSortChange,
+        onExportMembers,
+        onLoadMoreMembers,
         onOpenLink,
         onOpenOwner,
         onPreviousInstancesChange,
@@ -269,8 +248,6 @@ export function GroupDialogTabPanels({
         onSearchPostsChange,
         onToggleEventFollow
     } = commands;
-    const members = filteredMembers.source || [];
-    const memberRows = filteredMembers.rows || [];
     const languages = Array.isArray(group.languages) ? group.languages : [];
     const links = Array.isArray(group.links) ? group.links : [];
     const tags = Array.isArray(group.tags) ? group.tags : [];
@@ -599,132 +576,15 @@ export function GroupDialogTabPanels({
                     onDeletePost={onDeletePost}
                 />
             </EntityDialogTabContent>
-            <EntityDialogTabContent
-                value="members"
-                className="flex flex-col gap-2"
-            >
-                <div className="flex flex-wrap items-center gap-2">
-                    <div className="text-muted-foreground text-sm">
-                        {memberRows.length}/
-                        {group.memberCount || members.length}{' '}
-                        {t('dialog.group.members.header')}
-                    </div>
-                    <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={remoteStatus.members === 'running'}
-                        onClick={onRefreshMembers}
-                    >
-                        {t('common.actions.refresh')}
-                    </Button>
-                    <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={remoteStatus.members === 'running'}
-                        onClick={onLoadAllMembers}
-                    >
-                        {t('dialog.group.action.load_all')}
-                    </Button>
-                    <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={!members.length}
-                        onClick={onDownloadMembersJson}
-                    >
-                        <DownloadIcon data-icon="inline-start" />
-                        JSON
-                    </Button>
-                    <Select
-                        value={memberSort}
-                        items={[
-                            {
-                                value: 'joinedAt:desc',
-                                label: t('dialog.group.success.joined_newest')
-                            },
-                            {
-                                value: 'joinedAt:asc',
-                                label: t('dialog.group.success.joined_oldest')
-                            }
-                        ]}
-                        onValueChange={(value) => {
-                            if (value) {
-                                onMemberSortChange(value);
-                            }
-                        }}
-                        disabled={remoteStatus.members === 'running'}
-                    >
-                        <SelectTrigger size="sm" className="w-44">
-                            <SelectValue
-                                placeholder={t('side_panel.settings.sort')}
-                            />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectGroup>
-                                <SelectItem value="joinedAt:desc">
-                                    {t('dialog.group.success.joined_newest')}
-                                </SelectItem>
-                                <SelectItem value="joinedAt:asc">
-                                    {t('dialog.group.success.joined_oldest')}
-                                </SelectItem>
-                            </SelectGroup>
-                        </SelectContent>
-                    </Select>
-                    <Select
-                        value={memberRoleId || 'all'}
-                        items={[
-                            {
-                                value: 'all',
-                                label: t('dialog.group.label.all_roles')
-                            },
-                            ...roles.map((role: GroupRoleOption) => ({
-                                value: role.id || role.name,
-                                label: role.name || 'Role'
-                            }))
-                        ]}
-                        onValueChange={(value) =>
-                            onMemberRoleChange(value ?? '')
-                        }
-                        disabled={remoteStatus.members === 'running'}
-                    >
-                        <SelectTrigger size="sm" className="w-48">
-                            <SelectValue
-                                placeholder={t('dialog.group.label.role')}
-                            />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectGroup>
-                                <SelectItem value="all">
-                                    {t('dialog.group.label.all_roles')}
-                                </SelectItem>
-                                {roles.map((role) => (
-                                    <SelectItem
-                                        key={role.id || role.name}
-                                        value={role.id || role.name}
-                                    >
-                                        {role.name || 'Role'}
-                                    </SelectItem>
-                                ))}
-                            </SelectGroup>
-                        </SelectContent>
-                    </Select>
-                    <Input
-                        value={search.members}
-                        onChange={(event) =>
-                            onSearchMembersChange(event.target.value)
-                        }
-                        placeholder={t('dialog.group.members.search')}
-                        className="ml-auto h-8 max-w-64"
-                    />
-                </div>
-                <RowList
-                    rows={memberRows}
+            <EntityDialogTabContent value="members">
+                <GroupMembersPanel
+                    active={activeTab === 'members'}
                     group={group}
-                    kind="members"
-                    loading={remoteStatus.members === 'running'}
-                    error={remoteErrors.members}
+                    members={members}
+                    onExport={onExportMembers}
+                    onLoadMore={onLoadMoreMembers}
+                    onQueryChange={onSearchMembersChange}
+                    onRefresh={onRefreshMembers}
                 />
             </EntityDialogTabContent>
             <EntityDialogTabContent

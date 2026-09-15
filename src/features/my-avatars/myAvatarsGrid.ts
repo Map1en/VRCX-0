@@ -10,7 +10,7 @@ import type {
     MyAvatarsGridRow
 } from './myAvatarsTypes';
 
-export const MY_AVATARS_IMAGE_ASPECT_RATIO = 4 / 3;
+const MY_AVATARS_IMAGE_ASPECT_RATIO = 4 / 3;
 
 const MY_AVATARS_GRID_CARD_PADDING = 2;
 

@@ -5,7 +5,7 @@ import type {
 } from '../graphLayoutTypes';
 import GraphLayoutWorker from '../graphLayoutWorker.js?worker&inline';
 
-export type { GraphLayoutPositions, GraphLayoutRequest };
+export type { GraphLayoutRequest };
 
 export type GraphLayoutWorkerPort = {
     onMessage: (listener: (response: GraphLayoutResponse) => void) => void;

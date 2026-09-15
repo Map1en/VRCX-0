@@ -13,7 +13,7 @@ import { isRecord } from '@/shared/utils/record';
 import configRepository from './configRepository';
 import { unwrapVrchatResponse } from './vrchatRequest';
 
-export type NotificationDetails = Record<string, unknown> & {
+type NotificationDetails = Record<string, unknown> & {
     displayLocation?: string;
     emojiId?: unknown;
     groupId?: string;
@@ -26,7 +26,7 @@ export type NotificationDetails = Record<string, unknown> & {
     worldId?: string;
     worldName?: string;
 };
-export type NotificationData = Record<string, unknown> & {
+type NotificationData = Record<string, unknown> & {
     announcementTitle?: string;
     groupId?: string;
     groupName?: string;
@@ -39,7 +39,7 @@ export type NotificationResponse = Record<string, unknown> & {
     textKey?: string;
     type?: string;
 };
-export type NotificationListRow = Omit<
+type NotificationListRow = Omit<
     NotificationListItemOutput,
     'details' | 'data' | 'responses'
 > & {
@@ -58,7 +58,6 @@ export type NotificationRow = Omit<
         expiresAt?: string | null;
         displayLocation?: string;
         groupName?: string;
-        location?: string;
         senderDisplayName?: string;
         senderUserIcon?: string;
         worldName?: string;
@@ -388,17 +387,5 @@ const notificationPersistenceRepository = Object.freeze({
     updateNotificationExpired
 });
 
-export {
-    addNotificationToDatabase,
-    addNotificationV2ToDatabase,
-    expireNotificationV2,
-    queryNotifications,
-    deleteNotification,
-    expireNotification,
-    sendRequestInvite,
-    sendRequestInvitePhoto,
-    sendBoop,
-    seenNotificationV2,
-    updateNotificationExpired
-};
+export { addNotificationToDatabase, queryNotifications };
 export default notificationPersistenceRepository;

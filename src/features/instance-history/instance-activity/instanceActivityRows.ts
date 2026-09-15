@@ -1,5 +1,6 @@
 import { parseLocation } from '@/shared/utils/location';
 
+import { parseLocalDayKey } from './instanceActivityDate';
 import type {
     InstanceActivityChartRow,
     InstanceActivityDetailGroup,
@@ -11,13 +12,6 @@ import type {
 
 function timestampMs(value: string): number {
     return new Date(value).getTime();
-}
-
-export function parseLocalDayKey(dayKey: string) {
-    const [year, month, day] = dayKey
-        .split('-')
-        .map((value: string) => Number.parseInt(value, 10) || 0);
-    return new Date(year, Math.max(0, month - 1), day || 1, 0, 0, 0, 0);
 }
 
 export function getLocalDayBounds(dayKey: string) {
@@ -32,7 +26,7 @@ export function getLocalDayBounds(dayKey: string) {
     };
 }
 
-export function isValidActivityLocation(location: string): boolean {
+function isValidActivityLocation(location: string): boolean {
     const normalizedLocation = location.trim();
     if (!normalizedLocation) {
         return false;
@@ -40,7 +34,7 @@ export function isValidActivityLocation(location: string): boolean {
     return !parseLocation(normalizedLocation).isTraveling;
 }
 
-export function normalizeInstanceRow(
+function normalizeInstanceRow(
     row: InstanceActivityRawRow,
     selectedDate: string,
     currentUserId: string,
@@ -81,7 +75,7 @@ export function normalizeInstanceRow(
     };
 }
 
-export function getActivityDetailKey(location: string, joinMs: number): string {
+function getActivityDetailKey(location: string, joinMs: number): string {
     return `${location || ''}:${Number.isFinite(joinMs) ? joinMs : 0}`;
 }
 
@@ -118,7 +112,7 @@ export function buildChartRows(
         .sort((left, right) => left.joinMs - right.joinMs);
 }
 
-export function normalizeDetailRow(
+function normalizeDetailRow(
     row: InstanceActivityRawRow,
     currentUserId: string,
     friendIdSet: Set<string>,
@@ -151,14 +145,14 @@ export function normalizeDetailRow(
     };
 }
 
-export function doIntervalsOverlap(
+function doIntervalsOverlap(
     left: { joinMs: number; leaveMs: number },
     right: { joinMs: number; leaveMs: number }
 ): boolean {
     return !(left.leaveMs < right.joinMs || right.leaveMs < left.joinMs);
 }
 
-export function splitDetailGroupsByCurrentUserOverlap(
+function splitDetailGroupsByCurrentUserOverlap(
     groups: InstanceActivityDetailGroup[],
     currentUserId: string
 ): InstanceActivityDetailGroup[] {

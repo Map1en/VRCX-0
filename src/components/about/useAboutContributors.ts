@@ -19,7 +19,7 @@ function isBotContributor(entry: Record<string, unknown>): boolean {
     );
 }
 
-export function parseContributors(data: string): AboutContributor[] {
+function parseContributors(data: string): AboutContributor[] {
     const parsed: unknown = JSON.parse(data);
     if (!Array.isArray(parsed)) {
         throw new Error('GitHub contributors payload is not a list.');

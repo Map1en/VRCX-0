@@ -162,14 +162,14 @@ describe('myAvatarsState', () => {
     it('sanitizes saved column visibility, order, and sizing with migrated ids', () => {
         expect(
             sanitizeMyAvatarsColumnVisibility({
-                thumbnail: false,
+                visibility: false,
                 version: true,
                 action: true,
                 unknown: false,
                 name: 'yes'
             })
         ).toEqual({
-            thumbnail: false,
+            visibility: false,
             version: true,
             actions: true
         });
@@ -194,11 +194,10 @@ describe('myAvatarsState', () => {
 
         const resolvedColumnOrder = resolveMyAvatarsColumnOrder([
             'actions',
-            'name',
-            'thumbnail',
-            'customTags'
+            'visibility',
+            'name'
         ]);
-        expect(resolvedColumnOrder[0]).toBe('thumbnail');
+        expect(resolvedColumnOrder[0]).toBe('name');
         expect(resolvedColumnOrder.at(-1)).toBe('actions');
         expect(new Set(resolvedColumnOrder)).toEqual(
             new Set(MY_AVATARS_COLUMN_IDS)
@@ -206,13 +205,13 @@ describe('myAvatarsState', () => {
 
         expect(
             sanitizeMyAvatarsColumnSizing({
-                thumbnail: '120px',
+                timeSpent: '120px',
                 releaseStatus: 160,
                 unknown: 200,
                 name: 240
             })
         ).toEqual({
-            thumbnail: 120,
+            timeSpent: 120,
             name: 240,
             visibility: 160
         });

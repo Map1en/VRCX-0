@@ -64,18 +64,14 @@ export function normalizedText(value: unknown) {
         : String(value ?? '').trim();
 }
 
-export function isGroupId(value: unknown) {
-    return hasGroupIdPrefix(normalizedText(value));
-}
-
-export function firstNonGroupIdText(...values: unknown[]) {
+function firstNonGroupIdText(...values: unknown[]) {
     const fallback = [];
     for (const value of values) {
         const text = normalizedText(value);
         if (!text) {
             continue;
         }
-        if (!isGroupId(text)) {
+        if (!hasGroupIdPrefix(text)) {
             return text;
         }
         fallback.push(text);

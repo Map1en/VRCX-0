@@ -105,7 +105,6 @@ function compareUnityVersion(
 export {
     parseAvatarImageMetadata,
     stripDefaultAvatarImage,
-    DEFAULT_AVATAR_FILE_ID,
     parseAvatarUrl,
     getPlatformInfo,
     compareUnityVersion

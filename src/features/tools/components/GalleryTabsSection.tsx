@@ -54,7 +54,6 @@ export function GalleryTabsSection({
                 profilePicOverride,
                 userIcon,
                 gridDensityConfig,
-                onRefresh,
                 onBeginUpload,
                 onClearProfileField,
                 onPreview,

@@ -1,14 +1,14 @@
 import { create } from 'zustand';
 
+import { isRecord } from '@/shared/utils/record';
+import { normalizeString } from '@/shared/utils/string';
 import type {
     FeedEntryPatch,
     FeedEntryPatchInput,
     FeedLiveEntry,
     FeedLivePatch,
     FeedLiveEntryPayload
-} from '@/components/feed/feedLiveTypes';
-import { isRecord } from '@/shared/utils/record';
-import { normalizeString } from '@/shared/utils/string';
+} from '@/state/feedLiveTypes';
 import { usePreferencesStore } from '@/state/preferencesStore';
 
 type FeedLivePushOptions = {

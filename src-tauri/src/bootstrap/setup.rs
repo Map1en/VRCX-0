@@ -100,20 +100,6 @@ pub fn app_update_check_disabled() -> bool {
     option_env!("VRCX_0_DISABLE_UPDATE_CHECK") == Some("1")
 }
 
-pub fn apply_linux_webkit_workaround() {
-    #[cfg(target_os = "linux")]
-    {
-        use webkit2gtk_nvidia_quirk::{apply_workaround_with_options, ApplyWorkaroundOptions};
-
-        if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
-            tracing::info!("disabling WebKitGTK DMABUF renderer on Linux");
-            std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
-        }
-
-        apply_workaround_with_options(ApplyWorkaroundOptions::default());
-    }
-}
-
 pub fn configure_webview2_environment() {
     #[cfg(target_os = "windows")]
     {
@@ -277,6 +263,7 @@ pub fn setup_app_with_data_dir(
         0,
     );
     create_main_window(app.handle(), state.runtime_host().proxy_url())?;
+    super::linux_rendering::start_fallback(app.handle());
     state.runtime_host().record_lifecycle_phase(
         "mainWindow",
         RuntimeOperationStatus::Completed,
@@ -347,6 +334,10 @@ fn queue_deep_link_url(app: &tauri::AppHandle, value: &str) {
         tracing::warn!(url = %value, "ignored deep link before app state was ready");
         return;
     };
+    if state.runtime_host().privacy_lock().is_locked() {
+        tracing::info!("dropped deep link while the privacy lock is engaged");
+        return;
+    }
     queue_deep_link_action(state.pending_deep_links(), action, || {
         let app_handle = app.clone();
         tauri::async_runtime::spawn(async move {

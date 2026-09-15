@@ -1,9 +1,11 @@
-import { ClipboardCopyIcon } from 'lucide-react';
+import { ChevronUpIcon, ClipboardCopyIcon } from 'lucide-react';
+import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { DATA_TABLE_EMPTY_VALUE } from '@/components/data-table/dataTableStyles';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/ui/shadcn/badge';
-import { Checkbox } from '@/ui/shadcn/checkbox';
+import { Button } from '@/ui/shadcn/button';
 import {
     ContextMenu,
     ContextMenuContent,
@@ -11,22 +13,27 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
+import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import type { useVrchatLogController } from '../useVrchatLogController';
 import {
+    buildLogHighlightMatcher,
     entryMessageText,
     entryToText,
     levelClassName,
     LOG_HEADER_HEIGHT,
+    LOG_LOAD_OLDER_HEIGHT,
     LOG_ROW_HEIGHT,
-    LOG_TABLE_GRID_CLASS
+    LOG_TABLE_GRID_CLASS,
+    splitLogHighlight
 } from '../vrchatLogHelpers';
 
 type VrchatLogController = ReturnType<typeof useVrchatLogController>;
 type VrchatLogTableProps = Pick<
     VrchatLogController,
     | 'setLogScrollNode'
+    | 'logBodyOffset'
     | 'logVirtualHeight'
     | 'visibleLogRows'
     | 'selectedLineNumbers'
@@ -35,10 +42,18 @@ type VrchatLogTableProps = Pick<
     | 'copySelectedEntries'
     | 'selectedCount'
     | 'isCopying'
->;
+    | 'searchQuery'
+    | 'searchCaseSensitive'
+    | 'searchRegex'
+    | 'olderOffset'
+    | 'isLoadingMore'
+> & {
+    onLoadOlder: () => void;
+};
 
 export function VrchatLogTable({
     setLogScrollNode,
+    logBodyOffset,
     logVirtualHeight,
     visibleLogRows,
     selectedLineNumbers,
@@ -46,9 +61,20 @@ export function VrchatLogTable({
     copyText,
     copySelectedEntries,
     selectedCount,
-    isCopying
+    isCopying,
+    searchQuery,
+    searchCaseSensitive,
+    searchRegex,
+    olderOffset,
+    isLoadingMore,
+    onLoadOlder
 }: VrchatLogTableProps) {
     const { t } = useTranslation();
+    const matcher = buildLogHighlightMatcher(searchQuery, {
+        caseSensitive: searchCaseSensitive,
+        useRegex: searchRegex
+    });
+    const canLoadOlder = olderOffset !== null;
 
     return (
         <div ref={setLogScrollNode} className="h-full overflow-auto">
@@ -58,21 +84,47 @@ export function VrchatLogTable({
             >
                 <div
                     className={cn(
-                        'border-border bg-background/95 text-muted-foreground sticky top-0 z-10 grid h-[30px] items-center gap-2 border-b px-2 text-[11px] font-medium uppercase backdrop-blur',
+                        'bg-background/95 sticky top-0 z-10 grid h-[30px] items-center gap-2 border-b border-[var(--vrcx-0-table-divider)] px-2 text-xs text-[var(--vrcx-0-table-header-foreground)] backdrop-blur',
                         LOG_TABLE_GRID_CLASS
                     )}
                 >
-                    <div />
+                    <div className="text-right">
+                        {t('view.tools.vrchat_log.column_line')}
+                    </div>
                     <div>{t('view.tools.vrchat_log.column_time')}</div>
                     <div>{t('view.tools.vrchat_log.column_level')}</div>
                     <div>{t('view.tools.vrchat_log.column_category')}</div>
                     <div>{t('view.tools.vrchat_log.column_message')}</div>
                 </div>
+                {canLoadOlder ? (
+                    <div
+                        className="absolute top-0 right-0 left-0 flex items-center justify-center px-2"
+                        style={{
+                            height: `${LOG_LOAD_OLDER_HEIGHT}px`,
+                            transform: `translateY(${LOG_HEADER_HEIGHT}px)`
+                        }}
+                    >
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8"
+                            disabled={isLoadingMore}
+                            onClick={onLoadOlder}
+                        >
+                            {isLoadingMore ? (
+                                <Spinner className="size-3.5" />
+                            ) : (
+                                <ChevronUpIcon data-icon="inline-start" />
+                            )}
+                            {t('view.tools.vrchat_log.load_older')}
+                        </Button>
+                    </div>
+                ) : null}
                 {visibleLogRows.map((row) => {
                     const { entry } = row;
                     const categoryLabel =
-                        entry.category ||
-                        t('view.tools.vrchat_log.no_category');
+                        entry.category || DATA_TABLE_EMPTY_VALUE;
                     const selected = selectedLineNumbers.has(entry.lineNumber);
 
                     return (
@@ -85,18 +137,9 @@ export function VrchatLogTable({
                                         tabIndex={0}
                                         style={{
                                             height: `${LOG_ROW_HEIGHT}px`,
-                                            transform: `translateY(${row.start + LOG_HEADER_HEIGHT}px)`
+                                            transform: `translateY(${row.start + logBodyOffset}px)`
                                         }}
-                                        onClick={(event) => {
-                                            const target = event.target;
-                                            if (
-                                                target instanceof Element &&
-                                                target.closest(
-                                                    '[data-log-select-control]'
-                                                )
-                                            ) {
-                                                return;
-                                            }
+                                        onClick={() => {
                                             toggleEntrySelected(
                                                 entry,
                                                 !selected
@@ -116,24 +159,14 @@ export function VrchatLogTable({
                                             );
                                         }}
                                         className={cn(
-                                            'border-border hover:bg-accent/25 absolute top-0 right-0 left-0 grid cursor-default items-center gap-2 border-b px-2 text-[13px] leading-5',
+                                            'absolute top-0 right-0 left-0 grid cursor-default items-center gap-2 border-b border-[var(--vrcx-0-table-divider)] px-2 text-[13px] leading-5 hover:bg-[var(--vrcx-0-table-row-hover-surface)]',
                                             LOG_TABLE_GRID_CLASS,
-                                            selected && 'bg-accent/30'
+                                            selected &&
+                                                'before:bg-primary bg-[var(--vrcx-0-table-row-selected-surface)] before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:content-[""] hover:bg-[var(--vrcx-0-table-row-selected-hover-surface)]'
                                         )}
                                     >
-                                        <div
-                                            className="flex justify-center"
-                                            data-log-select-control
-                                        >
-                                            <Checkbox
-                                                checked={selected}
-                                                onCheckedChange={(checked) =>
-                                                    toggleEntrySelected(
-                                                        entry,
-                                                        checked === true
-                                                    )
-                                                }
-                                            />
+                                        <div className="text-muted-foreground/70 text-right tabular-nums">
+                                            {entry.lineNumber}
                                         </div>
                                         <div className="text-muted-foreground whitespace-nowrap tabular-nums">
                                             {entry.timestamp}
@@ -173,7 +206,20 @@ export function VrchatLogTable({
                                             title={entryMessageText(entry)}
                                         >
                                             <span className="min-w-0 truncate">
-                                                {entry.message}
+                                                {splitLogHighlight(
+                                                    entry.message,
+                                                    matcher
+                                                ).map((segment, index) => (
+                                                    <Fragment key={index}>
+                                                        {segment.match ? (
+                                                            <mark className="bg-primary/25 text-foreground rounded-sm">
+                                                                {segment.text}
+                                                            </mark>
+                                                        ) : (
+                                                            segment.text
+                                                        )}
+                                                    </Fragment>
+                                                ))}
                                             </span>
                                             {entry.continuationLines.length ? (
                                                 <Badge className="bg-muted text-muted-foreground h-5 shrink-0 px-1.5 text-[11px] font-medium">

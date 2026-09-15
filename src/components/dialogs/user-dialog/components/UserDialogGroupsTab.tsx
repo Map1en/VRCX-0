@@ -16,6 +16,7 @@ import {
     EntityBlank,
     EntityDialogTabContent
 } from '../../EntityDialogScaffold';
+import { groupIdForRow } from '../userDialogGroupRows';
 import {
     userDialogGroupSortingOptions,
     type UserDialogGroupSort
@@ -138,7 +139,18 @@ export function UserDialogGroupsTab({
                     error={remoteErrors.groups}
                 />
             ) : groupSearchActive ? (
-                <EntityList rows={filteredProfileGroups} kind="group" />
+                <EntityList
+                    rows={filteredProfileGroups}
+                    kind="group"
+                    groupMarkers={{
+                        own: new Set(
+                            userGroupSections.ownGroups.map(groupIdForRow)
+                        ),
+                        mutual: new Set(
+                            userGroupSections.mutualGroups.map(groupIdForRow)
+                        )
+                    }}
+                />
             ) : userGroupSections.ownGroups.length ||
               userGroupSections.mutualGroups.length ||
               userGroupSections.remainingGroups.length ? (

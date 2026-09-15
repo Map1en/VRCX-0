@@ -16,7 +16,7 @@ export type ActivityHeatmapData = {
 
 const ACTIVITY_PERIODS = ['7', '30', '90', '180', '365', 'all'] as const;
 export type ActivityPeriod = (typeof ACTIVITY_PERIODS)[number];
-export const VALID_ACTIVITY_PERIODS = new Set<string>(ACTIVITY_PERIODS);
+const VALID_ACTIVITY_PERIODS = new Set<string>(ACTIVITY_PERIODS);
 export const USER_ACTIVITY_HOUR_LABELS = Array.from(
     { length: 24 },
     (_, index) => `${String(index).padStart(2, '0')}:00`

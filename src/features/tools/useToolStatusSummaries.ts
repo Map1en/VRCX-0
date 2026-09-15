@@ -4,16 +4,27 @@ import { useTranslation } from 'react-i18next';
 
 import { formatDateTime } from '@/lib/dateTime';
 import { commands } from '@/platform/tauri/bindings';
+import appLauncherRepository from '@/repositories/appLauncherRepository';
 import configRepository from '@/repositories/configRepository';
 import { getCurrentAppLauncherSnapshot } from '@/services/appLauncherSnapshotService';
-import { getProfileBackupSettings } from '@/services/profileBackupService';
-import { TOOLS_STATUS_UPDATED_EVENT } from '@/shared/constants/tools';
+import {
+    getProfileBackupSettings,
+    setProfileBackupSettings
+} from '@/services/profileBackupService';
+import {
+    publishToolsStatusUpdated,
+    TOOLS_STATUS_UPDATED_EVENT
+} from '@/shared/constants/tools';
 import { isRecord } from '@/shared/utils/record';
 import { useProfileBackupStore } from '@/state/profileBackupStore';
 
 export type ToolStatusSummary = {
     label: string;
     tone: 'active' | 'neutral';
+    toggle?: {
+        enabled: boolean;
+        setEnabled: (enabled: boolean) => Promise<void>;
+    };
 };
 
 export function countPresenceRules(rules: readonly unknown[] | null): {
@@ -78,44 +89,61 @@ async function loadToolStatusSummaries(
         }
     }
 
-    if (inviteMode && inviteMode !== 'Off') {
+    if (inviteMode !== null) {
+        const enabled = inviteMode !== 'Off';
         next.set('presence-invite-requests', {
-            label: t('view.tools.status.auto_reply_enabled'),
-            tone: 'active'
+            label: '',
+            tone: enabled ? 'active' : 'neutral',
+            toggle: {
+                enabled,
+                setEnabled: async (nextEnabled) => {
+                    await configRepository.setString(
+                        'autoAcceptInviteRequests',
+                        nextEnabled ? 'All Favorites' : 'Off'
+                    );
+                    publishToolsStatusUpdated();
+                }
+            }
         });
     }
 
     if (appLauncher?.entries.length) {
         next.set('app-launcher', {
-            label: t(
-                appLauncher.enabled
-                    ? 'view.tools.status.apps_enabled'
-                    : 'view.tools.status.apps_configured_off',
-                { count: appLauncher.entries.length }
-            ),
-            tone: appLauncher.enabled ? 'active' : 'neutral'
+            label: t('view.tools.status.apps_count', {
+                count: appLauncher.entries.length
+            }),
+            tone: appLauncher.enabled ? 'active' : 'neutral',
+            toggle: {
+                enabled: appLauncher.enabled,
+                setEnabled: async (nextEnabled) => {
+                    await appLauncherRepository.setEnabled(nextEnabled);
+                    publishToolsStatusUpdated();
+                }
+            }
         });
     }
 
-    if (backupSettings?.lastAutoAt) {
+    if (backupSettings?.autoTargetDir) {
         next.set('profile-backup', {
-            label: t('view.tools.status.last_backup', {
-                date: formatDateTime(backupSettings.lastAutoAt, {
-                    dateStyle: 'medium',
-                    timeStyle: 'short'
-                })
-            }),
-            tone: 'active'
-        });
-    } else if (backupSettings?.autoEnabled) {
-        next.set('profile-backup', {
-            label: t('view.tools.status.automatic_backup_enabled'),
-            tone: 'active'
-        });
-    } else if (backupSettings?.autoTargetDir) {
-        next.set('profile-backup', {
-            label: t('view.tools.status.automatic_backup_configured_off'),
-            tone: 'neutral'
+            label: backupSettings.lastAutoAt
+                ? t('view.tools.status.last_backup', {
+                      date: formatDateTime(backupSettings.lastAutoAt, {
+                          dateStyle: 'medium',
+                          timeStyle: 'short'
+                      })
+                  })
+                : t('view.tools.status.automatic_backup'),
+            tone: backupSettings.autoEnabled ? 'active' : 'neutral',
+            toggle: {
+                enabled: backupSettings.autoEnabled,
+                setEnabled: async (nextEnabled) => {
+                    await setProfileBackupSettings({
+                        ...backupSettings,
+                        autoEnabled: nextEnabled
+                    });
+                    publishToolsStatusUpdated();
+                }
+            }
         });
     }
 

@@ -64,12 +64,7 @@ export type DiscordPreferenceKey =
     | 'discordWorldIntegration'
     | 'discordWorldNameAsDiscordStatus';
 
-export interface TableLimitsPreference {
-    maxTableSize: number;
-    searchLimit: number;
-}
-
-export { normalizeOverlayActivityFilters, parseOverlayActivityFilters };
+export { normalizeOverlayActivityFilters };
 
 function hasPersistedOverlayActivityFilters(value: unknown): boolean {
     if (!value) {
@@ -169,7 +164,7 @@ export function normalizeTranslationApiType(
     return value === 'openai' || value === 'deepl' ? value : 'google';
 }
 
-export function normalizeNotificationWebhookFormat(
+function normalizeNotificationWebhookFormat(
     value: unknown
 ): NotificationWebhookFormat {
     return value === 'discord' ? 'discord' : 'generic';

@@ -506,7 +506,7 @@ export function NoteExportDialog({
                                             <Button
                                                 type="button"
                                                 variant="ghost"
-                                                className="hover:text-primary h-auto min-w-0 justify-start truncate p-0 font-medium"
+                                                className="hover:text-primary h-auto min-w-0 justify-start truncate p-0 font-medium hover:bg-transparent"
                                                 onClick={() =>
                                                     openUserDialog({
                                                         userId: row.id,

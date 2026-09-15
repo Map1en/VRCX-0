@@ -9,6 +9,7 @@ import type {
     CurrentInstanceRosterContext,
     CurrentInstanceRosterPlayer
 } from '@/domain/instances/currentInstanceRoster';
+import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
 import {
     parseLocation,
     resolveFriendPresenceLocation
@@ -18,7 +19,6 @@ import { isRecord } from '@/shared/utils/record';
 import {
     firstText,
     groupSeed,
-    isGroupId,
     mergeInstanceUsers,
     normalizeInstanceGroup,
     resolveLaunchLocation,
@@ -137,7 +137,9 @@ export function buildWorldDialogDisplayInstanceRows({
                   parsedCurrentInstanceLocation.groupId
               )
             : '';
-    const currentInstanceOwnerIsGroup = isGroupId(currentInstanceOwnerId);
+    const currentInstanceOwnerIsGroup = hasGroupIdPrefix(
+        currentInstanceOwnerId
+    );
     const snapshotPlayers = (
         Array.isArray(playerSnapshot.players) ? playerSnapshot.players : []
     )
@@ -314,7 +316,7 @@ export function buildWorldDialogDisplayInstanceRows({
                 .map((instance) =>
                     firstText(
                         instance.creatorGroupId,
-                        isGroupId(instance.creatorUserId)
+                        hasGroupIdPrefix(instance.creatorUserId)
                             ? instance.creatorUserId
                             : ''
                     )
@@ -335,7 +337,9 @@ export function buildWorldDialogDisplayInstanceRows({
             : [];
         const creatorGroupId = firstText(
             instance.creatorGroupId,
-            isGroupId(instance.creatorUserId) ? instance.creatorUserId : ''
+            hasGroupIdPrefix(instance.creatorUserId)
+                ? instance.creatorUserId
+                : ''
         );
         const creatorGroupProfile = creatorGroupId
             ? creatorGroupsById[creatorGroupId]

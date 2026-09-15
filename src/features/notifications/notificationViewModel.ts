@@ -17,13 +17,13 @@ export type NotificationActor =
     | { kind: 'group'; id: string; name: string; imageUrl: string }
     | { kind: 'system'; name: string };
 
-export type NotificationViewModelContext = {
+type NotificationViewModelContext = {
     location: string;
     worldName: string;
     groupName: string;
 };
 
-export type NotificationViewModelLink = {
+type NotificationViewModelLink = {
     href: string;
     text: string;
     internal: boolean;
@@ -115,9 +115,7 @@ export function getNotificationLinkScheme(
     return value.slice(0, separatorIndex).toLowerCase();
 }
 
-export function notificationLinkIsInternal(
-    link: string | null | undefined
-): boolean {
+function notificationLinkIsInternal(link: string | null | undefined): boolean {
     return INTERNAL_LINK_SCHEMES.has(getNotificationLinkScheme(link));
 }
 

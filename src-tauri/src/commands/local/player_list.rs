@@ -3,6 +3,7 @@
 use std::collections::HashMap;
 use tauri::State;
 
+use crate::commands::blocking::run_blocking;
 use crate::error::AppError;
 use crate::state::AppState;
 
@@ -35,16 +36,16 @@ pub fn app__instance_activity_dates_get(
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__instance_activity_rows_get(
+pub async fn app__instance_activity_rows_get(
     state: State<'_, AppState>,
     start_date: String,
     end_date: String,
 ) -> Result<Vec<InstanceActivityRowOutput>, AppError> {
-    state
-        .runtime_host()
-        .local_data()
-        .instance_activity_rows_get(start_date, end_date)
-        .map_err(AppError::from)
+    let local_data = state.runtime_host().local_data().clone();
+    run_blocking("instance activity rows query", move || {
+        local_data.instance_activity_rows_get(start_date, end_date)
+    })
+    .await
 }
 
 #[tauri::command(async)]

@@ -1,10 +1,8 @@
 import { CopyIcon, HistoryIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
-import { DropdownMenuCheckboxItem } from '@/ui/shadcn/dropdown-menu';
 import {
     HoverCard,
     HoverCardContent,
@@ -101,43 +99,4 @@ export function PreviousDisplayNamesBadge({
             </HoverCardContent>
         </HoverCard>
     );
-}
-
-export function SelfPreferenceCheckboxItem({
-    label,
-    checked,
-    disabled = false,
-    onToggle
-}: {
-    label: ReactNode;
-    checked: boolean;
-    disabled?: boolean;
-    onToggle?: () => void;
-}) {
-    return (
-        <DropdownMenuCheckboxItem
-            checked={checked}
-            disabled={disabled || !onToggle}
-            onCheckedChange={() => onToggle?.()}
-        >
-            <span className="min-w-0 flex-1">{label}</span>
-            <span className="text-muted-foreground mr-4 shrink-0 text-xs">
-                {checked ? 'Allow' : 'Deny'}
-            </span>
-        </DropdownMenuCheckboxItem>
-    );
-}
-
-export function downloadJsonFile(filename: string, value: unknown) {
-    const blob = new Blob([JSON.stringify(value, null, 2)], {
-        type: 'application/json;charset=utf-8'
-    });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = filename;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }

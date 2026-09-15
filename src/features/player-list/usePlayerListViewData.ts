@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
 
+import { buildFavoriteIdSet } from '@/domain/favorites/favoriteIdSet';
 import { parseLocation } from '@/shared/utils/location';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 
 import { enrichPlayerListRows } from './playerListEnrichment';
-import { buildFavoriteIdSet } from './playerListRows';
 import type {
     PlayerListContext,
     PlayerListLocalModerationRecord,

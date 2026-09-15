@@ -85,5 +85,4 @@ const instanceActivityRepository = {
     getWorldSummariesByIds
 };
 
-export { getAvailableDates, getInstanceActivityRows, getWorldSummariesByIds };
 export default instanceActivityRepository;

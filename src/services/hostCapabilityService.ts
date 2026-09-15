@@ -53,9 +53,7 @@ export async function refreshHostCapabilities(): Promise<HostCapabilities> {
     return capabilities;
 }
 
-export function getHostCapabilityStatus(
-    key: HostCapabilityKey
-): HostCapabilityStatus {
+function getHostCapabilityStatus(key: HostCapabilityKey): HostCapabilityStatus {
     return useRuntimeStore.getState().hostCapabilities[key];
 }
 

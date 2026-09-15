@@ -42,7 +42,7 @@ const NATIVE_THEME_VALUES: Readonly<Record<ThemeMode, WindowTheme | null>> =
 let nativeThemeSyncQueue: Promise<void> = Promise.resolve();
 let themeApplySequence = 0;
 
-export const COMMUNITY_THEME_FIXED_THEME_MODE: ThemeMode = 'dark';
+const COMMUNITY_THEME_FIXED_THEME_MODE: ThemeMode = 'dark';
 const APP_FONT_STYLE_ATTR = 'data-vrcx-app-font';
 const APP_CJK_FONT_STYLE_ATTR = 'data-vrcx-cjk-font';
 const COMMUNITY_THEME_APPEARANCE_ATTR =
@@ -440,7 +440,7 @@ export function applyAppFontPreferences({
     };
 }
 
-export function syncNativeTheme(themeMode: ThemeMode): Promise<void> {
+function syncNativeTheme(themeMode: ThemeMode): Promise<void> {
     const normalized = resolveEffectiveThemeMode(themeMode);
     const sync = nativeThemeSyncQueue.then(async () => {
         await setWindowTheme(NATIVE_THEME_VALUES[normalized]);

@@ -97,22 +97,26 @@ export function FriendsLocationsSectionHeader({
     onOpenGroup
 }: FriendsLocationsSectionHeaderProps) {
     const { t } = useTranslation();
+    const isInstanceSection = Boolean(
+        section.rawLocation && !section.key.startsWith('instance:offline')
+    );
 
     return (
         <div className="flex h-full min-h-0 items-center justify-between gap-1.5 overflow-hidden px-2 py-2">
             <div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
                 <div className="flex min-w-0 items-center gap-2">
-                    <LayersIcon className="text-muted-foreground size-4 shrink-0" />
+                    {isInstanceSection ? (
+                        <LayersIcon className="text-muted-foreground size-4 shrink-0" />
+                    ) : null}
                     <div className="min-w-0 truncate text-sm font-semibold">
-                        {section.rawLocation &&
-                        !section.key.startsWith('instance:offline') ? (
+                        {isInstanceSection ? (
                             <Location
                                 location={section.rawLocation}
                                 hint={section.title}
                                 link
                                 asButton={false}
                                 disableTooltip
-                                className="text-sm"
+                                className="text-sm font-semibold"
                             />
                         ) : (
                             section.title
@@ -172,24 +176,24 @@ export function FriendsLocationsCollapsibleGroupHeader({
         <Button
             type="button"
             variant="ghost"
-            className="aria-expanded:hover:bg-muted h-auto w-full cursor-pointer justify-start gap-2 px-2 py-1.5 text-left text-sm font-semibold select-none aria-expanded:bg-transparent"
+            className="aria-expanded:hover:bg-muted h-auto w-full cursor-pointer justify-start gap-2 px-2 py-2 text-left text-sm font-semibold select-none aria-expanded:bg-transparent"
             aria-expanded={!section.collapsed}
             onClick={() => onToggle(section.groupKey)}
         >
-            <ChevronDownIcon
-                data-icon="inline-start"
-                className={cn(
-                    'shrink-0 transition-transform duration-200 ease-in-out',
-                    section.collapsed && '-rotate-90'
-                )}
-            />
-            <span className="min-w-0 truncate">{section.title}</span>{' '}
+            <span className="min-w-0 flex-1 truncate">{section.title}</span>{' '}
             <Badge
                 variant="outline"
                 className="text-muted-foreground shrink-0 font-normal tabular-nums"
             >
                 {section.friends.length}
             </Badge>
+            <ChevronDownIcon
+                data-icon="inline-end"
+                className={cn(
+                    'shrink-0 transition-transform duration-200 ease-in-out',
+                    section.collapsed && '-rotate-90'
+                )}
+            />
         </Button>
     );
 }

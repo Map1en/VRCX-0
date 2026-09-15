@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
+import { InstanceHistoryListPanel } from '@/components/dialogs/previous-instances-table/InstanceHistoryListPanel';
 import { DialogErrorState } from '@/components/dialogs/previous-instances-table/PreviousInstancesViewParts';
 import { UserActivityPanel } from '@/components/dialogs/UserActivityPanel';
 import type { UserProfileEntity } from '@/domain/entities/user';
@@ -33,10 +34,12 @@ import {
 } from '../userDialogListOptions';
 import { EntityList, FavoriteWorldGroups } from '../UserDialogViewParts';
 import type { UserDialogProfileRecord } from '../useUserDialogProfileResource';
-import type { useUserDialogSupplementalData } from '../useUserDialogSupplementalData';
+import {
+    USER_DIALOG_INSTANCE_HISTORY_LIMIT,
+    type useUserDialogSupplementalData
+} from '../useUserDialogSupplementalData';
 import type { useUserDialogTabData } from '../useUserDialogTabData';
 import { UserDialogSearchHeader } from './UserDialogSearchHeader';
-import { UserInstanceHistoryPanel } from './UserInstanceHistoryPanel';
 
 type UserTabData = ReturnType<typeof useUserDialogTabData>;
 type SupplementalData = ReturnType<typeof useUserDialogSupplementalData>;
@@ -457,8 +460,10 @@ export function UserDialogInstanceHistoryTab({
                         )}
                 </DialogErrorState>
             ) : (
-                <UserInstanceHistoryPanel
+                <InstanceHistoryListPanel
                     instances={previousInstances}
+                    variant="user"
+                    truncatedLimit={USER_DIALOG_INSTANCE_HISTORY_LIMIT}
                     onRowsChange={onPreviousInstancesChange}
                     onOpenFullHistory={userId ? openFullHistory : null}
                     className="flex-1"

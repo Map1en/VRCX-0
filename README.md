@@ -42,6 +42,14 @@ Grab the file for your platform from the [latest release](https://github.com/Map
 
 You only need to do this once — VRCX-0 updates itself from then on.
 
+On Linux, **Settings → System → Hardware acceleration (experimental)** is off
+by default and applies after a restart. After enabling, confirm that the interface
+works within 30 seconds of startup; otherwise acceleration is turned off and
+VRCX-0 restarts. If the application crashes or is forcibly closed before
+confirmation, the next launch also starts with acceleration off. Setting
+`WEBKIT_DISABLE_DMABUF_RENDERER` yourself hides the option and leaves the
+rendering mode entirely to your environment.
+
 ## Highlights
 
 - **Years of history won't slow it down** — data that makes VRCX visibly
@@ -55,35 +63,41 @@ You only need to do this once — VRCX-0 updates itself from then on.
 - **Zero-friction migration** — your VRCX database and settings import
   automatically; the original data is never modified
 
-Beyond that:
+### Only in VRCX-0
 
-- **Social AI** — a built-in assistant that helps you make sense of your VRChat
-  life: ask who you play with most, who you're drifting away from, or the best
-  time to catch friends online. Connect your own AI service to get started
-- **MCP server** — let external AI tools access your local social data directly,
-  far more flexible than the built-in assistant; recommended for advanced users
-- **Per-account local history** — game logs and account-specific history are
-  stored separately, so activity no longer gets mixed into a single timeline
-  when you use multiple accounts
-- **Backup & restore** — one-click compressed backup of your database, with
-  scheduled automatic backups and multiple versions; restore from any backup at
-  any time
+- **Social AI** — make sense of your VRChat life: ask who you play with most,
+  who you're drifting away from, or the best time to catch friends online.
+  Connect your own AI service to get started
+- **Sidebar Mode** — keep an eye on your friends from a narrow sidebar while
+  you do something else, instead of switching back to a full window; on Windows
+  and macOS it can dock to a screen edge and auto-hide
+- **Keyboard shortcuts and global hotkey** — switch pages, open Settings, and
+  move between tabs without touching the mouse; on Windows, a global hotkey
+  shows or hides VRCX-0 from inside any application
 - **Shareable world collections** — turn your favorite worlds into a shareable
   page others can browse, open, or import; also supports share links for
   individual worlds and avatars
-- **Social Automation** — auto-switch your status and bio based on time of day,
-  instance type, or who you're with; auto-accept invite requests; restores your
-  previous state when rules expire
-- **Lightweight VR wrist overlay** — supports OpenVR (SteamVR) and
-  **OpenXR on Linux (tested with WiVRn)**
-- **Community Themes** — browse and install themes from a catalog, set a custom
-  background image, and layer your own CSS on top
-- **Notifications** — desktop, text-to-speech, VR overlay, wrist overlay, and
-  webhooks — five channels independently configured per event type; webhooks
-  use a Discord-compatible format
-- Full keyboard navigation
-- Integration API for third-party apps — real-time room data while in-game, expanding over time
-- Headless mode for advanced setups — see `crates/headless`
+- **MCP server** — let external AI tools access your local social data directly,
+  far more flexible than Social AI; recommended for advanced users
+- **Integration API** — real-time room data for third-party apps while
+  in-game, expanding over time
+- **Headless mode** — for advanced setups; see `crates/headless`
+
+### Compared with VRCX
+
+| Feature               | VRCX                                                                                                                              | VRCX-0 (+ = added)                                                                                                                                                                                   |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Social automation** | Switch status and status message when alone or with company (optionally limited to instance types); auto-reply to invite requests | + Schedule rules (time of day, weekdays), multiple context rules (friends present, player count, instance type, favorite worlds, **with priorities**), **previous status restored when a rule ends** |
+| **Notifications**     | Desktop, TTS, XSOverlay, OVR Toolkit, wrist overlay (channels support different events; only the overlay filters by event)        | + **Discord-compatible webhooks**, Do Not Disturb; every channel supports the same events, each filtered independently                                                                               |
+| **VR overlay**        | Wrist and HMD, browser-rendered (100 MB+ of memory); OpenVR                                                                       | + OpenXR (**tested with WiVRn**); native rendering (tens of MB)                                                                                                                                      |
+| Screenshots           | View and search metadata                                                                                                          | + Grid view, multi-select, batch delete, ZIP export                                                                                                                                                  |
+| Avatar details        | Performance rank and file size                                                                                                    | + Triangles, texture memory, materials, bones, PhysBones, particles, colliders (against each platform's limits)                                                                                      |
+| Backup                | VRChat registry settings                                                                                                          | + Scheduled database backups, multiple versions, one-click restore                                                                                                                                   |
+| Group management      | Reorder in your profile; set visibility one group at a time                                                                       | + My Groups page (batch leave, batch visibility)                                                                                                                                                     |
+| Themes                | Built-in themes, custom CSS (from a file on disk)                                                                                 | + Community theme catalog, background image, in-app CSS editor, accent color                                                                                                                         |
+| Game log              | All accounts mixed together                                                                                                       | Stored per account                                                                                                                                                                                   |
+
+Everything else VRCX does, VRCX-0 does too.
 
 ## License
 

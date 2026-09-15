@@ -19,7 +19,7 @@ export function retainFeedRowWindow(
     return edge === 'latest' ? rows.slice(0, limit) : rows.slice(-limit);
 }
 
-export function resolveFeedCursor(row: FeedRow): FeedCursor | null {
+function resolveFeedCursor(row: FeedRow): FeedCursor | null {
     const createdAt = normalizeFeedId(row.created_at);
     if (
         !createdAt ||

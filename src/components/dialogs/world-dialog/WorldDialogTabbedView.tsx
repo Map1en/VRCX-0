@@ -60,7 +60,7 @@ import {
 
 export type { WorldWorldScreenshots } from './useWorldDialogScreenshots';
 
-export type WorldDialogDisplayInstanceRows = ReturnType<
+type WorldDialogDisplayInstanceRows = ReturnType<
     typeof buildWorldDialogDisplayInstanceRows
 >['displayInstanceRows'];
 

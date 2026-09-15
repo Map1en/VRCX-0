@@ -14,7 +14,7 @@ pub async fn app__friend_log_names_resolve(
     state.resolve_friend_log_names(input).await
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__friend_log_names_cancel(state: State<'_, AppState>, request_id: String) -> bool {
     state.cancel_friend_log_name_resolution(&request_id)

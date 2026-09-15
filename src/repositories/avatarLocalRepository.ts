@@ -186,20 +186,4 @@ const avatarLocalRepository = Object.freeze({
     updateAvatarTagColor
 });
 
-export {
-    addAvatarTag,
-    addAvatarTimeSpent,
-    clearAvatarHistory,
-    getAllAvatarTags,
-    getAllAvatarTimeSpent,
-    getAllDistinctTags,
-    getAvatarHistory,
-    getAvatarTags,
-    getAvatarTimeSpent,
-    removeAllAvatarTags,
-    removeAvatarTag,
-    patchAvatarTags,
-    replaceAvatarTags,
-    updateAvatarTagColor
-};
 export default avatarLocalRepository;

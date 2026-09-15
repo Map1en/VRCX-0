@@ -7,7 +7,7 @@ import type { QuickSearchResult, QuickSearchState } from '../quickSearch';
 
 const RESULT_LIMIT = 8;
 export const USER_QUERY_MIN_LENGTH = 1;
-export const DETAIL_QUERY_MIN_LENGTH = 2;
+const DETAIL_QUERY_MIN_LENGTH = 2;
 
 export function normalizeSearchValue(value: string | null | undefined) {
     return (value ?? '').trim();

@@ -1,12 +1,12 @@
 import { vrchatLaunchUrl } from '@/shared/constants/vrchatWebUrls';
 
-export interface LaunchableInstance {
+interface LaunchableInstance {
     worldId: string;
     instanceId?: string;
     shortName?: string;
 }
 
-export interface LegacyInstanceTagOptions {
+interface LegacyInstanceTagOptions {
     instanceName: string;
     userId?: string;
     accessType: string;

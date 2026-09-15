@@ -7,7 +7,7 @@ import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import type { UserGroupsOverviewGroup } from '@/platform/tauri/bindings';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 
-export type ModeratableGroupsStatus = LoadStatus;
+type ModeratableGroupsStatus = LoadStatus;
 
 export type UseModeratableGroupsOptions = {
     enabled?: boolean;

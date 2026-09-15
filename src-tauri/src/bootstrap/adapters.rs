@@ -507,7 +507,6 @@ async fn find_update(
     let endpoint = vrcx_0_host_desktop::updater_policy::validate_update_request(
         &request.manifest_url,
         &request.target,
-        request.allow_downgrades,
     )
     .map_err(|error| ApplicationError::Custom(error.to_string()))?;
     let current_version = semver::Version::parse(&request.current_version).map_err(|error| {
@@ -516,7 +515,7 @@ async fn find_update(
     let expected_version = semver::Version::parse(&request.expected_version).map_err(|error| {
         ApplicationError::Custom(format!("Invalid expected update version: {error}"))
     })?;
-    if expected_version <= current_version {
+    if !request.allow_downgrades && expected_version <= current_version {
         return Err(ApplicationError::Custom(
             "Expected update version must be newer than the current version.".into(),
         ));

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
 import type { NotificationRow } from '@/repositories/notificationPersistenceRepository';
+import { getDismissResponse } from '@/shared/utils/notificationResponse';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -18,7 +19,7 @@ import { HoverCard, HoverCardTrigger } from '@/ui/shadcn/hover-card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
-    NotificationActionButton,
+    NOTIFICATION_ROW_HOVER_REVEAL,
     NotificationEmojiPreview,
     NotificationIconDisc,
     NotificationPersonAvatar
@@ -110,14 +111,15 @@ export function NotificationDrawerRow({
     const isBroadcast = view.template === 'broadcast';
     const senderName = isBroadcast
         ? view.actor.name || t('view.notification.feed.unknown_sender')
-        : String(getSenderName(notification) || '') ||
-          notification.type ||
-          t('nav_tooltip.notification');
+        : String(getSenderName(notification) || '');
     const headline = isBroadcast
         ? view.headline || String(notification.title || '').trim()
         : '';
     const message = isBoop || isBroadcast ? view.body : rawMessage;
-    const previewMessage = isBroadcast && message === headline ? '' : message;
+    const previewMessage =
+        message === typeLabel || (isBroadcast && message === headline)
+            ? ''
+            : message;
     const actor: NotificationActor =
         showAvatar || view.actor.kind === 'group'
             ? view.actor
@@ -131,15 +133,13 @@ export function NotificationDrawerRow({
         handlers,
         t
     });
-    let inlineActionCount = 2;
-    if (isBroadcast) {
-        inlineActionCount = 0;
-    } else if (notification.type === 'friendRequest') {
-        inlineActionCount = 3;
-    }
+    const inlineActionCount = notification.type === 'friendRequest' ? 3 : 2;
     const inlineActions = orderedActions.slice(0, inlineActionCount);
     const overflowActions = orderedActions.slice(inlineActionCount);
-    const showMenuMarkRead = isUnseen && notification.type !== 'friendRequest';
+    const showMenuMarkRead =
+        isUnseen &&
+        notification.type !== 'friendRequest' &&
+        !getDismissResponse(notification.responses);
     const showDelete = Boolean(shouldShowDeleteLog(notification));
     const hasMenu =
         showMenuMarkRead || overflowActions.length > 0 || showDelete;
@@ -166,9 +166,9 @@ export function NotificationDrawerRow({
                 render={
                     <div className="group hover:bg-accent/50 border-border/50 relative flex items-start gap-3 border-b px-4 py-3 transition-colors last:border-b-0">
                         <div className="flex shrink-0 items-start gap-1.5">
-                            <span className="mt-1.5 flex w-1.5 shrink-0 justify-center">
+                            <span className="mt-1.5 flex w-2 shrink-0 justify-center">
                                 {showUnreadDot ? (
-                                    <span className="bg-primary size-1.5 rounded-full">
+                                    <span className="bg-primary size-2 rounded-full">
                                         <span className="sr-only">
                                             {t('view.notification.feed.unread')}
                                         </span>
@@ -178,7 +178,7 @@ export function NotificationDrawerRow({
                             <button
                                 type="button"
                                 className="shrink-0"
-                                aria-label={senderName}
+                                aria-label={senderName || typeLabel}
                                 onClick={() => openSender(notification, t)}
                             >
                                 {showAvatar ? (
@@ -202,23 +202,25 @@ export function NotificationDrawerRow({
                                 )}
                             >
                                 <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
-                                    <button
-                                        type="button"
-                                        className={cn(
-                                            'max-w-full min-w-0 truncate text-left hover:underline',
-                                            isBroadcast
-                                                ? 'text-muted-foreground text-xs'
-                                                : 'text-sm',
-                                            !isBroadcast &&
-                                                showUnreadDot &&
-                                                'font-medium'
-                                        )}
-                                        onClick={() =>
-                                            openSender(notification, t)
-                                        }
-                                    >
-                                        {senderName}
-                                    </button>
+                                    {senderName ? (
+                                        <button
+                                            type="button"
+                                            className={cn(
+                                                'max-w-full min-w-0 truncate text-left hover:underline',
+                                                isBroadcast
+                                                    ? 'text-muted-foreground text-xs'
+                                                    : 'text-sm',
+                                                !isBroadcast &&
+                                                    showUnreadDot &&
+                                                    'font-medium'
+                                            )}
+                                            onClick={() =>
+                                                openSender(notification, t)
+                                            }
+                                        >
+                                            {senderName}
+                                        </button>
+                                    ) : null}
                                     {isBroadcast ? (
                                         <span className="text-muted-foreground shrink-0 text-xs">
                                             · {typeLabel}
@@ -246,21 +248,12 @@ export function NotificationDrawerRow({
                                         </Badge>
                                     )}
                                 </div>
-                                {relativeTime ? (
-                                    <Tooltip>
-                                        <TooltipTrigger
-                                            render={
-                                                <span className="text-muted-foreground shrink-0 text-xs whitespace-nowrap">
-                                                    {relativeTime}
-                                                </span>
-                                            }
-                                        />
-                                        <TooltipContent>
-                                            {absoluteTime}
-                                        </TooltipContent>
-                                    </Tooltip>
-                                ) : null}
-                                <div className="absolute -top-1 right-0 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-within:opacity-100 [@media(hover:hover)]:has-[[aria-expanded=true]]:opacity-100">
+                                <div
+                                    className={cn(
+                                        'absolute -top-1 right-0',
+                                        NOTIFICATION_ROW_HOVER_REVEAL
+                                    )}
+                                >
                                     {hasMenu ? (
                                         <DropdownMenu>
                                             <DropdownMenuTrigger
@@ -364,54 +357,77 @@ export function NotificationDrawerRow({
                                     ) : null}
                                 </div>
                             ) : null}
-                            {hasLocation ||
+                            {relativeTime ||
+                            hasLocation ||
                             isQueueReady ||
                             inlineActions.length > 0 ? (
-                                <div className="mt-1.5 flex items-center gap-2">
+                                <div className="mt-2 flex items-center gap-2">
+                                    {relativeTime ? (
+                                        <Tooltip>
+                                            <TooltipTrigger
+                                                render={
+                                                    <span className="text-muted-foreground shrink-0 text-xs whitespace-nowrap">
+                                                        {relativeTime}
+                                                    </span>
+                                                }
+                                            />
+                                            <TooltipContent>
+                                                {absoluteTime}
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    ) : null}
                                     <div className="min-w-0 flex-1 truncate text-xs">
                                         <NotificationLocationLine
                                             notification={notification}
                                         />
                                     </div>
-                                    <div className="flex shrink-0 items-center gap-1">
-                                        {isQueueReady ? (
-                                            <Button
-                                                type="button"
-                                                size="sm"
-                                                variant="ghost"
-                                                className="h-7 gap-1 px-2 text-xs font-medium text-[var(--status-askme)] hover:text-[var(--status-askme)]"
-                                                style={{
-                                                    backgroundColor:
-                                                        STATUS_ASKME_TINT
-                                                }}
-                                                onClick={() =>
-                                                    handlers.onJoinQueueReady(
-                                                        notification
-                                                    )
-                                                }
-                                            >
-                                                {t(
-                                                    'side_panel.notification_center.join_now'
-                                                )}
-                                                {countdownLabel ? (
-                                                    <span className="tabular-nums">
-                                                        {countdownLabel}
-                                                    </span>
-                                                ) : null}
-                                            </Button>
-                                        ) : null}
-                                        <div className="flex items-center gap-1 transition-opacity duration-150 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-within:opacity-100 [@media(hover:hover)]:has-[[aria-expanded=true]]:opacity-100">
+                                    {isQueueReady ||
+                                    inlineActions.length > 0 ? (
+                                        <div
+                                            className={cn(
+                                                'flex shrink-0 items-center gap-1.5',
+                                                NOTIFICATION_ROW_HOVER_REVEAL
+                                            )}
+                                        >
+                                            {isQueueReady ? (
+                                                <Button
+                                                    type="button"
+                                                    size="xs"
+                                                    variant="ghost"
+                                                    className="font-medium text-[var(--status-askme)] hover:text-[var(--status-askme)]"
+                                                    style={{
+                                                        backgroundColor:
+                                                            STATUS_ASKME_TINT
+                                                    }}
+                                                    onClick={() =>
+                                                        handlers.onJoinQueueReady(
+                                                            notification
+                                                        )
+                                                    }
+                                                >
+                                                    {t(
+                                                        'side_panel.notification_center.join_now'
+                                                    )}
+                                                    {countdownLabel ? (
+                                                        <span className="tabular-nums">
+                                                            {countdownLabel}
+                                                        </span>
+                                                    ) : null}
+                                                </Button>
+                                            ) : null}
                                             {inlineActions.map((action) => (
-                                                <NotificationActionButton
+                                                <Button
                                                     key={action.key}
-                                                    label={action.label}
+                                                    type="button"
+                                                    size="xs"
+                                                    variant="ghost"
                                                     onClick={action.onClick}
                                                 >
-                                                    <action.Icon data-icon="icon" />
-                                                </NotificationActionButton>
+                                                    {action.label}
+                                                </Button>
                                             ))}
                                         </div>
-                                    </div>
+                                    ) : null}
                                 </div>
                             ) : null}
                         </div>
@@ -420,7 +436,7 @@ export function NotificationDrawerRow({
             />
             <NotificationHoverContent
                 notification={notification}
-                senderName={senderName}
+                senderName={senderName || typeLabel}
                 typeLabel={typeLabel}
                 message={message}
                 absoluteTime={absoluteTime}

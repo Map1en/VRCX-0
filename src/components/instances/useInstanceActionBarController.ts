@@ -73,9 +73,7 @@ function instanceCapacity(instance: InstanceActionRecord | null) {
     );
 }
 
-export function resolveInstanceSource(
-    instance: unknown
-): InstanceActionRecord | null {
+function resolveInstanceSource(instance: unknown): InstanceActionRecord | null {
     if (!isInstanceActionRecord(instance)) {
         return null;
     }

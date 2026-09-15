@@ -100,8 +100,8 @@ export const SCREENSHOT_GALLERY_SCROLL_CONFIG_KEY =
 export const SCREENSHOT_SEARCH_LAYOUT_CONFIG_KEY =
     SCREENSHOT_GALLERY_CONFIG_KEYS.searchLayout;
 export const SCREENSHOT_GALLERY_SCROLL_SAVE_DELAY_MS = 500;
-export const MAX_SCREENSHOT_GALLERY_SCROLL_POSITIONS = 100;
-export const MAX_SCREENSHOT_GALLERY_SCROLL_TOP = 50_000_000;
+const MAX_SCREENSHOT_GALLERY_SCROLL_POSITIONS = 100;
+const MAX_SCREENSHOT_GALLERY_SCROLL_TOP = 50_000_000;
 
 export function normalizeGalleryScrollTop(value: unknown): number {
     const numeric = Number(value);
@@ -157,7 +157,7 @@ export function getGalleryFolderPathSet(
     );
 }
 
-export function getFolderLatestModifiedAt(folder: ScreenshotFolderInfo) {
+function getFolderLatestModifiedAt(folder: ScreenshotFolderInfo) {
     return folder.latestModifiedAt ?? 0;
 }
 
@@ -256,10 +256,7 @@ export function getDroppedScreenshotPath(event: {
     );
 }
 
-export function getScreenshotSearchSortValue(
-    row: ScreenshotSearchRow,
-    key: string
-) {
+function getScreenshotSearchSortValue(row: ScreenshotSearchRow, key: string) {
     if (key === 'dateTime') {
         return row.dateTime?.getTime() ?? 0;
     }
@@ -317,7 +314,7 @@ export function getFileNameFromPath(path: unknown) {
     );
 }
 
-export function resolveScreenshotMetadataDate(
+function resolveScreenshotMetadataDate(
     metadata: Partial<ScreenshotMetadata>,
     extra: ScreenshotExtraData,
     fileName: string
@@ -457,11 +454,12 @@ export function searchResultToLibraryImage(
         ? Date.parse(result.creationDate)
         : Number.NaN;
     const createdAt = Number.isNaN(creationTime) ? null : creationTime;
+    const fileName = result.fileName || getFileNameFromPath(result.filePath);
 
     return {
         path: result.filePath,
         folderPath: getFolderPathFromPath(result.filePath),
-        fileName: result.fileName || getFileNameFromPath(result.filePath),
+        fileName,
         sizeBytes: result.fileSizeBytes,
         modifiedAt: createdAt ?? 0,
         createdAt,
@@ -469,7 +467,7 @@ export function searchResultToLibraryImage(
         height: result.height,
         worldId: result.metadata?.world?.id || null,
         worldName: result.metadata?.world?.name || null,
-        capturedAt: result.metadata?.timestamp || result.creationDate || null,
+        capturedAt: result.metadata?.timestamp || null,
         metadata: result.metadata,
         error: result.metadata?.error || null
     };

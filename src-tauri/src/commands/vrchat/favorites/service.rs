@@ -113,7 +113,7 @@ pub async fn app__vrchat_favorite_group_clear(
         .await?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__local_favorite_add(
     state: State<'_, AppState>,
@@ -125,7 +125,7 @@ pub fn app__local_favorite_add(
     crate::commands::local::favorites::favorite_add(state, kind, entity_id, group_name)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__local_favorite_remove(
     state: State<'_, AppState>,
@@ -137,7 +137,7 @@ pub fn app__local_favorite_remove(
     crate::commands::local::favorites::favorite_remove(state, kind, entity_id, group_name)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__local_favorite_group_create(
     state: State<'_, AppState>,
@@ -154,7 +154,7 @@ pub fn app__local_favorite_group_create(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__local_favorite_group_rename(
     state: State<'_, AppState>,
@@ -175,7 +175,7 @@ pub fn app__local_favorite_group_rename(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__local_favorite_group_delete(
     state: State<'_, AppState>,

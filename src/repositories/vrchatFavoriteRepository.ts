@@ -191,12 +191,5 @@ const vrchatFavoriteRepository = Object.freeze({
     clearFavoriteGroup
 });
 
-export {
-    addFavorite,
-    deleteFavorite,
-    getAllFavoriteWorlds,
-    getAllFavoriteGroups,
-    saveFavoriteGroup,
-    clearFavoriteGroup
-};
+export { addFavorite };
 export default vrchatFavoriteRepository;

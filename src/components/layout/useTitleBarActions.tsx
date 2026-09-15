@@ -6,6 +6,7 @@ import {
     KeyboardIcon,
     PanelRightIcon,
     PanelRightOpenIcon,
+    PinIcon,
     SearchIcon,
     SparklesIcon
 } from 'lucide-react';
@@ -31,7 +32,8 @@ import {
 import {
     enterSidebarWindowMode,
     restoreNormalWindowMode,
-    runAfterRestoringNormalWindow
+    runAfterRestoringNormalWindow,
+    setWindowAlwaysOnTop
 } from '@/services/windowModeService';
 import { getBuildBadgeLabel } from '@/shared/buildLabel';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
@@ -58,6 +60,7 @@ import {
 } from '@/ui/shadcn/context-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { STATUS_BAR_TOGGLE_ACTIVE } from './status-bar/statusBarToggle';
 import { TitleBarUpdateButton } from './TitleBarUpdateButton';
 import { useQuickSearchActions } from './useQuickSearchActions';
 import { useRightSidePanelVisibility } from './useRightSidePanelVisibility';
@@ -136,6 +139,7 @@ function formatTitleBarShortcutLabel(value: string, shortcutLabel: string) {
 interface TitleBarActionsResult {
     isSessionReady: boolean;
     actions: ReactNode;
+    alwaysOnTopButton: ReactNode;
     sidebarWindowModeButton: ReactNode;
     notificationAction: ReactNode;
     themeToggleAction: ReactNode;
@@ -208,8 +212,11 @@ export function useTitleBarActions(
         sidePanelOpen: rightSidebarOpen,
         toggleSidePanelOpen: toggleRightSidebar
     } = useRightSidePanelVisibility(location.pathname);
+    const alwaysOnTop = useShellStore((state) => state.windowAlwaysOnTop);
 
     const isMacHost = hostPlatform === 'macos';
+    const alwaysOnTopSupported =
+        hostPlatform === 'windows' || hostPlatform === 'macos';
     const notificationCenterEnabled = notificationLayout !== 'table';
     const notificationActionVisible =
         isSessionReady && (sidebarWindowMode || notificationCenterEnabled);
@@ -243,6 +250,29 @@ export function useTitleBarActions(
             console.warn('Failed to change the window display mode:', error);
         });
     }, [sidebarWindowMode, sidebarWindowModeBlocked]);
+
+    const toggleAlwaysOnTop = useCallback(() => {
+        void setWindowAlwaysOnTop(!alwaysOnTop).catch((error: unknown) => {
+            console.warn(
+                'Failed to change the always-on-top window state:',
+                error
+            );
+        });
+    }, [alwaysOnTop]);
+
+    const alwaysOnTopButton = alwaysOnTopSupported ? (
+        <TitleBarButton
+            label={t('app_menu.always_on_top')}
+            aria-pressed={alwaysOnTop}
+            className={cn(
+                'size-7 min-w-7 rounded-md px-0',
+                alwaysOnTop && STATUS_BAR_TOGGLE_ACTIVE
+            )}
+            onClick={toggleAlwaysOnTop}
+        >
+            <PinIcon data-icon="icon" />
+        </TitleBarButton>
+    ) : null;
 
     const sidebarWindowModeButton = (
         <TitleBarButton
@@ -481,6 +511,7 @@ export function useTitleBarActions(
                 <SparklesIcon data-icon="icon" />
             </TitleBarButton>
             {themeToggleAction}
+            {alwaysOnTopButton}
             <TitleBarButton
                 label={rightSidebarLabel}
                 className="size-7 min-w-7 rounded-md px-0"
@@ -541,6 +572,7 @@ export function useTitleBarActions(
         openNotificationCenter: openVrcNotificationCenter,
         toggleRightSidebar,
         rightSidebarOpen,
+        alwaysOnTopButton,
         sidebarWindowModeButton,
         notificationAction,
         themeToggleAction

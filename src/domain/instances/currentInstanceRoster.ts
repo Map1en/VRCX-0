@@ -1,4 +1,4 @@
-export type CurrentInstanceRosterSource = 'none' | 'runtime';
+type CurrentInstanceRosterSource = 'none' | 'runtime';
 
 export interface CurrentInstanceRosterContext {
     createdAt: string;

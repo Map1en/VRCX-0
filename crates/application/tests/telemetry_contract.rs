@@ -27,6 +27,7 @@ fn config_snapshot_matches_worker_contract_fields() {
         feed_rows_bucket: "1m_5m".into(),
         gamelog_rows_bucket: "100k_1m".into(),
         friend_log_rows_bucket: "lt10k".into(),
+        friend_count_bucket: "100_500".into(),
     };
 
     let value = serde_json::to_value(&snapshot).unwrap();
@@ -44,6 +45,7 @@ fn config_snapshot_matches_worker_contract_fields() {
         "backgroundModeEnabled",
         "dbSizeBucket",
         "feedRowsBucket",
+        "friendCountBucket",
         "friendLogRowsBucket",
         "gamelogRowsBucket",
         "hmdNotificationsEnabled",

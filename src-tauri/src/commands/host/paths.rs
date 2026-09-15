@@ -14,26 +14,26 @@ use vrcx_0_runtime_host_desktop::data_dir::{
 
 use vrcx_0_host_desktop::host_capabilities::{require_host_capability, HostCapability};
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__system_culture() -> String {
     vrcx_0_runtime_host_desktop::system_culture()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__system_language() -> String {
     vrcx_0_runtime_host_desktop::system_language()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__get_vrchat_photos_location() -> Result<String, AppError> {
     require_host_capability(HostCapability::VrchatPathDiscovery)?;
     Ok(vrchat_paths::vrchat_photos_location())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__get_ugc_photo_location(path: Option<String>) -> Result<String, AppError> {
     if path.as_deref().is_none_or(|p| p.is_empty()) {
@@ -86,7 +86,7 @@ pub async fn app__request_data_dir_migration(
     )
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__cancel_data_dir_migration(
     state: State<'_, AppState>,
@@ -94,7 +94,7 @@ pub fn app__cancel_data_dir_migration(
     Ok(state.runtime_host().data_dir().request_cancel())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__data_dir_migration_current_status(
     state: State<'_, AppState>,

@@ -27,6 +27,10 @@ const commandMocks = vi.hoisted(() => ({
     sync: vi.fn()
 }));
 
+const notificationActionMocks = vi.hoisted(() => ({
+    sendNotificationButtonResponse: vi.fn()
+}));
+
 vi.mock('@/platform/tauri/bindings', () => ({
     commands: {
         appNotificationMarkSeenBatch: commandMocks.markSeenBatch,
@@ -36,6 +40,11 @@ vi.mock('@/platform/tauri/bindings', () => ({
 
 vi.mock('@/repositories/notificationPersistenceRepository', () => ({
     default: notificationRepositoryMock
+}));
+
+vi.mock('@/services/notificationActionService', () => ({
+    sendNotificationButtonResponse:
+        notificationActionMocks.sendNotificationButtonResponse
 }));
 
 vi.mock('@/services/shellIntegrationService', () => ({
@@ -52,6 +61,10 @@ describe('vrcNotificationStore', () => {
         notificationRepositoryMock.queryNotifications.mockReset();
         commandMocks.markSeenBatch.mockReset();
         commandMocks.sync.mockReset();
+        notificationActionMocks.sendNotificationButtonResponse.mockReset();
+        notificationActionMocks.sendNotificationButtonResponse.mockResolvedValue(
+            undefined
+        );
         commandMocks.markSeenBatch.mockImplementation(
             async ({
                 items
@@ -583,6 +596,56 @@ describe('vrcNotificationStore', () => {
             items: [
                 {
                     id: 'notif_system',
+                    version: 2,
+                    location: 'local'
+                }
+            ]
+        });
+    });
+
+    it('dismisses notifications that offer a dismiss response on mark-all-seen', async () => {
+        const dismissResponse = {
+            type: 'delete',
+            icon: 'check',
+            text: 'Acknowledge and dismiss this notification'
+        };
+        const announcement = {
+            id: 'notif_announcement',
+            type: 'group.announcement',
+            version: 2,
+            seen: false,
+            responses: [dismissResponse],
+            created_at: new Date().toISOString()
+        };
+        const plain = {
+            id: 'notif_plain',
+            type: 'event.announcement',
+            version: 2,
+            seen: false,
+            created_at: new Date().toISOString()
+        };
+        useVrcNotificationStore.getState().upsertNotification(announcement);
+        useVrcNotificationStore.getState().upsertNotification(plain);
+        notificationRepositoryMock.queryNotifications.mockResolvedValue([]);
+
+        await useVrcNotificationStore.getState().markAllSeen();
+
+        expect(
+            notificationActionMocks.sendNotificationButtonResponse
+        ).toHaveBeenCalledTimes(1);
+        expect(
+            notificationActionMocks.sendNotificationButtonResponse
+        ).toHaveBeenCalledWith({
+            currentUserId: 'usr_me',
+            notification: expect.objectContaining({
+                id: 'notif_announcement'
+            }),
+            response: dismissResponse
+        });
+        expect(commandMocks.markSeenBatch).toHaveBeenCalledWith({
+            items: [
+                {
+                    id: 'notif_plain',
                     version: 2,
                     location: 'local'
                 }

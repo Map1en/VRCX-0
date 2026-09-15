@@ -4,6 +4,7 @@ use vrcx_0_i18n::{text as native_text, ShellKey};
 pub(crate) struct TrayLabels {
     pub(crate) open: String,
     pub(crate) background_mode: String,
+    pub(crate) lock: String,
     pub(crate) do_not_disturb: String,
     pub(crate) do_not_disturb_one_hour: String,
     pub(crate) do_not_disturb_three_hours: String,
@@ -177,6 +178,7 @@ pub(crate) fn tray_labels_for_language(language: &str) -> TrayLabels {
     TrayLabels {
         open: text(language, ShellKey::NativeShellTrayOpen),
         background_mode: text(language, ShellKey::NativeShellTrayBackgroundMode),
+        lock: text(language, ShellKey::NativeShellTrayLock),
         do_not_disturb: text(language, ShellKey::NativeShellTrayDoNotDisturb),
         do_not_disturb_one_hour: text(language, ShellKey::NativeShellTrayDoNotDisturbOneHour),
         do_not_disturb_three_hours: text(language, ShellKey::NativeShellTrayDoNotDisturbThreeHours),

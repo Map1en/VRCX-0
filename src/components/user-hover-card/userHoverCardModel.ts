@@ -22,7 +22,7 @@ import { normalizeString as normalizeId } from '@/shared/utils/string';
 import { resolveTrustColorKey } from '@/shared/utils/trustColors';
 import { computeTrustLevel } from '@/shared/utils/userTransforms';
 
-export type UserHoverCardVariant =
+type UserHoverCardVariant =
     | 'in-instance'
     | 'private'
     | 'active'

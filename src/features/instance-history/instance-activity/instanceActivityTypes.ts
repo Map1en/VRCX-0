@@ -2,7 +2,7 @@ import type { InstanceHistoryEntryOutput } from '@/platform/tauri/bindings';
 import type { InstanceActivityRow } from '@/repositories/instanceActivityRepository';
 import type { parseLocation } from '@/shared/utils/location';
 
-export type ActivityLocation = ReturnType<typeof parseLocation>;
+type ActivityLocation = ReturnType<typeof parseLocation>;
 
 export type WorldDetailsById = Record<
     string,

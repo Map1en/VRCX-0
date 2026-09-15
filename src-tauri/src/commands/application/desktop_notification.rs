@@ -5,7 +5,7 @@ use tauri::State;
 use crate::desktop_notification_activation::DesktopNotificationActivation;
 use crate::state::AppState;
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__take_pending_desktop_notification_activation(
     state: State<'_, AppState>,

@@ -54,7 +54,7 @@ export function patchPreferences(patch: Partial<PreferencesSnapshot>) {
     usePreferencesStore.getState().patchPreferences(patch);
 }
 
-export function normalizeStorePreferenceKey(
+function normalizeStorePreferenceKey(
     key: StorePreferenceConfigKey
 ): PreferenceKey {
     return normalizePreferenceKey(key) as PreferenceKey;
@@ -117,7 +117,7 @@ export async function getIntConfigWithLegacy(
     return defaultValue;
 }
 
-export function getLegacyOverlayNotificationKey(key: string) {
+function getLegacyOverlayNotificationKey(key: string) {
     return Object.entries(LEGACY_OVERLAY_NOTIFICATION_KEYS).find(
         ([currentKey]) => currentKey === key
     )?.[1];

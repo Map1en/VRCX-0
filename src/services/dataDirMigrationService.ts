@@ -11,16 +11,12 @@ export type {
     DataDirCleanupPending,
     DataDirCleanupReport,
     DataDirMigrationActionOutcome,
-    DataDirMigrationError,
     DataDirMigrationErrorCode,
     DataDirMigrationMode,
     DataDirMigrationPhase,
     DataDirMigrationPlan,
     DataDirMigrationResult,
-    DataDirMigrationResultStatus,
-    DataDirMigrationState,
     DataDirMigrationStatus,
-    DataDirMigrationTargetState,
     DataDirMigrationWarning
 } from '@/platform/tauri/bindings';
 

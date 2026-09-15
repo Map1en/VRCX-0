@@ -22,6 +22,7 @@ import { userStatusLabel } from '@/shared/utils/userStatus';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 
+import { groupIdForRow } from '../userDialogGroupRows';
 import {
     isUndisclosedMutualFriendRow,
     summarizeEntityRow,
@@ -32,7 +33,10 @@ import {
 import { rowImage, type UserDialogEntityKind } from './userDialogEntityImages';
 import { EntityListState } from './UserDialogEntityListState';
 import { openRow } from './userDialogEntityNavigation';
-import { UserGroupCard } from './UserDialogGroupCard';
+import {
+    UserGroupCard,
+    type UserGroupCardMarkers
+} from './UserDialogGroupCard';
 
 export function EntityList({
     rows,
@@ -40,7 +44,8 @@ export function EntityList({
     loading = false,
     error = '',
     instanceLocation = '',
-    showInstanceDuration = false
+    showInstanceDuration = false,
+    groupMarkers
 }: {
     rows: readonly EntityRecord[];
     kind: UserDialogEntityKind;
@@ -48,6 +53,7 @@ export function EntityList({
     error?: string;
     instanceLocation?: string;
     showInstanceDuration?: boolean;
+    groupMarkers?: UserGroupCardMarkers;
 }) {
     const { t } = useTranslation();
     const currentUserSnapshot = useRuntimeStore(
@@ -72,10 +78,13 @@ export function EntityList({
         <div className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] items-start gap-1">
             {rows.map((row, index) => {
                 if (kind === 'group') {
+                    const groupId = groupIdForRow(row);
                     return (
                         <UserGroupCard
                             key={`${row?.id || row?.groupId || row?.name || 'group'}:${index}`}
                             group={row}
+                            isOwner={groupMarkers?.own.has(groupId)}
+                            isMutual={groupMarkers?.mutual.has(groupId)}
                         />
                     );
                 }

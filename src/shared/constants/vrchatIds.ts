@@ -7,7 +7,7 @@ export const VRCHAT_ID_PREFIX = Object.freeze({
     instance: 'inst_'
 });
 
-export const VRCHAT_UUID_PATTERN =
+const VRCHAT_UUID_PATTERN =
     '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 
 const USER_ID_RE = vrchatIdRegExp(VRCHAT_ID_PREFIX.user);
@@ -25,7 +25,7 @@ function normalizedId(value: unknown): string {
         : String(value ?? '').trim();
 }
 
-export function hasVrchatIdPrefix(value: unknown, prefix: string): boolean {
+function hasVrchatIdPrefix(value: unknown, prefix: string): boolean {
     return normalizedId(value).startsWith(prefix);
 }
 

@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { EmptyState } from '@/components/layout/PageScaffold';
 import { cn } from '@/lib/utils';
 import type { FavoriteGroupVisibility } from '@/platform/tauri/bindings';
+import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -35,6 +36,8 @@ import { Spinner } from '@/ui/shadcn/spinner';
 import type { FavoriteGroupView, FavoriteSource } from '../favoritesTypes';
 
 const VISIBILITY_OPTIONS = ['public', 'friends', 'private'] as const;
+
+const NEAR_CAPACITY_RATIO = 0.8;
 
 const VISIBILITY_META: Record<
     FavoriteGroupVisibility,
@@ -64,9 +67,12 @@ function GroupVisibilityIcon({
     visibility,
     label
 }: {
-    visibility: string;
-    label: string;
+    visibility?: string;
+    label: string | null;
 }) {
+    if (!visibility || !label) {
+        return <span className="size-4 shrink-0" aria-hidden="true" />;
+    }
     if (!isFavoriteGroupVisibility(visibility)) {
         return (
             <span className="text-muted-foreground shrink-0 text-xs">
@@ -78,44 +84,53 @@ function GroupVisibilityIcon({
     return (
         <span className="shrink-0" title={label}>
             <meta.icon
-                className="text-muted-foreground size-3.5"
+                className="text-muted-foreground size-4"
                 aria-hidden="true"
             />
         </span>
     );
 }
 
-function GroupCapacityMeter({
+function GroupCapacity({
     count,
     capacity
 }: {
     count: number;
-    capacity: number;
+    capacity?: number;
 }) {
-    const ratio = capacity > 0 ? count / capacity : 0;
+    if (!capacity) {
+        return (
+            <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
+                {count}
+            </span>
+        );
+    }
+    const ratio = count / capacity;
     const percent = Math.min(100, Math.max(0, ratio * 100));
     const isFull = count >= capacity;
 
     return (
-        <div className="flex min-w-0 flex-1 items-center gap-1.5">
-            <div className="bg-muted h-[3px] min-w-0 flex-1 overflow-hidden rounded-full">
-                <div
-                    className={cn(
-                        'h-full rounded-full transition-[width,background-color] ease-out motion-reduce:transition-[background-color]',
-                        isFull ? 'bg-destructive' : 'bg-primary'
-                    )}
-                    style={{ width: `${percent}%` }}
-                />
-            </div>
+        <span className="flex shrink-0 items-center gap-1.5">
+            {ratio >= NEAR_CAPACITY_RATIO ? (
+                <span className="bg-muted h-[3px] w-6 overflow-hidden rounded-full">
+                    <span
+                        className={cn(
+                            'block h-full rounded-full transition-[width,background-color] ease-out motion-reduce:transition-[background-color]',
+                            isFull ? 'bg-destructive' : 'bg-primary'
+                        )}
+                        style={{ width: `${percent}%` }}
+                    />
+                </span>
+            ) : null}
             <span
                 className={cn(
-                    'shrink-0 text-xs tabular-nums',
+                    'text-xs tabular-nums',
                     isFull ? 'text-destructive' : 'text-muted-foreground'
                 )}
             >
                 {count}/{capacity}
             </span>
-        </div>
+        </span>
     );
 }
 
@@ -378,14 +393,22 @@ const GroupRailSection = memo(function GroupRailSection({
     return (
         <div className="flex flex-col gap-1">
             <div className="mb-1 flex items-center justify-between text-sm font-semibold">
-                <span className="flex items-center gap-1.5">
+                <span className="flex min-w-0 items-center gap-1.5">
                     {SectionIcon ? (
                         <SectionIcon
                             className="text-muted-foreground size-4"
                             aria-hidden="true"
                         />
                     ) : null}
-                    <span>{title}</span>
+                    <span className="min-w-0 truncate">{title}</span>
+                    {groups.length ? (
+                        <Badge
+                            variant="outline"
+                            className="text-muted-foreground shrink-0 font-normal tabular-nums"
+                        >
+                            {groups.length}
+                        </Badge>
+                    ) : null}
                 </span>
                 {onRefresh ? (
                     <Button
@@ -410,10 +433,10 @@ const GroupRailSection = memo(function GroupRailSection({
                     Array.from({ length: 5 }, (_, index) => (
                         <div
                             key={`group-placeholder-${index}`}
-                            className="pointer-events-none flex w-full flex-col gap-1 rounded-md px-2 py-1.5 text-sm opacity-70"
+                            className="pointer-events-none flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm opacity-70"
                         >
-                            <Skeleton className="h-3.5 w-3/5" />
-                            <Skeleton className="h-[3px] w-full rounded-full" />
+                            <Skeleton className="size-4 shrink-0 rounded-full" />
+                            <Skeleton className="h-3.5 flex-1" />
                         </div>
                     ))
                 ) : groups.length ? (
@@ -441,47 +464,39 @@ const GroupRailSection = memo(function GroupRailSection({
                             <div
                                 key={`${group.source}:${group.key}`}
                                 className={cn(
-                                    'group/rail-row flex w-full items-center gap-1 rounded-md transition-colors',
+                                    'group/rail-row flex w-full items-center gap-1 rounded-md transition-colors duration-(--motion-fast) ease-(--ease-out-ui) motion-reduce:transition-none',
                                     isActive
-                                        ? 'bg-primary/15'
-                                        : 'hover:bg-muted'
+                                        ? 'bg-(--state-selected-surface) hover:bg-(--state-selected-hover-surface)'
+                                        : 'hover:bg-(--state-hover-surface)'
                                 )}
                             >
                                 <Button
                                     type="button"
                                     variant="ghost"
-                                    className="h-auto min-w-0 flex-1 justify-start gap-1 rounded-md px-2 py-1.5 text-left whitespace-normal hover:bg-transparent"
+                                    className="h-auto min-w-0 flex-1 justify-start gap-2 rounded-md px-2 py-1.5 text-left hover:bg-transparent"
                                     onClick={() => onSelect(group)}
                                 >
-                                    <span className="flex min-w-0 flex-1 flex-col gap-1">
-                                        <span className="flex min-w-0 items-center gap-1.5">
-                                            <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                                                {group.label}
-                                            </span>
-                                            {visibilityLabel ? (
-                                                <GroupVisibilityIcon
-                                                    visibility={
-                                                        group.visibility || ''
-                                                    }
-                                                    label={visibilityLabel}
-                                                />
-                                            ) : null}
-                                            {!group.capacity ? (
-                                                <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-                                                    {group.count}
-                                                </span>
-                                            ) : null}
-                                        </span>
-                                        {group.capacity ? (
-                                            <GroupCapacityMeter
-                                                count={group.count ?? 0}
-                                                capacity={group.capacity}
-                                            />
-                                        ) : null}
+                                    <GroupVisibilityIcon
+                                        visibility={group.visibility}
+                                        label={visibilityLabel}
+                                    />
+                                    <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                                        {group.label}
                                     </span>
+                                    <GroupCapacity
+                                        count={group.count ?? 0}
+                                        capacity={group.capacity}
+                                    />
                                 </Button>
                                 {hasMenu ? (
-                                    <div className="shrink-0 pr-1">
+                                    <div
+                                        className={cn(
+                                            'shrink-0 pr-1 transition-opacity duration-(--motion-fast) ease-(--ease-out-ui) motion-reduce:transition-none',
+                                            isActive
+                                                ? 'opacity-100'
+                                                : 'opacity-0 group-focus-within/rail-row:opacity-100 group-hover/rail-row:opacity-100'
+                                        )}
+                                    >
                                         <GroupMenu
                                             group={group}
                                             onRemoteRename={onRemoteRename}
@@ -548,4 +563,4 @@ const GroupRailSection = memo(function GroupRailSection({
     );
 });
 
-export { GroupMenu, GroupRailSection };
+export { GroupRailSection };

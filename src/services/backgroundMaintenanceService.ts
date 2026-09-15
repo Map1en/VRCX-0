@@ -1,7 +1,6 @@
 export {
     refreshCurrentUser,
-    refreshFriendAndFavoriteSnapshots,
-    refreshPlayerModerations
+    refreshFriendAndFavoriteSnapshots
 } from './backgroundMaintenanceSessionService';
 export { handleAppUpdateStatusEvent } from './backgroundMaintenanceUpdateService';
 export {

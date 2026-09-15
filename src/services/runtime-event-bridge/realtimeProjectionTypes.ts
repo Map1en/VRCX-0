@@ -1,7 +1,3 @@
-import type {
-    FeedLiveEntryPayload,
-    FeedLivePatch
-} from '@/components/feed/feedLiveTypes';
 import type { UserProfileEntity } from '@/domain/entities/user';
 import type {
     FriendProjection,
@@ -16,6 +12,10 @@ import type {
     RealtimeUserProjection
 } from '@/platform/tauri/bindings';
 import type { NotificationRow } from '@/repositories/notificationPersistenceRepository';
+import type {
+    FeedLiveEntryPayload,
+    FeedLivePatch
+} from '@/state/feedLiveTypes';
 
 export type RealtimeFriendProjectionPayload = Omit<
     FriendProjection,
@@ -58,7 +58,7 @@ export type RealtimeUserProjectionPayload = Omit<
     users: RealtimeUserRecord[];
 };
 
-export type RealtimeGameStatePatch = Partial<{
+type RealtimeGameStatePatch = Partial<{
     currentLocation: string;
     currentWorldId: string;
     currentWorldName: string;
@@ -79,7 +79,7 @@ export type RealtimeCurrentUserProjectionPayload = Omit<
     gameStatePatch?: RealtimeGameStatePatch | null;
 };
 
-export type RealtimeNotificationUpsertPayload = Omit<
+type RealtimeNotificationUpsertPayload = Omit<
     RealtimeNotificationUpsert,
     'notification' | 'insertDefaults'
 > & {

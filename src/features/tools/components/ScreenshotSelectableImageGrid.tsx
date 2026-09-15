@@ -2,6 +2,10 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
+    getScreenshotGridDensityConfig,
+    type ScreenshotGridDensity
+} from '@/components/media/screenshotGridPreferences';
+import {
     ScreenshotThumbnailCard,
     useScreenshotThumbnailTitleMap
 } from '@/components/media/ScreenshotThumbnailCard';
@@ -9,6 +13,7 @@ import { useScreenshotGalleryGrid } from '@/components/media/useScreenshotGaller
 import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
 
 export function ScreenshotSelectableImageGrid({
+    density,
     images,
     initialScrollTop,
     resetKey,
@@ -18,6 +23,7 @@ export function ScreenshotSelectableImageGrid({
     onToggleSelect,
     onScrollPositionChange
 }: {
+    density: ScreenshotGridDensity;
     images: ScreenshotLibraryImage[];
     initialScrollTop: number;
     resetKey: string;
@@ -36,10 +42,12 @@ export function ScreenshotSelectableImageGrid({
         viewportRef,
         visibleRows
     } = useScreenshotGalleryGrid({
+        density,
         initialScrollTop,
         items: images,
         resetKey
     });
+    const compactCard = getScreenshotGridDensityConfig(density).compactCard;
     const visibleItems = useMemo(
         () => visibleRows.flatMap((row) => row.items),
         [visibleRows]
@@ -67,6 +75,7 @@ export function ScreenshotSelectableImageGrid({
                     >
                         {row.items.map((item: ScreenshotLibraryImage) => (
                             <ScreenshotThumbnailCard
+                                compact={compactCard}
                                 key={item.path}
                                 item={item}
                                 onOpen={onOpen}

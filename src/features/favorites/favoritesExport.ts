@@ -34,7 +34,7 @@ type FavoriteExportItem = Pick<FavoriteItem, 'id' | 'source'> &
         >
     >;
 
-export const FAVORITE_EXPORT_FIELD_OPTIONS: Readonly<{
+const FAVORITE_EXPORT_FIELD_OPTIONS: Readonly<{
     friend: readonly FavoriteExportFieldOption[];
     entity: readonly FavoriteExportFieldOption[];
 }> = Object.freeze({

@@ -17,7 +17,7 @@ pub async fn app__start_background_mode(
     bootstrap::start_background_mode_for_current_session(&app_handle, &state).await
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__backend_runtime_combined_snapshot_get(
     state: State<'_, AppState>,

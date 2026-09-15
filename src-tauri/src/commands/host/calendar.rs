@@ -7,7 +7,7 @@ use tauri::AppHandle;
 use crate::error::AppError;
 use vrcx_0_host_desktop::calendar;
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__open_calendar_file(ics_content: String) -> Result<(), AppError> {
     Ok(calendar::open_calendar_file(&ics_content)?)

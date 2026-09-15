@@ -75,7 +75,7 @@ export type FriendLocationCardFriend = FriendRecord & {
     travelingToLocation?: string | null;
 };
 
-export type FriendLocationCardDensity = Pick<
+type FriendLocationCardDensity = Pick<
     ReturnType<typeof getFriendsLocationsDensityConfig>,
     | 'value'
     | 'layout'
@@ -328,20 +328,20 @@ export interface FriendLocationCardLocationModel {
     timerLocation?: string | null;
 }
 
-export interface FriendLocationCardPresentation {
+interface FriendLocationCardPresentation {
     density?: FriendLocationCardDensity;
     contentMode?: FriendsLocationsCardContentMode;
     displayInstanceInfo?: boolean;
 }
 
-export interface FriendLocationCardCapabilities {
+interface FriendLocationCardCapabilities {
     useLocation?: boolean;
     sendInvite?: boolean;
     requestInvite?: boolean;
     boop?: boolean;
 }
 
-export interface FriendLocationCardActions {
+interface FriendLocationCardActions {
     openUser?: () => void;
     openWorld?: () => void;
     launchLocation?: () => void;

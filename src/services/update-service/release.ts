@@ -11,7 +11,7 @@ function asGitHubRelease(value: unknown): GitHubRelease {
     return isRecord(value) ? value : {};
 }
 
-export function normalizeGitHubRelease(
+function normalizeGitHubRelease(
     release: GitHubRelease
 ): NormalizedRelease | null {
     const parsedVersion = parseReleaseVersion(String(release?.tag_name || ''));

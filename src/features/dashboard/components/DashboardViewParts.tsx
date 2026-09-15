@@ -49,7 +49,7 @@ import {
 } from './DashboardPanelPreview';
 import { DashboardResizeHandle } from './DashboardResizeHandle';
 
-export function DashboardFilterConfig({
+function DashboardFilterConfig({
     title,
     filterTypes,
     config,
@@ -106,7 +106,7 @@ export function DashboardFilterConfig({
     );
 }
 
-export function DashboardSwitchConfig({
+function DashboardSwitchConfig({
     label,
     description,
     checked,
@@ -132,7 +132,7 @@ export function DashboardSwitchConfig({
     );
 }
 
-export function DashboardInstanceColumnConfig({
+function DashboardInstanceColumnConfig({
     config,
     onConfigChange
 }: {

@@ -1,10 +1,12 @@
-import { RefreshCwIcon, UploadIcon, XIcon } from 'lucide-react';
+import { UploadIcon, XIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ToolbarOverflowMenu } from '@/components/layout/ToolbarControls';
 import { useTileSelectionState } from '@/lib/useTileSelectionState';
 import { extractFileId } from '@/shared/utils/fileUtils';
 import { Button } from '@/ui/shadcn/button';
+import { DropdownMenuGroup, DropdownMenuItem } from '@/ui/shadcn/dropdown-menu';
 import { TabsContent } from '@/ui/shadcn/tabs';
 
 import type { FileAssetTab, FileTabDefinition } from '../galleryConstants';
@@ -34,7 +36,6 @@ export function GalleryFileTab({
         profilePicOverride,
         userIcon,
         gridDensityConfig,
-        onRefresh,
         onBeginUpload,
         onBulkDelete,
         onClearProfileField,
@@ -75,14 +76,6 @@ export function GalleryFileTab({
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => onRefresh(tab)}
-                            >
-                                <RefreshCwIcon data-icon="inline-start" />
-                                {t('dialog.gallery_icons.refresh')}
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
                                 disabled={Boolean(uploadingTab)}
                                 onClick={() => onBeginUpload(tab)}
                             >
@@ -90,38 +83,52 @@ export function GalleryFileTab({
                                 {t('dialog.gallery_icons.upload')}
                             </Button>
                             {tab === 'gallery' ? (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={
-                                        !profilePicOverride ||
-                                        Boolean(mutatingKey)
-                                    }
-                                    onClick={() =>
-                                        onClearProfileField(
-                                            'profilePicOverride',
-                                            ''
-                                        )
-                                    }
-                                >
-                                    <XIcon data-icon="inline-start" />
-                                    {t('dialog.gallery_icons.clear_banner')}
-                                </Button>
+                                <ToolbarOverflowMenu>
+                                    <DropdownMenuGroup>
+                                        <DropdownMenuItem
+                                            variant="destructive"
+                                            disabled={
+                                                !profilePicOverride ||
+                                                Boolean(mutatingKey)
+                                            }
+                                            onClick={() =>
+                                                onClearProfileField(
+                                                    'profilePicOverride',
+                                                    ''
+                                                )
+                                            }
+                                        >
+                                            <XIcon data-icon="inline-start" />
+                                            {t(
+                                                'dialog.gallery_icons.clear_banner'
+                                            )}
+                                        </DropdownMenuItem>
+                                    </DropdownMenuGroup>
+                                </ToolbarOverflowMenu>
                             ) : null}
                             {tab === 'icons' ? (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={!userIcon || Boolean(mutatingKey)}
-                                    onClick={() =>
-                                        onClearProfileField('userIcon', '')
-                                    }
-                                >
-                                    <XIcon data-icon="inline-start" />
-                                    {t(
-                                        'dialog.gallery_icons.clear_profile_icon'
-                                    )}
-                                </Button>
+                                <ToolbarOverflowMenu>
+                                    <DropdownMenuGroup>
+                                        <DropdownMenuItem
+                                            variant="destructive"
+                                            disabled={
+                                                !userIcon ||
+                                                Boolean(mutatingKey)
+                                            }
+                                            onClick={() =>
+                                                onClearProfileField(
+                                                    'userIcon',
+                                                    ''
+                                                )
+                                            }
+                                        >
+                                            <XIcon data-icon="inline-start" />
+                                            {t(
+                                                'dialog.gallery_icons.clear_profile_icon'
+                                            )}
+                                        </DropdownMenuItem>
+                                    </DropdownMenuGroup>
+                                </ToolbarOverflowMenu>
                             ) : null}
                         </>
                     }

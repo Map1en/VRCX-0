@@ -21,7 +21,7 @@ export function isFeedFilterType(value: unknown): value is FeedFilterType {
     return FEED_FILTER_TYPES.some((filter) => filter === value);
 }
 
-export interface FeedQueryOptions {
+interface FeedQueryOptions {
     userId: string;
     search?: string;
     filters?: FeedFilter[];
@@ -35,7 +35,7 @@ export interface FeedQueryOptions {
     favoritesOnly?: boolean;
 }
 
-export interface FeedLatestQueryOptions {
+interface FeedLatestQueryOptions {
     userId: string;
     filters?: FeedFilter[];
     favoriteUserIds?: string[];
@@ -177,5 +177,4 @@ class FeedRepository {
 
 const feedRepository = new FeedRepository();
 
-export { FeedRepository };
 export default feedRepository;

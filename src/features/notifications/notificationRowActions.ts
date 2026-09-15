@@ -97,7 +97,7 @@ export function getDiscIcon(
     return BellIcon;
 }
 
-export function getResponseIcon(
+function getResponseIcon(
     response: NotificationResponse | null | undefined,
     notificationType: string | undefined
 ): LucideIcon {
@@ -138,8 +138,6 @@ export function getNotificationLinkIcon(
             return ExternalLinkIcon;
     }
 }
-
-export const PRIMARY_ACTION_KEYS = new Set<string>(['accept', 'invite']);
 
 const MANUAL_BOOP_REPLY_RESPONSE = {
     icon: 'reply',
@@ -228,7 +226,7 @@ export function buildOrderedActions({
     for (const response of responses) {
         actions.push({
             key: `response:${response?.type}:${response?.text || response?.data || ''}`,
-            label: getResponseLabel(response),
+            label: getResponseLabel(response, t),
             Icon: getResponseIcon(response, type),
             onClick: () =>
                 handlers.onSendNotificationResponse(notification, response)

@@ -10,6 +10,7 @@ import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { IMAGE_UPLOAD_ACCEPT } from '@/shared/constants/imageUpload';
 import { parseLocation } from '@/shared/utils/location';
 import { isRecord } from '@/shared/utils/record';
+import { normalizeString } from '@/shared/utils/string';
 import type { WorldNewInstanceDefaults } from '@/state/dialogStore';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
@@ -23,7 +24,6 @@ import { useWorldDialogRuntimeState } from './world-dialog/useWorldDialogRuntime
 import { useWorldImageUpload } from './world-dialog/useWorldImageUpload';
 import { useWorldInstanceActions } from './world-dialog/useWorldInstanceActions';
 import { WorldDialogTabbedView } from './world-dialog/WorldDialogTabbedView';
-import { normalizeEntityId } from './world-dialog/worldInstances';
 import { WorldNewInstanceDialog } from './world-dialog/WorldNewInstanceDialog';
 import {
     WorldAllowedDomainsDialog,
@@ -152,10 +152,10 @@ export function WorldDialogContentWorkflow({
         ? parseLocation(normalizedWorldId).shortName
         : '';
     const isHomeWorld =
-        normalizeEntityId(currentHomeLocation) === normalizeEntityId(world?.id);
+        normalizeString(currentHomeLocation) === normalizeString(world?.id);
     const canUpdateHome = Boolean(currentUserId && world?.id);
     const canManageWorld =
-        normalizeEntityId(world?.authorId) === normalizeEntityId(currentUserId);
+        normalizeString(world?.authorId) === normalizeString(currentUserId);
 
     const worldActions = useWorldActions({
         world,

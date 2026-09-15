@@ -28,7 +28,7 @@ function SkeletonLine({ className }: { className?: string }) {
 
 function UserDialogHeaderSkeleton() {
     return (
-        <Card size="sm" className="border shadow-none ring-0">
+        <Card size="sm" className="ring-stroke-subtle border-0 shadow-none">
             <div className="space-y-4 px-4 pb-1">
                 <div className="relative">
                     <Skeleton className="aspect-[4/3] w-full rounded-lg" />
@@ -66,7 +66,7 @@ function UserDialogHeaderSkeleton() {
 
 function UserDialogPanelSkeleton({ compact = false }: { compact?: boolean }) {
     return (
-        <Card size="sm" className="border shadow-none ring-0">
+        <Card size="sm" className="ring-stroke-subtle border-0 shadow-none">
             <div className="space-y-4 px-4">
                 <SkeletonLine className="h-5 w-36" />
                 <div className="space-y-2">

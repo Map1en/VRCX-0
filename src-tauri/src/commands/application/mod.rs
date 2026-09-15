@@ -19,6 +19,7 @@ pub mod note_export;
 pub mod notification_chains;
 pub mod overlay_activity;
 pub mod presence_automation;
+pub mod privacy_lock;
 pub mod profile_backup;
 pub mod proxy;
 pub mod quick_search;

@@ -9,21 +9,21 @@ use vrcx_0_host_desktop::host_capabilities::{
 use crate::error::AppError;
 use crate::state::AppState;
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__is_game_running(state: State<'_, AppState>) -> Result<bool, AppError> {
     require_host_capability(HostCapability::GameProcessMonitor)?;
     Ok(state.runtime_host().is_game_running())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__start_game(launch_arguments: String) -> Result<bool, AppError> {
     require_host_capability(HostCapability::GameLaunch)?;
     Ok(game_launch::start_game(&launch_arguments)?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__start_game_from_path(
     state: State<'_, AppState>,

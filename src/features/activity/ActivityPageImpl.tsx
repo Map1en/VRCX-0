@@ -176,7 +176,7 @@ export function ActivityPageImpl() {
                 <PageToolbar>
                     <PageToolbarRow>
                         <ToolbarTabs options={rangeOptions} />
-                        <ToolbarActions>
+                        <ToolbarActions className="ms-auto">
                             <ToolbarRefreshButton
                                 onRefresh={refresh}
                                 loading={loading}

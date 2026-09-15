@@ -34,11 +34,7 @@ export function useModerationPageController({
             return matchesModerationSearch(row, filters.searchQuery);
         });
     }, [filters.searchQuery, filters.selectedTypes, rowsState.rows]);
-    const tableState = useModerationTableState({
-        filteredRowsLength: filteredRows.length,
-        searchQuery: filters.searchQuery,
-        selectedTypes: filters.selectedTypes
-    });
+    const tableState = useModerationTableState();
     const shiftHeld = useModerationShiftKey();
     const actions = useModerationRowActions({
         setDetail: rowsState.setDetail,
@@ -57,11 +53,9 @@ export function useModerationPageController({
             columnOrder: tableState.columnOrder,
             columnSizing: tableState.columnSizing,
             columnVisibility: tableState.columnVisibility,
-            sorting: tableState.sorting,
-            pagination: tableState.pagination
+            sorting: tableState.sorting
         },
         onSortingChange: tableState.setSorting,
-        onPaginationChange: tableState.setPagination,
         onColumnVisibilityChange: tableState.setColumnVisibility,
         onColumnOrderChange: tableState.setColumnOrder,
         onColumnSizingChange: tableState.setColumnSizing,
@@ -73,12 +67,16 @@ export function useModerationPageController({
             setColumnOrderLocked: tableState.setColumnOrderLocked
         }
     });
+    const listResetKey = [
+        filters.searchQuery,
+        filters.selectedTypes.join(','),
+        tableState.sorting.map((entry) => `${entry.id}:${entry.desc}`).join(',')
+    ].join('|');
 
     return {
-        filteredRows,
         filters,
+        listResetKey,
         rowsState,
-        table,
-        tableState
+        table
     };
 }

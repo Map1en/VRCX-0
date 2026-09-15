@@ -549,7 +549,7 @@ export function WorldDialogOverviewSection({
                                     type="button"
                                     variant="ghost"
                                     disabled={!world.name}
-                                    className="hover:text-primary h-auto min-w-0 flex-1 justify-start overflow-hidden p-0 text-left text-lg leading-tight font-semibold whitespace-normal disabled:pointer-events-none disabled:opacity-100"
+                                    className="hover:text-primary h-auto min-w-0 flex-1 justify-start overflow-hidden p-0 text-left text-lg leading-tight font-semibold whitespace-normal hover:bg-transparent disabled:pointer-events-none disabled:opacity-100"
                                     onClick={
                                         world.name ? onCopyWorldName : undefined
                                     }
@@ -570,7 +570,7 @@ export function WorldDialogOverviewSection({
                         type="button"
                         variant="ghost"
                         disabled={!world.authorId}
-                        className="text-muted-foreground hover:text-primary h-auto max-w-full min-w-0 justify-start overflow-hidden p-0 text-left font-mono text-sm disabled:pointer-events-none disabled:opacity-100"
+                        className="text-muted-foreground hover:text-primary h-auto max-w-full min-w-0 justify-start overflow-hidden p-0 text-left text-sm hover:bg-transparent disabled:pointer-events-none disabled:opacity-100"
                         onClick={world.authorId ? onOpenAuthor : undefined}
                     >
                         <span className="truncate">{world.authorName}</span>

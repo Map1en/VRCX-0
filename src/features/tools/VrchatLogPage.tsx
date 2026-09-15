@@ -1,4 +1,4 @@
-import { ClipboardCopyIcon, FileSearchIcon, XIcon } from 'lucide-react';
+import { ClipboardCopyIcon, FileSearchIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -6,8 +6,8 @@ import {
     PageBody,
     PageScaffold
 } from '@/components/layout/PageScaffold';
+import { SelectionActionBar } from '@/components/layout/SelectionActionBar';
 import { ToolPageHeader } from '@/components/layout/ToolPageHeader';
-import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
 
@@ -21,14 +21,15 @@ export function VrchatLogPage() {
         vrchatPathStatus,
         vrchatPathUnavailable,
         files,
-        selectedFile,
         selectedFileName,
         setSelectedFileName,
         entries,
         visibleLogRows,
+        logBodyOffset,
         logVirtualHeight,
         selectedLineNumbers,
         selectedCount,
+        isAllSelected,
         visibleLoadedCount,
         totalEntries,
         olderOffset,
@@ -40,6 +41,11 @@ export function VrchatLogPage() {
         toggleCategory,
         searchQuery,
         setSearchQuery,
+        searchCaseSensitive,
+        setSearchCaseSensitive,
+        searchRegex,
+        setSearchRegex,
+        levelCounts,
         followLatest,
         setFollowLatest,
         isFilesLoading,
@@ -52,6 +58,7 @@ export function VrchatLogPage() {
         refresh,
         copySelectedEntries,
         clearSelectedEntries,
+        toggleSelectAllEntries,
         copyText,
         loadEntries
     } = useVrchatLogController();
@@ -79,19 +86,25 @@ export function VrchatLogPage() {
                 setSelectedFileName={setSelectedFileName}
                 files={files}
                 isFilesLoading={isFilesLoading}
-                selectedFile={selectedFile}
                 isEntriesLoading={isEntriesLoading}
                 refresh={refresh}
                 followLatest={followLatest}
                 setFollowLatest={setFollowLatest}
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
+                searchCaseSensitive={searchCaseSensitive}
+                setSearchCaseSensitive={setSearchCaseSensitive}
+                searchRegex={searchRegex}
+                setSearchRegex={setSearchRegex}
                 levels={levels}
+                levelCounts={levelCounts}
                 toggleLevel={toggleLevel}
                 categoryOptions={categoryOptions}
                 selectedCategories={selectedCategories}
                 setSelectedCategories={setSelectedCategories}
                 toggleCategory={toggleCategory}
+                visibleLoadedCount={visibleLoadedCount}
+                totalEntries={totalEntries}
             />
             <PageBody>
                 {error ? (
@@ -100,7 +113,7 @@ export function VrchatLogPage() {
                     </div>
                 ) : null}
 
-                <div className="border-border bg-background min-h-0 flex-1 overflow-hidden rounded-md border">
+                <div className="border-border bg-background relative min-h-0 flex-1 overflow-hidden rounded-md border">
                     {isEntriesLoading ? (
                         <div className="text-muted-foreground flex h-full items-center justify-center gap-2 text-sm">
                             <Spinner className="size-4" />
@@ -127,6 +140,7 @@ export function VrchatLogPage() {
                     ) : (
                         <VrchatLogTable
                             setLogScrollNode={setLogScrollNode}
+                            logBodyOffset={logBodyOffset}
                             logVirtualHeight={logVirtualHeight}
                             visibleLogRows={visibleLogRows}
                             selectedLineNumbers={selectedLineNumbers}
@@ -135,73 +149,46 @@ export function VrchatLogPage() {
                             copySelectedEntries={copySelectedEntries}
                             selectedCount={selectedCount}
                             isCopying={isCopying}
+                            searchQuery={searchQuery}
+                            searchCaseSensitive={searchCaseSensitive}
+                            searchRegex={searchRegex}
+                            olderOffset={olderOffset}
+                            isLoadingMore={isLoadingMore}
+                            onLoadOlder={() =>
+                                loadEntries({
+                                    reset: false,
+                                    offset: olderOffset ?? 0
+                                })
+                            }
                         />
                     )}
-                </div>
-
-                {entries.length ? (
-                    <div className="text-muted-foreground flex shrink-0 items-center justify-between gap-3 pb-3 text-xs">
-                        <div className="flex min-w-0 items-center gap-3">
-                            {olderOffset !== null ? (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-8"
-                                    disabled={isLoadingMore}
-                                    onClick={() =>
-                                        loadEntries({
-                                            reset: false,
-                                            offset: olderOffset
-                                        })
-                                    }
-                                >
-                                    {isLoadingMore ? (
-                                        <Spinner className="size-3.5" />
-                                    ) : null}
-                                    {t('view.tools.vrchat_log.load_more')}
-                                </Button>
-                            ) : null}
-                            <span className="tabular-nums">
-                                {t('view.tools.vrchat_log.loaded_count', {
-                                    loaded: visibleLoadedCount,
-                                    total: totalEntries
-                                })}
-                            </span>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                            {selectedCount ? (
-                                <Badge className="bg-purple-50/70 text-purple-600 dark:bg-purple-950/50 dark:text-purple-300">
-                                    {t('view.tools.vrchat_log.selected_count', {
-                                        count: selectedCount
-                                    })}
-                                </Badge>
-                            ) : null}
+                    {selectedCount ? (
+                        <SelectionActionBar
+                            status={t('view.tools.vrchat_log.selected_count', {
+                                count: selectedCount
+                            })}
+                            selectAllLabel={
+                                isAllSelected
+                                    ? t('view.tools.vrchat_log.deselect_all')
+                                    : t('view.tools.vrchat_log.select_all')
+                            }
+                            clearLabel={t('common.actions.clear')}
+                            onSelectAll={toggleSelectAllEntries}
+                            onClearSelection={clearSelectedEntries}
+                        >
                             <Button
                                 type="button"
-                                variant="outline"
                                 size="sm"
-                                className="h-8"
-                                disabled={!selectedCount || isCopying}
+                                variant="ghost"
+                                disabled={isCopying}
                                 onClick={copySelectedEntries}
                             >
                                 <ClipboardCopyIcon data-icon="inline-start" />
                                 {t('view.tools.vrchat_log.copy_selected')}
                             </Button>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="h-8"
-                                disabled={!selectedCount}
-                                onClick={clearSelectedEntries}
-                            >
-                                <XIcon data-icon="inline-start" />
-                                {t('view.tools.vrchat_log.clear_selected')}
-                            </Button>
-                        </div>
-                    </div>
-                ) : null}
+                        </SelectionActionBar>
+                    ) : null}
+                </div>
             </PageBody>
         </PageScaffold>
     );

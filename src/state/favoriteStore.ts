@@ -29,16 +29,7 @@ import {
     renameLocalFavoriteGroupState
 } from './favoriteStoreModel';
 
-export type {
-    FavoriteKind,
-    FavoriteSnapshot,
-    FavoriteStore,
-    FavoriteStoreState,
-    LocalFavoriteAction,
-    LocalFavoriteGroupAction,
-    RenameLocalFavoriteGroupAction
-} from '@/domain/favorites/types';
-export { DEFAULT_FAVORITE_LIMITS } from './favoriteStoreModel';
+export type { FavoriteStore } from '@/domain/favorites/types';
 
 export const useFavoriteStore = create<FavoriteStore>((set, get) => ({
     ...initialFavoriteStoreState,

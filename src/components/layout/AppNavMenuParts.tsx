@@ -3,13 +3,9 @@ export {
     isEntryActive,
     isToolEntry,
     labelForEntry,
-    removeNavKeyFromLayout,
-    themeModeLabel
+    removeNavKeyFromLayout
 } from './app-nav-menu/AppNavMenuUtils';
-export {
-    DashboardEntryAction,
-    NavItemContextMenu
-} from './app-nav-menu/AppNavItemContextMenu';
+export { NavItemContextMenu } from './app-nav-menu/AppNavItemContextMenu';
 export {
     NavMenuEntryItem,
     NavMenuFolderItem

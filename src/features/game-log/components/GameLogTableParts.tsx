@@ -4,13 +4,7 @@ import { Location } from '@/components/Location';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { getGameLogLocationTarget } from '../gameLogRows';
-import {
-    GAME_LOG_SESSION_FILTER_TYPES,
-    type GameLogDetailValue,
-    type GameLogRow
-} from '../gameLogTypes';
-
-const SESSION_FILTER_TYPES = GAME_LOG_SESSION_FILTER_TYPES;
+import { type GameLogDetailValue, type GameLogRow } from '../gameLogTypes';
 
 function GameLogEmptyState({
     title,
@@ -97,7 +91,6 @@ export {
     EmptyTableValue,
     GameLogEmptyState,
     GameLogLocationDetail,
-    SESSION_FILTER_TYPES,
     DataTableSortButton as SortButton
 };
 import type { ComponentProps } from 'react';

@@ -74,5 +74,4 @@ const vrchatModerationRepository = Object.freeze({
     getLocalModeration
 });
 
-export { getAllLocalModerations, getLocalModeration };
 export default vrchatModerationRepository;

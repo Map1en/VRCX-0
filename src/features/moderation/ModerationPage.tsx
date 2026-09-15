@@ -7,9 +7,9 @@ import {
     PageScaffold
 } from '@/components/layout/PageScaffold';
 
-import { ModerationPageTable } from './components/ModerationPageTable';
 import { ModerationPageToolbar } from './components/ModerationPageToolbar';
 import { ModerationEmptyState } from './components/ModerationViewParts';
+import { ModerationVirtualList } from './components/ModerationVirtualList';
 import { useModerationPageController } from './useModerationPageController';
 
 export function ModerationPage({
@@ -17,7 +17,7 @@ export function ModerationPage({
 }: { embedded?: boolean } = {}) {
     const { t } = useTranslation();
     const location = useLocation();
-    const { filteredRows, filters, rowsState, table, tableState } =
+    const { filters, listResetKey, rowsState, table } =
         useModerationPageController({
             refreshKey: location.key || location.pathname
         });
@@ -25,7 +25,6 @@ export function ModerationPage({
         rowsState.loadStatus === 'running' && rowsState.rows.length === 0;
     const isError =
         rowsState.loadStatus === 'error' && rowsState.rows.length === 0;
-    const hasRows = filteredRows.length > 0;
 
     return (
         <PageScaffold embedded={embedded}>
@@ -58,22 +57,20 @@ export function ModerationPage({
                             'The moderation request did not complete.'
                         }
                     />
-                ) : hasRows ? (
-                    <ModerationPageTable
-                        table={table}
-                        filteredRowsLength={filteredRows.length}
-                        pagination={tableState.pagination}
-                        pageSizes={tableState.pageSizes}
-                        onPageSizeChange={tableState.handlePageSizeChange}
-                    />
                 ) : (
-                    <ModerationEmptyState
-                        title={t(
-                            'view.moderation.empty.no_moderation_rows_match_the_current_filters'
-                        )}
-                        description={t(
-                            'view.moderation.label.broaden_the_type_filters_or_search_query_to_see_more_results'
-                        )}
+                    <ModerationVirtualList
+                        table={table}
+                        resetKey={listResetKey}
+                        emptyState={
+                            <ModerationEmptyState
+                                title={t(
+                                    'view.moderation.empty.no_moderation_rows_match_the_current_filters'
+                                )}
+                                description={t(
+                                    'view.moderation.label.broaden_the_type_filters_or_search_query_to_see_more_results'
+                                )}
+                            />
+                        }
                     />
                 )}
             </PageBody>

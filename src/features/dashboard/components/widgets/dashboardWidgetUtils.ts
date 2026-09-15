@@ -1,34 +1,7 @@
-import type { FavoriteGroupMap } from '@/domain/favorites/types';
 import type { DashboardConfig } from '@/features/dashboard/dashboardConfig';
 import { formatDateFilter } from '@/lib/dateTime';
-import { normalizeString } from '@/shared/utils/string';
 
 type WidgetTimestamp = string | null | undefined;
-
-export function buildFavoriteIdSet(
-    remoteFavoriteIds: readonly string[] | null | undefined,
-    localFriendFavorites: FavoriteGroupMap | null | undefined
-): Set<string> {
-    const ids = new Set<string>();
-
-    for (const id of remoteFavoriteIds ?? []) {
-        const normalized = normalizeString(id);
-        if (normalized) {
-            ids.add(normalized);
-        }
-    }
-
-    for (const values of Object.values(localFriendFavorites ?? {})) {
-        for (const id of values) {
-            const normalized = normalizeString(id);
-            if (normalized) {
-                ids.add(normalized);
-            }
-        }
-    }
-
-    return ids;
-}
 
 export function formatWidgetTime(value: WidgetTimestamp) {
     if (!value) {

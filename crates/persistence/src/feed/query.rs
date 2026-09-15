@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 
 use serde_json::Value;
@@ -26,23 +27,15 @@ fn query_feed_rows(
     };
     params.insert("@limit".into(), Value::from(max_entries));
     params.insert("@per_table".into(), Value::from(max_entries));
-    let has_cursor = query
+    let cursor = query
         .cursor
         .as_ref()
-        .filter(|cursor| !cursor.created_at.trim().is_empty() && cursor.row_id > 0)
-        .is_some();
-    if let Some(cursor) = query
-        .cursor
-        .as_ref()
-        .filter(|cursor| !cursor.created_at.trim().is_empty() && cursor.row_id > 0)
-    {
+        .filter(|cursor| !cursor.created_at.trim().is_empty() && cursor.row_id > 0);
+    let cursor_source_rank = cursor.map(|cursor| cursor.source_rank);
+    if let Some(cursor) = cursor {
         params.insert(
             "@cursor_created_at".into(),
             Value::String(cursor.created_at.clone()),
-        );
-        params.insert(
-            "@cursor_source_rank".into(),
-            Value::from(cursor.source_rank),
         );
         params.insert("@cursor_row_id".into(), Value::from(cursor.row_id));
     }
@@ -125,7 +118,7 @@ fn query_feed_rows(
                     where_sql: &format!(
                         "(location LIKE @instance_like ESCAPE '\\' OR previous_location LIKE @instance_like ESCAPE '\\') {date_query} {user_scope_query}"
                     ),
-                    has_cursor,
+                    cursor_source_rank,
                     order_sql: &recent_order_sql,
                     created_at_expression,
                     cursor_created_at_expression,
@@ -148,7 +141,7 @@ fn query_feed_rows(
                     where_sql: &format!(
                         "location LIKE @instance_like ESCAPE '\\' {type_filter} {date_query} {user_scope_query}"
                     ),
-                    has_cursor,
+                    cursor_source_rank,
                     order_sql: &recent_order_sql,
                     created_at_expression,
                     cursor_created_at_expression,
@@ -165,7 +158,7 @@ fn query_feed_rows(
                 FeedSelectOptions {
                     source_rank: FEED_GPS_SOURCE_RANK,
                     where_sql: &format!("1=1 {date_query} {user_scope_query}"),
-                    has_cursor,
+                    cursor_source_rank,
                     order_sql: &recent_order_sql,
                     created_at_expression,
                     cursor_created_at_expression,
@@ -181,7 +174,7 @@ fn query_feed_rows(
                 FeedSelectOptions {
                     source_rank: FEED_STATUS_SOURCE_RANK,
                     where_sql: &format!("1=1 {date_query} {user_scope_query}"),
-                    has_cursor,
+                    cursor_source_rank,
                     order_sql: &recent_order_sql,
                     created_at_expression,
                     cursor_created_at_expression,
@@ -197,7 +190,7 @@ fn query_feed_rows(
                 FeedSelectOptions {
                     source_rank: FEED_BIO_SOURCE_RANK,
                     where_sql: &format!("1=1 {date_query} {user_scope_query}"),
-                    has_cursor,
+                    cursor_source_rank,
                     order_sql: &recent_order_sql,
                     created_at_expression,
                     cursor_created_at_expression,
@@ -213,7 +206,7 @@ fn query_feed_rows(
                 FeedSelectOptions {
                     source_rank: FEED_AVATAR_SOURCE_RANK,
                     where_sql: &format!("1=1 {date_query} {user_scope_query}"),
-                    has_cursor,
+                    cursor_source_rank,
                     order_sql: &recent_order_sql,
                     created_at_expression,
                     cursor_created_at_expression,
@@ -234,7 +227,7 @@ fn query_feed_rows(
                 FeedSelectOptions {
                     source_rank: FEED_ONLINE_OFFLINE_SOURCE_RANK,
                     where_sql: &format!("1=1 {type_filter} {date_query} {user_scope_query}"),
-                    has_cursor,
+                    cursor_source_rank,
                     order_sql: &recent_order_sql,
                     created_at_expression,
                     cursor_created_at_expression,
@@ -257,7 +250,7 @@ fn query_feed_rows(
                     where_sql: &format!(
                         "(display_name LIKE @search_like ESCAPE '\\' OR location LIKE @search_like ESCAPE '\\' OR world_name LIKE @search_like ESCAPE '\\' OR previous_location LIKE @search_like ESCAPE '\\' OR group_name LIKE @search_like ESCAPE '\\') {date_query} {user_scope_query}"
                     ),
-                    has_cursor,
+                    cursor_source_rank,
                     order_sql: &recent_order_sql,
                     created_at_expression,
                     cursor_created_at_expression,
@@ -275,7 +268,7 @@ fn query_feed_rows(
                     where_sql: &format!(
                         "(display_name LIKE @search_like ESCAPE '\\' OR status LIKE @search_like ESCAPE '\\' OR status_description LIKE @search_like ESCAPE '\\' OR previous_status LIKE @search_like ESCAPE '\\' OR previous_status_description LIKE @search_like ESCAPE '\\') {date_query} {user_scope_query}"
                     ),
-                    has_cursor,
+                    cursor_source_rank,
                     order_sql: &recent_order_sql,
                     created_at_expression,
                     cursor_created_at_expression,
@@ -293,7 +286,7 @@ fn query_feed_rows(
                     where_sql: &format!(
                         "(display_name LIKE @search_like ESCAPE '\\' OR bio LIKE @search_like ESCAPE '\\' OR previous_bio LIKE @search_like ESCAPE '\\') {date_query} {user_scope_query}"
                     ),
-                    has_cursor,
+                    cursor_source_rank,
                     order_sql: &recent_order_sql,
                     created_at_expression,
                     cursor_created_at_expression,
@@ -316,7 +309,7 @@ fn query_feed_rows(
                     where_sql: &format!(
                         "((display_name LIKE @search_like ESCAPE '\\' OR avatar_name LIKE @search_like ESCAPE '\\') {avatar_query}) {date_query} {user_scope_query}"
                     ),
-                    has_cursor,
+                    cursor_source_rank,
                     order_sql: &recent_order_sql,
                     created_at_expression,
                     cursor_created_at_expression,
@@ -340,7 +333,7 @@ fn query_feed_rows(
                     where_sql: &format!(
                         "{where_sql} {type_filter} {date_query} {user_scope_query}"
                     ),
-                    has_cursor,
+                    cursor_source_rank,
                     order_sql: &recent_order_sql,
                     created_at_expression,
                     cursor_created_at_expression,
@@ -521,7 +514,7 @@ const FEED_ONLINE_OFFLINE_PROJECTION: &str = "id, 50 AS source_rank, created_at,
 struct FeedSelectOptions<'a> {
     source_rank: i64,
     where_sql: &'a str,
-    has_cursor: bool,
+    cursor_source_rank: Option<i64>,
     order_sql: &'a str,
     created_at_expression: &'a str,
     cursor_created_at_expression: &'a str,
@@ -536,7 +529,7 @@ fn push_feed_select(
 ) {
     let cursor_sql = feed_cursor_condition(
         options.source_rank,
-        options.has_cursor,
+        options.cursor_source_rank,
         options.created_at_expression,
         options.cursor_created_at_expression,
     );
@@ -550,16 +543,24 @@ fn push_feed_select(
 
 fn feed_cursor_condition(
     source_rank: i64,
-    has_cursor: bool,
+    cursor_source_rank: Option<i64>,
     created_at_expression: &str,
     cursor_created_at_expression: &str,
 ) -> String {
-    if !has_cursor {
+    let Some(cursor_source_rank) = cursor_source_rank else {
         return String::new();
+    };
+    match source_rank.cmp(&cursor_source_rank) {
+        Ordering::Less => {
+            format!("AND {created_at_expression} <= {cursor_created_at_expression}")
+        }
+        Ordering::Equal => format!(
+            "AND ({created_at_expression}, id) < ({cursor_created_at_expression}, @cursor_row_id)"
+        ),
+        Ordering::Greater => {
+            format!("AND {created_at_expression} < {cursor_created_at_expression}")
+        }
     }
-    format!(
-        "AND ({created_at_expression} < {cursor_created_at_expression} OR ({created_at_expression} = {cursor_created_at_expression} AND {source_rank} < @cursor_source_rank) OR ({created_at_expression} = {cursor_created_at_expression} AND {source_rank} = @cursor_source_rank AND id < @cursor_row_id))"
-    )
 }
 
 fn value_opt_string(value: Option<&Value>) -> Option<String> {

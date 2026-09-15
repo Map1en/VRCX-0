@@ -67,7 +67,7 @@ function openFeedUser(
     });
 }
 
-export function getFeedRowId(row: DashboardFeedRow) {
+function getFeedRowId(row: DashboardFeedRow) {
     if (row?.id != null) {
         return `id:${row.id}`;
     }

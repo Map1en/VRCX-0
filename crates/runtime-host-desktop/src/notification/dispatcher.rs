@@ -16,6 +16,8 @@ use vrcx_0_application_core::{HostSessionRuntime, ImageCache, RuntimeAuthScope, 
 use vrcx_0_host_desktop::tts::TtsEngine;
 use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
 
+use crate::privacy_lock::PrivacyLockRuntime;
+
 use super::desktop::{send_desktop_notification, DesktopNotificationAction, DesktopNotifier};
 use super::overlay_transport::OverlayNotificationTransport;
 use super::tts::{notification_tts_memo_actor_user_id, send_tts_notification};
@@ -52,6 +54,7 @@ pub struct NotificationDispatcherDeps {
     pub tts: Arc<dyn TtsEngine>,
     pub tasks: TaskSupervisor,
     pub do_not_disturb: NotificationDoNotDisturbRuntime,
+    pub privacy_lock: Arc<PrivacyLockRuntime>,
 }
 
 struct NotificationOutputContext {
@@ -60,6 +63,7 @@ struct NotificationOutputContext {
     desktop: Arc<dyn DesktopNotifier>,
     tts: Arc<dyn TtsEngine>,
     do_not_disturb: NotificationDoNotDisturbRuntime,
+    privacy_lock: Arc<PrivacyLockRuntime>,
 }
 
 struct NotificationJob {
@@ -130,6 +134,7 @@ impl NotificationDispatcher {
             desktop: deps.desktop,
             tts: deps.tts,
             do_not_disturb: deps.do_not_disturb,
+            privacy_lock: deps.privacy_lock,
         });
         let (completion_tx, completion_rx) = mpsc::unbounded_channel();
         let worker_output = Arc::clone(&output);
@@ -157,9 +162,9 @@ impl OverlayActivitySink for NotificationDispatcher {
     fn emit_overlay_activity_delivery(&self, delivery: OverlayActivityDelivery) {
         let preferences = load_preferences(&self.config);
         let game = load_game_state(&self.session, &self.config);
-        let plan = plan_allowed_by_do_not_disturb(
+        let plan = plan_allowed_by_suppressors(
             decide_notification_plan(&delivery, &preferences, &game),
-            &self.output.do_not_disturb,
+            &self.output,
         );
         if !plan.has_local_transport() {
             return;
@@ -303,18 +308,20 @@ fn plan_without_suppressed_surfaces(
     plan
 }
 
-fn plan_allowed_by_do_not_disturb(
+fn plan_allowed_by_suppressors(
     plan: NotificationDeliveryPlan,
-    do_not_disturb: &NotificationDoNotDisturbRuntime,
+    output: &NotificationOutputContext,
 ) -> NotificationDeliveryPlan {
-    plan_without_suppressed_surfaces(plan, |surface| do_not_disturb.suppresses(surface))
+    plan_without_suppressed_surfaces(plan, |surface| {
+        output.do_not_disturb.suppresses(surface) || output.privacy_lock.suppresses(surface)
+    })
 }
 
 fn dispatch_prepared_notification(
     notification: &PreparedNotification,
     output: &NotificationOutputContext,
 ) {
-    let plan = plan_allowed_by_do_not_disturb(notification.plan, &output.do_not_disturb);
+    let plan = plan_allowed_by_suppressors(notification.plan, output);
     if plan.tts {
         let user_memo = notification_tts_memo_actor_user_id(
             &notification.delivery,

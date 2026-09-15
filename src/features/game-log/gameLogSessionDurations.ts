@@ -10,14 +10,7 @@ type GameLogSessionPlayerIdentity = Pick<
     'displayName' | 'userId'
 >;
 
-export function createEmptyGameLogSessionDurationDetails(): GameLogSessionDurationDetails {
-    return {
-        durationByKey: new Map(),
-        maxDurationMs: 0
-    };
-}
-
-export function playerDurationKey(
+function playerDurationKey(
     item: GameLogSessionPlayerIdentity | null | undefined
 ) {
     const userId = item?.userId.trim() ?? '';

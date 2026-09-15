@@ -9,17 +9,13 @@ export type {
     ActivityPageAccessSlice,
     ActivityPageBuildInput,
     ActivityPageCompanionRow,
-    ActivityPageCoverage,
     ActivityPageFadingRow,
     ActivityPagePeople,
-    ActivityPagePreviousSummary,
     ActivityPageSeries,
     ActivityPageSummary,
     ActivityPageView,
     ActivityPageWorldRow,
-    ActivityPageWorlds,
-    ActivitySeriesBucket,
-    ActivitySeriesPoint
+    ActivityPageWorlds
 } from '@/platform/tauri/bindings';
 
 export const activityPageRepository = {

@@ -353,6 +353,10 @@
                     "source": "nativeShell.tray.backgroundMode"
                 },
                 {
+                    "key": "nativeShell.tray.lock",
+                    "source": "nativeShell.tray.lock"
+                },
+                {
                     "key": "nativeShell.tray.doNotDisturb",
                     "source": "nativeShell.tray.doNotDisturb"
                 },

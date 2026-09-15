@@ -6,7 +6,7 @@ function normalizeEndpointValue(endpoint: unknown): string {
         : String(endpoint ?? '').trim();
 }
 
-export function normalizeVrchatEndpoint(endpoint: unknown = ''): string {
+function normalizeVrchatEndpoint(endpoint: unknown = ''): string {
     const explicitEndpoint = normalizeEndpointValue(endpoint);
     if (explicitEndpoint) {
         return explicitEndpoint;

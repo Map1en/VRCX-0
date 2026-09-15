@@ -9,7 +9,7 @@ use vrcx_0_runtime_host_desktop::local_data::{
     FeedSearchQueryInput,
 };
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__feed_persistence_set_disabled(
     state: State<'_, AppState>,
@@ -22,7 +22,7 @@ pub fn app__feed_persistence_set_disabled(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__avatar_feed_persistence_set_disabled(
     state: State<'_, AppState>,

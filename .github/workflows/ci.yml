@@ -241,7 +241,7 @@ jobs:
                     - label: macOS
                       os: macos-latest
                       cache_key: ci-test-macos-aarch64
-                      rust_test_args: --exclude vrcx-0-overlay-runtime
+                      rust_test_args: --exclude vrcx-0-overlay-runtime --exclude vrcx-0-application-game
         steps:
             - uses: actions/checkout@v7
             - name: Install Slint Linux dependencies

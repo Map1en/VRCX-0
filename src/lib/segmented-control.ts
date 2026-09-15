@@ -1,5 +1,3 @@
-import { cva } from 'class-variance-authority';
-
 export type SegmentedControlSize = 'default' | 'lg' | 'sm';
 
 export const segmentedControlItemSizeClassNames: Record<
@@ -11,31 +9,5 @@ export const segmentedControlItemSizeClassNames: Record<
     sm: 'h-7.5 px-[calc(--spacing(2)-1px)] sm:h-6.5'
 };
 
-export const segmentedControlRootClassName =
-    'relative z-0 flex w-fit items-center justify-center gap-0.5 rounded-lg bg-muted p-0.5';
-
 export const segmentedControlItemLayoutClassName =
     "gap-1.5 [&_svg:not(.lucide):not([class*='opacity-'])]:opacity-80 [&_.lucide]:text-muted-foreground [&_.lucide:not([class*='opacity-'])]:opacity-[0.576] hover:[&_.lucide:not([class*='opacity-'])]:opacity-80 data-active:[&_.lucide]:text-foreground data-active:[&_.lucide:not([class*='opacity-'])]:opacity-80 data-checked:[&_.lucide]:text-foreground data-checked:[&_.lucide:not([class*='opacity-'])]:opacity-80 aria-[current=page]:[&_.lucide]:text-foreground aria-[current=page]:[&_.lucide:not([class*='opacity-'])]:opacity-80 data-pressed:[&_.lucide]:text-foreground data-pressed:[&_.lucide:not([class*='opacity-'])]:opacity-80 [&_.lucide:not([class*='transition-'])]:transition-[color,opacity] [&_svg:not([class*='size-'])]:size-4.5 sm:[&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:-mx-0.5 [&_svg]:shrink-0";
-
-export const segmentedControlItemVariants = cva(
-    [
-        'text-muted-foreground/72 hover:text-muted-foreground focus-visible:outline-ring relative inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md border border-transparent text-base font-medium whitespace-nowrap outline-2 outline-transparent transition-[outline-color] select-none hover:bg-transparent disabled:pointer-events-none disabled:opacity-64 data-disabled:pointer-events-none data-disabled:opacity-64 sm:text-sm',
-        segmentedControlItemLayoutClassName
-    ],
-    {
-        defaultVariants: {
-            size: 'default'
-        },
-        variants: {
-            size: segmentedControlItemSizeClassNames,
-            state: {
-                checked:
-                    'data-checked:bg-background data-checked:text-foreground dark:data-checked:bg-input data-checked:shadow-sm/5',
-                current:
-                    'aria-[current=page]:bg-background aria-[current=page]:text-foreground dark:aria-[current=page]:bg-input aria-[current=page]:shadow-sm/5',
-                pressed:
-                    'data-pressed:bg-background data-pressed:text-foreground dark:data-pressed:bg-input data-pressed:shadow-sm/5'
-            }
-        }
-    }
-);

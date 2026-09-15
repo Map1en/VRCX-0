@@ -66,11 +66,4 @@ const externalApiRepository = Object.freeze({
     fetchImageDataUrl
 });
 
-export {
-    fetchGithubContributors,
-    fetchGithubReleases,
-    fetchImageDataUrl,
-    fetchYoutubeVideoMetadata,
-    searchAvatarProvider
-};
 export default externalApiRepository;

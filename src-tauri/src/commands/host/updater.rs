@@ -31,7 +31,7 @@ pub async fn app__app_update_release_get(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__app_update_download_status_get(
     state: State<'_, AppState>,

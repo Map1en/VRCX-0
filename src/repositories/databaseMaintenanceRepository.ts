@@ -125,7 +125,6 @@ export {
     getBrokenLeaveEntries,
     getGlobalTableSizes,
     getMaxFriendLogNumber,
-    getTableSizes,
     getUserTableSizes
 };
 export default databaseMaintenanceRepository;

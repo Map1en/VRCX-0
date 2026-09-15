@@ -73,7 +73,7 @@ function openWorldLocation(location: unknown, title: unknown = '') {
     });
 }
 
-export function buildVrcLaunchUrl(location: string, shortName = '') {
+function buildVrcLaunchUrl(location: string, shortName = '') {
     const normalizedLocation = normalizeString(location);
     const normalizedShortName = normalizeString(shortName);
     let launchUrl = `vrchat://launch?id=${normalizedLocation}`;
@@ -109,10 +109,7 @@ function shouldUseProvidedLaunchToken(
     );
 }
 
-export async function resolveInstanceLaunchToken(
-    location: string,
-    shortName = ''
-) {
+async function resolveInstanceLaunchToken(location: string, shortName = '') {
     const { parsed } = normalizeLaunchLocation(location);
     let launchToken = normalizeString(shortName || parsed.shortName);
 

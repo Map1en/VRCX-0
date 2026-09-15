@@ -85,9 +85,4 @@ export const useLaunchStore = create<LaunchStoreState>((set) => ({
         }));
     }
 }));
-export type {
-    LaunchCreatedInstance,
-    LaunchDialogOptions,
-    LaunchDialogState,
-    LaunchStoreState
-};
+export type { LaunchCreatedInstance, LaunchStoreState };

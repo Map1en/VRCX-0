@@ -1,22 +1,19 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog';
 import gameLogRepository from '@/repositories/gameLogRepository';
-import type { GameLogPreviousInstanceWorldRow } from '@/repositories/gameLogRepository';
 import { toast } from '@/services/toastService';
 import type { ParsedLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
-
-type PreviousInstanceDialogRow = Partial<GameLogPreviousInstanceWorldRow> & {
-    createdAt?: string;
-    worldId?: string;
-};
+import {
+    type PreviousInstancesDialogRow,
+    usePreviousInstancesDialogStore
+} from '@/state/previousInstancesDialogStore';
 
 type UseLocationPreviousInstancesDialogInput = {
     currentLocation: string;
     groupName: string;
-    onShowPreviousInstances?: (row: PreviousInstanceDialogRow) => void;
+    onShowPreviousInstances?: (row: PreviousInstancesDialogRow) => void;
     parsedLocation: ParsedLocation;
     worldName: string;
     worldNameHint: string;
@@ -31,19 +28,14 @@ export function useLocationPreviousInstancesDialog({
     worldNameHint
 }: UseLocationPreviousInstancesDialogInput) {
     const { t } = useTranslation();
-    const [previousInstancesOpen, setPreviousInstancesOpen] = useState(false);
-    const [previousInstancesRows, setPreviousInstancesRows] = useState<
-        PreviousInstanceDialogRow[]
-    >([]);
-    const [previousInstancesTitle, setPreviousInstancesTitle] =
-        useState('Instance History');
-    const [previousInstancesDetailsOnly, setPreviousInstancesDetailsOnly] =
-        useState(false);
+    const showPreviousInstancesDialog = usePreviousInstancesDialogStore(
+        (state) => state.showPreviousInstancesDialog
+    );
     const [previousInstancesLoading, setPreviousInstancesLoading] =
         useState(false);
 
     function showExactPreviousInstanceInfo() {
-        const payload: PreviousInstanceDialogRow = {
+        const payload: PreviousInstancesDialogRow = {
             location: currentLocation,
             worldId: parsedLocation.worldId,
             worldName: worldName || worldNameHint,
@@ -56,17 +48,19 @@ export function useLocationPreviousInstancesDialog({
         if (!currentLocation) {
             return;
         }
-        setPreviousInstancesRows([
-            {
-                location: currentLocation,
-                worldId: parsedLocation.worldId,
-                worldName: worldName || worldNameHint || parsedLocation.worldId,
-                groupName
-            }
-        ]);
-        setPreviousInstancesTitle('Instance Details');
-        setPreviousInstancesDetailsOnly(true);
-        setPreviousInstancesOpen(true);
+        showPreviousInstancesDialog({
+            title: 'Instance Details',
+            rows: [
+                {
+                    location: currentLocation,
+                    worldId: parsedLocation.worldId,
+                    worldName:
+                        worldName || worldNameHint || parsedLocation.worldId,
+                    groupName
+                }
+            ],
+            detailsOnly: true
+        });
     }
 
     async function showPreviousInstances() {
@@ -94,7 +88,7 @@ export function useLocationPreviousInstancesDialog({
                     worldId: parsedLocation.worldId
                 });
             const normalizedCurrentLocation = normalizeString(currentLocation);
-            const currentInstanceRow: PreviousInstanceDialogRow = {
+            const currentInstanceRow: PreviousInstancesDialogRow = {
                 location: normalizedCurrentLocation,
                 worldId: parsedLocation.worldId,
                 worldName: worldName || worldNameHint || parsedLocation.worldId
@@ -123,12 +117,11 @@ export function useLocationPreviousInstancesDialog({
                 );
             });
 
-            setPreviousInstancesRows(nextRows);
-            setPreviousInstancesTitle(
-                `Instance History - ${worldName || worldNameHint || parsedLocation.worldId}`
-            );
-            setPreviousInstancesDetailsOnly(false);
-            setPreviousInstancesOpen(true);
+            showPreviousInstancesDialog({
+                title: `Instance History - ${worldName || worldNameHint || parsedLocation.worldId}`,
+                rows: nextRows,
+                detailsOnly: false
+            });
         } catch (error) {
             toast.add({
                 type: 'error',
@@ -144,20 +137,7 @@ export function useLocationPreviousInstancesDialog({
         }
     }
 
-    const previousInstancesDialog = previousInstancesOpen ? (
-        <PreviousInstancesTableDialog
-            open={previousInstancesOpen}
-            onOpenChange={setPreviousInstancesOpen}
-            title={previousInstancesTitle}
-            instances={previousInstancesRows}
-            variant="world"
-            onRowsChange={setPreviousInstancesRows}
-            detailsOnly={previousInstancesDetailsOnly}
-        />
-    ) : null;
-
     return {
-        previousInstancesDialog,
         previousInstancesLoading,
         showExactPreviousInstanceInfo,
         showPreviousInstances

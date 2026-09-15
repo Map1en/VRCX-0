@@ -10,7 +10,7 @@
         "app_launcher_title": "Vyberte, co se spustí s VRChatem",
         "app_launcher_description": "Přidejte aplikaci nebo zástupce a určete, kdy se má otevřít.",
         "app_launcher_selection_title": "Vyberte aplikaci nebo zástupce",
-        "app_launcher_selection_description": "Vyberte položku ze seznamu a zobrazte nebo změňte, kdy se spouští.",
+        "app_launcher_selection_description": "Vyberte aplikaci a upravte, kdy se spouští.",
         "game_log_title": "Zatím žádná aktivita ve VRChatu",
         "game_log_description": "Během hraní se zde budou zobrazovat navštívené světy, hráči a další aktivita ve VRChatu.",
         "my_avatars_title": "Zatím žádné nahrané avatary",
@@ -279,7 +279,7 @@
     },
     "profile_backup": {
         "header": "Zálohování a obnovení",
-        "tools_description": "Záloha a obnova dat VRCX-0.",
+        "tools_description": "Záloha a obnova dat VRCX-0",
         "automatic": "Automatické zálohy",
         "automatic_description": "Pravidelně ukládejte zálohy do vybrané složky.",
         "automatic_on": "Zapnuto",
@@ -496,6 +496,7 @@
         "tray": {
             "open": "Otevřít VRCX-0",
             "backgroundMode": "Režim na pozadí",
+            "lock": "Zamknout",
             "doNotDisturb": "Nerušit",
             "doNotDisturbOneHour": "1 hodina",
             "doNotDisturbThreeHours": "3 hodiny",
@@ -724,6 +725,7 @@
         "hide_friends_sidebar": "Skrýt postranní panel přátel",
         "enter_sidebar_mode": "Režim postranního panelu",
         "restore_full_window": "Zpět do celého okna",
+        "always_on_top": "Vždy navrchu",
         "zoom_in": "Přiblížit",
         "zoom_out": "Oddálit",
         "reset_zoom": "Obnovit přiblížení",
@@ -788,6 +790,63 @@
         "hold_for_hints": "Zobrazit klávesové zkratky (podržet)",
         "toggle_details": "Zobrazit / skrýt podrobnosti",
         "clear_selection": "Zrušit výběr"
+    },
+    "privacy_lock": {
+        "locked_title": "Zamčeno",
+        "field": {
+            "password": "Heslo zámku",
+            "current_password": "Aktuální heslo zámku",
+            "new_password": "Nové heslo zámku",
+            "confirm_password": "Potvrzení nového hesla zámku",
+            "account_password": "Heslo k účtu VRChat"
+        },
+        "action": {
+            "lock": "Zamknout",
+            "unlock": "Odemknout",
+            "forgot": "Zapomněli jste heslo zámku?",
+            "back": "Zpět",
+            "set": "Nastavit heslo",
+            "change": "Změnit heslo",
+            "clear": "Odebrat heslo",
+            "clear_link": "Odebrat heslo zámku",
+            "clear_and_unlock": "Odebrat zámek",
+            "background_mode": "Režim na pozadí",
+            "logout": "Odhlásit se"
+        },
+        "setup": {
+            "create_title": "Nastavit heslo zámku",
+            "create_description": "Zámek skryje VRCX-0 za tento 4místný kód, zatímco záznam pokračuje. Nejde o šifrování – jen zabrání někomu u vašeho PC, aby se v aplikaci hrabal.",
+            "change_title": "Změnit heslo zámku",
+            "change_description": "Zadejte aktuální heslo zámku a poté zvolte nové.",
+            "clear_title": "Odebrat heslo zámku",
+            "clear_description": "Zadejte heslo k účtu VRChat, aby se kód zámku odebral. Porovnává se pouze s heslem uloženým lokálně ve VRCX-0; na servery VRChat se nic neposílá."
+        },
+        "recover": {
+            "description": "Zadejte heslo k účtu VRChat, aby se zámek odebral. Porovnává se pouze s heslem uloženým lokálně ve VRCX-0; na servery VRChat se nic neposílá."
+        },
+        "settings": {
+            "label": "Zámek soukromí",
+            "description": "Skryje okno za heslo zámku, zatímco VRCX-0 dál zaznamenává. Zamknout lze z nabídky v oznamovací oblasti nebo z nabídky účtu v postranním panelu.",
+            "status_set": "Heslo nastaveno",
+            "status_unset": "Bez hesla"
+        },
+        "toast": {
+            "set": "Heslo zámku nastaveno",
+            "changed": "Heslo zámku změněno",
+            "cleared": "Heslo zámku odebráno"
+        },
+        "error": {
+            "wrong_password": "Nesprávné heslo",
+            "incomplete": "Zadejte všech {count} číslic",
+            "mismatch": "Hesla se neshodují",
+            "current_required": "Zadejte aktuální heslo zámku",
+            "account_password_required": "Zadejte heslo k účtu VRChat",
+            "account_password_unavailable": "Tento účet nemá uložené heslo, takže zámek zde nelze odebrat. Odeberte ho ručně z dat aplikace.",
+            "password_not_set": "Heslo zámku není nastaveno",
+            "password_already_set": "Heslo zámku už je nastaveno",
+            "no_session": "Před použitím zámku se přihlaste",
+            "failed": "Operace zámku selhala"
+        }
     },
     "side_panel": {
         "search_placeholder": "Search",
@@ -854,7 +913,6 @@
             "favorites_section": "Oblíbené",
             "group_by_instance": "Seskupit podle instance",
             "split_favorite_friends": "Zobrazit oblíbené skupiny",
-            "show_grouped_friends": "Zobrazit seskupené přátele",
             "same_instance_above_favorites": "Upřednostnit stejnou instanci",
             "sort_secondary": "Poté podle",
             "sort_tertiary": "Poté podle",
@@ -1543,9 +1601,8 @@
                 "moderation_snapshot_failed_to_load": "Nepodařilo se načíst historii moderace"
             },
             "label": {
-                "showing": "Zobrazeno",
-                "of": "z",
                 "moderation_row": "záznam moderace",
+                "back_to_top": "Zpět nahoru",
                 "moderation_rows": "záznamů moderace",
                 "broaden_the_type_filters_or_search_query_to_see_more_results": "Pro zobrazení dalších výsledků rozšiřte filtry typu nebo hledaný výraz"
             },
@@ -1562,7 +1619,7 @@
                 "accept": "Přijmout",
                 "invite": "Pozvat",
                 "decline": "Odmítnout",
-                "delete_log": "Smazat záznam",
+                "delete_log": "Smazat upozornění",
                 "decline_with_message": "Odmítnout se zprávou"
             },
             "filters": {
@@ -1662,6 +1719,10 @@
                     "moderation": "Moderace",
                     "other": "Ostatní"
                 }
+            },
+            "responses": {
+                "acknowledge_and_dismiss": "Zavřít",
+                "unsubscribe_announcements": "Zrušit odběr"
             }
         },
         "friend_list": {
@@ -1726,7 +1787,8 @@
             "dynamic": {
                 "open_value": "Otevřít {value}"
             },
-            "bulk_selected": "Vybráno: {count}"
+            "bulk_selected": "Vybráno: {count}",
+            "search_scope": "Hledat v"
         },
         "charts": {
             "instance_activity": {
@@ -1849,16 +1911,13 @@
             "header": "Nástroje",
             "recent": "Nedávno použité",
             "status": {
-                "rules_enabled": "Počet aktivních pravidel: {count}",
-                "rules_enabled_of_total": "Aktivní pravidla: {enabled} z {total}",
-                "rules_configured_off": "Nastavená pravidla: {count} · Vypnuto",
-                "auto_reply_enabled": "Automatická odpověď je zapnutá",
-                "apps_enabled": "Nastavené aplikace: {count} · Zapnuto",
-                "apps_configured_off": "Nastavené aplikace: {count} · Vypnuto",
-                "last_backup": "Poslední záloha: {date}",
-                "automatic_backup_enabled": "Automatické zálohování je zapnuté",
-                "automatic_backup_configured_off": "Automatické zálohování je nastavené · Vypnuto",
-                "connections_configured": "Nastavená připojení AI: {count}"
+                "rules_enabled": "{count} pravidel · Zap",
+                "rules_enabled_of_total": "{enabled}/{total} pravidel · Zap",
+                "rules_configured_off": "{count} pravidel · Vyp",
+                "last_backup": "Záloha {date}",
+                "connections_configured": "{count} připojení",
+                "apps_count": "{count} aplikací",
+                "automatic_backup": "Auto záloha"
             },
             "quick_access": {
                 "header": "Rychlý přístup",
@@ -1866,12 +1925,11 @@
                 "done": "Hotovo",
                 "add": "Přidat do rychlého přístupu",
                 "remove": "Odebrat z rychlého přístupu",
-                "already_added": "Již přidáno do rychlého přístupu",
-                "empty": "Přetáhněte sem nástroje, nebo je přidejte z nabídky nástroje.",
+                "already_added": "Už je v rychlém přístupu",
+                "empty": "Přetáhněte nástroje sem",
                 "actions": "Akce nástroje",
-                "shortcut_menu": "Přidat zástupce…",
-                "tools_page_shortcut": "Rychlý přístup na stránce Nástroje",
-                "sidebar_shortcut": "Postranní navigace"
+                "tools_page_shortcut": "Připnout do rychlého přístupu",
+                "sidebar_shortcut": "Připnout na postranní panel"
             },
             "category": {
                 "automation": "Automatizace",
@@ -1885,9 +1943,9 @@
                 "calendar": "Kalendář",
                 "calendar_description": "Kalendář skupinových akcí",
                 "moderation": "Moderace skupiny",
-                "moderation_description": "Spravujte členy, zákazy, pozvánky a žádosti o vstup u skupin, které moderujete.",
+                "moderation_description": "Členové, bany, pozvánky a žádosti",
                 "my_groups": "Moje skupiny",
-                "my_groups_description": "Seřaďte, skryjte a opusťte skupiny, ve kterých jste."
+                "my_groups_description": "Řadit, skrývat a opouštět skupiny"
             },
             "user": {
                 "discord_names_description": "Najděte Discord uživatelská jména svých přátel z VRChat",
@@ -1913,7 +1971,7 @@
                 "screenshot": "Snímek obrazovky",
                 "screenshot_description": "Procházet fotky z VRChatu a podrobnosti o snímcích",
                 "gallery": "Galerie",
-                "gallery_description": "Správa galerie VRChatu — fotky, profilové ikony a printy",
+                "gallery_description": "Fotky, profilové ikony a printy",
                 "inventory": "Inventář",
                 "inventory_description": "Spravujte emoji, samolepky, předměty a kosmetiku"
             },
@@ -1934,23 +1992,22 @@
                 "vrchat_log_description": "Číst lokální výstupní záznamy VRChat",
                 "launch_options_description": "Upravit možnosti spuštění VRChat",
                 "app_launcher": "Spouštěč aplikací",
-                "app_launcher_description": "Spouštět aplikace automaticky při startu VRChatu.",
+                "app_launcher_description": "Spouštět aplikace při startu VRChat",
                 "registry_backup": "Záloha registru VRChat",
                 "registry_backup_description": "Vytvořte nebo obnovte zálohu registru VRChat",
                 "llm_endpoints": "Připojení AI",
-                "llm_endpoints_description": "Spravujte připojení k AI službám pro Social AI a překlad."
+                "llm_endpoints_description": "AI připojení pro Social AI a překlad"
             },
             "vrchat_log": {
                 "title": "Prohlížeč záznamů VRChat",
                 "latest": "nejnovější",
                 "file_placeholder": "Vyberte soubor záznamu",
-                "search_placeholder": "Hledat zprávu, kategorii nebo stack trace",
-                "follow_latest": "Sledovat nejnovější",
+                "search_placeholder": "Hledat v logu",
+                "follow_latest": "Sledovat",
                 "clear_categories": "Vymazat kategorie",
                 "copy_selected": "Kopírovat vybrané",
                 "copy_entry": "Kopírovat řádek",
                 "copy_message": "Kopírovat zprávu",
-                "clear_selected": "Vymazat výběr",
                 "copied": "Text záznamu zkopírován do schránky",
                 "copy_failed": "Nepodařilo se zkopírovat text záznamu",
                 "continuation_count": "+{count} řádků",
@@ -1959,13 +2016,18 @@
                 "column_category": "Kategorie",
                 "column_message": "Zpráva",
                 "loading": "Načítání záznamů",
-                "load_more": "Načíst další",
+                "load_older": "Načíst starší",
+                "matched_count": "{loaded} / {total} shod",
+                "match_case": "Rozlišovat velikost písmen",
+                "use_regex": "Regulární výraz",
+                "column_line": "Řádek",
+                "select_all": "Vybrat vše",
+                "deselect_all": "Zrušit výběr",
                 "unavailable": "Datová složka VRChat není dostupná",
                 "no_files": "Nebyly nalezeny žádné výstupní záznamy VRChat",
                 "no_files_description": "Spusťte VRChat alespoň jednou a po vytvoření output_log_*.txt tuto stránku obnovte.",
                 "no_entries": "Žádné položky neodpovídají aktuálním filtrům",
                 "no_entries_description": "Upravte úrovně, kategorii nebo hledaný text.",
-                "no_category": "Bez kategorie",
                 "error_load_files": "Nepodařilo se načíst soubory záznamů VRChat.",
                 "error_load_entries": "Nepodařilo se načíst položky záznamů VRChat.",
                 "error_tail": "Nepodařilo se přečíst nové položky záznamu.",
@@ -1975,11 +2037,11 @@
             "social_automation": {
                 "header": "Automatizace sociálních interakcí",
                 "status_schedule": "Plán stavu",
-                "status_schedule_description": "Naplánujte změny stavu, volitelně jen při spuštěném VRChatu.",
+                "status_schedule_description": "Měnit stav podle rozvrhu",
                 "room_status_rules": "Pravidla stavu podle instance a světa",
-                "room_status_rules_description": "Automatická změna stavu podle instance, světa nebo přátel.",
+                "room_status_rules_description": "Měnit stav podle instance, světa nebo přátel",
                 "invite_request_auto_reply": "Automatická odpověď na žádosti o pozvání",
-                "invite_request_auto_reply_description": "Automaticky pozve schválené přátele, kteří o vstup požádají, dokud VRChat běží.",
+                "invite_request_auto_reply_description": "Automaticky zvát schválené přátele, kteří žádají o vstup",
                 "schedule_rules": "Pravidla plánu",
                 "schedule_rules_description": "Časová okna mohou měnit stav, stavovou zprávu, nebo obojí.",
                 "add_rule": "Přidat pravidlo",
@@ -2185,7 +2247,10 @@
                 "detect_failed": "Nepodařilo se zjistit modely",
                 "deleted": "Endpoint odstraněn",
                 "delete_failed": "Nepodařilo se odstranit endpoint"
-            }
+            },
+            "filter_placeholder": "Filtrovat nástroje",
+            "filter_empty": "Žádné nástroje neodpovídají",
+            "sections": "Sekce"
         },
         "profile": {
             "game_info": {
@@ -2211,14 +2276,15 @@
             },
             "feedback": {
                 "title": "Odeslat zpětnou vazbu",
-                "description": "Zpětná vazba se ve výchozím nastavení odesílá anonymně. Každou zprávu čteme. Pokud potřebujete odpověď, uveďte ve zprávě svou e-mailovou adresu.",
+                "description": "Zpětná vazba se ve výchozím nastavení odesílá anonymně. Každou zprávu čteme.",
                 "privacy_note": "Nepřipojují se žádné údaje o účtu.",
                 "placeholder": "Řekněte nám, co funguje, co ne, nebo co byste chtěli vidět…",
                 "submit": "Odeslat",
                 "submitting": "Odesílání…",
                 "thanks": "Děkujeme za zpětnou vazbu!",
                 "cooldown": "Znovu odeslat můžete za {{seconds}} s",
-                "more_help": "Potřebujete odpověď nebo chcete přiložit logy?",
+                "reply_note": "Chcete odpověď? Uveďte ve zprávě svou e-mailovou adresu.",
+                "more_help": "Kontaktovat nás nebo přiložit logy můžete také zde:",
                 "error_generic": "Zpětnou vazbu se nepodařilo odeslat. Zkuste to prosím později."
             },
             "ai": {
@@ -3551,54 +3617,46 @@
         },
         "app_launcher": {
             "header": "Spouštěč aplikací",
-            "global_enabled": "Povoleno",
-            "add_app": "Přidat aplikaci nebo zástupce",
+            "global_enabled": "Spouštět aplikace s VRChat",
+            "add_app": "Přidat aplikaci",
             "choose_target": "Vybrat cíl",
-            "loading": "Načítání spouštěče aplikací",
-            "empty": "Žádné položky spouštěče",
-            "details": "Podrobnosti pravidla",
-            "no_selection": "Vyberte pravidlo",
+            "loading": "Načítání…",
             "enabled": "Povoleno",
             "name": "Název",
             "scope": "Rozsah",
             "target": "Cíl",
-            "policy": "Zásada",
-            "run": "Spustit",
-            "stop": "Zastavit",
-            "actions": "Akce",
+            "run": "Při spuštění VRChat",
+            "stop": "Při ukončení VRChat",
             "scope_all": "Vše",
             "scope_desktop": "Desktop",
             "scope_vr": "VR",
-            "run_policy_always": "Při každém spuštění VRChat",
-            "run_policy_skipIfRunning": "Přeskočit, pokud běží",
-            "run_policy_short_always": "Při každém spuštění",
-            "run_policy_short_skipIfRunning": "Přeskočit běžící",
-            "stop_policy_keepRunning": "Ponechat běžet",
-            "stop_policy_closeByVrcx": "Zavřít pomocí VRCX-0",
-            "stop_policy_short_keepRunning": "Ponechat",
-            "stop_policy_short_closeByVrcx": "Zavřít",
-            "delete": "Smazat",
+            "run_policy_short_always": "Spustit pokaždé",
+            "run_policy_short_skipIfRunning": "Jen když neběží",
+            "stop_policy_short_keepRunning": "Nechat běžet",
+            "stop_policy_short_closeByVrcx": "Zavřít aplikaci",
             "steam_app_id": "Steam App ID",
             "delay_seconds": "Zpoždění spuštění (sekundy)",
             "args": "Argumenty",
             "run_as_administrator": "Spustit jako správce",
-            "run_as_administrator_description": "Při spuštění této aplikace požádá Windows o oprávnění. Aplikace spuštěné se zvýšenými oprávněními zůstanou spuštěné i po ukončení VRChatu.",
+            "run_as_administrator_description": "Windows si při spuštění vyžádá oprávnění.",
             "run_status_waiting": "Čeká na spuštění",
             "run_status_running": "Spuštěno",
             "run_status_skipped": "Přeskočeno",
             "run_status_failed": "Spuštění se nezdařilo",
             "run_status_stopped": "Zastaveno",
             "run_status_completed": "Dokončeno",
-            "run_error_elevation_required": "Jsou vyžadována oprávnění správce (chyba Windows {code}). Pro toto pravidlo zapněte možnost „Spustit jako správce“.",
+            "run_error_elevation_required": "Je vyžadováno oprávnění správce (chyba Windows {code}). Zapněte „Spustit jako správce“.",
             "run_error_elevation_cancelled": "Požadavek na oprávnění správce byl zrušen (chyba Windows {code}).",
             "run_error_failed": "Aplikaci se nepodařilo spustit.",
-            "close": "Zavřít",
-            "save": "Uložit",
+            "stop_locked_steam": "Spouští ji Steam; VRCX-0 ji nemůže zavřít.",
+            "stop_locked_admin": "Běží jako správce; VRCX-0 ji nemůže zavřít.",
+            "remove_app": "Odebrat aplikaci",
+            "remove_confirm": "Odebrat {name} z App Launcheru?",
+            "name_required": "Název je povinný",
             "toast": {
                 "load_failed": "Nepodařilo se načíst spouštěč aplikací",
                 "save_failed": "Nepodařilo se uložit spouštěč aplikací",
-                "pick_failed": "Nepodařilo se vybrat aplikaci nebo zástupce",
-                "name_target_required": "Název a cíl jsou povinné"
+                "pick_failed": "Nepodařilo se vybrat aplikaci nebo zástupce"
             }
         },
         "user": {
@@ -4463,20 +4521,26 @@
                 "edited_by": "Upravil(a):",
                 "search_placeholder": "Hledat"
             },
+            "role_name": {
+                "group_owner": "Vlastník skupiny",
+                "everyone": "Všichni",
+                "member": "Člen"
+            },
             "members": {
                 "header": "Členové",
                 "sorting": {
                     "joined_at_asc": "Datum vstupu (vzestupně)",
                     "joined_at_desc": "Datum vstupu (sestupně)"
                 },
-                "filter": "Filtr:",
-                "filters": {
-                    "everyone": "Všichni",
-                    "users_with_no_role": "Uživatelé bez role"
-                },
                 "unsubscribed_announcements": "Odhlášeno z odběru oznámení",
                 "representing": "Reprezentuje",
-                "search": "Hledat"
+                "view_all": "Vše",
+                "friends": "Přátelé",
+                "search": "Hledat",
+                "loaded_of_total": "Načteno {loaded} z {total}",
+                "search_results": "{count} výsledků",
+                "export_loaded": "Exportovat načtené ({count})",
+                "export_all": "Exportovat vše ({count})"
             },
             "gallery": {
                 "header": "Fotografie"
@@ -4528,15 +4592,12 @@
                 "group_join_request_cancelled": "Žádost o vstup do skupiny zrušena",
                 "group_refreshed": "Skupina obnovena",
                 "group_invite_sent": "Pozvánka do skupiny odeslána",
-                "group_post_deleted": "Příspěvek skupiny smazán",
-                "joined_newest": "Vstoupil(a) nejnovější",
-                "joined_oldest": "Vstoupil(a) nejstarší"
+                "group_post_deleted": "Příspěvek skupiny smazán"
             },
             "action": {
                 "refresh_to_load_gallery_images": "Obnovte pro načtení obrázků galerie",
                 "open_group_owner_profile": "Otevřít profil vlastníka skupiny",
-                "join_state": "Stav vstupu",
-                "load_all": "Načíst vše"
+                "join_state": "Stav vstupu"
             },
             "toast": {
                 "failed_to_join_group": "Nepodařilo se vstoupit do skupiny",
@@ -4933,7 +4994,15 @@
             "scan_failed": "Nepodařilo se prohledat knihovnu snímků obrazovky",
             "thumbnail_failed": "Náhled není k dispozici",
             "hide_details": "Skrýt informace",
-            "show_details": "Zobrazit informace"
+            "show_details": "Zobrazit informace",
+            "search_in": "Hledat {scope}",
+            "grid_density": "Velikost náhledu",
+            "sort": "Řazení",
+            "year_group": "Rok {year}",
+            "sort_options": {
+                "captured_desc": "Nejnovější",
+                "captured_asc": "Nejstarší"
+            }
         },
         "set_avatar_styles": {
             "header": "Nastavit styly avatara",
@@ -4947,12 +5016,15 @@
             "header": "VRChat Config JSON",
             "description1": "Tyto možnosti jsou určeny pouze pro pokročilé uživatele.",
             "description2": "Leave field empty to set as default, game restart required to apply settings.",
-            "cache_size": "Velikost mezipaměti:",
+            "cache_size": "Velikost mezipaměti",
+            "section_cache": "Mezipaměť",
+            "section_pictures": "Obrázky",
+            "section_camera": "Kamera",
             "refresh": "Obnovit",
             "delete_cache": "Smazat mezipaměť",
             "sweep_cache": "Vyčistit mezipaměť",
-            "max_cache_size": "Max. velikost mezipaměti [GB] (min. 30)",
-            "cache_expiry_delay": "Vypršení platnosti mezipaměti [dny] (min. 30)",
+            "max_cache_size": "Maximum mezipaměti (GB)",
+            "cache_expiry_delay": "Platnost mezipaměti (dny)",
             "cache_directory": "Vlastní umístění složky mezipaměti",
             "cache_location_changed": "Změnit umístění mezipaměti VRChat",
             "old_cache_cleanup_description": "Stará mezipaměť zabírá {size}. Po změně ji VRChat již nebude používat. Chcete ji vyčistit?",
@@ -5284,7 +5356,7 @@
                 "stable": "Stabilní",
                 "beta": "Beta",
                 "description": "VRCX-0 kontroluje aktualizace pouze v nainstalovaném kanálu.",
-                "switch_description": "Chcete-li přejít na kanál {channel}, stáhněte a nainstalujte jeho nejnovější verzi z GitHubu.",
+                "switch_description": "Chcete-li přejít na kanál {channel}, stáhněte a nainstalujte jeho nejnovější verzi.",
                 "download_stable": "Stáhnout nejnovější stabilní verzi",
                 "download_beta": "Stáhnout nejnovější beta verzi",
                 "no_release": "V tomto kanálu není k dispozici žádná verze."
@@ -5795,7 +5867,8 @@
             "rows_per_page": "Řádků na stránku",
             "previous": "Předchozí",
             "next": "Další",
-            "more_pages": "Další stránky"
+            "more_pages": "Další stránky",
+            "page_number": "Stránka {page}"
         },
         "feed": {
             "date": "Datum",
@@ -6328,5 +6401,16 @@
             "themes": "Motivy",
             "themes_description": "Zdroj motivu a správa vlastního CSS."
         }
+    },
+    "linux_rendering": {
+        "title": "Hardwarová akcelerace (experimentální)",
+        "description": "Projeví se po restartu VRCX-0. Po zapnutí potvrďte do 30 sekund od spuštění; jinak se akcelerace vypne a VRCX-0 se restartuje.",
+        "saved": "Uloženo. Restartujte VRCX-0, aby se změna projevila.",
+        "restart_now": "Restartovat nyní",
+        "confirm_title": "Zobrazuje se rozhraní správně?",
+        "confirm_description": "Bez potvrzení do 30 sekund od spuštění VRCX-0 vypne hardwarovou akceleraci a restartuje se.",
+        "restore": "Obnovit a restartovat",
+        "keep": "Zobrazení je správné, ponechat",
+        "failed": "Nepodařilo se změnit nastavení vykreslování. Zkus to znovu."
     }
 }

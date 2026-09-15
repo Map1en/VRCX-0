@@ -2,6 +2,7 @@
 
 use tauri::State;
 
+use crate::commands::blocking::run_blocking;
 use crate::error::AppError;
 use crate::state::AppState;
 
@@ -12,26 +13,26 @@ use vrcx_0_runtime_host_desktop::local_data::{
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__database_maintenance_broken_game_log_display_names_get(
+pub async fn app__database_maintenance_broken_game_log_display_names_get(
     state: State<'_, AppState>,
 ) -> Result<Vec<BrokenGameLogDisplayNameOutput>, AppError> {
-    state
-        .runtime_host()
-        .local_data()
-        .broken_game_log_display_names()
-        .map_err(AppError::from)
+    let local_data = state.runtime_host().local_data().clone();
+    run_blocking("broken game log display names query", move || {
+        local_data.broken_game_log_display_names()
+    })
+    .await
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__database_maintenance_broken_leave_entries_get(
+pub async fn app__database_maintenance_broken_leave_entries_get(
     state: State<'_, AppState>,
 ) -> Result<Vec<Value>, AppError> {
-    state
-        .runtime_host()
-        .local_data()
-        .broken_leave_entries()
-        .map_err(AppError::from)
+    let local_data = state.runtime_host().local_data().clone();
+    run_blocking("broken leave entries query", move || {
+        local_data.broken_leave_entries()
+    })
+    .await
 }
 
 #[tauri::command(async)]
@@ -49,26 +50,26 @@ pub fn app__database_maintenance_max_friend_log_number_get(
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__database_maintenance_table_sizes_get(
+pub async fn app__database_maintenance_table_sizes_get(
     state: State<'_, AppState>,
     user_id: String,
 ) -> Result<MaintenanceTableSizesOutput, AppError> {
-    state
-        .runtime_host()
-        .local_data()
-        .maintenance_table_sizes(user_id)
-        .map_err(AppError::from)
+    let local_data = state.runtime_host().local_data().clone();
+    run_blocking("maintenance table sizes query", move || {
+        local_data.maintenance_table_sizes(user_id)
+    })
+    .await
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__user_tables_ensure(
+pub async fn app__user_tables_ensure(
     state: State<'_, AppState>,
     user_id: String,
 ) -> Result<UserTableContextOutput, AppError> {
-    state
-        .runtime_host()
-        .local_data()
-        .ensure_user_tables(user_id)
-        .map_err(AppError::from)
+    let local_data = state.runtime_host().local_data().clone();
+    run_blocking("user tables ensure", move || {
+        local_data.ensure_user_tables(user_id)
+    })
+    .await
 }

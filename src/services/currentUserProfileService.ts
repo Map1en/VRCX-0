@@ -51,5 +51,4 @@ const currentUserProfileService = Object.freeze({
     removeCurrentUserTags
 });
 
-export { addCurrentUserTags, removeCurrentUserTags, updateCurrentUser };
 export default currentUserProfileService;

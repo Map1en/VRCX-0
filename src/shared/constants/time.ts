@@ -3,11 +3,11 @@ export const MINUTE_MS = 60 * SECOND_MS;
 export const HOUR_MS = 60 * MINUTE_MS;
 export const DAY_MS = 24 * HOUR_MS;
 export const SECONDS_PER_MINUTE = 60;
-export const MINUTES_PER_HOUR = 60;
-export const HOURS_PER_DAY = 24;
-export const DAYS_PER_WEEK = 7;
-export const DAYS_PER_MONTH = 30;
-export const DAYS_PER_YEAR = 365;
+const MINUTES_PER_HOUR = 60;
+const HOURS_PER_DAY = 24;
+const DAYS_PER_WEEK = 7;
+const DAYS_PER_MONTH = 30;
+const DAYS_PER_YEAR = 365;
 
 export const MINUTES_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR;
 export const SECONDS_PER_HOUR = MINUTES_PER_HOUR * SECONDS_PER_MINUTE;

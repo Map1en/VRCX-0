@@ -123,7 +123,7 @@ function authenticatedLoginResult(
     };
 }
 
-export function toAuthUserRecord(
+function toAuthUserRecord(
     session: AuthenticatedRuntimeSession
 ): AuthUserRecord {
     if (isRecord(session.currentUser)) {
@@ -152,7 +152,7 @@ export function setSignedOutSessionState() {
     });
 }
 
-export function setAuthenticatingSessionState() {
+function setAuthenticatingSessionState() {
     useSessionStore.getState().setSessionState({
         isLoggedIn: false,
         isFriendsLoaded: false,
@@ -417,6 +417,10 @@ export async function logoutFromReactShell() {
         return false;
     }
 
+    return logoutWithoutConfirmation();
+}
+
+export async function logoutWithoutConfirmation() {
     const attempt = beginAuthAttempt();
 
     const runtimeStore = useRuntimeStore.getState();

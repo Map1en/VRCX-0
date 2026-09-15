@@ -12,6 +12,7 @@ pub(super) const NOTIFICATION_V1_COLUMNS: &[&str] = &[
     "invite_message",
     "request_message",
     "response_message",
+    "location",
     "expired",
     "seen",
 ];

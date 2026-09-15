@@ -4,6 +4,7 @@ use std::path::PathBuf;
 
 use tauri::{AppHandle, State};
 
+use crate::commands::blocking::run_blocking;
 use crate::error::AppError;
 use crate::state::AppState;
 use vrcx_0_core::screenshots::{
@@ -31,45 +32,51 @@ fn ensure_screenshot_write_allowed(state: &AppState, path: &str) -> Result<(), A
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__get_extra_screenshot_data(
+pub async fn app__get_extra_screenshot_data(
     state: State<'_, AppState>,
     path: String,
     carousel_cache: bool,
 ) -> Result<String, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
     ensure_screenshot_read_allowed(&state, &path)?;
-    Ok(state
-        .runtime_host()
-        .screenshots()
-        .extra_data(&path, carousel_cache)?)
+    let screenshots = state.runtime_host().screenshots().clone();
+    run_blocking("screenshot extra data", move || {
+        screenshots.extra_data(&path, carousel_cache)
+    })
+    .await
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__get_screenshot_metadata(
+pub async fn app__get_screenshot_metadata(
     state: State<'_, AppState>,
     path: String,
 ) -> Result<String, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
     ensure_screenshot_read_allowed(&state, &path)?;
-    Ok(state.runtime_host().screenshots().metadata_json(&path)?)
+    let screenshots = state.runtime_host().screenshots().clone();
+    run_blocking("screenshot metadata", move || {
+        screenshots.metadata_json(&path)
+    })
+    .await
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__find_screenshots_by_search(
+pub async fn app__find_screenshots_by_search(
     state: State<'_, AppState>,
     search_query: String,
     search_type: Option<i32>,
 ) -> Result<Vec<ScreenshotSearchResult>, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
-    Ok(state
-        .runtime_host()
-        .screenshots()
-        .find(&search_query, search_type))
+    let screenshots = state.runtime_host().screenshots().clone();
+    run_blocking("screenshot search", move || {
+        Ok::<_, AppError>(screenshots.find(&search_query, search_type))
+    })
+    .await
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__start_screenshot_library_scan(
     state: State<'_, AppState>,
@@ -81,7 +88,7 @@ pub fn app__start_screenshot_library_scan(
         .start_screenshot_library_scan(force.unwrap_or(false)))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__get_screenshot_library_status(
     state: State<'_, AppState>,
@@ -92,37 +99,40 @@ pub fn app__get_screenshot_library_status(
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__get_screenshot_folder_tree(
+pub async fn app__get_screenshot_folder_tree(
     state: State<'_, AppState>,
 ) -> Result<ScreenshotFolderTree, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
-    Ok(state.runtime_host().screenshots().folder_tree()?)
+    let screenshots = state.runtime_host().screenshots().clone();
+    run_blocking("screenshot folder tree", move || screenshots.folder_tree()).await
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__get_screenshot_folder_images(
+pub async fn app__get_screenshot_folder_images(
     state: State<'_, AppState>,
     folder_path: String,
 ) -> Result<Vec<ScreenshotLibraryImage>, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
-    Ok(state
-        .runtime_host()
-        .screenshots()
-        .folder_images(&folder_path)?)
+    let screenshots = state.runtime_host().screenshots().clone();
+    run_blocking("screenshot folder images", move || {
+        screenshots.folder_images(&folder_path)
+    })
+    .await
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__get_world_screenshots(
+pub async fn app__get_world_screenshots(
     state: State<'_, AppState>,
     world_id: String,
 ) -> Result<Vec<ScreenshotLibraryImage>, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
-    Ok(state
-        .runtime_host()
-        .screenshots()
-        .world_screenshots(&world_id)?)
+    let screenshots = state.runtime_host().screenshots().clone();
+    run_blocking("world screenshots", move || {
+        screenshots.world_screenshots(&world_id)
+    })
+    .await
 }
 
 #[tauri::command]
@@ -141,7 +151,7 @@ pub async fn app__ensure_screenshot_thumbnail(
     )
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__get_last_screenshot(state: State<'_, AppState>) -> Result<String, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
@@ -150,13 +160,17 @@ pub fn app__get_last_screenshot(state: State<'_, AppState>) -> Result<String, Ap
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__delete_screenshot_metadata(
+pub async fn app__delete_screenshot_metadata(
     state: State<'_, AppState>,
     path: String,
 ) -> Result<bool, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
     ensure_screenshot_write_allowed(&state, &path)?;
-    Ok(state.runtime_host().screenshots().delete_metadata(&path))
+    let screenshots = state.runtime_host().screenshots().clone();
+    run_blocking("screenshot metadata delete", move || {
+        Ok::<_, AppError>(screenshots.delete_metadata(&path))
+    })
+    .await
 }
 
 #[tauri::command]
@@ -175,10 +189,16 @@ pub async fn app__delete_screenshot_file(
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__delete_all_screenshot_metadata(state: State<'_, AppState>) -> Result<(), AppError> {
+pub async fn app__delete_all_screenshot_metadata(
+    state: State<'_, AppState>,
+) -> Result<(), AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
-    state.runtime_host().screenshots().delete_all_metadata();
-    Ok(())
+    let screenshots = state.runtime_host().screenshots().clone();
+    run_blocking("screenshot metadata clear", move || {
+        screenshots.delete_all_metadata();
+        Ok::<_, AppError>(())
+    })
+    .await
 }
 
 #[tauri::command]
@@ -296,7 +316,7 @@ pub async fn app__export_screenshots_zip(
     Ok(output_display)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__cancel_screenshot_export(state: State<'_, AppState>) -> Result<(), AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;

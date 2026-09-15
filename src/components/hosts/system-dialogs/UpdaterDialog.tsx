@@ -94,10 +94,10 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
     );
 
     useEffect(() => {
-        if (!open) {
+        if (!open && !downloading) {
             setSelectedChannel(currentChannel);
         }
-    }, [currentChannel, open]);
+    }, [currentChannel, downloading, open]);
 
     useEffect(() => {
         if (!open || updateCheckDisabled) {
@@ -193,8 +193,9 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
         if (
             !canInstallUpdate ||
             !latestRelease ||
-            !hasNewerRelease ||
-            downloading
+            (!hasNewerRelease && !isChangingChannel) ||
+            loading ||
+            showDownloadProgress
         ) {
             return;
         }
@@ -290,6 +291,10 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
                             </FieldLabel>
                             <Select
                                 value={selectedChannel}
+                                disabled={
+                                    downloading ||
+                                    autoDownloadState === 'installing'
+                                }
                                 onValueChange={(value) => {
                                     if (
                                         value === 'stable' ||
@@ -376,26 +381,14 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
                     ) : null}
                 </FieldGroup>
                 <DialogFooter>
-                    {isChangingChannel ? (
-                        <Button
-                            type="button"
-                            disabled={loading || !latestRelease}
-                            onClick={() => {
-                                handleOpenReleasePage();
-                            }}
-                        >
-                            {t(
-                                `dialog.vrcx_updater.channel.download_${selectedChannel}`
-                            )}
-                        </Button>
-                    ) : canInstallUpdate && !isPreviewUpdateCheck ? (
+                    {canInstallUpdate && !isPreviewUpdateCheck ? (
                         <Button
                             type="button"
                             disabled={
                                 !latestRelease ||
-                                !hasNewerRelease ||
+                                (!hasNewerRelease && !isChangingChannel) ||
                                 loading ||
-                                downloading
+                                showDownloadProgress
                             }
                             onClick={() => {
                                 handleInstallUpdate();
@@ -411,7 +404,11 @@ export function UpdaterDialog({ open, onOpenChange }: UpdaterDialogProps) {
                                 handleOpenReleasePage();
                             }}
                         >
-                            {t('nav_menu.update')}
+                            {t(
+                                isChangingChannel
+                                    ? `dialog.vrcx_updater.channel.download_${selectedChannel}`
+                                    : 'nav_menu.update'
+                            )}
                         </Button>
                     )}
                 </DialogFooter>

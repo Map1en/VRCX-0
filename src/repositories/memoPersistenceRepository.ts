@@ -199,17 +199,4 @@ const memoPersistenceRepository = Object.freeze({
     saveAvatarMemo
 });
 
-export {
-    createEmptyUserMemo,
-    createEmptyWorldMemo,
-    createEmptyAvatarMemo,
-    getUserMemo,
-    getAllUserMemos,
-    getAllUserNotes,
-    saveUserMemo,
-    getWorldMemo,
-    saveWorldMemo,
-    getAvatarMemo,
-    saveAvatarMemo
-};
 export default memoPersistenceRepository;

@@ -7,14 +7,12 @@ import {
 import { normalizeProfileAppearanceColor } from './userDialogProfileAppearance';
 import type { UserDialogProfileRecord } from './userDialogProfileTypes';
 
-export const DEFAULT_PROFILE_GRADIENT_TOP = '#5d3f86';
-export const DEFAULT_PROFILE_GRADIENT_BOTTOM = '#21385b';
+const DEFAULT_PROFILE_GRADIENT_TOP = '#5d3f86';
+const DEFAULT_PROFILE_GRADIENT_BOTTOM = '#21385b';
 
 export { profileBackgroundTextureLabel };
 
-export function profileBackgroundTextureRequiresVrcPlus(
-    textureId: string
-): boolean {
+function profileBackgroundTextureRequiresVrcPlus(textureId: string): boolean {
     return textureId !== 'grid';
 }
 

@@ -8,7 +8,7 @@ use crate::state::AppState;
 
 use crate::commands::host::host_capabilities::{require_host_capability, HostCapability};
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn log_watcher__get_current_location(
     state: State<'_, AppState>,

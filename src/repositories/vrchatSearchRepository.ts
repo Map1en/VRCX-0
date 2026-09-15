@@ -11,15 +11,15 @@ import {
     unwrapVrchatResponse
 } from './vrchatRequest';
 
-export type SearchEntityJson = Record<string, unknown> & {
+type SearchEntityJson = Record<string, unknown> & {
     id: string;
 };
 
-export type SearchWorldJson = SearchEntityJson & {
+type SearchWorldJson = SearchEntityJson & {
     name?: string;
 };
 
-export type SearchUserJson = SearchEntityJson;
+type SearchUserJson = SearchEntityJson;
 export type SearchGroupJson = SearchEntityJson & {
     bannerId: string | null;
     bannerUrl?: string;
@@ -39,7 +39,7 @@ export type SearchGroupJson = SearchEntityJson & {
     tags?: unknown[];
 };
 
-export type SearchInstanceJson = Record<string, unknown> & {
+type SearchInstanceJson = Record<string, unknown> & {
     location?: unknown;
     shortName?: unknown;
     world?: unknown;
@@ -160,12 +160,5 @@ const vrchatSearchRepository = Object.freeze({
     getInstanceFromShortName
 });
 
-export {
-    getWorlds,
-    getWorldById,
-    getUsers,
-    getGroups,
-    getGroupsStrictSearch,
-    getInstanceFromShortName
-};
+export { getUsers };
 export default vrchatSearchRepository;

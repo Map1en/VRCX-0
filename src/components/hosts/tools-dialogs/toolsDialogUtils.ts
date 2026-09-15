@@ -23,7 +23,7 @@ export type AutoAcceptInviteRequestValue =
     | 'All Favorites'
     | 'Selected Favorites';
 
-export function getAuthSnapshot(): ReturnType<
+function getAuthSnapshot(): ReturnType<
     typeof useRuntimeStore.getState
 >['auth'] {
     return useRuntimeStore.getState().auth || {};

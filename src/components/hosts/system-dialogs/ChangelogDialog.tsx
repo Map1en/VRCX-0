@@ -42,7 +42,7 @@ function MarkdownLink({
         <a
             {...props}
             href={href}
-            className="text-primary hover:text-primary/80 underline underline-offset-3"
+            className="text-primary hover:text-primary/80 break-all underline underline-offset-3"
             onClick={(event) => {
                 event.preventDefault();
                 openExternalLink(href);
@@ -108,9 +108,14 @@ const markdownComponents = {
             </code>
         ),
     pre: ({ children }: ComponentPropsWithoutRef<'pre'>) => (
-        <pre className="bg-muted my-2 overflow-x-auto rounded-md p-3">
+        <pre className="bg-muted my-2 max-w-full overflow-x-auto rounded-md p-3">
             {children}
         </pre>
+    ),
+    table: ({ children }: ComponentPropsWithoutRef<'table'>) => (
+        <div className="my-2 max-w-full overflow-x-auto">
+            <table className="text-xs">{children}</table>
+        </div>
     )
 } satisfies Components;
 
@@ -264,7 +269,7 @@ export function ChangelogDialog({
                                     value={entry.lang}
                                 >
                                     <ScrollArea className="h-[min(58vh,520px)] rounded-md border">
-                                        <div className="p-3 text-sm">
+                                        <div className="min-w-0 overflow-x-hidden p-3 text-sm break-words">
                                             {entry.markdown ? (
                                                 <ChangelogMarkdown>
                                                     {entry.markdown}

@@ -40,8 +40,7 @@ export function FriendListPage({
                     isLoadingUserDetails: actions.isLoadingUserDetails,
                     isMutualFetching: actions.isMutualFetching,
                     isMutualOptOut,
-                    mutualProgress,
-                    statusDetail: rows.friendDetail
+                    mutualProgress
                 }}
                 table={table}
                 toolbarCommands={{

@@ -36,7 +36,7 @@ use vrcx_0_host_desktop::tts::TtsVoice;
 use vrcx_0_integration_api::{IntegrationApiStartFailedPayload, IntegrationApiStatus};
 use vrcx_0_mcp::McpServerStatus;
 use vrcx_0_runtime_host_desktop::{
-    notification::NotificationDoNotDisturbSnapshot, AppLauncherSnapshotEvent,
+    notification::NotificationDoNotDisturbSnapshot, AppLauncherSnapshotEvent, PrivacyLockSnapshot,
 };
 
 use crate::commands;
@@ -91,6 +91,7 @@ struct BackendRuntimeEventPayloadMap {
     update_is_game_running: HostSessionProjection,
     integration_api_start_failed: IntegrationApiStartFailedPayload,
     notification_do_not_disturb_state: NotificationDoNotDisturbSnapshot,
+    privacy_lock_state: PrivacyLockSnapshot,
 }
 
 pub fn builder() -> Builder<tauri::Wry> {
@@ -154,6 +155,12 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::application::background_mode::app__start_background_mode,
             commands::application::background_mode::app__backend_runtime_combined_snapshot_get,
             commands::application::background_mode::app__ensure_main_window,
+            commands::application::privacy_lock::app__privacy_lock_setup_request_take,
+            commands::application::privacy_lock::app__privacy_lock_engage,
+            commands::application::privacy_lock::app__privacy_lock_unlock,
+            commands::application::privacy_lock::app__privacy_lock_password_set,
+            commands::application::privacy_lock::app__privacy_lock_password_change,
+            commands::application::privacy_lock::app__privacy_lock_password_clear,
             commands::application::deep_link::app__drain_pending_deep_links,
             commands::application::desktop_notification::app__take_pending_desktop_notification_activation,
             commands::application::deep_link::app__deep_link_registration_status,
@@ -569,6 +576,9 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::host::window::app__set_sidebar_auto_hide_context,
             commands::host::window::app__suspend_sidebar_auto_hide,
             commands::host::window::app__restart_application,
+            commands::host::linux_rendering::app__get_linux_rendering,
+            commands::host::linux_rendering::app__set_linux_rendering,
+            commands::host::linux_rendering::app__confirm_linux_rendering,
             commands::host::window::app__exit_application,
             commands::host::updater::app__app_update_check_run,
             commands::host::updater::app__app_update_release_get,

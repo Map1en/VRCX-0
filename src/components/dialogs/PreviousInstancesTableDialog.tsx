@@ -252,8 +252,4 @@ function PreviousInstancesTableDialog<TRow extends PreviousInstanceRow>({
     );
 }
 
-export {
-    PreviousInstanceDetailsPanel,
-    PreviousInstancesPanel,
-    PreviousInstancesTableDialog
-};
+export { PreviousInstancesPanel, PreviousInstancesTableDialog };

@@ -3,15 +3,12 @@ import { describe, expect, it } from 'vitest';
 import {
     buildCreatedInstanceDetails,
     buildLegacyCreatedInstance,
-    normalizeEntityId,
     parseRoleIds,
     resolveInstanceLocation
 } from './worldInstances';
 
 describe('worldInstances', () => {
     it('normalizes form ids, role ids, and returned instance locations', () => {
-        expect(normalizeEntityId('  wrld_123  ')).toBe('wrld_123');
-        expect(normalizeEntityId(null)).toBe('');
         expect(parseRoleIds('grol_a, grol_b,, ')).toEqual(['grol_a', 'grol_b']);
         expect(
             resolveInstanceLocation('wrld_base', {

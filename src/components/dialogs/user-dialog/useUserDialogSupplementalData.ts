@@ -42,7 +42,7 @@ type RepresentedGroupState = {
     endpoint: string;
     group: Awaited<
         ReturnType<
-            typeof import('@/repositories/userProfileRepository').getRepresentedGroup
+            typeof import('@/repositories/userProfileRepository').default.getRepresentedGroup
         >
     >;
     status: LoadStatus;

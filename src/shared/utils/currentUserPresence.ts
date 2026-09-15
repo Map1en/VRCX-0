@@ -59,7 +59,7 @@ export function isVisibleCurrentUserLocation(value: unknown): boolean {
     return Boolean(location && !HIDDEN_LOCATION_STATUSES.has(location));
 }
 
-export function hasVisibleCurrentUserPresence(
+function hasVisibleCurrentUserPresence(
     profile: CurrentUserPresenceRecord | null | undefined
 ): boolean {
     return isVisibleCurrentUserLocation(resolveFriendPresenceLocation(profile));
@@ -189,7 +189,7 @@ export function buildCurrentUserGameStatePresencePatch(
     });
 }
 
-export function buildCurrentUserApiPresencePatch(
+function buildCurrentUserApiPresencePatch(
     currentUser: CurrentUserPresenceRecord | null | undefined
 ): CurrentUserPresencePatch | null {
     const presence = currentUser?.presence as
@@ -227,7 +227,7 @@ export function buildCurrentUserApiPresencePatch(
     });
 }
 
-export function mergeCurrentUserSnapshotPresenceFields<
+function mergeCurrentUserSnapshotPresenceFields<
     TProfile extends CurrentUserPresenceRecord | null | undefined
 >(
     profile: TProfile,

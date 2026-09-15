@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
+import { buildFavoriteIdSet } from '@/domain/favorites/favoriteIdSet';
 import { recordKnownUser } from '@/services/domainIngestionService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { subscribeRecentActions } from '@/services/recentActionService';
@@ -20,10 +21,7 @@ import {
     resolveFriendRequestState,
     resolvePlatformMeta
 } from './user-dialog/userDialogContentHelpers';
-import {
-    buildFavoriteIdSet,
-    normalizeUserId
-} from './user-dialog/userProfileFields';
+import { normalizeUserId } from './user-dialog/userProfileFields';
 import { useUserDialogActions } from './user-dialog/useUserDialogActions';
 import {
     createEmptyUserDialogLocationPanel,

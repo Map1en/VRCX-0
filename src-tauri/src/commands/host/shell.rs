@@ -24,33 +24,33 @@ fn with_fixed_extension(mut path: PathBuf, extension: Option<&str>) -> PathBuf {
     path
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__open_link(url: String) -> Result<(), AppError> {
     Ok(shell_actions::open_link(&url)?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__open_discord_profile(discord_id: String) -> Result<(), AppError> {
     Ok(shell_actions::open_discord_profile(&discord_id)?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__get_file_base64(state: State<'_, AppState>, path: String) -> Result<String, AppError> {
     state.runtime_host().ensure_host_read_allowed(&path)?;
     Ok(shell_actions::file_base64(&path)?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__read_config_file_safe() -> Result<String, AppError> {
     require_host_capability(HostCapability::VrchatPathDiscovery)?;
     Ok(shell_actions::read_config_file_safe()?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__write_config_file(json: String) -> Result<(), AppError> {
     require_host_capability(HostCapability::VrchatPathDiscovery)?;
@@ -58,7 +58,7 @@ pub fn app__write_config_file(json: String) -> Result<(), AppError> {
     Ok(shell_actions::write_config_file(&normalized_json)?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__disable_vrchat_rich_presence(
 ) -> Result<shell_actions::VrchatRichPresenceDisableResult, AppError> {
@@ -66,7 +66,7 @@ pub fn app__disable_vrchat_rich_presence(
     Ok(shell_actions::disable_vrchat_rich_presence()?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__vrchat_cache_location_would_change(json: String) -> Result<bool, AppError> {
     require_host_capability(HostCapability::VrchatPathDiscovery)?;
@@ -76,7 +76,7 @@ pub fn app__vrchat_cache_location_would_change(json: String) -> Result<bool, App
     )?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__write_config_file_with_cache_cleanup(
     json: String,
@@ -88,7 +88,7 @@ pub fn app__write_config_file_with_cache_cleanup(
     )?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__open_vrcx_app_data_folder(state: State<'_, AppState>) -> Result<bool, AppError> {
     Ok(shell_actions::open_existing_folder(
@@ -96,21 +96,21 @@ pub fn app__open_vrcx_app_data_folder(state: State<'_, AppState>) -> Result<bool
     )?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__open_vrc_app_data_folder() -> Result<bool, AppError> {
     require_host_capability(HostCapability::VrchatPathDiscovery)?;
     Ok(shell_actions::open_vrc_app_data_folder()?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__open_vrc_photos_folder() -> Result<bool, AppError> {
     require_host_capability(HostCapability::VrchatPathDiscovery)?;
     Ok(shell_actions::open_vrc_photos_folder()?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__open_ugc_photos_folder(
     state: State<'_, AppState>,
@@ -124,21 +124,21 @@ pub fn app__open_ugc_photos_folder(
     Ok(shell_actions::open_ugc_photos_folder(ugc_path)?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__open_vrc_screenshots_folder() -> Result<bool, AppError> {
     require_host_capability(HostCapability::ScreenshotCache)?;
     Ok(shell_actions::open_vrc_screenshots_folder()?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__open_crash_vrc_crash_dumps() -> Result<bool, AppError> {
     require_host_capability(HostCapability::VrchatPathDiscovery)?;
     Ok(shell_actions::open_crash_dumps_folder()?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__open_folder_and_select_item(
     state: State<'_, AppState>,

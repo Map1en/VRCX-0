@@ -2,7 +2,7 @@ import { parseLocation } from './location';
 
 type ParsedInviteLocation = ReturnType<typeof parseLocation>;
 
-export type InviteInstanceCache = Map<
+type InviteInstanceCache = Map<
     string,
     {
         closedAt?: boolean | string | null;
@@ -49,7 +49,7 @@ export type LocalInstanceActionGates = {
     canInvite: boolean;
 };
 
-export type LocalInstanceActionGatesBatchInput = {
+type LocalInstanceActionGatesBatchInput = {
     currentUserId?: string | null;
     currentInviteLocation?: string;
     isGameRunning?: boolean | null;
@@ -58,7 +58,7 @@ export type LocalInstanceActionGatesBatchInput = {
     targets: LocalInstanceActionGateTarget[];
 };
 
-export type LocalInstanceActionGatesBatchOutput = {
+type LocalInstanceActionGatesBatchOutput = {
     targets: LocalInstanceActionGates[];
 };
 

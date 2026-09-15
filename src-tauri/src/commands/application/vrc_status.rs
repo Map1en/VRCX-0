@@ -5,7 +5,7 @@ use vrcx_0_application_core::VrcStatusSnapshot;
 
 use crate::{error::AppError, state::AppState};
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__vrc_status_get(state: State<'_, AppState>) -> VrcStatusSnapshot {
     state.runtime_host().vrc_status_snapshot()

@@ -30,7 +30,7 @@ import {
 type MediaApiRecord = Record<string, unknown>;
 type MediaAssetKind = MediaAssetUploadRequest['assetKind'];
 
-export type MediaFileVersion = Record<string, unknown> & {
+type MediaFileVersion = Record<string, unknown> & {
     created_at?: string;
     file?: { url?: string } | null;
     status?: string;
@@ -85,7 +85,7 @@ type InventoryAttribute = MediaApiRecord & {
     validator?: MediaApiRecord;
 };
 
-export type InventoryAsset = MediaApiRecord & {
+type InventoryAsset = MediaApiRecord & {
     fileId?: string;
     frameCount?: number;
     framesPerSecond?: number;
@@ -95,7 +95,7 @@ export type InventoryAsset = MediaApiRecord & {
     url?: string;
 };
 
-export type InventoryItemMetadata = MediaApiRecord & {
+type InventoryItemMetadata = MediaApiRecord & {
     assets?: InventoryAsset[];
     gradientEnd?: string;
     gradientStart?: string;
@@ -132,12 +132,12 @@ export type InventoryItemRecord = MediaApiRecord & {
     template?: InventoryItemRecord | null;
 };
 
-export type InventoryItemsResponse = {
+type InventoryItemsResponse = {
     data: InventoryItemRecord[];
     totalCount: number;
 };
 
-export type InventoryItemsCollectResult = {
+type InventoryItemsCollectResult = {
     items: InventoryItemRecord[];
     truncated: boolean;
 };
@@ -859,35 +859,5 @@ const vrchatMediaRepository = Object.freeze({
     uploadAvatarImageLegacy,
     uploadWorldImageLegacy
 });
-
-export {
-    getFiles,
-    getFileList,
-    deleteFile,
-    uploadGalleryImage,
-    uploadAvatarGalleryImage,
-    uploadVrcPlusIcon,
-    uploadEmoji,
-    uploadSticker,
-    uploadPrint,
-    uploadAssetImage,
-    getPrints,
-    getPrint,
-    deletePrint,
-    getPrintFavorites,
-    setPrintFavorite,
-    setPrintFavorites,
-    getInventoryItems,
-    collectInventoryItems,
-    getInventoryTemplate,
-    equipProfileDecoration,
-    unequipProfileDecoration,
-    getUserInventoryItem,
-    updateInventoryItem,
-    consumeInventoryBundle,
-    redeemReward,
-    uploadAvatarImageLegacy,
-    uploadWorldImageLegacy
-};
 
 export default vrchatMediaRepository;

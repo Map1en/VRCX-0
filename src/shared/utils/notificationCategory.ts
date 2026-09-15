@@ -48,11 +48,4 @@ function getNotificationTs(n: NotificationLike): number {
     return Number.isFinite(ts) ? ts : 0;
 }
 
-export {
-    FRIEND_TYPES,
-    GROUP_TYPES_PREFIX,
-    GROUP_EXACT_TYPES,
-    getNotificationCategory,
-    getNotificationTs
-};
-export type { NotificationCategory, NotificationLike };
+export { getNotificationCategory, getNotificationTs };

@@ -11,6 +11,7 @@ import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { enrichEntityDialogHistory } from '@/services/dialogService';
 import { recordLocationHintsFromInstances } from '@/services/domainIngestionService';
 import { toast } from '@/services/toastService';
+import { normalizeString } from '@/shared/utils/string';
 import { useDialogStore } from '@/state/dialogStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useModalStore } from '@/state/modalStore';
@@ -18,7 +19,6 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 
 import type { GroupActionStatus } from './groupDialogTypes';
 import { buildGroupDialogViewState } from './groupDialogViewState';
-import { normalizeEntityId } from './groupInstances';
 import { useGroupDialogActiveInstances } from './useGroupDialogActiveInstances';
 import { useGroupOwnerProfile } from './useGroupOwnerProfile';
 
@@ -338,7 +338,7 @@ export function useGroupDialogState({
             const response = await groupProfileRepository.joinGroup({
                 groupId: normalizedGroupId
             });
-            const nextStatus = normalizeEntityId(
+            const nextStatus = normalizeString(
                 response.json?.membershipStatus
             ).toLowerCase();
             await refreshGroupProfile().catch(() => {

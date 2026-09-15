@@ -42,7 +42,7 @@ interface AvatarTagEntry {
     color?: string | null;
 }
 
-export type MyAvatarRecord = AvatarRecord & {
+type MyAvatarRecord = AvatarRecord & {
     id: string;
     name?: string;
     $tags: AvatarTagEntry[];
@@ -207,12 +207,4 @@ const myAvatarRepository = Object.freeze({
     getAvailableAvatarStyles
 });
 
-export {
-    getMyAvatarById,
-    getMyAvatars,
-    updateAvatarTags,
-    saveAvatar,
-    createImpostor,
-    getAvailableAvatarStyles
-};
 export default myAvatarRepository;

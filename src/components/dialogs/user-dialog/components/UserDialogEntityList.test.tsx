@@ -14,7 +14,10 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
-        t: (key: string) => {
+        t: (key: string, options?: { count?: number }) => {
+            if (key === 'host.tools_dialogs.group_moderation.member_count') {
+                return `${options?.count} members`;
+            }
             if (key === 'dialog.user.mutual_friends.undisclosed_friend') {
                 return 'Localized Undisclosed Mutual Friend';
             }
@@ -338,7 +341,7 @@ describe('UserDialog EntityList', () => {
         );
 
         expect(screen.getByText('Group from membership list')).toBeTruthy();
-        expect(screen.getByText('42')).toBeTruthy();
+        expect(screen.getByText('42 members')).toBeTruthy();
         expect(mocks.getGroupProfile).not.toHaveBeenCalled();
     });
 });

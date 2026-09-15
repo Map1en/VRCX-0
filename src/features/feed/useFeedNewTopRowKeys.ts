@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { getFeedRowId } from '@/components/feed/feedRows';
 import type { FeedRow } from '@/components/feed/feedTypes';
 
-const NEW_ROW_FEEDBACK_MS = 180;
+const NEW_ROW_FEEDBACK_MS = 1600;
 const NEW_ROW_ANIMATION_LIMIT = 6;
 
 export function useFeedNewTopRowKeys(
@@ -12,14 +12,19 @@ export function useFeedNewTopRowKeys(
 ): Set<string> {
     const previousRowKeysRef = useRef<string[]>([]);
     const previousResetKeyRef = useRef(resetKey);
-    const clearTimerRef = useRef<number | null>(null);
+    const clearTimersRef = useRef(new Map<string, number>());
     const [newRowKeys, setNewRowKeys] = useState<Set<string>>(() => new Set());
 
     useEffect(() => {
+        const timers = clearTimersRef.current;
         const nextKeys = rows.map(getFeedRowId).filter(Boolean);
         if (previousResetKeyRef.current !== resetKey) {
             previousResetKeyRef.current = resetKey;
             previousRowKeysRef.current = nextKeys;
+            timers.forEach((timer) => {
+                window.clearTimeout(timer);
+            });
+            timers.clear();
             setNewRowKeys(new Set());
             return;
         }
@@ -35,31 +40,48 @@ export function useFeedNewTopRowKeys(
             return;
         }
 
-        setNewRowKeys(
-            new Set(
-                nextKeys.slice(
-                    0,
-                    Math.min(previousFirstIndex, NEW_ROW_ANIMATION_LIMIT)
-                )
-            )
+        const arrivedKeys = nextKeys.slice(
+            0,
+            Math.min(previousFirstIndex, NEW_ROW_ANIMATION_LIMIT)
         );
-        if (clearTimerRef.current) {
-            window.clearTimeout(clearTimerRef.current);
+        setNewRowKeys((current) => {
+            const next = new Set(current);
+            for (const key of arrivedKeys) {
+                next.add(key);
+            }
+            return next;
+        });
+        for (const key of arrivedKeys) {
+            const runningTimer = timers.get(key);
+            if (runningTimer) {
+                window.clearTimeout(runningTimer);
+            }
+            timers.set(
+                key,
+                window.setTimeout(() => {
+                    timers.delete(key);
+                    setNewRowKeys((current) => {
+                        if (!current.has(key)) {
+                            return current;
+                        }
+                        const next = new Set(current);
+                        next.delete(key);
+                        return next;
+                    });
+                }, NEW_ROW_FEEDBACK_MS)
+            );
         }
-        clearTimerRef.current = window.setTimeout(() => {
-            clearTimerRef.current = null;
-            setNewRowKeys(new Set());
-        }, NEW_ROW_FEEDBACK_MS);
     }, [resetKey, rows]);
 
-    useEffect(
-        () => () => {
-            if (clearTimerRef.current) {
-                window.clearTimeout(clearTimerRef.current);
-            }
-        },
-        []
-    );
+    useEffect(() => {
+        const timers = clearTimersRef.current;
+        return () => {
+            timers.forEach((timer) => {
+                window.clearTimeout(timer);
+            });
+            timers.clear();
+        };
+    }, []);
 
     return newRowKeys;
 }

@@ -17,7 +17,7 @@ const MAX_NAV_WIDTH = 480;
 export type ThemeMode = 'system' | 'light' | 'dark';
 export type TableDensity = 'standard' | 'compact';
 export type NotificationLayout = 'notification-center' | 'table';
-export type WindowDisplayMode = 'normal' | 'sidebar';
+type WindowDisplayMode = 'normal' | 'sidebar';
 
 const WINDOW_DISPLAY_MODE_STORAGE_KEY = 'vrcx-main-window-display-mode';
 
@@ -49,6 +49,36 @@ function saveWindowDisplayMode(windowDisplayMode: WindowDisplayMode): void {
     }
 }
 
+const WINDOW_ALWAYS_ON_TOP_STORAGE_KEY = 'vrcx-main-window-always-on-top';
+
+function loadWindowAlwaysOnTop(): boolean {
+    if (typeof window === 'undefined') {
+        return false;
+    }
+    try {
+        return (
+            window.localStorage.getItem(WINDOW_ALWAYS_ON_TOP_STORAGE_KEY) ===
+            'true'
+        );
+    } catch {
+        return false;
+    }
+}
+
+function saveWindowAlwaysOnTop(windowAlwaysOnTop: boolean): void {
+    if (typeof window === 'undefined') {
+        return;
+    }
+    try {
+        window.localStorage.setItem(
+            WINDOW_ALWAYS_ON_TOP_STORAGE_KEY,
+            String(windowAlwaysOnTop)
+        );
+    } catch {
+        return;
+    }
+}
+
 type ShellStore = {
     sidebarOpen: boolean;
     rightSidebarOpen: boolean;
@@ -59,6 +89,7 @@ type ShellStore = {
     tableDensity: TableDensity;
     notificationLayout: NotificationLayout;
     windowDisplayMode: WindowDisplayMode;
+    windowAlwaysOnTop: boolean;
     notificationIconDot: boolean;
     taskbarIconDot: boolean;
     displayVRCPlusIconsAsAvatar: boolean;
@@ -88,6 +119,7 @@ type ShellStore = {
         windowDisplayMode: WindowDisplayMode,
         remember?: boolean
     ): void;
+    setWindowAlwaysOnTop(windowAlwaysOnTop: boolean): void;
     setNotificationIconDot(notificationIconDot: boolean): void;
     setTaskbarIconDot(taskbarIconDot: boolean): void;
     setAppearancePreferences(options?: {
@@ -123,6 +155,7 @@ type ShellStoreState = Omit<
     | 'setTableDensity'
     | 'setNotificationLayout'
     | 'setWindowDisplayMode'
+    | 'setWindowAlwaysOnTop'
     | 'setNotificationIconDot'
     | 'setTaskbarIconDot'
     | 'setAppearancePreferences'
@@ -148,6 +181,7 @@ const initialState: ShellStoreState = {
     tableDensity: 'standard',
     notificationLayout: 'notification-center',
     windowDisplayMode: loadWindowDisplayMode(),
+    windowAlwaysOnTop: loadWindowAlwaysOnTop(),
     notificationIconDot: true,
     taskbarIconDot: true,
     displayVRCPlusIconsAsAvatar: true,
@@ -250,6 +284,10 @@ export const useShellStore = create<ShellStore>((set, get) => ({
             saveWindowDisplayMode(windowDisplayMode);
         }
         set({ windowDisplayMode });
+    },
+    setWindowAlwaysOnTop(windowAlwaysOnTop) {
+        saveWindowAlwaysOnTop(windowAlwaysOnTop);
+        set({ windowAlwaysOnTop });
     },
     setNotificationIconDot(notificationIconDot) {
         set({ notificationIconDot });

@@ -21,12 +21,10 @@ export function invoke<TReturn = unknown>(
             `Tauri command failed: ${command}`
         );
 
-        if (command !== 'app__append_error_log') {
-            recordErrorLog('rust:command', [
-                `command: ${command}`,
-                normalizedError
-            ]);
-        }
+        recordErrorLog('rust:command', [
+            `command: ${command}`,
+            normalizedError
+        ]);
         notifySQLiteError(normalizedError);
 
         throw normalizedError;

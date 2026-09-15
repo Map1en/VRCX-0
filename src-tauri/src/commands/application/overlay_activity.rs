@@ -11,14 +11,14 @@ use vrcx_0_application_activity::{
 use crate::error::AppError;
 use crate::state::AppState;
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__overlay_activity_definitions_get(
 ) -> Result<Vec<OverlayActivityTypeDefinition>, AppError> {
     Ok(overlay_activity_type_definitions())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__overlay_activity_filters_set(
     state: State<'_, AppState>,
@@ -30,7 +30,7 @@ pub fn app__overlay_activity_filters_set(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__notification_activity_filters_set(
     state: State<'_, AppState>,

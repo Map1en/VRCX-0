@@ -33,7 +33,7 @@ type FileAnalysisRequest = {
     version: number;
 };
 
-export type FileAnalysisLoadResult = {
+type FileAnalysisLoadResult = {
     fileAnalysis: PlatformFileAnalysis;
     pending: boolean;
 };

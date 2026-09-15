@@ -29,7 +29,7 @@ export type ToolDialogKey =
     | 'llm-endpoints'
     | 'profile-backup';
 
-export type ToolHostCapabilityKey =
+type ToolHostCapabilityKey =
     | 'gameLaunch'
     | 'gameProcessMonitor'
     | 'registryPrefs'
@@ -446,7 +446,6 @@ const toolDefinitionMap = new Map<string, ToolDefinition>(
 const quickAccessConfigKey = 'VRCX_toolsQuickAccessList';
 const recentToolsConfigKey = 'VRCX_toolsRecentList';
 const TOOLS_QUICK_ACCESS_UPDATED_EVENT = 'vrcx:tools-quick-access-updated';
-const TOOLS_RECENT_UPDATED_EVENT = 'vrcx:tools-recent-updated';
 const TOOLS_STATUS_UPDATED_EVENT = 'vrcx:tools-status-updated';
 const RECENT_TOOLS_LIMIT = 3;
 const knownToolKeys = new Set(toolDefinitions.map((tool) => tool.key));
@@ -518,12 +517,6 @@ function publishToolsQuickAccessUpdated(): void {
     }
 }
 
-function publishToolsRecentUpdated(): void {
-    if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent(TOOLS_RECENT_UPDATED_EVENT));
-    }
-}
-
 function publishToolsStatusUpdated(): void {
     if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent(TOOLS_STATUS_UPDATED_EVENT));
@@ -562,7 +555,6 @@ const toolNavDefinitions: ToolNavDefinition[] = [
     ...legacyToolNavDefinitions
 ];
 
-const defaultHiddenToolNavKeys = toolNavDefinitions.map((tool) => tool.key);
 const isToolNavKey = (key: unknown): key is string =>
     typeof key === 'string' && key.startsWith('tool-');
 
@@ -571,10 +563,7 @@ function getToolsByCategory(categoryKey: ToolCategoryKey): ToolDefinition[] {
 }
 
 export {
-    TOOLS_QUICK_ACCESS_UPDATED_EVENT,
-    TOOLS_RECENT_UPDATED_EVENT,
     TOOLS_STATUS_UPDATED_EVENT,
-    defaultHiddenToolNavKeys,
     getEquivalentToolNavKeys,
     isToolNavKey,
     knownToolKeys,
@@ -584,7 +573,6 @@ export {
     parseQuickAccessToolKeys,
     parseRecentToolKeys,
     publishToolsQuickAccessUpdated,
-    publishToolsRecentUpdated,
     publishToolsStatusUpdated,
     quickAccessConfigKey,
     recentToolsConfigKey,
@@ -594,10 +582,4 @@ export {
     toolNavDefinitions,
     getToolsByCategory
 };
-export type {
-    ToolAction,
-    ToolCategory,
-    ToolCategoryKey,
-    ToolDefinition,
-    ToolNavDefinition
-};
+export type { ToolDefinition };

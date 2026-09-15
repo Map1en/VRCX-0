@@ -1,14 +1,12 @@
 import { SettingsIcon, Trash2Icon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
 import {
     ToolbarActions,
     ToolbarOverflowMenu,
     ToolbarSearch,
     ToolbarTabs,
     ToolbarViewMenu,
-    ToolbarViews,
     type ToolbarSegmentOption
 } from '@/components/layout/ToolbarControls';
 import { Checkbox } from '@/ui/shadcn/checkbox';
@@ -220,7 +218,7 @@ function SearchViewOptionsMenu({
     );
 }
 
-export function SearchPageToolbar({
+export function SearchControlBand({
     activeTab,
     searchText,
     onSearchTextChange,
@@ -248,21 +246,19 @@ export function SearchPageToolbar({
     ];
 
     return (
-        <PageToolbar>
-            <PageToolbarRow>
-                <ToolbarViews>
-                    <ToolbarTabs options={tabOptions} />
-                </ToolbarViews>
-
-                <ToolbarSearch
-                    value={searchText}
-                    onValueChange={onSearchTextChange}
-                    onCommit={onSearch}
-                    commitOnBlur={false}
-                    placeholder={searchPlaceholder}
-                />
-
-                <ToolbarActions>
+        <div className="mx-auto flex w-full max-w-2xl shrink-0 flex-col gap-2 px-1 pb-3">
+            <ToolbarSearch
+                value={searchText}
+                onValueChange={onSearchTextChange}
+                onCommit={onSearch}
+                commitOnBlur={false}
+                autoFocus={!searchText}
+                placeholder={searchPlaceholder}
+                className="h-10 w-full sm:w-full"
+            />
+            <div className="flex min-w-0 items-center gap-2">
+                <ToolbarTabs options={tabOptions} />
+                <ToolbarActions className="ms-auto">
                     <SearchViewOptionsMenu
                         activeTab={activeTab}
                         options={viewOptions}
@@ -276,7 +272,7 @@ export function SearchPageToolbar({
                         </DropdownMenuGroup>
                     </ToolbarOverflowMenu>
                 </ToolbarActions>
-            </PageToolbarRow>
-        </PageToolbar>
+            </div>
+        </div>
     );
 }

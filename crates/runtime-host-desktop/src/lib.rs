@@ -24,6 +24,7 @@ pub mod local_data;
 mod log_watcher;
 mod media;
 pub mod notification;
+mod privacy_lock;
 mod process_monitor;
 mod profile_backup;
 mod registry_backup;
@@ -62,6 +63,7 @@ pub use log_watcher::{
     HostLogLocationSnapshotScanner, LogLocationSnapshot, LogWatcher,
 };
 pub use media::DesktopMediaRuntime;
+pub use privacy_lock::{PrivacyLockOutcome, PrivacyLockRuntime, PrivacyLockSnapshot};
 pub use process_monitor::HostGameProcessMonitorActions;
 pub use profile_backup::{DesktopProfileBackupRuntime, DesktopProfileRestoreRequest};
 pub use registry_backup::HostRegistryBackupActions;

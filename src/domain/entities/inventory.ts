@@ -4,8 +4,7 @@ export const PROFILE_DECORATION_ITEM_TYPES = [
     'nameplateEffect'
 ] as const;
 
-export type ProfileDecorationItemType =
-    (typeof PROFILE_DECORATION_ITEM_TYPES)[number];
+type ProfileDecorationItemType = (typeof PROFILE_DECORATION_ITEM_TYPES)[number];
 
 export interface ProfileDecorationMutation {
     action: 'equip' | 'unequip';

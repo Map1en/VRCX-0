@@ -118,7 +118,7 @@ function EntityOverviewCard({
             size="sm"
             style={style}
             className={cn(
-                'min-w-0 overflow-visible border shadow-none ring-0',
+                'ring-stroke-subtle min-w-0 overflow-visible border-0 shadow-none',
                 className
             )}
         >

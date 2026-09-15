@@ -4,6 +4,7 @@ import {
     CopyIcon,
     FolderOpenIcon,
     LayoutGridIcon,
+    ListFilterIcon,
     ListIcon,
     PanelRightCloseIcon,
     PanelRightOpenIcon,
@@ -30,7 +31,8 @@ import {
     ToolbarSearch,
     ToolbarSegmented,
     ToolbarStatus,
-    ToolbarViews
+    ToolbarViews,
+    toolbarSearchScopeTrigger
 } from '@/components/layout/ToolbarControls';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -41,14 +43,14 @@ import {
     CardTitle
 } from '@/ui/shadcn/card';
 import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/ui/shadcn/select';
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuTrigger
+} from '@/ui/shadcn/dropdown-menu';
 import { Table, TableBody, TableHeader } from '@/ui/shadcn/table';
+import { Tooltip } from '@/ui/shadcn/tooltip';
 
 import {
     SCREENSHOT_METADATA_SEARCH_TYPES,
@@ -189,6 +191,11 @@ export function ScreenshotSearchToolbar({
     onClearSearch: () => void;
 }) {
     const { t } = useTranslation();
+    const activeSearchTypeLabel = t(
+        SCREENSHOT_METADATA_SEARCH_TYPES.find(
+            (type) => type.value === searchType
+        )?.labelKey || 'dialog.screenshot_metadata.search_type_placeholder'
+    );
 
     return (
         <PageToolbar>
@@ -233,36 +240,6 @@ export function ScreenshotSearchToolbar({
                             {selectedPathIndex + 1}/{searchNavigationCount}
                         </ToolbarStatus>
                     ) : null}
-                    <Select
-                        value={searchType}
-                        items={SCREENSHOT_METADATA_SEARCH_TYPES.map((type) => ({
-                            value: type.value,
-                            label: t(type.labelKey)
-                        }))}
-                        onValueChange={onSearchTypeChange}
-                    >
-                        <SelectTrigger className="max-w-56 min-w-40 shrink-0">
-                            <SelectValue
-                                placeholder={t(
-                                    'dialog.screenshot_metadata.search_type_placeholder'
-                                )}
-                            />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectGroup>
-                                {SCREENSHOT_METADATA_SEARCH_TYPES.map(
-                                    (type) => (
-                                        <SelectItem
-                                            key={type.value}
-                                            value={type.value}
-                                        >
-                                            {t(type.labelKey)}
-                                        </SelectItem>
-                                    )
-                                )}
-                            </SelectGroup>
-                        </SelectContent>
-                    </Select>
                 </ToolbarViews>
 
                 <ToolbarSearch
@@ -271,9 +248,43 @@ export function ScreenshotSearchToolbar({
                     onCommit={onSearch}
                     onClear={onClearSearch}
                     commitOnBlur={false}
-                    placeholder={t(
-                        'dialog.screenshot_metadata.search_placeholder'
-                    )}
+                    placeholder={t('dialog.screenshot_metadata.search_in', {
+                        scope: activeSearchTypeLabel
+                    })}
+                    trailing={
+                        <DropdownMenu>
+                            <Tooltip>
+                                <DropdownMenuTrigger
+                                    render={toolbarSearchScopeTrigger({
+                                        active: true,
+                                        icon: ListFilterIcon,
+                                        label: activeSearchTypeLabel
+                                    })}
+                                />
+                            </Tooltip>
+                            <DropdownMenuContent align="end" className="w-48">
+                                <DropdownMenuGroup>
+                                    {SCREENSHOT_METADATA_SEARCH_TYPES.map(
+                                        (type) => (
+                                            <DropdownMenuCheckboxItem
+                                                key={type.value}
+                                                checked={
+                                                    type.value === searchType
+                                                }
+                                                onCheckedChange={() =>
+                                                    onSearchTypeChange(
+                                                        type.value
+                                                    )
+                                                }
+                                            >
+                                                {t(type.labelKey)}
+                                            </DropdownMenuCheckboxItem>
+                                        )
+                                    )}
+                                </DropdownMenuGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    }
                 />
             </PageToolbarRow>
         </PageToolbar>

@@ -173,6 +173,11 @@ function handleRuntimeEvent(event: RuntimeEvent): void {
         return;
     }
 
+    if (event.name === 'privacyLockState') {
+        runtimeStore.setPrivacyLock(event.payload);
+        return;
+    }
+
     if (event.name === 'vrcStatus') {
         applyVrcStatusSnapshot(event.payload);
         return;
@@ -421,6 +426,11 @@ async function hydrateAncillaryRuntimeState(): Promise<void> {
                     snapshot.notificationDoNotDisturbState
                 );
         }),
+        hydrateRuntimeState('Failed to hydrate privacy lock state:', () => {
+            useRuntimeStore
+                .getState()
+                .setPrivacyLock(snapshot.privacyLockState);
+        }),
         hydrateRuntimeState(
             'Failed to hydrate app update download status:',
             async () => {
@@ -448,6 +458,7 @@ export async function bindRuntimeEvents(): Promise<() => void> {
         'backgroundImageState',
         'communityThemeState',
         'notificationDoNotDisturbState',
+        'privacyLockState',
         'gameLogProjection',
         'gameLogPersistenceFallback',
         'gameLogSideEffect',

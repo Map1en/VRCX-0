@@ -213,7 +213,6 @@ export type GalleryFileTabState = Pick<
         | 'onClearProfileField'
         | 'onDeleteFile'
         | 'onPreview'
-        | 'onRefresh'
         | 'onSetProfileField'
     > &
     GalleryBulkCommands;

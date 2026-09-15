@@ -3,15 +3,12 @@ import { describe, expect, it } from 'vitest';
 import {
     instanceLocation,
     mergeGroupInstances,
-    normalizeEntityId,
     normalizeLocation,
     userGroupLocation
 } from './groupInstances';
 
 describe('groupInstances', () => {
     it('normalizes ids and locations for group instance rows', () => {
-        expect(normalizeEntityId('  grp_test  ')).toBe('grp_test');
-        expect(normalizeEntityId(null)).toBe('');
         expect(normalizeLocation(' offline ')).toBe('');
         expect(normalizeLocation('private')).toBe('');
         expect(normalizeLocation('wrld_1:2')).toBe('wrld_1:2');

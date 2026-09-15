@@ -45,7 +45,7 @@ function toCssString(value: string): string {
         .replace(/\n/g, '\\A ')}"`;
 }
 
-export function buildBackgroundImageCss(
+function buildBackgroundImageCss(
     snapshot: Pick<BackgroundImageSnapshot, 'imageUrl'>,
     opaqueBase = false
 ): string {
@@ -262,7 +262,7 @@ async function applySavedThemeColor(): Promise<void> {
     applyThemeColor(resolveThemeColor(savedThemeColor));
 }
 
-export function isCommunityAppearanceActive(): boolean {
+function isCommunityAppearanceActive(): boolean {
     const state = useCommunityThemeStore.getState();
     return communityThemeControlsAppearance(
         state.enabled,

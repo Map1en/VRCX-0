@@ -92,7 +92,7 @@ function normalizeLanguageComboboxValues(values: unknown) {
     return nextKeys;
 }
 
-export function UserSocialStatusDialog({
+function UserSocialStatusDialog({
     open,
     onOpenChange,
     actionStatus,

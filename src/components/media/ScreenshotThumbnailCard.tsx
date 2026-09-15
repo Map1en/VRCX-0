@@ -19,6 +19,7 @@ import {
     TILE_SELECT_TOGGLE_VISIBLE
 } from '@/shared/constants/selectableTile';
 import { parseLocation } from '@/shared/utils/location';
+import { resolveScreenshotCapturedTime } from '@/shared/utils/screenshot';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import { Skeleton } from '@/ui/shadcn/skeleton';
@@ -180,14 +181,14 @@ export function ScreenshotThumbnailCard({
     }, [item.modifiedAt, item.path, item.sizeBytes]);
 
     const dateLabel = formatScreenshotDateTime(
-        item.capturedAt || item.modifiedAt,
+        resolveScreenshotCapturedTime(item),
         i18n.resolvedLanguage || i18n.language
     );
-    const displayTitle =
-        title ||
+    const worldTitle =
+        (title && title !== item.fileName ? title : '') ||
         resolveDirectThumbnailTitle(item, worldNameHint) ||
-        item.fileName;
-    const cardHeight = compact ? 'h-[156px]' : 'h-[196px]';
+        '';
+    const cardHeight = compact ? 'h-[156px]' : 'h-[178px]';
     const mediaHeight = compact ? 'h-[94px]' : 'h-[118px]';
     const isSelectionActive = selectable && selectionActive;
 
@@ -252,18 +253,23 @@ export function ScreenshotThumbnailCard({
                     )}
                 </div>
                 <div className="flex min-h-0 flex-1 flex-col gap-1 p-2">
-                    <div
-                        className="truncate text-sm font-medium"
-                        title={displayTitle}
-                    >
-                        {displayTitle}
-                    </div>
-                    {!compact ? (
-                        <div className="text-muted-foreground truncate text-xs">
-                            {item.fileName}
+                    {worldTitle ? (
+                        <div
+                            className="truncate text-sm font-medium"
+                            title={item.fileName}
+                        >
+                            {worldTitle}
                         </div>
                     ) : null}
-                    <div className="text-muted-foreground mt-auto flex items-center gap-1 text-xs">
+                    <div
+                        className={cn(
+                            'flex items-center gap-1',
+                            worldTitle
+                                ? 'text-muted-foreground text-xs'
+                                : 'text-sm font-medium'
+                        )}
+                        title={item.fileName}
+                    >
                         <CameraIcon data-icon="inline-start" />
                         <span className="truncate">{dateLabel}</span>
                     </div>

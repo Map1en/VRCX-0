@@ -87,24 +87,6 @@ function Timeline({
 }
 
 // TimelineContent
-function TimelineContent({
-    className,
-    render,
-    children,
-    ...props
-}: useRender.ComponentProps<'div'>) {
-    const defaultProps = {
-        className: cn('text-muted-foreground text-sm', className),
-        'data-slot': 'timeline-content',
-        children
-    };
-
-    return useRender({
-        defaultTagName: 'div',
-        render,
-        props: mergeProps<'div'>(defaultProps, props)
-    });
-}
 
 // TimelineDate
 type TimelineDateProps = useRender.ComponentProps<'time'>;
@@ -254,7 +236,6 @@ function TimelineTitle({
 
 export {
     Timeline,
-    TimelineContent,
     TimelineDate,
     TimelineHeader,
     TimelineIndicator,

@@ -80,7 +80,6 @@ function renderContextMenu(props: ContextMenuTestProps = {}) {
                 onSelfInviteCurrentInstance: vi.fn(),
                 onShowExactPreviousInstanceInfo: vi.fn(),
                 onShowPreviousInstances: vi.fn(),
-                previousInstancesDialog: null,
                 previousInstancesDisabled: false,
                 previousInstancesLoading: false,
                 shareUrl: 'https://vrchat.com/home/world/wrld_test',

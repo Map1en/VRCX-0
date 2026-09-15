@@ -276,7 +276,7 @@ export function FavoriteCardView({
     return (
         <TileShell
             selected={selected}
-            className="group/tile flex h-full w-full cursor-pointer items-center gap-2 px-2.5 py-2 text-sm"
+            className="object-row object-row--interactive object-row--focusable group/tile flex h-full w-full cursor-pointer items-center gap-2 px-2.5 py-2 text-sm"
             {...interactions.shell}
         >
             {slots.selection}
@@ -325,7 +325,7 @@ export function FavoriteCardView({
                 <div className="flex min-w-0 items-center gap-1.5">
                     <UserHoverCard {...friendHoverCard}>
                         <span
-                            className="truncate font-medium"
+                            className="object-row__title truncate"
                             style={
                                 item.titleColor
                                     ? { color: item.titleColor }
@@ -347,7 +347,7 @@ export function FavoriteCardView({
                 {friendShowsLocation ? (
                     <div
                         role="presentation"
-                        className="text-muted-foreground truncate text-xs"
+                        className="object-row__meta truncate"
                         onClick={(event) => event.stopPropagation()}
                         onKeyDown={(event) => event.stopPropagation()}
                     >
@@ -366,7 +366,7 @@ export function FavoriteCardView({
                         />
                     </div>
                 ) : (
-                    <div className="text-muted-foreground truncate text-xs">
+                    <div className="object-row__meta truncate">
                         {showPlayerCountBadge ? (
                             <>
                                 <span className="inline-flex items-baseline gap-1">
@@ -381,7 +381,7 @@ export function FavoriteCardView({
                 )}
                 {slots.groupLabel}
             </div>
-            <div className="flex size-8 shrink-0 items-center justify-center">
+            <div className="object-row__context-action flex size-8 shrink-0 items-center justify-center">
                 {slots.actions}
             </div>
         </TileShell>

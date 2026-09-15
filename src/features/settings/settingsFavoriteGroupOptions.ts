@@ -9,7 +9,7 @@ export type FavoriteFriendGroupOption = {
     label: string;
 };
 
-export function buildRemoteFavoriteFriendGroupOptions(
+function buildRemoteFavoriteFriendGroupOptions(
     favoriteFriendGroups:
         | readonly RemoteFavoriteFriendGroup[]
         | null
@@ -23,7 +23,7 @@ export function buildRemoteFavoriteFriendGroupOptions(
         .filter((group) => group.value);
 }
 
-export function buildLocalFavoriteFriendGroupOptions(
+function buildLocalFavoriteFriendGroupOptions(
     localFriendFavoriteGroups: readonly string[] | null | undefined
 ) {
     return (localFriendFavoriteGroups || [])

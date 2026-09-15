@@ -399,3 +399,68 @@ pub struct GameLogInstanceJoinOutput {
     pub created_at: String,
     pub location: String,
 }
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn query_wire_shape_is_kind_plus_params_with_defaulted_fields() {
+        let query: GameLogQuery = serde_json::from_value(json!({
+            "kind": "rowsByLocation",
+            "params": { "instanceId": "wrld_a:1", "filters": ["Location"] }
+        }))
+        .unwrap();
+
+        let GameLogQuery::RowsByLocation {
+            instance_id,
+            current_user_id,
+            filters,
+            vip_list,
+            max_entries,
+            max_rows,
+        } = query
+        else {
+            panic!("rowsByLocation should deserialize into RowsByLocation");
+        };
+        assert_eq!(instance_id, "wrld_a:1");
+        assert_eq!(filters, vec!["Location".to_string()]);
+        assert!(current_user_id.is_empty());
+        assert!(vip_list.is_empty());
+        assert_eq!(max_entries, None);
+        assert_eq!(max_rows, None);
+    }
+
+    #[test]
+    fn unit_queries_accept_empty_params() {
+        let query: GameLogQuery =
+            serde_json::from_value(json!({ "kind": "lastDate", "params": {} })).unwrap();
+        assert!(matches!(query, GameLogQuery::LastDate {}));
+    }
+
+    #[test]
+    fn output_wire_shape_is_kind_plus_value_and_keeps_snake_case_created_at() {
+        let output = GameLogQueryOutput::RowsByLocation(vec![GameLogRowOutput {
+            row_id: 7,
+            created_at: "2026-05-14T08:00:00Z".into(),
+            r#type: "Location".into(),
+            world_id: Some("wrld_a".into()),
+            ..Default::default()
+        }]);
+
+        assert_eq!(
+            serde_json::to_value(output).unwrap(),
+            json!({
+                "kind": "rowsByLocation",
+                "value": [{
+                    "rowId": 7,
+                    "created_at": "2026-05-14T08:00:00Z",
+                    "type": "Location",
+                    "worldId": "wrld_a"
+                }]
+            })
+        );
+    }
+}

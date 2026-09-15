@@ -13,7 +13,8 @@ const mocks = vi.hoisted(() => ({
     setWindowPhysicalPosition: vi.fn<(x: number, y: number) => Promise<void>>(),
     setWindowSizeConstraints:
         vi.fn<(constraints: Record<string, number>) => Promise<void>>(),
-    setWindowMaximizable: vi.fn<(maximizable: boolean) => Promise<void>>()
+    setWindowMaximizable: vi.fn<(maximizable: boolean) => Promise<void>>(),
+    setWindowAlwaysOnTop: vi.fn<(alwaysOnTop: boolean) => Promise<void>>()
 }));
 
 vi.mock('@/platform/tauri/client', () => ({
@@ -37,10 +38,12 @@ import { useShellStore } from '@/state/shellStore';
 
 import {
     enterSidebarWindowMode,
+    initializeWindowAlwaysOnTop,
     initializeWindowDisplayMode,
     leaveSidebarWindowModeForLogin,
     restoreNormalWindowMode,
-    restoreSidebarWindowModeAfterLogin
+    restoreSidebarWindowModeAfterLogin,
+    setWindowAlwaysOnTop
 } from './windowModeService';
 
 const storedValues = new Map<string, string>();
@@ -81,7 +84,10 @@ function createGeometry(
 beforeEach(() => {
     window.localStorage.clear();
     useDialogStore.getState().clearDialogState();
-    useShellStore.setState({ windowDisplayMode: 'normal' });
+    useShellStore.setState({
+        windowDisplayMode: 'normal',
+        windowAlwaysOnTop: false
+    });
     useCriticalTaskStore.setState({ activeTasks: [] });
     Object.values(mocks).forEach((mock) => mock.mockReset());
     mocks.suspendSidebarAutoHide.mockResolvedValue(undefined);
@@ -92,6 +98,7 @@ beforeEach(() => {
     mocks.setWindowPhysicalPosition.mockResolvedValue(undefined);
     mocks.setWindowSizeConstraints.mockResolvedValue(undefined);
     mocks.setWindowMaximizable.mockResolvedValue(undefined);
+    mocks.setWindowAlwaysOnTop.mockResolvedValue(undefined);
 });
 
 describe('windowModeService', () => {
@@ -498,5 +505,48 @@ describe('remembered window display mode', () => {
         restoreSidebarWindowModeAfterLogin();
 
         expect(useShellStore.getState().windowDisplayMode).toBe('sidebar');
+    });
+
+    it.each(['normal', 'sidebar'] as const)(
+        'keeps the always-on-top window state through a %s mode transition',
+        async (mode) => {
+            useShellStore.setState({ windowDisplayMode: mode });
+            mocks.getWindowGeometry.mockResolvedValue(createGeometry());
+            await setWindowAlwaysOnTop(true);
+
+            await (mode === 'normal'
+                ? enterSidebarWindowMode()
+                : restoreNormalWindowMode());
+
+            expect(useShellStore.getState().windowAlwaysOnTop).toBe(true);
+            expect(mocks.setWindowAlwaysOnTop).toHaveBeenCalledTimes(1);
+            expect(mocks.setWindowAlwaysOnTop).toHaveBeenCalledWith(true);
+        }
+    );
+
+    it('restores a remembered always-on-top window on startup', async () => {
+        await setWindowAlwaysOnTop(true);
+        expect(
+            window.localStorage.getItem('vrcx-main-window-always-on-top')
+        ).toBe('true');
+        mocks.setWindowAlwaysOnTop.mockClear();
+
+        await initializeWindowAlwaysOnTop();
+
+        expect(mocks.setWindowAlwaysOnTop).toHaveBeenCalledWith(true);
+    });
+
+    it('leaves the window untouched on startup when it was not pinned', async () => {
+        await initializeWindowAlwaysOnTop();
+
+        expect(mocks.setWindowAlwaysOnTop).not.toHaveBeenCalled();
+    });
+
+    it('reverts the remembered always-on-top state when the window rejects it', async () => {
+        mocks.setWindowAlwaysOnTop.mockRejectedValue(new Error('denied'));
+
+        await expect(setWindowAlwaysOnTop(true)).rejects.toThrow('denied');
+
+        expect(useShellStore.getState().windowAlwaysOnTop).toBe(false);
     });
 });

@@ -10,7 +10,7 @@
         "app_launcher_title": "选择随 VRChat 一起启动的内容",
         "app_launcher_description": "添加应用或快捷方式，并选择希望它在什么时候启动。",
         "app_launcher_selection_title": "选择应用或快捷方式",
-        "app_launcher_selection_description": "从列表中选择一项，即可查看或更改它的启动时机。",
+        "app_launcher_selection_description": "选择一个应用，设置它何时启动。",
         "game_log_title": "还没有 VRChat 活动",
         "game_log_description": "游玩过程中访问的世界、遇到的玩家以及其他 VRChat 活动会显示在这里。",
         "my_avatars_title": "还没有上传过模型",
@@ -279,7 +279,7 @@
     },
     "profile_backup": {
         "header": "备份与恢复",
-        "tools_description": "备份 VRCX-0 数据，并在需要时从备份恢复。",
+        "tools_description": "备份与恢复 VRCX-0 数据",
         "automatic": "自动备份",
         "automatic_description": "定期将备份保存到所选文件夹。",
         "automatic_on": "已开启",
@@ -496,6 +496,7 @@
         "tray": {
             "open": "打开 VRCX-0",
             "backgroundMode": "后台模式",
+            "lock": "锁定",
             "doNotDisturb": "勿扰模式",
             "doNotDisturbOneHour": "1 小时",
             "doNotDisturbThreeHours": "3 小时",
@@ -724,6 +725,7 @@
         "hide_friends_sidebar": "隐藏好友侧栏",
         "enter_sidebar_mode": "侧栏模式",
         "restore_full_window": "返回完整窗口",
+        "always_on_top": "窗口置顶",
         "zoom_in": "放大",
         "zoom_out": "缩小",
         "reset_zoom": "重置缩放",
@@ -788,6 +790,63 @@
         "hold_for_hints": "显示快捷键提示（长按）",
         "toggle_details": "显示／隐藏详情",
         "clear_selection": "清除选择"
+    },
+    "privacy_lock": {
+        "locked_title": "已锁定",
+        "field": {
+            "password": "锁定密码",
+            "current_password": "当前锁定密码",
+            "new_password": "新锁定密码",
+            "confirm_password": "确认新锁定密码",
+            "account_password": "VRChat 账号密码"
+        },
+        "action": {
+            "lock": "锁定",
+            "unlock": "解锁",
+            "forgot": "忘记锁定密码？",
+            "back": "返回",
+            "set": "设置密码",
+            "change": "修改密码",
+            "clear": "移除密码",
+            "clear_link": "移除锁定密码",
+            "clear_and_unlock": "移除锁定",
+            "background_mode": "后台模式",
+            "logout": "退出登录"
+        },
+        "setup": {
+            "create_title": "设置锁定密码",
+            "create_description": "锁定后 VRCX-0 会被这 4 位数字遮住，同时继续记录。它不是加密，只是防止用你电脑的人随手翻看。",
+            "change_title": "修改锁定密码",
+            "change_description": "输入当前锁定密码，再设置一个新密码。",
+            "clear_title": "移除锁定密码",
+            "clear_description": "输入 VRChat 账号密码以移除锁定密码。只与本地保存的密码比对，不连接 VRChat 服务器。"
+        },
+        "recover": {
+            "description": "输入 VRChat 账号密码以移除锁定。只与本地保存的密码比对，不连接 VRChat 服务器。"
+        },
+        "settings": {
+            "label": "隐私锁定",
+            "description": "用锁定密码遮住窗口，同时 VRCX-0 继续记录。可从托盘菜单或侧边栏的账号菜单锁定。",
+            "status_set": "已设置密码",
+            "status_unset": "未设置密码"
+        },
+        "toast": {
+            "set": "已设置锁定密码",
+            "changed": "已修改锁定密码",
+            "cleared": "已移除锁定密码"
+        },
+        "error": {
+            "wrong_password": "密码不正确",
+            "incomplete": "请输入完整的 {count} 位数字",
+            "mismatch": "两次输入的密码不一致",
+            "current_required": "请输入当前锁定密码",
+            "account_password_required": "请输入 VRChat 账号密码",
+            "account_password_unavailable": "该账号没有保存密码，无法在这里移除锁定。请手动清理应用数据。",
+            "password_not_set": "尚未设置锁定密码",
+            "password_already_set": "已经设置过锁定密码",
+            "no_session": "请先登录再使用锁定",
+            "failed": "锁定操作失败"
+        }
     },
     "side_panel": {
         "search_placeholder": "搜索",
@@ -854,7 +913,6 @@
             "favorites_section": "收藏",
             "group_by_instance": "按房间分组",
             "split_favorite_friends": "按分组显示好友",
-            "show_grouped_friends": "显示同一房间中的好友",
             "same_instance_above_favorites": "优先显示同一房间中的好友",
             "sort_secondary": "次要排序方式",
             "sort_tertiary": "第三排序方式",
@@ -1541,9 +1599,8 @@
                 "moderation_snapshot_failed_to_load": "玩家管理记录加载失败"
             },
             "label": {
-                "showing": "显示",
-                "of": "/",
                 "moderation_row": "玩家管理记录",
+                "back_to_top": "回到顶部",
                 "moderation_rows": "玩家管理记录",
                 "broaden_the_type_filters_or_search_query_to_see_more_results": "放宽类型筛选或搜索词以查看更多结果"
             },
@@ -1560,7 +1617,7 @@
                 "accept": "接受",
                 "invite": "邀请",
                 "decline": "拒绝",
-                "delete_log": "删除日志",
+                "delete_log": "删除通知",
                 "decline_with_message": "拒绝并回复"
             },
             "filters": {
@@ -1660,6 +1717,10 @@
                     "moderation": "管理",
                     "other": "其他"
                 }
+            },
+            "responses": {
+                "acknowledge_and_dismiss": "忽略",
+                "unsubscribe_announcements": "取消订阅"
             }
         },
         "friend_list": {
@@ -1724,7 +1785,8 @@
             "dynamic": {
                 "open_value": "打开 {value}"
             },
-            "bulk_selected": "已选 {count} 项"
+            "bulk_selected": "已选 {count} 项",
+            "search_scope": "搜索范围"
         },
         "charts": {
             "instance_activity": {
@@ -1847,16 +1909,13 @@
             "header": "工具",
             "recent": "最近使用",
             "status": {
-                "rules_enabled": "{count} 条规则已启用",
-                "rules_enabled_of_total": "已启用 {enabled}/{total} 条规则",
-                "rules_configured_off": "已配置 {count} 条规则，当前已关闭",
-                "auto_reply_enabled": "自动回复已启用",
-                "apps_enabled": "已配置 {count} 个应用，当前已启用",
-                "apps_configured_off": "已配置 {count} 个应用，当前已关闭",
-                "last_backup": "上次备份：{date}",
-                "automatic_backup_enabled": "自动备份已启用",
-                "automatic_backup_configured_off": "自动备份已配置，当前已关闭",
-                "connections_configured": "已配置 {count} 个 AI 连接"
+                "rules_enabled": "{count} 条规则 · 开",
+                "rules_enabled_of_total": "{enabled}/{total} 条规则 · 开",
+                "rules_configured_off": "{count} 条规则 · 关",
+                "last_backup": "上次备份 {date}",
+                "connections_configured": "{count} 个连接",
+                "apps_count": "{count} 个应用",
+                "automatic_backup": "自动备份"
             },
             "quick_access": {
                 "header": "常用工具",
@@ -1864,12 +1923,11 @@
                 "done": "完成",
                 "add": "添加到常用",
                 "remove": "从常用移除",
-                "already_added": "已添加到常用工具",
-                "empty": "把工具拖到这里，或从工具菜单添加。",
+                "already_added": "已在常用工具中",
+                "empty": "把工具拖到这里",
                 "actions": "工具操作",
-                "shortcut_menu": "添加快捷方式…",
-                "tools_page_shortcut": "工具页常用工具",
-                "sidebar_shortcut": "侧边导航栏"
+                "tools_page_shortcut": "固定到常用工具",
+                "sidebar_shortcut": "固定到侧边栏"
             },
             "category": {
                 "automation": "自动化",
@@ -1883,9 +1941,9 @@
                 "calendar": "活动日历",
                 "calendar_description": "查看活动日历",
                 "moderation": "群组管理",
-                "moderation_description": "管理你拥有管理权限的群组的成员、封禁、邀请与加入申请。",
+                "moderation_description": "成员、封禁、邀请与加入申请",
                 "my_groups": "我的群组",
-                "my_groups_description": "排序、隐藏和退出你加入的群组。"
+                "my_groups_description": "排序、隐藏和退出已加入的群组"
             },
             "user": {
                 "discord_names_description": "查找好友的 Discord 名称（如果他们有写上去的话）",
@@ -1911,7 +1969,7 @@
                 "screenshot": "截图",
                 "screenshot_description": "浏览 VRChat 照片及拍摄详情",
                 "gallery": "相册",
-                "gallery_description": "管理 VRChat 图库 — 相册、头像图标和拍立得",
+                "gallery_description": "相册、头像图标和拍立得",
                 "inventory": "库存",
                 "inventory_description": "管理表情、贴纸、物品和装饰"
             },
@@ -1932,23 +1990,22 @@
                 "vrchat_log_description": "查看本地 VRChat 客户端日志",
                 "launch_options_description": "编辑 VRChat 的启动选项",
                 "app_launcher": "应用启动器",
-                "app_launcher_description": "管理会在 VRChat 启动时自动启动的应用和快捷方式。",
+                "app_launcher_description": "VRChat 启动时自动启动应用",
                 "registry_backup": "VRChat 设置数据备份工具",
                 "registry_backup_description": "创建或恢复 VRChat 的设置备份",
                 "llm_endpoints": "AI 连接",
-                "llm_endpoints_description": "管理供 Social AI 和翻译使用的 AI 服务连接。"
+                "llm_endpoints_description": "Social AI 和翻译使用的 AI 连接"
             },
             "vrchat_log": {
                 "title": "VRChat 日志查看器",
                 "latest": "最新",
                 "file_placeholder": "选择日志文件",
-                "search_placeholder": "搜索消息、分类或堆栈",
-                "follow_latest": "跟随最新",
+                "search_placeholder": "搜索日志",
+                "follow_latest": "跟随",
                 "clear_categories": "清除分类",
                 "copy_selected": "复制选中",
                 "copy_entry": "复制此行",
                 "copy_message": "复制消息",
-                "clear_selected": "清除选中",
                 "copied": "日志文本已复制到剪贴板",
                 "copy_failed": "复制日志文本失败",
                 "continuation_count": "+{count} 行",
@@ -1957,13 +2014,18 @@
                 "column_category": "分类",
                 "column_message": "消息",
                 "loading": "正在加载日志条目",
-                "load_more": "加载更多",
+                "load_older": "加载更早",
+                "matched_count": "{loaded} / {total} 命中",
+                "match_case": "区分大小写",
+                "use_regex": "正则表达式",
+                "column_line": "行号",
+                "select_all": "全选",
+                "deselect_all": "取消全选",
                 "unavailable": "VRChat 数据文件夹不可用",
                 "no_files": "没有找到 VRChat 客户端日志文件",
                 "no_files_description": "启动一次 VRChat，等 output_log_*.txt 出现后刷新本页。",
                 "no_entries": "没有符合当前筛选的条目",
                 "no_entries_description": "调整等级、分类或搜索文本。",
-                "no_category": "无分类",
                 "error_load_files": "加载 VRChat 日志文件失败。",
                 "error_load_entries": "加载 VRChat 日志条目失败。",
                 "error_tail": "读取新增日志条目失败。",
@@ -1973,11 +2035,11 @@
             "social_automation": {
                 "header": "社交自动化",
                 "status_schedule": "状态定时切换",
-                "status_schedule_description": "根据时间自动修改状态和签名，拥有详细的配置选项。",
+                "status_schedule_description": "按时间表更改状态",
                 "room_status_rules": "实例与世界状态规则",
-                "room_status_rules_description": "VRChat 运行时，根据所在实例、世界和同行好友自动更改状态。",
+                "room_status_rules_description": "按实例、世界或好友更改状态",
                 "invite_request_auto_reply": "自动回应加入申请",
-                "invite_request_auto_reply_description": "VRChat 运行时，已批准的好友申请加入会自动发送邀请。",
+                "invite_request_auto_reply_description": "自动邀请申请加入的已批准好友",
                 "schedule_rules": "时间规则",
                 "schedule_rules_description": "根据时间切换状态、签名，或同时切换两者。",
                 "add_rule": "添加规则",
@@ -2183,7 +2245,10 @@
                 "detect_failed": "检测模型失败",
                 "deleted": "端点已删除",
                 "delete_failed": "删除端点失败"
-            }
+            },
+            "filter_placeholder": "筛选工具",
+            "filter_empty": "没有匹配的工具",
+            "sections": "分区"
         },
         "profile": {
             "game_info": {
@@ -2209,14 +2274,15 @@
             },
             "feedback": {
                 "title": "发送反馈",
-                "description": "反馈默认匿名提交。我们会阅读每一条消息。如需回复，请在反馈中附上你的邮箱。",
+                "description": "反馈默认匿名提交。我们会阅读每一条消息。",
                 "privacy_note": "不会附带任何账号信息。",
                 "placeholder": "告诉我们哪些好用、哪些不好用，或者你希望看到什么新功能……",
                 "submit": "发送",
                 "submitting": "发送中…",
                 "thanks": "感谢你的反馈！",
                 "cooldown": "{{seconds}} 秒后可再次发送",
-                "more_help": "需要回复，或者想附上日志？",
+                "reply_note": "如需回复，请在反馈中留下邮箱。",
+                "more_help": "也可以通过以下渠道联系我们或附上日志：",
                 "error_generic": "发送失败，请稍后重试。"
             },
             "ai": {
@@ -3549,54 +3615,46 @@
         },
         "app_launcher": {
             "header": "应用启动器",
-            "global_enabled": "启用",
-            "add_app": "添加应用或快捷方式",
+            "global_enabled": "随 VRChat 启动应用",
+            "add_app": "添加应用",
             "choose_target": "选择目标",
-            "loading": "正在加载应用启动器",
-            "empty": "还没有启动规则",
-            "details": "规则详情",
-            "no_selection": "选择一条规则",
+            "loading": "加载中…",
             "enabled": "启用",
             "name": "名称",
             "scope": "适用范围",
             "target": "目标",
-            "policy": "策略",
-            "run": "运行",
-            "stop": "在 VRChat 关闭后停止",
-            "actions": "操作",
+            "run": "VRChat 启动时",
+            "stop": "VRChat 关闭时",
             "scope_all": "所有模式",
             "scope_desktop": "桌面模式",
             "scope_vr": "VR 模式",
-            "run_policy_always": "每次 VRChat 启动",
-            "run_policy_skipIfRunning": "已运行则跳过",
             "run_policy_short_always": "每次启动",
-            "run_policy_short_skipIfRunning": "已运行跳过",
-            "stop_policy_keepRunning": "保持运行",
-            "stop_policy_closeByVrcx": "由 VRCX-0 关闭",
-            "stop_policy_short_keepRunning": "保持",
-            "stop_policy_short_closeByVrcx": "关闭",
-            "delete": "删除",
+            "run_policy_short_skipIfRunning": "未运行时才启动",
+            "stop_policy_short_keepRunning": "保持运行",
+            "stop_policy_short_closeByVrcx": "关闭应用",
             "steam_app_id": "Steam App ID",
             "delay_seconds": "启动延迟秒数",
             "args": "参数",
             "run_as_administrator": "以管理员身份运行",
-            "run_as_administrator_description": "启动此应用时，Windows 会请求授权。VRChat 关闭后，提权运行的应用会继续运行。",
+            "run_as_administrator_description": "启动时 Windows 会请求权限。",
             "run_status_waiting": "等待启动",
             "run_status_running": "运行中",
             "run_status_skipped": "已跳过",
             "run_status_failed": "启动失败",
             "run_status_stopped": "已停止",
             "run_status_completed": "已完成",
-            "run_error_elevation_required": "此应用需要管理员权限（Windows 错误 {code}）。请为这条规则启用“以管理员身份运行”。",
+            "run_error_elevation_required": "需要管理员权限（Windows 错误 {code}）。请打开「以管理员身份运行」。",
             "run_error_elevation_cancelled": "已取消管理员授权（Windows 错误 {code}）。",
             "run_error_failed": "应用启动失败。",
-            "close": "关闭",
-            "save": "保存",
+            "stop_locked_steam": "由 Steam 启动，VRCX-0 无法关闭。",
+            "stop_locked_admin": "以管理员身份运行，VRCX-0 无法关闭。",
+            "remove_app": "移除应用",
+            "remove_confirm": "从应用启动器中移除 {name}？",
+            "name_required": "名称不能为空",
             "toast": {
                 "load_failed": "加载应用启动器失败",
                 "save_failed": "保存应用启动器失败",
-                "pick_failed": "选择应用或快捷方式失败",
-                "name_target_required": "名称和目标不能为空"
+                "pick_failed": "选择应用或快捷方式失败"
             }
         },
         "user": {
@@ -4504,20 +4562,26 @@
                 "edited_by": "最后编辑者：",
                 "search_placeholder": "搜索帖子"
             },
+            "role_name": {
+                "group_owner": "群组所有者",
+                "everyone": "所有人",
+                "member": "成员"
+            },
             "members": {
                 "header": "成员",
                 "sorting": {
                     "joined_at_asc": "加入时间（顺序）",
                     "joined_at_desc": "加入时间（倒序）"
                 },
-                "filter": "按身份组筛选：",
-                "filters": {
-                    "everyone": "所有人",
-                    "users_with_no_role": "没有身份组的成员"
-                },
                 "unsubscribed_announcements": "该玩家不接收群组通知",
                 "representing": "该玩家在其名片上展示该群组",
-                "search": "搜索"
+                "view_all": "全部",
+                "friends": "好友",
+                "search": "搜索",
+                "loaded_of_total": "已加载 {loaded} / {total}",
+                "search_results": "{count} 个结果",
+                "export_loaded": "导出已加载（{count}）",
+                "export_all": "导出全部（{count}）"
             },
             "gallery": {
                 "header": "相册"
@@ -4569,15 +4633,12 @@
                 "group_join_request_cancelled": "已取消群组加入申请",
                 "group_refreshed": "已刷新群组",
                 "group_invite_sent": "已发送群组邀请",
-                "group_post_deleted": "已删除群组帖子",
-                "joined_newest": "最新加入",
-                "joined_oldest": "最早加入"
+                "group_post_deleted": "已删除群组帖子"
             },
             "action": {
                 "refresh_to_load_gallery_images": "刷新以加载图库图片",
                 "open_group_owner_profile": "打开群组所有者资料",
-                "join_state": "加入方式",
-                "load_all": "全部加载"
+                "join_state": "加入方式"
             },
             "toast": {
                 "failed_to_join_group": "加入群组失败",
@@ -4974,7 +5035,15 @@
             "scan_failed": "扫描截图图库失败",
             "thumbnail_failed": "缩略图不可用",
             "hide_details": "隐藏图片信息",
-            "show_details": "显示图片信息"
+            "show_details": "显示图片信息",
+            "search_in": "搜索{scope}",
+            "grid_density": "缩略图尺寸",
+            "sort": "排序",
+            "year_group": "{year} 年",
+            "sort_options": {
+                "captured_desc": "最新",
+                "captured_asc": "最早"
+            }
         },
         "set_avatar_styles": {
             "header": "设置模型风格",
@@ -4988,12 +5057,15 @@
             "header": "VRChat 客户端 config.json 配置",
             "description1": "这些选项仅适用于高级用户。",
             "description2": "将输入框留白以使用默认值，设置需要重新启动游戏才能应用。",
-            "cache_size": "总缓存：",
+            "cache_size": "缓存大小",
+            "section_cache": "缓存",
+            "section_pictures": "图片",
+            "section_camera": "相机",
             "refresh": "刷新",
             "delete_cache": "删除缓存",
             "sweep_cache": "清理缓存",
-            "max_cache_size": "最大缓存大小 [GB]（至少 30GB）",
-            "cache_expiry_delay": "缓存保存时长 [天]（至少 30 天）",
+            "max_cache_size": "缓存上限 (GB)",
+            "cache_expiry_delay": "缓存保留 (天)",
             "cache_directory": "缓存文件夹位置",
             "cache_location_changed": "更改 VRChat 缓存位置",
             "old_cache_cleanup_description": "旧缓存占用 {size}。更改位置后，VRChat 将不再使用这些文件，但它们仍会占用存储空间。是否清理旧缓存？",
@@ -5325,7 +5397,7 @@
                 "stable": "正式版",
                 "beta": "测试版",
                 "description": "VRCX-0 只会检查当前安装通道中的更新。",
-                "switch_description": "要切换到{channel}，请从 GitHub 下载并安装该通道的最新版本。",
+                "switch_description": "切换到{channel}需要下载并安装该通道的最新版本。",
                 "download_stable": "下载最新正式版",
                 "download_beta": "下载最新测试版",
                 "no_release": "此通道暂无可用版本。"
@@ -5840,7 +5912,8 @@
             "rows_per_page": "每页显示行数",
             "previous": "上一页",
             "next": "下一页",
-            "more_pages": "更多页面"
+            "more_pages": "更多页面",
+            "page_number": "第 {page} 页"
         },
         "feed": {
             "date": "时间",
@@ -6373,5 +6446,16 @@
             "themes": "主题",
             "themes_description": "主题来源和自定义 CSS 管理。"
         }
+    },
+    "linux_rendering": {
+        "title": "硬件加速（实验性）",
+        "description": "重启 VRCX-0 后生效。开启后请在启动后的 30 秒内确认显示正常，否则将自动关闭硬件加速并重启。",
+        "saved": "已保存，重启 VRCX-0 后生效。",
+        "restart_now": "立即重启",
+        "confirm_title": "界面显示正常吗？",
+        "confirm_description": "启动后 30 秒内未确认，VRCX-0 将关闭硬件加速并重启。",
+        "restore": "恢复兼容模式并重启",
+        "keep": "显示正常，保留",
+        "failed": "无法更改渲染设置，请重试。"
     }
 }

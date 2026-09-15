@@ -81,4 +81,4 @@ export const useNotificationStore = create<NotificationStoreState>((set) => ({
         });
     }
 }));
-export type { NotificationEntry, NotificationInput, NotificationStoreState };
+export type { NotificationStoreState };

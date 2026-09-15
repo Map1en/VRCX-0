@@ -26,7 +26,7 @@ describe('statusBarProxy', () => {
             })
         ).toMatchObject({
             tone: 'direct',
-            className: expect.stringContaining('text-primary'),
+            className: expect.stringContaining('text-foreground'),
             tooltipKey: 'status_bar.proxy_enabled_direct'
         });
     });
@@ -40,7 +40,7 @@ describe('statusBarProxy', () => {
             })
         ).toMatchObject({
             tone: 'enabled',
-            className: expect.stringContaining('text-primary'),
+            className: expect.stringContaining('text-foreground'),
             tooltipKey: 'status_bar.proxy_enabled_server',
             tooltipValues: {
                 proxy: '127.0.0.1:7890'

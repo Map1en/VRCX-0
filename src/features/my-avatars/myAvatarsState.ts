@@ -35,7 +35,7 @@ export const MY_AVATARS_DEFAULT_CARD_SCALE = 0.6;
 export const MY_AVATARS_GRID_DENSITY_CONFIG_KEY = 'VRCX_MyAvatarsGridDensityV2';
 export const MY_AVATARS_LEGACY_GRID_DENSITY_CONFIG_KEY =
     'VRCX_MyAvatarsGridDensity';
-export const MY_AVATARS_DEFAULT_GRID_DENSITY = 'standard';
+const MY_AVATARS_DEFAULT_GRID_DENSITY = 'standard';
 export const MY_AVATARS_GRID_DENSITY_OPTIONS = Object.freeze([
     {
         value: 'standard',
@@ -68,9 +68,7 @@ export function isMyAvatarsPlatformFilter(
     );
 }
 export const MY_AVATARS_COLUMN_IDS = [
-    'thumbnail',
     'name',
-    'customTags',
     'platforms',
     'visibility',
     'timeSpent',
@@ -84,6 +82,7 @@ export const MY_AVATARS_COLUMN_IDS = [
 ];
 export const MY_AVATARS_DEFAULT_COLUMN_VISIBILITY: Record<string, boolean> =
     Object.freeze({
+        visibility: false,
         version: false,
         pcPerf: false,
         androidPerf: false,
@@ -108,7 +107,6 @@ const LEGACY_GRID_DENSITY_ALIASES: Readonly<
 });
 const SORT_COLUMN_IDS = [
     'name',
-    'customTags',
     'visibility',
     'timeSpent',
     'version',
@@ -308,9 +306,9 @@ export function sanitizeMyAvatarsColumnOrder(value: unknown): string[] {
 export function resolveMyAvatarsColumnOrder(value: unknown): string[] {
     const ordered = sanitizeMyAvatarsColumnOrder(value);
     return [
-        'thumbnail',
+        'name',
         ...ordered.filter(
-            (columnId) => columnId !== 'thumbnail' && columnId !== 'actions'
+            (columnId) => columnId !== 'name' && columnId !== 'actions'
         ),
         'actions'
     ];

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-    buildFavoriteIdSet,
     fallbackLanguageOptions,
     languageOptionLabel,
     normalizeLanguageOptionsFromConfig,
@@ -43,17 +42,6 @@ describe('userProfileFields', () => {
             statusDescription: 'World hopping'
         });
         expect(normalizeSocialStatusPreset(null)).toEqual({ status: '' });
-    });
-
-    it('combines favorite friend ids from cloud and local groups', () => {
-        expect(
-            Array.from(
-                buildFavoriteIdSet([' usr_remote ', '', 'usr_shared'], {
-                    groupA: ['usr_local', 'usr_shared'],
-                    groupC: ['  ', 'usr_other']
-                })
-            )
-        ).toEqual(['usr_remote', 'usr_shared', 'usr_local', 'usr_other']);
     });
 
     it('offers spoken-language options from config as clean sorted labels', () => {

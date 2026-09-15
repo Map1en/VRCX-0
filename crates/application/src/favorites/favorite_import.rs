@@ -760,17 +760,7 @@ fn ensure_scope_matches(
     current: &RuntimeAuthScopeSnapshot,
     expected: &RuntimeAuthScopeSnapshot,
 ) -> Result<()> {
-    if current.active
-        && current.generation == expected.generation
-        && current.current_user_id == expected.current_user_id
-        && current.endpoint == expected.endpoint
-    {
-        Ok(())
-    } else {
-        Err(Error::Custom(
-            "Favorite import authentication scope changed.".into(),
-        ))
-    }
+    crate::scope_gate::ensure_snapshot_scope_matches(current, expected, "Favorite import")
 }
 
 fn is_active_state(state: FavoriteImportState) -> bool {

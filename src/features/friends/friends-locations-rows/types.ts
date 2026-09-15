@@ -43,7 +43,7 @@ export type FriendLocationRecord = FriendRecordInput &
 
 export type FriendLocationFriend = FriendRecord | FriendLocationRecord;
 
-export type FavoriteGroupOption = {
+type FavoriteGroupOption = {
     key?: string;
     displayName?: string;
     name?: string;

@@ -7,19 +7,10 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import {
-    type PreviousInstanceRow,
-    rowDuration,
-    rowLocation,
-    rowMatchesSearch,
-    sortPreviousInstanceRows
-} from '@/components/dialogs/previous-instances-table/previousInstancesRows';
-import {
-    DialogEmptyState,
-    PreviousInstanceDetailsPanel
-} from '@/components/dialogs/previous-instances-table/PreviousInstancesViewParts';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
+import { normalizeLocationText } from '@/components/location/locationModel';
 import { StaticLocation } from '@/components/location/StaticLocation';
+import { LocationWorld } from '@/components/LocationWorld';
 import {
     formatCompactDateTime,
     formatDateFilterOrFallback
@@ -29,6 +20,7 @@ import gameLogRepository from '@/repositories/gameLogRepository';
 import { copyTextToClipboard } from '@/services/clipboardService';
 import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
+import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -40,20 +32,81 @@ import {
 import { Input } from '@/ui/shadcn/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-import { USER_DIALOG_INSTANCE_HISTORY_LIMIT } from '../useUserDialogSupplementalData';
+import {
+    type PreviousInstanceRow,
+    rowDuration,
+    rowLocation,
+    rowLocationObject,
+    rowMatchesSearch,
+    sortPreviousInstanceRows
+} from './previousInstancesRows';
+import {
+    DialogEmptyState,
+    PreviousInstanceDetailsPanel
+} from './PreviousInstancesViewParts';
+
+export type InstanceHistoryListVariant = 'user' | 'world';
 
 const ENTER_FORWARD =
     'animate-in fade-in-0 slide-in-from-right-1 duration-[160ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:slide-in-from-right-0';
 const ENTER_BACK =
     'animate-in fade-in-0 slide-in-from-left-1 duration-[160ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:slide-in-from-left-0';
 
-function UserInstanceHistoryRow<TRow extends PreviousInstanceRow>({
+function InstanceHistoryRowLocation({
     row,
+    variant
+}: {
+    row: PreviousInstanceRow;
+    variant: InstanceHistoryListVariant;
+}) {
+    const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
+    const location = rowLocation(row);
+    if (!location) {
+        return '-';
+    }
+    if (variant === 'world') {
+        const locationObject = rowLocationObject(row);
+        return (
+            <LocationWorld
+                locationObject={locationObject}
+                grouphint={row?.groupName}
+                currentUserId={currentUserId}
+                worldDialogShortName={normalizeLocationText(
+                    locationObject.shortName
+                )}
+                instanceOwner={
+                    locationObject.ownerUserId || locationObject.userId || ''
+                }
+                instanceOwnerName={normalizeLocationText(
+                    locationObject.ownerDisplayName ||
+                        row?.ownerDisplayName ||
+                        row?.ownerName
+                )}
+                interactive={false}
+                hint={row?.worldName || ''}
+                className="max-w-full"
+            />
+        );
+    }
+    return (
+        <StaticLocation
+            location={location}
+            hint={row?.worldName || ''}
+            showGroupLink={false}
+            disableTooltip
+        />
+    );
+}
+
+function InstanceHistoryListRow<TRow extends PreviousInstanceRow>({
+    row,
+    variant,
     onOpenDetails,
     onCopyLocation,
     onDelete
 }: {
     row: TRow;
+    variant: InstanceHistoryListVariant;
     onOpenDetails: (row: TRow) => void;
     onCopyLocation: (row: TRow) => void;
     onDelete: (row: TRow) => void;
@@ -79,16 +132,7 @@ function UserInstanceHistoryRow<TRow extends PreviousInstanceRow>({
                 {formatCompactDateTime(createdAt) || '-'}
             </span>
             <div className="pointer-events-none relative min-w-0 flex-1">
-                {location ? (
-                    <StaticLocation
-                        location={location}
-                        hint={row?.worldName || ''}
-                        showGroupLink={false}
-                        disableTooltip
-                    />
-                ) : (
-                    '-'
-                )}
+                <InstanceHistoryRowLocation row={row} variant={variant} />
             </div>
             <span className="pointer-events-none relative w-14 shrink-0 text-right tabular-nums">
                 {rowDuration(row)}
@@ -144,8 +188,10 @@ function UserInstanceHistoryRow<TRow extends PreviousInstanceRow>({
     );
 }
 
-export function UserInstanceHistoryPanel<TRow extends PreviousInstanceRow>({
+export function InstanceHistoryListPanel<TRow extends PreviousInstanceRow>({
     instances = [],
+    variant,
+    truncatedLimit = null,
     onRowsChange = null,
     onOpenFullHistory = null,
     className = ''
@@ -154,6 +200,8 @@ export function UserInstanceHistoryPanel<TRow extends PreviousInstanceRow>({
     instances?: TRow[];
     onOpenFullHistory?: ((search: string) => void) | null;
     onRowsChange?: ((rows: TRow[]) => void) | null;
+    truncatedLimit?: number | null;
+    variant: InstanceHistoryListVariant;
 }) {
     const { t } = useTranslation();
     const confirm = useModalStore((state) => state.confirm);
@@ -177,7 +225,8 @@ export function UserInstanceHistoryPanel<TRow extends PreviousInstanceRow>({
         return sortPreviousInstanceRows(nextRows, 'date', true);
     }, [rows, query]);
 
-    const isTruncated = rows.length >= USER_DIALOG_INSTANCE_HISTORY_LIMIT;
+    const isTruncated =
+        truncatedLimit !== null && rows.length >= truncatedLimit;
     const openFullLabel = t('view.instance_history.action.open_full');
 
     function openDetails(row: TRow) {
@@ -223,7 +272,10 @@ export function UserInstanceHistoryPanel<TRow extends PreviousInstanceRow>({
             return;
         }
 
-        if (!Array.isArray(row.events) || row.events.length === 0) {
+        if (
+            variant === 'user' &&
+            (!Array.isArray(row.events) || row.events.length === 0)
+        ) {
             toast.add({
                 type: 'error',
                 title: t(
@@ -234,10 +286,16 @@ export function UserInstanceHistoryPanel<TRow extends PreviousInstanceRow>({
         }
 
         try {
-            await gameLogRepository.deleteGameLogInstance({
-                location,
-                events: row.events
-            });
+            if (variant === 'user') {
+                await gameLogRepository.deleteGameLogInstance({
+                    location,
+                    events: row.events
+                });
+            } else {
+                await gameLogRepository.deleteGameLogInstanceByInstanceId({
+                    location
+                });
+            }
             const nextRows = rows.filter((item) => item !== row);
             setRows(nextRows);
             onRowsChange?.(nextRows);
@@ -319,9 +377,10 @@ export function UserInstanceHistoryPanel<TRow extends PreviousInstanceRow>({
             {visibleRows.length ? (
                 <div className="max-h-[33rem] min-h-0 flex-1 overflow-auto rounded-md border p-1">
                     {visibleRows.map((row, index) => (
-                        <UserInstanceHistoryRow
+                        <InstanceHistoryListRow
                             key={`${rowLocation(row)}:${row?.id || row?.created_at || row?.createdAt || index}`}
                             row={row}
+                            variant={variant}
                             onOpenDetails={openDetails}
                             onCopyLocation={copyLocation}
                             onDelete={deleteRow}

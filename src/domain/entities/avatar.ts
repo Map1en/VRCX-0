@@ -11,7 +11,7 @@ export type AvatarLocalTag = {
     color?: string | null;
 };
 
-export type AvatarPerformanceRecord = EntityRecord & {
+type AvatarPerformanceRecord = EntityRecord & {
     android?: string;
     'android-sort'?: number;
     ios?: string;

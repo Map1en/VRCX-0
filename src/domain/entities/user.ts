@@ -11,12 +11,7 @@ export type UserBadgeRecord = EntityRecord & {
     updatedAt?: string;
 };
 
-export type UserModerationState = {
-    block: boolean;
-    mute: boolean;
-};
-
-export type UserTravelingLocation = EntityRecord & {
+type UserTravelingLocation = EntityRecord & {
     accessType?: string;
     accessTypeName?: string;
     ageGate?: boolean;
@@ -41,13 +36,13 @@ export type UserTravelingLocation = EntityRecord & {
     worldId?: string;
 };
 
-export type UserPlatformHistoryRecord = EntityRecord & {
+type UserPlatformHistoryRecord = EntityRecord & {
     isMobile: boolean;
     platform: string;
     recorded: string;
 };
 
-export type UserPastDisplayNameRecord = EntityRecord & {
+type UserPastDisplayNameRecord = EntityRecord & {
     displayName: string;
     updated_at: string;
 };

@@ -195,8 +195,3 @@ function createLocationViewModel({
 }
 
 export { createLocationViewModel, resolveLocationMetadataModel };
-export type {
-    LocationMetadataModel,
-    LocationMetadataModelInput,
-    LocationViewModelInput
-};

@@ -9,9 +9,9 @@ import {
 
 import configRepository from './configRepository';
 
-export type LocalFavoriteKind = FavoriteEntityKind;
+type LocalFavoriteKind = FavoriteEntityKind;
 
-export interface WorldFavoriteRow {
+interface WorldFavoriteRow {
     created_at: string;
     worldId: string;
     groupName: string;
@@ -298,18 +298,5 @@ const favoritePersistenceRepository = Object.freeze({
     deleteLocalFavoriteGroup
 });
 
-export {
-    addAvatarToFavorites,
-    addFriendToLocalFavorites,
-    addWorldToFavorites,
-    getExplicitLocalFavoriteGroups,
-    createLocalFavoriteGroup,
-    getWorldFavorites,
-    getAvatarFavorites,
-    getFriendFavorites,
-    addLocalFavorite,
-    removeLocalFavorite,
-    renameLocalFavoriteGroup,
-    deleteLocalFavoriteGroup
-};
+export { getExplicitLocalFavoriteGroups };
 export default favoritePersistenceRepository;

@@ -67,18 +67,6 @@ describe('generatedInvoke', () => {
         expect(mocks.notifySQLiteError).toHaveBeenCalledWith(normalizedError);
     });
 
-    it('still notifies when recursive error logging is suppressed', async () => {
-        const normalizedError = new Error('database or disk is full');
-        mocks.invokeTauri.mockRejectedValue(normalizedError);
-        mocks.normalizePlatformError.mockReturnValue(normalizedError);
-
-        await expect(invoke('app__append_error_log')).rejects.toBe(
-            normalizedError
-        );
-        expect(mocks.recordErrorLog).not.toHaveBeenCalled();
-        expect(mocks.notifySQLiteError).toHaveBeenCalledWith(normalizedError);
-    });
-
     it('normalizes non-Error command rejections into Error', async () => {
         const normalizedError = new Error('normalized command failure');
         mocks.invokeTauri.mockRejectedValue('legacy command failure');

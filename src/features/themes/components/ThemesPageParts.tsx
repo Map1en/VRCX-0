@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { resolveThemeAuthorUrl } from '../themeHelpers';
 
-export function ThemeTags({ tags }: { tags: string[] }) {
+function ThemeTags({ tags }: { tags: string[] }) {
     return (
         <div className="flex min-w-0 flex-wrap gap-1.5">
             {tags.map((tag) => (

@@ -11,7 +11,6 @@ import {
 } from '@/components/data-table/DataTableView';
 import { formatDateFilter } from '@/lib/dateTime';
 import { useRuntimeStore } from '@/state/runtimeStore';
-import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
@@ -25,7 +24,7 @@ import type {
     ModerationRow,
     ModerationUserTarget
 } from '../moderationPageTypes';
-import { SortButton } from './ModerationViewParts';
+import { ModerationTypeIndicator, SortButton } from './ModerationViewParts';
 
 type ModerationColumnsOptions = {
     deletingModerationKey: string;
@@ -116,9 +115,10 @@ export function useModerationColumns({
                     />
                 ),
                 cell: ({ row }) => (
-                    <Badge variant="outline" className="text-muted-foreground">
-                        {resolveModerationTypeLabel(row.original.type, t)}
-                    </Badge>
+                    <ModerationTypeIndicator
+                        type={row.original.type}
+                        label={resolveModerationTypeLabel(row.original.type, t)}
+                    />
                 )
             },
             {
@@ -139,7 +139,7 @@ export function useModerationColumns({
                     <Button
                         type="button"
                         variant="ghost"
-                        className="hover:text-primary block h-auto w-full min-w-0 truncate p-0 pr-2.5 text-left text-sm font-medium"
+                        className="hover:text-primary block h-auto w-full min-w-0 truncate p-0 pr-2.5 text-left text-sm font-medium hover:bg-transparent"
                         disabled={!row.original.sourceUserId}
                         onClick={() =>
                             onOpenUser({
@@ -176,7 +176,7 @@ export function useModerationColumns({
                     <Button
                         type="button"
                         variant="ghost"
-                        className="hover:text-primary block h-auto w-full min-w-0 p-0 pr-2.5 text-left text-sm font-medium break-words whitespace-normal"
+                        className="hover:text-primary block h-auto w-full min-w-0 p-0 pr-2.5 text-left text-sm font-medium break-words whitespace-normal hover:bg-transparent"
                         disabled={!row.original.targetUserId}
                         onClick={() =>
                             onOpenUser({

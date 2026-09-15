@@ -12,7 +12,7 @@ use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 
 use super::types::{VrchatAuthFileAnalysisInput, VrchatAuthSavedCredentialDeleteInput};
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__vrchat_auth_saved_snapshot_get(
     state: State<'_, AppState>,
@@ -64,7 +64,7 @@ pub async fn app__vrchat_auth_session_cancel(
     Ok(state.runtime_host().cancel_login_session(input).await)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__vrchat_auth_saved_credential_delete(
     state: State<'_, AppState>,

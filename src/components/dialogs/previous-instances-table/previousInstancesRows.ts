@@ -112,11 +112,6 @@ export function rowLocation(row: PreviousInstanceRow | null | undefined) {
     );
 }
 
-export function rowWorldId(row: PreviousInstanceRow | null | undefined) {
-    const location = rowLocation(row);
-    return parseLocation(location).worldId || '';
-}
-
 export function rowOwnerUserId(row: PreviousInstanceRow | null | undefined) {
     const explicitOwnerUserId = textValue(
         row?.$location?.userId ||
@@ -236,7 +231,7 @@ export function playerLeaveMs(
     return joinedMs && durationMs > 0 ? joinedMs + durationMs : 0;
 }
 
-export function rowInstanceText(row: PreviousInstanceRow | null | undefined) {
+function rowInstanceText(row: PreviousInstanceRow | null | undefined) {
     return [
         row?.worldName,
         row?.groupName,
@@ -249,7 +244,7 @@ export function rowInstanceText(row: PreviousInstanceRow | null | undefined) {
         .toLowerCase();
 }
 
-export function rowCreatorText(row: PreviousInstanceRow | null | undefined) {
+function rowCreatorText(row: PreviousInstanceRow | null | undefined) {
     return (
         row?.ownerDisplayName ||
         row?.ownerName ||

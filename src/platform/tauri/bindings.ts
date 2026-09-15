@@ -147,6 +147,38 @@ const generatedCommands = {
     async appEnsureMainWindow(): Promise<null> {
         return await TAURI_INVOKE('app__ensure_main_window');
     },
+    async appPrivacyLockSetupRequestTake(): Promise<boolean> {
+        return await TAURI_INVOKE('app__privacy_lock_setup_request_take');
+    },
+    async appPrivacyLockEngage(): Promise<PrivacyLockOutcome> {
+        return await TAURI_INVOKE('app__privacy_lock_engage');
+    },
+    async appPrivacyLockUnlock(password: string): Promise<PrivacyLockOutcome> {
+        return await TAURI_INVOKE('app__privacy_lock_unlock', { password });
+    },
+    async appPrivacyLockPasswordSet(
+        password: string
+    ): Promise<PrivacyLockOutcome> {
+        return await TAURI_INVOKE('app__privacy_lock_password_set', {
+            password
+        });
+    },
+    async appPrivacyLockPasswordChange(
+        currentPassword: string,
+        newPassword: string
+    ): Promise<PrivacyLockOutcome> {
+        return await TAURI_INVOKE('app__privacy_lock_password_change', {
+            currentPassword,
+            newPassword
+        });
+    },
+    async appPrivacyLockPasswordClear(
+        accountPassword: string
+    ): Promise<PrivacyLockOutcome> {
+        return await TAURI_INVOKE('app__privacy_lock_password_clear', {
+            accountPassword
+        });
+    },
     async appDrainPendingDeepLinks(): Promise<DeepLinkAction[]> {
         return await TAURI_INVOKE('app__drain_pending_deep_links');
     },
@@ -2372,6 +2404,17 @@ const generatedCommands = {
     async appRestartApplication(): Promise<null> {
         return await TAURI_INVOKE('app__restart_application');
     },
+    async appGetLinuxRendering(): Promise<LinuxRenderingSnapshot | null> {
+        return await TAURI_INVOKE('app__get_linux_rendering');
+    },
+    async appSetLinuxRendering(
+        enabled: boolean
+    ): Promise<LinuxRenderingSnapshot> {
+        return await TAURI_INVOKE('app__set_linux_rendering', { enabled });
+    },
+    async appConfirmLinuxRendering(): Promise<LinuxRenderingSnapshot> {
+        return await TAURI_INVOKE('app__confirm_linux_rendering');
+    },
     async appExitApplication(): Promise<null> {
         return await TAURI_INVOKE('app__exit_application');
     },
@@ -2854,6 +2897,7 @@ export type AncillaryRuntimeSnapshot = {
     nowPlaying: NowPlayingSnapshot;
     backgroundImageState: BackgroundImageProjection;
     notificationDoNotDisturbState: NotificationDoNotDisturbSnapshot;
+    privacyLockState: PrivacyLockSnapshot;
 };
 export type AppDataDirSource = 'cli' | 'persisted' | 'default';
 export type AppDataDirState = {
@@ -3244,6 +3288,7 @@ export type BackendRuntimeEventPayloadMap = {
     updateIsGameRunning: HostSessionProjection;
     integrationApiStartFailed: IntegrationApiStartFailedPayload;
     notificationDoNotDisturbState: NotificationDoNotDisturbSnapshot;
+    privacyLockState: PrivacyLockSnapshot;
 };
 export type BackendRuntimeGameLogStatus =
     | 'idle'
@@ -4986,6 +5031,10 @@ export type LegacyVrcxMigrationStatus = {
     reason?: string | null;
 };
 export type LinuxPackageKind = 'unknown' | 'appimage' | 'deb' | 'rpm';
+export type LinuxRenderingSnapshot = {
+    enabled: boolean;
+    needsConfirmation: boolean;
+};
 export type LlmEndpointDetectModelsInput = {
     id: string | null;
     baseUrl: string | null;
@@ -5373,6 +5422,7 @@ export type NotificationListItemOutput = {
     data: JsonValue;
     responses: JsonValue;
     details: JsonValue;
+    location: string;
     expired: boolean;
 };
 export type NotificationListQueryInput = {
@@ -5586,6 +5636,19 @@ export type PrintFavoriteState = {
     warning: CleanupWarning | null;
 };
 export type PrintUploadParams = { note: string; timestamp: string };
+export type PrivacyLockOutcome =
+    | { status: 'ok'; snapshot: PrivacyLockSnapshot }
+    | { status: 'noActiveSession' }
+    | { status: 'passwordNotSet' }
+    | { status: 'passwordAlreadySet' }
+    | { status: 'wrongPassword' }
+    | { status: 'accountPasswordUnavailable' };
+export type PrivacyLockSnapshot = {
+    revision: number;
+    userId: string;
+    locked: boolean;
+    hasPassword: boolean;
+};
 export type ProfileBackupActionOutcome = {
     accepted: boolean;
     status: ProfileBackupStatus;
@@ -6525,12 +6588,15 @@ export type VrchatLogEntriesReadInput = {
     offset: number | null;
     limit: number | null;
     query: string | null;
+    queryCaseSensitive: boolean | null;
+    queryRegex: boolean | null;
     levels: string[] | null;
     categories: string[] | null;
 };
 export type VrchatLogEntriesReadOutput = {
     fileName: string;
     entries: VrchatLogEntryOutput[];
+    levelCounts: VrchatLogLevelCountOutput[] | null;
     offset: number;
     nextOffset: number | null;
     totalEntries: number;
@@ -6557,12 +6623,15 @@ export type VrchatLogFileOutput = {
     size: number;
     latest: boolean;
 };
+export type VrchatLogLevelCountOutput = { level: string; count: number };
 export type VrchatLogTailReadInput = {
     fileName: string | null;
     afterLineNumber: number | null;
     fileSize: number | null;
     limit: number | null;
     query: string | null;
+    queryCaseSensitive: boolean | null;
+    queryRegex: boolean | null;
     levels: string[] | null;
     categories: string[] | null;
 };

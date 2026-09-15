@@ -333,13 +333,32 @@ export function initializeWindowDisplayMode(): Promise<void> {
                 await tauriClient.webview.setWindowBounds(
                     resolveSidebarWindowTarget(geometry, targetWidth).bounds
                 );
-                return;
             }
-            await applyNormalWindowConstraints();
         } finally {
             await resumeSidebarAutoHide();
         }
     });
+}
+
+export function initializeWindowAlwaysOnTop(): Promise<void> {
+    if (!useShellStore.getState().windowAlwaysOnTop) {
+        return Promise.resolve();
+    }
+    return tauriClient.webview.setWindowAlwaysOnTop(true);
+}
+
+export function setWindowAlwaysOnTop(alwaysOnTop: boolean): Promise<void> {
+    const previous = useShellStore.getState().windowAlwaysOnTop;
+    if (previous === alwaysOnTop) {
+        return Promise.resolve();
+    }
+    useShellStore.getState().setWindowAlwaysOnTop(alwaysOnTop);
+    return tauriClient.webview
+        .setWindowAlwaysOnTop(alwaysOnTop)
+        .catch((error: unknown) => {
+            useShellStore.getState().setWindowAlwaysOnTop(previous);
+            throw error;
+        });
 }
 
 export function enterSidebarWindowMode(

@@ -1,5 +1,6 @@
 pub mod application;
 pub mod asset_bundle;
+pub(crate) mod blocking;
 pub mod database;
 pub mod host;
 pub mod integrations;

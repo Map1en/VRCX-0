@@ -1,6 +1,5 @@
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
-
-import { normalizeEntityId } from './groupInstances';
+import { normalizeString } from '@/shared/utils/string';
 
 export function buildGroupDialogViewState({
     currentUserId,
@@ -15,7 +14,7 @@ export function buildGroupDialogViewState({
 }) {
     const bannerUrl = convertFileUrlToImageUrl(group.bannerUrl, 1024);
     const iconUrl = convertFileUrlToImageUrl(group.iconUrl, 256);
-    const memberStatus = normalizeEntityId(
+    const memberStatus = normalizeString(
         group.myMember?.membershipStatus || group.membershipStatus
     ).toLowerCase();
     const isMember = memberStatus === 'member';
@@ -25,10 +24,10 @@ export function buildGroupDialogViewState({
         group.myMember?.isSubscribedToAnnouncements
     );
     const memberVisibility =
-        normalizeEntityId(group.myMember?.visibility || 'visible') || 'visible';
-    const joinState = normalizeEntityId(group.joinState).toLowerCase();
+        normalizeString(group.myMember?.visibility || 'visible') || 'visible';
+    const joinState = normalizeString(group.joinState).toLowerCase();
     const ownerDisplayName =
-        normalizeEntityId(
+        normalizeString(
             group.ownerDisplayName ||
                 group.ownerName ||
                 (typeof group.owner === 'object' && group.owner
@@ -38,8 +37,8 @@ export function buildGroupDialogViewState({
                 ownerProfile?.username ||
                 ownerProfile?.name
         ) ||
-        normalizeEntityId(friendsById[group.ownerId]?.displayName) ||
-        normalizeEntityId(group.ownerId);
+        normalizeString(friendsById[group.ownerId]?.displayName) ||
+        normalizeString(group.ownerId);
     const canJoin =
         !isMember &&
         memberStatus !== 'requested' &&

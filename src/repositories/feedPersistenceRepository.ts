@@ -209,5 +209,4 @@ const feed = {
     }
 };
 
-export { feed };
 export default feed;

@@ -2,6 +2,7 @@
 
 use tauri::State;
 
+use crate::commands::blocking::run_blocking;
 use crate::error::AppError;
 use crate::state::AppState;
 
@@ -10,7 +11,7 @@ use vrcx_0_runtime_host_desktop::local_data::{
     NotificationListItemOutput, NotificationListQueryInput,
 };
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__notification_add_v1(
     state: State<'_, AppState>,
@@ -26,7 +27,7 @@ pub fn app__notification_add_v1(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__notification_add_v2(
     state: State<'_, AppState>,
@@ -42,7 +43,7 @@ pub fn app__notification_add_v2(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__notification_delete(
     state: State<'_, AppState>,
@@ -58,7 +59,7 @@ pub fn app__notification_delete(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__notification_expire(
     state: State<'_, AppState>,
@@ -76,18 +77,18 @@ pub fn app__notification_expire(
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__notification_list_query(
+pub async fn app__notification_list_query(
     state: State<'_, AppState>,
     query: NotificationListQueryInput,
 ) -> Result<Vec<NotificationListItemOutput>, AppError> {
-    state
-        .runtime_host()
-        .local_data()
-        .notification_list_query(query)
-        .map_err(AppError::from)
+    let local_data = state.runtime_host().local_data().clone();
+    run_blocking("notification list query", move || {
+        local_data.notification_list_query(query)
+    })
+    .await
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__notification_update_expired(
     state: State<'_, AppState>,
@@ -104,7 +105,7 @@ pub fn app__notification_update_expired(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__notification_v2_expire(
     state: State<'_, AppState>,
@@ -120,7 +121,7 @@ pub fn app__notification_v2_expire(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__notification_v2_mark_seen(
     state: State<'_, AppState>,

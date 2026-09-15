@@ -1,9 +1,10 @@
 use std::collections::HashSet;
 
+use regex::RegexBuilder;
 use serde::Serialize;
 
 const LOG_TIME_FORMAT: &str = "%Y.%m.%d %H:%M:%S";
-const LOG_LEVELS: [&str; 3] = ["Debug", "Warning", "Error"];
+pub const LOG_LEVELS: [&str; 3] = ["Debug", "Warning", "Error"];
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -19,22 +20,78 @@ pub struct LogEntry {
     pub continuation_lines: Vec<String>,
 }
 
+#[derive(Clone, Debug, Default)]
+pub struct LogQuery {
+    pub text: Option<String>,
+    pub case_sensitive: bool,
+    pub use_regex: bool,
+}
+
+enum LogQueryMatcher {
+    Substring {
+        needle: String,
+        case_sensitive: bool,
+    },
+    Regex(regex::Regex),
+}
+
+impl LogQueryMatcher {
+    fn from_query(query: LogQuery) -> Result<Option<Self>, String> {
+        let Some(text) = query
+            .text
+            .map(|value| value.trim().to_string())
+            .filter(|value| !value.is_empty())
+        else {
+            return Ok(None);
+        };
+
+        if !query.use_regex {
+            return Ok(Some(Self::Substring {
+                needle: if query.case_sensitive {
+                    text
+                } else {
+                    text.to_lowercase()
+                },
+                case_sensitive: query.case_sensitive,
+            }));
+        }
+
+        RegexBuilder::new(&text)
+            .case_insensitive(!query.case_sensitive)
+            .build()
+            .map(|regex| Some(Self::Regex(regex)))
+            .map_err(|error| error.to_string())
+    }
+
+    fn matches(&self, haystack: &str) -> bool {
+        match self {
+            Self::Substring {
+                needle,
+                case_sensitive,
+            } => {
+                if *case_sensitive {
+                    haystack.contains(needle)
+                } else {
+                    haystack.to_lowercase().contains(needle)
+                }
+            }
+            Self::Regex(regex) => regex.is_match(haystack),
+        }
+    }
+}
+
 pub struct LogEntryFilter {
-    query: Option<String>,
+    query: Option<LogQueryMatcher>,
     levels: Option<HashSet<String>>,
     categories: Option<HashSet<String>>,
 }
 
 impl LogEntryFilter {
     pub fn from_parts(
-        query: Option<String>,
+        query: LogQuery,
         levels: Option<Vec<String>>,
         categories: Option<Vec<String>>,
-    ) -> Self {
-        let query = query
-            .map(|value| value.trim().to_ascii_lowercase())
-            .filter(|value| !value.is_empty());
-        let levels = normalize_level_set(levels);
+    ) -> Result<Self, String> {
         let categories = categories
             .unwrap_or_default()
             .into_iter()
@@ -42,20 +99,18 @@ impl LogEntryFilter {
             .filter(|value| !value.is_empty())
             .collect::<HashSet<_>>();
 
-        Self {
-            query,
-            levels,
+        Ok(Self {
+            query: LogQueryMatcher::from_query(query)?,
+            levels: normalize_level_set(levels),
             categories: (!categories.is_empty()).then_some(categories),
-        }
+        })
     }
 
     pub fn matches(&self, entry: &LogEntry) -> bool {
-        if let Some(levels) = &self.levels {
-            if !levels.contains(&entry.level) {
-                return false;
-            }
-        }
+        self.matches_level(entry) && self.matches_ignoring_level(entry)
+    }
 
+    pub fn matches_ignoring_level(&self, entry: &LogEntry) -> bool {
         if let Some(categories) = &self.categories {
             if !entry
                 .category
@@ -76,14 +131,19 @@ impl LogEntryFilter {
                 entry.raw.as_str(),
                 continuation_text.as_str(),
             ]
-            .join("\n")
-            .to_ascii_lowercase();
-            if !haystack.contains(query) {
+            .join("\n");
+            if !query.matches(&haystack) {
                 return false;
             }
         }
 
         true
+    }
+
+    fn matches_level(&self, entry: &LogEntry) -> bool {
+        self.levels
+            .as_ref()
+            .is_none_or(|levels| levels.contains(&entry.level))
     }
 }
 
@@ -230,13 +290,94 @@ continued needle
 2026.06.21 12:00:02 Warning - [Other] second line",
         );
         let filter = LogEntryFilter::from_parts(
-            Some("NEEDLE".to_string()),
+            LogQuery {
+                text: Some("NEEDLE".to_string()),
+                ..LogQuery::default()
+            },
             Some(vec!["warn".to_string(), "DEBUG".to_string()]),
             Some(vec!["Behaviour".to_string()]),
-        );
+        )
+        .expect("filter");
 
         assert!(filter.matches(&entries[0]));
         assert!(!filter.matches(&entries[1]));
+    }
+
+    #[test]
+    fn filter_honours_case_sensitivity_and_regex() {
+        let entries = parse_log_entries(
+            "output_log_2026-06-21.txt",
+            "\
+2026.06.21 12:00:01 Debug - [Behaviour] Needle one
+2026.06.21 12:00:02 Warning - [Other] second line",
+        );
+
+        let sensitive = LogEntryFilter::from_parts(
+            LogQuery {
+                text: Some("needle".to_string()),
+                case_sensitive: true,
+                use_regex: false,
+            },
+            None,
+            None,
+        )
+        .expect("filter");
+        assert!(!sensitive.matches(&entries[0]));
+
+        let pattern = LogEntryFilter::from_parts(
+            LogQuery {
+                text: Some(r"needle\s+\w+".to_string()),
+                case_sensitive: false,
+                use_regex: true,
+            },
+            None,
+            None,
+        )
+        .expect("filter");
+        assert!(pattern.matches(&entries[0]));
+        assert!(!pattern.matches(&entries[1]));
+
+        assert!(LogEntryFilter::from_parts(
+            LogQuery {
+                text: Some("[unclosed".to_string()),
+                case_sensitive: false,
+                use_regex: true,
+            },
+            None,
+            None,
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn filter_counts_levels_independently() {
+        let entries = parse_log_entries(
+            "output_log_2026-06-21.txt",
+            "\
+2026.06.21 12:00:01 Debug - [Behaviour] needle one
+2026.06.21 12:00:02 Error - [Behaviour] needle two
+2026.06.21 12:00:03 Error - [Other] third",
+        );
+        let filter = LogEntryFilter::from_parts(
+            LogQuery {
+                text: Some("needle".to_string()),
+                ..LogQuery::default()
+            },
+            Some(vec!["Debug".to_string()]),
+            None,
+        )
+        .expect("filter");
+
+        let ignoring_level = entries
+            .iter()
+            .filter(|entry| filter.matches_ignoring_level(entry))
+            .count();
+
+        assert_eq!(ignoring_level, 2);
+        assert_eq!(
+            entries.iter().filter(|entry| filter.matches(entry)).count(),
+            1
+        );
     }
 
     #[test]

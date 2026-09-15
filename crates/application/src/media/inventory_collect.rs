@@ -221,13 +221,7 @@ fn ensure_scope_matches(
     current: &RuntimeAuthScopeSnapshot,
     expected: &RuntimeAuthScopeSnapshot,
 ) -> Result<()> {
-    if current.generation_matches(expected) {
-        Ok(())
-    } else {
-        Err(Error::Custom(
-            "Inventory collect authentication scope changed.".into(),
-        ))
-    }
+    crate::scope_gate::ensure_snapshot_scope_matches(current, expected, "Inventory collect")
 }
 
 #[cfg(test)]

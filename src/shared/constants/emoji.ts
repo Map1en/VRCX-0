@@ -1,6 +1,3 @@
-const emojiAnimationStyleUrl =
-    'https://assets.vrchat.com/www/images/emoji-previews/';
-
 const emojiAnimationStyleList = {
     Aura: 'Preview_B2-Aura.gif',
     Bats: 'Preview_B2-Fall_Bats.gif',
@@ -37,8 +34,4 @@ const emojiAnimationStyleNames = Object.keys(
     emojiAnimationStyleList
 ) as EmojiAnimationStyleName[];
 
-export {
-    emojiAnimationStyleList,
-    emojiAnimationStyleNames,
-    emojiAnimationStyleUrl
-};
+export { emojiAnimationStyleList, emojiAnimationStyleNames };

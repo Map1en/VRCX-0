@@ -60,5 +60,4 @@ const mutualGraphPersistenceRepository = Object.freeze({
     getSnapshot
 });
 
-export { getSnapshot };
 export default mutualGraphPersistenceRepository;

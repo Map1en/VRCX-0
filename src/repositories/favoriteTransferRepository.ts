@@ -4,7 +4,7 @@ import {
     type FavoriteTransferSelectionResult
 } from '@/platform/tauri/bindings';
 
-export function transferFavoriteSelection(
+function transferFavoriteSelection(
     input: FavoriteTransferSelectionInput
 ): Promise<FavoriteTransferSelectionResult> {
     return commands.appFavoritesTransferSelection(input);

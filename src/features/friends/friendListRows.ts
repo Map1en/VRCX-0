@@ -8,7 +8,7 @@ import type {
 import type { GameLogAllUserStatsRow } from '@/repositories/gameLogPersistenceRepository';
 import removeConfusables, { removeWhitespace } from '@/services/confusables';
 
-export const FRIEND_LIST_DEFAULT_SEARCH_FILTER_IDS = [
+const FRIEND_LIST_DEFAULT_SEARCH_FILTER_IDS = [
     'displayName',
     'rank',
     'status',

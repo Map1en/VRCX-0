@@ -2,7 +2,6 @@ import configRepository from '@/repositories/configRepository';
 import {
     normalizeRecentToolKeys,
     parseRecentToolKeys,
-    publishToolsRecentUpdated,
     recentToolsConfigKey
 } from '@/shared/constants/tools';
 
@@ -29,7 +28,6 @@ export function recordRecentToolOpen(toolKey: string): Promise<void> {
             recentToolsConfigKey,
             JSON.stringify(next)
         );
-        publishToolsRecentUpdated();
     });
     writeQueue = write.catch(() => {});
     return write;

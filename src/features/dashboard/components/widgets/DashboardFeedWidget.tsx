@@ -12,6 +12,7 @@ import { useShallow } from 'zustand/react/shallow';
 
 import { AffinityBadge } from '@/components/affinity/AffinityBadge';
 import type { FeedRow } from '@/components/feed/feedTypes';
+import { buildFavoriteIdSet } from '@/domain/favorites/favoriteIdSet';
 import type { FeedReadModelResult } from '@/domain/feed/readModel';
 import { FeedPersistenceDisabledIndicator } from '@/features/feed/components/FeedPersistenceDisabledIndicator';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
@@ -44,7 +45,6 @@ import { DashboardWidgetEmptyState } from './DashboardWidgetEmptyState';
 import { DashboardWidgetHeader } from './DashboardWidgetHeader';
 import { DashboardWidgetTimelineRow } from './DashboardWidgetTimeline';
 import {
-    buildFavoriteIdSet,
     getNextDashboardWidgetFilterConfig,
     isDashboardWidgetFilterActive
 } from './dashboardWidgetUtils';

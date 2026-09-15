@@ -213,35 +213,6 @@ const mediaFileRepository = Object.freeze({
     cropAllPrints
 });
 
-export {
-    resizeImageToFitLimits,
-    getFileBase64,
-    getScreenshotMetadata,
-    deleteScreenshotMetadata,
-    deleteScreenshotFile,
-    exportScreenshotsZip,
-    cancelScreenshotExport,
-    addScreenshotMetadata,
-    getExtraScreenshotData,
-    findScreenshotsBySearch,
-    startScreenshotLibraryScan,
-    getScreenshotLibraryStatus,
-    getScreenshotFolderTree,
-    getScreenshotFolderImages,
-    getWorldScreenshots,
-    ensureScreenshotThumbnail,
-    getLastScreenshot,
-    getVrchatPhotosLocation,
-    getUgcPhotoLocation,
-    openFileSelectorDialog,
-    openFolderAndSelectItem,
-    copyImageToClipboard,
-    saveImageFile,
-    savePrintToFile,
-    saveStickerToFile,
-    saveEmojiToFile,
-    cropPrintImage,
-    cropAllPrints
-};
+export { openFileSelectorDialog, openFolderAndSelectItem };
 
 export default mediaFileRepository;

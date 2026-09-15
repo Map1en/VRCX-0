@@ -93,6 +93,11 @@ export function ActivityPeopleExhibit({
     );
     const avatarOf = useActivityUserAvatars(userIds);
     const [lead, ...rest] = people.companions;
+    const leadValue = lead
+        ? order === 'days'
+            ? lead.coDays
+            : lead.minutes
+        : 0;
 
     if (!lead) {
         return null;
@@ -160,49 +165,76 @@ export function ActivityPeopleExhibit({
 
                     {rest.length > 0 ? (
                         <div className="mt-4 flex flex-col border-t border-[var(--act-edge)] pt-2">
-                            {rest.map((row) => (
-                                <UserHoverCard
-                                    key={row.userId || row.displayName}
-                                    userId={row.userId}
-                                >
-                                    <button
-                                        type="button"
-                                        onClick={() => open(row)}
-                                        className="-mx-2 flex items-center gap-3 px-2 py-1.5 text-left transition-colors duration-100 ease-out hover:bg-[var(--act-track)]"
+                            {rest.map((row) => {
+                                const value =
+                                    order === 'days' ? row.coDays : row.minutes;
+                                const share =
+                                    leadValue > 0
+                                        ? Math.max(
+                                              2,
+                                              Math.round(
+                                                  (value / leadValue) * 100
+                                              )
+                                          )
+                                        : 0;
+                                return (
+                                    <UserHoverCard
+                                        key={row.userId || row.displayName}
+                                        userId={row.userId}
                                     >
-                                        <Face
-                                            url={avatarOf(row.userId)}
-                                            className="size-7"
-                                        />
-                                        <span className="text-foreground min-w-0 flex-1 truncate text-sm">
-                                            {row.displayName || row.userId}
-                                        </span>
-                                        <span
-                                            className={cn(
-                                                'shrink-0 text-xs tabular-nums',
-                                                order === 'days'
-                                                    ? 'text-foreground font-medium'
-                                                    : 'text-muted-foreground'
-                                            )}
+                                        <button
+                                            type="button"
+                                            onClick={() => open(row)}
+                                            className="-mx-2 flex items-center gap-3 px-2 py-1.5 text-left transition-colors duration-100 ease-out hover:bg-[var(--act-track)]"
                                         >
-                                            {t('view.activity.people.co_days', {
-                                                count: row.coDays
-                                            })}
-                                        </span>
-                                        <span
-                                            className={cn(
-                                                'w-16 shrink-0 text-right text-xs tabular-nums',
-                                                order === 'minutes'
-                                                    ? 'text-foreground font-medium'
-                                                    : 'text-muted-foreground'
-                                            )}
-                                        >
-                                            {hours(row.minutes)}
-                                            {hoursUnit}
-                                        </span>
-                                    </button>
-                                </UserHoverCard>
-                            ))}
+                                            <Face
+                                                url={avatarOf(row.userId)}
+                                                className="size-7"
+                                            />
+                                            <span className="text-foreground min-w-0 flex-1 truncate text-sm">
+                                                {row.displayName || row.userId}
+                                            </span>
+                                            <span
+                                                aria-hidden="true"
+                                                className="hidden h-1 w-16 shrink-0 bg-[var(--act-track)] sm:block"
+                                            >
+                                                <span
+                                                    className="block h-full bg-[var(--act-heat-2)]"
+                                                    style={{
+                                                        width: `${share}%`
+                                                    }}
+                                                />
+                                            </span>
+                                            <span
+                                                className={cn(
+                                                    'shrink-0 text-xs tabular-nums',
+                                                    order === 'days'
+                                                        ? 'text-foreground font-medium'
+                                                        : 'text-muted-foreground'
+                                                )}
+                                            >
+                                                {t(
+                                                    'view.activity.people.co_days',
+                                                    {
+                                                        count: row.coDays
+                                                    }
+                                                )}
+                                            </span>
+                                            <span
+                                                className={cn(
+                                                    'w-16 shrink-0 text-right text-xs tabular-nums',
+                                                    order === 'minutes'
+                                                        ? 'text-foreground font-medium'
+                                                        : 'text-muted-foreground'
+                                                )}
+                                            >
+                                                {hours(row.minutes)}
+                                                {hoursUnit}
+                                            </span>
+                                        </button>
+                                    </UserHoverCard>
+                                );
+                            })}
                         </div>
                     ) : null}
                 </>

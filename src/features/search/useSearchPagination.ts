@@ -17,6 +17,11 @@ type AvatarPaginationRequest = {
     query: string;
 };
 
+function pageOf(offset: number | undefined, size: number | undefined) {
+    const step = size || PAGE_SIZE;
+    return Math.floor((offset ?? 0) / step) + 1;
+}
+
 export function useSearchPagination<
     TAvatarRequest extends AvatarPaginationRequest,
     TGroupRequest extends PagedSearchRequest,
@@ -63,6 +68,10 @@ export function useSearchPagination<
         if (activeTab === 'user') {
             return {
                 show: userResults.length > 0 && !isUserLoading,
+                page: pageOf(
+                    userRequest?.params?.offset,
+                    userRequest?.params?.n
+                ),
                 prevDisabled: !userRequest?.params?.offset,
                 nextDisabled:
                     userResults.length < (userRequest?.params?.n ?? PAGE_SIZE),
@@ -102,6 +111,10 @@ export function useSearchPagination<
         if (activeTab === 'world') {
             return {
                 show: worldResults.length > 0 && !isWorldLoading,
+                page: pageOf(
+                    worldRequest?.params?.offset,
+                    worldRequest?.params?.n
+                ),
                 prevDisabled: !worldRequest?.params?.offset,
                 nextDisabled:
                     worldResults.length <
@@ -142,6 +155,10 @@ export function useSearchPagination<
         if (activeTab === 'group') {
             return {
                 show: groupResults.length > 0 && !isGroupLoading,
+                page: pageOf(
+                    groupRequest?.params?.offset,
+                    groupRequest?.params?.n
+                ),
                 prevDisabled: !groupRequest?.params?.offset,
                 nextDisabled:
                     groupResults.length <
@@ -183,6 +200,7 @@ export function useSearchPagination<
             const offset = avatarRequest?.offset ?? 0;
             return {
                 show: avatarResults.length > 0 && !isAvatarLoading,
+                page: pageOf(offset, PAGE_SIZE),
                 prevDisabled: offset <= 0,
                 nextDisabled: offset + PAGE_SIZE >= avatarResults.length,
                 onPrev() {
@@ -208,6 +226,7 @@ export function useSearchPagination<
 
         return {
             show: false,
+            page: 1,
             prevDisabled: true,
             nextDisabled: true,
             onPrev() {},

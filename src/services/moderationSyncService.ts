@@ -10,7 +10,7 @@ interface ModerationSyncRefreshInput {
     endpoint?: string;
 }
 
-export interface ModerationSyncChange {
+interface ModerationSyncChange {
     ownerUserId: string;
 }
 

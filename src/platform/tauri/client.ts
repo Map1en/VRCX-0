@@ -1,8 +1,8 @@
 import { tauriEvents } from './events';
 import { webview } from './webview';
 
-export type TauriEvents = typeof tauriEvents;
-export type TauriWebview = typeof webview;
+type TauriEvents = typeof tauriEvents;
+type TauriWebview = typeof webview;
 
 export interface TauriClient {
     events: TauriEvents;
@@ -13,5 +13,3 @@ export const tauriClient: TauriClient = Object.freeze({
     events: tauriEvents,
     webview
 });
-
-export default tauriClient;

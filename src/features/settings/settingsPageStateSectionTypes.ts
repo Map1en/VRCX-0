@@ -17,7 +17,7 @@ import type {
     useSettingsIntegrations
 } from './useSettingsIntegrations';
 
-export type SettingsPagePrefs = ReturnType<typeof createDefaultSettingsPrefs> &
+type SettingsPagePrefs = ReturnType<typeof createDefaultSettingsPrefs> &
     Record<string, unknown>;
 type SettingsPrefs = SettingsPagePrefs;
 type SettingsAction = () => void;

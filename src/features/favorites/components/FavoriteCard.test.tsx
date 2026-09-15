@@ -446,7 +446,8 @@ describe('FavoriteCard compact layout', () => {
         expect(html).toContain(
             'relative ml-2 flex shrink-0 items-center justify-center'
         );
-        expect(html).not.toContain('object-row');
+        expect(html).not.toContain('object-row__media');
+        expect(html).toContain('object-row__context-action');
     });
 
     it.each([

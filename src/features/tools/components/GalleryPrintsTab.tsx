@@ -1,7 +1,6 @@
 import {
     AlertTriangleIcon,
     ImageIcon,
-    RefreshCwIcon,
     StarIcon,
     StarOffIcon,
     Trash2Icon,
@@ -262,27 +261,17 @@ export function GalleryPrintsTab({ printsTab }: GalleryPrintsTabProps) {
                         </ToggleGroup>
                     }
                     actions={
-                        <>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => onRefresh('prints')}
-                            >
-                                <RefreshCwIcon data-icon="inline-start" />
-                                {t('dialog.gallery_icons.refresh')}
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={
-                                    !isVrcPlusSupporter || Boolean(uploadingTab)
-                                }
-                                onClick={() => onBeginUpload('prints')}
-                            >
-                                <UploadIcon data-icon="inline-start" />
-                                {t('dialog.gallery_icons.upload')}
-                            </Button>
-                        </>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={
+                                !isVrcPlusSupporter || Boolean(uploadingTab)
+                            }
+                            onClick={() => onBeginUpload('prints')}
+                        >
+                            <UploadIcon data-icon="inline-start" />
+                            {t('dialog.gallery_icons.upload')}
+                        </Button>
                     }
                 />
                 {noticeMessage ? (

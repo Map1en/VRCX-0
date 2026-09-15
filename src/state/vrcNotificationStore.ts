@@ -6,11 +6,16 @@ import {
     type NotificationMarkSeenItemResult
 } from '@/platform/tauri/bindings';
 import notificationPersistenceRepository from '@/repositories/notificationPersistenceRepository';
-import type { NotificationRow } from '@/repositories/notificationPersistenceRepository';
+import type {
+    NotificationResponse,
+    NotificationRow
+} from '@/repositories/notificationPersistenceRepository';
+import { sendNotificationButtonResponse } from '@/services/notificationActionService';
 import {
     getNotificationCategory,
     getNotificationTs
 } from '@/shared/utils/notificationCategory';
+import { getDismissResponse } from '@/shared/utils/notificationResponse';
 import {
     isNotificationExpired,
     isUnseenNotification,
@@ -28,7 +33,7 @@ let notificationRowsRevision = 0;
 import type { LoadStatus } from '@/domain/shared/types';
 
 export type { LoadStatus };
-export type NotificationCategoryKey = 'friend' | 'group' | 'other';
+type NotificationCategoryKey = 'friend' | 'group' | 'other';
 type NotificationPatch = Partial<{
     displayName: string;
     senderDisplayName: string;
@@ -599,7 +604,38 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                 return;
             }
 
-            const items = unseenRows.flatMap<NotificationMarkSeenBatchItem>(
+            const dismissTargets: {
+                notification: NotificationRow;
+                response: NotificationResponse;
+            }[] = [];
+            const seenRows: NotificationRow[] = [];
+            for (const notification of unseenRows) {
+                const response = getDismissResponse(notification.responses);
+                if (response) {
+                    dismissTargets.push({ notification, response });
+                } else {
+                    seenRows.push(notification);
+                }
+            }
+
+            let failedCount = 0;
+            for (const target of dismissTargets) {
+                try {
+                    await sendNotificationButtonResponse({
+                        currentUserId: auth.currentUserId,
+                        notification: target.notification,
+                        response: target.response
+                    });
+                } catch (error) {
+                    failedCount += 1;
+                    console.warn(
+                        'Failed to dismiss VRChat notification:',
+                        error
+                    );
+                }
+            }
+
+            const items = seenRows.flatMap<NotificationMarkSeenBatchItem>(
                 (notification) => {
                     const item = notificationMarkSeenBatchItem(notification);
                     return item ? [item] : [];
@@ -607,18 +643,25 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
             );
             const ids = items.map((item) => item.id);
             if (!ids.length) {
+                if (dismissTargets.length) {
+                    await get().loadForCurrentUser();
+                }
+                if (failedCount > 0) {
+                    throw new Error(
+                        `Failed to mark ${failedCount} notification(s) as seen.`
+                    );
+                }
                 return;
             }
             for (const id of ids) {
                 pendingSeenIds.add(id);
             }
             get().markNotificationsSeen(ids);
-            let failedCount = 0;
             try {
                 const result = await commands.appNotificationMarkSeenBatch({
                     items
                 });
-                failedCount = result.failed;
+                failedCount += result.failed;
                 for (const item of result.items) {
                     pendingSeenIds.delete(item.id);
                 }
@@ -638,7 +681,7 @@ export const useVrcNotificationStore = create<VrcNotificationStore>(
                         );
                     }
                 }
-                if (failedCount > 0) {
+                if (failedCount > 0 || dismissTargets.length) {
                     await get().loadForCurrentUser();
                 }
             } catch (error) {

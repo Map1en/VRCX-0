@@ -53,5 +53,3 @@ export type GameLogColumns = AppColumnDef<GameLogRow>[];
 export type GameLogPaginationSetter = Dispatch<SetStateAction<PaginationState>>;
 
 export type GameLogFilterType = RepositoryGameLogFilterType;
-
-export type { PaginationState };

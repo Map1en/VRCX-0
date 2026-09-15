@@ -14,7 +14,7 @@ pub async fn app__quick_search_query(
     state.quick_search(input).await
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__quick_search_working_set_invalidate(
     state: State<'_, AppState>,

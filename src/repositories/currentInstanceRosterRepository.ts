@@ -43,5 +43,5 @@ const currentInstanceRosterRepository = Object.freeze({
 });
 
 export { getCurrentInstanceSnapshot };
-export type { PlayerListContext, PlayerListPlayer };
+export type { PlayerListContext };
 export default currentInstanceRosterRepository;

@@ -164,6 +164,10 @@ impl RuntimeHostDesktopAssemblyDeps {
         self.context.auth_credentials()
     }
 
+    pub fn auth_credentials_shared(&self) -> Arc<dyn AuthCredentialStore> {
+        Arc::clone(&self.context.auth_credentials)
+    }
+
     pub fn vrc_status(&self) -> &VrcStatusService {
         self.context.vrc_status()
     }

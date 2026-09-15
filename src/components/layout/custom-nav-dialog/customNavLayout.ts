@@ -1,7 +1,4 @@
-import {
-    DASHBOARD_NAV_KEY_PREFIX,
-    DEFAULT_DASHBOARD_ICON
-} from '@/shared/constants/dashboard';
+import { DASHBOARD_NAV_KEY_PREFIX } from '@/shared/constants/dashboard';
 import {
     DEFAULT_FOLDER_ICON,
     normalizeNavIconKey
@@ -30,7 +27,7 @@ export type CustomNavFolderEntry = {
     items: CustomNavFolderItem[];
 };
 
-export type CustomNavLayoutEntry = CustomNavItemEntry | CustomNavFolderEntry;
+type CustomNavLayoutEntry = CustomNavItemEntry | CustomNavFolderEntry;
 
 export type CustomNavLayout = CustomNavLayoutEntry[];
 
@@ -121,7 +118,7 @@ export function getFolderDropId(id: string) {
     return `folder-drop:${id}`;
 }
 
-export function getFolderIdFromDropId(id: string) {
+function getFolderIdFromDropId(id: string) {
     return id.startsWith('folder-drop:') ? id.slice('folder-drop:'.length) : '';
 }
 
@@ -474,5 +471,3 @@ export function findFolderItemIndex(
         (item) => getFolderItemKey(item) === node.id
     );
 }
-
-export { DEFAULT_DASHBOARD_ICON };

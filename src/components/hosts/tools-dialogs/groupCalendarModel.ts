@@ -15,7 +15,7 @@ import { getTimeZoneDateParts } from '@/shared/utils/dateTimeFormatters';
 
 import { getEventId } from './toolsDialogUtils';
 
-export const DATE_KEY_FORMAT = 'yyyy-MM-dd';
+const DATE_KEY_FORMAT = 'yyyy-MM-dd';
 
 export function dateKeyToLocalDate(dateKey: string) {
     const parsed = parse(dateKey, DATE_KEY_FORMAT, new Date());

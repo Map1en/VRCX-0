@@ -4,5 +4,3 @@ import type { InstanceLocationSummaryProps } from '@/components/location/Instanc
 export function LocationWorld(props: InstanceLocationSummaryProps) {
     return <InstanceLocationSummary {...props} />;
 }
-
-export { InstanceLocationSummary };

@@ -29,7 +29,7 @@ export type StatusBarClock = {
     offset: number;
 };
 
-export type StatusBarTimezoneOption = {
+type StatusBarTimezoneOption = {
     value: number;
     label: string;
 };
@@ -52,18 +52,18 @@ export type StatusBarFriendProfileLoad = Pick<
     'processedFriends' | 'status' | 'totalFriends'
 >;
 
-export type StatusBarWorldCollectionImport = {
+type StatusBarWorldCollectionImport = {
     active: boolean;
     progress: number;
     total: number;
 };
 
-export type StatusBarProfileBackup = {
+type StatusBarProfileBackup = {
     status: ProfileBackupStatus;
     onOpenDetails: () => void;
 };
 
-export type StatusBarDataDirMigration = {
+type StatusBarDataDirMigration = {
     status: DataDirMigrationStatus;
 };
 
@@ -72,7 +72,7 @@ export type StatusBarNowPlaying = Pick<
     'length' | 'name' | 'position' | 'startedAt' | 'url'
 >;
 
-export type StatusBarRuntimeGameState = {
+type StatusBarRuntimeGameState = {
     currentLocationStartedAt?: string | null;
     currentWorldId?: string | null;
     currentWorldName?: string | null;
@@ -81,11 +81,11 @@ export type StatusBarRuntimeGameState = {
     lastGameStartedAt?: string | null;
 };
 
-export type StatusBarRuntimeTransport = {
+type StatusBarRuntimeTransport = {
     websocketConnected?: boolean | null;
 };
 
-export type StatusBarProxyEditorState = {
+type StatusBarProxyEditorState = {
     enabled: boolean;
     open: boolean;
     saving: boolean;
@@ -93,7 +93,7 @@ export type StatusBarProxyEditorState = {
     testing: boolean;
 };
 
-export type StatusBarFooterModel = {
+type StatusBarFooterModel = {
     appStartedAt: number;
     clockPopoverOpen: boolean[];
     currentLocationStartedTimestamp: number;
@@ -148,7 +148,7 @@ export type StatusBarFooterProps = ComponentPropsWithoutRef<'footer'> & {
     footer: StatusBarFooterModel;
 };
 
-export type StatusFormatterProps = {
+type StatusFormatterProps = {
     formatter: (ms: number) => string;
 };
 

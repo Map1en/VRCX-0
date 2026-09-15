@@ -4,8 +4,7 @@ import type { GroupProfileRecord } from '@/domain/entities/group';
 import type { UserProfileRecord } from '@/domain/entities/user';
 import type { FriendRosterById } from '@/domain/friends/types';
 import userProfileRepository from '@/repositories/userProfileRepository';
-
-import { normalizeEntityId } from './groupInstances';
+import { normalizeString } from '@/shared/utils/string';
 
 export function useGroupOwnerProfile({
     currentEndpoint,
@@ -22,7 +21,7 @@ export function useGroupOwnerProfile({
 
     useEffect(() => {
         let active = true;
-        const ownerId = normalizeEntityId(group?.ownerId);
+        const ownerId = normalizeString(group?.ownerId);
         setOwnerProfile(null);
 
         if (

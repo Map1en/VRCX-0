@@ -5,30 +5,19 @@ export {
     DEFAULT_VR_NOTIFICATION_ACTIVITY_FILTERS,
     DEFAULT_WEBHOOK_ACTIVITY_FILTERS,
     HMD_DEFAULT_SCOPES,
-    OVERLAY_ACTIVITY_CATEGORIES,
-    OVERLAY_ACTIVITY_RAW_TYPES,
-    OVERLAY_ACTIVITY_SCOPES,
     OVERLAY_ACTIVITY_TYPE_DEFINITIONS,
-    OVERLAY_ACTIVITY_TYPE_DEFINITION_BY_KEY,
-    disabledOverlayActivityFilterProfileFromDefinitions,
     normalizeOverlayActivityFilters,
-    overlayActivityTypeLabelKey,
-    parseOverlayActivityFilters,
-    type OverlayActivityCategory,
-    type OverlayActivityFavoriteGroupKeys,
-    type OverlayActivityFiltersPreference,
-    type OverlayActivityRule,
-    type OverlayActivityScope
+    overlayActivityTypeLabelKey
 } from '@/shared/constants/overlayActivityFilters';
 
-export const TABLE_PAGE_SIZE_SUGGESTIONS = [
+const TABLE_PAGE_SIZE_SUGGESTIONS = [
     5, 10, 15, 20, 25, 30, 50, 75, 100, 150, 200, 250, 500, 1000
 ];
 export const TABLE_PAGE_SIZE_DEFAULTS = [10, 15, 20, 25, 50, 100];
 export const DEFAULT_TRANSLATION_ENDPOINT =
     'https://api.openai.com/v1/chat/completions';
 export const DEFAULT_TRANSLATION_MODEL = 'gpt-4o-mini';
-export const MAX_CUSTOM_FONT_FAMILY_LENGTH = 200;
+const MAX_CUSTOM_FONT_FAMILY_LENGTH = 200;
 
 const FONT_FAMILY_TOKEN_PATTERN =
     /^([-_\p{L}][\p{L}\p{N}_\s-]*|'(?:\\.|[^'\\])+'|"(?:\\.|[^"\\])+")$/u;

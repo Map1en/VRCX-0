@@ -2,6 +2,7 @@
 
 use tauri::State;
 
+use crate::commands::blocking::run_blocking;
 use crate::error::AppError;
 use crate::state::AppState;
 
@@ -25,27 +26,27 @@ pub fn app__friend_log_current_list(
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__friend_log_history_delete(
+pub async fn app__friend_log_history_delete(
     state: State<'_, AppState>,
     user_id: String,
     entry: FriendLogHistoryEntryInput,
 ) -> Result<i64, AppError> {
-    state
-        .runtime_host()
-        .local_data()
-        .friend_log_history_delete(user_id, entry)
-        .map_err(AppError::from)
+    let local_data = state.runtime_host().local_data().clone();
+    run_blocking("friend log history delete", move || {
+        local_data.friend_log_history_delete(user_id, entry)
+    })
+    .await
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__friend_log_history_query(
+pub async fn app__friend_log_history_query(
     state: State<'_, AppState>,
     query: FriendLogHistoryQueryInput,
 ) -> Result<Vec<FriendLogHistoryOutput>, AppError> {
-    state
-        .runtime_host()
-        .local_data()
-        .friend_log_history_query(query)
-        .map_err(AppError::from)
+    let local_data = state.runtime_host().local_data().clone();
+    run_blocking("friend log history query", move || {
+        local_data.friend_log_history_query(query)
+    })
+    .await
 }

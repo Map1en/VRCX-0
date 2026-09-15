@@ -19,7 +19,6 @@ import { formatDateFilter } from '@/lib/dateTime';
 import { openWorldDialog } from '@/services/dialogService';
 import { openExternalLink } from '@/services/entityMediaService';
 import { openGameLogUser } from '@/services/gameLogUserDialogService';
-import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
@@ -42,6 +41,7 @@ import {
     GameLogLocationDetail,
     SortButton
 } from './GameLogTableParts';
+import { GameLogTypeIndicator } from './GameLogTypeIndicator';
 
 type UseGameLogColumnsOptions = {
     deletingGameLogKey: string;
@@ -141,23 +141,19 @@ export function useGameLogColumns({
                                     });
                                 }}
                             >
-                                <Badge
-                                    variant="outline"
-                                    className="text-muted-foreground"
-                                >
-                                    {typeLabel}
-                                </Badge>
+                                <GameLogTypeIndicator
+                                    type={String(row.original?.type || '')}
+                                    label={typeLabel}
+                                />
                             </Button>
                         );
                     }
 
                     return (
-                        <Badge
-                            variant="outline"
-                            className="text-muted-foreground"
-                        >
-                            {typeLabel}
-                        </Badge>
+                        <GameLogTypeIndicator
+                            type={String(row.original?.type || '')}
+                            label={typeLabel}
+                        />
                     );
                 }
             },
@@ -190,7 +186,7 @@ export function useGameLogColumns({
                                     <Button
                                         type="button"
                                         variant="ghost"
-                                        className="hover:text-primary h-auto max-w-full min-w-0 p-0 text-left text-sm"
+                                        className="hover:text-primary h-auto max-w-full min-w-0 p-0 text-left text-sm hover:bg-transparent"
                                         onClick={() => {
                                             openGameLogUser(row.original, t);
                                         }}
@@ -272,7 +268,7 @@ export function useGameLogColumns({
                                             <Button
                                                 type="button"
                                                 variant="ghost"
-                                                className="hover:text-primary h-auto min-w-0 p-0 text-left text-sm"
+                                                className="hover:text-primary h-auto min-w-0 p-0 text-left text-sm hover:bg-transparent"
                                                 onClick={() =>
                                                     openWorldDialog({
                                                         worldId: worldTarget,

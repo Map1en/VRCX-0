@@ -16,7 +16,7 @@ export type AvatarSearchProviderConfig = {
 
 type ProviderItem = Record<string, unknown>;
 
-export type AvatarSearchProviderResult = {
+type AvatarSearchProviderResult = {
     avatars: AvatarProfileRecord[];
     provider: string;
     query: string;
@@ -327,12 +327,5 @@ const avatarSearchProviderRepository = Object.freeze({
     search
 });
 
-export {
-    AVATAR_SEARCH_PROVIDER_PREFERENCE_KEYS,
-    getConfig,
-    saveConfig,
-    saveSelectedProvider,
-    getVrcxId,
-    search
-};
+export { AVATAR_SEARCH_PROVIDER_PREFERENCE_KEYS };
 export default avatarSearchProviderRepository;

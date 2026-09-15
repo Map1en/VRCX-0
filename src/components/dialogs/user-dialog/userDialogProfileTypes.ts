@@ -40,7 +40,7 @@ export type ActiveUserTarget = {
     endpoint?: string;
 };
 
-export type UserDialogGameStateInput = Omit<
+type UserDialogGameStateInput = Omit<
     CurrentUserPresenceGameState,
     'isGameRunning'
 > & {

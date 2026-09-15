@@ -109,10 +109,4 @@ export {
     normalizeUserId,
     userFactKey
 };
-export type {
-    UserFact,
-    UserFactLocation,
-    UserFactMergeOptions,
-    UserFactSource,
-    UserStateBucket
-};
+export type { UserFact, UserFactMergeOptions, UserFactSource };

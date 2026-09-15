@@ -43,17 +43,7 @@ fn updater_target(
     Ok(target)
 }
 
-pub fn validate_update_request(
-    manifest_url: &str,
-    target: &str,
-    allow_downgrades: bool,
-) -> Result<url::Url, Error> {
-    if allow_downgrades {
-        return Err(Error::Custom(
-            "Updater commands do not allow downgrades.".into(),
-        ));
-    }
-
+pub fn validate_update_request(manifest_url: &str, target: &str) -> Result<url::Url, Error> {
     let expected_target = expected_updater_target()?;
     validate_update_request_with_expected_target(manifest_url, target, &expected_target)
 }
@@ -127,17 +117,6 @@ mod tests {
             .unwrap(),
             "macos-aarch64-stable"
         );
-    }
-
-    #[test]
-    fn rejects_update_downgrades() {
-        let result = validate_update_request(
-            "https://github.com/Map1en/VRCX-0/releases/latest/download/latest_windows.json",
-            TEST_TARGET,
-            true,
-        );
-
-        assert!(result.is_err());
     }
 
     #[test]

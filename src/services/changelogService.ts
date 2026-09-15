@@ -25,9 +25,9 @@ const LANGUAGE_LABELS: Record<string, string> = {
 
 export const POST_UPDATE_CHANGELOG_TOAST_CONFIG_KEY =
     'VRCX_showPostUpdateChangelogToast';
-export const SEEN_POST_UPDATE_CHANGELOG_VERSION_CONFIG_KEY =
+const SEEN_POST_UPDATE_CHANGELOG_VERSION_CONFIG_KEY =
     'VRCX_seenPostUpdateChangelogVersion';
-export const LAST_STARTED_VERSION_CONFIG_KEY = 'VRCX_lastStartedVersion';
+const LAST_STARTED_VERSION_CONFIG_KEY = 'VRCX_lastStartedVersion';
 
 export type LocalizedChangelogEntry = {
     lang: string;
@@ -209,7 +209,7 @@ function getCurrentVersion() {
     return typeof VERSION === 'undefined' ? '' : VERSION || '';
 }
 
-export async function fetchLatestChangelogRelease() {
+async function fetchLatestChangelogRelease() {
     const branch =
         parseReleaseVersion(getCurrentVersion())?.channel ?? STABLE_BRANCH;
     return fetchLatestBranchRelease(branch);

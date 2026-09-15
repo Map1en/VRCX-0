@@ -1,6 +1,7 @@
 import { SearchIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { usePrivacyLockCovering } from '@/state/privacyLockPhase';
 import { useShellStore } from '@/state/shellStore';
 
 import {
@@ -18,10 +19,12 @@ export function MacOverlayTitleBar() {
         actions,
         isSessionReady,
         openQuickSearch,
+        alwaysOnTopButton,
         sidebarWindowModeButton,
         notificationAction,
         themeToggleAction
     } = useTitleBarActions('px-2');
+    const privacyLockCovering = usePrivacyLockCovering();
 
     return (
         <>
@@ -41,7 +44,7 @@ export function MacOverlayTitleBar() {
                         className="h-full min-w-0 flex-1"
                     />
                 </div>
-                {sidebarWindowMode ? (
+                {privacyLockCovering ? null : sidebarWindowMode ? (
                     <div className="flex h-full shrink-0 items-center gap-1 px-2">
                         {isSessionReady ? (
                             <TitleBarButton
@@ -54,6 +57,7 @@ export function MacOverlayTitleBar() {
                         ) : null}
                         {notificationAction}
                         {themeToggleAction}
+                        {alwaysOnTopButton}
                         {sidebarWindowModeButton}
                     </div>
                 ) : (

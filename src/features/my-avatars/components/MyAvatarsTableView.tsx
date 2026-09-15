@@ -3,22 +3,18 @@ import type { KeyboardEvent, MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppTable } from '@/components/data-table/appTable';
-import { useDataTableColumnDnd } from '@/components/data-table/dataTableColumnDndContext';
 import {
     DataTableColumnDndProvider,
     DataTableColumnSizeColGroup,
     DataTableColumnSortableContext,
-    DataTableHeaderRow,
+    DataTableHeader,
     DataTablePagination,
     DataTableRow,
     DataTableScrollArea,
     DataTableSurface,
     getDataTableSizingStyle
 } from '@/components/data-table/DataTableView';
-import {
-    ResizableTableCell,
-    ResizableTableHead
-} from '@/components/data-table/ResizableTableParts';
+import { ResizableTableCell } from '@/components/data-table/ResizableTableParts';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import {
     ContextMenu,
@@ -29,7 +25,7 @@ import {
     ContextMenuSeparator,
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
-import { Table, TableBody, TableHeader } from '@/ui/shadcn/table';
+import { Table, TableBody } from '@/ui/shadcn/table';
 
 import type { MyAvatarActionHandler, MyAvatarRow } from '../myAvatarsTypes';
 import { AvatarActionMenuItems, openAvatarDetails } from './MyAvatarsViewParts';
@@ -56,35 +52,6 @@ function isInteractiveRowEvent(
                 'button,a,input,textarea,select,[role="button"],[role="menuitem"]'
             )
         )
-    );
-}
-
-function MyAvatarsTableHeader({ table }: { table: AppTable<MyAvatarRow> }) {
-    const columnDnd = useDataTableColumnDnd();
-
-    return (
-        <TableHeader className="z-20">
-            {table.getHeaderGroups().map((headerGroup) => (
-                <DataTableColumnSortableContext
-                    key={headerGroup.id}
-                    table={table}
-                >
-                    <DataTableHeaderRow>
-                        {headerGroup.headers.map((header) => (
-                            <ResizableTableHead
-                                key={header.id}
-                                header={header}
-                                enableColumnReorder={columnDnd.enabled}
-                                className={
-                                    header.column.columnDef.meta
-                                        ?.tableHeadClassName || ''
-                                }
-                            />
-                        ))}
-                    </DataTableHeaderRow>
-                </DataTableColumnSortableContext>
-            ))}
-        </TableHeader>
     );
 }
 
@@ -115,7 +82,7 @@ export function MyAvatarsTableView({
                             style={getDataTableSizingStyle(table)}
                         >
                             <DataTableColumnSizeColGroup table={table} />
-                            <MyAvatarsTableHeader table={table} />
+                            <DataTableHeader table={table} className="z-20" />
                             <TableBody>
                                 {table.getRowModel().rows.map((row) => (
                                     <ContextMenu

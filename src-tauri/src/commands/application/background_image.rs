@@ -5,7 +5,7 @@ use vrcx_0_application::profile::{BackgroundImageConfigureInput, BackgroundImage
 
 use crate::{error::AppError, state::AppState};
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__background_image_state_get(state: State<'_, AppState>) -> BackgroundImageProjection {
     state.runtime_host().background_image_projection()

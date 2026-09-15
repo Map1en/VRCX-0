@@ -8,7 +8,7 @@ interface DraftDateRange {
     to?: Date | null;
 }
 
-export function normalizeMinuteStep(step: number) {
+function normalizeMinuteStep(step: number) {
     const value = Math.floor(step);
     return Number.isFinite(value) && value >= 1 && value <= 60 ? value : 1;
 }

@@ -30,7 +30,7 @@ describe('dateTime utils', () => {
                 dateCulture: 'en-gb',
                 dateHour12: false
             })
-        ).toBe('2026年6月4日 9:20:02');
+        ).toBe('2026年6月4日 9:20');
     });
 
     it('formats Chinese short dates as month and day text', () => {

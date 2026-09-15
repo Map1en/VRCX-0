@@ -1,7 +1,7 @@
 import { commands } from '@/platform/tauri/bindings';
 import type { CacheCheckResult } from '@/platform/tauri/bindings';
 
-export async function getVRChatCacheFullLocation(
+async function getVRChatCacheFullLocation(
     fileId: string,
     fileVersion: number,
     variant: string,
@@ -15,7 +15,7 @@ export async function getVRChatCacheFullLocation(
     );
 }
 
-export async function checkVRChatCache(
+async function checkVRChatCache(
     fileId: string,
     fileVersion: number,
     variant: string,
@@ -29,7 +29,7 @@ export async function checkVRChatCache(
     );
 }
 
-export async function deleteCache(
+async function deleteCache(
     fileId: string,
     fileVersion: number,
     variant: string,
@@ -43,15 +43,15 @@ export async function deleteCache(
     );
 }
 
-export async function deleteAllCache(): Promise<void> {
+async function deleteAllCache(): Promise<void> {
     await commands.assetBundleDeleteAllCache();
 }
 
-export async function sweepCache(maxSizeBytes: number): Promise<string[]> {
+async function sweepCache(maxSizeBytes: number): Promise<string[]> {
     return commands.assetBundleSweepCacheToSize(maxSizeBytes);
 }
 
-export async function getCacheSize(): Promise<number> {
+async function getCacheSize(): Promise<number> {
     return Number(await commands.assetBundleGetCacheSize()) || 0;
 }
 
@@ -63,5 +63,3 @@ export const assetBundleRepository = Object.freeze({
     getVRChatCacheFullLocation,
     sweepCache
 });
-
-export default assetBundleRepository;

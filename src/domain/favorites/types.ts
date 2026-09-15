@@ -3,11 +3,7 @@ import type { LoadStatus } from '../shared/types';
 export type FavoriteKind = 'friend' | 'avatar' | 'world';
 export type StoredLocalFavoriteKind = Exclude<FavoriteKind, 'world'>;
 export type RemoteFavoriteKind = FavoriteKind | 'vrcPlusWorld' | (string & {});
-export type FavoriteVisibility =
-    | 'public'
-    | 'private'
-    | 'friends'
-    | (string & {});
+type FavoriteVisibility = 'public' | 'private' | 'friends' | (string & {});
 export type FavoriteLoadStatus = LoadStatus;
 export type FavoriteLimits = {
     maxFavoriteGroups: Record<string, number>;
@@ -52,25 +48,22 @@ export type FavoriteEntityDetail = Record<string, unknown> & {
     tags?: string[];
     thumbnailImageUrl?: string;
 };
-export type FavoriteDetailsById = Record<string, FavoriteEntityDetail>;
-export type FavoriteSnapshot = Partial<
-    Record<keyof FavoriteStoreState, unknown>
-> &
+type FavoriteSnapshot = Partial<Record<keyof FavoriteStoreState, unknown>> &
     Record<string, unknown> & {
         favoriteLimits?: unknown;
     };
-export type LocalFavoriteGroupAction = {
+type LocalFavoriteGroupAction = {
     kind: StoredLocalFavoriteKind;
     groupName: string;
 };
-export type LocalFavoriteAction = LocalFavoriteGroupAction & {
+type LocalFavoriteAction = LocalFavoriteGroupAction & {
     entityId: string;
     entity?: FavoriteEntityDetail | Record<string, unknown> | null;
 };
-export type RenameLocalFavoriteGroupAction = LocalFavoriteGroupAction & {
+type RenameLocalFavoriteGroupAction = LocalFavoriteGroupAction & {
     newGroupName: string;
 };
-export type LocalFavoritesForKindSnapshot = {
+type LocalFavoritesForKindSnapshot = {
     localFavorites: unknown;
     localFavoriteGroups: unknown;
 };

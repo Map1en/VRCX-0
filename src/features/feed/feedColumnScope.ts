@@ -9,10 +9,7 @@ import type {
     FeedColumnFavoriteGroupSelection
 } from './feedColumnsState';
 
-export {
-    buildFeedFavoriteGroupOptions,
-    type FeedFavoriteGroupOption
-} from '@/domain/feed/feedFavoriteGroups';
+export { buildFeedFavoriteGroupOptions } from '@/domain/feed/feedFavoriteGroups';
 
 export type FeedColumnScopeDescriptionOptions = {
     allFavoritesLabel: string;

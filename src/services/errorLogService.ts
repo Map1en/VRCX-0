@@ -1,4 +1,4 @@
-import { commands } from '@/platform/tauri/bindings';
+import { invokeTauri } from '@/platform/tauri/invoke';
 import { isRecord } from '@/shared/utils/record';
 
 const HTTP_ERROR_STATUS_MIN = 400;
@@ -251,7 +251,9 @@ async function flushLogQueue(): Promise<void> {
         while (logQueue.length > 0) {
             const nextEntry = logQueue.shift();
             try {
-                await commands.appAppendErrorLog(nextEntry || '');
+                await invokeTauri('app__append_error_log', {
+                    entry: nextEntry || ''
+                });
             } catch {
                 // Logging must never affect the app path that produced the error.
             }

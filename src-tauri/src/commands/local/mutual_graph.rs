@@ -8,23 +8,24 @@ use vrcx_0_application::social::{
 };
 use vrcx_0_runtime_host_desktop::local_data::MutualGraphSnapshotOutput;
 
+use crate::commands::blocking::run_blocking;
 use crate::error::AppError;
 use crate::state::AppState;
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__mutual_graph_snapshot_get(
+pub async fn app__mutual_graph_snapshot_get(
     state: State<'_, AppState>,
     user_id: String,
 ) -> Result<MutualGraphSnapshotOutput, AppError> {
-    state
-        .runtime_host()
-        .local_data()
-        .mutual_graph_snapshot_get(user_id)
-        .map_err(AppError::from)
+    let local_data = state.runtime_host().local_data().clone();
+    run_blocking("mutual graph snapshot", move || {
+        local_data.mutual_graph_snapshot_get(user_id)
+    })
+    .await
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__mutual_graph_fetch_status_get(state: State<'_, AppState>) -> MutualGraphFetchStatus {
     state
@@ -33,7 +34,7 @@ pub fn app__mutual_graph_fetch_status_get(state: State<'_, AppState>) -> MutualG
         .mutual_graph_fetch_status()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__mutual_graph_fetch_cancel(
     state: State<'_, AppState>,
@@ -46,7 +47,7 @@ pub fn app__mutual_graph_fetch_cancel(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__mutual_graph_fetch_start(
     state: State<'_, AppState>,

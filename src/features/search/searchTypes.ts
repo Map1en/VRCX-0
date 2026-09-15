@@ -29,6 +29,7 @@ export type WorldSearchRequest = ReturnType<typeof buildWorldSearchRequest>;
 
 export type SearchPaginationState = {
     show: boolean;
+    page: number;
     prevDisabled: boolean;
     nextDisabled: boolean;
     onPrev: () => void;

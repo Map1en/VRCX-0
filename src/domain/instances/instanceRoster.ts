@@ -112,15 +112,11 @@ export function firstText(...values: unknown[]): string {
     return '';
 }
 
-export function isGroupId(value: unknown): boolean {
-    return hasGroupIdPrefix(firstText(value));
-}
-
 function isPresentValue(value: unknown): boolean {
     return value !== undefined && value !== null && value !== '';
 }
 
-export function userIdForRosterRow(user: unknown): string {
+function userIdForRosterRow(user: unknown): string {
     return firstText(
         field(user, 'id'),
         field(user, 'userId'),
@@ -441,8 +437,8 @@ export function buildInstanceRosterRows({
     const ownerGroupId = firstText(
         field(ownerGroup, 'id'),
         field(ownerGroup, 'groupId'),
-        isGroupId(ownerFallbackId) ? ownerFallbackId : '',
-        isGroupId(field(parsedLocation, 'groupId'))
+        hasGroupIdPrefix(ownerFallbackId) ? ownerFallbackId : '',
+        hasGroupIdPrefix(field(parsedLocation, 'groupId'))
             ? field(parsedLocation, 'groupId')
             : ''
     );
@@ -454,7 +450,9 @@ export function buildInstanceRosterRows({
         field(parsedLocation, 'groupId')
     );
     const ownerIsGroup = Boolean(
-        ownerGroupId || isGroupId(ownerUserId) || isGroupId(ownerId)
+        ownerGroupId ||
+        hasGroupIdPrefix(ownerUserId) ||
+        hasGroupIdPrefix(ownerId)
     );
     const ownerName = ownerIsGroup
         ? firstText(

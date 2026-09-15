@@ -7,11 +7,12 @@ use vrcx_0_runtime_host_desktop::local_data::{
     BrowseHistoryRecordInput,
 };
 
+use crate::commands::blocking::run_blocking;
 use crate::error::AppError;
 use crate::state::AppState;
 use vrcx_0_runtime_host_desktop::local_data::OwnerId;
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__browse_history_record(
     state: State<'_, AppState>,
@@ -37,7 +38,7 @@ pub fn app__browse_history_query(
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__browse_history_delete(
     state: State<'_, AppState>,
@@ -54,16 +55,16 @@ pub fn app__browse_history_delete(
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__browse_history_clear(
+pub async fn app__browse_history_clear(
     state: State<'_, AppState>,
     owner_user_id: OwnerId,
     entity_kind: Option<BrowseHistoryEntityKind>,
 ) -> Result<i64, AppError> {
-    state
-        .runtime_host()
-        .local_data()
-        .browse_history_clear(owner_user_id, entity_kind)
-        .map_err(AppError::from)
+    let local_data = state.runtime_host().local_data().clone();
+    run_blocking("browse history clear", move || {
+        local_data.browse_history_clear(owner_user_id, entity_kind)
+    })
+    .await
 }
 
 #[tauri::command(async)]
@@ -76,7 +77,7 @@ pub fn app__browse_history_retention_days_get(state: State<'_, AppState>) -> Res
         .map_err(AppError::from)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__browse_history_retention_days_set(
     state: State<'_, AppState>,

@@ -1,7 +1,4 @@
-import {
-    FRIEND_LOG_TYPES,
-    type FriendLogType
-} from '@/domain/friends/friendLog';
+import type { FriendLogType } from '@/domain/friends/friendLog';
 import {
     commands,
     type FriendLogHistoryCursor,
@@ -21,7 +18,7 @@ export interface FriendLogHistoryRow {
     previousTrustLevel?: string;
 }
 
-export interface FriendLogHistoryEntry {
+interface FriendLogHistoryEntry {
     rowId?: number | string | null;
     created_at?: string | null;
     type?: FriendLogType | string | null;
@@ -33,7 +30,7 @@ export interface FriendLogHistoryEntry {
     previousTrustLevel?: string | null;
 }
 
-export interface FriendLogHistoryOptions {
+interface FriendLogHistoryOptions {
     targetUserId?: string;
     types?: string[];
     excludedTypes?: string[];
@@ -126,5 +123,5 @@ const friendLogHistoryRepository = {
     deleteFriendLogHistory
 };
 
-export { FRIEND_LOG_TYPES, deleteFriendLogHistory, getFriendLogHistory };
+export { getFriendLogHistory };
 export default friendLogHistoryRepository;

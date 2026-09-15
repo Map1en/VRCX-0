@@ -178,9 +178,4 @@ const removeWhitespace = function (a: string) {
     return a.replace(/\s/g, '');
 };
 
-export {
-    removeConfusables as default,
-    confusablesToChar,
-    charToConfusables,
-    removeWhitespace
-};
+export { removeConfusables as default, removeWhitespace };

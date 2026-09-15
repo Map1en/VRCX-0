@@ -479,18 +479,4 @@ const userProfileRepository = Object.freeze({
     removeCurrentUserTags
 });
 
-export {
-    normalize,
-    getUserProfile,
-    getFriendStatus,
-    getUserAppearanceProfile,
-    getRepresentedGroup,
-    getAllMutualFriends,
-    updateCurrentUserProfile,
-    updateCurrentUser,
-    updateCurrentUserBadge,
-    addCurrentUserTags,
-    removeCurrentUserTags
-};
-export type { UserProfileRecord } from '@/domain/entities/user';
 export default userProfileRepository;

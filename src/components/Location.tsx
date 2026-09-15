@@ -121,7 +121,6 @@ export function Location({
         parsedLocation.worldId
     );
     const {
-        previousInstancesDialog,
         previousInstancesLoading,
         showExactPreviousInstanceInfo,
         showPreviousInstances
@@ -263,12 +262,7 @@ export function Location({
         />
     );
     if (!showContextMenu) {
-        return (
-            <>
-                {content}
-                {previousInstancesDialog}
-            </>
-        );
+        return content;
     }
 
     return (
@@ -285,7 +279,6 @@ export function Location({
             onSelfInviteCurrentInstance={selfInviteCurrentInstance}
             onShowExactPreviousInstanceInfo={showExactPreviousInstanceInfo}
             onShowPreviousInstances={showPreviousInstances}
-            previousInstancesDialog={previousInstancesDialog}
             previousInstancesDisabled={previousInstancesDisabled}
             previousInstancesLoading={previousInstancesLoading}
             shareUrl={shareUrl}

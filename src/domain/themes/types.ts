@@ -1,7 +1,7 @@
-export type CommunityThemeAccentMode = boolean;
-export type CommunityThemeDarkMode = boolean;
+type CommunityThemeAccentMode = boolean;
+type CommunityThemeDarkMode = boolean;
 
-export type CommunityThemeAuthor = {
+type CommunityThemeAuthor = {
     name: string;
     github: string;
     url?: string | null;
@@ -40,7 +40,7 @@ export type CommunityThemeInstallMetadata = {
     accentMode: boolean;
 };
 
-export type CommunityThemeStatsEntry = {
+type CommunityThemeStatsEntry = {
     downloads: number;
 };
 

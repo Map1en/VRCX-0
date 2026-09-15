@@ -1,4 +1,4 @@
-import { formatClock as formatAppClock, timeToText } from '@/lib/dateTime';
+import { formatClock, timeToText } from '@/lib/dateTime';
 import { DAY_MS, HOUR_MS, MINUTE_MS } from '@/shared/constants/time';
 
 import { getLocalDayBounds } from './instanceActivityRows';
@@ -84,15 +84,7 @@ function getActivityAxisWindow(
     return { originMs: origin, spanMs, interval: pickAxisInterval(spanMs) };
 }
 
-export function formatClock(
-    value: Date | number | string,
-    hour12: boolean,
-    includeSeconds = false
-) {
-    return formatAppClock(value, { hour12, includeSeconds });
-}
-
-export function truncateLabel(value: unknown, maxLength = 26): string {
+function truncateLabel(value: unknown, maxLength = 26): string {
     const text = String(value || '');
     if (text.length <= maxLength) {
         return text;
@@ -159,7 +151,7 @@ export function buildChartOption({
                     locationBits.length
                         ? `<div style="margin-bottom:4px;">${locationBits.join(' ')}</div>`
                         : '',
-                    `<div>${formatClock(row.joinMs, hour12, true)} - ${formatClock(row.leaveMs, hour12, true)}</div>`,
+                    `<div>${formatClock(row.joinMs, { hour12, includeSeconds: true })} - ${formatClock(row.leaveMs, { hour12, includeSeconds: true })}</div>`,
                     `<div>${t('view.charts.instance_activity.online_time')}: ${timeToText(row.visibleDurationMs, true)}</div>`,
                     `</div>`
                 ].join('');
@@ -191,7 +183,7 @@ export function buildChartOption({
             interval: axis.interval,
             axisLabel: {
                 formatter(value: number) {
-                    return formatClock(axis.originMs + value, hour12, false);
+                    return formatClock(axis.originMs + value, { hour12 });
                 }
             },
             splitLine: {

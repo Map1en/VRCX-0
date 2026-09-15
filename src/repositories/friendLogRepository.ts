@@ -33,5 +33,4 @@ const friendLogRepository = {
     getFriendLogCurrent
 };
 
-export { getFriendLogCurrent };
 export default friendLogRepository;

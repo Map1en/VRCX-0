@@ -14,6 +14,7 @@ pub fn ensure_realtime_tables(db: &DatabaseService, user_prefix: &str) -> Result
             "seen",
             "INTEGER NOT NULL DEFAULT 0",
         )?;
+        add_column_if_missing(db, &notification_v1_table, "location", "TEXT")?;
         db.execute_non_query(
             &format!("UPDATE {notification_v1_table} SET seen = 1 WHERE expired = 1 AND seen = 0"),
             &Default::default(),
@@ -82,7 +83,7 @@ fn realtime_table_statements(user_prefix: &str) -> Vec<String> {
         format!("CREATE TABLE IF NOT EXISTS {user_prefix}_friend_log_history (id INTEGER PRIMARY KEY, created_at TEXT, type TEXT, user_id TEXT, display_name TEXT, previous_display_name TEXT, trust_level TEXT, previous_trust_level TEXT, friend_number INTEGER)"),
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_friend_log_history_user_id_idx ON {user_prefix}_friend_log_history (user_id)"),
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_friend_log_history_time_idx ON {user_prefix}_friend_log_history (COALESCE(julianday(created_at), 0) DESC, id DESC)"),
-        format!("CREATE TABLE IF NOT EXISTS {user_prefix}_notifications (id TEXT PRIMARY KEY, created_at TEXT, type TEXT, sender_user_id TEXT, sender_username TEXT, receiver_user_id TEXT, message TEXT, world_id TEXT, world_name TEXT, image_url TEXT, invite_message TEXT, request_message TEXT, response_message TEXT, expired INTEGER, seen INTEGER NOT NULL DEFAULT 0)"),
+        format!("CREATE TABLE IF NOT EXISTS {user_prefix}_notifications (id TEXT PRIMARY KEY, created_at TEXT, type TEXT, sender_user_id TEXT, sender_username TEXT, receiver_user_id TEXT, message TEXT, world_id TEXT, world_name TEXT, image_url TEXT, invite_message TEXT, request_message TEXT, response_message TEXT, location TEXT, expired INTEGER, seen INTEGER NOT NULL DEFAULT 0)"),
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_notifications_created_id_idx ON {user_prefix}_notifications (created_at DESC, id DESC)"),
         format!("CREATE TABLE IF NOT EXISTS {user_prefix}_notifications_v2 (id TEXT PRIMARY KEY, created_at TEXT, updated_at TEXT, expires_at TEXT, type TEXT, link TEXT, link_text TEXT, message TEXT, title TEXT, image_url TEXT, seen INTEGER, sender_user_id TEXT, sender_username TEXT, data TEXT, responses TEXT, details TEXT)"),
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_notifications_v2_created_id_idx ON {user_prefix}_notifications_v2 (created_at DESC, id DESC)"),

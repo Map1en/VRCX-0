@@ -10,31 +10,15 @@ import {
 } from '@/shared/constants/tools';
 import { isRecord } from '@/shared/utils/record';
 
-export const categoryConfigKey = 'VRCX_toolsCategoryCollapsed';
 export const quickAccessDropId = 'tools-quick-access-drop-zone';
 export const toolCatalogDropId = 'tools-catalog-drop-zone';
 
 const quickAccessDragPrefix = 'tools-quick-access-tool:';
 const catalogDragPrefix = 'tools-catalog-tool:';
-const collapsibleCategories = toolCategories.map((category) => category.key);
-
-export const defaultCollapsedState: Record<string, boolean> = {
-    image: false,
-    shortcuts: false,
-    automation: false,
-    group: false,
-    vrchat: false,
-    data: false,
-    debug: false,
-    other: false
-};
-
-export const toolsPageCategories = toolCategories
-    .filter((category) => collapsibleCategories.includes(category.key))
-    .map((category) => ({
-        ...category,
-        tools: getToolsByCategory(category.key)
-    }));
+export const toolsPageCategories = toolCategories.map((category) => ({
+    ...category,
+    tools: getToolsByCategory(category.key)
+}));
 
 export function getQuickAccessDragId(toolKey: string): string {
     return `${quickAccessDragPrefix}${toolKey}`;

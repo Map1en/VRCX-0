@@ -504,7 +504,7 @@ fn upsert_notification_v1(
         bool_field(notification.get("$isExpired")) || bool_field(notification.get("expired"));
     let seen = bool_field(notification.get("seen")) || expired;
     tx.execute_non_query(
-        &format!("INSERT OR IGNORE INTO {user_prefix}_notifications (id, created_at, type, sender_user_id, sender_username, receiver_user_id, message, world_id, world_name, image_url, invite_message, request_message, response_message, expired, seen) VALUES (@id, @created_at, @type, @sender_user_id, @sender_username, @receiver_user_id, @message, @world_id, @world_name, @image_url, @invite_message, @request_message, @response_message, @expired, @seen)"),
+        &format!("INSERT OR IGNORE INTO {user_prefix}_notifications (id, created_at, type, sender_user_id, sender_username, receiver_user_id, message, world_id, world_name, image_url, invite_message, request_message, response_message, location, expired, seen) VALUES (@id, @created_at, @type, @sender_user_id, @sender_username, @receiver_user_id, @message, @world_id, @world_name, @image_url, @invite_message, @request_message, @response_message, @location, @expired, @seen)"),
         &ParamsBuilder::new()
             .set("id", id)
             .set("created_at", created_at)
@@ -524,6 +524,7 @@ fn upsert_notification_v1(
             .set("invite_message", entry_string(details, "inviteMessage"))
             .set("request_message", entry_string(details, "requestMessage"))
             .set("response_message", entry_string(details, "responseMessage"))
+            .set("location", entry_string(notification, "location"))
             .set("expired", if expired { 1 } else { 0 })
             .set("seen", if seen { 1 } else { 0 })
             .build(),

@@ -10,6 +10,7 @@ import {
     recordGameRuntimePresence,
     recordLocationHintsFromInstances
 } from '@/services/domainIngestionService';
+import { hasGroupIdPrefix } from '@/shared/constants/vrchatIds';
 import { parseLocation } from '@/shared/utils/location';
 import { isRecord } from '@/shared/utils/record';
 
@@ -17,7 +18,6 @@ import type { WorldDialogTabbedRuntimeState } from './useWorldDialogRuntimeState
 import {
     firstText,
     groupSeed,
-    isGroupId,
     normalizeInstanceGroup,
     sameLocationTag
 } from './WorldDialogViewParts';
@@ -162,7 +162,7 @@ export function useWorldDialogCurrentInstance({
                     groupRecord.id,
                     parsedLocation.groupId
                 );
-                const ownerIsGroup = isGroupId(ownerId);
+                const ownerIsGroup = hasGroupIdPrefix(ownerId);
                 const ownerSeed = ownerIsGroup
                     ? firstRecord(
                           instanceRecord.group,

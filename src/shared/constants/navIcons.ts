@@ -3,7 +3,7 @@ const LUCIDE_ICON_PREFIX = 'lucide:';
 export const DEFAULT_NAV_ICON_KEY = 'lucide:Circle';
 export const DEFAULT_FOLDER_ICON = 'lucide:Folder';
 
-export type NavIconKey = `${typeof LUCIDE_ICON_PREFIX}${string}`;
+type NavIconKey = `${typeof LUCIDE_ICON_PREFIX}${string}`;
 
 export interface NavIconOption {
     key: string;

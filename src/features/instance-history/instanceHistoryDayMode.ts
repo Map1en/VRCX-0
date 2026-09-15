@@ -18,7 +18,7 @@ export function sanitizeInstanceHistoryMode(
     return value === 'day' ? 'day' : 'search';
 }
 
-export function previousInstanceLeaveMs(row: InstanceHistoryEntryRow): number {
+function previousInstanceLeaveMs(row: InstanceHistoryEntryRow): number {
     const groupedLeaveValue = row.last_ts ?? row.lastTs ?? 0;
     const groupedLeaveMs =
         typeof groupedLeaveValue === 'string'
@@ -30,7 +30,7 @@ export function previousInstanceLeaveMs(row: InstanceHistoryEntryRow): number {
     return createdTime(row);
 }
 
-export function previousInstanceJoinMs(row: InstanceHistoryEntryRow): number {
+function previousInstanceJoinMs(row: InstanceHistoryEntryRow): number {
     const leaveMs = previousInstanceLeaveMs(row);
     return leaveMs - rowDurationValue(row);
 }

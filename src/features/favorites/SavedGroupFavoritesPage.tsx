@@ -1,6 +1,5 @@
 import {
-    FolderHeartIcon,
-    HeartIcon,
+    FolderIcon,
     MoreHorizontalIcon,
     Trash2Icon,
     UsersRoundIcon
@@ -39,7 +38,6 @@ import {
     AlertDialogHeader,
     AlertDialogTitle
 } from '@/ui/shadcn/alert-dialog';
-import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -295,7 +293,7 @@ export function SavedGroupFavoritesPage() {
                         <div className="flex h-full min-h-0 flex-col gap-3 overflow-auto p-2">
                             <GroupRailSection
                                 title={t('saved_group_favorites.title')}
-                                icon={FolderHeartIcon}
+                                icon={FolderIcon}
                                 emptyTitle={t(
                                     'saved_group_favorites.empty_collections'
                                 )}
@@ -339,27 +337,20 @@ export function SavedGroupFavoritesPage() {
                         className="min-w-0"
                     >
                         <div className="flex h-full min-h-0 min-w-0 flex-col px-5 pb-4">
-                            <div className="mb-4 flex min-w-0 items-center justify-between gap-3 border-b pb-4">
-                                <div className="flex min-w-0 items-center gap-3">
-                                    <span className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-xl ring-1 ring-current/10">
-                                        <FolderHeartIcon className="size-5" />
-                                    </span>
-                                    <span className="truncate text-lg font-semibold">
+                            <div className="mb-3 flex min-w-0 items-center justify-between gap-3 pl-0.5">
+                                <div className="flex min-w-0 flex-col gap-0.5 text-base font-semibold">
+                                    <span className="truncate">
                                         {selectedCollection?.name ||
                                             t(
                                                 'view.favorites.empty.no_group_selected'
                                             )}
                                     </span>
+                                    {selectedCollection ? (
+                                        <small className="text-muted-foreground truncate text-xs font-normal tabular-nums">
+                                            {selectedCollection.groupIds.length}
+                                        </small>
+                                    ) : null}
                                 </div>
-                                {selectedCollection ? (
-                                    <Badge
-                                        variant="secondary"
-                                        className="shrink-0 tabular-nums"
-                                    >
-                                        <HeartIcon data-icon="inline-start" />
-                                        {selectedCollection.groupIds.length}
-                                    </Badge>
-                                ) : null}
                             </div>
                             <div className="min-h-0 min-w-0 flex-1 overflow-auto pr-1">
                                 {loading && !snapshot.collections.length ? (
@@ -372,7 +363,7 @@ export function SavedGroupFavoritesPage() {
                                 ) : !selectedCollection ? (
                                     <EmptyState
                                         variant="panel"
-                                        icon={FolderHeartIcon}
+                                        icon={FolderIcon}
                                         title={t(
                                             'saved_group_favorites.empty_collections'
                                         )}

@@ -14,10 +14,7 @@ import {
 import { buildSocialSection } from './settings-page-state-sections/socialSection';
 import type { BuildSettingsPageStateSectionsInput } from './settingsPageStateSectionTypes';
 
-export type {
-    BuildSettingsPageStateSectionsInput,
-    SettingsPagePrefs
-} from './settingsPageStateSectionTypes';
+export type { BuildSettingsPageStateSectionsInput } from './settingsPageStateSectionTypes';
 
 export function buildSettingsPageStateSections(
     input: BuildSettingsPageStateSectionsInput

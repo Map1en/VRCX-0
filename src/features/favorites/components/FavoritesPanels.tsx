@@ -2,10 +2,10 @@ import type { TFunction } from 'i18next';
 import {
     CloudIcon,
     HardDriveIcon,
-    HeartIcon,
     HistoryIcon,
     SearchXIcon,
-    Share2Icon
+    Share2Icon,
+    StarIcon
 } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -213,7 +213,6 @@ export function FavoritesGroupRailPanel({
                 newGroupName={newLocalGroupName}
                 newGroupLabel={viewData.pageConfig.localNewGroupLabel}
                 showNewGroup={viewData.canCreateLocalGroup}
-                onRefresh={favoriteCommands.refreshFavorites}
                 onSelect={selectGroup}
                 onStartCreate={startCreateLocalGroup}
                 onNewGroupNameChange={onNewGroupNameChange}
@@ -443,9 +442,7 @@ export function FavoritesContentPanel({
                     ) : !viewData.contentItems.length ? (
                         <FavoritesEmptyState
                             icon={
-                                viewData.isSearchActive
-                                    ? SearchXIcon
-                                    : HeartIcon
+                                viewData.isSearchActive ? SearchXIcon : StarIcon
                             }
                             title={emptyTitle}
                             description={emptyDescription}

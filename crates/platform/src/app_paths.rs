@@ -281,53 +281,8 @@ fn write_app_data_dir_pointer(default_dir: &Path, json: &str) -> Result<(), Erro
     temporary.write_all(json.as_bytes())?;
     temporary.sync_all()?;
     drop(temporary);
-    replace_file_atomically(&temporary_path, &pointer_path)?;
+    crate::path_utils::replace_file_atomically(&temporary_path, &pointer_path)?;
     sync_directory_after_pointer_update(default_dir)
-}
-
-#[cfg(not(windows))]
-fn replace_file_atomically(source: &Path, destination: &Path) -> Result<(), Error> {
-    std::fs::rename(source, destination)?;
-    Ok(())
-}
-
-#[cfg(windows)]
-fn replace_file_atomically(source: &Path, destination: &Path) -> Result<(), Error> {
-    use std::os::windows::ffi::OsStrExt;
-
-    const MOVEFILE_REPLACE_EXISTING: u32 = 0x1;
-    const MOVEFILE_WRITE_THROUGH: u32 = 0x8;
-
-    #[link(name = "Kernel32")]
-    extern "system" {
-        fn MoveFileExW(
-            existing_file_name: *const u16,
-            new_file_name: *const u16,
-            flags: u32,
-        ) -> i32;
-    }
-
-    let source = source
-        .as_os_str()
-        .encode_wide()
-        .chain(std::iter::once(0))
-        .collect::<Vec<_>>();
-    let destination = destination
-        .as_os_str()
-        .encode_wide()
-        .chain(std::iter::once(0))
-        .collect::<Vec<_>>();
-    let replaced = unsafe {
-        MoveFileExW(
-            source.as_ptr(),
-            destination.as_ptr(),
-            MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH,
-        )
-    };
-    if replaced == 0 {
-        return Err(Error::Io(std::io::Error::last_os_error()));
-    }
-    Ok(())
 }
 
 #[cfg(not(windows))]

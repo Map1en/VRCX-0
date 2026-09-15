@@ -1,4 +1,8 @@
-import { DownloadIcon, StarIcon, UserMinusIcon, UsersIcon } from 'lucide-react';
+import {
+    UserMinusIcon,
+    UserRoundSearchIcon,
+    WaypointsIcon
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppTable } from '@/components/data-table/appTable';
@@ -9,7 +13,6 @@ import {
     ToolbarOverflowMenu,
     ToolbarSearch,
     ToolbarStatus,
-    ToolbarToggleButton,
     ToolbarViews
 } from '@/components/layout/ToolbarControls';
 import { Button } from '@/ui/shadcn/button';
@@ -17,7 +20,10 @@ import { DropdownMenuGroup, DropdownMenuItem } from '@/ui/shadcn/dropdown-menu';
 import { Spinner } from '@/ui/shadcn/spinner';
 
 import type { FriendListRow } from '../friendListRows';
-import { FriendListSearchFilterDropdown } from './FriendListViewParts';
+import {
+    FriendListFilterDropdown,
+    FriendListSearchScopeDropdown
+} from './FriendListViewParts';
 
 export function FriendListToolbar({
     bulkModel,
@@ -43,7 +49,6 @@ export function FriendListToolbar({
         isMutualFetching: boolean;
         isMutualOptOut: boolean;
         mutualProgress: { current: number; total: number };
-        statusDetail: string;
     };
     table: AppTable<FriendListRow>;
     toolbarCommands: {
@@ -70,8 +75,7 @@ export function FriendListToolbar({
         isLoadingUserDetails,
         isMutualFetching,
         isMutualOptOut,
-        mutualProgress,
-        statusDetail: rawStatusDetail
+        mutualProgress
     } = loadModel;
     const {
         onBulkUnfriend,
@@ -88,7 +92,7 @@ export function FriendListToolbar({
               current: mutualProgress?.current ?? 0,
               total: mutualProgress?.total ?? 0
           })
-        : rawStatusDetail;
+        : '';
 
     if (bulkUnfriendMode) {
         return (
@@ -144,17 +148,10 @@ export function FriendListToolbar({
         <PageToolbar>
             <PageToolbarRow>
                 <ToolbarViews>
-                    <ToolbarToggleButton
-                        icon={StarIcon}
-                        fillWhenActive
-                        active={favoritesOnly}
-                        disabled={!isFavoritesLoaded}
-                        label={t('view.friend_list.favorites_only_tooltip')}
-                        onClick={onToggleFavoritesOnly}
-                    />
-                    <FriendListSearchFilterDropdown
-                        value={activeSearchFilterIds}
-                        onChange={onSearchFilterChange}
+                    <FriendListFilterDropdown
+                        favoritesOnly={favoritesOnly}
+                        isFavoritesLoaded={isFavoritesLoaded}
+                        onToggleFavoritesOnly={onToggleFavoritesOnly}
                     />
                 </ToolbarViews>
 
@@ -162,6 +159,12 @@ export function FriendListToolbar({
                     value={searchQuery}
                     onValueChange={onSearchChange}
                     placeholder={t('view.friend_list.search_placeholder')}
+                    trailing={
+                        <FriendListSearchScopeDropdown
+                            value={activeSearchFilterIds}
+                            onChange={onSearchFilterChange}
+                        />
+                    }
                 />
 
                 <ToolbarActions>
@@ -176,7 +179,7 @@ export function FriendListToolbar({
                         {isMutualFetching ? (
                             <Spinner data-icon="inline-start" />
                         ) : (
-                            <UsersIcon data-icon="inline-start" />
+                            <WaypointsIcon data-icon="inline-start" />
                         )}
                         {t('view.friend_list.load_mutual_friends')}
                     </Button>
@@ -189,7 +192,7 @@ export function FriendListToolbar({
                         {isLoadingUserDetails ? (
                             <Spinner data-icon="inline-start" />
                         ) : (
-                            <DownloadIcon data-icon="inline-start" />
+                            <UserRoundSearchIcon data-icon="inline-start" />
                         )}
                         {t('view.friend_list.load')}
                     </Button>

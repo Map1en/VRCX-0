@@ -9,6 +9,7 @@ description = "Shared domain primitives"
 chrono = { workspace = true }
 compact_str = { workspace = true }
 quick-xml = "0.41"
+regex = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 specta.workspace = true

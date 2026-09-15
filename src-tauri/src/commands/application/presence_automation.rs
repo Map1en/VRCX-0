@@ -7,7 +7,7 @@ use vrcx_0_core::json::RawJson;
 use crate::error::AppError;
 use crate::state::AppState;
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__presence_automation_rules_get(
     state: State<'_, AppState>,
@@ -16,7 +16,7 @@ pub fn app__presence_automation_rules_get(
     Ok(state.runtime_host().presence_automation_rules(kind)?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__presence_automation_rules_set(
     state: State<'_, AppState>,

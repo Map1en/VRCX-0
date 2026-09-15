@@ -3,9 +3,9 @@ import {
     type UserTableContextOutput
 } from '@/platform/tauri/bindings';
 
-export type UserTableContext = UserTableContextOutput;
+type UserTableContext = UserTableContextOutput;
 
-export interface UserSessionRepository {
+interface UserSessionRepository {
     normalizeUserTablePrefix(userId: string): string;
     ensureUserTables(userId: string): Promise<UserTableContext>;
     getUserTableContext(userId: string): Promise<UserTableContext>;
@@ -91,11 +91,5 @@ const userSessionRepository: UserSessionRepository = {
     initUserTablesUncached
 };
 
-export {
-    ensureUserTables,
-    getUserTableContext,
-    initUserTables,
-    initUserTablesUncached,
-    normalizeUserTablePrefix
-};
+export { ensureUserTables, initUserTablesUncached, normalizeUserTablePrefix };
 export default userSessionRepository;

@@ -12,15 +12,15 @@ const mocks = vi.hoisted(() => ({
     appAppUpdateReleaseGet: vi.fn(),
     toNormalizedReleaseFromSnapshot: vi.fn(),
     confirmInstall: vi.fn(),
+    restartApplication: vi.fn(),
     updateCheckDisabled: false
 }));
 
-vi.mock('react-i18next', () => ({
-    useTranslation: () => ({
-        t: (key: string, values?: Record<string, unknown>) =>
-            values ? `${key}:${JSON.stringify(values)}` : key
-    })
-}));
+vi.mock('react-i18next', () => {
+    const t = (key: string, values?: Record<string, unknown>) =>
+        values ? `${key}:${JSON.stringify(values)}` : key;
+    return { useTranslation: () => ({ t }) };
+});
 
 vi.mock('@/services/updateService', () => ({
     getPreviewStableReleaseUpdateMode: mocks.getPreviewStableReleaseUpdateMode,
@@ -45,7 +45,7 @@ vi.mock('@/services/entityMediaService', () => ({
 }));
 
 vi.mock('@/services/shellIntegrationService', () => ({
-    restartApplication: vi.fn()
+    restartApplication: mocks.restartApplication
 }));
 
 vi.mock('@/ui/shadcn/button', async () => {
@@ -107,9 +107,11 @@ vi.mock('@/ui/shadcn/select', async () => {
         Select: ({
             children,
             value,
+            disabled,
             onValueChange
         }: React.PropsWithChildren<{
             value: string;
+            disabled?: boolean;
             onValueChange: (value: string) => void;
         }>) =>
             React.createElement(
@@ -119,6 +121,7 @@ vi.mock('@/ui/shadcn/select', async () => {
                     'button',
                     {
                         type: 'button',
+                        disabled,
                         onClick: () =>
                             onValueChange(
                                 value === 'stable' ? 'beta' : 'stable'
@@ -152,6 +155,7 @@ describe('UpdaterDialog', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mocks.updateCheckDisabled = false;
+        mocks.confirmInstall.mockResolvedValue({});
         vi.stubGlobal('VERSION', '2.6.0');
         useRuntimeStore.getState().resetRuntimeState();
         useRuntimeStore.getState().setHostCapabilities({
@@ -261,7 +265,7 @@ describe('UpdaterDialog', () => {
         expect(screen.queryByText('2.6.0 -> 2.6.0')).toBeNull();
     });
 
-    it('shows matching background download progress when opened mid-download', async () => {
+    it('blocks installation during a matching background download and enables it when ready', async () => {
         const release = {
             displayName: 'VRCX-0 2.7.0',
             tagName: 'v2.7.0',
@@ -295,12 +299,31 @@ describe('UpdaterDialog', () => {
             expect(screen.getByText('42%')).toBeTruthy();
         });
 
+        const installButton = screen.getByRole<HTMLButtonElement>('button', {
+            name: 'dialog.system.action.install_and_restart'
+        });
+        expect(installButton.disabled).toBe(true);
+        act(() => installButton.click());
+        expect(mocks.confirmInstall).not.toHaveBeenCalled();
+
         act(() => {
             useRuntimeStore.getState().setUpdateLoopState({
                 downloadedVersion: '2.8.0'
             });
         });
         expect(screen.queryByText('42%')).toBeNull();
+        await waitFor(() => expect(installButton.disabled).toBe(false));
+
+        act(() => {
+            useRuntimeStore.getState().setUpdateLoopState({
+                autoDownloadState: 'downloaded',
+                downloadedVersion: '2.7.0',
+                downloadProgress: 100
+            });
+        });
+        await waitFor(() => expect(installButton.disabled).toBe(false));
+        await act(async () => installButton.click());
+        expect(mocks.confirmInstall).toHaveBeenCalledExactlyOnceWith('2.7.0');
     });
 
     it('shows the disabled build state without running an update check', async () => {
@@ -327,7 +350,77 @@ describe('UpdaterDialog', () => {
         expect(mocks.appAppUpdateCheckRun).not.toHaveBeenCalled();
     });
 
-    it('requires downloading the target channel release to switch channels', async () => {
+    it.each([
+        ['2.6.0', 'stable', '2.7.0-beta.1', 'beta'],
+        ['2.7.0-beta.1', 'beta', '2.6.0', 'stable']
+    ])(
+        'installs %s to the selected channel in-app',
+        async (current, channel, target, targetChannel) => {
+            vi.stubGlobal('VERSION', current);
+            const release = {
+                canonicalVersion: target,
+                displayVersion: target,
+                channel: targetChannel,
+                updaterType: 'tauri'
+            };
+            mocks.appAppUpdateReleaseGet.mockResolvedValue(release);
+            mocks.toNormalizedReleaseFromSnapshot.mockImplementation(
+                (value: unknown) => value
+            );
+            const installation = Promise.withResolvers<void>();
+            mocks.confirmInstall.mockReturnValue(installation.promise);
+
+            const onOpenChange = vi.fn();
+            const { rerender } = render(
+                <UpdaterDialog open onOpenChange={onOpenChange} />
+            );
+            await act(async () =>
+                screen
+                    .getByRole('button', { name: `select:${channel}` })
+                    .click()
+            );
+            const button = await screen.findByRole<HTMLButtonElement>(
+                'button',
+                {
+                    name: 'dialog.system.action.install_and_restart'
+                }
+            );
+            await waitFor(() => expect(button.disabled).toBe(false));
+            await act(async () => button.click());
+            expect(mocks.confirmInstall).toHaveBeenCalledExactlyOnceWith(
+                target
+            );
+            expect(
+                screen.getByRole<HTMLButtonElement>('button', {
+                    name: `select:${targetChannel}`
+                }).disabled
+            ).toBe(true);
+            act(() =>
+                useRuntimeStore.getState().setUpdateLoopState({
+                    autoDownloadState: 'downloading',
+                    downloadedVersion: target,
+                    downloadProgress: 42
+                })
+            );
+            expect(screen.getByText('42%')).toBeTruthy();
+            expect(button.disabled).toBe(true);
+            rerender(
+                <UpdaterDialog open={false} onOpenChange={onOpenChange} />
+            );
+            rerender(<UpdaterDialog open onOpenChange={onOpenChange} />);
+            await screen.findByText(`${current} -> ${target}`);
+            expect(
+                screen.getByRole<HTMLButtonElement>('button', {
+                    name: `select:${targetChannel}`
+                }).disabled
+            ).toBe(true);
+            expect(screen.getByText('42%')).toBeTruthy();
+            await act(async () => installation.resolve());
+            expect(mocks.restartApplication).toHaveBeenCalledOnce();
+        }
+    );
+
+    it('keeps the release page action for a channel without in-app installation', async () => {
         const betaRelease = {
             canonicalVersion: '2.7.0-beta.1',
             displayVersion: '2.7.0-beta.1',

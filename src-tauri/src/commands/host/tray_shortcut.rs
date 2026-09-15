@@ -41,7 +41,7 @@ pub async fn app__check_tray_shortcut(
     crate::bootstrap::tray_shortcut::check(&app_handle, binding).await
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__take_tray_shortcut_startup_failure(app_handle: AppHandle) -> bool {
     crate::bootstrap::tray_shortcut::take_startup_failure(&app_handle)

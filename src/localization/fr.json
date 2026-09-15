@@ -496,6 +496,7 @@
         "tray": {
             "open": "Ouvrir VRCX-0",
             "backgroundMode": "Mode arrière-plan",
+            "lock": "Verrouiller",
             "doNotDisturb": "Ne pas déranger",
             "doNotDisturbOneHour": "1 heure",
             "doNotDisturbThreeHours": "3 heures",

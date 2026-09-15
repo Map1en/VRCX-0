@@ -5,7 +5,7 @@ use std::time::SystemTime;
 
 use serde::{Deserialize, Serialize};
 use vrcx_0_core::vrchat_log_reader::{
-    parse_log_document, LogEntry, LogEntryFilter, ParsedLogDocument,
+    parse_log_document, LogEntry, LogEntryFilter, LogQuery, ParsedLogDocument, LOG_LEVELS,
 };
 use vrcx_0_platform::Error;
 
@@ -61,6 +61,8 @@ pub struct VrchatLogEntriesReadInput {
     pub offset: Option<u32>,
     pub limit: Option<u32>,
     pub query: Option<String>,
+    pub query_case_sensitive: Option<bool>,
+    pub query_regex: Option<bool>,
     pub levels: Option<Vec<String>>,
     pub categories: Option<Vec<String>>,
 }
@@ -73,8 +75,17 @@ pub struct VrchatLogTailReadInput {
     pub file_size: Option<u64>,
     pub limit: Option<u32>,
     pub query: Option<String>,
+    pub query_case_sensitive: Option<bool>,
+    pub query_regex: Option<bool>,
     pub levels: Option<Vec<String>>,
     pub categories: Option<Vec<String>>,
+}
+
+#[derive(Clone, Debug, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct VrchatLogLevelCountOutput {
+    pub level: String,
+    pub count: u32,
 }
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
@@ -82,6 +93,7 @@ pub struct VrchatLogTailReadInput {
 pub struct VrchatLogEntriesReadOutput {
     pub file_name: String,
     pub entries: Vec<VrchatLogEntryOutput>,
+    pub level_counts: Option<Vec<VrchatLogLevelCountOutput>>,
     pub offset: u32,
     pub next_offset: Option<u32>,
     pub total_entries: u32,
@@ -127,7 +139,17 @@ fn read_log_entries(
         entries,
         total_lines,
     } = read_log_document(base_dir, &file_name)?;
-    let filter = LogEntryFilter::from_parts(input.query, input.levels, input.categories);
+    let filter = LogEntryFilter::from_parts(
+        LogQuery {
+            text: input.query,
+            case_sensitive: input.query_case_sensitive.unwrap_or(false),
+            use_regex: input.query_regex.unwrap_or(false),
+        },
+        input.levels,
+        input.categories,
+    )
+    .map_err(|message| Error::Custom(format!("Invalid search pattern: {message}")))?;
+    let level_counts = count_levels(&entries, &filter);
     let output_offset = input.offset.unwrap_or(0);
     let offset = output_offset as usize;
     let limit = normalize_limit(input.limit);
@@ -148,6 +170,7 @@ fn read_log_entries(
     Ok(VrchatLogEntriesReadOutput {
         file_name,
         entries: page,
+        level_counts: Some(level_counts),
         offset: output_offset,
         next_offset: (next_offset < total_entries).then_some(output_next_offset),
         total_entries: u32::try_from(total_entries).unwrap_or(u32::MAX),
@@ -178,6 +201,7 @@ fn read_log_tail(
         return Ok(VrchatLogEntriesReadOutput {
             file_name,
             entries: Vec::new(),
+            level_counts: None,
             offset: 0,
             next_offset: None,
             total_entries: 0,
@@ -195,6 +219,7 @@ fn read_log_tail(
         return Ok(VrchatLogEntriesReadOutput {
             file_name,
             entries: Vec::new(),
+            level_counts: None,
             offset: 0,
             next_offset: None,
             total_entries: 0,
@@ -210,7 +235,17 @@ fn read_log_tail(
         entries,
         total_lines: _,
     } = read_log_document(base_dir, &file_name)?;
-    let filter = LogEntryFilter::from_parts(input.query, input.levels, input.categories);
+    let filter = LogEntryFilter::from_parts(
+        LogQuery {
+            text: input.query,
+            case_sensitive: input.query_case_sensitive.unwrap_or(false),
+            use_regex: input.query_regex.unwrap_or(false),
+        },
+        input.levels,
+        input.categories,
+    )
+    .map_err(|message| Error::Custom(format!("Invalid search pattern: {message}")))?;
+    let level_counts = count_levels(&entries, &filter);
     let filtered_entries = entries
         .into_iter()
         .filter(|entry| entry.end_line_number > after_line_number && filter.matches(entry))
@@ -233,6 +268,7 @@ fn read_log_tail(
     Ok(VrchatLogEntriesReadOutput {
         file_name,
         entries: tail_entries,
+        level_counts: Some(level_counts),
         offset: 0,
         next_offset: None,
         total_entries: u32::try_from(total_entries).unwrap_or(u32::MAX),
@@ -242,6 +278,27 @@ fn read_log_tail(
         file_modified_at: file_state.modified_at,
         reset_required: false,
     })
+}
+
+fn count_levels(entries: &[LogEntry], filter: &LogEntryFilter) -> Vec<VrchatLogLevelCountOutput> {
+    let mut counts = [0u32; LOG_LEVELS.len()];
+    for entry in entries {
+        let Some(index) = LOG_LEVELS.iter().position(|level| *level == entry.level) else {
+            continue;
+        };
+        if filter.matches_ignoring_level(entry) {
+            counts[index] = counts[index].saturating_add(1);
+        }
+    }
+
+    LOG_LEVELS
+        .iter()
+        .zip(counts)
+        .map(|(level, count)| VrchatLogLevelCountOutput {
+            level: (*level).to_string(),
+            count,
+        })
+        .collect()
 }
 
 fn normalize_limit(limit: Option<u32>) -> usize {

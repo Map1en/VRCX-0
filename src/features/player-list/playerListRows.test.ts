@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { normalizeString } from '@/shared/utils/string';
 
 import {
-    buildFavoriteIdSet,
     buildPlayerSourceRows,
     buildPlayerDialogSeedData,
     isLiveLocation,
@@ -28,17 +27,6 @@ describe('playerListRows', () => {
         expect(isLiveLocation('offline')).toBe(false);
         expect(isLiveLocation('traveling')).toBe(false);
         expect(isLiveLocation('')).toBe(false);
-    });
-
-    it('combines remote and local favorite friend ids once', () => {
-        expect(
-            Array.from(
-                buildFavoriteIdSet([' usr_remote ', 'usr_shared', ''], {
-                    groupA: ['usr_local', 'usr_shared'],
-                    groupC: ['usr_other']
-                })
-            )
-        ).toEqual(['usr_remote', 'usr_shared', 'usr_local', 'usr_other']);
     });
 
     it('deduplicates player rows and prepends the current user when the game is in a live instance', () => {

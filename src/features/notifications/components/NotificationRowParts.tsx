@@ -1,12 +1,9 @@
 import { SmileIcon, UserIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { cn } from '@/lib/utils';
 import type { NotificationRow } from '@/repositories/notificationPersistenceRepository';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
-import { Button } from '@/ui/shadcn/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { getNotificationImageUrl } from '../notificationCenterUtils';
 import { getDiscIcon } from '../notificationRowActions';
@@ -116,31 +113,5 @@ export function NotificationIconDisc({
     );
 }
 
-export function NotificationActionButton({
-    label,
-    onClick,
-    children
-}: {
-    children: ReactNode;
-    label: string;
-    onClick: () => void;
-}) {
-    return (
-        <Tooltip>
-            <TooltipTrigger
-                render={
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-xs"
-                        aria-label={label}
-                        onClick={onClick}
-                    >
-                        {children}
-                    </Button>
-                }
-            />
-            <TooltipContent>{label}</TooltipContent>
-        </Tooltip>
-    );
-}
+export const NOTIFICATION_ROW_HOVER_REVEAL =
+    'transition-opacity duration-150 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-within:opacity-100 [@media(hover:hover)]:has-[[aria-expanded=true]]:opacity-100';

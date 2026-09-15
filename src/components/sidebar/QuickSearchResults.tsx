@@ -12,7 +12,7 @@ import { CommandGroup, CommandItem } from '@/ui/shadcn/command';
 
 import type { QuickSearchEntityType, QuickSearchResult } from './quickSearch';
 
-export function entityTypeLabel(type: QuickSearchEntityType) {
+function entityTypeLabel(type: QuickSearchEntityType) {
     switch (type) {
         case 'friend':
             return 'User';

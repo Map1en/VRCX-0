@@ -194,7 +194,7 @@ export function parseInteger(value: unknown): number {
     return Number.isFinite(parsed) ? parsed : 0;
 }
 
-export function parseOptionalInteger(value: unknown): number | null {
+function parseOptionalInteger(value: unknown): number | null {
     const parsed = Number.parseInt(String(value), 10);
     return Number.isFinite(parsed) ? parsed : null;
 }

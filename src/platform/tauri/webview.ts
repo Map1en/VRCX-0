@@ -41,6 +41,7 @@ type WindowLike = {
         constraints: WindowSizeConstraints | null
     ) => Promise<void>;
     setMaximizable?: (maximizable: boolean) => Promise<void>;
+    setAlwaysOnTop?: (alwaysOnTop: boolean) => Promise<void>;
     setFocus?: () => Promise<void>;
     requestUserAttention?: (requestType: number | null) => Promise<void>;
     setTheme?: (theme: WindowTheme | null) => Promise<void>;
@@ -353,6 +354,16 @@ export async function setWindowMaximizable(
     return undefined;
 }
 
+export async function setWindowAlwaysOnTop(
+    alwaysOnTop: boolean
+): Promise<void> {
+    const current = await getCurrentWindow();
+    if (current && typeof current.setAlwaysOnTop === 'function') {
+        return current.setAlwaysOnTop(alwaysOnTop);
+    }
+    return undefined;
+}
+
 export const webview = Object.freeze({
     getCurrentWebviewWindow,
     getCurrentWindow,
@@ -373,5 +384,6 @@ export const webview = Object.freeze({
     setWindowPhysicalPosition,
     setWindowBounds,
     setWindowSizeConstraints,
-    setWindowMaximizable
+    setWindowMaximizable,
+    setWindowAlwaysOnTop
 });

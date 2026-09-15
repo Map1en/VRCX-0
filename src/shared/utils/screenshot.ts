@@ -49,4 +49,24 @@ function parseVrchatScreenshotDateFromFileName(
     return Number.isNaN(timestamp) ? null : timestamp;
 }
 
-export { parseVrchatScreenshotDateFromFileName };
+function resolveScreenshotCapturedTime(image: {
+    capturedAt?: string | null;
+    fileName?: string | null;
+    modifiedAt?: number | null;
+}): number {
+    const parsed = image.capturedAt ? Date.parse(image.capturedAt) : Number.NaN;
+    if (Number.isFinite(parsed)) {
+        return parsed;
+    }
+
+    const fromFileName = parseVrchatScreenshotDateFromFileName(
+        image.fileName ?? ''
+    );
+    if (fromFileName !== null) {
+        return fromFileName;
+    }
+
+    return image.modifiedAt ?? 0;
+}
+
+export { parseVrchatScreenshotDateFromFileName, resolveScreenshotCapturedTime };

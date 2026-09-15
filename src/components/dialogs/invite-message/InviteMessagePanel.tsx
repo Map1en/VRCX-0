@@ -50,10 +50,8 @@ import {
 export {
     dialogDescription,
     dialogTitle,
-    getInviteCooldownLabel,
     isInviteMessageType,
-    INVITE_MESSAGE_TYPES,
-    normalizeInviteMessageRows
+    INVITE_MESSAGE_TYPES
 } from './inviteMessagePanelData';
 
 export type {

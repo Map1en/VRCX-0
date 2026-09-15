@@ -18,6 +18,14 @@ const mocks = vi.hoisted(() => ({
     }>
 }));
 
+class ResizeObserverMock {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+}
+
+vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+
 vi.mock('react-i18next', async (importOriginal) => ({
     ...(await importOriginal<typeof import('react-i18next')>()),
     useTranslation: () => ({
@@ -113,9 +121,7 @@ describe('ScreenshotGalleryView folder tree', () => {
         );
 
         await waitFor(() => {
-            expect(container.querySelectorAll('aside nav button')).toHaveLength(
-                3
-            );
+            expect(container.querySelectorAll('nav button')).toHaveLength(3);
         });
         const selectedFolder = screen.getByRole('button', {
             name: '2026-07'
@@ -128,6 +134,59 @@ describe('ScreenshotGalleryView folder tree', () => {
 
         fireEvent.click(screen.getByRole('button', { name: '2024-05' }));
         expect(onSelectFolder).toHaveBeenCalledWith(folderTree.folders[1].path);
+    });
+
+    it('groups months under a year only when that year has more than one', async () => {
+        const groupedTree = {
+            rootPath: 'C:\\VRChat',
+            folders: [
+                folderTree.folders[0],
+                folderTree.folders[1],
+                {
+                    path: 'C:\\VRChat\\2024-06',
+                    parentPath: 'C:\\VRChat',
+                    name: '2024-06',
+                    imageCount: 4,
+                    totalImageCount: 4,
+                    latestModifiedAt: 3
+                },
+                folderTree.folders[2],
+                {
+                    path: 'C:\\VRChat\\aryz',
+                    parentPath: 'C:\\VRChat',
+                    name: 'aryz',
+                    imageCount: 2,
+                    totalImageCount: 2,
+                    latestModifiedAt: 4
+                }
+            ]
+        };
+        render(
+            <GalleryHarness
+                folderTree={groupedTree}
+                images={[]}
+                selectedFolder="C:\VRChat\2024-06"
+                onDeleteSelection={() => undefined}
+                onSelectFolder={() => undefined}
+            />
+        );
+
+        await waitFor(() => {
+            expect(
+                screen.getByRole('button', {
+                    name: 'dialog.screenshot_metadata.year_group'
+                })
+            ).toBeTruthy();
+        });
+        expect(screen.getByRole('button', { name: '2024-05' })).toBeTruthy();
+        expect(screen.getByRole('button', { name: '2024-06' })).toBeTruthy();
+        expect(screen.getByRole('button', { name: '2026-07' })).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'aryz' })).toBeTruthy();
+        expect(
+            screen.getAllByRole('button', {
+                name: 'dialog.screenshot_metadata.year_group'
+            })
+        ).toHaveLength(1);
     });
 });
 
@@ -165,11 +224,13 @@ const mayImages = [
 ];
 
 function GalleryHarness({
+    folderTree: tree = folderTree,
     images,
     selectedFolder,
     onDeleteSelection,
     onSelectFolder = () => undefined
 }: {
+    folderTree?: typeof folderTree;
     images: ScreenshotLibraryImage[];
     selectedFolder: string;
     onDeleteSelection: (paths: string[]) => void;
@@ -180,7 +241,7 @@ function GalleryHarness({
     );
     return (
         <ScreenshotGalleryView
-            folderTree={folderTree}
+            folderTree={tree}
             images={images}
             isImagesLoading={false}
             isTreeLoading={false}

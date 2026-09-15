@@ -166,9 +166,49 @@ describe('NotificationDrawerRow', () => {
         expect(handlers.onMarkSeen).toHaveBeenCalledWith(notification);
     });
 
+    it('hides a message that only restates the notification type', () => {
+        renderNotification({
+            id: 'not_instance_closed',
+            type: 'instance.closed',
+            message: 'view.notification.filters.instance.closed',
+            seen: false
+        });
+
+        expect(
+            screen.getAllByText('view.notification.filters.instance.closed')
+        ).toHaveLength(1);
+    });
+
+    it('drops mark as read when the notification offers a dismiss response', async () => {
+        const notification: NotificationRow = {
+            id: 'not_dismissable',
+            type: 'group.announcement',
+            title: 'Weekly meetup',
+            responses: [{ type: 'delete', icon: 'check', text: 'Dismiss' }],
+            seen: false
+        };
+        renderNotification(notification);
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'side_panel.notification_center.more_actions'
+            })
+        );
+        expect(
+            await screen.findByRole('menuitem', {
+                name: 'view.notification.actions.delete_log'
+            })
+        ).toBeTruthy();
+        expect(
+            screen.queryByRole('menuitem', {
+                name: 'side_panel.notification_center.mark_as_read'
+            })
+        ).toBeNull();
+    });
+
     it.each(['group.announcement', 'group.event.created'])(
-        'keeps %s response actions in the menu without inline buttons',
-        async (type) => {
+        'renders %s response actions as inline buttons',
+        (type) => {
             const response = {
                 type: 'link',
                 text: 'View group',
@@ -183,17 +223,7 @@ describe('NotificationDrawerRow', () => {
             };
             const handlers = renderNotification(notification, false);
 
-            expect(
-                screen.queryByRole('button', { name: 'View group' })
-            ).toBeNull();
-            fireEvent.click(
-                screen.getByRole('button', {
-                    name: 'side_panel.notification_center.more_actions'
-                })
-            );
-            fireEvent.click(
-                await screen.findByRole('menuitem', { name: 'View group' })
-            );
+            fireEvent.click(screen.getByRole('button', { name: 'View group' }));
             expect(handlers.onSendNotificationResponse).toHaveBeenCalledWith(
                 notification,
                 response

@@ -22,7 +22,7 @@ function applyVrcStatusResponse(
     }
 }
 
-export function refreshVrcStatus(): Promise<void> {
+function refreshVrcStatus(): Promise<void> {
     if (!refreshPromise) {
         const requestSequence = snapshotSequence;
         refreshPromise = commands

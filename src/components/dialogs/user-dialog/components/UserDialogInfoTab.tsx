@@ -6,6 +6,7 @@ import { AvatarInfoLine } from '@/components/feed/FeedAvatarInfoLine';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
 import { Location } from '@/components/Location';
 import { LocationWorld } from '@/components/LocationWorld';
+import { BioLinkFavicon } from '@/components/media/BioLinkFavicon';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import {
     Timeline,
@@ -27,7 +28,6 @@ import {
 } from '@/services/entityMediaService';
 import type { UserDialogPreviousInstance } from '@/services/userDialogSessionCacheService';
 import type { UserDialogRelationshipEvent } from '@/services/userDialogSessionCacheService';
-import { getFaviconUrl } from '@/shared/utils/urlUtils';
 import { Button } from '@/ui/shadcn/button';
 import {
     Card,
@@ -73,7 +73,7 @@ type PresenceModel = {
 type RepresentedGroup = NonNullable<
     Awaited<
         ReturnType<
-            typeof import('@/repositories/userProfileRepository').getRepresentedGroup
+            typeof import('@/repositories/userProfileRepository').default.getRepresentedGroup
         >
     >
 > & {
@@ -160,9 +160,12 @@ function InfoPanel({
     return (
         <Card
             size="sm"
-            className={cn('min-w-0 border shadow-none ring-0', className)}
+            className={cn(
+                'ring-stroke-subtle min-w-0 border-0 shadow-none',
+                className
+            )}
         >
-            <CardHeader className="border-b pb-3">
+            <CardHeader className="border-stroke-subtle border-b pb-3">
                 <CardTitle className="min-w-0 truncate text-sm">
                     {title}
                 </CardTitle>
@@ -548,7 +551,7 @@ function UserDialogProfileLinksPanel({
                     <Button
                         type="button"
                         variant="ghost"
-                        className="hover:text-primary h-auto max-w-full justify-start gap-2 p-0 text-left text-xs font-normal whitespace-normal text-inherit"
+                        className="hover:text-primary h-auto max-w-full justify-start gap-2 p-0 text-left text-xs font-normal whitespace-normal text-inherit hover:bg-transparent"
                         onClick={() =>
                             openGroupDialog({
                                 groupId: representedGroup.groupId,
@@ -641,15 +644,12 @@ function UserDialogBioPanel({ profile, bioLinks }: UserDialogBioSectionProps) {
                                     title={link}
                                     onClick={() => openExternalLink(link)}
                                 >
-                                    {getFaviconUrl(link) ? (
-                                        <FadeInImage
-                                            src={getFaviconUrl(link)}
-                                            alt=""
-                                            className="size-4"
-                                        />
-                                    ) : (
-                                        <ExternalLinkIcon data-icon="inline-start" />
-                                    )}
+                                    <BioLinkFavicon
+                                        link={link}
+                                        fallback={
+                                            <ExternalLinkIcon data-icon="inline-start" />
+                                        }
+                                    />
                                 </Button>
                             ))}
                         </div>

@@ -1,8 +1,3 @@
-import type {
-    FeedLiveEntry,
-    FeedLiveEntryPayload,
-    FeedLivePatch
-} from '@/components/feed/feedLiveTypes';
 import type { FeedReadModelResult } from '@/domain/feed/readModel';
 import type { FeedRowOutput as FeedRow } from '@/platform/tauri/bindings';
 import {
@@ -10,6 +5,11 @@ import {
     type FeedFilterType
 } from '@/repositories/feedRepository';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
+import type {
+    FeedLiveEntry,
+    FeedLiveEntryPayload,
+    FeedLivePatch
+} from '@/state/feedLiveTypes';
 
 type FeedLiveMergeOptions = {
     rows: FeedRow[];

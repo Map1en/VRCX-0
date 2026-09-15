@@ -11,7 +11,7 @@ type RuntimeJobTelemetryRecord = {
     detail?: string;
 };
 
-export async function recordRuntimeJobTelemetry(
+async function recordRuntimeJobTelemetry(
     record: RuntimeJobTelemetryRecord
 ): Promise<void> {
     await commands

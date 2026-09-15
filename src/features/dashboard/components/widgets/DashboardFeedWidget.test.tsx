@@ -6,9 +6,9 @@ import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { onlineFeedEntry } from '@/components/feed/feedLiveTestEntries';
-import type { FeedLiveEntry } from '@/components/feed/feedLiveTypes';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
+import type { FeedLiveEntry } from '@/state/feedLiveTypes';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';

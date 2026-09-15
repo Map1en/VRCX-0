@@ -115,7 +115,7 @@ export async function onTauriEvent(
     };
 }
 
-export async function subscribeTauriEvent<TPayload = unknown>(
+async function subscribeTauriEvent<TPayload = unknown>(
     name: string,
     handler: TauriEventHandler<TPayload>
 ): Promise<() => void> {
@@ -138,7 +138,7 @@ export async function subscribeTauriEvent<TPayload = unknown>(
     };
 }
 
-export function offTauriEvent(name: string, handler: TauriEventHandler): void {
+function offTauriEvent(name: string, handler: TauriEventHandler): void {
     const bucket = listeners.get(name);
     if (!bucket) {
         return;
@@ -157,7 +157,7 @@ export function offTauriEvent(name: string, handler: TauriEventHandler): void {
     }
 }
 
-export function emitTauriEvent(name: string, payload?: unknown): void {
+function emitTauriEvent(name: string, payload?: unknown): void {
     dispatch(name, payload);
 }
 

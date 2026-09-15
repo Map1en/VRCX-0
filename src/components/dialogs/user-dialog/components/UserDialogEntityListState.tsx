@@ -13,7 +13,7 @@ import { Spinner } from '@/ui/shadcn/spinner';
 
 import type { UserDialogEntityKind } from './userDialogEntityImages';
 
-export function EntityListEmptyTitle(kind: UserDialogEntityKind, t: TFunction) {
+function EntityListEmptyTitle(kind: UserDialogEntityKind, t: TFunction) {
     if (kind === 'user') {
         return t('dialog.user.empty.no_users');
     }

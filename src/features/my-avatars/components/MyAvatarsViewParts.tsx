@@ -1,7 +1,11 @@
 import {
+    Globe2Icon,
+    LockIcon,
     MonitorIcon,
     MoreHorizontalIcon,
-    RectangleGogglesIcon
+    PersonStandingIcon,
+    RectangleGogglesIcon,
+    SmartphoneIcon
 } from 'lucide-react';
 import { Fragment } from 'react';
 import type {
@@ -18,6 +22,7 @@ import {
     toolbarFilterTrigger,
     ToolbarViewMenu
 } from '@/components/layout/ToolbarControls';
+import { FadeInImage } from '@/components/media/FadeInImage';
 import { cn } from '@/lib/utils';
 import { openAvatarDialog } from '@/services/dialogService';
 import { getAvailablePlatforms } from '@/shared/utils/avatarPlatform';
@@ -33,6 +38,11 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 import { Field, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
+import {
+    HoverCard,
+    HoverCardContent,
+    HoverCardTrigger
+} from '@/ui/shadcn/hover-card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { Spinner } from '@/ui/shadcn/spinner';
 import {
@@ -107,9 +117,12 @@ function PlatformBadge({ children, label }: PlatformBadgeProps) {
         <Tooltip>
             <TooltipTrigger
                 render={
-                    <Badge variant="outline" aria-label={label}>
+                    <span
+                        aria-label={label}
+                        className="text-content-primary inline-flex items-center"
+                    >
                         {children}
-                    </Badge>
+                    </span>
                 }
             />
             <TooltipContent>{label}</TooltipContent>
@@ -121,7 +134,7 @@ export function PlatformBadges({ unityPackages }: PlatformBadgesProps) {
     const platforms = getAvailablePlatforms(unityPackages);
 
     return (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
             {platforms?.isPC ? (
                 <PlatformBadge label="PC">
                     <MonitorIcon aria-hidden="true" className="size-3.5" />
@@ -136,7 +149,96 @@ export function PlatformBadges({ unityPackages }: PlatformBadgesProps) {
                 </PlatformBadge>
             ) : null}
             {platforms?.isIos ? (
-                <PlatformBadge label="iOS">iOS</PlatformBadge>
+                <PlatformBadge label="iOS">
+                    <SmartphoneIcon aria-hidden="true" className="size-3.5" />
+                </PlatformBadge>
+            ) : null}
+        </div>
+    );
+}
+
+export function AvatarVisibilityIndicator({
+    isPublic,
+    label
+}: {
+    isPublic: boolean;
+    label: string;
+}) {
+    const Icon = isPublic ? Globe2Icon : LockIcon;
+    return (
+        <span className="inline-flex min-w-0 items-center gap-1.5">
+            <Icon
+                aria-hidden="true"
+                className={cn(
+                    'size-3.5 shrink-0',
+                    isPublic ? 'text-emerald-500' : 'text-muted-foreground'
+                )}
+            />
+            <span className="text-foreground/80 min-w-0 truncate text-sm font-normal">
+                {label}
+            </span>
+        </span>
+    );
+}
+
+export function MyAvatarNameCell({
+    avatar,
+    isPublic,
+    publicLabel
+}: {
+    avatar: MyAvatarRow;
+    isPublic: boolean;
+    publicLabel: string;
+}) {
+    const { t } = useTranslation();
+    const name = avatar?.name || t('view.my_avatars.label.untitled_avatar');
+    const thumbnailUrl = avatar?.thumbnailImageUrl || avatar?.imageUrl || '';
+
+    return (
+        <div className="flex min-w-0 items-center gap-1.5">
+            <HoverCard>
+                <HoverCardTrigger
+                    delay={400}
+                    closeDelay={100}
+                    render={
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="hover:text-primary h-auto min-w-0 p-0 text-left text-sm font-medium hover:bg-transparent"
+                            onClick={() => openAvatarDetails(avatar)}
+                        >
+                            <span className="truncate">{name}</span>
+                        </Button>
+                    }
+                />
+                <HoverCardContent side="right" sideOffset={8} className="w-64">
+                    <div className="bg-muted aspect-[4/3] w-full overflow-hidden rounded-md">
+                        {thumbnailUrl ? (
+                            <FadeInImage
+                                src={thumbnailUrl}
+                                alt=""
+                                className="size-full object-cover"
+                                loading="lazy"
+                            />
+                        ) : (
+                            <div className="flex size-full items-center justify-center">
+                                <PersonStandingIcon
+                                    aria-hidden="true"
+                                    className="text-muted-foreground size-6"
+                                />
+                            </div>
+                        )}
+                    </div>
+                    <p className="mt-2 line-clamp-2 text-sm font-medium break-words">
+                        {name}
+                    </p>
+                </HoverCardContent>
+            </HoverCard>
+            {isPublic ? (
+                <Globe2Icon
+                    aria-label={publicLabel}
+                    className="size-3.5 shrink-0 text-emerald-500"
+                />
             ) : null}
         </div>
     );

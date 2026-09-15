@@ -4,8 +4,6 @@ import { useFavoriteStore } from '@/state/favoriteStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
-import { refreshModerationSync } from './moderationSyncService';
-
 type RuntimeAuthSnapshot = {
     currentUserId: string | null;
     currentUserEndpoint: string;
@@ -23,10 +21,6 @@ type RefreshCurrentUserOptions = {
     expectedUserId?: string;
     expectedEndpoint?: string;
     expectedWebsocket?: string;
-};
-
-type RefreshPlayerModerationsOptions = {
-    isCurrent?: (() => boolean) | null;
 };
 
 function getRuntimeAuth(): RuntimeAuthSnapshot {
@@ -108,27 +102,4 @@ export async function refreshFriendAndFavoriteSnapshots(
     }
     useFavoriteStore.getState().setFavoritesSnapshot(favoritesSnapshot);
     useSessionStore.getState().setFavoritesLoaded(true);
-}
-
-export async function refreshPlayerModerations({
-    isCurrent = null
-}: RefreshPlayerModerationsOptions = {}) {
-    const { currentUserId, currentUserEndpoint } = getRuntimeAuth();
-    if (!currentUserId) {
-        return;
-    }
-
-    await refreshModerationSync({
-        userId: currentUserId,
-        endpoint: currentUserEndpoint
-    });
-
-    const latestAuth = getRuntimeAuth();
-    if (
-        latestAuth.currentUserId !== currentUserId ||
-        latestAuth.currentUserEndpoint !== currentUserEndpoint ||
-        (typeof isCurrent === 'function' && !isCurrent())
-    ) {
-        return;
-    }
 }

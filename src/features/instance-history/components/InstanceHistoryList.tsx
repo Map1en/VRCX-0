@@ -372,7 +372,6 @@ export function InstanceHistoryList({
                             </Button>
                         ) : undefined
                     }
-                    className="min-h-40 flex-none"
                 />
             )}
         </div>

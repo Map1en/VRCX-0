@@ -1,4 +1,5 @@
 import { SearchPagination } from '@/components/search/SearchPagination';
+import { cn } from '@/lib/utils';
 import type { LanguageOption } from '@/shared/utils/userLanguage';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { TabsContent } from '@/ui/shadcn/tabs';
@@ -45,10 +46,15 @@ export function SearchUserTabPanel({
         <TabsContent
             value="user"
             keepMounted
-            className="m-0 flex min-h-0 flex-1 flex-col data-hidden:hidden"
+            className="relative m-0 flex min-h-0 flex-1 flex-col data-hidden:hidden"
         >
             <div className="flex min-h-0 flex-col" style={{ flex: 9 }}>
-                <div className="min-h-0 flex-1 overflow-y-auto">
+                <div
+                    className={cn(
+                        'flex min-h-0 flex-1 flex-col overflow-y-auto',
+                        pagination.show && 'pb-14'
+                    )}
+                >
                     {isLoading ? (
                         <SearchLoadingState />
                     ) : results.length > 0 ? (
@@ -74,6 +80,7 @@ export function SearchUserTabPanel({
             </div>
             <SearchPagination
                 show={pagination.show}
+                page={pagination.page}
                 prevDisabled={pagination.prevDisabled}
                 nextDisabled={pagination.nextDisabled}
                 onPrev={pagination.onPrev}
@@ -100,10 +107,15 @@ export function SearchWorldTabPanel({
         <TabsContent
             value="world"
             keepMounted
-            className="m-0 flex min-h-0 flex-1 flex-col data-hidden:hidden"
+            className="relative m-0 flex min-h-0 flex-1 flex-col data-hidden:hidden"
         >
             <div className="flex min-h-0 flex-col" style={{ flex: 9 }}>
-                <div className="min-h-0 flex-1 overflow-y-auto">
+                <div
+                    className={cn(
+                        'flex min-h-0 flex-1 flex-col overflow-y-auto',
+                        pagination.show && 'pb-14'
+                    )}
+                >
                     {isLoading ? (
                         <SearchLoadingState />
                     ) : results.length > 0 ? (
@@ -123,6 +135,7 @@ export function SearchWorldTabPanel({
             </div>
             <SearchPagination
                 show={pagination.show}
+                page={pagination.page}
                 prevDisabled={pagination.prevDisabled}
                 nextDisabled={pagination.nextDisabled}
                 onPrev={pagination.onPrev}
@@ -153,10 +166,15 @@ export function SearchAvatarTabPanel({
         <TabsContent
             value="avatar"
             keepMounted
-            className="m-0 flex min-h-0 flex-1 flex-col data-hidden:hidden"
+            className="relative m-0 flex min-h-0 flex-1 flex-col data-hidden:hidden"
         >
             <div className="flex min-h-0 flex-col" style={{ flex: 9 }}>
-                <div className="min-h-0 flex-1 overflow-y-auto">
+                <div
+                    className={cn(
+                        'flex min-h-0 flex-1 flex-col overflow-y-auto',
+                        pagination.show && 'pb-14'
+                    )}
+                >
                     {isLoading ? (
                         <SearchLoadingState />
                     ) : results.length > 0 ? (
@@ -180,6 +198,7 @@ export function SearchAvatarTabPanel({
             </div>
             <SearchPagination
                 show={pagination.show}
+                page={pagination.page}
                 prevDisabled={pagination.prevDisabled}
                 nextDisabled={pagination.nextDisabled}
                 onPrev={pagination.onPrev}
@@ -206,9 +225,15 @@ export function SearchGroupTabPanel({
         <TabsContent
             value="group"
             keepMounted
-            className="m-0 flex min-h-0 flex-1 flex-col data-hidden:hidden"
+            className="relative m-0 flex min-h-0 flex-1 flex-col data-hidden:hidden"
         >
-            <div className="min-h-0 flex-1 overflow-y-auto" style={{ flex: 9 }}>
+            <div
+                className={cn(
+                    'flex min-h-0 flex-1 flex-col overflow-y-auto',
+                    pagination.show && 'pb-14'
+                )}
+                style={{ flex: 9 }}
+            >
                 {isLoading ? (
                     <SearchLoadingState />
                 ) : results.length > 0 ? (
@@ -227,6 +252,7 @@ export function SearchGroupTabPanel({
             </div>
             <SearchPagination
                 show={pagination.show}
+                page={pagination.page}
                 prevDisabled={pagination.prevDisabled}
                 nextDisabled={pagination.nextDisabled}
                 onPrev={pagination.onPrev}

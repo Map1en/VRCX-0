@@ -18,12 +18,11 @@ export function OptionToggle({
 }) {
     return (
         <Toggle
-            variant="outline"
             size="sm"
             pressed={active}
             onPressedChange={onToggle}
             aria-label={label}
-            className="shrink-0 text-xs"
+            className="text-muted-foreground data-pressed:text-foreground shrink-0 text-xs"
         >
             {label}
         </Toggle>

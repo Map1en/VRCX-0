@@ -28,6 +28,7 @@ pub struct NotificationV1RowOutput {
     pub invite_message: String,
     pub request_message: String,
     pub response_message: String,
+    pub location: String,
     pub expired: i64,
     pub seen: i64,
 }
@@ -103,5 +104,7 @@ pub struct NotificationListItemOutput {
     pub data: Value,
     pub responses: Value,
     pub details: Value,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub location: String,
     pub expired: bool,
 }

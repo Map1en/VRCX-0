@@ -11,7 +11,7 @@ import { runRuntimeTelemetryJob } from './runtimeJobTelemetryService';
 
 let inFlightMaintenance: Promise<void> | null = null;
 
-export async function runRegistryBackupMaintenance(reason: string) {
+async function runRegistryBackupMaintenance(reason: string) {
     if (!isHostCapabilityAvailable('registryPrefs')) {
         return;
     }

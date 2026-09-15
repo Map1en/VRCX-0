@@ -57,6 +57,7 @@ describe('tauri webview wrappers', () => {
             requestUserAttention: vi.fn(() => 'flashed'),
             setTheme: vi.fn(() => 'themed'),
             setMaximizable: vi.fn(() => 'maximizable'),
+            setAlwaysOnTop: vi.fn(() => 'pinned'),
             setSizeConstraints: vi.fn(() => 'constrained'),
             setSize: vi.fn(() => 'sized'),
             setPosition: vi.fn(() => 'positioned'),
@@ -80,6 +81,7 @@ describe('tauri webview wrappers', () => {
         await expect(api.setWindowMaximizable(false)).resolves.toBe(
             'maximizable'
         );
+        await expect(api.setWindowAlwaysOnTop(true)).resolves.toBe('pinned');
         await expect(
             api.setWindowSizeConstraints({
                 minWidth: 320,
@@ -116,6 +118,7 @@ describe('tauri webview wrappers', () => {
         expect(currentWindow.setFocus).toHaveBeenCalledOnce();
         expect(currentWindow.requestUserAttention).toHaveBeenCalledWith(2);
         expect(currentWindow.setTheme).toHaveBeenCalledWith('dark');
+        expect(currentWindow.setAlwaysOnTop).toHaveBeenCalledWith(true);
         expect(currentWindow.setPosition).toHaveBeenCalledWith({
             x: 300,
             y: 200
@@ -136,6 +139,7 @@ describe('tauri webview wrappers', () => {
         await expect(api.flashWindow()).resolves.toBeUndefined();
         await expect(api.setWindowTheme(null)).resolves.toBeUndefined();
         await expect(api.setWindowMaximizable(true)).resolves.toBeUndefined();
+        await expect(api.setWindowAlwaysOnTop(true)).resolves.toBeUndefined();
         await expect(
             api.setWindowSizeConstraints({ minWidth: 320 })
         ).resolves.toBeUndefined();

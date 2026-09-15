@@ -1,45 +1,20 @@
-import type { PaginationState } from '@tanstack/react-table';
 import { useEffect, useRef, useState } from 'react';
 
 import { usePersistedTableColumnSizing } from '@/components/data-table/dataTablePersistence';
-import {
-    getTablePageSizePreference,
-    getTablePageSizesPreference
-} from '@/services/preferencesService';
-import { usePreferencesStore } from '@/state/preferencesStore';
 
 import {
     MODERATION_COLUMN_IDS,
-    MODERATION_DEFAULT_PAGE_SIZES,
     readModerationPersistedState,
-    resolveModerationPageSize,
     sanitizeModerationColumnOrder,
     sanitizeModerationColumnVisibility,
-    sanitizeModerationPageSizes,
     sanitizeModerationSorting,
     writeModerationPersistedState
 } from './moderationPageState';
 
-export function useModerationTableState({
-    filteredRowsLength,
-    searchQuery,
-    selectedTypes
-}: {
-    filteredRowsLength: number;
-    searchQuery: string;
-    selectedTypes: string[];
-}) {
+export function useModerationTableState() {
     const [persistedState] = useState(() => readModerationPersistedState());
     const hasWrittenSortingRef = useRef(false);
-    const hasWrittenPageSizeRef = useRef(false);
     const hasWrittenTableStateRef = useRef(false);
-    const preferencesHydrated = usePreferencesStore(
-        (state) => state.preferencesHydrated
-    );
-    const tablePageSizesPreference = usePreferencesStore(
-        (state) => state.tablePageSizes
-    );
-    const [pageSizes, setPageSizes] = useState(MODERATION_DEFAULT_PAGE_SIZES);
     const [sorting, setSorting] = useState(() =>
         sanitizeModerationSorting(persistedState.sorting)
     );
@@ -57,79 +32,6 @@ export function useModerationTableState({
     const [columnOrderLocked, setColumnOrderLocked] = useState(
         () => persistedState.columnOrderLocked === true
     );
-    const [pagination, setPagination] = useState<PaginationState>(() => ({
-        pageIndex: 0,
-        pageSize: resolveModerationPageSize(
-            persistedState.pageSize,
-            MODERATION_DEFAULT_PAGE_SIZES,
-            MODERATION_DEFAULT_PAGE_SIZES[1]
-        )
-    }));
-
-    useEffect(() => {
-        let active = true;
-        Promise.all([
-            getTablePageSizesPreference(MODERATION_DEFAULT_PAGE_SIZES),
-            getTablePageSizePreference(20)
-        ])
-            .then(([nextPageSizes, nextPageSize]) => {
-                if (!active) {
-                    return;
-                }
-                const resolvedPageSizes =
-                    sanitizeModerationPageSizes(nextPageSizes);
-                const parsedPersistedPageSize = Number.parseInt(
-                    String(persistedState.pageSize ?? ''),
-                    10
-                );
-                const hasPersistedPageSize =
-                    Number.isFinite(parsedPersistedPageSize) &&
-                    parsedPersistedPageSize > 0;
-                const resolvedConfiguredPageSize = resolveModerationPageSize(
-                    nextPageSize,
-                    resolvedPageSizes,
-                    MODERATION_DEFAULT_PAGE_SIZES[1]
-                );
-                const resolvedActivePageSize = hasPersistedPageSize
-                    ? resolveModerationPageSize(
-                          parsedPersistedPageSize,
-                          resolvedPageSizes,
-                          resolvedConfiguredPageSize
-                      )
-                    : resolvedConfiguredPageSize;
-                setPageSizes(resolvedPageSizes);
-                setPagination((current) => ({
-                    ...current,
-                    pageSize: resolvedActivePageSize
-                }));
-            })
-            .catch(() => {});
-        return () => {
-            active = false;
-        };
-    }, [persistedState.pageSize]);
-
-    useEffect(() => {
-        if (!preferencesHydrated) {
-            return;
-        }
-        const resolvedPageSizes = sanitizeModerationPageSizes(
-            tablePageSizesPreference
-        );
-        setPageSizes(resolvedPageSizes);
-        setPagination((current) => {
-            const pageSize = resolveModerationPageSize(
-                current.pageSize,
-                resolvedPageSizes
-            );
-            return pageSize === current.pageSize
-                ? current
-                : {
-                      ...current,
-                      pageSize
-                  };
-        });
-    }, [preferencesHydrated, tablePageSizesPreference]);
 
     useEffect(() => {
         if (!hasWrittenSortingRef.current) {
@@ -140,16 +42,6 @@ export function useModerationTableState({
             sorting: sanitizeModerationSorting(sorting)
         });
     }, [sorting]);
-
-    useEffect(() => {
-        if (!hasWrittenPageSizeRef.current) {
-            hasWrittenPageSizeRef.current = true;
-            return;
-        }
-        writeModerationPersistedState({
-            pageSize: pagination.pageSize
-        });
-    }, [pagination.pageSize]);
 
     useEffect(() => {
         if (!hasWrittenTableStateRef.current) {
@@ -164,51 +56,15 @@ export function useModerationTableState({
         });
     }, [columnOrder, columnOrderLocked, columnVisibility]);
 
-    useEffect(() => {
-        setPagination((current) => ({
-            ...current,
-            pageIndex: 0
-        }));
-    }, [searchQuery, selectedTypes]);
-
-    useEffect(() => {
-        const maxPageIndex = Math.max(
-            0,
-            Math.ceil(filteredRowsLength / pagination.pageSize) - 1
-        );
-        if (pagination.pageIndex > maxPageIndex) {
-            setPagination((current) => ({
-                ...current,
-                pageIndex: maxPageIndex
-            }));
-        }
-    }, [filteredRowsLength, pagination.pageIndex, pagination.pageSize]);
-
-    function handlePageSizeChange(value: string) {
-        const nextPageSize = resolveModerationPageSize(
-            value,
-            pageSizes,
-            pagination.pageSize
-        );
-        setPagination({
-            pageIndex: 0,
-            pageSize: nextPageSize
-        });
-    }
-
     return {
         columnOrder,
         columnOrderLocked,
         columnSizing,
         columnVisibility,
-        handlePageSizeChange,
-        pageSizes,
-        pagination,
         setColumnOrder,
         setColumnOrderLocked,
         setColumnSizing,
         setColumnVisibility,
-        setPagination,
         setSorting,
         sorting
     };

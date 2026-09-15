@@ -240,4 +240,4 @@ async function resolveUserByDisplayName(
     return resolvedUser(recorded, 'search', normalizedDisplayName);
 }
 
-export { findKnownUserByDisplayName, resolveUserByDisplayName, resolvedUser };
+export { resolveUserByDisplayName };

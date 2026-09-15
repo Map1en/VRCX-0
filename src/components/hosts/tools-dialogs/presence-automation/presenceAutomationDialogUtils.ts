@@ -11,7 +11,7 @@ export type PresenceRuleActions = Record<string, unknown> & {
     statusDescription?: string;
 };
 
-export type PresenceRuleCondition = Record<string, unknown> & {
+type PresenceRuleCondition = Record<string, unknown> & {
     type: string;
 };
 

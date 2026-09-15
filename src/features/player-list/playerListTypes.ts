@@ -18,7 +18,7 @@ export type PlayerListLanguageRow = {
     value?: string;
 };
 
-export type PlayerListModerationRecord = PlayerListRecord & {
+type PlayerListModerationRecord = PlayerListRecord & {
     block?: boolean;
     mute?: boolean;
     timeoutTime?: number | null;

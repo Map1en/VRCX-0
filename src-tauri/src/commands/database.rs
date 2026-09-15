@@ -39,7 +39,7 @@ pub async fn app__database_upgrade_run(
     Ok(state.runtime_host().database_upgrade().run().await?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__database_upgrade_progress(state: State<'_, AppState>) -> DatabaseUpgradeProgress {
     state.runtime_host().database_upgrade().progress()
@@ -53,7 +53,7 @@ pub async fn app__database_upgrade_retry(
     Ok(state.runtime_host().database_upgrade().retry().await?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn app__database_upgrade_failure_log_path(state: State<'_, AppState>) -> String {
     state.runtime_host().database_upgrade().failure_log_path()

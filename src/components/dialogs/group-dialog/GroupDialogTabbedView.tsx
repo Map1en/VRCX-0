@@ -8,7 +8,6 @@ import {
 } from '@/components/hosts/tools-dialogs/toolsDialogUtils';
 import type { LoadStatus } from '@/domain/shared/types';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
-import type { GroupMemberSort } from '@/platform/tauri/bindings';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import vrchatToolsRepository, {
     type GroupCalendarEventRecord
@@ -28,11 +27,7 @@ import {
     EntityDialogTwoColumnLayout
 } from '../EntityDialogScaffold';
 import { downloadJsonFile } from './groupDialogDownloads';
-import {
-    filterGroupMembers,
-    filterGroupPosts,
-    getGroupDialogTabs
-} from './groupDialogFilters';
+import { filterGroupPosts, getGroupDialogTabs } from './groupDialogFilters';
 import { GroupDialogHeaderSection } from './GroupDialogHeaderSection';
 import { GroupDialogTabPanels } from './GroupDialogTabPanels';
 import type {
@@ -58,8 +53,10 @@ import {
     resolveGroupDialogTab
 } from './groupDialogUtils';
 import { shouldShowGroupBadgeValue } from './GroupDialogViewParts';
+import { staffRoleIdsOf } from './GroupMembersPanel';
 import { GroupPostEditorDialog } from './GroupPostEditorDialog';
 import { useGroupDialogLanguageRows } from './useGroupDialogLanguageRows';
+import { useGroupDialogMembers } from './useGroupDialogMembers';
 import { useGroupDialogPosts } from './useGroupDialogPosts';
 import type { GroupPostForm } from './useGroupDialogPosts';
 import { useGroupDialogTabbedRuntimeState } from './useGroupDialogTabbedRuntimeState';
@@ -67,7 +64,7 @@ import { useGroupDialogTabbedRuntimeState } from './useGroupDialogTabbedRuntimeS
 let lastGroupDialogTab = 'overview';
 
 function isGroupRemoteTab(value: string): value is GroupRemoteTab {
-    return value === 'posts' || value === 'members' || value === 'photos';
+    return value === 'posts' || value === 'photos';
 }
 
 export function GroupDialogTabbedView({
@@ -124,7 +121,6 @@ export function GroupDialogTabbedView({
     const [activeTab, setActiveTab] = useState('overview');
     const [remoteData, setRemoteData] = useState<GroupRemoteData>({
         posts: [],
-        members: [],
         photos: []
     });
     const [remoteStatus, setRemoteStatus] = useState<GroupRemoteStatus>({});
@@ -136,12 +132,8 @@ export function GroupDialogTabbedView({
         useState<LoadStatus>('idle');
     const [groupEventsError, setGroupEventsError] = useState('');
     const [search, setSearch] = useState<GroupDialogSearch>({
-        posts: '',
-        members: ''
+        posts: ''
     });
-    const [memberSort, setMemberSort] =
-        useState<GroupMemberSort>('joinedAt:desc');
-    const [memberRoleId, setMemberRoleId] = useState('');
     const gallerySignature = Array.isArray(group.galleries)
         ? group.galleries
               .map((gallery) => gallery.id || '')
@@ -151,9 +143,7 @@ export function GroupDialogTabbedView({
     const loadContextRef = useRef<GroupLoadContext>({
         endpoint: currentEndpoint,
         groupId: group.id,
-        gallerySignature,
-        memberSort: 'joinedAt:desc',
-        memberRoleId: ''
+        gallerySignature
     });
     const groupEventsRequestRef = useRef(0);
     const groupFollowingRequestRef = useRef(0);
@@ -170,10 +160,15 @@ export function GroupDialogTabbedView({
         remoteStatus.posts === 'ready'
             ? remoteData.posts[0]
             : (posts[0] ?? group.announcement);
-    const members =
-        remoteStatus.members === 'ready'
-            ? remoteData.members
-            : firstArray(group.members);
+    const groupMembers = useGroupDialogMembers({
+        endpoint: currentEndpoint,
+        groupId: group.id,
+        active: activeTab === 'members',
+        totalCount:
+            typeof group.memberCount === 'number' ? group.memberCount : null,
+        staffRoleIds: staffRoleIdsOf(group),
+        seedRows: firstArray(group.members)
+    });
     const photos =
         remoteStatus.photos === 'ready'
             ? remoteData.photos
@@ -190,17 +185,14 @@ export function GroupDialogTabbedView({
         isGroupOwner || hasGroupPermission(group, 'group-invites-manage');
     const canModerateGroup = hasGroupModerationPermission(group);
     const filteredPosts = filterGroupPosts(posts, search.posts);
-    const filteredMembers = filterGroupMembers(members, search.members);
 
     const resetForTarget = useEffectEvent(() => {
         loadContextRef.current = {
             endpoint: currentEndpoint,
             groupId: group.id,
-            gallerySignature,
-            memberSort: 'joinedAt:desc',
-            memberRoleId: ''
+            gallerySignature
         };
-        setRemoteData({ posts: [], members: [], photos: [] });
+        setRemoteData({ posts: [], photos: [] });
         setRemoteStatus({});
         setRemoteErrors({});
         groupEventsRequestRef.current += 1;
@@ -209,9 +201,7 @@ export function GroupDialogTabbedView({
         setGroupEvents([]);
         setGroupEventsStatus('idle');
         setGroupEventsError('');
-        setSearch({ posts: '', members: '' });
-        setMemberSort('joinedAt:desc');
-        setMemberRoleId('');
+        setSearch({ posts: '' });
         const nextTab = resolveGroupDialogTab(tabs, lastGroupDialogTab);
         lastGroupDialogTab = nextTab;
         setActiveTab(nextTab);
@@ -225,9 +215,7 @@ export function GroupDialogTabbedView({
         loadContextRef.current = {
             endpoint: currentEndpoint,
             groupId: group.id,
-            gallerySignature,
-            memberSort,
-            memberRoleId
+            gallerySignature
         };
 
         setRemoteData((current) => ({ ...current, photos: [] }));
@@ -252,11 +240,7 @@ export function GroupDialogTabbedView({
             loadContextRef.current.groupId === context.groupId &&
             (context.tab !== 'photos' ||
                 loadContextRef.current.gallerySignature ===
-                    context.gallerySignature) &&
-            (context.tab !== 'members' ||
-                (loadContextRef.current.memberSort === context.memberSort &&
-                    loadContextRef.current.memberRoleId ===
-                        context.memberRoleId))
+                    context.gallerySignature)
         );
     }
 
@@ -279,17 +263,13 @@ export function GroupDialogTabbedView({
             endpoint: currentEndpoint,
             groupId: group.id,
             gallerySignature,
-            memberSort,
-            memberRoleId,
             tab
         };
         loadContextRef.current = {
             ...loadContextRef.current,
             endpoint: currentEndpoint,
             groupId: group.id,
-            gallerySignature,
-            memberSort,
-            memberRoleId
+            gallerySignature
         };
         setRemoteStatus((current) => ({ ...current, [tab]: 'running' }));
         setRemoteErrors((current) => ({ ...current, [tab]: '' }));
@@ -302,17 +282,6 @@ export function GroupDialogTabbedView({
                     return;
                 }
                 setRemoteData((current) => ({ ...current, posts: rows }));
-            } else if (tab === 'members') {
-                const rows = await groupProfileRepository.getGroupMembers({
-                    groupId: group.id,
-                    sort: memberSort,
-                    roleId: memberRoleId,
-                    force
-                });
-                if (!isCurrentLoadContext(loadContext)) {
-                    return;
-                }
-                setRemoteData((current) => ({ ...current, members: rows }));
             } else if (tab === 'photos') {
                 const galleries = Array.isArray(group.galleries)
                     ? group.galleries
@@ -503,14 +472,7 @@ export function GroupDialogTabbedView({
 
     useEffect(() => {
         loadActiveTab();
-    }, [
-        activeTab,
-        currentEndpoint,
-        gallerySignature,
-        group.id,
-        memberRoleId,
-        memberSort
-    ]);
+    }, [activeTab, currentEndpoint, gallerySignature, group.id]);
 
     const loadEventsForTarget = useEffectEvent(() => {
         if (!group.id) {
@@ -532,71 +494,6 @@ export function GroupDialogTabbedView({
     useEffect(() => {
         loadFollowingEventsForActiveTab();
     }, [activeTab, currentEndpoint, group.id]);
-
-    const reloadMembersForFilter = useEffectEvent(() => {
-        if (activeTab === 'members') {
-            loadTab('members', { force: true });
-        }
-    });
-
-    useEffect(() => {
-        reloadMembersForFilter();
-    }, [memberRoleId, memberSort]);
-
-    async function loadAllMembers() {
-        const loadContext: GroupLoadContext = {
-            endpoint: currentEndpoint,
-            groupId: group.id,
-            gallerySignature,
-            memberSort,
-            memberRoleId,
-            tab: 'members'
-        };
-        loadContextRef.current = {
-            ...loadContextRef.current,
-            endpoint: currentEndpoint,
-            groupId: group.id,
-            gallerySignature,
-            memberSort,
-            memberRoleId
-        };
-        setRemoteStatus((current) => ({ ...current, members: 'running' }));
-        setRemoteErrors((current) => ({ ...current, members: '' }));
-        try {
-            const rows = await groupProfileRepository.getAllGroupMembers({
-                groupId: group.id,
-                sort: memberSort,
-                roleId: memberRoleId,
-                force: true
-            });
-            if (!isCurrentLoadContext(loadContext)) {
-                return;
-            }
-            setRemoteData((current) => ({
-                ...current,
-                members: rows
-            }));
-            setRemoteStatus((current) => ({
-                ...current,
-                members: 'ready'
-            }));
-        } catch (error) {
-            if (!isCurrentLoadContext(loadContext)) {
-                return;
-            }
-            setRemoteStatus((current) => ({
-                ...current,
-                members: 'error'
-            }));
-            setRemoteErrors((current) => ({
-                ...current,
-                members:
-                    error instanceof Error
-                        ? error.message
-                        : 'Failed to load members.'
-            }));
-        }
-    }
 
     const groupUrl = group.url || (group.id ? vrchatGroupUrl(group.id) : '');
     const groupTitle = group.name || 'Group';
@@ -687,15 +584,23 @@ export function GroupDialogTabbedView({
         }));
     }
 
-    function handleSearchMembersChange(value: string) {
-        setSearch((current) => ({
-            ...current,
-            members: value
-        }));
-    }
-
-    function handleMemberRoleChange(value: string) {
-        setMemberRoleId(value === 'all' ? '' : value);
+    async function exportMembers(scope: 'loaded' | 'all') {
+        const rows =
+            scope === 'all'
+                ? await groupMembers.loadAll().catch((error: unknown) => {
+                      toast.add({
+                          type: 'error',
+                          title:
+                              error instanceof Error
+                                  ? error.message
+                                  : 'Failed to load members.'
+                      });
+                      return null;
+                  })
+                : groupMembers.model.rows;
+        if (rows) {
+            downloadJsonFile(`${group.id}_members.json`, rows);
+        }
     }
 
     const {
@@ -775,10 +680,6 @@ export function GroupDialogTabbedView({
         bannerUrl,
         canManagePosts,
         currentUserId,
-        filteredMembers: {
-            rows: filteredMembers,
-            source: members
-        },
         filteredPosts,
         group,
         groupEvents,
@@ -787,8 +688,7 @@ export function GroupDialogTabbedView({
         groupTitle,
         groupUrl,
         joinState,
-        memberRoleId,
-        memberSort,
+        members: groupMembers.model,
         memberStatus,
         ownerLabel,
         photos,
@@ -806,16 +706,15 @@ export function GroupDialogTabbedView({
         onDeletePost: (post) => {
             deleteGroupPost(post);
         },
-        onDownloadMembersJson: () =>
-            downloadJsonFile(`${group.id}_members.json`, members),
         onEditPost: (post) => {
             editGroupPost(post);
         },
-        onLoadAllMembers: () => {
-            loadAllMembers();
+        onExportMembers: (scope) => {
+            void exportMembers(scope);
         },
-        onMemberRoleChange: handleMemberRoleChange,
-        onMemberSortChange: setMemberSort,
+        onLoadMoreMembers: () => {
+            void groupMembers.loadMore();
+        },
         onOpenLink: openExternalLink,
         onOpenOwner: openGroupOwner,
         onPreviousInstancesChange,
@@ -826,9 +725,9 @@ export function GroupDialogTabbedView({
             loadFollowingGroupEvents({ force: true });
         },
         onRefreshMembers: () => {
-            loadTab('members', { force: true });
+            void groupMembers.refresh();
         },
-        onSearchMembersChange: handleSearchMembersChange,
+        onSearchMembersChange: groupMembers.setQuery,
         onSearchPostsChange: handleSearchPostsChange,
         onToggleEventFollow: (event) => {
             toggleGroupEventFollow(event);
