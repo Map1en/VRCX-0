@@ -8,6 +8,8 @@ import shareCollectionRepository from '@/repositories/shareCollectionRepository'
 import { toast } from '@/services/toastService';
 import { isCollectionShortcode } from '@/shared/constants/collectionShare';
 import { isAvatarId, isWorldId } from '@/shared/constants/vrchatIds';
+import { isVrcxInstanceLink } from '@/shared/constants/vrcxDeepLinks';
+import { useLaunchStore } from '@/state/launchStore';
 import { useModalStore } from '@/state/modalStore';
 import { useWorldCollectionImportStore } from '@/state/worldCollectionImportStore';
 
@@ -71,6 +73,22 @@ export async function drainPendingDeepLinks(): Promise<void> {
 
 export function handleDeepLinkAction(action: DeepLinkAction): void {
     switch (action.type) {
+        case 'openInstance':
+            if (isVrcxInstanceLink(action)) {
+                openWorldDialog({ worldId: action.worldId });
+                useLaunchStore
+                    .getState()
+                    .showLaunchDialog(
+                        `${action.worldId}:${action.instanceId}`,
+                        action.shortName,
+                        action.shortName
+                    );
+            } else {
+                console.warn(
+                    'Ignored deep link with invalid instance parameters'
+                );
+            }
+            break;
         case 'openWorld':
             if (isWorldId(action.worldId)) {
                 openWorldDialog({ worldId: action.worldId });

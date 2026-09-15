@@ -7,6 +7,7 @@ import {
     MapPinIcon,
     MonitorIcon,
     RectangleGogglesIcon,
+    Share2Icon,
     UserPlusIcon
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -14,6 +15,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { InstanceInviteDialog } from '@/components/dialogs/InstanceInviteDialog';
+import { useLocationMetadata } from '@/components/location/useLocationMetadata';
 import type { GroupInstanceRecord } from '@/domain/entities/group';
 import { cn } from '@/lib/utils';
 import { copyTextToClipboard } from '@/services/clipboardService';
@@ -26,6 +28,7 @@ import {
 } from '@/services/launchService';
 import { toast } from '@/services/toastService';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType';
+import { vrcxInstanceDeepLink } from '@/shared/constants/vrcxDeepLinks';
 import { checkCanInvite } from '@/shared/utils/invite';
 import { parseLocation, translateAccessType } from '@/shared/utils/location';
 import {
@@ -402,6 +405,19 @@ export function LaunchDialogHost() {
         launchDialog.launchToken ||
         launchDialog.shortName ||
         '';
+    const shareLocation = useMemo(() => parseLocation(actionTag), [actionTag]);
+    const { worldName, instanceName } = useLocationMetadata({
+        locationInfo: shareLocation,
+        currentLocation: actionTag,
+        endpoint: currentEndpoint,
+        worldNameHint: details.worldName || launchDialog.worldName,
+        instanceName: shareLocation.instanceName
+    });
+    const vrcxInstanceUrl = vrcxInstanceDeepLink({
+        worldId: shareLocation.worldId,
+        instanceId: shareLocation.instanceId,
+        shortName: actionLaunchToken
+    });
     const canInviteResolvedInstance =
         Boolean(actionTag) &&
         (checkCanInvite(actionTag, {
@@ -418,7 +434,6 @@ export function LaunchDialogHost() {
     const inGameHint = isGameRunning
         ? ''
         : t('dialog.launch.tile.game_not_running');
-    const worldName = details.worldName || launchDialog.worldName || '';
     const accessTypeLabel = details.parsed.accessTypeName
         ? translateAccessType(
               details.parsed.accessTypeName,
@@ -527,6 +542,20 @@ export function LaunchDialogHost() {
                             </Button>
                         </div>
                         <div className="flex gap-0.5">
+                            <CopyButton
+                                icon={Share2Icon}
+                                label={t('dialog.world.info.copy_vrcx_url')}
+                                value={vrcxInstanceUrl}
+                                onCopy={() =>
+                                    copyField(
+                                        t('dialog.world.info.vrcx_share_text', {
+                                            name: `${subtitle} #${instanceName}`,
+                                            url: vrcxInstanceUrl
+                                        }),
+                                        t('dialog.world.info.vrcx_url')
+                                    )
+                                }
+                            />
                             <CopyButton
                                 icon={LinkIcon}
                                 label={t('accessibility.copy_value', {

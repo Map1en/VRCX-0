@@ -99,6 +99,7 @@ vi.mock('./i18nService', () => ({
     }
 }));
 
+import { useLaunchStore } from '@/state/launchStore';
 import { useWorldCollectionImportStore } from '@/state/worldCollectionImportStore';
 
 import {
@@ -131,6 +132,7 @@ function importStatus(
 describe('deepLinkService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        useLaunchStore.getState().closeLaunchDialog();
         mocks.eventHandlers.clear();
         useWorldCollectionImportStore.getState().reset();
         mocks.appDrainPendingDeepLinks.mockResolvedValue([]);
@@ -440,6 +442,42 @@ describe('deepLinkService', () => {
         expect(mocks.openWorldDialog).toHaveBeenCalledWith({
             worldId: WORLD_ID
         });
+    });
+
+    it('opens world details before the exact instance invitation', async () => {
+        const instanceId = '12345~private(usr_owner)~nonce(abc)~region(jp)';
+        mocks.openWorldDialog.mockImplementationOnce(() => {
+            expect(useLaunchStore.getState().launchDialog.open).toBe(false);
+        });
+        mocks.appDrainPendingDeepLinks.mockResolvedValueOnce([
+            {
+                type: 'openInstance',
+                worldId: WORLD_ID,
+                instanceId,
+                shortName: 'inviteToken'
+            }
+        ]);
+        await drainPendingDeepLinks();
+        expect(useLaunchStore.getState().launchDialog).toMatchObject({
+            open: true,
+            tag: `${WORLD_ID}:${instanceId}`,
+            shortName: 'inviteToken',
+            launchToken: 'inviteToken'
+        });
+        expect(mocks.openWorldDialog).toHaveBeenCalledWith({
+            worldId: WORLD_ID
+        });
+    });
+
+    it('ignores malformed instance actions', () => {
+        handleDeepLinkAction({
+            type: 'openInstance',
+            worldId: WORLD_ID,
+            instanceId: '123&shortName=other',
+            shortName: ''
+        });
+        expect(useLaunchStore.getState().launchDialog.open).toBe(false);
+        expect(mocks.openWorldDialog).not.toHaveBeenCalled();
     });
 
     it('opens avatars from actions', () => {

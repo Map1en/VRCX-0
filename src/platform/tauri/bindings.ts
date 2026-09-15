@@ -3723,6 +3723,12 @@ export type DebugLoggingOutcomeKind =
     | 'needsUserAction';
 export type DeepLinkAction =
     | { type: 'openWorld'; worldId: string }
+    | {
+          type: 'openInstance';
+          worldId: string;
+          instanceId: string;
+          shortName: string;
+      }
     | { type: 'openAvatar'; avatarId: string }
     | { type: 'importCollection'; collectionId: string };
 export type DesktopNotificationActivation = {
