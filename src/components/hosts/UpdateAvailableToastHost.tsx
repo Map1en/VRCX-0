@@ -94,7 +94,7 @@ export function showUpdateReadyToast({
         timeout: 0,
         position: 'bottom-right',
         actionProps: {
-            children: t('nav_menu.update_downloaded'),
+            children: t('nav_menu.update'),
             onClick: onUpdate
         },
         data: { closeButton: true }

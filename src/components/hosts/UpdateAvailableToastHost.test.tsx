@@ -111,7 +111,7 @@ describe('showUpdateAvailableToast', () => {
                 timeout: 0,
                 position: 'bottom-right',
                 actionProps: expect.objectContaining({
-                    children: 'nav_menu.update_downloaded'
+                    children: 'nav_menu.update'
                 })
             })
         );
