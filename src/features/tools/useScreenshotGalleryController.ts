@@ -149,20 +149,18 @@ export function useScreenshotGalleryController({
         storedGalleryFolder
     ]);
 
-    const openGalleryRoute = useCallback(
-        (folder: string = routeFolder || selectedGalleryFolder) => {
-            if (folder) {
-                selectedGalleryFolderRef.current = folder;
-                setSelectedGalleryFolder(folder);
-            }
-            const nextParams = new URLSearchParams();
-            if (folder) {
-                nextParams.set('folder', folder);
-            }
-            setSearchParams(nextParams);
-        },
-        [routeFolder, selectedGalleryFolder, setSearchParams]
-    );
+    const openGalleryRoute = useCallback(() => {
+        const folder = routeFolder || selectedGalleryFolder;
+        if (folder) {
+            selectedGalleryFolderRef.current = folder;
+            setSelectedGalleryFolder(folder);
+        }
+        const nextParams = new URLSearchParams();
+        if (folder) {
+            nextParams.set('folder', folder);
+        }
+        setSearchParams(nextParams);
+    }, [routeFolder, selectedGalleryFolder, setSearchParams]);
 
     const loadGalleryTree = useCallback(
         async ({
