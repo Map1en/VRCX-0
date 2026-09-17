@@ -98,6 +98,13 @@ fn run_dump(out_dir: &Path) -> Result<(), Box<dyn std::error::Error + Send + Syn
         backdrop_sheet_png(&render_current_png(&app, &mut renderer)?.bytes)?,
     )?);
 
+    app.select(SurfaceKind::Wrist, "video");
+    written.push(write_dump_png(
+        out_dir,
+        "wrist-video.png",
+        backdrop_sheet_png(&render_current_png(&app, &mut renderer)?.bytes)?,
+    )?);
+
     app.select(SurfaceKind::Toast, mock::toast::default_scenario_key());
     written.push(write_dump_png(
         out_dir,

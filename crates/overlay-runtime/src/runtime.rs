@@ -14,6 +14,7 @@ use vrcx_0_application_activity::{
 };
 use vrcx_0_application_core::{GameProcessEvent, GameProcessEventSink, TaskSupervisor};
 use vrcx_0_core::friends::FriendRecord;
+use vrcx_0_core::text::first_non_empty_owned;
 use vrcx_0_host_desktop::vr_overlay::{
     OverlayActivationButton, OverlayPlacement, OverlaySurfaceConfig, VrDeviceSnapshot,
 };
@@ -32,8 +33,10 @@ use super::{
     manager::VrOverlayManager,
     service::{HostVrOverlayService, OverlayBackendPreference},
     surfaces::hmd_toast::{refresh_cached_world_name, HmdToastState},
+    surfaces::wrist::compact_duration,
     test_preview::test_wrist_frame_input,
     WristOverlayFrameInput, WristOverlayRenderOptions, WristOverlaySizePreset, WristRuntimeFooter,
+    WristRuntimeNowPlaying,
 };
 
 pub(crate) use super::config::load_runtime_config;
@@ -1063,6 +1066,7 @@ pub(super) fn build_wrist_frame_input(
     devices: Vec<VrDeviceSnapshot>,
 ) -> WristOverlayFrameInput {
     let game_log = services.game_log_snapshot();
+    let now_playing = services.now_playing();
     let captured_at_ms = now_ms();
     let mut activity = services.overlay_activity().snapshot();
     for entry in &mut activity.entries {
@@ -1071,6 +1075,12 @@ pub(super) fn build_wrist_frame_input(
     WristOverlayFrameInput {
         activity,
         devices,
+        now_playing: (!now_playing.url.trim().is_empty()).then(|| WristRuntimeNowPlaying {
+            title: first_non_empty_owned([now_playing.name.as_str(), now_playing.url.as_str()]),
+            length_seconds: now_playing.length,
+            position_seconds: now_playing.position,
+            started_at: now_playing.started_at.clone().unwrap_or_default(),
+        }),
         footer: WristRuntimeFooter {
             player_count: game_log.players.len() as u32,
             instance_duration: instance_duration_text(
@@ -1125,24 +1135,6 @@ fn instance_duration_text(location: &str, started_at: &str, now_ms: i64) -> Stri
         return String::new();
     }
     compact_duration(now_ms - started_at_ms)
-}
-
-fn compact_duration(duration_ms: i64) -> String {
-    let total_minutes = duration_ms / 60_000;
-    if total_minutes < 1 {
-        return "<1m".to_string();
-    }
-    let total_hours = total_minutes / 60;
-    let minutes = total_minutes % 60;
-    if total_hours < 1 {
-        return format!("{minutes}m");
-    }
-    if total_hours < 24 {
-        return format!("{total_hours}h {minutes}m");
-    }
-    let days = total_hours / 24;
-    let hours = total_hours % 24;
-    format!("{days}d {hours}h")
 }
 
 fn is_real_instance_location(location: &str) -> bool {

@@ -9,7 +9,7 @@ use vrcx_0_host_desktop::vr_overlay::{VrDeviceSnapshot, VrDeviceStatus};
 use vrcx_0_i18n::OverlayMessage;
 use vrcx_0_vr_overlay::{
     DeviceChip, DeviceRole, DeviceStatus, FeedAccent, FeedKind, FeedLine, FeedRelation,
-    FeedSeverity, OverlayFooter, OverlaySize, WristSurfaceModel,
+    FeedSeverity, OverlayFooter, OverlayNowPlaying, OverlaySize, WristSurfaceModel,
 };
 
 use super::super::localization::{OverlayLocale, OverlayLocalizer, OverlayPanelLocalizer};
@@ -88,6 +88,7 @@ impl Default for WristOverlayRenderOptions {
 pub struct WristOverlayFrameInput {
     pub activity: OverlayActivitySnapshot,
     pub devices: Vec<VrDeviceSnapshot>,
+    pub now_playing: Option<WristRuntimeNowPlaying>,
     pub footer: WristRuntimeFooter,
     pub options: WristOverlayRenderOptions,
     pub locale: String,
@@ -103,6 +104,80 @@ pub struct WristRuntimeFooter {
     pub player_count: u32,
     pub instance_duration: String,
     pub local_time: String,
+}
+
+#[derive(
+    Clone, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type,
+)]
+#[serde(rename_all = "camelCase")]
+pub struct WristRuntimeNowPlaying {
+    pub title: String,
+    pub length_seconds: i64,
+    pub position_seconds: i64,
+    pub started_at: String,
+}
+
+const NOW_PLAYING_PROGRESS_STEP_PERCENT: u8 = 2;
+
+fn now_playing_model(
+    input: &WristRuntimeNowPlaying,
+    captured_at_ms: i64,
+) -> Option<OverlayNowPlaying> {
+    let title = input.title.trim();
+    if title.is_empty() {
+        return None;
+    }
+    let started_at_ms = DateTime::parse_from_rfc3339(input.started_at.trim())
+        .ok()
+        .map(|value| value.timestamp_millis());
+    let elapsed_seconds = input.position_seconds.max(0)
+        + started_at_ms.map_or(0, |started_at_ms| {
+            (captured_at_ms - started_at_ms).max(0) / 1000
+        });
+    let (time_text, progress_percent) = if input.length_seconds > 0 {
+        let ratio = elapsed_seconds.min(input.length_seconds) as f64 / input.length_seconds as f64;
+        let percent = (ratio * 100.0).floor() as u8;
+        (
+            clock_duration(input.length_seconds),
+            Some(percent - percent % NOW_PLAYING_PROGRESS_STEP_PERCENT),
+        )
+    } else {
+        (compact_duration(elapsed_seconds * 1000), None)
+    };
+    Some(OverlayNowPlaying {
+        title: title.to_string(),
+        time_text,
+        progress_percent,
+    })
+}
+
+fn clock_duration(total_seconds: i64) -> String {
+    let hours = total_seconds / 3600;
+    let minutes = total_seconds % 3600 / 60;
+    let seconds = total_seconds % 60;
+    if hours > 0 {
+        format!("{hours}:{minutes:02}:{seconds:02}")
+    } else {
+        format!("{minutes}:{seconds:02}")
+    }
+}
+
+pub(crate) fn compact_duration(duration_ms: i64) -> String {
+    let total_minutes = duration_ms / 60_000;
+    if total_minutes < 1 {
+        return "<1m".to_string();
+    }
+    let total_hours = total_minutes / 60;
+    let minutes = total_minutes % 60;
+    if total_hours < 1 {
+        return format!("{minutes}m");
+    }
+    if total_hours < 24 {
+        return format!("{total_hours}h {minutes}m");
+    }
+    let days = total_hours / 24;
+    let hours = total_hours % 24;
+    format!("{days}d {hours}h")
 }
 
 pub fn build_wrist_surface_model(input: WristOverlayFrameInput) -> WristSurfaceModel {
@@ -133,6 +208,10 @@ pub fn build_wrist_surface_model(input: WristOverlayFrameInput) -> WristSurfaceM
             Vec::new()
         },
         feed_rows,
+        now_playing: input
+            .now_playing
+            .as_ref()
+            .and_then(|now_playing| now_playing_model(now_playing, input.captured_at_ms)),
         footer: OverlayFooter {
             left: localizer.text(&OverlayActivityText::message(
                 OverlayMessage::overlay_footer_players(input.footer.player_count),

@@ -328,6 +328,10 @@ impl VrOverlayRuntimeServices for DesktopRuntimeServices {
             .as_ref()
             .clone()
     }
+
+    fn now_playing(&self) -> NowPlayingSnapshot {
+        DesktopRuntimeServices::now_playing(self).as_ref().clone()
+    }
 }
 
 #[cfg(test)]

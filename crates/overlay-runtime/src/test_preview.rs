@@ -43,6 +43,7 @@ pub(crate) fn test_wrist_frame_input(
             entries: vec![test_overlay_entry()],
         },
         devices,
+        now_playing: None,
         footer: WristRuntimeFooter {
             player_count: 0,
             instance_duration: String::new(),

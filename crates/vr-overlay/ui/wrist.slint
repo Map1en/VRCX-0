@@ -29,19 +29,31 @@ export component WristPanel inherits Window {
     in property <string> footer-left;
     in property <string> footer-center;
     in property <string> footer-right;
+    in property <string> now-playing-title;
+    in property <string> now-playing-time;
+    in property <bool> now-playing-has-progress: false;
+    in property <float> now-playing-progress: 0;
 
     property <color> background-color: root.dark-background ? #0d1117f2 : #0d1117b8;
     property <color> edge-color: #ffffff24;
     property <color> divider-color: #ffffff1f;
     property <color> muted-color: root.dark-background ? #aeb6c2 : #d5dbe4;
     property <color> quiet-color: root.dark-background ? #7f8996 : #c3cad4;
+    property <color> now-playing-title-color: root.dark-background ? #d5dbe4 : #e6ebf1;
+    property <color> now-playing-accent-color: #38bdf8;
     property <length> header-height: 44px;
     property <length> footer-height: 34px;
     property <length> row-height: 38px;
     property <length> feed-top: 49px;
+    property <length> now-playing-padding: 8px;
+    property <length> now-playing-meter-height: 14px;
+    property <bool> now-playing-title-truncated: now-playing-title-measure.preferred-height > now-playing-title.preferred-height;
+    property <length> now-playing-height: root.now-playing-title != ""
+        ? root.now-playing-padding * 2 + now-playing-title.preferred-height + 6px + root.now-playing-meter-height
+        : 0px;
     property <float> visible-rows: Math.min(
         root.feed-lines.length,
-        Math.floor((root.height - root.feed-top - root.footer-height) / root.row-height));
+        Math.floor((root.height - root.feed-top - root.now-playing-height - root.footer-height) / root.row-height));
 
     Rectangle {
         x: 0px;
@@ -49,7 +61,7 @@ export component WristPanel inherits Window {
         width: parent.width;
         height: (root.visible-rows > 0
             ? root.feed-top + root.visible-rows * root.row-height
-            : root.header-height) + root.footer-height;
+            : root.header-height) + root.now-playing-height + root.footer-height;
         border-radius: 18px;
         border-width: 1px;
         border-color: root.edge-color;
@@ -190,6 +202,97 @@ export component WristPanel inherits Window {
                     vertical-alignment: center;
                     overflow: elide;
                     color: line.detail-color;
+                }
+            }
+        }
+
+        Rectangle {
+            x: 0px;
+            y: parent.height - root.footer-height - root.now-playing-height;
+            width: parent.width;
+            height: root.now-playing-height;
+            visible: root.now-playing-title != "";
+            clip: true;
+
+            Rectangle {
+                x: 0px;
+                y: 0px;
+                width: parent.width;
+                height: 1px;
+                background: root.divider-color;
+            }
+
+            now-playing-title-measure := Text {
+                width: now-playing-title.width;
+                height: 0px;
+                visible: false;
+                text: root.now-playing-title;
+                font-size: 14px;
+                wrap: word-wrap;
+            }
+
+            now-playing-title := Text {
+                x: 18px;
+                y: root.now-playing-padding;
+                width: parent.width - 36px - now-playing-ellipsis.width;
+                height: self.preferred-height;
+                max-lines: 2;
+                text: root.now-playing-title;
+                font-size: 14px;
+                wrap: word-wrap;
+                overflow: clip;
+                vertical-alignment: top;
+                color: root.now-playing-title-color;
+            }
+
+            now-playing-ellipsis := Text {
+                x: parent.width - 18px - self.width;
+                y: root.now-playing-padding + now-playing-title.preferred-height / 2;
+                width: self.preferred-width + 4px;
+                height: now-playing-title.preferred-height / 2;
+                visible: root.now-playing-title-truncated;
+                text: "…";
+                font-size: 14px;
+                horizontal-alignment: right;
+                vertical-alignment: top;
+                color: root.now-playing-title-color;
+            }
+
+            HorizontalLayout {
+                x: 18px;
+                y: root.now-playing-padding + now-playing-title.preferred-height + 6px;
+                width: parent.width - 36px;
+                height: root.now-playing-meter-height;
+                spacing: 10px;
+
+                Rectangle {
+                    horizontal-stretch: 1;
+
+                    if root.now-playing-has-progress : Rectangle {
+                        x: 0px;
+                        y: (parent.height - 3px) / 2;
+                        width: parent.width;
+                        height: 3px;
+                        border-radius: 2px;
+                        background: root.divider-color;
+                        clip: true;
+
+                        Rectangle {
+                            x: 0px;
+                            y: 0px;
+                            width: parent.width * root.now-playing-progress;
+                            height: parent.height;
+                            background: root.now-playing-accent-color;
+                        }
+                    }
+                }
+
+                Text {
+                    horizontal-stretch: 0;
+                    text: root.now-playing-time;
+                    font-size: 12px;
+                    vertical-alignment: center;
+                    color: root.quiet-color;
                 }
             }
         }

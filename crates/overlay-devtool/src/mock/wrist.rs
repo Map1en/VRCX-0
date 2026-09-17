@@ -1,6 +1,6 @@
 use vrcx_0_vr_overlay::{
     DeviceChip, DeviceRole, DeviceStatus, FeedAccent, FeedKind, FeedLine, FeedRelation,
-    FeedSeverity, OverlayFooter, OverlaySize, WristSurfaceModel,
+    FeedSeverity, OverlayFooter, OverlayNowPlaying, OverlaySize, WristSurfaceModel,
 };
 
 use super::ScenarioInfo;
@@ -27,6 +27,10 @@ const SCENARIOS: &[ScenarioInfo] = &[
         key: "i18n",
         label: "CJK and emoji",
     },
+    ScenarioInfo {
+        key: "video",
+        label: "Now playing",
+    },
 ];
 
 pub fn scenario_infos() -> &'static [ScenarioInfo] {
@@ -49,6 +53,7 @@ pub fn build(scenario: &str) -> WristSurfaceModel {
         show_battery_percent: true,
         devices: devices_for_scenario(scenario),
         feed_rows: feed_for_scenario(scenario),
+        now_playing: now_playing_for_scenario(scenario),
         footer: OverlayFooter {
             left: if scenario == "i18n" {
                 "叠加层工具".to_string()
@@ -66,6 +71,29 @@ pub fn build(scenario: &str) -> WristSurfaceModel {
                 "No VR".to_string()
             },
         },
+    }
+}
+
+fn now_playing_for_scenario(scenario: &str) -> Option<OverlayNowPlaying> {
+    match scenario {
+        "video" => Some(OverlayNowPlaying {
+            title: "【MV】YOASOBI「アイドル」/ Idol (Official Music Video) - TVアニメ『【推しの子】』OPテーマ 4K Remaster 2024 Edition (Full Version with Lyrics)"
+                .to_string(),
+            time_text: "3:52".to_string(),
+            progress_percent: Some(72),
+        }),
+        "dense" => Some(OverlayNowPlaying {
+            title: "Never Gonna Give You Up".to_string(),
+            time_text: "3:32".to_string(),
+            progress_percent: Some(40),
+        }),
+        "i18n" => Some(OverlayNowPlaying {
+            title: "https://stream.example.test/live/abc123/very/long/path/that/never/ends/and/keeps/going"
+                .to_string(),
+            time_text: "12m".to_string(),
+            progress_percent: None,
+        }),
+        _ => None,
     }
 }
 

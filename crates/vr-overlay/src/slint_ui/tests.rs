@@ -5,8 +5,8 @@ use super::{
 };
 use crate::{
     AvatarBitmap, DeviceChip, DeviceRole, DeviceStatus, FeedAccent, FeedKind, FeedLine,
-    FeedRelation, FeedSeverity, MainSurfaceModel, OverlayFooter, OverlaySize, RgbaFrame, ToastCard,
-    WristSurfaceModel,
+    FeedRelation, FeedSeverity, MainSurfaceModel, OverlayFooter, OverlayNowPlaying, OverlaySize,
+    RgbaFrame, ToastCard, WristSurfaceModel,
 };
 use std::{sync::Arc, thread};
 
@@ -167,6 +167,64 @@ fn wrist_panel_clamps_the_feed_to_the_rows_that_fit_each_preset() {
     }
 }
 
+#[test]
+fn wrist_panel_reserves_up_to_two_title_lines_for_now_playing_above_the_footer() {
+    let mut renderer = SlintWristRenderer::new();
+    let mut model = sample_wrist_model();
+    model.feed_rows = (0..2).map(feed_row).collect();
+    let panel_bottom = |frame: &RgbaFrame| {
+        (0..frame.size.height)
+            .rev()
+            .find(|y| frame.data[((y * frame.size.width + 250) * 4 + 3) as usize] > 200)
+            .unwrap()
+    };
+
+    let without = panel_bottom(&renderer.render(&model).unwrap());
+    model.now_playing = Some(now_playing("Never Gonna Give You Up", Some(40)));
+    let one_line = panel_bottom(&renderer.render(&model).unwrap());
+    model.now_playing = Some(now_playing(
+        "【MV】YOASOBI「アイドル」/ Idol (Official Music Video) - TVアニメ『【推しの子】』OPテーマ 4K Remaster",
+        Some(40),
+    ));
+    let two_lines = panel_bottom(&renderer.render(&model).unwrap());
+    model.now_playing = Some(now_playing(
+        &"【MV】YOASOBI「アイドル」/ Idol (Official Music Video) - TVアニメ ".repeat(6),
+        Some(40),
+    ));
+    let truncated = panel_bottom(&renderer.render(&model).unwrap());
+    model.now_playing = Some(now_playing("https://stream.example.test/live", None));
+    let unknown_length = panel_bottom(&renderer.render(&model).unwrap());
+
+    assert!(one_line > without + 40);
+    assert!(two_lines > one_line + 10);
+    assert!((two_lines..=two_lines + 2).contains(&truncated));
+    assert_eq!(unknown_length, one_line);
+}
+
+#[test]
+fn wrist_panel_redraws_only_when_the_now_playing_model_changes() {
+    let mut renderer = SlintWristRenderer::new();
+    let mut model = sample_wrist_model();
+    model.now_playing = Some(now_playing("Never Gonna Give You Up", Some(40)));
+
+    let first = renderer.render(&model).unwrap();
+    let second = renderer.render(&model).unwrap();
+    assert_eq!(first, second);
+    assert_eq!(renderer.render_count(), 1);
+
+    model.now_playing = Some(now_playing("Never Gonna Give You Up", Some(42)));
+    let advanced = renderer.render(&model).unwrap();
+    assert_ne!(first, advanced);
+    assert_eq!(renderer.render_count(), 2);
+}
+
+fn now_playing(title: &str, progress_percent: Option<u8>) -> OverlayNowPlaying {
+    OverlayNowPlaying {
+        title: title.to_string(),
+        time_text: "3:32".to_string(),
+        progress_percent,
+    }
+}
 fn overlay_size_presets() -> [OverlaySize; 3] {
     [
         OverlaySize::new(448, 448),
@@ -418,6 +476,7 @@ fn sample_wrist_model() -> WristSurfaceModel {
             severity: FeedSeverity::Important,
             accent: FeedAccent::None,
         }],
+        now_playing: None,
         footer: OverlayFooter {
             left: "8 players".to_string(),
             center: "Instance 12m".to_string(),
