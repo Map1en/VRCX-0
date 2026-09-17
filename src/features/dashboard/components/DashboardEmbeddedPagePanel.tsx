@@ -24,7 +24,7 @@ export function DashboardEmbeddedPagePanel({ panelKey }: { panelKey: string }) {
     }
 
     return (
-        <div className="min-h-0 flex-1 overflow-auto">
+        <div className="h-full min-h-0 overflow-auto">
             <Suspense fallback={<EmbeddedPageFallback />}>
                 <PanelComponent embedded />
             </Suspense>
