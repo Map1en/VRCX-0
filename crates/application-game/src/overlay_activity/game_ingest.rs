@@ -6,7 +6,8 @@ use vrcx_0_application_activity::{
 use vrcx_0_contracts::game_log::GameLogJoinLeaveEntry;
 use vrcx_0_core::location::world_id_from_location as world_id_from_location_or_id;
 
-use crate::game_log::{GameLogIngestOutput, GameLogSideEffect};
+use crate::game_log::video::VideoInput;
+use crate::game_log::GameLogIngestOutput;
 
 pub trait OverlayActivityGameIngestExt {
     fn ingest_game_log_output(&self, output: &GameLogIngestOutput) -> Vec<OverlayActivityEntry>;
@@ -63,39 +64,6 @@ impl OverlayActivityGameIngestExt for OverlayActivityRuntime {
                 entries.push(entry);
             }
         }
-        for side_effect in &output.side_effects {
-            let GameLogSideEffect::Video(input) = side_effect else {
-                continue;
-            };
-            let payload = json!({
-                "location": input.location,
-                "videoUrl": input.video_url,
-                "videoId": input.video_id,
-                "videoName": input.video_name,
-                "worldId": world_id_from_location_or_id(&input.location),
-                "worldName": input.world_name,
-                "thumbnailUrl": input.thumbnail_url,
-            });
-            let candidate = OverlayActivityCandidate {
-                source_id: format!(
-                    "video-play:{}:{}:{}:{}",
-                    input.location,
-                    input.display_name,
-                    input.created_at,
-                    stable_json_hash(&payload)
-                ),
-                activity_type: "VideoPlay".to_string(),
-                created_at: input.created_at.clone(),
-                actor_user_id: input.user_id.clone(),
-                actor_display_name: input.display_name.clone(),
-                current_instance: true,
-                favorite_subject: OverlayActivityFavoriteSubject::UserId(input.user_id.clone()),
-                payload: payload.into(),
-            };
-            if let Some(entry) = self.ingest_candidate(candidate) {
-                entries.push(entry);
-            }
-        }
         for entry in &output.batch.events {
             let payload = json!({
                 "data": entry.data,
@@ -144,6 +112,34 @@ impl OverlayActivityGameIngestExt for OverlayActivityRuntime {
             }
         }
         entries
+    }
+}
+
+pub(crate) fn video_activity_candidate(input: &VideoInput) -> OverlayActivityCandidate {
+    let payload = json!({
+        "location": input.location,
+        "videoUrl": input.video_url,
+        "videoId": input.video_id,
+        "videoName": input.video_name,
+        "worldId": world_id_from_location_or_id(&input.location),
+        "worldName": input.world_name,
+        "thumbnailUrl": input.thumbnail_url,
+    });
+    OverlayActivityCandidate {
+        source_id: format!(
+            "video-play:{}:{}:{}:{}",
+            input.location,
+            input.display_name,
+            input.created_at,
+            stable_json_hash(&payload)
+        ),
+        activity_type: "VideoPlay".to_string(),
+        created_at: input.created_at.clone(),
+        actor_user_id: input.user_id.clone(),
+        actor_display_name: input.display_name.clone(),
+        current_instance: true,
+        favorite_subject: OverlayActivityFavoriteSubject::UserId(input.user_id.clone()),
+        payload: payload.into(),
     }
 }
 

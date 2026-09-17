@@ -1,6 +1,9 @@
 use std::sync::Arc;
+use vrcx_0_application_activity::OverlayActivityRuntime;
 
-use vrcx_0_application_core::{BackendRuntimeStatusPublisher, RuntimeAuthIdentity};
+use vrcx_0_application_core::{
+    BackendRuntimeStatusPublisher, RuntimeAuthIdentity, RuntimeAuthScope, RuntimeAuthScopeSnapshot,
+};
 
 use crate::game_log::host::GameLogHostActions;
 use crate::game_log::ingest::GameLogSideEffect;
@@ -26,6 +29,9 @@ pub(super) struct GameLogSideEffectDeps {
     backend_status: BackendRuntimeStatusPublisher,
     side_effect_sink: GameLogSideEffectSink,
     tasks: TaskSupervisor,
+    overlay_activity: OverlayActivityRuntime,
+    auth_scope: RuntimeAuthScope,
+    auth_scope_snapshot: RuntimeAuthScopeSnapshot,
     media_queue: InstanceMediaQueue,
     host_actions: Arc<dyn GameLogHostActions>,
     pub(super) auth_identity: RuntimeAuthIdentity,
@@ -33,6 +39,7 @@ pub(super) struct GameLogSideEffectDeps {
 
 impl GameLogSideEffectDeps {
     pub(super) fn new(deps: &GameLogProcessorDeps, media_queue: InstanceMediaQueue) -> Self {
+        let auth_scope_snapshot = deps.auth_scope.snapshot();
         let auth_identity = deps.auth_scope.identity();
         Self {
             store: Arc::clone(&deps.store),
@@ -42,6 +49,9 @@ impl GameLogSideEffectDeps {
             backend_status: deps.backend_status.clone(),
             side_effect_sink: deps.side_effect_sink.clone(),
             tasks: deps.tasks.clone(),
+            overlay_activity: deps.overlay_activity.clone(),
+            auth_scope: deps.auth_scope.clone(),
+            auth_scope_snapshot,
             media_queue,
             host_actions: Arc::clone(&deps.host_actions),
             auth_identity,
@@ -62,11 +72,15 @@ impl GameLogSideEffectDeps {
     }
 }
 
-pub(super) fn dispatch_side_effect(deps: GameLogSideEffectDeps, side_effect: GameLogSideEffect) {
+pub(super) fn dispatch_side_effect(
+    deps: GameLogSideEffectDeps,
+    side_effect: GameLogSideEffect,
+    deliver_activity: bool,
+) {
     match side_effect {
         GameLogSideEffect::Video(input) => {
             deps.tasks.clone().spawn(async move {
-                if let Err(error) = runtime_video::handle_video_play(
+                match runtime_video::handle_video_play(
                     deps.store.as_ref(),
                     deps.video_metadata.as_ref(),
                     &deps.event_bus,
@@ -77,7 +91,17 @@ pub(super) fn dispatch_side_effect(deps: GameLogSideEffectDeps, side_effect: Gam
                 )
                 .await
                 {
-                    tracing::warn!("GameLog video side effect failed: {error}");
+                    Ok(Some(candidate))
+                        if deliver_activity
+                            && deps
+                                .auth_scope
+                                .snapshot()
+                                .generation_matches(&deps.auth_scope_snapshot) =>
+                    {
+                        deps.overlay_activity.ingest_candidate(candidate);
+                    }
+                    Ok(_) => {}
+                    Err(error) => tracing::warn!("GameLog video side effect failed: {error}"),
                 }
             });
         }

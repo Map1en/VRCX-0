@@ -3,3 +3,5 @@ mod game_ingest;
 mod tests;
 
 pub use game_ingest::OverlayActivityGameIngestExt;
+
+pub(crate) use game_ingest::video_activity_candidate;

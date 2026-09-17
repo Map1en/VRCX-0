@@ -543,7 +543,7 @@ impl GameLogProcessor {
         }
         let deps = self.side_effect_deps();
         for side_effect in output.side_effects {
-            dispatch_side_effect(deps.clone(), side_effect);
+            dispatch_side_effect(deps.clone(), side_effect, true);
         }
         Ok(())
     }
@@ -596,7 +596,7 @@ impl GameLogProcessor {
         }
         let result = self.flush_pending_write();
         for side_effect in side_effects {
-            dispatch_side_effect(deps.clone(), side_effect);
+            dispatch_side_effect(deps.clone(), side_effect, deliver_activity);
         }
         result
     }

@@ -949,6 +949,7 @@ describe('runtimeEventBridgeService', () => {
             name: 'Live Track',
             position: 7
         });
+        expect(mocks.pushSharedFeedNotification).not.toHaveBeenCalled();
     });
 
     it('still hydrates now playing after an unrelated GameLog side effect', async () => {

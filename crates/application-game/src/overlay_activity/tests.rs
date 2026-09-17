@@ -124,6 +124,11 @@ fn game_log_system_and_video_entries_with_same_timestamp_do_not_collide() {
         ..crate::GameLogIngestOutput::default()
     };
 
+    for side_effect in &output.side_effects {
+        if let GameLogSideEffect::Video(input) = side_effect {
+            runtime.ingest_candidate(video_activity_candidate(input));
+        }
+    }
     runtime.ingest_game_log_output(&output);
 
     let entries = runtime.snapshot().entries;

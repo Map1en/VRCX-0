@@ -1,6 +1,8 @@
+use crate::overlay_activity::video_activity_candidate;
 use chrono::Utc;
 use serde_json::Value;
 use url::Url;
+use vrcx_0_application_activity::OverlayActivityCandidate;
 use vrcx_0_contracts::game_log::{GameLogVideoPlayEntry, GameLogWriteBatch};
 
 use crate::Result;
@@ -51,9 +53,9 @@ pub async fn handle_video_play(
     side_effect_sink: &GameLogSideEffectSink,
     owner_user_id: &OwnerId,
     mut input: VideoInput,
-) -> Result<()> {
+) -> Result<Option<OverlayActivityCandidate>> {
     if input.video_url.trim().is_empty() {
-        return Ok(());
+        return Ok(None);
     }
 
     input.video_url = input.video_url.trim().to_string();
@@ -119,7 +121,7 @@ pub async fn handle_video_play(
             tracing::warn!(
                 "GameLog video write failed; frontend fallback writes are disabled: {message}"
             );
-            return Ok(());
+            return Ok(None);
         }
     };
 
@@ -129,6 +131,7 @@ pub async fn handle_video_play(
         raw: raw_row,
     });
 
+    let activity = video_activity_candidate(&input);
     side_effect_sink.emit(GameLogSideEffectEvent::NowPlaying(Box::new(
         NowPlayingPayload {
             url: Some(input.video_url.clone()),
@@ -150,7 +153,7 @@ pub async fn handle_video_play(
         },
     )));
 
-    Ok(())
+    Ok(Some(activity))
 }
 
 async fn lookup_youtube_video(

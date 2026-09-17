@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 use vrcx_0_application_core::NoopWorldCachePort;
 use vrcx_0_contracts::game_log::{GameLogLocationEntry, GameLogWriteBatch};
 use vrcx_0_core::game_log_parser::{GameLogEvent, GameLogEventKind};
+use vrcx_0_core::json::JsonExt;
 
 use crate::game_log::runtime_state::RuntimeSnapshotStore;
 use crate::game_log::NoopGameLogHostActions;
@@ -1965,5 +1966,184 @@ fn side_effect_events_without_history_rows_still_advance_the_restart_position() 
         0,
         "an already consumed side effect must not run again after a restart"
     );
+    Ok(())
+}
+
+struct InlineVideoTaskExecutor;
+
+impl vrcx_0_application_core::RuntimeTaskExecutor for InlineVideoTaskExecutor {
+    fn spawn(
+        &self,
+        task: vrcx_0_application_core::RuntimeTask,
+    ) -> Box<dyn vrcx_0_application_core::RuntimeTaskHandle> {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(task);
+        Box::new(Self)
+    }
+}
+
+impl vrcx_0_application_core::RuntimeTaskHandle for InlineVideoTaskExecutor {
+    fn abort(&self) {}
+    fn is_finished(&self) -> bool {
+        true
+    }
+    fn join_or_abort(&mut self, _timeout: std::time::Duration) {}
+}
+
+struct VideoMetadataFixture;
+
+#[async_trait::async_trait]
+impl crate::VideoMetadataPort for VideoMetadataFixture {
+    async fn youtube_metadata(
+        &self,
+        video_id: &str,
+        api_key: &str,
+    ) -> Result<Option<serde_json::Value>> {
+        assert_eq!(video_id, "dQw4w9WgXcQ");
+        assert_eq!(api_key, "test-key");
+        Ok(Some(serde_json::json!({ "items": [{
+            "snippet": { "title": "Resolved video title", "thumbnails": {
+                "high": { "url": "https://example.test/thumbnail.jpg" }
+            } },
+            "contentDetails": { "duration": "PT3M20S" }
+        }] })))
+    }
+}
+
+#[test]
+fn video_notifications_use_enriched_activity_and_respect_replay_and_surface_filters() -> Result<()>
+{
+    for (initial_scan, persistence_disabled, enabled) in [
+        (false, false, true),
+        (false, true, true),
+        (true, false, true),
+        (true, true, true),
+        (false, false, false),
+    ] {
+        let (_dir, store, mut processor) = test_processor("video-notification-channel")?;
+        store.set_bool("youtubeAPI", true)?;
+        store.set_string("youtubeAPIKey", "test-key")?;
+        store.set_bool("gameLogDisabled", persistence_disabled)?;
+        processor.deps.video_metadata = Arc::new(VideoMetadataFixture);
+        processor.deps.auth_scope.set("usr_video_owner", "");
+        processor.deps.tasks.set_executor(InlineVideoTaskExecutor);
+        let overlay = &processor.deps.overlay_activity;
+        let scope = if enabled { "on" } else { "off" };
+        let mut filters = serde_json::json!({ "version": 1 });
+        for surface in ["wrist", "desktop", "vr", "hmd", "webhook", "tts"] {
+            filters[surface] = serde_json::json!({ "types": { "VideoPlay": { "scope": scope } } });
+        }
+        overlay.set_filters(OverlayActivityFilters::from_json(filters));
+        overlay.set_delivery_armed(true);
+        let sink = RecordingOverlaySink::default();
+        overlay.set_sink(sink.clone());
+        let timestamp = chrono::Utc::now().to_rfc3339();
+        let video = event(
+            &timestamp,
+            GameLogEventKind::VideoPlay {
+                video_url: "https://youtu.be/dQw4w9WgXcQ".into(),
+                display_name: "Video User".into(),
+            },
+        );
+        let location = event(
+            &timestamp,
+            GameLogEventKind::Location {
+                location: "wrld_video:123".into(),
+                world_name: "Video World".into(),
+            },
+        );
+        processor.handle_jobs(
+            [location, video.clone(), video]
+                .into_iter()
+                .map(|event| {
+                    if initial_scan {
+                        GameLogWorkerJob::InitialEvent(event)
+                    } else {
+                        GameLogWorkerJob::Event(event)
+                    }
+                })
+                .collect(),
+        )?;
+        let deliveries = sink.take_deliveries();
+        if initial_scan || !enabled {
+            assert!(deliveries.is_empty());
+            assert!(overlay.snapshot().entries.is_empty());
+        } else {
+            assert_eq!(deliveries.len(), 1);
+            let delivery = &deliveries[0];
+            assert_eq!(delivery.entry.activity_type, "VideoPlay");
+            assert_eq!(
+                delivery.entry.content.body.source_text(),
+                "Resolved video title"
+            );
+            assert_eq!(delivery.entry.content.world_name, "Video World");
+            assert_eq!(
+                delivery.entry.payload.trimmed_text("thumbnailUrl"),
+                "https://example.test/thumbnail.jpg"
+            );
+            assert!(
+                delivery.desktop && delivery.vr && delivery.hmd && delivery.webhook && delivery.tts
+            );
+            assert_eq!(overlay.snapshot().entries, vec![delivery.entry.clone()]);
+        }
+    }
+    Ok(())
+}
+
+struct ScopeChangingVideoMetadata {
+    auth_scope: RuntimeAuthScope,
+    overlay: OverlayActivityRuntime,
+    next_user_id: &'static str,
+}
+
+#[async_trait::async_trait]
+impl crate::VideoMetadataPort for ScopeChangingVideoMetadata {
+    async fn youtube_metadata(
+        &self,
+        video_id: &str,
+        api_key: &str,
+    ) -> Result<Option<serde_json::Value>> {
+        self.auth_scope.set("", "");
+        self.overlay.clear_runtime_state();
+        if !self.next_user_id.is_empty() {
+            self.auth_scope.set(self.next_user_id, "");
+            self.overlay.set_delivery_armed(true);
+        }
+        VideoMetadataFixture
+            .youtube_metadata(video_id, api_key)
+            .await
+    }
+}
+
+#[test]
+fn video_notifications_discard_metadata_completed_after_auth_scope_changes() -> Result<()> {
+    for next_user_id in ["", "usr_other", "usr_video_owner"] {
+        let (_dir, store, mut processor) = test_processor("video-notification-auth-scope")?;
+        store.set_bool("youtubeAPI", true)?;
+        store.set_string("youtubeAPIKey", "test-key")?;
+        processor.deps.auth_scope.set("usr_video_owner", "");
+        processor.deps.tasks.set_executor(InlineVideoTaskExecutor);
+        processor.deps.video_metadata = Arc::new(ScopeChangingVideoMetadata {
+            auth_scope: processor.deps.auth_scope.clone(),
+            overlay: processor.deps.overlay_activity.clone(),
+            next_user_id,
+        });
+        let overlay = &processor.deps.overlay_activity;
+        let sink = RecordingOverlaySink::default();
+        overlay.set_sink(sink.clone());
+        overlay.set_delivery_armed(true);
+        processor.handle_jobs(vec![GameLogWorkerJob::Event(event(
+            &chrono::Utc::now().to_rfc3339(),
+            GameLogEventKind::VideoPlay {
+                video_url: "https://youtu.be/dQw4w9WgXcQ".into(),
+                display_name: "Video User".into(),
+            },
+        ))])?;
+        assert!(sink.take_deliveries().is_empty());
+        assert!(overlay.snapshot().entries.is_empty());
+    }
     Ok(())
 }

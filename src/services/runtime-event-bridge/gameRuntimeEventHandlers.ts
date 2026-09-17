@@ -1,8 +1,7 @@
 import type {
     DebugLoggingOutcome,
     GameLogProjection,
-    HostSessionProjection,
-    NowPlayingPayload
+    HostSessionProjection
 } from '@/platform/tauri/bindings';
 import { useModalStore } from '@/state/modalStore';
 import { useNotificationStore } from '@/state/notificationStore';
@@ -11,47 +10,8 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { applyRuntimeGameLogProjection } from '../gameLogIngestService';
 import { handleGameRunningUpdate } from '../gameStateService';
 import { isHostCapabilityAvailable } from '../hostCapabilityService';
-import { pushSharedFeedNotification } from '../sharedFeedNotificationService';
 import { handleBrowserFocus } from '../vrcStatusService';
 import type { RuntimeEventPayloadMap } from './types';
-
-function publishNowPlayingSharedFeed(payload: NowPlayingPayload): void {
-    const videoUrl = (payload.videoUrl || payload.url || '').trim();
-    if (!videoUrl) {
-        return;
-    }
-
-    const videoName = (payload.videoName || payload.name || '').trim();
-    const displayName = (payload.displayName || '').trim();
-    const message = [
-        videoName || videoUrl,
-        displayName ? `(${displayName})` : ''
-    ]
-        .filter(Boolean)
-        .join(' ');
-
-    pushSharedFeedNotification({
-        ...payload,
-        created_at:
-            (payload.created_at || '').trim() ||
-            payload.startedAt.trim() ||
-            new Date().toISOString(),
-        type: 'VideoPlay',
-        videoUrl,
-        videoName,
-        videoId: (payload.videoId || payload.source || '').trim(),
-        location: (payload.location || '').trim(),
-        displayName,
-        userId: (payload.userId || '').trim(),
-        message,
-        notyName: message
-    }).catch((error: unknown) => {
-        console.warn(
-            'Failed to publish runtime video shared feed notification:',
-            error
-        );
-    });
-}
 
 let lastDebugLoggingCheckId = 0;
 let nowPlayingEventRevision = 0;
@@ -94,7 +54,6 @@ export function handleGameLogSideEffect(
     switch (event.kind) {
         case 'nowPlaying':
             runtimeStore.setNowPlayingState(event.payload);
-            publishNowPlayingSharedFeed(event.payload);
             break;
         case 'nowPlayingReset':
             runtimeStore.resetNowPlayingState();
