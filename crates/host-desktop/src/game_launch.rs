@@ -78,18 +78,21 @@ pub fn quit_game() -> i32 {
     let mut sys = System::new();
     sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
 
-    let mut count = 0i32;
-    for process in sys.processes().values() {
-        if process
-            .name()
-            .to_string_lossy()
-            .eq_ignore_ascii_case("VRChat.exe")
-        {
-            process.kill();
-            count += 1;
-        }
+    let processes: Vec<_> = sys
+        .processes()
+        .values()
+        .filter(|process| {
+            process
+                .name()
+                .to_string_lossy()
+                .eq_ignore_ascii_case("VRChat.exe")
+        })
+        .collect();
+    if processes.len() != 1 {
+        return 0;
     }
-    count
+    processes[0].kill();
+    1
 }
 
 pub fn start_game(arguments: &str) -> Result<bool, Error> {
