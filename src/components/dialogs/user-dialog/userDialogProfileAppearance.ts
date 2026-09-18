@@ -114,6 +114,19 @@ export function preserveUserDialogProfileAppearance(
     );
 }
 
+export function retainUserDialogProfileAppearance(
+    user: UserDialogProfileSnapshot,
+    previousUser: UserDialogProfileSnapshot
+): UserDialogProfileSnapshot {
+    if (!user || !previousUser) {
+        return user;
+    }
+
+    return applyProfileEndpointFields(user, previousUser, (field) =>
+        Object.prototype.hasOwnProperty.call(previousUser, field)
+    );
+}
+
 function applyProfileEndpointFields(
     user: UserDialogProfileRecord,
     source: Record<string, unknown>,

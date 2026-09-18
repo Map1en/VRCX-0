@@ -18,7 +18,8 @@ import {
 } from './userDialogCurrentAvatar';
 import {
     mergeUserDialogProfileAppearance,
-    preserveUserDialogProfileAppearance
+    preserveUserDialogProfileAppearance,
+    retainUserDialogProfileAppearance
 } from './userDialogProfileAppearance';
 import {
     mergeActivityTimestampsIntoProfile,
@@ -245,22 +246,24 @@ export function useUserDialogProfileResource({
                                     currentProfile,
                                     normalizedUserId
                                 );
-                                const refreshedProfile = isTargetCurrentUser
-                                    ? mergeCurrentUserAvatarFields(
-                                          mergeCurrentUserPresenceFields(
-                                              remoteProfile,
+                                return isTargetCurrentUser
+                                    ? retainUserDialogProfileAppearance(
+                                          mergeCurrentUserAvatarFields(
+                                              mergeCurrentUserPresenceFields(
+                                                  remoteProfile,
+                                                  previousProfile
+                                              ),
                                               previousProfile
                                           ),
                                           previousProfile
                                       )
-                                    : mergeLocalSnapshotIntoProfile(
-                                          localSnapshotRef.current,
-                                          remoteProfile
+                                    : preserveUserDialogProfileAppearance(
+                                          mergeLocalSnapshotIntoProfile(
+                                              localSnapshotRef.current,
+                                              remoteProfile
+                                          ),
+                                          previousProfile
                                       );
-                                return preserveUserDialogProfileAppearance(
-                                    refreshedProfile,
-                                    previousProfile
-                                );
                             })(),
                             activitySnapshotRef.current
                         ),

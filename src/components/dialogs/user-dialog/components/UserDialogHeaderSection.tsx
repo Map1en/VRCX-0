@@ -681,6 +681,7 @@ export function UserDialogHeaderSection({
             )}
             media={
                 <UserDialogHeaderMedia
+                    key={profile.id}
                     bannerAlt={profile.displayName || profile.id || 'User'}
                     bannerFallbackUrl={bannerFallbackUrl}
                     bannerUrl={imageUrl}

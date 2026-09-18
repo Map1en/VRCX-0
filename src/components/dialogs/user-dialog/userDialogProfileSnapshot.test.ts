@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { mergeActivityTimestampsIntoProfile } from './userDialogProfileSnapshot';
+import {
+    mergeActivityTimestampsIntoProfile,
+    mergeSnapshotIntoCurrentProfile
+} from './userDialogProfileSnapshot';
 
 describe('mergeActivityTimestampsIntoProfile', () => {
     it('adopts a real timestamp reported by the snapshot', () => {
@@ -81,5 +84,56 @@ describe('mergeActivityTimestampsIntoProfile', () => {
         expect(mergeActivityTimestampsIntoProfile(null, { id: 'usr_1' })).toBe(
             null
         );
+    });
+});
+
+describe('mergeSnapshotIntoCurrentProfile', () => {
+    it('keeps profile-owned appearance fields over a stale current-user snapshot', () => {
+        const previous = {
+            id: 'usr_self',
+            status: 'active',
+            bannerType: 'customImage',
+            bannerUrl: 'https://image/file_new/1/1024',
+            bannerCustomUrl: 'https://files/file_new/1',
+            userIcon: 'https://files/file_icon_new/1',
+            bio: 'fresh bio'
+        };
+        const merged = mergeSnapshotIntoCurrentProfile({
+            currentProfile: previous,
+            isTargetCurrentUser: true,
+            snapshot: {
+                id: 'usr_self',
+                status: 'busy',
+                location: 'wrld_a:1',
+                bannerType: 'avatarBanner',
+                bannerUrl: 'https://image/file_old/1/1024',
+                userIcon: 'https://files/file_icon_old/1'
+            },
+            targetUserId: 'usr_self'
+        });
+
+        expect(merged).toMatchObject({
+            status: 'busy',
+            location: 'wrld_a:1',
+            bannerType: 'customImage',
+            bannerUrl: 'https://image/file_new/1/1024',
+            bannerCustomUrl: 'https://files/file_new/1',
+            userIcon: 'https://files/file_icon_new/1',
+            bio: 'fresh bio'
+        });
+    });
+
+    it('still takes appearance fields from the snapshot when the dialog has none yet', () => {
+        const merged = mergeSnapshotIntoCurrentProfile({
+            currentProfile: null,
+            isTargetCurrentUser: true,
+            snapshot: {
+                id: 'usr_self',
+                bannerUrl: 'https://image/file_old/1/1024'
+            },
+            targetUserId: 'usr_self'
+        });
+
+        expect(merged?.bannerUrl).toBe('https://image/file_old/1/1024');
     });
 });

@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { cn } from '@/lib/utils';
@@ -33,6 +33,22 @@ export function UserDialogHeaderMedia({
         resolveProfileDecorationAssetUrls(iconFrame);
     const hasIconFrame = Boolean(animatedUrl || staticUrl);
     const displayedBannerUrl = bannerUrl || bannerFallbackUrl;
+    const [loadedBannerUrl, setLoadedBannerUrl] = useState('');
+    useEffect(() => {
+        if (!bannerUrl) {
+            setLoadedBannerUrl('');
+        }
+    }, [bannerUrl]);
+    const previousBannerUrl =
+        bannerUrl && loadedBannerUrl !== bannerUrl ? loadedBannerUrl : '';
+    const fallbackImage = bannerFallbackUrl ? (
+        <FadeInImage
+            src={bannerFallbackUrl}
+            alt={bannerAlt}
+            className="size-full object-cover"
+            fallback={null}
+        />
+    ) : null;
 
     return (
         <div className="relative">
@@ -47,26 +63,26 @@ export function UserDialogHeaderMedia({
                     displayedBannerUrl ? 'cursor-pointer' : 'cursor-default'
                 )}
             >
-                {displayedBannerUrl ? (
+                {bannerUrl ? (
                     <span className="relative size-full">
-                        {bannerFallbackUrl ? (
-                            <FadeInImage
-                                src={bannerFallbackUrl}
-                                alt={bannerUrl ? '' : bannerAlt}
-                                className="absolute inset-0 size-full object-cover"
-                                fallback={null}
-                            />
-                        ) : null}
-                        {bannerUrl ? (
-                            <FadeInImage
-                                src={bannerUrl}
-                                alt={bannerAlt}
-                                className="absolute inset-0 size-full object-cover"
-                                fallback={null}
-                            />
-                        ) : null}
+                        {[previousBannerUrl, bannerUrl]
+                            .filter(Boolean)
+                            .map((url) => (
+                                <FadeInImage
+                                    key={url}
+                                    src={url}
+                                    alt={url === bannerUrl ? bannerAlt : ''}
+                                    className="absolute inset-0 size-full object-cover"
+                                    fallback={
+                                        url === bannerUrl ? fallbackImage : null
+                                    }
+                                    onLoad={() => setLoadedBannerUrl(url)}
+                                />
+                            ))}
                     </span>
-                ) : null}
+                ) : (
+                    fallbackImage
+                )}
             </Button>
             {userIconUrl ? (
                 <div className="absolute bottom-3 left-3 z-30 size-16">
