@@ -1,8 +1,9 @@
-import { mergeCurrentUserMediaFields } from '@/shared/utils/currentUserMedia';
 import {
-    mergeCurrentUserPresenceFields,
-    type CurrentUserPresenceRecord
-} from '@/shared/utils/currentUserPresence';
+    mergeCurrentUserMediaFields,
+    profileMediaFileUrl,
+    profileMediaUpdate,
+    PROFILE_MEDIA_URL_FIELD
+} from '@/shared/utils/currentUserMedia';
 import { extractFileId } from '@/shared/utils/fileUtils';
 import { normalizeString } from '@/shared/utils/string';
 import { usePrintFavoriteStore } from '@/state/printFavoriteStore';
@@ -12,29 +13,9 @@ import type {
     GalleryProfileField
 } from './galleryTypes';
 
-function mergeCurrentUserMediaUpdate(
-    nextUser: CurrentUserPresenceRecord,
-    previousUser: CurrentUserPresenceRecord | null
-) {
-    const mergedUser = mergeCurrentUserPresenceFields(nextUser, previousUser);
-    if (
-        Array.isArray(previousUser?.badges) &&
-        previousUser.badges.length > 0 &&
-        (!Array.isArray(nextUser?.badges) || nextUser.badges.length === 0)
-    ) {
-        return {
-            ...mergedUser,
-            badges: previousUser.badges
-        };
-    }
-    return mergedUser;
-}
-
 export function useGalleryInventoryActions({
-    buildProfilePicOverride,
     confirm,
     currentEndpoint,
-    currentUserProfileService,
     currentUserId,
     mediaProfile,
     refreshMediaProfile,
@@ -47,7 +28,8 @@ export function useGalleryInventoryActions({
     setMutatingKey,
     t,
     toast,
-    useRuntimeStore
+    useRuntimeStore,
+    userProfileRepository
 }: GalleryInventoryActionDeps) {
     async function deletePrint(printId: string) {
         const normalizedPrintId = printId.trim();
@@ -128,16 +110,12 @@ export function useGalleryInventoryActions({
             return;
         }
         const normalizedFileId = fileId.trim();
-        const nextValue = buildProfilePicOverride(
+        const nextValue = profileMediaFileUrl(
             currentEndpoint,
             normalizedFileId
         );
         const currentValue =
-            mediaProfile?.[
-                fieldName === 'profilePicOverride'
-                    ? 'bannerCustomUrl'
-                    : 'userIcon'
-            ] || '';
+            mediaProfile?.[PROFILE_MEDIA_URL_FIELD[fieldName]] || '';
         if (mediaProfile && normalizedFileId === extractFileId(currentValue)) {
             return;
         }
@@ -147,11 +125,9 @@ export function useGalleryInventoryActions({
         }
         setMutatingKey(`${fieldName}:${normalizedFileId || 'clear'}`);
         try {
-            const nextUser = await currentUserProfileService.updateCurrentUser({
-                userId: currentUserId,
-                params: {
-                    [fieldName]: nextValue
-                }
+            await userProfileRepository.updateCurrentUserProfile({
+                expectedUserId: currentUserId,
+                params: profileMediaUpdate(fieldName, nextValue)
             });
             if (!isRuntimeAuthTarget(authTarget)) {
                 return;
@@ -160,9 +136,12 @@ export function useGalleryInventoryActions({
             if (!isRuntimeAuthTarget(authTarget) || !refreshed) {
                 return;
             }
-            const mergedUser = mergeCurrentUserMediaUpdate(
-                mergeCurrentUserMediaFields(nextUser, refreshed),
-                useRuntimeStore.getState().auth.currentUserSnapshot
+            const mergedUser = mergeCurrentUserMediaFields(
+                {
+                    id: currentUserId,
+                    ...useRuntimeStore.getState().auth.currentUserSnapshot
+                },
+                refreshed
             );
             useRuntimeStore.getState().setAuthBootstrap({
                 currentUserSnapshot: mergedUser,

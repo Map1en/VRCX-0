@@ -16,13 +16,19 @@ import type {
 } from '@/domain/entities/user';
 import { invalidateEntityQueries, queryKeys } from '@/lib/entityQueryCache';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import type { CurrentUserProfileUpdateRequest } from '@/platform/tauri/bindings';
 import userProfileRepository from '@/repositories/userProfileRepository';
 import currentUserProfileService from '@/services/currentUserProfileService';
 import { toast } from '@/services/toastService';
-import { mergeCurrentUserMediaFields } from '@/shared/utils/currentUserMedia';
+import {
+    mergeCurrentUserMediaFields,
+    profileMediaFileUrl,
+    profileMediaUpdate,
+    PROFILE_MEDIA_URL_FIELD,
+    type ProfileMediaField
+} from '@/shared/utils/currentUserMedia';
 import { mergeCurrentUserPresenceFields } from '@/shared/utils/currentUserPresence';
 import { extractFileId } from '@/shared/utils/fileUtils';
-import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useVrchatConfigStore } from '@/state/vrchatConfigStore';
 
@@ -120,14 +126,6 @@ function normalizeProfilePronouns(profile: Record<string, unknown>) {
         : String(profile?.pronouns || '');
 }
 
-function buildProfileMediaFileUrl(endpoint: string, fileId: string) {
-    if (!fileId) {
-        return '';
-    }
-    const base = normalizeVrchatEndpointDomain(endpoint);
-    return `${base}/file/${fileId}/1`;
-}
-
 function areStringArraysEqual(left: string[], right: string[]) {
     if (left.length !== right.length) {
         return false;
@@ -148,8 +146,6 @@ type UseUserDialogSelfActionsProps = {
 };
 
 type CurrentUserPatch = EntityRecord & {
-    bio?: string;
-    bioLinks?: string[];
     pronouns?: string;
 };
 
@@ -278,6 +274,20 @@ export function useUserDialogSelfActions({
 
     async function saveCurrentUserPatch(
         patch: CurrentUserPatch,
+        options: { successMessage: string; errorMessage: string }
+    ) {
+        return runCurrentUserMutation(
+            () =>
+                currentUserProfileService.updateCurrentUser({
+                    userId: currentUserId || '',
+                    params: patch
+                }),
+            options
+        );
+    }
+
+    async function runCurrentUserMutation(
+        mutate: () => Promise<UserDialogProfileRecord>,
         {
             successMessage,
             errorMessage,
@@ -306,10 +316,7 @@ export function useUserDialogSelfActions({
         }
         setSelfActionStatus(actionStatusRef, setActionStatus, 'self-profile');
         try {
-            const nextUser = await currentUserProfileService.updateCurrentUser({
-                userId: currentUserId || '',
-                params: patch
-            });
+            const nextUser = await mutate();
             if (!isCurrentTarget()) {
                 return false;
             }
@@ -429,9 +436,10 @@ export function useUserDialogSelfActions({
             32
         );
         const patch: CurrentUserPatch = {};
+        const profilePatch: CurrentUserProfileUpdateRequest = {};
 
         if (nextBio !== String(profile.bio || '')) {
-            patch.bio = nextBio;
+            profilePatch.bio = nextBio;
         }
         if (
             !areStringArraysEqual(
@@ -439,7 +447,7 @@ export function useUserDialogSelfActions({
                 normalizeProfileBioLinks(profile)
             )
         ) {
-            patch.bioLinks = nextBioLinks;
+            profilePatch.bioLinks = nextBioLinks;
         }
         if (nextPronouns !== normalizeProfilePronouns(profile)) {
             patch.pronouns = nextPronouns;
@@ -447,6 +455,7 @@ export function useUserDialogSelfActions({
 
         if (
             !Object.keys(patch).length &&
+            !Object.keys(profilePatch).length &&
             !addLanguageKeys.length &&
             !removeLanguageKeys.length
         ) {
@@ -457,30 +466,33 @@ export function useUserDialogSelfActions({
         setSelfActionStatus(actionStatusRef, setActionStatus, 'self-profile');
 
         try {
+            let nextUser: UserDialogProfileRecord = profile;
+            if (Object.keys(profilePatch).length) {
+                await userProfileRepository.updateCurrentUserProfile({
+                    expectedUserId: currentUserId || '',
+                    params: profilePatch
+                });
+            }
             if (Object.keys(patch).length) {
-                const nextProfile =
-                    await currentUserProfileService.updateCurrentUser({
-                        userId: currentUserId || '',
-                        params: patch
-                    });
-                applyCurrentUserSnapshot(nextProfile);
+                nextUser = await currentUserProfileService.updateCurrentUser({
+                    userId: currentUserId || '',
+                    params: patch
+                });
             }
             if (removeLanguageKeys.length) {
-                const nextProfile =
+                nextUser =
                     await currentUserProfileService.removeCurrentUserTags({
                         userId: currentUserId || '',
                         tags: removeLanguageKeys.map((key) => `language_${key}`)
                     });
-                applyCurrentUserSnapshot(nextProfile);
             }
             if (addLanguageKeys.length) {
-                const nextProfile =
-                    await currentUserProfileService.addCurrentUserTags({
-                        userId: currentUserId || '',
-                        tags: addLanguageKeys.map((key) => `language_${key}`)
-                    });
-                applyCurrentUserSnapshot(nextProfile);
+                nextUser = await currentUserProfileService.addCurrentUserTags({
+                    userId: currentUserId || '',
+                    tags: addLanguageKeys.map((key) => `language_${key}`)
+                });
             }
+            applyCurrentUserSnapshot({ ...nextUser, ...profilePatch });
 
             toast.add({
                 type: 'success',
@@ -501,32 +513,32 @@ export function useUserDialogSelfActions({
     }
 
     async function setSelfProfileMediaField(
-        fieldName: 'userIcon' | 'profilePicOverride',
+        fieldName: ProfileMediaField,
         fileId: string
     ) {
         if (!isCurrentUser || actionStatusRef.current !== 'idle' || !profile) {
             return;
         }
         const normalizedFileId = fileId.trim();
-        const nextValue = buildProfileMediaFileUrl(
+        const nextValue = profileMediaFileUrl(
             currentEndpoint,
             normalizedFileId
         );
-        const currentValue =
-            profile[
-                fieldName === 'profilePicOverride'
-                    ? 'bannerCustomUrl'
-                    : 'userIcon'
-            ];
+        const currentValue = profile[PROFILE_MEDIA_URL_FIELD[fieldName]];
         if (
             normalizedFileId ===
             extractFileId(typeof currentValue === 'string' ? currentValue : '')
         ) {
             return;
         }
-        await saveCurrentUserPatch(
-            {
-                [fieldName]: nextValue
+        const currentProfile = profile;
+        await runCurrentUserMutation(
+            async () => {
+                await userProfileRepository.updateCurrentUserProfile({
+                    expectedUserId: currentUserId || '',
+                    params: profileMediaUpdate(fieldName, nextValue)
+                });
+                return currentProfile;
             },
             {
                 refreshMedia: true,

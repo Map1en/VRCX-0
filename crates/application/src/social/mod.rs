@@ -32,8 +32,9 @@ pub use batch_mutation::{
 pub use current_user_mutation::{
     ContentFilter, CurrentUserMutationFuture, CurrentUserMutationPort, CurrentUserMutationRequest,
     CurrentUserMutationRuntime, CurrentUserProfileUpdateRequest,
-    CurrentUserQueryInvalidationFuture, CurrentUserUpdateRequest, VrchatCurrentUserBadgeInput,
-    VrchatCurrentUserProfileUpdateInput, VrchatCurrentUserTagsInput, VrchatCurrentUserUpdateInput,
+    CurrentUserQueryInvalidationFuture, CurrentUserUpdateRequest, ProfileBackgroundType,
+    ProfileBannerType, VrchatCurrentUserBadgeInput, VrchatCurrentUserProfileUpdateInput,
+    VrchatCurrentUserTagsInput, VrchatCurrentUserUpdateInput,
 };
 pub use friend_log_names::{
     resolve_friend_log_names, FriendLogNameResolutionCoordinator, FriendLogNameResolutionDeps,

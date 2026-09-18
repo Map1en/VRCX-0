@@ -21,12 +21,16 @@ import {
     TILE_CHECK,
     TILE_CHECK_ANCHOR
 } from '@/shared/constants/selectableTile';
+import {
+    PROFILE_MEDIA_URL_FIELD,
+    type ProfileMediaField
+} from '@/shared/utils/currentUserMedia';
 import { extractFileId } from '@/shared/utils/fileUtils';
 import { Button } from '@/ui/shadcn/button';
 
 import type { UserDialogProfileRecord } from '../useUserDialogProfileResource';
 
-type ProfileMediaFieldName = 'profilePicOverride' | 'userIcon';
+type ProfileMediaFieldName = ProfileMediaField;
 type MediaFile = Awaited<
     ReturnType<typeof mediaRepository.getFileList>
 >['json'][number];
@@ -45,7 +49,7 @@ interface MediaSection {
 const MEDIA_SECTIONS: MediaSection[] = [
     {
         key: 'banner',
-        fieldName: 'profilePicOverride',
+        fieldName: 'banner',
         fileTag: 'gallery',
         assetKey: 'gallery',
         titleKey: 'dialog.user.profile_media.banner',
@@ -177,11 +181,7 @@ function ProfileMediaSection({
 }) {
     const { t } = useTranslation();
     const rawCurrentValue =
-        profile?.[
-            section.fieldName === 'profilePicOverride'
-                ? 'bannerCustomUrl'
-                : 'userIcon'
-        ];
+        profile?.[PROFILE_MEDIA_URL_FIELD[section.fieldName]];
     const currentValue =
         typeof rawCurrentValue === 'string' ? rawCurrentValue : '';
     const currentFileId = extractFileId(currentValue);

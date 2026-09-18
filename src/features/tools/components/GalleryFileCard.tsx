@@ -49,7 +49,7 @@ export function GalleryFileCard({
             ? extractFileId(bannerCustomUrl)
             : extractFileId(userIcon);
     const profileField: GalleryProfileField =
-        tab === 'gallery' ? 'profilePicOverride' : 'userIcon';
+        tab === 'gallery' ? 'banner' : 'userIcon';
     const isCurrent = activeFileId === file.id;
     const isFileMutating = mutatingKey === `${tab}:${file.id}`;
     const isProfileMutating = profileField

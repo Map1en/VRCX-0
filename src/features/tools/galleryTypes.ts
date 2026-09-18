@@ -2,6 +2,7 @@ import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 
 import type { UserProfileEntity } from '@/domain/entities/user';
 import type { AppToastOptions } from '@/services/toastService';
+import type { ProfileMediaField } from '@/shared/utils/currentUserMedia';
 import type { CurrentUserSnapshotState } from '@/state/runtimeStore';
 
 import type {
@@ -80,7 +81,6 @@ export type GalleryControllerDeps = {
 export type GalleryActionDeps = GalleryControllerDeps & {
     FILE_TABS: Partial<typeof import('./galleryConstants').FILE_TABS>;
     UPLOAD_ASPECT_RATIOS: Partial<Record<GalleryUploadTarget, number>>;
-    buildProfilePicOverride(endpoint: string, fileId: string): string;
     confirm(request: DialogRequest): Promise<DialogResult>;
     getLocalTimestampString(): string;
     isRuntimeAuthTarget(authTarget: GalleryAuthTarget): boolean;
@@ -94,20 +94,19 @@ export type GalleryActionDeps = GalleryControllerDeps & {
     t: Translation;
     toast: ToastApi;
     useRuntimeStore: typeof import('@/state/runtimeStore').useRuntimeStore;
-    currentUserProfileService: typeof import('@/services/currentUserProfileService').default;
+    userProfileRepository: typeof import('@/repositories/userProfileRepository').default;
     validateImageFile(file: Blob, t: Translation): boolean;
     withUploadTimeout<T>(promise: Promise<T>): Promise<T>;
 };
 
 export type GalleryAssetActionDeps = Omit<
     GalleryActionDeps,
-    | 'buildProfilePicOverride'
     | 'mediaProfile'
     | 'refreshMediaProfile'
     | 'mediaRepository'
     | 'prompt'
     | 'useRuntimeStore'
-    | 'currentUserProfileService'
+    | 'userProfileRepository'
 > & {
     mediaRepository: Pick<
         GalleryActionDeps['mediaRepository'],
@@ -121,7 +120,6 @@ export type GalleryAssetActionDeps = Omit<
 
 export type GalleryInventoryActionDeps = Pick<
     GalleryActionDeps,
-    | 'buildProfilePicOverride'
     | 'confirm'
     | 'currentEndpoint'
     | 'currentUserId'
@@ -154,13 +152,13 @@ export type GalleryInventoryActionDeps = Pick<
             }): void;
         };
     };
-    currentUserProfileService: Pick<
-        GalleryActionDeps['currentUserProfileService'],
-        'updateCurrentUser'
+    userProfileRepository: Pick<
+        GalleryActionDeps['userProfileRepository'],
+        'updateCurrentUserProfile'
     >;
 };
 
-export type GalleryProfileField = 'profilePicOverride' | 'userIcon';
+export type GalleryProfileField = ProfileMediaField;
 
 export type GalleryBulkCommands = {
     bulkRunning: boolean;

@@ -1,4 +1,4 @@
-import type { ProfileBackgroundUpdate } from '@/repositories/userProfileRepository';
+import type { CurrentUserProfileUpdateRequest } from '@/platform/tauri/bindings';
 import {
     profileBackgroundTextureLabel,
     profileBackgroundTextures
@@ -48,7 +48,7 @@ export function resolveProfileGradientColors(
 export function buildGradientBackgroundUpdate(
     top: string,
     bottom: string
-): ProfileBackgroundUpdate {
+): CurrentUserProfileUpdateRequest {
     return {
         backgroundType: 'gradient',
         backgroundGradientTop: top.replace(/^#/, ''),

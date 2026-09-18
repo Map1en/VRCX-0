@@ -2,12 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { resolveProfileDecorationMutation } from '@/domain/entities/inventory';
+import type { CurrentUserProfileUpdateRequest } from '@/platform/tauri/bindings';
 import mediaRepository, {
     type InventoryItemRecord
 } from '@/repositories/mediaRepository';
-import userProfileRepository, {
-    type ProfileBackgroundUpdate
-} from '@/repositories/userProfileRepository';
+import userProfileRepository from '@/repositories/userProfileRepository';
 import { refreshCurrentUser } from '@/services/backgroundMaintenanceSessionService';
 import { toast } from '@/services/toastService';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -39,7 +38,7 @@ type ProfileDecorationMutation =
           equipSlot: ProfileDecorationSlot;
           inventoryId: string;
       }
-    | { action: 'background'; params: ProfileBackgroundUpdate };
+    | { action: 'background'; params: CurrentUserProfileUpdateRequest };
 
 export const UNEQUIP_PENDING_KEY = 'unequip';
 
@@ -341,7 +340,10 @@ export function useUserDialogProfileDecorations({
         });
     }
 
-    function updateBackground(key: string, params: ProfileBackgroundUpdate) {
+    function updateBackground(
+        key: string,
+        params: CurrentUserProfileUpdateRequest
+    ) {
         runMutation(key, { action: 'background', params });
     }
 

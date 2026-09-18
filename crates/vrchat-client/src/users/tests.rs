@@ -86,9 +86,11 @@ fn current_user_mutations_build_paths_and_json_bodies() {
     let (_, profile) = profile_update_input(
         "endpoint".into(),
         " usr/1 ".into(),
-        CurrentUserProfileUpdateRequest::Gradient {
-            background_gradient_top: "5d3f86".into(),
-            background_gradient_bottom: "21385B".into(),
+        CurrentUserProfileUpdateRequest {
+            background_type: Some(ProfileBackgroundType::Gradient),
+            background_gradient_top: Some("5d3f86".into()),
+            background_gradient_bottom: Some("21385B".into()),
+            ..Default::default()
         },
     )
     .unwrap();
@@ -100,6 +102,30 @@ fn current_user_mutations_build_paths_and_json_bodies() {
             "backgroundType": "gradient",
             "backgroundGradientTop": "5d3f86",
             "backgroundGradientBottom": "21385B",
+        })
+    );
+
+    let (_, profile_details) = profile_update_input(
+        "endpoint".into(),
+        "usr_1".into(),
+        CurrentUserProfileUpdateRequest {
+            bio: Some("hello".into()),
+            bio_links: Some(vec!["https://example.test".into()]),
+            user_icon: Some(String::new()),
+            banner_type: Some(ProfileBannerType::CustomImage),
+            banner_custom_url: Some("https://files/file_banner/1".into()),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        json_body(&profile_details),
+        &json!({
+            "bio": "hello",
+            "bioLinks": ["https://example.test"],
+            "userIcon": "",
+            "bannerType": "customImage",
+            "bannerCustomUrl": "https://files/file_banner/1",
         })
     );
 
@@ -200,7 +226,7 @@ fn user_requests_reject_blank_required_ids() {
     assert!(profile_update_input(
         "".into(),
         " ".into(),
-        CurrentUserProfileUpdateRequest::Default,
+        CurrentUserProfileUpdateRequest::default(),
     )
     .is_err());
     assert!(user_mutual_counts_get_input("".into(), " ".into()).is_err());
@@ -223,6 +249,10 @@ fn user_requests_reject_blank_required_ids() {
 fn current_user_requests_reject_unknown_fields_and_statuses() {
     assert!(serde_json::from_value::<CurrentUserUpdateRequest>(json!({
         "displayName": "unsupported here",
+    }))
+    .is_err());
+    assert!(serde_json::from_value::<CurrentUserUpdateRequest>(json!({
+        "bio": "profile-owned now",
     }))
     .is_err());
     assert!(serde_json::from_value::<CurrentUserUpdateRequest>(json!({

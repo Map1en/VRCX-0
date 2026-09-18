@@ -6,12 +6,10 @@ import type { GalleryInventoryActionDeps } from './galleryTypes';
 import { useGalleryInventoryActions } from './useGalleryInventoryActions';
 
 function useActions(overrides: Partial<GalleryInventoryActionDeps> = {}) {
-    const nextUser = {
+    const updateCurrentUserProfile = vi.fn().mockResolvedValue({
         id: 'usr_self',
-        displayName: 'Current User',
         userIcon: 'https://api.vrchat.cloud/api/1/file/file_icon/1'
-    };
-    const updateCurrentUser = vi.fn().mockResolvedValue(nextUser);
+    });
     const setAuthBootstrap = vi.fn();
     const refreshMediaProfile = vi
         .fn()
@@ -37,10 +35,8 @@ function useActions(overrides: Partial<GalleryInventoryActionDeps> = {}) {
         tags: []
     };
     const actions = useGalleryInventoryActions({
-        buildProfilePicOverride: (endpoint: string, fileId: string) =>
-            fileId ? `${endpoint}/file/${fileId}/1` : '',
-        currentUserProfileService: {
-            updateCurrentUser
+        userProfileRepository: {
+            updateCurrentUserProfile
         },
         currentEndpoint: 'https://api.vrchat.cloud/api/1',
         currentUserId: 'usr_self',
@@ -77,8 +73,7 @@ function useActions(overrides: Partial<GalleryInventoryActionDeps> = {}) {
 
     return {
         actions,
-        nextUser,
-        updateCurrentUser,
+        updateCurrentUserProfile,
         setAuthBootstrap,
         toast,
         refreshMediaProfile
@@ -89,8 +84,7 @@ describe('useGalleryInventoryActions', () => {
     it('allows a non-VRC+ user to set profile icons and banners', async () => {
         const {
             actions,
-            nextUser,
-            updateCurrentUser,
+            updateCurrentUserProfile,
             setAuthBootstrap,
             toast,
             refreshMediaProfile
@@ -98,25 +92,25 @@ describe('useGalleryInventoryActions', () => {
 
         await actions.setProfileField('userIcon', 'file_icon');
 
-        expect(updateCurrentUser).toHaveBeenCalledWith({
-            userId: 'usr_self',
+        expect(updateCurrentUserProfile).toHaveBeenCalledWith({
+            expectedUserId: 'usr_self',
             params: {
                 userIcon: 'https://api.vrchat.cloud/api/1/file/file_icon/1'
             }
         });
         expect(setAuthBootstrap).toHaveBeenCalledWith({
             currentUserSnapshot: expect.objectContaining({
-                ...nextUser,
+                id: 'usr_self',
                 userIcon: 'canonical',
                 bannerCustomUrl: ''
             }),
-            currentUserDisplayName: 'Current User'
+            currentUserDisplayName: 'usr_self'
         });
         expect(toast.error).not.toHaveBeenCalled();
         expect(refreshMediaProfile).toHaveBeenCalledOnce();
-        expect(updateCurrentUser.mock.invocationCallOrder[0]).toBeLessThan(
-            refreshMediaProfile.mock.invocationCallOrder[0]
-        );
+        expect(
+            updateCurrentUserProfile.mock.invocationCallOrder[0]
+        ).toBeLessThan(refreshMediaProfile.mock.invocationCallOrder[0]);
         expect(refreshMediaProfile.mock.invocationCallOrder[0]).toBeLessThan(
             setAuthBootstrap.mock.invocationCallOrder[0]
         );
@@ -127,12 +121,13 @@ describe('useGalleryInventoryActions', () => {
             })
         );
 
-        await actions.setProfileField('profilePicOverride', 'file_banner');
+        await actions.setProfileField('banner', 'file_banner');
 
-        expect(updateCurrentUser).toHaveBeenLastCalledWith({
-            userId: 'usr_self',
+        expect(updateCurrentUserProfile).toHaveBeenLastCalledWith({
+            expectedUserId: 'usr_self',
             params: {
-                profilePicOverride:
+                bannerType: 'customImage',
+                bannerCustomUrl:
                     'https://api.vrchat.cloud/api/1/file/file_banner/1'
             }
         });
@@ -143,16 +138,16 @@ describe('useGalleryInventoryActions', () => {
             })
         );
     });
-    it('compares the selected banner file and can clear it using the existing write field', async () => {
-        const { actions, updateCurrentUser } = useActions({
+    it('compares the selected banner file and falls back to the avatar banner when cleared', async () => {
+        const { actions, updateCurrentUserProfile } = useActions({
             mediaProfile: { bannerCustomUrl: 'https://image/file_banner/3/256' }
         });
-        await actions.setProfileField('profilePicOverride', 'file_banner');
-        expect(updateCurrentUser).not.toHaveBeenCalled();
-        await actions.setProfileField('profilePicOverride', '');
-        expect(updateCurrentUser).toHaveBeenCalledWith({
-            userId: 'usr_self',
-            params: { profilePicOverride: '' }
+        await actions.setProfileField('banner', 'file_banner');
+        expect(updateCurrentUserProfile).not.toHaveBeenCalled();
+        await actions.setProfileField('banner', '');
+        expect(updateCurrentUserProfile).toHaveBeenCalledWith({
+            expectedUserId: 'usr_self',
+            params: { bannerType: 'avatarBanner' }
         });
     });
 

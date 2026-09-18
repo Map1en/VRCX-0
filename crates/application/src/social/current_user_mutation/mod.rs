@@ -10,6 +10,6 @@ pub use runtime::{
 };
 pub use types::{
     ContentFilter, CurrentUserProfileUpdateRequest, CurrentUserUpdateRequest,
-    VrchatCurrentUserBadgeInput, VrchatCurrentUserProfileUpdateInput, VrchatCurrentUserTagsInput,
-    VrchatCurrentUserUpdateInput,
+    ProfileBackgroundType, ProfileBannerType, VrchatCurrentUserBadgeInput,
+    VrchatCurrentUserProfileUpdateInput, VrchatCurrentUserTagsInput, VrchatCurrentUserUpdateInput,
 };

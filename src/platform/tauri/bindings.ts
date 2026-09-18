@@ -3548,25 +3548,24 @@ export type ContentFilter =
 export type CrashRelaunchDecisionPayload =
     | { handled: boolean; error: string }
     | { handled: boolean; location: string; delayMs: number | null };
-export type CurrentUserProfileUpdateRequest =
-    | { backgroundType: 'default' }
-    | {
-          backgroundType: 'gradient';
-          backgroundGradientBottom: string;
-          backgroundGradientTop: string;
-      }
-    | { backgroundType: 'texture'; backgroundTextureId: string };
+export type CurrentUserProfileUpdateRequest = {
+    bio?: string | null;
+    bioLinks?: string[] | null;
+    userIcon?: string | null;
+    bannerType?: ProfileBannerType | null;
+    bannerCustomUrl?: string | null;
+    backgroundType?: ProfileBackgroundType | null;
+    backgroundGradientBottom?: string | null;
+    backgroundGradientTop?: string | null;
+    backgroundTextureId?: string | null;
+};
 export type CurrentUserRefreshOutcome = { applied: boolean };
 export type CurrentUserSnapshot = JsonValue;
 export type CurrentUserUpdateRequest = {
     homeLocation?: string | null;
     status?: UserStatus | null;
     statusDescription?: string | null;
-    bio?: string | null;
-    bioLinks?: string[] | null;
     pronouns?: string | null;
-    userIcon?: string | null;
-    profilePicOverride?: string | null;
     allowAvatarCopying?: boolean | null;
     isBoopingEnabled?: boolean | null;
     hasSharedConnectionsOptOut?: boolean | null;
@@ -5659,6 +5658,7 @@ export type PrivacyLockSnapshot = {
     locked: boolean;
     hasPassword: boolean;
 };
+export type ProfileBackgroundType = 'default' | 'gradient' | 'texture';
 export type ProfileBackupActionOutcome = {
     accepted: boolean;
     status: ProfileBackupStatus;
@@ -5709,6 +5709,7 @@ export type ProfileBackupStatus = {
     error: ProfileBackupError | null;
     lastOutcome: ProfileBackupOutcome | null;
 };
+export type ProfileBannerType = 'avatarBanner' | 'customImage';
 export type ProfileDecorationEquipSlot =
     | 'iconFrame'
     | 'profileEffect'

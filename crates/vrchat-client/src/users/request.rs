@@ -15,20 +15,42 @@ pub enum ContentFilter {
     Violence,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
-#[serde(tag = "backgroundType", rename_all = "camelCase", deny_unknown_fields)]
-pub enum CurrentUserProfileUpdateRequest {
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum ProfileBackgroundType {
     Default,
-    Gradient {
-        #[serde(rename = "backgroundGradientBottom")]
-        background_gradient_bottom: String,
-        #[serde(rename = "backgroundGradientTop")]
-        background_gradient_top: String,
-    },
-    Texture {
-        #[serde(rename = "backgroundTextureId")]
-        background_texture_id: String,
-    },
+    Gradient,
+    Texture,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum ProfileBannerType {
+    AvatarBanner,
+    CustomImage,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct CurrentUserProfileUpdateRequest {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bio: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bio_links: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub user_icon: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub banner_type: Option<ProfileBannerType>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub banner_custom_url: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub background_type: Option<ProfileBackgroundType>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub background_gradient_bottom: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub background_gradient_top: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub background_texture_id: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
@@ -41,15 +63,7 @@ pub struct CurrentUserUpdateRequest {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub status_description: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub bio: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub bio_links: Option<Vec<String>>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pronouns: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub user_icon: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub profile_pic_override: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub allow_avatar_copying: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]

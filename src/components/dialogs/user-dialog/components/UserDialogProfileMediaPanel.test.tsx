@@ -39,10 +39,7 @@ describe('UserDialogProfileMediaPanel', () => {
         expect(clearIcon.hasAttribute('disabled')).toBe(false);
         fireEvent.click(clearBanner);
         await waitFor(() =>
-            expect(onSetProfileMediaField).toHaveBeenCalledWith(
-                'profilePicOverride',
-                ''
-            )
+            expect(onSetProfileMediaField).toHaveBeenCalledWith('banner', '')
         );
         fireEvent.click(clearIcon);
         await waitFor(() =>

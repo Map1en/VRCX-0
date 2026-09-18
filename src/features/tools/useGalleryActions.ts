@@ -1,13 +1,12 @@
 import { useTranslation } from 'react-i18next';
 
 import mediaRepository from '@/repositories/mediaRepository';
-import currentUserProfileService from '@/services/currentUserProfileService';
+import userProfileRepository from '@/repositories/userProfileRepository';
 import { toast } from '@/services/toastService';
 import {
     readFileAsBase64,
     withUploadTimeout
 } from '@/shared/utils/imageUpload';
-import { normalizeVrchatEndpointDomain } from '@/shared/vrchatEndpoint';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
@@ -20,14 +19,6 @@ import {
 } from './inventoryHelpers';
 import { createGalleryAssetActions } from './useGalleryAssetActions';
 import { useGalleryInventoryActions } from './useGalleryInventoryActions';
-
-function buildProfilePicOverride(endpoint: string, fileId: string) {
-    if (!fileId) {
-        return '';
-    }
-    const base = normalizeVrchatEndpointDomain(endpoint);
-    return `${base}/file/${fileId}/1`;
-}
 
 function getLocalTimestampString() {
     const date = new Date();
@@ -43,9 +34,7 @@ export function useGalleryActions(deps: GalleryControllerDeps) {
         ...deps,
         FILE_TABS,
         UPLOAD_ASPECT_RATIOS,
-        buildProfilePicOverride,
         confirm,
-        currentUserProfileService,
         getLocalTimestampString,
         isRuntimeAuthTarget,
         mediaRepository,
@@ -55,6 +44,7 @@ export function useGalleryActions(deps: GalleryControllerDeps) {
         t,
         toast,
         useRuntimeStore,
+        userProfileRepository,
         validateImageFile,
         withUploadTimeout
     } satisfies GalleryActionDeps;

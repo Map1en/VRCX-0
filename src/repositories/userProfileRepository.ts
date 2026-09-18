@@ -91,8 +91,6 @@ interface CurrentUserUpdateInput extends UserEndpointInput {
     params?: CurrentUserUpdateRequest;
 }
 
-export type ProfileBackgroundUpdate = CurrentUserProfileUpdateRequest;
-
 interface CurrentUserProfileUpdateInput {
     expectedUserId?: string;
     params: CurrentUserProfileUpdateRequest;

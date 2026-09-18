@@ -8,7 +8,10 @@ use crate::http_api::{
 
 mod request;
 
-pub use request::{ContentFilter, CurrentUserProfileUpdateRequest, CurrentUserUpdateRequest};
+pub use request::{
+    ContentFilter, CurrentUserProfileUpdateRequest, CurrentUserUpdateRequest,
+    ProfileBackgroundType, ProfileBannerType,
+};
 
 pub fn user_get_input(
     endpoint: String,

@@ -97,7 +97,7 @@ export function GalleryFileTab({
                                             }
                                             onClick={() =>
                                                 onClearProfileField(
-                                                    'profilePicOverride',
+                                                    'banner',
                                                     ''
                                                 )
                                             }

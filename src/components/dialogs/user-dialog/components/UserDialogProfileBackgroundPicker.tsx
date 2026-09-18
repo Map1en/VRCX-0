@@ -3,7 +3,7 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { SelectableTile } from '@/components/tile/SelectableTile';
-import type { ProfileBackgroundUpdate } from '@/repositories/userProfileRepository';
+import type { CurrentUserProfileUpdateRequest } from '@/platform/tauri/bindings';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 
@@ -57,7 +57,10 @@ export function UserDialogProfileBackgroundPicker({
     profile: UserDialogProfileRecord;
     isVrcPlus: boolean;
     pendingKey: string;
-    onUpdateBackground: (key: string, params: ProfileBackgroundUpdate) => void;
+    onUpdateBackground: (
+        key: string,
+        params: CurrentUserProfileUpdateRequest
+    ) => void;
 }) {
     const { t } = useTranslation();
     const { top: profileGradientTop, bottom: profileGradientBottom } =
