@@ -772,7 +772,7 @@ export function useUserDialogLocationPanel({
 
     const canInviteFromCurrentLocation = checkCanInvite(currentInviteLocation, {
         currentUserId: normalizedCurrentUserId,
-        lastLocationStr: '',
+        lastLocationStr: currentInviteLocation,
         cachedInstances: inviteInstanceCache
     });
 

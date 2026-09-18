@@ -92,6 +92,39 @@ describe('enrichLocationUsersWithProfiles', () => {
 });
 
 describe('useUserDialogLocationPanel', () => {
+    it('allows inviting from the current invite-plus instance', () => {
+        const currentLocation =
+            'wrld_hidden:12345~hidden(usr_owner)~region(use)';
+        const gameState = {
+            currentDestination: '',
+            currentLocation,
+            currentLocationPlayerIds: [],
+            currentLocationPlayers: [],
+            currentLocationStartedAt: null,
+            currentWorldId: 'wrld_hidden',
+            currentWorldName: 'Hidden World',
+            isGameRunning: true
+        };
+        const groupInstancesState = {};
+        const friendsById = {};
+        const { result } = renderHook(() =>
+            useUserDialogLocationPanel({
+                currentEndpoint: 'https://api.example.test',
+                currentUserId: 'usr_self',
+                currentUserSnapshot: null,
+                gameState,
+                groupInstancesState,
+                friendsById,
+                presenceLocation: '',
+                profile: null,
+                reloadToken: 0
+            })
+        );
+
+        expect(result.current.currentInviteLocation).toBe(currentLocation);
+        expect(result.current.canInviteFromCurrentLocation).toBe(true);
+    });
+
     it('reuses the active location request across profile-only rerenders', async () => {
         mocks.getInstance.mockResolvedValue({
             json: {
