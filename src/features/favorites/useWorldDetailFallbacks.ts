@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import type { FavoriteKind } from '@/domain/favorites/types';
 import type { LoadStatus } from '@/domain/shared/types';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
+import { useFavoriteRevisionStore } from '@/state/favoriteRevisionStore';
 
 import {
     type DetailMap,
@@ -18,7 +19,7 @@ type WorldDetailFallbackInput = {
 };
 
 const fetchWorldById = (worldId: string) =>
-    worldProfileRepository.getWorldProfile({ worldId });
+    worldProfileRepository.getWorldProfile({ worldId, dialog: true });
 
 export function getWorldDetailFallbackIds({
     worldIds,
@@ -39,6 +40,9 @@ export function useWorldDetailFallbacks({
     remoteEntityDetailsData,
     remoteEntityDetailsStatus
 }: WorldDetailFallbackInput): DetailMap {
+    const worldDetailsRevision = useFavoriteRevisionStore(
+        (state) => state.worldDetailsRevision
+    );
     const fallbackWorldIds = useMemo(
         () =>
             getWorldDetailFallbackIds({
@@ -50,5 +54,9 @@ export function useWorldDetailFallbacks({
         [worldIds, kind, remoteEntityDetailsData, remoteEntityDetailsStatus]
     );
 
-    return useRemoteEntityCacheFallbackLoader(fallbackWorldIds, fetchWorldById);
+    return useRemoteEntityCacheFallbackLoader(
+        fallbackWorldIds,
+        fetchWorldById,
+        worldDetailsRevision
+    );
 }

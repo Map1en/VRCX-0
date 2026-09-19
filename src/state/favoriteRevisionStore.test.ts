@@ -7,6 +7,7 @@ describe('favoriteRevisionStore', () => {
         useFavoriteRevisionStore.setState({
             revision: 0,
             localWorldRevision: 0,
+            worldDetailsRevision: 0,
             remoteDetailsRevisionByKind: {
                 avatar: 0,
                 world: 0
@@ -65,6 +66,17 @@ describe('favoriteRevisionStore', () => {
         });
 
         expect(useFavoriteRevisionStore.getState().localWorldRevision).toBe(2);
+    });
+
+    it('invalidates favorite world details independently', () => {
+        useFavoriteRevisionStore.getState().bumpWorldDetailsRevision();
+
+        expect(useFavoriteRevisionStore.getState()).toMatchObject({
+            revision: 0,
+            localWorldRevision: 0,
+            worldDetailsRevision: 1,
+            pendingRemote: false
+        });
     });
 
     it('invalidates both local world data and remote details for a mixed change', () => {

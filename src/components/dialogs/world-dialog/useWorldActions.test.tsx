@@ -6,9 +6,29 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AppToastOptions } from '@/services/toastService';
 
 const mocks = vi.hoisted(() => ({
+    getWorldProfile: vi.fn(),
     saveWorldMemo: vi.fn(),
+    persistFavoriteWorldDetails: vi.fn(),
     toastSuccess: vi.fn(),
     toastError: vi.fn()
+}));
+
+vi.mock('@/repositories/worldProfileRepository', async (importOriginal) => {
+    const actual =
+        await importOriginal<
+            typeof import('@/repositories/worldProfileRepository')
+        >();
+    return {
+        ...actual,
+        default: {
+            ...actual.default,
+            getWorldProfile: mocks.getWorldProfile
+        }
+    };
+});
+
+vi.mock('@/services/favoriteWorldCacheService', () => ({
+    persistFavoriteWorldDetails: mocks.persistFavoriteWorldDetails
 }));
 
 vi.mock('react-i18next', async (importOriginal) => {
@@ -49,6 +69,7 @@ vi.mock('@/repositories/memoPersistenceRepository', async (importOriginal) => {
 });
 
 import worldProfileRepository from '@/repositories/worldProfileRepository';
+import { useFavoriteRevisionStore } from '@/state/favoriteRevisionStore';
 
 import { useWorldActions } from './useWorldActions';
 import { defaultWorldSideData } from './worldDialogHelpers';
@@ -61,9 +82,70 @@ function deferred<T>() {
     return { promise, resolve };
 }
 
-describe('useWorldActions saveMemo', () => {
+describe('useWorldActions', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        useFavoriteRevisionStore.setState({ worldDetailsRevision: 0 });
+    });
+
+    it('invalidates favorite cards after refreshing the world profile', async () => {
+        const nextWorld = worldProfileRepository.normalize({
+            id: 'wrld_target',
+            name: 'Updated Target',
+            imageUrl: 'https://example.test/updated.png'
+        });
+        mocks.getWorldProfile.mockResolvedValue(nextWorld);
+        const setWorld = vi.fn();
+        const activeWorldTargetRef = {
+            current: { worldId: 'wrld_target', endpoint: 'endpoint-a' }
+        };
+        const { result } = renderHook(() =>
+            useWorldActions({
+                world: worldProfileRepository.normalize({
+                    id: 'wrld_target',
+                    name: 'Target'
+                }),
+                setWorld,
+                currentEndpoint: 'endpoint-a',
+                currentUserId: 'usr_self',
+                profileWorldId: 'wrld_target',
+                normalizedWorldId: 'wrld_target',
+                isInstanceLocation: false,
+                worldDialogShortName: '',
+                isHomeWorld: false,
+                canUpdateHome: false,
+                actionStatusRef: { current: 'idle' },
+                setActionStatus: vi.fn(),
+                activeWorldTargetRef,
+                memoRevisionRef: { current: 0 },
+                memo: '',
+                setMemo: vi.fn(),
+                worldSideData: defaultWorldSideData(),
+                setWorldSideData: vi.fn(),
+                isCurrentWorldTarget: (worldId, endpoint) =>
+                    activeWorldTargetRef.current.worldId === worldId &&
+                    activeWorldTargetRef.current.endpoint === endpoint,
+                confirm: vi.fn(),
+                prompt: vi.fn(),
+                setAuthBootstrap: vi.fn()
+            })
+        );
+
+        await act(async () => {
+            await result.current.refreshWorldProfile();
+        });
+
+        expect(mocks.getWorldProfile).toHaveBeenCalledWith({
+            worldId: 'wrld_target',
+            force: true
+        });
+        expect(mocks.persistFavoriteWorldDetails).toHaveBeenCalledWith(
+            nextWorld
+        );
+        expect(setWorld).toHaveBeenCalledWith(nextWorld);
+        expect(useFavoriteRevisionStore.getState().worldDetailsRevision).toBe(
+            1
+        );
     });
 
     it('ignores an older save response for the same active world', async () => {

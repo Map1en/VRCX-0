@@ -88,7 +88,8 @@ export async function loadRemoteEntityCacheFallbacksById(
 
 export function useRemoteEntityCacheFallbackLoader(
     fallbackIds: string[],
-    fetchById: FetchEntityById
+    fetchById: FetchEntityById,
+    refreshToken: unknown = 0
 ): DetailMap {
     const fallbackKey = JSON.stringify(fallbackIds);
     const stableFallbackIds = useMemo(() => {
@@ -127,7 +128,7 @@ export function useRemoteEntityCacheFallbackLoader(
         return () => {
             active = false;
         };
-    }, [fetchById, stableFallbackIds]);
+    }, [fetchById, refreshToken, stableFallbackIds]);
 
     return useMemo(
         () =>
