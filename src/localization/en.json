@@ -5404,7 +5404,7 @@
             "send": "Send",
             "recent": "Recent",
             "inventory_emojis": "Inventory",
-            "no_inventory_emojis": "No boop emojis in your inventory yet"
+            "no_inventory_emojis": "No emojis in your inventory yet"
         },
         "vrcx_updater": {
             "latest_version": "VRCX-0 is up to date",
