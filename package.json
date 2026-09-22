@@ -61,7 +61,7 @@
         "@tauri-apps/plugin-fs": "^2.5.2",
         "class-variance-authority": "^0.7.1",
         "cmdk": "^1.1.1",
-        "cn": "^0.2.6",
+        "cn": "^0.3.0",
         "date-fns": "^4.4.0",
         "echarts": "^6.1.0",
         "graphology": "^0.26.0",
