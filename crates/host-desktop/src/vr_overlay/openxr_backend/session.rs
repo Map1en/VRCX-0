@@ -130,6 +130,7 @@ impl SessionContext {
                 },
                 &extensions,
                 &[],
+                &(),
             )
             .map_err(|error| {
                 BackendStartError::transient(format!("xrCreateInstance failed: {error}"))

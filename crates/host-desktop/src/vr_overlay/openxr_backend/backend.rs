@@ -34,7 +34,7 @@ pub fn probe_runtime() -> Result<(), String> {
 }
 
 pub(super) fn load_entry() -> Result<xr::Entry, BackendStartError> {
-    unsafe { xr::Entry::load() }.map_err(|error| {
+    unsafe { xr::Entry::load(&()) }.map_err(|error| {
         BackendStartError::permanent(format!("OpenXR loader unavailable: {error}"))
     })
 }
