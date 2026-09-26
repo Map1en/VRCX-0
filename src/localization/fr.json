@@ -887,12 +887,18 @@
         "self_menu": "Menu du compte",
         "filter_friends": "Filtrer les amis",
         "filter_groups": "Filtrer les groupes",
+        "filter_instances": "Filtrer les instances",
         "filter_no_results": "Aucune correspondance",
         "self_more_actions": "Plus",
         "switch_account": "Changer de compte",
         "favorite": "FAVORIS",
         "same_instance": "MÊME INSTANCE",
         "you_are_here": "VOUS ÊTES ICI",
+        "visited_minutes_ago_one": "Visité il y a 1 minute",
+        "visited_minutes_ago_other": "Visité il y a {count} minutes",
+        "visited_hours_ago_one": "Visité il y a 1 heure",
+        "visited_hours_ago_other": "Visité il y a {count} heures",
+        "visited_at": "Dernière connexion {time}",
         "online": "EN LIGNE",
         "active": "ACTIF",
         "offline": "HORS LIGNE",
@@ -914,9 +920,9 @@
             "advanced": "Avancé",
             "sorting": "Tri",
             "favorites_section": "Favoris",
-            "group_by_instance": "Grouper par instance",
-            "split_favorite_friends": "Afficher les groupes de favoris",
-            "show_grouped_friends": "Afficher les amis filtrés",
+            "group_by_instance": "Afficher par instance",
+            "split_favorite_friends": "Séparer par groupe",
+            "show_grouped_friends": "Afficher dans les autres sections",
             "same_instance_above_favorites": "Prioriser la même instance",
             "sort_secondary": "Puis par",
             "sort_tertiary": "Puis par",
@@ -931,6 +937,7 @@
                 "display_hint": "Apparence des onglets dans le panneau latéral.",
                 "layout_hint": "Glissez pour réorganiser. Amis et Groupes sont intégrés — ajoutez des groupes de favoris comme vos propres onglets.",
                 "system_badge": "Intégré",
+                "world_badge": "Monde",
                 "always_visible": "Toujours visible",
                 "move_up": "Monter",
                 "move_down": "Descendre",
@@ -1154,6 +1161,8 @@
             "view_worlds": "Vue des mondes",
             "world_instances_one": "{count} instance",
             "world_instances_other": "{count} instances",
+            "instance_population": "Utilisateurs dans l'instance: {users}",
+            "instance_population_capacity": "Utilisateurs dans l'instance: {users} / {capacity}",
             "other_online": "Autres amis en ligne",
             "favorite": "Favoris",
             "same_instance": "Même instance",
@@ -1402,6 +1411,8 @@
                 "search": "Rechercher",
                 "search_mode_name": "Nom",
                 "search_mode_tag": "Tag",
+                "search_mode": "Rechercher par",
+                "search_tags": "Rechercher les tags",
                 "vrchat_favorites": "Favoris VRChat",
                 "local_favorites": "Favoris locaux",
                 "new_group": "Nouveau groupe"
@@ -1495,9 +1506,7 @@
                 "favorites_failed_to_load": "Échec du chargement des favoris"
             },
             "loading": {
-                "loading_favorites_baseline": "Chargement des favoris",
-                "loading_remote_avatar_details": "Chargement des détails de l'avatar distant",
-                "loading_remote_world_details": "Chargement des détails du monde distant"
+                "loading_favorites_baseline": "Chargement des favoris"
             },
             "share_collection": {
                 "title": "Partager la collection",
@@ -3278,10 +3287,6 @@
                 "world_deleted": "Ce monde a été supprimé.",
                 "avatar_details_unavailable": "Les détails de l'avatar sont indisponibles."
             },
-            "loading": {
-                "loading_world_details": "Chargement des détails du monde.",
-                "loading_avatar_details": "Chargement des détails de l'avatar."
-            },
             "dynamic": {
                 "remove_value_from_value": "Retirer {value} de {value2} ?",
                 "local_group_value_already_exists": "Le groupe local {value} existe déjà",
@@ -4112,6 +4117,12 @@
                 "public_count": "{count} en public",
                 "private_count": "{count} en privé",
                 "capacity_count": "Capacité : {count} ({max})",
+                "pin_to_sidebar": "Épingler à la barre latérale",
+                "pinned_to_sidebar": "Épinglé à la barre latérale",
+                "pin_to_sidebar_failed": "Impossible d'épingler à la barre latérale",
+                "unpin_from_sidebar": "Désépingler de la barre latérale",
+                "unpinned_from_sidebar": "Désépinglé de la barre latérale",
+                "unpin_from_sidebar_failed": "Impossible de désépingler de la barre latérale",
                 "instance_creator": "Créateur de l'instance"
             },
             "info": {
@@ -5758,7 +5769,8 @@
                 "schema_migrations": "Application des mises à jour du schéma",
                 "optimize": "Optimisation de la copie de la base de données",
                 "write_version": "Enregistrement de la version de la base de données",
-                "commit": "Passage à la base de données mise à niveau"
+                "commit": "Passage à la base de données mise à niveau",
+                "repair_data": "Réparation des lacunes dans l'historique des journaux de jeu"
             },
             "upgrade_failed_title": "Échec de la mise à niveau de la base de données",
             "failure_record": "Journal de l’échec",
@@ -6094,6 +6106,7 @@
         "clocks_none": "Aucune",
         "timezone": "Fuseau horaire",
         "now_playing": "En cours de lecture",
+        "now_playing_hint": "Clic droit pour copier le lien",
         "instance_queue": "File d'attente",
         "instance_queue_waiting": "En attente",
         "instance_queue_position": "#{position}",
@@ -6117,12 +6130,6 @@
                 "failed_to_remove_favorite": "Échec du retrait des favoris",
                 "failed_to_add_local_favorite": "Échec de l'ajout au favori local",
                 "failed_to_remove_local_favorite": "Échec du retrait du favori local"
-            },
-            "modal": {
-                "remove_vrchat_favorite": "Retirer le favori VRChat ?"
-            },
-            "dynamic": {
-                "remove_value_from_vrchat_favorites": "Retirer {value} des favoris VRChat ?"
             }
         },
         "friend_location_card": {
@@ -6230,6 +6237,14 @@
             "toast": {
                 "failed_to_launch_instance": "Échec du lancement de l'instance",
                 "failed_to_send_self_invite": "Échec de l'envoi de l'auto-invitation"
+            }
+        },
+        "world_rooms_sidebar": {
+            "empty": "Aucune instance active pour le moment",
+            "failed": "Impossible de charger les instances",
+            "toast": {
+                "failed_to_launch_instance": "Impossible de lancer l'instance",
+                "failed_to_send_self_invite": "Impossible d'envoyer l'auto-invitation"
             }
         }
     },
