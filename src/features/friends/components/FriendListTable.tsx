@@ -168,9 +168,13 @@ export function FriendListTable({
                             <Trans
                                 i18nKey="view.friend_list.label.showing_summary"
                                 count={filteredRowsLength}
-                                values={{ shown: table.getRowModel().rows.length }}
+                                values={{
+                                    shown: table.getRowModel().rows.length
+                                }}
                                 components={{
-                                    b: <span className="text-foreground font-medium" />
+                                    b: (
+                                        <span className="text-foreground font-medium" />
+                                    )
                                 }}
                             />
                         </div>
