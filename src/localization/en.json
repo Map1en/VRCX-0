@@ -1162,8 +1162,8 @@
             "view_worlds": "Worlds view",
             "world_instances_one": "{count} instance",
             "world_instances_other": "{count} instances",
-            "instance_population": "Players in instance: {users}",
-            "instance_population_capacity": "Players in instance: {users} / {capacity}",
+            "instance_population": "Users in instance: {users}",
+            "instance_population_capacity": "Users in instance: {users} / {capacity}",
             "other_online": "Other online friends",
             "favorite": "Favorites",
             "same_instance": "Same instance",
@@ -4290,7 +4290,7 @@
                 "enable_focus_view": "Enable focus view",
                 "enable_debugging": "Enable debugging",
                 "enable_third_person_view": "Enable third-person view",
-                "allow_props_to_modify_player_movement": "Allow props to modify player movement",
+                "allow_props_to_modify_player_movement": "Allow props to modify user movement",
                 "add_domain": "Add domain"
             },
             "loading": {
