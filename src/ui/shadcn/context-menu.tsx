@@ -73,12 +73,13 @@ function ContextMenuContent({
     return (
         <ContextMenuPrimitive.Portal>
             <ContextMenuPrimitive.Positioner
+                data-slot="menu-positioner"
                 align={align}
                 alignOffset={alignOffset}
                 side={side}
                 sideOffset={sideOffset}
                 collisionPadding={titleBarCollisionPadding}
-                className="isolate z-50 outline-none"
+                className="isolate z-50 rounded-lg outline-none"
             >
                 <ContextMenuPrimitive.Popup
                     data-slot="context-menu-content"
