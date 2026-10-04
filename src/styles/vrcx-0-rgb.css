@@ -1,3 +1,4 @@
+/* Someone asked for this x */
 /*!
  * RGB shine effects adapted from Magic UI Shine Border:
  * https://magicui.design/docs/components/shine-border
@@ -113,6 +114,11 @@ html.vrcx-0-rgb .vrcx-0-statusbar::after {
     right: 0 !important;
     left: 0 !important;
     height: 1px !important;
+}
+
+/* Match the popup's rounded-lg only while RGB is enabled. */
+html.vrcx-0-rgb [data-slot='menu-positioner'] {
+    border-radius: var(--radius) !important;
 }
 
 /* Menus scroll inside their positioner; Select scrolls inside its popup's List. */

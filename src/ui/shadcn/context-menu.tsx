@@ -79,7 +79,7 @@ function ContextMenuContent({
                 side={side}
                 sideOffset={sideOffset}
                 collisionPadding={titleBarCollisionPadding}
-                className="isolate z-50 rounded-lg outline-none"
+                className="isolate z-50 outline-none"
             >
                 <ContextMenuPrimitive.Popup
                     data-slot="context-menu-content"
