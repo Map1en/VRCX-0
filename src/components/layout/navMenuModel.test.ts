@@ -1,10 +1,51 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
     createBaseDefaultNavLayout,
     getNavShortcutEntries,
+    loadNavMenuModel,
+    type NavLayoutEntry,
     type NavMenuItem
 } from './navMenuModel';
+
+const storedNavConfig = vi.hoisted(() => ({ value: '' }));
+
+vi.mock('@/repositories/configRepository', () => ({
+    default: {
+        getString: vi.fn(async () => storedNavConfig.value),
+        setString: vi.fn(async () => {})
+    }
+}));
+
+function layoutKeys(layout: NavLayoutEntry[]) {
+    return layout.flatMap((entry) =>
+        entry.type === 'item'
+            ? [entry.key]
+            : entry.items.map((item) =>
+                  typeof item === 'string' ? item : item.key
+              )
+    );
+}
+
+describe('navMenuModel stored layout', () => {
+    it('shows pages missing from a customized layout unless the user removed them', async () => {
+        storedNavConfig.value = JSON.stringify({
+            layout: [
+                { type: 'item', key: 'search' },
+                { type: 'item', key: 'feed' }
+            ],
+            hiddenKeys: ['game-log']
+        });
+
+        const model = await loadNavMenuModel({ t: (key: string) => key });
+        const keys = layoutKeys(model.layout);
+
+        expect(keys.slice(0, 2)).toEqual(['search', 'feed']);
+        expect(keys).toContain('browse-history');
+        expect(keys).not.toContain('game-log');
+        expect(model.hiddenKeys).toEqual(['game-log']);
+    });
+});
 
 describe('navMenuModel defaults', () => {
     it('places browse history directly after search', () => {
