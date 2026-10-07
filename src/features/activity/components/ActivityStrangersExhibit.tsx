@@ -46,6 +46,7 @@ function StrangerMutuals({ userId }: { userId: string }) {
             })}
         >
             <MutualFriendAvatars
+                className="-space-x-1 [&_[data-slot=avatar]]:size-4"
                 friends={friends.slice(0, MUTUAL_AVATAR_LIMIT)}
             />
             <span className="text-muted-foreground min-w-0 truncate text-xs">
