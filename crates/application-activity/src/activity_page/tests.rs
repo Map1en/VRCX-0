@@ -151,7 +151,7 @@ fn cache_hit_skips_rebuild_and_all_operations_stay_inside_owner_lock() {
     let store = Store::default();
     let first = activity_page_view_build(&store, input()).unwrap();
     assert_eq!(first.summary.total_minutes, 60);
-    assert_eq!(store.cached.borrow().as_ref().unwrap().payload_version, 2);
+    assert_eq!(store.cached.borrow().as_ref().unwrap().payload_version, 3);
     store.calls.borrow_mut().clear();
     assert_eq!(activity_page_view_build(&store, input()).unwrap(), first);
     assert_eq!(*store.calls.borrow(), vec!["cursor", "cache_read"]);

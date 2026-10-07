@@ -11,7 +11,7 @@ pub use vrcx_0_contracts::activity_page::{
     ActivityCompanionOrder, ActivityPageBuildInput, ActivityPageView, ActivitySeriesBucket,
 };
 
-const PAYLOAD_VERSION: i64 = 2;
+const PAYLOAD_VERSION: i64 = 3;
 
 fn activity_iso_from_ms(ms: i64) -> String {
     chrono::DateTime::<chrono::Utc>::from_timestamp_millis(ms)

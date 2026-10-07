@@ -2,7 +2,7 @@ use std::collections::{BTreeSet, HashMap};
 
 use chrono::NaiveDate;
 
-use super::spans::read_source_rows;
+use super::spans::{read_source_rows, unclosed_stays_sql};
 use crate::activity::{activity_iso_from_ms, parse_activity_time_ms};
 use crate::common::{row_i64, row_string, ParamsBuilder};
 use crate::database::DatabaseService;
@@ -164,13 +164,21 @@ pub fn read_journey_days(
 ) -> Result<Vec<String>, Error> {
     ensure_game_log_tables(db)?;
     let rows = db.execute(
-        "SELECT substr(datetime(created_at, '-' || (time * 1.0 / 1000) || ' seconds', @tz), 1, 10),
-                substr(datetime(created_at, @tz), 1, 10)
-         FROM gamelog_join_leave
-         WHERE owner_id IN (0, @owner_id)
-           AND user_id = @user_id
-           AND type = 'OnPlayerLeft'
-           AND time > 0",
+        &format!(
+            "SELECT substr(datetime(created_at, '-' || (time * 1.0 / 1000) || ' seconds', @tz), 1, 10),
+                    substr(datetime(created_at, @tz), 1, 10)
+             FROM gamelog_join_leave
+             WHERE owner_id IN (0, @owner_id)
+               AND user_id = @user_id
+               AND type = 'OnPlayerLeft'
+               AND time > 0
+             UNION ALL
+             SELECT substr(datetime(started_at, @tz), 1, 10),
+                    substr(datetime(last_at, @tz), 1, 10)
+             FROM ({})
+             WHERE last_at > started_at",
+            unclosed_stays_sql("")
+        ),
         &ParamsBuilder::new()
             .set("owner_id", owner_id_for_filter(db, owner_user_id)?)
             .set("user_id", owner_user_id.as_str())
@@ -224,6 +232,28 @@ mod tests {
                 .set("user_id", user_id)
                 .set("time", time)
                 .build(),
+        )
+        .unwrap();
+    }
+
+    fn location(db: &DatabaseService, created_at: &str, location: &str, time: i64) {
+        db.execute_non_query(
+            "INSERT INTO gamelog_location (created_at, location, world_id, world_name, time)
+             VALUES (@created_at, @location, 'wrld_a', 'Alpha', @time)",
+            &ParamsBuilder::new()
+                .set("created_at", created_at)
+                .set("location", location)
+                .set("time", time)
+                .build(),
+        )
+        .unwrap();
+    }
+
+    fn video(db: &DatabaseService, created_at: &str) {
+        db.execute_non_query(
+            "INSERT INTO gamelog_video_play (created_at, video_url, location)
+             VALUES (@created_at, @created_at, 'wrld_a:1~friends')",
+            &ParamsBuilder::new().set("created_at", created_at).build(),
         )
         .unwrap();
     }
@@ -313,6 +343,56 @@ mod tests {
         assert_eq!(
             read_journey_days(&db, &owner, 9 * 60).unwrap(),
             vec!["2026-10-06".to_string()]
+        );
+    }
+
+    #[test]
+    fn unclosed_stays_end_at_their_last_logged_event() {
+        let db = test_db("unclosed");
+        let owner = OwnerId::new("usr_me");
+        location(&db, "2026-10-05T08:00:00.000Z", "wrld_a:1~friends", 0);
+        leave(&db, "2026-10-05T09:00:00.000Z", "Me", "usr_me", 60 * MINUTE);
+        location(&db, "2026-10-05T23:00:00.000Z", "wrld_a:1~friends", 0);
+        leave(
+            &db,
+            "2026-10-06T00:30:00.000Z",
+            "Alice",
+            "usr_alice",
+            30 * MINUTE,
+        );
+        video(&db, "2026-10-06T01:15:00.000Z");
+
+        let visits = read_journey_visits(
+            &db,
+            &owner,
+            ms("2026-10-05T00:00:00.000Z"),
+            ms("2026-10-07T00:00:00.000Z"),
+        )
+        .unwrap();
+
+        let spans = visits
+            .iter()
+            .map(|visit| (visit.start_ms, visit.end_ms))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            spans,
+            vec![
+                (
+                    ms("2026-10-05T08:00:00.000Z"),
+                    ms("2026-10-05T09:00:00.000Z")
+                ),
+                (
+                    ms("2026-10-05T23:00:00.000Z"),
+                    ms("2026-10-06T01:15:00.000Z")
+                ),
+            ]
+        );
+        assert_eq!(visits[1].world_name, "Alpha");
+        assert_eq!(visits[1].companions.len(), 1);
+        assert_eq!(visits[1].companions[0].shared_ms, 30 * MINUTE);
+        assert_eq!(
+            read_journey_days(&db, &owner, 0).unwrap(),
+            vec!["2026-10-05".to_string(), "2026-10-06".to_string()]
         );
     }
 }
