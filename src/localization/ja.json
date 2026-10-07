@@ -3642,6 +3642,7 @@
                 "when_you_play": "よく遊んでいる時間帯",
                 "top_worlds": "長く過ごしたワールド",
                 "companions": "よく一緒にいる人",
+                "strangers": "よく見かける人",
                 "highlights": "ちょっとした発見",
                 "avatars": "よく使うアバター"
             },
@@ -3676,6 +3677,7 @@
                 "fading_title": "会う頻度が減った人",
                 "fading_caveat": "前の期間より会う時間が減っています。生活リズムの違いかもしれません。",
                 "encountered_total": "合計 {count} 人",
+                "strangers_caption": "フレンドと元フレンドは含みません",
                 "fading_last_seen": "最後に会ったのは {date}",
                 "order_minutes": "時間順",
                 "order_days": "日数順"

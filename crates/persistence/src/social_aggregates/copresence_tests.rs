@@ -48,7 +48,7 @@ fn copresence_summary_groups_minutes_days_instances_and_access_type() {
             min_minutes: Some(2),
             limit: None,
             owner_user_id: None,
-            friends_only: false,
+            audience: CopresenceAudience::Everyone,
             order_by: CopresenceOrderBy::default(),
             utc_offset_minutes: None,
         },
@@ -123,7 +123,7 @@ fn copresence_is_account_scoped_and_includes_shared_history() {
                 min_minutes: None,
                 limit: None,
                 owner_user_id: Some(owner_user_id.clone()),
-                friends_only: false,
+                audience: CopresenceAudience::Everyone,
                 order_by: CopresenceOrderBy::default(),
                 utc_offset_minutes: None,
             },
@@ -173,7 +173,7 @@ fn copresence_summary_applies_limit_after_ranking() {
             min_minutes: None,
             limit: Some(2),
             owner_user_id: None,
-            friends_only: false,
+            audience: CopresenceAudience::Everyone,
             order_by: CopresenceOrderBy::default(),
             utc_offset_minutes: None,
         },
@@ -222,7 +222,7 @@ fn copresence_merges_renamed_user_into_one_row() {
             min_minutes: None,
             limit: None,
             owner_user_id: None,
-            friends_only: false,
+            audience: CopresenceAudience::Everyone,
             order_by: CopresenceOrderBy::default(),
             utc_offset_minutes: None,
         },
@@ -262,7 +262,7 @@ fn copresence_keeps_distinct_name_only_strangers_separate() {
             min_minutes: None,
             limit: None,
             owner_user_id: None,
-            friends_only: false,
+            audience: CopresenceAudience::Everyone,
             order_by: CopresenceOrderBy::default(),
             utc_offset_minutes: None,
         },
@@ -309,7 +309,7 @@ fn copresence_renamed_user_does_not_inflate_total_rows() {
             min_minutes: None,
             limit: Some(1),
             owner_user_id: None,
-            friends_only: false,
+            audience: CopresenceAudience::Everyone,
             order_by: CopresenceOrderBy::default(),
             utc_offset_minutes: None,
         },
@@ -358,7 +358,7 @@ fn copresence_marks_is_friend_against_current_friends() {
             min_minutes: None,
             limit: None,
             owner_user_id: Some(OwnerId::new("usr_self")),
-            friends_only: false,
+            audience: CopresenceAudience::Everyone,
             order_by: CopresenceOrderBy::default(),
             utc_offset_minutes: None,
         },
@@ -407,7 +407,7 @@ fn copresence_enriches_world_name_from_game_log_location() {
             min_minutes: None,
             limit: None,
             owner_user_id: None,
-            friends_only: false,
+            audience: CopresenceAudience::Everyone,
             order_by: CopresenceOrderBy::default(),
             utc_offset_minutes: None,
         },
@@ -454,7 +454,7 @@ fn copresence_friend_world_keeps_tied_worlds_separate() {
             min_minutes: None,
             limit: None,
             owner_user_id: None,
-            friends_only: false,
+            audience: CopresenceAudience::Everyone,
             order_by: CopresenceOrderBy::default(),
             utc_offset_minutes: None,
         },
@@ -513,7 +513,7 @@ fn copresence_summary_excludes_owner_self_rows() {
             min_minutes: None,
             limit: None,
             owner_user_id: Some(OwnerId::new("usr_self")),
-            friends_only: false,
+            audience: CopresenceAudience::Everyone,
             order_by: CopresenceOrderBy::default(),
             utc_offset_minutes: None,
         },
@@ -527,4 +527,80 @@ fn copresence_summary_excludes_owner_self_rows() {
         .rows
         .iter()
         .any(|row| row.user_id.is_empty() && row.display_name == "Mallory"));
+}
+
+#[test]
+fn copresence_strangers_exclude_current_past_and_blocked_friends() {
+    let (_dir, db) = test_db("copresence-strangers");
+    create_game_log_tables(&db);
+    crate::database::schema::ensure_user_store_tables(&db, "usrself").unwrap();
+    db.execute_non_query(
+        "INSERT INTO usrself_friend_log_current (user_id, display_name, trust_level, friend_number)
+             VALUES ('usr_friend', 'Friend', 'Known', 1)",
+        &Default::default(),
+    )
+    .unwrap();
+    db.execute_non_query(
+        "INSERT INTO usrself_friend_log_history
+            (created_at, type, user_id, display_name, previous_display_name, trust_level, previous_trust_level, friend_number)
+         VALUES
+            ('2026-05-01T10:00:00Z', 'Unfriend', 'usr_former', 'Former', '', 'Known', '', 2),
+            ('2026-05-01T10:00:00Z', 'TrustLevel', 'usr_stranger', 'Stranger', '', 'Known', 'User', 0)",
+        &Default::default(),
+    )
+    .unwrap();
+    db.execute_non_query(
+        "INSERT INTO usrself_moderation (user_id, updated_at, display_name, block, mute)
+             VALUES ('usr_blocked', '2026-05-01T10:00:00Z', 'Blocked', 1, 0),
+                    ('usr_muted', '2026-05-01T10:00:00Z', 'Muted', 0, 1)",
+        &Default::default(),
+    )
+    .unwrap();
+    for (created_at, display_name, user_id) in [
+        ("2026-06-01T10:00:00Z", "Friend", "usr_friend"),
+        ("2026-06-01T10:00:00Z", "Former", "usr_former"),
+        ("2026-06-01T10:00:00Z", "Blocked", "usr_blocked"),
+        ("2026-06-01T10:00:00Z", "Nameless", ""),
+        ("2026-06-01T10:00:00Z", "Muted", "usr_muted"),
+        ("2026-06-01T10:00:00Z", "Stranger", "usr_stranger"),
+        ("2026-06-02T10:00:00Z", "Stranger", "usr_stranger"),
+    ] {
+        insert_join_leave(
+            &db,
+            created_at,
+            "OnPlayerLeft",
+            display_name,
+            user_id,
+            "wrld_a:1",
+            600_000,
+        );
+    }
+
+    let output = get_copresence_summary(
+        &db,
+        CopresenceSummaryInput {
+            time_window: TimeWindow {
+                from: None,
+                to: None,
+            },
+            group_by: CopresenceGroupBy::Friend,
+            min_minutes: None,
+            limit: None,
+            owner_user_id: Some(OwnerId::new("usr_self")),
+            audience: CopresenceAudience::Strangers,
+            order_by: CopresenceOrderBy::CoDays,
+            utc_offset_minutes: None,
+        },
+    )
+    .unwrap();
+
+    let rows = output
+        .rows
+        .iter()
+        .map(|row| (row.user_id.as_str(), row.co_days, row.is_friend))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        rows,
+        vec![("usr_stranger", 2, false), ("usr_muted", 1, false)]
+    );
 }

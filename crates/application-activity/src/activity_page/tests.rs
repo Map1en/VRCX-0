@@ -4,7 +4,8 @@ use std::collections::BTreeSet;
 use vrcx_0_application_core::{Error, Result};
 use vrcx_0_contracts::activity_page::{ActivityLocationSpan, CachedActivityPage};
 use vrcx_0_contracts::social_aggregates::{
-    CopresenceSummaryInput, CopresenceSummaryOutput, FadingFriendsInput, FadingFriendsOutput,
+    CopresenceSummaryInput, CopresenceSummaryOutput, CopresenceSummaryRow, FadingFriendsInput,
+    FadingFriendsOutput,
 };
 use vrcx_0_core::OwnerId;
 
@@ -95,10 +96,21 @@ impl ActivityPageStore for Store {
         self.called("encountered");
         Ok(Default::default())
     }
-    fn copresence_summary(&self, _: CopresenceSummaryInput) -> Result<CopresenceSummaryOutput> {
+    fn copresence_summary(&self, input: CopresenceSummaryInput) -> Result<CopresenceSummaryOutput> {
         self.called("companions");
         Ok(CopresenceSummaryOutput {
-            rows: Vec::new(),
+            rows: vec![CopresenceSummaryRow {
+                user_id: format!("{:?}:{:?}", input.audience, input.order_by),
+                display_name: String::new(),
+                is_friend: false,
+                world_id: None,
+                world_name: None,
+                total_minutes: 0,
+                co_days: 0,
+                instances: 0,
+                last_seen_together: String::new(),
+                minutes_by_access: Default::default(),
+            }],
             total_rows: 0,
             returned_rows: 0,
             truncated: false,
@@ -151,7 +163,7 @@ fn cache_hit_skips_rebuild_and_all_operations_stay_inside_owner_lock() {
     let store = Store::default();
     let first = activity_page_view_build(&store, input()).unwrap();
     assert_eq!(first.summary.total_minutes, 60);
-    assert_eq!(store.cached.borrow().as_ref().unwrap().payload_version, 3);
+    assert_eq!(store.cached.borrow().as_ref().unwrap().payload_version, 4);
     store.calls.borrow_mut().clear();
     assert_eq!(activity_page_view_build(&store, input()).unwrap(), first);
     assert_eq!(*store.calls.borrow(), vec!["cursor", "cache_read"]);
@@ -214,4 +226,16 @@ fn timezone_order_and_payload_version_changes_invalidate_cache() {
     store.calls.borrow_mut().clear();
     activity_page_view_build(&store, query).unwrap();
     assert!(store.calls.borrow().contains(&"cache_write"));
+}
+
+#[test]
+fn companions_rank_friends_in_the_chosen_order_and_strangers_by_days() {
+    let store = Store::default();
+    let mut query = input();
+    query.companion_order = ActivityCompanionOrder::Minutes;
+
+    let people = activity_page_view_build(&store, query).unwrap().people;
+
+    assert_eq!(people.companions[0].user_id, "Friends:TotalMinutes");
+    assert_eq!(people.strangers[0].user_id, "Strangers:CoDays");
 }

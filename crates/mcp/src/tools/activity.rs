@@ -43,7 +43,11 @@ impl VrcxMcpServer {
                 min_minutes: input.min_minutes,
                 limit: input.limit,
                 owner_user_id: Some(owner_user_id.clone()),
-                friends_only: input.friends_only.unwrap_or(true),
+                audience: if input.friends_only.unwrap_or(true) {
+                    social_aggregates::CopresenceAudience::Friends
+                } else {
+                    social_aggregates::CopresenceAudience::Everyone
+                },
                 order_by: social_aggregates::CopresenceOrderBy::default(),
                 utc_offset_minutes: None,
             },
@@ -341,7 +345,7 @@ impl VrcxMcpServer {
                 min_minutes: None,
                 limit: Some(5),
                 owner_user_id: Some(owner_user_id.clone()),
-                friends_only: true,
+                audience: social_aggregates::CopresenceAudience::Friends,
                 order_by: social_aggregates::CopresenceOrderBy::default(),
                 utc_offset_minutes: input.utc_offset_minutes,
             })

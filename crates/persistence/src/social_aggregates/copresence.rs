@@ -13,8 +13,8 @@ use super::helpers::{
     table_exists, tz_offset_modifier, world_id_from_location_sql, world_names_for_ids,
 };
 use super::types::{
-    CopresenceGroupBy, CopresenceOrderBy, CopresenceSummaryInput, CopresenceSummaryOutput,
-    CopresenceSummaryRow,
+    CopresenceAudience, CopresenceGroupBy, CopresenceOrderBy, CopresenceSummaryInput,
+    CopresenceSummaryOutput, CopresenceSummaryRow,
 };
 
 pub fn get_copresence_summary(
@@ -71,22 +71,47 @@ pub fn get_copresence_summary(
 
     sql.push_str(" AND (@owner_user_id = '' OR COALESCE(g.user_id, '') <> @owner_user_id)");
 
-    if input.friends_only && !owner_user_id.is_empty() {
-        let user_prefix = normalize_user_table_prefix(owner_user_id.as_str())?;
-        let table_name = format!("{user_prefix}_friend_log_current");
-        if table_exists(db, &table_name)? {
+    let empty_output = || CopresenceSummaryOutput {
+        rows: Vec::new(),
+        total_rows: 0,
+        returned_rows: 0,
+        truncated: false,
+        summary: copresence_summary(&[]),
+        caveats: copresence_caveats(),
+    };
+    match input.audience {
+        CopresenceAudience::Everyone => {}
+        CopresenceAudience::Friends if owner_user_id.is_empty() => {}
+        CopresenceAudience::Friends => {
+            let user_prefix = normalize_user_table_prefix(owner_user_id.as_str())?;
+            let table_name = format!("{user_prefix}_friend_log_current");
+            if !table_exists(db, &table_name)? {
+                return Ok(empty_output());
+            }
             sql.push_str(&format!(
                 " AND EXISTS (SELECT 1 FROM {table_name} f WHERE f.user_id = g.user_id)"
             ));
-        } else {
-            return Ok(CopresenceSummaryOutput {
-                rows: Vec::new(),
-                total_rows: 0,
-                returned_rows: 0,
-                truncated: false,
-                summary: copresence_summary(&[]),
-                caveats: copresence_caveats(),
-            });
+        }
+        CopresenceAudience::Strangers if owner_user_id.is_empty() => {
+            return Ok(empty_output());
+        }
+        CopresenceAudience::Strangers => {
+            let user_prefix = normalize_user_table_prefix(owner_user_id.as_str())?;
+            sql.push_str(" AND trim(COALESCE(g.user_id, '')) <> ''");
+            for (table_name, condition) in [
+                (format!("{user_prefix}_friend_log_current"), ""),
+                (
+                    format!("{user_prefix}_friend_log_history"),
+                    " AND f.type IN ('Friend', 'Unfriend')",
+                ),
+                (format!("{user_prefix}_moderation"), " AND f.block = 1"),
+            ] {
+                if table_exists(db, &table_name)? {
+                    sql.push_str(&format!(
+                        " AND NOT EXISTS (SELECT 1 FROM {table_name} f WHERE f.user_id = g.user_id{condition})"
+                    ));
+                }
+            }
         }
     }
     sql.push_str(
@@ -232,17 +257,14 @@ pub fn get_copresence_summary(
         rows.push(row);
     }
 
-    // When friends_only is set the query already restricted rows to current
-    // friends, so skip the extra friend-set read and mark them directly.
-    let friend_ids = if input.friends_only {
-        None
-    } else {
-        Some(current_friend_id_set(db, &owner_user_id)?)
+    let friend_ids = match input.audience {
+        CopresenceAudience::Everyone => Some(current_friend_id_set(db, &owner_user_id)?),
+        CopresenceAudience::Friends | CopresenceAudience::Strangers => None,
     };
     for row in &mut rows {
         row.is_friend = match &friend_ids {
-            None => true,
             Some(friend_ids) => !row.user_id.is_empty() && friend_ids.contains(&row.user_id),
+            None => input.audience == CopresenceAudience::Friends,
         };
     }
 

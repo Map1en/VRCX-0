@@ -116,6 +116,7 @@ pub struct ActivityPageFadingRow {
 pub struct ActivityPagePeople {
     pub order: ActivityCompanionOrder,
     pub companions: Vec<ActivityPageCompanionRow>,
+    pub strangers: Vec<ActivityPageCompanionRow>,
     pub fading: Vec<ActivityPageFadingRow>,
     pub encountered_count: i64,
     pub new_face_count: i64,

@@ -2921,6 +2921,7 @@ export type ActivityPageFadingRow = {
 export type ActivityPagePeople = {
     order: ActivityCompanionOrder;
     companions: ActivityPageCompanionRow[];
+    strangers: ActivityPageCompanionRow[];
     fading: ActivityPageFadingRow[];
     encounteredCount: number;
     newFaceCount: number;

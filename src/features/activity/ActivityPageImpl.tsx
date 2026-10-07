@@ -67,6 +67,7 @@ import { ActivityAvatarsExhibit } from './components/ActivityAvatarsExhibit';
 import { ActivityJourneyView } from './components/ActivityJourneyView';
 import { ActivityPeopleExhibit } from './components/ActivityPeopleExhibit';
 import { ActivityRhythmExhibit } from './components/ActivityRhythmExhibit';
+import { ActivityStrangersExhibit } from './components/ActivityStrangersExhibit';
 import { ActivityTimeExhibit } from './components/ActivityTimeExhibit';
 import { ActivityWorldsExhibit } from './components/ActivityWorldsExhibit';
 import { useActivityAvatarUsage } from './useActivityAvatarUsage';
@@ -411,14 +412,24 @@ export function ActivityPageImpl() {
                                     />
                                 </Staggered>
                                 <Staggered index={3}>
-                                    <ActivityPeopleExhibit
-                                        people={view.people}
-                                        order={companionOrder}
-                                        pending={
-                                            view.people.order !== companionOrder
-                                        }
-                                        onOrderChange={onCompanionOrderChange}
-                                    />
+                                    <div className="flex flex-col gap-3">
+                                        <ActivityPeopleExhibit
+                                            people={view.people}
+                                            order={companionOrder}
+                                            pending={
+                                                view.people.order !==
+                                                companionOrder
+                                            }
+                                            onOrderChange={
+                                                onCompanionOrderChange
+                                            }
+                                        />
+                                        {view.people.strangers.length > 0 ? (
+                                            <ActivityStrangersExhibit
+                                                rows={view.people.strangers}
+                                            />
+                                        ) : null}
+                                    </div>
                                 </Staggered>
                                 <Staggered index={4}>
                                     <ActivityAccessExhibit

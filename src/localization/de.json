@@ -3644,6 +3644,7 @@
                 "when_you_play": "Wann du spielst",
                 "top_worlds": "Wo du die meiste Zeit verbringst",
                 "companions": "Mit wem du Zeit verbringst",
+                "strangers": "Vertraute Fremde",
                 "highlights": "Aufgefallen",
                 "avatars": "Am häufigsten genutzte Avatare"
             },
@@ -3678,6 +3679,7 @@
                 "fading_title": "Seltener geworden",
                 "fading_caveat": "Weniger gemeinsame Zeit als im Zeitraum davor. Vielleicht nur andere Zeitpläne.",
                 "encountered_total": "{count} insgesamt getroffen",
+                "strangers_caption": "Ohne aktuelle und frühere Freunde",
                 "fading_last_seen": "zuletzt gesehen {date}",
                 "order_minutes": "Nach Zeit",
                 "order_days": "Nach Tagen"

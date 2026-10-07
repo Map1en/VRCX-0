@@ -3,7 +3,8 @@ use std::collections::BTreeSet;
 use super::{activity_iso_from_ms, ActivityPageStore};
 use vrcx_0_application_core::Result;
 use vrcx_0_contracts::social_aggregates::{
-    CopresenceGroupBy, CopresenceOrderBy, CopresenceSummaryInput, FadingFriendsInput, TimeWindow,
+    CopresenceAudience, CopresenceGroupBy, CopresenceOrderBy, CopresenceSummaryInput,
+    FadingFriendsInput, TimeWindow,
 };
 use vrcx_0_core::OwnerId;
 
@@ -39,7 +40,25 @@ pub(super) fn people(
 
     Ok(ActivityPagePeople {
         order,
-        companions: companions(store, owner_user_id, &window, utc_offset_minutes, order)?,
+        companions: companions(
+            store,
+            owner_user_id,
+            &window,
+            utc_offset_minutes,
+            match order {
+                ActivityCompanionOrder::Minutes => CopresenceOrderBy::TotalMinutes,
+                ActivityCompanionOrder::Days => CopresenceOrderBy::CoDays,
+            },
+            CopresenceAudience::Friends,
+        )?,
+        strangers: companions(
+            store,
+            owner_user_id,
+            &window,
+            utc_offset_minutes,
+            CopresenceOrderBy::CoDays,
+            CopresenceAudience::Strangers,
+        )?,
         fading: fading(store, owner_user_id, from_ms, to_ms)?,
         encountered_count: i64::try_from(encountered.len()).unwrap_or(i64::MAX),
         new_face_count: i64::try_from(new_face_count).unwrap_or(i64::MAX),
@@ -51,19 +70,17 @@ fn companions(
     owner_user_id: &OwnerId,
     window: &TimeWindow,
     utc_offset_minutes: i64,
-    order: ActivityCompanionOrder,
+    order_by: CopresenceOrderBy,
+    audience: CopresenceAudience,
 ) -> Result<Vec<ActivityPageCompanionRow>> {
     let summary = store.copresence_summary(CopresenceSummaryInput {
         time_window: window.clone(),
         group_by: CopresenceGroupBy::Friend,
-        order_by: match order {
-            ActivityCompanionOrder::Minutes => CopresenceOrderBy::TotalMinutes,
-            ActivityCompanionOrder::Days => CopresenceOrderBy::CoDays,
-        },
+        order_by,
         min_minutes: None,
         limit: Some(COMPANION_LIMIT),
         owner_user_id: Some(owner_user_id.clone()),
-        friends_only: false,
+        audience,
         utc_offset_minutes: Some(utc_offset_minutes),
     })?;
 

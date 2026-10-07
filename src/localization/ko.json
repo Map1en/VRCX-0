@@ -3585,6 +3585,7 @@
                 "when_you_play": "주로 플레이하는 시간대",
                 "top_worlds": "오래 머문 월드",
                 "companions": "자주 함께한 사람",
+                "strangers": "자주 마주친 사람",
                 "highlights": "눈에 띄는 점",
                 "avatars": "자주 쓰는 아바타"
             },
@@ -3619,6 +3620,7 @@
                 "fading_title": "만남이 줄어든 사람",
                 "fading_caveat": "이전 기간보다 함께한 시간이 줄었습니다. 단순히 생활 패턴 차이일 수 있습니다.",
                 "encountered_total": "총 {count}명",
+                "strangers_caption": "친구와 예전 친구는 제외합니다",
                 "fading_last_seen": "마지막 만남 {date}",
                 "order_minutes": "시간순",
                 "order_days": "일수순"

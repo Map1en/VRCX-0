@@ -381,7 +381,7 @@ impl VrcxMcpServer {
                 min_minutes: None,
                 limit: Some(100),
                 owner_user_id: Some(owner_user_id.clone()),
-                friends_only: false,
+                audience: social_aggregates::CopresenceAudience::Everyone,
                 order_by: social_aggregates::CopresenceOrderBy::default(),
                 utc_offset_minutes: None,
             })

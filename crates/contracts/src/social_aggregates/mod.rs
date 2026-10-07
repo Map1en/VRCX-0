@@ -23,8 +23,8 @@ pub use changes::{
 pub use common::{ActivityBucket, TimeWindow};
 pub use companions::{CompanionOfRow, CompanionWorldRow, CompanionsOfInput, CompanionsOfOutput};
 pub use copresence::{
-    CopresenceGroupBy, CopresenceOrderBy, CopresenceSummaryInput, CopresenceSummaryOutput,
-    CopresenceSummaryRow,
+    CopresenceAudience, CopresenceGroupBy, CopresenceOrderBy, CopresenceSummaryInput,
+    CopresenceSummaryOutput, CopresenceSummaryRow,
 };
 pub use fading::{FadingFriendRow, FadingFriendsInput, FadingFriendsOutput};
 pub use friend_log::{FriendLogInput, FriendLogOutput, FriendLogRow};

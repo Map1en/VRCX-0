@@ -3648,6 +3648,7 @@
                 "when_you_play": "Cuándo juegas",
                 "top_worlds": "Donde pasas más tiempo",
                 "companions": "Con quién pasas el tiempo",
+                "strangers": "Desconocidos habituales",
                 "highlights": "Para destacar",
                 "avatars": "Avatares que más usas"
             },
@@ -3682,6 +3683,7 @@
                 "fading_title": "Se ven menos",
                 "fading_caveat": "Menos coincidencia que en el periodo anterior. Puede ser cuestión de horarios.",
                 "encountered_total": "{count} personas en total",
+                "strangers_caption": "Sin amigos actuales ni anteriores",
                 "fading_last_seen": "visto por última vez {date}",
                 "order_minutes": "Por tiempo",
                 "order_days": "Por días"

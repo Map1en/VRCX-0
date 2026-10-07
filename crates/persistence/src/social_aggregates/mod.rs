@@ -33,10 +33,10 @@ pub use recall::recall_encounter;
 pub use resolve::resolve_user_by_name;
 pub use types::{
     ActivityBucket, BestTimeBucketRow, BestTimeFriend, BestTimeToPlayInput, BestTimeToPlayOutput,
-    CompanionOfRow, CompanionWorldRow, CompanionsOfInput, CompanionsOfOutput, CopresenceGroupBy,
-    CopresenceOrderBy, CopresenceSummaryInput, CopresenceSummaryOutput, CopresenceSummaryRow,
-    FadingFriendRow, FadingFriendsInput, FadingFriendsOutput, FavoriteAction, FavoriteLocalInput,
-    FavoriteOutput, FriendActivityPatternInput, FriendActivityPatternOutput,
+    CompanionOfRow, CompanionWorldRow, CompanionsOfInput, CompanionsOfOutput, CopresenceAudience,
+    CopresenceGroupBy, CopresenceOrderBy, CopresenceSummaryInput, CopresenceSummaryOutput,
+    CopresenceSummaryRow, FadingFriendRow, FadingFriendsInput, FadingFriendsOutput, FavoriteAction,
+    FavoriteLocalInput, FavoriteOutput, FriendActivityPatternInput, FriendActivityPatternOutput,
     FriendActivityPatternRow, FriendChangeEvent, FriendChangeKind, FriendChangeRow,
     FriendChangesInput, FriendChangesOutput, FriendCirclePair, FriendCircleRow, FriendCirclesInput,
     FriendCirclesOutput, FriendLogInput, FriendLogOutput, FriendLogRow, InviteDirection,

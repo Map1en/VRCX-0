@@ -3648,6 +3648,7 @@
                 "when_you_play": "When you play",
                 "top_worlds": "Where you spend your time",
                 "companions": "Who you spend time with",
+                "strangers": "Familiar strangers",
                 "highlights": "Worth noticing",
                 "avatars": "Avatars you use most"
             },
@@ -3682,6 +3683,7 @@
                 "fading_title": "Fading out",
                 "fading_caveat": "Less overlap than the period before. Could be schedules, not intent.",
                 "encountered_total": "{count} met in total",
+                "strangers_caption": "Not counting friends, past or present",
                 "fading_last_seen": "last seen {date}",
                 "order_minutes": "By time",
                 "order_days": "By days"

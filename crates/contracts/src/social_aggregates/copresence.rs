@@ -21,6 +21,15 @@ pub enum CopresenceOrderBy {
     CoDays,
 }
 
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum CopresenceAudience {
+    #[default]
+    Everyone,
+    Friends,
+    Strangers,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct CopresenceSummaryInput {
@@ -36,7 +45,7 @@ pub struct CopresenceSummaryInput {
     #[serde(default)]
     pub owner_user_id: Option<OwnerId>,
     #[serde(default)]
-    pub friends_only: bool,
+    pub audience: CopresenceAudience,
     #[serde(default)]
     pub utc_offset_minutes: Option<i64>,
 }

@@ -3658,6 +3658,7 @@
                 "when_you_play": "Kdy hrajete",
                 "top_worlds": "Kde trávíte nejvíc času",
                 "companions": "S kým trávíte čas",
+                "strangers": "Známí cizinci",
                 "highlights": "Stojí za povšimnutí",
                 "avatars": "Nejpoužívanější avataři"
             },
@@ -3692,6 +3693,7 @@
                 "fading_title": "Méně častý kontakt",
                 "fading_caveat": "Méně společného času než v předchozím období. Může jít jen o rozvrh.",
                 "encountered_total": "celkem {count}",
+                "strangers_caption": "Bez současných i bývalých přátel",
                 "fading_last_seen": "naposledy viděn/a {date}",
                 "order_minutes": "Podle času",
                 "order_days": "Podle dní"

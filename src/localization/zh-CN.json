@@ -3642,6 +3642,7 @@
                 "when_you_play": "活跃时段",
                 "top_worlds": "待最久的世界",
                 "companions": "相处最久的人",
+                "strangers": "常遇见的路人",
                 "highlights": "值得一提",
                 "avatars": "常用的模型"
             },
@@ -3676,6 +3677,7 @@
                 "fading_title": "相处变少的人",
                 "fading_caveat": "比上一段时间见得少了，可能只是作息对不上。",
                 "encountered_total": "遇到过 {count} 人",
+                "strangers_caption": "不含好友和曾经的好友",
                 "fading_last_seen": "上次见面 {date}",
                 "order_minutes": "按时长",
                 "order_days": "按天数"
