@@ -285,6 +285,7 @@ export function InviteMessagePanel({
         setSending(true);
         setError('');
         try {
+            let sendRow = row;
             if (
                 allowEdit &&
                 nextMessage !== String(row?.message || '') &&
@@ -298,9 +299,22 @@ export function InviteMessagePanel({
                     );
                 }
                 await saveMessage(row, nextMessage);
+                const savedRow = {
+                    ...row,
+                    message: nextMessage,
+                    updatedAt: new Date().toISOString()
+                };
+                sendRow = savedRow;
+                setRows((current) =>
+                    current.map((item) =>
+                        item.slot === savedRow.slot ? savedRow : item
+                    )
+                );
+                setEditingRow(null);
+                setConfirmRow(savedRow);
             }
             const result = await onUse?.({
-                row,
+                row: sendRow,
                 messageType: resolvedMessageType,
                 message: nextMessage,
                 imageData

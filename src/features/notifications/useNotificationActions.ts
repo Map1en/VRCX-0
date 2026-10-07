@@ -492,7 +492,7 @@ export function useNotificationActions({
                 responseSlot: row.slot,
                 withUploadTimeout
             });
-            await reload();
+            await Promise.resolve(reload()).catch(() => undefined);
             toast.add({
                 type: 'success',
                 title: result.sentPhoto

@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
     openImagePreview: vi.fn(),
     reload: vi.fn(),
     sendButtonResponse: vi.fn(),
+    sendInviteResponse: vi.fn(),
     signalFriendLogChanged: vi.fn(),
     toastError: vi.fn(),
     toastSuccess: vi.fn(),
@@ -83,7 +84,7 @@ vi.mock('@/services/notificationActionService', () => ({
     expireNotificationLocally: mocks.expireLocally,
     hideRemoteAndExpireNotification: mocks.hideRemote,
     sendBoopReplyNotification: vi.fn(),
-    sendInviteResponseNotification: vi.fn(),
+    sendInviteResponseNotification: mocks.sendInviteResponse,
     sendNotificationButtonResponse: mocks.sendButtonResponse
 }));
 
@@ -224,6 +225,29 @@ describe('useNotificationActions', () => {
         expect(mocks.reload).toHaveBeenCalledOnce();
         expect(mocks.toastError).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'error', title: 'send failed' })
+        );
+    });
+
+    it('reports a sent invite response as sent when the follow-up refresh fails', async () => {
+        mocks.sendInviteResponse.mockResolvedValue({ sentPhoto: false });
+        mocks.reload.mockRejectedValue(new Error('sync failed'));
+        const { result } = renderActions();
+
+        await act(async () =>
+            result.current.sendInviteResponseSlot({
+                imageData: '',
+                notification: { id: 'not_request', type: 'requestInvite' },
+                row: { slot: 2 }
+            })
+        );
+
+        expect(mocks.sendInviteResponse).toHaveBeenCalledWith(
+            expect.objectContaining({ responseSlot: 2 })
+        );
+        expect(mocks.toastSuccess).toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: 'view.notifications.toast.invite_response_sent'
+            })
         );
     });
 });

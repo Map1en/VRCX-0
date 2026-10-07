@@ -424,8 +424,19 @@ pub async fn send_invite_response_notification(
             return finish(actions, outcome);
         }
     }
-    let mut outcome = hide_then_expire(actions, &target).await;
+    let mut outcome = NotificationActionOutcome::new(NotificationActionStatus::Applied);
     outcome.sent_photo = sent_photo;
+    if !target.id.is_empty() {
+        if let Err(error) = actions
+            .execute_remote(NotificationChainRemoteCall::HideNotification(
+                target.clone(),
+            ))
+            .await
+        {
+            outcome.remote_error = Some(error.message);
+        }
+    }
+    expire_into(actions, &target.id, &mut outcome);
     finish(actions, outcome)
 }
 

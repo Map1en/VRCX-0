@@ -452,6 +452,32 @@ async fn invite_response_send_failure_skips_hide_and_expire() {
 }
 
 #[tokio::test]
+async fn invite_response_sent_stays_applied_and_expires_when_hide_fails() {
+    let mut actions = FakeActions::new();
+    actions.fail_remote = Some(("hide:".into(), 500));
+    let outcome = send_invite_response_notification(
+        &actions,
+        NotificationInviteResponseInput {
+            owner_user_id: OwnerId::new("usr_self"),
+            endpoint: String::new(),
+            target: target("notif", 1),
+            response_slot: 0,
+            image_data: String::new(),
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!(outcome.status, NotificationActionStatus::Applied);
+    assert!(outcome.remote_error.is_some());
+    assert_eq!(
+        actions.remote_calls(),
+        vec!["inviteResponse:notif", "hide:notif"]
+    );
+    assert_eq!(outcome.expired_ids, vec!["notif"]);
+    assert_eq!(actions.emitted(), vec![vec!["notif".to_string()]]);
+}
+
+#[tokio::test]
 async fn request_invite_accept_sends_invite_with_rsvp_then_cleans_up() {
     let actions = FakeActions::new();
     let outcome = accept_request_invite_notification(
