@@ -3589,7 +3589,8 @@
                 "source_type_file": "Local file",
                 "source_type_files": "Selected files",
                 "source_type_folder": "Folder",
-                "resolved_at": "Loaded"
+                "resolved_at": "Loaded",
+                "scrim": "Dimming"
             },
             "mode": {
                 "daily": "Daily image",
@@ -3599,6 +3600,11 @@
             "rotation": {
                 "minutes": "min",
                 "custom": "Custom"
+            },
+            "scrim": {
+                "subtle": "Subtle",
+                "balanced": "Balanced",
+                "clear": "Strong"
             },
             "action": {
                 "refresh": "Refresh",

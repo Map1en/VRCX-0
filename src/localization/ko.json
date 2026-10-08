@@ -3526,7 +3526,8 @@
                 "source_type_file": "로컬 파일",
                 "source_type_files": "선택한 파일",
                 "source_type_folder": "폴더",
-                "resolved_at": "불러옴"
+                "resolved_at": "불러옴",
+                "scrim": "오버레이 강도"
             },
             "mode": {
                 "daily": "일일 이미지",
@@ -3536,6 +3537,11 @@
             "rotation": {
                 "minutes": "분",
                 "custom": "사용자 지정"
+            },
+            "scrim": {
+                "subtle": "약하게",
+                "balanced": "보통",
+                "clear": "강하게"
             },
             "action": {
                 "refresh": "새로고침",

@@ -3585,7 +3585,8 @@
                 "source_type_file": "Arquivo local",
                 "source_type_files": "Arquivos selecionados",
                 "source_type_folder": "Pasta",
-                "resolved_at": "Carregado"
+                "resolved_at": "Carregado",
+                "scrim": "Escurecimento"
             },
             "mode": {
                 "daily": "Imagem diária",
@@ -3595,6 +3596,11 @@
             "rotation": {
                 "minutes": "min",
                 "custom": "Personalizado"
+            },
+            "scrim": {
+                "subtle": "Suave",
+                "balanced": "Equilibrado",
+                "clear": "Intenso"
             },
             "action": {
                 "refresh": "Atualizar",

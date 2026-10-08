@@ -3593,7 +3593,8 @@
                 "source_type_file": "Местный файл",
                 "source_type_files": "Выбранные файлы",
                 "source_type_folder": "Папка",
-                "resolved_at": "Загружено"
+                "resolved_at": "Загружено",
+                "scrim": "Затемнение"
             },
             "mode": {
                 "daily": "Ежедневное изображение",
@@ -3603,6 +3604,11 @@
             "rotation": {
                 "minutes": "мин.",
                 "custom": "Другое"
+            },
+            "scrim": {
+                "subtle": "Слабое",
+                "balanced": "Среднее",
+                "clear": "Сильное"
             },
             "action": {
                 "refresh": "Обновить",

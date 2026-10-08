@@ -3589,7 +3589,8 @@
                 "source_type_file": "Archivo local",
                 "source_type_files": "Archivos seleccionados",
                 "source_type_folder": "Carpeta",
-                "resolved_at": "Cargada"
+                "resolved_at": "Cargada",
+                "scrim": "Oscurecimiento"
             },
             "mode": {
                 "daily": "Imagen diaria",
@@ -3599,6 +3600,11 @@
             "rotation": {
                 "minutes": "min",
                 "custom": "Personalizado"
+            },
+            "scrim": {
+                "subtle": "Suave",
+                "balanced": "Equilibrado",
+                "clear": "Intenso"
             },
             "action": {
                 "refresh": "Actualizar",

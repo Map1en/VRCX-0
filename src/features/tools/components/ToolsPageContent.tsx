@@ -167,8 +167,8 @@ function ToolRow({
             ref={itemRef}
             style={itemStyle}
             className={cn(
-                'bg-background',
-                editMode && 'cursor-grab touch-none active:cursor-grabbing',
+                editMode &&
+                    'bg-background cursor-grab touch-none active:cursor-grabbing',
                 isDragging && 'opacity-50'
             )}
             {...(editMode && dragProps ? dragProps : {})}

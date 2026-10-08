@@ -3583,7 +3583,8 @@
                 "source_type_file": "ローカルファイル",
                 "source_type_files": "選択済みファイル",
                 "source_type_folder": "フォルダ",
-                "resolved_at": "読み込み日時"
+                "resolved_at": "読み込み日時",
+                "scrim": "パネルの濃さ"
             },
             "mode": {
                 "daily": "デイリー画像",
@@ -3593,6 +3594,11 @@
             "rotation": {
                 "minutes": "分",
                 "custom": "カスタム"
+            },
+            "scrim": {
+                "subtle": "薄め",
+                "balanced": "標準",
+                "clear": "濃いめ"
             },
             "action": {
                 "refresh": "再読み込み",

@@ -3583,7 +3583,8 @@
                 "source_type_file": "本機檔案",
                 "source_type_files": "已選檔案",
                 "source_type_folder": "資料夾",
-                "resolved_at": "載入時間"
+                "resolved_at": "載入時間",
+                "scrim": "遮罩強度"
             },
             "mode": {
                 "daily": "每日圖片",
@@ -3593,6 +3594,11 @@
             "rotation": {
                 "minutes": "分鐘",
                 "custom": "自訂"
+            },
+            "scrim": {
+                "subtle": "通透",
+                "balanced": "均衡",
+                "clear": "清晰"
             },
             "action": {
                 "refresh": "重新整理",

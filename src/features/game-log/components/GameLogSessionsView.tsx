@@ -255,7 +255,7 @@ function SessionDayDivider({ session }: { session: GameLogSession }) {
     const label = formatDateFilter(value, 'date');
 
     return (
-        <div className="bg-background flex items-center gap-3 px-3 pt-2.5 pb-1">
+        <div className="flex items-center gap-3 px-3 pt-2.5 pb-1">
             <span className="text-muted-foreground shrink-0 text-xs font-medium tracking-wide tabular-nums">
                 {label}
             </span>

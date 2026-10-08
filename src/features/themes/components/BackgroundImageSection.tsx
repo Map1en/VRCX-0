@@ -7,7 +7,7 @@ import {
     RefreshCwIcon,
     ShuffleIcon
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { formatDateFilter, formatRelativeTime } from '@/lib/dateTime';
@@ -19,6 +19,7 @@ import type {
 } from '@/platform/tauri/bindings';
 import {
     backgroundImageRemoteProviders,
+    backgroundImageScrimLevels,
     type BackgroundImageSelectionMode,
     chooseBackgroundImageFiles,
     chooseBackgroundImageFolder,
@@ -27,12 +28,16 @@ import {
     setBackgroundImageCustomRotationIntervalMinutes,
     setBackgroundImageDecoration,
     setBackgroundImageMode,
-    setBackgroundImageProvider
+    setBackgroundImageProvider,
+    setBackgroundImageScrim
 } from '@/services/background-image/backgroundImageService';
 import { openFolderAndSelectItem } from '@/services/shellIntegrationService';
 import { toast } from '@/services/toastService';
 import { profileBackgroundTextures } from '@/shared/constants/profileBackgrounds';
-import { useBackgroundImageStore } from '@/state/backgroundImageStore';
+import {
+    type BackgroundImageScrim,
+    useBackgroundImageStore
+} from '@/state/backgroundImageStore';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent } from '@/ui/shadcn/card';
 import {
@@ -49,6 +54,11 @@ import {
     SelectTrigger,
     SelectValue
 } from '@/ui/shadcn/select';
+import {
+    ToggleGroup,
+    ToggleGroupItem,
+    ToggleGroupSeparator
+} from '@/ui/shadcn/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 const DEFAULT_ROTATION_INTERVAL_MINUTES = 60;
@@ -354,6 +364,7 @@ export function BackgroundImageSection() {
         : mode;
     const snapshot = useBackgroundImageStore((state) => state.snapshot);
     const loading = useBackgroundImageStore((state) => state.loading);
+    const scrim = useBackgroundImageStore((state) => state.scrim);
     const rotationIntervalMinutes =
         customSource?.rotationIntervalMinutes ??
         DEFAULT_ROTATION_INTERVAL_MINUTES;
@@ -432,6 +443,20 @@ export function BackgroundImageSection() {
                 type: 'success',
                 title: t('view.background_image.toast.enabled')
             });
+        } catch (error) {
+            toast.add({
+                type: 'error',
+                title:
+                    error instanceof Error
+                        ? error.message
+                        : t('view.background_image.toast.failed')
+            });
+        }
+    }
+
+    async function updateScrim(nextScrim: BackgroundImageScrim) {
+        try {
+            await setBackgroundImageScrim(nextScrim);
         } catch (error) {
             toast.add({
                 type: 'error',
@@ -839,6 +864,43 @@ export function BackgroundImageSection() {
                                 ) : null}
                             </div>
                         ) : null}
+                    </div>
+                ) : null}
+                {enabled ? (
+                    <div className="border-border/70 flex min-w-0 flex-wrap items-center gap-2 border-t pt-3">
+                        <span className="text-muted-foreground text-xs">
+                            {t('view.background_image.settings.scrim')}
+                        </span>
+                        <ToggleGroup
+                            variant="outline"
+                            size="sm"
+                            value={[scrim]}
+                            onValueChange={(nextValue) => {
+                                const nextScrim =
+                                    backgroundImageScrimLevels.find(
+                                        (level) => level === nextValue[0]
+                                    );
+                                if (nextScrim && nextScrim !== scrim) {
+                                    void updateScrim(nextScrim);
+                                }
+                            }}
+                        >
+                            {backgroundImageScrimLevels.map((level, index) => (
+                                <Fragment key={level}>
+                                    {index > 0 ? (
+                                        <ToggleGroupSeparator />
+                                    ) : null}
+                                    <ToggleGroupItem
+                                        value={level}
+                                        className="px-3"
+                                    >
+                                        {t(
+                                            `view.background_image.scrim.${level}`
+                                        )}
+                                    </ToggleGroupItem>
+                                </Fragment>
+                            ))}
+                        </ToggleGroup>
                     </div>
                 ) : null}
             </CardContent>

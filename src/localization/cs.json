@@ -3599,7 +3599,8 @@
                 "source_type_file": "Místní soubor",
                 "source_type_files": "Vybrané soubory",
                 "source_type_folder": "Složka",
-                "resolved_at": "Načteno"
+                "resolved_at": "Načteno",
+                "scrim": "Ztmavení"
             },
             "mode": {
                 "daily": "Denní obrázek",
@@ -3609,6 +3610,11 @@
             "rotation": {
                 "minutes": "min",
                 "custom": "Vlastní"
+            },
+            "scrim": {
+                "subtle": "Slabé",
+                "balanced": "Vyvážené",
+                "clear": "Silné"
             },
             "action": {
                 "refresh": "Obnovit",

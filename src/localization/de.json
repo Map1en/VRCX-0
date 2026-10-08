@@ -3585,7 +3585,8 @@
                 "source_type_file": "Lokale Datei",
                 "source_type_files": "Ausgewählte Dateien",
                 "source_type_folder": "Ordner",
-                "resolved_at": "Geladen"
+                "resolved_at": "Geladen",
+                "scrim": "Abdunklung"
             },
             "mode": {
                 "daily": "Tägliches Bild",
@@ -3595,6 +3596,11 @@
             "rotation": {
                 "minutes": "Min.",
                 "custom": "Benutzerdefiniert"
+            },
+            "scrim": {
+                "subtle": "Leicht",
+                "balanced": "Ausgewogen",
+                "clear": "Stark"
             },
             "action": {
                 "refresh": "Aktualisieren",

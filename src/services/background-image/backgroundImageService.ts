@@ -14,12 +14,22 @@ import {
     registerBackgroundImageAppearanceHandlers
 } from '@/services/appearanceConflictCoordinator';
 import { profileBackgroundTextures } from '@/shared/constants/profileBackgrounds';
-import { useBackgroundImageStore } from '@/state/backgroundImageStore';
+import {
+    type BackgroundImageScrim,
+    useBackgroundImageStore
+} from '@/state/backgroundImageStore';
 
 import { syncBackgroundImageAppearance } from './appearanceService';
 
 const BACKGROUND_IMAGE_DECORATION_URL_CONFIG_KEY =
     'backgroundImageDecorationUrl';
+const BACKGROUND_IMAGE_SCRIM_CONFIG_KEY = 'backgroundImageScrim';
+
+export const backgroundImageScrimLevels: BackgroundImageScrim[] = [
+    'subtle',
+    'balanced',
+    'clear'
+];
 
 export type BackgroundImageSelectionMode = BackgroundImageMode | 'decoration';
 
@@ -132,6 +142,16 @@ export async function initializeBackgroundImage(
     const projection =
         prefetchedProjection ?? (await commands.appBackgroundImageStateGet());
     applyProjectionState(projection);
+    const savedScrim = await configRepository.getString(
+        BACKGROUND_IMAGE_SCRIM_CONFIG_KEY,
+        'balanced'
+    );
+    const scrim = backgroundImageScrimLevels.find(
+        (level) => level === savedScrim
+    );
+    if (scrim) {
+        useBackgroundImageStore.getState().setScrim(scrim);
+    }
     const decorationImageUrl = (
         await configRepository.getString(
             BACKGROUND_IMAGE_DECORATION_URL_CONFIG_KEY,
@@ -191,6 +211,14 @@ export async function setBackgroundImageDecoration(
     useBackgroundImageStore.getState().setDecorationImageUrl(nextImageUrl);
     await syncBackgroundImageAppearance(false);
     return true;
+}
+
+export async function setBackgroundImageScrim(
+    scrim: BackgroundImageScrim
+): Promise<void> {
+    await configRepository.setString(BACKGROUND_IMAGE_SCRIM_CONFIG_KEY, scrim);
+    useBackgroundImageStore.getState().setScrim(scrim);
+    await syncBackgroundImageAppearance(false);
 }
 
 async function clearBackgroundImageDecoration(): Promise<void> {

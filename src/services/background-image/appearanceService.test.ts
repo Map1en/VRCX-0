@@ -3,11 +3,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { BackgroundImageSnapshot } from '@/platform/tauri/bindings';
+import type { BackgroundImageScrim } from '@/state/backgroundImageStore';
 
 const mocks = vi.hoisted(() => ({
     backgroundState: {
         enabled: false,
         decorationImageUrl: '',
+        scrim: 'balanced' as BackgroundImageScrim,
         snapshot: null as BackgroundImageSnapshot | null
     },
     setCommunityThemeAppearanceControl: vi.fn(),
@@ -83,6 +85,7 @@ describe('background image appearance', () => {
             '<div class="vrcx-0-background-image-transition-layer"></div>';
         mocks.backgroundState.enabled = false;
         mocks.backgroundState.decorationImageUrl = '';
+        mocks.backgroundState.scrim = 'balanced';
         mocks.backgroundState.snapshot = null;
         await syncBackgroundImageAppearance(false);
         vi.clearAllMocks();
@@ -127,7 +130,7 @@ describe('background image appearance', () => {
         expect(mocks.setVrcxCssLayer).toHaveBeenCalledWith(
             'background-image',
             expect.stringContaining(
-                '--vrcx-0-sidebar-surface: var(--vrcx-0-app-surface);'
+                '--vrcx-0-sidebar-surface: color-mix(in oklch, var(--background) 40%, transparent);'
             )
         );
         expect(transitionLayer?.hasAttribute('data-active')).toBe(false);
@@ -166,8 +169,41 @@ describe('background image appearance', () => {
         expect(mocks.setVrcxCssLayer).toHaveBeenCalledWith(
             'background-image',
             expect.stringMatching(
-                /--vrcx-0-titlebar-surface: var\(--surface-shell\);[\s\S]*--vrcx-0-sidebar-surface: var\(--surface-shell\);[\s\S]*--vrcx-0-side-panel-surface: var\(--surface-shell\);[\s\S]*--vrcx-0-statusbar-surface: var\(--surface-shell\);/
+                /--vrcx-0-titlebar-surface: color-mix\(in oklch, var\(--background\) 42%, transparent\);[\s\S]*--vrcx-0-sidebar-surface: color-mix\(in oklch, var\(--background\) 42%, transparent\);[\s\S]*--vrcx-0-side-panel-surface: var\(--surface-shell\);[\s\S]*--vrcx-0-statusbar-surface: color-mix\(in oklch, var\(--background\) 42%, transparent\);/
             )
         );
+    });
+
+    it('reapplies the current image when the dimming level changes', async () => {
+        mocks.backgroundState.enabled = true;
+        mocks.backgroundState.snapshot = snapshot('https://example.com/a.jpg');
+        await syncBackgroundImageAppearance(false);
+        const balancedCss = mocks.setVrcxCssLayer.mock.lastCall?.[1];
+        expect(balancedCss).toContain(
+            '--vrcx-0-main-content-surface: color-mix(in oklch, var(--background) 42%, transparent);'
+        );
+        expect(balancedCss).toMatch(
+            /\.bg-card \{\s*background-color: color-mix\(in oklch, var\(--card\) 50%, transparent\);\s*\}/
+        );
+        expect(balancedCss).toMatch(
+            /\[data-slot='tabs-list'\] \{\s*--state-pressed-surface: color-mix\(in oklch, var\(--background\) 30%, transparent\);\s*color: var\(--muted-foreground\);/
+        );
+
+        mocks.setVrcxCssLayer.mockClear();
+        mocks.backgroundState.scrim = 'clear';
+        await syncBackgroundImageAppearance(false);
+
+        expect(mocks.setVrcxCssLayer).toHaveBeenCalledTimes(1);
+        expect(mocks.setVrcxCssLayer).toHaveBeenCalledWith(
+            'background-image',
+            expect.stringMatching(
+                /https:\/\/example\.com\/a\.jpg[\s\S]*--content-secondary: color-mix\(in oklch, var\(--foreground\) 80%, var\(--surface-canvas\)\);[\s\S]*--vrcx-0-main-content-surface: color-mix\(in oklch, var\(--background\) 56%, transparent\);[\s\S]*--vrcx-0-sidebar-surface: color-mix\(in oklch, var\(--background\) 75%, transparent\);[\s\S]*0 0 0 100vmax var\(--vrcx-0-sidebar-surface\);/
+            )
+        );
+
+        mocks.setVrcxCssLayer.mockClear();
+        await syncBackgroundImageAppearance(false);
+
+        expect(mocks.setVrcxCssLayer).not.toHaveBeenCalled();
     });
 });

@@ -3583,7 +3583,8 @@
                 "source_type_file": "本地文件",
                 "source_type_files": "已选文件",
                 "source_type_folder": "文件夹",
-                "resolved_at": "加载时间"
+                "resolved_at": "加载时间",
+                "scrim": "遮罩强度"
             },
             "mode": {
                 "daily": "每日图片",
@@ -3593,6 +3594,11 @@
             "rotation": {
                 "minutes": "分钟",
                 "custom": "自定义"
+            },
+            "scrim": {
+                "subtle": "通透",
+                "balanced": "均衡",
+                "clear": "清晰"
             },
             "action": {
                 "refresh": "刷新",
