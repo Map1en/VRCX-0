@@ -6,6 +6,9 @@ use vrcx_0_application_activity::activity_page::{
     ActivityCompanionOrder, ActivityPageBuildInput, ActivitySeriesBucket,
 };
 use vrcx_0_core::OwnerId;
+use vrcx_0_persistence::friends::{
+    friend_log_upsert_current, FriendLogCurrentEntryInput, FriendLogUpsertOptionsInput,
+};
 use vrcx_0_persistence::game_log::{
     write_batch, GameLogJoinLeaveEntry, GameLogLocationEntry, GameLogWriteBatch,
 };
@@ -130,6 +133,23 @@ fn write_join_leave(db: &DatabaseService, join_leave: Vec<GameLogJoinLeaveEntry>
         },
     )
     .unwrap();
+}
+
+fn write_friends(db: &DatabaseService, user_ids: &[&str]) {
+    for user_id in user_ids {
+        friend_log_upsert_current(
+            db,
+            USER_ID.to_string(),
+            FriendLogCurrentEntryInput {
+                user_id: user_id.to_string(),
+                display_name: user_id.to_string(),
+                trust_level: None,
+                friend_number: serde_json::Value::Null,
+            },
+            FriendLogUpsertOptionsInput::default(),
+        )
+        .unwrap();
+    }
 }
 
 fn build(range_days: i64, now: &str) -> ActivityPageBuildInput {
@@ -372,6 +392,8 @@ fn activity_page_ranks_companions_by_shared_days_not_minutes() {
         ],
     );
 
+    write_friends(&db, &["usr_marathon", "usr_regular"]);
+
     let view = activity_page_view_build(db.as_ref(), build(30, "2025-01-08T00:00:00Z")).unwrap();
 
     assert_eq!(view.people.companions[0].user_id, "usr_regular");
@@ -406,6 +428,8 @@ fn activity_page_reranks_companions_when_the_order_changes() {
             left("2025-01-07T02:00:00Z", "usr_regular", "wrld_1:1", HOUR_MS),
         ],
     );
+
+    write_friends(&db, &["usr_marathon", "usr_regular"]);
 
     let mut input = build(30, "2025-01-08T00:00:00Z");
     input.companion_order = ActivityCompanionOrder::Minutes;
@@ -548,6 +572,8 @@ fn activity_page_clips_companion_minutes_to_the_window() {
             8 * HOUR_MS,
         )],
     );
+
+    write_friends(&db, &["usr_friend"]);
 
     let view = activity_page_view_build(db.as_ref(), build(1, "2025-01-08T12:00:00Z")).unwrap();
 
