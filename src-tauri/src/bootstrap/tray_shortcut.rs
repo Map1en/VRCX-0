@@ -50,7 +50,14 @@ pub(crate) async fn configure(
     binding: Option<TrayShortcutBinding>,
 ) -> Result<TrayShortcutUpdate, AppError> {
     #[cfg(windows)]
-    return on_main_thread(app, move |app| native::configure(app, binding)).await;
+    {
+        if app.try_state::<AppState>().is_none() {
+            return Err(AppError::Custom(
+                "Application storage is not connected yet.".into(),
+            ));
+        }
+        return on_main_thread(app, move |app| native::configure(app, binding)).await;
+    }
     #[cfg(not(windows))]
     {
         let _ = binding;

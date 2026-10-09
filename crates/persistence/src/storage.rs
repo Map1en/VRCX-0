@@ -42,6 +42,11 @@ impl StorageService {
         self.data.read().unwrap().get(key).cloned()
     }
 
+    /// Returns the directory containing the profile's local configuration file.
+    pub fn parent_dir(&self) -> &Path {
+        self.file_path.parent().unwrap_or_else(|| Path::new("."))
+    }
+
     pub fn set(&self, key: String, value: String) {
         self.data.write().unwrap().insert(key, value);
         if let Some(dirty_tx) = &self.dirty_tx {

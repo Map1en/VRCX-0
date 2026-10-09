@@ -29,21 +29,33 @@ impl ProfileBioStore for LocalProfileBioStore {
     }
 
     fn record(&self, owner: &OwnerId, user_id: &str, record: &ProfileBioRecord) -> Result<()> {
+        if self.db.is_remote() {
+            return Ok(());
+        }
         profile_bio::profile_bio_upsert(&self.db, owner, user_id, record)
             .map_err(crate::map_persistence_error)
     }
 
     fn mark_checked(&self, owner: &OwnerId, user_id: &str, checked_at: &str) -> Result<()> {
+        if self.db.is_remote() {
+            return Ok(());
+        }
         profile_bio::profile_bio_mark_checked(&self.db, owner, user_id, checked_at)
             .map_err(crate::map_persistence_error)
     }
 
     fn next_stale_friend(&self, owner: &OwnerId, checked_before: &str) -> Result<Option<String>> {
+        if self.db.is_remote() {
+            return Ok(None);
+        }
         profile_bio::profile_bio_next_stale_friend(&self.db, owner, checked_before)
             .map_err(crate::map_persistence_error)
     }
 
     fn observe_self_bio(&self, owner: &OwnerId, bio: &str, observed_at: &str) -> Result<()> {
+        if self.db.is_remote() {
+            return Ok(());
+        }
         realtime::write_realtime_batch(
             &self.db,
             owner,

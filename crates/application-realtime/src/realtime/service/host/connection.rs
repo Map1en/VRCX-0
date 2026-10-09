@@ -66,6 +66,10 @@ impl RealtimeHostRuntime {
             ),
             friend_profile_bulk_cancel_tx,
             current_user_refresh_inflight: Mutex::new(None),
+            pending_realtime_persistence: Mutex::new(super::state::PendingRealtimePersistence {
+                batches: std::collections::VecDeque::new(),
+                retry_worker_running: false,
+            }),
         }
     }
 

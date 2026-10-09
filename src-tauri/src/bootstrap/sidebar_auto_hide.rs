@@ -39,6 +39,9 @@ pub(crate) fn snapshot(app: &AppHandle) -> SidebarAutoHideSnapshot {
 pub(crate) async fn set_enabled(app: AppHandle, enabled: bool) -> Result<bool, AppError> {
     #[cfg(any(windows, target_os = "macos"))]
     {
+        let state = app
+            .try_state::<crate::state::AppState>()
+            .ok_or_else(|| AppError::Custom("Application storage is not connected yet.".into()))?;
         native::update(app.clone(), move |control, window| {
             control.recover(window)?;
             control.enabled = enabled;
@@ -46,7 +49,7 @@ pub(crate) async fn set_enabled(app: AppHandle, enabled: bool) -> Result<bool, A
             Ok(())
         })
         .await?;
-        app.state::<crate::state::AppState>()
+        state
             .runtime_host()
             .storage_set(PREFERENCE_KEY.into(), enabled.to_string());
         Ok(enabled)
@@ -122,6 +125,19 @@ pub(crate) fn attach(window: &tauri::WebviewWindow) {
     native::attach(window);
     #[cfg(not(any(windows, target_os = "macos")))]
     let _ = window;
+}
+
+/// Refresh the saved preference after the deferred AppState becomes available.
+/// The window is created before a database connection is established, so its
+/// first attach must not assume that AppState already exists.
+pub(crate) fn load_saved_preference(app: &AppHandle, state: &crate::state::AppState) {
+    #[cfg(any(windows, target_os = "macos"))]
+    native::set_initial_enabled(
+        app,
+        state.runtime_host().storage_get(PREFERENCE_KEY).as_deref() != Some("false"),
+    );
+    #[cfg(not(any(windows, target_os = "macos")))]
+    let _ = (app, state);
 }
 
 #[cfg(windows)]
@@ -322,16 +338,16 @@ mod native {
         if app.try_state::<Shared>().is_none() {
             app.manage(Shared::default());
         }
+        let enabled = app
+            .try_state::<crate::state::AppState>()
+            .is_some_and(|state| {
+                state.runtime_host().storage_get(PREFERENCE_KEY).as_deref() != Some("false")
+            });
         *app.state::<Shared>()
             .control
             .lock()
             .unwrap_or_else(|e| e.into_inner()) = Control {
-            enabled: app
-                .state::<crate::state::AppState>()
-                .runtime_host()
-                .storage_get(PREFERENCE_KEY)
-                .as_deref()
-                != Some("false"),
+            enabled,
             ..Control::default()
         };
         let destroyed = Arc::new(AtomicBool::new(false));
@@ -397,6 +413,18 @@ mod native {
                 interval = next_interval;
             }
         });
+    }
+
+    pub(super) fn set_initial_enabled(app: &AppHandle, enabled: bool) {
+        let Some(shared) = app.try_state::<Shared>() else {
+            return;
+        };
+        let mut control = shared.control.lock().unwrap_or_else(|e| e.into_inner());
+        control.enabled = enabled;
+        if let Some(window) = app.get_webview_window("main") {
+            publish(&window, &control);
+        }
+        shared.wake.notify_one();
     }
 
     #[cfg(windows)]

@@ -4,6 +4,7 @@ import type { AppToastOptions } from '@/services/toastService';
 
 const mocks = vi.hoisted(() => ({
     toastWarning: vi.fn(),
+    toastError: vi.fn(),
     appDatabaseUpgradePreflight: vi.fn(),
     appDatabaseUpgradeProgress: vi.fn(),
     appDatabaseUpgradeRun: vi.fn(),
@@ -11,6 +12,7 @@ const mocks = vi.hoisted(() => ({
     appDatabaseUpgradeFailureLogPath: vi.fn(),
     appDatabaseUpgradeStartFresh: vi.fn(),
     appGetLegacyVrcxMigrationStatus: vi.fn(),
+    appBootstrapStatusGet: vi.fn(),
     appRequestLegacyMigration: vi.fn(),
     configReload: vi.fn(),
     confirmLegacyVrcxProcessState: vi.fn(),
@@ -25,6 +27,8 @@ vi.mock('@/services/toastService', () => ({
             switch (options.type) {
                 case 'warning':
                     return mocks.toastWarning(options);
+                case 'error':
+                    return mocks.toastError(options);
                 default:
                     throw new Error('Unhandled toast type: ' + options.type);
             }
@@ -42,6 +46,7 @@ vi.mock('@/platform/tauri/bindings', () => ({
             mocks.appDatabaseUpgradeFailureLogPath,
         appDatabaseUpgradeStartFresh: mocks.appDatabaseUpgradeStartFresh,
         appGetLegacyVrcxMigrationStatus: mocks.appGetLegacyVrcxMigrationStatus,
+        appBootstrapStatusGet: mocks.appBootstrapStatusGet,
         appRequestLegacyMigration: mocks.appRequestLegacyMigration
     }
 }));
@@ -146,6 +151,7 @@ describe('databaseUpgradeService', () => {
         mocks.appGetLegacyVrcxMigrationStatus.mockResolvedValue(
             unavailableLegacyStatus()
         );
+        mocks.appBootstrapStatusGet.mockResolvedValue({ isRemote: false });
         mocks.appRequestLegacyMigration.mockResolvedValue(false);
         mocks.confirmLegacyVrcxProcessState.mockResolvedValue(false);
         mocks.configReload.mockResolvedValue(undefined);
@@ -186,7 +192,7 @@ describe('databaseUpgradeService', () => {
         expect(mocks.appDatabaseUpgradeRun).not.toHaveBeenCalled();
     });
 
-    it('opens the legacy migration confirmation after backend preflight', async () => {
+    it('queues the legacy migration confirmation after completing the database upgrade', async () => {
         mocks.appDatabaseUpgradePreflight.mockResolvedValueOnce(
             preflight('upgradeRequired', 0, 18)
         );
@@ -195,17 +201,17 @@ describe('databaseUpgradeService', () => {
             available: true
         });
 
-        await expect(initializeDatabaseUpgradeFlow()).resolves.toBe(false);
+        await expect(initializeDatabaseUpgradeFlow()).resolves.toBe(true);
 
         expect(useRuntimeStore.getState().databaseUpgrade).toMatchObject({
-            open: true,
+            open: false,
             phase: 'confirm-legacy-migration',
             fromVersion: 0,
             toVersion: 18,
             legacyMigrationAvailable: true
         });
-        expect(useSessionStore.getState().databaseReady).toBe(false);
-        expect(mocks.appDatabaseUpgradeRun).not.toHaveBeenCalled();
+        expect(useSessionStore.getState().databaseReady).toBe(true);
+        expect(mocks.appDatabaseUpgradeRun).toHaveBeenCalledOnce();
     });
 
     it('marks an already current database ready from the backend result', async () => {
@@ -280,7 +286,7 @@ describe('databaseUpgradeService', () => {
         await expect(upgrade).resolves.toBe(true);
     });
 
-    it('joins an upgrade already running after the frontend is rebuilt', async () => {
+    it('joins an upgrade already running and checks for legacy data after it completes', async () => {
         mocks.appDatabaseUpgradePreflight.mockResolvedValueOnce({
             ...preflight('running', 17, 18),
             stage: 'optimize'
@@ -293,12 +299,12 @@ describe('databaseUpgradeService', () => {
 
         await expect(initializeDatabaseUpgradeFlow()).resolves.toBe(true);
 
-        expect(mocks.appGetLegacyVrcxMigrationStatus).not.toHaveBeenCalled();
+        expect(mocks.appGetLegacyVrcxMigrationStatus).toHaveBeenCalledOnce();
         expect(mocks.appDatabaseUpgradeRun).toHaveBeenCalledTimes(1);
         expect(mocks.configReload).toHaveBeenCalledTimes(1);
     });
 
-    it('hydrates a finished upgrade without starting or prompting again', async () => {
+    it('hydrates a finished upgrade and checks for a deferred legacy import', async () => {
         mocks.appDatabaseUpgradePreflight.mockResolvedValueOnce({
             ...preflight('finished', 17, 18),
             result: {
@@ -310,7 +316,7 @@ describe('databaseUpgradeService', () => {
 
         await expect(initializeDatabaseUpgradeFlow()).resolves.toBe(true);
 
-        expect(mocks.appGetLegacyVrcxMigrationStatus).not.toHaveBeenCalled();
+        expect(mocks.appGetLegacyVrcxMigrationStatus).toHaveBeenCalledOnce();
         expect(mocks.appDatabaseUpgradeRun).not.toHaveBeenCalled();
         expect(mocks.configReload).toHaveBeenCalledTimes(1);
     });
@@ -454,7 +460,6 @@ describe('databaseUpgradeService', () => {
             fromVersion: 17,
             toVersion: 18
         });
-
         await expect(retryDatabaseUpgrade()).resolves.toBe(true);
 
         expect(mocks.appDatabaseUpgradeRetry).toHaveBeenCalledTimes(1);
@@ -521,6 +526,46 @@ describe('databaseUpgradeService', () => {
         });
     });
 
+    it('closes a remote migration prompt while signed out and preserves it for next login', async () => {
+        mocks.appBootstrapStatusGet.mockResolvedValueOnce({ isRemote: true });
+        useRuntimeStore.getState().setDatabaseUpgradeState({
+            open: true,
+            phase: 'confirm-legacy-migration',
+            legacyMigrationAvailable: true
+        });
+
+        await confirmLegacyDatabaseMigration();
+
+        expect(mocks.confirmLegacyVrcxProcessState).not.toHaveBeenCalled();
+        expect(mocks.appRequestLegacyMigration).not.toHaveBeenCalled();
+        expect(mocks.toastWarning).toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: 'view.login.legacy_import_sign_in_required'
+            })
+        );
+        expect(useRuntimeStore.getState().databaseUpgrade).toMatchObject({
+            open: false,
+            phase: 'confirm-legacy-migration',
+            legacyMigrationAvailable: true
+        });
+    });
+
+    it('fails closed when storage mode cannot be checked before remote migration', async () => {
+        mocks.appBootstrapStatusGet.mockRejectedValueOnce(
+            new Error('storage unavailable')
+        );
+
+        await confirmLegacyDatabaseMigration();
+
+        expect(mocks.toastError).toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: 'view.login.legacy_import_storage_unavailable'
+            })
+        );
+        expect(mocks.confirmLegacyVrcxProcessState).not.toHaveBeenCalled();
+        expect(mocks.appRequestLegacyMigration).not.toHaveBeenCalled();
+    });
+
     it('passes the force choice to the guarded migration request', async () => {
         mocks.confirmLegacyVrcxProcessState.mockResolvedValueOnce(true);
 
@@ -544,31 +589,23 @@ describe('databaseUpgradeService', () => {
         });
     });
 
-    it('skips legacy migration and invokes only the backend orchestration', async () => {
+    it('skips legacy migration without rerunning the database upgrade', async () => {
         useRuntimeStore.getState().setDatabaseUpgradeState({
             open: true,
             phase: 'confirm-legacy-migration',
             fromVersion: 16,
             toVersion: 18
         });
-        mocks.appDatabaseUpgradeRun.mockImplementationOnce(async () => {
-            expect(useRuntimeStore.getState().databaseUpgrade).toMatchObject({
-                open: true,
-                phase: 'running',
-                fromVersion: 16,
-                toVersion: 18
-            });
-            return {
-                status: 'upgraded',
-                fromVersion: 16,
-                toVersion: 18
-            };
-        });
-
+        useSessionStore.getState().setSessionState({ databaseReady: true });
         await expect(skipLegacyDatabaseMigration()).resolves.toBe(true);
 
-        expect(mocks.appDatabaseUpgradeRun).toHaveBeenCalledTimes(1);
-        expect(mocks.configReload).toHaveBeenCalledTimes(1);
+        expect(mocks.appDatabaseUpgradeRun).not.toHaveBeenCalled();
+        expect(mocks.configReload).not.toHaveBeenCalled();
         expect(useSessionStore.getState().databaseReady).toBe(true);
+        expect(useRuntimeStore.getState().databaseUpgrade).toMatchObject({
+            open: false,
+            phase: 'completed',
+            legacyMigrationAvailable: false
+        });
     });
 });

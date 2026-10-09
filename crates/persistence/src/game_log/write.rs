@@ -295,6 +295,21 @@ pub fn write_batch(
     }
     let owner_id = owner_id_get_or_insert(db, owner_user_id)?;
     db.write_transaction(|tx| {
+        if let Some(checkpoint) = &batch.replay_checkpoint {
+            // A lost commit response leaves the desktop batch pending. Check the
+            // committed cursor inside this transaction before applying it again.
+            let rows = tx.execute(
+                "SELECT value FROM configs WHERE key = @key",
+                &ParamsBuilder::new()
+                    .set("key", crate::config::resolve_config_key("gameLogReplayCheckpoint"))
+                    .build(),
+            )?;
+            if rows.first().and_then(|row| row.first()).and_then(|value| value.as_str())
+                == Some(checkpoint.as_str())
+            {
+                return Ok(0);
+            }
+        }
         ensure_game_log_tables_on(tx)?;
         let mut affected = 0_u64;
         for entry in &batch.locations {

@@ -267,12 +267,25 @@ impl RuntimeHostContext {
         image_cache: Arc<ImageCache>,
         tasks: TaskSupervisor,
     ) -> Self {
+        Self::new_with_auth_namespace(db, web, image_cache, tasks, "")
+    }
+
+    pub(crate) fn new_with_auth_namespace(
+        db: Arc<DatabaseService>,
+        web: Arc<WebClient>,
+        image_cache: Arc<ImageCache>,
+        tasks: TaskSupervisor,
+        auth_namespace: &str,
+    ) -> Self {
         let config = ConfigRepository::new(Arc::clone(&db));
         let notification_config: Arc<dyn NotificationConfig> = Arc::new(
             vrcx_0_outbound_adapters::LocalNotificationConfig::new(config.clone()),
         );
         let auth_credentials: Arc<dyn AuthCredentialStore> = Arc::new(
-            vrcx_0_outbound_adapters::LocalAuthCredentialStore::from_repository(config.clone()),
+            vrcx_0_outbound_adapters::LocalAuthCredentialStore::from_repository_with_prefix(
+                config.clone(),
+                auth_namespace,
+            ),
         );
         let login_api: Arc<dyn LoginApi> = Arc::new(vrcx_0_outbound_adapters::VrchatLoginApi::new(
             Arc::clone(&web),

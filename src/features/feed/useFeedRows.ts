@@ -98,6 +98,7 @@ export function useFeedRows({
     const unresolvedUserIdsRef = useRef<Set<string>>(new Set());
     const viewingLatestRef = useRef(true);
     const hasUnloadedLatestRef = useRef(false);
+    const seenFriendLogRevisionRef = useRef(friendLogRevision);
 
     const favoriteIdSet = useMemo(
         () =>
@@ -162,6 +163,18 @@ export function useFeedRows({
         updateHasUnloadedLatest(false);
         setLatestReloadToken((current) => current + 1);
     }, [updateHasUnloadedLatest]);
+
+    useEffect(() => {
+        if (seenFriendLogRevisionRef.current === friendLogRevision) {
+            return;
+        }
+        seenFriendLogRevisionRef.current = friendLogRevision;
+        if (searchMode || viewingLatestRef.current) {
+            setLatestReloadToken((current) => current + 1);
+        } else {
+            updateHasUnloadedLatest(true);
+        }
+    }, [friendLogRevision, searchMode, updateHasUnloadedLatest]);
 
     const commitRowsToWindow = useCallback(
         (nextRows: FeedRow[], edge: 'latest' | 'oldest') => {

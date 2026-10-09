@@ -226,7 +226,7 @@ fn write_preserved_config(db_file: &Path, entries: &[(String, String)]) {
     }
 }
 
-fn copy_database_snapshot(
+pub fn copy_database_snapshot(
     from: &Path,
     to: &Path,
     on_progress: impl FnMut(u64, u64),

@@ -28,9 +28,7 @@ pub(in crate::state) async fn run_background_social_baseline_refresh(
         return;
     };
     let deps = SocialBaselineDeps::new(
-        Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
-            Arc::clone(context.db),
-        )),
+        Arc::clone(context.realtime_store),
         Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests),
         Arc::clone(context.web),
         context.runtime_context.auth_scope.clone(),

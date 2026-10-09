@@ -4,10 +4,12 @@ import { createRoot } from 'react-dom/client';
 import '@/styles/globals.css';
 import { installDevPerformanceTimelineGuard } from '@/app/devPerformanceTimelineGuard';
 import { installErrorLogging } from '@/services/errorLogService';
+import { applyThemeModeLocally } from '@/services/themeService';
 
 // only use in dev to prevent OOM from React dev tools User Timing measures
 installDevPerformanceTimelineGuard();
 installErrorLogging();
+applyThemeModeLocally('system');
 
 async function bootstrap() {
     const [, { App }] = await Promise.all([

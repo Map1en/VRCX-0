@@ -20,6 +20,7 @@ import {
 } from '@/services/feedLiveMergeService';
 import { buildFeedRoute } from '@/shared/utils/feedRouteScope';
 import { useDialogStore } from '@/state/dialogStore';
+import { useFriendLogStore } from '@/state/friendLogStore';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
@@ -41,6 +42,7 @@ export function UserDialogFeedPanel({
     targetUserId: string;
 }) {
     const { t } = useTranslation();
+    const friendLogRevision = useFriendLogStore((state) => state.revision);
     const [rows, setRows] = useState<FeedRow[]>([]);
     const [loadStatus, setLoadStatus] = useState<FeedLoadStatus>('idle');
 
@@ -101,7 +103,7 @@ export function UserDialogFeedPanel({
         return () => {
             requestActive = false;
         };
-    }, [active, currentUserId, targetUserId]);
+    }, [active, currentUserId, friendLogRevision, targetUserId]);
 
     const openFeedLabel = t('nav_tooltip.feed');
 

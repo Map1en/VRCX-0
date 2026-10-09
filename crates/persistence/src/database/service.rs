@@ -10,12 +10,14 @@ use std::time::Duration;
 
 use rusqlite::{
     types::{ToSql, Value as SqlValue},
-    Connection, OpenFlags, OptionalExtension, Statement,
+    Connection, OpenFlags, OptionalExtension, Statement, TransactionBehavior,
 };
 pub use vrcx_0_contracts::DatabaseUpgradeStatus;
 
 use crate::Error;
 
+use super::remote::{RemoteConnectionStatus, RemoteDatabaseClient, RemoteTransaction};
+use super::remote_server::{DatabaseRpcRequest, DatabaseRpcResponse, RemoteDatabaseServer};
 use super::value::{json_to_sql, sqlite_value_to_json};
 
 #[cfg(test)]
@@ -51,6 +53,11 @@ pub struct DatabaseService {
     upgrade_dir: PathBuf,
     inner: RwLock<DatabaseMode>,
     config_generation: AtomicU64,
+    remote: Option<RemoteDatabaseClient>,
+    remote_write_lock: Mutex<()>,
+    remote_path: PathBuf,
+    remote_server: RemoteDatabaseServer,
+    remote_ensured: EnsuredSchemas,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -92,7 +99,12 @@ impl WalCheckpointMode {
 }
 
 pub(crate) struct DatabaseWriteTransaction<'conn> {
-    tx: rusqlite::Transaction<'conn>,
+    tx: DatabaseTransaction<'conn>,
+}
+
+enum DatabaseTransaction<'conn> {
+    Local(rusqlite::Transaction<'conn>),
+    Remote(RemoteTransaction),
 }
 
 impl DatabaseService {
@@ -109,7 +121,42 @@ impl DatabaseService {
             upgrade_dir,
             inner: RwLock::new(DatabaseMode::Main(main)),
             config_generation: AtomicU64::new(0),
+            remote: None,
+            remote_write_lock: Mutex::new(()),
+            remote_path: db_path.to_path_buf(),
+            remote_server: RemoteDatabaseServer::new(db_path.to_path_buf()),
+            remote_ensured: EnsuredSchemas::default(),
         })
+    }
+
+    /// Connects this persistence service to the authenticated database RPC endpoint.
+    /// The remote server is the only process that opens the SQLite database.
+    pub fn new_remote(server_url: &str, token: &str) -> Result<Self, Error> {
+        let remote = RemoteDatabaseClient::new(server_url, token)?;
+        let remote_path = PathBuf::from(format!("remote:{}", remote.endpoint()));
+        Ok(Self {
+            db_path: remote_path.clone(),
+            upgrade_dir: PathBuf::new(),
+            inner: RwLock::new(DatabaseMode::Closed),
+            config_generation: AtomicU64::new(0),
+            remote: Some(remote),
+            remote_write_lock: Mutex::new(()),
+            remote_path,
+            remote_server: RemoteDatabaseServer::new(PathBuf::new()),
+            remote_ensured: EnsuredSchemas::default(),
+        })
+    }
+
+    /// Handles a single authenticated database RPC request. The HTTP listener must
+    /// authenticate the request before calling this method.
+    pub fn handle_remote_request(
+        &self,
+        request: DatabaseRpcRequest,
+    ) -> Result<DatabaseRpcResponse, Error> {
+        if self.remote.is_some() {
+            return Err(remote_operation_unsupported("serving database RPC"));
+        }
+        self.remote_server.handle(self, request)
     }
 
     pub fn config_generation(&self) -> u64 {
@@ -121,7 +168,7 @@ impl DatabaseService {
     }
 
     pub fn db_path(&self) -> &Path {
-        &self.db_path
+        &self.remote_path
     }
 
     pub fn is_main_mode(&self) -> bool {
@@ -131,7 +178,37 @@ impl DatabaseService {
             .unwrap_or(false)
     }
 
+    pub fn is_remote(&self) -> bool {
+        self.remote.is_some()
+    }
+
+    /// Returns the last authenticated reachability state for remote storage.
+    /// Local storage has no remote connection state and returns `None`.
+    pub fn remote_connection_status(&self) -> Option<RemoteConnectionStatus> {
+        self.remote
+            .as_ref()
+            .map(RemoteDatabaseClient::connection_status)
+    }
+
+    /// Reconnects a remote client by issuing an authenticated, read-only `SELECT 1` probe.
+    /// The probe is safe to retry and never changes the configured storage mode.
+    pub fn check_remote_connection(&self) -> Result<(), Error> {
+        match &self.remote {
+            Some(remote) => remote.check_connection(),
+            None => Ok(()),
+        }
+    }
+
+    /// Drops abandoned server-side SQLite transactions after their idle timeout.
+    /// A background task invokes the same cleanup every second.
+    pub fn expire_remote_transactions(&self) -> usize {
+        self.remote_server.expire()
+    }
+
     pub fn freeze_for_migration(&self) -> Result<FrozenDatabase, Error> {
+        if self.remote.is_some() {
+            return Err(remote_operation_unsupported("database migration"));
+        }
         let mut inner = self
             .inner
             .write()
@@ -173,6 +250,9 @@ impl DatabaseService {
     }
 
     pub fn reopen_after_migration_abort(&self) -> Result<(), Error> {
+        if self.remote.is_some() {
+            return Err(remote_operation_unsupported("database migration"));
+        }
         let mut inner = self
             .inner
             .write()
@@ -187,6 +267,9 @@ impl DatabaseService {
     }
 
     pub fn vacuum_into(&self, dest: &Path) -> Result<(), Error> {
+        if self.remote.is_some() {
+            return Err(remote_operation_unsupported("local database snapshots"));
+        }
         let inner = self
             .inner
             .read()
@@ -230,6 +313,23 @@ impl DatabaseService {
     where
         F: FnOnce() -> Result<bool, Error>,
     {
+        if self.remote.is_some() {
+            let ensured = Arc::clone(&self.remote_ensured);
+            if ensured
+                .lock()
+                .map_err(|error| Error::Database(error.to_string()))?
+                .contains(key)
+            {
+                return Ok(());
+            }
+            if ensure()? {
+                ensured
+                    .lock()
+                    .map_err(|error| Error::Database(error.to_string()))?
+                    .insert(key.to_owned());
+            }
+            return Ok(());
+        }
         let ensured = {
             let inner = self
                 .inner
@@ -266,6 +366,9 @@ impl DatabaseService {
         sql: &str,
         args: &HashMap<String, serde_json::Value>,
     ) -> Result<Vec<Vec<serde_json::Value>>, Error> {
+        if let Some(remote) = &self.remote {
+            return remote.read(sql, args, None);
+        }
         let inner = self
             .inner
             .read()
@@ -294,6 +397,12 @@ impl DatabaseService {
     where
         F: Fn() -> bool + Send + Sync + 'static,
     {
+        if let Some(remote) = &self.remote {
+            if should_interrupt() {
+                return Err(interrupted_error());
+            }
+            return remote.read(sql, args, None);
+        }
         let inner = read_lock_interruptibly(&self.inner, &should_interrupt)?;
         match &*inner {
             DatabaseMode::Main(main) => {
@@ -314,6 +423,13 @@ impl DatabaseService {
         sql: &str,
         args: &HashMap<String, serde_json::Value>,
     ) -> Result<i64, Error> {
+        if let Some(remote) = &self.remote {
+            let _write_guard = self
+                .remote_write_lock
+                .lock()
+                .map_err(|error| Error::Database(error.to_string()))?;
+            return remote.execute(sql, args, None);
+        }
         let inner = self
             .inner
             .write()
@@ -338,6 +454,13 @@ impl DatabaseService {
         sql: &str,
         args: &HashMap<String, serde_json::Value>,
     ) -> Result<i64, Error> {
+        if let Some(remote) = &self.remote {
+            let _write_guard = self
+                .remote_write_lock
+                .lock()
+                .map_err(|error| Error::Database(error.to_string()))?;
+            return remote.execute(sql, args, None);
+        }
         let inner = self
             .inner
             .read()
@@ -361,26 +484,50 @@ impl DatabaseService {
     where
         F: FnOnce(&mut DatabaseWriteTransaction<'_>) -> Result<T, Error>,
     {
-        let inner = self
-            .inner
-            .read()
-            .map_err(|e| Error::Database(e.to_string()))?;
-        match &*inner {
-            DatabaseMode::Main(main) => main.write_transaction(f),
-            DatabaseMode::Upgrade(upgrade) => {
-                let mut conn = upgrade
-                    .conn
-                    .lock()
-                    .map_err(|e| Error::Database(e.to_string()))?;
-                execute_write_transaction(&mut conn, f)
+        if let Some(remote) = &self.remote {
+            let _write_guard = self
+                .remote_write_lock
+                .lock()
+                .map_err(|error| Error::Database(error.to_string()))?;
+            let mut transaction = DatabaseWriteTransaction {
+                tx: DatabaseTransaction::Remote(remote.begin()?),
+            };
+            let result = f(&mut transaction);
+            match result {
+                Ok(value) => {
+                    transaction.commit()?;
+                    Ok(value)
+                }
+                Err(error) => {
+                    transaction.rollback();
+                    Err(error)
+                }
             }
-            DatabaseMode::Closed => Err(Error::Database(
-                "Database connection is temporarily unavailable.".into(),
-            )),
+        } else {
+            let inner = self
+                .inner
+                .read()
+                .map_err(|e| Error::Database(e.to_string()))?;
+            match &*inner {
+                DatabaseMode::Main(main) => main.write_transaction(f),
+                DatabaseMode::Upgrade(upgrade) => {
+                    let mut conn = upgrade
+                        .conn
+                        .lock()
+                        .map_err(|e| Error::Database(e.to_string()))?;
+                    execute_write_transaction(&mut conn, f)
+                }
+                DatabaseMode::Closed => Err(Error::Database(
+                    "Database connection is temporarily unavailable.".into(),
+                )),
+            }
         }
     }
 
     pub(crate) fn checkpoint_and_vacuum(&self) -> Result<(), Error> {
+        if self.remote.is_some() {
+            return Err(remote_operation_unsupported("database maintenance"));
+        }
         let inner = self
             .inner
             .read()
@@ -407,14 +554,31 @@ impl DatabaseService {
     }
 
     pub fn checkpoint_wal(&self) -> Result<(), Error> {
+        if self.remote.is_some() {
+            return Ok(());
+        }
         self.with_checkpoint_connection(checkpoint)
     }
 
     pub fn checkpoint_wal_passive(&self) -> Result<WalCheckpointResult, Error> {
+        if self.remote.is_some() {
+            return Ok(WalCheckpointResult {
+                busy: false,
+                log_frames: 0,
+                checkpointed_frames: 0,
+            });
+        }
         self.with_checkpoint_connection(|conn| checkpoint_status(conn, WalCheckpointMode::Passive))
     }
 
     pub fn truncate_wal(&self) -> Result<WalCheckpointResult, Error> {
+        if self.remote.is_some() {
+            return Ok(WalCheckpointResult {
+                busy: false,
+                log_frames: 0,
+                checkpointed_frames: 0,
+            });
+        }
         self.with_checkpoint_connection(truncate_status_without_wait)
     }
 
@@ -459,6 +623,9 @@ fn map_profile_backup_sqlite_error(error: rusqlite::Error) -> Error {
 }
 
 pub fn optimize_database(db: &DatabaseService) -> Result<(), Error> {
+    if db.is_remote() {
+        return Ok(());
+    }
     db.execute_non_query("PRAGMA optimize", &Default::default())?;
     Ok(())
 }
@@ -469,7 +636,10 @@ impl DatabaseWriteTransaction<'_> {
         sql: &str,
         args: &HashMap<String, serde_json::Value>,
     ) -> Result<Vec<Vec<serde_json::Value>>, Error> {
-        execute_on_connection(&self.tx, sql, args)
+        match &self.tx {
+            DatabaseTransaction::Local(tx) => execute_on_connection(tx, sql, args),
+            DatabaseTransaction::Remote(tx) => tx.read(sql, args),
+        }
     }
 
     pub(crate) fn execute_non_query(
@@ -477,8 +647,30 @@ impl DatabaseWriteTransaction<'_> {
         sql: &str,
         args: &HashMap<String, serde_json::Value>,
     ) -> Result<i64, Error> {
-        execute_non_query_on_connection(&self.tx, sql, args)
+        match &self.tx {
+            DatabaseTransaction::Local(tx) => execute_non_query_on_connection(tx, sql, args),
+            DatabaseTransaction::Remote(tx) => tx.execute(sql, args),
+        }
     }
+
+    fn commit(self) -> Result<(), Error> {
+        match self.tx {
+            DatabaseTransaction::Local(tx) => tx.commit().map_err(Error::sqlite),
+            DatabaseTransaction::Remote(mut tx) => tx.commit(),
+        }
+    }
+
+    fn rollback(self) {
+        if let DatabaseTransaction::Remote(mut tx) = self.tx {
+            tx.rollback();
+        }
+    }
+}
+
+fn remote_operation_unsupported(operation: &str) -> Error {
+    Error::Database(format!(
+        "{operation} is unavailable for a remote database connection."
+    ))
 }
 
 impl MainDatabase {
@@ -588,9 +780,26 @@ fn open_main_database(db_path: &Path) -> Result<MainDatabase, Error> {
     })
 }
 
-fn open_configured_connection(db_path: &Path) -> Result<Connection, Error> {
+pub(super) fn open_configured_connection(db_path: &Path) -> Result<Connection, Error> {
     let conn = Connection::open(db_path).map_err(Error::sqlite)?;
     configure_connection(&conn)?;
+    Ok(conn)
+}
+
+/// Opens an additional writer connection after the main connection has already
+/// configured WAL mode. Avoid repeating `journal_mode=WAL` and `PRAGMA optimize`
+/// for each remote transaction, since both can introduce unnecessary locking.
+pub(super) fn open_remote_transaction_connection(db_path: &Path) -> Result<Connection, Error> {
+    let conn = Connection::open(db_path).map_err(Error::sqlite)?;
+    conn.busy_timeout(CONNECTION_BUSY_TIMEOUT)
+        .map_err(Error::sqlite)?;
+    conn.execute_batch(
+        "PRAGMA locking_mode=NORMAL;
+         PRAGMA synchronous=NORMAL;
+         PRAGMA secure_delete=OFF;",
+    )
+    .map_err(Error::sqlite)?;
+    conn.set_prepared_statement_cache_capacity(64);
     Ok(conn)
 }
 
@@ -666,10 +875,17 @@ fn execute_write_transaction<T, F>(conn: &mut Connection, f: F) -> Result<T, Err
 where
     F: FnOnce(&mut DatabaseWriteTransaction<'_>) -> Result<T, Error>,
 {
-    let tx = conn.transaction().map_err(Error::sqlite)?;
-    let mut wrapped = DatabaseWriteTransaction { tx };
+    // Reserve the writer before reading. A remote RPC transaction can hold a
+    // snapshot across HTTP requests; a deferred read-to-write upgrade may fail
+    // immediately with SQLITE_BUSY_SNAPSHOT instead of waiting for it.
+    let tx = conn
+        .transaction_with_behavior(TransactionBehavior::Immediate)
+        .map_err(Error::sqlite)?;
+    let mut wrapped = DatabaseWriteTransaction {
+        tx: DatabaseTransaction::Local(tx),
+    };
     let value = f(&mut wrapped)?;
-    wrapped.tx.commit().map_err(Error::sqlite)?;
+    wrapped.commit()?;
     Ok(value)
 }
 
@@ -693,7 +909,7 @@ fn ensure_upgrade_version_written(conn: &Connection, to_version: i64) -> Result<
     Ok(())
 }
 
-fn execute_on_connection(
+pub(super) fn execute_on_connection(
     conn: &Connection,
     sql: &str,
     args: &HashMap<String, serde_json::Value>,
@@ -794,7 +1010,7 @@ fn interrupted_error() -> Error {
     Error::Database("SQLite query interrupted".into())
 }
 
-fn execute_non_query_on_connection(
+pub(super) fn execute_non_query_on_connection(
     conn: &Connection,
     sql: &str,
     args: &HashMap<String, serde_json::Value>,

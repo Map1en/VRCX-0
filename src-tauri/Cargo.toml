@@ -17,6 +17,7 @@ tauri = { version = "2", features = ["tray-icon", "image-ico", "macos-proxy"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 semver = { workspace = true }
+reqwest = { workspace = true, features = ["json"] }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
@@ -59,6 +60,7 @@ vrcx-0-integration-api = { path = "../crates/integration-api" }
 vrcx-0-assistant = { path = "../crates/assistant" }
 vrcx-0-composition = { path = "../crates/composition" }
 vrcx-0-runtime-host-desktop = { path = "../crates/runtime-host-desktop" }
+vrcx-0-persistence = { path = "../crates/persistence" }
 specta-typescript = "0.0.9"
 specta = { workspace = true }
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
@@ -84,12 +86,8 @@ default = ["steamvr-overlay", "openxr-overlay"]
 bindings-export = []
 devtools = ["tauri/devtools"]
 devkit = ["devtools"]
-steamvr-overlay = [
-    "vrcx-0-runtime-host-desktop/steamvr-overlay"
-]
-openxr-overlay = [
-    "vrcx-0-runtime-host-desktop/openxr-overlay"
-]
+steamvr-overlay = ["vrcx-0-runtime-host-desktop/steamvr-overlay"]
+openxr-overlay = ["vrcx-0-runtime-host-desktop/openxr-overlay"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

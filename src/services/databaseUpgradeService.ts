@@ -412,7 +412,10 @@ export async function initializeDatabaseUpgradeFlow(): Promise<boolean> {
     }
 
     if (preflight.status === 'running') {
-        return runBackendDatabaseUpgrade(preflight);
+        return finishUpgradeAndQueueLegacyMigration(
+            preflight,
+            runBackendDatabaseUpgrade(preflight)
+        );
     }
     if (preflight.status === 'finished') {
         if (!preflight.result) {
@@ -420,7 +423,10 @@ export async function initializeDatabaseUpgradeFlow(): Promise<boolean> {
                 'Finished database upgrade status is missing its result.'
             );
         }
-        return handleDatabaseUpgradeResult(preflight.result);
+        return finishUpgradeAndQueueLegacyMigration(
+            preflight,
+            handleDatabaseUpgradeResult(preflight.result)
+        );
     }
 
     if (preflight.status === 'blocked') {
@@ -444,12 +450,33 @@ export async function initializeDatabaseUpgradeFlow(): Promise<boolean> {
         );
     }
 
-    const legacyMigrationStatus =
-        await commands.appGetLegacyVrcxMigrationStatus();
+    return finishUpgradeAndQueueLegacyMigration(
+        preflight,
+        runBackendDatabaseUpgrade(preflight)
+    );
+}
+
+async function finishUpgradeAndQueueLegacyMigration(
+    preflight: DatabaseUpgradePreflight,
+    upgrade: Promise<boolean>
+): Promise<boolean> {
+    const databaseReady = await upgrade;
+    if (!databaseReady) {
+        return false;
+    }
+
+    let legacyMigrationStatus;
+    try {
+        legacyMigrationStatus =
+            await commands.appGetLegacyVrcxMigrationStatus();
+    } catch (error) {
+        console.warn('Legacy VRCX migration status unavailable:', error);
+        return true;
+    }
 
     if (legacyMigrationStatus.available) {
         setUpgradeState({
-            open: true,
+            open: false,
             phase: 'confirm-legacy-migration',
             fromVersion: preflight.fromVersion,
             toVersion: preflight.toVersion,
@@ -460,18 +487,32 @@ export async function initializeDatabaseUpgradeFlow(): Promise<boolean> {
             failureLogPath: '',
             failedWorkDbPath: ''
         });
-        useSessionStore.getState().setSessionState({ databaseReady: false });
-        return false;
-    }
-
-    if (legacyMigrationStatus.detected && legacyMigrationStatus.reason) {
+    } else if (legacyMigrationStatus.detected && legacyMigrationStatus.reason) {
         toast.add({ type: 'warning', title: legacyMigrationStatus.reason });
     }
-
-    return runBackendDatabaseUpgrade(preflight);
+    return true;
 }
 
 export async function confirmLegacyDatabaseMigration(): Promise<void> {
+    let remoteDatabase: boolean;
+    try {
+        remoteDatabase = (await commands.appBootstrapStatusGet()).isRemote;
+    } catch {
+        toast.add({
+            type: 'error',
+            title: i18n.t('view.login.legacy_import_storage_unavailable')
+        });
+        return;
+    }
+    if (remoteDatabase && !useSessionStore.getState().isLoggedIn) {
+        setUpgradeState({ open: false });
+        toast.add({
+            type: 'warning',
+            title: i18n.t('view.login.legacy_import_sign_in_required')
+        });
+        return;
+    }
+
     let failureDetail = i18n.t(
         'service.database_upgrade_service.error.legacy_migration_restart_failed'
     );
@@ -488,6 +529,15 @@ export async function confirmLegacyDatabaseMigration(): Promise<void> {
             open: true,
             phase: 'confirm-legacy-migration',
             detail: failureDetail
+        });
+        return;
+    }
+
+    if (remoteDatabase && !useSessionStore.getState().isLoggedIn) {
+        setUpgradeState({ open: false });
+        toast.add({
+            type: 'warning',
+            title: i18n.t('view.login.legacy_import_sign_in_required')
         });
         return;
     }
@@ -543,12 +593,10 @@ export async function confirmLegacyDatabaseMigration(): Promise<void> {
 }
 
 export async function skipLegacyDatabaseMigration(): Promise<boolean> {
-    const { fromVersion, toVersion } =
-        useRuntimeStore.getState().databaseUpgrade;
-    return runBackendDatabaseUpgrade({
-        status: 'upgradeRequired',
-        fromVersion,
-        toVersion,
-        repairPending: false
+    setUpgradeState({
+        open: false,
+        phase: 'completed',
+        legacyMigrationAvailable: false
     });
+    return true;
 }

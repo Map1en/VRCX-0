@@ -1,0 +1,13 @@
+.git
+.github
+.husky
+.vscode
+node_modules
+dist
+target
+coverage
+vrcx-0-data
+*.log
+.env
+.env.*
+!.env.example

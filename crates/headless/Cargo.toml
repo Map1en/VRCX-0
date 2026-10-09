@@ -10,17 +10,33 @@ name = "vrcx-0-headless"
 path = "src/main.rs"
 
 [dependencies]
+axum = "0.8"
+constant_time_eq = "0.6"
+futures-util = "0.3"
 rpassword = "7.5.4"
+rusqlite = { workspace = true, features = ["bundled"] }
+serde = { workspace = true, features = ["derive"] }
 rustls = { version = "0.23", features = ["aws_lc_rs"] }
+sha2 = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true, features = [
+    "fs",
+    "io-util",
     "macros",
+    "net",
     "rt-multi-thread",
     "signal",
     "sync",
     "time"
 ] }
+tracing = { workspace = true }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 vrcx-0-application-core = { path = "../application-core" }
+vrcx-0-application = { path = "../application" }
+vrcx-0-local-server = { path = "../local-server" }
+vrcx-0-outbound-adapters = { path = "../outbound-adapters" }
 vrcx-0-platform = { path = "../platform" }
 vrcx-0-composition = { path = "../composition" }
+vrcx-0-contracts = { path = "../contracts" }
+vrcx-0-persistence = { path = "../persistence" }
+uuid = { workspace = true }

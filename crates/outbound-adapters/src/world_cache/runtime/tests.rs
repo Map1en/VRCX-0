@@ -2,6 +2,7 @@ use super::*;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use rusqlite::Connection;
 use serde_json::json;
 use vrcx_0_persistence::cache_entities::CacheEntityInput;
 use vrcx_0_persistence::worlds::{world_cache_get, world_cache_upsert};
@@ -608,4 +609,52 @@ fn capacity_bounds_every_hydrated_world() {
     cache.working.run_pending_tasks();
 
     assert!(cache.working.entry_count() <= 1);
+}
+
+#[test]
+fn failed_database_upserts_retry_the_latest_payload_per_world() {
+    let (_dir, db) = test_db("locked-write-retry");
+    world_cache_upsert(db.as_ref(), world_entry("wrld_retry", "Seed", "old")).unwrap();
+    let direct = Connection::open(db.db_path()).unwrap();
+    direct
+        .execute_batch(
+            "CREATE TRIGGER fail_world_cache BEFORE INSERT ON cache_world BEGIN SELECT RAISE(ABORT, 'retry'); END",
+        )
+        .unwrap();
+    let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+
+    cache.hydrate_from_payload(&json!({
+        "id": "wrld_retry",
+        "name": "First update",
+        "updated_at": "2026-10-01T00:00:00.000Z",
+        "imageUrl": "first.png",
+        "releaseStatus": "public"
+    }));
+    cache.hydrate_from_payload(&json!({
+        "id": "wrld_retry",
+        "name": "Latest update",
+        "updated_at": "2026-10-02T00:00:00.000Z",
+        "imageUrl": "latest.png",
+        "releaseStatus": "public"
+    }));
+    assert_eq!(
+        cache.pending_writes.entries.lock().unwrap().len(),
+        1,
+        "failed writes keep only the latest payload for a world"
+    );
+
+    direct
+        .execute_batch("DROP TRIGGER fail_world_cache")
+        .unwrap();
+    for _ in 0..100 {
+        if world_cache_get(db.as_ref(), "wrld_retry".into())
+            .unwrap()
+            .is_some_and(|summary| summary.name == "Latest update")
+        {
+            drop(direct);
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    panic!("world cache retry worker did not persist the latest payload");
 }

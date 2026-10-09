@@ -1164,3 +1164,47 @@ fn checkpointed_avatar_wear_extends_one_log_row_and_adds_only_the_new_time(
     assert_eq!(history[0][0], json!(90_000));
     Ok(())
 }
+
+#[test]
+fn durable_realtime_replay_is_atomic_and_does_not_add_avatar_time_twice() -> Result<(), crate::Error>
+{
+    let dir = TestDir::new("realtime-durable-replay");
+    let path = dir.path.join("VRCX-0.sqlite3");
+    let db = DatabaseService::new(&path)?;
+    let owner = OwnerId::new("usr_self");
+    ensure_realtime_tables(&db, "usrself")?;
+    let batch = RealtimePersistenceBatch {
+        avatar_time_spent_upserts: vec![AvatarTimeSpentUpsert {
+            avatar_id: "avtr_worn".into(),
+            created_at: "2026-10-01T14:00:00.000Z".into(),
+            time_spent: 60_000,
+            started_at_ms: 1_790_863_200_000,
+            ended_at_ms: 1_790_863_260_000,
+        }],
+        ..Default::default()
+    };
+    db.execute_non_query("CREATE TRIGGER fail_avatar BEFORE INSERT ON usrself_avatar_history BEGIN SELECT RAISE(ABORT, 'forced failure'); END", &Default::default())?;
+    assert!(super::write_realtime_batch_once(&db, &owner, &batch, "durable-batch").is_err());
+    assert!(db
+        .execute(
+            "SELECT 1 FROM collector_realtime_batches",
+            &Default::default()
+        )?
+        .is_empty());
+    db.execute_non_query("DROP TRIGGER fail_avatar", &Default::default())?;
+    super::write_realtime_batch_once(&db, &owner, &batch, "durable-batch")?;
+    drop(db);
+    let reopened = DatabaseService::new(&path)?;
+    assert_eq!(
+        super::write_realtime_batch_once(&reopened, &owner, &batch, "durable-batch")?,
+        Default::default()
+    );
+    assert_eq!(
+        reopened.execute(
+            "SELECT time FROM usrself_avatar_history WHERE avatar_id = 'avtr_worn'",
+            &Default::default()
+        )?[0][0],
+        json!(60_000)
+    );
+    Ok(())
+}

@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use vrcx_0_contracts::external_api::{
@@ -36,6 +37,8 @@ fn vrchat_config_request_endpoint(input: &HttpApiRequestInput, scope: ApiScope) 
 pub struct WebClient {
     inner: transport::WebClient,
     db: Arc<DatabaseService>,
+    diagnostics_dir: PathBuf,
+    cookie_key: String,
     realtime_origin: String,
     image_fetcher: Arc<ImageFetcher>,
     vrchat_config: VrchatConfigCache,
@@ -82,14 +85,25 @@ impl WebClient {
         realtime_origin: String,
         app_version: &str,
     ) -> Result<Self> {
+        Self::new_with_cookie_key(storage, db, realtime_origin, app_version, "default")
+    }
+
+    pub fn new_with_cookie_key(
+        storage: &StorageService,
+        db: Arc<DatabaseService>,
+        realtime_origin: String,
+        app_version: &str,
+        cookie_key: &str,
+    ) -> Result<Self> {
         let raw_enabled = storage.get(vrcx_0_application_core::PROXY_ENABLED_STORAGE_KEY);
         let raw_proxy_url = storage
             .get(vrcx_0_application_core::PROXY_STORAGE_KEY)
             .unwrap_or_default();
         let proxy_url =
             vrcx_0_application_core::load_proxy_url(raw_enabled.as_deref(), &raw_proxy_url);
+        let diagnostics_dir = storage.parent_dir().to_path_buf();
         let persisted_cookies =
-            cookies::get_default_cookies(db.as_ref()).map_err(crate::map_persistence_error)?;
+            cookies::get_cookies(db.as_ref(), cookie_key).map_err(crate::map_persistence_error)?;
         let inner = transport::WebClient::new(proxy_url, persisted_cookies.as_deref(), app_version)
             .map_err(crate::map_web_client_error)?;
         let image_fetcher = Arc::new(
@@ -99,6 +113,8 @@ impl WebClient {
         Ok(Self {
             inner,
             db,
+            diagnostics_dir,
+            cookie_key: cookie_key.to_owned(),
             realtime_origin,
             image_fetcher,
             vrchat_config: VrchatConfigCache::default(),
@@ -114,7 +130,7 @@ impl WebClient {
             jar.mark_dirty();
             return;
         };
-        if let Err(error) = cookies::save_default_cookies(self.db.as_ref(), &b64) {
+        if let Err(error) = cookies::save_cookies(self.db.as_ref(), &self.cookie_key, &b64) {
             jar.mark_dirty();
             tracing::warn!("failed to persist cookies: {error}");
         }
@@ -211,7 +227,7 @@ impl WebClient {
         let request = self.build_api_request(input, scope)?;
         let (status, data) = self.execute(request).await?;
         if let Some(context) = field_log_context {
-            crate::user_api_field_log::record(self.db.db_path(), context, status, &data).await;
+            crate::user_api_field_log::record(&self.diagnostics_dir, context, status, &data).await;
         }
         let response = self.finish_api_request(status, data)?;
         if response.status == 200 {

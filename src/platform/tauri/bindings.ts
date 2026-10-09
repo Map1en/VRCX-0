@@ -128,6 +128,69 @@ const generatedCommands = {
     async appFriendProfileLoadCancel(): Promise<FriendProfileLoadStatusPayload> {
         return await TAURI_INVOKE('app__friend_profile_load_cancel');
     },
+    async appRemoteDatabaseConnectionStatusGet(): Promise<RemoteDatabaseConnectionSnapshot> {
+        return await TAURI_INVOKE('app__remote_database_connection_status_get');
+    },
+    async appRemoteDatabaseConnectionCheck(): Promise<RemoteDatabaseConnectionSnapshot> {
+        return await TAURI_INVOKE('app__remote_database_connection_check');
+    },
+    async appBootstrapStatusGet(): Promise<BootstrapStatus> {
+        return await TAURI_INVOKE('app__bootstrap_status_get');
+    },
+    async appBootstrapConnect(
+        serverUrl: string,
+        token: string
+    ): Promise<BootstrapStatus> {
+        return await TAURI_INVOKE('app__bootstrap_connect', {
+            serverUrl,
+            token
+        });
+    },
+    async appBootstrapChooseLocal(): Promise<BootstrapStatus> {
+        return await TAURI_INVOKE('app__bootstrap_choose_local');
+    },
+    async appBootstrapRetrySaved(): Promise<BootstrapStatus> {
+        return await TAURI_INVOKE('app__bootstrap_retry_saved');
+    },
+    async appBootstrapSaveStorage(
+        useRemote: boolean,
+        serverUrl: string,
+        token: string
+    ): Promise<null> {
+        return await TAURI_INVOKE('app__bootstrap_save_storage', {
+            useRemote,
+            serverUrl,
+            token
+        });
+    },
+    async appCollectorAuthStatusGet(): Promise<CollectorAuthStatus> {
+        return await TAURI_INVOKE('app__collector_auth_status_get');
+    },
+    async appCollectorAuthLogin(
+        username: string,
+        password: string
+    ): Promise<CollectorAuthStatus> {
+        return await TAURI_INVOKE('app__collector_auth_login', {
+            username,
+            password
+        });
+    },
+    async appCollectorAuthVerify(
+        attemptId: string,
+        method: string,
+        code: string
+    ): Promise<CollectorAuthStatus> {
+        return await TAURI_INVOKE('app__collector_auth_verify', {
+            attemptId,
+            method,
+            code
+        });
+    },
+    async appCollectorAuthCancel(
+        attemptId: string
+    ): Promise<CollectorAuthStatus> {
+        return await TAURI_INVOKE('app__collector_auth_cancel', { attemptId });
+    },
     async appAncillaryRuntimeSnapshotGet(): Promise<AncillaryRuntimeSnapshot> {
         return await TAURI_INVOKE('app__ancillary_runtime_snapshot_get');
     },
@@ -3544,6 +3607,14 @@ export type BatchMutationResult = {
     items: BatchMutationItemResult[];
     lastError: string | null;
 };
+export type BootstrapStatus = {
+    connected: boolean;
+    hasSavedChoice: boolean;
+    isRemote: boolean;
+    serverUrl: string | null;
+    connecting: boolean;
+    error: string | null;
+};
 export type BrowseHistoryCursor = {
     lastViewedAt: string;
     entityKind: BrowseHistoryEntityKind;
@@ -3604,6 +3675,22 @@ export type ClientConfigSnippets = {
     mcpRemoteJson: string;
     genericJson: string;
 };
+export type CollectorAuthStatus = {
+    status: CollectorAuthStatusKind;
+    userId?: string | null;
+    displayName?: string | null;
+    methods?: string[];
+    attemptId?: string | null;
+    mode?: string | null;
+    error?: string | null;
+    collectorReady: boolean;
+};
+export type CollectorAuthStatusKind =
+    | 'needsLogin'
+    | 'authenticating'
+    | 'awaitingTwoFactor'
+    | 'ready'
+    | 'error';
 export type CommunityThemeAuthor = {
     name: string;
     github: string;
@@ -6103,6 +6190,12 @@ export type RegistryBackupSnapshot = {
     date: string;
 };
 export type ReleaseStatusFilter = 'all' | 'hidden' | 'private' | 'public';
+export type RemoteDatabaseConnectionSnapshot = {
+    isRemote: boolean;
+    state: RemoteDatabaseConnectionState | null;
+    error: string | null;
+};
+export type RemoteDatabaseConnectionState = 'connected' | 'disconnected';
 export type RemoteModerationRow = {
     id: string;
     type: string;

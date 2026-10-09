@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Manager, State};
 
 use crate::error::AppError;
 use crate::state::AppState;
@@ -12,6 +12,12 @@ use vrcx_0_runtime_host_desktop::{LegacyMigrationLifecycle, LegacyMigrationReque
 struct TauriLegacyMigrationLifecycle(AppHandle);
 
 impl LegacyMigrationLifecycle for TauriLegacyMigrationLifecycle {
+    fn current_user_id(&self) -> Option<String> {
+        self.0
+            .try_state::<AppState>()
+            .map(|state| state.runtime_host().auth_scope_snapshot().current_user_id)
+    }
+
     fn stop_runtime_services(&self) {
         super::window::stop_runtime_services(&self.0);
     }

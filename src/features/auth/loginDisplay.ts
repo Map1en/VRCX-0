@@ -14,7 +14,8 @@ export function getLoginUserDisplayName(
 
 export function shouldShowLegacyMigrationAction(
     isLoading: boolean,
-    savedAccounts: ReadonlyArray<Pick<SavedCredentialSnapshot, 'user'>>
+    savedAccounts: ReadonlyArray<Pick<SavedCredentialSnapshot, 'user'>>,
+    storageMode: 'local' | 'remote' | 'unknown' = 'local'
 ): boolean {
-    return !isLoading && savedAccounts.length === 0;
+    return storageMode === 'local' && !isLoading && savedAccounts.length === 0;
 }

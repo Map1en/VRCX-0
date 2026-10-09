@@ -2,6 +2,7 @@ pub mod activity;
 pub mod activity_page;
 mod avatar;
 pub mod background_image;
+pub mod collector_auth;
 mod community_theme;
 pub mod community_theme_protocol;
 mod data_dir_migration;
@@ -32,6 +33,7 @@ mod web;
 pub mod world_collections;
 
 pub use avatar::{AvatarTagOutput, AvatarTimeSpentOutput, AvatarUsageRow, AvatarWearSegment};
+pub use collector_auth::{CollectorAuthStatus, CollectorAuthStatusKind};
 pub use community_theme::{
     CommunityThemeAuthor, CommunityThemeCatalog, CommunityThemeManifest, CommunityThemeStatsById,
     CommunityThemeStatsEntry,

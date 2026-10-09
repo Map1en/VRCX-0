@@ -1,6 +1,7 @@
 use std::fs;
 use std::io::ErrorKind;
 use std::path::PathBuf;
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use vrcx_0_application_core::{
     DatabaseCheckpointKind, DatabaseCheckpointResult, DatabaseMaintenancePort,
@@ -99,6 +100,9 @@ impl RuntimeHostState {
     }
 
     pub fn start_data_services(&self) {
+        if self.data_services_started.swap(true, Ordering::AcqRel) {
+            return;
+        }
         self.runtime_context
             .runtime
             .set_host_services_started(true, "Runtime host services installed.");

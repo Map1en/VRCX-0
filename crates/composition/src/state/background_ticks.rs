@@ -24,6 +24,7 @@ pub(super) use social_baseline::run_background_social_baseline_refresh;
 
 pub(super) struct BackgroundTickContext<'a> {
     pub(super) db: &'a Arc<DatabaseService>,
+    pub(super) realtime_store: &'a Arc<dyn vrcx_0_application_realtime::RealtimeStore>,
     pub(super) web: &'a Arc<WebClient>,
     pub(super) session_slot: &'a Arc<Mutex<AuthenticatedSessionProjection>>,
     pub(super) realtime_runtime: &'a Arc<RealtimeHostRuntime>,

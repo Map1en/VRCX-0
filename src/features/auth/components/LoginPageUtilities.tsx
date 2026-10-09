@@ -1,4 +1,5 @@
 import { ArchiveRestoreIcon, DatabaseIcon, NetworkIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/ui/shadcn/button';
@@ -11,6 +12,7 @@ type LoginPageUtilitiesProps = {
     onOpenProxyDialog: () => void;
     onRestoreProfileBackup: () => void;
     showLegacyMigration: boolean;
+    storageSettings?: ReactNode;
 };
 
 export function LoginPageUtilities({
@@ -19,7 +21,8 @@ export function LoginPageUtilities({
     onMigrateLegacyVrcxData,
     onOpenProxyDialog,
     onRestoreProfileBackup,
-    showLegacyMigration
+    showLegacyMigration,
+    storageSettings
 }: LoginPageUtilitiesProps) {
     const { t } = useTranslation();
 
@@ -42,6 +45,7 @@ export function LoginPageUtilities({
                 )}
                 {t('profile_backup.restore_from_backup')}
             </Button>
+            {storageSettings}
             {showLegacyMigration ? (
                 <Button
                     type="button"

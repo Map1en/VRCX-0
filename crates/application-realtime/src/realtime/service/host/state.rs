@@ -296,6 +296,16 @@ pub struct RealtimeHostRuntime {
     pub(super) friend_profile_bulk_cancel_tx: watch::Sender<u64>,
     pub(super) current_user_refresh_inflight:
         Mutex<Option<watch::Receiver<CurrentUserRefreshStatus>>>,
+    pub(super) pending_realtime_persistence: Mutex<PendingRealtimePersistence>,
+}
+
+pub(super) struct PendingRealtimePersistence {
+    pub(super) batches: std::collections::VecDeque<(
+        vrcx_0_core::OwnerId,
+        vrcx_0_contracts::realtime::RealtimePersistenceBatch,
+        bool,
+    )>,
+    pub(super) retry_worker_running: bool,
 }
 
 impl RealtimeHostRuntime {

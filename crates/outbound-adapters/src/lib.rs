@@ -43,6 +43,7 @@ mod profile_config;
 mod profile_database_upgrade;
 mod proxy_connectivity;
 mod quick_search;
+mod realtime_journal;
 pub mod realtime_lifecycle_log;
 mod realtime_remote_requests;
 mod realtime_store;

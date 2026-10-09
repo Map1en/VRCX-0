@@ -147,7 +147,7 @@ impl RealtimeHostRuntime {
         owner_user_id: &OwnerId,
         entries: Vec<FeedLiveEntry>,
     ) {
-        if entries.is_empty() {
+        if entries.is_empty() || !self.deps.store.records_realtime_history() {
             return;
         }
         let _owner = self

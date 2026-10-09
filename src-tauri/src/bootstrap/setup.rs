@@ -1,18 +1,22 @@
+#![allow(non_snake_case)]
+
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::Mutex;
 use vrcx_0_application_core::RuntimeOperationStatus;
 
 use tauri::{Emitter, Manager};
 use tauri_plugin_deep_link::DeepLinkExt;
-use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 use tracing::Level;
 use tracing_subscriber::filter::filter_fn;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::Layer;
+use vrcx_0_contracts::CollectorAuthStatus;
 
-use crate::error::AppError;
 use crate::state::{AppState, BACKGROUND_MODE_RESUME_ROUTE_STORAGE_KEY};
+use vrcx_0_application_core::RuntimeTaskExecutor;
 use vrcx_0_runtime_host_desktop::deep_link::{parse_deep_link, queue_deep_link_action};
 
 use super::adapters::{
@@ -21,6 +25,398 @@ use super::adapters::{
 use super::autostart::{apply_autostart_window_state_if_needed, sync_autostart_from_db};
 use super::shared::app_language;
 use super::window::{configure_tray, configure_windows_webview_settings, create_main_window};
+
+#[derive(Clone, Debug, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct BootstrapStatus {
+    pub connected: bool,
+    pub has_saved_choice: bool,
+    pub is_remote: bool,
+    pub server_url: Option<String>,
+    pub connecting: bool,
+    pub error: Option<String>,
+}
+
+pub struct BootstrapState {
+    app_data_dir: vrcx_0_platform::app_paths::AppDataDirResolution,
+    maintenance_cache_dir: Option<PathBuf>,
+    updater_port: Arc<TauriUpdaterPort>,
+    task_executor: Arc<dyn RuntimeTaskExecutor>,
+    status: Mutex<BootstrapStatus>,
+    connect_lock: tokio::sync::Mutex<()>,
+    explicit_choice_requested: AtomicBool,
+}
+
+#[tauri::command(async)]
+#[specta::specta]
+pub async fn app__collector_auth_status_get(
+    app: tauri::AppHandle,
+) -> Result<CollectorAuthStatus, String> {
+    collector_auth_request(&app, "GET", "/api/auth/status", None).await
+}
+
+#[tauri::command(async)]
+#[specta::specta]
+pub async fn app__collector_auth_login(
+    app: tauri::AppHandle,
+    username: String,
+    password: String,
+) -> Result<CollectorAuthStatus, String> {
+    collector_auth_request(
+        &app,
+        "POST",
+        "/api/auth/login",
+        Some(serde_json::json!({ "username": username, "password": password })),
+    )
+    .await
+}
+
+#[tauri::command(async)]
+#[specta::specta]
+pub async fn app__collector_auth_verify(
+    app: tauri::AppHandle,
+    attempt_id: String,
+    method: String,
+    code: String,
+) -> Result<CollectorAuthStatus, String> {
+    collector_auth_request(
+        &app,
+        "POST",
+        "/api/auth/verify",
+        Some(serde_json::json!({ "attemptId": attempt_id, "method": method, "code": code })),
+    )
+    .await
+}
+
+#[tauri::command(async)]
+#[specta::specta]
+pub async fn app__collector_auth_cancel(
+    app: tauri::AppHandle,
+    attempt_id: String,
+) -> Result<CollectorAuthStatus, String> {
+    collector_auth_request(
+        &app,
+        "POST",
+        "/api/auth/cancel",
+        Some(serde_json::json!({ "attemptId": attempt_id })),
+    )
+    .await
+}
+
+async fn collector_auth_request(
+    app: &tauri::AppHandle,
+    method: &str,
+    path: &str,
+    body: Option<serde_json::Value>,
+) -> Result<CollectorAuthStatus, String> {
+    let bootstrap = app
+        .try_state::<BootstrapState>()
+        .ok_or_else(|| "Remote server settings are unavailable.".to_string())?;
+    let connection =
+        vrcx_0_composition::RemoteDatabaseConnection::load(&bootstrap.app_data_dir.current_dir)
+            .map_err(|_| "Could not read remote server settings.".to_string())?
+            .ok_or_else(|| "No remote server is configured.".to_string())?;
+    let url = format!("{}{path}", connection.server_url.trim_end_matches('/'));
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(15))
+        .connect_timeout(std::time::Duration::from_secs(4))
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .map_err(|_| "Could not connect to the collector server.".to_string())?;
+    let mut request = match method {
+        "GET" => client.get(&url),
+        _ => client.post(&url),
+    }
+    .bearer_auth(&connection.token);
+    if let Some(body) = body {
+        request = request.json(&body);
+    }
+    let response = request
+        .send()
+        .await
+        .map_err(|_| "Could not reach the collector server. Check its connection.".to_string())?;
+    if !response.status().is_success() {
+        return Err(match response.status().as_u16() {
+            401 | 403 => "The remote server access token was rejected.".to_string(),
+            404 => "Collector authentication is unavailable on this server version.".to_string(),
+            _ => "The collector server could not complete the authentication request.".to_string(),
+        });
+    }
+    response
+        .json::<CollectorAuthStatus>()
+        .await
+        .map_err(|_| "The collector server returned an invalid authentication status.".to_string())
+}
+
+impl BootstrapState {
+    fn new(
+        app_data_dir: vrcx_0_platform::app_paths::AppDataDirResolution,
+        maintenance_cache_dir: Option<PathBuf>,
+        updater_port: Arc<TauriUpdaterPort>,
+    ) -> Self {
+        Self {
+            app_data_dir,
+            maintenance_cache_dir,
+            updater_port,
+            task_executor: Arc::new(super::adapters::TauriRuntimeTaskExecutor),
+            status: Mutex::new(BootstrapStatus {
+                connected: false,
+                has_saved_choice: false,
+                is_remote: false,
+                server_url: None,
+                connecting: false,
+                error: None,
+            }),
+            connect_lock: tokio::sync::Mutex::new(()),
+            explicit_choice_requested: AtomicBool::new(false),
+        }
+    }
+
+    fn status(&self) -> BootstrapStatus {
+        self.status
+            .lock()
+            .expect("bootstrap status poisoned")
+            .clone()
+    }
+}
+
+#[tauri::command(async)]
+#[specta::specta]
+pub fn app__bootstrap_status_get(
+    _app: tauri::AppHandle,
+    state: tauri::State<'_, BootstrapState>,
+) -> BootstrapStatus {
+    state.status()
+}
+
+#[tauri::command(async)]
+#[specta::specta]
+pub async fn app__bootstrap_connect(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, BootstrapState>,
+    server_url: String,
+    token: String,
+) -> Result<BootstrapStatus, String> {
+    state
+        .explicit_choice_requested
+        .store(true, Ordering::Release);
+    connect_remote_database(&app, state.inner(), server_url, token).await
+}
+
+#[tauri::command(async)]
+#[specta::specta]
+pub async fn app__bootstrap_retry_saved(app: tauri::AppHandle) -> Result<BootstrapStatus, String> {
+    let bootstrap = app
+        .try_state::<BootstrapState>()
+        .ok_or_else(|| "Bootstrap is unavailable".to_string())?;
+    bootstrap
+        .explicit_choice_requested
+        .store(true, Ordering::Release);
+    let connection =
+        vrcx_0_composition::RemoteDatabaseConnection::load(&bootstrap.app_data_dir.current_dir)
+            .map_err(|error| format!("Could not read remote server settings: {error}"))?
+            .ok_or_else(|| "No saved remote server settings".to_string())?;
+    connect_remote_database(&app, &bootstrap, connection.server_url, connection.token).await
+}
+
+#[tauri::command(async)]
+#[specta::specta]
+pub async fn app__bootstrap_choose_local(app: tauri::AppHandle) -> Result<BootstrapStatus, String> {
+    let bootstrap = app
+        .try_state::<BootstrapState>()
+        .ok_or_else(|| "Bootstrap is unavailable".to_string())?;
+    bootstrap
+        .explicit_choice_requested
+        .store(true, Ordering::Release);
+    connect_local_database(&app, &bootstrap, true).await
+}
+
+#[tauri::command(async)]
+#[specta::specta]
+pub fn app__bootstrap_save_storage(
+    app: tauri::AppHandle,
+    use_remote: bool,
+    server_url: String,
+    token: String,
+) -> Result<(), String> {
+    if app.try_state::<AppState>().is_none() {
+        return Err("Connect to a storage profile before changing it.".into());
+    }
+    let bootstrap = app
+        .try_state::<BootstrapState>()
+        .ok_or_else(|| "Bootstrap is unavailable".to_string())?;
+    let app_data_dir = &bootstrap.app_data_dir.current_dir;
+    if use_remote {
+        let server_url = server_url.trim().trim_end_matches('/').to_string();
+        let token = if token.trim().is_empty() {
+            let current = vrcx_0_composition::RemoteDatabaseConnection::load(app_data_dir)
+                .map_err(|error| error.to_string())?;
+            current
+                .filter(|connection| connection.server_url.trim_end_matches('/') == server_url)
+                .map(|connection| connection.token)
+                .ok_or_else(|| "Enter an access token for this server.".to_string())?
+        } else {
+            token.trim().to_string()
+        };
+        vrcx_0_composition::RemoteDatabaseConnection { server_url, token }
+            .save(app_data_dir)
+            .map_err(|error| error.to_string())?;
+    } else {
+        vrcx_0_composition::RemoteDatabaseConnection::choose_local(app_data_dir)
+            .map_err(|error| error.to_string())?;
+    }
+    crate::commands::host::window::restart_now(&app);
+    Ok(())
+}
+
+async fn connect_remote_database(
+    app: &tauri::AppHandle,
+    bootstrap: &BootstrapState,
+    server_url: String,
+    token: String,
+) -> Result<BootstrapStatus, String> {
+    let _guard = bootstrap.connect_lock.lock().await;
+    if app.try_state::<AppState>().is_some() {
+        return Ok(bootstrap.status());
+    }
+    {
+        let mut status = bootstrap
+            .status
+            .lock()
+            .map_err(|_| "Connection status unavailable".to_string())?;
+        status.connecting = true;
+        status.error = None;
+        status.has_saved_choice = true;
+        status.is_remote = true;
+        status.server_url = Some(server_url.clone());
+    }
+    let result = async {
+        let connection = vrcx_0_composition::RemoteDatabaseConnection {
+            server_url: server_url.clone(),
+            token: token.clone(),
+        };
+        connection
+            .save(&bootstrap.app_data_dir.current_dir)
+            .map_err(|error| safe_connection_error(error.to_string(), &token))?;
+
+        let app_data_dir = bootstrap.app_data_dir.clone();
+        let cache_dir = bootstrap.maintenance_cache_dir.clone();
+        let updater_port = bootstrap.updater_port.clone();
+        let task_executor = bootstrap.task_executor.clone();
+        let app_state = tauri::async_runtime::spawn_blocking(move || {
+            AppState::new(app_data_dir, cache_dir, updater_port, task_executor)
+        })
+        .await
+        .map_err(|error| format!("Could not start the application: {error}"))?
+        .map_err(|error| safe_connection_error(error.to_string(), &token))?;
+
+        app.manage(app_state);
+        let state = app.state::<AppState>();
+        finish_connected_setup(app, &state)
+            .map_err(|error| safe_connection_error(error.to_string(), &token))?;
+        Ok::<_, String>(())
+    }
+    .await;
+
+    let mut status = bootstrap
+        .status
+        .lock()
+        .map_err(|_| "Connection status unavailable".to_string())?;
+    status.connecting = false;
+    match result {
+        Ok(()) => {
+            status.connected = true;
+            status.server_url = Some(server_url);
+            status.error = None;
+            Ok(status.clone())
+        }
+        Err(error) => {
+            status.connected = app.try_state::<AppState>().is_some();
+            status.error = Some(error.clone());
+            Err(error)
+        }
+    }
+}
+
+async fn connect_local_database(
+    app: &tauri::AppHandle,
+    bootstrap: &BootstrapState,
+    persist_choice: bool,
+) -> Result<BootstrapStatus, String> {
+    let _guard = bootstrap.connect_lock.lock().await;
+    let has_saved_choice = persist_choice
+        || vrcx_0_composition::RemoteDatabaseConnection::is_local_configured(
+            &bootstrap.app_data_dir.current_dir,
+        );
+    if !persist_choice && bootstrap.explicit_choice_requested.load(Ordering::Acquire) {
+        return Ok(bootstrap.status());
+    }
+    if app.try_state::<AppState>().is_some() {
+        return Ok(bootstrap.status());
+    }
+    if persist_choice {
+        vrcx_0_composition::RemoteDatabaseConnection::choose_local(
+            &bootstrap.app_data_dir.current_dir,
+        )
+        .map_err(|error| format!("Could not save local storage settings: {error}"))?;
+    }
+    {
+        let mut status = bootstrap
+            .status
+            .lock()
+            .map_err(|_| "Connection status unavailable".to_string())?;
+        status.connecting = true;
+        status.error = None;
+        status.has_saved_choice = has_saved_choice;
+        status.is_remote = false;
+        status.server_url = None;
+    }
+    let app_data_dir = bootstrap.app_data_dir.clone();
+    let cache_dir = bootstrap.maintenance_cache_dir.clone();
+    let updater_port = bootstrap.updater_port.clone();
+    let task_executor = bootstrap.task_executor.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        AppState::new(app_data_dir, cache_dir, updater_port, task_executor)
+    })
+    .await
+    .map_err(|error| format!("Could not start the application: {error}"))
+    .and_then(|result| result.map_err(|error| error.to_string()))
+    .and_then(|app_state| {
+        if !persist_choice && bootstrap.explicit_choice_requested.load(Ordering::Acquire) {
+            return Ok(());
+        }
+        app.manage(app_state);
+        let state = app.state::<AppState>();
+        finish_connected_setup(app, &state).map_err(|error| error.to_string())
+    });
+
+    let mut status = bootstrap
+        .status
+        .lock()
+        .map_err(|_| "Connection status unavailable".to_string())?;
+    status.connecting = false;
+    match result {
+        Ok(()) => {
+            status.connected = app.try_state::<AppState>().is_some();
+            status.error = None;
+            Ok(status.clone())
+        }
+        Err(error) => {
+            status.connected = false;
+            status.error = Some(error.clone());
+            Err(error)
+        }
+    }
+}
+
+fn safe_connection_error(error: String, token: &str) -> String {
+    let token = token.trim();
+    if token.is_empty() {
+        error
+    } else {
+        error.replace(token, "[redacted]")
+    }
+}
 
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 #[cfg(target_os = "windows")]
@@ -125,135 +521,74 @@ fn append_browser_arguments(
     arguments
 }
 
-fn initialize_app_state(
-    app: &tauri::App,
-    app_data_dir: vrcx_0_platform::app_paths::AppDataDirResolution,
-    updater_port: Arc<TauriUpdaterPort>,
-) -> AppState {
-    let database_maintenance_cache_dir = match app.path().app_cache_dir() {
-        Ok(path) => Some(path),
-        Err(error) => {
-            tracing::warn!(
-                error = %error,
-                "failed to resolve Tauri cache directory for database maintenance"
-            );
-            None
-        }
-    };
-    let error = match AppState::new(
-        app_data_dir.clone(),
-        database_maintenance_cache_dir.clone(),
-        updater_port.clone(),
-        Arc::new(super::adapters::TauriRuntimeTaskExecutor),
-    ) {
-        Ok(state) => return state,
-        Err(error) => error,
-    };
-
-    if is_database_corruption_error(&error) {
-        match quarantine_corrupt_database(&app_data_dir.current_dir) {
-            Ok(quarantined) => {
-                tracing::error!(
-                    error = %error,
-                    quarantined = %quarantined.display(),
-                    "local database is corrupted; quarantined it to recreate a fresh database"
-                );
-                match AppState::new(
-                    app_data_dir,
-                    database_maintenance_cache_dir,
-                    updater_port,
-                    Arc::new(super::adapters::TauriRuntimeTaskExecutor),
-                ) {
-                    Ok(state) => {
-                        show_blocking_dialog(
-                            app,
-                            MessageDialogKind::Warning,
-                            &format!(
-                                "The local database was corrupted and could not be opened.\n\n\
-                                 It was moved to:\n{}\n\n\
-                                 VRCX-0 created a fresh database; please sign in again.",
-                                quarantined.display()
-                            ),
-                        );
-                        return state;
-                    }
-                    Err(retry_error) => exit_with_startup_error(app, &retry_error),
-                }
-            }
-            Err(quarantine_error) => {
-                tracing::error!(
-                    error = %quarantine_error,
-                    "failed to quarantine the corrupted local database"
-                );
-            }
-        }
-    }
-
-    exit_with_startup_error(app, &error)
-}
-
-fn is_database_corruption_error(error: &AppError) -> bool {
-    let message = error.to_string().to_ascii_lowercase();
-    message.contains("malformed") || message.contains("not a database")
-}
-
-fn quarantine_corrupt_database(app_data: &std::path::Path) -> std::io::Result<PathBuf> {
-    let db_file =
-        vrcx_0_platform::app_paths::AppPaths::from_app_data(app_data.to_path_buf()).db_file;
-    let timestamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|elapsed| elapsed.as_secs())
-        .unwrap_or(0);
-    let quarantined = appended_path(&db_file, &format!(".corrupt-{timestamp}"));
-    std::fs::rename(&db_file, &quarantined)?;
-    for suffix in ["-wal", "-shm"] {
-        let sidecar = appended_path(&db_file, suffix);
-        if sidecar.exists() {
-            let _ = std::fs::rename(&sidecar, appended_path(&quarantined, suffix));
-        }
-    }
-    Ok(quarantined)
-}
-
-fn appended_path(path: &std::path::Path, suffix: &str) -> PathBuf {
-    let mut appended = path.as_os_str().to_os_string();
-    appended.push(suffix);
-    PathBuf::from(appended)
-}
-
-fn exit_with_startup_error(app: &tauri::App, error: &AppError) -> ! {
-    tracing::error!(error = %error, "failed to initialize app state");
-    show_blocking_dialog(
-        app,
-        MessageDialogKind::Error,
-        &format!("VRCX-0 failed to start.\n\n{error}"),
-    );
-    std::process::exit(1);
-}
-
-fn show_blocking_dialog(app: &tauri::App, kind: MessageDialogKind, message: &str) {
-    app.dialog()
-        .message(message)
-        .kind(kind)
-        .title("VRCX-0")
-        .blocking_show();
-}
-
 pub fn setup_app_with_data_dir(
     app: &mut tauri::App,
     app_data_dir: vrcx_0_platform::app_paths::AppDataDirResolution,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let updater_port = Arc::new(TauriUpdaterPort::new(app.handle().clone()));
-    let app_state = initialize_app_state(app, app_data_dir, updater_port);
-    let language = app_language(&app_state);
-    app.manage(app_state);
+    let cache_dir = match app.path().app_cache_dir() {
+        Ok(path) => Some(path),
+        Err(error) => {
+            tracing::warn!(error = %error, "failed to resolve Tauri cache directory for database maintenance");
+            None
+        }
+    };
+    app.manage(BootstrapState::new(
+        app_data_dir.clone(),
+        cache_dir,
+        updater_port,
+    ));
+    create_main_window(app.handle(), None)?;
+    configure_windows_webview_settings(app.handle());
 
-    let state = app.state::<AppState>();
+    match vrcx_0_composition::RemoteDatabaseConnection::load(&app_data_dir.current_dir) {
+        Ok(Some(connection)) => {
+            if let Some(bootstrap) = app.try_state::<BootstrapState>() {
+                if let Ok(mut status) = bootstrap.status.lock() {
+                    status.has_saved_choice = true;
+                    status.is_remote = true;
+                    status.server_url = Some(connection.server_url.clone());
+                }
+            }
+            let app_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                let _ = connect_remote_database(
+                    &app_handle,
+                    &app_handle.state::<BootstrapState>(),
+                    connection.server_url,
+                    connection.token,
+                )
+                .await;
+            });
+        }
+        Ok(None) => {
+            let app_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                let bootstrap = app_handle.state::<BootstrapState>();
+                let _ = connect_local_database(&app_handle, &bootstrap, false).await;
+            });
+        }
+        Err(error) => {
+            if let Some(bootstrap) = app.try_state::<BootstrapState>() {
+                if let Ok(mut status) = bootstrap.status.lock() {
+                    status.error = Some(format!("Could not read remote server settings: {error}"));
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn finish_connected_setup(
+    app: &tauri::AppHandle,
+    state: &AppState,
+) -> Result<(), Box<dyn std::error::Error>> {
+    super::sidebar_auto_hide::load_saved_preference(app, state);
+    let language = app_language(state);
     state
         .runtime_host()
-        .set_notification_desktop_notifier(Arc::new(TauriDesktopNotifier::new(
-            app.handle().clone(),
-        )));
+        .set_notification_desktop_notifier(Arc::new(TauriDesktopNotifier::new(app.clone())));
     let _ = state
         .runtime_host()
         .storage_remove(BACKGROUND_MODE_RESUME_ROUTE_STORAGE_KEY);
@@ -268,40 +603,35 @@ pub fn setup_app_with_data_dir(
         "Tauri setup is wiring runtime services.",
         0,
     );
-    create_main_window(app.handle(), state.runtime_host().proxy_url())?;
-    super::linux_rendering::start_fallback(app.handle());
+    super::linux_rendering::resolve(app, state);
+    super::linux_rendering::start_fallback(app);
     state.runtime_host().record_lifecycle_phase(
         "mainWindow",
         RuntimeOperationStatus::Completed,
         "Main webview window created.",
     );
-
-    configure_windows_webview_settings(app.handle());
-
-    let state = app.state::<AppState>();
-    configure_tray(app, &state)?;
-    super::tray_shortcut::setup(app.handle(), &state);
+    configure_tray(app, state)?;
+    super::tray_shortcut::setup(app, state);
     state.runtime_host().record_lifecycle_phase(
         "tray",
         RuntimeOperationStatus::Completed,
         "System tray configured.",
     );
     #[cfg(target_os = "macos")]
-    crate::macos_menu::configure_macos_app_menu(app.handle(), &language)?;
+    crate::macos_menu::configure_macos_app_menu(app, &language)?;
     #[cfg(not(target_os = "macos"))]
     let _ = language;
-    sync_autostart_from_db(app, &state);
-    apply_autostart_window_state_if_needed(app, &state);
-    start_host_services(app.handle(), &state);
-    start_mcp_server_if_enabled(app.handle());
-    wire_deep_links(app.handle());
+    sync_autostart_from_db(app, state);
+    apply_autostart_window_state_if_needed(app, state);
+    start_host_services(app, state);
+    start_mcp_server_if_enabled(app);
+    wire_deep_links(app);
     state.runtime_host().record_sync(
         "startup",
         RuntimeOperationStatus::Ready,
         "Backend host services are ready.",
         0,
     );
-
     Ok(())
 }
 

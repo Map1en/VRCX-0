@@ -28,4 +28,13 @@ describe('login display helpers', () => {
         ).toBe(false);
         expect(shouldShowLegacyMigrationAction(false, [])).toBe(true);
     });
+
+    it('leaves remote migration prompts to the authenticated bootstrap flow', () => {
+        expect(shouldShowLegacyMigrationAction(false, [], 'remote')).toBe(
+            false
+        );
+        expect(shouldShowLegacyMigrationAction(false, [], 'unknown')).toBe(
+            false
+        );
+    });
 });

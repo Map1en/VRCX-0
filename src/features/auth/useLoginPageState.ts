@@ -2,6 +2,7 @@ import type { FormEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { commands } from '@/platform/tauri/bindings';
 import type {
     SavedAuthSnapshot,
     SavedCredentialRecord
@@ -66,6 +67,9 @@ export function useLoginPageState() {
     const sessionPhase = useSessionStore((state) => state.sessionPhase);
     const databaseReady = useSessionStore((state) => state.databaseReady);
     const [snapshot, setSnapshot] = useState<SavedAuthSnapshot | null>(null);
+    const [isRemoteDatabase, setIsRemoteDatabase] = useState<boolean | null>(
+        null
+    );
     const [isLoading, setIsLoading] = useState(true);
     const [deleteTarget, setDeleteTarget] =
         useState<SavedCredentialRecord | null>(null);
@@ -88,6 +92,21 @@ export function useLoginPageState() {
         username: '',
         password: ''
     });
+
+    useEffect(() => {
+        let active = true;
+        void commands
+            .appBootstrapStatusGet()
+            .then((status) => {
+                if (active) {
+                    setIsRemoteDatabase(status.isRemote);
+                }
+            })
+            .catch(() => undefined);
+        return () => {
+            active = false;
+        };
+    }, []);
 
     useEffect(() => {
         setProxyEnabledInput(proxyEnabled);
@@ -186,6 +205,27 @@ export function useLoginPageState() {
 
     async function migrateLegacyVrcxData() {
         cancelPendingAutoLogin();
+        let remoteDatabase = isRemoteDatabase;
+        if (remoteDatabase === null) {
+            try {
+                const status = await commands.appBootstrapStatusGet();
+                remoteDatabase = status.isRemote;
+                setIsRemoteDatabase(remoteDatabase);
+            } catch {
+                toast.add({
+                    type: 'error',
+                    title: t('view.login.legacy_import_storage_unavailable')
+                });
+                return;
+            }
+        }
+        if (remoteDatabase && !useSessionStore.getState().isLoggedIn) {
+            toast.add({
+                type: 'warning',
+                title: t('view.login.legacy_import_sign_in_required')
+            });
+            return;
+        }
         await promptLegacyVrcxForceMigration({ alert, confirm, t, toast });
     }
 
@@ -410,7 +450,12 @@ export function useLoginPageState() {
     const hasSavedAccounts = !isLoading && savedAccounts.length > 0;
     const showLegacyMigrationAction = shouldShowLegacyMigrationAction(
         isLoading,
-        savedAccounts
+        savedAccounts,
+        isRemoteDatabase === null
+            ? 'unknown'
+            : isRemoteDatabase
+              ? 'remote'
+              : 'local'
     );
 
     return {

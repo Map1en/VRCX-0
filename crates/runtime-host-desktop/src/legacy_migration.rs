@@ -9,6 +9,9 @@ use crate::{DesktopDatabaseUpgradeRuntime, Error, Result};
 pub trait LegacyMigrationLifecycle: Send + Sync {
     fn stop_runtime_services(&self);
     fn request_restart(&self);
+    fn current_user_id(&self) -> Option<String> {
+        None
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -69,6 +72,22 @@ impl DesktopLegacyMigrationRuntime {
         let source = source.ok_or_else(|| {
             Error::Custom(legacy_migration_unavailable_reason(&unavailable_status))
         })?;
+        if let Some(connection) =
+            vrcx_0_composition::RemoteDatabaseConnection::load(&self.paths.app_data)?
+        {
+            let owner_user_id = lifecycle
+                .current_user_id()
+                .filter(|id| !id.is_empty())
+                .ok_or_else(|| {
+                    Error::Custom("Sign in before importing VRCX data into the server.".into())
+                })?;
+            self.upload_remote_import(connection, source, owner_user_id)
+                .await?;
+            // Reconnect normally after import so every view reads the server's new data.
+            lifecycle.stop_runtime_services();
+            lifecycle.request_restart();
+            return Ok(true);
+        }
         let plan = legacy_migration_execution_plan(mode, cfg!(debug_assertions));
         if plan.prepare_snapshot {
             self.database_upgrade
@@ -90,6 +109,66 @@ impl DesktopLegacyMigrationRuntime {
             lifecycle.request_restart();
         }
         Ok(plan.result)
+    }
+
+    async fn upload_remote_import(
+        &self,
+        connection: vrcx_0_composition::RemoteDatabaseConnection,
+        source: LegacyVrcxSource,
+        owner_user_id: String,
+    ) -> Result<()> {
+        let snapshot = self
+            .paths
+            .app_data
+            .join(format!("vrcx-import-{}.sqlite3", uuid::Uuid::new_v4()));
+        let staged = snapshot.clone();
+        let result = async {
+            tokio::task::spawn_blocking(move || {
+                vrcx_0_persistence::legacy_vrcx::validate_legacy_source(&source)
+                    .map_err(Error::Custom)?;
+                vrcx_0_persistence::legacy_migration::copy_database_snapshot(
+                    &source.db_path,
+                    &staged,
+                    |_, _| {},
+                )
+                .map_err(Error::from)
+            })
+            .await
+            .map_err(|error| Error::Custom(format!("VRCX snapshot failed: {error}")))??;
+            let file = tokio::fs::File::open(&snapshot).await?;
+            let size = file.metadata().await?.len();
+            let client = reqwest::Client::builder()
+                .redirect(reqwest::redirect::Policy::none())
+                .timeout(std::time::Duration::from_secs(3600))
+                .build()
+                .map_err(|_| Error::Custom("Could not create the import connection.".into()))?;
+            let response = client
+                .post(format!(
+                    "{}/api/import-vrcx",
+                    connection.server_url.trim_end_matches('/')
+                ))
+                .bearer_auth(connection.token)
+                .header("X-VRCX-User-Id", owner_user_id)
+                .header(reqwest::header::CONTENT_TYPE, "application/vnd.sqlite3")
+                .header(reqwest::header::CONTENT_LENGTH, size)
+                .body(reqwest::Body::wrap_stream(
+                    tokio_util::io::ReaderStream::new(file),
+                ))
+                .send()
+                .await
+                .map_err(|_| Error::Custom("Could not upload VRCX data to the server.".into()))?;
+            if !response.status().is_success() {
+                let status = response.status();
+                return Err(Error::Custom(format!(
+                    "The server could not import VRCX data (HTTP {status})."
+                )));
+            }
+            Ok(())
+        }
+        .await;
+        // This is a temporary import snapshot, never an active desktop database.
+        let _ = tokio::fs::remove_file(snapshot).await;
+        result
     }
 }
 

@@ -22,6 +22,7 @@ use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
 
 pub(super) struct RuntimeHostSocialMaintenanceActions {
     pub(super) db: Arc<DatabaseService>,
+    pub(super) realtime_store: Arc<dyn vrcx_0_application_realtime::RealtimeStore>,
     pub(super) web: Arc<WebClient>,
     pub(super) session_slot: Arc<Mutex<AuthenticatedSessionProjection>>,
     pub(super) realtime_runtime: Arc<RealtimeHostRuntime>,
@@ -45,6 +46,7 @@ impl RuntimeHostSocialMaintenanceActions {
     fn tick_context(&self) -> BackgroundTickContext<'_> {
         BackgroundTickContext {
             db: &self.db,
+            realtime_store: &self.realtime_store,
             web: &self.web,
             session_slot: &self.session_slot,
             realtime_runtime: &self.realtime_runtime,
@@ -220,9 +222,7 @@ impl RuntimeHostState {
             ));
         };
         let deps = vrcx_0_application_realtime::SocialBaselineDeps::new(
-            Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
-                Arc::clone(&self.db),
-            )),
+            Arc::clone(&self.realtime_store),
             Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests),
             Arc::clone(&self.web),
             self.runtime_context.auth_scope.clone(),

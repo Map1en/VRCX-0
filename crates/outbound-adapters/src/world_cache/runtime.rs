@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 use std::future::Future;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, Weak};
-use std::time::Duration;
+use std::thread;
+use std::time::{Duration, Instant};
 
 use moka::policy::EvictionPolicy;
 use moka::sync::Cache;
@@ -9,8 +11,7 @@ use serde_json::Value;
 use vrcx_0_core::ReleaseStatus;
 use vrcx_0_persistence::cache_entities::CacheEntityInput;
 use vrcx_0_persistence::worlds::{
-    world_cache_get, world_cache_search, world_cache_upsert, world_cache_upsert_many,
-    WorldSummaryOutput,
+    world_cache_get, world_cache_search, world_cache_upsert_many, WorldSummaryOutput,
 };
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::http_api::{
@@ -24,10 +25,13 @@ use vrcx_0_core::location::is_meaningful_world_name;
 const WORLD_RESOLVE_FETCH_TIMEOUT: Duration = Duration::from_secs(5);
 const WORLD_RESOLVE_FAILURE_TTL: Duration = Duration::from_secs(60);
 const WORLD_RESOLVE_FAILURE_CAPACITY: u64 = 32;
+const WORLD_CACHE_WRITE_RETRY_INTERVAL: Duration = Duration::from_secs(1);
+const WORLD_CACHE_WRITE_RETRY_LOG_INTERVAL: Duration = Duration::from_secs(30);
 
 pub struct WorldCache {
     working: Cache<String, Arc<CachedWorld>>,
     db: Arc<DatabaseService>,
+    pending_writes: Arc<PendingWorldWrites>,
     inflight: Mutex<HashMap<WorldResolveKey, Weak<tokio::sync::Mutex<()>>>>,
     failures: Cache<WorldResolveKey, ()>,
 }
@@ -50,15 +54,122 @@ struct WorldResolveKey {
     world_id: String,
 }
 
+struct PendingWorldWrites {
+    db: Arc<DatabaseService>,
+    entries: Mutex<HashMap<String, (u64, CacheEntityInput)>>,
+    next_generation: AtomicU64,
+    flush_lock: Mutex<()>,
+}
+
+impl PendingWorldWrites {
+    fn enqueue(&self, entries: impl IntoIterator<Item = CacheEntityInput>) {
+        let mut pending = self
+            .entries
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        for entry in entries {
+            let Some(id) = entry.id.as_str().map(str::trim).filter(|id| !id.is_empty()) else {
+                tracing::warn!("Skipping world cache retry entry without an id");
+                continue;
+            };
+            let generation = self.next_generation.fetch_add(1, Ordering::Relaxed);
+            pending.insert(id.to_owned(), (generation, entry));
+        }
+    }
+
+    fn flush(&self) -> crate::Result<()> {
+        let _flush = self
+            .flush_lock
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        let snapshot = self
+            .entries
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .iter()
+            .map(|(id, (generation, entry))| (id.clone(), *generation, entry.clone()))
+            .collect::<Vec<_>>();
+        if snapshot.is_empty() {
+            return Ok(());
+        }
+        world_cache_upsert_many(
+            self.db.as_ref(),
+            snapshot.iter().map(|(_, _, entry)| entry.clone()).collect(),
+        )
+        .map_err(crate::map_persistence_error)?;
+        let mut pending = self
+            .entries
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        for (id, generation, _) in snapshot {
+            if pending
+                .get(&id)
+                .is_some_and(|(pending_generation, _)| *pending_generation == generation)
+            {
+                pending.remove(&id);
+            }
+        }
+        Ok(())
+    }
+
+    fn start_retry_worker(pending: &Arc<Self>) {
+        let weak = Arc::downgrade(pending);
+        if let Err(error) = thread::Builder::new()
+            .name("world-cache-write-retry".into())
+            .spawn(move || {
+                let mut last_warning: Option<Instant> = None;
+                loop {
+                    thread::sleep(WORLD_CACHE_WRITE_RETRY_INTERVAL);
+                    let Some(pending) = weak.upgrade() else {
+                        break;
+                    };
+                    if pending
+                        .entries
+                        .lock()
+                        .unwrap_or_else(|error| error.into_inner())
+                        .is_empty()
+                    {
+                        last_warning = None;
+                        continue;
+                    }
+                    if let Err(error) = pending.flush() {
+                        let should_warn = last_warning
+                            .map(|last| last.elapsed() >= WORLD_CACHE_WRITE_RETRY_LOG_INTERVAL)
+                            .unwrap_or(true);
+                        if should_warn {
+                            tracing::warn!(error = %error, "World cache persistence retry failed; latest entries remain queued");
+                            last_warning = Some(Instant::now());
+                        } else {
+                            tracing::debug!(error = %error, "World cache persistence retry failed; latest entries remain queued");
+                        }
+                    } else {
+                        last_warning = None;
+                    }
+                }
+            })
+        {
+            tracing::error!(error = %error, "World cache persistence retry worker could not start");
+        }
+    }
+}
+
 impl WorldCache {
     pub fn new(db: Arc<DatabaseService>, capacity: u64, working_ttl: Duration) -> Self {
         let capacity = capacity.max(1);
+        let pending_writes = Arc::new(PendingWorldWrites {
+            db: Arc::clone(&db),
+            entries: Mutex::new(HashMap::new()),
+            next_generation: AtomicU64::new(0),
+            flush_lock: Mutex::new(()),
+        });
+        PendingWorldWrites::start_retry_worker(&pending_writes);
         Self {
             working: Cache::builder()
                 .max_capacity(capacity)
                 .time_to_live(working_ttl)
                 .build(),
             db,
+            pending_writes,
             inflight: Mutex::new(HashMap::new()),
             failures: Cache::builder()
                 .max_capacity(WORLD_RESOLVE_FAILURE_CAPACITY)
@@ -159,8 +270,8 @@ impl WorldCache {
         let (summary, entry) = self.hydrate_summary_from_payload_with_entry(world_value)?;
         if let Some(entry) = entry {
             let world_id = summary.id.clone();
-            if let Err(error) = world_cache_upsert(self.db.as_ref(), entry) {
-                tracing::warn!(world_id = %world_id, "WorldCache upsert failed: {error}");
+            if let Err(error) = self.persist_entries([entry]) {
+                tracing::debug!(world_id = %world_id, "WorldCache upsert failed and was queued for retry: {error}");
             }
         }
         Some(summary)
@@ -172,7 +283,9 @@ impl WorldCache {
             return Ok(None);
         };
         if let Some(entry) = entry {
-            world_cache_upsert(self.db.as_ref(), entry).map_err(crate::map_persistence_error)?;
+            if let Err(error) = self.persist_entries([entry]) {
+                tracing::debug!("WorldCache upsert failed and was queued for retry: {error}");
+            }
         }
         Ok(Some(summary.name))
     }
@@ -227,10 +340,18 @@ impl WorldCache {
                 self.get_cached_card_payload(&summary.id)
             })
             .collect();
-        if let Err(error) = world_cache_upsert_many(self.db.as_ref(), pending) {
-            tracing::warn!("WorldCache batch upsert failed: {error}");
+        if let Err(error) = self.persist_entries(pending) {
+            tracing::debug!("WorldCache batch upsert failed and was queued for retry: {error}");
         }
         payloads
+    }
+
+    fn persist_entries(
+        &self,
+        entries: impl IntoIterator<Item = CacheEntityInput>,
+    ) -> crate::Result<()> {
+        self.pending_writes.enqueue(entries);
+        self.pending_writes.flush()
     }
 
     pub async fn resolve_name(

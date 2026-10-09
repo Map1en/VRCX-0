@@ -161,7 +161,9 @@ fn take_trial(app: &AppHandle) -> Option<Instant> {
 }
 
 fn write_mode(app: &AppHandle, mode: &str) -> Result<(), String> {
-    let state = app.state::<AppState>();
+    let state = app
+        .try_state::<AppState>()
+        .ok_or_else(|| "Application storage is not connected yet.".to_string())?;
     let host = state.runtime_host();
     host.storage_set(STORAGE_KEY.to_string(), mode.to_string());
     host.storage_flush().map_err(|error| error.to_string())

@@ -16,6 +16,7 @@ pub mod files;
 pub mod friends;
 pub mod game_log;
 pub mod legacy_migration;
+pub mod legacy_remote_import;
 pub mod legacy_vrcx;
 pub mod local_moderation;
 pub mod memos;
@@ -49,9 +50,11 @@ pub use database::schema::{
     write_vrcx0_schema_version, VRCX0_SCHEMA_VERSION, VRCX0_SCHEMA_VERSION_KEY,
 };
 pub use database::{
-    database_scale_estimate, optimize_database, DatabaseScaleEstimate, DatabaseService,
-    DatabaseUpgradeStatus, FrozenDatabase, WalCheckpointResult,
+    database_scale_estimate, optimize_database, DatabaseRpcRequest, DatabaseRpcResponse,
+    DatabaseScaleEstimate, DatabaseService, DatabaseUpgradeStatus, FrozenDatabase,
+    RemoteConnectionStatus, WalCheckpointResult,
 };
 pub use error::{Error, SqliteErrorCategory};
+pub use legacy_remote_import::{merge_remote_legacy, RemoteLegacyImportCounts};
 
 pub type Result<T> = std::result::Result<T, Error>;

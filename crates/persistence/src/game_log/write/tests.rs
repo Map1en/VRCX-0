@@ -830,5 +830,13 @@ fn replay_checkpoint_commits_atomically_with_its_rows() -> Result<(), Error> {
         crate::config::get_string(&ctx.db, "gameLogReplayCheckpoint", "")?,
         "second"
     );
+    // Retrying after an unacknowledged successful commit must apply nothing.
+    ctx.db.execute_non_query("CREATE TRIGGER fail_replay BEFORE INSERT ON gamelog_join_leave BEGIN SELECT RAISE(ABORT, 'batch was replayed'); END", &Default::default())?;
+    assert_eq!(write_batch(&ctx.db, &OwnerId::new(""), &second)?, 0);
+    let rows = ctx.db.execute(
+        "SELECT COUNT(*) FROM gamelog_join_leave",
+        &Default::default(),
+    )?;
+    assert_eq!(rows[0][0].as_i64(), Some(1));
     Ok(())
 }

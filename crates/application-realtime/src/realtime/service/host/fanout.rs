@@ -1,6 +1,7 @@
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
-use vrcx_0_application_core::{Result, RuntimeOperationStatus};
+use std::time::Duration;
+use vrcx_0_application_core::{Result, RuntimeOperationStatus, TaskSpawnOutcome};
 
 use super::state::{ActiveRealtimeContext, FriendOwnerGuard};
 use serde_json::Value;
@@ -18,6 +19,7 @@ use super::RealtimeHostRuntime;
 use crate::realtime::activity_events::{
     feed_activity_event, instance_closed_activity_event, notification_activity_event,
 };
+use vrcx_0_contracts::realtime::RealtimePersistenceBatch;
 use vrcx_0_core::json::RawJsonObject;
 use vrcx_0_core::OwnerId;
 
@@ -27,6 +29,175 @@ pub(super) enum FriendOutputApplyOutcome {
 }
 
 impl RealtimeHostRuntime {
+    fn persist_friend_batch_or_queue(
+        self: &Arc<Self>,
+        owner: &OwnerId,
+        batch: &RealtimePersistenceBatch,
+    ) -> Result<bool> {
+        if batch.is_empty() {
+            return Ok(true);
+        }
+
+        let mut queue = self
+            .pending_realtime_persistence
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        let stage_error = self.deps.store.stage_realtime_batch(owner, batch).err();
+        let staged = stage_error.is_none();
+        let retry_safe = self.deps.store.realtime_batch_retry_safe();
+        if let Some(error) = &stage_error {
+            tracing::error!("Realtime friend batch could not be durably staged: {error}");
+        }
+        if queue.batches.is_empty() {
+            if !staged {
+                queue
+                    .batches
+                    .push_back((owner.clone(), batch.clone(), false));
+                let start_worker = !queue.retry_worker_running;
+                queue.retry_worker_running = true;
+                drop(queue);
+                if start_worker {
+                    self.start_realtime_persistence_retry_worker();
+                }
+                return Err(stage_error.expect("unstaged batch must have a staging error"));
+            }
+            match self.deps.store.write_realtime_batch(owner, batch) {
+                Ok(_) => return Ok(true),
+                Err(error) => {
+                    queue
+                        .batches
+                        .push_back((owner.clone(), batch.clone(), true));
+                    let start_worker = retry_safe && !queue.retry_worker_running;
+                    queue.retry_worker_running |= retry_safe;
+                    drop(queue);
+                    if retry_safe {
+                        tracing::warn!(
+                            "Realtime friend persistence failed; queued for retry: {error}"
+                        );
+                    } else {
+                        tracing::error!("Realtime friend persistence failed with an ambiguous remote result; batch retained without automatic replay: {error}");
+                    }
+                    if start_worker {
+                        self.start_realtime_persistence_retry_worker();
+                    }
+                    return Err(error);
+                }
+            }
+        }
+
+        queue
+            .batches
+            .push_back((owner.clone(), batch.clone(), staged));
+        let start_worker = retry_safe && !queue.retry_worker_running;
+        queue.retry_worker_running |= retry_safe;
+        drop(queue);
+        if start_worker {
+            self.start_realtime_persistence_retry_worker();
+        }
+        match stage_error {
+            Some(error) => Err(error),
+            None if retry_safe => Ok(false),
+            None => Err(vrcx_0_application_core::Error::Custom(
+                "Earlier remote friend persistence is awaiting safe replay.".into(),
+            )),
+        }
+    }
+
+    fn start_realtime_persistence_retry_worker(self: &Arc<Self>) {
+        let runtime = Arc::clone(self);
+        let outcome = self.deps.tasks.spawn_cancellable(move |stop| async move {
+            let mut delay = Duration::from_millis(250);
+            loop {
+                if stop.is_stop_requested() {
+                    runtime.finish_realtime_persistence_retry_worker(true);
+                    return;
+                }
+
+                let next = {
+                    let mut queue = runtime
+                        .pending_realtime_persistence
+                        .lock()
+                        .unwrap_or_else(|error| error.into_inner());
+                    match queue.batches.front().cloned() {
+                        Some(batch) => Some(batch),
+                        None => {
+                            queue.retry_worker_running = false;
+                            return;
+                        }
+                    }
+                };
+                let Some((owner, batch, staged)) = next else {
+                    continue;
+                };
+
+                if !staged {
+                    match runtime.deps.store.stage_realtime_batch(&owner, &batch) {
+                        Ok(()) => {
+                            let mut queue = runtime
+                                .pending_realtime_persistence
+                                .lock()
+                                .unwrap_or_else(|error| error.into_inner());
+                            if let Some(front) = queue.batches.front_mut() {
+                                front.2 = true;
+                            }
+                        }
+                        Err(error) => {
+                            tracing::debug!("Realtime friend batch staging retry failed: {error}");
+                            tokio::time::sleep(delay).await;
+                            delay = (delay * 2).min(Duration::from_secs(30));
+                            continue;
+                        }
+                    }
+                }
+
+                match runtime.deps.store.write_realtime_batch(&owner, &batch) {
+                    Ok(_) => {
+                        let mut queue = runtime
+                            .pending_realtime_persistence
+                            .lock()
+                            .unwrap_or_else(|error| error.into_inner());
+                        queue.batches.pop_front();
+                        drop(queue);
+                        runtime.deps.sync.record(
+                            "realtimeFriends",
+                            RuntimeOperationStatus::Persisted,
+                            "Queued realtime friend data was persisted after retry.",
+                            0,
+                        );
+                        delay = Duration::from_millis(250);
+                    }
+                    Err(error) => {
+                        tracing::debug!("Queued realtime friend persistence retry failed: {error}");
+                        tokio::time::sleep(delay).await;
+                        delay = (delay * 2).min(Duration::from_secs(30));
+                    }
+                }
+            }
+        });
+
+        if outcome != TaskSpawnOutcome::Scheduled {
+            let pending = self.finish_realtime_persistence_retry_worker(false);
+            tracing::error!(
+                "Realtime friend persistence retry worker could not start ({outcome:?}); {pending} batch(es) remain queued"
+            );
+        }
+    }
+
+    fn finish_realtime_persistence_retry_worker(&self, shutting_down: bool) -> usize {
+        let mut queue = self
+            .pending_realtime_persistence
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        queue.retry_worker_running = false;
+        let pending = queue.batches.len();
+        if shutting_down && pending > 0 {
+            tracing::error!(
+                "Realtime host stopped with {pending} friend persistence batch(es) still pending"
+            );
+        }
+        pending
+    }
+
     pub fn emit_friend_projection(&self, projection: FriendProjection) {
         self.deps.friend_projection_sink.emit(projection);
     }
@@ -149,32 +320,30 @@ impl RealtimeHostRuntime {
         let mut world_name_fetch_ids = self.enrich_projection_world_names(&mut live_feed);
         world_name_fetch_ids.extend(self.enrich_projection_world_names(&mut joining));
         world_name_fetch_ids.extend(self.enrich_persistence_world_names(&mut output.persistence));
-        let persisted = match self
-            .deps
-            .store
-            .write_realtime_batch(&output.owner_user_id, &output.persistence)
-        {
-            Ok(_) => {
-                self.deps.sync.record(
-                    "realtimeFriends",
-                    RuntimeOperationStatus::Persisted,
-                    "Realtime friend projection persisted by Rust.",
-                    0,
-                );
-                true
-            }
-            Err(error) => {
-                tracing::warn!("Realtime friend persistence failed: {error}");
-                self.deps
-                    .sync
-                    .record_failure("realtimeFriends", error.to_string());
-                if !feed_persistence_disabled {
-                    live_feed.clear();
-                    joining.clear();
+        let persisted =
+            match self.persist_friend_batch_or_queue(&output.owner_user_id, &output.persistence) {
+                Ok(true) => {
+                    self.deps.sync.record(
+                        "realtimeFriends",
+                        RuntimeOperationStatus::Persisted,
+                        "Realtime friend projection persisted by Rust.",
+                        0,
+                    );
+                    true
                 }
-                false
-            }
-        };
+                Ok(false) => false,
+                Err(error) => {
+                    tracing::warn!("Realtime friend persistence failed: {error}");
+                    self.deps
+                        .sync
+                        .record_failure("realtimeFriends", error.to_string());
+                    if !feed_persistence_disabled {
+                        live_feed.clear();
+                        joining.clear();
+                    }
+                    false
+                }
+            };
         self.ingest_friend_activity(&projection, &[live_feed.as_slice(), &joining].concat());
         if !projection.patches.is_empty() || !projection.removals.is_empty() {
             let endpoint = self.active_endpoint();

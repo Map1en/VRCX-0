@@ -13,6 +13,7 @@ import { useShellStore } from '@/state/shellStore';
 
 import {
     applyThemeMode,
+    applyThemeModeLocally,
     resolveAppCjkFontPackForLocale,
     supportsConfigurableCjkFontPack
 } from './themeService';
@@ -73,6 +74,18 @@ describe('themeService theme mode', () => {
         expect(toggleDarkClass).toHaveBeenCalledWith('dark', false);
         expect(setRootAttribute).toHaveBeenCalledWith('data-theme', 'light');
         expect(useShellStore.getState().themeMode).toBe('system');
+    });
+
+    it('applies the initial system theme without native IPC', () => {
+        const { toggleDarkClass, setRootAttribute } = stubThemeEnvironment(
+            () => true
+        );
+
+        applyThemeModeLocally('system');
+
+        expect(toggleDarkClass).toHaveBeenCalledWith('dark', true);
+        expect(setRootAttribute).toHaveBeenCalledWith('data-theme', 'dark');
+        expect(mocks.setWindowTheme).not.toHaveBeenCalled();
     });
 
     it('keeps the latest explicit theme while system sync is pending', async () => {

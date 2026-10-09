@@ -26,8 +26,11 @@ url = { workspace = true }
 chrono = { workspace = true }
 fs4 = { workspace = true }
 sys-locale.workspace = true
-tokio = { workspace = true, features = ["time", "rt", "macros", "sync"] }
+tokio = { workspace = true, features = ["time", "rt", "macros", "sync", "fs"] }
 tracing = { workspace = true }
+reqwest = { workspace = true, features = ["json", "stream"] }
+tokio-util = { workspace = true, features = ["io"] }
+uuid = { workspace = true }
 vrcx-0-application = { path = "../application" }
 vrcx-0-application-activity = { path = "../application-activity" }
 vrcx-0-application-core = { path = "../application-core" }

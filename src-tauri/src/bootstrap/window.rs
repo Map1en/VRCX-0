@@ -37,12 +37,18 @@ struct WindowChromeState {
 }
 
 pub fn ensure_main_window(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+    let Some(state) = app.try_state::<AppState>() else {
+        if app.get_webview_window("main").is_none() {
+            create_main_window(app, None)?;
+            configure_windows_webview_settings(app);
+        }
+        present_main_window(app);
+        return Ok(());
+    };
     if app.get_webview_window("main").is_none() {
-        let state = app.state::<AppState>();
         create_main_window(app, state.runtime_host().proxy_url())?;
         configure_windows_webview_settings(app);
     }
-    let state = app.state::<AppState>();
     start_host_services(app, &state);
     present_main_window(app);
     let _ = refresh_tray_menu(app, &state);
@@ -52,7 +58,12 @@ pub fn ensure_main_window(app: &tauri::AppHandle) -> Result<(), Box<dyn std::err
 pub(crate) async fn rebuild_main_window(
     app: &tauri::AppHandle,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let state = app.state::<AppState>();
+    let state = app.try_state::<AppState>().ok_or_else(|| {
+        std::io::Error::new(
+            std::io::ErrorKind::NotConnected,
+            "application storage is not connected yet",
+        )
+    })?;
     let _rebuild_guard = state.try_begin_main_window_rebuild().ok_or_else(|| {
         std::io::Error::new(
             std::io::ErrorKind::AlreadyExists,
@@ -232,15 +243,19 @@ pub(super) fn create_main_window(
         })?;
 
     let mut builder = WebviewWindowBuilder::from_config(app, window_config)?;
-    let state = app.state::<AppState>();
-    super::linux_rendering::resolve(app, &state);
+    let state = app.try_state::<AppState>();
+    if let Some(state) = state.as_ref() {
+        super::linux_rendering::resolve(app, state);
+    }
     #[cfg(target_os = "windows")]
     {
-        let system_frame = state
-            .runtime_host()
-            .storage_get("VRCX_SystemWindowFrame")
-            .as_deref()
-            == Some("true");
+        let system_frame = state.as_ref().is_some_and(|state| {
+            state
+                .runtime_host()
+                .storage_get("VRCX_SystemWindowFrame")
+                .as_deref()
+                == Some("true")
+        });
         if !system_frame {
             builder = builder.transparent(true).shadow(false);
         }
@@ -256,7 +271,7 @@ pub(super) fn create_main_window(
             .hidden_title(true)
             .traffic_light_position(tauri::LogicalPosition::new(16.0, 16.0));
     }
-    if let Some(route) = state.take_background_resume_route() {
+    if let Some(route) = state.and_then(|state| state.take_background_resume_route()) {
         let route = serde_json::to_string(&route)?;
         builder = builder.initialization_script(format!(
             r#"
@@ -371,7 +386,7 @@ pub(super) fn configure_windows_webview_settings(app: &tauri::AppHandle) {
     let _ = app;
 }
 
-pub(super) fn configure_tray(app: &tauri::App, state: &AppState) -> Result<(), tauri::Error> {
+pub(super) fn configure_tray(app: &tauri::AppHandle, state: &AppState) -> Result<(), tauri::Error> {
     #[cfg(target_os = "linux")]
     {
         if !appindicator_available(|name| unsafe { libloading::Library::new(name) }.is_ok()) {
@@ -386,7 +401,7 @@ pub(super) fn configure_tray(app: &tauri::App, state: &AppState) -> Result<(), t
         }
         tray.build(app)?;
     }
-    refresh_tray_menu(app.handle(), state)
+    refresh_tray_menu(app, state)
 }
 
 #[cfg(any(target_os = "linux", test))]

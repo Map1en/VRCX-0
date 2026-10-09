@@ -16,6 +16,7 @@ chrono = { workspace = true }
 dirs = { workspace = true }
 fs4 = { workspace = true }
 rusqlite = { workspace = true, features = ["bundled", "backup", "hooks"] }
+reqwest = { workspace = true }
 sea-query = { version = "1.0.1", default-features = false, features = [
     "backend-sqlite"
 ] }
@@ -28,4 +29,6 @@ thiserror = { workspace = true }
 tracing = { workspace = true }
 vrcx-0-core = { path = "../core" }
 vrcx-0-platform = { path = "../platform" }
+tokio = { workspace = true, features = ["rt", "time"] }
+uuid = { workspace = true }
 zstd = { workspace = true }

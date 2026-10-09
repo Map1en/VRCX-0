@@ -995,3 +995,445 @@ fn profile_backup_maps_sqlite_disk_full_to_storage_full_io() {
         Error::Io(error) if error.kind() == std::io::ErrorKind::StorageFull
     ));
 }
+
+#[test]
+fn remote_database_rpc_transactions_commit_and_rollback_atomically() -> Result<(), Error> {
+    let dir = TestDir::new("remote-database-rpc");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+    db.execute_non_query(
+        "CREATE TABLE rpc_items (id INTEGER PRIMARY KEY, value TEXT NOT NULL)",
+        &HashMap::new(),
+    )?;
+
+    let transaction_id = match db.handle_remote_request(DatabaseRpcRequest::Begin)? {
+        DatabaseRpcResponse::Transaction(id) => id,
+        response => panic!("unexpected begin response: {response:?}"),
+    };
+    let mut args = HashMap::new();
+    args.insert("@id".to_owned(), serde_json::json!(1));
+    args.insert("@value".to_owned(), serde_json::json!("rolled back"));
+    db.handle_remote_request(DatabaseRpcRequest::Execute {
+        sql: "INSERT INTO rpc_items (id, value) VALUES (@id, @value)".into(),
+        args: args.clone(),
+        transaction_id: Some(transaction_id.clone()),
+    })?;
+    let rows = match db.handle_remote_request(DatabaseRpcRequest::Read {
+        sql: "SELECT value FROM rpc_items WHERE id = @id".into(),
+        args: args.clone(),
+        transaction_id: Some(transaction_id.clone()),
+    })? {
+        DatabaseRpcResponse::Rows(rows) => rows,
+        response => panic!("unexpected read response: {response:?}"),
+    };
+    assert_eq!(rows, vec![vec![serde_json::json!("rolled back")]]);
+    db.handle_remote_request(DatabaseRpcRequest::Rollback { transaction_id })?;
+
+    let rows = db.execute("SELECT value FROM rpc_items WHERE id = @id", &args)?;
+    assert!(rows.is_empty());
+
+    let transaction_id = match db.handle_remote_request(DatabaseRpcRequest::Begin)? {
+        DatabaseRpcResponse::Transaction(id) => id,
+        response => panic!("unexpected begin response: {response:?}"),
+    };
+    args.insert("@id".to_owned(), serde_json::json!(2));
+    args.insert("@value".to_owned(), serde_json::json!("committed"));
+    db.handle_remote_request(DatabaseRpcRequest::Execute {
+        sql: "INSERT INTO rpc_items (id, value) VALUES (@id, @value)".into(),
+        args: args.clone(),
+        transaction_id: Some(transaction_id.clone()),
+    })?;
+    db.handle_remote_request(DatabaseRpcRequest::Commit { transaction_id })?;
+
+    let rows = db.execute("SELECT value FROM rpc_items WHERE id = @id", &args)?;
+    assert_eq!(rows, vec![vec![serde_json::json!("committed")]]);
+    Ok(())
+}
+
+#[test]
+fn remote_server_nontransaction_write_does_not_block_transaction_commit() -> Result<(), Error> {
+    let dir = TestDir::new("remote-database-rpc-locking");
+    let db = std::sync::Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
+    db.execute_non_query(
+        "CREATE TABLE rpc_items (id INTEGER PRIMARY KEY, value TEXT NOT NULL)",
+        &HashMap::new(),
+    )?;
+    let transaction_id = match db.handle_remote_request(DatabaseRpcRequest::Begin)? {
+        DatabaseRpcResponse::Transaction(id) => id,
+        response => panic!("unexpected begin response: {response:?}"),
+    };
+    let timeout = match db.handle_remote_request(DatabaseRpcRequest::Read {
+        sql: "PRAGMA busy_timeout".into(),
+        args: HashMap::new(),
+        transaction_id: Some(transaction_id.clone()),
+    })? {
+        DatabaseRpcResponse::Rows(rows) => rows,
+        response => panic!("unexpected timeout response: {response:?}"),
+    };
+    assert_eq!(timeout, vec![vec![serde_json::json!(5_000)]]);
+
+    let (started_tx, started_rx) = std::sync::mpsc::channel();
+    let concurrent_db = std::sync::Arc::clone(&db);
+    let write = std::thread::spawn(move || {
+        let mut args = HashMap::new();
+        args.insert("@id".to_owned(), serde_json::json!(1));
+        args.insert("@value".to_owned(), serde_json::json!("concurrent"));
+        started_tx.send(()).unwrap();
+        concurrent_db.handle_remote_request(DatabaseRpcRequest::Execute {
+            sql: "INSERT INTO rpc_items (id, value) VALUES (@id, @value)".into(),
+            args,
+            transaction_id: None,
+        })
+    });
+    started_rx
+        .recv()
+        .map_err(|error| Error::Database(error.to_string()))?;
+    std::thread::sleep(Duration::from_millis(50));
+
+    db.handle_remote_request(DatabaseRpcRequest::Commit { transaction_id })?;
+    assert!(matches!(
+        write
+            .join()
+            .map_err(|_| Error::Database("Concurrent RPC writer panicked.".into()))??,
+        DatabaseRpcResponse::Affected(1)
+    ));
+    Ok(())
+}
+
+#[test]
+fn local_read_then_write_waits_for_remote_rpc_transaction_instead_of_busy_snapshot(
+) -> Result<(), Error> {
+    let dir = TestDir::new("remote-database-local-write-serialization");
+    let db = std::sync::Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
+    db.execute_non_query(
+        "CREATE TABLE rpc_items (id INTEGER PRIMARY KEY, value TEXT NOT NULL)",
+        &HashMap::new(),
+    )?;
+    db.execute_non_query(
+        "INSERT INTO rpc_items (id, value) VALUES (1, 'existing')",
+        &HashMap::new(),
+    )?;
+    let transaction_id = match db.handle_remote_request(DatabaseRpcRequest::Begin)? {
+        DatabaseRpcResponse::Transaction(id) => id,
+        response => panic!("unexpected begin response: {response:?}"),
+    };
+
+    let (started_tx, started_rx) = std::sync::mpsc::channel();
+    let (read_tx, read_rx) = std::sync::mpsc::channel();
+    let (continue_tx, continue_rx) = std::sync::mpsc::channel();
+    let (result_tx, result_rx) = std::sync::mpsc::channel();
+    let writer_db = std::sync::Arc::clone(&db);
+    let writer = std::thread::spawn(move || {
+        started_tx.send(()).unwrap();
+        let result = writer_db.write_transaction(|tx| {
+            let rows = tx.execute("SELECT value FROM rpc_items WHERE id = 1", &HashMap::new())?;
+            read_tx
+                .send(rows.len())
+                .map_err(|error| Error::Database(error.to_string()))?;
+            continue_rx
+                .recv()
+                .map_err(|error| Error::Database(error.to_string()))?;
+            tx.execute_non_query(
+                "INSERT INTO rpc_items (id, value) VALUES (2, 'collector')",
+                &HashMap::new(),
+            )?;
+            Ok(rows.len())
+        });
+        result_tx.send(result).unwrap();
+    });
+
+    started_rx
+        .recv()
+        .map_err(|error| Error::Database(error.to_string()))?;
+    std::thread::sleep(Duration::from_millis(50));
+    assert!(matches!(
+        read_rx.try_recv(),
+        Err(std::sync::mpsc::TryRecvError::Empty)
+    ));
+
+    db.handle_remote_request(DatabaseRpcRequest::Commit { transaction_id })?;
+    assert_eq!(
+        read_rx
+            .recv_timeout(Duration::from_secs(2))
+            .map_err(|error| Error::Database(error.to_string()))?,
+        1
+    );
+    continue_tx
+        .send(())
+        .map_err(|error| Error::Database(error.to_string()))?;
+    assert_eq!(
+        result_rx
+            .recv_timeout(Duration::from_secs(2))
+            .map_err(|error| Error::Database(error.to_string()))??,
+        1
+    );
+    writer
+        .join()
+        .map_err(|_| Error::Database("Concurrent local writer panicked.".into()))?;
+    assert_eq!(
+        db.execute("SELECT value FROM rpc_items WHERE id = 2", &HashMap::new())?,
+        vec![vec![serde_json::json!("collector")]]
+    );
+    Ok(())
+}
+
+#[test]
+fn remote_client_retries_reads_tracks_status_and_never_retries_writes() -> Result<(), Error> {
+    use std::io::Write;
+    use std::net::TcpListener;
+    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+
+    let listener = TcpListener::bind("127.0.0.1:0").map_err(Error::Io)?;
+    listener.set_nonblocking(true).map_err(Error::Io)?;
+    let address = listener.local_addr().map_err(Error::Io)?;
+    let running = std::sync::Arc::new(AtomicBool::new(true));
+    let read_count = std::sync::Arc::new(AtomicUsize::new(0));
+    let write_count = std::sync::Arc::new(AtomicUsize::new(0));
+    let commit_count = std::sync::Arc::new(AtomicUsize::new(0));
+    let server_running = std::sync::Arc::clone(&running);
+    let server_reads = std::sync::Arc::clone(&read_count);
+    let server_writes = std::sync::Arc::clone(&write_count);
+    let server_commits = std::sync::Arc::clone(&commit_count);
+    let server = std::thread::spawn(move || {
+        while server_running.load(Ordering::Acquire) {
+            let (mut stream, _) = match listener.accept() {
+                Ok(connection) => connection,
+                Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                    std::thread::sleep(Duration::from_millis(5));
+                    continue;
+                }
+                Err(_) => break,
+            };
+            let Some(body) = read_http_json_body(&mut stream) else {
+                continue;
+            };
+            let request: serde_json::Value =
+                serde_json::from_slice(&body).expect("remote request should be JSON");
+            let operation = request["operation"].as_str().unwrap_or_default();
+            let sql = request["sql"].as_str().unwrap_or_default();
+            let (status, response) = match (operation, sql) {
+                ("read", "SELECT retry") => {
+                    if server_reads.fetch_add(1, Ordering::AcqRel) == 0 {
+                        (503, String::new())
+                    } else {
+                        (200, r#"{"kind":"rows","value":[[7]]}"#.to_owned())
+                    }
+                }
+                ("execute", _) => {
+                    server_writes.fetch_add(1, Ordering::AcqRel);
+                    (503, String::new())
+                }
+                ("begin", _) => (
+                    200,
+                    r#"{"kind":"transaction","value":"test-transaction"}"#.to_owned(),
+                ),
+                ("commit", _) => {
+                    server_commits.fetch_add(1, Ordering::AcqRel);
+                    (503, String::new())
+                }
+                ("read", "SELECT 1") => (200, r#"{"kind":"rows","value":[[1]]}"#.to_owned()),
+                _ => (400, String::new()),
+            };
+            let reason = if status == 200 { "OK" } else { "Unavailable" };
+            let response = format!(
+                "HTTP/1.1 {status} {reason}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{response}",
+                response.len()
+            );
+            let _ = stream.write_all(response.as_bytes());
+        }
+    });
+
+    let db = DatabaseService::new_remote(&format!("http://{address}"), "test-token")?;
+    assert!(db.is_remote());
+    assert_eq!(
+        db.remote_connection_status(),
+        Some(RemoteConnectionStatus::Connected)
+    );
+    assert_eq!(
+        db.execute("SELECT retry", &HashMap::new())?,
+        vec![vec![serde_json::json!(7)]]
+    );
+    assert_eq!(read_count.load(Ordering::Acquire), 2);
+
+    assert!(db
+        .execute_non_query("INSERT INTO test VALUES (1)", &HashMap::new())
+        .is_err());
+    assert_eq!(write_count.load(Ordering::Acquire), 1);
+    assert_eq!(
+        db.remote_connection_status(),
+        Some(RemoteConnectionStatus::Disconnected)
+    );
+    db.check_remote_connection()?;
+    assert_eq!(
+        db.remote_connection_status(),
+        Some(RemoteConnectionStatus::Connected)
+    );
+    let commit_error = db
+        .write_transaction(|_| Ok(()))
+        .expect_err("failed commit should report its ambiguous outcome");
+    assert!(commit_error.to_string().contains("outcome is unknown"));
+    assert_eq!(commit_count.load(Ordering::Acquire), 1);
+
+    drop(db);
+    running.store(false, Ordering::Release);
+    server
+        .join()
+        .map_err(|_| Error::Database("Mock remote RPC server panicked.".into()))?;
+    Ok(())
+}
+
+fn read_http_json_body(stream: &mut std::net::TcpStream) -> Option<Vec<u8>> {
+    use std::io::Read;
+
+    let mut bytes = Vec::new();
+    let mut chunk = [0; 2048];
+    loop {
+        let count = stream.read(&mut chunk).ok()?;
+        if count == 0 {
+            return None;
+        }
+        bytes.extend_from_slice(&chunk[..count]);
+        let Some(header_end) = bytes
+            .windows(4)
+            .position(|window| window == b"\r\n\r\n")
+            .map(|index| index + 4)
+        else {
+            continue;
+        };
+        let headers = std::str::from_utf8(&bytes[..header_end]).ok()?;
+        let content_length = headers.lines().find_map(|line| {
+            line.split_once(':')
+                .filter(|(name, _)| name.eq_ignore_ascii_case("content-length"))
+                .and_then(|(_, value)| value.trim().parse::<usize>().ok())
+        })?;
+        if bytes.len() >= header_end + content_length {
+            return Some(bytes[header_end..header_end + content_length].to_vec());
+        }
+    }
+}
+
+#[test]
+fn remote_legacy_import_merges_allowlisted_rows_and_is_idempotent() -> Result<(), Error> {
+    let dir = TestDir::new("remote-legacy-import");
+    let target_path = dir.path.join("server.sqlite3");
+    let source_path = dir.path.join("normalized-legacy.sqlite3");
+    let target = DatabaseService::new(&target_path)?;
+    target.execute_non_query(
+        "CREATE TABLE configs (key TEXT PRIMARY KEY, value TEXT)",
+        &HashMap::new(),
+    )?;
+    target.execute_non_query(
+        "CREATE TABLE cookies (key TEXT PRIMARY KEY, value TEXT)",
+        &HashMap::new(),
+    )?;
+    target.execute_non_query(
+        "INSERT INTO configs (key, value) VALUES ('server-setting', 'keep')",
+        &HashMap::new(),
+    )?;
+    target.execute_non_query(
+        "INSERT INTO cookies (key, value) VALUES ('server-cookie', 'keep')",
+        &HashMap::new(),
+    )?;
+    crate::game_log::ensure_game_log_tables(&target)?;
+    target.execute_non_query(
+        "INSERT INTO owners (id, user_id) VALUES (41, 'usr_self')",
+        &HashMap::new(),
+    )?;
+    crate::realtime::ensure_realtime_tables(&target, "usrself")?;
+    crate::database::schema::ensure_user_store_tables(&target, "usrself")?;
+    target.execute_non_query(
+        "INSERT INTO gamelog_join_leave
+         (created_at, type, display_name, location, user_id, time, owner_id)
+         VALUES ('same', 'OnPlayerJoined', 'Alice', 'wrld_a', 'usr_friend', 0, 41)",
+        &HashMap::new(),
+    )?;
+    target.execute_non_query(
+        "INSERT INTO usrself_feed_gps
+         (created_at, user_id, display_name, location, world_name, previous_location, time, group_name)
+         VALUES ('same', 'usr_friend', 'Alice', 'wrld_a', 'World A', '', 0, '')",
+        &HashMap::new(),
+    )?;
+    target.execute_non_query(
+        "INSERT INTO usrself_notes (user_id, display_name, note, created_at)
+         VALUES ('usr_friend', 'Alice', 'server note', 'same')",
+        &HashMap::new(),
+    )?;
+
+    let source = Connection::open(&source_path).map_err(Error::sqlite)?;
+    source
+        .execute_batch(
+            "CREATE TABLE configs (key TEXT PRIMARY KEY, value TEXT);
+         CREATE TABLE cookies (key TEXT PRIMARY KEY, value TEXT);
+         CREATE TABLE gamelog_join_leave (
+             id INTEGER PRIMARY KEY, created_at TEXT, type TEXT, display_name TEXT,
+             location TEXT, user_id TEXT, time INTEGER, owner_id INTEGER NOT NULL DEFAULT 0
+         );
+         CREATE TABLE usrself_feed_gps (
+             id INTEGER PRIMARY KEY, created_at TEXT, user_id TEXT, display_name TEXT,
+             location TEXT, world_name TEXT, previous_location TEXT, time INTEGER, group_name TEXT
+         );
+         CREATE TABLE usrself_notes (
+             user_id TEXT PRIMARY KEY, display_name TEXT, note TEXT, created_at TEXT
+         );
+         INSERT INTO configs VALUES ('device-auth', 'must not import');
+         INSERT INTO cookies VALUES ('device-cookie', 'must not import');
+         INSERT INTO gamelog_join_leave VALUES
+             (5, 'same', 'OnPlayerJoined', 'Alice', 'wrld_a', 'usr_friend', 0, 0),
+             (6, 'later', 'OnPlayerLeft', 'Bob', 'wrld_b', 'usr_other', 5, 0);
+         INSERT INTO usrself_feed_gps VALUES
+             (12, 'same', 'usr_friend', 'Alice', 'wrld_a', 'World A', '', 0, ''),
+             (13, 'later', 'usr_friend', 'Alice', 'wrld_b', 'World B', 'wrld_a', 5, '');
+         INSERT INTO usrself_notes VALUES ('usr_friend', 'Alice', 'local note', 'later');",
+        )
+        .map_err(Error::sqlite)?;
+    drop(source);
+
+    let snapshot_hash = "a".repeat(64);
+    let counts = crate::merge_remote_legacy(&target, &source_path, &snapshot_hash, "usr_self")?;
+    assert!(counts.tables >= 3);
+    assert!(counts.inserted_rows >= 2);
+
+    let imported_owner_rows = target.execute(
+        "SELECT DISTINCT owner_id FROM gamelog_join_leave ORDER BY owner_id",
+        &HashMap::new(),
+    )?;
+    assert_eq!(imported_owner_rows, vec![vec![serde_json::json!(41)]]);
+    let game_rows = target.execute("SELECT COUNT(*) FROM gamelog_join_leave", &HashMap::new())?;
+    assert_eq!(game_rows[0][0], serde_json::json!(2));
+    let feed_rows = target.execute("SELECT COUNT(*) FROM usrself_feed_gps", &HashMap::new())?;
+    assert_eq!(feed_rows[0][0], serde_json::json!(2));
+    let note = target.execute(
+        "SELECT note FROM usrself_notes WHERE user_id = 'usr_friend'",
+        &HashMap::new(),
+    )?;
+    assert_eq!(note[0][0], serde_json::json!("server note"));
+    assert_eq!(
+        target.execute(
+            "SELECT value FROM configs WHERE key = 'server-setting'",
+            &HashMap::new(),
+        )?[0][0],
+        serde_json::json!("keep")
+    );
+    assert!(target
+        .execute(
+            "SELECT 1 FROM configs WHERE key = 'device-auth'",
+            &HashMap::new(),
+        )?
+        .is_empty());
+    assert_eq!(
+        target.execute(
+            "SELECT value FROM cookies WHERE key = 'server-cookie'",
+            &HashMap::new(),
+        )?[0][0],
+        serde_json::json!("keep")
+    );
+    assert!(target
+        .execute(
+            "SELECT 1 FROM cookies WHERE key = 'device-cookie'",
+            &HashMap::new(),
+        )?
+        .is_empty());
+
+    let repeated = crate::merge_remote_legacy(&target, &source_path, &snapshot_hash, "usr_self")?;
+    assert_eq!(repeated, counts);
+    Ok(())
+}

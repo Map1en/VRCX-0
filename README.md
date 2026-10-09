@@ -57,7 +57,7 @@ VRCX-0 is a ground-up rewrite of VRCX by one of its former maintainers. Rebuilt 
 
 - **MCP server** — let external AI tools use your local social data directly
 - **Integration API** — real-time in-game data for third-party apps
-- **Headless mode** — run without a UI; see `crates/headless`
+- **Headless mode** — run a remote database and collector on Docker; see [Docker headless setup](HEADLESS.md)
 
 ### Compared with VRCX
 
@@ -96,6 +96,18 @@ Hardware acceleration for the app interface is off by default. Turn it on under
 **Settings → System → Hardware acceleration (experimental)**; if the interface
 doesn't display properly, VRCX-0 turns it back off automatically. Setting
 `WEBKIT_DISABLE_DMABUF_RENDERER` yourself hides this option.
+
+## Run a headless server with Docker
+
+Clone the repository and build the headless image from its Dockerfile. Replace `REPOSITORY_URL` with the Git URL of the repository you want to build:
+
+```sh
+git clone REPOSITORY_URL VRCX-0
+cd VRCX-0
+docker build -f Dockerfile.headless -t vrcx-0-headless:local .
+```
+
+Follow [HEADLESS.md](HEADLESS.md) to set the access token, prepare the `vrcx-0-data` bind folder, and start the server with Compose. It also covers Windows setup, the separate collector sign-in, updates, logs, and data reset.
 
 ## Feedback
 

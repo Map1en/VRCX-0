@@ -17,6 +17,9 @@ use vrcx_0_core::{FavoriteEntityKind, OwnerId};
 
 pub trait RealtimeStore: Send + Sync {
     fn database_path(&self) -> PathBuf;
+    fn records_realtime_history(&self) -> bool {
+        true
+    }
     fn get_bool(&self, key: &str, default: bool) -> Result<bool>;
     fn get_string(&self, key: &str, default: &str) -> Result<String>;
     fn get_json(&self, key: &str, default: Value) -> Result<Value>;
@@ -55,6 +58,20 @@ pub trait RealtimeStore: Send + Sync {
         entries: Vec<FriendLogHistoryEntryInput>,
     ) -> Result<i64>;
     fn notification_expire(&self, user_id: &str, notification_id: &str) -> Result<()>;
+    /// Durably stage a realtime batch before attempting to write it. Stores that do not need a
+    /// restart-safe queue may keep the default no-op implementation.
+    fn stage_realtime_batch(
+        &self,
+        _owner: &OwnerId,
+        _batch: &RealtimePersistenceBatch,
+    ) -> Result<()> {
+        Ok(())
+    }
+    /// Whether a failed batch write is safe to retry. Remote transports must return false unless
+    /// their write protocol provides a stable idempotency key for the batch.
+    fn realtime_batch_retry_safe(&self) -> bool {
+        true
+    }
     fn write_realtime_batch(
         &self,
         owner: &OwnerId,

@@ -1802,6 +1802,7 @@ fn repeated_friend_delete_retries_after_persistence_failure_without_duplicate_fe
         },
     )?;
     runtime.runtime().deps.event_bus.take_events_for_test();
+    runtime.store().set_fail_writes(true);
     let payload = RealtimeWsMessagePayload {
         json: json!({
             "type": "friend-delete",
@@ -1811,15 +1812,11 @@ fn repeated_friend_delete_retries_after_persistence_failure_without_duplicate_fe
         received_at: "2026-05-15T00:00:01Z".into(),
     };
 
-    let RealtimeFriendApplyResult::Output(mut first) =
+    let RealtimeFriendApplyResult::Output(first) =
         runtime.runtime().friends.apply_ws_message(&payload)
     else {
         panic!("first friend-delete should produce an output");
     };
-    first
-        .persistence
-        .feed_entries
-        .push(unwritable_feed_entry("2026-05-15T00:00:01Z"));
     runtime.runtime().apply_friend_output(*first);
 
     assert_eq!(
@@ -1831,6 +1828,7 @@ fn repeated_friend_delete_retries_after_persistence_failure_without_duplicate_fe
         1
     );
 
+    runtime.store().set_fail_writes(false);
     let RealtimeFriendApplyResult::Output(retry) =
         runtime.runtime().friends.apply_ws_message(&payload)
     else {
@@ -1839,6 +1837,7 @@ fn repeated_friend_delete_retries_after_persistence_failure_without_duplicate_fe
     assert_eq!(retry.persistence.friend_log_deletes.len(), 1);
     assert!(retry.persistence.feed_entries.is_empty());
     runtime.runtime().apply_friend_output(*retry);
+    std::thread::sleep(std::time::Duration::from_millis(600));
 
     assert!(friend_log_current_list(
         runtime.runtime().deps.store.as_ref(),

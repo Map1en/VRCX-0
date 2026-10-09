@@ -146,6 +146,27 @@ describe('useFeedRows', () => {
         expect(mocks.queryFeed).not.toHaveBeenCalled();
     });
 
+    it('refreshes the persisted feed when friend history is imported', async () => {
+        mocks.queryFeedLatest
+            .mockResolvedValueOnce({
+                rows: [{ userId: 'usr_before' }],
+                maxSequence: 0
+            })
+            .mockResolvedValueOnce({
+                rows: [{ userId: 'usr_after' }],
+                maxSequence: 0
+            });
+        const { result, rerender } = renderFeedRows();
+        await flush();
+
+        mocks.friendLog.revision += 1;
+        rerender(BASE_PROPS);
+        await flush();
+
+        expect(result.current.rows).toEqual([{ userId: 'usr_after' }]);
+        expect(mocks.queryFeedLatest).toHaveBeenCalledTimes(2);
+    });
+
     it('loads older cursor pages without trimming them when realtime rows arrive', async () => {
         const persistedCursor = {
             createdAt: '2026-05-15T00:00:00.000Z',

@@ -4,7 +4,7 @@ use serde_json::Value;
 use vrcx_0_core::json::JsonExt;
 use vrcx_0_core::ReleaseStatus;
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CacheEntityInput {
     #[serde(default)]

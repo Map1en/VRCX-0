@@ -229,7 +229,7 @@ function setCurrentUserRuntimeAuth(
     recordCurrentUserSnapshot(nextSnapshot ?? null, { endpoint });
 }
 
-async function getLocalizedAuthPrompt(mode: TwoFactorMode): Promise<{
+export async function getLocalizedAuthPrompt(mode: TwoFactorMode): Promise<{
     mode: TwoFactorMode;
     title: string;
     description: string;
@@ -277,7 +277,7 @@ async function getTwoFactorInputErrorMessage(mode: TwoFactorMode) {
     );
 }
 
-function normalizeTwoFactorMode(mode: string): TwoFactorMode {
+export function normalizeTwoFactorMode(mode: string): TwoFactorMode {
     return mode === 'emailOtp' || mode === 'otp' ? mode : 'totp';
 }
 

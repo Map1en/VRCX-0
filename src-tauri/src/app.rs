@@ -318,7 +318,9 @@ pub fn run() {
             }
 
             if let WindowEvent::CloseRequested { api, .. } = event {
-                let state = window.state::<AppState>();
+                let Some(state) = window.try_state::<AppState>() else {
+                    return;
+                };
                 let snapshot = state.runtime_host().backend_runtime_snapshot();
                 if is_background_running(snapshot.mode, snapshot.phase) {
                     return;

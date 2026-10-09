@@ -29,6 +29,11 @@ pub struct DatabaseScaleEstimate {
 }
 
 pub fn database_scale_estimate(db: &DatabaseService) -> Result<DatabaseScaleEstimate, Error> {
+    if db.is_remote() {
+        return Err(Error::Database(
+            "Database size estimates are unavailable for a remote database.".into(),
+        ));
+    }
     let db_bytes = fs::metadata(db.db_path())
         .map(|metadata| metadata.len())
         .unwrap_or(0);

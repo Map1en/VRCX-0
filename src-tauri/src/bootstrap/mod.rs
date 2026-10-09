@@ -4,7 +4,7 @@ mod background_delay;
 pub(crate) mod linux_rendering;
 mod notification;
 mod protocol;
-mod setup;
+pub(crate) mod setup;
 mod shared;
 pub(crate) mod sidebar_auto_hide;
 pub(crate) mod tray_shortcut;

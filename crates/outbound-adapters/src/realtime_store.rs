@@ -17,15 +17,42 @@ use vrcx_0_persistence::DatabaseService;
 
 pub struct PersistenceRealtimeStore {
     db: Arc<DatabaseService>,
+    headless_journal: Option<Arc<super::realtime_journal::RealtimeJournal>>,
 }
 
 impl PersistenceRealtimeStore {
     pub fn new(db: Arc<DatabaseService>) -> Self {
-        Self { db }
+        Self {
+            db,
+            headless_journal: None,
+        }
+    }
+
+    pub fn new_headless(db: Arc<DatabaseService>) -> crate::Result<Self> {
+        let headless_journal = Some(super::realtime_journal::RealtimeJournal::open(Arc::clone(
+            &db,
+        ))?);
+        Ok(Self {
+            db,
+            headless_journal,
+        })
     }
 }
 
 impl RealtimeStore for PersistenceRealtimeStore {
+    fn records_realtime_history(&self) -> bool {
+        !self.db.is_remote()
+    }
+    fn stage_realtime_batch(
+        &self,
+        owner: &OwnerId,
+        batch: &RealtimePersistenceBatch,
+    ) -> crate::Result<()> {
+        if let Some(journal) = &self.headless_journal {
+            return journal.stage(owner, batch);
+        }
+        Ok(())
+    }
     fn database_path(&self) -> std::path::PathBuf {
         self.db.db_path().to_path_buf()
     }
@@ -89,6 +116,15 @@ impl RealtimeStore for PersistenceRealtimeStore {
         entries: Vec<FriendLogCurrentEntryInput>,
         options: FriendLogReplaceOptionsInput,
     ) -> crate::Result<FriendLogMutationResult> {
+        if self.db.is_remote() {
+            return Ok(FriendLogMutationResult {
+                user_id: user_id.to_owned(),
+                target_user_id: String::new(),
+                count: 0,
+                inserted: None,
+                history_count: 0,
+            });
+        }
         Ok(vrcx_0_persistence::friends::friend_log_replace_current(
             &self.db,
             user_id.to_string(),
@@ -102,6 +138,15 @@ impl RealtimeStore for PersistenceRealtimeStore {
         target_user_ids: Vec<String>,
         options: FriendLogDeleteOptionsInput,
     ) -> crate::Result<FriendLogMutationResult> {
+        if self.db.is_remote() {
+            return Ok(FriendLogMutationResult {
+                user_id: user_id.to_owned(),
+                target_user_id: String::new(),
+                count: 0,
+                inserted: None,
+                history_count: 0,
+            });
+        }
         Ok(
             vrcx_0_persistence::friends::friend_log_delete_current_array(
                 &self.db,
@@ -117,6 +162,15 @@ impl RealtimeStore for PersistenceRealtimeStore {
         entry: FriendLogCurrentEntryInput,
         options: FriendLogUpsertOptionsInput,
     ) -> crate::Result<FriendLogMutationResult> {
+        if self.db.is_remote() {
+            return Ok(FriendLogMutationResult {
+                user_id: user_id.to_owned(),
+                target_user_id: entry.user_id.clone(),
+                count: 0,
+                inserted: Some(false),
+                history_count: 0,
+            });
+        }
         Ok(vrcx_0_persistence::friends::friend_log_upsert_current(
             &self.db,
             user_id.to_string(),
@@ -137,6 +191,9 @@ impl RealtimeStore for PersistenceRealtimeStore {
         user_id: &str,
         entries: Vec<FriendLogHistoryEntryInput>,
     ) -> crate::Result<i64> {
+        if self.db.is_remote() {
+            return Ok(0);
+        }
         Ok(vrcx_0_persistence::friends::friend_log_history_add(
             &self.db,
             user_id.to_string(),
@@ -155,6 +212,30 @@ impl RealtimeStore for PersistenceRealtimeStore {
         owner: &OwnerId,
         batch: &RealtimePersistenceBatch,
     ) -> crate::Result<RealtimeWriteCounts> {
+        if self.db.is_remote() {
+            // The server records API activity. Only observations requiring a running
+            // game are supplied by the desktop, so there is no history reconciliation.
+            let local_game = RealtimePersistenceBatch {
+                game_log_locations: batch.game_log_locations.clone(),
+                game_log_location_time_updates: batch.game_log_location_time_updates.clone(),
+                avatar_history_upserts: batch.avatar_history_upserts.clone(),
+                avatar_time_spent_upserts: batch.avatar_time_spent_upserts.clone(),
+                ..Default::default()
+            };
+            if local_game.is_empty() {
+                return Ok(RealtimeWriteCounts::default());
+            }
+            let batch_id = super::realtime_journal::batch_id(owner, &local_game)?;
+            return Ok(vrcx_0_persistence::realtime::write_realtime_batch_once(
+                &self.db,
+                owner,
+                &local_game,
+                &batch_id,
+            )?);
+        }
+        if let Some(journal) = &self.headless_journal {
+            return Ok(journal.write_and_drain(owner, batch)?);
+        }
         Ok(vrcx_0_persistence::realtime::write_realtime_batch(
             &self.db, owner, batch,
         )?)

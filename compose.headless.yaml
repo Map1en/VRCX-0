@@ -1,0 +1,14 @@
+services:
+    collector:
+        image: vrcx-0-headless:local
+        build:
+            context: .
+            dockerfile: Dockerfile.headless
+        restart: unless-stopped
+        environment:
+            VRCX_DATABASE_BIND: 0.0.0.0:9001
+            VRCX_DATABASE_TOKEN: ${VRCX_DATABASE_TOKEN:?Set VRCX_DATABASE_TOKEN to a long random secret}
+        ports:
+            - '${VRCX_DATABASE_PORT:-9001}:9001'
+        volumes:
+            - ./vrcx-0-data:/data

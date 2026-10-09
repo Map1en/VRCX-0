@@ -87,6 +87,7 @@ impl RuntimeHostState {
     pub async fn refresh_runtime_group_instances(&self) {
         let context = BackgroundTickContext {
             db: &self.db,
+            realtime_store: &self.realtime_store,
             web: &self.web,
             session_slot: &self.authenticated_session_projection,
             realtime_runtime: &self.realtime_runtime,

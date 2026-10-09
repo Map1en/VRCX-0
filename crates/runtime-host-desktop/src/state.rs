@@ -1150,6 +1150,10 @@ impl DesktopRuntimeHostState {
         &self.database_upgrade
     }
 
+    pub fn database(&self) -> &Arc<vrcx_0_persistence::DatabaseService> {
+        self.runtime.database()
+    }
+
     pub fn legacy_migration(&self) -> &DesktopLegacyMigrationRuntime {
         &self.legacy_migration
     }

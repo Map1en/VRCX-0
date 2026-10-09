@@ -12,15 +12,21 @@ use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::Layer;
+mod database_api;
+
+use database_api::DatabaseApi;
+use vrcx_0_application::profile::{run_database_upgrade, DatabaseUpgradeRunStatus};
 use vrcx_0_application_core::{
     format_runtime_output_event, recommended_tokio_max_blocking_threads,
     recommended_tokio_worker_threads, BackendRuntimeTelemetry, BackendRuntimeTelemetryKind,
     RuntimeEventPayload, RuntimeEventSink, RuntimeOutputLevel, RuntimeOutputLine,
     RuntimeOutputMode, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle,
+    RuntimeVrchatAuthFailurePayload,
 };
 use vrcx_0_composition::{
     CliLoginPrompt, CliTwoFactorChoice, RuntimeHostOptions, RuntimeHostProfile, RuntimeHostState,
 };
+use vrcx_0_outbound_adapters::LocalDatabaseUpgradeStore;
 use vrcx_0_platform::app_paths::resolve_app_data_dir;
 use vrcx_0_platform::error_log::{
     append_headless_error_log, default_app_data_dir, ErrorLogWriter, HEADLESS_ERROR_LOG_FILE,
@@ -76,7 +82,7 @@ async fn async_main() -> ExitCode {
         database_maintenance_cache_dir: None,
         task_executor: Some(Arc::new(TokioRuntimeTaskExecutor)),
     }) {
-        Ok(state) => state,
+        Ok(state) => Arc::new(state),
         Err(error) => {
             report_headless_error(
                 Some(&app_data_dir.current_dir),
@@ -87,49 +93,217 @@ async fn async_main() -> ExitCode {
         }
     };
 
-    let (fatal_tx, mut fatal_rx) = mpsc::unbounded_channel();
-    let console_sink = ConsoleRuntimeEventSink::new(fatal_tx, app_data_dir.current_dir.clone());
-    state.set_event_sink(console_sink.clone());
-
-    match state.start_headless_backend_runtime(cli_login_prompt).await {
-        Ok(_) => {}
+    let db_for_upgrade = Arc::clone(state.database());
+    let upgrade = match tokio::task::spawn_blocking(move || {
+        let store = LocalDatabaseUpgradeStore::new(db_for_upgrade);
+        run_database_upgrade(&store)
+    })
+    .await
+    {
+        Ok(result) => result,
         Err(error) => {
             report_headless_error(
                 Some(&app_data_dir.current_dir),
-                "headless:login",
-                format!("headless login failed: {error}"),
+                "headless:database-upgrade",
+                format!("database upgrade worker failed: {error}"),
             );
             return ExitCode::from(1);
         }
+    };
+    if !matches!(
+        upgrade.status,
+        DatabaseUpgradeRunStatus::Current | DatabaseUpgradeRunStatus::Upgraded
+    ) {
+        let detail = upgrade
+            .error
+            .as_deref()
+            .unwrap_or("the database schema is not ready for serving");
+        report_headless_error(
+            Some(&app_data_dir.current_dir),
+            "headless:database-upgrade",
+            format!(
+                "database upgrade did not complete ({:?}): {detail}",
+                upgrade.status
+            ),
+        );
+        return ExitCode::from(1);
     }
-    println!("headless runtime is running. Press Ctrl+C to stop.");
-    tokio::select! {
-        signal = tokio::signal::ctrl_c() => {
-            if let Err(error) = signal {
+
+    let (auth_failure_tx, mut auth_failure_rx) = mpsc::unbounded_channel();
+    let console_sink =
+        ConsoleRuntimeEventSink::new(auth_failure_tx, app_data_dir.current_dir.clone());
+    state.set_event_sink(console_sink.clone());
+
+    if force_login {
+        return match state.start_headless_backend_runtime(cli_login_prompt).await {
+            Ok(_) => {
+                println!("VRChat login saved. Start the headless service to begin collection.");
+                shutdown_runtime(&state, "login-complete");
+                ExitCode::SUCCESS
+            }
+            Err(error) => {
                 report_headless_error(
                     Some(&app_data_dir.current_dir),
-                    "headless:signal",
-                    format!("failed to wait for Ctrl+C: {error}"),
+                    "headless:login",
+                    format!("headless login failed: {error}"),
                 );
-                console_sink.begin_shutdown();
-                shutdown_runtime(&state, "signal-error");
-                return ExitCode::from(1);
+                shutdown_runtime(&state, "login-failed");
+                ExitCode::from(1)
             }
-            console_sink.begin_shutdown();
-            shutdown_runtime(&state, "ctrl-c");
-            ExitCode::SUCCESS
-        }
-        fatal = fatal_rx.recv() => {
-            let reason = fatal.unwrap_or_else(|| "fatal runtime error".into());
+        };
+    }
+
+    let (database_api, database_api_address) = match DatabaseApi::bind(
+        Arc::clone(state.database()),
+        app_data_dir.current_dir.clone(),
+        Arc::clone(&state),
+    )
+    .await
+    {
+        Ok(api) => api,
+        Err(error) => {
             report_headless_error(
                 Some(&app_data_dir.current_dir),
-                "headless:fatal",
-                format!("headless runtime fatal error: {reason}"),
+                "headless:database-api",
+                format!("database API startup failed: {error}"),
             );
-            console_sink.begin_shutdown();
-            shutdown_runtime(&state, "fatal-error");
-            ExitCode::from(1)
+            return ExitCode::from(1);
         }
+    };
+    let (shutdown_tx, shutdown_rx) = tokio::sync::watch::channel(false);
+    let auth_retry_pause = database_api.auth_retry_pause();
+    let auth_retry_lock = database_api.auth_retry_lock();
+    let _startup_auth_guard = auth_retry_lock.lock().await;
+    auth_retry_pause.store(true, std::sync::atomic::Ordering::Release);
+    let mut database_api_task = tokio::spawn(database_api.serve(shutdown_rx));
+    println!("authenticated database API listening at http://{database_api_address}/api/database");
+
+    let initial_login = state.start_headless_backend_runtime(None).await;
+    auth_retry_pause.store(false, std::sync::atomic::Ordering::Release);
+    drop(_startup_auth_guard);
+    let login_retry_task = Some(spawn_login_retry(
+        Arc::clone(&state),
+        Arc::clone(&auth_retry_pause),
+        Arc::clone(&auth_retry_lock),
+    ));
+    if initial_login.is_err() {
+        tracing::info!("waiting for a VRChat account login; the database API is ready");
+        eprintln!("No active VRChat login yet. Use the desktop app's collector login or run `vrcx-0-headless --login`; collection will start automatically after the server session is authenticated.");
+    }
+    println!("headless service is running. Press Ctrl+C to stop.");
+    let exit_code = loop {
+        tokio::select! {
+            signal = shutdown_signal() => break match signal {
+                Ok(reason) => {
+                    console_sink.begin_shutdown();
+                    shutdown_runtime(&state, reason);
+                    ExitCode::SUCCESS
+                }
+                Err(error) => {
+                    report_headless_error(
+                        Some(&app_data_dir.current_dir),
+                        "headless:signal",
+                        format!("failed to wait for shutdown signal: {error}"),
+                    );
+                    console_sink.begin_shutdown();
+                    shutdown_runtime(&state, "signal-error");
+                    ExitCode::from(1)
+                }
+            },
+            auth_failure = auth_failure_rx.recv() => {
+                let Some(failure) = auth_failure else {
+                    tracing::error!("headless auth-failure event channel closed");
+                    break ExitCode::from(1);
+                };
+                let _auth_guard = auth_retry_lock.lock().await;
+                if auth_retry_pause.load(std::sync::atomic::Ordering::Acquire) {
+                    continue;
+                }
+                let session = state.authenticated_session_projection().session;
+                let is_current_session = session.as_ref().is_some_and(|session| {
+                    session.user_id == failure.owner_user_id.as_str()
+                        && session.auth_scope_generation == failure.auth_scope_generation
+                });
+                if is_current_session {
+                    auth_retry_pause.store(true, std::sync::atomic::Ordering::Release);
+                    tracing::warn!("VRChat rejected the headless collector session; checking saved server auth");
+                    let snapshot = state.recover_background_auth_after_failure(failure.reason).await;
+                    let still_needs_login = snapshot.auth_status
+                        != vrcx_0_application_core::BackendRuntimeAuthStatus::Authenticated;
+                    auth_retry_pause.store(false, std::sync::atomic::Ordering::Release);
+                    if still_needs_login {
+                        tracing::info!("headless collector needs a new VRChat login; database API remains available");
+                    }
+                }
+            }
+            server = &mut database_api_task => {
+                report_headless_error(
+                    Some(&app_data_dir.current_dir),
+                    "headless:database-api",
+                    format!("database API stopped unexpectedly: {server:?}"),
+                );
+                console_sink.begin_shutdown();
+                shutdown_runtime(&state, "database-api-stopped");
+                break ExitCode::from(1)
+            }
+        }
+    };
+
+    let _ = shutdown_tx.send(true);
+    if let Some(task) = login_retry_task {
+        task.abort();
+    }
+    let _ = tokio::time::timeout(Duration::from_secs(5), &mut database_api_task).await;
+    exit_code
+}
+
+fn spawn_login_retry(
+    state: Arc<RuntimeHostState>,
+    auth_retry_pause: Arc<std::sync::atomic::AtomicBool>,
+    auth_retry_lock: Arc<tokio::sync::Mutex<()>>,
+) -> tokio::task::JoinHandle<()> {
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(Duration::from_secs(30)).await;
+            let _guard = auth_retry_lock.lock().await;
+            if auth_retry_pause.load(std::sync::atomic::Ordering::Acquire) {
+                continue;
+            }
+            let snapshot = state.backend_runtime().snapshot();
+            if snapshot.phase == vrcx_0_application_core::BackendRuntimePhase::Running
+                && snapshot.auth_status
+                    == vrcx_0_application_core::BackendRuntimeAuthStatus::Authenticated
+            {
+                continue;
+            }
+            auth_retry_pause.store(true, std::sync::atomic::Ordering::Release);
+            match state.start_headless_backend_runtime(None).await {
+                Ok(_) => {
+                    tracing::info!("headless collector authenticated and started");
+                    println!(
+                        "VRChat credentials are available; friend activity collection started."
+                    );
+                }
+                Err(_) => tracing::debug!("VRChat login is not ready; retrying in 30 seconds"),
+            }
+            auth_retry_pause.store(false, std::sync::atomic::Ordering::Release);
+        }
+    })
+}
+
+async fn shutdown_signal() -> Result<&'static str, std::io::Error> {
+    #[cfg(unix)]
+    {
+        let mut terminate =
+            tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
+        tokio::select! {
+            result = tokio::signal::ctrl_c() => result.map(|()| "ctrl-c"),
+            _ = terminate.recv() => Ok("sigterm"),
+        }
+    }
+    #[cfg(not(unix))]
+    {
+        tokio::signal::ctrl_c().await.map(|()| "ctrl-c")
     }
 }
 
@@ -241,16 +415,19 @@ fn report_headless_error(app_data: Option<&Path>, source: &str, message: impl As
 
 #[derive(Clone)]
 struct ConsoleRuntimeEventSink {
-    fatal_tx: mpsc::UnboundedSender<String>,
+    auth_failure_tx: mpsc::UnboundedSender<RuntimeVrchatAuthFailurePayload>,
     app_data: PathBuf,
     shutdown_started: Arc<AtomicBool>,
     output_lock: Arc<Mutex<()>>,
 }
 
 impl ConsoleRuntimeEventSink {
-    fn new(fatal_tx: mpsc::UnboundedSender<String>, app_data: PathBuf) -> Self {
+    fn new(
+        auth_failure_tx: mpsc::UnboundedSender<RuntimeVrchatAuthFailurePayload>,
+        app_data: PathBuf,
+    ) -> Self {
         Self {
-            fatal_tx,
+            auth_failure_tx,
             app_data,
             shutdown_started: Arc::new(AtomicBool::new(false)),
             output_lock: Arc::new(Mutex::new(())),
@@ -268,6 +445,13 @@ impl ConsoleRuntimeEventSink {
 
 impl RuntimeEventSink for ConsoleRuntimeEventSink {
     fn emit(&self, event: &str, payload: Value) {
+        if event == RuntimeVrchatAuthFailurePayload::EVENT_NAME {
+            if let Ok(failure) =
+                serde_json::from_value::<RuntimeVrchatAuthFailurePayload>(payload.clone())
+            {
+                let _ = self.auth_failure_tx.send(failure);
+            }
+        }
         let allow_during_shutdown = is_runtime_stopped_event(event, &payload);
         let _guard = self
             .output_lock
@@ -282,11 +466,7 @@ impl RuntimeEventSink for ConsoleRuntimeEventSink {
         else {
             return;
         };
-        let fatal_reason = output.fatal_reason.clone();
         self.print_output(allow_during_shutdown, output);
-        if let Some(reason) = fatal_reason {
-            let _ = self.fatal_tx.send(reason);
-        }
     }
 }
 

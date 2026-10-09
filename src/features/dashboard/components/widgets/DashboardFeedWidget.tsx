@@ -26,6 +26,7 @@ import { mergeFeedRowsWithSnapshot } from '@/services/feedLiveMergeService';
 import { normalizeString } from '@/shared/utils/string';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFeedLiveStore } from '@/state/feedLiveStore';
+import { useFriendLogStore } from '@/state/friendLogStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -85,6 +86,7 @@ export function DashboardFeedWidget({
         }))
     );
     const friendsById = useFriendRosterStore((state) => state.friendsById);
+    const friendLogRevision = useFriendLogStore((state) => state.revision);
     const feedPersistenceDisabled = usePreferencesStore(
         (state) => state.feedPersistenceDisabled
     );
@@ -292,6 +294,7 @@ export function DashboardFeedWidget({
         activeFilters,
         addGameLogEventCount,
         currentUserId,
+        friendLogRevision,
         feedHiddenUsers,
         feedPersistenceDisabled,
         mergeWidgetRowsWithLatestLive,

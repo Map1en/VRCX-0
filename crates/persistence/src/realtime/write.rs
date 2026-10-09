@@ -30,6 +30,32 @@ pub fn write_realtime_batch(
     owner_user_id: &OwnerId,
     batch: &RealtimePersistenceBatch,
 ) -> Result<RealtimeWriteCounts, Error> {
+    write_realtime_batch_inner(db, owner_user_id, batch, None)
+}
+
+/// Atomically records a durable collector batch and its replay marker.
+pub fn write_realtime_batch_once(
+    db: &DatabaseService,
+    owner_user_id: &OwnerId,
+    batch: &RealtimePersistenceBatch,
+    batch_id: &str,
+) -> Result<RealtimeWriteCounts, Error> {
+    if batch_id.is_empty() || batch_id.len() > 128 {
+        return Err(Error::InvalidData("Invalid realtime batch id.".into()));
+    }
+    db.execute_non_query(
+        "CREATE TABLE IF NOT EXISTS collector_realtime_batches (owner_user_id TEXT NOT NULL, batch_id TEXT NOT NULL, PRIMARY KEY (owner_user_id, batch_id))",
+        &Default::default(),
+    )?;
+    write_realtime_batch_inner(db, owner_user_id, batch, Some(batch_id))
+}
+
+fn write_realtime_batch_inner(
+    db: &DatabaseService,
+    owner_user_id: &OwnerId,
+    batch: &RealtimePersistenceBatch,
+    batch_id: Option<&str>,
+) -> Result<RealtimeWriteCounts, Error> {
     if batch.is_empty() {
         return Ok(RealtimeWriteCounts::default());
     }
@@ -54,6 +80,15 @@ pub fn write_realtime_batch(
         OwnerRowId::UNASSIGNED
     };
     db.write_transaction(|tx| {
+        let replay_args = ParamsBuilder::new()
+            .set("owner", owner_user_id.as_str())
+            .set("batch", batch_id.unwrap_or_default())
+            .build();
+        if batch_id.is_some()
+            && !tx.execute("SELECT 1 FROM collector_realtime_batches WHERE owner_user_id = @owner AND batch_id = @batch", &replay_args)?.is_empty()
+        {
+            return Ok(RealtimeWriteCounts::default());
+        }
         let mut counts = RealtimeWriteCounts::default();
         for entry in &batch.friend_log_upserts {
             counts.add_realtime_rows(upsert_friend_log_current(tx, &user_prefix, entry)?);
@@ -93,6 +128,9 @@ pub fn write_realtime_batch(
         }
         for observation in &batch.self_profile_observations {
             counts.add_realtime_rows(observe_self_profile_field(tx, &user_prefix, observation)?);
+        }
+        if batch_id.is_some() {
+            tx.execute_non_query("INSERT INTO collector_realtime_batches (owner_user_id, batch_id) VALUES (@owner, @batch)", &replay_args)?;
         }
         Ok(counts)
     })

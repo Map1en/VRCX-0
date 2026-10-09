@@ -41,7 +41,7 @@ pub(crate) fn request_startup_foreground() {
     STARTUP_FOREGROUND_REQUESTED.store(true, Ordering::Release);
 }
 
-pub(super) fn sync_autostart_from_db(app: &tauri::App, state: &AppState) {
+pub(super) fn sync_autostart_from_db(app: &tauri::AppHandle, state: &AppState) {
     #[cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))]
     {
         if db_config_bool(state, "config:vrcx_startatwindowsstartup") == Some(true) {
@@ -67,7 +67,7 @@ pub(super) fn sync_autostart_from_db(app: &tauri::App, state: &AppState) {
     }
 }
 
-pub(super) fn apply_autostart_window_state_if_needed(app: &tauri::App, state: &AppState) {
+pub(super) fn apply_autostart_window_state_if_needed(app: &tauri::AppHandle, state: &AppState) {
     let action = autostart_window_action(
         state.runtime_host().launched_from_autostart(),
         state
@@ -90,7 +90,7 @@ pub(super) fn apply_autostart_window_state_if_needed(app: &tauri::App, state: &A
         return;
     };
     let window = window.clone();
-    let app_handle = app.handle().clone();
+    let app_handle = app.clone();
     tauri::async_runtime::spawn(async move {
         tokio::time::sleep(Duration::from_millis(100)).await;
         match action {

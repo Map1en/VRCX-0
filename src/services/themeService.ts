@@ -145,6 +145,23 @@ export function getResolvedThemeMode(themeMode: ThemeMode): ResolvedThemeMode {
     return normalized;
 }
 
+/** Apply document theme tokens before the application backend is connected. */
+export function applyThemeModeLocally(themeMode: string): ThemeMode {
+    const effectiveThemeMode = resolveEffectiveThemeMode(
+        resolveThemeMode(themeMode)
+    );
+    if (typeof document !== 'undefined') {
+        const resolvedTheme = getResolvedThemeMode(effectiveThemeMode);
+        document.documentElement.classList.toggle(
+            'dark',
+            resolvedTheme === 'dark'
+        );
+        document.documentElement.setAttribute('data-theme', resolvedTheme);
+    }
+    useShellStore.getState().setThemeMode(effectiveThemeMode);
+    return effectiveThemeMode;
+}
+
 function subscribeSystemColorScheme(onChange: () => void): () => void {
     const query = window.matchMedia?.('(prefers-color-scheme: dark)');
     if (!query) {
@@ -462,13 +479,7 @@ export async function applyThemeMode(themeMode: string): Promise<void> {
         }
     }
 
-    const resolvedTheme = getResolvedThemeMode(effectiveThemeMode);
-    const shouldUseDarkClass = resolvedTheme === 'dark';
-
-    document.documentElement.classList.toggle('dark', shouldUseDarkClass);
-    document.documentElement.setAttribute('data-theme', resolvedTheme);
-
-    useShellStore.getState().setThemeMode(effectiveThemeMode);
+    applyThemeModeLocally(effectiveThemeMode);
     if (effectiveThemeMode !== 'system') {
         await syncNativeTheme(effectiveThemeMode);
     }

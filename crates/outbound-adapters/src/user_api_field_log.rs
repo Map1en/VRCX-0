@@ -93,7 +93,13 @@ fn user_shape(user: &Value) -> Value {
     })
 }
 
-pub(crate) async fn record(db_path: &Path, mut context: Value, status: i32, data: &str) {
+pub(crate) fn diagnostics_path(app_data_dir: &Path) -> std::path::PathBuf {
+    app_data_dir
+        .join("diagnostics")
+        .join("user-api-fields.jsonl")
+}
+
+pub(crate) async fn record(app_data_dir: &Path, mut context: Value, status: i32, data: &str) {
     let Ok(payload) = serde_json::from_str::<Value>(data) else {
         return;
     };
@@ -105,11 +111,7 @@ pub(crate) async fn record(db_path: &Path, mut context: Value, status: i32, data
         _ => vec![user_shape(&payload)],
     }
     .into();
-    let path = db_path
-        .parent()
-        .unwrap_or_else(|| Path::new("."))
-        .join("diagnostics")
-        .join("user-api-fields.jsonl");
+    let path = diagnostics_path(app_data_dir);
     let result = tokio::task::spawn_blocking(move || -> std::io::Result<()> {
         let mut written = WRITTEN
             .lock()
@@ -195,5 +197,17 @@ mod tests {
             input.path = Some(path.into());
             assert!(request_context(&input, ApiScope::Vrchat).is_none());
         }
+    }
+
+    #[test]
+    fn diagnostics_path_is_under_the_local_profile_directory() {
+        let path = diagnostics_path(Path::new(r"C:\Users\tester\AppData\Roaming\VRCX-0"));
+        assert_eq!(
+            path,
+            Path::new(r"C:\Users\tester\AppData\Roaming\VRCX-0")
+                .join("diagnostics")
+                .join("user-api-fields.jsonl")
+        );
+        assert!(!path.to_string_lossy().starts_with("remote:"));
     }
 }

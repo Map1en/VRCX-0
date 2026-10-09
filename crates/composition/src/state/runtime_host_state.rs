@@ -33,7 +33,7 @@ use vrcx_0_application_core::{
 };
 use vrcx_0_application_realtime::{
     FriendProjectionSink, RealtimeCurrentUserSnapshotSink, RealtimeHostRuntime,
-    RealtimeHostRuntimeDeps, RealtimeSessionContext,
+    RealtimeHostRuntimeDeps, RealtimeSessionContext, RealtimeStore,
 };
 use vrcx_0_persistence::data_dir_migration::{
     cleanup_interrupted_data_dir_migration, complete_data_dir_migration,
@@ -109,6 +109,7 @@ pub struct RuntimeHostState {
     desktop_assembly: RuntimeHostDesktopAssemblyDeps,
     pub(crate) backend_runtime: BackendRuntime,
     pub(crate) realtime_runtime: Arc<RealtimeHostRuntime>,
+    pub(crate) realtime_store: Arc<dyn RealtimeStore>,
     pub(crate) web: Arc<WebClient>,
     pub(crate) image_cache: Arc<ImageCache>,
     pub(crate) authenticated_runtime: AuthenticatedRuntimeOrchestrator,
@@ -123,6 +124,7 @@ pub struct RuntimeHostState {
     pub(crate) database_maintenance_cache_dir: Option<PathBuf>,
     pub(super) profile_extension: Option<Arc<dyn RuntimeHostProfileExtension>>,
     pub(super) backend_starting: AtomicBool,
+    pub(super) data_services_started: AtomicBool,
     pub(super) background_auth_recovery: BackgroundAuthRecoveryOrchestrator,
     pub(super) authenticated_session_maintenance: AuthenticatedSessionMaintenanceRuntime,
     pub(super) social_maintenance: SocialMaintenanceRuntime,
@@ -134,7 +136,7 @@ pub struct RuntimeHostState {
 
 fn prepare_secrets_at_rest(db: &Arc<DatabaseService>, profile: RuntimeHostProfile) {
     let allow_encrypted_writes = match profile {
-        RuntimeHostProfile::Desktop => true,
+        RuntimeHostProfile::Desktop => !db.is_remote(),
         RuntimeHostProfile::HeadlessData => false,
     };
     let mut startup =
@@ -203,7 +205,32 @@ fn prepare_data_dir_migration_startup(
     }
 }
 
-fn open_profile(paths: &AppPaths) -> Result<OpenedProfile> {
+fn open_profile(paths: &AppPaths, profile: RuntimeHostProfile) -> Result<OpenedProfile> {
+    if profile == RuntimeHostProfile::Desktop {
+        if let Some(connection) = crate::RemoteDatabaseConnection::load(&paths.app_data)? {
+            let db = Arc::new(DatabaseService::new_remote(
+                &connection.server_url,
+                &connection.token,
+            )?);
+            let legacy = if vrcx_0_persistence::config::get_bool(
+                &db,
+                "remoteLegacyImportComplete",
+                false,
+            )? {
+                vrcx_0_persistence::legacy_vrcx::LegacyVrcxDiscovery::without_source(
+                    LegacyVrcxMigrationStatus::unavailable(),
+                )
+            } else {
+                vrcx_0_persistence::legacy_vrcx::discover_supported_legacy_source()
+            };
+            return Ok(OpenedProfile {
+                storage: Arc::new(StorageService::new(&paths.config_file)?),
+                db,
+                legacy_vrcx_source: legacy.importable_source,
+                legacy_vrcx_migration_status: legacy.status,
+            });
+        }
+    }
     let migration_paths = LegacyMigrationPaths::from_app_data(paths.app_data.clone());
     consume_pending_legacy_migration(&migration_paths)?;
     let pending_profile_restore = consume_pending_profile_restore(&paths.app_data, &paths.db_file)?;
@@ -270,7 +297,7 @@ impl RuntimeHostStateBuilder {
         let prepared_migration = prepare_data_dir_migration_startup(&mut app_data_dir)?;
         let mut paths = AppPaths::from_app_data(app_data_dir.current_dir.clone());
         let mut profile_lock = ProfileLock::acquire(&paths.app_data)?;
-        let opened = match open_profile(&paths) {
+        let opened = match open_profile(&paths, profile) {
             Ok(opened) => opened,
             Err(error) => {
                 let Some(prepared) = prepared_migration.as_ref() else {
@@ -281,7 +308,7 @@ impl RuntimeHostStateBuilder {
                 rollback_failed_data_dir_migration_startup(&mut app_data_dir, prepared)?;
                 paths = AppPaths::from_app_data(app_data_dir.current_dir.clone());
                 profile_lock = ProfileLock::acquire(&paths.app_data)?;
-                open_profile(&paths)?
+                open_profile(&paths, profile)?
             }
         };
         if let Some(prepared) = prepared_migration.as_ref() {
@@ -302,12 +329,17 @@ impl RuntimeHostStateBuilder {
             legacy_vrcx_migration_status,
         } = opened;
         prepare_secrets_at_rest(&db, profile);
+        let cookie_key = match profile {
+            RuntimeHostProfile::Desktop => "default",
+            RuntimeHostProfile::HeadlessData => "headless",
+        };
         let web = Arc::new(WebClient::new(
-            vrcx_0_outbound_adapters::LocalWebClientAdapter::new(
+            vrcx_0_outbound_adapters::LocalWebClientAdapter::new_with_cookie_key(
                 &storage,
                 Arc::clone(&db),
                 realtime_origin,
                 &web_ua_app_version(&app_version, profile),
+                cookie_key,
             )?,
         ));
         let image_cache = Arc::new(ImageCache::new(Arc::new(
@@ -319,11 +351,16 @@ impl RuntimeHostStateBuilder {
         let tasks = task_executor
             .map(TaskSupervisor::with_executor)
             .unwrap_or_default();
-        let runtime_context = Arc::new(RuntimeHostContext::new(
+        let auth_namespace = match profile {
+            RuntimeHostProfile::Desktop => "",
+            RuntimeHostProfile::HeadlessData => "headlessAuth:",
+        };
+        let runtime_context = Arc::new(RuntimeHostContext::new_with_auth_namespace(
             Arc::clone(&db),
             Arc::clone(&web),
             Arc::clone(&image_cache),
             tasks,
+            auth_namespace,
         ));
         let desktop_assembly =
             RuntimeHostDesktopAssemblyDeps::from_context(Arc::clone(&runtime_context));
@@ -450,10 +487,18 @@ impl RuntimeHostStateBuilder {
                 },
             ))
         };
-        let realtime_store: Arc<dyn vrcx_0_application_realtime::RealtimeStore> =
-            Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
-                Arc::clone(&self.runtime_context.db),
-            ));
+        let realtime_store: Arc<dyn RealtimeStore> = match self.profile {
+            RuntimeHostProfile::Desktop => {
+                Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
+                    Arc::clone(&self.runtime_context.db),
+                ))
+            }
+            RuntimeHostProfile::HeadlessData => Arc::new(
+                vrcx_0_outbound_adapters::PersistenceRealtimeStore::new_headless(Arc::clone(
+                    &self.runtime_context.db,
+                ))?,
+            ),
+        };
         let remote_requests: Arc<dyn vrcx_0_application_realtime::RealtimeRemoteRequests> =
             Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests);
         let backend_status = BackendRuntimeStatusPublisher::new(
@@ -467,7 +512,7 @@ impl RuntimeHostStateBuilder {
                 backend_status.clone(),
             ));
         let realtime_runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps::new(
-            realtime_store,
+            Arc::clone(&realtime_store),
             realtime_transport,
             remote_requests,
             Arc::clone(&self.runtime_context.web),
@@ -519,9 +564,7 @@ impl RuntimeHostStateBuilder {
         let authenticated_runtime =
             AuthenticatedRuntimeOrchestrator::new(AuthenticatedRuntimeDeps {
                 social_baseline: vrcx_0_application_realtime::SocialBaselineDeps::new(
-                    Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
-                        Arc::clone(&self.db),
-                    )),
+                    Arc::clone(&realtime_store),
                     Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests),
                     Arc::clone(&self.web),
                     self.runtime_context.auth_scope.clone(),
@@ -617,6 +660,7 @@ impl RuntimeHostStateBuilder {
         let social_maintenance = SocialMaintenanceRuntime::new(
             Arc::new(RuntimeHostSocialMaintenanceActions {
                 db: Arc::clone(&self.db),
+                realtime_store: Arc::clone(&realtime_store),
                 web: Arc::clone(&self.web),
                 session_slot: Arc::clone(&authenticated_session_projection),
                 realtime_runtime: Arc::clone(&realtime_runtime),
@@ -646,6 +690,7 @@ impl RuntimeHostStateBuilder {
             desktop_assembly: self.desktop_assembly,
             backend_runtime: self.backend_runtime,
             realtime_runtime,
+            realtime_store,
             web: self.web,
             image_cache: self.image_cache,
             authenticated_runtime,
@@ -660,6 +705,7 @@ impl RuntimeHostStateBuilder {
             database_maintenance_cache_dir: self.database_maintenance_cache_dir,
             profile_extension,
             backend_starting: AtomicBool::new(false),
+            data_services_started: AtomicBool::new(false),
             background_auth_recovery: BackgroundAuthRecoveryOrchestrator::new(),
             authenticated_session_maintenance,
             social_maintenance,
