@@ -1,7 +1,8 @@
-import EdgeCurveProgram from '@sigma/edge-curve';
-import { createNodeBorderProgram } from '@sigma/node-border';
+import { layerBorder } from '@sigma/node-border';
 import Graph from 'graphology';
-import Sigma from 'sigma';
+import Sigma, { DEFAULT_STYLES } from 'sigma';
+import { pathCurved, pathLine, sdfCircle } from 'sigma/rendering';
+import type { EdgeDisplayData, NodeDisplayData } from 'sigma/types';
 
 import { runGraphLayoutWorker } from '@/lib/mutual-friends/graphLayoutWorkerClient';
 import {
@@ -86,30 +87,16 @@ const {
 
 const NODE_RING_COLOR = '#f2f2f2';
 
-const NodeBorderProgram = createNodeBorderProgram({
-    borders: [
-        {
-            size: { value: 0.1 },
-            color: { attribute: 'ringColor', defaultValue: NODE_RING_COLOR }
-        },
-        { size: { fill: true }, color: { attribute: 'color' } }
-    ]
-});
-
-const NodeHollowProgram = createNodeBorderProgram({
-    borders: [
-        { size: { value: 0.34 }, color: { attribute: 'color' } },
-        { size: { fill: true }, color: { attribute: 'holeColor' } }
-    ]
-});
-
 let layoutRequestSequence = 0;
 
 function easeOut(progress: number) {
     return 1 - Math.pow(1 - progress, 3);
 }
 
-export type SigmaInstance = Sigma;
+export type SigmaInstance = Sigma<
+    MutualFriendsNodeAttributes,
+    MutualFriendsEdgeAttributes
+>;
 
 interface GraphTransition {
     value: number;
@@ -216,7 +203,7 @@ export function applyMutualFriendsEdgeCurvature(
         EDGE_CURVATURE_LIMITS.max,
         MUTUAL_GRAPH_LAYOUT_DEFAULTS.edgeCurvature
     );
-    const type = curvature > 0 ? 'curve' : 'line';
+    const type = curvature > 0 ? 'curved' : 'straight';
     graph.forEachEdge((edge) => {
         graph.mergeEdgeAttributes(edge, { curvature, type });
     });
@@ -456,90 +443,23 @@ export function renderSigmaGraph({
     onOpenNode?: (nodeId: string) => void;
     hoverCardStringsRef: { current: HoverCardStrings };
 }) {
-    let sigma = instanceRef.current;
-
-    if (sigma) {
-        sigma.setGraph(graph);
-        sigma.getCamera().setState({ x: 0.5, y: 0.5, ratio: 1, angle: 0 });
-    } else {
-        sigma = new Sigma(graph, container, {
-            allowInvalidContainer: true,
-            renderLabels: true,
-            labelRenderedSizeThreshold: NODE_LABEL_THRESHOLD,
-            labelDensity: LABEL_DENSITY,
-            labelGridCellSize: LABEL_GRID_CELL_SIZE,
-            zIndex: true,
-            defaultNodeType: 'border',
-            nodeProgramClasses: {
-                border: NodeBorderProgram,
-                hollow: NodeHollowProgram
-            },
-            edgeProgramClasses: { curve: EdgeCurveProgram }
-        });
-        instanceRef.current = sigma;
-        resizeObserverRef.current?.disconnect();
-        resizeObserverRef.current = new ResizeObserver(() => {
-            sigma?.resize();
-            sigma?.refresh();
-        });
-        resizeObserverRef.current.observe(container);
-    }
-
-    const renderer = sigma;
+    destroySigmaInstance(instanceRef, resizeObserverRef);
     const reducedMotion = prefersReducedMotion();
     const hoverTransition = createTransition();
     const selectionTransition = createTransition();
     let hovered: string | null = null;
+    let isPointerOverNode = false;
     let neighbors = new Set<string>();
 
     const repaint = () => renderer.refresh({ skipIndexation: true });
 
-    const applyTheme = () => {
-        renderer.setSetting('labelColor', {
-            color: themeRef.current.labelColor
-        });
-        renderer.setSetting('defaultEdgeColor', themeRef.current.edgeColor);
-        repaint();
-    };
-
-    renderer.setSetting('labelRenderedSizeThreshold', NODE_LABEL_THRESHOLD);
-    renderer.setSetting('defaultDrawNodeHover', (ctx, data, settings) =>
-        drawMutualFriendHoverCard(
-            ctx,
-            {
-                x: data.x,
-                y: data.y,
-                size: data.size,
-                label: data.label,
-                fullLabel:
-                    'fullLabel' in data && typeof data.fullLabel === 'string'
-                        ? data.fullLabel
-                        : undefined,
-                lastFetchedAt:
-                    'lastFetchedAt' in data &&
-                    (typeof data.lastFetchedAt === 'string' ||
-                        data.lastFetchedAt === null)
-                        ? data.lastFetchedAt
-                        : undefined,
-                optedOut:
-                    'optedOut' in data && typeof data.optedOut === 'boolean'
-                        ? data.optedOut
-                        : undefined,
-                mutualCount:
-                    'mutualCount' in data &&
-                    typeof data.mutualCount === 'number'
-                        ? data.mutualCount
-                        : undefined
-            },
-            settings,
-            themeRef.current,
-            hoverCardStringsRef.current
-        )
-    );
-
-    renderer.setSetting('nodeReducer', (node, data) => {
-        const baseColor = String(data.baseColor ?? data.color);
-        const baseSize = Number(data.baseSize ?? data.size ?? 4);
+    const reduceNode = (
+        node: string,
+        data: NodeDisplayData,
+        attributes: MutualFriendsNodeAttributes
+    ) => {
+        const baseColor = String(attributes.baseColor ?? attributes.color);
+        const baseSize = attributes.baseSize;
         const theme = themeRef.current;
         const isSelected = node === selectedNodeIdRef.current;
         const selection = isSelected ? selectionTransition.value : 0;
@@ -548,51 +468,71 @@ export function renderSigmaGraph({
         const isNeighbor = neighbors.has(node);
         const stayLit = isHovered || isNeighbor || isSelected;
 
-        const result: Record<string, unknown> = { ...data };
+        const result = {
+            ...data,
+            labelColor: theme.labelColor,
+            labelFont: 'Arial',
+            labelSize: 14,
+            backdropVisibility: 'hidden' as const,
+            ringColor: NODE_RING_COLOR,
+            borderColor: NODE_RING_COLOR,
+            borderSize: attributes.type === 'hollow' ? 0.34 : 0.1,
+            fillColor: baseColor
+        };
         result.size = baseSize * (1 + (SELECTED_SIZE_SCALE - 1) * selection);
 
         if (isHovered) {
             result.color = baseColor;
             result.ringColor = NODE_RING_COLOR;
             result.size = baseSize * (1 + (HOVER_SIZE_SCALE - 1) * dim);
-            result.forceLabel = true;
+            result.labelVisibility = 'visible';
             result.zIndex = 4;
-            return result;
-        }
-
-        if (stayLit) {
+        } else if (stayLit) {
             result.color = baseColor;
             result.ringColor = NODE_RING_COLOR;
-            result.forceLabel =
-                data.forceLabel === true ||
+            result.labelVisibility =
+                attributes.forceLabel === true ||
                 isSelected ||
-                (isNeighbor && dim > 0.5);
+                (isNeighbor && dim > 0.5)
+                    ? 'visible'
+                    : 'auto';
             result.zIndex = isSelected ? 3 : 2;
-            return result;
+        } else {
+            result.labelVisibility =
+                attributes.forceLabel === true ? 'visible' : 'auto';
+            result.color = mixGraphColors(
+                baseColor,
+                theme.backgroundColor,
+                dim * NODE_DIM_STRENGTH
+            );
+            result.ringColor = mixGraphColors(
+                NODE_RING_COLOR,
+                theme.backgroundColor,
+                dim * NODE_DIM_STRENGTH
+            );
+            result.zIndex = 1;
+            if (dim > 0.5) {
+                result.label = '';
+            }
         }
-
-        result.color = mixGraphColors(
-            baseColor,
-            theme.backgroundColor,
-            dim * NODE_DIM_STRENGTH
-        );
-        result.ringColor = mixGraphColors(
-            NODE_RING_COLOR,
-            theme.backgroundColor,
-            dim * NODE_DIM_STRENGTH
-        );
-        result.zIndex = 1;
-        if (dim > 0.5) {
-            result.label = '';
-        }
+        result.borderColor =
+            attributes.type === 'hollow' ? result.color : result.ringColor;
+        result.fillColor =
+            attributes.type === 'hollow'
+                ? String(attributes.holeColor ?? theme.backgroundColor)
+                : result.color;
         return result;
-    });
+    };
 
-    renderer.setSetting('edgeReducer', (edge, data) => {
-        const result: Record<string, unknown> = { ...data };
+    const reduceEdge = (
+        edge: string,
+        data: EdgeDisplayData,
+        attributes: MutualFriendsEdgeAttributes
+    ) => {
+        const result = { ...data };
         const theme = themeRef.current;
         const dim = hoverTransition.value;
-        const isCross = data.crossCommunity === true;
+        const isCross = attributes.crossCommunity === true;
         const baseColor = isCross ? theme.edgeCrossColor : theme.edgeColor;
         const restingColor =
             crossCommunityOnlyRef.current && !isCross
@@ -624,11 +564,124 @@ export function renderSigmaGraph({
               );
         result.zIndex = isIncident ? 2 : isCross ? 1 : 0;
         return result;
+    };
+
+    const renderer = new Sigma<
+        MutualFriendsNodeAttributes,
+        MutualFriendsEdgeAttributes
+    >(graph, container, {
+        settings: {
+            allowInvalidContainer: true,
+            renderLabels: true,
+            labelRenderedSizeThreshold: NODE_LABEL_THRESHOLD,
+            labelDensity: LABEL_DENSITY,
+            labelGridCellSize: LABEL_GRID_CELL_SIZE,
+            itemSizesReference: 'screen',
+            enableNodeDrag: false,
+            enableCameraMouseRotation: false
+        },
+        primitives: {
+            nodes: {
+                shapes: [sdfCircle()],
+                layers: [
+                    layerBorder({
+                        borders: [
+                            {
+                                size: { attribute: 'borderSize', default: 0.1 },
+                                color: {
+                                    attribute: 'borderColor',
+                                    default: NODE_RING_COLOR
+                                }
+                            },
+                            {
+                                size: 0,
+                                fill: true,
+                                color: { attribute: 'fillColor' }
+                            }
+                        ]
+                    })
+                ],
+                label: { font: { family: 'Arial', size: 14 } }
+            },
+            edges: {
+                paths: [
+                    pathLine(),
+                    pathCurved({
+                        curvature: { attribute: 'curvature', default: 0 }
+                    })
+                ]
+            }
+        },
+        styles: {
+            edges: {
+                ...DEFAULT_STYLES.edges,
+                path: { attribute: 'type', defaultValue: 'straight' }
+            }
+        },
+        nodeReducer: reduceNode,
+        edgeReducer: reduceEdge
     });
+    instanceRef.current = renderer;
+    resizeObserverRef.current = new ResizeObserver(() => {
+        renderer.resize();
+        renderer.refresh();
+    });
+    resizeObserverRef.current.observe(container);
+
+    const hoverCanvas = renderer.createCanvas('mutual-friend-hover', {
+        afterLayer: 'stage',
+        style: {
+            pointerEvents: 'none',
+            top: '0',
+            left: '0',
+            width: '100%',
+            height: '100%'
+        }
+    });
+    const drawHoverCard = () => {
+        const { width, height } = renderer.getDimensions();
+        const pixelRatio = window.devicePixelRatio || 1;
+        const pixelWidth = Math.round(width * pixelRatio);
+        const pixelHeight = Math.round(height * pixelRatio);
+        if (
+            hoverCanvas.width !== pixelWidth ||
+            hoverCanvas.height !== pixelHeight
+        ) {
+            hoverCanvas.width = pixelWidth;
+            hoverCanvas.height = pixelHeight;
+        }
+        const ctx = hoverCanvas.getContext('2d');
+        if (!ctx) {
+            return;
+        }
+        ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+        ctx.clearRect(0, 0, width, height);
+        if (!isPointerOverNode || !hovered || !graph.hasNode(hovered)) {
+            return;
+        }
+        const data = renderer.getNodeDisplayData(hovered);
+        if (!data) {
+            return;
+        }
+        drawMutualFriendHoverCard(
+            ctx,
+            {
+                ...graph.getNodeAttributes(hovered),
+                ...renderer.framedGraphToViewport(data),
+                size: renderer.scaleSize(data.size),
+                label: data.label
+            },
+            { labelFont: data.labelFont, labelSize: data.labelSize },
+            themeRef.current,
+            hoverCardStringsRef.current
+        );
+    };
 
     renderer.removeAllListeners();
+    renderer.on('afterRender', drawHoverCard);
     renderer.on('enterNode', ({ node }) => {
         container.style.cursor = 'pointer';
+        isPointerOverNode = true;
         hovered = node;
         neighbors = graph.hasNode(node)
             ? new Set(graph.neighbors(node))
@@ -642,6 +695,7 @@ export function renderSigmaGraph({
     });
     renderer.on('leaveNode', () => {
         container.style.cursor = '';
+        isPointerOverNode = false;
         runTransition(
             hoverTransition,
             0,
@@ -669,7 +723,6 @@ export function renderSigmaGraph({
 
     let appliedSelection = selectedNodeIdRef.current;
     selectionTransition.value = appliedSelection ? 1 : 0;
-    applyTheme();
     renderer.refresh();
 
     return {
@@ -688,7 +741,7 @@ export function renderSigmaGraph({
                 repaint
             );
         },
-        applyTheme,
+        applyTheme: repaint,
         applyEdgeEmphasis() {
             repaint();
         },
@@ -696,6 +749,8 @@ export function renderSigmaGraph({
             container.style.cursor = '';
             cancelTransition(hoverTransition);
             cancelTransition(selectionTransition);
+            renderer.removeListener('afterRender', drawHoverCard);
+            renderer.killLayer('mutual-friend-hover');
         }
     };
 }
