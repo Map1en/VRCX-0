@@ -35,7 +35,7 @@ vrcx-0-logger-protocol = { path = "../logger-protocol", features = ["server"] }
 vrcx-0-vrchat-client = { path = "../vrchat-client" }
 
 [target.'cfg(windows)'.dependencies]
-getrandom = "0.3"
+getrandom = "0.4"
 slint = { workspace = true, features = ["backend-winit", "software-renderer-systemfonts"] }
 windows-sys = { version = "0.61", features = ["Win32_System_Console"] }
 

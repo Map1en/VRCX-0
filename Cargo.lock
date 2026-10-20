@@ -9612,7 +9612,7 @@ dependencies = [
  "chrono",
  "fs4",
  "futures-util",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "reqwest",
  "rusqlite",
  "serde",
