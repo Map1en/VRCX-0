@@ -1,9 +1,8 @@
-import type { ChangeEvent } from 'react';
-
-import type {
-    GalleryAssets,
-    GalleryAssetTab,
-    GalleryUploadTarget
+import {
+    canUploadGalleryTarget,
+    type GalleryAssets,
+    type GalleryAssetTab,
+    type GalleryUploadTarget
 } from './galleryConstants';
 import type {
     GalleryAssetActionDeps,
@@ -20,7 +19,6 @@ export function createGalleryAssetActions({
     FILE_TABS,
     UPLOAD_ASPECT_RATIOS,
     activeTab,
-    clipboardPastingRef,
     confirm,
     cropRequest,
     currentEndpoint,
@@ -35,10 +33,8 @@ export function createGalleryAssetActions({
     isVrcPlusSupporter,
     mediaRepository,
     parseEmojiUploadSettings,
-    readClipboardUploadImage,
     readFileAsBase64,
     setAssets,
-    setClipboardPasting,
     setCropRequest,
     setEmojiAnimFps,
     setEmojiAnimFrameCount,
@@ -50,10 +46,6 @@ export function createGalleryAssetActions({
     setUploadingTab,
     t,
     toast,
-    uploadAuthTargetRef,
-    uploadInputRef,
-    uploadTargetRef,
-    validateImageFile,
     withUploadTimeout
 }: GalleryAssetActionDeps) {
     function getAuthTarget() {
@@ -190,15 +182,6 @@ export function createGalleryAssetActions({
             refreshPrints()
         ]);
     }
-    function beginUpload(tab: GalleryUploadTarget) {
-        if (tab !== 'gallery' && tab !== 'icons' && !isVrcPlusSupporter) {
-            toast.add({ type: 'error', title: t('message.vrcplus.required') });
-            return;
-        }
-        uploadTargetRef.current = tab;
-        uploadAuthTargetRef.current = getAuthTarget();
-        uploadInputRef.current?.click();
-    }
     function uploadAsset(
         tab: GalleryUploadTarget,
         base64Body: string,
@@ -228,53 +211,11 @@ export function createGalleryAssetActions({
         }
         throw new Error(`Unsupported upload target: ${tab}`);
     }
-    function uploadSelectedFile(event: ChangeEvent<HTMLInputElement>) {
-        const file = event.target.files?.[0] || null;
-        event.target.value = '';
-        if (!file) {
-            return;
-        }
-        requestUpload(
-            file,
-            uploadTargetRef.current || activeTab,
-            uploadAuthTargetRef.current || getAuthTarget()
-        );
-    }
-    function uploadDroppedFile(file: File) {
-        requestUpload(file, activeTab, getAuthTarget());
-    }
-    async function pasteClipboardUpload(tab: GalleryUploadTarget) {
-        if (clipboardPastingRef.current) {
-            return;
-        }
-        clipboardPastingRef.current = true;
-        setClipboardPasting(true);
-        const authTarget = getAuthTarget();
-        try {
-            const file = await readClipboardUploadImage(t);
-            if (file) {
-                requestUpload(file, tab, authTarget);
-            }
-        } finally {
-            clipboardPastingRef.current = false;
-            setClipboardPasting(false);
-        }
-    }
-    function requestUpload(
+    function openCropRequest(
         file: File,
         tab: GalleryUploadTarget,
         authTarget: GalleryAuthTarget
     ) {
-        if (tab !== 'gallery' && tab !== 'icons' && !isVrcPlusSupporter) {
-            toast.add({ type: 'error', title: t('message.vrcplus.required') });
-            return;
-        }
-        if (!validateImageFile(file, t)) {
-            return;
-        }
-        if (!isRuntimeAuthTarget(authTarget)) {
-            return;
-        }
         const settings =
             tab === 'emojis'
                 ? parseEmojiUploadSettings(file.name, {
@@ -315,7 +256,7 @@ export function createGalleryAssetActions({
             return;
         }
         const { tab, settings, authTarget } = request;
-        if (tab !== 'gallery' && tab !== 'icons' && !isVrcPlusSupporter) {
+        if (!canUploadGalleryTarget(tab, isVrcPlusSupporter)) {
             toast.add({ type: 'error', title: t('message.vrcplus.required') });
             return;
         }
@@ -376,7 +317,6 @@ export function createGalleryAssetActions({
             }
         } finally {
             setUploadingTab('');
-            uploadAuthTargetRef.current = null;
             setCropRequest(null);
         }
     }
@@ -441,10 +381,7 @@ export function createGalleryAssetActions({
         refreshInventory,
         refreshTab,
         refreshAll,
-        beginUpload,
-        uploadSelectedFile,
-        uploadDroppedFile,
-        pasteClipboardUpload,
+        openCropRequest,
         confirmCroppedUpload,
         deleteFileAsset
     };

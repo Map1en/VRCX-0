@@ -24,7 +24,11 @@ function PasteHarness({
     );
 }
 
-function pasteEvent(options: KeyboardEventInit = {}) {
+function pasteEvent() {
+    return new Event('paste', { bubbles: true, cancelable: true });
+}
+
+function pasteKeyEvent(options: KeyboardEventInit = {}) {
     return new KeyboardEvent('keydown', {
         key: 'v',
         ctrlKey: true,
@@ -53,17 +57,42 @@ describe('image paste shortcut', () => {
         vi.restoreAllMocks();
     });
 
+    it('requests image paste for a paste outside text entry', () => {
+        const onPaste = vi.fn();
+        render(<PasteHarness onPaste={onPaste} />);
+        const event = pasteEvent();
+        fireEvent(document.body, event);
+        expect(onPaste).toHaveBeenCalledOnce();
+        expect(event.defaultPrevented).toBe(true);
+    });
+
     it.each([{ ctrlKey: true }, { ctrlKey: false, metaKey: true }])(
-        'requests image paste with the primary modifier: %o',
+        'requests image paste from the primary modifier shortcut: %o',
         (options) => {
             const onPaste = vi.fn();
             render(<PasteHarness onPaste={onPaste} />);
-            const event = pasteEvent(options);
-            fireEvent(window, event);
+            const event = pasteKeyEvent(options);
+            fireEvent(document.body, event);
             expect(onPaste).toHaveBeenCalledOnce();
             expect(event.defaultPrevented).toBe(true);
         }
     );
+
+    it.each([
+        { ctrlKey: false },
+        { key: 'c' },
+        { shiftKey: true },
+        { altKey: true },
+        { repeat: true },
+        { isComposing: true }
+    ])('leaves other keyboard actions alone: %o', (options) => {
+        const onPaste = vi.fn();
+        render(<PasteHarness onPaste={onPaste} />);
+        const event = pasteKeyEvent(options);
+        fireEvent(document.body, event);
+        expect(event.defaultPrevented).toBe(false);
+        expect(onPaste).not.toHaveBeenCalled();
+    });
 
     it('uses the current upload callback and stops after disable or unmount', () => {
         const firstPaste = vi.fn();
@@ -118,9 +147,10 @@ describe('image paste shortcut', () => {
             const control = screen.getByLabelText('control');
             control.focus();
             for (const target of [control, window]) {
-                const event = pasteEvent();
-                fireEvent(target, event);
-                expect(event.defaultPrevented).toBe(false);
+                for (const event of [pasteEvent(), pasteKeyEvent()]) {
+                    fireEvent(target, event);
+                    expect(event.defaultPrevented).toBe(false);
+                }
             }
             expect(onPaste).not.toHaveBeenCalled();
         }
@@ -175,22 +205,6 @@ describe('image paste shortcut', () => {
     });
 
     it.each([
-        { ctrlKey: false },
-        { key: 'c' },
-        { shiftKey: true },
-        { altKey: true },
-        { repeat: true },
-        { isComposing: true }
-    ])('leaves other keyboard actions alone: %o', (options) => {
-        const onPaste = vi.fn();
-        render(<PasteHarness onPaste={onPaste} />);
-        const event = pasteEvent(options);
-        fireEvent(window, event);
-        expect(event.defaultPrevented).toBe(false);
-        expect(onPaste).not.toHaveBeenCalled();
-    });
-
-    it.each([
         { role: 'dialog' },
         { role: 'alertdialog' },
         { 'data-slot': 'popover-content' }
@@ -210,7 +224,7 @@ describe('image paste shortcut', () => {
         expect(onPaste).not.toHaveBeenCalled();
     });
 
-    it('respects paste shortcuts already handled by another control', () => {
+    it('respects pastes already handled by another control', () => {
         const onPaste = vi.fn();
         render(<PasteHarness onPaste={onPaste} />);
         const event = pasteEvent();

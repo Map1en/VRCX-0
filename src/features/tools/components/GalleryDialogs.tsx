@@ -7,13 +7,11 @@ import type { GalleryCropRequest, GalleryUploadOptions } from '../galleryTypes';
 export function GalleryDialogs({
     cropRequest,
     onClearCropRequest,
-    onConfirmCrop,
-    onResetUploadAuthTarget
+    onConfirmCrop
 }: {
     cropRequest: GalleryCropRequest | null;
     onClearCropRequest: () => void;
     onConfirmCrop: (blob: Blob, options?: GalleryUploadOptions) => void;
-    onResetUploadAuthTarget: () => void;
 }) {
     const { t } = useTranslation();
     const printNoteField =
@@ -44,7 +42,6 @@ export function GalleryDialogs({
                 onOpenChange={(open) => {
                     if (!open) {
                         onClearCropRequest();
-                        onResetUploadAuthTarget();
                     }
                 }}
                 onConfirm={onConfirmCrop}

@@ -1,9 +1,6 @@
-import type { ChangeEvent } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useFileDropTarget } from '@/components/file-drop/useFileDropTarget';
-import { useImagePasteShortcut } from '@/components/keyboard/useImagePasteShortcut';
 import { resolveProfileDecorationMutation } from '@/domain/entities/inventory';
 import vrchatMediaRepository, {
     type InventoryItemRecord,
@@ -28,17 +25,15 @@ import {
     INITIAL_INVENTORY_SUB_TABS,
     getInventoryGridDensityConfig,
     parseEmojiUploadSettings,
-    readClipboardUploadImage,
-    readDroppedUploadImage,
     readGridDensityPreference,
     scopeKey,
-    validateImageFile,
     writeGridDensityPreference,
     type InventoryCategory,
     type InventoryTabDefinition,
     type InventoryUploadTarget,
     type EmojiUploadSettings
 } from './inventoryHelpers';
+import { useImageUploadIntake } from './useImageUploadIntake';
 
 type InventoryAuthTarget = {
     endpoint: string;
@@ -132,8 +127,6 @@ export function useInventoryPageState() {
     useEffect(() => {
         translateRef.current = t;
     }, [t]);
-    const uploadInputRef = useRef<HTMLInputElement | null>(null);
-    const uploadTargetRef = useRef<InventoryUploadTarget | null>(null);
     const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
@@ -178,8 +171,6 @@ export function useInventoryPageState() {
         setProfileDecorationMutationPending
     ] = useState(false);
     const [uploadingTarget, setUploadingTarget] = useState('');
-    const clipboardPastingRef = useRef(false);
-    const [clipboardPasting, setClipboardPasting] = useState(false);
     const [cropRequest, setCropRequest] = useState<InventoryCropRequest | null>(
         null
     );
@@ -205,32 +196,21 @@ export function useInventoryPageState() {
         CATEGORY_DEFINITIONS[activeCategory].tabs.find(
             (entry) => entry.key === activeSubTab
         )?.uploadTarget ?? null;
-    const dropOrPasteEnabled =
-        Boolean(currentUserId) &&
-        Boolean(activeUploadTarget) &&
-        !cropRequest &&
-        !uploadingTarget &&
-        !clipboardPasting;
-    const fileDropActive = useFileDropTarget({
-        enabled: dropOrPasteEnabled,
-        onDrop: async (paths) => {
-            if (!activeUploadTarget) {
-                return;
-            }
-            const file = await readDroppedUploadImage(paths, t);
-            if (file) {
-                requestUpload(file, activeUploadTarget);
-            }
-        }
-    });
-
-    const imagePasteRef = useImagePasteShortcut<HTMLDivElement>({
-        enabled: dropOrPasteEnabled,
-        onPaste: () => {
-            if (activeUploadTarget) {
-                return pasteClipboardUpload(activeUploadTarget);
-            }
-        }
+    const {
+        beginUpload,
+        clipboardPasting,
+        fileDropActive,
+        pasteClipboardUpload,
+        pasteScopeRef,
+        uploadInputRef,
+        uploadSelectedFile
+    } = useImageUploadIntake<InventoryUploadTarget, InventoryAuthTarget>({
+        enabled: Boolean(currentUserId) && !cropRequest && !uploadingTarget,
+        activeTarget: activeUploadTarget,
+        canUploadTo: () => isVrcPlusSupporter,
+        getAuthTarget: getInventoryAuthTarget,
+        isCurrentAuthTarget: isCurrentInventoryAuthTarget,
+        openCropRequest
     });
 
     function changeGridDensity(nextValue: GalleryGridDensity) {
@@ -316,15 +296,6 @@ export function useInventoryPageState() {
         refreshScope
     ]);
 
-    function beginUpload(target: InventoryUploadTarget) {
-        if (!isVrcPlusSupporter) {
-            toast.add({ type: 'error', title: t('message.vrcplus.required') });
-            return;
-        }
-        uploadTargetRef.current = target;
-        uploadInputRef.current?.click();
-    }
-
     function uploadAsset(
         target: InventoryUploadTarget,
         base64Body: string,
@@ -342,43 +313,11 @@ export function useInventoryPageState() {
         throw new Error(`Unsupported inventory upload target: ${target}`);
     }
 
-    function uploadSelectedFile(event: ChangeEvent<HTMLInputElement>) {
-        const file = event.target.files?.[0] || null;
-        event.target.value = '';
-        const target = uploadTargetRef.current;
-        if (!file || !target) {
-            return;
-        }
-        requestUpload(file, target);
-    }
-
-    async function pasteClipboardUpload(target: InventoryUploadTarget) {
-        if (clipboardPastingRef.current) {
-            return;
-        }
-        clipboardPastingRef.current = true;
-        setClipboardPasting(true);
-        const authTarget = getInventoryAuthTarget();
-        try {
-            const file = await readClipboardUploadImage(t);
-            if (file && isCurrentInventoryAuthTarget(authTarget)) {
-                requestUpload(file, target);
-            }
-        } finally {
-            clipboardPastingRef.current = false;
-            setClipboardPasting(false);
-        }
-    }
-
-    function requestUpload(file: File, target: InventoryUploadTarget) {
-        if (!isVrcPlusSupporter) {
-            toast.add({ type: 'error', title: t('message.vrcplus.required') });
-            return;
-        }
-        if (!validateImageFile(file, t)) {
-            return;
-        }
-        const authTarget = getInventoryAuthTarget();
+    function openCropRequest(
+        file: File,
+        target: InventoryUploadTarget,
+        authTarget: InventoryAuthTarget
+    ) {
         const settings =
             target === 'emojis'
                 ? parseEmojiUploadSettings(file.name, {
@@ -464,7 +403,6 @@ export function useInventoryPageState() {
             }
         } finally {
             setUploadingTarget('');
-            uploadTargetRef.current = null;
             setCropRequest(null);
         }
     }
@@ -723,7 +661,6 @@ export function useInventoryPageState() {
     }
 
     function closeCropRequest() {
-        uploadTargetRef.current = null;
         setCropRequest(null);
     }
 
@@ -747,7 +684,7 @@ export function useInventoryPageState() {
         emojiAnimationStyle,
         clipboardPasting,
         fileDropActive,
-        imagePasteRef,
+        pasteScopeRef,
         gridDensity,
         gridDensityConfig,
         isVrcPlusSupporter,

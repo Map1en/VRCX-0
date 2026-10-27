@@ -30,7 +30,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
-import { isEditableTarget } from '@/components/layout/useGlobalKeyboardShortcuts';
+import { isTextEntryTarget } from '@/components/keyboard/keyboardShortcutGuards';
 import type { FavoriteKind } from '@/domain/favorites/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';
@@ -451,7 +451,7 @@ export function FavoritesContentPanel({
         selection.clearSelection()
     );
     const handleEscapeKeyDown = useStableEvent((event: KeyboardEvent) => {
-        if (event.key !== 'Escape' || isEditableTarget(event.target)) {
+        if (event.key !== 'Escape' || isTextEntryTarget(event.target)) {
             return;
         }
         selection.clearSelection();

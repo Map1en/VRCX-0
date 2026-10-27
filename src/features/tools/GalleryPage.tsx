@@ -16,7 +16,7 @@ export function GalleryPage() {
     const pageState = useGalleryPageController();
 
     return (
-        <PageScaffold ref={pageState.imagePasteRef} className="gallery-page">
+        <PageScaffold ref={pageState.pasteScopeRef} className="gallery-page">
             <GalleryHeader
                 uploadInputRef={pageState.uploadInputRef}
                 uploadingTab={pageState.uploadingTab}
@@ -96,9 +96,6 @@ export function GalleryPage() {
                     blob: Blob,
                     uploadOptions: GalleryUploadOptions = {}
                 ) => pageState.confirmCroppedUpload(blob, uploadOptions)}
-                onResetUploadAuthTarget={() => {
-                    pageState.uploadAuthTargetRef.current = null;
-                }}
             />
 
             <FileDropOverlay

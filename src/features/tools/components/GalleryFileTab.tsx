@@ -52,6 +52,7 @@ export function GalleryFileTab({
     } = fileTab;
     const files = assets[tab];
     const loading = loadingByTab[tab] || mediaProfileLoading;
+    const uploadBusy = Boolean(uploadingTab) || clipboardPasting;
     const { t } = useTranslation();
     const activeFileId =
         tab === 'gallery'
@@ -90,7 +91,7 @@ export function GalleryFileTab({
                             <Button
                                 variant="outline"
                                 size="sm"
-                                disabled={Boolean(uploadingTab)}
+                                disabled={uploadBusy}
                                 onClick={() => onBeginUpload(tab)}
                             >
                                 <UploadIcon data-icon="inline-start" />
@@ -99,9 +100,7 @@ export function GalleryFileTab({
                             <Button
                                 variant="outline"
                                 size="sm"
-                                disabled={
-                                    Boolean(uploadingTab) || clipboardPasting
-                                }
+                                disabled={uploadBusy}
                                 onClick={() => onPasteUpload(tab)}
                             >
                                 <ClipboardPasteIcon data-icon="inline-start" />
@@ -211,7 +210,7 @@ export function GalleryFileTab({
                             <Button
                                 type="button"
                                 variant="link"
-                                disabled={Boolean(uploadingTab)}
+                                disabled={uploadBusy}
                                 onClick={() => onBeginUpload(tab)}
                             >
                                 {t('dialog.gallery_icons.upload')}

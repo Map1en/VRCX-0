@@ -21,8 +21,15 @@ const DIALOG_SELECTOR = '[role="dialog"], [role="alertdialog"]';
 const POPUP_SELECTOR =
     '[role="menu"], [role="listbox"], [data-slot="popover-content"]';
 
-export function isKeyboardShortcutBlocked(
-    event: KeyboardEvent,
+export function isTextEntryTarget(target: EventTarget | null) {
+    return (
+        target instanceof Element &&
+        Boolean(target.closest(TEXT_ENTRY_SELECTOR))
+    );
+}
+
+export function isShortcutBlocked(
+    event: Event,
     owner: Element,
     controlSelector: string
 ) {

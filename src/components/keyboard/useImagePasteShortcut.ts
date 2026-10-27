@@ -2,8 +2,19 @@ import { useEffect, useEffectEvent, useRef } from 'react';
 
 import {
     TEXT_ENTRY_SELECTOR,
-    isKeyboardShortcutBlocked
+    isShortcutBlocked
 } from './keyboardShortcutGuards';
+
+function isPasteKey(event: KeyboardEvent) {
+    return (
+        !event.repeat &&
+        !event.isComposing &&
+        !event.altKey &&
+        !event.shiftKey &&
+        (event.ctrlKey || event.metaKey) &&
+        event.key.toLowerCase() === 'v'
+    );
+}
 
 export function useImagePasteShortcut<TElement extends HTMLElement>({
     enabled,
@@ -13,23 +24,13 @@ export function useImagePasteShortcut<TElement extends HTMLElement>({
     onPaste(): void | Promise<void>;
 }) {
     const scopeRef = useRef<TElement>(null);
-    const handlePasteShortcut = useEffectEvent((event: KeyboardEvent) => {
-        if (
-            event.defaultPrevented ||
-            event.repeat ||
-            event.isComposing ||
-            event.altKey ||
-            event.shiftKey ||
-            !(event.ctrlKey || event.metaKey) ||
-            event.key.toLowerCase() !== 'v'
-        ) {
-            return;
-        }
-
+    const handlePaste = useEffectEvent((event: Event) => {
         const scope = scopeRef.current;
         if (
+            event.defaultPrevented ||
+            (event instanceof KeyboardEvent && !isPasteKey(event)) ||
             !scope ||
-            isKeyboardShortcutBlocked(event, scope, TEXT_ENTRY_SELECTOR)
+            isShortcutBlocked(event, scope, TEXT_ENTRY_SELECTOR)
         ) {
             return;
         }
@@ -42,9 +43,13 @@ export function useImagePasteShortcut<TElement extends HTMLElement>({
         if (!enabled) {
             return;
         }
-        const listener = (event: KeyboardEvent) => handlePasteShortcut(event);
+        const listener = (event: Event) => handlePaste(event);
         window.addEventListener('keydown', listener);
-        return () => window.removeEventListener('keydown', listener);
+        window.addEventListener('paste', listener);
+        return () => {
+            window.removeEventListener('keydown', listener);
+            window.removeEventListener('paste', listener);
+        };
     }, [enabled]);
 
     return scopeRef;

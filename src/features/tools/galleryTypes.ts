@@ -1,4 +1,4 @@
-import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 
 import type { UserProfileEntity } from '@/domain/entities/user';
 import type { AppToastOptions } from '@/services/toastService';
@@ -52,7 +52,6 @@ type ToastApi = {
 
 export type GalleryControllerDeps = {
     activeTab: GalleryTab;
-    clipboardPastingRef: MutableRefObject<boolean>;
     cropRequest: GalleryCropRequest | null;
     currentEndpoint: string;
     currentUserId: string | null;
@@ -65,7 +64,6 @@ export type GalleryControllerDeps = {
     emojiAnimationStyle: string;
     isVrcPlusSupporter: boolean;
     setAssets: Dispatch<SetStateAction<GalleryAssets>>;
-    setClipboardPasting: Dispatch<SetStateAction<boolean>>;
     setCropRequest: Dispatch<SetStateAction<GalleryCropRequest | null>>;
     setEmojiAnimFps: Dispatch<SetStateAction<number>>;
     setEmojiAnimFrameCount: Dispatch<SetStateAction<number>>;
@@ -75,9 +73,6 @@ export type GalleryControllerDeps = {
     setLoadingByTab: Dispatch<SetStateAction<Record<string, boolean>>>;
     setMutatingKey: Dispatch<SetStateAction<string>>;
     setUploadingTab: Dispatch<SetStateAction<string>>;
-    uploadAuthTargetRef: MutableRefObject<GalleryAuthTarget | null>;
-    uploadInputRef: MutableRefObject<{ click(): void } | null>;
-    uploadTargetRef: MutableRefObject<GalleryUploadTarget | null>;
 };
 
 export type GalleryActionDeps = GalleryControllerDeps & {
@@ -92,13 +87,11 @@ export type GalleryActionDeps = GalleryControllerDeps & {
         settings?: Partial<EmojiUploadSettings>
     ): EmojiUploadSettings;
     prompt(request: DialogRequest): Promise<DialogResult<string>>;
-    readClipboardUploadImage(t: Translation): Promise<File | null>;
     readFileAsBase64(file: Blob): Promise<string>;
     t: Translation;
     toast: ToastApi;
     useRuntimeStore: typeof import('@/state/runtimeStore').useRuntimeStore;
     userProfileRepository: typeof import('@/repositories/userProfileRepository').default;
-    validateImageFile(file: Blob, t: Translation): boolean;
     withUploadTimeout<T>(promise: Promise<T>): Promise<T>;
 };
 

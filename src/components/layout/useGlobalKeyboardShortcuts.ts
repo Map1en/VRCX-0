@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
+import { isTextEntryTarget } from '@/components/keyboard/keyboardShortcutGuards';
 import {
     restoreNormalWindowModeForIntent,
     runAfterRestoringNormalWindow
@@ -16,19 +17,6 @@ import { useShellStore } from '@/state/shellStore';
 import { useRightSidePanelVisibility } from './useRightSidePanelVisibility';
 
 const SHORTCUT_HINT_HOLD_DELAY_MS = 160;
-
-export function isEditableTarget(target: EventTarget | null) {
-    if (!(target instanceof HTMLElement)) {
-        return false;
-    }
-    const tag = target.tagName.toLowerCase();
-    return (
-        tag === 'input' ||
-        tag === 'textarea' ||
-        tag === 'select' ||
-        target.isContentEditable === true
-    );
-}
 
 export function useGlobalKeyboardShortcuts() {
     const navigate = useNavigate();
@@ -81,7 +69,7 @@ export function useGlobalKeyboardShortcuts() {
                     event.repeat ||
                     event.defaultPrevented ||
                     shortcutHintsSuppressed ||
-                    isEditableTarget(event.target) ||
+                    isTextEntryTarget(event.target) ||
                     !sessionReady
                 ) {
                     return;
@@ -93,7 +81,7 @@ export function useGlobalKeyboardShortcuts() {
                     if (
                         primaryModifierHeld &&
                         !shortcutHintsSuppressed &&
-                        !isEditableTarget(document.activeElement) &&
+                        !isTextEntryTarget(document.activeElement) &&
                         sessionReady
                     ) {
                         setShortcutHintsVisible(true);
@@ -133,7 +121,7 @@ export function useGlobalKeyboardShortcuts() {
                 if (
                     handledElsewhere ||
                     event.repeat ||
-                    isEditableTarget(event.target) ||
+                    isTextEntryTarget(event.target) ||
                     useSessionStore.getState().sessionPhase !== 'ready'
                 ) {
                     return;
@@ -144,7 +132,7 @@ export function useGlobalKeyboardShortcuts() {
                 return;
             }
 
-            if (isEditableTarget(event.target)) {
+            if (isTextEntryTarget(event.target)) {
                 return;
             }
             if (key === '/') {

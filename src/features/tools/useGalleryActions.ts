@@ -13,11 +13,7 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { isRuntimeAuthTarget } from './galleryAuthTarget';
 import { FILE_TABS, UPLOAD_ASPECT_RATIOS } from './galleryConstants';
 import type { GalleryActionDeps, GalleryControllerDeps } from './galleryTypes';
-import {
-    parseEmojiUploadSettings,
-    readClipboardUploadImage,
-    validateImageFile
-} from './inventoryHelpers';
+import { parseEmojiUploadSettings } from './inventoryHelpers';
 import { createGalleryAssetActions } from './useGalleryAssetActions';
 import { useGalleryInventoryActions } from './useGalleryInventoryActions';
 
@@ -41,13 +37,11 @@ export function useGalleryActions(deps: GalleryControllerDeps) {
         mediaRepository: vrchatMediaRepository,
         parseEmojiUploadSettings,
         prompt,
-        readClipboardUploadImage,
         readFileAsBase64,
         t,
         toast,
         useRuntimeStore,
         userProfileRepository,
-        validateImageFile,
         withUploadTimeout
     } satisfies GalleryActionDeps;
     const assetActions = createGalleryAssetActions(actionDeps);

@@ -93,6 +93,8 @@ export function GalleryPrintsTab({ printsTab }: GalleryPrintsTabProps) {
         onDeletePrint
     } = printsTab;
     const { t } = useTranslation();
+    const uploadDisabled =
+        !isVrcPlusSupporter || Boolean(uploadingTab) || clipboardPasting;
     const [favoriteMutatingId, setFavoriteMutatingId] = useState('');
     const [favoriteFilter, setFavoriteFilter] =
         useState<PrintFavoriteFilter>('all');
@@ -270,9 +272,7 @@ export function GalleryPrintsTab({ printsTab }: GalleryPrintsTabProps) {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                disabled={
-                                    !isVrcPlusSupporter || Boolean(uploadingTab)
-                                }
+                                disabled={uploadDisabled}
                                 onClick={() => onBeginUpload('prints')}
                             >
                                 <UploadIcon data-icon="inline-start" />
@@ -281,11 +281,7 @@ export function GalleryPrintsTab({ printsTab }: GalleryPrintsTabProps) {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                disabled={
-                                    !isVrcPlusSupporter ||
-                                    Boolean(uploadingTab) ||
-                                    clipboardPasting
-                                }
+                                disabled={uploadDisabled}
                                 onClick={() => onPasteUpload('prints')}
                             >
                                 <ClipboardPasteIcon data-icon="inline-start" />

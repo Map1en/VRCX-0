@@ -2,7 +2,7 @@ import { useEffect, useEffectEvent, useRef } from 'react';
 
 import {
     KEYBOARD_CONTROL_SELECTOR,
-    isKeyboardShortcutBlocked
+    isShortcutBlocked
 } from './keyboardShortcutGuards';
 
 export function usePaginationKeyboardShortcuts<TElement extends HTMLElement>({
@@ -37,11 +37,7 @@ export function usePaginationKeyboardShortcuts<TElement extends HTMLElement>({
         if (
             !pagination ||
             window.getSelection()?.isCollapsed === false ||
-            isKeyboardShortcutBlocked(
-                event,
-                pagination,
-                KEYBOARD_CONTROL_SELECTOR
-            )
+            isShortcutBlocked(event, pagination, KEYBOARD_CONTROL_SELECTOR)
         ) {
             return;
         }

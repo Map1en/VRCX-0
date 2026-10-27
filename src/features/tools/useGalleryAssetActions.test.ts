@@ -2,17 +2,15 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { AppToastOptions } from '@/services/toastService';
 
-import type { GalleryUploadTarget } from './galleryConstants';
+import {
+    canUploadGalleryTarget,
+    type GalleryUploadTarget
+} from './galleryConstants';
 import type { GalleryAssetActionDeps } from './galleryTypes';
 import { createGalleryAssetActions } from './useGalleryAssetActions';
 
 function createActions(overrides: Partial<GalleryAssetActionDeps> = {}) {
     const uploadAssetImage = vi.fn().mockResolvedValue({ json: null });
-    const uploadInputRef = {
-        current: {
-            click: vi.fn()
-        }
-    };
     const toast = {
         error: vi.fn(),
         success: vi.fn(),
@@ -30,9 +28,8 @@ function createActions(overrides: Partial<GalleryAssetActionDeps> = {}) {
     };
     const actions = createGalleryAssetActions({
         FILE_TABS: {},
-        UPLOAD_ASPECT_RATIOS: {},
+        UPLOAD_ASPECT_RATIOS: { prints: 16 / 9 },
         activeTab: 'prints',
-        clipboardPastingRef: { current: false },
         confirm: vi.fn(),
         cropRequest: {
             tab: 'prints',
@@ -68,10 +65,8 @@ function createActions(overrides: Partial<GalleryAssetActionDeps> = {}) {
             getPrints: vi.fn()
         },
         parseEmojiUploadSettings: vi.fn(),
-        readClipboardUploadImage: vi.fn().mockResolvedValue(null),
         readFileAsBase64: vi.fn().mockResolvedValue('base64-body'),
         setAssets: vi.fn(),
-        setClipboardPasting: vi.fn(),
         setCropRequest: vi.fn(),
         setEmojiAnimFps: vi.fn(),
         setEmojiAnimFrameCount: vi.fn(),
@@ -83,14 +78,6 @@ function createActions(overrides: Partial<GalleryAssetActionDeps> = {}) {
         setUploadingTab: vi.fn(),
         t: (key: string) => key,
         toast,
-        uploadAuthTargetRef: {
-            current: null
-        },
-        uploadInputRef,
-        uploadTargetRef: {
-            current: null
-        },
-        validateImageFile: vi.fn(),
         withUploadTimeout: <T>(promise: Promise<T>) => promise,
         ...overrides
     });
@@ -98,8 +85,7 @@ function createActions(overrides: Partial<GalleryAssetActionDeps> = {}) {
     return {
         actions,
         toast,
-        uploadAssetImage,
-        uploadInputRef
+        uploadAssetImage
     };
 }
 
@@ -139,146 +125,41 @@ describe('createGalleryAssetActions', () => {
         });
     });
 
-    it('allows profile media uploads without VRC+', () => {
-        const { actions, toast, uploadInputRef } = createActions({
-            isVrcPlusSupporter: false
-        });
-
-        actions.beginUpload('gallery');
-        actions.beginUpload('icons');
-
-        expect(uploadInputRef.current.click).toHaveBeenCalledTimes(2);
-        expect(toast.error).not.toHaveBeenCalled();
-    });
-
-    it('opens the crop dialog for an image dropped on the active tab', () => {
+    it('opens the crop dialog with the tab aspect ratio and captured account', () => {
         const setCropRequest = vi.fn();
-        const { actions } = createActions({
-            setCropRequest,
-            validateImageFile: () => true
-        });
-        const file = new File(['image'], 'drop.png', { type: 'image/png' });
+        const { actions } = createActions({ setCropRequest });
+        const file = new File(['image'], 'print.png', { type: 'image/png' });
+        const authTarget = {
+            userId: 'usr_self',
+            endpoint: 'https://api.vrchat.cloud'
+        };
 
-        actions.uploadDroppedFile(file);
+        actions.openCropRequest(file, 'prints', authTarget);
 
         expect(setCropRequest).toHaveBeenCalledWith(
             expect.objectContaining({
                 tab: 'prints',
                 file,
-                authTarget: {
-                    userId: 'usr_self',
-                    endpoint: 'https://api.vrchat.cloud'
-                }
+                authTarget,
+                aspectRatio: 16 / 9
             })
         );
     });
+});
 
-    it('opens the crop dialog for a clipboard image on the requested tab', async () => {
-        const setCropRequest = vi.fn();
-        const file = new File(['image'], 'clipboard.png', {
-            type: 'image/png'
-        });
-        const { actions } = createActions({
-            readClipboardUploadImage: vi.fn().mockResolvedValue(file),
-            setCropRequest,
-            validateImageFile: () => true
-        });
-
-        await actions.pasteClipboardUpload('gallery');
-
-        expect(setCropRequest).toHaveBeenCalledWith(
-            expect.objectContaining({
-                tab: 'gallery',
-                file,
-                authTarget: {
-                    userId: 'usr_self',
-                    endpoint: 'https://api.vrchat.cloud'
-                }
-            })
-        );
-    });
-
-    it('ignores another clipboard paste while one is still reading', async () => {
-        let resolveClipboard!: (file: File | null) => void;
-        const readClipboardUploadImage = vi.fn(
-            () =>
-                new Promise<File | null>((resolve) => {
-                    resolveClipboard = resolve;
-                })
-        );
-        const setClipboardPasting = vi.fn();
-        const setCropRequest = vi.fn();
-        const { actions } = createActions({
-            readClipboardUploadImage,
-            setClipboardPasting,
-            setCropRequest,
-            validateImageFile: () => true
-        });
-
-        const firstPaste = actions.pasteClipboardUpload('gallery');
-        await actions.pasteClipboardUpload('icons');
-        expect(readClipboardUploadImage).toHaveBeenCalledOnce();
-        expect(setClipboardPasting).toHaveBeenLastCalledWith(true);
-
-        resolveClipboard(
-            new File(['image'], 'clipboard.png', { type: 'image/png' })
-        );
-        await firstPaste;
-        expect(setCropRequest).toHaveBeenCalledOnce();
-        expect(setCropRequest).toHaveBeenCalledWith(
-            expect.objectContaining({ tab: 'gallery' })
-        );
-        expect(setClipboardPasting).toHaveBeenLastCalledWith(false);
-
-        const nextPaste = actions.pasteClipboardUpload('icons');
-        expect(readClipboardUploadImage).toHaveBeenCalledTimes(2);
-        resolveClipboard(null);
-        await nextPaste;
-    });
-
-    it('does nothing when the clipboard has no image', async () => {
-        const setCropRequest = vi.fn();
-        const { actions } = createActions({ setCropRequest });
-
-        await actions.pasteClipboardUpload('prints');
-
-        expect(setCropRequest).not.toHaveBeenCalled();
-    });
-
-    it('keeps dropped prints restricted to VRC+ users', () => {
-        const setCropRequest = vi.fn();
-        const { actions, toast } = createActions({
-            isVrcPlusSupporter: false,
-            setCropRequest,
-            validateImageFile: () => true
-        });
-
-        actions.uploadDroppedFile(
-            new File(['image'], 'drop.png', { type: 'image/png' })
-        );
-
-        expect(setCropRequest).not.toHaveBeenCalled();
-        expect(toast.error).toHaveBeenCalledWith(
-            expect.objectContaining({ title: 'message.vrcplus.required' })
-        );
-    });
+describe('canUploadGalleryTarget', () => {
+    it.each<GalleryUploadTarget>(['gallery', 'icons'])(
+        'allows %s uploads without VRC+',
+        (tab) => {
+            expect(canUploadGalleryTarget(tab, false)).toBe(true);
+        }
+    );
 
     it.each<GalleryUploadTarget>(['prints', 'emojis', 'stickers'])(
         'keeps %s uploads restricted to VRC+ users',
         (tab) => {
-            const { actions, toast, uploadInputRef } = createActions({
-                isVrcPlusSupporter: false
-            });
-
-            actions.beginUpload(tab);
-
-            expect(uploadInputRef.current.click).not.toHaveBeenCalled();
-            expect(toast.error).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    type: 'error',
-                    title: 'message.vrcplus.required'
-                })
-            );
+            expect(canUploadGalleryTarget(tab, false)).toBe(false);
+            expect(canUploadGalleryTarget(tab, true)).toBe(true);
         }
     );
 });

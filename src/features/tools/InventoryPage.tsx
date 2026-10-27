@@ -368,7 +368,7 @@ export function InventoryPage() {
     const inventory = useInventoryPageState();
 
     return (
-        <PageScaffold ref={inventory.imagePasteRef} className="gallery-page">
+        <PageScaffold ref={inventory.pasteScopeRef} className="gallery-page">
             <FileDropOverlay
                 active={inventory.fileDropActive}
                 label={t('view.tools.file_drop.upload_to', {
@@ -459,7 +459,8 @@ export function InventoryPage() {
                         const selectedUploadTarget = selectedTab?.uploadTarget;
                         const uploadDisabled =
                             !inventory.isVrcPlusSupporter ||
-                            Boolean(inventory.uploadingTarget);
+                            Boolean(inventory.uploadingTarget) ||
+                            inventory.clipboardPasting;
                         const showEmojiUploadOptions =
                             category === 'emojis' &&
                             categorySubTab === 'custom';
@@ -606,8 +607,7 @@ export function InventoryPage() {
                                                                 variant="outline"
                                                                 size="sm"
                                                                 disabled={
-                                                                    uploadDisabled ||
-                                                                    inventory.clipboardPasting
+                                                                    uploadDisabled
                                                                 }
                                                                 onClick={() => {
                                                                     void inventory.pasteClipboardUpload(
