@@ -1,24 +1,9 @@
 import { useEffect, useEffectEvent, useRef } from 'react';
 
-const KEYBOARD_CONTROL_SELECTOR = [
-    'input',
-    'textarea',
-    'select',
-    '[contenteditable]:not([contenteditable="false"])',
-    '[role="textbox"]',
-    '[role="combobox"]',
-    '[role="listbox"]',
-    '[role="menu"]',
-    '[role="menubar"]',
-    '[role="tablist"]',
-    '[role="slider"]',
-    '[role="spinbutton"]',
-    '[role="tree"]',
-    '[role="grid"]'
-].join(',');
-const DIALOG_SELECTOR = '[role="dialog"], [role="alertdialog"]';
-const POPUP_SELECTOR =
-    '[role="menu"], [role="listbox"], [data-slot="popover-content"]';
+import {
+    KEYBOARD_CONTROL_SELECTOR,
+    isKeyboardShortcutBlocked
+} from './keyboardShortcutGuards';
 
 export function usePaginationKeyboardShortcuts<TElement extends HTMLElement>({
     enabled = true,
@@ -49,38 +34,15 @@ export function usePaginationKeyboardShortcuts<TElement extends HTMLElement>({
         }
 
         const pagination = paginationRef.current;
-        if (!pagination || pagination.getClientRects().length === 0) {
-            return;
-        }
-        const target = event.target instanceof Element ? event.target : null;
-        const focused = document.activeElement;
         if (
-            target?.closest(KEYBOARD_CONTROL_SELECTOR) ||
-            focused?.closest(KEYBOARD_CONTROL_SELECTOR) ||
-            window.getSelection()?.isCollapsed === false
+            !pagination ||
+            window.getSelection()?.isCollapsed === false ||
+            isKeyboardShortcutBlocked(
+                event,
+                pagination,
+                KEYBOARD_CONTROL_SELECTOR
+            )
         ) {
-            return;
-        }
-
-        for (const dialog of document.querySelectorAll(DIALOG_SELECTOR)) {
-            if (
-                dialog.getClientRects().length &&
-                !dialog.contains(pagination)
-            ) {
-                return;
-            }
-        }
-        for (const popup of document.querySelectorAll(POPUP_SELECTOR)) {
-            if (popup.getClientRects().length) {
-                return;
-            }
-        }
-
-        const scope =
-            pagination.closest(
-                `[role="tabpanel"], .vrcx-0-page-scaffold, ${DIALOG_SELECTOR}`
-            ) ?? pagination.parentElement;
-        if (focused && focused !== document.body && !scope?.contains(focused)) {
             return;
         }
 

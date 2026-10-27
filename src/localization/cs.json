@@ -985,7 +985,8 @@
             "pagination": "Stránkování vyhledávání a tabulek",
             "screenshots": "Podrobnosti snímku obrazovky",
             "image_viewer": "Prohlížeč obrázků na celou obrazovku",
-            "selection": "Výběr ve snímcích a oblíbených"
+            "selection": "Výběr ve snímcích a oblíbených",
+            "gallery_inventory": "Galerie a inventář"
         },
         "navigation_items": "Otevřít položku navigace 1–9",
         "hold_for_hints": "Zobrazit klávesové zkratky (podržet)",

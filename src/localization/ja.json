@@ -973,7 +973,8 @@
             "pagination": "検索・テーブルのページ切り替え",
             "screenshots": "スクリーンショットの詳細",
             "image_viewer": "全画面画像ビューアー",
-            "selection": "スクリーンショット・お気に入りの選択"
+            "selection": "スクリーンショット・お気に入りの選択",
+            "gallery_inventory": "ギャラリー・インベントリ"
         },
         "navigation_items": "ナビゲーションの1～9番目を開く",
         "hold_for_hints": "ショートカットのヒントを表示（長押し）",

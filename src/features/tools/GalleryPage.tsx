@@ -16,7 +16,7 @@ export function GalleryPage() {
     const pageState = useGalleryPageController();
 
     return (
-        <PageScaffold className="gallery-page">
+        <PageScaffold ref={pageState.imagePasteRef} className="gallery-page">
             <GalleryHeader
                 uploadInputRef={pageState.uploadInputRef}
                 uploadingTab={pageState.uploadingTab}
@@ -44,6 +44,7 @@ export function GalleryPage() {
                     galleryModel={{
                         activeTab: pageState.activeTab,
                         assets: pageState.assets,
+                        clipboardPasting: pageState.clipboardPasting,
                         currentUserId: pageState.currentUserId,
                         gridDensityConfig: pageState.gridDensityConfig,
                         isVrcPlusSupporter: pageState.isVrcPlusSupporter,

@@ -977,7 +977,8 @@
             "pagination": "Search and table pagination",
             "screenshots": "Screenshot details",
             "image_viewer": "Fullscreen image viewer",
-            "selection": "Selection in screenshots and favorites"
+            "selection": "Selection in screenshots and favorites",
+            "gallery_inventory": "Gallery and inventory"
         },
         "navigation_items": "Open navigation item 1–9",
         "hold_for_hints": "Show shortcut hints (hold)",

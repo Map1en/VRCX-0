@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useFileDropTarget } from '@/components/file-drop/useFileDropTarget';
+import { useImagePasteShortcut } from '@/components/keyboard/useImagePasteShortcut';
 import { resolveProfileDecorationMutation } from '@/domain/entities/inventory';
 import vrchatMediaRepository, {
     type InventoryItemRecord,
@@ -27,6 +28,7 @@ import {
     INITIAL_INVENTORY_SUB_TABS,
     getInventoryGridDensityConfig,
     parseEmojiUploadSettings,
+    readClipboardUploadImage,
     readDroppedUploadImage,
     readGridDensityPreference,
     scopeKey,
@@ -176,6 +178,8 @@ export function useInventoryPageState() {
         setProfileDecorationMutationPending
     ] = useState(false);
     const [uploadingTarget, setUploadingTarget] = useState('');
+    const clipboardPastingRef = useRef(false);
+    const [clipboardPasting, setClipboardPasting] = useState(false);
     const [cropRequest, setCropRequest] = useState<InventoryCropRequest | null>(
         null
     );
@@ -201,12 +205,14 @@ export function useInventoryPageState() {
         CATEGORY_DEFINITIONS[activeCategory].tabs.find(
             (entry) => entry.key === activeSubTab
         )?.uploadTarget ?? null;
+    const dropOrPasteEnabled =
+        Boolean(currentUserId) &&
+        Boolean(activeUploadTarget) &&
+        !cropRequest &&
+        !uploadingTarget &&
+        !clipboardPasting;
     const fileDropActive = useFileDropTarget({
-        enabled:
-            Boolean(currentUserId) &&
-            Boolean(activeUploadTarget) &&
-            !cropRequest &&
-            !uploadingTarget,
+        enabled: dropOrPasteEnabled,
         onDrop: async (paths) => {
             if (!activeUploadTarget) {
                 return;
@@ -214,6 +220,15 @@ export function useInventoryPageState() {
             const file = await readDroppedUploadImage(paths, t);
             if (file) {
                 requestUpload(file, activeUploadTarget);
+            }
+        }
+    });
+
+    const imagePasteRef = useImagePasteShortcut<HTMLDivElement>({
+        enabled: dropOrPasteEnabled,
+        onPaste: () => {
+            if (activeUploadTarget) {
+                return pasteClipboardUpload(activeUploadTarget);
             }
         }
     });
@@ -335,6 +350,24 @@ export function useInventoryPageState() {
             return;
         }
         requestUpload(file, target);
+    }
+
+    async function pasteClipboardUpload(target: InventoryUploadTarget) {
+        if (clipboardPastingRef.current) {
+            return;
+        }
+        clipboardPastingRef.current = true;
+        setClipboardPasting(true);
+        const authTarget = getInventoryAuthTarget();
+        try {
+            const file = await readClipboardUploadImage(t);
+            if (file && isCurrentInventoryAuthTarget(authTarget)) {
+                requestUpload(file, target);
+            }
+        } finally {
+            clipboardPastingRef.current = false;
+            setClipboardPasting(false);
+        }
     }
 
     function requestUpload(file: File, target: InventoryUploadTarget) {
@@ -712,12 +745,15 @@ export function useInventoryPageState() {
         emojiAnimLoopPingPong,
         emojiAnimType,
         emojiAnimationStyle,
+        clipboardPasting,
         fileDropActive,
+        imagePasteRef,
         gridDensity,
         gridDensityConfig,
         isVrcPlusSupporter,
         mutatingKey,
         openImagePreview,
+        pasteClipboardUpload,
         profileDecorationMutationPending,
         redeemReward,
         refreshScope,

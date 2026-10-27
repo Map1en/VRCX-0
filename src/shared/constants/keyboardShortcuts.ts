@@ -51,5 +51,14 @@ export const SHORTCUT_GROUPS = [
     {
         titleKey: 'shortcuts.group.selection',
         items: [{ labelKey: 'shortcuts.clear_selection', keys: ['Escape'] }]
+    },
+    {
+        titleKey: 'shortcuts.group.gallery_inventory',
+        items: [
+            {
+                labelKey: 'dialog.gallery_icons.paste_upload',
+                keys: ['Mod', 'V']
+            }
+        ]
     }
 ] as const;

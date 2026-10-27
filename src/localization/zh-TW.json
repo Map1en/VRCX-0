@@ -977,7 +977,8 @@
             "pagination": "搜尋與表格分頁",
             "screenshots": "截圖詳情",
             "image_viewer": "全螢幕圖片檢視",
-            "selection": "截圖與收藏多選"
+            "selection": "截圖與收藏多選",
+            "gallery_inventory": "相簿與庫存"
         },
         "navigation_items": "開啟第 1～9 個導覽項目",
         "hold_for_hints": "顯示快速鍵提示（長按）",

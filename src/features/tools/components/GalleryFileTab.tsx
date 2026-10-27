@@ -32,6 +32,7 @@ export function GalleryFileTab({
         assets,
         bulkRunning,
         loadingByTab,
+        clipboardPasting,
         uploadingTab,
         mutatingKey,
         currentUserId,
@@ -98,7 +99,9 @@ export function GalleryFileTab({
                             <Button
                                 variant="outline"
                                 size="sm"
-                                disabled={Boolean(uploadingTab)}
+                                disabled={
+                                    Boolean(uploadingTab) || clipboardPasting
+                                }
                                 onClick={() => onPasteUpload(tab)}
                             >
                                 <ClipboardPasteIcon data-icon="inline-start" />

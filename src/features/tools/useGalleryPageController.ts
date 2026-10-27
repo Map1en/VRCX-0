@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router';
 
 import { useFileDropTarget } from '@/components/file-drop/useFileDropTarget';
+import { useImagePasteShortcut } from '@/components/keyboard/useImagePasteShortcut';
 
 import {
     EMPTY_ASSETS,
@@ -64,6 +65,8 @@ export function useGalleryPageController() {
         {}
     );
     const [uploadingTab, setUploadingTab] = useState('');
+    const clipboardPastingRef = useRef(false);
+    const [clipboardPasting, setClipboardPasting] = useState(false);
     const [mutatingKey, setMutatingKey] = useState('');
     const [cropRequest, setCropRequest] = useState<GalleryCropRequest | null>(
         null
@@ -103,6 +106,7 @@ export function useGalleryPageController() {
         redeemReward
     } = useGalleryActions({
         activeTab,
+        clipboardPastingRef,
         cropRequest,
         currentEndpoint,
         currentUserId,
@@ -115,6 +119,7 @@ export function useGalleryPageController() {
         emojiAnimationStyle,
         isVrcPlusSupporter,
         setAssets,
+        setClipboardPasting,
         setCropRequest,
         setEmojiAnimFps,
         setEmojiAnimFrameCount,
@@ -130,14 +135,23 @@ export function useGalleryPageController() {
     } satisfies GalleryControllerDeps);
     const { bulkRunning, deleteSelection, setFavoriteSelection } =
         useGalleryBulkActions({ setAssets });
+    const dropOrPasteEnabled =
+        Boolean(currentUserId) &&
+        !cropRequest &&
+        !uploadingTab &&
+        !clipboardPasting;
     const fileDropActive = useFileDropTarget({
-        enabled: Boolean(currentUserId) && !cropRequest && !uploadingTab,
+        enabled: dropOrPasteEnabled,
         onDrop: async (paths) => {
             const file = await readDroppedUploadImage(paths, t);
             if (file) {
                 uploadDroppedFile(file);
             }
         }
+    });
+    const imagePasteRef = useImagePasteShortcut<HTMLDivElement>({
+        enabled: dropOrPasteEnabled,
+        onPaste: () => pasteClipboardUpload(activeTab)
     });
     const refreshAllRef = useRef(refreshAllAssets);
     useEffect(() => {
@@ -188,6 +202,7 @@ export function useGalleryPageController() {
         uploadingTab,
         uploadSelectedFile,
         fileDropActive,
+        imagePasteRef,
         gridDensity,
         changeGridDensity,
         navigate,
@@ -211,6 +226,7 @@ export function useGalleryPageController() {
         refreshTab,
         activeTab,
         assets,
+        clipboardPasting,
         currentUserId,
         emojiAnimFps,
         emojiAnimFrameCount,

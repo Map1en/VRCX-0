@@ -977,7 +977,8 @@
             "pagination": "검색 및 표 페이지 이동",
             "screenshots": "스크린샷 상세 정보",
             "image_viewer": "전체 화면 이미지 뷰어",
-            "selection": "스크린샷 및 즐겨찾기 선택"
+            "selection": "스크린샷 및 즐겨찾기 선택",
+            "gallery_inventory": "갤러리 및 인벤토리"
         },
         "navigation_items": "1~9번째 내비게이션 항목 열기",
         "hold_for_hints": "단축키 힌트 표시(길게 누르기)",

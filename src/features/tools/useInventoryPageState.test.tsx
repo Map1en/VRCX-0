@@ -3,6 +3,7 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { commands, type ClipboardImage } from '@/platform/tauri/bindings';
 import type { AppToastOptions } from '@/services/toastService';
 
 const mediaMocks = vi.hoisted(() => ({
@@ -38,6 +39,11 @@ const toastMocks = vi.hoisted(() => ({
 
 vi.mock('@/repositories/vrchatMediaRepository', () => ({
     default: mediaMocks
+}));
+vi.mock('@tauri-apps/api/webview', () => ({
+    getCurrentWebview: () => ({
+        onDragDropEvent: async () => () => {}
+    })
 }));
 vi.mock('@/services/backgroundMaintenanceSessionService', () => ({
     refreshCurrentUser: maintenanceMocks.refreshCurrentUser
@@ -103,7 +109,95 @@ describe('useInventoryPageState', () => {
             id: 'usr_self'
         });
     });
-    afterEach(cleanup);
+    afterEach(() => {
+        cleanup();
+        vi.restoreAllMocks();
+    });
+
+    it.each(['emojis', 'stickers'] as const)(
+        'opens the existing crop workflow for a clipboard image in %s',
+        async (target) => {
+            runtimeState.auth.currentUserSnapshot = { $isVRCPlus: true };
+            vi.spyOn(commands, 'appReadClipboardImage').mockResolvedValue({
+                fileName: 'clipboard.png',
+                mimeType: 'image/png',
+                dataBase64: btoa('image')
+            });
+            const { result } = renderHook(() => useInventoryPageState());
+
+            await act(async () => {
+                await result.current.pasteClipboardUpload(target);
+            });
+
+            expect(result.current.cropRequest).toEqual(
+                expect.objectContaining({
+                    target,
+                    aspectRatio: 1,
+                    file: expect.any(File),
+                    authTarget: {
+                        userId: 'usr_self',
+                        endpoint: 'https://api.vrchat.cloud/api/1',
+                        websocket: 'wss://pipeline.vrchat.cloud'
+                    }
+                })
+            );
+            expect(result.current.cropRequest?.file.name).toBe('clipboard.png');
+            expect(result.current.cropRequest?.file.type).toBe('image/png');
+        }
+    );
+
+    it('ignores a clipboard image returned after switching accounts', async () => {
+        runtimeState.auth.currentUserSnapshot = { $isVRCPlus: true };
+        const clipboard = deferred<ClipboardImage | null>();
+        vi.spyOn(commands, 'appReadClipboardImage').mockReturnValue(
+            clipboard.promise
+        );
+        const { result, rerender } = renderHook(() => useInventoryPageState());
+        let pendingPaste!: Promise<void>;
+        act(() => {
+            pendingPaste = result.current.pasteClipboardUpload('stickers');
+        });
+        runtimeState.auth.currentUserId = 'usr_other';
+        rerender();
+        await act(async () => {
+            clipboard.resolve({
+                fileName: 'clipboard.png',
+                mimeType: 'image/png',
+                dataBase64: btoa('image')
+            });
+            await pendingPaste;
+        });
+        expect(result.current.cropRequest).toBeNull();
+    });
+
+    it('ignores another clipboard paste while one is still reading', async () => {
+        runtimeState.auth.currentUserSnapshot = { $isVRCPlus: true };
+        const clipboard = deferred<ClipboardImage | null>();
+        const readClipboard = vi
+            .spyOn(commands, 'appReadClipboardImage')
+            .mockReturnValue(clipboard.promise);
+        const { result } = renderHook(() => useInventoryPageState());
+        let pendingPaste!: Promise<void>;
+        act(() => {
+            pendingPaste = result.current.pasteClipboardUpload('emojis');
+        });
+        expect(result.current.clipboardPasting).toBe(true);
+        await act(async () => {
+            await result.current.pasteClipboardUpload('stickers');
+        });
+        expect(readClipboard).toHaveBeenCalledOnce();
+
+        await act(async () => {
+            clipboard.resolve({
+                fileName: 'clipboard.png',
+                mimeType: 'image/png',
+                dataBase64: btoa('image')
+            });
+            await pendingPaste;
+        });
+        expect(result.current.clipboardPasting).toBe(false);
+        expect(result.current.cropRequest?.target).toBe('emojis');
+    });
 
     it('equips a profile decoration, refreshes its scope, and refreshes the self profile', async () => {
         const { result } = renderHook(() => useInventoryPageState());

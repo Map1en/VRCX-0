@@ -977,7 +977,8 @@
             "pagination": "Such- und Tabellenseiten",
             "screenshots": "Screenshot-Details",
             "image_viewer": "Vollbild-Bildbetrachter",
-            "selection": "Auswahl in Screenshots und Favoriten"
+            "selection": "Auswahl in Screenshots und Favoriten",
+            "gallery_inventory": "Galerie und Inventar"
         },
         "navigation_items": "Navigationseintrag 1–9 öffnen",
         "hold_for_hints": "Tastenkürzel anzeigen (gedrückt halten)",

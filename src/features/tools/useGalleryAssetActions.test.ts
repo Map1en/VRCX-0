@@ -32,6 +32,7 @@ function createActions(overrides: Partial<GalleryAssetActionDeps> = {}) {
         FILE_TABS: {},
         UPLOAD_ASPECT_RATIOS: {},
         activeTab: 'prints',
+        clipboardPastingRef: { current: false },
         confirm: vi.fn(),
         cropRequest: {
             tab: 'prints',
@@ -70,6 +71,7 @@ function createActions(overrides: Partial<GalleryAssetActionDeps> = {}) {
         readClipboardUploadImage: vi.fn().mockResolvedValue(null),
         readFileAsBase64: vi.fn().mockResolvedValue('base64-body'),
         setAssets: vi.fn(),
+        setClipboardPasting: vi.fn(),
         setCropRequest: vi.fn(),
         setEmojiAnimFps: vi.fn(),
         setEmojiAnimFrameCount: vi.fn(),
@@ -194,6 +196,44 @@ describe('createGalleryAssetActions', () => {
                 }
             })
         );
+    });
+
+    it('ignores another clipboard paste while one is still reading', async () => {
+        let resolveClipboard!: (file: File | null) => void;
+        const readClipboardUploadImage = vi.fn(
+            () =>
+                new Promise<File | null>((resolve) => {
+                    resolveClipboard = resolve;
+                })
+        );
+        const setClipboardPasting = vi.fn();
+        const setCropRequest = vi.fn();
+        const { actions } = createActions({
+            readClipboardUploadImage,
+            setClipboardPasting,
+            setCropRequest,
+            validateImageFile: () => true
+        });
+
+        const firstPaste = actions.pasteClipboardUpload('gallery');
+        await actions.pasteClipboardUpload('icons');
+        expect(readClipboardUploadImage).toHaveBeenCalledOnce();
+        expect(setClipboardPasting).toHaveBeenLastCalledWith(true);
+
+        resolveClipboard(
+            new File(['image'], 'clipboard.png', { type: 'image/png' })
+        );
+        await firstPaste;
+        expect(setCropRequest).toHaveBeenCalledOnce();
+        expect(setCropRequest).toHaveBeenCalledWith(
+            expect.objectContaining({ tab: 'gallery' })
+        );
+        expect(setClipboardPasting).toHaveBeenLastCalledWith(false);
+
+        const nextPaste = actions.pasteClipboardUpload('icons');
+        expect(readClipboardUploadImage).toHaveBeenCalledTimes(2);
+        resolveClipboard(null);
+        await nextPaste;
     });
 
     it('does nothing when the clipboard has no image', async () => {

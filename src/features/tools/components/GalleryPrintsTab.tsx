@@ -55,6 +55,7 @@ const PRINT_FAVORITE_FILTERS: PrintFavoriteFilter[] = [
 
 export type GalleryPrintsTabState = {
     activeTab: string;
+    clipboardPasting?: boolean;
     gridDensityConfig: GridDensityConfig;
     isVrcPlusSupporter: boolean;
     loading: boolean;
@@ -78,6 +79,7 @@ export function GalleryPrintsTab({ printsTab }: GalleryPrintsTabProps) {
         bulkRunning,
         prints,
         loading,
+        clipboardPasting,
         uploadingTab,
         mutatingKey,
         isVrcPlusSupporter,
@@ -280,7 +282,9 @@ export function GalleryPrintsTab({ printsTab }: GalleryPrintsTabProps) {
                                 variant="outline"
                                 size="sm"
                                 disabled={
-                                    !isVrcPlusSupporter || Boolean(uploadingTab)
+                                    !isVrcPlusSupporter ||
+                                    Boolean(uploadingTab) ||
+                                    clipboardPasting
                                 }
                                 onClick={() => onPasteUpload('prints')}
                             >

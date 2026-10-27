@@ -1,5 +1,6 @@
 import { ArrowLeftIcon } from 'lucide-react';
 import type {
+    ComponentProps,
     ComponentPropsWithoutRef,
     ComponentType,
     HTMLAttributes,
@@ -36,7 +37,7 @@ export function PageScaffold({
     embeddedClassName = '',
     children,
     ...divProps
-}: HTMLAttributes<HTMLDivElement> & {
+}: ComponentProps<'div'> & {
     embedded?: boolean;
     flushBottom?: boolean;
     embeddedClassName?: string;

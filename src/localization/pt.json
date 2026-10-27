@@ -977,7 +977,8 @@
             "pagination": "Paginação de buscas e tabelas",
             "screenshots": "Detalhes da captura de tela",
             "image_viewer": "Visualizador de imagens em tela cheia",
-            "selection": "Seleção em capturas e favoritos"
+            "selection": "Seleção em capturas e favoritos",
+            "gallery_inventory": "Galeria e inventário"
         },
         "navigation_items": "Abrir o item de navegação 1–9",
         "hold_for_hints": "Mostrar atalhos (manter pressionado)",

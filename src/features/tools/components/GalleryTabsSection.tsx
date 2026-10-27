@@ -17,6 +17,7 @@ export function GalleryTabsSection({
     const {
         activeTab,
         assets,
+        clipboardPasting,
         currentUserId,
         gridDensityConfig,
         isVrcPlusSupporter,
@@ -50,6 +51,7 @@ export function GalleryTabsSection({
                 ...galleryBulkCommands,
                 activeTab,
                 assets,
+                clipboardPasting,
                 loadingByTab,
                 uploadingTab,
                 mutatingKey,
@@ -72,6 +74,7 @@ export function GalleryTabsSection({
                 activeTab,
                 prints: assets.prints,
                 loading: loadingByTab.prints,
+                clipboardPasting,
                 uploadingTab,
                 mutatingKey,
                 isVrcPlusSupporter,

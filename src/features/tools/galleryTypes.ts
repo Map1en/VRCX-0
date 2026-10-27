@@ -52,6 +52,7 @@ type ToastApi = {
 
 export type GalleryControllerDeps = {
     activeTab: GalleryTab;
+    clipboardPastingRef: MutableRefObject<boolean>;
     cropRequest: GalleryCropRequest | null;
     currentEndpoint: string;
     currentUserId: string | null;
@@ -64,6 +65,7 @@ export type GalleryControllerDeps = {
     emojiAnimationStyle: string;
     isVrcPlusSupporter: boolean;
     setAssets: Dispatch<SetStateAction<GalleryAssets>>;
+    setClipboardPasting: Dispatch<SetStateAction<boolean>>;
     setCropRequest: Dispatch<SetStateAction<GalleryCropRequest | null>>;
     setEmojiAnimFps: Dispatch<SetStateAction<number>>;
     setEmojiAnimFrameCount: Dispatch<SetStateAction<number>>;
@@ -186,6 +188,7 @@ export type GalleryCommands = {
 export type GalleryModel = {
     activeTab: GalleryTab;
     assets: GalleryAssets;
+    clipboardPasting: boolean;
     currentUserId: string | null;
     gridDensityConfig: ReturnType<
         typeof import('./galleryDensity').getGalleryGridDensityConfig
@@ -205,6 +208,7 @@ export type GalleryFileTabState = Pick<
     GalleryModel,
     | 'activeTab'
     | 'assets'
+    | 'clipboardPasting'
     | 'currentUserId'
     | 'gridDensityConfig'
     | 'isVrcPlusSupporter'

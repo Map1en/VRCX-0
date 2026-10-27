@@ -20,6 +20,7 @@ export function createGalleryAssetActions({
     FILE_TABS,
     UPLOAD_ASPECT_RATIOS,
     activeTab,
+    clipboardPastingRef,
     confirm,
     cropRequest,
     currentEndpoint,
@@ -37,6 +38,7 @@ export function createGalleryAssetActions({
     readClipboardUploadImage,
     readFileAsBase64,
     setAssets,
+    setClipboardPasting,
     setCropRequest,
     setEmojiAnimFps,
     setEmojiAnimFrameCount,
@@ -242,10 +244,20 @@ export function createGalleryAssetActions({
         requestUpload(file, activeTab, getAuthTarget());
     }
     async function pasteClipboardUpload(tab: GalleryUploadTarget) {
+        if (clipboardPastingRef.current) {
+            return;
+        }
+        clipboardPastingRef.current = true;
+        setClipboardPasting(true);
         const authTarget = getAuthTarget();
-        const file = await readClipboardUploadImage(t);
-        if (file) {
-            requestUpload(file, tab, authTarget);
+        try {
+            const file = await readClipboardUploadImage(t);
+            if (file) {
+                requestUpload(file, tab, authTarget);
+            }
+        } finally {
+            clipboardPastingRef.current = false;
+            setClipboardPasting(false);
         }
     }
     function requestUpload(
