@@ -764,7 +764,6 @@
                 "keyboardShortcuts": "Горячие клавиши",
                 "sendFeedback": "Отправить отзыв",
                 "reportIssue": "Сообщить о проблеме на GitHub",
-                "qqGroup": "QQ-группа",
                 "openDevtools": "Открыть DevTools",
                 "supportVrcx": "Поддержать VRCX-0"
             }
@@ -796,7 +795,6 @@
         "toggle_theme": "Тема закладки"
     },
     "nav_menu": {
-        "qq_group": "QQ-группа",
         "changelog": "Изменить журнал",
         "update": "Обновление",
         "update_downloading": "Загрузка",

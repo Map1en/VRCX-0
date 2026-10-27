@@ -362,7 +362,6 @@ Source strings live in [`en.json`](en.json). Keep recurring terms consistent wit
 | Profile Details                    | 个人资料详情               | 個人資料詳細資訊      | プロフィール詳細                     |
 | Profile Icon                       | 头像                       | 頭像                  | アイコン画像                         |
 | Proxy Settings                     | 代理服务器设置             | 代理設定              | プロキシ設定                         |
-| QQ Group                           | QQ群                       | QQ 群組               | QQグループ                           |
 | Refresh                            | 刷新                       | 重新整理              | 更新                                 |
 | Request Invite Response            | 拒绝加入申请               | 請求邀請回復          | 招待リクエストへの返信               |
 | Reset Zoom                         | 重置缩放                   | 重設縮放比例          | ズームをリセット                     |

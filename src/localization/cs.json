@@ -764,7 +764,6 @@
                 "keyboardShortcuts": "Klávesové zkratky",
                 "sendFeedback": "Odeslat zpětnou vazbu",
                 "reportIssue": "Nahlásit problém na GitHubu",
-                "qqGroup": "QQ skupina",
                 "openDevtools": "Otevřít DevTools",
                 "supportVrcx": "Podpořte VRCX-0"
             }
@@ -796,7 +795,6 @@
         "toggle_theme": "Přepnout téma"
     },
     "nav_menu": {
-        "qq_group": "QQ skupina",
         "changelog": "Seznam změn",
         "update": "Aktualizace",
         "update_downloading": "Stahování",

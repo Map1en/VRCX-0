@@ -79,8 +79,7 @@ pub(crate) fn configure_macos_app_menu(app: &AppHandle, language: &str) -> tauri
         .text("mac-menu-report-issue", help_i18n.report_issue)
         .separator()
         .text("mac-menu-github", help_i18n.github)
-        .text("mac-menu-discord", help_i18n.discord)
-        .text("mac-menu-qq-group", help_i18n.qq_group);
+        .text("mac-menu-discord", help_i18n.discord);
     #[cfg(feature = "devtools")]
     let help_menu = help_menu
         .separator()

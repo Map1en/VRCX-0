@@ -751,7 +751,6 @@
                 "keyboardShortcuts": "Raccourcis clavier",
                 "sendFeedback": "Envoyer un retour",
                 "reportIssue": "Signaler un problème sur GitHub",
-                "qqGroup": "Groupe QQ (communauté chinoise)",
                 "openDevtools": "Ouvrir les DevTools",
                 "supportVrcx": "Soutenir VRCX-0"
             }
@@ -783,7 +782,6 @@
         "toggle_theme": "Changer le thème"
     },
     "nav_menu": {
-        "qq_group": "Groupe QQ (communauté chinoise)",
         "changelog": "Journal des modifications",
         "update": "Mettre à jour",
         "update_downloading": "Téléchargement…",

@@ -756,7 +756,6 @@
                 "keyboardShortcuts": "키보드 단축키",
                 "sendFeedback": "피드백 보내기",
                 "reportIssue": "GitHub에서 문제 보고",
-                "qqGroup": "QQ그룹 (중국 커뮤니티)",
                 "openDevtools": "DevTools 열기",
                 "supportVrcx": "VRCX-0 후원"
             }
@@ -788,7 +787,6 @@
         "toggle_theme": "테마 전환"
     },
     "nav_menu": {
-        "qq_group": "QQ그룹 (중국 커뮤니티)",
         "changelog": "변경 내역",
         "update": "업데이트",
         "update_downloading": "다운로드 중",

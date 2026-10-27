@@ -752,7 +752,6 @@
                 "keyboardShortcuts": "キーボードショートカット",
                 "sendFeedback": "フィードバックを送信",
                 "reportIssue": "GitHub で問題を報告",
-                "qqGroup": "QQグループ",
                 "openDevtools": "DevTools を開く",
                 "supportVrcx": "VRCX-0 をサポート"
             }
@@ -784,7 +783,6 @@
         "toggle_theme": "テーマを切り替える"
     },
     "nav_menu": {
-        "qq_group": "QQグループ",
         "changelog": "新機能 (更新履歴)",
         "update": "アップデート",
         "update_downloading": "ダウンロード中",

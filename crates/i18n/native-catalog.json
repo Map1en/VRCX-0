@@ -599,10 +599,6 @@
                     "source": "nativeShell.menu.help.reportIssue"
                 },
                 {
-                    "key": "nativeShell.menu.help.qqGroup",
-                    "source": "nativeShell.menu.help.qqGroup"
-                },
-                {
                     "key": "nativeShell.menu.help.openDevtools",
                     "source": "nativeShell.menu.help.openDevtools"
                 },

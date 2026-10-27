@@ -756,7 +756,6 @@
                 "keyboardShortcuts": "键盘快捷键",
                 "sendFeedback": "发送反馈",
                 "reportIssue": "在 GitHub 报告问题",
-                "qqGroup": "QQ群",
                 "openDevtools": "打开 DevTools",
                 "supportVrcx": "支持 VRCX-0"
             }
@@ -788,7 +787,6 @@
         "toggle_theme": "切换日/夜间模式"
     },
     "nav_menu": {
-        "qq_group": "QQ群",
         "changelog": "更新日志",
         "update": "更新",
         "update_downloading": "下载中",

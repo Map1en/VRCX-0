@@ -99,7 +99,6 @@ pub(crate) mod macos_menu {
         pub(crate) report_issue: String,
         pub(crate) github: String,
         pub(crate) discord: String,
-        pub(crate) qq_group: String,
         #[cfg(feature = "devtools")]
         pub(crate) open_devtools: String,
         pub(crate) support_vrcx: String,
@@ -174,7 +173,6 @@ pub(crate) mod macos_menu {
             report_issue: text(language, ShellKey::NativeShellMenuHelpReportIssue),
             github: "GitHub".to_string(),
             discord: "Discord".to_string(),
-            qq_group: text(language, ShellKey::NativeShellMenuHelpQqGroup),
             #[cfg(feature = "devtools")]
             open_devtools: text(language, ShellKey::NativeShellMenuHelpOpenDevtools),
             support_vrcx: text(language, ShellKey::NativeShellMenuHelpSupportVrcx),

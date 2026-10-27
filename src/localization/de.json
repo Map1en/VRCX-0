@@ -756,7 +756,6 @@
                 "keyboardShortcuts": "Tastenkombinationen",
                 "sendFeedback": "Feedback senden",
                 "reportIssue": "Problem auf GitHub melden",
-                "qqGroup": "QQ-Gruppe",
                 "openDevtools": "DevTools öffnen",
                 "supportVrcx": "VRCX-0 unterstützen"
             }
@@ -788,7 +787,6 @@
         "toggle_theme": "Design wechseln"
     },
     "nav_menu": {
-        "qq_group": "QQ-Gruppe",
         "changelog": "Änderungsprotokoll",
         "update": "Update",
         "update_downloading": "Lädt herunter",
