@@ -95,9 +95,7 @@ impl<F: Fn() + Send + Sync> VrchatRequestPort for ResponsePort<F> {
 #[tokio::test]
 async fn non_friend_and_pending_request_lists_only_backfill_after_friend_add() -> Result<()> {
     let (_dir, runtime, session) = runtime_with_active_session("mutual-list-pending")?;
-    runtime
-        .runtime()
-        .sync_friend_snapshot(session.clone(), Some(7), HashMap::new())?;
+    runtime.sync_friend_baseline(&session, HashMap::new())?;
     let store = RecordingStore::default();
     let remote = ResponsePort {
         status: 200,
@@ -165,9 +163,7 @@ async fn non_friend_and_pending_request_lists_only_backfill_after_friend_add() -
 #[tokio::test]
 async fn empty_non_friend_list_does_not_create_an_isolated_node() -> Result<()> {
     let (_dir, runtime, session) = runtime_with_active_session("mutual-list-empty")?;
-    runtime
-        .runtime()
-        .sync_friend_snapshot(session, Some(7), HashMap::new())?;
+    runtime.sync_friend_baseline(&session, HashMap::new())?;
     let store = RecordingStore::default();
     let remote = ResponsePort {
         status: 200,
@@ -193,9 +189,7 @@ async fn unavailable_lists_only_update_opt_out_metadata_for_current_friends() ->
     for status in [403, 404] {
         for is_friend in [false, true] {
             let (_dir, runtime, session) = runtime_with_active_session("mutual-list-opt-out")?;
-            runtime
-                .runtime()
-                .sync_friend_snapshot(session.clone(), Some(7), HashMap::new())?;
+            runtime.sync_friend_baseline(&session, HashMap::new())?;
             if is_friend {
                 assert_eq!(
                     runtime.runtime().apply_synthetic_trusted_friend_add(
@@ -246,9 +240,7 @@ async fn unavailable_lists_only_update_opt_out_metadata_for_current_friends() ->
 #[tokio::test]
 async fn friend_removed_during_list_request_is_not_backfilled() -> Result<()> {
     let (_dir, runtime, session) = runtime_with_active_session("mutual-list-unfriend")?;
-    runtime
-        .runtime()
-        .sync_friend_snapshot(session.clone(), Some(7), HashMap::new())?;
+    runtime.sync_friend_baseline(&session, HashMap::new())?;
     assert_eq!(
         runtime.runtime().apply_synthetic_trusted_friend_add(
             &OwnerId::new(&session.user_id),

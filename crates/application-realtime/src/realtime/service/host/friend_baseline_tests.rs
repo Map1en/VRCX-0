@@ -27,9 +27,7 @@ fn sync_friend_snapshot_debounces_online_to_offline() -> Result<()> {
             },
         },
     );
-    runtime
-        .runtime()
-        .sync_friend_snapshot(active_session.clone(), Some(7), initial_friends)?;
+    runtime.sync_friend_baseline(&active_session, initial_friends)?;
     let initial_events = runtime.runtime().deps.event_bus.take_events_for_test();
     let initial_projection = initial_events
         .iter()
@@ -61,11 +59,9 @@ fn sync_friend_snapshot_debounces_online_to_offline() -> Result<()> {
             },
         },
     );
-    let result = runtime.runtime().sync_friend_snapshot(
-        active_session.clone(),
-        Some(7),
-        refreshed_friends,
-    )?;
+    let result = runtime
+        .sync_friend_baseline(&active_session, refreshed_friends)?
+        .result;
 
     let events = runtime.runtime().deps.event_bus.take_events_for_test();
     let projection = events
@@ -105,9 +101,7 @@ fn sync_friend_snapshot_keeps_a_pending_offline_until_its_deadline() -> Result<(
             },
         },
     );
-    runtime
-        .runtime()
-        .sync_friend_snapshot(active_session.clone(), Some(7), initial_friends)?;
+    runtime.sync_friend_baseline(&active_session, initial_friends)?;
 
     let RealtimeFriendApplyResult::Output(pending_output) = runtime
         .runtime()
@@ -165,7 +159,9 @@ fn sync_friend_snapshot_keeps_a_pending_offline_until_its_deadline() -> Result<(
     );
     assert!(events
         .iter()
-        .all(|event| event.name != "realtimeFeedProjection"));
+        .filter(|event| event.name == "realtimeFeedProjection")
+        .flat_map(|event| event.payload["upserts"].as_array().unwrap())
+        .all(|upsert| upsert["entry"]["type"] == "DisplayName"));
 
     let fired = runtime
         .runtime()
@@ -240,9 +236,8 @@ fn host_watermark_preserves_pending_created_after_capture() -> Result<()> {
         let (_dir, runtime, active_session) =
             runtime_with_active_session(&format!("host-stale-watermark-{state_bucket}"))?;
         runtime.set_task_executor_for_test(DiscardTaskExecutor);
-        runtime.runtime().sync_friend_snapshot(
-            active_session.clone(),
-            Some(7),
+        runtime.sync_friend_baseline(
+            &active_session,
             [(
                 "usr_friend".to_string(),
                 FriendBaselineEntry {
@@ -335,9 +330,8 @@ fn host_watermark_preserves_online_cancellation_after_capture() -> Result<()> {
     let (_dir, runtime, active_session) =
         runtime_with_active_session("host-online-cancel-watermark")?;
     runtime.set_task_executor_for_test(DiscardTaskExecutor);
-    runtime.runtime().sync_friend_snapshot(
-        active_session.clone(),
-        Some(7),
+    runtime.sync_friend_baseline(
+        &active_session,
         [(
             "usr_friend".to_string(),
             FriendBaselineEntry {
@@ -471,9 +465,8 @@ fn causal_sync_returns_canonical_snapshot_after_newer_friend_delete() -> Result<
             ..FriendBaselinePresence::default()
         },
     };
-    runtime.runtime().sync_friend_snapshot(
-        active_session.clone(),
-        Some(7),
+    runtime.sync_friend_baseline(
+        &active_session,
         [("usr_friend".to_string(), stale_friend.clone())]
             .into_iter()
             .collect(),
@@ -564,9 +557,8 @@ fn causal_watermark_rejects_baseline_after_local_friend_log_mutation() -> Result
             ..FriendBaselinePresence::default()
         },
     };
-    runtime.runtime().sync_friend_snapshot(
-        active_session.clone(),
-        Some(7),
+    runtime.sync_friend_baseline(
+        &active_session,
         [("usr_friend".to_string(), friend.clone())]
             .into_iter()
             .collect(),
@@ -1500,13 +1492,9 @@ fn causal_watermark_rejects_superseded_baseline() -> Result<()> {
         .into_iter()
         .collect()
     };
-    runtime
-        .runtime()
-        .sync_friend_snapshot(active_session.clone(), Some(7), friend("Initial"))?;
+    runtime.sync_friend_baseline(&active_session, friend("Initial"))?;
     let stale_watermark = runtime.runtime().capture_friend_baseline_watermark()?;
-    runtime
-        .runtime()
-        .sync_friend_snapshot(active_session.clone(), Some(7), friend("Newer"))?;
+    runtime.sync_friend_baseline(&active_session, friend("Newer"))?;
 
     let result = runtime.runtime().sync_friend_snapshot_with_watermark(
         active_session.clone(),
@@ -1534,9 +1522,7 @@ fn causal_watermark_rejects_superseded_baseline() -> Result<()> {
 #[test]
 fn causal_baseline_from_stopped_generation_is_not_cached() -> Result<()> {
     let (_dir, runtime, active_session) = runtime_with_active_session("stopped-watermark")?;
-    runtime
-        .runtime()
-        .sync_friend_snapshot(active_session.clone(), Some(7), HashMap::new())?;
+    runtime.sync_friend_baseline(&active_session, HashMap::new())?;
     let watermark = runtime.runtime().capture_friend_baseline_watermark()?;
     runtime.runtime().stop(RealtimeStopRequest {
         generation: Some(7),
@@ -1611,9 +1597,7 @@ fn sync_friend_snapshot_emits_projection_for_active_removals() -> Result<()> {
             },
         },
     );
-    runtime
-        .runtime()
-        .sync_friend_snapshot(active_session.clone(), Some(7), initial_friends)?;
+    runtime.sync_friend_baseline(&active_session, initial_friends)?;
     assert_eq!(
         runtime.activity_sink_for_test().friend_user_ids(),
         vec!["usr_removed".to_string()]
@@ -1625,10 +1609,9 @@ fn sync_friend_snapshot_emits_projection_for_active_removals() -> Result<()> {
         .is_some());
     runtime.runtime().deps.event_bus.take_events_for_test();
 
-    let result =
-        runtime
-            .runtime()
-            .sync_friend_snapshot(active_session.clone(), Some(7), HashMap::new())?;
+    let result = runtime
+        .sync_friend_baseline(&active_session, HashMap::new())?
+        .result;
 
     let events = runtime.runtime().deps.event_bus.take_events_for_test();
     let projection = events
@@ -1683,9 +1666,7 @@ fn apply_friend_profile_refresh_updates_existing_friend_only() -> Result<()> {
             },
         },
     );
-    runtime
-        .runtime()
-        .sync_friend_snapshot(active_session.clone(), Some(7), friends_by_id)?;
+    runtime.sync_friend_baseline(&active_session, friends_by_id)?;
 
     let friend_rev = runtime
         .runtime()
@@ -1766,9 +1747,8 @@ fn friend_projection_clears_feed_entries_when_persistence_fails() -> Result<()> 
 fn repeated_friend_delete_retries_after_persistence_failure_without_duplicate_feed() -> Result<()> {
     let (_dir, runtime, active_session) =
         runtime_with_active_session("friend-delete-persistence-retry")?;
-    runtime.runtime().sync_friend_snapshot(
-        active_session.clone(),
-        Some(7),
+    runtime.sync_friend_baseline(
+        &active_session,
         [(
             "usr_friend".to_string(),
             FriendBaselineEntry {
@@ -1943,9 +1923,7 @@ fn emit_friend_log_changed_carries_the_active_baseline_scope() -> Result<()> {
             },
         },
     );
-    runtime
-        .runtime()
-        .sync_friend_snapshot(active_session.clone(), Some(7), friends)?;
+    runtime.sync_friend_baseline(&active_session, friends)?;
     let mut refreshed = HashMap::new();
     refreshed.insert(
         "usr_friend".to_string(),
@@ -1962,11 +1940,8 @@ fn emit_friend_log_changed_carries_the_active_baseline_scope() -> Result<()> {
             },
         },
     );
-    let refreshed_result =
-        runtime
-            .runtime()
-            .sync_friend_snapshot(active_session.clone(), Some(7), refreshed)?;
-    assert_eq!(refreshed_result.baseline_revision, 1);
+    let refreshed_result = runtime.sync_friend_baseline(&active_session, refreshed)?;
+    assert_eq!(refreshed_result.result.baseline_revision, 1);
     runtime.runtime().deps.event_bus.take_events_for_test();
 
     runtime.runtime().emit_friend_log_changed();

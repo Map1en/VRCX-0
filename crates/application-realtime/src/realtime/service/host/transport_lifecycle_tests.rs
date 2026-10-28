@@ -48,13 +48,8 @@ fn online_friend_roster() -> HashMap<String, FriendBaselineEntry> {
 fn seed_online_friend(
     runtime: &TestRealtimeHostRuntime,
     session: &RealtimeSessionContext,
-    generation: u64,
 ) -> Result<()> {
-    runtime.runtime().sync_friend_snapshot(
-        session.clone(),
-        Some(generation),
-        online_friend_roster(),
-    )?;
+    runtime.sync_friend_baseline(session, online_friend_roster())?;
     Ok(())
 }
 
@@ -151,11 +146,7 @@ fn reconnect_projects_the_fresh_baseline_to_the_frontend() -> Result<()> {
             presence: FriendBaselinePresence::default(),
         },
     );
-    runtime.runtime().sync_friend_snapshot(
-        session.clone(),
-        Some(old_transport.generation),
-        roster,
-    )?;
+    runtime.sync_friend_baseline(&session, roster)?;
     runtime.runtime().finish_realtime_transport(
         old_transport,
         RealtimeTransportTermination::UnexpectedExit {
@@ -163,9 +154,8 @@ fn reconnect_projects_the_fresh_baseline_to_the_frontend() -> Result<()> {
             connected_secs: Some(60),
         },
     );
-    runtime.runtime().sync_friend_snapshot(
-        session.clone(),
-        None,
+    runtime.sync_friend_baseline(
+        &session,
         HashMap::from([(
             "usr_friend".to_string(),
             FriendBaselineEntry {
@@ -267,7 +257,7 @@ fn synthetic_delete_while_reconnecting_updates_the_kept_roster_and_defers_persis
 {
     let (_dir, runtime, session) = runtime_with_active_session("synthetic-delete-reconnecting")?;
     let transport = active_transport(&runtime);
-    seed_online_friend(&runtime, &session, transport.generation)?;
+    seed_online_friend(&runtime, &session)?;
     runtime.runtime().finish_realtime_transport(
         transport,
         RealtimeTransportTermination::UnexpectedExit {
@@ -292,7 +282,7 @@ fn synthetic_delete_while_reconnecting_updates_the_kept_roster_and_defers_persis
 fn local_mode_leave_publishes_while_the_transport_is_disconnected() -> Result<()> {
     let (_dir, runtime, session) = runtime_with_active_session("local-mode-disconnected")?;
     let transport = active_transport(&runtime);
-    seed_online_friend(&runtime, &session, transport.generation)?;
+    seed_online_friend(&runtime, &session)?;
     runtime
         .runtime()
         .deps
@@ -350,7 +340,7 @@ fn local_mode_leave_publishes_while_the_transport_is_disconnected() -> Result<()
 fn local_mode_stop_after_disconnect_clears_the_previous_session() -> Result<()> {
     let (_dir, runtime, session) = runtime_with_active_session("local-mode-disconnected-stop")?;
     let transport = active_transport(&runtime);
-    seed_online_friend(&runtime, &session, transport.generation)?;
+    seed_online_friend(&runtime, &session)?;
     let friends = online_friend_roster();
     runtime
         .runtime()
@@ -364,9 +354,7 @@ fn local_mode_stop_after_disconnect_clears_the_previous_session() -> Result<()> 
             connected_secs: Some(60),
         },
     );
-    runtime
-        .runtime()
-        .sync_friend_snapshot(session.clone(), None, friends.clone())?;
+    runtime.sync_friend_baseline(&session, friends.clone())?;
 
     runtime.runtime().stop(RealtimeStopRequest::default());
 
@@ -388,9 +376,7 @@ fn local_mode_stop_after_disconnect_clears_the_previous_session() -> Result<()> 
     runtime.runtime().emit_friend_location_time_snapshot();
     assert!(runtime.take_events_for_test().is_empty());
 
-    runtime
-        .runtime()
-        .sync_friend_snapshot(session.clone(), None, friends)?;
+    runtime.sync_friend_baseline(&session, friends)?;
     runtime.set_task_executor_for_test(DiscardTaskExecutor);
     runtime.runtime().start_from_friend_baseline(
         session.user_id.clone(),
@@ -426,9 +412,8 @@ fn local_mode_stop_before_first_connection_preserves_replayed_roster() -> Result
 
     runtime.runtime().stop(RealtimeStopRequest::default());
 
-    runtime.runtime().sync_friend_snapshot(
-        session.clone(),
-        None,
+    runtime.sync_friend_baseline(
+        &session,
         HashMap::from([(
             "usr_friend".to_string(),
             FriendBaselineEntry {
@@ -463,7 +448,7 @@ fn local_mode_stop_before_first_connection_preserves_replayed_roster() -> Result
 fn local_mode_scoped_stop_after_disconnect_preserves_reconnect_state() -> Result<()> {
     let (_dir, runtime, session) = runtime_with_active_session("local-mode-scoped-stop")?;
     let transport = active_transport(&runtime);
-    seed_online_friend(&runtime, &session, transport.generation)?;
+    seed_online_friend(&runtime, &session)?;
     runtime
         .runtime()
         .deps
@@ -495,7 +480,7 @@ fn local_mode_scoped_stop_after_disconnect_preserves_reconnect_state() -> Result
 fn fresh_baseline_reconnect_preserves_location_time_without_new_game_logs() -> Result<()> {
     let (_dir, runtime, active_session) = runtime_with_active_session("reconnect-location-time")?;
     let old_transport = active_transport(&runtime);
-    seed_online_friend(&runtime, &active_session, old_transport.generation)?;
+    seed_online_friend(&runtime, &active_session)?;
     runtime
         .runtime()
         .deps
@@ -589,7 +574,7 @@ fn fresh_offline_baseline_keeps_a_pending_offline_through_reconnect() -> Result<
     let (_dir, runtime, active_session) =
         runtime_with_active_session("reconnect-placeholder-offline")?;
     let old_transport = active_transport(&runtime);
-    seed_online_friend(&runtime, &active_session, old_transport.generation)?;
+    seed_online_friend(&runtime, &active_session)?;
     runtime.set_task_executor_for_test(DiscardTaskExecutor);
     runtime.handle_active_friend_ws_message_for_test(&RealtimeWsMessagePayload {
         json: json!({"type": "friend-offline", "content": {"userId": "usr_friend"}}),
@@ -620,9 +605,8 @@ fn fresh_offline_baseline_keeps_a_pending_offline_through_reconnect() -> Result<
             ..FriendBaselinePresence::default()
         },
     };
-    runtime.runtime().sync_friend_snapshot(
-        active_session.clone(),
-        None,
+    runtime.sync_friend_baseline(
+        &active_session,
         HashMap::from([("usr_friend".into(), placeholder)]),
     )?;
 
@@ -646,7 +630,7 @@ fn local_roster_publishes_while_disconnected_and_again_on_reconnect() -> Result<
     let (_dir, runtime, active_session) =
         runtime_with_active_session("reconnect-missed-calibration")?;
     let old_transport = active_transport(&runtime);
-    seed_online_friend(&runtime, &active_session, old_transport.generation)?;
+    seed_online_friend(&runtime, &active_session)?;
     let weak_runtime = Arc::downgrade(runtime.runtime());
     runtime
         .runtime()
@@ -707,7 +691,7 @@ fn replacement_session_does_not_inherit_friend_location_times() -> Result<()> {
         let (_dir, runtime, active_session) =
             runtime_with_active_session("replacement-session-time")?;
         let old_transport = active_transport(&runtime);
-        seed_online_friend(&runtime, &active_session, old_transport.generation)?;
+        seed_online_friend(&runtime, &active_session)?;
         runtime
             .runtime()
             .deps
@@ -731,9 +715,7 @@ fn replacement_session_does_not_inherit_friend_location_times() -> Result<()> {
         runtime
             .auth_scope()
             .set(&replacement.user_id, &replacement.endpoint);
-        runtime
-            .runtime()
-            .sync_friend_snapshot(replacement.clone(), None, friends)?;
+        runtime.sync_friend_baseline(&replacement, friends)?;
         runtime.set_task_executor_for_test(DiscardTaskExecutor);
 
         runtime.runtime().start_from_friend_baseline(
@@ -836,10 +818,8 @@ fn pending_baseline_start_emits_initial_location_time_snapshot() -> Result<()> {
 fn game_start_in_another_instance_republishes_remote_friend_timers() -> Result<()> {
     let (_dir, runtime, active_session) =
         runtime_with_active_session("game-start-remote-friend-timers")?;
-    let active = active_transport(&runtime);
-    runtime.runtime().sync_friend_snapshot(
-        active_session,
-        Some(active.generation),
+    runtime.sync_friend_baseline(
+        &active_session,
         HashMap::from([
             (
                 "usr_a".to_string(),
@@ -906,16 +886,14 @@ fn game_start_in_another_instance_republishes_remote_friend_timers() -> Result<(
 fn baseline_friend_cache_seed_preserves_profile_and_friend_fields() -> Result<()> {
     let (_dir, runtime, active_session) =
         runtime_with_active_session("baseline-friend-cache-open-fields")?;
-    let active = active_transport(&runtime);
     let mut extra = serde_json::Map::new();
     extra.insert(
         "currentAvatarImageUrl".into(),
         json!("https://example.test/avatar.png"),
     );
     extra.insert("tags".into(), json!(["system_trust_known"]));
-    runtime.runtime().sync_friend_snapshot(
-        active_session.clone(),
-        Some(active.generation),
+    runtime.sync_friend_baseline(
+        &active_session,
         HashMap::from([(
             "usr_future".to_string(),
             FriendBaselineEntry {
@@ -954,7 +932,7 @@ fn baseline_friend_cache_seed_preserves_profile_and_friend_fields() -> Result<()
 fn auth_expiry_keeps_snapshots_for_the_reconnect_attempt() -> Result<()> {
     let (_dir, runtime, active_session) = runtime_with_active_session("transport-lifecycle")?;
     let expected = active_transport(&runtime);
-    seed_online_friend(&runtime, &active_session, expected.generation)?;
+    seed_online_friend(&runtime, &active_session)?;
     runtime.runtime().current_user.set_snapshot(
         active_session.user_id.clone(),
         expected.generation,
@@ -1035,7 +1013,7 @@ fn stale_auth_expiry_cannot_clear_or_signal_the_active_transport() -> Result<()>
 fn explicit_stop_finishes_without_auth_expiry_or_restart_signal() -> Result<()> {
     let (_dir, runtime, active_session) = runtime_with_active_session("explicit-stop")?;
     let transport = active_transport(&runtime);
-    seed_online_friend(&runtime, &active_session, transport.generation)?;
+    seed_online_friend(&runtime, &active_session)?;
     runtime.runtime().current_user.set_snapshot(
         active_session.user_id.clone(),
         transport.generation,
@@ -1080,7 +1058,7 @@ fn unexpected_exit_keeps_old_roster_until_pending_baseline_replacement_starts() 
     let (_dir, runtime, active_session) =
         runtime_with_active_session("unexpected-exit-replacement-baseline")?;
     let old_transport = active_transport(&runtime);
-    seed_online_friend(&runtime, &active_session, old_transport.generation)?;
+    seed_online_friend(&runtime, &active_session)?;
 
     runtime.runtime().finish_realtime_transport(
         old_transport.clone(),
@@ -1179,9 +1157,8 @@ fn reconnect_without_a_fresh_baseline_preserves_the_latest_canonical_roster() ->
     let (_dir, runtime, active_session) =
         runtime_with_active_session("unexpected-exit-preserved-baseline")?;
     let old_transport = active_transport(&runtime);
-    runtime.runtime().sync_friend_snapshot(
-        active_session.clone(),
-        Some(old_transport.generation),
+    runtime.sync_friend_baseline(
+        &active_session,
         HashMap::from([(
             "usr_friend".to_string(),
             FriendBaselineEntry {
@@ -1234,7 +1211,7 @@ fn reconnect_without_a_fresh_baseline_keeps_pending_offline() -> Result<()> {
     let (_dir, runtime, active_session) =
         runtime_with_active_session("unexpected-exit-pending-offline")?;
     let old_transport = active_transport(&runtime);
-    seed_online_friend(&runtime, &active_session, old_transport.generation)?;
+    seed_online_friend(&runtime, &active_session)?;
     let RealtimeFriendApplyResult::Output(output) =
         runtime
             .runtime()
@@ -1302,7 +1279,7 @@ fn pending_offline_timer_firing_while_disconnected_keeps_preserved_baseline() ->
         runtime_with_active_session("disconnected-pending-offline-fire")?;
     let old_transport = active_transport(&runtime);
     let old_generation = old_transport.generation;
-    seed_online_friend(&runtime, &active_session, old_generation)?;
+    seed_online_friend(&runtime, &active_session)?;
     let RealtimeFriendApplyResult::Output(output) =
         runtime
             .runtime()
@@ -1366,11 +1343,7 @@ fn friend_ws_dispatch_fans_out_one_canonical_output() -> Result<()> {
         .active_context
         .clone()
         .unwrap();
-    runtime.runtime().sync_friend_snapshot(
-        active_session.clone(),
-        Some(active.generation),
-        HashMap::new(),
-    )?;
+    runtime.sync_friend_baseline(&active_session, HashMap::new())?;
     runtime.take_events_for_test();
     runtime.activity_sink_for_test().take_friend_updates();
 
@@ -1665,9 +1638,7 @@ fn reconnect_with_friend_at(
             connected_secs: Some(600),
         },
     );
-    runtime
-        .runtime()
-        .sync_friend_snapshot(session.clone(), None, friend_roster_at(location))?;
+    runtime.sync_friend_baseline(session, friend_roster_at(location))?;
     runtime.set_task_executor_for_test(DiscardTaskExecutor);
     runtime.runtime().start_from_friend_baseline(
         session.user_id.clone(),
@@ -1683,7 +1654,7 @@ fn reconnect_with_friend_at(
 fn a_reconnect_while_the_recorder_may_be_recording_leaves_the_missed_changes_to_the_backfill(
 ) -> Result<()> {
     let (_dir, runtime, session) = runtime_with_active_session("reconnect-covered-by-recorder")?;
-    seed_online_friend(&runtime, &session, active_transport(&runtime).generation)?;
+    seed_online_friend(&runtime, &session)?;
     let recorder_may_be_recording = Arc::new(AtomicBool::new(true));
     let check = Arc::clone(&recorder_may_be_recording);
     runtime
@@ -1702,7 +1673,7 @@ fn a_reconnect_while_the_recorder_may_be_recording_leaves_the_missed_changes_to_
 #[test]
 fn a_reconnect_the_recorder_did_not_cover_still_writes_what_changed() -> Result<()> {
     let (_dir, runtime, session) = runtime_with_active_session("reconnect-not-covered")?;
-    seed_online_friend(&runtime, &session, active_transport(&runtime).generation)?;
+    seed_online_friend(&runtime, &session)?;
 
     reconnect_with_friend_at(&runtime, &session, 2, "wrld_new:456")?;
 

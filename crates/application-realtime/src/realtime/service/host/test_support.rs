@@ -43,9 +43,10 @@ pub(super) use super::state::{
 };
 use crate::realtime::notifications::apply_notification_ws_message;
 use crate::realtime::{
-    RealtimeMessageSink, RealtimeSessionContext, RealtimeTransport, RealtimeTransportFuture,
-    RealtimeTransportStartResult, RealtimeTransportTermination,
+    FriendBaselineSyncOutcome, RealtimeMessageSink, RealtimeSessionContext, RealtimeTransport,
+    RealtimeTransportFuture, RealtimeTransportStartResult, RealtimeTransportTermination,
 };
+use crate::social_baseline::service::FriendStatusVerdicts;
 pub(super) use crate::test_store::TestRealtimeStore;
 
 impl RealtimeHostRuntime {
@@ -130,6 +131,20 @@ impl TestRealtimeHostRuntime {
         self.runtime.deps.tasks.set_executor(executor);
     }
 
+    pub fn sync_friend_baseline(
+        &self,
+        session: &RealtimeSessionContext,
+        friends_by_id: HashMap<String, FriendBaselineEntry>,
+    ) -> Result<FriendBaselineSyncOutcome> {
+        let watermark = self.runtime.capture_friend_baseline_watermark()?;
+        self.runtime.sync_friend_snapshot_with_watermark(
+            session.clone(),
+            watermark,
+            friends_by_id,
+            FriendStatusVerdicts::default(),
+        )
+    }
+
     pub fn prepare_pending_friend_baseline(
         &self,
         session: &RealtimeSessionContext,
@@ -137,8 +152,7 @@ impl TestRealtimeHostRuntime {
     ) -> Result<()> {
         self.runtime.state.lock().unwrap().connection.active_context = None;
         self.runtime.friends.clear();
-        self.runtime
-            .sync_friend_snapshot(session.clone(), None, friends_by_id)?;
+        self.sync_friend_baseline(session, friends_by_id)?;
         Ok(())
     }
 

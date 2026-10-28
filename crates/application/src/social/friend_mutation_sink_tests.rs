@@ -263,9 +263,8 @@ fn unfriend_locally_applies_via_synthetic_event_when_baseline_present() -> Resul
             ..FriendBaselinePresence::default()
         },
     };
-    runtime.runtime().sync_friend_snapshot(
-        active_session.clone(),
-        Some(7),
+    runtime.sync_friend_baseline(
+        &active_session,
         [("usr_friend".to_string(), friend)].into_iter().collect(),
     )?;
     seed_friend_log_current(&runtime, &active_session.user_id, "usr_friend");
@@ -311,9 +310,8 @@ fn unfriend_locally_with_stale_owner_falls_back_without_touching_active_roster()
             ..FriendBaselinePresence::default()
         },
     };
-    runtime.runtime().sync_friend_snapshot(
-        active_session.clone(),
-        Some(7),
+    runtime.sync_friend_baseline(
+        &active_session,
         [("usr_friend".to_string(), friend)].into_iter().collect(),
     )?;
     seed_friend_log_current(&runtime, &active_session.user_id, "usr_friend");
@@ -369,9 +367,8 @@ fn synthetic_event_with_stale_endpoint_reports_missing_baseline() -> Result<()> 
             ..FriendBaselinePresence::default()
         },
     };
-    runtime.runtime().sync_friend_snapshot(
-        active_session.clone(),
-        Some(7),
+    runtime.sync_friend_baseline(
+        &active_session,
         [("usr_friend".to_string(), friend)].into_iter().collect(),
     )?;
 
@@ -396,9 +393,7 @@ fn synthetic_event_with_stale_endpoint_reports_missing_baseline() -> Result<()> 
 fn accept_locally_applies_via_synthetic_event_when_baseline_present() -> Result<()> {
     let (_dir, runtime, active_session) =
         runtime_with_active_session("mutation-sink-accept-baseline")?;
-    runtime
-        .runtime()
-        .sync_friend_snapshot(active_session.clone(), Some(7), HashMap::new())?;
+    runtime.sync_friend_baseline(&active_session, HashMap::new())?;
 
     let outcome = apply_friend_request_accept_locally(
         &deps(&runtime),
@@ -456,9 +451,8 @@ fn unfriend_then_later_ws_friend_delete_records_exactly_one_unfriend_history() -
             ..FriendBaselinePresence::default()
         },
     };
-    runtime.runtime().sync_friend_snapshot(
-        active_session.clone(),
-        Some(7),
+    runtime.sync_friend_baseline(
+        &active_session,
         [("usr_friend".to_string(), friend)].into_iter().collect(),
     )?;
     seed_friend_log_current(&runtime, &active_session.user_id, "usr_friend");
@@ -496,9 +490,8 @@ fn ws_friend_delete_then_later_unfriend_records_exactly_one_unfriend_history() -
             ..FriendBaselinePresence::default()
         },
     };
-    runtime.runtime().sync_friend_snapshot(
-        active_session.clone(),
-        Some(7),
+    runtime.sync_friend_baseline(
+        &active_session,
         [("usr_friend".to_string(), friend)].into_iter().collect(),
     )?;
     seed_friend_log_current(&runtime, &active_session.user_id, "usr_friend");
@@ -525,9 +518,7 @@ fn ws_friend_delete_then_later_unfriend_records_exactly_one_unfriend_history() -
 fn accept_then_later_ws_friend_add_records_exactly_one_friend_history() -> Result<()> {
     let (_dir, runtime, active_session) =
         runtime_with_active_session("mutation-sink-accept-race-local-first")?;
-    runtime
-        .runtime()
-        .sync_friend_snapshot(active_session.clone(), Some(7), HashMap::new())?;
+    runtime.sync_friend_baseline(&active_session, HashMap::new())?;
 
     let outcome = apply_friend_request_accept_locally(
         &deps(&runtime),
@@ -552,9 +543,7 @@ fn accept_then_later_ws_friend_add_records_exactly_one_friend_history() -> Resul
 fn ws_friend_add_then_later_accept_records_exactly_one_friend_history() -> Result<()> {
     let (_dir, runtime, active_session) =
         runtime_with_active_session("mutation-sink-accept-race-ws-first")?;
-    runtime
-        .runtime()
-        .sync_friend_snapshot(active_session.clone(), Some(7), HashMap::new())?;
+    runtime.sync_friend_baseline(&active_session, HashMap::new())?;
 
     runtime.handle_active_friend_ws_message_for_test(&friend_add_payload("usr_target", "Target"));
 
