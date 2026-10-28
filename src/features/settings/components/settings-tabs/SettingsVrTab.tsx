@@ -22,6 +22,7 @@ import {
 import { Slider } from '@/ui/shadcn/slider';
 import { Switch } from '@/ui/shadcn/switch';
 
+import { SETTINGS_DEFAULT_VALUES } from '../../settingsFieldState';
 import { overlayToastOptions } from '../../settingsOptions';
 import { SettingsCard } from '../SettingsCard';
 import { Field } from '../SettingsField';
@@ -198,8 +199,6 @@ function SettingsVrTabContent({
         prefs.hmdNotificationsEnabled;
     const hmdNotificationsEnabled = prefs.hmdNotificationsEnabled;
     const wristOverlayEnabled = prefs.wristOverlayEnabled;
-    const vrDeviceStatusEnabled =
-        wristOverlayEnabled && prefs.wristOverlayShowDevices;
     const notificationTimeoutSeconds =
         draftNotificationTimeout ??
         Math.max(0, Math.floor(prefs.notificationTimeout / 1000));
@@ -222,6 +221,12 @@ function SettingsVrTabContent({
                 )}
             >
                 <Field
+                    settingId="vr.notifications.when-to-display"
+                    onReset={() =>
+                        onOverlayToastChange(
+                            SETTINGS_DEFAULT_VALUES.overlayToast
+                        )
+                    }
                     label={t(
                         'view.settings.notifications.notifications.vr_notifications.when_to_display'
                     )}
@@ -239,7 +244,6 @@ function SettingsVrTabContent({
                             value,
                             label: t(labelKey)
                         }))}
-                        disabled={!vrNotificationsEnabled}
                         onValueChange={(value) =>
                             onOverlayToastChange(value ?? '')
                         }
@@ -265,6 +269,12 @@ function SettingsVrTabContent({
                 </Field>
 
                 <Field
+                    settingId="vr.notifications.xsoverlay"
+                    onReset={() =>
+                        onXsNotificationsChange(
+                            SETTINGS_DEFAULT_VALUES.xsNotifications
+                        )
+                    }
                     label={t(
                         isLinux
                             ? 'view.settings.notifications.notifications.vr_notifications.wayvr_notifications'
@@ -280,6 +290,12 @@ function SettingsVrTabContent({
                 {isLinux ? null : (
                     <>
                         <Field
+                            settingId="vr.notifications.ovrtoolkit-hud"
+                            onReset={() =>
+                                onOvrtHudNotificationsChange(
+                                    SETTINGS_DEFAULT_VALUES.ovrtHudNotifications
+                                )
+                            }
                             label={t(
                                 'view.settings.notifications.notifications.vr_notifications.ovrtoolkit_hud_notifications'
                             )}
@@ -291,6 +307,12 @@ function SettingsVrTabContent({
                         </Field>
 
                         <Field
+                            settingId="vr.notifications.ovrtoolkit-wrist"
+                            onReset={() =>
+                                onOvrtWristNotificationsChange(
+                                    SETTINGS_DEFAULT_VALUES.ovrtWristNotifications
+                                )
+                            }
                             label={t(
                                 'view.settings.notifications.notifications.vr_notifications.ovrtoolkit_wrist_notifications'
                             )}
@@ -304,6 +326,7 @@ function SettingsVrTabContent({
                 )}
 
                 <Field
+                    settingId="vr.notifications.filters"
                     label={t(
                         'view.settings.notifications.notifications.vr_notifications.notification_filters'
                     )}
@@ -318,6 +341,12 @@ function SettingsVrTabContent({
                 </Field>
 
                 <Field
+                    settingId="vr.notifications.user-images"
+                    onReset={() =>
+                        onImageNotificationsChange(
+                            SETTINGS_DEFAULT_VALUES.imageNotifications
+                        )
+                    }
                     label={t(
                         'view.settings.notifications.notifications.vr_notifications.user_images'
                     )}
@@ -329,6 +358,15 @@ function SettingsVrTabContent({
                 </Field>
 
                 <Field
+                    settingId="vr.notifications.timeout"
+                    onReset={() =>
+                        onNotificationTimeoutSecondsChange(
+                            String(
+                                SETTINGS_DEFAULT_VALUES.notificationTimeout /
+                                    1000
+                            )
+                        )
+                    }
                     label={t(
                         'view.settings.notifications.notifications.vr_notifications.notification_timeout'
                     )}
@@ -363,6 +401,12 @@ function SettingsVrTabContent({
                 </Field>
 
                 <Field
+                    settingId="vr.notifications.opacity"
+                    onReset={() =>
+                        onNotificationOpacityChange(
+                            SETTINGS_DEFAULT_VALUES.notificationOpacity
+                        )
+                    }
                     label={t(
                         'view.settings.notifications.notifications.vr_notifications.notification_opacity'
                     )}
@@ -397,6 +441,12 @@ function SettingsVrTabContent({
                 title={t('view.settings.vr.hmd_notifications.header')}
             >
                 <Field
+                    settingId="vr.hmd.enabled"
+                    onReset={() =>
+                        onHmdNotificationsEnabledChange(
+                            SETTINGS_DEFAULT_VALUES.hmdNotificationsEnabled
+                        )
+                    }
                     label={t(
                         'view.settings.vr.hmd_notifications.hmd_notifications'
                     )}
@@ -408,9 +458,14 @@ function SettingsVrTabContent({
                 </Field>
 
                 <Field
+                    settingId="vr.hmd.start-mode"
+                    onReset={() =>
+                        onHmdNotificationStartModeChange(
+                            SETTINGS_DEFAULT_VALUES.hmdNotificationStartMode
+                        )
+                    }
                     label={t('view.settings.vr.hmd_notifications.start_when')}
                     controlId="settings-hmd-notification-start-mode"
-                    disabled={!hmdNotificationsEnabled}
                 >
                     <Select<HmdNotificationStartMode>
                         value={prefs.hmdNotificationStartMode}
@@ -418,7 +473,6 @@ function SettingsVrTabContent({
                             value,
                             label: t(labelKey)
                         }))}
-                        disabled={!hmdNotificationsEnabled}
                         onValueChange={(value) => {
                             if (value) {
                                 onHmdNotificationStartModeChange(value);
@@ -446,9 +500,14 @@ function SettingsVrTabContent({
                 </Field>
 
                 <Field
+                    settingId="vr.hmd.position"
+                    onReset={() =>
+                        onHmdNotificationPositionChange(
+                            SETTINGS_DEFAULT_VALUES.hmdNotificationPosition
+                        )
+                    }
                     label={t('view.settings.vr.hmd_notifications.position')}
                     controlId="settings-hmd-notification-position"
-                    disabled={!hmdNotificationsEnabled}
                 >
                     <Select<HmdNotificationPosition>
                         value={prefs.hmdNotificationPosition}
@@ -456,7 +515,6 @@ function SettingsVrTabContent({
                             value,
                             label: t(labelKey)
                         }))}
-                        disabled={!hmdNotificationsEnabled}
                         onValueChange={(value) => {
                             if (value) {
                                 onHmdNotificationPositionChange(value);
@@ -482,9 +540,14 @@ function SettingsVrTabContent({
                 </Field>
 
                 <Field
+                    settingId="vr.hmd.style"
+                    onReset={() =>
+                        onHmdNotificationStyleChange(
+                            SETTINGS_DEFAULT_VALUES.hmdNotificationStyle
+                        )
+                    }
                     label={t('view.settings.vr.hmd_notifications.style')}
                     controlId="settings-hmd-notification-style"
-                    disabled={!hmdNotificationsEnabled}
                 >
                     <Select<HmdNotificationStyle>
                         value={prefs.hmdNotificationStyle}
@@ -492,7 +555,6 @@ function SettingsVrTabContent({
                             value,
                             label: t(labelKey)
                         }))}
-                        disabled={!hmdNotificationsEnabled}
                         onValueChange={(value) => {
                             if (value) {
                                 onHmdNotificationStyleChange(value);
@@ -518,25 +580,33 @@ function SettingsVrTabContent({
                 </Field>
 
                 <Field
+                    settingId="vr.hmd.friend-icons"
+                    onReset={() =>
+                        onHmdNotificationAvatarsChange(
+                            SETTINGS_DEFAULT_VALUES.hmdNotificationAvatars
+                        )
+                    }
                     label={t('view.settings.vr.hmd_notifications.friend_icons')}
-                    disabled={!hmdNotificationsEnabled}
                 >
                     <Switch
                         checked={prefs.hmdNotificationAvatars}
-                        disabled={!hmdNotificationsEnabled}
                         onCheckedChange={onHmdNotificationAvatarsChange}
                     />
                 </Field>
 
                 <Field
+                    settingId="vr.hmd.tracker-disconnect"
+                    onReset={() =>
+                        onHmdNotificationTrackerDisconnectChange(
+                            SETTINGS_DEFAULT_VALUES.hmdNotificationTrackerDisconnect
+                        )
+                    }
                     label={t(
                         'view.settings.vr.hmd_notifications.tracker_disconnect'
                     )}
-                    disabled={!hmdNotificationsEnabled}
                 >
                     <Switch
                         checked={prefs.hmdNotificationTrackerDisconnect}
-                        disabled={!hmdNotificationsEnabled}
                         onCheckedChange={
                             onHmdNotificationTrackerDisconnectChange
                         }
@@ -544,9 +614,17 @@ function SettingsVrTabContent({
                 </Field>
 
                 <Field
+                    settingId="vr.hmd.timeout"
+                    onReset={() =>
+                        onHmdNotificationTimeoutSecondsChange(
+                            String(
+                                SETTINGS_DEFAULT_VALUES.hmdNotificationTimeout /
+                                    1000
+                            )
+                        )
+                    }
                     label={t('view.settings.vr.hmd_notifications.timeout')}
                     controlId="settings-hmd-notification-timeout"
-                    disabled={!hmdNotificationsEnabled}
                 >
                     <div className="flex items-center justify-end gap-2">
                         <NumberField
@@ -555,7 +633,6 @@ function SettingsVrTabContent({
                             max={30}
                             step={1}
                             value={hmdNotificationTimeoutSeconds}
-                            disabled={!hmdNotificationsEnabled}
                             className="w-32"
                             onValueChange={setDraftHmdNotificationTimeout}
                             onValueCommitted={(value) => {
@@ -578,8 +655,13 @@ function SettingsVrTabContent({
                 </Field>
 
                 <Field
+                    settingId="vr.hmd.opacity"
+                    onReset={() =>
+                        onHmdNotificationOpacityChange(
+                            SETTINGS_DEFAULT_VALUES.hmdNotificationOpacity
+                        )
+                    }
                     label={t('view.settings.vr.hmd_notifications.opacity')}
-                    disabled={!hmdNotificationsEnabled}
                 >
                     <div className="flex w-56 max-w-full items-center justify-end gap-3">
                         <Slider
@@ -587,7 +669,6 @@ function SettingsVrTabContent({
                             min={0}
                             max={100}
                             step={1}
-                            disabled={!hmdNotificationsEnabled}
                             onValueChange={(value) =>
                                 setDraftHmdNotificationOpacity(
                                     Array.isArray(value) ? value[0] : value
@@ -607,13 +688,12 @@ function SettingsVrTabContent({
                 </Field>
 
                 <Field
+                    settingId="vr.hmd.filters"
                     label={t('view.settings.vr.hmd_notifications.filters')}
-                    disabled={!hmdNotificationsEnabled}
                 >
                     <Button
                         type="button"
                         variant="outline"
-                        disabled={!hmdNotificationsEnabled}
                         onClick={onOpenHmdNotificationFiltersDialog}
                     >
                         {t('common.actions.configure')}
@@ -626,6 +706,12 @@ function SettingsVrTabContent({
                 title={t('view.settings.vr.wrist_overlay.header')}
             >
                 <Field
+                    settingId="vr.wrist.enabled"
+                    onReset={() =>
+                        onWristOverlayEnabledChange(
+                            SETTINGS_DEFAULT_VALUES.wristOverlayEnabled
+                        )
+                    }
                     label={t(
                         'view.settings.vr.wrist_overlay.wrist_feed_overlay'
                     )}
@@ -637,9 +723,14 @@ function SettingsVrTabContent({
                 </Field>
 
                 <Field
+                    settingId="vr.wrist.start-mode"
+                    onReset={() =>
+                        onWristOverlayStartModeChange(
+                            SETTINGS_DEFAULT_VALUES.wristOverlayStartMode
+                        )
+                    }
                     label={t('view.settings.vr.wrist_overlay.start_when')}
                     controlId="settings-wrist-overlay-start-mode"
-                    disabled={!wristOverlayEnabled}
                 >
                     <Select<WristOverlayStartMode>
                         value={prefs.wristOverlayStartMode}
@@ -649,7 +740,6 @@ function SettingsVrTabContent({
                                 label: t(labelKey)
                             })
                         )}
-                        disabled={!wristOverlayEnabled}
                         onValueChange={(value) => {
                             if (value) {
                                 onWristOverlayStartModeChange(value);
@@ -677,9 +767,14 @@ function SettingsVrTabContent({
                 </Field>
 
                 <Field
+                    settingId="vr.wrist.button"
+                    onReset={() =>
+                        onWristOverlayButtonChange(
+                            SETTINGS_DEFAULT_VALUES.wristOverlayButton
+                        )
+                    }
                     label={t('view.settings.vr.wrist_overlay.overlay_button')}
                     controlId="settings-wrist-overlay-button"
-                    disabled={!wristOverlayEnabled}
                 >
                     <Select<WristOverlayButton>
                         value={prefs.wristOverlayButton}
@@ -687,7 +782,6 @@ function SettingsVrTabContent({
                             value,
                             label: t(labelKey)
                         }))}
-                        disabled={!wristOverlayEnabled}
                         onValueChange={(value) => {
                             if (value) {
                                 onWristOverlayButtonChange(value);
@@ -713,9 +807,14 @@ function SettingsVrTabContent({
                 </Field>
 
                 <Field
+                    settingId="vr.wrist.hand"
+                    onReset={() =>
+                        onWristOverlayHandChange(
+                            SETTINGS_DEFAULT_VALUES.wristOverlayHand
+                        )
+                    }
                     label={t('view.settings.vr.wrist_overlay.display_on')}
                     controlId="settings-wrist-overlay-hand"
-                    disabled={!wristOverlayEnabled}
                 >
                     <Select<WristOverlayHand>
                         value={prefs.wristOverlayHand}
@@ -723,7 +822,6 @@ function SettingsVrTabContent({
                             value,
                             label: t(labelKey)
                         }))}
-                        disabled={!wristOverlayEnabled}
                         onValueChange={(value) => {
                             if (value) {
                                 onWristOverlayHandChange(value);
@@ -749,9 +847,14 @@ function SettingsVrTabContent({
                 </Field>
 
                 <Field
+                    settingId="vr.wrist.size"
+                    onReset={() =>
+                        onWristOverlaySizeChange(
+                            SETTINGS_DEFAULT_VALUES.wristOverlaySize
+                        )
+                    }
                     label={t('view.settings.vr.wrist_overlay.size')}
                     controlId="settings-wrist-overlay-size"
-                    disabled={!wristOverlayEnabled}
                 >
                     <Select<WristOverlaySize>
                         value={prefs.wristOverlaySize}
@@ -759,7 +862,6 @@ function SettingsVrTabContent({
                             value,
                             label: t(labelKey)
                         }))}
-                        disabled={!wristOverlayEnabled}
                         onValueChange={(value) => {
                             if (value) {
                                 onWristOverlaySizeChange(value);
@@ -785,54 +887,71 @@ function SettingsVrTabContent({
                 </Field>
 
                 <Field
+                    settingId="vr.wrist.dark-background"
+                    onReset={() =>
+                        onWristOverlayDarkBackgroundChange(
+                            SETTINGS_DEFAULT_VALUES.wristOverlayDarkBackground
+                        )
+                    }
                     label={t('view.settings.vr.wrist_overlay.dark_background')}
-                    disabled={!wristOverlayEnabled}
                 >
                     <Switch
                         checked={prefs.wristOverlayDarkBackground}
-                        disabled={!wristOverlayEnabled}
                         onCheckedChange={onWristOverlayDarkBackgroundChange}
                     />
                 </Field>
 
                 <Field
+                    settingId="vr.wrist.hide-private-worlds"
+                    onReset={() =>
+                        onWristOverlayHidePrivateWorldsChange(
+                            SETTINGS_DEFAULT_VALUES.wristOverlayHidePrivateWorlds
+                        )
+                    }
                     label={t(
                         'view.settings.vr.wrist_overlay.hide_private_worlds'
                     )}
-                    disabled={!wristOverlayEnabled}
                 >
                     <Switch
                         checked={prefs.wristOverlayHidePrivateWorlds}
-                        disabled={!wristOverlayEnabled}
                         onCheckedChange={onWristOverlayHidePrivateWorldsChange}
                     />
                 </Field>
 
                 <Field
+                    settingId="vr.wrist.device-status"
+                    onReset={() =>
+                        onWristOverlayShowDevicesChange(
+                            SETTINGS_DEFAULT_VALUES.wristOverlayShowDevices
+                        )
+                    }
                     label={t('view.settings.vr.wrist_overlay.vr_device_status')}
-                    disabled={!wristOverlayEnabled}
                 >
                     <Switch
                         checked={prefs.wristOverlayShowDevices}
-                        disabled={!wristOverlayEnabled}
                         onCheckedChange={onWristOverlayShowDevicesChange}
                     />
                 </Field>
 
                 <Field
+                    settingId="vr.wrist.battery-percent"
+                    onReset={() =>
+                        onWristOverlayShowBatteryPercentChange(
+                            SETTINGS_DEFAULT_VALUES.wristOverlayShowBatteryPercent
+                        )
+                    }
                     label={t(
                         'view.settings.vr.wrist_overlay.battery_percentage'
                     )}
-                    disabled={!vrDeviceStatusEnabled}
                 >
                     <Switch
                         checked={prefs.wristOverlayShowBatteryPercent}
-                        disabled={!vrDeviceStatusEnabled}
                         onCheckedChange={onWristOverlayShowBatteryPercentChange}
                     />
                 </Field>
 
                 <Field
+                    settingId="vr.wrist.notifications"
                     label={t(
                         'view.settings.vr.wrist_overlay.wrist_feed_notifications'
                     )}
@@ -840,7 +959,6 @@ function SettingsVrTabContent({
                     <Button
                         type="button"
                         variant="outline"
-                        disabled={!wristOverlayEnabled}
                         onClick={onOpenWristFeedNotificationsDialog}
                     >
                         {t('common.actions.configure')}
@@ -854,6 +972,7 @@ function SettingsVrTabContent({
                 description={t('view.settings.vr.test_mode.description')}
             >
                 <Field
+                    settingId="vr.test.force-display"
                     label={t('view.settings.vr.test_mode.force_display')}
                     description={
                         overlayTestModeDisabled && !overlayTestMode
@@ -864,7 +983,6 @@ function SettingsVrTabContent({
                 >
                     <Switch
                         checked={overlayTestMode}
-                        disabled={overlayTestModeDisabled}
                         onCheckedChange={onOverlayTestModeChange}
                     />
                 </Field>

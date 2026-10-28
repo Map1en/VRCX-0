@@ -238,6 +238,7 @@ export function McpServerSettingsGroup() {
             description={t('view.settings.integrations.mcp_server.description')}
         >
             <Field
+                settingId="ai.mcp.enabled"
                 label={t('view.settings.integrations.mcp_server.enable')}
                 description={t(
                     'view.settings.integrations.mcp_server.enable_description'
@@ -251,6 +252,7 @@ export function McpServerSettingsGroup() {
             </Field>
 
             <Field
+                settingId="ai.mcp.allow-lan"
                 label={t(
                     'view.settings.integrations.mcp_server.allow_lan_connections'
                 )}
@@ -266,6 +268,7 @@ export function McpServerSettingsGroup() {
             </Field>
 
             <Field
+                settingId="ai.mcp.allow-vrchat-writes"
                 label={t(
                     'view.settings.integrations.mcp_server.allow_vrchat_writes'
                 )}
@@ -281,6 +284,7 @@ export function McpServerSettingsGroup() {
             </Field>
 
             <Field
+                settingId="ai.mcp.port"
                 label={t('view.settings.integrations.mcp_server.port_label')}
                 description={t(
                     'view.settings.integrations.mcp_server.port_description'
@@ -317,6 +321,7 @@ export function McpServerSettingsGroup() {
             </Field>
 
             <Field
+                settingId="ai.mcp.status"
                 label={t('view.settings.integrations.mcp_server.status_label')}
                 description={
                     mcpStatus?.port
@@ -349,6 +354,7 @@ export function McpServerSettingsGroup() {
             </Field>
 
             <Field
+                settingId="ai.mcp.client-config"
                 label={t('view.settings.integrations.mcp_server.client_config')}
                 description={t(
                     'view.settings.integrations.mcp_server.security_note'
@@ -385,6 +391,7 @@ export function McpServerSettingsGroup() {
             </Field>
 
             <Field
+                settingId="ai.mcp.rotate-token"
                 label={t('view.settings.integrations.mcp_server.rotate_token')}
                 description={t(
                     'view.settings.integrations.mcp_server.rotate_token_description'

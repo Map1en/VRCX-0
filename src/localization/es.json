@@ -3387,6 +3387,17 @@
             "restart_pending": {
                 "description": "Algunos cambios se aplicarán cuando reinicies VRCX-0.",
                 "restart_now": "Reiniciar ahora"
+            },
+            "field": {
+                "modified": "Modificado",
+                "reset": "Restablecer",
+                "restart_required": "Requiere reiniciar",
+                "requires_parent": "Activa primero «{name}»"
+            },
+            "search": {
+                "placeholder": "Buscar ajustes",
+                "results": "Resultados de búsqueda de ajustes",
+                "no_results": "No hay ajustes que coincidan"
             }
         },
         "dashboard": {

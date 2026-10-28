@@ -3377,6 +3377,17 @@
             "restart_pending": {
                 "description": "一部の設定は VRCX-0 を再起動すると反映されます。",
                 "restart_now": "今すぐ再起動"
+            },
+            "field": {
+                "modified": "変更済み",
+                "reset": "リセット",
+                "restart_required": "再起動が必要",
+                "requires_parent": "先に「{name}」をオンにしてください"
+            },
+            "search": {
+                "placeholder": "設定を検索",
+                "results": "設定の検索結果",
+                "no_results": "一致する設定がありません"
             }
         },
         "dashboard": {

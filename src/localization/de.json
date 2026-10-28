@@ -3383,6 +3383,17 @@
             "restart_pending": {
                 "description": "Einige Änderungen werden erst nach einem Neustart von VRCX-0 wirksam.",
                 "restart_now": "Jetzt neu starten"
+            },
+            "field": {
+                "modified": "Geändert",
+                "reset": "Zurücksetzen",
+                "restart_required": "Neustart erforderlich",
+                "requires_parent": "Zuerst „{name}“ aktivieren"
+            },
+            "search": {
+                "placeholder": "Einstellungen durchsuchen",
+                "results": "Suchergebnisse in den Einstellungen",
+                "no_results": "Keine passenden Einstellungen"
             }
         },
         "dashboard": {

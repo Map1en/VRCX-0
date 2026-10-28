@@ -3399,6 +3399,17 @@
             "restart_pending": {
                 "description": "Некоторые изменения вступят в силу после перезапуска VRCX-0.",
                 "restart_now": "Перезапустить сейчас"
+            },
+            "field": {
+                "modified": "Изменено",
+                "reset": "Сбросить",
+                "restart_required": "Нужен перезапуск",
+                "requires_parent": "Сначала включите «{name}»"
+            },
+            "search": {
+                "placeholder": "Поиск по настройкам",
+                "results": "Результаты поиска по настройкам",
+                "no_results": "Подходящих настроек нет"
             }
         },
         "dashboard": {

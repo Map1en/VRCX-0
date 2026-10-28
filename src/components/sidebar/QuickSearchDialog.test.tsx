@@ -47,6 +47,10 @@ vi.mock('react-i18next', async (importOriginal) => {
     };
 });
 
+vi.mock('@/shared/buildLabel', () => ({
+    isUpdateCheckDisabledBuild: () => false
+}));
+
 vi.mock('@/lib/useKnownUser', () => ({
     useKnownUserFacts: () => ({})
 }));

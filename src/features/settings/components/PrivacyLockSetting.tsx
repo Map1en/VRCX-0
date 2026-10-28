@@ -14,6 +14,7 @@ export function PrivacyLockSetting() {
 
     return (
         <Field
+            settingId="system.window.privacy-lock"
             label={t('privacy_lock.settings.label')}
             description={t('privacy_lock.settings.description')}
         >

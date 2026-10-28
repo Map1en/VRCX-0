@@ -260,6 +260,7 @@ export function IntegrationApiSettingsGroup() {
             }
         >
             <Field
+                settingId="integrations.api.enabled"
                 label={t('view.settings.integrations.integration_api.enable')}
                 description={t(
                     'view.settings.integrations.integration_api.enable_description'
@@ -277,6 +278,7 @@ export function IntegrationApiSettingsGroup() {
             </Field>
 
             <Field
+                settingId="integrations.api.information-types"
                 label={t(
                     'view.settings.integrations.integration_api.information_types'
                 )}
@@ -288,6 +290,7 @@ export function IntegrationApiSettingsGroup() {
             </Field>
 
             <Field
+                settingId="integrations.api.allow-lan"
                 label={t(
                     'view.settings.integrations.integration_api.allow_lan_connections'
                 )}
@@ -309,6 +312,7 @@ export function IntegrationApiSettingsGroup() {
             </Field>
 
             <Field
+                settingId="integrations.api.port"
                 label={t(
                     'view.settings.integrations.integration_api.port_label'
                 )}
@@ -350,6 +354,7 @@ export function IntegrationApiSettingsGroup() {
             </Field>
 
             <Field
+                settingId="integrations.api.status"
                 label={t(
                     'view.settings.integrations.integration_api.status_label'
                 )}
@@ -381,6 +386,7 @@ export function IntegrationApiSettingsGroup() {
             </Field>
 
             <Field
+                settingId="integrations.api.token"
                 label={t('view.settings.integrations.integration_api.token')}
                 description={t(
                     'view.settings.integrations.integration_api.token_description'

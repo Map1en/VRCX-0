@@ -70,6 +70,7 @@ export function BrowseHistoryRetentionField() {
 
     return (
         <Field
+            settingId="advanced.storage.browse-history-retention"
             label={t('browse_history.retention.label')}
             description={t('browse_history.retention.description')}
         >

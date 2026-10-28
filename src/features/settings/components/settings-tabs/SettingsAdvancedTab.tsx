@@ -25,6 +25,7 @@ import {
 import { Switch } from '@/ui/shadcn/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { SETTINGS_DEFAULT_VALUES } from '../../settingsFieldState';
 import { BrowseHistoryRetentionField } from '../BrowseHistoryRetentionField';
 import { SettingsCard } from '../SettingsCard';
 import { Field } from '../SettingsField';
@@ -104,6 +105,7 @@ export function SettingsAdvancedTabContent({
                 title={t('view.settings.advanced.advanced_ui.storage.header')}
             >
                 <Field
+                    settingId="advanced.storage.data-location"
                     label={t(
                         'view.settings.advanced.advanced_ui.storage.data_location'
                     )}
@@ -245,6 +247,12 @@ export function SettingsAdvancedTabContent({
                     </Alert>
                 ) : null}
                 <Field
+                    settingId="advanced.storage.auto-sweep-cache"
+                    onReset={() =>
+                        onAutoSweepVRChatCacheChange(
+                            SETTINGS_DEFAULT_VALUES.autoSweepVRChatCache
+                        )
+                    }
                     label={t(
                         'view.settings.advanced.advanced_ui.storage.cache_header'
                     )}
@@ -258,6 +266,12 @@ export function SettingsAdvancedTabContent({
                     />
                 </Field>
                 <Field
+                    settingId="advanced.storage.avatar-cleanup"
+                    onReset={() =>
+                        onAvatarAutoCleanupChange(
+                            SETTINGS_DEFAULT_VALUES.avatarAutoCleanup
+                        )
+                    }
                     label={t(
                         'view.settings.advanced.advanced_ui.storage.keep_avatar_data'
                     )}
@@ -311,6 +325,12 @@ export function SettingsAdvancedTabContent({
                 <BrowseHistoryRetentionField />
                 {gameLogPersistenceSupported ? (
                     <Field
+                        settingId="advanced.storage.gamelog"
+                        onReset={() =>
+                            onGameLogDisabledChange(
+                                SETTINGS_DEFAULT_VALUES.gameLogDisabled
+                            )
+                        }
                         label={t(
                             'view.settings.advanced.advanced_ui.troubleshooting.gamelog'
                         )}
@@ -327,6 +347,12 @@ export function SettingsAdvancedTabContent({
                     </Field>
                 ) : null}
                 <Field
+                    settingId="advanced.storage.feed-history"
+                    onReset={() =>
+                        onFeedPersistenceDisabledChange(
+                            SETTINGS_DEFAULT_VALUES.feedPersistenceDisabled
+                        )
+                    }
                     label={t(
                         'view.settings.advanced.advanced_ui.troubleshooting.feed_history'
                     )}
@@ -364,6 +390,7 @@ export function SettingsAdvancedTabContent({
                 )}
             >
                 <Field
+                    settingId="advanced.import-recovery.import-from-vrcx"
                     label={t(
                         'view.settings.advanced.advanced_ui.import_recovery.import_from_vrcx'
                     )}
@@ -391,6 +418,12 @@ export function SettingsAdvancedTabContent({
                 )}
             >
                 <Field
+                    settingId="advanced.usage-data.share"
+                    onReset={() =>
+                        onAnonymousUsageTelemetryChange(
+                            SETTINGS_DEFAULT_VALUES.anonymousUsageTelemetry
+                        )
+                    }
                     label={t(
                         'view.settings.advanced.advanced_ui.usage_data.share'
                     )}
@@ -413,6 +446,7 @@ export function SettingsAdvancedTabContent({
                 </div>
                 <div className="flex flex-col px-4 pb-2">
                     <Field
+                        settingId="advanced.usage-data.purge-avatar-history"
                         label={t(
                             'view.settings.advanced.advanced_ui.danger.avatar_history'
                         )}

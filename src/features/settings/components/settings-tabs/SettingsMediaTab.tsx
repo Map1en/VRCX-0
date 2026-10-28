@@ -12,6 +12,7 @@ import {
 } from '@/ui/shadcn/number-field';
 import { Switch } from '@/ui/shadcn/switch';
 
+import { SETTINGS_DEFAULT_VALUES } from '../../settingsFieldState';
 import { useSettingsPageSection } from '../../SettingsPageStateContext';
 import { SettingsCard } from '../SettingsCard';
 import { Field } from '../SettingsField';
@@ -64,6 +65,12 @@ export function SettingsMediaTab() {
                 )}
             >
                 <Field
+                    settingId="media.screenshots.helper"
+                    onReset={() =>
+                        onScreenshotHelperChange(
+                            SETTINGS_DEFAULT_VALUES.screenshotHelper
+                        )
+                    }
                     label={t(
                         'view.settings.advanced.advanced.screenshot_helper.enable'
                     )}
@@ -77,6 +84,12 @@ export function SettingsMediaTab() {
                     />
                 </Field>
                 <Field
+                    settingId="media.screenshots.modify-filename"
+                    onReset={() =>
+                        onScreenshotHelperModifyFilenameChange(
+                            SETTINGS_DEFAULT_VALUES.screenshotHelperModifyFilename
+                        )
+                    }
                     label={t(
                         'view.settings.advanced.advanced.screenshot_helper.modify_filename'
                     )}
@@ -86,11 +99,16 @@ export function SettingsMediaTab() {
                 >
                     <Switch
                         checked={prefs.screenshotHelperModifyFilename}
-                        disabled={!prefs.screenshotHelper}
                         onCheckedChange={onScreenshotHelperModifyFilenameChange}
                     />
                 </Field>
                 <Field
+                    settingId="media.screenshots.copy-to-clipboard"
+                    onReset={() =>
+                        onScreenshotHelperCopyToClipboardChange(
+                            SETTINGS_DEFAULT_VALUES.screenshotHelperCopyToClipboard
+                        )
+                    }
                     label={t(
                         'view.settings.advanced.advanced.screenshot_helper.copy_to_clipboard'
                     )}
@@ -103,6 +121,7 @@ export function SettingsMediaTab() {
                     />
                 </Field>
                 <Field
+                    settingId="media.screenshots.delete-metadata"
                     label={t(
                         'view.settings.advanced.advanced.delete_all_screenshot_metadata.button'
                     )}
@@ -170,6 +189,12 @@ export function SettingsMediaTab() {
                 )}
             >
                 <Field
+                    settingId="media.prints.save"
+                    onReset={() =>
+                        onSaveInstancePrintsChange(
+                            SETTINGS_DEFAULT_VALUES.saveInstancePrints
+                        )
+                    }
                     label={t(
                         'view.settings.advanced.advanced.save_instance_prints_to_file.description'
                     )}
@@ -180,17 +205,28 @@ export function SettingsMediaTab() {
                     />
                 </Field>
                 <Field
+                    settingId="media.prints.crop"
+                    onReset={() =>
+                        onCropInstancePrintsChange(
+                            SETTINGS_DEFAULT_VALUES.cropInstancePrints
+                        )
+                    }
                     label={t(
                         'view.settings.advanced.advanced.save_instance_prints_to_file.crop'
                     )}
                 >
                     <Switch
                         checked={prefs.cropInstancePrints}
-                        disabled={!prefs.saveInstancePrints}
                         onCheckedChange={onCropInstancePrintsChange}
                     />
                 </Field>
                 <Field
+                    settingId="media.prints.auto-delete"
+                    onReset={() =>
+                        onAutoDeleteOldPrintsChange(
+                            SETTINGS_DEFAULT_VALUES.autoDeleteOldPrints
+                        )
+                    }
                     label={t(
                         'view.settings.advanced.advanced.auto_delete_prints.enable'
                     )}
@@ -204,6 +240,14 @@ export function SettingsMediaTab() {
                     />
                 </Field>
                 <Field
+                    settingId="media.prints.auto-delete-limit"
+                    onReset={() =>
+                        onAutoDeletePrintsLimitBlur(
+                            String(
+                                SETTINGS_DEFAULT_VALUES.autoDeletePrintsLimit
+                            )
+                        )
+                    }
                     label={t(
                         'view.settings.advanced.advanced.auto_delete_prints.limit'
                     )}
@@ -218,7 +262,6 @@ export function SettingsMediaTab() {
                         allowOutOfRange
                         className="w-32"
                         value={prefs.autoDeletePrintsLimit ?? 60}
-                        disabled={!prefs.autoDeleteOldPrints}
                         onValueChange={(value) =>
                             onAutoDeletePrintsLimitChange(
                                 value === null ? '' : String(value)
@@ -245,6 +288,12 @@ export function SettingsMediaTab() {
                 )}
             >
                 <Field
+                    settingId="media.stickers.save"
+                    onReset={() =>
+                        onSaveInstanceStickersChange(
+                            SETTINGS_DEFAULT_VALUES.saveInstanceStickers
+                        )
+                    }
                     label={t(
                         'view.settings.advanced.advanced.save_instance_stickers_to_file.description'
                     )}
@@ -265,6 +314,12 @@ export function SettingsMediaTab() {
                 )}
             >
                 <Field
+                    settingId="media.emoji.save"
+                    onReset={() =>
+                        onSaveInstanceEmojiChange(
+                            SETTINGS_DEFAULT_VALUES.saveInstanceEmoji
+                        )
+                    }
                     label={t(
                         'view.settings.advanced.advanced.save_instance_emoji_to_file.description'
                     )}

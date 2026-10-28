@@ -12,6 +12,7 @@ import {
 } from '@/ui/shadcn/select';
 import { Switch } from '@/ui/shadcn/switch';
 
+import { SETTINGS_DEFAULT_VALUES } from '../../settingsFieldState';
 import type { SettingsPageStateSections } from '../../settingsPageStateSections';
 import { SettingsCard } from '../SettingsCard';
 import { Field, SegmentedPreference } from '../SettingsField';
@@ -76,6 +77,12 @@ export function SettingsInterfaceDisplayCards({
                 title={t('view.settings.appearance.display.header')}
             >
                 <Field
+                    settingId="interface.display.show-instance-id"
+                    onReset={() =>
+                        onShowInstanceIdInLocationChange(
+                            SETTINGS_DEFAULT_VALUES.showInstanceIdInLocation
+                        )
+                    }
                     label={t(
                         'view.settings.appearance.appearance.show_instance_id'
                     )}
@@ -87,6 +94,12 @@ export function SettingsInterfaceDisplayCards({
                 </Field>
 
                 <Field
+                    settingId="interface.display.age-gated-instances"
+                    onReset={() =>
+                        onAgeGatedInstancesVisibleChange(
+                            SETTINGS_DEFAULT_VALUES.isAgeGatedInstancesVisible
+                        )
+                    }
                     label={t(
                         'view.settings.appearance.appearance.age_gated_instances'
                     )}
@@ -110,6 +123,12 @@ export function SettingsInterfaceDisplayCards({
                 title={t('view.settings.interface.navigation.header')}
             >
                 <Field
+                    settingId="interface.navigation.new-dashboard-button"
+                    onReset={() =>
+                        onShowNewDashboardButtonChange(
+                            SETTINGS_DEFAULT_VALUES.showNewDashboardButton
+                        )
+                    }
                     label={t(
                         'view.settings.interface.navigation.show_new_dashboard_button'
                     )}
@@ -126,6 +145,7 @@ export function SettingsInterfaceDisplayCards({
                 title={t('view.settings.interface.lists_tables.header')}
             >
                 <Field
+                    settingId="interface.tables.page-sizes"
                     label={t(
                         'view.settings.appearance.appearance.table_page_sizes'
                     )}
@@ -141,6 +161,7 @@ export function SettingsInterfaceDisplayCards({
                 </Field>
 
                 <Field
+                    settingId="interface.tables.entry-limits"
                     label={t(
                         'view.settings.appearance.appearance.table_entries_settings'
                     )}
@@ -164,6 +185,12 @@ export function SettingsInterfaceDisplayCards({
                 title={t('view.settings.appearance.timedate.header')}
             >
                 <Field
+                    settingId="interface.time-date.time-format"
+                    onReset={() =>
+                        onHour12Change(
+                            SETTINGS_DEFAULT_VALUES.dtHour12 ? '12' : '24'
+                        )
+                    }
                     label={t('view.settings.appearance.timedate.time_format')}
                     controlId="settings-time-format"
                 >
@@ -198,6 +225,10 @@ export function SettingsInterfaceDisplayCards({
                 </Field>
 
                 <Field
+                    settingId="interface.time-date.iso-date"
+                    onReset={() =>
+                        onIsoFormatChange(SETTINGS_DEFAULT_VALUES.dtIsoFormat)
+                    }
                     label={t(
                         'view.settings.appearance.timedate.force_iso_date_format'
                     )}
@@ -209,6 +240,12 @@ export function SettingsInterfaceDisplayCards({
                 </Field>
 
                 <Field
+                    settingId="interface.time-date.week-start"
+                    onReset={() =>
+                        onWeekStartsOnChange(
+                            String(SETTINGS_DEFAULT_VALUES.weekStartsOn)
+                        )
+                    }
                     label={t(
                         'view.settings.appearance.timedate.week_starts_on'
                     )}
@@ -248,6 +285,12 @@ export function SettingsInterfaceDisplayCards({
                 </Field>
 
                 <Field
+                    settingId="interface.time-date.feed-time-display"
+                    onReset={() =>
+                        onFeedTimeDisplayModeChange(
+                            SETTINGS_DEFAULT_VALUES.feedTimeDisplayMode
+                        )
+                    }
                     label={t(
                         'view.settings.appearance.timedate.feed_time_display'
                     )}

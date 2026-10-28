@@ -3383,6 +3383,17 @@
             "restart_pending": {
                 "description": "Algumas alterações só serão aplicadas depois de reiniciar o VRCX-0.",
                 "restart_now": "Reiniciar agora"
+            },
+            "field": {
+                "modified": "Modificado",
+                "reset": "Redefinir",
+                "restart_required": "Requer reinício",
+                "requires_parent": "Ative “{name}” primeiro"
+            },
+            "search": {
+                "placeholder": "Pesquisar configurações",
+                "results": "Resultados da pesquisa de configurações",
+                "no_results": "Nenhuma configuração correspondente"
             }
         },
         "dashboard": {

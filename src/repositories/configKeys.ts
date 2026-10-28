@@ -1,3 +1,8 @@
+import {
+    DEFAULT_TABLE_PAGE_SIZE,
+    DEFAULT_TRANSLATION_ENDPOINT,
+    DEFAULT_TRANSLATION_MODEL
+} from '@/shared/constants/settings';
 import { DEFAULT_GENERIC_WEBHOOK_FIELDS } from '@/shared/constants/webhook';
 
 type ConfigValueType = 'string' | 'int' | 'bool' | 'float';
@@ -50,7 +55,7 @@ export const ConfigKeys = defineConfigKeys({
 
     // ── Nav ──────────────────────────────────────────
     navIsCollapsed: { type: 'bool', default: false },
-    navPanelWidth: { type: 'int', default: null },
+    navPanelWidth: { type: 'int', default: 240 },
 
     // ── Settings - General ───────────────────────────
     StartAtWindowsStartup: { type: 'bool', default: false },
@@ -59,7 +64,7 @@ export const ConfigKeys = defineConfigKeys({
     autoLoginDelaySeconds: { type: 'int', default: 0 },
     backgroundModeDelayEnabled: { type: 'bool', default: false },
     backgroundModeDelayMinutes: { type: 'int', default: 60 },
-    weekStartsOn: { type: 'int', default: null },
+    weekStartsOn: { type: 'int', default: 1 },
 
     // ── Settings - Appearance ────────────────────────
     ThemeMode: { type: 'string', default: null },
@@ -96,9 +101,9 @@ export const ConfigKeys = defineConfigKeys({
     hideUserNotes: { type: 'bool', default: false },
     compactTableMode: { type: 'bool', default: false },
     dataTableStriped: { type: 'bool', default: false },
-    tableDensity: { type: 'string', default: null },
+    tableDensity: { type: 'string', default: 'standard' },
     reducedMotionAndBlur: { type: 'bool', default: false },
-    tablePageSize: { type: 'int', default: null },
+    tablePageSize: { type: 'int', default: DEFAULT_TABLE_PAGE_SIZE },
     randomUserColours: { type: 'bool', default: false },
     randomUserColourStyle: { type: 'string', default: 'classic' },
     backgroundImageEnabled: { type: 'bool', default: false },
@@ -122,7 +127,7 @@ export const ConfigKeys = defineConfigKeys({
     themeMarketplaceCatalogUrl: { type: 'string', default: '' },
 
     // ── Settings - Advanced ──────────────────────────
-    bioLanguage: { type: 'string', default: null },
+    bioLanguage: { type: 'string', default: 'en' },
     relaunchVRChatAfterCrash: { type: 'bool', default: false },
     vrcQuitFix: { type: 'bool', default: true },
     focusVrchatOnJoin: { type: 'bool', default: false },
@@ -155,8 +160,11 @@ export const ConfigKeys = defineConfigKeys({
     translationAPIKey: { type: 'string', default: '' },
     translationAPIType: { type: 'string', default: 'google' },
     translationEndpointId: { type: 'string', default: '' },
-    translationAPIEndpoint: { type: 'string', default: '' },
-    translationAPIModel: { type: 'string', default: '' },
+    translationAPIEndpoint: {
+        type: 'string',
+        default: DEFAULT_TRANSLATION_ENDPOINT
+    },
+    translationAPIModel: { type: 'string', default: DEFAULT_TRANSLATION_MODEL },
     translationAPIPrompt: { type: 'string', default: '' },
     translationAPIReasoningEffort: { type: 'string', default: '' },
 
@@ -169,7 +177,7 @@ export const ConfigKeys = defineConfigKeys({
     notificationDoNotDisturbEndOnGameStart: { type: 'bool', default: true },
     busyStatusDoNotDisturb: { type: 'bool', default: true },
     hideVideoErrorNotifications: { type: 'bool', default: false },
-    notificationLayout: { type: 'string', default: null },
+    notificationLayout: { type: 'string', default: 'notification-center' },
     notificationTTS: { type: 'string', default: 'Never' },
     notificationTTSVoiceNative: { type: 'string', default: '' },
     notificationTTSVolume: { type: 'int', default: 100 },

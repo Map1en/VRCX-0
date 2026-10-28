@@ -64,6 +64,7 @@ export function LinuxRenderingSetting() {
     if (snapshot === null) return null;
     return (
         <Field
+            settingId="system.window.linux-rendering"
             label={t('linux_rendering.title')}
             description={t('linux_rendering.description')}
             error={failed ? t('linux_rendering.failed') : undefined}

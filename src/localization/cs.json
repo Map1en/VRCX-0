@@ -3401,6 +3401,17 @@
             "restart_pending": {
                 "description": "Některé změny se projeví až po restartu VRCX-0.",
                 "restart_now": "Restartovat nyní"
+            },
+            "field": {
+                "modified": "Změněno",
+                "reset": "Resetovat",
+                "restart_required": "Vyžaduje restart",
+                "requires_parent": "Nejprve zapněte „{name}“"
+            },
+            "search": {
+                "placeholder": "Hledat v nastavení",
+                "results": "Výsledky hledání v nastavení",
+                "no_results": "Žádné odpovídající nastavení"
             }
         },
         "dashboard": {

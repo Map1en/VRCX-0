@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { Switch } from '@/ui/shadcn/switch';
 
+import { SETTINGS_DEFAULT_VALUES } from '../../settingsFieldState';
 import { useSettingsPageSection } from '../../SettingsPageStateContext';
 import { SettingsCard } from '../SettingsCard';
 import { Field } from '../SettingsField';
@@ -30,6 +31,12 @@ export function SettingsInterfaceUserDialogCard() {
             title={t('view.settings.appearance.user_dialog.header')}
         >
             <Field
+                settingId="interface.user-dialog.nicknames"
+                onReset={() =>
+                    onHideNicknamesChange(
+                        !SETTINGS_DEFAULT_VALUES.hideNicknames
+                    )
+                }
                 label={t('view.settings.appearance.appearance.nicknames')}
                 description={t(
                     'view.settings.appearance.appearance.nicknames_description'
@@ -41,6 +48,12 @@ export function SettingsInterfaceUserDialogCard() {
                 />
             </Field>
             <Field
+                settingId="interface.user-dialog.vrchat-notes"
+                onReset={() =>
+                    onHideUserNotesChange(
+                        !SETTINGS_DEFAULT_VALUES.hideUserNotes
+                    )
+                }
                 label={t('view.settings.appearance.user_dialog.vrchat_notes')}
                 description={t(
                     'view.settings.appearance.user_dialog.vrchat_notes_description'
@@ -52,6 +65,12 @@ export function SettingsInterfaceUserDialogCard() {
                 />
             </Field>
             <Field
+                settingId="interface.user-dialog.memos"
+                onReset={() =>
+                    onHideUserMemosChange(
+                        !SETTINGS_DEFAULT_VALUES.hideUserMemos
+                    )
+                }
                 label={t('view.settings.appearance.user_dialog.vrcx_memos')}
                 description={t(
                     'view.settings.appearance.user_dialog.vrcx_memos_description'

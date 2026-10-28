@@ -3324,6 +3324,17 @@
             "restart_pending": {
                 "description": "일부 설정은 VRCX-0을 다시 시작해야 적용됩니다.",
                 "restart_now": "지금 다시 시작"
+            },
+            "field": {
+                "modified": "변경됨",
+                "reset": "재설정",
+                "restart_required": "다시 시작 필요",
+                "requires_parent": "먼저 \"{name}\"을(를) 켜세요"
+            },
+            "search": {
+                "placeholder": "설정 검색",
+                "results": "설정 검색 결과",
+                "no_results": "일치하는 설정이 없습니다"
             }
         },
         "dashboard": {

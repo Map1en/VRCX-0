@@ -31,6 +31,7 @@ import {
 } from '@/ui/shadcn/select';
 import { Switch } from '@/ui/shadcn/switch';
 
+import { SETTINGS_DEFAULT_VALUES } from '../../settingsFieldState';
 import { SettingsCard } from '../SettingsCard';
 import { Field } from '../SettingsField';
 
@@ -195,6 +196,12 @@ export function WebhookSettingsGroup({
             )}
         >
             <Field
+                settingId="notifications.webhook.enabled"
+                onReset={() =>
+                    onWebhookEnabledChange(
+                        SETTINGS_DEFAULT_VALUES.webhookEnabled
+                    )
+                }
                 label={t(
                     'view.settings.notifications.notifications.webhook.enabled'
                 )}
@@ -206,6 +213,12 @@ export function WebhookSettingsGroup({
             </Field>
 
             <Field
+                settingId="notifications.webhook.auth-events"
+                onReset={() =>
+                    onWebhookAuthEventsEnabledChange(
+                        SETTINGS_DEFAULT_VALUES.webhookAuthEventsEnabled
+                    )
+                }
                 label={t(
                     'view.settings.notifications.notifications.webhook.auth_events_enabled'
                 )}
@@ -220,16 +233,17 @@ export function WebhookSettingsGroup({
             </Field>
 
             <Field
+                settingId="notifications.webhook.url"
                 label={t(
                     'view.settings.notifications.notifications.webhook.url'
                 )}
                 controlId="settings-webhook-url"
+                disabled={!webhookControlsEnabled}
             >
                 <Input
                     id="settings-webhook-url"
                     className="w-full max-w-lg"
                     value={webhookUrlDraft ?? prefs.webhookUrl ?? ''}
-                    disabled={!webhookControlsEnabled}
                     placeholder={t(
                         'view.settings.notifications.notifications.webhook.url_placeholder'
                     )}
@@ -244,10 +258,15 @@ export function WebhookSettingsGroup({
             </Field>
 
             <Field
+                settingId="notifications.webhook.format"
+                onReset={() =>
+                    onWebhookFormatChange(SETTINGS_DEFAULT_VALUES.webhookFormat)
+                }
                 label={t(
                     'view.settings.notifications.notifications.webhook.format'
                 )}
                 controlId="settings-webhook-format"
+                disabled={!webhookControlsEnabled}
             >
                 <Select
                     value={prefs.webhookFormat || 'generic'}
@@ -255,7 +274,6 @@ export function WebhookSettingsGroup({
                         value,
                         label: value === 'discord' ? 'Discord' : t(labelKey)
                     }))}
-                    disabled={!webhookControlsEnabled}
                     onValueChange={(value) => {
                         if (value) {
                             onWebhookFormatChange(value);
@@ -287,6 +305,7 @@ export function WebhookSettingsGroup({
             </Field>
 
             <Field
+                settingId="notifications.webhook.fields"
                 label={t(
                     'view.settings.notifications.notifications.webhook.fields'
                 )}
@@ -303,6 +322,7 @@ export function WebhookSettingsGroup({
             </Field>
 
             <Field
+                settingId="notifications.webhook.filters"
                 label={t(
                     'view.settings.notifications.notifications.webhook.notification_filters'
                 )}
@@ -310,7 +330,6 @@ export function WebhookSettingsGroup({
                 <Button
                     type="button"
                     variant="outline"
-                    disabled={!prefs.webhookEnabled}
                     onClick={onOpenWebhookNotificationFiltersDialog}
                 >
                     {t('common.actions.configure')}
@@ -318,6 +337,7 @@ export function WebhookSettingsGroup({
             </Field>
 
             <Field
+                settingId="notifications.webhook.send-test"
                 label={t(
                     'view.settings.notifications.notifications.webhook.send_test'
                 )}
@@ -338,6 +358,7 @@ export function WebhookSettingsGroup({
             </Field>
 
             <Field
+                settingId="notifications.webhook.delivery-status"
                 label={t(
                     'view.settings.notifications.notifications.webhook.delivery_status'
                 )}

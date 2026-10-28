@@ -3381,6 +3381,17 @@
             "restart_pending": {
                 "description": "部分设置需要重启 VRCX-0 后才会生效。",
                 "restart_now": "立即重启"
+            },
+            "field": {
+                "modified": "已修改",
+                "reset": "重置",
+                "restart_required": "需重启",
+                "requires_parent": "需先开启「{name}」"
+            },
+            "search": {
+                "placeholder": "搜索设置",
+                "results": "设置搜索结果",
+                "no_results": "没有匹配的设置"
             }
         },
         "dashboard": {

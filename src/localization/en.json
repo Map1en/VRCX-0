@@ -3387,6 +3387,17 @@
             "restart_pending": {
                 "description": "Some changes take effect after VRCX-0 restarts.",
                 "restart_now": "Restart now"
+            },
+            "field": {
+                "modified": "Modified",
+                "reset": "Reset",
+                "restart_required": "Restart required",
+                "requires_parent": "Turn on “{name}” first"
+            },
+            "search": {
+                "placeholder": "Search settings",
+                "results": "Settings search results",
+                "no_results": "No matching settings"
             }
         },
         "dashboard": {

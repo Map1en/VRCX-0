@@ -19,6 +19,7 @@ import {
 import { Input } from '@/ui/shadcn/input';
 import { Switch } from '@/ui/shadcn/switch';
 
+import { SETTINGS_DEFAULT_VALUES } from '../../settingsFieldState';
 import type { SettingsPageStateSections } from '../../settingsPageStateSections';
 import { SettingsCard } from '../SettingsCard';
 import { Field, SegmentedPreference } from '../SettingsField';
@@ -71,6 +72,12 @@ export function SettingsInterfaceUserColorsCard({
             title={t('view.settings.appearance.user_colors.header')}
         >
             <Field
+                settingId="interface.user-colors.random-colors"
+                onReset={() =>
+                    onRandomUserColoursChange(
+                        SETTINGS_DEFAULT_VALUES.randomUserColours
+                    )
+                }
                 label={t(
                     'view.settings.appearance.user_colors.random_colors_from_user_id'
                 )}
@@ -85,6 +92,12 @@ export function SettingsInterfaceUserColorsCard({
             </Field>
             {prefs.randomUserColours ? (
                 <Field
+                    settingId="interface.user-colors.random-color-style"
+                    onReset={() =>
+                        onRandomUserColourStyleChange(
+                            SETTINGS_DEFAULT_VALUES.randomUserColourStyle
+                        )
+                    }
                     label={t(
                         'view.settings.appearance.user_colors.random_color_style'
                     )}
