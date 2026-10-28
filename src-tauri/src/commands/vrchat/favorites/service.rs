@@ -1,8 +1,9 @@
 #![allow(non_snake_case)]
 
-use tauri::State;
+use tauri::{AppHandle, Manager, State};
 use vrcx_0_application_core::vrchat_api::require_text;
 
+use crate::commands::blocking::run_blocking;
 use crate::error::AppError;
 use crate::state::AppState;
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
@@ -193,27 +194,33 @@ pub fn app__local_favorite_group_delete(
         .map_err(AppError::from)
 }
 
-#[tauri::command(async)]
+#[tauri::command]
 #[specta::specta]
-pub fn app__local_favorite_group_reorder(
-    state: State<'_, AppState>,
+pub async fn app__local_favorite_group_reorder(
+    app: AppHandle,
     input: LocalFavoriteGroupReorderInput,
 ) -> Result<Vec<String>, AppError> {
-    state
-        .runtime_host()
-        .favorite_local_group_reorder(input.kind, input.group_names)
-        .map_err(AppError::from)
+    run_blocking("local favorite group reorder", move || {
+        let state = app.state::<AppState>();
+        state
+            .runtime_host()
+            .favorite_local_group_reorder(input.kind, input.group_names)
+    })
+    .await
 }
 
-#[tauri::command(async)]
+#[tauri::command]
 #[specta::specta]
-pub fn app__local_favorite_reorder(
-    state: State<'_, AppState>,
+pub async fn app__local_favorite_reorder(
+    app: AppHandle,
     input: LocalFavoriteReorderInput,
 ) -> Result<i64, AppError> {
     let group_name = require_text(input.group_name, "LocalFavoriteReorder requires groupName.")?;
-    state
-        .runtime_host()
-        .favorite_local_reorder(input.kind, group_name, input.entity_ids)
-        .map_err(AppError::from)
+    run_blocking("local favorite reorder", move || {
+        let state = app.state::<AppState>();
+        state
+            .runtime_host()
+            .favorite_local_reorder(input.kind, group_name, input.entity_ids)
+    })
+    .await
 }

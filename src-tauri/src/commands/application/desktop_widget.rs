@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use tauri::{AppHandle, Manager, State};
+use tauri::State;
 use vrcx_0_runtime_host_desktop::desktop_widget::DesktopWidgetSnapshot;
 
 use crate::commands::blocking::run_blocking;
@@ -10,16 +10,11 @@ use crate::state::AppState;
 #[tauri::command]
 #[specta::specta]
 pub async fn app__desktop_widget_enabled_set(
-    app: AppHandle,
+    state: State<'_, AppState>,
     enabled: bool,
 ) -> Result<DesktopWidgetSnapshot, AppError> {
-    tauri::async_runtime::spawn_blocking(move || {
-        let state = app.state::<AppState>();
-        let widget = state.runtime_host().desktop_widget();
-        Ok(widget.set_enabled(enabled)?)
-    })
-    .await
-    .map_err(|error| AppError::Custom(format!("activity window task failed: {error}")))?
+    let widget = state.runtime_host().desktop_widget();
+    run_blocking("desktop widget enable", move || widget.set_enabled(enabled)).await
 }
 
 #[tauri::command]
