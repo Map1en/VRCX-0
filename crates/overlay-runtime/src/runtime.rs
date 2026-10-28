@@ -809,6 +809,26 @@ impl VrOverlayRuntime {
         show_devices: bool,
         watch_trackers: bool,
     ) -> Option<TrackerDisconnect> {
+        if !self.prepare_device_refresh(refresh_devices, show_devices, watch_trackers) {
+            return None;
+        }
+        match manager.snapshot_devices() {
+            Ok(next_devices) => {
+                self.apply_device_snapshot(next_devices, show_devices, watch_trackers)
+            }
+            Err(error) => {
+                tracing::warn!(error = %error, "failed to snapshot VR overlay devices");
+                None
+            }
+        }
+    }
+
+    fn prepare_device_refresh(
+        &self,
+        refresh_devices: bool,
+        show_devices: bool,
+        watch_trackers: bool,
+    ) -> bool {
         if !show_devices {
             if let Ok(mut devices) = self.devices.lock() {
                 devices.clear();
@@ -822,33 +842,29 @@ impl VrOverlayRuntime {
             .lock()
             .map(|devices| devices.is_empty())
             .unwrap_or(true);
-        let snapshot_needed = (refresh_devices && (show_devices || watch_trackers))
-            || (show_devices && devices_empty);
-        if !snapshot_needed {
-            return None;
-        }
-        match manager.snapshot_devices() {
-            Ok(next_devices) => {
-                let disconnect = if watch_trackers {
-                    self.tracker_watch
-                        .lock()
-                        .ok()
-                        .and_then(|mut watch| watch.observe(&next_devices))
-                } else {
-                    None
-                };
-                if show_devices {
-                    if let Ok(mut devices) = self.devices.lock() {
-                        *devices = next_devices;
-                    }
-                }
-                disconnect
-            }
-            Err(error) => {
-                tracing::warn!(error = %error, "failed to snapshot VR overlay devices");
-                None
+        (refresh_devices && (show_devices || watch_trackers)) || (show_devices && devices_empty)
+    }
+
+    fn apply_device_snapshot(
+        &self,
+        next_devices: Vec<VrDeviceSnapshot>,
+        show_devices: bool,
+        watch_trackers: bool,
+    ) -> Option<TrackerDisconnect> {
+        let disconnect = if watch_trackers {
+            self.tracker_watch
+                .lock()
+                .ok()
+                .and_then(|mut watch| watch.observe(&next_devices))
+        } else {
+            None
+        };
+        if show_devices {
+            if let Ok(mut devices) = self.devices.lock() {
+                *devices = next_devices;
             }
         }
+        disconnect
     }
 
     fn reset_tracker_watch(&self) {
@@ -1272,5 +1288,7 @@ fn is_real_instance_location(location: &str) -> bool {
 mod activity_sink_tests;
 #[cfg(test)]
 mod config_reload_tests;
+#[cfg(test)]
+mod device_refresh_tests;
 #[cfg(test)]
 mod footer_tests;
