@@ -1,7 +1,8 @@
 #![allow(non_snake_case)]
 
-use tauri::State;
+use tauri::{AppHandle, Manager, State};
 
+use crate::commands::blocking::run_blocking;
 use crate::error::AppError;
 use crate::state::AppState;
 use vrcx_0_runtime_host_desktop::notification::{
@@ -30,13 +31,17 @@ pub fn app__notification_do_not_disturb_mode_set(
         .set_notification_do_not_disturb_mode(mode)?)
 }
 
-#[tauri::command(async)]
+#[tauri::command]
 #[specta::specta]
-pub fn app__game_isolation_set(
-    state: State<'_, AppState>,
+pub async fn app__game_isolation_set(
+    app: AppHandle,
     enabled: bool,
 ) -> Result<GameIsolationSnapshot, AppError> {
-    Ok(state.runtime_host().set_game_isolation_enabled(enabled)?)
+    run_blocking("game isolation", move || {
+        let state = app.state::<AppState>();
+        state.runtime_host().set_game_isolation_enabled(enabled)
+    })
+    .await
 }
 
 #[tauri::command]

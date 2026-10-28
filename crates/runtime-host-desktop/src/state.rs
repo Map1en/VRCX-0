@@ -785,10 +785,16 @@ impl DesktopRuntimeHostState {
     pub fn current_log_location_snapshot(
         &self,
     ) -> Option<vrcx_0_application_game::LogLocationSnapshot> {
+        if self.desktop.services.game_isolation().is_enabled() {
+            return None;
+        }
         self.game.log_watcher.current_location_snapshot()
     }
 
     pub fn now_playing_snapshot(&self) -> vrcx_0_application_game::NowPlayingSnapshot {
+        if self.desktop.services.game_isolation().is_enabled() {
+            return vrcx_0_application_game::NowPlayingSnapshot::default();
+        }
         self.desktop.services.now_playing().as_ref().clone()
     }
 
