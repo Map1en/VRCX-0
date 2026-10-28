@@ -70,9 +70,12 @@ pub fn group_event_follow_input(
 }
 
 fn group_event_body(event: GroupCalendarEventMutation) -> Result<Value, HttpApiError> {
-    require_text(&event.title, "VrchatToolsGroupEvent requires title.")?;
-    require_text(&event.starts_at, "VrchatToolsGroupEvent requires startsAt.")?;
-    require_text(&event.ends_at, "VrchatToolsGroupEvent requires endsAt.")?;
+    let event = GroupCalendarEventMutation {
+        title: require_text(event.title, "VrchatToolsGroupEvent requires title.")?,
+        starts_at: require_text(event.starts_at, "VrchatToolsGroupEvent requires startsAt.")?,
+        ends_at: require_text(event.ends_at, "VrchatToolsGroupEvent requires endsAt.")?,
+        ..event
+    };
     let is_series = event.recurrence.is_some();
     let mut body =
         serde_json::to_value(event).map_err(|error| HttpApiError::Custom(error.to_string()))?;
@@ -613,6 +616,22 @@ mod tests {
         let mut untitled = sample_event();
         untitled.title = " ".into();
         assert!(group_event_create_input("endpoint".into(), "grp_1".into(), untitled).is_err());
+    }
+
+    #[test]
+    fn group_events_send_their_title_and_times_trimmed() {
+        let mut padded = sample_event();
+        padded.title = " Meetup ".into();
+        padded.starts_at = " 2026-10-22T10:00:00.000Z ".into();
+        padded.ends_at = " 2026-10-22T12:00:00.000Z ".into();
+
+        let (_, create) =
+            group_event_create_input("endpoint".into(), "grp_1".into(), padded).unwrap();
+
+        let body = json_body(&create);
+        assert_eq!(body["title"], json!("Meetup"));
+        assert_eq!(body["startsAt"], json!("2026-10-22T10:00:00.000Z"));
+        assert_eq!(body["endsAt"], json!("2026-10-22T12:00:00.000Z"));
     }
 
     #[test]
