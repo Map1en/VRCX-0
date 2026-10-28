@@ -213,7 +213,8 @@ fn desktop_execution_modules_do_not_receive_the_complete_runtime_context() {
         let source = std::fs::read_to_string(&path).expect("read desktop runtime source");
         assert!(
             !source.contains("RuntimeHostContext")
-                && !source.contains("RuntimeHostDesktopAssemblyDeps"),
+                && !source.contains("RuntimeHostDesktopAssemblyDeps")
+                && !source.contains("vrcx_0_composition::RuntimeHostState"),
             "desktop execution module receives the complete runtime context: {}",
             path.display()
         );

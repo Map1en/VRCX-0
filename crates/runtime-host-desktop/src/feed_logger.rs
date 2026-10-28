@@ -4,16 +4,16 @@ use std::time::{Duration, Instant};
 
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use vrcx_0_application::auth::{
     saved_login_credentials, AuthCredentialStore, SavedLoginCredentials,
 };
 use vrcx_0_application::social::PROFILE_BIO_SCAN_CONFIG_KEY;
 use vrcx_0_application_core::{
     BackendRuntime, BackendRuntimeAuthStatus, BackendRuntimePhase, FileCache, RuntimeAuthScope,
-    RuntimeEventBus, WebClient, WorldCache,
+    RuntimeEventBus, TaskSupervisor, WebClient, WorldCache,
 };
 use vrcx_0_application_realtime::{replay_logger_frames, ReplayOutcome, ReplayResolvers};
-use vrcx_0_composition::RuntimeHostState;
 use vrcx_0_contracts::runtime_event_payload;
 use vrcx_0_core::realtime::RealtimeWsStatus;
 use vrcx_0_core::OwnerId;
@@ -201,7 +201,7 @@ pub enum SettingsCheck {
 
 pub struct VerifiedRecorder {
     settings: PersistedSettings,
-    client: Arc<FeedLoggerClient>,
+    client: Arc<dyn RecorderTransport>,
     status: StatusResponse,
 }
 
@@ -209,6 +209,77 @@ pub struct VerifiedRecorder {
 struct PersistedSettings {
     address: String,
     password: String,
+}
+
+#[async_trait::async_trait]
+pub trait RecorderTransport: Send + Sync {
+    async fn call_value(
+        &self,
+        path: &str,
+        request: Value,
+    ) -> std::result::Result<Value, FeedLoggerClientError>;
+    async fn presence(
+        &self,
+        request: &PresenceRequest,
+    ) -> std::result::Result<PresenceResponse, FeedLoggerClientError>;
+    fn clock_offset_ms(&self) -> i64;
+}
+
+#[async_trait::async_trait]
+impl RecorderTransport for FeedLoggerClient {
+    async fn call_value(
+        &self,
+        path: &str,
+        request: Value,
+    ) -> std::result::Result<Value, FeedLoggerClientError> {
+        self.call(path, &request).await
+    }
+
+    async fn presence(
+        &self,
+        request: &PresenceRequest,
+    ) -> std::result::Result<PresenceResponse, FeedLoggerClientError> {
+        FeedLoggerClient::presence(self, request).await
+    }
+
+    fn clock_offset_ms(&self) -> i64 {
+        FeedLoggerClient::clock_offset_ms(self)
+    }
+}
+
+#[async_trait::async_trait]
+pub trait RecorderConnector: Send + Sync {
+    async fn connect(
+        &self,
+        address: &str,
+        password: &str,
+    ) -> Result<(Arc<dyn RecorderTransport>, HelloResponse)>;
+}
+
+struct HttpRecorderConnector;
+
+#[async_trait::async_trait]
+impl RecorderConnector for HttpRecorderConnector {
+    async fn connect(
+        &self,
+        address: &str,
+        password: &str,
+    ) -> Result<(Arc<dyn RecorderTransport>, HelloResponse)> {
+        let address = address.to_string();
+        let password = password.to_string();
+        let client =
+            tokio::task::spawn_blocking(move || FeedLoggerClient::new(&address, &password))
+                .await
+                .map_err(storage)??;
+        let hello = client.hello().await?;
+        Ok((Arc::new(client), hello))
+    }
+}
+
+#[derive(Default)]
+pub struct PresenceTicker {
+    heartbeat_at: Option<(Instant, String)>,
+    probed: Option<Instant>,
 }
 
 pub struct DesktopFeedLoggerRuntime {
@@ -220,7 +291,8 @@ pub struct DesktopFeedLoggerRuntime {
     event_bus: RuntimeEventBus,
     auth_scope: RuntimeAuthScope,
     auth_credentials: Arc<dyn AuthCredentialStore>,
-    client: Mutex<Option<Arc<FeedLoggerClient>>>,
+    client: Mutex<Option<Arc<dyn RecorderTransport>>>,
+    connector: Arc<dyn RecorderConnector>,
     presence_generation: AtomicU64,
     syncing: AtomicBool,
     stable_app: bool,
@@ -257,6 +329,7 @@ impl DesktopFeedLoggerRuntime {
             auth_scope,
             auth_credentials,
             client: Mutex::new(None),
+            connector: Arc::new(HttpRecorderConnector),
             presence_generation: AtomicU64::new(0),
             syncing: AtomicBool::new(false),
             linked_account: Mutex::new(None),
@@ -271,6 +344,10 @@ impl DesktopFeedLoggerRuntime {
             .is_ok_and(|settings| settings.is_some());
         self.configured.store(configured, Ordering::Release);
         self
+    }
+
+    pub fn with_connector(self, connector: Arc<dyn RecorderConnector>) -> Self {
+        Self { connector, ..self }
     }
 
     pub fn for_app_version(self, app_version: &str) -> Self {
@@ -289,9 +366,8 @@ impl DesktopFeedLoggerRuntime {
 
     pub async fn verify_settings(&self, address: String, password: String) -> SettingsCheck {
         let settings = PersistedSettings { address, password };
-        let verified = match connect(&settings, self.stable_app).await {
-            Ok(client) => client
-                .call::<_, StatusResponse>("/status", &OkResponse {})
+        let verified = match self.connect(&settings).await {
+            Ok(client) => call_transport::<_, StatusResponse>(&*client, "/status", &OkResponse {})
                 .await
                 .map(|status| (client, status))
                 .map_err(FeedLoggerError::from),
@@ -673,76 +749,91 @@ impl DesktopFeedLoggerRuntime {
         Ok(inserted)
     }
 
-    pub fn start_presence_loop(self: &Arc<Self>, state: &RuntimeHostState) {
+    pub fn start_presence_loop(
+        self: &Arc<Self>,
+        backend_runtime: BackendRuntime,
+        auth_scope: RuntimeAuthScope,
+        tasks: TaskSupervisor,
+    ) {
         let generation = self.presence_generation.fetch_add(1, Ordering::AcqRel) + 1;
         let runtime = Arc::clone(self);
-        let backend_runtime = state.backend_runtime().clone();
-        let auth_scope = state.desktop_assembly().auth_scope().clone();
-        let check = Arc::clone(self);
-        state
-            .realtime_runtime()
-            .set_reconnect_backfill_check(Arc::new(move || check.recorder_may_be_recording()));
-        let tasks = state.desktop_assembly().tasks().clone();
-        state
-            .desktop_assembly()
-            .tasks()
-            .spawn_cancellable(move |stop_token| async move {
-                let mut heartbeat_at: Option<(Instant, String)> = None;
-                let mut probed: Option<Instant> = None;
-                loop {
-                    if stop_token.is_stop_requested()
-                        || runtime.presence_generation.load(Ordering::Acquire) != generation
-                    {
-                        break;
-                    }
-                    let Some(session_account) = session_account(&backend_runtime, &auth_scope)
-                    else {
-                        break;
-                    };
-                    if backend_runtime.snapshot().ws_status != RealtimeWsStatus::Connected {
-                        heartbeat_at = None;
-                    } else {
-                        let due = heartbeat_at.as_ref().is_none_or(|(at, account)| {
-                            at.elapsed() >= PRESENCE_INTERVAL || *account != session_account
-                        });
-                        if due {
-                            if lock(&runtime.linked_account)
-                                .as_ref()
-                                .is_some_and(|(account, _)| *account != session_account)
-                            {
-                                runtime.leave().await;
-                            }
-                            let sync = match runtime.heartbeat(session_account.clone()).await {
-                                Heartbeat::Resumed => {
-                                    probed = None;
-                                    true
-                                }
-                                Heartbeat::Present => runtime.has_unsynced_for(&session_account),
-                                Heartbeat::Failed => false,
-                            };
-                            if sync {
-                                let runtime = Arc::clone(&runtime);
-                                tasks.spawn(async move {
-                                    if let Err(error) = runtime.sync_now().await {
-                                        tracing::debug!(error = %error, "feed logger sync skipped");
-                                    }
-                                });
-                            }
-                            heartbeat_at = Some((Instant::now(), session_account));
-                        }
-                    }
-                    if probed.is_none_or(|at| at.elapsed() >= HEALTH_CHECK_INTERVAL) {
-                        if let Err(error) = runtime.probe().await {
-                            tracing::debug!(error = %error, "feed logger health check failed");
-                        }
-                        probed = Some(Instant::now());
-                    }
-                    tokio::time::sleep(PRESENCE_CHECK_INTERVAL).await;
+        let loop_tasks = tasks.clone();
+        tasks.spawn_cancellable(move |stop_token| async move {
+            let mut ticker = PresenceTicker::default();
+            loop {
+                if stop_token.is_stop_requested()
+                    || runtime.presence_generation.load(Ordering::Acquire) != generation
+                {
+                    break;
                 }
-                if runtime.presence_generation.load(Ordering::Acquire) == generation {
-                    runtime.leave().await;
-                }
+                let Some(session_account) = session_account(&backend_runtime, &auth_scope) else {
+                    break;
+                };
+                let ws_connected =
+                    backend_runtime.snapshot().ws_status == RealtimeWsStatus::Connected;
+                runtime
+                    .presence_tick(&mut ticker, session_account, ws_connected, &loop_tasks)
+                    .await;
+                tokio::time::sleep(PRESENCE_CHECK_INTERVAL).await;
+            }
+            if runtime.presence_generation.load(Ordering::Acquire) == generation {
+                runtime.leave().await;
+            }
+        });
+    }
+
+    pub async fn presence_tick(
+        self: &Arc<Self>,
+        ticker: &mut PresenceTicker,
+        session_account: String,
+        ws_connected: bool,
+        tasks: &TaskSupervisor,
+    ) {
+        if !self.configured.load(Ordering::Acquire) {
+            *ticker = PresenceTicker::default();
+            return;
+        }
+        if !ws_connected {
+            ticker.heartbeat_at = None;
+        } else {
+            let due = ticker.heartbeat_at.as_ref().is_none_or(|(at, account)| {
+                at.elapsed() >= PRESENCE_INTERVAL || *account != session_account
             });
+            if due {
+                if lock(&self.linked_account)
+                    .as_ref()
+                    .is_some_and(|(account, _)| *account != session_account)
+                {
+                    self.leave().await;
+                }
+                let sync = match self.heartbeat(session_account.clone()).await {
+                    Heartbeat::Resumed => {
+                        ticker.probed = None;
+                        true
+                    }
+                    Heartbeat::Present => self.has_unsynced_for(&session_account),
+                    Heartbeat::Failed => false,
+                };
+                if sync {
+                    let runtime = Arc::clone(self);
+                    tasks.spawn(async move {
+                        if let Err(error) = runtime.sync_now().await {
+                            tracing::debug!(error = %error, "feed logger sync skipped");
+                        }
+                    });
+                }
+                ticker.heartbeat_at = Some((Instant::now(), session_account));
+            }
+        }
+        if ticker
+            .probed
+            .is_none_or(|at| at.elapsed() >= HEALTH_CHECK_INTERVAL)
+        {
+            if let Err(error) = self.probe().await {
+                tracing::debug!(error = %error, "feed logger health check failed");
+            }
+            ticker.probed = Some(Instant::now());
+        }
     }
 
     pub async fn leave(&self) {
@@ -830,7 +921,7 @@ impl DesktopFeedLoggerRuntime {
         Response: DeserializeOwned,
     {
         let client = self.client().await?;
-        self.drop_client_on_error(client.call(path, request).await)
+        self.drop_client_on_error(call_transport(&*client, path, request).await)
     }
 
     fn drop_client_on_error<T>(
@@ -847,15 +938,24 @@ impl DesktopFeedLoggerRuntime {
         self.call::<_, OkResponse>(path, request).await.map(|_| ())
     }
 
-    async fn client(&self) -> Result<Arc<FeedLoggerClient>> {
+    async fn client(&self) -> Result<Arc<dyn RecorderTransport>> {
         if let Some(client) = lock(&self.client).clone() {
             return Ok(client);
         }
         let settings = self
             .load_settings()?
             .ok_or(FeedLoggerError::NotConfigured)?;
-        let client = connect(&settings, self.stable_app).await?;
+        let client = self.connect(&settings).await?;
         *lock(&self.client) = Some(Arc::clone(&client));
+        Ok(client)
+    }
+
+    async fn connect(&self, settings: &PersistedSettings) -> Result<Arc<dyn RecorderTransport>> {
+        let (client, hello) = self
+            .connector
+            .connect(&settings.address, &settings.password)
+            .await?;
+        check_compatibility(&hello, self.stable_app)?;
         Ok(client)
     }
 
@@ -891,14 +991,20 @@ fn store_settings(config: &ConfigRepository, settings: &PersistedSettings) -> Re
     config.set_string(SETTINGS_KEY, &json).map_err(storage)
 }
 
-async fn connect(settings: &PersistedSettings, stable_app: bool) -> Result<Arc<FeedLoggerClient>> {
-    let address = settings.address.clone();
-    let password = settings.password.clone();
-    let client = tokio::task::spawn_blocking(move || FeedLoggerClient::new(&address, &password))
-        .await
-        .map_err(storage)??;
-    check_compatibility(&client.hello().await?, stable_app)?;
-    Ok(Arc::new(client))
+async fn call_transport<Request, Response>(
+    client: &dyn RecorderTransport,
+    path: &str,
+    request: &Request,
+) -> std::result::Result<Response, FeedLoggerClientError>
+where
+    Request: Serialize + ?Sized,
+    Response: DeserializeOwned,
+{
+    let request = serde_json::to_value(request)
+        .map_err(|error| FeedLoggerClientError::Malformed(error.to_string()))?;
+    let response = client.call_value(path, request).await?;
+    serde_json::from_value(response)
+        .map_err(|error| FeedLoggerClientError::Malformed(error.to_string()))
 }
 
 fn check_compatibility(hello: &HelloResponse, stable_app: bool) -> Result<()> {

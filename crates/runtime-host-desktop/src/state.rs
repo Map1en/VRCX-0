@@ -2435,7 +2435,16 @@ impl RuntimeHostProfileExtension for DesktopRuntimeProfileExtension {
     fn start_profile_maintenance(&self, state: &RuntimeHostState) {
         self.start_registry_backup_loop(state);
         self.start_desktop_maintenance_loops(state);
-        self.desktop.feed_logger.start_presence_loop(state);
+        let feed_logger = &self.desktop.feed_logger;
+        let check = Arc::clone(feed_logger);
+        state
+            .realtime_runtime()
+            .set_reconnect_backfill_check(Arc::new(move || check.recorder_may_be_recording()));
+        feed_logger.start_presence_loop(
+            state.backend_runtime().clone(),
+            state.desktop_assembly().auth_scope().clone(),
+            state.desktop_assembly().tasks().clone(),
+        );
     }
 }
 
