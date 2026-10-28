@@ -49,10 +49,6 @@ impl AvatarCache {
         }
     }
 
-    pub fn clear_working(&self) {
-        self.working.invalidate_all();
-    }
-
     pub fn invalidate(&self, user_id: &str, endpoint: &str, avatar_id: &str) {
         self.working
             .invalidate(&cache_key(user_id, endpoint, avatar_id));
@@ -279,10 +275,6 @@ impl AvatarCache {
 
 #[async_trait::async_trait]
 impl vrcx_0_application_core::AvatarCachePort for AvatarCache {
-    fn clear_working(&self) {
-        AvatarCache::clear_working(self);
-    }
-
     fn invalidate(&self, user_id: &str, endpoint: &str, avatar_id: &str) {
         AvatarCache::invalidate(self, user_id, endpoint, avatar_id);
     }

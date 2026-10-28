@@ -45,9 +45,6 @@ pub(super) struct RealtimeCurrentUserStateSnapshot {
     pub(super) user_id: String,
     pub(super) location: String,
     pub(super) traveling_to_location: String,
-    pub(super) status: String,
-    pub(super) status_description: String,
-    pub(super) bio: String,
     pub(super) current_avatar: String,
     pub(super) world_name: String,
     pub(super) previous_avatar_swap_time: i64,
@@ -93,9 +90,6 @@ impl RealtimeCurrentUserStateSnapshot {
         self.user_id = normalize_user_id(&self.raw.text_field("id"));
         self.location = self.raw.text_field("location");
         self.traveling_to_location = self.raw.text_field("travelingToLocation");
-        self.status = self.raw.text_field("status");
-        self.status_description = self.raw.text_field("statusDescription");
-        self.bio = self.raw.text_field("bio");
         self.current_avatar = normalize_user_id(&self.raw.text_field("currentAvatar"));
         self.world_name = self.raw.text_field("worldName");
         self.previous_avatar_swap_time = self

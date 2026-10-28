@@ -20,9 +20,7 @@ use vrcx_0_application_activity::notification::{
     NotificationConfig, NotificationRemote, NotificationResolver, NotificationWebhookSink,
     NotificationWebhookSinkDeps, WebhookDeliveryMonitor, WebhookDeliverySnapshot,
 };
-use vrcx_0_application_activity::{
-    ActivityRouter, ActivitySink, ActivitySinkRegistry, GroupInstanceMonitor,
-};
+use vrcx_0_application_activity::{ActivityRouter, ActivitySinkRegistry, GroupInstanceMonitor};
 use vrcx_0_application_core::RemoteMutationGate;
 use vrcx_0_application_core::{
     AvatarCache, FileCache, HostSessionRuntime, ImageCache, InstanceDwellRegistry,
@@ -203,10 +201,6 @@ impl RuntimeHostDesktopAssemblyDeps {
 
     pub fn activity_router(&self) -> ActivityRouter {
         self.context.activity_router()
-    }
-
-    pub fn add_overlay_activity_sink(&self, sink: Arc<dyn ActivitySink>) {
-        self.context.add_overlay_activity_sink(sink);
     }
 
     pub fn activity_sink_registry(&self) -> ActivitySinkRegistry {
@@ -526,10 +520,6 @@ impl RuntimeHostContext {
     pub fn clear_activity_runtime_state(&self) {
         self.activity_router.clear_runtime_state();
         self.group_instance_monitor.clear();
-    }
-
-    pub fn add_overlay_activity_sink(&self, sink: Arc<dyn ActivitySink>) {
-        self.activity_sinks.add(sink);
     }
 
     pub fn activity_sink_registry(&self) -> ActivitySinkRegistry {
