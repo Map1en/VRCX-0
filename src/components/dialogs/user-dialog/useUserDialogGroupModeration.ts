@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { LoadStatus } from '@/domain/shared/types';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import { useDelayedFlag } from '@/lib/useDelayedFlag';
 import {
     commands,
     type GroupQuickModerationAction,
@@ -11,11 +12,9 @@ import {
 } from '@/platform/tauri/bindings';
 import { toast } from '@/services/toastService';
 
-import {
-    createDelayedVisibleController,
-    groupQuickModerationLoadingDelayMs
-} from './groupQuickModerationLoading';
 import { normalizeUserId } from './userProfileFields';
+
+const groupQuickModerationLoadingDelayMs = 160;
 
 type GroupsStatus = LoadStatus;
 
@@ -28,30 +27,6 @@ interface UseUserDialogGroupModerationInput {
 
 function groupIdSet(groups: GroupQuickModerationGroup[]) {
     return new Set(groups.map((group) => group.groupId));
-}
-
-function useDelayedGroupQuickModerationLoading(
-    loading: boolean,
-    identity: string
-) {
-    const [visible, setVisible] = useState(false);
-
-    useEffect(() => {
-        const controller = createDelayedVisibleController(
-            setVisible,
-            groupQuickModerationLoadingDelayMs
-        );
-        if (loading) {
-            controller.start();
-        } else {
-            controller.stop();
-        }
-        return () => {
-            controller.dispose();
-        };
-    }, [identity, loading]);
-
-    return visible;
 }
 
 function emptyOutput(
@@ -91,8 +66,9 @@ export function useUserDialogGroupModeration({
     const [banBusy, setBanBusy] = useState(false);
     const [pendingBanGroupId, setPendingBanGroupId] = useState('');
 
-    const groupsLoadingVisible = useDelayedGroupQuickModerationLoading(
+    const groupsLoadingVisible = useDelayedFlag(
         groupsStatus === 'running',
+        groupQuickModerationLoadingDelayMs,
         `${identity}:${reloadToken}:groups`
     );
     const banGroupsById = useMemo(() => {
