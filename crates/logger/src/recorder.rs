@@ -12,7 +12,7 @@ use vrcx_0_contracts::profile_bio::{
     PROFILE_BIO_SCAN_INTERVAL, PROFILE_BIO_SCAN_MIN_AGE, PROFILE_BIO_SCAN_PAUSE,
 };
 use vrcx_0_contracts::vrchat_api::{classify_vrchat_response, VrchatResponseClass};
-use vrcx_0_logger_protocol::wire::{FrameKind, SessionState};
+use vrcx_0_logger_protocol::wire::{FrameKind, SessionState, SnapshotPayload};
 use vrcx_0_vrchat_client::realtime::{
     classify_websocket_frame, heartbeat, Error as RealtimeError, RealtimeFrame,
     RealtimeWebSocketStream, HEARTBEAT_INTERVAL,
@@ -316,7 +316,7 @@ impl Recorder {
     async fn snapshot_until_taken<F, Fut>(&self, mut stop: watch::Receiver<bool>, mut fetch: F)
     where
         F: FnMut() -> Fut,
-        Fut: Future<Output = Result<Value, String>>,
+        Fut: Future<Output = Result<SnapshotPayload, String>>,
     {
         let mut retry_delays = SNAPSHOT_RETRY_DELAYS.into_iter().chain(std::iter::repeat(
             SNAPSHOT_RETRY_DELAYS[SNAPSHOT_RETRY_DELAYS.len() - 1],
@@ -348,7 +348,7 @@ impl Recorder {
     ) -> Result<(), String>
     where
         F: FnMut() -> Fut,
-        Fut: Future<Output = Result<Value, String>>,
+        Fut: Future<Output = Result<SnapshotPayload, String>>,
     {
         let Some(segment_id) = self.begin_segment() else {
             return Ok(());
@@ -361,8 +361,9 @@ impl Recorder {
         }
         self.profile_scan
             .set_friends(snapshot_friend_ids(&snapshot));
-        snapshot["afterSeq"] = after_seq.into();
-        self.record_snapshot(segment_id, started_at, &snapshot.to_string())?;
+        snapshot.after_seq = Some(after_seq);
+        let payload = serde_json::to_string(&snapshot).map_err(|error| error.to_string())?;
+        self.record_snapshot(segment_id, started_at, &payload)?;
         self.shared
             .update(|info| info.last_snapshot_at = Some(Utc::now().timestamp()));
         Ok(())
@@ -424,11 +425,11 @@ impl Recorder {
     }
 }
 
-fn snapshot_friend_ids(snapshot: &Value) -> Vec<String> {
-    ["onlineFriends", "offlineFriends"]
-        .into_iter()
-        .filter_map(|key| snapshot.get(key).and_then(Value::as_array))
-        .flatten()
+fn snapshot_friend_ids(snapshot: &SnapshotPayload) -> Vec<String> {
+    snapshot
+        .online_friends
+        .iter()
+        .chain(&snapshot.offline_friends)
         .filter_map(|friend| friend.get("id").and_then(Value::as_str))
         .filter(|user_id| user_id.starts_with("usr_"))
         .map(ToOwned::to_owned)
@@ -438,8 +439,6 @@ fn snapshot_friend_ids(snapshot: &Value) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use std::sync::atomic::{AtomicUsize, Ordering};
-
-    use serde_json::json;
 
     use super::*;
     use crate::app::{now_unix, App};
@@ -467,8 +466,8 @@ mod tests {
         recorder.write(FrameKind::Message, Utc::now(), payload);
     }
 
-    fn friend_list() -> Result<Value, String> {
-        Ok(json!({ "onlineFriends": [], "offlineFriends": [] }))
+    fn friend_list() -> Result<SnapshotPayload, String> {
+        Ok(SnapshotPayload::default())
     }
 
     #[tokio::test]

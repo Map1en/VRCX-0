@@ -25,7 +25,7 @@ use vrcx_0_contracts::{
     VrchatResponse, VrchatScope, WebExecuteRequest, WorldSummaryOutput,
 };
 use vrcx_0_core::OwnerId;
-use vrcx_0_logger_protocol::wire::{FrameKind, WireFrame};
+use vrcx_0_logger_protocol::wire::{FrameKind, SnapshotPayload, WireFrame};
 use vrcx_0_outbound_adapters::LocalWorldCacheAdapter;
 use vrcx_0_persistence::feed::feed_rows_query;
 use vrcx_0_persistence::profile_bio::{profile_bio_get, profile_bio_upsert};
@@ -82,27 +82,26 @@ fn friend_snapshot_at(seq: i64, after_seq: i64, seconds: i64, location: &str) ->
         seq,
         FrameKind::Snapshot,
         seconds,
-        json!({
-            "afterSeq": after_seq,
-            "currentUser": {
+        serde_json::to_value(SnapshotPayload {
+            after_seq: Some(after_seq),
+            current_user: json!({
                 "id": SELF,
                 "friends": ["usr_a", "usr_b"],
                 "onlineFriends": ["usr_a"],
                 "offlineFriends": ["usr_b"],
-            },
-            "onlineFriends": [
-                {
-                    "id": "usr_a",
-                    "displayName": "A",
-                    "location": location,
-                    "status": "active",
-                    "iconUrl": icon_url("file_old"),
-                }
+            }),
+            online_friends: vec![json!({
+                "id": "usr_a",
+                "displayName": "A",
+                "location": location,
+                "status": "active",
+                "iconUrl": icon_url("file_old"),
+            })],
+            offline_friends: vec![
+                json!({ "id": "usr_b", "displayName": "B", "location": "offline" }),
             ],
-            "offlineFriends": [
-                { "id": "usr_b", "displayName": "B", "location": "offline" }
-            ],
-        }),
+        })
+        .unwrap(),
     )
 }
 

@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use serde_json::{json, Value};
+use serde_json::Value;
 use vrcx_0_contracts::vrchat_api::{vrchat_response, VrchatResponse};
 use vrcx_0_contracts::vrchat_login::{
     interpret_cookie_probe_config_response, interpret_cookie_probe_current_user_response,
@@ -14,6 +14,7 @@ use vrcx_0_core::vrchat_endpoints::{
     VRCHAT_API_DEFAULT_ENDPOINT, VRCHAT_WEBSOCKET_DEFAULT_ENDPOINT,
 };
 use vrcx_0_core::TwoFactorMethod;
+use vrcx_0_logger_protocol::wire::SnapshotPayload;
 use vrcx_0_vrchat_client::auth::{
     config_get_input, current_user_get_input, email_otp_verify_input, login_basic_input,
     otp_verify_input, session_get_input, totp_verify_input,
@@ -208,7 +209,7 @@ impl Vrchat {
         })
     }
 
-    pub async fn snapshot(&self) -> Result<Value, String> {
+    pub async fn snapshot(&self) -> Result<SnapshotPayload, String> {
         let user = self.execute(current_user_get_input(ENDPOINT.into())).await;
         if user.status != 200 {
             return Err(format!("current user request failed ({})", user.status));
@@ -217,11 +218,12 @@ impl Vrchat {
             .map_err(|error| format!("current user response: {error}"))?;
         let online_friends = self.friends(false).await?;
         let offline_friends = self.friends(true).await?;
-        Ok(json!({
-            "currentUser": current_user,
-            "onlineFriends": online_friends,
-            "offlineFriends": offline_friends,
-        }))
+        Ok(SnapshotPayload {
+            after_seq: None,
+            current_user,
+            online_friends,
+            offline_friends,
+        })
     }
 
     pub async fn profile(&self, user_id: &str) -> VrchatResponse {

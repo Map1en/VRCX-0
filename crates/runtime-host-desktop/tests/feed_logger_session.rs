@@ -14,8 +14,8 @@ use vrcx_0_application_core::{
 use vrcx_0_contracts::feed::{FeedQueryMode, FeedRowsQueryInput};
 use vrcx_0_integrations::feed_logger::FeedLoggerClientError;
 use vrcx_0_logger_protocol::wire::{
-    FrameKind, HelloResponse, PresenceRequest, PresenceResponse, WireFrame, CAPTURE_FORMAT_VERSION,
-    PROTOCOL_VERSION,
+    FrameKind, HelloResponse, PresenceRequest, PresenceResponse, SnapshotPayload, WireFrame,
+    CAPTURE_FORMAT_VERSION, PROTOCOL_VERSION,
 };
 use vrcx_0_persistence::feed::feed_rows_query;
 use vrcx_0_persistence::DatabaseService;
@@ -226,19 +226,22 @@ fn frame(seq: i64, kind: FrameKind, payload: Value) -> WireFrame {
 fn friend_moved_frames() -> Value {
     json!({
         "frames": [
-            frame(1, FrameKind::Snapshot, json!({
-                "afterSeq": 0,
-                "currentUser": {
+            frame(1, FrameKind::Snapshot, serde_json::to_value(SnapshotPayload {
+                after_seq: Some(0),
+                current_user: json!({
                     "id": SELF,
                     "friends": ["usr_a"],
                     "onlineFriends": ["usr_a"],
                     "offlineFriends": [],
-                },
-                "onlineFriends": [
-                    { "id": "usr_a", "displayName": "A", "location": "wrld_x:1", "status": "active" }
-                ],
-                "offlineFriends": [],
-            })),
+                }),
+                online_friends: vec![json!({
+                    "id": "usr_a",
+                    "displayName": "A",
+                    "location": "wrld_x:1",
+                    "status": "active",
+                })],
+                offline_friends: Vec::new(),
+            }).unwrap()),
             frame(2, FrameKind::Message, json!({
                 "type": "friend-location",
                 "content": {
