@@ -21,3 +21,4 @@ updates:
           - dependency-name: 'specta'
           - dependency-name: 'tauri-specta'
           - dependency-name: 'specta-typescript'
+          - dependency-name: 'rust-ini'
