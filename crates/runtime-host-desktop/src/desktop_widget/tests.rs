@@ -15,7 +15,8 @@ use vrcx_0_overlay_runtime::desktop_widget::{
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::DatabaseService;
 
-use super::{DesktopWidget, DesktopWidgetParts};
+use super::imp::{DesktopWidgetParts, Widget};
+use super::DesktopWidget;
 use crate::notification::{DesktopNotificationAction, DesktopNotificationTarget};
 use crate::privacy_lock::tests::runtime_with_scope;
 use crate::{PrivacyLockRuntime, RuntimeHost, RuntimeHostActions};
@@ -104,7 +105,7 @@ fn clicking_a_name_opens_that_user_for_the_signed_in_account() {
     widget
         .sinks
         .emit_overlay_activity_delivery(delivery(FRIEND, "Ada"));
-    let runtime = widget.widget.runtime();
+    let runtime = widget.widget.imp.runtime();
     let id = runtime.view().rows[0].id;
 
     runtime.activate(id, DesktopWidgetRowPart::Actor);
@@ -172,18 +173,20 @@ impl TestWidget {
         let sinks = ActivitySinkRegistry::default();
         let event_bus = RuntimeEventBus::new();
         let windows = Arc::new(RecordingWindows::default());
-        let widget = DesktopWidget::assemble(
-            DesktopWidgetParts {
-                config: config.clone(),
-                host,
-                event_bus: event_bus.clone(),
-                auth_scope: scope.clone(),
-                privacy_lock: Arc::clone(&privacy_lock),
-                activity_sinks: sinks.clone(),
-                services: None,
-            },
-            Arc::clone(&windows) as Arc<dyn DesktopWidgetWindows>,
-        );
+        let widget = DesktopWidget {
+            imp: Widget::assemble(
+                DesktopWidgetParts {
+                    config: config.clone(),
+                    host,
+                    event_bus: event_bus.clone(),
+                    auth_scope: scope.clone(),
+                    privacy_lock: Arc::clone(&privacy_lock),
+                    activity_sinks: sinks.clone(),
+                    services: None,
+                },
+                Arc::clone(&windows) as Arc<dyn DesktopWidgetWindows>,
+            ),
+        };
         Self {
             dir,
             config,
@@ -198,7 +201,7 @@ impl TestWidget {
     }
 
     fn row_count(&self) -> usize {
-        self.widget.runtime().view().rows.len()
+        self.widget.imp.runtime().view().rows.len()
     }
 }
 
