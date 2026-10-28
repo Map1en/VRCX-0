@@ -11,12 +11,25 @@ use vrcx_0_outbound_adapters::LocalAuthCredentialStore;
 use vrcx_0_persistence::config::ConfigRepository;
 
 use super::LocalNotificationPolicy;
+use crate::game_isolation::GameIsolationRuntime;
 use crate::notification::test_support::{test_config, TestDir};
 use crate::notification::{NotificationDoNotDisturbMode, NotificationDoNotDisturbRuntime};
 use crate::privacy_lock::PrivacyLockRuntime;
 use crate::RuntimeHost;
 
 fn policy(name: &str) -> (TestDir, ConfigRepository, LocalNotificationPolicy) {
+    let (dir, config, policy, _isolation) = policy_with_isolation(name);
+    (dir, config, policy)
+}
+
+fn policy_with_isolation(
+    name: &str,
+) -> (
+    TestDir,
+    ConfigRepository,
+    LocalNotificationPolicy,
+    GameIsolationRuntime,
+) {
     let (dir, config) = test_config(name);
     let session = HostSessionRuntime::new();
     session.apply_game_process_status(HostSessionGameProcessStatus {
@@ -38,9 +51,17 @@ fn policy(name: &str) -> (TestDir, ConfigRepository, LocalNotificationPolicy) {
         )
         .unwrap(),
     );
-    let policy =
-        LocalNotificationPolicy::new(config.clone(), session, do_not_disturb, privacy_lock);
-    (dir, config, policy)
+    let isolation =
+        GameIsolationRuntime::new(config.clone(), RuntimeEventBus::new(), RuntimeHost::new())
+            .unwrap();
+    let policy = LocalNotificationPolicy::new(
+        config.clone(),
+        session,
+        do_not_disturb,
+        privacy_lock,
+        isolation.clone(),
+    );
+    (dir, config, policy, isolation)
 }
 
 fn desktop_delivery() -> ActivityDelivery {
@@ -82,6 +103,29 @@ fn the_hmd_condition_follows_the_overlay_toast_setting() {
     config.set_string("overlayToast", "Game Closed").unwrap();
     assert!(!policy.hmd_allowed());
     config.set_string("overlayToast", "Always").unwrap();
+    assert!(policy.hmd_allowed());
+}
+
+#[test]
+fn game_isolation_keeps_desktop_toasts_but_closes_the_headset() {
+    let (_dir, config, policy, isolation) = policy_with_isolation("policy-game-isolation");
+    config.set_string("desktopToast", "Always").unwrap();
+    config.set_string("overlayToast", "Always").unwrap();
+    let delivery = ActivityDelivery {
+        vr: true,
+        tts: true,
+        ..desktop_delivery()
+    };
+    config.set_bool("xsNotifications", true).unwrap();
+    config.set_string("notificationTTS", "Always").unwrap();
+
+    isolation.set_enabled(true).unwrap();
+    let plan = policy.plan(&delivery, &policy.settings());
+
+    assert!(plan.desktop);
+    assert!(!plan.xs && !plan.ovrt && !plan.tts);
+    assert!(!policy.hmd_allowed());
+    isolation.set_enabled(false).unwrap();
     assert!(policy.hmd_allowed());
 }
 

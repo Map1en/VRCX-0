@@ -320,6 +320,7 @@ Source strings live in [`en.json`](en.json). Keep recurring terms consistent wit
 | Feed Widget                        | 动态小组件                 | 動態小工具            | フィード                             |
 | Folders                            | 文件夹                     | 捷徑                  | フォルダ                             |
 | Friend History                     | 好友历史                   | 好友紀錄              | フレンドログ                         |
+| Game Isolation                     | 隔离模式                   | 隔離模式              | ゲーム分離モード                     |
 | Game Log                           | 游戏日志                   | 遊戲紀錄              | ゲームログ                           |
 | Game Log Widget                    | 游戏日志小组件             | 遊戲紀錄小工具        | ゲームログ                           |
 | GitHub                             | 在 GitHub 上查看           | 在 GitHub 上查看      | GitHub                               |

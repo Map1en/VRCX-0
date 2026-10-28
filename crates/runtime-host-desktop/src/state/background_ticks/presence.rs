@@ -6,11 +6,11 @@ use vrcx_0_application_game::{
     BackgroundPresenceAutomationState, BackgroundPresenceFactsInput,
 };
 
-use super::BackgroundTickContext;
 use super::{
     background_capability_session, background_capability_session_matches, emit_background_error,
     emit_background_info, BACKGROUND_PRESENCE_AUTOMATION_JOB, BACKGROUND_PRESENCE_CADENCE_SECONDS,
 };
+use super::{BackgroundTickContext, LocalGameFacts};
 
 pub(in crate::state) async fn run_background_presence_tick(
     context: &BackgroundTickContext<'_>,
@@ -32,7 +32,7 @@ pub(in crate::state) async fn run_background_presence_tick(
         return;
     };
     let session_identity = session.identity();
-    let host_session = context.host_session.snapshot();
+    let local_game = LocalGameFacts::from_context(context);
     let game_state_store =
         crate::game_state_store::PersistenceGameStateStore::new(std::sync::Arc::clone(context.db));
     let background_remote = crate::background_remote::DesktopBackgroundRemoteApi::new(
@@ -42,15 +42,12 @@ pub(in crate::state) async fn run_background_presence_tick(
         &game_state_store,
         BackgroundPresenceFactsInput {
             session,
-            is_game_running: host_session.is_game_running,
-            is_steamvr_running: host_session.is_steamvr_running,
-            is_game_no_vr: context
-                .config
-                .get_bool("isGameNoVR", false)
-                .unwrap_or(false),
-            last_game_started_at: host_session.last_game_started_at,
-            game_log_snapshot: context.desktop_services.game_log_snapshot(),
-            now_playing: context.desktop_services.now_playing(),
+            is_game_running: local_game.is_game_running,
+            is_steamvr_running: local_game.is_steamvr_running,
+            is_game_no_vr: local_game.is_game_no_vr,
+            last_game_started_at: local_game.last_game_started_at,
+            game_log_snapshot: local_game.game_log_snapshot,
+            now_playing: local_game.now_playing,
             friend_user_ids,
             favorite_friend_groups_by_key,
             favorite_world_groups_by_key,

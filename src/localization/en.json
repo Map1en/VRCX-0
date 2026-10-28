@@ -687,6 +687,29 @@
             "show": "Bring to Front"
         }
     },
+    "game_isolation": {
+        "confirm_title": "Turn on Game Isolation?",
+        "active_title": "Game Isolation is on",
+        "summary": "This account isn't the one playing VRChat on this PC.",
+        "effect_game_log": "Game Log isn't recorded",
+        "effect_presence": "Your location and status come from VRChat's servers only",
+        "effect_vr": "VR overlay, XSOverlay, OVR Toolkit, and Text-to-Speech are turned off",
+        "effect_automation": "Game-based automation, Discord status, screenshot info, and crash relaunch are turned off",
+        "unchanged": "Desktop notifications and the Desktop Overlay keep working.",
+        "hint_before_launch": "Turn it on before launching VRChat. Also recommended when running more than one game client.",
+        "hint_running_enable": "VRChat is running: the current room is still recorded, and recording stops from the next room.",
+        "hint_running_active": "VRChat is running: after you turn it off, recording resumes from the next room.",
+        "cancel": "Cancel",
+        "confirm": "Turn on",
+        "close": "Close",
+        "turn_off": "Turn off Game Isolation",
+        "toast_on": "Game Isolation turned on",
+        "toast_off": "Game Isolation turned off",
+        "toast_off_running": "Game Isolation turned off · Recording resumes from the next room",
+        "failed": "Couldn't change Game Isolation",
+        "badge": "Isolated",
+        "menu_item": "Game Isolation…"
+    },
     "nativeShell": {
         "tray": {
             "open": "Open VRCX-0",
@@ -697,6 +720,7 @@
             "doNotDisturbThreeHours": "3 hours",
             "doNotDisturbUntilStopped": "Until turned off",
             "doNotDisturbTurnOff": "Turn off",
+            "gameIsolation": "Game Isolation",
             "rebuildUi": "Reload UI",
             "sidebarMode": "Sidebar Mode",
             "disableTheme": "Disable Theme",
@@ -6790,6 +6814,8 @@
         "do_not_disturb_three_hours": "For 3 hours",
         "do_not_disturb_until_stopped": "Until I turn it off",
         "do_not_disturb_turn_off": "Turn off Do Not Disturb",
+        "game_isolation": "Game Isolation",
+        "game_isolation_active": "Game Isolation is on · Click to turn off",
         "do_not_disturb_failed": "Failed to update Do Not Disturb",
         "world_collection_importing": "Importing world collection ({progress}/{total})",
         "game": "Game",

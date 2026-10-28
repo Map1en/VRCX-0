@@ -385,6 +385,7 @@ impl DesktopRuntimeHostState {
             instance_roster_observer: Some(Arc::clone(&game_roster_observer)),
             backend_status: backend_status.clone(),
             side_effect_sink: game_log_side_effect_sink,
+            isolation: desktop_services.game_isolation(),
         }));
         let vr_overlay_runtime =
             Arc::new(DesktopVrOverlayRuntime::new(Arc::clone(&desktop_services))?);
@@ -407,6 +408,7 @@ impl DesktopRuntimeHostState {
             instance_roster_observer: Some(Arc::clone(&game_roster_observer)),
             backend_status: backend_status.clone(),
             activity_router: desktop_services.activity_router(),
+            isolation: desktop_services.game_isolation(),
         }));
         let session_runtime = Arc::new(SessionHostRuntime::new(
             builder.desktop_assembly().session().clone(),
@@ -495,10 +497,14 @@ impl DesktopRuntimeHostState {
                 .app_data
                 .join("presenceAutomationState.json"),
         });
-        let local_game_context = Arc::new(GameLogLocalGameContextSource::new(
-            builder.desktop_assembly().session().clone(),
-            game_log_snapshot,
-        ));
+        let local_game_context =
+            Arc::new(crate::game_isolation::IsolatedLocalGameContextSource::new(
+                Arc::new(GameLogLocalGameContextSource::new(
+                    builder.desktop_assembly().session().clone(),
+                    game_log_snapshot,
+                )),
+                desktop_services.game_isolation(),
+            ));
         let friend_projection_observer: Arc<dyn FriendProjectionObserver> =
             desktop_services.clone();
         let instance_launch = crate::instance_launch::build_instance_launch_runtime(
@@ -518,6 +524,14 @@ impl DesktopRuntimeHostState {
             profile_extension: Some(extension.clone()),
         })?;
         current_user_presence_observer.bind(runtime.realtime_runtime());
+        let isolation_realtime = Arc::downgrade(runtime.realtime_runtime());
+        desktop_services
+            .game_isolation()
+            .add_observer(Arc::new(move |_enabled| {
+                if let Some(realtime_runtime) = isolation_realtime.upgrade() {
+                    realtime_runtime.refresh_current_user_local_presence();
+                }
+            }));
         let realtime_runtime = Arc::downgrade(runtime.realtime_runtime());
         runtime
             .desktop_assembly()
@@ -759,11 +773,12 @@ impl DesktopRuntimeHostState {
         &self,
         requested_location: &str,
     ) -> vrcx_0_application_game::PlayerListSnapshotOutput {
-        let snapshot = if self.is_game_running() {
-            self.desktop.services.game_log_snapshot()
-        } else {
-            Arc::new(vrcx_0_application_game::RuntimeSnapshot::default())
-        };
+        let snapshot =
+            if self.is_game_running() && !self.desktop.services.game_isolation().is_enabled() {
+                self.desktop.services.game_log_snapshot()
+            } else {
+                Arc::new(vrcx_0_application_game::RuntimeSnapshot::default())
+            };
         vrcx_0_application_game::player_list_runtime_snapshot(&snapshot, requested_location)
     }
 
@@ -2194,6 +2209,17 @@ impl DesktopRuntimeHostState {
             self.desktop.desktop_widget.reload_settings();
         }
         Ok(removed)
+    }
+
+    pub fn game_isolation_snapshot(&self) -> crate::GameIsolationSnapshot {
+        self.desktop.services.game_isolation().snapshot()
+    }
+
+    pub fn set_game_isolation_enabled(
+        &self,
+        enabled: bool,
+    ) -> vrcx_0_application_core::Result<crate::GameIsolationSnapshot> {
+        self.desktop.services.game_isolation().set_enabled(enabled)
     }
 
     pub fn desktop_widget(&self) -> Arc<crate::desktop_widget::DesktopWidget> {

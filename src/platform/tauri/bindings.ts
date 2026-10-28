@@ -138,6 +138,11 @@ const generatedCommands = {
             mode
         });
     },
+    async appGameIsolationSet(
+        enabled: boolean
+    ): Promise<GameIsolationSnapshot> {
+        return await TAURI_INVOKE('app__game_isolation_set', { enabled });
+    },
     async appStartBackgroundMode(): Promise<BackendRuntimeSnapshot> {
         return await TAURI_INVOKE('app__start_background_mode');
     },
@@ -3289,6 +3294,7 @@ export type AncillaryRuntimeSnapshot = {
     nowPlaying: NowPlayingSnapshot;
     backgroundImageState: BackgroundImageProjection;
     notificationDoNotDisturbState: NotificationDoNotDisturbSnapshot;
+    gameIsolationState: GameIsolationSnapshot;
     privacyLockState: PrivacyLockSnapshot;
     desktopWidgetState: DesktopWidgetSnapshot;
 };
@@ -3694,6 +3700,7 @@ export type BackendRuntimeEventPayloadMap = {
     feedLoggerSync: FeedLoggerSyncEvent;
     feedLoggerHealth: FeedLoggerProbe;
     notificationDoNotDisturbState: NotificationDoNotDisturbSnapshot;
+    gameIsolationState: GameIsolationSnapshot;
     privacyLockState: PrivacyLockSnapshot;
     desktopWidgetState: DesktopWidgetSnapshot;
 };
@@ -4851,6 +4858,7 @@ export type GameClientEvent =
     | { kind: 'crashRelaunchDecision'; payload: CrashRelaunchDecisionPayload }
     | { kind: 'debugLoggingOutcome'; payload: DebugLoggingOutcome }
     | { kind: 'notification'; payload: RuntimeNotificationPayload };
+export type GameIsolationSnapshot = { revision: number; enabled: boolean };
 export type GameLogAllUserStatsOutput = {
     lastSeen: string;
     userId: string;

@@ -408,6 +408,7 @@ pub fn refresh_tray_menu(app: &tauri::AppHandle, state: &AppState) -> Result<(),
         let community_theme_enabled = is_community_theme_enabled(state);
         let do_not_disturb = state.runtime_host().notification_do_not_disturb_snapshot();
         let privacy_lock = state.runtime_host().privacy_lock().snapshot();
+        let game_isolation = state.runtime_host().game_isolation_snapshot();
         let open_item = MenuItem::with_id(app, "tray-open", labels.open, true, None::<&str>)?;
         let background_item = CheckMenuItem::with_id(
             app,
@@ -459,6 +460,14 @@ pub fn refresh_tray_menu(app: &tauri::AppHandle, state: &AppState) -> Result<(),
                 &do_not_disturb_until_stopped,
                 &do_not_disturb_turn_off,
             ],
+        )?;
+        let game_isolation_item = CheckMenuItem::with_id(
+            app,
+            "tray-game-isolation",
+            labels.game_isolation,
+            true,
+            game_isolation.enabled,
+            None::<&str>,
         )?;
         #[cfg(target_os = "linux")]
         let rebuild_ui_item = MenuItem::with_id(
@@ -538,6 +547,11 @@ pub fn refresh_tray_menu(app: &tauri::AppHandle, state: &AppState) -> Result<(),
             }
             menu.append(&sidebar_mode_item)?;
             menu.append(&do_not_disturb_menu)?;
+            if vrcx_0_host_desktop::host_capabilities::is_host_capability_available(
+                vrcx_0_host_desktop::host_capabilities::HostCapability::GameProcessMonitor,
+            ) {
+                menu.append(&game_isolation_item)?;
+            }
             if desktop_widget.supported {
                 menu.append(&desktop_widget_menu)?;
             }

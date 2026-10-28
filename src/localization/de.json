@@ -687,6 +687,29 @@
             "show": "In den Vordergrund holen"
         }
     },
+    "game_isolation": {
+        "confirm_title": "Spielentkopplung einschalten?",
+        "active_title": "Spielentkopplung ist an",
+        "summary": "Mit diesem Konto wird VRChat auf diesem PC gerade nicht gespielt.",
+        "effect_game_log": "Das Spielprotokoll wird nicht aufgezeichnet",
+        "effect_presence": "Dein Standort und Status kommen nur von den VRChat-Servern",
+        "effect_vr": "VR-Overlay, XSOverlay, OVR Toolkit und Text-zu-Sprache werden ausgeschaltet",
+        "effect_automation": "Spielabhängige Automationen, Discord-Status, Screenshot-Infos und Neustart nach Absturz werden ausgeschaltet",
+        "unchanged": "Desktop-Benachrichtigungen und das Desktop-Overlay funktionieren weiter.",
+        "hint_before_launch": "Am besten vor dem Start von VRChat einschalten. Auch empfohlen, wenn mehrere Spielclients laufen.",
+        "hint_running_enable": "VRChat läuft: Der aktuelle Raum wird noch aufgezeichnet, ab dem nächsten Raum nicht mehr.",
+        "hint_running_active": "VRChat läuft: Nach dem Ausschalten wird ab dem nächsten Raum wieder aufgezeichnet.",
+        "cancel": "Abbrechen",
+        "confirm": "Einschalten",
+        "close": "Schließen",
+        "turn_off": "Spielentkopplung ausschalten",
+        "toast_on": "Spielentkopplung eingeschaltet",
+        "toast_off": "Spielentkopplung ausgeschaltet",
+        "toast_off_running": "Spielentkopplung ausgeschaltet · Aufzeichnung ab dem nächsten Raum",
+        "failed": "Spielentkopplung konnte nicht geändert werden",
+        "badge": "Entkoppelt",
+        "menu_item": "Spielentkopplung…"
+    },
     "nativeShell": {
         "tray": {
             "open": "VRCX-0 öffnen",
@@ -697,6 +720,7 @@
             "doNotDisturbThreeHours": "3 Stunden",
             "doNotDisturbUntilStopped": "Bis zum Ausschalten",
             "doNotDisturbTurnOff": "Ausschalten",
+            "gameIsolation": "Spielentkopplung",
             "rebuildUi": "UI neu laden",
             "sidebarMode": "Seitenleistenmodus",
             "disableTheme": "Theme deaktivieren",
@@ -6734,6 +6758,8 @@
         "do_not_disturb_three_hours": "Für 3 Stunden",
         "do_not_disturb_until_stopped": "Bis ich es ausschalte",
         "do_not_disturb_turn_off": "„Nicht stören“ ausschalten",
+        "game_isolation": "Spielentkopplung",
+        "game_isolation_active": "Spielentkopplung ist an · Zum Ausschalten klicken",
         "do_not_disturb_failed": "„Nicht stören“ konnte nicht geändert werden",
         "world_collection_importing": "Welten-Sammlung wird importiert ({progress}/{total})",
         "game": "Spiel",

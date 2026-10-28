@@ -687,6 +687,29 @@
             "show": "Trazer para a frente"
         }
     },
+    "game_isolation": {
+        "confirm_title": "Ativar o isolamento do jogo?",
+        "active_title": "Isolamento do jogo ativado",
+        "summary": "Esta conta não é a que está jogando VRChat neste PC.",
+        "effect_game_log": "O Registro do Jogo não é gravado",
+        "effect_presence": "Sua localização e status vêm apenas dos servidores do VRChat",
+        "effect_vr": "Overlay de VR, XSOverlay, OVR Toolkit e Texto para Voz são desativados",
+        "effect_automation": "Automações que dependem do jogo, status do Discord, informações de capturas de tela e reinício após falha são desativados",
+        "unchanged": "As notificações da área de trabalho e o Overlay da Área de Trabalho continuam funcionando.",
+        "hint_before_launch": "Ative antes de abrir o VRChat. Também é recomendado ao rodar mais de um cliente do jogo.",
+        "hint_running_enable": "O VRChat está aberto: a sala atual ainda é gravada e a gravação para a partir da próxima sala.",
+        "hint_running_active": "O VRChat está aberto: ao desativar, a gravação volta a partir da próxima sala.",
+        "cancel": "Cancelar",
+        "confirm": "Ativar",
+        "close": "Fechar",
+        "turn_off": "Desativar isolamento do jogo",
+        "toast_on": "Isolamento do jogo ativado",
+        "toast_off": "Isolamento do jogo desativado",
+        "toast_off_running": "Isolamento do jogo desativado · A gravação volta a partir da próxima sala",
+        "failed": "Não foi possível alterar o isolamento do jogo",
+        "badge": "Isolado",
+        "menu_item": "Isolamento do jogo…"
+    },
     "nativeShell": {
         "tray": {
             "open": "Abrir VRCX-0",
@@ -697,6 +720,7 @@
             "doNotDisturbThreeHours": "3 horas",
             "doNotDisturbUntilStopped": "Até desativar",
             "doNotDisturbTurnOff": "Desativar",
+            "gameIsolation": "Isolamento do jogo",
             "rebuildUi": "Recarregar interface",
             "sidebarMode": "Modo barra lateral",
             "disableTheme": "Desativar tema",
@@ -6734,6 +6758,8 @@
         "do_not_disturb_three_hours": "Durante 3 horas",
         "do_not_disturb_until_stopped": "Até eu desativar",
         "do_not_disturb_turn_off": "Desativar Não incomodar",
+        "game_isolation": "Isolamento do jogo",
+        "game_isolation_active": "Isolamento do jogo ativado · Clique para desativar",
         "do_not_disturb_failed": "Não foi possível alterar Não incomodar",
         "world_collection_importing": "Importando coleção de mundos ({progress}/{total})",
         "game": "Jogo",

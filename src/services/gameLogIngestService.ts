@@ -12,6 +12,9 @@ import { recordGameRuntimePresence } from './domainIngestionService';
 type RuntimeState = ReturnType<typeof useRuntimeStore.getState>;
 type GameStatePatch = Parameters<RuntimeState['setGameState']>[0];
 export function applyRuntimeGameLogProjection(projection: GameLogProjection) {
+    if (useRuntimeStore.getState().gameIsolation.enabled) {
+        return;
+    }
     const {
         currentLocation,
         currentWorldId,

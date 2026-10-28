@@ -688,6 +688,7 @@
             "doNotDisturbThreeHours": "3 heures",
             "doNotDisturbUntilStopped": "Jusqu'à désactivation",
             "doNotDisturbTurnOff": "Désactiver",
+            "gameIsolation": "Isolation du jeu",
             "rebuildUi": "Recharger l'interface",
             "sidebarMode": "Mode barre latérale",
             "disableTheme": "Désactiver le thème",

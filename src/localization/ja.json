@@ -683,6 +683,29 @@
             "show": "最前面に表示"
         }
     },
+    "game_isolation": {
+        "confirm_title": "ゲーム分離モードをオンにしますか？",
+        "active_title": "ゲーム分離モード中",
+        "summary": "このアカウントは、このPCでVRChatをプレイしているアカウントではありません。",
+        "effect_game_log": "ゲームログを記録しません",
+        "effect_presence": "自分の現在地とステータスはVRChatのサーバー情報のみを使います",
+        "effect_vr": "VRオーバーレイ、XSOverlay、OVR Toolkit、テキスト読み上げをオフにします",
+        "effect_automation": "ゲーム連動の自動化、Discordステータス、スクリーンショット情報の書き込み、クラッシュ後の再起動をオフにします",
+        "unchanged": "デスクトップ通知とデスクトップのオーバーレイはそのまま使えます。",
+        "hint_before_launch": "VRChatを起動する前にオンにするのがおすすめです。ゲームを複数起動するときもおすすめです。",
+        "hint_running_enable": "VRChatの起動中です。今いるルームはそのまま記録され、次のルームから記録を止めます。",
+        "hint_running_active": "VRChatの起動中です。解除すると、次のルームから記録を再開します。",
+        "cancel": "キャンセル",
+        "confirm": "オンにする",
+        "close": "閉じる",
+        "turn_off": "ゲーム分離モードを解除",
+        "toast_on": "ゲーム分離モードをオンにしました",
+        "toast_off": "ゲーム分離モードを解除しました",
+        "toast_off_running": "ゲーム分離モードを解除しました · 次のルームから記録を再開します",
+        "failed": "ゲーム分離モードを切り替えられませんでした",
+        "badge": "分離中",
+        "menu_item": "ゲーム分離モード…"
+    },
     "nativeShell": {
         "tray": {
             "open": "VRCX-0 を開く",
@@ -693,6 +716,7 @@
             "doNotDisturbThreeHours": "3時間",
             "doNotDisturbUntilStopped": "オフにするまで",
             "doNotDisturbTurnOff": "一時停止を解除",
+            "gameIsolation": "ゲーム分離モード",
             "rebuildUi": "UI を再読み込み",
             "sidebarMode": "サイドバーモード",
             "disableTheme": "テーマを無効化",
@@ -6776,6 +6800,8 @@
         "do_not_disturb_three_hours": "3時間",
         "do_not_disturb_until_stopped": "オフにするまで",
         "do_not_disturb_turn_off": "一時停止を解除",
+        "game_isolation": "ゲーム分離モード",
+        "game_isolation_active": "ゲーム分離モード中 · クリックで解除",
         "do_not_disturb_failed": "通知の一時停止を変更できませんでした",
         "world_collection_importing": "ワールドコレクションをインポート中（{progress}/{total}）",
         "game": "VRChat",

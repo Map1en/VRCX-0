@@ -687,6 +687,29 @@
             "show": "顯示到最前"
         }
     },
+    "game_isolation": {
+        "confirm_title": "開啟隔離模式？",
+        "active_title": "隔離模式已開啟",
+        "summary": "目前帳號不是這台電腦遊戲中正在玩的帳號。",
+        "effect_game_log": "不記錄遊戲紀錄",
+        "effect_presence": "自己的位置和狀態只使用 VRChat 伺服器的資料",
+        "effect_vr": "關閉 VR 疊加介面、XSOverlay、OVR Toolkit 和文字轉語音",
+        "effect_automation": "關閉依賴遊戲的自動化、Discord 狀態、截圖資訊寫入和當機後重新啟動",
+        "unchanged": "桌面通知和桌面疊加介面照常運作。",
+        "hint_before_launch": "建議在啟動遊戲前開啟；多開遊戲時也建議開啟。",
+        "hint_running_enable": "遊戲正在執行：目前房間仍會記錄，下次進房起停止。",
+        "hint_running_active": "遊戲正在執行：關閉後從下次進房起恢復記錄。",
+        "cancel": "取消",
+        "confirm": "開啟",
+        "close": "收起",
+        "turn_off": "關閉隔離模式",
+        "toast_on": "已開啟隔離模式",
+        "toast_off": "已關閉隔離模式",
+        "toast_off_running": "已關閉隔離模式 · 下次進房起恢復記錄",
+        "failed": "無法切換隔離模式",
+        "badge": "隔離",
+        "menu_item": "隔離模式…"
+    },
     "nativeShell": {
         "tray": {
             "open": "開啟 VRCX-0",
@@ -697,6 +720,7 @@
             "doNotDisturbThreeHours": "3 小時",
             "doNotDisturbUntilStopped": "持續開啟",
             "doNotDisturbTurnOff": "關閉勿擾",
+            "gameIsolation": "隔離模式",
             "rebuildUi": "重新載入用戶介面",
             "sidebarMode": "側邊欄模式",
             "disableTheme": "停用佈景主題",
@@ -6771,6 +6795,8 @@
         "do_not_disturb_three_hours": "開啟 3 小時",
         "do_not_disturb_until_stopped": "持續開啟",
         "do_not_disturb_turn_off": "關閉勿擾模式",
+        "game_isolation": "隔離模式",
+        "game_isolation_active": "隔離模式已開啟 · 點擊關閉",
         "do_not_disturb_failed": "無法更新勿擾模式",
         "world_collection_importing": "正在匯入世界集合（{progress}/{total}）",
         "game": "遊戲",

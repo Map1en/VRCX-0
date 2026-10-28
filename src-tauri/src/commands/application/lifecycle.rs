@@ -7,7 +7,9 @@ use crate::state::AppState;
 use vrcx_0_runtime_host_desktop::notification::{
     NotificationDoNotDisturbMode, NotificationDoNotDisturbSnapshot,
 };
-use vrcx_0_runtime_host_desktop::{AncillaryRuntimeSnapshot, RuntimeJobRecordInput};
+use vrcx_0_runtime_host_desktop::{
+    AncillaryRuntimeSnapshot, GameIsolationSnapshot, RuntimeJobRecordInput,
+};
 
 #[tauri::command]
 #[specta::specta]
@@ -26,6 +28,15 @@ pub fn app__notification_do_not_disturb_mode_set(
     Ok(state
         .runtime_host()
         .set_notification_do_not_disturb_mode(mode)?)
+}
+
+#[tauri::command(async)]
+#[specta::specta]
+pub fn app__game_isolation_set(
+    state: State<'_, AppState>,
+    enabled: bool,
+) -> Result<GameIsolationSnapshot, AppError> {
+    Ok(state.runtime_host().set_game_isolation_enabled(enabled)?)
 }
 
 #[tauri::command]

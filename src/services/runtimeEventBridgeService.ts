@@ -36,6 +36,7 @@ import {
     hydrateFavoriteImportRuntimeStatus
 } from './favoriteImportService';
 import { applyFriendProfileLoadStatusPayload } from './friendProfileLoadService';
+import { applyGameIsolationSnapshot } from './gameIsolationService';
 import { handleGroupBanImportStatusEvent } from './groupBanImportService';
 import { isHostCapabilityAvailable } from './hostCapabilityService';
 import {
@@ -183,6 +184,11 @@ function handleRuntimeEvent(event: RuntimeEvent): void {
 
     if (event.name === 'notificationDoNotDisturbState') {
         runtimeStore.setNotificationDoNotDisturb(event.payload);
+        return;
+    }
+
+    if (event.name === 'gameIsolationState') {
+        applyGameIsolationSnapshot(event.payload);
         return;
     }
 
@@ -454,6 +460,9 @@ async function hydrateAncillaryRuntimeState(): Promise<void> {
                     snapshot.notificationDoNotDisturbState
                 );
         }),
+        hydrateRuntimeState('Failed to hydrate game isolation state:', () => {
+            applyGameIsolationSnapshot(snapshot.gameIsolationState);
+        }),
         hydrateRuntimeState('Failed to hydrate privacy lock state:', () => {
             useRuntimeStore
                 .getState()
@@ -491,6 +500,7 @@ export async function bindRuntimeEvents(): Promise<() => void> {
         'backgroundImageState',
         'communityThemeState',
         'notificationDoNotDisturbState',
+        'gameIsolationState',
         'privacyLockState',
         'desktopWidgetState',
         'gameLogProjection',

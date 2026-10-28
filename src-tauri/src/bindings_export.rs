@@ -95,6 +95,7 @@ struct BackendRuntimeEventPayloadMap {
     feed_logger_sync: vrcx_0_runtime_host_desktop::feed_logger::FeedLoggerSyncEvent,
     feed_logger_health: vrcx_0_runtime_host_desktop::feed_logger::FeedLoggerProbe,
     notification_do_not_disturb_state: NotificationDoNotDisturbSnapshot,
+    game_isolation_state: vrcx_0_runtime_host_desktop::GameIsolationSnapshot,
     privacy_lock_state: PrivacyLockSnapshot,
     desktop_widget_state: vrcx_0_runtime_host_desktop::desktop_widget::DesktopWidgetSnapshot,
 }
@@ -157,6 +158,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::application::realtime::app__friend_profile_load_cancel,
             commands::application::lifecycle::app__ancillary_runtime_snapshot_get,
             commands::application::lifecycle::app__notification_do_not_disturb_mode_set,
+            commands::application::lifecycle::app__game_isolation_set,
             commands::application::background_mode::app__start_background_mode,
             commands::application::background_mode::app__backend_runtime_combined_snapshot_get,
             commands::application::background_mode::app__ensure_main_window,

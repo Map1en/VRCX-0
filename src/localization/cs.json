@@ -695,6 +695,29 @@
             "show": "Přenést do popředí"
         }
     },
+    "game_isolation": {
+        "confirm_title": "Zapnout oddělení od hry?",
+        "active_title": "Oddělení od hry je zapnuté",
+        "summary": "Tento účet není ten, na kterém se na tomto PC právě hraje VRChat.",
+        "effect_game_log": "Záznam hry se neukládá",
+        "effect_presence": "Vaše poloha a stav se berou jen ze serverů VRChat",
+        "effect_vr": "VR overlay, XSOverlay, OVR Toolkit a převod textu na řeč se vypnou",
+        "effect_automation": "Automatizace závislé na hře, stav v Discordu, údaje ve snímcích obrazovky a opětovné spuštění po pádu se vypnou",
+        "unchanged": "Oznámení na ploše a desktopový overlay fungují dál.",
+        "hint_before_launch": "Doporučujeme zapnout před spuštěním VRChatu. Doporučeno i při spuštění více klientů hry.",
+        "hint_running_enable": "VRChat běží: aktuální místnost se ještě zaznamená, od další místnosti se záznam zastaví.",
+        "hint_running_active": "VRChat běží: po vypnutí se záznam obnoví od další místnosti.",
+        "cancel": "Zrušit",
+        "confirm": "Zapnout",
+        "close": "Zavřít",
+        "turn_off": "Vypnout oddělení od hry",
+        "toast_on": "Oddělení od hry zapnuto",
+        "toast_off": "Oddělení od hry vypnuto",
+        "toast_off_running": "Oddělení od hry vypnuto · Záznam se obnoví od další místnosti",
+        "failed": "Oddělení od hry se nepodařilo změnit",
+        "badge": "Odděleno",
+        "menu_item": "Oddělení od hry…"
+    },
     "nativeShell": {
         "tray": {
             "open": "Otevřít VRCX-0",
@@ -705,6 +728,7 @@
             "doNotDisturbThreeHours": "3 hodiny",
             "doNotDisturbUntilStopped": "Do vypnutí",
             "doNotDisturbTurnOff": "Vypnout",
+            "gameIsolation": "Oddělení od hry",
             "rebuildUi": "Znovu načíst UI",
             "sidebarMode": "Režim postranního panelu",
             "disableTheme": "Zakázat motiv",
@@ -6766,6 +6790,8 @@
         "do_not_disturb_three_hours": "Na 3 hodiny",
         "do_not_disturb_until_stopped": "Do ručního vypnutí",
         "do_not_disturb_turn_off": "Vypnout režim Nerušit",
+        "game_isolation": "Oddělení od hry",
+        "game_isolation_active": "Oddělení od hry je zapnuté · Kliknutím vypnete",
         "do_not_disturb_failed": "Režim Nerušit se nepodařilo změnit",
         "world_collection_importing": "Importuji kolekci světů ({progress}/{total})",
         "game": "Hra",

@@ -279,6 +279,24 @@ describe('gameLogIngestService characterization', () => {
             lastGameLogType: 'game-stopped'
         });
     });
+
+    it('keeps the local game room out of an isolated account', async () => {
+        const { service, useRuntimeStore } = await loadGameLogService();
+        useRuntimeStore
+            .getState()
+            .setGameIsolation({ revision: 1, enabled: true });
+
+        service.applyRuntimeGameLogProjection(
+            projection({
+                currentLocation: 'wrld_alt:1',
+                currentWorldId: 'wrld_alt',
+                currentLocationStartedAt: '2026-05-14T00:00:00.000Z'
+            })
+        );
+
+        expect(useRuntimeStore.getState().gameState.currentLocation).toBe('');
+        expect(mocks.recordGameRuntimePresence).not.toHaveBeenCalled();
+    });
 });
 
 it('hydrates the backend current room over an unchanged stale frontend room', async () => {

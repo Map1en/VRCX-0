@@ -28,6 +28,7 @@ pub struct AncillaryRuntimeSnapshot {
     pub now_playing: NowPlayingSnapshot,
     pub background_image_state: BackgroundImageProjection,
     pub notification_do_not_disturb_state: NotificationDoNotDisturbSnapshot,
+    pub game_isolation_state: crate::GameIsolationSnapshot,
     pub privacy_lock_state: PrivacyLockSnapshot,
     pub desktop_widget_state: DesktopWidgetSnapshot,
 }
@@ -64,6 +65,7 @@ pub async fn ancillary_runtime_snapshot(
         now_playing: state.now_playing_snapshot(),
         background_image_state: state.background_image_projection(),
         notification_do_not_disturb_state: state.notification_do_not_disturb_snapshot(),
+        game_isolation_state: state.game_isolation_snapshot(),
         privacy_lock_state: state.privacy_lock().snapshot(),
         desktop_widget_state: state.desktop_widget().snapshot(),
     }

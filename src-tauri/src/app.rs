@@ -174,6 +174,23 @@ fn update_desktop_widget_from_tray(
     }
 }
 
+fn toggle_game_isolation_from_tray(app: &tauri::AppHandle) {
+    let Some(state) = app.try_state::<AppState>() else {
+        return;
+    };
+    if !state.runtime_host().game_isolation_snapshot().enabled {
+        restore_or_ensure_main_window(app, "failed to show main window for game isolation");
+        if let Err(error) = app.emit("gameIsolationConfirmRequested", serde_json::json!({})) {
+            tracing::warn!(error = %error, "failed to emit game isolation confirm request");
+        }
+    } else if let Err(error) = state.runtime_host().set_game_isolation_enabled(false) {
+        tracing::warn!(error = %error, "failed to turn off game isolation from tray");
+    }
+    if let Err(error) = bootstrap::refresh_tray_menu(app, &state) {
+        tracing::warn!(error = %error, "failed to refresh tray menu after game isolation update");
+    }
+}
+
 fn set_do_not_disturb_from_tray(app: &tauri::AppHandle, mode: NotificationDoNotDisturbMode) {
     let Some(state) = app.try_state::<AppState>() else {
         return;
@@ -402,6 +419,9 @@ pub fn run() {
             }
             "tray-dnd-turn-off" => {
                 set_do_not_disturb_from_tray(app, NotificationDoNotDisturbMode::Off);
+            }
+            "tray-game-isolation" => {
+                toggle_game_isolation_from_tray(app);
             }
             "tray-desktop-widget-on" => {
                 update_desktop_widget_from_tray(app, |widget| widget.set_enabled(true));

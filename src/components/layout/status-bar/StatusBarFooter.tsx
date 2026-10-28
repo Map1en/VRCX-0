@@ -47,6 +47,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { DesktopWidgetToggle } from './DesktopWidgetToggle';
 import { DoNotDisturbMenu } from './DoNotDisturbMenu';
+import { GameIsolationToggle } from './GameIsolationToggle';
 import { OfflineRecordIndicator } from './OfflineRecordIndicator';
 import {
     AppUptimeValue,
@@ -321,6 +322,7 @@ export const StatusBarFooter = forwardRef<HTMLElement, StatusBarFooterProps>(
         const sessionActions = (
             <>
                 <DoNotDisturbMenu />
+                <GameIsolationToggle />
                 <Tooltip>
                     <TooltipTrigger
                         render={

@@ -4,6 +4,8 @@ use vrcx_0_application_core::GameProcessEvent;
 use vrcx_0_composition::Result;
 
 use crate::DesktopRuntimeServices;
+#[cfg(any(windows, target_os = "linux"))]
+use crate::GameIsolationRuntime;
 
 #[cfg(any(windows, target_os = "linux"))]
 use vrcx_0_application_core::GameProcessEventSink;
@@ -53,6 +55,8 @@ pub struct DesktopVrOverlayRuntime {
     config: ConfigRepository,
     #[cfg(any(windows, target_os = "linux"))]
     runtime: Arc<VrOverlayRuntime>,
+    #[cfg(any(windows, target_os = "linux"))]
+    isolation: GameIsolationRuntime,
 }
 
 impl DesktopVrOverlayRuntime {
@@ -61,12 +65,28 @@ impl DesktopVrOverlayRuntime {
         {
             let config = services.config().clone();
             let runtime = Arc::new(VrOverlayRuntime::new(Arc::clone(&services)));
+            let isolation = services.game_isolation();
             let enabled = config.get_bool(VR_OVERLAY_ENABLED_CONFIG_KEY, false)?;
-            runtime.set_enabled(enabled);
+            runtime.set_enabled(enabled && !isolation.is_enabled());
             runtime.start_refresh_loop(services.tasks().clone());
             services
                 .set_overlay_activity_extra_sink(Arc::new(VrOverlayActivitySink::new(&runtime)));
-            Ok(Self { config, runtime })
+            let observed_runtime = Arc::downgrade(&runtime);
+            let observed_config = config.clone();
+            isolation.add_observer(Arc::new(move |isolated| {
+                let Some(runtime) = observed_runtime.upgrade() else {
+                    return;
+                };
+                let enabled = observed_config
+                    .get_bool(VR_OVERLAY_ENABLED_CONFIG_KEY, false)
+                    .unwrap_or(false);
+                runtime.set_enabled(enabled && !isolated);
+            }));
+            Ok(Self {
+                config,
+                runtime,
+                isolation,
+            })
         }
 
         #[cfg(not(any(windows, target_os = "linux")))]
@@ -81,8 +101,9 @@ impl DesktopVrOverlayRuntime {
         {
             self.config
                 .set_bool(VR_OVERLAY_ENABLED_CONFIG_KEY, enabled)?;
-            self.runtime.set_enabled(enabled);
-            Ok(self.runtime.snapshot().into())
+            self.runtime
+                .set_enabled(enabled && !self.isolation.is_enabled());
+            self.snapshot()
         }
 
         #[cfg(not(any(windows, target_os = "linux")))]
@@ -96,7 +117,7 @@ impl DesktopVrOverlayRuntime {
         #[cfg(any(windows, target_os = "linux"))]
         {
             self.runtime.set_test_mode(test_mode);
-            Ok(self.runtime.snapshot().into())
+            self.snapshot()
         }
 
         #[cfg(not(any(windows, target_os = "linux")))]
@@ -104,6 +125,13 @@ impl DesktopVrOverlayRuntime {
             let _ = test_mode;
             Err(unsupported_error())
         }
+    }
+
+    #[cfg(any(windows, target_os = "linux"))]
+    fn snapshot(&self) -> Result<VrOverlayRuntimeSnapshot> {
+        let mut snapshot: VrOverlayRuntimeSnapshot = self.runtime.snapshot().into();
+        snapshot.enabled = self.config.get_bool(VR_OVERLAY_ENABLED_CONFIG_KEY, false)?;
+        Ok(snapshot)
     }
 
     pub fn mark_config_dirty(&self) {

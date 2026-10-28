@@ -687,6 +687,29 @@
             "show": "맨 앞으로 가져오기"
         }
     },
+    "game_isolation": {
+        "confirm_title": "게임 분리 모드를 켤까요?",
+        "active_title": "게임 분리 모드 켜짐",
+        "summary": "이 계정은 이 PC에서 VRChat을 플레이 중인 계정이 아닙니다.",
+        "effect_game_log": "게임 로그를 기록하지 않습니다",
+        "effect_presence": "내 위치와 상태는 VRChat 서버 정보만 사용합니다",
+        "effect_vr": "VR 오버레이, XSOverlay, OVR Toolkit, 텍스트 음성 변환을 끕니다",
+        "effect_automation": "게임 기반 자동화, Discord 상태, 스크린샷 정보 기록, 충돌 후 재실행을 끕니다",
+        "unchanged": "데스크톱 알림과 데스크톱 오버레이는 그대로 작동합니다.",
+        "hint_before_launch": "VRChat을 실행하기 전에 켜는 것을 권장합니다. 게임을 여러 개 실행할 때도 권장합니다.",
+        "hint_running_enable": "VRChat 실행 중: 현재 방은 계속 기록되고, 다음 방부터 기록을 멈춥니다.",
+        "hint_running_active": "VRChat 실행 중: 끄면 다음 방부터 기록을 다시 시작합니다.",
+        "cancel": "취소",
+        "confirm": "켜기",
+        "close": "닫기",
+        "turn_off": "게임 분리 모드 끄기",
+        "toast_on": "게임 분리 모드를 켰습니다",
+        "toast_off": "게임 분리 모드를 껐습니다",
+        "toast_off_running": "게임 분리 모드를 껐습니다 · 다음 방부터 기록을 다시 시작합니다",
+        "failed": "게임 분리 모드를 변경하지 못했습니다",
+        "badge": "분리됨",
+        "menu_item": "게임 분리 모드…"
+    },
     "nativeShell": {
         "tray": {
             "open": "VRCX-0 열기",
@@ -696,6 +719,7 @@
             "doNotDisturbThreeHours": "3시간",
             "doNotDisturbUntilStopped": "끌 때까지",
             "doNotDisturbTurnOff": "방해 금지 끄기",
+            "gameIsolation": "게임 분리 모드",
             "rebuildUi": "UI 새로고침",
             "sidebarMode": "사이드바 모드",
             "disableTheme": "테마 비활성화",
@@ -6724,6 +6748,8 @@
         "do_not_disturb_three_hours": "3시간 동안",
         "do_not_disturb_until_stopped": "직접 끌 때까지",
         "do_not_disturb_turn_off": "방해 금지 끄기",
+        "game_isolation": "게임 분리 모드",
+        "game_isolation_active": "게임 분리 모드 켜짐 · 클릭하면 끕니다",
         "do_not_disturb_failed": "방해 금지를 변경하지 못했습니다",
         "world_collection_importing": "월드 컬렉션 가져오는 중 ({progress}/{total})",
         "game": "게임",
