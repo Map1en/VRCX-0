@@ -5,9 +5,11 @@ use std::sync::Arc;
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::Result;
 
+use vrcx_0_contracts::vrchat_login::auth_response_error_message;
+
 use super::{
-    auth_response_error_message, parse_current_user_response, AuthenticatedRuntimeSession,
-    CookieSessionProbe, NonInteractiveAuthError,
+    parse_current_user_response, AuthenticatedRuntimeSession, CookieSessionProbe,
+    NonInteractiveAuthError,
 };
 use crate::auth::{
     LoginSuccessRecordInput, LogoutRecordInput, SavedAuthAutoLoginStatus, SavedAuthSnapshot,

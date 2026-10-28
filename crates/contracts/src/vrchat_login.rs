@@ -79,7 +79,7 @@ pub fn interpret_login_config_response(response: &VrchatResponse) -> Option<Vrch
         return None;
     }
     Some(failed(
-        error_message(
+        auth_response_error_message(
             response,
             format!(
                 "VRChat config request failed with HTTP {}.",
@@ -93,7 +93,7 @@ pub fn interpret_login_config_response(response: &VrchatResponse) -> Option<Vrch
 pub fn interpret_login_response(response: &VrchatResponse) -> VrchatLoginStep {
     if response.status != 200 {
         return failed(
-            error_message(
+            auth_response_error_message(
                 response,
                 format!("Login failed with HTTP {}", response.status),
             ),
@@ -128,7 +128,7 @@ pub fn interpret_two_factor_verify_response(
     }
     if matches!(response.status, 401 | 403) {
         return VrchatTwoFactorVerifyOutcome::Rejected {
-            reason: error_message(
+            reason: auth_response_error_message(
                 response,
                 format!("2FA verification failed with HTTP {}", response.status),
             ),
@@ -221,8 +221,22 @@ fn is_missing_credentials(response: &VrchatResponse) -> bool {
     classify_vrchat_auth_failure(response) == VrchatAuthFailureKind::MissingCredentials
 }
 
-fn error_message(response: &VrchatResponse, fallback: String) -> String {
+pub fn auth_response_error_message(response: &VrchatResponse, fallback: String) -> String {
     vrchat_auth_error_message(response).unwrap_or(fallback)
+}
+
+pub fn cookie_probe_rejection_reason(stage: CookieProbeStage, response: &VrchatResponse) -> String {
+    let request_name = match stage {
+        CookieProbeStage::Config => "config",
+        CookieProbeStage::CurrentUser => "current-user",
+    };
+    auth_response_error_message(
+        response,
+        format!(
+            "VRChat {request_name} request failed with HTTP {}.",
+            response.status
+        ),
+    )
 }
 
 fn failed(reason: impl Into<String>, kind: VrchatLoginFailureKind) -> VrchatLoginStep {
@@ -399,5 +413,31 @@ mod tests {
             Some(CookieProbeResult::MissingCredentials(_))
         ));
         assert!(interpret_cookie_probe_config_response(response(200, json!({}))).is_none());
+    }
+}
+
+#[cfg(test)]
+mod rejection_reason_tests {
+    use serde_json::json;
+
+    use super::*;
+    use crate::vrchat_api::vrchat_response;
+
+    #[test]
+    fn a_rejected_cookie_probe_names_its_request_unless_vrchat_explains_why() {
+        assert_eq!(
+            cookie_probe_rejection_reason(
+                CookieProbeStage::Config,
+                &vrchat_response(500, json!({}).to_string()),
+            ),
+            "VRChat config request failed with HTTP 500."
+        );
+        assert_eq!(
+            cookie_probe_rejection_reason(
+                CookieProbeStage::CurrentUser,
+                &vrchat_response(403, json!({ "error": { "message": "Banned" } }).to_string()),
+            ),
+            "Banned"
+        );
     }
 }
