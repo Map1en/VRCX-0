@@ -1,3 +1,5 @@
+pub const VIDEO_ERROR_EVENT_PREFIX: &str = "VideoError:";
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct GameLogEvent {
     pub file_name: String,

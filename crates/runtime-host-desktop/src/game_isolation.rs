@@ -7,11 +7,11 @@ use vrcx_0_application_core::{
 use vrcx_0_core::game_log_parser::{GameLogEvent, GameLogEventKind};
 use vrcx_0_persistence::config::ConfigRepository;
 
+use crate::game_log::GAME_LOG_PERSISTENCE_RESUME_AFTER_CONFIG_KEY;
 use crate::RuntimeHost;
 
 const GAME_ISOLATION_ENABLED_CONFIG_KEY: &str = "gameIsolationEnabled";
 const GAME_ISOLATION_GAME_LOG_EFFECTIVE_CONFIG_KEY: &str = "gameIsolationGameLogEffective";
-const GAME_LOG_PERSISTENCE_RESUME_AFTER_CONFIG_KEY: &str = "gameLogPersistenceResumeAfter";
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

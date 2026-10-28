@@ -2,6 +2,7 @@ use std::collections::{BTreeSet, HashMap, HashSet, VecDeque};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
+use vrcx_0_core::game_log_parser::VIDEO_ERROR_EVENT_PREFIX;
 
 use chrono::{DateTime, Utc};
 use vrcx_0_contracts::activity::{ActivityEvent, ActivityKind, ActivitySubject};
@@ -413,7 +414,7 @@ impl ActivityRouter {
                 && parse_location(&event.facts.location).is_private)
                 && !(state.hide_video_errors
                     && event.kind == ActivityKind::Event
-                    && event.facts.message.starts_with("VideoError:"));
+                    && event.facts.message.starts_with(VIDEO_ERROR_EVENT_PREFIX));
             let wrist = surface_matches(&state, &event, NotificationSurface::Wrist, &definition);
             let desktop = notifies
                 && surface_matches(&state, &event, NotificationSurface::Desktop, &definition);

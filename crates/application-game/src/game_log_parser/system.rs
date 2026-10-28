@@ -1,4 +1,4 @@
-use vrcx_0_core::game_log_parser::GameLogEventKind;
+use vrcx_0_core::game_log_parser::{GameLogEventKind, VIDEO_ERROR_EVENT_PREFIX};
 
 use super::context::LogContext;
 use super::sink::GameLogParseSink;
@@ -214,7 +214,7 @@ pub(super) fn parse_untrusted_url(
         fname,
         line,
         GameLogEventKind::Event {
-            data: format!("VideoError: {content}"),
+            data: format!("{VIDEO_ERROR_EVENT_PREFIX} {content}"),
         },
     );
     true

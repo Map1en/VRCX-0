@@ -10,6 +10,7 @@ pub(crate) mod sidebar_auto_hide;
 pub(crate) mod tray_shortcut;
 mod window;
 
+pub(crate) use adapters::block_on_runtime_task;
 pub(crate) use autostart::request_startup_foreground;
 pub(crate) use background_delay::{arm_background_delay, cancel_background_delay};
 pub(crate) use notification::{

@@ -344,7 +344,7 @@ impl RuntimeTaskHandle for TauriRuntimeTaskHandle {
     }
 }
 
-fn block_on_runtime_task<F>(future: F) -> Option<F::Output>
+pub(crate) fn block_on_runtime_task<F>(future: F) -> Option<F::Output>
 where
     F: std::future::Future,
 {
