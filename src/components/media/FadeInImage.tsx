@@ -10,12 +10,14 @@ import { cn } from '@/lib/utils';
 
 type FadeInImageProps = Omit<ComponentProps<'img'>, 'alt'> & {
     alt: string;
+    fade?: boolean;
     fallback?: ReactNode;
 };
 
 function FadeInImage({
     alt,
     className,
+    fade = true,
     fallback,
     onLoad,
     onError,
@@ -44,8 +46,8 @@ function FadeInImage({
             alt={alt}
             ref={imgRef}
             className={cn(
-                loaded ? 'opacity-100' : 'opacity-0',
-                !instant && 'transition-opacity duration-200 ease-out',
+                fade && (loaded ? 'opacity-100' : 'opacity-0'),
+                fade && !instant && 'transition-opacity duration-200 ease-out',
                 className
             )}
             onLoad={(event) => {

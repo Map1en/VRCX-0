@@ -141,6 +141,7 @@ export function MediaAssetTile({
     aspectClass = 'aspect-square',
     imageFit = 'cover',
     imagePosition = 'center',
+    fadeIn = true,
     isCurrent = false,
     locked = false,
     currentLabel,
@@ -170,6 +171,7 @@ export function MediaAssetTile({
     aspectClass?: string;
     imageFit?: 'cover' | 'contain';
     imagePosition?: 'center' | 'top';
+    fadeIn?: boolean;
     isCurrent?: boolean;
     locked?: boolean;
     currentLabel?: string;
@@ -251,6 +253,7 @@ export function MediaAssetTile({
                         ) : imageUrl ? (
                             <FadeInImage
                                 src={imageUrl}
+                                fade={fadeIn}
                                 alt={alt || safeTitle}
                                 loading="lazy"
                                 className={imageClassName}

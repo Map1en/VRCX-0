@@ -34,6 +34,7 @@ import {
     ToolbarViews,
     toolbarSearchScopeTrigger
 } from '@/components/layout/ToolbarControls';
+import { useProgressiveImageSource } from '@/components/media/useProgressiveImageSource';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -443,6 +444,7 @@ export function ScreenshotMetadataResultsTable({
 export function ScreenshotMetadataPreviewCard({
     metadata,
     imageUrl,
+    placeholderUrl,
     isMetadataLoading,
     canNavigatePrev,
     canNavigateNext,
@@ -454,6 +456,7 @@ export function ScreenshotMetadataPreviewCard({
 }: {
     metadata: NormalizedScreenshotMetadata | null;
     imageUrl: string;
+    placeholderUrl: string;
     isMetadataLoading: boolean;
     canNavigatePrev: boolean;
     canNavigateNext: boolean;
@@ -464,6 +467,10 @@ export function ScreenshotMetadataPreviewCard({
     onImagePreview: () => void;
 }) {
     const { t } = useTranslation();
+    const { shownSrc, status } = useProgressiveImageSource(
+        imageUrl,
+        placeholderUrl
+    );
 
     return (
         <Card className="flex min-h-0 flex-col">
@@ -518,15 +525,7 @@ export function ScreenshotMetadataPreviewCard({
                 </div>
             </CardHeader>
             <CardContent className="flex min-h-0 flex-1 items-center justify-center">
-                {isMetadataLoading && !imageUrl ? (
-                    <EmptyState
-                        loading
-                        title={t('view.tools.loading.loading_screenshot')}
-                        description={t(
-                            'view.tools.loading.fetching_embedded_metadata_and_file_details'
-                        )}
-                    />
-                ) : imageUrl ? (
+                {shownSrc ? (
                     <Button
                         type="button"
                         variant="ghost"
@@ -534,11 +533,21 @@ export function ScreenshotMetadataPreviewCard({
                         onClick={onImagePreview}
                     >
                         <img
-                            src={imageUrl}
+                            src={shownSrc}
                             alt={metadata?.fileName || 'Screenshot preview'}
                             className="max-h-[70vh] w-full rounded-lg object-contain transition-none"
                         />
                     </Button>
+                ) : isMetadataLoading || status === 'loading' ? (
+                    <EmptyState
+                        loading
+                        title={t('view.tools.loading.loading_screenshot')}
+                        description={t(
+                            'view.tools.loading.fetching_embedded_metadata_and_file_details'
+                        )}
+                    />
+                ) : status === 'error' ? (
+                    <EmptyState title={t('message.image.load_failed')} />
                 ) : (
                     <EmptyState
                         title={t('dialog.screenshot_metadata.drag')}

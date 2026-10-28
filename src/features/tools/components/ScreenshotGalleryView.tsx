@@ -317,6 +317,8 @@ function ScreenshotGalleryGrid({
     density,
     error,
     initialScrollTop,
+    revealPath,
+    onRevealPathConsumed,
     images,
     isLoading,
     selectedFolder,
@@ -330,6 +332,8 @@ function ScreenshotGalleryGrid({
     density: ScreenshotGridDensity;
     error: string;
     initialScrollTop: number;
+    revealPath: string;
+    onRevealPathConsumed: () => void;
     images: ScreenshotLibraryImage[];
     isLoading: boolean;
     selectedFolder: string;
@@ -388,6 +392,8 @@ function ScreenshotGalleryGrid({
             images={images}
             initialScrollTop={initialScrollTop}
             resetKey={selectedFolder}
+            revealPath={revealPath}
+            onRevealPathConsumed={onRevealPathConsumed}
             hasSelection={hasSelection}
             selectedKeysSet={selectedKeysSet}
             onOpen={onOpen}
@@ -502,6 +508,8 @@ export function ScreenshotGalleryView({
     onScrollPositionChange,
     isDeleteRunning,
     restoreScrollTop,
+    revealPath = '',
+    onRevealPathConsumed = () => {},
     selection,
     onExportSelection,
     favorites,
@@ -522,6 +530,8 @@ export function ScreenshotGalleryView({
     onScrollPositionChange: (folder: string, scrollTop: number) => void;
     isDeleteRunning: boolean;
     restoreScrollTop: number;
+    revealPath?: string;
+    onRevealPathConsumed?: () => void;
     selection: ScreenshotBrowseSelection;
     onExportSelection: (paths: string[], groupByFolder: boolean) => void;
     favorites: ScreenshotGalleryFavorites;
@@ -756,6 +766,8 @@ export function ScreenshotGalleryView({
                     density={density}
                     error={error}
                     initialScrollTop={restoreScrollTop}
+                    revealPath={revealPath}
+                    onRevealPathConsumed={onRevealPathConsumed}
                     images={images}
                     isLoading={isImagesLoading}
                     selectedFolder={selectedFolder}

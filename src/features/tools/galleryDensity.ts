@@ -23,10 +23,9 @@ const DEFAULT_GALLERY_GRID_DENSITY: GalleryGridDensity = 'standard';
 const DENSITY_CONFIGS = Object.freeze({
     standard: Object.freeze({
         value: 'standard',
-        fileGridClass:
-            'grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5',
-        printsGridClass:
-            'grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4',
+        fileTileMinWidth: 200,
+        printsTileMinWidth: 280,
+        tileGridGap: 12,
         inventoryGridClass:
             'grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5',
         contentClass: 'flex flex-col gap-2.5 p-3',
@@ -36,10 +35,9 @@ const DENSITY_CONFIGS = Object.freeze({
     }),
     compact: Object.freeze({
         value: 'compact',
-        fileGridClass:
-            'grid grid-cols-3 gap-2.5 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6',
-        printsGridClass:
-            'grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5',
+        fileTileMinWidth: 150,
+        printsTileMinWidth: 210,
+        tileGridGap: 10,
         inventoryGridClass:
             'grid grid-cols-3 gap-2.5 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6',
         contentClass: 'flex flex-col gap-2 p-2.5',
@@ -49,10 +47,9 @@ const DENSITY_CONFIGS = Object.freeze({
     }),
     dense: Object.freeze({
         value: 'dense',
-        fileGridClass:
-            'grid grid-cols-4 gap-2 md:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7',
-        printsGridClass:
-            'grid grid-cols-3 gap-2 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6',
+        fileTileMinWidth: 120,
+        printsTileMinWidth: 160,
+        tileGridGap: 8,
         inventoryGridClass:
             'grid grid-cols-4 gap-2 md:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7',
         contentClass: 'flex flex-col gap-1.5 p-2',

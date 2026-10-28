@@ -6,6 +6,8 @@ import { FileDropOverlay } from '@/components/file-drop/FileDropOverlay';
 import { useFileDropTarget } from '@/components/file-drop/useFileDropTarget';
 import { PageScaffold } from '@/components/layout/PageScaffold';
 import { ToolPageHeader } from '@/components/layout/ToolPageHeader';
+import { preloadImages } from '@/components/media/imageDecodeCache';
+import { getRememberedScreenshotThumbnailUrl } from '@/components/media/screenshotThumbnailUrlCache';
 import { convertFileSrc } from '@/platform/tauri/assets';
 import { commands } from '@/platform/tauri/bindings';
 import mediaFileRepository from '@/repositories/mediaFileRepository';
@@ -45,6 +47,16 @@ import { useScreenshotMetadataNavigation } from './useScreenshotMetadataNavigati
 import { useScreenshotMetadataSearch } from './useScreenshotMetadataSearch';
 import { useScreenshotZipExport } from './useScreenshotZipExport';
 
+const DETAILS_VISIBLE_STORAGE_KEY = 'VRCX_0_ScreenshotDetailsVisible';
+
+function readDetailsVisible() {
+    return localStorage.getItem(DETAILS_VISIBLE_STORAGE_KEY) !== 'false';
+}
+
+function writeDetailsVisible(visible: boolean) {
+    localStorage.setItem(DETAILS_VISIBLE_STORAGE_KEY, String(visible));
+}
+
 function recordFromUnknown(value: unknown): Record<string, unknown> {
     return value && typeof value === 'object' && !Array.isArray(value)
         ? Object.fromEntries(Object.entries(value))
@@ -67,7 +79,7 @@ export function ScreenshotMetadataPage() {
         currentUserSnapshot?.tags?.includes?.('system_supporter') ||
         globalThis.$debug?.debugVrcPlus
     );
-    const imageVersionRef = useRef(0);
+    const imageVersionsRef = useRef(new Map<string, number>());
     const metadataRequestRef = useRef(0);
     const searchRequestRef = useRef(0);
     const routePath = searchParams.get('path') || '';
@@ -107,7 +119,9 @@ export function ScreenshotMetadataPage() {
     const [isDeletingMetadata, setIsDeletingMetadata] = useState(false);
     const [isDeletingFile, setIsDeletingFile] = useState(false);
     const [isUploadingScreenshot, setIsUploadingScreenshot] = useState(false);
-    const [isDetailsVisible, setIsDetailsVisible] = useState(true);
+    const [isDetailsVisible, setIsDetailsVisible] =
+        useState(readDetailsVisible);
+    const [galleryRevealPath, setGalleryRevealPath] = useState('');
     const dateLocale = i18n.resolvedLanguage || i18n.language;
     const {
         folderTree,
@@ -173,6 +187,24 @@ export function ScreenshotMetadataPage() {
     });
     const { exportScreenshots } = useScreenshotZipExport();
 
+    const clearGalleryRevealPath = useCallback(() => {
+        setGalleryRevealPath('');
+    }, []);
+
+    const toggleDetailsVisible = useCallback(() => {
+        const nextVisible = !isDetailsVisible;
+        setIsDetailsVisible(nextVisible);
+        writeDetailsVisible(nextVisible);
+    }, [isDetailsVisible]);
+
+    const screenshotImageUrl = useCallback(
+        (path: string) =>
+            path
+                ? `${convertFileSrc(path, 'vrcx-0-img')}?v=${imageVersionsRef.current.get(path) ?? 0}`
+                : '',
+        []
+    );
+
     const updateRoutePath = useCallback(
         (path: string, folderPath?: string) => {
             const nextParams = new URLSearchParams();
@@ -233,6 +265,7 @@ export function ScreenshotMetadataPage() {
             metadataRequestRef.current = requestId;
             setIsMetadataLoading(true);
             setMetadataError('');
+            setImageUrl(screenshotImageUrl(path));
 
             try {
                 const rawMetadata = recordFromUnknown(
@@ -274,14 +307,11 @@ export function ScreenshotMetadataPage() {
                 const nextMetadataError = rawMetadata?.error
                     ? String(rawMetadata.error)
                     : '';
-                imageVersionRef.current += 1;
-
                 setMetadata(nextMetadata);
                 setMetadataError(nextMetadataError);
                 setSelectedPath(nextMetadata.filePath);
-                setImageUrl(
-                    `${convertFileSrc(nextMetadata.filePath, 'vrcx-0-img')}?v=${imageVersionRef.current}`
-                );
+                setGalleryRevealPath(nextMetadata.filePath);
+                setImageUrl(screenshotImageUrl(nextMetadata.filePath));
             } catch (error) {
                 if (metadataRequestRef.current !== requestId) {
                     return;
@@ -301,7 +331,7 @@ export function ScreenshotMetadataPage() {
                 }
             }
         },
-        [setSelectedPath, t]
+        [screenshotImageUrl, setSelectedPath, t]
     );
 
     useEffect(() => {
@@ -312,16 +342,37 @@ export function ScreenshotMetadataPage() {
         loadScreenshot(routePath, true);
     }, [loadScreenshot, routePath, setSearchViewMode]);
 
-    const { canNavigateNext, canNavigatePrev, navigateNext, navigatePrev } =
-        useScreenshotMetadataNavigation({
-            enabled: !isGalleryMode && searchViewMode === 'detail',
-            loadScreenshot,
-            metadata,
-            onPathChange: updateRoutePath,
-            searchNavigationPaths,
-            selectedPath,
-            setSelectedPath
-        });
+    const isDetailView = !isGalleryMode && searchViewMode === 'detail';
+    const {
+        canNavigateNext,
+        canNavigatePrev,
+        navigateNext,
+        navigatePrev,
+        nextFolderPath,
+        nextPath,
+        prevFolderPath,
+        prevPath
+    } = useScreenshotMetadataNavigation({
+        browseNavigationPaths: visibleGalleryImagePaths,
+        crossFolderAtEdges: !isFavoritesFolder,
+        enabled: isDetailView,
+        loadScreenshot,
+        metadata,
+        onPathChange: updateRoutePath,
+        reverseMetadataOrder: gallerySort === 'captured-desc',
+        searchNavigationPaths,
+        selectedPath,
+        setSelectedPath
+    });
+
+    useEffect(() => {
+        if (isDetailView) {
+            preloadImages([
+                screenshotImageUrl(prevPath),
+                screenshotImageUrl(nextPath)
+            ]);
+        }
+    }, [isDetailView, nextPath, prevPath, screenshotImageUrl]);
 
     useEffect(() => {
         function handleDetailsShortcut(event: KeyboardEvent) {
@@ -344,14 +395,14 @@ export function ScreenshotMetadataPage() {
             }
 
             event.preventDefault();
-            setIsDetailsVisible((visible) => !visible);
+            toggleDetailsVisible();
         }
 
         window.addEventListener('keydown', handleDetailsShortcut);
         return () => {
             window.removeEventListener('keydown', handleDetailsShortcut);
         };
-    }, [isGalleryMode, searchViewMode]);
+    }, [isGalleryMode, searchViewMode, toggleDetailsVisible]);
 
     async function openFolder() {
         if (!metadata?.filePath) {
@@ -427,6 +478,10 @@ export function ScreenshotMetadataPage() {
                 type: 'success',
                 title: t('message.screenshot_metadata.deleted')
             });
+            imageVersionsRef.current.set(
+                filePath,
+                (imageVersionsRef.current.get(filePath) ?? 0) + 1
+            );
             await loadScreenshot(filePath, true);
         } catch (error) {
             toast.add({
@@ -460,18 +515,35 @@ export function ScreenshotMetadataPage() {
             return;
         }
 
-        const nextTarget = resolvePathAfterScreenshotDelete(metadata);
+        const neighborPath = nextPath || prevPath;
+        const neighborFolderPath = nextPath ? nextFolderPath : prevFolderPath;
+        const fallbackTarget = neighborPath
+            ? null
+            : resolvePathAfterScreenshotDelete(metadata);
         setIsDeletingFile(true);
 
         try {
             await commands.appDeleteScreenshotFile(filePath);
             forgetFavoritePaths([filePath]);
+            removeGalleryImages([filePath]);
+            removeSearchPaths([filePath]);
             toast.add({
                 type: 'success',
                 title: t('message.screenshot_metadata.file_deleted')
             });
-            if (nextTarget) {
-                updateRoutePath(nextTarget.filePath, nextTarget.folderPath);
+            if (neighborPath) {
+                if (neighborFolderPath) {
+                    updateRoutePath(neighborPath, neighborFolderPath);
+                } else {
+                    updateRoutePath(neighborPath);
+                }
+                return;
+            }
+            if (fallbackTarget) {
+                updateRoutePath(
+                    fallbackTarget.filePath,
+                    fallbackTarget.folderPath
+                );
                 return;
             }
             openGalleryRoute();
@@ -751,6 +823,8 @@ export function ScreenshotMetadataPage() {
                     onScrollPositionChange={updateGalleryScrollPosition}
                     isDeleteRunning={bulkDeleteRunning}
                     restoreScrollTop={selectedGalleryScrollTop}
+                    revealPath={galleryRevealPath}
+                    onRevealPathConsumed={clearGalleryRevealPath}
                     selection={browseSelection}
                     favorites={{
                         paths: favoritePaths,
@@ -810,6 +884,13 @@ export function ScreenshotMetadataPage() {
                         <ScreenshotMetadataPreviewCard
                             metadata={metadata}
                             imageUrl={imageUrl}
+                            placeholderUrl={
+                                imageUrl
+                                    ? getRememberedScreenshotThumbnailUrl(
+                                          routePath
+                                      )
+                                    : ''
+                            }
                             isMetadataLoading={isMetadataLoading}
                             canNavigatePrev={canNavigatePrev}
                             canNavigateNext={canNavigateNext}
@@ -820,9 +901,7 @@ export function ScreenshotMetadataPage() {
                             onNavigateNext={() => {
                                 navigateNext();
                             }}
-                            onToggleDetails={() => {
-                                setIsDetailsVisible((visible) => !visible);
-                            }}
+                            onToggleDetails={toggleDetailsVisible}
                             onImagePreview={() =>
                                 openImagePreview({
                                     url: imageUrl,

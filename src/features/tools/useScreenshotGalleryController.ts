@@ -53,6 +53,7 @@ export function useScreenshotGalleryController({
 }) {
     const { t } = useTranslation();
     const galleryRequestRef = useRef(0);
+    const galleryImagesRequestKeyRef = useRef('');
     const selectedGalleryFolderRef = useRef('');
     const galleryScrollPositionsRef = useRef<Map<string, number>>(new Map());
     const galleryScrollPersistTimerRef = useRef<number | null>(null);
@@ -326,18 +327,31 @@ export function useScreenshotGalleryController({
     ]);
 
     useEffect(() => {
+        if (isGalleryMode || !routeFolder) {
+            return;
+        }
+        selectedGalleryFolderRef.current = routeFolder;
+        setSelectedGalleryFolder(routeFolder);
+    }, [isGalleryMode, routeFolder]);
+
+    useEffect(() => {
         if (
-            !isGalleryMode ||
             !selectedGalleryFolder ||
             selectedGalleryFolder === SCREENSHOT_FAVORITES_FOLDER
         ) {
             galleryRequestRef.current += 1;
+            galleryImagesRequestKeyRef.current = '';
             setGalleryImages([]);
             setGalleryImagesFolder('');
             setIsGalleryImagesLoading(false);
             return;
         }
 
+        const requestKey = `${galleryRevision}:${selectedGalleryFolder}`;
+        if (galleryImagesRequestKeyRef.current === requestKey) {
+            return;
+        }
+        galleryImagesRequestKeyRef.current = requestKey;
         const requestId = galleryRequestRef.current + 1;
         galleryRequestRef.current = requestId;
         const requestedFolder = selectedGalleryFolder;
@@ -354,6 +368,7 @@ export function useScreenshotGalleryController({
             })
             .catch((error: unknown) => {
                 if (galleryRequestRef.current === requestId) {
+                    galleryImagesRequestKeyRef.current = '';
                     const message =
                         error instanceof Error
                             ? error.message
@@ -371,7 +386,7 @@ export function useScreenshotGalleryController({
                     setIsGalleryImagesLoading(false);
                 }
             });
-    }, [galleryRevision, isGalleryMode, selectedGalleryFolder, t]);
+    }, [galleryRevision, selectedGalleryFolder, t]);
 
     const removeGalleryImages = useCallback((paths: string[]) => {
         const removedPaths = new Set(paths);

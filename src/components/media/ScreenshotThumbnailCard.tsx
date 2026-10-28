@@ -7,6 +7,7 @@ import {
     type LocationMetadataEntry
 } from '@/components/location/useLocationMetadata';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { rememberScreenshotThumbnailUrl } from '@/components/media/screenshotThumbnailUrlCache';
 import { TileShell } from '@/components/tile/TileShell';
 import { formatScreenshotDateTime } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
@@ -127,6 +128,7 @@ export function useScreenshotThumbnailTitleMap(
 
 export function ScreenshotThumbnailCard({
     compact = false,
+    fadeIn = true,
     item,
     onOpen,
     title = '',
@@ -141,6 +143,7 @@ export function ScreenshotThumbnailCard({
     onToggleFavorite
 }: {
     compact?: boolean;
+    fadeIn?: boolean;
     item: ScreenshotThumbnailItem;
     onOpen: (path: string) => void;
     title?: string;
@@ -170,9 +173,12 @@ export function ScreenshotThumbnailCard({
                 if (!active) {
                     return;
                 }
-                setThumbnailUrl(
-                    convertFileSrc(String(thumbnailPath || ''), 'vrcx-0-thumb')
+                const nextThumbnailUrl = convertFileSrc(
+                    String(thumbnailPath || ''),
+                    'vrcx-0-thumb'
                 );
+                rememberScreenshotThumbnailUrl(item.path, nextThumbnailUrl);
+                setThumbnailUrl(nextThumbnailUrl);
                 setLoadState('ready');
             })
             .catch(() => {
@@ -227,6 +233,7 @@ export function ScreenshotThumbnailCard({
                     {thumbnailUrl ? (
                         <FadeInImage
                             src={thumbnailUrl}
+                            fade={fadeIn}
                             alt={item.fileName}
                             className="size-full object-cover"
                             loading="lazy"

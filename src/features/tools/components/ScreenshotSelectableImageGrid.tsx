@@ -17,6 +17,8 @@ export function ScreenshotSelectableImageGrid({
     images,
     initialScrollTop,
     resetKey,
+    revealPath,
+    onRevealPathConsumed,
     hasSelection,
     selectedKeysSet,
     onOpen,
@@ -29,6 +31,8 @@ export function ScreenshotSelectableImageGrid({
     images: ScreenshotLibraryImage[];
     initialScrollTop: number;
     resetKey: string;
+    revealPath?: string;
+    onRevealPathConsumed?: () => void;
     hasSelection: boolean;
     selectedKeysSet: ReadonlySet<string>;
     onOpen: (path: string) => void;
@@ -49,7 +53,9 @@ export function ScreenshotSelectableImageGrid({
         density,
         initialScrollTop,
         items: images,
-        resetKey
+        onRevealPathConsumed,
+        resetKey,
+        revealPath
     });
     const compactCard = getScreenshotGridDensityConfig(density).compactCard;
     const visibleItems = useMemo(
@@ -61,7 +67,8 @@ export function ScreenshotSelectableImageGrid({
     return (
         <div
             ref={viewportRef}
-            className="min-h-0 flex-1 overflow-auto p-0.5 pr-1"
+            tabIndex={-1}
+            className="min-h-0 flex-1 overflow-auto p-0.5 pr-1 outline-none"
             onScroll={(event) =>
                 onScrollPositionChange?.(event.currentTarget.scrollTop)
             }
@@ -80,6 +87,7 @@ export function ScreenshotSelectableImageGrid({
                         {row.items.map((item: ScreenshotLibraryImage) => (
                             <ScreenshotThumbnailCard
                                 compact={compactCard}
+                                fadeIn={false}
                                 key={item.path}
                                 item={item}
                                 onOpen={onOpen}
