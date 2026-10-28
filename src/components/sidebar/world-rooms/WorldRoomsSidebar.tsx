@@ -10,6 +10,7 @@ import { RegionCodeBadge } from '@/components/location/RegionCodeBadge';
 import { useInstancePopulation } from '@/components/location/useInstancePopulation';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { normalizeSidebarFilterQuery } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
+import { handleSidebarRowArrowNavigation } from '@/components/sidebar/sidebarRowArrowNavigation';
 import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows';
 import type { FriendRecord } from '@/domain/friends/types';
 import { groupProfileQueryOptions } from '@/lib/groupProfileQuery';
@@ -414,7 +415,9 @@ export function WorldRoomsSidebar({
     return (
         <div
             ref={viewportRef}
+            role="presentation"
             className="relative h-full overflow-auto overflow-x-hidden"
+            onKeyDown={handleSidebarRowArrowNavigation}
         >
             <div className="px-1.5 pt-1 pb-2.5">
                 <div
@@ -425,6 +428,7 @@ export function WorldRoomsSidebar({
                         <div
                             key={item.key}
                             ref={getRowRef(item.key)}
+                            data-sidebar-row=""
                             className="absolute top-0 left-0 w-full"
                             style={{ transform: `translateY(${item.start}px)` }}
                         >
