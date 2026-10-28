@@ -2362,9 +2362,6 @@
                 "automatic_replies_note": "Funguje jen při spuštěném VRChatu a pokud vaše lokace umožňuje posílat pozvánky. Každý odesílatel má cooldown.",
                 "invite_message": "Zpráva pozvánky",
                 "invite_message_description": "Odešle aktuální text slotu – když ho upravíte, změní se i odesílaná zpráva.",
-                "invite_message_none": "Bez zprávy",
-                "invite_message_slot": "Slot {slot}",
-                "invite_message_picker_title": "Vybrat zprávu pozvánky",
                 "failed_to_load_schedule_rules": "Nepodařilo se načíst pravidla plánu.",
                 "failed_to_save_schedule_rules": "Nepodařilo se uložit pravidla plánu.",
                 "failed_to_load_room_rules": "Nepodařilo se načíst pravidla instance.",
@@ -5266,7 +5263,10 @@
             },
             "dynamic": {
                 "edit_slot_value": "Upravit slot {value}"
-            }
+            },
+            "no_message": "Bez zprávy",
+            "slot_value": "Slot {value}",
+            "attach_image": "Připojit obrázek"
         },
         "invite_request_message": {
             "header": "Požádat se zprávou"
@@ -5294,16 +5294,11 @@
             }
         },
         "edit_invite_message": {
-            "header": "Upravit šablonu zprávy",
             "save": "Uložit"
         },
         "edit_send_invite_message": {
-            "header": "Upravit a odeslat šablonu zprávy",
             "description": "Doba čekání na úpravu je 1 hodina.",
             "send": "Odeslat"
-        },
-        "edit_send_invite_response_message": {
-            "description": "Doba čekání na úpravu je 1 hodina."
         },
         "export_friends_list": {
             "header": "Export seznamu přátel",
@@ -6635,10 +6630,7 @@
         },
         "profile": {
             "invite_messages": {
-                "slot": "Slot",
-                "message": "Zpráva",
-                "cool_down": "Prodleva",
-                "action": "Akce"
+                "cool_down": "Prodleva"
             }
         },
         "import": {

@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     getInviteMessages: vi.fn()
@@ -39,16 +39,19 @@ const ENABLED_VALUES: InviteRulesTabValues = {
 };
 
 describe('InviteRulesTab invite message', () => {
+    beforeEach(() => {
+        mocks.getInviteMessages.mockResolvedValue([
+            { slot: 0, message: 'first' },
+            { slot: 3, message: 'come join' }
+        ]);
+    });
+
     afterEach(() => {
         cleanup();
         vi.clearAllMocks();
     });
 
-    it('saves the slot picked from the invite message list', async () => {
-        mocks.getInviteMessages.mockResolvedValue([
-            { slot: 0, message: 'first' },
-            { slot: 3, message: 'come join' }
-        ]);
+    it('saves the slot picked from the invite message dropdown', async () => {
         const onSaveValue = vi.fn();
         render(
             <InviteRulesTab
@@ -60,13 +63,12 @@ describe('InviteRulesTab invite message', () => {
         const user = userEvent.setup();
 
         await user.click(
-            screen.getByRole('button', { name: 'common.actions.select' })
-        );
-        const row = (await screen.findByText('come join')).closest('tr');
-        await user.click(
-            within(row as HTMLElement).getByRole('button', {
-                name: 'common.actions.select'
+            screen.getByRole('button', {
+                name: 'dialog.invite_message.no_message'
             })
+        );
+        await user.click(
+            await screen.findByRole('button', { name: /come join/ })
         );
 
         expect(onSaveValue).toHaveBeenCalledWith(
@@ -75,21 +77,25 @@ describe('InviteRulesTab invite message', () => {
         );
     });
 
-    it('clears a chosen slot back to no message', async () => {
+    it('shows the chosen message and clears it back to no message', async () => {
         const onSaveValue = vi.fn();
         render(
             <InviteRulesTab
-                values={{ ...ENABLED_VALUES, autoAcceptInviteMessageSlot: '0' }}
+                values={{ ...ENABLED_VALUES, autoAcceptInviteMessageSlot: '3' }}
                 loading={false}
                 onSaveValue={onSaveValue}
             />
         );
+        const user = userEvent.setup();
 
-        await userEvent
-            .setup()
-            .click(
-                screen.getByRole('button', { name: 'common.actions.clear' })
-            );
+        await user.click(
+            await screen.findByRole('button', { name: /come join/ })
+        );
+        await user.click(
+            await screen.findByRole('button', {
+                name: 'dialog.invite_message.no_message'
+            })
+        );
 
         expect(onSaveValue).toHaveBeenCalledWith(
             'autoAcceptInviteMessageSlot',

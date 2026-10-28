@@ -2348,9 +2348,6 @@
                 "automatic_replies_note": "Solo funciona mientras VRChat esté abierto y tu ubicación permita enviar invitaciones. Cada remitente tiene un tiempo de espera.",
                 "invite_message": "Mensaje de invitación",
                 "invite_message_description": "Envía el texto actual del espacio; si lo editas, cambia lo que se envía.",
-                "invite_message_none": "Sin mensaje",
-                "invite_message_slot": "Espacio {slot}",
-                "invite_message_picker_title": "Elegir mensaje de invitación",
                 "failed_to_load_schedule_rules": "No se pudieron cargar las reglas de programación.",
                 "failed_to_save_schedule_rules": "No se pudieron guardar las reglas de programación.",
                 "failed_to_load_room_rules": "No se pudieron cargar las reglas de instancia.",
@@ -5282,7 +5279,10 @@
             },
             "dynamic": {
                 "edit_slot_value": "Editar ranura {value}"
-            }
+            },
+            "no_message": "Sin mensaje",
+            "slot_value": "Espacio {value}",
+            "attach_image": "Adjuntar imagen"
         },
         "invite_request_message": {
             "header": "Solicitar con mensaje"
@@ -5310,16 +5310,11 @@
             }
         },
         "edit_invite_message": {
-            "header": "Editar plantilla de mensaje",
             "save": "Guardar"
         },
         "edit_send_invite_message": {
-            "header": "Editar y enviar plantilla de mensaje",
             "description": "Tiempo de espera de edición de 1 hora.",
             "send": "Enviar"
-        },
-        "edit_send_invite_response_message": {
-            "description": "Tiempo de espera de edición de 1 hora."
         },
         "export_friends_list": {
             "header": "Exportar lista de amigos",
@@ -6659,10 +6654,7 @@
         },
         "profile": {
             "invite_messages": {
-                "slot": "Espacio",
-                "message": "Mensaje",
-                "cool_down": "Tiempo de espera",
-                "action": "Acción"
+                "cool_down": "Tiempo de espera"
             }
         },
         "import": {

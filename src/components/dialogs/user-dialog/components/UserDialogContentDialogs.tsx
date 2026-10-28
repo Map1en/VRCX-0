@@ -105,12 +105,6 @@ export function UserDialogContentDialogs({
                 messageType={
                     inviteMessageDialog.request?.messageType || 'message'
                 }
-                mode="select"
-                title={
-                    inviteMessageDialog.request?.kind === 'request'
-                        ? 'Request With Message'
-                        : 'Send With Message'
-                }
                 targetLabel={
                     inviteMessageDialog.request?.context?.targetLabel ||
                     inviteMessageDialog.targetLabel ||

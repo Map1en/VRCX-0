@@ -2360,9 +2360,6 @@
                 "automatic_replies_note": "Работает только пока VRChat запущен и ваше местоположение позволяет отправлять приглашения. У каждого отправителя есть кулдаун.",
                 "invite_message": "Сообщение приглашения",
                 "invite_message_description": "Отправляется текущий текст слота — если его изменить, изменится и сообщение.",
-                "invite_message_none": "Без сообщения",
-                "invite_message_slot": "Слот {slot}",
-                "invite_message_picker_title": "Выбор сообщения приглашения",
                 "failed_to_load_schedule_rules": "Не удалось загрузить график.",
                 "failed_to_save_schedule_rules": "Не удалось сохранить правила расписания.",
                 "failed_to_load_room_rules": "Не удалось загрузить правила инстансов.",
@@ -5260,7 +5257,10 @@
             },
             "dynamic": {
                 "edit_slot_value": "Редактировать слот {value}"
-            }
+            },
+            "no_message": "Без сообщения",
+            "slot_value": "Слот {value}",
+            "attach_image": "Прикрепить изображение"
         },
         "invite_request_message": {
             "header": "Запрос с сообщением"
@@ -5288,16 +5288,11 @@
             }
         },
         "edit_invite_message": {
-            "header": "Изменить шаблон сообщения",
             "save": "Сохранить"
         },
         "edit_send_invite_message": {
-            "header": "Правка и отправка шаблона сообщения",
             "description": "После редактирования требуется 1 час восстановления.",
             "send": "Отправить"
-        },
-        "edit_send_invite_response_message": {
-            "description": "После редактирования требуется 1 час восстановления."
         },
         "export_friends_list": {
             "header": "Экспорт списка друзей",
@@ -6629,10 +6624,7 @@
         },
         "profile": {
             "invite_messages": {
-                "slot": "Слот",
-                "message": "Сообщение",
-                "cool_down": "Тайм-аут",
-                "action": "Действие"
+                "cool_down": "Тайм-аут"
             }
         },
         "import": {

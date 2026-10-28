@@ -6,8 +6,6 @@ import vrchatToolsRepository, {
 import { HOUR_MS, MINUTE_MS } from '@/shared/constants/time';
 import { isRecord } from '@/shared/utils/record';
 
-export type InviteMessageMode = 'select' | 'manage' | 'respond';
-
 export type InviteMessageRow = InviteMessageRecord & {
     message: string;
     messageType: InviteMessageType;
@@ -21,7 +19,7 @@ export type InviteMessageUsePayload = {
     imageData: string;
 };
 
-export type InviteMessageSavePayload = {
+type InviteMessageSavePayload = {
     currentUserId?: string | null;
     messageType: InviteMessageType;
     row: InviteMessageRow;
@@ -109,62 +107,33 @@ export function getInviteCooldownLabel(updatedAt: unknown, nowMs: number) {
     return timeToText(Math.ceil(remainingMs / MINUTE_MS) * MINUTE_MS);
 }
 
-export function isInviteMessageOnCooldown(
-    row: InviteMessageRow,
-    nowMs: number
-) {
-    return Boolean(getInviteCooldownLabel(rowUpdatedAt(row), nowMs));
-}
-
 export function rowUpdatedAt(row: InviteMessageRow) {
     return row.updatedAt || row.updated_at || '';
 }
 
-export function dialogTitle(
-    mode: InviteMessageMode,
+export function inviteMessageDialogTitle(
     messageType: InviteMessageType,
     t: Translate
 ) {
-    if (mode === 'manage') {
-        return t('dialog.edit_invite_messages.header');
+    switch (messageType) {
+        case 'request':
+            return t('dialog.invite_request_message.header');
+        case 'response':
+            return t('dialog.invite_response_message.header');
+        case 'requestResponse':
+            return t('dialog.invite_request_response_message.header');
+        default:
+            return t('dialog.invite_message.header');
     }
-    if (mode === 'respond') {
-        return messageType === 'requestResponse'
-            ? t('dialog.invite_request_response_message.header')
-            : t('dialog.invite_response_message.header');
-    }
+}
+
+export function inviteMessageActionLabel(
+    messageType: InviteMessageType,
+    t: Translate
+) {
     return messageType === 'request'
-        ? t('dialog.invite_request_message.header')
-        : t('dialog.invite_message.header');
-}
-
-export function dialogDescription(
-    mode: InviteMessageMode,
-    messageType: InviteMessageType,
-    _targetLabel: string | null | undefined,
-    t: Translate
-) {
-    if (mode === 'manage') {
-        return t('view.tools.other.edit_invite_message_description');
-    }
-    if (mode === 'respond') {
-        return t('dialog.edit_send_invite_response_message.description');
-    }
-    return t('dialog.edit_send_invite_message.description');
-}
-
-export function primaryActionLabel(
-    mode: InviteMessageMode,
-    messageType: InviteMessageType,
-    t: Translate
-) {
-    if (mode === 'manage') {
-        return t('dialog.edit_invite_message.save');
-    }
-    if (mode === 'select' && messageType === 'request') {
-        return t('dialog.user.actions.request_invite');
-    }
-    return t('dialog.edit_send_invite_message.send');
+        ? t('dialog.user.actions.request_invite')
+        : t('dialog.edit_send_invite_message.send');
 }
 
 export async function saveInviteMessage({

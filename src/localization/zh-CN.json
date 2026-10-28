@@ -2342,9 +2342,6 @@
                 "automatic_replies_note": "自动回应只会在 VRChat 运行中且当前位置可发送邀请时运行。冷却按发送者单独计算，并且只有邀请 API 返回成功后才会隐藏通知。",
                 "invite_message": "邀请消息",
                 "invite_message_description": "发送该编号当前的文字，改了文字发出的也会变。",
-                "invite_message_none": "不附带消息",
-                "invite_message_slot": "编号 {slot}",
-                "invite_message_picker_title": "选择邀请消息",
                 "failed_to_load_schedule_rules": "加载时间规则失败。",
                 "failed_to_save_schedule_rules": "保存时间规则失败。",
                 "failed_to_load_room_rules": "加载房间规则失败。",
@@ -5272,7 +5269,10 @@
             },
             "dynamic": {
                 "edit_slot_value": "编辑编号 {value}"
-            }
+            },
+            "no_message": "不附带消息",
+            "slot_value": "编号 {value}",
+            "attach_image": "附加图片"
         },
         "invite_request_message": {
             "header": "发送带消息的加入请求"
@@ -5300,16 +5300,11 @@
             }
         },
         "edit_invite_message": {
-            "header": "编辑消息模板",
             "save": "保存"
         },
         "edit_send_invite_message": {
-            "header": "编辑并发送邀请消息",
             "description": "编辑冷却时间：一小时",
             "send": "发送"
-        },
-        "edit_send_invite_response_message": {
-            "description": "编辑冷却时间：一小时"
         },
         "export_friends_list": {
             "header": "导出好友列表",
@@ -6649,10 +6644,7 @@
         },
         "profile": {
             "invite_messages": {
-                "slot": "编号",
-                "message": "消息",
-                "cool_down": "编辑冷却",
-                "action": "操作"
+                "cool_down": "编辑冷却"
             }
         },
         "import": {

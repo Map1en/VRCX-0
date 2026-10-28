@@ -2344,9 +2344,6 @@
                 "automatic_replies_note": "Läuft nur, während VRChat läuft und dein Standort Einladungen erlaubt. Jeder Absender hat eine Abklingzeit.",
                 "invite_message": "Einladungsnachricht",
                 "invite_message_description": "Sendet den aktuellen Text des Slots – änderst du ihn, ändert sich auch die Nachricht.",
-                "invite_message_none": "Keine Nachricht",
-                "invite_message_slot": "Slot {slot}",
-                "invite_message_picker_title": "Einladungsnachricht auswählen",
                 "failed_to_load_schedule_rules": "Zeitplanregeln konnten nicht geladen werden.",
                 "failed_to_save_schedule_rules": "Zeitplanregeln konnten nicht gespeichert werden.",
                 "failed_to_load_room_rules": "Instanzregeln konnten nicht geladen werden.",
@@ -5234,7 +5231,10 @@
             },
             "dynamic": {
                 "edit_slot_value": "Slot {value} bearbeiten"
-            }
+            },
+            "no_message": "Keine Nachricht",
+            "slot_value": "Slot {value}",
+            "attach_image": "Bild anhängen"
         },
         "invite_request_message": {
             "header": "Mit Nachricht anfragen"
@@ -5262,16 +5262,11 @@
             }
         },
         "edit_invite_message": {
-            "header": "Nachrichtenvorlage bearbeiten",
             "save": "Speichern"
         },
         "edit_send_invite_message": {
-            "header": "Nachrichtenvorlage bearbeiten und senden",
             "description": "1 Stunde Abklingzeit für Bearbeitungen.",
             "send": "Senden"
-        },
-        "edit_send_invite_response_message": {
-            "description": "1 Stunde Abklingzeit für Bearbeitungen."
         },
         "export_friends_list": {
             "header": "Freundesliste exportieren",
@@ -6603,10 +6598,7 @@
         },
         "profile": {
             "invite_messages": {
-                "slot": "Slot",
-                "message": "Nachricht",
-                "cool_down": "Abklingzeit",
-                "action": "Aktion"
+                "cool_down": "Abklingzeit"
             }
         },
         "import": {

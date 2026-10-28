@@ -2338,9 +2338,6 @@
                 "automatic_replies_note": "VRChat 起動中かつ招待可能な場所でのみ動作します。送信者ごとにクールダウンがあります。",
                 "invite_message": "招待メッセージ",
                 "invite_message_description": "そのスロットの現在の文面を送ります。文面を編集すると送る内容も変わります。",
-                "invite_message_none": "メッセージなし",
-                "invite_message_slot": "スロット {slot}",
-                "invite_message_picker_title": "招待メッセージを選択",
                 "failed_to_load_schedule_rules": "スケジュールルールの読み込みに失敗しました。",
                 "failed_to_save_schedule_rules": "スケジュールルールの保存に失敗しました。",
                 "failed_to_load_room_rules": "インスタンスルールの読み込みに失敗しました。",
@@ -5268,7 +5265,10 @@
             },
             "dynamic": {
                 "edit_slot_value": "スロット {value} を編集"
-            }
+            },
+            "no_message": "メッセージなし",
+            "slot_value": "スロット {value}",
+            "attach_image": "画像を添付"
         },
         "invite_request_message": {
             "header": "メッセージ付きでリクエスト"
@@ -5296,16 +5296,11 @@
             }
         },
         "edit_invite_message": {
-            "header": "メッセージテンプレートを編集",
             "save": "保存"
         },
         "edit_send_invite_message": {
-            "header": "メッセージテンプレートを編集して送信",
             "description": "編集後は1時間クールダウンが必要です。",
             "send": "送信"
-        },
-        "edit_send_invite_response_message": {
-            "description": "編集後は1時間クールダウンが必要です。"
         },
         "export_friends_list": {
             "header": "フレンドリストをエクスポート",
@@ -6645,10 +6640,7 @@
         },
         "profile": {
             "invite_messages": {
-                "slot": "スロット",
-                "message": "メッセージ",
-                "cool_down": "クールダウン",
-                "action": "アクション"
+                "cool_down": "クールダウン"
             }
         },
         "import": {

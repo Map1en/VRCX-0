@@ -2348,9 +2348,6 @@
                 "automatic_replies_note": "Only runs while VRChat is running and your location allows invites. Each sender has a cooldown.",
                 "invite_message": "Invite message",
                 "invite_message_description": "Sends the slot's current text, so editing it changes what's sent.",
-                "invite_message_none": "No message",
-                "invite_message_slot": "Slot {slot}",
-                "invite_message_picker_title": "Choose Invite Message",
                 "failed_to_load_schedule_rules": "Failed to load schedule rules.",
                 "failed_to_save_schedule_rules": "Failed to save schedule rules.",
                 "failed_to_load_room_rules": "Failed to load instance rules.",
@@ -5282,7 +5279,10 @@
             },
             "dynamic": {
                 "edit_slot_value": "Edit slot {value}"
-            }
+            },
+            "no_message": "No message",
+            "slot_value": "Slot {value}",
+            "attach_image": "Attach image"
         },
         "invite_request_message": {
             "header": "Request with Message"
@@ -5310,16 +5310,11 @@
             }
         },
         "edit_invite_message": {
-            "header": "Edit Message Template",
             "save": "Save"
         },
         "edit_send_invite_message": {
-            "header": "Edit and Send Message Template",
             "description": "1-hour edit cooldown.",
             "send": "Send"
-        },
-        "edit_send_invite_response_message": {
-            "description": "1-hour edit cooldown."
         },
         "export_friends_list": {
             "header": "Export Friends List",
@@ -6659,10 +6654,7 @@
         },
         "profile": {
             "invite_messages": {
-                "slot": "Slot",
-                "message": "Message",
-                "cool_down": "Cooldown",
-                "action": "Action"
+                "cool_down": "Cooldown"
             }
         },
         "import": {

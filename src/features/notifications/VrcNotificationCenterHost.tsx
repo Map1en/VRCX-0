@@ -315,7 +315,6 @@ export function VrcNotificationCenterHost() {
                 currentUserId={currentUserId}
                 endpoint={endpoint}
                 messageType={inviteResponseRequest?.messageType || 'response'}
-                mode="respond"
                 targetLabel={String(
                     inviteResponseRequest?.notification?.senderUsername ||
                         inviteResponseRequest?.notification?.senderUserId ||

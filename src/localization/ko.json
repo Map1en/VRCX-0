@@ -2285,9 +2285,6 @@
                 "automatic_replies_note": "VRChat 실행 중이고 현재 위치에서 초대를 보낼 수 있을 때만 동작합니다. 발신자별로 쿨다운이 있습니다.",
                 "invite_message": "초대 메시지",
                 "invite_message_description": "해당 슬롯의 현재 문구를 보냅니다. 문구를 바꾸면 보내는 내용도 바뀝니다.",
-                "invite_message_none": "메시지 없음",
-                "invite_message_slot": "슬롯 {slot}",
-                "invite_message_picker_title": "초대 메시지 선택",
                 "failed_to_load_schedule_rules": "일정 규칙을 불러오지 못했습니다.",
                 "failed_to_save_schedule_rules": "일정 규칙을 저장하지 못했습니다.",
                 "failed_to_load_room_rules": "인스턴스 규칙을 불러오지 못했습니다.",
@@ -5216,7 +5213,10 @@
             },
             "dynamic": {
                 "edit_slot_value": "슬롯 {value} 수정"
-            }
+            },
+            "no_message": "메시지 없음",
+            "slot_value": "슬롯 {value}",
+            "attach_image": "이미지 첨부"
         },
         "invite_request_message": {
             "header": "메시지로 요청"
@@ -5244,16 +5244,11 @@
             }
         },
         "edit_invite_message": {
-            "header": "메시지 템플릿 편집",
             "save": "저장"
         },
         "edit_send_invite_message": {
-            "header": "메시지 템플릿 편집 및 보내기",
             "description": "한번 바꾸면 1시간 쿨타임이 생깁니다",
             "send": "보내기"
-        },
-        "edit_send_invite_response_message": {
-            "description": "한번 바꾸면 1시간 쿨타임이 생깁니다"
         },
         "export_friends_list": {
             "header": "친구 목록 내보내기",
@@ -6593,10 +6588,7 @@
         },
         "profile": {
             "invite_messages": {
-                "slot": "슬롯",
-                "message": "메시지",
-                "cool_down": "쿨타임",
-                "action": "작업"
+                "cool_down": "쿨타임"
             }
         },
         "import": {

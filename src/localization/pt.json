@@ -2344,9 +2344,6 @@
                 "automatic_replies_note": "Só funciona enquanto o VRChat estiver aberto e a sua localização permitir convites. Cada remetente tem um tempo de espera.",
                 "invite_message": "Mensagem de convite",
                 "invite_message_description": "Envia o texto atual do campo; se você editá-lo, o que é enviado também muda.",
-                "invite_message_none": "Sem mensagem",
-                "invite_message_slot": "Campo {slot}",
-                "invite_message_picker_title": "Escolher mensagem de convite",
                 "failed_to_load_schedule_rules": "Falha ao carregar as regras de agendamento.",
                 "failed_to_save_schedule_rules": "Falha ao salvar as regras de agendamento.",
                 "failed_to_load_room_rules": "Não foi possível carregar as regras de instância.",
@@ -5234,7 +5231,10 @@
             },
             "dynamic": {
                 "edit_slot_value": "Editar espaço {value}"
-            }
+            },
+            "no_message": "Sem mensagem",
+            "slot_value": "Campo {value}",
+            "attach_image": "Anexar imagem"
         },
         "invite_request_message": {
             "header": "Solicitar Com Mensagem"
@@ -5262,16 +5262,11 @@
             }
         },
         "edit_invite_message": {
-            "header": "Editar Modelo de Mensagem",
             "save": "Salvar"
         },
         "edit_send_invite_message": {
-            "header": "Editar e Enviar Modelo de Mensagem",
             "description": "1 hora de cooldown para edição.",
             "send": "Enviar"
-        },
-        "edit_send_invite_response_message": {
-            "description": "1 hora de cooldown para edição."
         },
         "export_friends_list": {
             "header": "Exportar Lista de Amigos",
@@ -6603,10 +6598,7 @@
         },
         "profile": {
             "invite_messages": {
-                "slot": "Campo",
-                "message": "Mensagem",
-                "cool_down": "Cooldown",
-                "action": "Ação"
+                "cool_down": "Cooldown"
             }
         },
         "import": {

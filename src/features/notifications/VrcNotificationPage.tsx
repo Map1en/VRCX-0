@@ -100,7 +100,6 @@ export function VrcNotificationPage({
                 messageType={
                     dialogs.inviteResponseRequest?.messageType || 'response'
                 }
-                mode="respond"
                 targetLabel={String(
                     dialogs.inviteResponseRequest?.notification
                         ?.senderUsername ||
