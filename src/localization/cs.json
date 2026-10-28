@@ -991,7 +991,10 @@
         "navigation_items": "Otevřít položku navigace 1–9",
         "hold_for_hints": "Zobrazit klávesové zkratky (podržet)",
         "toggle_details": "Zobrazit / skrýt podrobnosti",
-        "clear_selection": "Zrušit výběr"
+        "clear_selection": "Zrušit výběr",
+        "toggle_theme_safe_mode": "Dočasně vypnout komunitní motivy",
+        "theme_safe_mode_on": "Komunitní motivy jsou pro tuto relaci vypnuté",
+        "theme_safe_mode_off": "Komunitní motivy obnoveny"
     },
     "privacy_lock": {
         "locked_title": "Zamčeno",
@@ -1185,7 +1188,8 @@
             "group_system": "Systém",
             "tab_friend": "Přítel",
             "no_new_notifications": "Za posledních 24 hodin žádná nová oznámení",
-            "no_unseen_notifications": "Žádná nepřečtená oznámení"
+            "no_unseen_notifications": "Žádná nepřečtená oznámení",
+            "title_with_count": "Oznámení, nepřečtená: {count}"
         },
         "success": {
             "vrchat_launch_request_sent": "Otevřeno ve VRChat",
@@ -1982,7 +1986,12 @@
                     "group": "Skupiny",
                     "moderation": "Moderace",
                     "other": "Ostatní"
-                }
+                },
+                "pending_count": "Nová oznámení: {count}",
+                "new_this_session": "Nové v této relaci",
+                "expires_in": "Vyprší {time}",
+                "action_all_done": "Vše vyřízeno",
+                "action_all_done_description": "Momentálně nic nečeká na vaši odpověď."
             },
             "responses": {
                 "acknowledge_and_dismiss": "Zavřít",
@@ -3699,7 +3708,10 @@
                 "accept_friend_request": "Přijmout žádost o přátelství",
                 "decline_notification": "Odmítnout upozornění",
                 "decline": "Odmítnout",
-                "send_invite": "Odeslat pozvánku"
+                "send_invite": "Odeslat pozvánku",
+                "accept_friend_request_consequence": "Uživatel bude přidán do seznamu přátel.",
+                "decline_notification_consequence": "Oznámení bude na VRChatu odstraněno.",
+                "send_invite_consequence": "Pozvánka půjde do instance, ve které právě jste."
             },
             "dynamic": {
                 "accept_the_friend_request_from_value": "Přijmout žádost o přátelství od {value}?",
@@ -3714,7 +3726,8 @@
             },
             "status": {
                 "active": "Aktivní",
-                "installed": "Nainstalováno"
+                "installed": "Nainstalováno",
+                "tested_with_older": "Testováno s {version}; v této verzi nemusí vypadat správně"
             },
             "field": {
                 "name": "Název",

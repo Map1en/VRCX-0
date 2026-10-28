@@ -979,7 +979,10 @@
         "navigation_items": "ナビゲーションの1～9番目を開く",
         "hold_for_hints": "ショートカットのヒントを表示（長押し）",
         "toggle_details": "詳細の表示／非表示",
-        "clear_selection": "選択を解除"
+        "clear_selection": "選択を解除",
+        "toggle_theme_safe_mode": "コミュニティテーマを一時的に無効化",
+        "theme_safe_mode_on": "コミュニティテーマを一時的に無効にしました",
+        "theme_safe_mode_off": "コミュニティテーマを元に戻しました"
     },
     "privacy_lock": {
         "locked_title": "ロック中",
@@ -1167,7 +1170,8 @@
             "group_system": "システム",
             "tab_friend": "フレンド",
             "no_new_notifications": "過去24時間以内に新しい通知はありません",
-            "no_unseen_notifications": "未読の通知はありません"
+            "no_unseen_notifications": "未読の通知はありません",
+            "title_with_count": "通知（未読 {count} 件）"
         },
         "success": {
             "vrchat_launch_request_sent": "VRChat で開きました",
@@ -1958,7 +1962,12 @@
                     "group": "グループ",
                     "moderation": "モデレーション",
                     "other": "その他"
-                }
+                },
+                "pending_count": "新着通知 {count} 件",
+                "new_this_session": "今回の新着",
+                "expires_in": "{time}に期限切れ",
+                "action_all_done": "すべて対応済み",
+                "action_all_done_description": "今対応が必要な通知はありません。"
             },
             "responses": {
                 "acknowledge_and_dismiss": "閉じる",
@@ -3671,7 +3680,10 @@
                 "accept_friend_request": "フレンドリクエストを承認",
                 "decline_notification": "通知を断る",
                 "decline": "断る",
-                "send_invite": "招待を送信"
+                "send_invite": "招待を送信",
+                "accept_friend_request_consequence": "相手がフレンドリストに追加されます。",
+                "decline_notification_consequence": "この通知は VRChat 上から削除されます。",
+                "send_invite_consequence": "招待は今いるインスタンスに送られます。"
             },
             "dynamic": {
                 "accept_the_friend_request_from_value": "{value} からのフレンドリクエストを承認しますか？",
@@ -3686,7 +3698,8 @@
             },
             "status": {
                 "active": "有効",
-                "installed": "インストール済み"
+                "installed": "インストール済み",
+                "tested_with_older": "{version} で動作確認済み。このバージョンでは表示が崩れる可能性があります"
             },
             "field": {
                 "name": "名前",

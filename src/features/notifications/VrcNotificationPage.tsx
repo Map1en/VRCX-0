@@ -6,6 +6,7 @@ import { NotificationFeed } from './components/NotificationFeed';
 import { NotificationPageToolbar } from './components/NotificationPageToolbar';
 import { BoopReplyDialog } from './components/NotificationViewParts';
 import { NotificationActionPendingContext } from './notificationActionPending';
+import { NotificationSessionUnreadContext } from './notificationSessionUnread';
 import { useVrcNotificationPageController } from './useVrcNotificationPageController';
 
 type VrcNotificationPageProps = {
@@ -21,8 +22,11 @@ export function VrcNotificationPage({
         filters,
         handlers,
         notificationTypeLabel,
+        onFeedScrolledAwayChange,
         pageRows,
         rowsState,
+        sessionUnreadKeys,
+        showPendingNotifications,
         runtime,
         sourceRowsCount,
         table,
@@ -52,6 +56,7 @@ export function VrcNotificationPage({
                         quickFilter={filters.quickFilter}
                         notificationTypeLabel={notificationTypeLabel}
                         loadStatus={rowsState.loadStatus}
+                        quickFilterCounts={rowsState.quickFilterCounts}
                         canMarkAllSeen={canMarkAllSeen}
                         isMarkingAllSeen={isMarkingAllSeen}
                         onActiveTypesChange={filters.setActiveTypes}
@@ -67,32 +72,43 @@ export function VrcNotificationPage({
                         <NotificationActionPendingContext
                             value={actions.pendingNotificationKeys}
                         >
-                            <NotificationFeed
-                                rows={pageRows}
-                                table={table}
-                                detail={rowsState.detail}
-                                loadStatus={rowsState.loadStatus}
-                                sourceRowsCount={sourceRowsCount}
-                                hasActiveFilters={
-                                    filters.activeTypes.length > 0 ||
-                                    filters.quickFilter !== 'all' ||
-                                    Boolean(filters.searchQuery.trim())
-                                }
-                                rowsCount={rowsState.rows.length}
-                                pagination={tableState.pagination}
-                                pageSizes={tableState.pageSizes}
-                                onPageSizeChange={
-                                    tableState.handlePageSizeChange
-                                }
-                                onClearFilters={filters.clearFilters}
-                                currentUserId={
-                                    runtime.currentUserId ?? undefined
-                                }
-                                canInviteFromCurrentLocation={
-                                    runtime.canInviteFromCurrentLocation
-                                }
-                                handlers={handlers}
-                            />
+                            <NotificationSessionUnreadContext
+                                value={sessionUnreadKeys}
+                            >
+                                <NotificationFeed
+                                    rows={pageRows}
+                                    table={table}
+                                    detail={rowsState.detail}
+                                    loadStatus={rowsState.loadStatus}
+                                    sourceRowsCount={sourceRowsCount}
+                                    hasActiveFilters={
+                                        filters.activeTypes.length > 0 ||
+                                        filters.quickFilter !== 'all' ||
+                                        Boolean(filters.searchQuery.trim())
+                                    }
+                                    rowsCount={rowsState.rows.length}
+                                    pagination={tableState.pagination}
+                                    pageSizes={tableState.pageSizes}
+                                    onPageSizeChange={
+                                        tableState.handlePageSizeChange
+                                    }
+                                    onClearFilters={filters.clearFilters}
+                                    currentUserId={
+                                        runtime.currentUserId ?? undefined
+                                    }
+                                    canInviteFromCurrentLocation={
+                                        runtime.canInviteFromCurrentLocation
+                                    }
+                                    handlers={handlers}
+                                    pendingCount={rowsState.pendingCount}
+                                    onShowPending={showPendingNotifications}
+                                    onScrolledAwayChange={
+                                        onFeedScrolledAwayChange
+                                    }
+                                    onRetry={rowsState.reload}
+                                    quickFilter={filters.quickFilter}
+                                />
+                            </NotificationSessionUnreadContext>
                         </NotificationActionPendingContext>
                     </TabsContent>
                 </Tabs>

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { useAppTable } from '@/components/data-table/appTable';
 import {
@@ -7,6 +7,7 @@ import {
 } from '@/state/vrcNotificationStore';
 
 import type { NotificationFeedHandlers } from './components/NotificationRow';
+import { useSessionUnreadKeys } from './notificationSessionUnread';
 import { useNotificationActions } from './useNotificationActions';
 import { useNotificationDialogs } from './useNotificationDialogs';
 import { useNotificationFilters } from './useNotificationFilters';
@@ -20,9 +21,10 @@ export function useVrcNotificationPageController() {
     const isMarkingAllSeen = useVrcNotificationStore(
         (state) => state.markAllSeenProgress !== null
     );
-    const sourceRowsCount = useVrcNotificationStore(
-        (state) => state.rows.length
-    );
+    const sourceRows = useVrcNotificationStore((state) => state.rows);
+    const sourceRowsCount = sourceRows.length;
+    const sessionUnreadKeys = useSessionUnreadKeys(sourceRows);
+    const [feedScrolledAway, setFeedScrolledAway] = useState(false);
     const filters = useNotificationFilters();
     const runtime = useNotificationRuntime();
     const dialogs = useNotificationDialogs();
@@ -36,8 +38,16 @@ export function useVrcNotificationPageController() {
         currentUserId: runtime.currentUserId ?? undefined,
         deferredSearchQuery: filters.deferredSearchQuery,
         filtersReady: filters.filtersReady,
+        holdNew: feedScrolledAway || tableState.pagination.pageIndex > 0,
         quickFilter: filters.quickFilter
     });
+    const { setPagination } = tableState;
+    const showPendingNotifications = useCallback(() => {
+        setFeedScrolledAway(false);
+        setPagination((current) =>
+            current.pageIndex === 0 ? current : { ...current, pageIndex: 0 }
+        );
+    }, [setPagination]);
     const notificationTypeLabel = useNotificationTypeLabel();
     const actions = useNotificationActions({
         canInviteFromCurrentLocation: runtime.canInviteFromCurrentLocation,
@@ -80,6 +90,9 @@ export function useVrcNotificationPageController() {
     return {
         actions,
         dialogs,
+        onFeedScrolledAwayChange: setFeedScrolledAway,
+        sessionUnreadKeys,
+        showPendingNotifications,
         filters,
         handlers,
         notificationTypeLabel,

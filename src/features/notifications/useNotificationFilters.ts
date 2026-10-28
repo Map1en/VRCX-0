@@ -7,8 +7,13 @@ import { safeJsonParse } from '@/shared/utils/json';
 import { sanitizeNotificationFilters } from './notificationTableState';
 
 const NOTIFICATION_TABLE_FILTERS_CONFIG_KEY = 'VRCX_notificationTableFilters';
+const NOTIFICATION_QUICK_FILTER_CONFIG_KEY = 'VRCX_notificationQuickFilter';
 
 export type NotificationQuickFilter = 'all' | 'action' | 'unread';
+
+function sanitizeQuickFilter(value: unknown): NotificationQuickFilter {
+    return value === 'action' || value === 'unread' ? value : 'all';
+}
 
 export function useNotificationFilters() {
     const [activeTypes, setActiveTypes] = useState<string[]>([]);
@@ -20,9 +25,17 @@ export function useNotificationFilters() {
 
     useEffect(() => {
         let active = true;
-        configRepository
-            .getString(NOTIFICATION_TABLE_FILTERS_CONFIG_KEY, '[]')
-            .then((savedFilters) => {
+        Promise.all([
+            configRepository.getString(
+                NOTIFICATION_TABLE_FILTERS_CONFIG_KEY,
+                '[]'
+            ),
+            configRepository.getString(
+                NOTIFICATION_QUICK_FILTER_CONFIG_KEY,
+                'all'
+            )
+        ])
+            .then(([savedFilters, savedQuickFilter]) => {
                 if (!active) {
                     return;
                 }
@@ -32,6 +45,7 @@ export function useNotificationFilters() {
                         NOTIFICATION_TYPES
                     )
                 );
+                setQuickFilter(sanitizeQuickFilter(savedQuickFilter));
                 setFiltersReady(true);
             })
             .catch(() => {
@@ -54,6 +68,16 @@ export function useNotificationFilters() {
             JSON.stringify(activeTypes)
         );
     }, [activeTypes, filtersReady]);
+
+    useEffect(() => {
+        if (!filtersReady) {
+            return;
+        }
+        configRepository.setString(
+            NOTIFICATION_QUICK_FILTER_CONFIG_KEY,
+            quickFilter
+        );
+    }, [filtersReady, quickFilter]);
 
     function clearFilters() {
         setActiveTypes([]);

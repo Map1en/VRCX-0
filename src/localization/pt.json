@@ -983,7 +983,10 @@
         "navigation_items": "Abrir o item de navegação 1–9",
         "hold_for_hints": "Mostrar atalhos (manter pressionado)",
         "toggle_details": "Mostrar / ocultar detalhes",
-        "clear_selection": "Limpar seleção"
+        "clear_selection": "Limpar seleção",
+        "toggle_theme_safe_mode": "Desativar temporariamente os temas da comunidade",
+        "theme_safe_mode_on": "Temas da comunidade desativados nesta sessão",
+        "theme_safe_mode_off": "Temas da comunidade restaurados"
     },
     "privacy_lock": {
         "locked_title": "Bloqueado",
@@ -1173,7 +1176,8 @@
             "group_system": "Sistema",
             "tab_friend": "Amigo",
             "no_new_notifications": "Sem novas notificações nas últimas 24 horas",
-            "no_unseen_notifications": "Sem notificações não lidas"
+            "no_unseen_notifications": "Sem notificações não lidas",
+            "title_with_count": "Notificações, {count} não lidas"
         },
         "success": {
             "vrchat_launch_request_sent": "Aberto no VRChat",
@@ -1964,7 +1968,12 @@
                     "group": "Grupos",
                     "moderation": "Moderação",
                     "other": "Outros"
-                }
+                },
+                "pending_count": "{count} novas notificações",
+                "new_this_session": "Nova nesta sessão",
+                "expires_in": "Expira {time}",
+                "action_all_done": "Tudo em dia",
+                "action_all_done_description": "Nada precisa da sua resposta agora."
             },
             "responses": {
                 "acknowledge_and_dismiss": "Dispensar",
@@ -3677,7 +3686,10 @@
                 "accept_friend_request": "Aceitar pedido de amizade",
                 "decline_notification": "Recusar notificação",
                 "decline": "Recusar",
-                "send_invite": "Enviar convite"
+                "send_invite": "Enviar convite",
+                "accept_friend_request_consequence": "A pessoa será adicionada à sua lista de amigos.",
+                "decline_notification_consequence": "A notificação será removida no VRChat.",
+                "send_invite_consequence": "O convite vai para a instância em que você está."
             },
             "dynamic": {
                 "accept_the_friend_request_from_value": "Aceitar o pedido de amizade de {value}?",
@@ -3692,7 +3704,8 @@
             },
             "status": {
                 "active": "Ativo",
-                "installed": "Instalado"
+                "installed": "Instalado",
+                "tested_with_older": "Testado com {version}; pode não aparecer corretamente nesta versão"
             },
             "field": {
                 "name": "Nome",

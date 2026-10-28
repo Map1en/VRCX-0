@@ -983,7 +983,10 @@
         "navigation_items": "開啟第 1～9 個導覽項目",
         "hold_for_hints": "顯示快速鍵提示（長按）",
         "toggle_details": "顯示／隱藏詳情",
-        "clear_selection": "清除選取"
+        "clear_selection": "清除選取",
+        "toggle_theme_safe_mode": "暫時停用社群主題",
+        "theme_safe_mode_on": "已暫時停用社群主題",
+        "theme_safe_mode_off": "已恢復社群主題"
     },
     "privacy_lock": {
         "locked_title": "已鎖定",
@@ -1171,7 +1174,8 @@
             "group_system": "系統",
             "tab_friend": "好友",
             "no_new_notifications": "最近 24 小時內沒有新通知",
-            "no_unseen_notifications": "沒有未讀通知"
+            "no_unseen_notifications": "沒有未讀通知",
+            "title_with_count": "通知，{count} 則未讀"
         },
         "success": {
             "vrchat_launch_request_sent": "已在 VRChat 中開啟",
@@ -1962,7 +1966,12 @@
                     "group": "群組",
                     "moderation": "管理",
                     "other": "其他"
-                }
+                },
+                "pending_count": "{count} 則新通知",
+                "new_this_session": "本次新到",
+                "expires_in": "{time}到期",
+                "action_all_done": "已全部處理",
+                "action_all_done_description": "目前沒有需要你處理的通知。"
             },
             "responses": {
                 "acknowledge_and_dismiss": "忽略",
@@ -3675,7 +3684,10 @@
                 "accept_friend_request": "接受好友請求",
                 "decline_notification": "拒絕通知",
                 "decline": "拒絕",
-                "send_invite": "傳送邀請"
+                "send_invite": "傳送邀請",
+                "accept_friend_request_consequence": "對方會加入你的好友清單。",
+                "decline_notification_consequence": "此通知會在 VRChat 上被移除。",
+                "send_invite_consequence": "邀請會傳送到你目前所在的房間。"
             },
             "dynamic": {
                 "accept_the_friend_request_from_value": "接受來自 {value} 的好友請求？",
@@ -3690,7 +3702,8 @@
             },
             "status": {
                 "active": "已啟用",
-                "installed": "已安裝"
+                "installed": "已安裝",
+                "tested_with_older": "僅在 {version} 測試過，目前版本可能顯示異常"
             },
             "field": {
                 "name": "名稱",

@@ -42,4 +42,21 @@ describe('useNotificationFilters', () => {
         expect(result.current.quickFilter).toBe('all');
         expect(result.current.searchQuery).toBe('');
     });
+
+    it('restores and saves the selected quick tab', async () => {
+        mocks.getString.mockImplementation(async (key: string) =>
+            key === 'VRCX_notificationQuickFilter' ? 'action' : '[]'
+        );
+        const { result } = renderHook(() => useNotificationFilters());
+        await waitFor(() => expect(result.current.filtersReady).toBe(true));
+
+        expect(result.current.quickFilter).toBe('action');
+
+        act(() => result.current.setQuickFilter('unread'));
+
+        expect(mocks.setString).toHaveBeenCalledWith(
+            'VRCX_notificationQuickFilter',
+            'unread'
+        );
+    });
 });

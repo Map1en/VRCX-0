@@ -7,6 +7,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useMinuteNowMs } from '@/lib/useMinuteNowMs';
 import { cn } from '@/lib/utils';
 import type { NotificationRow } from '@/repositories/notificationPersistenceRepository';
 import { getDismissResponse } from '@/shared/utils/notificationResponse';
@@ -108,7 +109,8 @@ export function NotificationDrawerRow({
     const actionPending = useNotificationActionPending(notification);
     const rawMessage = String(getNotificationMessage(notification) || '');
     const typeLabel = getNotificationTypeLabel(notification, t);
-    const relativeTime = getNotificationRelativeTime(notification);
+    const nowMs = useMinuteNowMs();
+    const relativeTime = getNotificationRelativeTime(notification, nowMs);
     const absoluteTime =
         getNotificationAbsoluteTime(notification) ||
         formatNotificationTime(notification);

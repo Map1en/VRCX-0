@@ -4,7 +4,12 @@ import { useTranslation } from 'react-i18next';
 
 import { Location } from '@/components/Location';
 import { FadeInImage } from '@/components/media/FadeInImage';
-import { formatClock, formatDateFilter } from '@/lib/dateTime';
+import {
+    formatClock,
+    formatDateFilter,
+    formatRelativeTime
+} from '@/lib/dateTime';
+import { useMinuteNowMs } from '@/lib/useMinuteNowMs';
 import { cn } from '@/lib/utils';
 import type { NotificationRow as NotificationRecord } from '@/repositories/notificationPersistenceRepository';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
@@ -28,6 +33,7 @@ import {
     getNotificationLinkIcon,
     type NotificationRowActionHandlers
 } from '../notificationRowActions';
+import { useNotificationNewThisSession } from '../notificationSessionUnread';
 import { toNotificationViewModel } from '../notificationViewModel';
 import { useNotificationActorImage } from '../useNotificationActorImage';
 import { NotificationMessage } from './NotificationMessage';
@@ -61,6 +67,8 @@ export function NotificationRow({
 }) {
     const { t } = useTranslation();
     const actionPending = useNotificationActionPending(notification);
+    const newThisSession = useNotificationNewThisSession(notification);
+    const nowMs = useMinuteNowMs();
     const [mediaFailed, setMediaFailed] = useState(false);
     const unknownLabel = t('view.notification.feed.unknown');
     const view = useMemo(
@@ -89,6 +97,20 @@ export function NotificationRow({
     const inlineActionCount = notification.type === 'friendRequest' ? 3 : 2;
     const inlineActions = orderedActions.slice(0, inlineActionCount);
     const overflowActions = orderedActions.slice(inlineActionCount);
+    const expiresAtMs = Date.parse(String(notification.expiresAt || ''));
+    const expiresLabel =
+        inlineActions.length > 0 &&
+        !view.expired &&
+        Number.isFinite(expiresAtMs) &&
+        expiresAtMs > nowMs
+            ? t('view.notification.feed.expires_in', {
+                  time: formatRelativeTime(expiresAtMs, {
+                      nowMs,
+                      style: 'short',
+                      minUnit: 'minute'
+                  })
+              })
+            : '';
     const showMenuMarkRead =
         view.unseen &&
         notification.type !== 'friendRequest' &&
@@ -146,12 +168,26 @@ export function NotificationRow({
         view.body === typeLabel || view.body === view.headline ? '' : view.body;
 
     return (
-        <div className="group flex items-start gap-3 rounded-lg px-2 py-2.5 transition-colors duration-150 ease-out hover:bg-(--state-hover-surface)">
+        <div
+            role="listitem"
+            className={cn(
+                'group flex items-start gap-3 rounded-lg px-2 py-2.5 transition-colors duration-150 ease-out',
+                newThisSession
+                    ? 'bg-(--state-selected-surface) hover:bg-(--state-selected-hover-surface)'
+                    : 'hover:bg-(--state-hover-surface)'
+            )}
+        >
             <span className="mt-1.5 flex w-2 shrink-0 justify-center">
                 {view.unseen ? (
                     <span className="bg-primary size-2 rounded-full">
                         <span className="sr-only">
                             {t('view.notification.feed.unread')}
+                        </span>
+                    </span>
+                ) : newThisSession ? (
+                    <span className="border-primary size-2 rounded-full border">
+                        <span className="sr-only">
+                            {t('view.notification.feed.new_this_session')}
                         </span>
                     </span>
                 ) : null}
@@ -254,6 +290,11 @@ export function NotificationRow({
                             />
                             <TooltipContent>{absoluteLabel}</TooltipContent>
                         </Tooltip>
+                        {expiresLabel ? (
+                            <span className="text-muted-foreground shrink-0 text-[11px] leading-4 tabular-nums">
+                                {expiresLabel}
+                            </span>
+                        ) : null}
                         {view.expired ? (
                             <span className="border-border/60 text-muted-foreground/70 shrink-0 rounded-full border px-1.5 py-px text-[11px] leading-4">
                                 {t('view.notification.feed.expired')}
@@ -280,6 +321,7 @@ export function NotificationRow({
                                     size="xs"
                                     variant="ghost"
                                     disabled={actionPending}
+                                    aria-label={`${action.label} · ${actorName || typeLabel}`}
                                     onClick={action.onClick}
                                 >
                                     {action.label}

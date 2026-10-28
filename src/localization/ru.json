@@ -991,7 +991,10 @@
         "navigation_items": "Открыть пункт навигации 1–9",
         "hold_for_hints": "Показать подсказки клавиш (удерживать)",
         "toggle_details": "Показать / скрыть сведения",
-        "clear_selection": "Снять выделение"
+        "clear_selection": "Снять выделение",
+        "toggle_theme_safe_mode": "Временно отключить темы сообщества",
+        "theme_safe_mode_on": "Темы сообщества отключены на этот сеанс",
+        "theme_safe_mode_off": "Темы сообщества восстановлены"
     },
     "privacy_lock": {
         "locked_title": "Заблокировано",
@@ -1185,7 +1188,8 @@
             "group_system": "Система",
             "tab_friend": "Друг",
             "no_new_notifications": "Никаких новых уведомлений за последние 24 часа",
-            "no_unseen_notifications": "Нет непрочитанных уведомлений"
+            "no_unseen_notifications": "Нет непрочитанных уведомлений",
+            "title_with_count": "Уведомления, непрочитанных: {count}"
         },
         "success": {
             "vrchat_launch_request_sent": "Открыто VRChat",
@@ -1980,7 +1984,12 @@
                     "group": "Группы",
                     "moderation": "Модерация",
                     "other": "Прочее"
-                }
+                },
+                "pending_count": "Новых уведомлений: {count}",
+                "new_this_session": "Новое за этот сеанс",
+                "expires_in": "Истекает {time}",
+                "action_all_done": "Всё обработано",
+                "action_all_done_description": "Сейчас ничто не требует вашего ответа."
             },
             "responses": {
                 "acknowledge_and_dismiss": "Скрыть",
@@ -3693,7 +3702,10 @@
                 "accept_friend_request": "Примите просьбу друга",
                 "decline_notification": "Отклонить уведомление",
                 "decline": "Отклонить",
-                "send_invite": "Отправить приглашение"
+                "send_invite": "Отправить приглашение",
+                "accept_friend_request_consequence": "Пользователь будет добавлен в ваш список друзей.",
+                "decline_notification_consequence": "Уведомление будет удалено в VRChat.",
+                "send_invite_consequence": "Приглашение будет отправлено в инстанс, где вы сейчас находитесь."
             },
             "dynamic": {
                 "accept_the_friend_request_from_value": "Принять запрос в друзья от {value}?",
@@ -3708,7 +3720,8 @@
             },
             "status": {
                 "active": "Активен",
-                "installed": "Установлено"
+                "installed": "Установлено",
+                "tested_with_older": "Проверено с {version}; в этой версии может отображаться неправильно"
             },
             "field": {
                 "name": "Имя",

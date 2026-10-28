@@ -1,7 +1,10 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router';
 
 import { isTextEntryTarget } from '@/components/keyboard/keyboardShortcutGuards';
+import { toast } from '@/services/toastService';
+import { toggleCommunityThemeLayersSuppressed } from '@/services/vrcx0CssLayerService';
 import {
     restoreNormalWindowModeForIntent,
     runAfterRestoringNormalWindow
@@ -19,6 +22,7 @@ import { useRightSidePanelVisibility } from './useRightSidePanelVisibility';
 const SHORTCUT_HINT_HOLD_DELAY_MS = 160;
 
 export function useGlobalKeyboardShortcuts() {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
     const { toggleSidePanelOpen } = useRightSidePanelVisibility(
@@ -135,6 +139,19 @@ export function useGlobalKeyboardShortcuts() {
             if (isTextEntryTarget(event.target)) {
                 return;
             }
+            if (key === 't' && event.altKey && event.shiftKey) {
+                event.preventDefault();
+                const suppressed = toggleCommunityThemeLayersSuppressed();
+                toast.add({
+                    type: 'info',
+                    title: t(
+                        suppressed
+                            ? 'shortcuts.theme_safe_mode_on'
+                            : 'shortcuts.theme_safe_mode_off'
+                    )
+                });
+                return;
+            }
             if (key === '/') {
                 event.preventDefault();
                 restoreNormalWindowModeForIntent();
@@ -201,6 +218,7 @@ export function useGlobalKeyboardShortcuts() {
         sessionReady,
         setShortcutHintsVisible,
         setSystemHostOpen,
+        t,
         toggleSidePanelOpen
     ]);
 }

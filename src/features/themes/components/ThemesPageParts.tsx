@@ -1,6 +1,12 @@
-import { BadgeCheckIcon, DownloadIcon, ExternalLinkIcon } from 'lucide-react';
+import {
+    BadgeCheckIcon,
+    DownloadIcon,
+    ExternalLinkIcon,
+    TriangleAlertIcon
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { isThemeTestedWithOlderRelease } from '@/domain/themes/themeCompatibility';
 import type { CommunityThemeManifest } from '@/domain/themes/types';
 import { openExternalLink } from '@/services/entityMediaService';
 import { Badge } from '@/ui/shadcn/badge';
@@ -115,6 +121,20 @@ export function ThemeCatalogCard({
                         {t('view.community_themes.field.tested_with')}:{' '}
                         {theme.testedWith}
                     </div>
+                    {isThemeTestedWithOlderRelease(
+                        theme.testedWith,
+                        String(VERSION || '')
+                    ) ? (
+                        <div className="text-foreground flex items-center gap-1">
+                            <TriangleAlertIcon className="size-3.5 shrink-0" />
+                            {t(
+                                'view.community_themes.status.tested_with_older',
+                                {
+                                    version: theme.testedWith
+                                }
+                            )}
+                        </div>
+                    ) : null}
                     <div className="text-muted-foreground">
                         {t('view.community_themes.field.downloads')}:{' '}
                         {downloads.toLocaleString()}

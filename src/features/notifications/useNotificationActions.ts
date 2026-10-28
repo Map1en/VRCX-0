@@ -281,12 +281,12 @@ export function useNotificationActions({
         async (notification: NotificationRow) => {
             try {
                 const result = await confirm({
-                    description: t(
+                    description: `${t(
                         'view.notifications.dynamic.accept_the_friend_request_from_value',
                         {
                             value: notification.senderUsername || 'this user'
                         }
-                    ),
+                    )} ${t('view.notifications.modal.accept_friend_request_consequence')}`,
                     title: t('view.notifications.modal.accept_friend_request')
                 });
                 if (!result.ok) {
@@ -341,12 +341,12 @@ export function useNotificationActions({
                 if (!skipConfirm) {
                     const result = await confirm({
                         confirmText: t('view.notifications.modal.decline'),
-                        description: t(
+                        description: `${t(
                             'view.notifications.dynamic.decline_the_value_notification',
                             {
                                 value: notificationTypeLabel(notification.type)
                             }
-                        ),
+                        )} ${t('view.notifications.modal.decline_notification_consequence')}`,
                         destructive: true,
                         title: t(
                             'view.notifications.modal.decline_notification'
@@ -447,12 +447,12 @@ export function useNotificationActions({
                     return;
                 }
                 const result = await confirm({
-                    description: t(
+                    description: `${t(
                         'view.notifications.dynamic.send_an_invite_to_value',
                         {
                             value: notification.senderUsername || 'this user'
                         }
-                    ),
+                    )} ${t('view.notifications.modal.send_invite_consequence')}`,
                     title: t('view.notifications.modal.send_invite')
                 });
                 if (!result.ok) {

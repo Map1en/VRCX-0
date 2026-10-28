@@ -983,7 +983,10 @@
         "navigation_items": "Open navigation item 1–9",
         "hold_for_hints": "Show shortcut hints (hold)",
         "toggle_details": "Show / hide details",
-        "clear_selection": "Clear selection"
+        "clear_selection": "Clear selection",
+        "toggle_theme_safe_mode": "Temporarily disable community themes",
+        "theme_safe_mode_on": "Community themes disabled for this session",
+        "theme_safe_mode_off": "Community themes restored"
     },
     "privacy_lock": {
         "locked_title": "Locked",
@@ -1173,7 +1176,8 @@
             "group_system": "System",
             "tab_friend": "Friend",
             "no_new_notifications": "No new notifications in the past 24 hours",
-            "no_unseen_notifications": "No unread notifications"
+            "no_unseen_notifications": "No unread notifications",
+            "title_with_count": "Notifications, {count} unread"
         },
         "success": {
             "vrchat_launch_request_sent": "Opened in VRChat",
@@ -1967,7 +1971,12 @@
                     "group": "Groups",
                     "moderation": "Moderation",
                     "other": "Other"
-                }
+                },
+                "pending_count": "{count} new notifications",
+                "new_this_session": "New this session",
+                "expires_in": "Expires {time}",
+                "action_all_done": "All caught up",
+                "action_all_done_description": "Nothing needs your response right now."
             },
             "responses": {
                 "acknowledge_and_dismiss": "Dismiss",
@@ -3681,7 +3690,10 @@
                 "accept_friend_request": "Accept friend request",
                 "decline_notification": "Decline notification",
                 "decline": "Decline",
-                "send_invite": "Send invite"
+                "send_invite": "Send invite",
+                "accept_friend_request_consequence": "They will be added to your friends list.",
+                "decline_notification_consequence": "The notification will be removed on VRChat.",
+                "send_invite_consequence": "The invite goes to the instance you are in now."
             },
             "dynamic": {
                 "accept_the_friend_request_from_value": "Accept the friend request from {value}?",
@@ -3696,7 +3708,8 @@
             },
             "status": {
                 "active": "Active",
-                "installed": "Installed"
+                "installed": "Installed",
+                "tested_with_older": "Tested with {version}; may not look right on this version"
             },
             "field": {
                 "name": "Name",

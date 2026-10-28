@@ -15,6 +15,10 @@ vi.mock('@/services/windowModeService', () => ({
     runAfterRestoringNormalWindow: mocks.runAfterRestoringNormalWindow
 }));
 
+import {
+    setVrcxCssLayer,
+    VRCX_CSS_LAYER_ATTR
+} from '@/services/vrcx0CssLayerService';
 import { NAV_SHORTCUT_REQUESTED_EVENT } from '@/shared/events/navLayoutEvents';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
@@ -337,5 +341,34 @@ describe('useGlobalKeyboardShortcuts', () => {
 
         expect(useShellStore.getState().shortcutHintsVisible).toBe(false);
         input.remove();
+    });
+
+    it('toggles community theme CSS off and back on with Ctrl+Alt+Shift+T', () => {
+        setVrcxCssLayer('installed-theme', 'body { color: red; }');
+        renderHook(() => useGlobalKeyboardShortcuts(), { wrapper });
+        const themeStyle = () =>
+            document.head.querySelector(
+                `style[${VRCX_CSS_LAYER_ATTR}="installed-theme"]`
+            );
+        const pressSafeMode = () =>
+            act(() =>
+                window.dispatchEvent(
+                    new KeyboardEvent('keydown', {
+                        cancelable: true,
+                        ctrlKey: true,
+                        altKey: true,
+                        shiftKey: true,
+                        key: 'T'
+                    })
+                )
+            );
+        expect(themeStyle()).not.toBeNull();
+
+        pressSafeMode();
+        expect(themeStyle()).toBeNull();
+
+        pressSafeMode();
+        expect(themeStyle()).not.toBeNull();
+        setVrcxCssLayer('installed-theme', '');
     });
 });

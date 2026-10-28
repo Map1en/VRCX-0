@@ -9,6 +9,10 @@ export const SHORTCUT_GROUPS = [
                 keys: ['Mod', 'D']
             },
             { labelKey: 'app_menu.keyboard_shortcuts', keys: ['Mod', '/'] },
+            {
+                labelKey: 'shortcuts.toggle_theme_safe_mode',
+                keys: ['Mod', 'Alt', 'Shift', 'T']
+            },
             { labelKey: 'shortcuts.hold_for_hints', keys: ['Mod'] }
         ]
     },

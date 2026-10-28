@@ -1,5 +1,10 @@
-import { BellIcon, SearchXIcon } from 'lucide-react';
-import { useMemo } from 'react';
+import {
+    ArrowUpToLineIcon,
+    BellIcon,
+    CheckCheckIcon,
+    SearchXIcon
+} from 'lucide-react';
+import { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppTable } from '@/components/data-table/appTable';
@@ -18,6 +23,7 @@ import type {
     NotificationLoadStatus,
     NotificationRow as NotificationRecord
 } from '../notificationPageTypes';
+import type { NotificationQuickFilter } from '../useNotificationFilters';
 import {
     NotificationRow,
     type NotificationFeedHandlers
@@ -67,9 +73,19 @@ export function NotificationFeed({
     onClearFilters,
     currentUserId,
     canInviteFromCurrentLocation,
-    handlers
+    handlers,
+    pendingCount = 0,
+    onShowPending,
+    onScrolledAwayChange,
+    onRetry,
+    quickFilter = 'all'
 }: {
     canInviteFromCurrentLocation: boolean;
+    pendingCount?: number;
+    onShowPending?: () => void;
+    onScrolledAwayChange?: (value: boolean) => void;
+    onRetry?: () => void;
+    quickFilter?: NotificationQuickFilter;
     currentUserId?: string;
     detail: string;
     handlers: NotificationFeedHandlers;
@@ -85,6 +101,8 @@ export function NotificationFeed({
     table: AppTable<NotificationRecord>;
 }) {
     const { t } = useTranslation();
+    const scrollRef = useRef<HTMLDivElement | null>(null);
+    const scrolledAwayRef = useRef(false);
     const days = useMemo(() => groupByDay(rows), [rows]);
     const nowMs = useNowMs({ intervalMs: 60_000 });
     const todayKey = dayKey(nowMs);
@@ -103,41 +121,95 @@ export function NotificationFeed({
     return (
         <>
             {detail ? (
-                <div className="text-muted-foreground text-sm">
+                <div className="text-muted-foreground flex items-center gap-2 text-sm">
                     {userFacingErrorMessage(
                         detail,
                         t(
                             'view.notifications.toast.failed_to_load_notifications'
                         )
                     )}
+                    {onRetry ? (
+                        <Button
+                            type="button"
+                            variant="link"
+                            size="sm"
+                            onClick={onRetry}
+                        >
+                            {t('common.action.retry')}
+                        </Button>
+                    ) : null}
                 </div>
             ) : null}
 
             <DataTableSurface>
-                <div className="h-full min-h-0 min-w-0 overflow-auto px-2 pb-2">
+                <div
+                    ref={scrollRef}
+                    className="relative h-full min-h-0 min-w-0 overflow-auto px-2 pb-2"
+                    onScroll={(event) => {
+                        const scrolledAway = event.currentTarget.scrollTop > 8;
+                        if (scrolledAwayRef.current !== scrolledAway) {
+                            scrolledAwayRef.current = scrolledAway;
+                            onScrolledAwayChange?.(scrolledAway);
+                        }
+                    }}
+                >
+                    {pendingCount > 0 ? (
+                        <div className="pointer-events-none sticky top-2 z-20 flex justify-center">
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                className="bg-popover/95 pointer-events-auto h-7 rounded-full border px-3 text-xs shadow-md"
+                                onClick={() => {
+                                    if (scrollRef.current) {
+                                        scrollRef.current.scrollTop = 0;
+                                    }
+                                    onShowPending?.();
+                                }}
+                            >
+                                <ArrowUpToLineIcon data-icon="inline-start" />
+                                {t('view.notification.feed.pending_count', {
+                                    count: pendingCount
+                                })}
+                            </Button>
+                        </div>
+                    ) : null}
                     {days.length > 0 ? (
                         days.map((day) => (
-                            <div key={day.key}>
-                                <div className="text-muted-foreground/70 sticky top-0 z-10 bg-(--vrcx-0-main-content-surface) px-2 pt-5 pb-2 text-xs font-medium">
+                            <section key={day.key}>
+                                <h3 className="text-muted-foreground/70 sticky top-0 z-10 bg-(--vrcx-0-main-content-surface) px-2 pt-5 pb-2 text-xs font-medium">
                                     {dayLabel(day)}
+                                </h3>
+                                <div role="list">
+                                    {day.rows.map((notification) => (
+                                        <NotificationRow
+                                            key={String(notification.id)}
+                                            notification={notification}
+                                            currentUserId={currentUserId}
+                                            canInviteFromCurrentLocation={
+                                                canInviteFromCurrentLocation
+                                            }
+                                            handlers={handlers}
+                                        />
+                                    ))}
                                 </div>
-                                {day.rows.map((notification) => (
-                                    <NotificationRow
-                                        key={String(notification.id)}
-                                        notification={notification}
-                                        currentUserId={currentUserId}
-                                        canInviteFromCurrentLocation={
-                                            canInviteFromCurrentLocation
-                                        }
-                                        handlers={handlers}
-                                    />
-                                ))}
-                            </div>
+                            </section>
                         ))
                     ) : loadStatus === 'running' ? (
                         <LoadingState
                             variant="table"
                             label={t('common.loading')}
+                        />
+                    ) : quickFilter === 'action' &&
+                      sourceRowsCount > 0 &&
+                      !detail ? (
+                        <EmptyState
+                            variant="table"
+                            icon={CheckCheckIcon}
+                            title={t('view.notification.feed.action_all_done')}
+                            description={t(
+                                'view.notification.feed.action_all_done_description'
+                            )}
                         />
                     ) : (
                         <EmptyState

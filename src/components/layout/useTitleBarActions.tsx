@@ -381,7 +381,13 @@ export function useTitleBarActions(
 
     const notificationButton = (
         <TitleBarButton
-            label={t('side_panel.notification_center.title')}
+            label={
+                vrcUnseenNotificationCount > 0
+                    ? t('side_panel.notification_center.title_with_count', {
+                          count: vrcUnseenNotificationCount
+                      })
+                    : t('side_panel.notification_center.title')
+            }
             className="relative size-7 min-w-7 rounded-md px-0"
             onClick={openNotifications}
             onContextMenu={
