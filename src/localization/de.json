@@ -173,7 +173,10 @@
         "in_private_world": "In einer privaten Welt",
         "mutual_friends": "{count} gemeinsame Freunde",
         "no_mutual_friends": "Keine gemeinsamen Freunde",
-        "name_separator": ", "
+        "name_separator": ", ",
+        "open_world": "Welt öffnen",
+        "unknown_user": "Unbekannter Nutzer",
+        "load_failed": "Dieses Profil konnte nicht geladen werden"
     },
     "group_event_hover_card": {
         "following": "Gefolgt",
@@ -566,7 +569,8 @@
             "view_options": "Ansichtsoptionen",
             "cut": "Ausschneiden",
             "paste": "Einfügen",
-            "select_all": "Alles auswählen"
+            "select_all": "Alles auswählen",
+            "more_actions": "Weitere Aktionen"
         },
         "sort_by": "Sortieren nach:",
         "time_units": {
@@ -4491,6 +4495,28 @@
                 "issue_clear_days": "Tage bis zur Aufhebung",
                 "sanctions": "Sanktionen",
                 "load_failed": "Kontostatus konnte nicht geladen werden"
+            },
+            "relationship": {
+                "friend": "Freund",
+                "request_received": "Freundschaftsanfrage erhalten",
+                "request_sent": "Freundschaftsanfrage gesendet",
+                "avatar_hidden": "Avatar ausgeblendet",
+                "interaction_off": "Avatar-Interaktion deaktiviert",
+                "chatbox_muted": "Chatbox stummgeschaltet"
+            },
+            "friend_request": {
+                "incoming_banner": "Hat dir eine Freundschaftsanfrage gesendet"
+            },
+            "consequence": {
+                "block_on": "Du und {name} könnt euch in VRChat nicht mehr sehen oder hören.",
+                "block_off": "Du und {name} könnt euch in VRChat wieder sehen und hören.",
+                "mute_on": "Du hörst die Stimme von {name} in VRChat nicht mehr.",
+                "mute_off": "Du hörst die Stimme von {name} in VRChat wieder.",
+                "interactOff_on": "{name} kann in VRChat nicht mehr mit deinem Avatar interagieren.",
+                "interactOff_off": "{name} kann in VRChat wieder mit deinem Avatar interagieren.",
+                "muteChat_on": "Du siehst die Chatbox-Nachrichten von {name} in VRChat nicht mehr.",
+                "muteChat_off": "Du siehst die Chatbox-Nachrichten von {name} in VRChat wieder.",
+                "unfriend": "{name} wird aus deiner Freundesliste entfernt. Um wieder befreundet zu sein, muss einer von euch erneut eine Freundschaftsanfrage senden."
             }
         },
         "world": {

@@ -123,6 +123,19 @@ describe('UserDialog EntityList', () => {
         expect(screen.queryByText(/Tauri command failed/)).toBeNull();
     });
 
+    it('keeps existing rows instead of a spinner while refreshing', () => {
+        const { container } = render(
+            <EntityList
+                kind="user"
+                loading
+                rows={[{ id: 'usr_visible', displayName: 'Visible Friend' }]}
+            />
+        );
+
+        expect(screen.getByText('Visible Friend')).toBeTruthy();
+        expect(container.querySelector('[aria-busy="true"]')).not.toBeNull();
+    });
+
     it('localizes undisclosed mutual friends and prevents opening them', () => {
         render(
             <EntityList

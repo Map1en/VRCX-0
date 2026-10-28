@@ -173,7 +173,10 @@
         "in_private_world": "В частном мире",
         "mutual_friends": "Общих друзей: {count}",
         "no_mutual_friends": "Нет общих друзей",
-        "name_separator": ", "
+        "name_separator": ", ",
+        "open_world": "Открыть мир",
+        "unknown_user": "Неизвестный пользователь",
+        "load_failed": "Не удалось загрузить профиль"
     },
     "group_event_hover_card": {
         "following": "Отслеживается",
@@ -566,7 +569,8 @@
             "view_options": "Параметры отображения",
             "cut": "Вырезать",
             "paste": "Вставить",
-            "select_all": "Выделить всё"
+            "select_all": "Выделить всё",
+            "more_actions": "Другие действия"
         },
         "sort_by": "Сортировать по:",
         "time_units": {
@@ -4515,6 +4519,28 @@
                 "issue_clear_days": "Дней до снятия",
                 "sanctions": "Санкции",
                 "load_failed": "Не удалось загрузить статус аккаунта"
+            },
+            "relationship": {
+                "friend": "Друг",
+                "request_received": "Получена заявка в друзья",
+                "request_sent": "Заявка в друзья отправлена",
+                "avatar_hidden": "Аватар скрыт",
+                "interaction_off": "Взаимодействие с аватаром отключено",
+                "chatbox_muted": "Chatbox заглушён"
+            },
+            "friend_request": {
+                "incoming_banner": "Отправил(а) вам заявку в друзья"
+            },
+            "consequence": {
+                "block_on": "Вы и {name} перестанете видеть и слышать друг друга в VRChat.",
+                "block_off": "Вы и {name} снова сможете видеть и слышать друг друга в VRChat.",
+                "mute_on": "Вы перестанете слышать голос {name} в VRChat.",
+                "mute_off": "Вы снова будете слышать голос {name} в VRChat.",
+                "interactOff_on": "{name} не сможет взаимодействовать с вашим аватаром в VRChat.",
+                "interactOff_off": "{name} снова сможет взаимодействовать с вашим аватаром в VRChat.",
+                "muteChat_on": "Вы перестанете видеть сообщения Chatbox от {name} в VRChat.",
+                "muteChat_off": "Вы снова будете видеть сообщения Chatbox от {name} в VRChat.",
+                "unfriend": "{name} будет удалён(а) из вашего списка друзей. Чтобы снова стать друзьями, одному из вас придётся отправить новую заявку."
             }
         },
         "world": {

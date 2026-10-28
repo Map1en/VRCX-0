@@ -173,7 +173,10 @@
         "in_private_world": "プライベートワールド",
         "mutual_friends": "共通のフレンド {count}人",
         "no_mutual_friends": "共通のフレンドはいません",
-        "name_separator": "、"
+        "name_separator": "、",
+        "open_world": "ワールドを開く",
+        "unknown_user": "不明なユーザー",
+        "load_failed": "このユーザーのプロフィールを読み込めませんでした"
     },
     "group_event_hover_card": {
         "following": "フォロー中",
@@ -566,7 +569,8 @@
             "view_options": "表示オプション",
             "cut": "切り取り",
             "paste": "貼り付け",
-            "select_all": "すべて選択"
+            "select_all": "すべて選択",
+            "more_actions": "その他の操作"
         },
         "sort_by": "並べ替え:",
         "time_units": {
@@ -4481,6 +4485,28 @@
                 "issue_clear_days": "問題が解消されるまでの日数",
                 "sanctions": "処分",
                 "load_failed": "アカウントの状態を読み込めませんでした"
+            },
+            "relationship": {
+                "friend": "フレンド",
+                "request_received": "フレンドリクエスト受信",
+                "request_sent": "フレンドリクエスト送信済み",
+                "avatar_hidden": "アバター非表示中",
+                "interaction_off": "アバターインタラクション無効",
+                "chatbox_muted": "チャットボックスをミュート中"
+            },
+            "friend_request": {
+                "incoming_banner": "フレンドリクエストが届いています"
+            },
+            "consequence": {
+                "block_on": "VRChat 内で {name} とお互いに姿も声も届かなくなります。",
+                "block_off": "VRChat 内で {name} とまたお互いの姿と声が届くようになります。",
+                "mute_on": "VRChat 内で {name} の声が聞こえなくなります。",
+                "mute_off": "VRChat 内で {name} の声がまた聞こえるようになります。",
+                "interactOff_on": "VRChat 内で {name} はあなたのアバターに干渉できなくなります。",
+                "interactOff_off": "VRChat 内で {name} がまたあなたのアバターに干渉できるようになります。",
+                "muteChat_on": "VRChat 内で {name} のチャットボックスが表示されなくなります。",
+                "muteChat_off": "VRChat 内で {name} のチャットボックスがまた表示されるようになります。",
+                "unfriend": "{name} がフレンドリストから外れます。もう一度フレンドになるには、どちらかが改めてフレンドリクエストを送る必要があります。"
             }
         },
         "world": {

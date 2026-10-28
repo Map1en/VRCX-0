@@ -173,7 +173,10 @@
         "in_private_world": "V soukromém světě",
         "mutual_friends": "Společní přátelé: {count}",
         "no_mutual_friends": "Žádní společní přátelé",
-        "name_separator": ", "
+        "name_separator": ", ",
+        "open_world": "Otevřít svět",
+        "unknown_user": "Neznámý uživatel",
+        "load_failed": "Tento profil se nepodařilo načíst"
     },
     "group_event_hover_card": {
         "following": "Sledováno",
@@ -566,7 +569,8 @@
             "view_options": "Možnosti zobrazení",
             "cut": "Vyjmout",
             "paste": "Vložit",
-            "select_all": "Vybrat vše"
+            "select_all": "Vybrat vše",
+            "more_actions": "Další akce"
         },
         "sort_by": "Seřadit dle:",
         "time_units": {
@@ -4521,6 +4525,28 @@
                 "issue_clear_days": "Dní do odstranění",
                 "sanctions": "Sankce",
                 "load_failed": "Stav účtu se nepodařilo načíst"
+            },
+            "relationship": {
+                "friend": "Přítel",
+                "request_received": "Přijatá žádost o přátelství",
+                "request_sent": "Odeslaná žádost o přátelství",
+                "avatar_hidden": "Avatar skrytý",
+                "interaction_off": "Interakce s avatarem zakázána",
+                "chatbox_muted": "Chatbox ztlumen"
+            },
+            "friend_request": {
+                "incoming_banner": "Poslal(a) vám žádost o přátelství"
+            },
+            "consequence": {
+                "block_on": "Vy a {name} se ve VRChatu přestanete navzájem vidět i slyšet.",
+                "block_off": "Vy a {name} se ve VRChatu budete moci znovu vidět i slyšet.",
+                "mute_on": "Ve VRChatu přestanete slyšet hlas uživatele {name}.",
+                "mute_off": "Ve VRChatu budete znovu slyšet hlas uživatele {name}.",
+                "interactOff_on": "{name} nebude moci ve VRChatu interagovat s vaším avatarem.",
+                "interactOff_off": "{name} bude moci ve VRChatu znovu interagovat s vaším avatarem.",
+                "muteChat_on": "Ve VRChatu přestanete vidět zprávy z chatboxu uživatele {name}.",
+                "muteChat_off": "Ve VRChatu budete znovu vidět zprávy z chatboxu uživatele {name}.",
+                "unfriend": "{name} bude odebrán(a) z vašeho seznamu přátel. Abyste byli znovu přátelé, musí jeden z vás poslat novou žádost o přátelství."
             }
         },
         "world": {

@@ -173,7 +173,10 @@
         "in_private_world": "在私人世界中",
         "mutual_friends": "{count} 位共同好友",
         "no_mutual_friends": "沒有共同好友",
-        "name_separator": "、"
+        "name_separator": "、",
+        "open_world": "開啟世界",
+        "unknown_user": "未知用戶",
+        "load_failed": "無法載入此用戶的資料"
     },
     "group_event_hover_card": {
         "following": "已追蹤",
@@ -566,7 +569,8 @@
             "view_options": "顯示選項",
             "cut": "剪下",
             "paste": "貼上",
-            "select_all": "全選"
+            "select_all": "全選",
+            "more_actions": "更多操作"
         },
         "sort_by": "排序方式：",
         "time_units": {
@@ -4485,6 +4489,28 @@
                 "issue_clear_days": "問題清除剩餘天數",
                 "sanctions": "處分",
                 "load_failed": "無法載入帳號狀態"
+            },
+            "relationship": {
+                "friend": "好友",
+                "request_received": "收到好友邀請",
+                "request_sent": "已傳送好友邀請",
+                "avatar_hidden": "已隱藏角色",
+                "interaction_off": "已關閉角色互動",
+                "chatbox_muted": "已隱藏對話框"
+            },
+            "friend_request": {
+                "incoming_banner": "向你傳送了好友邀請"
+            },
+            "consequence": {
+                "block_on": "你和 {name} 在 VRChat 中將互相看不見、聽不到對方。",
+                "block_off": "你和 {name} 在 VRChat 中將重新可以看見、聽到對方。",
+                "mute_on": "你在 VRChat 中將聽不到 {name} 的聲音。",
+                "mute_off": "你在 VRChat 中將重新聽到 {name} 的聲音。",
+                "interactOff_on": "{name} 在 VRChat 中將無法與你的角色互動。",
+                "interactOff_off": "{name} 在 VRChat 中將重新可以與你的角色互動。",
+                "muteChat_on": "你在 VRChat 中將看不到 {name} 的對話框訊息。",
+                "muteChat_off": "你在 VRChat 中將重新看到 {name} 的對話框訊息。",
+                "unfriend": "{name} 將從你的好友列表中移除。之後若想再成為好友，需要其中一方重新傳送好友邀請。"
             }
         },
         "world": {

@@ -166,7 +166,9 @@ export function useUserDialogActions({
         setActionStatus('unfriend');
         const result = await confirm({
             title: t('dialog.user.modal.unfriend_user'),
-            description: friend?.displayName || rosterUserId,
+            description: t('dialog.user.consequence.unfriend', {
+                name: friend?.displayName || rosterUserId
+            }),
             confirmText: t('dialog.user.actions.unfriend'),
             cancelText: t('common.actions.cancel'),
             destructive: true

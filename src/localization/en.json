@@ -173,7 +173,10 @@
         "in_private_world": "In a private world",
         "mutual_friends": "{count} mutual friends",
         "no_mutual_friends": "No mutual friends",
-        "name_separator": ", "
+        "name_separator": ", ",
+        "open_world": "Open world",
+        "unknown_user": "Unknown user",
+        "load_failed": "Couldn't load this profile"
     },
     "group_event_hover_card": {
         "following": "Following",
@@ -566,7 +569,8 @@
             "view_options": "View options",
             "cut": "Cut",
             "paste": "Paste",
-            "select_all": "Select all"
+            "select_all": "Select all",
+            "more_actions": "More actions"
         },
         "sort_by": "Sort by:",
         "time_units": {
@@ -4495,6 +4499,28 @@
                 "issue_clear_days": "Days until cleared",
                 "sanctions": "Sanctions",
                 "load_failed": "Couldn't load account standing"
+            },
+            "relationship": {
+                "friend": "Friend",
+                "request_received": "Friend request received",
+                "request_sent": "Friend request sent",
+                "avatar_hidden": "Avatar hidden",
+                "interaction_off": "Avatar interaction off",
+                "chatbox_muted": "Chatbox muted"
+            },
+            "friend_request": {
+                "incoming_banner": "Sent you a friend request"
+            },
+            "consequence": {
+                "block_on": "You and {name} won't be able to see or hear each other in VRChat.",
+                "block_off": "You and {name} will be able to see and hear each other in VRChat again.",
+                "mute_on": "You won't hear {name}'s voice in VRChat.",
+                "mute_off": "You'll hear {name}'s voice in VRChat again.",
+                "interactOff_on": "{name} won't be able to interact with your avatar in VRChat.",
+                "interactOff_off": "{name} will be able to interact with your avatar in VRChat again.",
+                "muteChat_on": "You won't see {name}'s chatbox messages in VRChat.",
+                "muteChat_off": "You'll see {name}'s chatbox messages in VRChat again.",
+                "unfriend": "{name} will be removed from your friends list. To be friends again, one of you will need to send a new friend request."
             }
         },
         "world": {

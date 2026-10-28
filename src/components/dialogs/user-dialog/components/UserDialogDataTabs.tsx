@@ -83,7 +83,7 @@ export function UserDialogMutualTab({
     const [view, setView] = useState(readUserDialogMutualView);
     const showGraph =
         view === 'graph' &&
-        remoteStatus.mutual !== 'running' &&
+        (remoteStatus.mutual !== 'running' || mutualFriends.length > 0) &&
         !remoteErrors.mutual &&
         filteredMutualFriends.length > 0;
     const viewOptions = [

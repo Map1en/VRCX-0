@@ -173,7 +173,10 @@
         "in_private_world": "비공개 월드에 있음",
         "mutual_friends": "공통 친구 {count}명",
         "no_mutual_friends": "공통 친구 없음",
-        "name_separator": ", "
+        "name_separator": ", ",
+        "open_world": "월드 열기",
+        "unknown_user": "알 수 없는 사용자",
+        "load_failed": "이 사용자의 프로필을 불러오지 못했습니다"
     },
     "group_event_hover_card": {
         "following": "팔로우 중",
@@ -566,7 +569,8 @@
             "view_options": "보기 옵션",
             "cut": "잘라내기",
             "paste": "붙여넣기",
-            "select_all": "모두 선택"
+            "select_all": "모두 선택",
+            "more_actions": "추가 작업"
         },
         "sort_by": "정렬 기준:",
         "time_units": {
@@ -4428,6 +4432,28 @@
                 "issue_clear_days": "문제 해소까지 남은 일수",
                 "sanctions": "제재",
                 "load_failed": "계정 상태를 불러오지 못했습니다"
+            },
+            "relationship": {
+                "friend": "친구",
+                "request_received": "친구 요청 받음",
+                "request_sent": "친구 요청 보냄",
+                "avatar_hidden": "아바타 숨김",
+                "interaction_off": "아바타 상호작용 거부",
+                "chatbox_muted": "채팅창 음소거됨"
+            },
+            "friend_request": {
+                "incoming_banner": "친구 요청을 보냈습니다"
+            },
+            "consequence": {
+                "block_on": "VRChat에서 {name} 님과 서로 보거나 들을 수 없게 됩니다.",
+                "block_off": "VRChat에서 {name} 님과 다시 서로 보고 들을 수 있게 됩니다.",
+                "mute_on": "VRChat에서 {name} 님의 음성이 들리지 않게 됩니다.",
+                "mute_off": "VRChat에서 {name} 님의 음성이 다시 들리게 됩니다.",
+                "interactOff_on": "VRChat에서 {name} 님이 내 아바타와 상호작용할 수 없게 됩니다.",
+                "interactOff_off": "VRChat에서 {name} 님이 다시 내 아바타와 상호작용할 수 있게 됩니다.",
+                "muteChat_on": "VRChat에서 {name} 님의 채팅창 메시지가 보이지 않게 됩니다.",
+                "muteChat_off": "VRChat에서 {name} 님의 채팅창 메시지가 다시 보이게 됩니다.",
+                "unfriend": "{name} 님이 친구 목록에서 삭제됩니다. 다시 친구가 되려면 둘 중 한 명이 친구 요청을 새로 보내야 합니다."
             }
         },
         "world": {

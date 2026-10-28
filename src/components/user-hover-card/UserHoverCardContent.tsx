@@ -11,6 +11,7 @@ import {
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { UserRelationshipBadges } from '@/components/dialogs/user-dialog/components/UserRelationshipBadges';
 import { FriendInstanceTimer } from '@/components/friends/FriendInstanceTimer';
 import { Location } from '@/components/Location';
 import { FadeInImage } from '@/components/media/FadeInImage';
@@ -71,8 +72,13 @@ export function UserHoverCardContent({
         population,
         populationLoading,
         memo,
+        profile,
+        relationshipBadges,
         trustColor,
-        instanceEpoch
+        instanceEpoch,
+        hasSeed,
+        loading,
+        loadFailed
     } = useUserHoverCardData({ userId, seed });
     const openImagePreview = useModalStore((state) => state.openImagePreview);
     const showAvatarFrame = usePreferencesStore(
@@ -113,6 +119,26 @@ export function UserHoverCardContent({
     const nameplateId = showNameplate ? model.decorations.nameplateEffect : '';
     const onlineForText =
         model.onlineForMs > 0 ? timeToText(model.onlineForMs) : '';
+    const dialogSeed = profile ?? seed;
+
+    if (loading && !hasSeed) {
+        return (
+            <div
+                aria-busy="true"
+                className="flex min-h-28 w-full flex-col gap-2.5 p-3"
+            >
+                <div className="flex items-center gap-2.5">
+                    <Skeleton className="size-10 shrink-0 rounded-full" />
+                    <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                        <Skeleton className="h-3.5 w-28" />
+                        <Skeleton className="h-3 w-16" />
+                    </div>
+                </div>
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-2/3" />
+            </div>
+        );
+    }
 
     return (
         <div className="relative isolate w-full">
@@ -123,6 +149,7 @@ export function UserHoverCardContent({
                 <button
                     type="button"
                     className="bg-muted flex h-28 w-full items-center justify-center overflow-hidden enabled:cursor-pointer"
+                    aria-label={t('user_hover_card.open_world')}
                     disabled={!worldDialogTarget}
                     onClick={() =>
                         worldDialogTarget &&
@@ -152,6 +179,7 @@ export function UserHoverCardContent({
                     <button
                         type="button"
                         className="relative flex size-10 shrink-0 rounded-full enabled:cursor-pointer"
+                        aria-label={t('dialog.user.action.open_user_icon')}
                         disabled={!model.avatarPreviewUrl}
                         onClick={() =>
                             model.avatarPreviewUrl &&
@@ -191,9 +219,15 @@ export function UserHoverCardContent({
                             type="button"
                             className="block w-full cursor-pointer truncate text-left text-sm font-medium"
                             style={{ color: nameColour }}
-                            onClick={() => openUserDialog({ userId })}
+                            onClick={() =>
+                                openUserDialog({
+                                    userId,
+                                    title: displayName,
+                                    seedData: dialogSeed
+                                })
+                            }
                         >
-                            {displayName}
+                            {displayName || t('user_hover_card.unknown_user')}
                         </button>
                         {trustLabel ? (
                             <span className="text-muted-foreground block truncate text-xs">
@@ -213,6 +247,18 @@ export function UserHoverCardContent({
                         </span>
                     ) : null}
                 </div>
+
+                {relationshipBadges.length ? (
+                    <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                        <UserRelationshipBadges badges={relationshipBadges} />
+                    </div>
+                ) : null}
+
+                {loadFailed && !hasSeed ? (
+                    <div className="text-muted-foreground text-xs">
+                        {t('user_hover_card.load_failed')}
+                    </div>
+                ) : null}
 
                 {showInlineStatus || hasStatusDescription ? (
                     <div className="flex min-w-0 items-center gap-1.5 text-xs">

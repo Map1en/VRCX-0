@@ -154,8 +154,7 @@ export function buildUserHoverCardModel({
             identity?.displayName ||
             identity?.username ||
             seedFields?.displayName ||
-            normalizeId(identity?.id) ||
-            'Unknown',
+            '',
         avatarUrl: userImage(identity, 128),
         avatarPreviewUrl: userImage(identity, 512),
         userColour: identity?.$userColour || '',
