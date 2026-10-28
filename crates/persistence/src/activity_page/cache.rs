@@ -93,12 +93,29 @@ pub fn source_cursor(db: &DatabaseService, owner_user_id: &OwnerId) -> Result<St
          FROM gamelog_join_leave WHERE owner_id IN (0, @owner_id)",
         &owner_scope,
     )?;
+    let mut unclosed_stay_ends = Vec::new();
+    for table in [
+        "gamelog_video_play",
+        "gamelog_portal_spawn",
+        "gamelog_resource_load",
+    ] {
+        unclosed_stay_ends.push(source_signature(
+            db,
+            &format!(
+                "SELECT MAX(created_at), COUNT(*), 0 FROM {table} WHERE owner_id IN (0, @owner_id)"
+            ),
+            &owner_scope,
+        )?);
+    }
     let friend_log = source_signature(
         db,
         &format!("SELECT MAX(created_at), COUNT(*), 0 FROM {user_prefix}_friend_log_history"),
         &Default::default(),
     )?;
-    Ok(format!("{location}|{join_leave}|{friend_log}"))
+    Ok(format!(
+        "{location}|{join_leave}|{}|{friend_log}",
+        unclosed_stay_ends.join("|")
+    ))
 }
 
 fn source_signature(
@@ -118,4 +135,46 @@ fn source_signature(
             )
         })
         .unwrap_or_default())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_db(name: &str) -> DatabaseService {
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!(
+            "vrcx-0-activity-cache-{name}-{}-{nonce}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        DatabaseService::new(&dir.join("VRCX-0.sqlite3")).unwrap()
+    }
+
+    #[test]
+    fn cursor_moves_when_only_an_unclosed_stay_end_event_arrives() {
+        let db = test_db("unclosed-ends");
+        let owner = OwnerId::new("usr_me");
+        let mut cursor = source_cursor(&db, &owner).unwrap();
+        for table in [
+            "gamelog_video_play",
+            "gamelog_portal_spawn",
+            "gamelog_resource_load",
+        ] {
+            db.execute_non_query(
+                &format!(
+                    "INSERT INTO {table} (created_at, location)
+                     VALUES ('2026-10-28T00:00:00.000Z', 'wrld_a:1')"
+                ),
+                &Default::default(),
+            )
+            .unwrap();
+            let next = source_cursor(&db, &owner).unwrap();
+            assert_ne!(next, cursor, "{table}");
+            cursor = next;
+        }
+    }
 }
