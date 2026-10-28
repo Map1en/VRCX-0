@@ -618,7 +618,7 @@ pub fn role_create_input(
     group_id: String,
     role: GroupRoleMutation,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
-    let role = role.validated(true)?;
+    let role = request::validated_role(role, true)?;
     simple_group_action_input(
         VRCHAT_API_DEFAULT_ENDPOINT.into(),
         group_id,
@@ -634,7 +634,7 @@ pub fn role_update_input(
     role_id: String,
     role: GroupRoleMutation,
 ) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
-    let role = role.validated(false)?;
+    let role = request::validated_role(role, false)?;
     group_user_action_input(GroupUserActionInput {
         endpoint: VRCHAT_API_DEFAULT_ENDPOINT.into(),
         group_id,

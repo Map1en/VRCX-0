@@ -1,7 +1,7 @@
 use vrcx_0_application::social::{
     GroupBuiltRequest, GroupMemberPatch, GroupMemberSort, GroupMemberVisibility, GroupPostMutation,
     GroupPostVisibility, GroupProfileJoinState, GroupProfileUpdate, GroupRemoteRequest,
-    GroupRemoteRequests, GroupRoleMutation,
+    GroupRemoteRequests,
 };
 use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Result};
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
@@ -254,12 +254,12 @@ impl GroupRemoteRequests for VrchatGroupRemoteRequests {
                 Ok(built1(group_id, request))
             }
             GroupRemoteRequest::CreateRole(input) => {
-                let (group_id, request) = role_create_input(input.group_id, role(input.params))?;
+                let (group_id, request) = role_create_input(input.group_id, input.params)?;
                 Ok(built1(group_id, request))
             }
             GroupRemoteRequest::UpdateRole(input) => {
                 let (group_id, role_id, request) =
-                    role_update_input(input.group_id, input.role_id, role(input.params))?;
+                    role_update_input(input.group_id, input.role_id, input.params)?;
                 Ok(built2(group_id, role_id, request))
             }
             GroupRemoteRequest::DeleteRole(input) => {
@@ -317,19 +317,6 @@ fn profile_update(input: GroupProfileUpdate) -> vrcx_0_vrchat_client::groups::Gr
         icon_id: input.icon_id,
         banner_id: input.banner_id,
         allow_group_join_prompt: input.allow_group_join_prompt,
-    }
-}
-
-fn role(input: GroupRoleMutation) -> vrcx_0_vrchat_client::groups::GroupRoleMutation {
-    vrcx_0_vrchat_client::groups::GroupRoleMutation {
-        name: input.name,
-        description: input.description,
-        is_self_assignable: input.is_self_assignable,
-        is_added_on_join: input.is_added_on_join,
-        requires_two_factor: input.requires_two_factor,
-        requires_purchase: input.requires_purchase,
-        permissions: input.permissions,
-        order: input.order,
     }
 }
 

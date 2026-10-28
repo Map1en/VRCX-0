@@ -1,4 +1,5 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
+pub use vrcx_0_contracts::vrchat_requests::GroupRoleMutation;
 use vrcx_0_core::GroupJoinRequestAction;
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
@@ -274,27 +275,6 @@ pub struct VrchatGroupJoinRequestRespondInput {
     pub action: GroupJoinRequestAction,
     #[serde(default)]
     pub block: bool,
-}
-
-#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct GroupRoleMutation {
-    #[serde(default)]
-    pub name: Option<String>,
-    #[serde(default)]
-    pub description: Option<String>,
-    #[serde(default)]
-    pub is_self_assignable: Option<bool>,
-    #[serde(default)]
-    pub is_added_on_join: Option<bool>,
-    #[serde(default)]
-    pub requires_two_factor: Option<bool>,
-    #[serde(default)]
-    pub requires_purchase: Option<bool>,
-    #[serde(default)]
-    pub permissions: Option<Vec<String>>,
-    #[serde(default)]
-    pub order: Option<i32>,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]

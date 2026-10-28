@@ -491,6 +491,27 @@ pub struct GroupCalendarRecurrence {
     pub end: Option<GroupCalendarRecurrenceEnd>,
 }
 
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct GroupRoleMutation {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub is_self_assignable: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub is_added_on_join: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub requires_two_factor: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub requires_purchase: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub permissions: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub order: Option<i32>,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct GroupCalendarEventMutation {

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+pub use vrcx_0_contracts::vrchat_requests::GroupRoleMutation;
 
 use crate::http_api::{require_text, HttpApiError};
 
@@ -46,37 +47,17 @@ impl GroupPostMutation {
     }
 }
 
-#[derive(Clone, Debug, Default, Serialize, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct GroupRoleMutation {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub is_self_assignable: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub is_added_on_join: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub requires_two_factor: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub requires_purchase: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub permissions: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub order: Option<i32>,
-}
-
-impl GroupRoleMutation {
-    pub(super) fn validated(mut self, require_name: bool) -> Result<Self, HttpApiError> {
-        if require_name || self.name.is_some() {
-            self.name = Some(require_text(
-                self.name.unwrap_or_default(),
-                "VrchatGroupRole requires name.",
-            )?);
-        }
-        Ok(self)
+pub(super) fn validated_role(
+    mut role: GroupRoleMutation,
+    require_name: bool,
+) -> Result<GroupRoleMutation, HttpApiError> {
+    if require_name || role.name.is_some() {
+        role.name = Some(require_text(
+            role.name.unwrap_or_default(),
+            "VrchatGroupRole requires name.",
+        )?);
     }
+    Ok(role)
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
