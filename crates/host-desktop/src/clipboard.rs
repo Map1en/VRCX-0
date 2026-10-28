@@ -15,6 +15,7 @@ const WINDOWS_CLIPBOARD_OPEN_RETRY_COUNT: usize = 5;
 const WINDOWS_CLIPBOARD_OPEN_RETRY_DELAY: Duration = Duration::from_millis(5);
 
 const CLIPBOARD_IMAGE_FILE_NAME: &str = "clipboard.png";
+const MAX_CLIPBOARD_IMAGE_FILE_BYTES: u64 = 64 * 1024 * 1024;
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -58,10 +59,21 @@ pub fn read_clipboard_image() -> Result<Option<ClipboardImage>, Error> {
 }
 
 fn read_clipboard_image_file(path: &Path) -> Result<ClipboardImage, Error> {
-    let mime_type = image_mime_type(path)
-        .ok_or_else(|| Error::Custom(format!("unsupported image format: {}", path.display())))?;
+    let size = std::fs::metadata(path)
+        .map_err(|e| Error::Custom(format!("read clipboard image {}: {e}", path.display())))?
+        .len();
+    if size > MAX_CLIPBOARD_IMAGE_FILE_BYTES {
+        return Err(Error::Custom(format!(
+            "clipboard image is larger than {} MB: {}",
+            MAX_CLIPBOARD_IMAGE_FILE_BYTES / (1024 * 1024),
+            path.display()
+        )));
+    }
     let bytes = std::fs::read(path)
         .map_err(|e| Error::Custom(format!("read clipboard image {}: {e}", path.display())))?;
+    let mime_type = vrcx_0_core::image_sniff::sniff_image_mime(&bytes)
+        .filter(|mime| *mime != "image/tiff")
+        .ok_or_else(|| Error::Custom(format!("unsupported image format: {}", path.display())))?;
     Ok(ClipboardImage {
         file_name: path
             .file_name()
@@ -295,21 +307,67 @@ mod tests {
         Ok(())
     }
 
+    const JPEG_BYTES: &[u8] = b"\xFF\xD8\xFF\xE0jpeg-bytes";
+
+    fn clipboard_test_dir(name: &str) -> std::path::PathBuf {
+        let dir =
+            std::env::temp_dir().join(format!("vrcx-0-clipboard-{name}-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
     #[test]
     fn copied_image_file_keeps_its_name_and_type() -> Result<(), Error> {
-        let dir =
-            std::env::temp_dir().join(format!("vrcx-0-clipboard-test-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).map_err(|e| Error::Custom(e.to_string()))?;
+        let dir = clipboard_test_dir("name");
         let path = dir.join("sea.JPG");
-        std::fs::write(&path, b"jpeg-bytes").map_err(|e| Error::Custom(e.to_string()))?;
+        std::fs::write(&path, JPEG_BYTES).map_err(|e| Error::Custom(e.to_string()))?;
 
         let image = read_clipboard_image_file(&path)?;
         let _ = std::fs::remove_dir_all(&dir);
 
         assert_eq!(image.file_name, "sea.JPG");
         assert_eq!(image.mime_type, "image/jpeg");
-        assert_eq!(image.data_base64, B64.encode(b"jpeg-bytes"));
+        assert_eq!(image.data_base64, B64.encode(JPEG_BYTES));
         Ok(())
+    }
+
+    #[test]
+    fn a_copied_file_reports_the_type_of_its_content() -> Result<(), Error> {
+        let dir = clipboard_test_dir("content-type");
+        let path = dir.join("renamed.png");
+        std::fs::write(&path, JPEG_BYTES).map_err(|e| Error::Custom(e.to_string()))?;
+
+        let image = read_clipboard_image_file(&path)?;
+        let _ = std::fs::remove_dir_all(&dir);
+
+        assert_eq!(image.mime_type, "image/jpeg");
+        Ok(())
+    }
+
+    #[test]
+    fn a_copied_file_that_is_not_an_image_is_rejected() {
+        let dir = clipboard_test_dir("not-image");
+        let path = dir.join("clip.png");
+        std::fs::write(&path, b"not an image").unwrap();
+
+        let result = read_clipboard_image_file(&path);
+        let _ = std::fs::remove_dir_all(&dir);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn an_oversized_copied_file_is_rejected_without_reading_it() {
+        let dir = clipboard_test_dir("oversized");
+        let path = dir.join("huge.png");
+        let file = std::fs::File::create(&path).unwrap();
+        file.set_len(MAX_CLIPBOARD_IMAGE_FILE_BYTES + 1).unwrap();
+        drop(file);
+
+        let result = read_clipboard_image_file(&path);
+        let _ = std::fs::remove_dir_all(&dir);
+
+        assert!(result.is_err());
     }
 
     #[test]
