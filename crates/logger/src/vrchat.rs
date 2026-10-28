@@ -355,6 +355,7 @@ fn probe_outcome(result: CookieProbeResult) -> ProbeOutcome {
 
 #[cfg(test)]
 mod tests {
+    use serde_json::json;
     use vrcx_0_contracts::vrchat_login::CookieProbeStage;
 
     use super::*;

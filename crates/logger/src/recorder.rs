@@ -113,6 +113,7 @@ impl Recorder {
                 }
                 Err(RealtimeError::Other(reason)) => {
                     tracing::warn!(reason, "websocket connect failed");
+                    self.connection_lost(reason);
                 }
                 Ok(stream) => {
                     if *stop.borrow() {
@@ -130,6 +131,7 @@ impl Recorder {
                         ConnectionEnd::Stopped => return RecorderExit::Stopped,
                         ConnectionEnd::Disconnected(reason) => {
                             tracing::warn!(reason, "websocket disconnected");
+                            self.connection_lost(reason);
                         }
                     }
                     if started.elapsed() >= STABLE_CONNECTION {
@@ -150,16 +152,24 @@ impl Recorder {
         }
     }
 
+    fn connection_opened(&self, connected_at: chrono::DateTime<Utc>) {
+        self.shared.update(|info| {
+            info.connected_since = Some(connected_at.timestamp());
+            info.state = SessionState::Recording;
+            info.last_error = None;
+        });
+    }
+
+    fn connection_lost(&self, reason: String) {
+        self.shared.update(|info| info.last_error = Some(reason));
+    }
+
     async fn record(
         &self,
         mut stream: RealtimeWebSocketStream,
         stop: &mut watch::Receiver<bool>,
     ) -> ConnectionEnd {
-        let connected_at = Utc::now();
-        self.shared.update(|info| {
-            info.connected_since = Some(connected_at.timestamp());
-            info.state = SessionState::Recording;
-        });
+        self.connection_opened(Utc::now());
         if let Err(error) = self.credentials.update_cookies(self.client.cookies()) {
             tracing::warn!(error = %error, "failed to persist VRChat cookies");
         }
@@ -516,6 +526,24 @@ mod tests {
         let frames = desktop.pull_all().await;
         assert_eq!(kinds(&frames), [FrameKind::Connect, FrameKind::Message]);
         assert_eq!(messages(&frames), ["saved"]);
+    }
+
+    #[tokio::test]
+    async fn a_lost_connection_shows_its_reason_until_the_next_connection_opens() {
+        let app = fresh_app();
+        let recorder = recorder(&app);
+        let desktop = Desktop::new(&app);
+
+        recorder.connection_lost("websocket connect failed: dns error".into());
+        assert_eq!(
+            desktop.status().await.last_error.as_deref(),
+            Some("websocket connect failed: dns error")
+        );
+
+        recorder.connection_opened(Utc::now());
+        let status = desktop.status().await;
+        assert_eq!(status.last_error, None);
+        assert!(status.connected_since.is_some());
     }
 
     #[tokio::test]
