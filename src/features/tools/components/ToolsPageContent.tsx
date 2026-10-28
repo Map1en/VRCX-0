@@ -41,6 +41,7 @@ import {
 } from '@/components/layout/PageScaffold';
 import { ToolbarSearch } from '@/components/layout/ToolbarControls';
 import { SettingsCard } from '@/features/settings/components/SettingsCard';
+import { useRouteScrollMemory } from '@/lib/useRouteScrollMemory';
 import { cn } from '@/lib/utils';
 import type { ToolDefinition } from '@/shared/constants/tools';
 import { useNavigationCacheStore } from '@/state/navigationCacheStore';
@@ -886,6 +887,7 @@ export function ToolsPageContent({ embedded = false }: { embedded?: boolean }) {
     const showRecent =
         !isFiltering && !isQuickAccessEditing && visibleRecentTools.length > 0;
     const scrollRef = useRef<HTMLDivElement | null>(null);
+    useRouteScrollMemory(scrollRef, 'tools');
     const railItems = [
         ...(showQuickAccess
             ? [
