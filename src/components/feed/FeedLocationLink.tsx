@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { Location } from '@/components/Location';
 import { cn } from '@/lib/utils';
 import { parseLocation } from '@/shared/utils/location';
@@ -8,6 +10,7 @@ import type { FeedLocationActionPayload } from './feedTypes';
 
 type FeedLocationLinkProps = {
     className?: string;
+    contextMenuExtraItems?: ReactNode;
     disableTooltip?: boolean;
     groupName?: string | null;
     loadingHistoryKey?: string;
@@ -20,6 +23,7 @@ type FeedLocationLinkProps = {
 
 function FeedLocationLink({
     className = '',
+    contextMenuExtraItems,
     disableTooltip = false,
     groupName = '',
     loadingHistoryKey = '',
@@ -43,6 +47,7 @@ function FeedLocationLink({
                 endpoint={endpoint}
                 enableContextMenu
                 showLaunchActions
+                contextMenuExtraItems={contextMenuExtraItems}
                 disableTooltip={disableTooltip}
                 previousInstancesDisabled={
                     !worldTarget || loadingHistoryKey === normalizedLocation

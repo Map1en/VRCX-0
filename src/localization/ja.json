@@ -1395,7 +1395,10 @@
                 "expand_session": "セッションを展開",
                 "collapse_session": "セッションを折りたたむ",
                 "expand_all": "すべて展開",
-                "collapse_all": "すべて折りたたむ"
+                "collapse_all": "すべて折りたたむ",
+                "players_count": "{count} 人",
+                "videos_count": "動画 {count} 件",
+                "latest": "最新"
             },
             "label": {
                 "sessions": "セッション",
@@ -6666,13 +6669,28 @@
             "table_layout": "テーブルレイアウト",
             "columns": "列",
             "lock_column_order": "列順をロック",
-            "unlock_column_order": "列順のロックを解除"
+            "unlock_column_order": "列順のロックを解除",
+            "new_items_count": "新着 {count} 件"
         },
         "action": {
-            "reset_columns": "列をリセット"
+            "reset_columns": "列をリセット",
+            "sort_ascending": "昇順で並べ替え",
+            "sort_descending": "降順で並べ替え",
+            "clear_sort": "並べ替えを解除",
+            "hide_column": "この列を非表示",
+            "move_column_left": "左へ移動",
+            "move_column_right": "右へ移動"
         },
         "empty": {
             "no_rows_yet": "データはまだありません。"
+        },
+        "filter_action": {
+            "label": "フィルター",
+            "only_user": "{value} だけを表示",
+            "add_user_to_scope": "{value} をフィルターに追加",
+            "only_type": "「{value}」だけを表示",
+            "exclude_type": "「{value}」を除外",
+            "only_world": "{value} だけを表示"
         }
     },
     "accessibility": {
@@ -6697,7 +6715,8 @@
         "open_player": "プレイヤーのプロフィールを開く：{player}",
         "player": "プレイヤー",
         "remove_value": "{value} を削除",
-        "add_table_page_size": "1ページあたりの表示数を追加"
+        "add_table_page_size": "1ページあたりの表示数を追加",
+        "column_width_value": "{value} ピクセル"
     },
     "status_bar": {
         "do_not_disturb": "通知を一時停止",

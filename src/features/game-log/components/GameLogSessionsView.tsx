@@ -1,7 +1,11 @@
-import { ChevronRightIcon, UserIcon } from 'lucide-react';
-import { Fragment, memo, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowUpToLineIcon, ChevronRightIcon, UserIcon } from 'lucide-react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+    LogFilterContextMenu,
+    LogFilterMenuItems
+} from '@/components/data-table/LogFilterContextMenu';
 import { Location } from '@/components/Location';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { formatDateFilter, timeToText } from '@/lib/dateTime';
@@ -30,6 +34,7 @@ import {
 import { Separator } from '@/ui/shadcn/separator';
 import { Spinner } from '@/ui/shadcn/spinner';
 
+import { useGameLogFilterCommands } from '../gameLogFilterCommands';
 import {
     collectGameLogSessionFriends,
     getGameLogSessionKey,
@@ -40,6 +45,7 @@ import { useGameLogSessionAffinity } from '../gameLogSessionAffinity';
 import { buildGameLogSessionDurationDetails } from '../gameLogSessionDurations';
 import type { GameLogSession, GameLogSessionEvent } from '../gameLogTypes';
 import { SessionEventGroups } from './GameLogSessionEventRow';
+import { useSessionScrollAnchor } from './useSessionScrollAnchor';
 
 const FACEPILE_AVATAR_LIMIT = 5;
 
@@ -255,7 +261,7 @@ function SessionDayDivider({ session }: { session: GameLogSession }) {
     const label = formatDateFilter(value, 'date');
 
     return (
-        <div className="flex items-center gap-3 px-3 pt-2.5 pb-1">
+        <div className="bg-muted sticky top-0 z-[6] flex h-7 items-center gap-3 px-3">
             <span className="text-muted-foreground shrink-0 text-xs font-medium tracking-wide tabular-nums">
                 {label}
             </span>
@@ -268,6 +274,58 @@ type GameLogSessionSummary = {
     firstEventAt: string;
     lastEventAt: string;
 };
+
+function addSessionPlayer(
+    players: Set<string>,
+    player: { userId?: string | null; displayName?: string | null }
+) {
+    const id = player.userId || player.displayName;
+    if (id) {
+        players.add(id);
+    }
+}
+
+function buildSessionCounts(session: GameLogSession) {
+    const players = new Set<string>();
+    let videos = 0;
+    for (const row of session.playerDurationRows ?? []) {
+        addSessionPlayer(players, row);
+    }
+    for (const event of session.events ?? []) {
+        if (event.type === 'VideoPlay') {
+            videos += Math.max(1, Number(event.playCount) || 1);
+            continue;
+        }
+        addSessionPlayer(players, event);
+        for (const member of event.members ?? []) {
+            addSessionPlayer(players, member);
+        }
+    }
+    return { players: players.size, videos };
+}
+
+type SessionDayGroup = {
+    dayKey: string;
+    entries: { index: number; session: GameLogSession }[];
+};
+
+function groupSessionsByDay(sessions: readonly GameLogSession[]) {
+    const groups: SessionDayGroup[] = [];
+    sessions.forEach((session, index) => {
+        const dayKey = sessionDayKey(session);
+        const current = groups.at(-1);
+        if (current && current.dayKey === dayKey) {
+            current.entries.push({ index, session });
+            return;
+        }
+        groups.push({ dayKey, entries: [{ index, session }] });
+    });
+    return groups;
+}
+
+const SESSION_HEADER_ESTIMATE_PX = 37;
+const SESSION_EVENT_ESTIMATE_PX = 32;
+const SESSION_EVENT_ESTIMATE_LIMIT = 40;
 
 function formatSessionEventRange(
     summary: GameLogSessionSummary,
@@ -321,6 +379,7 @@ function buildSessionSummary(
 }
 
 type GameLogSessionSegmentProps = {
+    hasDayDivider: boolean;
     sessionKey: string;
     session: GameLogSession;
     isLast: boolean;
@@ -331,6 +390,7 @@ type GameLogSessionSegmentProps = {
 };
 
 const GameLogSessionSegment = memo(function GameLogSessionSegment({
+    hasDayDivider,
     sessionKey,
     session,
     isLast,
@@ -341,6 +401,7 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
 }: GameLogSessionSegmentProps) {
     const { t } = useTranslation();
     const { favoriteIdSet, friendIdSet } = useGameLogSessionAffinity();
+    const filterCommands = useGameLogFilterCommands();
     const worldTarget = resolveWorldTarget(session);
     const durationMs = resolveSessionDuration(session);
     const sessionStartedAt = Date.parse(session?.created_at || '');
@@ -379,6 +440,23 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
         summary,
         session.created_at || ''
     );
+    const counts = useMemo(() => buildSessionCounts(session), [session]);
+    const headerMetaText = [
+        eventRangeText,
+        durationText,
+        counts.players
+            ? t('view.game_log.sessions.players_count', {
+                  count: counts.players
+              })
+            : '',
+        counts.videos
+            ? t('view.game_log.sessions.videos_count', {
+                  count: counts.videos
+              })
+            : ''
+    ]
+        .filter(Boolean)
+        .join(' · ');
     const sessionFriends = useMemo(
         () =>
             collectGameLogSessionFriends(
@@ -414,7 +492,12 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
             onOpenChange={handleOpenChange}
             className={cn('border-border border-b', isLast && 'border-b-0')}
         >
-            <div className="border-border bg-muted sticky top-0 z-[5] border-b">
+            <div
+                className={cn(
+                    'border-border bg-muted sticky z-[5] border-b',
+                    hasDayDivider ? 'top-7' : 'top-0'
+                )}
+            >
                 <div className="flex min-h-9 w-full items-center gap-2 px-3 py-1.5 text-left">
                     <CollapsibleTrigger
                         render={
@@ -446,6 +529,15 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
                                 hint={session.worldName || worldTarget}
                                 grouphint={session.groupName || ''}
                                 enableContextMenu
+                                contextMenuExtraItems={
+                                    <LogFilterMenuItems
+                                        commands={filterCommands}
+                                        target={{
+                                            worldId: session.worldId || '',
+                                            worldName: session.worldName || ''
+                                        }}
+                                    />
+                                }
                                 stopPropagation
                                 className="min-w-0 text-sm font-normal"
                             />
@@ -465,9 +557,7 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
                         </Badge>
                     ) : null}
                     <span className="text-muted-foreground ml-auto shrink-0 text-xs tabular-nums">
-                        {durationText
-                            ? `${eventRangeText} · ${durationText}`
-                            : eventRangeText}
+                        {headerMetaText}
                     </span>
                 </div>
             </div>
@@ -508,6 +598,7 @@ export function GameLogSessionsView({
     onLoadMore
 }: GameLogSessionsViewProps) {
     const { t } = useTranslation();
+    const filterCommands = useGameLogFilterCommands();
     const scrollRef = useRef<HTMLDivElement | null>(null);
     const sentinelRef = useRef<HTMLDivElement | null>(null);
     const [autoFillAttempts, setAutoFillAttempts] = useState(0);
@@ -583,40 +674,98 @@ export function GameLogSessionsView({
         sessions.length
     ]);
 
+    const dayGroups = useMemo(() => groupSessionsByDay(sessions), [sessions]);
+    const { scrolledAway, scrollToLatest } = useSessionScrollAnchor(
+        scrollRef,
+        sessions,
+        SESSION_HEADER_ESTIMATE_PX
+    );
+
     return (
-        <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-md border">
+        <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-md border">
+            {scrolledAway ? (
+                <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="bg-popover/95 absolute top-9 left-1/2 z-20 h-7 -translate-x-1/2 rounded-full border px-3 text-xs shadow-md backdrop-blur"
+                    onClick={scrollToLatest}
+                >
+                    <ArrowUpToLineIcon data-icon="inline-start" />
+                    {t('view.game_log.sessions.latest')}
+                </Button>
+            ) : null}
             <div
                 ref={scrollRef}
                 className="flex-1 overflow-x-hidden overflow-y-auto"
             >
-                {sessions.map((session, index) => {
-                    const sessionKey = getGameLogSessionKey(session);
-                    const currentDayKey = sessionDayKey(session);
-                    const previousDayKey =
-                        index > 0 ? sessionDayKey(sessions[index - 1]) : '';
-                    const showDayDivider =
-                        Boolean(currentDayKey) &&
-                        currentDayKey !== previousDayKey;
-                    const isOpen = sessionKey
-                        ? (sessionOpenOverrides.get(sessionKey) ?? defaultOpen)
-                        : defaultOpen;
-                    return (
-                        <Fragment key={sessionKey || `session:${index}`}>
-                            {showDayDivider ? (
-                                <SessionDayDivider session={session} />
-                            ) : null}
-                            <GameLogSessionSegment
-                                sessionKey={sessionKey}
-                                session={session}
-                                isLatest={index === 0}
-                                isLast={index === sessions.length - 1}
-                                isGameRunning={isGameRunning}
-                                isOpen={isOpen}
-                                onOpenChange={onSessionOpenChange}
-                            />
-                        </Fragment>
-                    );
-                })}
+                <LogFilterContextMenu commands={filterCommands}>
+                    <div>
+                        {dayGroups.map((group) => (
+                            <section
+                                key={
+                                    group.dayKey ||
+                                    `day:${group.entries[0]?.index ?? 0}`
+                                }
+                            >
+                                {group.dayKey ? (
+                                    <SessionDayDivider
+                                        session={group.entries[0].session}
+                                    />
+                                ) : null}
+                                {group.entries.map(({ index, session }) => {
+                                    const sessionKey =
+                                        getGameLogSessionKey(session);
+                                    const isOpen = sessionKey
+                                        ? (sessionOpenOverrides.get(
+                                              sessionKey
+                                          ) ?? defaultOpen)
+                                        : defaultOpen;
+                                    const estimatedHeight =
+                                        SESSION_HEADER_ESTIMATE_PX +
+                                        (isOpen
+                                            ? Math.min(
+                                                  session.events?.length ?? 0,
+                                                  SESSION_EVENT_ESTIMATE_LIMIT
+                                              ) * SESSION_EVENT_ESTIMATE_PX
+                                            : 0);
+                                    return (
+                                        <div
+                                            key={
+                                                sessionKey || `session:${index}`
+                                            }
+                                            data-session-key={
+                                                sessionKey || `session:${index}`
+                                            }
+                                            style={{
+                                                contentVisibility: 'auto',
+                                                containIntrinsicSize: `auto ${estimatedHeight}px`
+                                            }}
+                                        >
+                                            <GameLogSessionSegment
+                                                hasDayDivider={Boolean(
+                                                    group.dayKey
+                                                )}
+                                                sessionKey={sessionKey}
+                                                session={session}
+                                                isLatest={index === 0}
+                                                isLast={
+                                                    index ===
+                                                    sessions.length - 1
+                                                }
+                                                isGameRunning={isGameRunning}
+                                                isOpen={isOpen}
+                                                onOpenChange={
+                                                    onSessionOpenChange
+                                                }
+                                            />
+                                        </div>
+                                    );
+                                })}
+                            </section>
+                        ))}
+                    </div>
+                </LogFilterContextMenu>
                 <div
                     ref={sentinelRef}
                     className="text-muted-foreground flex items-center justify-center py-4 pb-6 text-sm"

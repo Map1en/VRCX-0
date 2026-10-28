@@ -9,10 +9,9 @@ import {
     DATA_TABLE_METADATA_CELL_CLASS_NAME,
     DATA_TABLE_PRIMARY_CELL_CLASS_NAME
 } from '@/components/data-table/DataTableView';
-import { formatDateFilter } from '@/lib/dateTime';
+import { TimestampText } from '@/components/data-table/TimestampText';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { getFriendLogRowKey, normalizeUserId } from '../friendLogRows';
 import type { FriendLogRow } from '../friendLogRows';
@@ -148,21 +147,7 @@ export function useFriendLogColumns({
 }
 
 export function FriendLogDateCell({ row }: { row: FriendLogRow }) {
-    const createdAt = row.created_at;
-    return (
-        <Tooltip>
-            <TooltipTrigger
-                render={
-                    <span className="text-sm">
-                        {formatDateFilter(createdAt, 'short')}
-                    </span>
-                }
-            />
-            <TooltipContent>
-                {formatDateFilter(createdAt, 'long')}
-            </TooltipContent>
-        </Tooltip>
-    );
+    return <TimestampText value={row.created_at} className="text-sm" />;
 }
 
 export function FriendLogDeleteAction({

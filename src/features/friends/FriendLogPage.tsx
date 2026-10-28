@@ -22,6 +22,7 @@ export function FriendLogPage({
         filters,
         isError,
         isLoading,
+        rowFilterCommands,
         rows,
         rowActions,
         shiftHeld,
@@ -32,13 +33,16 @@ export function FriendLogPage({
     const hasHistory =
         rows.rows.length > 0 ||
         rows.searchMode ||
-        filters.selectedTypes.length > 0;
+        filters.selectedTypes.length > 0 ||
+        Boolean(filters.targetUser);
 
     return (
         <PageScaffold embedded={embedded}>
             <FriendLogPageToolbar
                 selectedTypes={filters.selectedTypes}
                 onSelectedTypesChange={filters.setSelectedTypes}
+                targetUser={filters.targetUser}
+                onClearTargetUser={() => filters.setTargetUser(null)}
                 searchDraft={filters.searchDraft}
                 onSearchDraftChange={filters.setSearchDraft}
                 onCommitSearch={filters.commitSearch}
@@ -80,6 +84,7 @@ export function FriendLogPage({
                     <FriendLogVirtualList
                         rows={rows.orderedRows}
                         table={table}
+                        filterCommands={rowFilterCommands}
                         resolveDisplayName={rows.resolveDisplayName}
                         resetKey={rows.normalQueryKey}
                         hasMore={rows.hasMore}
@@ -101,6 +106,7 @@ export function FriendLogPage({
                 ) : hasRows ? (
                     <FriendLogPageTable
                         table={table}
+                        filterCommands={rowFilterCommands}
                         orderedRowsLength={rows.orderedRows.length}
                         pagination={tableState.pagination}
                         pageSizes={tableState.pageSizes}
@@ -126,6 +132,7 @@ export function FriendLogPage({
                                 variant="link"
                                 onClick={() => {
                                     filters.setSelectedTypes([]);
+                                    filters.setTargetUser(null);
                                     filters.clearSearch();
                                     filters.setDateRange('', '');
                                 }}

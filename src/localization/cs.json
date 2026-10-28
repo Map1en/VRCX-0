@@ -1415,7 +1415,10 @@
                 "expand_session": "Rozbalit relaci",
                 "collapse_session": "Sbalit relaci",
                 "expand_all": "Rozbalit vše",
-                "collapse_all": "Sbalit vše"
+                "collapse_all": "Sbalit vše",
+                "players_count": "Hráči: {count}",
+                "videos_count": "Videa: {count}",
+                "latest": "Nejnovější"
             },
             "label": {
                 "sessions": "Relace",
@@ -6656,13 +6659,28 @@
             "table_layout": "Rozvržení tabulky",
             "columns": "Sloupce",
             "lock_column_order": "Uzamknout pořadí sloupců",
-            "unlock_column_order": "Odemknout pořadí sloupců"
+            "unlock_column_order": "Odemknout pořadí sloupců",
+            "new_items_count": "Nové: {count}"
         },
         "action": {
-            "reset_columns": "Resetovat sloupce"
+            "reset_columns": "Resetovat sloupce",
+            "sort_ascending": "Seřadit vzestupně",
+            "sort_descending": "Seřadit sestupně",
+            "clear_sort": "Zrušit řazení",
+            "hide_column": "Skrýt sloupec",
+            "move_column_left": "Posunout doleva",
+            "move_column_right": "Posunout doprava"
         },
         "empty": {
             "no_rows_yet": "Zatím žádné řádky."
+        },
+        "filter_action": {
+            "label": "Filtr",
+            "only_user": "Zobrazit jen {value}",
+            "add_user_to_scope": "Přidat {value} do filtru",
+            "only_type": "Zobrazit jen „{value}“",
+            "exclude_type": "Skrýt „{value}“",
+            "only_world": "Zobrazit jen {value}"
         }
     },
     "accessibility": {
@@ -6687,7 +6705,8 @@
         "open_player": "Otevřít profil hráče: {player}",
         "player": "hráč",
         "remove_value": "Odebrat {value}",
-        "add_table_page_size": "Přidat velikost stránky tabulky"
+        "add_table_page_size": "Přidat velikost stránky tabulky",
+        "column_width_value": "{value} px"
     },
     "status_bar": {
         "do_not_disturb": "Nerušit",

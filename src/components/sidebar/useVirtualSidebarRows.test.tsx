@@ -62,6 +62,49 @@ describe('useVirtualSidebarRows scroll anchoring', () => {
         expect(viewport.scrollTop).toBe(160);
     });
 
+    it('follows the newest rows while scrolled within the anchor threshold', () => {
+        const { result, rerender } = renderHook(
+            ({ rows }: { rows: Row[] }) =>
+                useVirtualSidebarRows(rows, () => 40, {
+                    preserveScrollAnchor: true,
+                    anchorThreshold: 40,
+                    resetKey: 'normal'
+                }),
+            { initialProps: { rows: [{ key: 'a' }, { key: 'b' }] } }
+        );
+        const viewport = document.createElement('div');
+        Object.defineProperty(viewport, 'clientHeight', { value: 80 });
+        act(() => result.current.viewportRef(viewport));
+        viewport.scrollTop = 20;
+
+        rerender({ rows: [{ key: 'new' }, { key: 'a' }, { key: 'b' }] });
+
+        expect(viewport.scrollTop).toBe(20);
+    });
+
+    it('keeps rows in place under an open popup even at the top', () => {
+        const { result, rerender } = renderHook(
+            ({ rows }: { rows: Row[] }) =>
+                useVirtualSidebarRows(rows, () => 40, {
+                    preserveScrollAnchor: true,
+                    anchorThreshold: 40,
+                    resetKey: 'normal'
+                }),
+            { initialProps: { rows: [{ key: 'a' }, { key: 'b' }] } }
+        );
+        const viewport = document.createElement('div');
+        const menuTrigger = document.createElement('button');
+        menuTrigger.setAttribute('data-popup-open', '');
+        viewport.append(menuTrigger);
+        Object.defineProperty(viewport, 'clientHeight', { value: 80 });
+        act(() => result.current.viewportRef(viewport));
+        viewport.scrollTop = 0;
+
+        rerender({ rows: [{ key: 'new' }, { key: 'a' }, { key: 'b' }] });
+
+        expect(viewport.scrollTop).toBe(40);
+    });
+
     it('anchors on the first surviving row when leading rows are dropped', () => {
         const { result, rerender } = renderHook(
             ({ resetKey, rows }: { resetKey: string; rows: Row[] }) =>

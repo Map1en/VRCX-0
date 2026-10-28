@@ -1,9 +1,14 @@
 import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
+import { LogFilterMenuItems } from '@/components/data-table/LogFilterContextMenu';
 import { EmptyState } from '@/components/layout/PageScaffold';
 import { Location } from '@/components/Location';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-import { getGameLogLocationTarget } from '../gameLogRows';
+import { useGameLogFilterCommands } from '../gameLogFilterCommands';
+import {
+    getGameLogLocationTarget,
+    resolveGameLogWorldId
+} from '../gameLogRows';
 import { type GameLogDetailValue, type GameLogRow } from '../gameLogTypes';
 
 function GameLogEmptyState({
@@ -29,6 +34,7 @@ function GameLogLocationDetail({
     row: GameLogRow;
     worldTarget?: string;
 }) {
+    const filterCommands = useGameLogFilterCommands();
     const location = getGameLogLocationTarget(row);
     const targetLocation = location || worldTarget;
     const primary = String(detailValue.primary || '');
@@ -67,6 +73,15 @@ function GameLogLocationDetail({
                             grouphint={String(row?.groupName || '')}
                             enableContextMenu
                             showLaunchActions
+                            contextMenuExtraItems={
+                                <LogFilterMenuItems
+                                    commands={filterCommands}
+                                    target={{
+                                        worldId: resolveGameLogWorldId(row),
+                                        worldName: String(row?.worldName || '')
+                                    }}
+                                />
+                            }
                             onShowPreviousInstances={() => {
                                 onPreviousInstances?.(row);
                             }}

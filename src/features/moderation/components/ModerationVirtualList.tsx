@@ -3,6 +3,10 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppTable } from '@/components/data-table/appTable';
+import {
+    getColumnGridLayout,
+    getColumnSizeVars
+} from '@/components/data-table/columnSizing';
 import { DataTableColumnResizeHandle } from '@/components/data-table/DataTableColumnResizeHandle';
 import {
     getStretchColumnId,
@@ -36,16 +40,7 @@ export function ModerationVirtualList({
     const headers = table.getHeaderGroups().flatMap((group) => group.headers);
     const columns = table.getVisibleLeafColumns();
     const stretchColumnId = getStretchColumnId(table);
-    const layout = {
-        gridTemplateColumns: columns
-            .map((column) =>
-                column.id === stretchColumnId
-                    ? `minmax(${column.getSize()}px, 1fr)`
-                    : `${column.getSize()}px`
-            )
-            .join(' '),
-        minWidth: columns.reduce((width, column) => width + column.getSize(), 0)
-    };
+    const layout = getColumnGridLayout(columns, stretchColumnId);
     const hasMore = visibleCount < rows.length;
 
     function loadMore() {
@@ -80,6 +75,7 @@ export function ModerationVirtualList({
             estimatedRowHeight={density === 'compact' ? 32 : 40}
             resetKey={resetKey}
             minWidth={layout.minWidth}
+            sizingStyle={getColumnSizeVars(columns)}
             hasMore={hasMore}
             loadingOlder={false}
             onLoadOlder={loadMore}

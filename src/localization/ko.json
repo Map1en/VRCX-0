@@ -1342,7 +1342,10 @@
                 "expand_session": "세션 펼치기",
                 "collapse_session": "세션 접기",
                 "expand_all": "모두 펼치기",
-                "collapse_all": "모두 접기"
+                "collapse_all": "모두 접기",
+                "players_count": "{count}명",
+                "videos_count": "동영상 {count}개",
+                "latest": "최신"
             },
             "label": {
                 "sessions": "세션",
@@ -6614,13 +6617,28 @@
             "table_layout": "테이블 레이아웃",
             "columns": "열",
             "lock_column_order": "열 순서 잠금",
-            "unlock_column_order": "열 순서 잠금 해제"
+            "unlock_column_order": "열 순서 잠금 해제",
+            "new_items_count": "새 항목 {count}개"
         },
         "action": {
-            "reset_columns": "열 재설정"
+            "reset_columns": "열 재설정",
+            "sort_ascending": "오름차순 정렬",
+            "sort_descending": "내림차순 정렬",
+            "clear_sort": "정렬 해제",
+            "hide_column": "열 숨기기",
+            "move_column_left": "왼쪽으로 이동",
+            "move_column_right": "오른쪽으로 이동"
         },
         "empty": {
             "no_rows_yet": "아직 항목이 없습니다."
+        },
+        "filter_action": {
+            "label": "필터",
+            "only_user": "{value}만 보기",
+            "add_user_to_scope": "{value}을(를) 필터에 추가",
+            "only_type": "'{value}'만 보기",
+            "exclude_type": "'{value}' 제외",
+            "only_world": "{value}만 보기"
         }
     },
     "accessibility": {
@@ -6645,7 +6663,8 @@
         "open_player": "플레이어 프로필 열기: {player}",
         "player": "플레이어",
         "remove_value": "{value} 삭제",
-        "add_table_page_size": "표 페이지 크기 추가"
+        "add_table_page_size": "표 페이지 크기 추가",
+        "column_width_value": "{value}픽셀"
     },
     "status_bar": {
         "do_not_disturb": "방해 금지",

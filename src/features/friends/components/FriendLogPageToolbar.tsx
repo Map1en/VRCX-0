@@ -6,6 +6,7 @@ import { DateRangeFilter } from '@/components/date-range-filter/DateRangeFilter'
 import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
 import {
     ToolbarActions,
+    ToolbarFilterChips,
     ToolbarRefreshButton,
     ToolbarSearch,
     ToolbarStatus,
@@ -18,6 +19,8 @@ import { FriendLogTypeFilterDropdown } from './FriendLogViewParts';
 export function FriendLogPageToolbar({
     selectedTypes,
     onSelectedTypesChange,
+    targetUser,
+    onClearTargetUser,
     searchDraft,
     onSearchDraftChange,
     onCommitSearch,
@@ -33,6 +36,8 @@ export function FriendLogPageToolbar({
 }: {
     selectedTypes: string[];
     onSelectedTypesChange: (value: string[]) => void;
+    targetUser: { id: string; name: string } | null;
+    onClearTargetUser(): void;
     searchDraft: string;
     onSearchDraftChange(value: string): void;
     onCommitSearch(): void;
@@ -56,6 +61,19 @@ export function FriendLogPageToolbar({
                         value={selectedTypes}
                         onChange={onSelectedTypesChange}
                     />
+                    {targetUser ? (
+                        <ToolbarFilterChips
+                            value={[targetUser.id]}
+                            options={[
+                                { value: targetUser.id, label: targetUser.name }
+                            ]}
+                            onValueChange={(next) => {
+                                if (!next.length) {
+                                    onClearTargetUser();
+                                }
+                            }}
+                        />
+                    ) : null}
                 </ToolbarViews>
 
                 <ToolbarSearch

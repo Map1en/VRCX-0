@@ -6,9 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('./FeedTableParts', () => ({
     FeedDetailCell: () => null,
     FeedUserLink: () => null,
-    SortButton: () => null,
-    formatTimestampLong: () => '',
-    formatTimestampParts: () => ({ date: '', time: '' })
+    SortButton: () => null
 }));
 
 vi.mock('@/components/feed/FeedTypeIndicator', () => ({

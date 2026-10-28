@@ -24,13 +24,17 @@ const mocks = vi.hoisted(
             localFriendFavorites: FavoriteGroupMap;
         };
         friends: { friendsById: Record<string, object> };
+        applySearch: (value: string) => void;
+        setActiveSelectedTypes: (types: string[]) => void;
     } => ({
         rows: [],
         searchQuery: '',
         sessions: [],
         viewMode: 'table',
         favorites: { favoriteFriendIds: [], localFriendFavorites: {} },
-        friends: { friendsById: {} }
+        friends: { friendsById: {} },
+        applySearch: vi.fn(),
+        setActiveSelectedTypes: vi.fn()
     })
 );
 
@@ -43,6 +47,12 @@ vi.mock('./components/GameLogColumns', () => ({
 
 vi.mock('./useGameLogFilters', () => ({
     useGameLogFilters: () => ({
+        applySearch: mocks.applySearch,
+        availableFilterTypes:
+            mocks.viewMode === 'sessions'
+                ? ['OnPlayerJoined', 'OnPlayerLeft', 'VideoPlay']
+                : ['Location', 'OnPlayerJoined', 'OnPlayerLeft'],
+        setActiveSelectedTypes: mocks.setActiveSelectedTypes,
         deferredSearchQuery: mocks.searchQuery,
         favoritesOnly: false,
         preferencesReady: true,
@@ -372,5 +382,23 @@ describe('useGameLogPageController', () => {
         expect(result.current.annotations.affinity.favoriteIdSet.size).toBe(0);
         expect(result.current.annotations.affinity.friendIdSet.size).toBe(0);
         expect(mocks.sessions[0].events[0].isFavorite).toBeUndefined();
+    });
+
+    it('routes row filter commands to the search box and the active view types', () => {
+        mocks.viewMode = 'sessions';
+        const { result } = renderHook(useGameLogPageController);
+        const commands = result.current.rowFilterCommands;
+
+        commands.onlyUser?.('usr_1', 'User');
+        commands.onlyWorld?.('wrld_test');
+        commands.excludeType?.('JoinGroup');
+
+        expect(mocks.applySearch).toHaveBeenNthCalledWith(1, 'usr_1');
+        expect(mocks.applySearch).toHaveBeenNthCalledWith(2, 'wrld_test');
+        expect(mocks.setActiveSelectedTypes).toHaveBeenCalledWith([
+            'OnPlayerLeft',
+            'VideoPlay'
+        ]);
+        expect(commands.canFilterType?.('Location')).toBe(false);
     });
 });

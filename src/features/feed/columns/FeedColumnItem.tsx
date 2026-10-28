@@ -1,11 +1,13 @@
 import { useTranslation } from 'react-i18next';
 
+import { useDateFormatPreferenceKey } from '@/components/data-table/TimestampText';
 import { FeedDetailCell } from '@/components/feed/FeedDetailCell';
 import type {
     FeedFriendActions,
     FeedLocationActionPayload,
     FeedRow
 } from '@/components/feed/feedTypes';
+import { useMinuteNowMs } from '@/lib/useMinuteNowMs';
 import { cn } from '@/lib/utils';
 import type { FeedTimeDisplayModePreference } from '@/state/preferencesStore';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
@@ -15,14 +17,17 @@ import {
     FeedUserLink
 } from '../components/FeedTableParts';
 import type { FeedColumnDensityConfig } from '../feedColumnsDensity';
-import { resolveFeedColumnTimeDisplay } from '../feedTimeDisplay';
+import {
+    formatFeedExactTime,
+    formatFeedRelativeTime,
+    getFeedRelativeTimeMinWidth
+} from '../feedTimeDisplay';
 
 type FeedColumnItemProps = {
     actions: FeedFriendActions;
     animateEntry?: boolean;
     densityConfig: FeedColumnDensityConfig;
     loadingPreviousInstancesKey: string;
-    nowMs: number;
     onOpenPreviousInstances(payload?: FeedLocationActionPayload): void;
     row: FeedRow;
     showTypeHint: boolean;
@@ -46,18 +51,60 @@ function FeedColumnTypeHint({
     );
 }
 
-function FeedColumnTime({ label, title }: { label: string; title: string }) {
+function FeedRelativeTimeTitle({
+    value
+}: {
+    value: string | null | undefined;
+}) {
+    return formatFeedRelativeTime(value, Date.now());
+}
+
+function FeedRelativeTimeLabel({
+    value
+}: {
+    value: string | null | undefined;
+}) {
+    const nowMs = useMinuteNowMs();
+    const minWidth = getFeedRelativeTimeMinWidth(useDateFormatPreferenceKey());
+    return (
+        <span
+            className="text-muted-foreground inline-block text-right text-[11px] tabular-nums"
+            style={{ minWidth }}
+        >
+            {formatFeedRelativeTime(value, nowMs)}
+        </span>
+    );
+}
+
+function FeedColumnTime({
+    mode,
+    value
+}: {
+    mode: FeedTimeDisplayModePreference;
+    value: string | null | undefined;
+}) {
+    useDateFormatPreferenceKey();
     return (
         <div className="ml-auto flex shrink-0 items-center">
             <Tooltip>
                 <TooltipTrigger
                     render={
-                        <span className="text-muted-foreground text-[11px] tabular-nums">
-                            {label}
-                        </span>
+                        mode === 'relative' ? (
+                            <FeedRelativeTimeLabel value={value} />
+                        ) : (
+                            <span className="text-muted-foreground text-[11px] tabular-nums">
+                                {formatFeedExactTime(value, 'short')}
+                            </span>
+                        )
                     }
                 />
-                <TooltipContent>{title}</TooltipContent>
+                <TooltipContent>
+                    {mode === 'relative' ? (
+                        formatFeedExactTime(value, 'long')
+                    ) : (
+                        <FeedRelativeTimeTitle value={value} />
+                    )}
+                </TooltipContent>
             </Tooltip>
         </div>
     );
@@ -67,7 +114,6 @@ export function FeedColumnItem(props: FeedColumnItemProps) {
     const {
         animateEntry = false,
         densityConfig,
-        nowMs,
         row,
         showTypeHint,
         timeDisplayMode
@@ -76,12 +122,6 @@ export function FeedColumnItem(props: FeedColumnItemProps) {
     const type = row.type || '';
     const typeLabel = type ? t(`view.feed.filters.${type}`) : '';
     const showAvatar = densityConfig.showAvatar;
-    const time = resolveFeedColumnTimeDisplay({
-        mode: timeDisplayMode,
-        nowMs,
-        t,
-        value: row?.created_at
-    });
 
     return (
         <>
@@ -136,8 +176,8 @@ export function FeedColumnItem(props: FeedColumnItemProps) {
                                 />
                             ) : null}
                             <FeedColumnTime
-                                label={time.label}
-                                title={time.title}
+                                mode={timeDisplayMode}
+                                value={row?.created_at}
                             />
                         </div>
                         <div

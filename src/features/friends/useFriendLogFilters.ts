@@ -12,6 +12,10 @@ export function useFriendLogFilters() {
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
     const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+    const [targetUser, setTargetUser] = useState<{
+        id: string;
+        name: string;
+    } | null>(null);
 
     useEffect(() => {
         let active = true;
@@ -79,6 +83,8 @@ export function useFriendLogFilters() {
         selectedTypes,
         refreshFriendLog,
         setSearchQuery,
-        setSelectedTypes
+        setSelectedTypes,
+        targetUser,
+        setTargetUser
     };
 }

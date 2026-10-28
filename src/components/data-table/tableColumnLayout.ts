@@ -92,21 +92,25 @@ export function getColumnOrder<TData extends RowData>(
     return ordered;
 }
 
+export function isColumnToggleable<TData extends RowData>(
+    column: AppColumn<TData> | null | undefined
+) {
+    if (!column?.getCanHide?.()) {
+        return false;
+    }
+    if (isSpacerColumn(column)) {
+        return false;
+    }
+    if (column.columnDef?.meta?.disableVisibilityToggle) {
+        return false;
+    }
+    return hasExplicitColumnLayoutLabel(column);
+}
+
 export function getToggleableColumns<TData extends RowData>(
     columns: AppColumn<TData>[] = []
 ) {
-    return columns.filter((column) => {
-        if (!column?.getCanHide?.()) {
-            return false;
-        }
-        if (isSpacerColumn(column)) {
-            return false;
-        }
-        if (column.columnDef?.meta?.disableVisibilityToggle) {
-            return false;
-        }
-        return hasExplicitColumnLayoutLabel(column);
-    });
+    return columns.filter((column) => isColumnToggleable(column));
 }
 
 export function getColumnOrderLocked<TData extends RowData>(
@@ -180,6 +184,41 @@ export function getReorderableColumnIds<TData extends RowData>(
     return columns
         .filter((column) => isColumnReorderable(column))
         .map((column) => column.id);
+}
+
+export function moveColumnTo<TData extends RowData>(
+    table: AppTable<TData>,
+    columnId: string,
+    targetColumnId: string
+) {
+    if (!columnId || !targetColumnId || columnId === targetColumnId) {
+        return;
+    }
+    const columnOrder = getColumnOrder(table);
+    const fromIndex = columnOrder.indexOf(columnId);
+    const toIndex = columnOrder.indexOf(targetColumnId);
+    if (fromIndex < 0 || toIndex < 0) {
+        return;
+    }
+    const nextOrder = [...columnOrder];
+    nextOrder.splice(fromIndex, 1);
+    nextOrder.splice(toIndex, 0, columnId);
+    table.setColumnOrder(nextOrder);
+}
+
+export function getAdjacentReorderableColumnId<TData extends RowData>(
+    table: AppTable<TData>,
+    columnId: string,
+    direction: -1 | 1
+) {
+    const reorderableIds = getReorderableColumnIds(
+        table.getVisibleLeafColumns()
+    );
+    const index = reorderableIds.indexOf(columnId);
+    if (index < 0) {
+        return null;
+    }
+    return reorderableIds[index + direction] ?? null;
 }
 
 export function resetTableLayout<TData extends RowData>(

@@ -12,7 +12,12 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { AffinityBadge } from '@/components/affinity/AffinityBadge';
-import { formatDateFilter, timeToText } from '@/lib/dateTime';
+import {
+    LogFilterMenuItems,
+    getLogFilterRowAttributes
+} from '@/components/data-table/LogFilterContextMenu';
+import { TimestampText } from '@/components/data-table/TimestampText';
+import { timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { copyTextToClipboard } from '@/services/clipboardService';
 import { openExternalLink } from '@/services/entityMediaService';
@@ -34,6 +39,10 @@ import {
     ContextMenuTrigger
 } from '@/ui/shadcn/context-menu';
 
+import {
+    getGameLogFilterTypeLabel,
+    useGameLogFilterCommands
+} from '../gameLogFilterCommands';
 import { getGameLogSessionPlayerAffinity } from '../gameLogRows';
 import {
     useGameLogSessionAffinity,
@@ -107,9 +116,11 @@ function getGroupCount(event: GameLogSessionEvent, memberCount: number) {
 
 function EventTime({ value }: { value: string }) {
     return (
-        <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-            {formatDateFilter(value, 'time')}
-        </span>
+        <TimestampText
+            value={value}
+            format="time"
+            className="text-muted-foreground shrink-0 text-xs tabular-nums"
+        />
     );
 }
 
@@ -182,15 +193,26 @@ function PlayerCell({ item }: { item: GameLogSessionMember }) {
 
 function PlayerActivityRow({
     durationByKey,
+    eventType,
     item,
     showDuration
 }: {
     durationByKey: Map<string, number>;
+    eventType: string;
     item: GameLogSessionMember;
     showDuration: boolean;
 }) {
+    const { t } = useTranslation();
     return (
-        <div className="grid min-h-7 grid-cols-[4.75rem_1rem_minmax(0,1fr)_5rem] items-center gap-2 rounded-md px-2 py-0.5 text-sm hover:bg-(--state-hover-surface)">
+        <div
+            {...getLogFilterRowAttributes({
+                userId: item.userId,
+                userName: item.displayName,
+                type: eventType,
+                typeLabel: getGameLogFilterTypeLabel(eventType, t)
+            })}
+            className="grid min-h-7 grid-cols-[4.75rem_1rem_minmax(0,1fr)_5rem] items-center gap-2 rounded-md px-2 py-0.5 text-sm hover:bg-(--state-hover-surface)"
+        >
             <EventTime value={item.created_at} />
             <AffinityBadge
                 isFriend={item?.isFriend}
@@ -218,11 +240,19 @@ function SinglePlayerActivityRow({
     event: GameLogSessionEvent;
     showDuration: boolean;
 }) {
+    const { t } = useTranslation();
     const affinity = useGameLogSessionAffinity();
     const item = normalizeSessionMember(event, affinity, event?.created_at);
+    const eventType = String(event.type || '');
 
     return (
         <div
+            {...getLogFilterRowAttributes({
+                userId: item.userId,
+                userName: item.displayName,
+                type: eventType,
+                typeLabel: getGameLogFilterTypeLabel(eventType, t)
+            })}
             className={cn(
                 'grid min-h-8 items-center gap-2 rounded-md px-2 py-1 text-sm hover:bg-(--state-hover-surface)',
                 PLAYER_EVENT_GRID_CLASS
@@ -252,11 +282,13 @@ function GroupMemberRows({
     members,
     createdAt,
     durationByKey,
+    eventType,
     showDuration
 }: {
     members: readonly SessionPlayerInput[];
     createdAt: string;
     durationByKey: Map<string, number>;
+    eventType: string;
     showDuration: boolean;
 }) {
     const affinity = useGameLogSessionAffinity();
@@ -272,6 +304,7 @@ function GroupMemberRows({
                     <PlayerActivityRow
                         key={`${item.userId}:${item.created_at}:${item.displayName}:${index}`}
                         durationByKey={durationByKey}
+                        eventType={eventType}
                         item={item}
                         showDuration={showDuration}
                     />
@@ -313,6 +346,13 @@ function GroupActivityRow({
                         type="button"
                         variant="ghost"
                         size="sm"
+                        {...getLogFilterRowAttributes({
+                            type: String(event.type || ''),
+                            typeLabel: getGameLogFilterTypeLabel(
+                                String(event.type || ''),
+                                t
+                            )
+                        })}
                         className={cn(
                             'grid min-h-8 w-full items-center gap-2 rounded-md px-2 py-1 text-left text-sm hover:bg-(--state-hover-surface)',
                             PLAYER_EVENT_GRID_CLASS
@@ -349,6 +389,7 @@ function GroupActivityRow({
                         members={members}
                         createdAt={event.created_at}
                         durationByKey={durationByKey}
+                        eventType={String(event.type || '')}
                         showDuration={event?.type === 'LeftGroup'}
                     />
                 </CollapsibleContent>
@@ -359,6 +400,7 @@ function GroupActivityRow({
 
 function VideoActivityRow({ event }: { event: GameLogSessionEvent }) {
     const { t } = useTranslation();
+    const filterCommands = useGameLogFilterCommands();
     const videoUrl = event.videoUrl || '';
     const videoLabel =
         event?.videoName ||
@@ -450,6 +492,13 @@ function VideoActivityRow({ event }: { event: GameLogSessionEvent }) {
                         {t('common.actions.copy')}
                     </ContextMenuItem>
                 </ContextMenuGroup>
+                <LogFilterMenuItems
+                    commands={filterCommands}
+                    target={{
+                        type: 'VideoPlay',
+                        typeLabel: getGameLogFilterTypeLabel('VideoPlay', t)
+                    }}
+                />
             </ContextMenuContent>
         </ContextMenu>
     );

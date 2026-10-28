@@ -23,6 +23,7 @@ export function LocationContextMenu({
     canOpenInstanceInGame,
     canUseCurrentInstance,
     children,
+    extraItems,
     isOpenPreviousInstanceInfoDialog,
     launchLocation,
     launchShortName,
@@ -42,6 +43,7 @@ export function LocationContextMenu({
     canOpenInstanceInGame: boolean;
     canUseCurrentInstance: boolean;
     children?: ReactNode;
+    extraItems?: ReactNode;
     isOpenPreviousInstanceInfoDialog: boolean;
     launchLocation: string;
     launchShortName: string;
@@ -150,6 +152,7 @@ export function LocationContextMenu({
                         </ContextMenuGroup>
                     </>
                 ) : null}
+                {extraItems}
             </ContextMenuContent>
         </ContextMenu>
     );

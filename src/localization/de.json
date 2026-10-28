@@ -1401,7 +1401,10 @@
                 "expand_session": "Sitzung erweitern",
                 "collapse_session": "Sitzung einklappen",
                 "expand_all": "Alle erweitern",
-                "collapse_all": "Alle einklappen"
+                "collapse_all": "Alle einklappen",
+                "players_count": "{count} Spieler",
+                "videos_count": "{count} Videos",
+                "latest": "Neueste"
             },
             "label": {
                 "sessions": "Sitzungen",
@@ -6624,13 +6627,28 @@
             "table_layout": "Tabellenlayout",
             "columns": "Spalten",
             "lock_column_order": "Spaltenreihenfolge sperren",
-            "unlock_column_order": "Spaltenreihenfolge entsperren"
+            "unlock_column_order": "Spaltenreihenfolge entsperren",
+            "new_items_count": "{count} neu"
         },
         "action": {
-            "reset_columns": "Spalten zurücksetzen"
+            "reset_columns": "Spalten zurücksetzen",
+            "sort_ascending": "Aufsteigend sortieren",
+            "sort_descending": "Absteigend sortieren",
+            "clear_sort": "Sortierung aufheben",
+            "hide_column": "Spalte ausblenden",
+            "move_column_left": "Nach links verschieben",
+            "move_column_right": "Nach rechts verschieben"
         },
         "empty": {
             "no_rows_yet": "Noch keine Zeilen."
+        },
+        "filter_action": {
+            "label": "Filtern",
+            "only_user": "Nur {value} anzeigen",
+            "add_user_to_scope": "{value} zum Filter hinzufügen",
+            "only_type": "Nur „{value}“ anzeigen",
+            "exclude_type": "„{value}“ ausblenden",
+            "only_world": "Nur {value} anzeigen"
         }
     },
     "accessibility": {
@@ -6655,7 +6673,8 @@
         "open_player": "Spielerprofil öffnen: {player}",
         "player": "Spieler",
         "remove_value": "{value} entfernen",
-        "add_table_page_size": "Seitengröße für Tabellen hinzufügen"
+        "add_table_page_size": "Seitengröße für Tabellen hinzufügen",
+        "column_width_value": "{value} Pixel"
     },
     "status_bar": {
         "do_not_disturb": "Nicht stören",

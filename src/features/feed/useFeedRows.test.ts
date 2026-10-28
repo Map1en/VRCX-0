@@ -149,6 +149,30 @@ describe('useFeedRows', () => {
         expect(mocks.queryFeed).not.toHaveBeenCalled();
     });
 
+    it('counts rows that arrive while the reader is away from the latest edge', async () => {
+        mocks.queryFeedLatest.mockResolvedValue({
+            rows: [{ userId: 'usr_base' }],
+            maxSequence: 0
+        });
+        const { result } = renderFeedRows();
+        await flush();
+
+        act(() => result.current.setViewingLatest(false));
+        pushLiveEntry('first');
+        pushLiveEntry('second');
+        await flush();
+        act(() => {
+            vi.advanceTimersByTime(250);
+        });
+        await flush();
+
+        expect(result.current.newSinceLeftCount).toBe(2);
+
+        act(() => result.current.setViewingLatest(true));
+
+        expect(result.current.newSinceLeftCount).toBe(0);
+    });
+
     it('hides every row of hidden friends when the hide-all mode is on', async () => {
         mocks.preferences.feedHiddenUsers = ['usr_hidden'];
         mocks.preferences.feedHiddenUsersHideAll = true;

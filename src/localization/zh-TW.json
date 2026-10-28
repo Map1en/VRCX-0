@@ -1399,7 +1399,10 @@
                 "expand_session": "展開遊玩時段",
                 "collapse_session": "收合遊玩時段",
                 "expand_all": "展開全部",
-                "collapse_all": "收合全部"
+                "collapse_all": "收合全部",
+                "players_count": "{count} 人",
+                "videos_count": "{count} 部影片",
+                "latest": "最新"
             },
             "label": {
                 "sessions": "遊玩時段",
@@ -6661,13 +6664,28 @@
             "table_layout": "表格版面配置",
             "columns": "欄位",
             "lock_column_order": "鎖定欄位順序",
-            "unlock_column_order": "解除鎖定欄位順序"
+            "unlock_column_order": "解除鎖定欄位順序",
+            "new_items_count": "{count} 則新動態"
         },
         "action": {
-            "reset_columns": "重設欄位"
+            "reset_columns": "重設欄位",
+            "sort_ascending": "遞增排序",
+            "sort_descending": "遞減排序",
+            "clear_sort": "取消排序",
+            "hide_column": "隱藏此欄",
+            "move_column_left": "左移",
+            "move_column_right": "右移"
         },
         "empty": {
             "no_rows_yet": "尚無資料。"
+        },
+        "filter_action": {
+            "label": "篩選",
+            "only_user": "只看 {value}",
+            "add_user_to_scope": "將 {value} 加入篩選",
+            "only_type": "只看「{value}」",
+            "exclude_type": "排除「{value}」",
+            "only_world": "只看 {value}"
         }
     },
     "accessibility": {
@@ -6692,7 +6710,8 @@
         "open_player": "開啟玩家個人檔案：{player}",
         "player": "用戶",
         "remove_value": "移除 {value}",
-        "add_table_page_size": "新增表格每頁筆數"
+        "add_table_page_size": "新增表格每頁筆數",
+        "column_width_value": "{value} 像素"
     },
     "status_bar": {
         "do_not_disturb": "勿擾模式",

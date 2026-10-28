@@ -13,6 +13,7 @@ export const KEYBOARD_CONTROL_SELECTOR = [
     '[role="menubar"]',
     '[role="tablist"]',
     '[role="slider"]',
+    '[role="separator"]',
     '[role="spinbutton"]',
     '[role="tree"]',
     '[role="grid"]'

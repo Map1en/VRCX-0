@@ -1401,7 +1401,10 @@
                 "expand_session": "Expandir sesión",
                 "collapse_session": "Contraer sesión",
                 "expand_all": "Expandir todo",
-                "collapse_all": "Contraer todo"
+                "collapse_all": "Contraer todo",
+                "players_count": "{count} jugadores",
+                "videos_count": "{count} vídeos",
+                "latest": "Más reciente"
             },
             "label": {
                 "sessions": "Sesiones",
@@ -6680,13 +6683,28 @@
             "table_layout": "Diseño de tabla",
             "columns": "Columnas",
             "lock_column_order": "Bloquear orden de columnas",
-            "unlock_column_order": "Desbloquear orden de columnas"
+            "unlock_column_order": "Desbloquear orden de columnas",
+            "new_items_count": "{count} nuevos"
         },
         "action": {
-            "reset_columns": "Restablecer columnas"
+            "reset_columns": "Restablecer columnas",
+            "sort_ascending": "Orden ascendente",
+            "sort_descending": "Orden descendente",
+            "clear_sort": "Quitar orden",
+            "hide_column": "Ocultar columna",
+            "move_column_left": "Mover a la izquierda",
+            "move_column_right": "Mover a la derecha"
         },
         "empty": {
             "no_rows_yet": "Aún no hay entradas."
+        },
+        "filter_action": {
+            "label": "Filtrar",
+            "only_user": "Mostrar solo a {value}",
+            "add_user_to_scope": "Añadir a {value} al filtro",
+            "only_type": "Mostrar solo «{value}»",
+            "exclude_type": "Ocultar «{value}»",
+            "only_world": "Mostrar solo {value}"
         }
     },
     "accessibility": {
@@ -6711,7 +6729,8 @@
         "open_player": "Abrir perfil del jugador: {player}",
         "player": "jugador",
         "remove_value": "Eliminar {value}",
-        "add_table_page_size": "Añadir tamaño de página de tabla"
+        "add_table_page_size": "Añadir tamaño de página de tabla",
+        "column_width_value": "{value} píxeles"
     },
     "status_bar": {
         "do_not_disturb": "No molestar",

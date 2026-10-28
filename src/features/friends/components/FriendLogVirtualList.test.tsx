@@ -33,6 +33,7 @@ const rows: FriendLogRow[] = Array.from({ length: 160 }, (_, index) => ({
     friendNumber: 0
 }));
 const onDelete = vi.fn(async () => {});
+const onlyUser = vi.fn();
 const resolveDisplayName = vi.fn((row: FriendLogRow) => row.displayName);
 
 function Harness() {
@@ -50,6 +51,7 @@ function Harness() {
         <FriendLogVirtualList
             rows={rows}
             table={table}
+            filterCommands={{ onlyUser }}
             resolveDisplayName={resolveDisplayName}
             deleteAction={deleteAction}
             resetKey="normal"
@@ -105,5 +107,24 @@ describe('Friend History virtual rows', () => {
                 (column) => column.id
             )
         ).toEqual(['created_at', 'type', 'displayName', 'action']);
+    });
+
+    it('filters to the right-clicked user from the row context menu', async () => {
+        const view = render(<Harness />);
+        const firstRow = view.container.querySelector(
+            '[data-friend-history-row]'
+        );
+        if (!firstRow) {
+            throw new Error('missing history row');
+        }
+
+        fireEvent.contextMenu(firstRow);
+        fireEvent.click(
+            await screen.findByRole('menuitem', {
+                name: 'table.filter_action.only_user'
+            })
+        );
+
+        expect(onlyUser).toHaveBeenCalledWith('usr_0', 'Name 0');
     });
 });

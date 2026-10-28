@@ -119,16 +119,18 @@ function FeedTableMode({
         loadOlder,
         loadStatus,
         loadingOlder,
+        newSinceLeftCount,
         normalQueryKey,
         previousInstancesDialog,
         resolvePageSize,
         rows,
         reloadLatest,
+        rowFilterCommands,
         searchMode,
         setViewingLatest,
         table,
         tableModel
-    } = useFeedPageController({ routeScopedUserIds });
+    } = useFeedPageController({ routeScopedUserIds, setRouteScopedUserIds });
     const {
         activeFilters,
         clearSearch,
@@ -212,6 +214,7 @@ function FeedTableMode({
             <PageBody>
                 {searchMode ? (
                     <FeedTableShell
+                        filterCommands={rowFilterCommands}
                         favoritesOnly={filters.favoritesOnly}
                         isFavoritesLoaded={isFavoritesLoaded}
                         loadStatus={loadStatus}
@@ -232,6 +235,7 @@ function FeedTableMode({
                 ) : (
                     <FeedVirtualListShell
                         actions={friendActions}
+                        filterCommands={rowFilterCommands}
                         favoritesOnly={filters.favoritesOnly}
                         friendLogNamesById={friendLogNamesById}
                         hasMore={hasMore}
@@ -242,6 +246,7 @@ function FeedTableMode({
                         loadingPreviousInstancesKey={
                             previousInstancesDialog.loadingKey
                         }
+                        newCount={newSinceLeftCount}
                         onLoadOlder={loadOlder}
                         onReloadLatest={reloadLatest}
                         onOpenPreviousInstances={

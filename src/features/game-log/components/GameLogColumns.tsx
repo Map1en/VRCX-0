@@ -15,7 +15,7 @@ import {
     DATA_TABLE_METADATA_CELL_CLASS_NAME,
     DATA_TABLE_PRIMARY_CELL_CLASS_NAME
 } from '@/components/data-table/DataTableView';
-import { formatDateFilter } from '@/lib/dateTime';
+import { TimestampText } from '@/components/data-table/TimestampText';
 import { openWorldDialog } from '@/services/dialogService';
 import { openExternalLink } from '@/services/entityMediaService';
 import { openGameLogUser } from '@/services/gameLogUserDialogService';
@@ -53,20 +53,11 @@ type UseGameLogColumnsOptions = {
 };
 
 function DateCell({ row }: { row: AppRow<GameLogRow> }) {
-    const createdAt = row.original?.created_at || '';
     return (
-        <Tooltip>
-            <TooltipTrigger
-                render={
-                    <span className="text-sm">
-                        {formatDateFilter(createdAt, 'short')}
-                    </span>
-                }
-            />
-            <TooltipContent>
-                {formatDateFilter(createdAt, 'long')}
-            </TooltipContent>
-        </Tooltip>
+        <TimestampText
+            value={row.original?.created_at || ''}
+            className="text-sm"
+        />
     );
 }
 

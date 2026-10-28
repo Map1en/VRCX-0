@@ -1415,7 +1415,10 @@
                 "expand_session": "Расширенная сессия",
                 "collapse_session": "Свернуть сеанс",
                 "expand_all": "Расширить все",
-                "collapse_all": "Свернуть все"
+                "collapse_all": "Свернуть все",
+                "players_count": "Игроков: {count}",
+                "videos_count": "Видео: {count}",
+                "latest": "Последние"
             },
             "label": {
                 "sessions": "Сессии",
@@ -6650,13 +6653,28 @@
             "table_layout": "Формат таблицы",
             "columns": "Колонки",
             "lock_column_order": "Заблокировать столбец",
-            "unlock_column_order": "Разблокировать столбец"
+            "unlock_column_order": "Разблокировать столбец",
+            "new_items_count": "Новых: {count}"
         },
         "action": {
-            "reset_columns": "Переустановить колонки"
+            "reset_columns": "Переустановить колонки",
+            "sort_ascending": "По возрастанию",
+            "sort_descending": "По убыванию",
+            "clear_sort": "Сбросить сортировку",
+            "hide_column": "Скрыть столбец",
+            "move_column_left": "Переместить влево",
+            "move_column_right": "Переместить вправо"
         },
         "empty": {
             "no_rows_yet": "Пока никаких ссор."
+        },
+        "filter_action": {
+            "label": "Фильтр",
+            "only_user": "Показать только {value}",
+            "add_user_to_scope": "Добавить {value} в фильтр",
+            "only_type": "Показать только «{value}»",
+            "exclude_type": "Скрыть «{value}»",
+            "only_world": "Показать только {value}"
         }
     },
     "accessibility": {
@@ -6681,7 +6699,8 @@
         "open_player": "Открыть профиль игрока: {player}",
         "player": "игрок",
         "remove_value": "Удалить {value}",
-        "add_table_page_size": "Добавить размер страницы таблицы"
+        "add_table_page_size": "Добавить размер страницы таблицы",
+        "column_width_value": "{value} пикс."
     },
     "status_bar": {
         "do_not_disturb": "Не беспокоить",

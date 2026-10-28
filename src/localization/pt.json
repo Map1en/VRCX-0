@@ -1401,7 +1401,10 @@
                 "expand_session": "Expandir sessão",
                 "collapse_session": "Recolher sessão",
                 "expand_all": "Expandir tudo",
-                "collapse_all": "Recolher tudo"
+                "collapse_all": "Recolher tudo",
+                "players_count": "{count} jogadores",
+                "videos_count": "{count} vídeos",
+                "latest": "Mais recente"
             },
             "label": {
                 "sessions": "Sessões",
@@ -6624,13 +6627,28 @@
             "table_layout": "Layout da tabela",
             "columns": "Colunas",
             "lock_column_order": "Bloquear ordem das colunas",
-            "unlock_column_order": "Desbloquear ordem das colunas"
+            "unlock_column_order": "Desbloquear ordem das colunas",
+            "new_items_count": "{count} novos"
         },
         "action": {
-            "reset_columns": "Redefinir colunas"
+            "reset_columns": "Redefinir colunas",
+            "sort_ascending": "Ordenar em ordem crescente",
+            "sort_descending": "Ordenar em ordem decrescente",
+            "clear_sort": "Limpar ordenação",
+            "hide_column": "Ocultar coluna",
+            "move_column_left": "Mover para a esquerda",
+            "move_column_right": "Mover para a direita"
         },
         "empty": {
             "no_rows_yet": "Nenhuma linha ainda."
+        },
+        "filter_action": {
+            "label": "Filtrar",
+            "only_user": "Mostrar só {value}",
+            "add_user_to_scope": "Adicionar {value} ao filtro",
+            "only_type": "Mostrar só \"{value}\"",
+            "exclude_type": "Ocultar \"{value}\"",
+            "only_world": "Mostrar só {value}"
         }
     },
     "accessibility": {
@@ -6655,7 +6673,8 @@
         "open_player": "Abrir perfil do jogador: {player}",
         "player": "jogador",
         "remove_value": "Remover {value}",
-        "add_table_page_size": "Adicionar tamanho de página da tabela"
+        "add_table_page_size": "Adicionar tamanho de página da tabela",
+        "column_width_value": "{value} pixels"
     },
     "status_bar": {
         "do_not_disturb": "Não incomodar",

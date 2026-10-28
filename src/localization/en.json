@@ -1401,7 +1401,10 @@
                 "expand_session": "Expand session",
                 "collapse_session": "Collapse session",
                 "expand_all": "Expand all",
-                "collapse_all": "Collapse all"
+                "collapse_all": "Collapse all",
+                "players_count": "{count} players",
+                "videos_count": "{count} videos",
+                "latest": "Latest"
             },
             "label": {
                 "sessions": "Sessions",
@@ -6680,13 +6683,28 @@
             "table_layout": "Table layout",
             "columns": "Columns",
             "lock_column_order": "Lock column order",
-            "unlock_column_order": "Unlock column order"
+            "unlock_column_order": "Unlock column order",
+            "new_items_count": "{count} new"
         },
         "action": {
-            "reset_columns": "Reset columns"
+            "reset_columns": "Reset columns",
+            "sort_ascending": "Sort ascending",
+            "sort_descending": "Sort descending",
+            "clear_sort": "Clear sorting",
+            "hide_column": "Hide column",
+            "move_column_left": "Move left",
+            "move_column_right": "Move right"
         },
         "empty": {
             "no_rows_yet": "No entries yet."
+        },
+        "filter_action": {
+            "label": "Filter",
+            "only_user": "Only show {value}",
+            "add_user_to_scope": "Add {value} to the filter",
+            "only_type": "Only show {value}",
+            "exclude_type": "Hide {value}",
+            "only_world": "Only show {value}"
         }
     },
     "accessibility": {
@@ -6711,7 +6729,8 @@
         "open_player": "Open player profile: {player}",
         "player": "player",
         "remove_value": "Remove {value}",
-        "add_table_page_size": "Add table page size"
+        "add_table_page_size": "Add table page size",
+        "column_width_value": "{value} pixels"
     },
     "status_bar": {
         "do_not_disturb": "Do Not Disturb",

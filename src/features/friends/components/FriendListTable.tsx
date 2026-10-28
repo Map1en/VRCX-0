@@ -105,7 +105,7 @@ export function FriendListTable({
     const { t } = useTranslation();
     const columnLayoutKey = table
         .getVisibleLeafColumns()
-        .map((column) => `${column.id}:${column.getSize()}`)
+        .map((column) => column.id)
         .join('|');
 
     return (

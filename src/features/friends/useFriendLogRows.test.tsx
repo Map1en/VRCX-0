@@ -257,4 +257,18 @@ describe('Friend History browsing and search', () => {
         expect(result.current.rows).toBe(searchRows);
         expect(result.current.loadingOlder).toBe(false);
     });
+
+    it('queries one user exactly when a target user is set', async () => {
+        const { result } = renderHook(() =>
+            useFriendLogRows({ ...initial, targetUserId: 'usr_7' })
+        );
+
+        await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+        expect(
+            friendLogHistoryRepository.getFriendLogHistory
+        ).toHaveBeenCalledWith(
+            'usr_owner',
+            expect.objectContaining({ targetUserId: 'usr_7' })
+        );
+    });
 });

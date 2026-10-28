@@ -13,11 +13,12 @@ import {
     DATA_TABLE_NUMERIC_HEADER_CLASS_NAME,
     DATA_TABLE_PRIMARY_CELL_CLASS_NAME
 } from '@/components/data-table/DataTableView';
+import { TimestampText } from '@/components/data-table/TimestampText';
 import { LanguageCodeBadge } from '@/components/language/LanguageCodeBadge';
 import { BioLinkFavicon } from '@/components/media/BioLinkFavicon';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { UserStatusDot } from '@/components/UserStatusDot';
-import { formatDateFilter, timeToText } from '@/lib/dateTime';
+import { timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import {
     getNameColour,
@@ -456,17 +457,14 @@ export function useFriendListColumns({
                         label={t('table.friendList.lastSeen')}
                     />
                 ),
-                cell: ({ row }) => {
-                    const text = formatDateFilter(
-                        row.original?.$lastSeen,
-                        'long'
-                    );
-                    return (
-                        <span>
-                            {text === '-' ? DATA_TABLE_EMPTY_VALUE : text}
-                        </span>
-                    );
-                }
+                cell: ({ row }) => (
+                    <TimestampText
+                        value={row.original?.$lastSeen}
+                        format="long"
+                        tooltip={false}
+                        emptyText={DATA_TABLE_EMPTY_VALUE}
+                    />
+                )
             },
             {
                 id: 'mutualFriends',
@@ -522,17 +520,14 @@ export function useFriendListColumns({
                         label={t('table.friendList.lastActivity')}
                     />
                 ),
-                cell: ({ row }) => {
-                    const text = formatDateFilter(
-                        row.original?.last_activity,
-                        'long'
-                    );
-                    return (
-                        <span>
-                            {text === '-' ? DATA_TABLE_EMPTY_VALUE : text}
-                        </span>
-                    );
-                }
+                cell: ({ row }) => (
+                    <TimestampText
+                        value={row.original?.last_activity}
+                        format="long"
+                        tooltip={false}
+                        emptyText={DATA_TABLE_EMPTY_VALUE}
+                    />
+                )
             },
             {
                 id: 'lastLogin',
@@ -548,17 +543,14 @@ export function useFriendListColumns({
                         label={t('table.friendList.lastLogin')}
                     />
                 ),
-                cell: ({ row }) => {
-                    const text = formatDateFilter(
-                        row.original?.last_login,
-                        'long'
-                    );
-                    return (
-                        <span>
-                            {text === '-' ? DATA_TABLE_EMPTY_VALUE : text}
-                        </span>
-                    );
-                }
+                cell: ({ row }) => (
+                    <TimestampText
+                        value={row.original?.last_login}
+                        format="long"
+                        tooltip={false}
+                        emptyText={DATA_TABLE_EMPTY_VALUE}
+                    />
+                )
             },
             {
                 id: 'dateJoined',

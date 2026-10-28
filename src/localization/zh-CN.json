@@ -1399,7 +1399,10 @@
                 "expand_session": "展开会话",
                 "collapse_session": "收起会话",
                 "expand_all": "全部展开",
-                "collapse_all": "全部收起"
+                "collapse_all": "全部收起",
+                "players_count": "{count} 人",
+                "videos_count": "{count} 个视频",
+                "latest": "最新"
             },
             "label": {
                 "sessions": "会话",
@@ -6670,13 +6673,28 @@
             "table_layout": "表格布局",
             "columns": "列",
             "lock_column_order": "锁定列顺序",
-            "unlock_column_order": "解锁列顺序"
+            "unlock_column_order": "解锁列顺序",
+            "new_items_count": "{count} 条新动态"
         },
         "action": {
-            "reset_columns": "重置列"
+            "reset_columns": "重置列",
+            "sort_ascending": "升序排列",
+            "sort_descending": "降序排列",
+            "clear_sort": "取消排序",
+            "hide_column": "隐藏此列",
+            "move_column_left": "左移",
+            "move_column_right": "右移"
         },
         "empty": {
             "no_rows_yet": "空空如也~"
+        },
+        "filter_action": {
+            "label": "筛选",
+            "only_user": "只看 {value}",
+            "add_user_to_scope": "将 {value} 加入筛选",
+            "only_type": "只看「{value}」",
+            "exclude_type": "排除「{value}」",
+            "only_world": "只看 {value}"
         }
     },
     "accessibility": {
@@ -6701,7 +6719,8 @@
         "open_player": "打开玩家资料：{player}",
         "player": "玩家",
         "remove_value": "移除 {value}",
-        "add_table_page_size": "添加每页显示行数"
+        "add_table_page_size": "添加每页显示行数",
+        "column_width_value": "{value} 像素"
     },
     "status_bar": {
         "do_not_disturb": "勿扰模式",

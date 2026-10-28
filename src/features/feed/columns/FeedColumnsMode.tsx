@@ -105,31 +105,6 @@ function SortableFeedColumn({ children, columnId }: SortableFeedColumnProps) {
     });
 }
 
-function useFeedTimeTicker() {
-    const [nowMs, setNowMs] = useState(() => Date.now());
-
-    useEffect(() => {
-        const updateNow = () => setNowMs(Date.now());
-        let intervalId: number | undefined;
-        const timeoutId = window.setTimeout(
-            () => {
-                updateNow();
-                intervalId = window.setInterval(updateNow, 1000);
-            },
-            1000 - (Date.now() % 1000)
-        );
-
-        return () => {
-            window.clearTimeout(timeoutId);
-            if (intervalId) {
-                window.clearInterval(intervalId);
-            }
-        };
-    }, []);
-
-    return nowMs;
-}
-
 function FeedColumnsSettingsMenu({
     density,
     onDensityChange,
@@ -189,7 +164,6 @@ export function FeedColumnsMode({
     const friendActions = useFeedFriendActions();
     const previousInstancesDialog = useFeedPreviousInstancesDialog();
     const timeDisplayMode = useFeedTimeDisplayMode();
-    const nowMs = useFeedTimeTicker();
     const densityConfig = getFeedColumnDensityConfig(density);
     const [managerOpen, setManagerOpen] = useState(false);
     const [restorePresetPromptOpen, setRestorePresetPromptOpen] =
@@ -327,7 +301,6 @@ export function FeedColumnsMode({
                                                 loadingPreviousInstancesKey={
                                                     previousInstancesDialog.loadingKey
                                                 }
-                                                nowMs={nowMs}
                                                 onDelete={deleteColumn}
                                                 onEdit={(columnId) => {
                                                     setSelectedColumnId(

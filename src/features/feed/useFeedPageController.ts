@@ -2,7 +2,12 @@ import type { SortingState } from '@tanstack/react-table';
 import { useEffect, useMemo } from 'react';
 
 import { useAppTable } from '@/components/data-table/appTable';
+import type { LogFilterCommands } from '@/components/data-table/LogFilterContextMenu';
 import { canExpandFeedRow, getFeedRowId } from '@/components/feed/feedRows';
+import {
+    FEED_FILTER_TYPES,
+    isFeedFilterType
+} from '@/repositories/feedRepository';
 
 import { useFeedColumns } from './components/FeedColumns';
 import { sortFeedTableRows } from './feedTableRows';
@@ -18,11 +23,65 @@ const EMPTY_SORT_META = { knownUsersById: {}, friendLogNamesById: {} };
 const EMPTY_SORTING: SortingState = [];
 
 export function useFeedPageController({
-    routeScopedUserIds
+    routeScopedUserIds,
+    setRouteScopedUserIds
 }: {
     routeScopedUserIds: readonly string[];
+    setRouteScopedUserIds(userIds: readonly string[]): void;
 }) {
     const filters = useFeedFilters({ routeScopedUserIds });
+    const {
+        activeFilters,
+        commitSearch,
+        scopedUserIds,
+        setFeedFilters,
+        setSearchDraft,
+        setUserScope
+    } = filters;
+    const rowFilterCommands = useMemo<LogFilterCommands>(() => {
+        const applyScope = (userIds: readonly string[]) => {
+            setUserScope(userIds);
+            setRouteScopedUserIds(userIds);
+        };
+        const currentTypes = activeFilters.length
+            ? activeFilters
+            : FEED_FILTER_TYPES;
+        return {
+            onlyUser: (userId) => applyScope([userId]),
+            addUserToScope: scopedUserIds.length
+                ? (userId) =>
+                      applyScope(
+                          scopedUserIds.includes(userId)
+                              ? scopedUserIds
+                              : [...scopedUserIds, userId]
+                      )
+                : undefined,
+            canFilterType: isFeedFilterType,
+            onlyType: (type) => {
+                if (isFeedFilterType(type)) {
+                    setFeedFilters([type]);
+                }
+            },
+            canExcludeType: (type) =>
+                currentTypes.some((current) => current !== type),
+            excludeType: (type) =>
+                setFeedFilters(
+                    currentTypes.filter((current) => current !== type)
+                ),
+            onlyWorld: (worldId) => {
+                setSearchDraft(worldId);
+                commitSearch(worldId);
+            }
+        };
+    }, [
+        activeFilters,
+        commitSearch,
+        scopedUserIds,
+        setFeedFilters,
+        setRouteScopedUserIds,
+        setSearchDraft,
+        setUserScope
+    ]);
     const tableModel = useFeedTableState({
         activeFilters: filters.activeFilters,
         dateFrom: filters.dateFrom,
@@ -46,6 +105,7 @@ export function useFeedPageController({
     const friendActions = useFeedFriendActions();
     const feedTableMeta = useFeedTableMeta({
         actions: friendActions,
+        filterCommands: rowFilterCommands,
         friendLogNamesById: feedRows.friendLogNamesById,
         loadingPreviousInstancesKey: previousInstancesDialog.loadingKey,
         onOpenPreviousInstances:
@@ -121,6 +181,7 @@ export function useFeedPageController({
 
     return {
         filters,
+        rowFilterCommands,
         friendLogNamesById: feedRows.friendLogNamesById,
         hasMore: feedRows.hasMore,
         hasUnloadedLatest: feedRows.hasUnloadedLatest,
@@ -130,6 +191,7 @@ export function useFeedPageController({
         loadOlder: feedRows.loadOlder,
         loadStatus: feedRows.loadStatus,
         loadingOlder: feedRows.loadingOlder,
+        newSinceLeftCount: feedRows.newSinceLeftCount,
         normalQueryKey: feedRows.normalQueryKey,
         previousInstancesDialog,
         resolvePageSize,

@@ -20,12 +20,14 @@ export function useFriendLogRows({
     refreshToken,
     searchQuery,
     selectedTypes,
+    targetUserId = '',
     dateFrom,
     dateTo
 }: {
     refreshToken: number;
     searchQuery: string;
     selectedTypes: string[];
+    targetUserId?: string;
     dateFrom: string;
     dateTo: string;
 }) {
@@ -72,6 +74,7 @@ export function useFriendLogRows({
         currentUserId,
         endpoint,
         selectedTypes,
+        targetUserId,
         hideUnfriends,
         searchQuery.trim(),
         dateFrom,
@@ -87,12 +90,13 @@ export function useFriendLogRows({
     );
     const queryOptions = useMemo(
         () => ({
+            ...(targetUserId ? { targetUserId } : {}),
             types: selectedTypes,
             excludedTypes,
             dateFrom: toIsoRangeStart(dateFrom),
             dateTo: toIsoRangeEnd(dateTo)
         }),
-        [selectedTypes, excludedTypes, dateFrom, dateTo]
+        [targetUserId, selectedTypes, excludedTypes, dateFrom, dateTo]
     );
 
     const reloadLatest = useCallback(() => {
