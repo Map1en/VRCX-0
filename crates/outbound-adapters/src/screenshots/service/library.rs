@@ -1,6 +1,3 @@
-use std::sync::Arc;
-
-use super::favorites::relink_missing_screenshot_favorites;
 use super::metadata::is_screenshot_content_asset_path;
 use super::paths::{is_png_path, now_rfc3339, option_string, path_string, unix_time_millis};
 use super::thumbnail::delete_thumbnail_cache_for_source_paths;
@@ -10,9 +7,9 @@ use super::{
     ScreenshotLibraryScanStatus, ScreenshotMetadata, ScreenshotSearchResult, ScreenshotSearchType,
     ScreenshotTimeWindow, ScreenshotWindowImages, SCREENSHOT_LIBRARY_INDEX_VERSION,
 };
+use vrcx_0_application::media::ScreenshotFavorites;
 use vrcx_0_application_core::{RuntimeEventBus, TaskStopToken, TaskSupervisor};
 use vrcx_0_core::text::contains_lowercase_query_case_insensitive;
-use vrcx_0_persistence::DatabaseService;
 
 pub(super) fn screenshot_search_result(
     path: &str,
@@ -312,7 +309,7 @@ pub(super) fn scan_screenshot_library_in(
 
 pub fn start_screenshot_library_scan(
     cache: &MetadataCacheDb,
-    favorites_db: Arc<DatabaseService>,
+    favorites: ScreenshotFavorites,
     thumbnail_cache_dir: PathBuf,
     event_bus: RuntimeEventBus,
     tasks: TaskSupervisor,
@@ -351,9 +348,7 @@ pub fn start_screenshot_library_scan(
             Some(&stop_token),
         );
         if !stop_token.is_stop_requested() {
-            if let Err(error) =
-                relink_missing_screenshot_favorites(&favorites_db, &cache_for_scan, &root)
-            {
+            if let Err(error) = favorites.relink_missing(&root) {
                 tracing::warn!(%error, "failed to relink missing screenshot favorites");
             }
         }

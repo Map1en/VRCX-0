@@ -1,139 +1,127 @@
-use std::collections::HashSet;
+use std::sync::Arc;
 
-use vrcx_0_core::screenshots::FavoriteScreenshots;
+use vrcx_0_application::media::{
+    ScreenshotFavorite, ScreenshotFavoriteStore, ScreenshotFingerprint, ScreenshotLibraryPort,
+};
 use vrcx_0_media::media_files::file_sha256_hex;
 use vrcx_0_persistence::screenshot_favorites as store;
 use vrcx_0_persistence::DatabaseService;
 
-use super::{Error, MetadataCacheDb, Path, Result};
+use super::{
+    delete_all_screenshot_metadata, delete_text_metadata, Error, MetadataCacheDb, Path, PathBuf,
+    Result, ScreenshotLibraryImage,
+};
 use crate::map_persistence_error;
 
-fn file_fingerprint(path: &Path) -> Result<(i64, String)> {
-    let size_bytes = std::fs::metadata(path).map_err(Error::Io)?.len() as i64;
-    let sha256 = file_sha256_hex(path).map_err(|error| match error {
-        vrcx_0_media::Error::Io(error) => Error::Io(error),
-        vrcx_0_media::Error::Custom(message) => Error::Custom(message),
-    })?;
-    Ok((size_bytes, sha256))
+pub struct LocalScreenshotFavoriteStore {
+    db: Arc<DatabaseService>,
 }
 
-pub fn set_screenshot_favorite(db: &DatabaseService, path: &str, favorite: bool) -> Result<()> {
-    if !favorite {
-        return store::remove_screenshot_favorite(db, path).map_err(map_persistence_error);
+impl LocalScreenshotFavoriteStore {
+    pub fn new(db: Arc<DatabaseService>) -> Self {
+        Self { db }
     }
-    let (size_bytes, sha256) = file_fingerprint(Path::new(path))?;
-    store::add_screenshot_favorite(db, path, size_bytes, &sha256).map_err(map_persistence_error)
 }
 
-pub fn forget_screenshot_favorite(db: &DatabaseService, path: &str) -> Result<()> {
-    store::remove_screenshot_favorite(db, path).map_err(map_persistence_error)
-}
-
-pub fn forget_missing_screenshot_favorites(db: &DatabaseService) -> Result<u32> {
-    let mut removed = 0u32;
-    for favorite in store::list_screenshot_favorites(db).map_err(map_persistence_error)? {
-        if Path::new(&favorite.path).is_file() {
-            continue;
-        }
-        store::remove_screenshot_favorite(db, &favorite.path).map_err(map_persistence_error)?;
-        removed = removed.saturating_add(1);
+fn favorite_from_record(record: store::ScreenshotFavoriteRecord) -> ScreenshotFavorite {
+    ScreenshotFavorite {
+        id: record.id,
+        path: record.path,
+        fingerprint: ScreenshotFingerprint {
+            size_bytes: record.size_bytes,
+            sha256: record.sha256,
+        },
     }
-    Ok(removed)
 }
 
-pub fn refresh_screenshot_favorite(db: &DatabaseService, path: &str) -> Result<()> {
-    let Some(favorite) = store::get_screenshot_favorite(db, path).map_err(map_persistence_error)?
-    else {
-        return Ok(());
-    };
-    let (size_bytes, sha256) = file_fingerprint(Path::new(path))?;
-    store::update_screenshot_favorite_file(db, favorite.id, path, size_bytes, &sha256)
-        .map_err(map_persistence_error)
-}
+impl ScreenshotFavoriteStore for LocalScreenshotFavoriteStore {
+    fn list(&self) -> Result<Vec<ScreenshotFavorite>> {
+        Ok(store::list_screenshot_favorites(&self.db)
+            .map_err(map_persistence_error)?
+            .into_iter()
+            .map(favorite_from_record)
+            .collect())
+    }
 
-pub fn refresh_all_screenshot_favorites(db: &DatabaseService) -> Result<()> {
-    for favorite in store::list_screenshot_favorites(db).map_err(map_persistence_error)? {
-        let Ok((size_bytes, sha256)) = file_fingerprint(Path::new(&favorite.path)) else {
-            continue;
-        };
+    fn get(&self, path: &str) -> Result<Option<ScreenshotFavorite>> {
+        Ok(store::get_screenshot_favorite(&self.db, path)
+            .map_err(map_persistence_error)?
+            .map(favorite_from_record))
+    }
+
+    fn add(&self, path: &str, fingerprint: &ScreenshotFingerprint) -> Result<()> {
+        store::add_screenshot_favorite(&self.db, path, fingerprint.size_bytes, &fingerprint.sha256)
+            .map_err(map_persistence_error)
+    }
+
+    fn update_file(&self, id: i64, path: &str, fingerprint: &ScreenshotFingerprint) -> Result<()> {
         store::update_screenshot_favorite_file(
-            db,
-            favorite.id,
-            &favorite.path,
-            size_bytes,
-            &sha256,
+            &self.db,
+            id,
+            path,
+            fingerprint.size_bytes,
+            &fingerprint.sha256,
         )
-        .map_err(map_persistence_error)?;
+        .map_err(map_persistence_error)
     }
-    Ok(())
+
+    fn remove(&self, path: &str) -> Result<()> {
+        store::remove_screenshot_favorite(&self.db, path).map_err(map_persistence_error)
+    }
 }
 
-pub fn list_favorite_screenshots(
-    db: &DatabaseService,
-    cache: &MetadataCacheDb,
-    root_path: &str,
-) -> Result<FavoriteScreenshots> {
-    let favorites = store::list_screenshot_favorites(db).map_err(map_persistence_error)?;
-    let paths = favorites
-        .iter()
-        .map(|favorite| favorite.path.clone())
-        .collect::<Vec<_>>();
-    let images = cache.list_library_images_by_paths_for_root(root_path, &paths)?;
-    let missing_count = paths
-        .iter()
-        .filter(|path| !Path::new(path).is_file())
-        .count();
-    Ok(FavoriteScreenshots {
-        missing_count: u32::try_from(missing_count).unwrap_or(u32::MAX),
-        paths,
-        images,
-    })
+pub struct LocalScreenshotLibraryAdapter {
+    cache: MetadataCacheDb,
+    thumbnail_cache_dir: PathBuf,
 }
 
-pub fn relink_missing_screenshot_favorites(
-    db: &DatabaseService,
-    cache: &MetadataCacheDb,
-    root_path: &str,
-) -> Result<usize> {
-    let favorites = store::list_screenshot_favorites(db).map_err(map_persistence_error)?;
-    let favorite_paths = favorites
-        .iter()
-        .map(|favorite| favorite.path.clone())
-        .collect::<HashSet<_>>();
-    let mut claimed_paths = HashSet::new();
-    let mut relinked = 0;
-
-    for favorite in favorites
-        .iter()
-        .filter(|favorite| !Path::new(&favorite.path).is_file())
-    {
-        for candidate in
-            cache.list_library_paths_with_size_for_root(root_path, favorite.size_bytes)?
-        {
-            if favorite_paths.contains(&candidate) || claimed_paths.contains(&candidate) {
-                continue;
-            }
-            let Ok((size_bytes, sha256)) = file_fingerprint(Path::new(&candidate)) else {
-                continue;
-            };
-            if size_bytes != favorite.size_bytes || sha256 != favorite.sha256 {
-                continue;
-            }
-            store::update_screenshot_favorite_file(
-                db,
-                favorite.id,
-                &candidate,
-                size_bytes,
-                &sha256,
-            )
-            .map_err(map_persistence_error)?;
-            claimed_paths.insert(candidate);
-            relinked += 1;
-            break;
+impl LocalScreenshotLibraryAdapter {
+    pub fn new(cache: MetadataCacheDb, thumbnail_cache_dir: PathBuf) -> Self {
+        Self {
+            cache,
+            thumbnail_cache_dir,
         }
     }
+}
 
-    Ok(relinked)
+impl ScreenshotLibraryPort for LocalScreenshotLibraryAdapter {
+    fn is_file(&self, path: &str) -> bool {
+        Path::new(path).is_file()
+    }
+
+    fn fingerprint(&self, path: &str) -> Result<ScreenshotFingerprint> {
+        let path = Path::new(path);
+        let size_bytes = std::fs::metadata(path).map_err(Error::Io)?.len() as i64;
+        let sha256 = file_sha256_hex(path).map_err(|error| match error {
+            vrcx_0_media::Error::Io(error) => Error::Io(error),
+            vrcx_0_media::Error::Custom(message) => Error::Custom(message),
+        })?;
+        Ok(ScreenshotFingerprint { size_bytes, sha256 })
+    }
+
+    fn indexed_paths_with_size(&self, root_path: &str, size_bytes: i64) -> Result<Vec<String>> {
+        Ok(self
+            .cache
+            .list_library_paths_with_size_for_root(root_path, size_bytes)?)
+    }
+
+    fn indexed_images(
+        &self,
+        root_path: &str,
+        paths: &[String],
+    ) -> Result<Vec<ScreenshotLibraryImage>> {
+        Ok(self
+            .cache
+            .list_library_images_by_paths_for_root(root_path, paths)?)
+    }
+
+    fn delete_text_metadata(&self, path: &str) -> bool {
+        delete_text_metadata(path, true)
+    }
+
+    fn delete_all_metadata(&self, root_path: &str) {
+        delete_all_screenshot_metadata(&self.cache, &self.thumbnail_cache_dir, root_path);
+    }
 }
 
 #[cfg(test)]

@@ -1,5 +1,6 @@
 mod inventory_collect;
 mod media_upload;
+mod screenshot_favorites;
 
 pub use inventory_collect::{
     collect_inventory_items, InventoryItemsCollectDeps, InventoryItemsCollectInput,
@@ -12,4 +13,8 @@ pub use media_upload::{
     LegacyMediaUploadFuture, LegacyMediaUploadGate, LegacyMediaUploadGateFuture,
     LegacyMediaUploadPort, LegacyMediaUploadRequest, LegacyMediaUploadResult,
     MediaUploadPreprocessor,
+};
+pub use screenshot_favorites::{
+    ScreenshotFavorite, ScreenshotFavoriteStore, ScreenshotFavorites, ScreenshotFingerprint,
+    ScreenshotLibraryPort,
 };

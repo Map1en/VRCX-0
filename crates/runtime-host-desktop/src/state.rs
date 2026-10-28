@@ -2039,7 +2039,7 @@ impl DesktopRuntimeHostState {
     ) -> vrcx_0_core::screenshots::ScreenshotLibraryScanStatus {
         vrcx_0_outbound_adapters::screenshots::start_screenshot_library_scan(
             &self.game.screenshot_cache,
-            Arc::clone(self.runtime.database()),
+            self.screenshots.screenshot_favorites().clone(),
             self.runtime.paths().screenshot_thumbs.clone(),
             self.runtime.desktop_assembly().event_bus().clone(),
             self.runtime.desktop_assembly().tasks().clone(),

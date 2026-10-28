@@ -1,6 +1,7 @@
-use std::path::PathBuf;
+use vrcx_0_application::media::ScreenshotFavorites;
 
 use super::super::library::scan_screenshot_library_in;
+use super::super::write_vrcx_metadata;
 use super::*;
 
 struct TestDir {
@@ -29,8 +30,9 @@ impl Drop for TestDir {
 struct Library {
     _dir: TestDir,
     root: PathBuf,
-    db: DatabaseService,
+    db: Arc<DatabaseService>,
     cache: MetadataCacheDb,
+    favorites: ScreenshotFavorites,
 }
 
 impl Library {
@@ -39,13 +41,21 @@ impl Library {
         let root = dir.path.join("photos");
         std::fs::create_dir_all(root.join("2026-05")).unwrap();
         std::fs::create_dir_all(root.join("sorted")).unwrap();
-        let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap();
+        let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap());
         let cache = MetadataCacheDb::new(&dir.path.join("metadataCache.db")).unwrap();
+        let favorites = ScreenshotFavorites::new(
+            Arc::new(LocalScreenshotFavoriteStore::new(Arc::clone(&db))),
+            Arc::new(LocalScreenshotLibraryAdapter::new(
+                cache.clone(),
+                dir.path.join("thumbnails"),
+            )),
+        );
         Self {
             _dir: dir,
             root,
             db,
             cache,
+            favorites,
         }
     }
 
@@ -66,7 +76,7 @@ impl Library {
 
     fn scan_and_relink(&self) -> usize {
         scan_screenshot_library_in(&self.root, &self.cache, None, false, None);
-        relink_missing_screenshot_favorites(&self.db, &self.cache, &self.root_string()).unwrap()
+        self.favorites.relink_missing(&self.root_string()).unwrap()
     }
 
     fn favorite_paths(&self) -> Vec<String> {
@@ -84,7 +94,7 @@ fn moved_favorite_is_found_again_after_the_next_scan() {
     let original = library.write_png("2026-05/VRChat_sea.png", 10);
     library.write_png("2026-05/VRChat_other.png", 200);
     library.scan_and_relink();
-    set_screenshot_favorite(&library.db, &original, true).unwrap();
+    library.favorites.set_favorite(&original, true).unwrap();
 
     let moved = library.root.join("sorted").join("sea.png");
     std::fs::rename(&original, &moved).unwrap();
@@ -93,8 +103,7 @@ fn moved_favorite_is_found_again_after_the_next_scan() {
     let moved = moved.to_string_lossy().into_owned();
     assert_eq!(relinked, 1);
     assert_eq!(library.favorite_paths(), vec![moved.clone()]);
-    let favorites =
-        list_favorite_screenshots(&library.db, &library.cache, &library.root_string()).unwrap();
+    let favorites = library.favorites.list(&library.root_string()).unwrap();
     assert_eq!(favorites.missing_count, 0);
     assert_eq!(
         favorites
@@ -111,7 +120,7 @@ fn favorite_stays_missing_when_no_file_has_the_same_content() {
     let library = Library::new("favorite-missing");
     let original = library.write_png("2026-05/VRChat_sea.png", 10);
     library.scan_and_relink();
-    set_screenshot_favorite(&library.db, &original, true).unwrap();
+    library.favorites.set_favorite(&original, true).unwrap();
 
     std::fs::remove_file(&original).unwrap();
     library.write_png("sorted/VRChat_sea.png", 11);
@@ -119,8 +128,7 @@ fn favorite_stays_missing_when_no_file_has_the_same_content() {
 
     assert_eq!(relinked, 0);
     assert_eq!(library.favorite_paths(), vec![original]);
-    let favorites =
-        list_favorite_screenshots(&library.db, &library.cache, &library.root_string()).unwrap();
+    let favorites = library.favorites.list(&library.root_string()).unwrap();
     assert_eq!(favorites.missing_count, 1);
     assert!(favorites.images.is_empty());
 }
@@ -131,11 +139,11 @@ fn removing_missing_favorites_keeps_the_ones_still_on_disk() {
     let gone = library.write_png("2026-05/VRChat_gone.png", 10);
     let kept = library.write_png("2026-05/VRChat_kept.png", 20);
     library.scan_and_relink();
-    set_screenshot_favorite(&library.db, &gone, true).unwrap();
-    set_screenshot_favorite(&library.db, &kept, true).unwrap();
+    library.favorites.set_favorite(&gone, true).unwrap();
+    library.favorites.set_favorite(&kept, true).unwrap();
     std::fs::remove_file(&gone).unwrap();
 
-    assert_eq!(forget_missing_screenshot_favorites(&library.db).unwrap(), 1);
+    assert_eq!(library.favorites.forget_missing().unwrap(), 1);
     assert_eq!(library.favorite_paths(), vec![kept]);
 }
 
@@ -147,8 +155,8 @@ fn copy_that_is_already_a_favorite_is_not_claimed_by_a_missing_favorite() {
     std::fs::copy(&original, &copy).unwrap();
     let copy = copy.to_string_lossy().into_owned();
     library.scan_and_relink();
-    set_screenshot_favorite(&library.db, &original, true).unwrap();
-    set_screenshot_favorite(&library.db, &copy, true).unwrap();
+    library.favorites.set_favorite(&original, true).unwrap();
+    library.favorites.set_favorite(&copy, true).unwrap();
 
     std::fs::remove_file(&original).unwrap();
     let relinked = library.scan_and_relink();
@@ -162,14 +170,17 @@ fn copy_that_is_already_a_favorite_is_not_claimed_by_a_missing_favorite() {
 }
 
 #[test]
-fn refreshing_after_an_in_place_rewrite_keeps_the_favorite_findable_after_a_move() {
-    let library = Library::new("favorite-rewrite");
+fn deleting_metadata_keeps_the_favorite_findable_after_a_move() {
+    let library = Library::new("favorite-metadata-delete");
     let original = library.write_png("2026-05/VRChat_sea.png", 10);
+    assert!(write_vrcx_metadata(
+        r#"{"application":"VRCX-0"}"#,
+        &original
+    ));
     library.scan_and_relink();
-    set_screenshot_favorite(&library.db, &original, true).unwrap();
+    library.favorites.set_favorite(&original, true).unwrap();
 
-    library.write_png("2026-05/VRChat_sea.png", 99);
-    refresh_screenshot_favorite(&library.db, &original).unwrap();
+    assert!(library.favorites.delete_metadata(&original));
     let moved = library.root.join("sorted").join("sea.png");
     std::fs::rename(&original, &moved).unwrap();
 

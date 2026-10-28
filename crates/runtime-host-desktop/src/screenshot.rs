@@ -3,13 +3,15 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+use vrcx_0_application::media::ScreenshotFavorites;
 use vrcx_0_application_core::RuntimeEventBus;
 use vrcx_0_core::screenshots::{
     plan_screenshot_zip_entries, screenshot_export_file_name, ScreenshotZipEntry,
 };
 use vrcx_0_core::screenshots::{FavoriteScreenshots, ScreenshotExportProgress};
 use vrcx_0_outbound_adapters::screenshots::{
-    self as screenshot, ScreenshotExportOutcome, ScreenshotFolderTree, ScreenshotLibraryImage,
+    self as screenshot, LocalScreenshotFavoriteStore, LocalScreenshotLibraryAdapter,
+    ScreenshotExportOutcome, ScreenshotFolderTree, ScreenshotLibraryImage,
     ScreenshotLibraryScanStatus, ScreenshotSearchResult, ScreenshotTimeWindow,
     ScreenshotWindowImages,
 };
@@ -49,7 +51,7 @@ fn ensure_export_space(output_path: &Path, required_bytes: u64) -> Result<()> {
 #[derive(Clone)]
 pub struct DesktopScreenshotRuntime {
     cache: MetadataCacheDb,
-    db: Arc<DatabaseService>,
+    favorites: ScreenshotFavorites,
     host_file_access: HostFileAccess,
     paths: AppPaths,
     photos_root: String,
@@ -66,9 +68,16 @@ impl DesktopScreenshotRuntime {
         photos_root: String,
         event_bus: RuntimeEventBus,
     ) -> Self {
+        let favorites = ScreenshotFavorites::new(
+            Arc::new(LocalScreenshotFavoriteStore::new(db)),
+            Arc::new(LocalScreenshotLibraryAdapter::new(
+                cache.clone(),
+                paths.screenshot_thumbs.clone(),
+            )),
+        );
         Self {
             cache,
-            db,
+            favorites,
             host_file_access,
             paths,
             photos_root,
@@ -128,20 +137,14 @@ impl DesktopScreenshotRuntime {
     }
 
     pub fn delete_metadata(&self, path: &str) -> bool {
-        let deleted = screenshot::delete_text_metadata(path, true);
-        if deleted {
-            if let Err(error) = screenshot::refresh_screenshot_favorite(&self.db, path) {
-                tracing::warn!(%error, "failed to refresh screenshot favorite after metadata delete");
-            }
-        }
-        deleted
+        self.favorites.delete_metadata(path)
     }
 
     pub fn delete_file(&self, path: &str) -> Result<()> {
         self.ensure_delete_allowed(path)?;
         vrcx_0_host_desktop::shell_actions::move_to_trash(Path::new(path))?;
         screenshot::forget_screenshot_file(&self.cache, &self.paths.screenshot_thumbs, path)?;
-        screenshot::forget_screenshot_favorite(&self.db, path)?;
+        self.favorites.forget(path)?;
         Ok(())
     }
 
@@ -149,21 +152,15 @@ impl DesktopScreenshotRuntime {
         if favorite {
             self.ensure_read_allowed(path)?;
         }
-        Ok(screenshot::set_screenshot_favorite(
-            &self.db, path, favorite,
-        )?)
+        Ok(self.favorites.set_favorite(path, favorite)?)
     }
 
     pub fn forget_missing_favorites(&self) -> Result<u32> {
-        Ok(screenshot::forget_missing_screenshot_favorites(&self.db)?)
+        Ok(self.favorites.forget_missing()?)
     }
 
     pub fn favorites(&self) -> Result<FavoriteScreenshots> {
-        Ok(screenshot::list_favorite_screenshots(
-            &self.db,
-            &self.cache,
-            &self.photos_root,
-        )?)
+        Ok(self.favorites.list(&self.photos_root)?)
     }
 
     pub fn add_metadata(
@@ -333,13 +330,10 @@ impl DesktopScreenshotRuntime {
     }
 
     pub fn delete_all_metadata(&self) {
-        screenshot::delete_all_screenshot_metadata(
-            &self.cache,
-            &self.paths.screenshot_thumbs,
-            &self.photos_root,
-        );
-        if let Err(error) = screenshot::refresh_all_screenshot_favorites(&self.db) {
-            tracing::warn!(%error, "failed to refresh screenshot favorites after metadata clear");
-        }
+        self.favorites.delete_all_metadata(&self.photos_root);
+    }
+
+    pub(crate) fn screenshot_favorites(&self) -> &ScreenshotFavorites {
+        &self.favorites
     }
 }

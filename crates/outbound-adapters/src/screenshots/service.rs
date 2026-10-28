@@ -30,11 +30,7 @@ mod paths;
 mod thumbnail;
 
 pub use export::{total_screenshot_export_bytes, write_screenshots_zip, ScreenshotExportOutcome};
-pub use favorites::{
-    forget_missing_screenshot_favorites, forget_screenshot_favorite, list_favorite_screenshots,
-    refresh_all_screenshot_favorites, refresh_screenshot_favorite,
-    relink_missing_screenshot_favorites, set_screenshot_favorite,
-};
+pub use favorites::{LocalScreenshotFavoriteStore, LocalScreenshotLibraryAdapter};
 pub use library::{
     find_screenshots, forget_screenshot_file, list_screenshot_folder_images,
     list_screenshots_in_windows, list_world_screenshots, random_screenshot_path_in_folder_tree,
