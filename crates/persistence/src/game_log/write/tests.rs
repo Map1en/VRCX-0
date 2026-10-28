@@ -265,7 +265,7 @@ fn writes_core_rows_in_one_batch_and_keeps_deduplication() -> Result<(), Error> 
         data: "event data".into(),
     });
 
-    let affected_count = write_batch(db, &OwnerId::new("usr_test"), &batch)?;
+    let affected_count = write_batch(db, &OwnerId::new("usr_test"), &batch)?.affected();
     assert_eq!(affected_count, 3);
 
     let rows = db.execute("SELECT COUNT(*) FROM gamelog_location", &Default::default())?;
@@ -321,7 +321,10 @@ fn account_scoped_reads_include_shared_rows_and_machine_cursor_stays_global() ->
             time: 1,
             group_name: "".into(),
         });
-        assert_eq!(write_batch(db, &OwnerId::new(owner_user_id), &batch)?, 2);
+        assert_eq!(
+            write_batch(db, &OwnerId::new(owner_user_id), &batch)?.affected(),
+            2
+        );
     }
 
     assert_eq!(
@@ -387,8 +390,14 @@ fn game_log_uniqueness_remains_machine_global() -> Result<(), Error> {
         data: "duplicate".into(),
     });
 
-    assert_eq!(write_batch(db, &OwnerId::new("usr_a"), &batch)?, 1);
-    assert_eq!(write_batch(db, &OwnerId::new("usr_b"), &batch)?, 0);
+    assert_eq!(
+        write_batch(db, &OwnerId::new("usr_a"), &batch)?.affected(),
+        1
+    );
+    assert_eq!(
+        write_batch(db, &OwnerId::new("usr_b"), &batch)?.affected(),
+        0
+    );
     assert!(get_game_log_events(db, &OwnerId::new("usr_b"))?.is_empty());
     Ok(())
 }

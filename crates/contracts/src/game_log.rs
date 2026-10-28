@@ -145,6 +145,18 @@ impl GameLogWriteBatch {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct GameLogWriteCount {
+    pub inserted: u64,
+    pub location_times_updated: u64,
+}
+
+impl GameLogWriteCount {
+    pub fn affected(self) -> u64 {
+        self.inserted.saturating_add(self.location_times_updated)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct GameLogLocationSnapshot {
     pub created_at: String,

@@ -3,8 +3,8 @@ use std::sync::Arc;
 use serde_json::Value;
 use vrcx_0_application_game::{GameStateStore, PlayerModeration};
 use vrcx_0_contracts::game_log::{
-    GameLogJoinLeaveSnapshot, GameLogLocationSnapshot, GameLogWriteBatch, PreviousInstanceEventRow,
-    SessionEventRow, SessionLocationSegmentRow, SessionPlayerDurationRow,
+    GameLogJoinLeaveSnapshot, GameLogLocationSnapshot, GameLogWriteBatch, GameLogWriteCount,
+    PreviousInstanceEventRow, SessionEventRow, SessionLocationSegmentRow, SessionPlayerDurationRow,
 };
 use vrcx_0_core::OwnerId;
 use vrcx_0_persistence::{config, game_log, local_moderation, DatabaseService};
@@ -48,7 +48,7 @@ impl GameStateStore for PersistenceGameStateStore {
         &self,
         owner: &OwnerId,
         batch: &GameLogWriteBatch,
-    ) -> vrcx_0_application_core::Result<u64> {
+    ) -> vrcx_0_application_core::Result<GameLogWriteCount> {
         Ok(game_log::write_batch(self.db.as_ref(), owner, batch)?)
     }
 

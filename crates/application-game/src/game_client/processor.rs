@@ -318,16 +318,20 @@ impl GameClientProcessor {
 
     fn persist_crash_relaunch_event(&self) -> Result<()> {
         let created_at = now_iso();
-        let affected_count = self.deps.store.write_game_log(
-            &OwnerId::new(self.deps.auth_scope.snapshot().current_user_id),
-            &GameLogWriteBatch {
-                events: vec![GameLogEventEntry {
-                    created_at: created_at.clone(),
-                    data: CRASH_RELAUNCH_MESSAGE.into(),
-                }],
-                ..Default::default()
-            },
-        )?;
+        let affected_count = self
+            .deps
+            .store
+            .write_game_log(
+                &OwnerId::new(self.deps.auth_scope.snapshot().current_user_id),
+                &GameLogWriteBatch {
+                    events: vec![GameLogEventEntry {
+                        created_at: created_at.clone(),
+                        data: CRASH_RELAUNCH_MESSAGE.into(),
+                    }],
+                    ..Default::default()
+                },
+            )?
+            .affected();
         self.deps
             .backend_status
             .publish_game_log_persisted(affected_count);

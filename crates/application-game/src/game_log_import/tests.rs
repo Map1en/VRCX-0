@@ -143,6 +143,20 @@ fn import_writes_history_rows_without_counting_location_time_updates_as_new_rows
 }
 
 #[test]
+fn import_stores_history_rows_and_their_durations_in_one_write() {
+    let dir = TestDir::new("import-one-write");
+    let path = dir.write("own.txt", &session_with(&[AUTH_SELF]));
+    let store = TestGameStateStore::default();
+    store.allow_only_writes(1);
+    let owner = OwnerId::new("usr_self");
+
+    let result = import_game_log_file(&store, &owner, &path, NO_CONSENT, false).unwrap();
+
+    assert_eq!(result.inserted_count, 6);
+    assert!(store.locations(&owner)[0].time > 0);
+}
+
+#[test]
 fn import_requires_confirmation_for_logs_without_an_account_line() {
     let dir = TestDir::new("unverified");
     let path = dir.write("unknown.txt", &SESSION);

@@ -1,7 +1,7 @@
 use serde_json::Value;
 use vrcx_0_contracts::game_log::{
-    GameLogJoinLeaveSnapshot, GameLogLocationSnapshot, GameLogWriteBatch, PreviousInstanceEventRow,
-    SessionEventRow, SessionLocationSegmentRow, SessionPlayerDurationRow,
+    GameLogJoinLeaveSnapshot, GameLogLocationSnapshot, GameLogWriteBatch, GameLogWriteCount,
+    PreviousInstanceEventRow, SessionEventRow, SessionLocationSegmentRow, SessionPlayerDurationRow,
 };
 use vrcx_0_core::OwnerId;
 
@@ -65,7 +65,11 @@ pub trait GameStateStore: Send + Sync {
     fn set_bool(&self, key: &str, value: bool) -> Result<()>;
     fn set_string(&self, key: &str, value: &str) -> Result<()>;
     fn set_json(&self, key: &str, value: &Value) -> Result<()>;
-    fn write_game_log(&self, owner: &OwnerId, batch: &GameLogWriteBatch) -> Result<u64>;
+    fn write_game_log(
+        &self,
+        owner: &OwnerId,
+        batch: &GameLogWriteBatch,
+    ) -> Result<GameLogWriteCount>;
     fn fill_location_group_name(
         &self,
         owner: &OwnerId,
@@ -151,6 +155,7 @@ pub(crate) struct TestGameStateStore {
     state: std::sync::Mutex<TestGameState>,
     fail_writes: std::sync::atomic::AtomicBool,
     fail_reads: std::sync::atomic::AtomicBool,
+    writes_left: std::sync::Mutex<Option<usize>>,
 }
 
 #[cfg(test)]
@@ -229,6 +234,10 @@ impl TestGameStateStore {
     pub(crate) fn set_fail_writes(&self, fail: bool) {
         self.fail_writes
             .store(fail, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    pub(crate) fn allow_only_writes(&self, count: usize) {
+        *self.writes_left.lock().expect("test write budget lock") = Some(count);
     }
 }
 
@@ -333,9 +342,24 @@ impl GameStateStore for TestGameStateStore {
         Ok(1)
     }
 
-    fn write_game_log(&self, owner: &OwnerId, batch: &GameLogWriteBatch) -> Result<u64> {
+    fn write_game_log(
+        &self,
+        owner: &OwnerId,
+        batch: &GameLogWriteBatch,
+    ) -> Result<GameLogWriteCount> {
         if self.fail_writes.load(std::sync::atomic::Ordering::Relaxed) {
             return Err(crate::Error::Custom("test game state write failure".into()));
+        }
+        if let Some(left) = self
+            .writes_left
+            .lock()
+            .expect("test write budget lock")
+            .as_mut()
+        {
+            if *left == 0 {
+                return Err(crate::Error::Custom("test game state write failure".into()));
+            }
+            *left -= 1;
         }
         let mut state = self.state.lock().expect("test game state lock");
         state.tables_exist = true;
@@ -346,7 +370,7 @@ impl GameStateStore for TestGameStateStore {
             );
         }
         let owner = owner.as_str().to_string();
-        let mut affected = (batch.locations.len()
+        let inserted = (batch.locations.len()
             + batch.join_leave.len()
             + batch.portal_spawns.len()
             + batch.video_plays.len()
@@ -359,13 +383,14 @@ impl GameStateStore for TestGameStateStore {
                 owner: owner.clone(),
                 value,
             }));
+        let mut location_times_updated = 0_u64;
         for update in &batch.location_time_updates {
             if let Some(row) = state.locations.iter_mut().rev().find(|row| {
                 owner_can_read(&row.owner, &OwnerId::new(&owner))
                     && row.value.created_at == update.created_at
             }) {
                 row.value.time = update.time;
-                affected += 1;
+                location_times_updated += 1;
             }
         }
         state
@@ -380,7 +405,10 @@ impl GameStateStore for TestGameStateStore {
                 owner: owner.clone(),
                 value,
             }));
-        Ok(affected)
+        Ok(GameLogWriteCount {
+            inserted,
+            location_times_updated,
+        })
     }
 
     fn join_leave_for_location(

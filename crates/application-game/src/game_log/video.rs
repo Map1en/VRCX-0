@@ -191,7 +191,7 @@ pub(crate) async fn handle_video_play(
         ..Default::default()
     };
     let affected_count = match store.write_game_log(owner_user_id, &batch) {
-        Ok(affected_count) => affected_count,
+        Ok(count) => count.affected(),
         Err(error) => {
             let message = error.to_string();
             event_bus.emit_game_log_persistence_fallback(GameLogPersistenceFallbackPayload {

@@ -8,6 +8,7 @@ use super::tables::ensure_game_log_tables_on;
 use super::types::{
     GameLogEventEntry, GameLogExternalEntry, GameLogJoinLeaveEntry, GameLogLocationEntry,
     GameLogPortalSpawnEntry, GameLogResourceLoadEntry, GameLogVideoPlayEntry, GameLogWriteBatch,
+    GameLogWriteCount,
 };
 
 fn update_location_time_sql() -> String {
@@ -284,9 +285,9 @@ pub fn write_batch(
     db: &DatabaseService,
     owner_user_id: &OwnerId,
     batch: &GameLogWriteBatch,
-) -> Result<u64, Error> {
+) -> Result<GameLogWriteCount, Error> {
     if batch.is_empty() {
-        return Ok(0);
+        return Ok(GameLogWriteCount::default());
     }
 
     super::tables::ensure_game_log_tables(db)?;
@@ -296,12 +297,13 @@ pub fn write_batch(
     let owner_id = owner_id_get_or_insert(db, owner_user_id)?;
     db.write_transaction(|tx| {
         ensure_game_log_tables_on(tx)?;
-        let mut affected = 0_u64;
+        let mut inserted = 0_u64;
+        let mut location_times_updated = 0_u64;
         for entry in &batch.locations {
-            affected = affected.saturating_add(insert_location_on(tx, owner_id, entry)?);
+            inserted = inserted.saturating_add(insert_location_on(tx, owner_id, entry)?);
         }
         for update in &batch.location_time_updates {
-            affected = affected.saturating_add(update_location_time_on(
+            location_times_updated = location_times_updated.saturating_add(update_location_time_on(
                 tx,
                 owner_id,
                 &update.created_at,
@@ -309,22 +311,22 @@ pub fn write_batch(
             )?);
         }
         for entry in &batch.join_leave {
-            affected = affected.saturating_add(insert_join_leave_on(tx, owner_id, entry)?);
+            inserted = inserted.saturating_add(insert_join_leave_on(tx, owner_id, entry)?);
         }
         for entry in &batch.portal_spawns {
-            affected = affected.saturating_add(insert_portal_spawn_on(tx, owner_id, entry)?);
+            inserted = inserted.saturating_add(insert_portal_spawn_on(tx, owner_id, entry)?);
         }
         for entry in &batch.video_plays {
-            affected = affected.saturating_add(insert_video_play_on(tx, owner_id, entry)?);
+            inserted = inserted.saturating_add(insert_video_play_on(tx, owner_id, entry)?);
         }
         for entry in &batch.resource_loads {
-            affected = affected.saturating_add(insert_resource_load_on(tx, owner_id, entry)?);
+            inserted = inserted.saturating_add(insert_resource_load_on(tx, owner_id, entry)?);
         }
         for entry in &batch.events {
-            affected = affected.saturating_add(insert_event_on(tx, owner_id, entry)?);
+            inserted = inserted.saturating_add(insert_event_on(tx, owner_id, entry)?);
         }
         for entry in &batch.externals {
-            affected = affected.saturating_add(insert_external_on(tx, owner_id, entry)?);
+            inserted = inserted.saturating_add(insert_external_on(tx, owner_id, entry)?);
         }
         if let Some(checkpoint) = &batch.replay_checkpoint {
             tx.execute_non_query(
@@ -335,7 +337,10 @@ pub fn write_batch(
                     .build(),
             )?;
         }
-        Ok(affected)
+        Ok(GameLogWriteCount {
+            inserted,
+            location_times_updated,
+        })
     })
 }
 
