@@ -387,3 +387,129 @@ fn built3(
         request,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use serde::de::DeserializeOwned;
+    use serde_json::{json, Value};
+
+    use super::*;
+
+    fn input<T: DeserializeOwned>(value: Value) -> T {
+        serde_json::from_value(value).unwrap()
+    }
+
+    fn built(action: GroupRemoteRequest) -> (String, String, Option<Value>) {
+        let request = VrchatGroupRemoteRequests.build(action).unwrap().request;
+        (
+            request.method.unwrap_or_default(),
+            request.path.unwrap_or_default(),
+            request.body.as_json().cloned(),
+        )
+    }
+
+    #[test]
+    fn role_and_permission_lists_read_their_own_group_collections() {
+        let group = || input(json!({ "groupId": "grp_1" }));
+
+        assert_eq!(
+            built(GroupRemoteRequest::GetRoles(group())),
+            ("GET".into(), "groups/grp%5F1/roles".into(), None)
+        );
+        assert_eq!(
+            built(GroupRemoteRequest::GetPermissions(group())),
+            ("GET".into(), "groups/grp%5F1/permissions".into(), None)
+        );
+    }
+
+    #[test]
+    fn role_writes_carry_every_role_field() {
+        let role = json!({
+            "name": "Staff",
+            "description": "Runs events",
+            "isSelfAssignable": true,
+            "isAddedOnJoin": false,
+            "requiresTwoFactor": true,
+            "requiresPurchase": false,
+            "permissions": ["group-members-manage"],
+            "order": 2,
+        });
+
+        let (method, path, body) = built(GroupRemoteRequest::CreateRole(input(
+            json!({ "groupId": "grp_1", "params": role }),
+        )));
+        assert_eq!(
+            (method.as_str(), path.as_str()),
+            ("POST", "groups/grp%5F1/roles")
+        );
+        assert_eq!(body, Some(role.clone()));
+
+        let (method, path, body) = built(GroupRemoteRequest::UpdateRole(input(
+            json!({ "groupId": "grp_1", "roleId": "grol_1", "params": role }),
+        )));
+        assert_eq!(
+            (method.as_str(), path.as_str()),
+            ("PUT", "groups/grp%5F1/roles/grol%5F1")
+        );
+        assert_eq!(body, Some(role));
+    }
+
+    #[test]
+    fn member_props_carry_every_patched_field() {
+        let patch = json!({
+            "isSubscribedToAnnouncements": true,
+            "isSubscribedToEventAnnouncements": false,
+            "managerNotes": "trusted",
+            "visibility": "friends",
+        });
+
+        let (method, path, body) = built(GroupRemoteRequest::SetMemberProps(input(
+            json!({ "groupId": "grp_1", "userId": "usr_1", "params": patch }),
+        )));
+
+        assert_eq!(
+            (method.as_str(), path.as_str()),
+            ("PUT", "groups/grp%5F1/members/usr%5F1")
+        );
+        assert_eq!(body, Some(patch));
+    }
+
+    #[test]
+    fn profile_updates_and_posts_carry_every_field() {
+        let profile = json!({
+            "name": "Group",
+            "shortCode": "GRP",
+            "description": "About",
+            "joinState": "invite",
+            "languages": ["eng"],
+            "rules": "Be kind",
+            "links": ["https://example.com"],
+            "iconId": "file_icon",
+            "bannerId": "file_banner",
+            "allowGroupJoinPrompt": true,
+        });
+        let (_, _, body) = built(GroupRemoteRequest::Update(input(
+            json!({ "groupId": "grp_1", "params": profile }),
+        )));
+        let body = body.unwrap();
+        for key in profile.as_object().unwrap().keys() {
+            assert!(body.get(key).is_some(), "profile update dropped {key}");
+        }
+
+        let post = json!({
+            "title": "News",
+            "text": "Hello",
+            "sendNotification": true,
+            "visibility": "group",
+            "roleIds": ["grol_1"],
+            "imageId": "file_post",
+        });
+        let (_, _, body) = built(GroupRemoteRequest::CreatePost(input(
+            json!({ "groupId": "grp_1", "params": post }),
+        )));
+        let body = body.unwrap();
+        for key in post.as_object().unwrap().keys() {
+            assert!(body.get(key).is_some(), "post dropped {key}");
+        }
+    }
+}
