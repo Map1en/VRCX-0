@@ -934,3 +934,33 @@ fn avatar_wear_checkpoint_saves_the_open_segment_and_closing_adds_only_the_rest(
         .checkpoint_avatar_wear(7, game_not_running(true))
         .is_none());
 }
+
+#[test]
+fn an_avatar_wear_checkpoint_that_was_not_stored_is_counted_again_by_the_next_one() {
+    let runtime = RealtimeCurrentUserRuntime::new();
+    runtime.set_snapshot(
+        "usr_self".into(),
+        7,
+        json!({ "id": "usr_self", "currentAvatar": "avtr_worn" }),
+    );
+    runtime
+        .apply_game_running_state(7, game_running_at("wrld_1:1", "World"))
+        .expect("game start output");
+    std::thread::sleep(std::time::Duration::from_millis(5));
+    let (_, failed) = runtime
+        .checkpoint_avatar_wear(7, game_running_at("wrld_1:1", "World"))
+        .expect("first checkpoint");
+    let failed = &failed.avatar_time_spent_upserts[0];
+
+    runtime.restore_avatar_wear_checkpoint(7, failed);
+    std::thread::sleep(std::time::Duration::from_millis(5));
+    let (_, next) = runtime
+        .checkpoint_avatar_wear(7, game_running_at("wrld_1:1", "World"))
+        .expect("next checkpoint");
+    let next = &next.avatar_time_spent_upserts[0];
+
+    assert_eq!(
+        next.ended_at_ms - next.time_spent,
+        failed.ended_at_ms - failed.time_spent
+    );
+}
