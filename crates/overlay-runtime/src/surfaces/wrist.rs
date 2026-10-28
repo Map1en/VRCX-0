@@ -4,7 +4,7 @@ use vrcx_0_application_activity::{
 };
 use vrcx_0_core::location::world_id_from_location;
 use vrcx_0_core::text::first_non_empty_owned;
-use vrcx_0_host_desktop::vr_overlay::{VrDeviceSnapshot, VrDeviceStatus};
+use vrcx_0_host_desktop::vr_overlay::{VrDeviceRole, VrDeviceSnapshot, VrDeviceStatus};
 use vrcx_0_i18n::OverlayMessage;
 use vrcx_0_vr_overlay::{
     DeviceChip, DeviceRole, DeviceStatus, FeedAccent, FeedKind, FeedLine, FeedRelation,
@@ -287,7 +287,7 @@ fn device_chip_from_snapshot(snapshot: VrDeviceSnapshot) -> DeviceChip {
         VrDeviceStatus::Normal => 10,
     };
     DeviceChip {
-        role: device_role(&snapshot.label),
+        role: device_role(snapshot.role),
         label: snapshot.label,
         status,
         battery_percent: snapshot.battery_percent,
@@ -296,13 +296,13 @@ fn device_chip_from_snapshot(snapshot: VrDeviceSnapshot) -> DeviceChip {
     }
 }
 
-pub(crate) fn device_role(label: &str) -> DeviceRole {
-    match label.trim() {
-        "HMD" => DeviceRole::Hmd,
-        "L" => DeviceRole::LeftController,
-        "R" => DeviceRole::RightController,
-        value if value.starts_with('T') && value[1..].parse::<u32>().is_ok() => DeviceRole::Tracker,
-        _ => DeviceRole::Other,
+fn device_role(role: VrDeviceRole) -> DeviceRole {
+    match role {
+        VrDeviceRole::Hmd => DeviceRole::Hmd,
+        VrDeviceRole::LeftController => DeviceRole::LeftController,
+        VrDeviceRole::RightController => DeviceRole::RightController,
+        VrDeviceRole::Tracker => DeviceRole::Tracker,
+        VrDeviceRole::Other => DeviceRole::Other,
     }
 }
 

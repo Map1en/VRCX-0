@@ -1,9 +1,6 @@
 use std::collections::BTreeMap;
 
-use vrcx_0_host_desktop::vr_overlay::VrDeviceSnapshot;
-use vrcx_0_vr_overlay::DeviceRole;
-
-use super::surfaces::wrist::device_role;
+use vrcx_0_host_desktop::vr_overlay::{VrDeviceRole, VrDeviceSnapshot};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct TrackerDisconnect {
@@ -26,14 +23,14 @@ impl TrackerWatch {
     pub(crate) fn observe(&mut self, devices: &[VrDeviceSnapshot]) -> Option<TrackerDisconnect> {
         if !devices
             .iter()
-            .any(|device| device_role(&device.label) == DeviceRole::Hmd)
+            .any(|device| device.role == VrDeviceRole::Hmd)
         {
             self.reset();
             return None;
         }
         let present = devices
             .iter()
-            .filter(|device| device_role(&device.label) == DeviceRole::Tracker)
+            .filter(|device| device.role == VrDeviceRole::Tracker)
             .filter_map(|device| {
                 let serial = device.serial.as_deref()?.trim();
                 (!serial.is_empty()).then(|| (serial.to_string(), device.battery_percent))
@@ -79,21 +76,42 @@ impl TrackerWatch {
 
 #[cfg(test)]
 mod tests {
-    use vrcx_0_host_desktop::vr_overlay::VrDeviceStatus;
+    use vrcx_0_host_desktop::vr_overlay::{VrDeviceRole, VrDeviceStatus};
 
     use super::*;
 
-    fn device(label: &str, serial: Option<&str>, battery_percent: Option<u8>) -> VrDeviceSnapshot {
+    fn device(
+        label: &str,
+        role: VrDeviceRole,
+        serial: Option<&str>,
+        battery_percent: Option<u8>,
+    ) -> VrDeviceSnapshot {
         VrDeviceSnapshot {
             label: label.to_string(),
+            role,
             serial: serial.map(str::to_string),
             status: VrDeviceStatus::Normal,
             battery_percent,
         }
     }
 
+    fn tracker(label: &str, serial: Option<&str>, battery_percent: Option<u8>) -> VrDeviceSnapshot {
+        device(label, VrDeviceRole::Tracker, serial, battery_percent)
+    }
+
     fn hmd() -> VrDeviceSnapshot {
-        device("HMD", Some("hmd-serial"), Some(80))
+        device("HMD", VrDeviceRole::Hmd, Some("hmd-serial"), Some(80))
+    }
+
+    #[test]
+    fn devices_are_watched_by_their_role_not_by_a_label_that_looks_like_a_tracker() {
+        let mut watch = TrackerWatch::default();
+        watch.observe(&[
+            hmd(),
+            device("T1", VrDeviceRole::Other, Some("controller"), Some(40)),
+        ]);
+
+        assert_eq!(watch.observe(&[hmd()]), None);
     }
 
     #[test]
@@ -102,21 +120,21 @@ mod tests {
         assert_eq!(
             watch.observe(&[
                 hmd(),
-                device("T1", Some("a"), Some(70)),
-                device("T2", Some("b"), Some(12)),
+                tracker("T1", Some("a"), Some(70)),
+                tracker("T2", Some("b"), Some(12)),
             ]),
             None
         );
 
         assert_eq!(
-            watch.observe(&[hmd(), device("T1", Some("a"), Some(70))]),
+            watch.observe(&[hmd(), tracker("T1", Some("a"), Some(70))]),
             Some(TrackerDisconnect {
                 count: 1,
                 battery_percent: Some(12),
             })
         );
         assert_eq!(
-            watch.observe(&[hmd(), device("T1", Some("a"), Some(70))]),
+            watch.observe(&[hmd(), tracker("T1", Some("a"), Some(70))]),
             None
         );
     }
@@ -124,11 +142,11 @@ mod tests {
     #[test]
     fn reports_again_after_the_tracker_reconnects_and_drops_out() {
         let mut watch = TrackerWatch::default();
-        watch.observe(&[hmd(), device("T1", Some("a"), Some(50))]);
+        watch.observe(&[hmd(), tracker("T1", Some("a"), Some(50))]);
         watch.observe(&[hmd()]);
 
         assert_eq!(
-            watch.observe(&[hmd(), device("T1", Some("a"), Some(45))]),
+            watch.observe(&[hmd(), tracker("T1", Some("a"), Some(45))]),
             None
         );
         assert_eq!(
@@ -145,13 +163,13 @@ mod tests {
         let mut watch = TrackerWatch::default();
         watch.observe(&[
             hmd(),
-            device("T1", Some("a"), Some(50)),
-            device("T2", Some("b"), Some(60)),
-            device("T3", Some("c"), None),
+            tracker("T1", Some("a"), Some(50)),
+            tracker("T2", Some("b"), Some(60)),
+            tracker("T3", Some("c"), None),
         ]);
 
         assert_eq!(
-            watch.observe(&[hmd(), device("T1", Some("c"), None)]),
+            watch.observe(&[hmd(), tracker("T1", Some("c"), None)]),
             Some(TrackerDisconnect {
                 count: 2,
                 battery_percent: None,
@@ -164,12 +182,12 @@ mod tests {
         let mut watch = TrackerWatch::default();
         watch.observe(&[
             hmd(),
-            device("T1", Some("a"), Some(50)),
-            device("T2", Some("b"), Some(60)),
+            tracker("T1", Some("a"), Some(50)),
+            tracker("T2", Some("b"), Some(60)),
         ]);
 
         assert_eq!(
-            watch.observe(&[hmd(), device("T1", Some("b"), Some(60))]),
+            watch.observe(&[hmd(), tracker("T1", Some("b"), Some(60))]),
             Some(TrackerDisconnect {
                 count: 1,
                 battery_percent: Some(50),
@@ -182,9 +200,9 @@ mod tests {
         let mut watch = TrackerWatch::default();
         watch.observe(&[
             hmd(),
-            device("L", Some("left"), Some(40)),
-            device("R", Some("right"), Some(40)),
-            device("T1", None, Some(40)),
+            device("L", VrDeviceRole::LeftController, Some("left"), Some(40)),
+            device("R", VrDeviceRole::RightController, Some("right"), Some(40)),
+            tracker("T1", None, Some(40)),
         ]);
 
         assert_eq!(watch.observe(&[hmd()]), None);
@@ -193,7 +211,7 @@ mod tests {
     #[test]
     fn a_snapshot_without_the_hmd_forgets_every_tracker_silently() {
         let mut watch = TrackerWatch::default();
-        watch.observe(&[hmd(), device("T1", Some("a"), Some(50))]);
+        watch.observe(&[hmd(), tracker("T1", Some("a"), Some(50))]);
 
         assert_eq!(watch.observe(&[]), None);
         assert_eq!(watch.observe(&[hmd()]), None);
@@ -202,7 +220,7 @@ mod tests {
     #[test]
     fn reset_forgets_trackers_without_reporting_them() {
         let mut watch = TrackerWatch::default();
-        watch.observe(&[hmd(), device("T1", Some("a"), Some(50))]);
+        watch.observe(&[hmd(), tracker("T1", Some("a"), Some(50))]);
         watch.reset();
 
         assert_eq!(watch.observe(&[hmd()]), None);

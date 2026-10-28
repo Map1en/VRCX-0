@@ -3,7 +3,7 @@ use vrcx_0_application_activity::{
     ActivityText,
 };
 use vrcx_0_contracts::activity::ActivityKind;
-use vrcx_0_host_desktop::vr_overlay::{VrDeviceSnapshot, VrDeviceStatus};
+use vrcx_0_host_desktop::vr_overlay::{VrDeviceRole, VrDeviceSnapshot, VrDeviceStatus};
 use vrcx_0_overlay_runtime::{
     build_wrist_surface_model, WristOverlayFrameInput, WristOverlayRenderOptions,
     WristRuntimeFooter, WristRuntimeNowPlaying,
@@ -30,6 +30,7 @@ fn wrist_builder_keeps_renderer_model_free_of_application_entry_shape() {
         activity: snapshot,
         devices: vec![VrDeviceSnapshot {
             label: "HMD".to_string(),
+            role: VrDeviceRole::Hmd,
             serial: Some("abc".to_string()),
             status: VrDeviceStatus::LowBattery,
             battery_percent: Some(18),
