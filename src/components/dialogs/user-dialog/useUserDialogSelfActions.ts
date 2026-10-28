@@ -371,7 +371,7 @@ export function useUserDialogSelfActions({
 
     async function saveSelfProfileDetails() {
         if (!isCurrentUser || actionStatusRef.current !== 'idle' || !profile) {
-            return;
+            return false;
         }
 
         const nextLanguageKeys = normalizeProfileLanguageKeys(
@@ -415,7 +415,7 @@ export function useUserDialogSelfActions({
             !addLanguageKeys.length &&
             !removeLanguageKeys.length
         ) {
-            return;
+            return true;
         }
 
         setSelfActionStatus(actionStatusRef, setActionStatus, 'self-profile');
@@ -453,6 +453,7 @@ export function useUserDialogSelfActions({
                 type: 'success',
                 title: t('dialog.user.success.profile_details_updated')
             });
+            return true;
         } catch (error) {
             toast.add({
                 type: 'error',
@@ -461,6 +462,7 @@ export function useUserDialogSelfActions({
                     t('dialog.user.toast.failed_to_update_profile_details')
                 )
             });
+            return false;
         } finally {
             setSelfActionStatus(actionStatusRef, setActionStatus, 'idle');
         }

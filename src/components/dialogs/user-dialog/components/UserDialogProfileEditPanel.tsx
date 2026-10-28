@@ -152,13 +152,15 @@ function ProfileDetailsTab({
     details,
     statusDotClassName,
     statusText,
-    onEditStatus
+    onEditStatus,
+    onSaved
 }: {
     busy: boolean;
     details: ProfileDetailsController;
     statusDotClassName: string;
     statusText: string;
     onEditStatus: () => void;
+    onSaved: () => void;
 }) {
     const { t } = useTranslation();
 
@@ -215,7 +217,13 @@ function ProfileDetailsTab({
                 >
                     {t('common.actions.cancel')}
                 </Button>
-                <Button type="button" disabled={busy} onClick={details.onSave}>
+                <Button
+                    type="button"
+                    disabled={busy}
+                    onClick={async () => {
+                        if (await details.onSave()) onSaved();
+                    }}
+                >
                     {t('common.actions.save')}
                 </Button>
             </div>
@@ -316,6 +324,7 @@ export function UserDialogProfileEditPanel({
                         statusDotClassName={statusDotClassName}
                         statusText={statusText}
                         onEditStatus={onEditStatus}
+                        onSaved={onBack}
                     />
                 ) : activeTab === 'userIcon' || activeTab === 'banner' ? (
                     <UserProfileMediaPicker
