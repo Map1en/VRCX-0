@@ -305,8 +305,8 @@ impl DatabaseService {
                 main.execute_read_interruptible(sql, args, should_interrupt)
             }
             DatabaseMode::Upgrade(upgrade) => {
-                let conn = lock_interruptibly(&upgrade.conn, &should_interrupt)?;
-                execute_on_connection_interruptible(&conn, sql, args, should_interrupt)
+                let mut conn = lock_interruptibly(&upgrade.conn, &should_interrupt)?;
+                execute_on_connection_interruptible(&mut conn, sql, args, should_interrupt)
             }
             DatabaseMode::Closed => Err(Error::Database(
                 "Database connection is temporarily unavailable.".into(),
@@ -513,8 +513,8 @@ impl MainDatabase {
         F: Fn() -> bool + Send + Sync + 'static,
     {
         if self.readers.is_empty() {
-            let conn = lock_interruptibly(&self.writer, &should_interrupt)?;
-            return execute_on_connection_interruptible(&conn, sql, args, should_interrupt);
+            let mut conn = lock_interruptibly(&self.writer, &should_interrupt)?;
+            return execute_on_connection_interruptible(&mut conn, sql, args, should_interrupt);
         }
 
         let start = self.next_reader.fetch_add(1, Ordering::Relaxed) % self.readers.len();
@@ -522,9 +522,9 @@ impl MainDatabase {
             for offset in 0..self.readers.len() {
                 let index = (start + offset) % self.readers.len();
                 match self.readers[index].try_lock() {
-                    Ok(conn) => {
+                    Ok(mut conn) => {
                         return execute_on_connection_interruptible(
-                            &conn,
+                            &mut conn,
                             sql,
                             args,
                             should_interrupt,
@@ -735,7 +735,7 @@ fn execute_on_connection(
 }
 
 fn execute_on_connection_interruptible<F>(
-    conn: &Connection,
+    conn: &mut Connection,
     sql: &str,
     args: &HashMap<String, serde_json::Value>,
     should_interrupt: F,
