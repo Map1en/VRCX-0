@@ -32,6 +32,7 @@ type InviteMessageDialogProps = {
     targetLabel?: string | null;
     allowEdit?: boolean;
     allowImageUpload?: boolean;
+    actionLabel?: string | null;
     onUse?:
         | ((
               payload: InviteMessageUsePayload
@@ -62,6 +63,7 @@ function InviteMessageDialog({
     targetLabel,
     allowEdit = false,
     allowImageUpload = false,
+    actionLabel,
     onUse,
     onSave,
     onClose,
@@ -113,6 +115,7 @@ function InviteMessageDialog({
                         targetLabel={targetLabel}
                         allowEdit={allowEdit}
                         allowImageUpload={allowImageUpload}
+                        actionLabel={actionLabel}
                         onUse={onUse}
                         onSave={onSave}
                         onClose={close}

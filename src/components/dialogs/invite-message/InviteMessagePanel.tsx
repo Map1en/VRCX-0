@@ -69,6 +69,7 @@ type InviteMessagePanelProps = {
     targetLabel?: string | null;
     allowEdit?: boolean;
     allowImageUpload?: boolean;
+    actionLabel?: string | null;
     onUse?:
         | ((
               payload: InviteMessageUsePayload
@@ -88,6 +89,7 @@ export function InviteMessagePanel({
     targetLabel,
     allowEdit,
     allowImageUpload,
+    actionLabel: actionLabelOverride,
     onUse,
     onSave,
     onClose
@@ -337,11 +339,9 @@ export function InviteMessagePanel({
 
     const showActionColumn =
         allowEdit || resolvedMode === 'respond' || Boolean(onUse);
-    const actionLabel = primaryActionLabel(
-        resolvedMode,
-        resolvedMessageType,
-        t
-    );
+    const actionLabel =
+        actionLabelOverride ??
+        primaryActionLabel(resolvedMode, resolvedMessageType, t);
 
     return (
         <div className="flex min-h-0 flex-col gap-3">

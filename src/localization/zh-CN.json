@@ -2340,6 +2340,11 @@
                 "allowed_statuses_label": "仅当我的状态为",
                 "allowed_statuses_description": "全部不勾选则不限状态。",
                 "automatic_replies_note": "自动回应只会在 VRChat 运行中且当前位置可发送邀请时运行。冷却按发送者单独计算，并且只有邀请 API 返回成功后才会隐藏通知。",
+                "invite_message": "邀请消息",
+                "invite_message_description": "发送该编号当前的文字，改了文字发出的也会变。",
+                "invite_message_none": "不附带消息",
+                "invite_message_slot": "编号 {slot}",
+                "invite_message_picker_title": "选择邀请消息",
                 "failed_to_load_schedule_rules": "加载时间规则失败。",
                 "failed_to_save_schedule_rules": "保存时间规则失败。",
                 "failed_to_load_room_rules": "加载房间规则失败。",
@@ -4302,7 +4307,7 @@
             },
             "action": {
                 "open_user_icon": "打开用户头像",
-                "invite_message_slot_must_be_a_number": "邀请消息槽位必须是数字",
+                "invite_message_slot_must_be_a_number": "邀请消息编号必须是数字",
                 "edit_social_status": "编辑社交状态",
                 "save_preset": "保存预设",
                 "update": "更新",
@@ -5266,7 +5271,7 @@
                 "target": "发送给："
             },
             "dynamic": {
-                "edit_slot_value": "编辑槽位 {value}"
+                "edit_slot_value": "编辑编号 {value}"
             }
         },
         "invite_request_message": {
@@ -5291,7 +5296,7 @@
                 "update_failed": "邀请消息更新失败。"
             },
             "description": {
-                "slot_must_be_number": "邀请消息的所在槽位必须是数字。"
+                "slot_must_be_number": "邀请消息编号必须是数字。"
             }
         },
         "edit_invite_message": {
@@ -6644,7 +6649,7 @@
         },
         "profile": {
             "invite_messages": {
-                "slot": "字段",
+                "slot": "编号",
                 "message": "消息",
                 "cool_down": "编辑冷却",
                 "action": "操作"

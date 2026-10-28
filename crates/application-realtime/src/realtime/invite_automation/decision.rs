@@ -17,6 +17,7 @@ pub struct InviteAutomationConfig {
     pub mode: InviteAutomationMode,
     pub selected_groups: Vec<String>,
     pub allowed_statuses: Vec<String>,
+    pub message_slot: Option<i32>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -129,6 +130,14 @@ pub fn normalize_invite_automation_mode(value: &str) -> InviteAutomationMode {
         "Selected Favorites" => InviteAutomationMode::SelectedFavorites,
         _ => InviteAutomationMode::Off,
     }
+}
+
+pub fn normalize_invite_message_slot(value: &str) -> Option<i32> {
+    value
+        .trim()
+        .parse::<i32>()
+        .ok()
+        .filter(|slot| (0..12).contains(slot))
 }
 
 pub fn context_gates(
@@ -297,6 +306,7 @@ mod tests {
                 mode: InviteAutomationMode::SelectedFavorites,
                 selected_groups: vec!["friend:group_0".into()],
                 allowed_statuses: Vec::new(),
+                message_slot: None,
             },
             allowlist: SenderAllowlist {
                 is_favorite: true,
@@ -519,5 +529,14 @@ mod tests {
                 reason: InviteAutomationSkipReason::FailureBackoff,
             }
         );
+    }
+
+    #[test]
+    fn message_slot_accepts_only_vrchat_slot_range() {
+        assert_eq!(normalize_invite_message_slot("0"), Some(0));
+        assert_eq!(normalize_invite_message_slot(" 11 "), Some(11));
+        assert_eq!(normalize_invite_message_slot(""), None);
+        assert_eq!(normalize_invite_message_slot("12"), None);
+        assert_eq!(normalize_invite_message_slot("-1"), None);
     }
 }

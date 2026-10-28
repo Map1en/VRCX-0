@@ -2340,6 +2340,11 @@
                 "allowed_statuses_label": "僅在我的狀態為",
                 "allowed_statuses_description": "全部不勾選則不限狀態。",
                 "automatic_replies_note": "自動回應只會在 VRChat 執行中且目前位置可傳送邀請時運作。每位傳送者各有冷卻時間。",
+                "invite_message": "邀請訊息",
+                "invite_message_description": "傳送該編號目前的文字，改了文字送出的也會跟著變。",
+                "invite_message_none": "不附加訊息",
+                "invite_message_slot": "編號 {slot}",
+                "invite_message_picker_title": "選擇邀請訊息",
                 "failed_to_load_schedule_rules": "載入時間規則失敗。",
                 "failed_to_save_schedule_rules": "儲存時間規則失敗。",
                 "failed_to_load_room_rules": "載入房間規則失敗。",
@@ -5257,7 +5262,7 @@
                 "target": "傳送給："
             },
             "dynamic": {
-                "edit_slot_value": "編輯欄位 {value}"
+                "edit_slot_value": "編輯編號 {value}"
             }
         },
         "invite_request_message": {
@@ -5282,7 +5287,7 @@
                 "update_failed": "邀請訊息更新失敗。"
             },
             "description": {
-                "slot_must_be_number": "邀請訊息欄位必須是數字。"
+                "slot_must_be_number": "邀請訊息編號必須是數字。"
             }
         },
         "edit_invite_message": {
@@ -6635,7 +6640,7 @@
         },
         "profile": {
             "invite_messages": {
-                "slot": "欄位",
+                "slot": "編號",
                 "message": "訊息",
                 "cool_down": "編輯冷卻",
                 "action": "動作"

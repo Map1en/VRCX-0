@@ -1,8 +1,11 @@
 import { InfoIcon } from 'lucide-react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { InviteMessageDialog } from '@/components/dialogs/InviteMessageDialog';
 import { userStatusLabel } from '@/shared/utils/userStatus';
 import { Alert, AlertDescription } from '@/ui/shadcn/alert';
+import { Button } from '@/ui/shadcn/button';
 import {
     Field,
     FieldDescription,
@@ -22,6 +25,8 @@ import {
 import { Switch } from '@/ui/shadcn/switch';
 
 import {
+    getCurrentUserId,
+    getEndpoint,
     normalizeAutoAcceptMode,
     statusOptions,
     type AutoAcceptInviteRequestValue
@@ -35,6 +40,7 @@ export type InviteRulesTabValues = {
     autoAcceptInviteGroups: string[];
     autoAcceptInviteRequests: AutoAcceptInviteRequestValue;
     autoAcceptInviteStatuses: string[];
+    autoAcceptInviteMessageSlot: string;
 };
 
 type InviteRulesTabProps = {
@@ -53,6 +59,7 @@ export function InviteRulesTab({
 }: InviteRulesTabProps) {
     const { t } = useTranslation();
     const groupOptions = useFavoriteFriendGroupOptions();
+    const [messagePickerOpen, setMessagePickerOpen] = useState(false);
     const allowedStatusOptions = statusOptions.map((status) => ({
         value: status,
         label: userStatusLabel(status, t)
@@ -60,6 +67,7 @@ export function InviteRulesTab({
     const autoAcceptEnabled = values.autoAcceptInviteRequests !== 'Off';
     const selectedFavoritesOnly =
         values.autoAcceptInviteRequests === 'Selected Favorites';
+    const messageSlot = values.autoAcceptInviteMessageSlot;
 
     return (
         <FieldGroup className="gap-4">
@@ -194,6 +202,71 @@ export function InviteRulesTab({
                     </Field>
                 </FieldGroup>
             </FieldSet>
+            <FieldSet
+                className="bg-card/40 rounded-lg border p-3"
+                disabled={loading || !autoAcceptEnabled}
+                data-disabled={loading || !autoAcceptEnabled}
+            >
+                <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                        <FieldLegend variant="label">
+                            {t(`${I18N_ROOT}.invite_message`)}
+                        </FieldLegend>
+                        <FieldDescription>
+                            {t(`${I18N_ROOT}.invite_message_description`)}
+                        </FieldDescription>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                        <span className="text-muted-foreground text-sm">
+                            {messageSlot
+                                ? t(`${I18N_ROOT}.invite_message_slot`, {
+                                      slot: messageSlot
+                                  })
+                                : t(`${I18N_ROOT}.invite_message_none`)}
+                        </span>
+                        {messageSlot ? (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                    onSaveValue(
+                                        'autoAcceptInviteMessageSlot',
+                                        ''
+                                    );
+                                }}
+                            >
+                                {t('common.actions.clear')}
+                            </Button>
+                        ) : null}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setMessagePickerOpen(true)}
+                        >
+                            {t('common.actions.select')}
+                        </Button>
+                    </div>
+                </div>
+            </FieldSet>
+            <InviteMessageDialog
+                open={messagePickerOpen}
+                onOpenChange={setMessagePickerOpen}
+                currentUserId={getCurrentUserId()}
+                endpoint={getEndpoint()}
+                messageType="message"
+                mode="select"
+                allowEdit
+                actionLabel={t('common.actions.select')}
+                title={t(`${I18N_ROOT}.invite_message_picker_title`)}
+                onUse={({ row }) => {
+                    onSaveValue(
+                        'autoAcceptInviteMessageSlot',
+                        String(row.slot)
+                    );
+                }}
+            />
             <Alert>
                 <InfoIcon data-icon="inline-start" />
                 <AlertDescription>
