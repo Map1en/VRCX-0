@@ -59,6 +59,7 @@ export function useFriendLogColumns({
                 size: 120,
                 accessorFn: (row) => row?.created_at || '',
                 meta: {
+                    label: t('table.friendLog.date'),
                     tableCellClassName: DATA_TABLE_METADATA_CELL_CLASS_NAME
                 },
                 header: ({ column }) => (
@@ -75,6 +76,7 @@ export function useFriendLogColumns({
                 id: 'type',
                 size: 160,
                 accessorFn: (row) => row?.type || '',
+                meta: { label: t('table.friendLog.type') },
                 header: ({ column }) => (
                     <SortButton
                         column={column}
@@ -90,6 +92,7 @@ export function useFriendLogColumns({
                 size: 260,
                 minSize: 80,
                 meta: {
+                    label: t('table.friendLog.user'),
                     stretch: true,
                     tableCellClassName: DATA_TABLE_PRIMARY_CELL_CLASS_NAME
                 },
@@ -105,6 +108,7 @@ export function useFriendLogColumns({
                 enableResizing: false,
                 enableSorting: false,
                 meta: {
+                    label: t('table.friendLog.action'),
                     tableCellClassName: DATA_TABLE_CONTROL_CELL_CLASS_NAME
                 },
                 header: () => t('table.friendLog.action'),

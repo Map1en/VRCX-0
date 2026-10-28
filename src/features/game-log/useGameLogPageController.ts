@@ -94,11 +94,21 @@ export function useGameLogPageController() {
         }
     });
 
+    const queryFilterTypesKey = filters.queryFilterTypes.join(',');
+
     useEffect(() => {
         setPagination((current) =>
             current.pageIndex === 0 ? current : { ...current, pageIndex: 0 }
         );
-    }, [rowsState.rows, sorting, annotations.affinity, setPagination]);
+    }, [
+        filters.deferredSearchQuery,
+        filters.favoritesOnly,
+        filters.refreshToken,
+        filters.viewMode,
+        queryFilterTypesKey,
+        sorting,
+        setPagination
+    ]);
 
     useEffect(() => {
         const maxPageIndex = Math.max(

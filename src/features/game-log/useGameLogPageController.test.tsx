@@ -16,6 +16,7 @@ import type {
 const mocks = vi.hoisted(
     (): {
         rows: GameLogRow[];
+        searchQuery: string;
         sessions: GameLogSession[];
         viewMode: GameLogViewMode;
         favorites: {
@@ -25,6 +26,7 @@ const mocks = vi.hoisted(
         friends: { friendsById: Record<string, object> };
     } => ({
         rows: [],
+        searchQuery: '',
         sessions: [],
         viewMode: 'table',
         favorites: { favoriteFriendIds: [], localFriendFavorites: {} },
@@ -41,7 +43,7 @@ vi.mock('./components/GameLogColumns', () => ({
 
 vi.mock('./useGameLogFilters', () => ({
     useGameLogFilters: () => ({
-        deferredSearchQuery: '',
+        deferredSearchQuery: mocks.searchQuery,
         favoritesOnly: false,
         preferencesReady: true,
         queryFilterTypes: [],
@@ -132,6 +134,7 @@ describe('useGameLogPageController', () => {
 
     beforeEach(() => {
         mocks.rows = createRows(45);
+        mocks.searchQuery = '';
         mocks.sessions = [];
         mocks.viewMode = 'table';
         mocks.favorites = { favoriteFriendIds: [], localFriendFavorites: {} };
@@ -229,18 +232,36 @@ describe('useGameLogPageController', () => {
         expect(result.current.rowsState.rows).toBe(mocks.rows);
     });
 
-    it('resets after refreshing or deleting rows and retains correct totals after resizing the page', () => {
+    it('keeps the current page when live rows arrive and resets when the query changes', () => {
+        const { result, rerender } = renderHook(useGameLogPageController);
+        act(() => result.current.table.nextPage());
+
+        mocks.rows = createRows(46);
+        rerender();
+
+        expect(result.current.tableState.pagination.pageIndex).toBe(1);
+        expect(result.current.table.getRowModel().rows[0].original.rowId).toBe(
+            26
+        );
+
+        mocks.searchQuery = 'usr_1';
+        rerender();
+
+        expect(result.current.tableState.pagination.pageIndex).toBe(0);
+    });
+
+    it('clamps the page after deleting rows and retains correct totals after resizing the page', () => {
         const { result, rerender } = renderHook(useGameLogPageController);
         act(() => result.current.table.lastPage());
 
         mocks.rows = createRows(25);
         rerender();
 
-        expect(result.current.tableState.pagination.pageIndex).toBe(0);
+        expect(result.current.tableState.pagination.pageIndex).toBe(1);
         expect(result.current.table.getRowCount()).toBe(25);
         expect(result.current.pageCount).toBe(2);
         expect(result.current.table.getRowModel().rows[0].original.rowId).toBe(
-            25
+            5
         );
 
         act(() =>
@@ -284,18 +305,18 @@ describe('useGameLogPageController', () => {
         mocks.friends.friendsById = { usr_25: {} };
         rerender();
 
-        expect(result.current.tableState.pagination.pageIndex).toBe(0);
-        expect(result.current.annotations.annotatedRows[0]).toMatchObject({
-            rowId: 45,
-            isFavorite: false,
-            isFriend: false
-        });
-        act(() => result.current.table.nextPage());
-
+        expect(result.current.tableState.pagination.pageIndex).toBe(1);
         expect(result.current.annotations.annotatedRows[0]).toMatchObject({
             rowId: 25,
             isFavorite: true,
             isFriend: true
+        });
+        act(() => result.current.table.previousPage());
+
+        expect(result.current.annotations.annotatedRows[0]).toMatchObject({
+            rowId: 45,
+            isFavorite: false,
+            isFriend: false
         });
         expect(mocks.rows[24].isFavorite).toBeUndefined();
         expect(mocks.rows[24].isFriend).toBeUndefined();

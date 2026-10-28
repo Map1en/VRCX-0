@@ -40,6 +40,7 @@ import {
     friendNumberForSort,
     normalizeFriendListId as normalizeId
 } from '../friendListRows';
+import { useFriendListSelectedIds } from '../friendListSelectionContext';
 import { SortButton } from './FriendListViewParts';
 
 type FriendListColumnsOptions = {
@@ -50,7 +51,6 @@ type FriendListColumnsOptions = {
     onToggleSelectedFriend(friendId: string): void;
     randomUserColours: boolean;
     randomUserColourStyle: UserNameColourStyle;
-    selectedFriendIds: Set<string>;
 };
 
 function parseListNumber(value: unknown): number {
@@ -60,6 +60,37 @@ function parseListNumber(value: unknown): number {
 
 function textValue(value: unknown): string {
     return typeof value === 'string' ? value : String(value ?? '');
+}
+
+function FriendListSelectCell({
+    friendId,
+    friendLabel,
+    disabled,
+    onToggleSelectedFriend
+}: {
+    friendId: string;
+    friendLabel: string;
+    disabled: boolean;
+    onToggleSelectedFriend(friendId: string): void;
+}) {
+    const { t } = useTranslation();
+    const selectedFriendIds = useFriendListSelectedIds();
+
+    return (
+        <div
+            role="presentation"
+            className="flex items-center justify-center"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+        >
+            <Checkbox
+                checked={selectedFriendIds.has(friendId)}
+                disabled={disabled}
+                aria-label={`${t('common.actions.select')} ${friendLabel}`}
+                onCheckedChange={() => onToggleSelectedFriend(friendId)}
+            />
+        </div>
+    );
 }
 
 function bioLinks(row: FriendListRow): string[] {
@@ -75,8 +106,7 @@ export function useFriendListColumns({
     onConfirmDeleteFriend,
     onToggleSelectedFriend,
     randomUserColours,
-    randomUserColourStyle,
-    selectedFriendIds
+    randomUserColourStyle
 }: FriendListColumnsOptions) {
     const { t } = useTranslation();
     const isDarkMode =
@@ -106,24 +136,15 @@ export function useFriendListColumns({
                     const friendLabel = row.original?.displayName || friendId;
 
                     return (
-                        <div
-                            role="presentation"
-                            className="flex items-center justify-center"
-                            onClick={(event) => event.stopPropagation()}
-                            onKeyDown={(event) => event.stopPropagation()}
-                        >
-                            <Checkbox
-                                checked={selectedFriendIds.has(friendId)}
-                                disabled={
-                                    !bulkUnfriendMode ||
-                                    deletingFriendIds.has(friendId)
-                                }
-                                aria-label={`${t('common.actions.select')} ${friendLabel}`}
-                                onCheckedChange={() =>
-                                    onToggleSelectedFriend(friendId)
-                                }
-                            />
-                        </div>
+                        <FriendListSelectCell
+                            friendId={friendId}
+                            friendLabel={friendLabel}
+                            disabled={
+                                !bulkUnfriendMode ||
+                                deletingFriendIds.has(friendId)
+                            }
+                            onToggleSelectedFriend={onToggleSelectedFriend}
+                        />
                     );
                 }
             },
@@ -606,7 +627,6 @@ export function useFriendListColumns({
             onToggleSelectedFriend,
             randomUserColours,
             randomUserColourStyle,
-            selectedFriendIds,
             t
         ]
     );

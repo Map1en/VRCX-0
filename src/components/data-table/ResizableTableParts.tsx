@@ -130,7 +130,10 @@ function ResizableTableHeadContent<TData extends RowData>({
 
     return (
         <div className="flex min-w-0 items-center gap-2 pr-2">
-            <div className="flex min-w-0 flex-1 items-center gap-1.5">
+            <div
+                data-slot="table-head-content"
+                className="flex min-w-0 flex-1 items-center gap-1.5"
+            >
                 <div className="min-w-0">
                     {header.isPlaceholder
                         ? null
@@ -289,11 +292,16 @@ export function ResizableTableHead<TData extends RowData>({
     style?: CSSProperties;
     enableColumnReorder?: boolean;
 }) {
+    const resolvedClassName = cn(
+        header.column.columnDef.meta?.tableHeadClassName,
+        className
+    );
+
     if (enableColumnReorder && isColumnReorderable(header?.column)) {
         return (
             <SortableResizableTableHead
                 header={header}
-                className={className}
+                className={resolvedClassName}
                 style={style}
             />
         );
@@ -302,7 +310,7 @@ export function ResizableTableHead<TData extends RowData>({
     return (
         <ResizableTableHeadBase
             header={header}
-            className={className}
+            className={resolvedClassName}
             style={style}
         />
     );

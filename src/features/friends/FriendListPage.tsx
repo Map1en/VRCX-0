@@ -2,6 +2,7 @@ import { PageScaffold } from '@/components/layout/PageScaffold';
 
 import { FriendListTable } from './components/FriendListTable';
 import { FriendListToolbar } from './components/FriendListToolbar';
+import { FriendListSelectedIdsContext } from './friendListSelectionContext';
 import { useFriendListPageController } from './useFriendListPageController';
 
 export function FriendListPage({
@@ -62,21 +63,23 @@ export function FriendListPage({
                 }}
             />
 
-            <FriendListTable
-                table={table}
-                pageCount={pageCount}
-                pageSizes={tableState.pageSizes}
-                pagination={tableState.pagination}
-                filteredRowsLength={rows.filteredRows.length}
-                friendDetail={rows.friendDetail}
-                favoritesOnly={filters.favoritesOnly}
-                isLoading={isLoading}
-                isError={isError}
-                hasRows={rows.filteredRows.length > 0}
-                onResetTableLayout={actions.resetFriendListTableLayout}
-                onPageSizeChange={tableState.setPageSize}
-                onOpenUser={actions.openFriendDetails}
-            />
+            <FriendListSelectedIdsContext value={selection.selectedFriendIds}>
+                <FriendListTable
+                    table={table}
+                    pageCount={pageCount}
+                    pageSizes={tableState.pageSizes}
+                    pagination={tableState.pagination}
+                    filteredRowsLength={rows.filteredRows.length}
+                    friendDetail={rows.friendDetail}
+                    favoritesOnly={filters.favoritesOnly}
+                    isLoading={isLoading}
+                    isError={isError}
+                    hasRows={rows.filteredRows.length > 0}
+                    onResetTableLayout={actions.resetFriendListTableLayout}
+                    onPageSizeChange={tableState.setPageSize}
+                    onOpenUser={actions.openFriendDetails}
+                />
+            </FriendListSelectedIdsContext>
         </PageScaffold>
     );
 }

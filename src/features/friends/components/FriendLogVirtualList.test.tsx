@@ -1,9 +1,16 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import {
+    cleanup,
+    fireEvent,
+    render,
+    renderHook,
+    screen
+} from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { useAppTable } from '@/components/data-table/appTable';
+import { getToggleableColumns } from '@/components/data-table/tableColumnLayout';
 
 import type { FriendLogRow } from '../friendLogRows';
 import { useFriendLogColumns } from './FriendLogColumns';
@@ -78,5 +85,25 @@ describe('Friend History virtual rows', () => {
         );
         expect(onDelete).toHaveBeenCalledWith(rows[0], { skipConfirm: false });
         expect(rows.every((row) => !('resolvedDisplayName' in row))).toBe(true);
+    });
+
+    it('offers every data column in the column visibility menu', () => {
+        const { result } = renderHook(() => {
+            const columns = useFriendLogColumns({
+                currentUserId: 'usr_owner',
+                rowsOwnerUserId: 'usr_owner',
+                loadStatus: 'ready',
+                deletingRowKey: '',
+                handleDeleteRow: onDelete,
+                shiftHeld: false
+            });
+            return useAppTable({ data: [], columns });
+        });
+
+        expect(
+            getToggleableColumns(result.current.getAllLeafColumns()).map(
+                (column) => column.id
+            )
+        ).toEqual(['created_at', 'type', 'displayName', 'action']);
     });
 });
