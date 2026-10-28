@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 
@@ -36,6 +36,7 @@ import {
     sortScreenshotRowsByNewest,
     type ScreenshotMetadataSearchType
 } from './screenshotMetadataValues';
+import { useScreenshotBrowseImages } from './useScreenshotBrowseImages';
 import { useScreenshotBrowseSelection } from './useScreenshotBrowseSelection';
 import { useScreenshotBulkDelete } from './useScreenshotBulkDelete';
 import { useScreenshotFavorites } from './useScreenshotFavorites';
@@ -149,12 +150,13 @@ export function ScreenshotMetadataPage() {
     }, [lastScanAt, reloadFavorites]);
     const isFavoritesFolder =
         selectedGalleryFolder === SCREENSHOT_FAVORITES_FOLDER;
-    const browseImages = isFavoritesFolder
-        ? favoriteImages
-        : visibleGalleryImages;
-    const visibleGalleryImagePaths = useMemo(
-        () => browseImages.map((image) => image.path),
-        [browseImages]
+    const {
+        images: browseImages,
+        paths: visibleGalleryImagePaths,
+        setSort: setGallerySort,
+        sort: gallerySort
+    } = useScreenshotBrowseImages(
+        isFavoritesFolder ? favoriteImages : visibleGalleryImages
     );
     const browseSelection = useScreenshotBrowseSelection(
         visibleGalleryImagePaths
@@ -717,6 +719,8 @@ export function ScreenshotMetadataPage() {
                 <ScreenshotGalleryView
                     folderTree={folderTree}
                     images={browseImages}
+                    sort={gallerySort}
+                    onSortChange={setGallerySort}
                     isImagesLoading={
                         isFavoritesFolder
                             ? isFavoritesLoading && favoriteImages.length === 0

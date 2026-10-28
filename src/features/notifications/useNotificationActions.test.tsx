@@ -247,4 +247,37 @@ describe('useNotificationActions', () => {
             })
         );
     });
+
+    it('ignores repeat actions on a notification while one is still running', async () => {
+        mocks.confirm.mockResolvedValue({ ok: true, value: undefined });
+        let finishHide!: () => void;
+        mocks.hideRemote.mockReturnValue(
+            new Promise<void>((resolve) => {
+                finishHide = resolve;
+            })
+        );
+        const { result } = renderActions();
+
+        let first!: Promise<void>;
+        await act(async () => {
+            first = result.current.hideNotification(notification, {
+                skipConfirm: true
+            });
+            await Promise.resolve();
+        });
+        expect(result.current.pendingNotificationKeys.has('not_1')).toBe(true);
+
+        await act(async () =>
+            result.current.hideNotification(notification, {
+                skipConfirm: true
+            })
+        );
+        expect(mocks.hideRemote).toHaveBeenCalledTimes(1);
+
+        await act(async () => {
+            finishHide();
+            await first;
+        });
+        expect(result.current.pendingNotificationKeys.has('not_1')).toBe(false);
+    });
 });

@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { BoopEmojiChoice } from '@/domain/entities/boopEmoji';
@@ -33,6 +33,7 @@ import { parseLocation } from '@/shared/utils/location';
 import { useModalStore } from '@/state/modalStore';
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 
+import { getNotificationActionKey } from './notificationActionPending';
 import type {
     NotificationDialogRequest,
     NotificationRow
@@ -73,6 +74,32 @@ export function useNotificationActions({
     );
     const confirm = useModalStore((state) => state.confirm);
     const openImagePreview = useModalStore((state) => state.openImagePreview);
+    const pendingKeysRef = useRef(new Set<string>());
+    const [pendingNotificationKeys, setPendingNotificationKeys] = useState<
+        ReadonlySet<string>
+    >(() => new Set());
+
+    const runExclusive = useCallback(
+        async (notification: NotificationRow, task: () => Promise<void>) => {
+            const key = getNotificationActionKey(notification);
+            if (!key) {
+                await task();
+                return;
+            }
+            if (pendingKeysRef.current.has(key)) {
+                return;
+            }
+            pendingKeysRef.current.add(key);
+            setPendingNotificationKeys(new Set(pendingKeysRef.current));
+            try {
+                await task();
+            } finally {
+                pendingKeysRef.current.delete(key);
+                setPendingNotificationKeys(new Set(pendingKeysRef.current));
+            }
+        },
+        []
+    );
     const openUser = useCallback((params: DialogParams) => {
         openUserDialog(params);
     }, []);
@@ -219,19 +246,21 @@ export function useNotificationActions({
                         return;
                     }
                 }
-                await notificationPersistenceRepository.deleteNotification({
-                    id:
-                        typeof notification.id === 'string'
-                            ? notification.id
-                            : '',
-                    userId: currentUserId
-                });
-                await reload();
-                toast.add({
-                    type: 'success',
-                    title: t(
-                        'view.notification.success.notification_log_entry_deleted'
-                    )
+                await runExclusive(notification, async () => {
+                    await notificationPersistenceRepository.deleteNotification({
+                        id:
+                            typeof notification.id === 'string'
+                                ? notification.id
+                                : '',
+                        userId: currentUserId
+                    });
+                    await reload();
+                    toast.add({
+                        type: 'success',
+                        title: t(
+                            'view.notification.success.notification_log_entry_deleted'
+                        )
+                    });
                 });
             } catch (error) {
                 toast.add({
@@ -245,7 +274,7 @@ export function useNotificationActions({
                 });
             }
         },
-        [confirm, currentUserId, notificationTypeLabel, reload, t]
+        [confirm, currentUserId, notificationTypeLabel, reload, runExclusive, t]
     );
 
     const acceptFriendRequest = useCallback(
@@ -263,29 +292,31 @@ export function useNotificationActions({
                 if (!result.ok) {
                     return;
                 }
-                const acceptResult = await acceptFriendRequestNotification({
-                    notification
+                await runExclusive(notification, async () => {
+                    const acceptResult = await acceptFriendRequestNotification({
+                        notification
+                    });
+                    await reload();
+                    if (acceptResult.status === 'not-found') {
+                        return;
+                    }
+                    signalFriendLogChanged();
+                    if (acceptResult.outcome.status === 'remoteOkLocalFailed') {
+                        toast.add({
+                            type: 'warning',
+                            title: t(
+                                'dialog.user.toast.applied_on_vrchat_but_local_update_failed'
+                            )
+                        });
+                    } else {
+                        toast.add({
+                            type: 'success',
+                            title: t(
+                                'view.notification.success.friend_request_accepted'
+                            )
+                        });
+                    }
                 });
-                await reload();
-                if (acceptResult.status === 'not-found') {
-                    return;
-                }
-                signalFriendLogChanged();
-                if (acceptResult.outcome.status === 'remoteOkLocalFailed') {
-                    toast.add({
-                        type: 'warning',
-                        title: t(
-                            'dialog.user.toast.applied_on_vrchat_but_local_update_failed'
-                        )
-                    });
-                } else {
-                    toast.add({
-                        type: 'success',
-                        title: t(
-                            'view.notification.success.friend_request_accepted'
-                        )
-                    });
-                }
             } catch (error) {
                 toast.add({
                     type: 'error',
@@ -298,7 +329,7 @@ export function useNotificationActions({
                 });
             }
         },
-        [confirm, reload, t]
+        [confirm, reload, runExclusive, t]
     );
 
     const hideNotification = useCallback(
@@ -325,14 +356,18 @@ export function useNotificationActions({
                         return;
                     }
                 }
-                await hideRemoteAndExpireNotification({
-                    currentUserId,
-                    notification
-                });
-                await reload();
-                toast.add({
-                    type: 'success',
-                    title: t('view.notification.success.notification_declined')
+                await runExclusive(notification, async () => {
+                    await hideRemoteAndExpireNotification({
+                        currentUserId,
+                        notification
+                    });
+                    await reload();
+                    toast.add({
+                        type: 'success',
+                        title: t(
+                            'view.notification.success.notification_declined'
+                        )
+                    });
                 });
             } catch (error) {
                 toast.add({
@@ -346,22 +381,24 @@ export function useNotificationActions({
                 });
             }
         },
-        [confirm, currentUserId, notificationTypeLabel, reload, t]
+        [confirm, currentUserId, notificationTypeLabel, reload, runExclusive, t]
     );
 
     const ignoreNotificationLocally = useCallback(
         async (notification: NotificationRow) => {
             try {
-                await expireNotificationLocally({
-                    currentUserId,
-                    notification
-                });
-                await reload();
-                toast.add({
-                    type: 'success',
-                    title: t(
-                        'view.notification.success.notification_ignored_locally'
-                    )
+                await runExclusive(notification, async () => {
+                    await expireNotificationLocally({
+                        currentUserId,
+                        notification
+                    });
+                    await reload();
+                    toast.add({
+                        type: 'success',
+                        title: t(
+                            'view.notification.success.notification_ignored_locally'
+                        )
+                    });
                 });
             } catch (error) {
                 toast.add({
@@ -375,7 +412,7 @@ export function useNotificationActions({
                 });
             }
         },
-        [currentUserId, reload, t]
+        [currentUserId, reload, runExclusive, t]
     );
 
     const acceptRequestInvite = useCallback(
@@ -421,14 +458,19 @@ export function useNotificationActions({
                 if (!result.ok) {
                     return;
                 }
-                await acceptRequestInviteNotification({
-                    currentUserId,
-                    instanceId: currentInviteLocation,
-                    notification,
-                    worldId: parsedLocation.worldId
+                await runExclusive(notification, async () => {
+                    await acceptRequestInviteNotification({
+                        currentUserId,
+                        instanceId: currentInviteLocation,
+                        notification,
+                        worldId: parsedLocation.worldId
+                    });
+                    await reload();
+                    toast.add({
+                        type: 'success',
+                        title: t('message.invite.sent')
+                    });
                 });
-                await reload();
-                toast.add({ type: 'success', title: t('message.invite.sent') });
             } catch (error) {
                 toast.add({
                     type: 'error',
@@ -447,6 +489,7 @@ export function useNotificationActions({
             currentInviteLocation,
             currentUserId,
             reload,
+            runExclusive,
             t
         ]
     );
@@ -531,17 +574,19 @@ export function useNotificationActions({
                     setBoopReplyRequest(notification);
                     return;
                 }
-                await sendNotificationButtonResponse({
-                    currentUserId,
-                    notification,
-                    response
-                });
-                await reload();
-                toast.add({
-                    type: 'success',
-                    title: t(
-                        'view.notification.success.notification_response_sent'
-                    )
+                await runExclusive(notification, async () => {
+                    await sendNotificationButtonResponse({
+                        currentUserId,
+                        notification,
+                        response
+                    });
+                    await reload();
+                    toast.add({
+                        type: 'success',
+                        title: t(
+                            'view.notification.success.notification_response_sent'
+                        )
+                    });
                 });
             } catch (error) {
                 await reload();
@@ -556,7 +601,14 @@ export function useNotificationActions({
                 });
             }
         },
-        [currentUserId, openNotificationLink, reload, setBoopReplyRequest, t]
+        [
+            currentUserId,
+            openNotificationLink,
+            reload,
+            runExclusive,
+            setBoopReplyRequest,
+            t
+        ]
     );
 
     return {
@@ -573,6 +625,7 @@ export function useNotificationActions({
         openNotificationLink,
         openNotificationTypeTarget,
         openUser,
+        pendingNotificationKeys,
         sendBoopReply,
         sendInviteResponseSlot,
         sendInviteResponseWithMessage,

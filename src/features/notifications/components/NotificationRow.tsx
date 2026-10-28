@@ -18,8 +18,10 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
+import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { useNotificationActionPending } from '../notificationActionPending';
 import { openSender, shouldShowDeleteLog } from '../notificationCenterUtils';
 import {
     buildOrderedActions,
@@ -58,6 +60,7 @@ export function NotificationRow({
     notification: NotificationRecord;
 }) {
     const { t } = useTranslation();
+    const actionPending = useNotificationActionPending(notification);
     const [mediaFailed, setMediaFailed] = useState(false);
     const unknownLabel = t('view.notification.feed.unknown');
     const view = useMemo(
@@ -261,17 +264,22 @@ export function NotificationRow({
                     </div>
                     {inlineActions.length > 0 ? (
                         <div
+                            aria-busy={actionPending || undefined}
                             className={cn(
                                 'flex shrink-0 items-center gap-1.5',
-                                NOTIFICATION_ROW_HOVER_REVEAL
+                                !actionPending && NOTIFICATION_ROW_HOVER_REVEAL
                             )}
                         >
+                            {actionPending ? (
+                                <Spinner className="text-muted-foreground size-3.5" />
+                            ) : null}
                             {inlineActions.map((action) => (
                                 <Button
                                     key={action.key}
                                     type="button"
                                     size="xs"
                                     variant="ghost"
+                                    disabled={actionPending}
                                     onClick={action.onClick}
                                 >
                                     {action.label}

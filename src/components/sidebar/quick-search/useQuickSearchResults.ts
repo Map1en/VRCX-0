@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { GroupInstanceRecord } from '@/domain/entities/group';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -26,6 +26,7 @@ export function useQuickSearchResults({
     open: boolean;
 }) {
     const [state, setState] = useState(() => createEmptyQuickSearchState());
+    const resultsAccountRef = useRef('');
     const groupInstancesState = useRuntimeStore(
         (runtimeState) => runtimeState.groupInstances
     );
@@ -46,10 +47,16 @@ export function useQuickSearchResults({
         }
 
         let active = true;
-        setState(createEmptyQuickSearchState('running'));
+        const account = `${currentUserId}|${currentEndpoint ?? ''}`;
+        setState((current) =>
+            resultsAccountRef.current === account
+                ? { ...current, status: 'running', detail: '' }
+                : createEmptyQuickSearchState('running')
+        );
         loadQuickSearchResults(normalizedQuery)
             .then((results) => {
                 if (active) {
+                    resultsAccountRef.current = account;
                     setState(results);
                 }
             })

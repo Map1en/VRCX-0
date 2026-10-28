@@ -130,4 +130,51 @@ describe('useQuickSearchResults', () => {
         expect(result.current.detail).toBe('current');
         expect(mocks.loadQuickSearchResults).toHaveBeenNthCalledWith(2, 'beta');
     });
+
+    it('keeps the previous results visible while the next query is loading', async () => {
+        const first = deferredResults();
+        const second = deferredResults();
+        mocks.loadQuickSearchResults
+            .mockReturnValueOnce(first.promise)
+            .mockReturnValueOnce(second.promise);
+        const { result, rerender } = renderHook(
+            ({ normalizedQuery }) =>
+                useQuickSearchResults({
+                    currentUserId: 'usr_current',
+                    currentEndpoint: 'https://example.test',
+                    normalizedQuery,
+                    open: true
+                }),
+            { initialProps: { normalizedQuery: 'alp' } }
+        );
+
+        await act(async () => {
+            first.resolve({
+                ...createEmptyQuickSearchState('ready'),
+                ownAvatars: [
+                    {
+                        id: 'avtr_alpha',
+                        type: 'avatar',
+                        source: 'own',
+                        name: 'Alpha',
+                        subtitle: '',
+                        imageUrl: '',
+                        seedData: null,
+                        memo: '',
+                        note: '',
+                        matchedField: 'name',
+                        userColour: ''
+                    }
+                ]
+            });
+            await first.promise;
+        });
+
+        rerender({ normalizedQuery: 'alph' });
+
+        expect(result.current.status).toBe('running');
+        expect(result.current.ownAvatars.map((item) => item.id)).toEqual([
+            'avtr_alpha'
+        ]);
+    });
 });

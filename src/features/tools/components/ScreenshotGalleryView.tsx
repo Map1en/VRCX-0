@@ -15,14 +15,11 @@ import { ToolbarViewMenu } from '@/components/layout/ToolbarControls';
 import { WorkspaceResizeHandle } from '@/components/layout/WorkspaceResizeHandle';
 import {
     readScreenshotGridDensity,
-    readScreenshotGridSort,
     sanitizeScreenshotGridDensity,
     sanitizeScreenshotGridSort,
     SCREENSHOT_GRID_DENSITY_OPTIONS,
     SCREENSHOT_GRID_SORT_OPTIONS,
-    sortScreenshotGridImages,
     writeScreenshotGridDensity,
-    writeScreenshotGridSort,
     type ScreenshotGridDensity,
     type ScreenshotGridSort
 } from '@/components/media/screenshotGridPreferences';
@@ -507,7 +504,9 @@ export function ScreenshotGalleryView({
     restoreScrollTop,
     selection,
     onExportSelection,
-    favorites
+    favorites,
+    sort,
+    onSortChange
 }: {
     folderTree: ScreenshotFolderTree | null;
     images: ScreenshotLibraryImage[];
@@ -526,6 +525,8 @@ export function ScreenshotGalleryView({
     selection: ScreenshotBrowseSelection;
     onExportSelection: (paths: string[], groupByFolder: boolean) => void;
     favorites: ScreenshotGalleryFavorites;
+    sort: ScreenshotGridSort;
+    onSortChange: (value: ScreenshotGridSort) => void;
 }) {
     const { t } = useTranslation();
     const isFavoritesFolder = selectedFolder === SCREENSHOT_FAVORITES_FOLDER;
@@ -534,11 +535,6 @@ export function ScreenshotGalleryView({
         panelIds: SCREENSHOT_GALLERY_PANEL_IDS
     });
     const [density, setDensity] = useState(readScreenshotGridDensity);
-    const [sort, setSort] = useState(readScreenshotGridSort);
-    const sortedImages = useMemo(
-        () => sortScreenshotGridImages(images, sort),
-        [images, sort]
-    );
     const root = useMemo(() => buildFolderTree(folderTree), [folderTree]);
     const activeFolder =
         folderTree?.folders.find((folder) => folder.path === selectedFolder) ||
@@ -561,11 +557,6 @@ export function ScreenshotGalleryView({
     function onDensityChange(next: ScreenshotGridDensity) {
         setDensity(next);
         writeScreenshotGridDensity(next);
-    }
-
-    function onSortChange(next: ScreenshotGridSort) {
-        setSort(next);
-        writeScreenshotGridSort(next);
     }
 
     return (
@@ -765,7 +756,7 @@ export function ScreenshotGalleryView({
                     density={density}
                     error={error}
                     initialScrollTop={restoreScrollTop}
-                    images={sortedImages}
+                    images={images}
                     isLoading={isImagesLoading}
                     selectedFolder={selectedFolder}
                     hasSelection={selection.hasSelection}

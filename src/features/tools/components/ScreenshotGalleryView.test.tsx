@@ -288,6 +288,8 @@ function GalleryHarness({
             restoreScrollTop={0}
             selection={selection}
             favorites={favorites}
+            sort="captured-desc"
+            onSortChange={() => undefined}
         />
     );
 }

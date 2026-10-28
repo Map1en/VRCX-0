@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { InviteMessageDialog } from '@/components/dialogs/InviteMessageDialog';
 import { BoopReplyDialog } from '@/features/notifications/components/NotificationViewParts';
 import { NotificationDrawerList } from '@/features/notifications/drawer/NotificationDrawerList';
+import { NotificationActionPendingContext } from '@/features/notifications/notificationActionPending';
 import type {
     NotificationDialogRequest,
     NotificationRow
@@ -90,6 +91,7 @@ export function VrcNotificationCenterHost() {
         ignoreNotificationLocally,
         markAllSeen,
         markSeen,
+        pendingNotificationKeys,
         sendBoopReply,
         sendInviteResponseSlot,
         sendInviteResponseWithMessage,
@@ -281,28 +283,32 @@ export function VrcNotificationCenterHost() {
                             />
                         ) : null}
                     </SheetHeader>
-                    <NotificationDrawerList
-                        categories={categories}
-                        currentUserId={currentUserId ?? undefined}
-                        canInviteFromCurrentLocation={
-                            canInviteFromCurrentLocation
-                        }
-                        handlers={{
-                            onAcceptFriendRequest: acceptFriendRequest,
-                            onAcceptRequestInvite: acceptRequestInvite,
-                            onSendInviteResponseWithMessage:
-                                sendInviteResponseWithMessage,
-                            onSendNotificationResponse:
-                                sendNotificationResponse,
-                            onHideNotification: hideNotification,
-                            onIgnoreNotificationLocally:
-                                ignoreNotificationLocally,
-                            onDeleteNotification: deleteNotification,
-                            onMarkSeen: markSeen,
-                            onJoinQueueReady: joinQueueReady
-                        }}
-                        onNavigateToTable={navigateToTable}
-                    />
+                    <NotificationActionPendingContext
+                        value={pendingNotificationKeys}
+                    >
+                        <NotificationDrawerList
+                            categories={categories}
+                            currentUserId={currentUserId ?? undefined}
+                            canInviteFromCurrentLocation={
+                                canInviteFromCurrentLocation
+                            }
+                            handlers={{
+                                onAcceptFriendRequest: acceptFriendRequest,
+                                onAcceptRequestInvite: acceptRequestInvite,
+                                onSendInviteResponseWithMessage:
+                                    sendInviteResponseWithMessage,
+                                onSendNotificationResponse:
+                                    sendNotificationResponse,
+                                onHideNotification: hideNotification,
+                                onIgnoreNotificationLocally:
+                                    ignoreNotificationLocally,
+                                onDeleteNotification: deleteNotification,
+                                onMarkSeen: markSeen,
+                                onJoinQueueReady: joinQueueReady
+                            }}
+                            onNavigateToTable={navigateToTable}
+                        />
+                    </NotificationActionPendingContext>
                 </SheetContent>
             </Sheet>
             <InviteMessageDialog

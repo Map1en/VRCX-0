@@ -5,6 +5,7 @@ import { Tabs, TabsContent } from '@/ui/shadcn/tabs';
 import { NotificationFeed } from './components/NotificationFeed';
 import { NotificationPageToolbar } from './components/NotificationPageToolbar';
 import { BoopReplyDialog } from './components/NotificationViewParts';
+import { NotificationActionPendingContext } from './notificationActionPending';
 import { useVrcNotificationPageController } from './useVrcNotificationPageController';
 
 type VrcNotificationPageProps = {
@@ -63,28 +64,36 @@ export function VrcNotificationPage({
                         value={filters.quickFilter}
                         className="flex min-h-0 flex-1 flex-col"
                     >
-                        <NotificationFeed
-                            rows={pageRows}
-                            table={table}
-                            detail={rowsState.detail}
-                            loadStatus={rowsState.loadStatus}
-                            sourceRowsCount={sourceRowsCount}
-                            hasActiveFilters={
-                                filters.activeTypes.length > 0 ||
-                                filters.quickFilter !== 'all' ||
-                                Boolean(filters.searchQuery.trim())
-                            }
-                            rowsCount={rowsState.rows.length}
-                            pagination={tableState.pagination}
-                            pageSizes={tableState.pageSizes}
-                            onPageSizeChange={tableState.handlePageSizeChange}
-                            onClearFilters={filters.clearFilters}
-                            currentUserId={runtime.currentUserId ?? undefined}
-                            canInviteFromCurrentLocation={
-                                runtime.canInviteFromCurrentLocation
-                            }
-                            handlers={handlers}
-                        />
+                        <NotificationActionPendingContext
+                            value={actions.pendingNotificationKeys}
+                        >
+                            <NotificationFeed
+                                rows={pageRows}
+                                table={table}
+                                detail={rowsState.detail}
+                                loadStatus={rowsState.loadStatus}
+                                sourceRowsCount={sourceRowsCount}
+                                hasActiveFilters={
+                                    filters.activeTypes.length > 0 ||
+                                    filters.quickFilter !== 'all' ||
+                                    Boolean(filters.searchQuery.trim())
+                                }
+                                rowsCount={rowsState.rows.length}
+                                pagination={tableState.pagination}
+                                pageSizes={tableState.pageSizes}
+                                onPageSizeChange={
+                                    tableState.handlePageSizeChange
+                                }
+                                onClearFilters={filters.clearFilters}
+                                currentUserId={
+                                    runtime.currentUserId ?? undefined
+                                }
+                                canInviteFromCurrentLocation={
+                                    runtime.canInviteFromCurrentLocation
+                                }
+                                handlers={handlers}
+                            />
+                        </NotificationActionPendingContext>
                     </TabsContent>
                 </Tabs>
             </PageScaffold>
