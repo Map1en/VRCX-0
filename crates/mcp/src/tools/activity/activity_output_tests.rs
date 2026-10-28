@@ -374,6 +374,35 @@ fn my_activity_buckets_weekdays_in_the_callers_timezone() {
 }
 
 #[test]
+fn my_activity_reads_a_calendar_day_window_in_the_callers_timezone() {
+    let (_dir, runtime, db) =
+        crate::test_support::test_runtime_with_database("my-activity-local-day", "usr_owner")
+            .unwrap();
+    write_batch(
+        db.as_ref(),
+        &OwnerId::new("usr_owner"),
+        &GameLogWriteBatch {
+            join_leave: vec![closed_stay("2026-06-07T21:00:00.000Z", 60)],
+            ..GameLogWriteBatch::default()
+        },
+    )
+    .unwrap();
+    let server = VrcxMcpServer::new(runtime);
+
+    let output = server
+        .get_my_activity_output(
+            OwnerId::new("usr_owner"),
+            MyActivityParams {
+                time_window: Some(serde_json::from_value(serde_json::json!("2026-06-08")).unwrap()),
+                utc_offset_minutes: Some(540),
+            },
+        )
+        .unwrap();
+
+    assert_eq!(output.total_minutes, 60);
+}
+
+#[test]
 fn my_activity_tolerates_an_out_of_range_utc_offset() {
     let (_dir, runtime, _db) =
         crate::test_support::test_runtime_with_database("my-activity-huge-offset", "usr_owner")

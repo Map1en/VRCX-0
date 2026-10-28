@@ -76,7 +76,10 @@ impl VrcxMcpServer {
             .friend_activity_pattern(social_aggregates::FriendActivityPatternInput {
                 owner_user_id: owner_user_id.clone(),
                 user_id,
-                time_window: input.time_window.into(),
+                time_window: input
+                    .time_window
+                    .in_utc_offset(input.utc_offset_minutes)?
+                    .into(),
                 bucket: input.bucket.into(),
                 utc_offset_minutes: input.utc_offset_minutes,
             })
@@ -140,7 +143,10 @@ impl VrcxMcpServer {
         Parameters(input): Parameters<ActivityTimelineParams>,
     ) -> Result<CallToolResult, String> {
         let owner_user_id = require_current_user_id(&self.runtime)?;
-        let time_window: social_aggregates::TimeWindow = input.time_window.into();
+        let time_window: social_aggregates::TimeWindow = input
+            .time_window
+            .in_utc_offset(input.utc_offset_minutes)?
+            .into();
         let bounds = time_window_bounds_ms(&time_window)?;
         let to_ms = bounds.to.unwrap_or_else(|| Utc::now().timestamp_millis());
         let sessions = self.play_sessions(&owner_user_id, bounds.from, to_ms)?;
@@ -193,15 +199,20 @@ impl VrcxMcpServer {
         Parameters(input): Parameters<BestTimeToPlayParams>,
     ) -> Result<CallToolResult, String> {
         let owner_user_id = require_current_user_id(&self.runtime)?;
-        application_query_result(self.runtime.activity_queries.best_time_to_play(
-            social_aggregates::BestTimeToPlayInput {
-                owner_user_id: owner_user_id.clone(),
-                time_window: input.time_window.into(),
-                bucket: input.bucket.into(),
-                limit: input.limit,
-                utc_offset_minutes: input.utc_offset_minutes,
-            },
-        ))
+        application_query_result(
+            self.runtime.activity_queries.best_time_to_play(
+                social_aggregates::BestTimeToPlayInput {
+                    owner_user_id: owner_user_id.clone(),
+                    time_window: input
+                        .time_window
+                        .in_utc_offset(input.utc_offset_minutes)?
+                        .into(),
+                    bucket: input.bucket.into(),
+                    limit: input.limit,
+                    utc_offset_minutes: input.utc_offset_minutes,
+                },
+            ),
+        )
     }
 
     #[tool(
@@ -256,7 +267,11 @@ impl VrcxMcpServer {
         owner_user_id: OwnerId,
         input: MyActivityParams,
     ) -> Result<MyActivityOutput, String> {
-        let time_window = input.time_window.unwrap_or_default().into();
+        let time_window = input
+            .time_window
+            .unwrap_or_default()
+            .in_utc_offset(input.utc_offset_minutes)?
+            .into();
         let bounds = time_window_bounds_ms(&time_window)?;
         let offset_minutes = input.utc_offset_minutes.unwrap_or(0);
         let offset_ms = offset_minutes.saturating_mul(60_000);
@@ -326,7 +341,10 @@ impl VrcxMcpServer {
         owner_user_id: OwnerId,
         input: SummarizeSocialPeriodParams,
     ) -> Result<SocialPeriodSummaryOutput, String> {
-        let time_window_params = input.time_window.unwrap_or_default();
+        let time_window_params = input
+            .time_window
+            .unwrap_or_default()
+            .in_utc_offset(input.utc_offset_minutes)?;
         let time_window: social_aggregates::TimeWindow = time_window_params.clone().into();
         let activity = self.get_my_activity_output(
             owner_user_id.clone(),
