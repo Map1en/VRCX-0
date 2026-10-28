@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use serde_json::Value;
 
-use crate::activity::activity_iso_from_ms;
+use crate::activity::{activity_iso_from_ms, parse_activity_time_ms};
 use crate::common::{row_i64, row_string, ParamsBuilder};
 use crate::database::{DatabaseService, DatabaseWriteTransaction};
 use crate::game_log::{ensure_game_log_tables, GameLogLocationEntry, GameLogLocationTimeUpdate};
@@ -449,21 +449,43 @@ fn backfilled_entry_table_if_new(
         ),
         _ => return Ok(None),
     };
-    let params = params
+    let mut params = params
         .set("user_id", entry.user_id())
         .set("created_at", entry.created_at())
-        .set("window", BACKFILL_DUPLICATE_WINDOW_SECS)
-        .build();
+        .set("window", BACKFILL_DUPLICATE_WINDOW_SECS);
+    let created_ms = parse_activity_time_ms(entry.created_at());
+    if let Some(created_ms) = created_ms {
+        let margin_ms = (BACKFILL_DUPLICATE_WINDOW_SECS + 1) * 1000;
+        params = params
+            .set("created_from", activity_iso_from_ms(created_ms - margin_ms))
+            .set("created_to", activity_iso_from_ms(created_ms + margin_ms));
+    }
     let nearby = tx.execute(
-        &format!(
-            "SELECT id FROM {user_prefix}_{table} WHERE user_id = @user_id AND {same_change}              AND ABS(julianday(created_at) - julianday(@created_at)) * 86400 <= @window"
-        ),
-        &params,
+        &backfill_nearby_ids_sql(user_prefix, table, same_change, created_ms.is_some()),
+        &params.build(),
     )?;
     let recorded_elsewhere = nearby
         .iter()
         .any(|row| !written.rows.contains(&(table, row_i64(row, 0))));
     Ok((!recorded_elsewhere).then_some(table))
+}
+
+fn backfill_nearby_ids_sql(
+    user_prefix: &str,
+    table: &str,
+    same_change: &str,
+    indexed: bool,
+) -> String {
+    let indexed_range = if indexed {
+        "AND created_at BETWEEN @created_from AND @created_to"
+    } else {
+        ""
+    };
+    format!(
+        "SELECT id FROM {user_prefix}_{table} WHERE user_id = @user_id AND {same_change}
+         {indexed_range}
+         AND ABS(julianday(created_at) - julianday(@created_at)) * 86400 <= @window"
+    )
 }
 
 fn insert_feed_entry(

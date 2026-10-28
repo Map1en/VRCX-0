@@ -9,9 +9,10 @@ use crate::realtime::ensure_realtime_tables;
 use crate::Error;
 
 const GLOBAL_STORE_SCHEMA_KEY: &str = "global-store";
+const FAVORITE_UNIQUE_INDEX_SCHEMA_KEY: &str = "global-store:favorite-unique-indexes";
 
 pub(crate) fn ensure_global_store_tables(db: &DatabaseService) -> Result<(), Error> {
-    db.ensure_schema_until_stable(GLOBAL_STORE_SCHEMA_KEY, || {
+    db.ensure_schema_once(GLOBAL_STORE_SCHEMA_KEY, || {
         ensure_owner_table(db)?;
         for sql in [
             "CREATE TABLE IF NOT EXISTS cache_avatar (id TEXT PRIMARY KEY, added_at TEXT, author_id TEXT, author_name TEXT, created_at TEXT, description TEXT, image_url TEXT, name TEXT, release_status TEXT, thumbnail_image_url TEXT, updated_at TEXT, version INTEGER)",
@@ -40,6 +41,13 @@ pub(crate) fn ensure_global_store_tables(db: &DatabaseService) -> Result<(), Err
         for table in ["favorite_world", "favorite_avatar", "favorite_friend"] {
             add_column_if_missing(db, table, "sort_order", "INTEGER")?;
         }
+        db.execute_non_query(
+            "DROP INDEX IF EXISTS favorite_friend_user_id_group_idx",
+            &Default::default(),
+        )?;
+        Ok(())
+    })?;
+    db.ensure_schema_until_stable(FAVORITE_UNIQUE_INDEX_SCHEMA_KEY, || {
         ensure_favorite_unique_indexes(db)
     })
 }
@@ -67,10 +75,6 @@ fn ensure_favorite_unique_indexes(db: &DatabaseService) -> Result<bool, Error> {
         "favorite_friend",
         "owner_id, user_id, group_name",
         "favorite_friend_owner_user_id_group",
-    )?;
-    db.execute_non_query(
-        "DROP INDEX IF EXISTS favorite_friend_user_id_group_idx",
-        &Default::default(),
     )?;
     Ok(stable)
 }

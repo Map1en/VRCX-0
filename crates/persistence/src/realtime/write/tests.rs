@@ -1222,3 +1222,93 @@ fn backfill_only_treats_rows_from_before_the_current_sync_as_duplicates() -> Res
     assert_eq!((first_segment, next_segment, next_sync), (1, 1, 0));
     Ok(())
 }
+
+#[test]
+fn backfill_matches_duplicates_across_time_formats_only_inside_the_window(
+) -> Result<(), crate::Error> {
+    let dir = TestDir::new("realtime-feed-backfill-window");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+    let owner = OwnerId::new("usr_self");
+
+    let recorded = insert_backfilled_feed(
+        &db,
+        &owner,
+        &[online_entry("2026-05-15T00:00:00Z", "wrld_1:1", "World")],
+        &[],
+        &mut BackfillWrites::default(),
+    )?;
+    let within_window = insert_backfilled_feed(
+        &db,
+        &owner,
+        &[online_entry(
+            "2026-05-15T00:02:00.000Z",
+            "wrld_1:1",
+            "World",
+        )],
+        &[],
+        &mut BackfillWrites::default(),
+    )?;
+    let outside_window = insert_backfilled_feed(
+        &db,
+        &owner,
+        &[online_entry(
+            "2026-05-15T00:02:01.000Z",
+            "wrld_1:1",
+            "World",
+        )],
+        &[],
+        &mut BackfillWrites::default(),
+    )?;
+
+    assert_eq!((recorded, within_window, outside_window), (1, 0, 1));
+    Ok(())
+}
+
+#[test]
+fn backfill_duplicate_lookup_reads_a_created_at_range_through_an_index() -> Result<(), crate::Error>
+{
+    let dir = TestDir::new("realtime-feed-backfill-plan");
+    let db = DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?;
+    ensure_realtime_tables(&db, "usrself")?;
+
+    for (table, same_change) in [
+        (
+            "feed_status",
+            "status = @status AND status_description = @status_description",
+        ),
+        (
+            "feed_avatar",
+            "current_avatar_image_url = @current_avatar_image_url",
+        ),
+    ] {
+        let plan = db.execute(
+            &format!(
+                "EXPLAIN QUERY PLAN {}",
+                super::backfill_nearby_ids_sql("usrself", table, same_change, true)
+            ),
+            &ParamsBuilder::new()
+                .set("user_id", "usr_friend")
+                .set("status", "active")
+                .set("status_description", "")
+                .set("current_avatar_image_url", "")
+                .set("created_at", "2026-05-15T00:00:00.000Z")
+                .set("window", 120)
+                .set("created_from", "2026-05-14T23:57:59.000Z")
+                .set("created_to", "2026-05-15T00:02:01.000Z")
+                .build(),
+        )?;
+        let details = plan
+            .iter()
+            .map(|row| {
+                row.last()
+                    .and_then(|value| value.as_str())
+                    .unwrap_or_default()
+            })
+            .collect::<Vec<_>>();
+        assert!(
+            details.iter().any(|detail| detail.contains("USING INDEX")),
+            "{table}: {details:?}"
+        );
+    }
+    Ok(())
+}
