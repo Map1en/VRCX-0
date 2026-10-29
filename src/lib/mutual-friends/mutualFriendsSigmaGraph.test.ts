@@ -294,7 +294,10 @@ describe('buildSigmaGraph', () => {
             labelGridCellSize: 140
         });
         expect(options.primitives?.nodes?.layers?.[0]).toMatchObject({
-            name: 'border'
+            name: 'border',
+            attributes: expect.not.arrayContaining([
+                expect.objectContaining({ name: 'borderSize_1' })
+            ])
         });
         expect(
             options.primitives?.edges?.paths?.map((path) => path.name)
@@ -324,7 +327,7 @@ describe('buildSigmaGraph', () => {
         const options = sigmaMock.options[0];
         const hollowNode = projectNode(graph, options, 'usr_a');
         expect(hollowNode).toMatchObject({
-            borderSize: 0.34,
+            innerBorderSize: 0.24,
             borderColor: hollowNode.color,
             fillColor: themeRef.current.backgroundColor,
             labelVisibility: 'visible'

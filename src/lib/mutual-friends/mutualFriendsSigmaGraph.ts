@@ -476,7 +476,7 @@ export function renderSigmaGraph({
             backdropVisibility: 'hidden' as const,
             ringColor: NODE_RING_COLOR,
             borderColor: NODE_RING_COLOR,
-            borderSize: attributes.type === 'hollow' ? 0.34 : 0.1,
+            innerBorderSize: attributes.type === 'hollow' ? 0.24 : 0,
             fillColor: baseColor
         };
         result.size = baseSize * (1 + (SELECTED_SIZE_SCALE - 1) * selection);
@@ -587,7 +587,17 @@ export function renderSigmaGraph({
                     layerBorder({
                         borders: [
                             {
-                                size: { attribute: 'borderSize', default: 0.1 },
+                                size: 0.1,
+                                color: {
+                                    attribute: 'borderColor',
+                                    default: NODE_RING_COLOR
+                                }
+                            },
+                            {
+                                size: {
+                                    attribute: 'innerBorderSize',
+                                    default: 0
+                                },
                                 color: {
                                     attribute: 'borderColor',
                                     default: NODE_RING_COLOR
