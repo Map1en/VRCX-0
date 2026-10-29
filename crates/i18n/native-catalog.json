@@ -443,6 +443,10 @@
                     "source": "nativeShell.tray.exit"
                 },
                 {
+                    "key": "nativeShell.tray.realtimeReconnecting",
+                    "source": "nativeShell.tray.realtimeReconnecting"
+                },
+                {
                     "key": "nativeShell.notification.backgroundModeStarted.title",
                     "source": "nativeShell.notification.backgroundModeStarted.title"
                 },

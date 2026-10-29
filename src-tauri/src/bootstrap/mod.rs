@@ -15,7 +15,7 @@ pub(crate) use autostart::request_startup_foreground;
 pub(crate) use background_delay::{arm_background_delay, cancel_background_delay};
 pub(crate) use notification::{
     show_auth_failure_notification_after_backend_start_error, show_auth_failure_notification_once,
-    show_background_mode_started_notification,
+    show_background_mode_started_notification, tray_realtime_reconnecting_label,
 };
 pub use protocol::{
     background_image_protocol_response, screenshot_protocol_response,

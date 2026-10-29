@@ -174,3 +174,7 @@ fn auth_failure_notification_labels_for_language(language: &str) -> AuthFailureN
 pub(super) fn tray_labels(state: &AppState) -> TrayLabels {
     shell_locale::tray_labels_for_language(&app_language(state))
 }
+
+pub(crate) fn tray_realtime_reconnecting_label(state: &AppState) -> String {
+    shell_locale::tray_realtime_reconnecting_for_language(&app_language(state))
+}

@@ -738,7 +738,8 @@
             "rebuildUi": "Перезагрузить интерфейс",
             "sidebarMode": "Режим боковой панели",
             "disableTheme": "Отключить тему",
-            "exit": "Выход"
+            "exit": "Выход",
+            "realtimeReconnecting": "Соединение в реальном времени потеряно, идёт переподключение"
         },
         "notification": {
             "backgroundModeStarted": {
@@ -6837,6 +6838,14 @@
         "realtime_connection": "В режиме реального времени",
         "ws_connected": "Подключено",
         "ws_disconnected": "Разъединены",
+        "realtime_connecting": "Подключение",
+        "realtime_reconnecting": "Переподключение",
+        "realtime_retry_in": "Повтор через {seconds} с",
+        "realtime_retry_soon": "Скоро повтор",
+        "realtime_last_connected": "Последнее подключение: {time}",
+        "realtime_disconnected_since": "Нет связи с {time}",
+        "realtime_reason": "Причина: {reason}",
+        "realtime_retry_now": "Нажмите, чтобы повторить сейчас",
         "zoom": "Увеличить",
         "zoom_tooltip": "Нажмите для корректировки уровня увеличения",
         "app_uptime": "Время подачи заявления",

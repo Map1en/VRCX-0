@@ -726,7 +726,8 @@
             "rebuildUi": "UI を再読み込み",
             "sidebarMode": "サイドバーモード",
             "disableTheme": "テーマを無効化",
-            "exit": "終了"
+            "exit": "終了",
+            "realtimeReconnecting": "リアルタイム接続が切れたため、再接続しています"
         },
         "notification": {
             "backgroundModeStarted": {
@@ -6853,6 +6854,14 @@
         "realtime_connection": "リアルタイム",
         "ws_connected": "接続済み",
         "ws_disconnected": "未接続",
+        "realtime_connecting": "接続中",
+        "realtime_reconnecting": "再接続中",
+        "realtime_retry_in": "{seconds} 秒後に再試行",
+        "realtime_retry_soon": "まもなく再試行",
+        "realtime_last_connected": "最終接続：{time}",
+        "realtime_disconnected_since": "{time} から切断中",
+        "realtime_reason": "原因：{reason}",
+        "realtime_retry_now": "クリックですぐに再試行",
         "zoom": "ズーム",
         "zoom_tooltip": "クリックしてズームレベルを調整",
         "app_uptime": "VRCX-0 の稼働時間",

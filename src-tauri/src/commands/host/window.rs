@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::OnceLock;
+use std::sync::{Mutex, OnceLock};
 
 use tauri::{AppHandle, State};
 use tauri_plugin_autostart::ManagerExt as _;
@@ -155,6 +155,17 @@ pub fn app__set_tray_icon_notification(state: State<'_, AppState>, notify: Optio
         .set_frontend_tray_notification(notify.unwrap_or(false));
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+struct TrayTooltipState {
+    notify: bool,
+    realtime_interrupted: bool,
+}
+
+static TRAY_TOOLTIP_STATE: Mutex<TrayTooltipState> = Mutex::new(TrayTooltipState {
+    notify: false,
+    realtime_interrupted: false,
+});
+
 pub(crate) fn set_tray_icon_notification(app_handle: &AppHandle, notify: bool) {
     if let Some(tray) = app_handle.tray_by_id("main") {
         if let Some(icon) = tray_icon_image(notify) {
@@ -164,13 +175,55 @@ pub(crate) fn set_tray_icon_notification(app_handle: &AppHandle, notify: bool) {
                 icon.height(),
             )));
         }
-        let tooltip = if notify {
-            "VRCX-0 (new notification)"
-        } else {
-            "VRCX-0"
-        };
-        let _ = tray.set_tooltip(Some(tooltip));
     }
+    let state = update_tray_tooltip_state(|state| state.notify = notify).0;
+    apply_tray_tooltip(app_handle, state);
+}
+
+pub(crate) fn set_tray_realtime_interrupted(app_handle: &AppHandle, interrupted: bool) {
+    let (state, changed) =
+        update_tray_tooltip_state(|state| state.realtime_interrupted = interrupted);
+    if changed {
+        apply_tray_tooltip(app_handle, state);
+    }
+}
+
+pub(crate) fn refresh_tray_tooltip(app_handle: &AppHandle) {
+    apply_tray_tooltip(app_handle, update_tray_tooltip_state(|_| {}).0);
+}
+
+fn update_tray_tooltip_state(
+    update: impl FnOnce(&mut TrayTooltipState),
+) -> (TrayTooltipState, bool) {
+    let mut state = TRAY_TOOLTIP_STATE
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    let previous = *state;
+    update(&mut state);
+    (*state, *state != previous)
+}
+
+fn apply_tray_tooltip(app_handle: &AppHandle, state: TrayTooltipState) {
+    use tauri::Manager;
+
+    let Some(tray) = app_handle.tray_by_id("main") else {
+        return;
+    };
+    let base = if state.notify {
+        "VRCX-0 (new notification)"
+    } else {
+        "VRCX-0"
+    };
+    let realtime_label = state
+        .realtime_interrupted
+        .then(|| app_handle.try_state::<AppState>())
+        .flatten()
+        .map(|app_state| crate::bootstrap::tray_realtime_reconnecting_label(&app_state));
+    let tooltip = match realtime_label {
+        Some(label) => format!("{base} — {label}"),
+        None => base.to_string(),
+    };
+    let _ = tray.set_tooltip(Some(tooltip));
 }
 
 #[cfg(windows)]

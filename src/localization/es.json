@@ -730,7 +730,8 @@
             "rebuildUi": "Recargar interfaz",
             "sidebarMode": "Modo barra lateral",
             "disableTheme": "Desactivar tema",
-            "exit": "Salir"
+            "exit": "Salir",
+            "realtimeReconnecting": "Se perdió la conexión en tiempo real; reconectando"
         },
         "notification": {
             "backgroundModeStarted": {
@@ -6867,6 +6868,14 @@
         "realtime_connection": "Tiempo real",
         "ws_connected": "Conectado",
         "ws_disconnected": "Desconectado",
+        "realtime_connecting": "Conectando",
+        "realtime_reconnecting": "Reconectando",
+        "realtime_retry_in": "Reintento en {seconds} s",
+        "realtime_retry_soon": "Reintentando en breve",
+        "realtime_last_connected": "Última conexión: {time}",
+        "realtime_disconnected_since": "Desconectado desde {time}",
+        "realtime_reason": "Motivo: {reason}",
+        "realtime_retry_now": "Haz clic para reintentar ahora",
         "zoom": "Zoom",
         "zoom_tooltip": "Haz clic para ajustar el nivel de zoom",
         "app_uptime": "Tiempo de actividad de la aplicación",

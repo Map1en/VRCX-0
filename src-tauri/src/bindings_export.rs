@@ -153,6 +153,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::host::tts::app__host_tts_voices,
             commands::host::tts::app__host_tts_speak,
             commands::application::realtime::app__current_user_refresh,
+            commands::application::realtime::app__realtime_retry_now,
             commands::application::realtime::app__ingest_user_facts,
             commands::application::realtime::app__friend_profile_load_start,
             commands::application::realtime::app__friend_profile_load_cancel,

@@ -220,6 +220,11 @@ function createAuthenticatedRuntimePhaseSnapshot(
             detail: 'Realtime ready.',
             lastError: null
         },
+        realtimeHealth: {
+            interrupted: false,
+            disconnectedAt: null,
+            retryAt: null
+        },
         friendBaselineRevision: 1,
         friendBaseline: null,
         favoritesBaseline: null,

@@ -76,6 +76,10 @@ impl RealtimeHostRuntime {
         self.transport_lifecycle_tx.subscribe()
     }
 
+    pub fn verify_transport_liveness(&self) {
+        self.deps.transport.verify_liveness();
+    }
+
     pub fn transport_is_active(&self, transport: &RealtimeTransportStartResult) -> bool {
         self.state
             .lock()

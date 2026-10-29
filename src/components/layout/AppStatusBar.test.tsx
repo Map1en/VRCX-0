@@ -1,9 +1,16 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, render } from '@testing-library/react';
+import {
+    act,
+    cleanup,
+    fireEvent,
+    render,
+    screen
+} from '@testing-library/react';
 import type { ComponentProps, PropsWithChildren, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { commands } from '@/platform/tauri/bindings';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 const segmentRenders = vi.hoisted(() => [] as string[]);
@@ -94,5 +101,33 @@ describe('AppStatusBar', () => {
             })
         );
         expect(segmentRenders).toEqual(['VRChat']);
+    });
+
+    it('shows the reconnect state as text and retries on click', async () => {
+        vi.mocked(commands.appRealtimeRetryNow).mockResolvedValue();
+        render(<AppStatusBar />);
+        await act(async () => {});
+        expect(screen.queryByText(/status_bar\.realtime_retry/)).toBeNull();
+
+        act(() =>
+            useRuntimeStore.getState().setTransportState({
+                websocketConnected: false,
+                interrupted: true,
+                retryWaiting: true,
+                retryAt: new Date(Date.now() + 30_000).toISOString(),
+                lastError: 'websocket read: connection reset',
+                outageStartedAt: '2026-10-29T00:00:00.000Z'
+            })
+        );
+
+        const segment = screen.getByRole('button', {
+            name: /status_bar\.realtime_retry_in/
+        });
+        expect(
+            screen.queryByText(/status_bar\.realtime_reason/)
+        ).not.toBeNull();
+        fireEvent.click(segment);
+
+        expect(commands.appRealtimeRetryNow).toHaveBeenCalledTimes(1);
     });
 });

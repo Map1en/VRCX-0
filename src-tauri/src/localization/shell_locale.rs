@@ -211,6 +211,10 @@ pub(crate) fn tray_labels_for_language(language: &str) -> TrayLabels {
     }
 }
 
+pub(crate) fn tray_realtime_reconnecting_for_language(language: &str) -> String {
+    text(language, ShellKey::NativeShellTrayRealtimeReconnecting)
+}
+
 pub(crate) fn background_mode_notification_labels_for_language(
     language: &str,
 ) -> BackgroundModeNotificationLabels {

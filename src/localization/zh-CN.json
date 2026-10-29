@@ -730,7 +730,8 @@
             "rebuildUi": "重载界面",
             "sidebarMode": "侧边栏模式",
             "disableTheme": "禁用主题",
-            "exit": "退出"
+            "exit": "退出",
+            "realtimeReconnecting": "实时连接已断开，正在重连"
         },
         "notification": {
             "backgroundModeStarted": {
@@ -6857,6 +6858,14 @@
         "realtime_connection": "实时连接",
         "ws_connected": "已连接",
         "ws_disconnected": "已断开",
+        "realtime_connecting": "连接中",
+        "realtime_reconnecting": "重连中",
+        "realtime_retry_in": "{seconds} 秒后重试",
+        "realtime_retry_soon": "即将重试",
+        "realtime_last_connected": "上次连接：{time}",
+        "realtime_disconnected_since": "断开于 {time}",
+        "realtime_reason": "原因：{reason}",
+        "realtime_retry_now": "点击立即重试",
         "zoom": "界面缩放",
         "zoom_tooltip": "点击以调整界面缩放",
         "app_uptime": "应用运行时长",

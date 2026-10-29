@@ -564,6 +564,7 @@ pub fn refresh_tray_menu(app: &tauri::AppHandle, state: &AppState) -> Result<(),
         menu.append(&exit_item)?;
         let _ = tray.set_menu(Some(menu));
         let _ = tray.set_show_menu_on_left_click(false);
+        crate::commands::host::window::refresh_tray_tooltip(app);
     }
     Ok(())
 }

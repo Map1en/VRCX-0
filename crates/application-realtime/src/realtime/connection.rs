@@ -40,4 +40,6 @@ pub trait RealtimeTransport: Send + Sync {
         session: RealtimeSessionContext,
         cancel_rx: watch::Receiver<u64>,
     ) -> RealtimeTransportFuture;
+
+    fn verify_liveness(&self) {}
 }

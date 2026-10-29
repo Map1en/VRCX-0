@@ -119,6 +119,9 @@ const generatedCommands = {
     async appCurrentUserRefresh(): Promise<CurrentUserRefreshOutcome> {
         return await TAURI_INVOKE('app__current_user_refresh');
     },
+    async appRealtimeRetryNow(): Promise<void> {
+        await TAURI_INVOKE('app__realtime_retry_now');
+    },
     async appIngestUserFacts(entries: JsonValue[]): Promise<null> {
         return await TAURI_INVOKE('app__ingest_user_facts', { entries });
     },
@@ -3520,11 +3523,17 @@ export type AuthenticatedRuntimePhaseSnapshot = {
     friends: AuthenticatedRuntimeStepSnapshot;
     favorites: AuthenticatedRuntimeStepSnapshot;
     realtime: AuthenticatedRuntimeStepSnapshot;
+    realtimeHealth: AuthenticatedRuntimeRealtimeHealth;
     friendBaselineRevision: number;
     friendBaseline: SocialFriendRosterBaselineOutput | null;
     favoritesBaseline: SocialFavoritesBaselineOutput | null;
     realtimeTransport: RealtimeTransportStartResult | null;
     updatedAt: string;
+};
+export type AuthenticatedRuntimeRealtimeHealth = {
+    interrupted: boolean;
+    disconnectedAt: string | null;
+    retryAt: string | null;
 };
 export type AuthenticatedRuntimeSession = {
     userId: string;

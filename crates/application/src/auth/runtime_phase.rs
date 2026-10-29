@@ -38,6 +38,14 @@ pub struct AuthenticatedRuntimeStepSnapshot {
 
 #[derive(Clone, Debug, Default, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
+pub struct AuthenticatedRuntimeRealtimeHealth {
+    pub interrupted: bool,
+    pub disconnected_at: Option<String>,
+    pub retry_at: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct AuthenticatedRuntimePhaseSnapshot {
     pub run_id: u64,
     pub auth_scope_generation: u64,
@@ -48,6 +56,7 @@ pub struct AuthenticatedRuntimePhaseSnapshot {
     pub friends: AuthenticatedRuntimeStepSnapshot,
     pub favorites: AuthenticatedRuntimeStepSnapshot,
     pub realtime: AuthenticatedRuntimeStepSnapshot,
+    pub realtime_health: AuthenticatedRuntimeRealtimeHealth,
     pub friend_baseline_revision: u64,
     pub friend_baseline: Option<SocialFriendRosterBaselineOutput>,
     pub favorites_baseline: Option<SocialFavoritesBaselineOutput>,

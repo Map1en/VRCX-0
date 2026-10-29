@@ -47,7 +47,8 @@ pub use privacy_lock::{
     verify_saved_account_password, PrivacyLockPasswordCheck, PrivacyLockRecord, PrivacyLockStore,
 };
 pub use runtime_phase::{
-    AuthenticatedRuntimePhase, AuthenticatedRuntimePhaseSnapshot, AuthenticatedRuntimeStepSnapshot,
+    AuthenticatedRuntimePhase, AuthenticatedRuntimePhaseSnapshot,
+    AuthenticatedRuntimeRealtimeHealth, AuthenticatedRuntimeStepSnapshot,
     AuthenticatedRuntimeStepStatus,
 };
 pub use session_projection::{

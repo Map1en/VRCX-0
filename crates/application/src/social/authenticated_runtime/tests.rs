@@ -38,15 +38,6 @@ fn compact_friend_ids_preserve_record_ids_and_fall_back_to_roster_keys() {
 }
 
 #[test]
-fn retry_schedule_caps_at_sixty_seconds() {
-    assert_eq!(retry_delay_seconds(1), 5);
-    assert_eq!(retry_delay_seconds(2), 15);
-    assert_eq!(retry_delay_seconds(3), 30);
-    assert_eq!(retry_delay_seconds(4), 60);
-    assert_eq!(retry_delay_seconds(20), 60);
-}
-
-#[test]
 fn recognizes_only_typed_vrchat_auth_failures() {
     assert_eq!(
         vrchat_auth_failure_status(&Error::VrchatApi {

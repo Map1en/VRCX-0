@@ -692,7 +692,8 @@
             "rebuildUi": "Recharger l'interface",
             "sidebarMode": "Mode barre latérale",
             "disableTheme": "Désactiver le thème",
-            "exit": "Quitter"
+            "exit": "Quitter",
+            "realtimeReconnecting": "Connexion en temps réel perdue, reconnexion en cours"
         },
         "notification": {
             "backgroundModeStarted": {

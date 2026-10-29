@@ -738,7 +738,8 @@
             "rebuildUi": "Znovu načíst UI",
             "sidebarMode": "Režim postranního panelu",
             "disableTheme": "Zakázat motiv",
-            "exit": "Ukončit"
+            "exit": "Ukončit",
+            "realtimeReconnecting": "Spojení v reálném čase bylo přerušeno, probíhá opětovné připojení"
         },
         "notification": {
             "backgroundModeStarted": {
@@ -6843,6 +6844,14 @@
         "realtime_connection": "V reálném čase",
         "ws_connected": "Připojeno",
         "ws_disconnected": "Odpojeno",
+        "realtime_connecting": "Připojování",
+        "realtime_reconnecting": "Opětovné připojování",
+        "realtime_retry_in": "Nový pokus za {seconds} s",
+        "realtime_retry_soon": "Brzy nový pokus",
+        "realtime_last_connected": "Naposledy připojeno: {time}",
+        "realtime_disconnected_since": "Odpojeno od {time}",
+        "realtime_reason": "Důvod: {reason}",
+        "realtime_retry_now": "Kliknutím to zkusíte znovu hned",
         "zoom": "Přiblížení",
         "zoom_tooltip": "Kliknutím upravíte úroveň přiblížení",
         "app_uptime": "Doba běhu aplikace",

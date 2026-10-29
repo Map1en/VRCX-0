@@ -730,6 +730,7 @@
             "sidebarMode": "사이드바 모드",
             "disableTheme": "테마 비활성화",
             "exit": "종료",
+            "realtimeReconnecting": "실시간 연결이 끊겨 다시 연결하는 중",
             "lock": "잠금"
         },
         "notification": {
@@ -6801,6 +6802,14 @@
         "realtime_connection": "실시간",
         "ws_connected": "연결됨",
         "ws_disconnected": "연결이 끊김",
+        "realtime_connecting": "연결 중",
+        "realtime_reconnecting": "재연결 중",
+        "realtime_retry_in": "{seconds}초 후 재시도",
+        "realtime_retry_soon": "곧 재시도",
+        "realtime_last_connected": "마지막 연결: {time}",
+        "realtime_disconnected_since": "{time}부터 연결 끊김",
+        "realtime_reason": "원인: {reason}",
+        "realtime_retry_now": "클릭하면 바로 재시도",
         "zoom": "줌",
         "zoom_tooltip": "확대/축소 수준을 조정하려면 클릭하세요.",
         "app_uptime": "애플리케이션 가동 시간",

@@ -730,7 +730,8 @@
             "rebuildUi": "重新載入用戶介面",
             "sidebarMode": "側邊欄模式",
             "disableTheme": "停用佈景主題",
-            "exit": "退出"
+            "exit": "退出",
+            "realtimeReconnecting": "即時連線已中斷，正在重新連線"
         },
         "notification": {
             "backgroundModeStarted": {
@@ -6848,6 +6849,14 @@
         "realtime_connection": "即時連線",
         "ws_connected": "已連線",
         "ws_disconnected": "未連線",
+        "realtime_connecting": "連線中",
+        "realtime_reconnecting": "重新連線中",
+        "realtime_retry_in": "{seconds} 秒後重試",
+        "realtime_retry_soon": "即將重試",
+        "realtime_last_connected": "上次連線：{time}",
+        "realtime_disconnected_since": "中斷於 {time}",
+        "realtime_reason": "原因：{reason}",
+        "realtime_retry_now": "點擊立即重試",
         "zoom": "縮放",
         "zoom_tooltip": "點擊調整縮放比例",
         "app_uptime": "應用程式運行時間",

@@ -1,15 +1,17 @@
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
+import { commands } from '@/platform/tauri/bindings';
 import { openExternalLink } from '@/services/shellIntegrationService';
 import { toast } from '@/services/toastService';
 import { refreshVrcStatusNow } from '@/services/vrcStatusService';
 import { links } from '@/shared/constants/link';
 import { useRuntimeStore } from '@/state/runtimeStore';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { realtimeRecoveryLabel } from './realtimeRecovery';
 import { formatStatusDate } from './statusBarFormat';
-import { StatusDot, StatusSegment } from './StatusBarParts';
+import { StatusSegment } from './StatusBarParts';
+import { useStatusNowMs } from './statusBarTicker';
 
 export function ServersSegment() {
     const { t } = useTranslation();
@@ -94,27 +96,95 @@ export function RealtimeConnectionSegment() {
     const websocketConnected = useRuntimeStore(
         (state) => state.transport.websocketConnected
     );
+    const interrupted = useRuntimeStore((state) => state.transport.interrupted);
+    const retryWaiting = useRuntimeStore(
+        (state) => state.transport.retryWaiting
+    );
+    const retryAt = useRuntimeStore((state) => state.transport.retryAt);
+    const lastError = useRuntimeStore((state) => state.transport.lastError);
+    const outageStartedAt = useRuntimeStore(
+        (state) => state.transport.outageStartedAt
+    );
+    const lastConnectedAt = useRuntimeStore(
+        (state) => state.transport.lastConnectedAt
+    );
+    const showRecovery = interrupted && !websocketConnected;
+    const retryAtMs = retryAt ? Date.parse(retryAt) : Number.NaN;
+    const nowMs = useStatusNowMs(
+        showRecovery && retryWaiting && Number.isFinite(retryAtMs)
+    );
+    const canRetryNow = showRecovery && retryWaiting;
+
+    const recovery = showRecovery
+        ? realtimeRecoveryLabel({
+              retryWaiting,
+              retryAtMs,
+              nowMs,
+              reconnecting: Boolean(outageStartedAt)
+          })
+        : null;
+    const recoveryText = recovery
+        ? recovery.key === 'status_bar.realtime_retry_in'
+            ? t(recovery.key, { seconds: recovery.seconds })
+            : t(recovery.key)
+        : null;
 
     return (
-        <Tooltip>
-            <TooltipTrigger
-                render={
-                    <div className="flex h-6 shrink-0 items-center gap-1.5 px-2">
-                        <StatusDot active={Boolean(websocketConnected)} />
-                        <span className="text-content-tertiary text-xs">
-                            {t('status_bar.realtime_connection')}
+        <StatusSegment
+            active={websocketConnected}
+            label={t('status_bar.realtime_connection')}
+            value={recoveryText ? `· ${recoveryText}` : undefined}
+            onClick={
+                canRetryNow
+                    ? () => {
+                          commands
+                              .appRealtimeRetryNow()
+                              .catch((error: unknown) => {
+                                  console.warn(
+                                      'Realtime retry request failed:',
+                                      error
+                                  );
+                              });
+                      }
+                    : undefined
+            }
+            tooltip={
+                <div className="flex flex-col gap-1 text-xs">
+                    <span>
+                        WebSocket{' '}
+                        {websocketConnected
+                            ? t('status_bar.ws_connected')
+                            : t('status_bar.ws_disconnected')}
+                    </span>
+                    {recoveryText ? <span>{recoveryText}</span> : null}
+                    {showRecovery && outageStartedAt ? (
+                        <span className="text-muted-foreground">
+                            {t('status_bar.realtime_disconnected_since', {
+                                time: formatStatusDate(outageStartedAt)
+                            })}
                         </span>
-                    </div>
-                }
-            />
-            <TooltipContent className="flex max-w-xs flex-col gap-1 text-xs">
-                <span>
-                    WebSocket{' '}
-                    {websocketConnected
-                        ? t('status_bar.ws_connected')
-                        : t('status_bar.ws_disconnected')}
-                </span>
-            </TooltipContent>
-        </Tooltip>
+                    ) : null}
+                    {lastConnectedAt ? (
+                        <span className="text-muted-foreground">
+                            {t('status_bar.realtime_last_connected', {
+                                time: formatStatusDate(lastConnectedAt)
+                            })}
+                        </span>
+                    ) : null}
+                    {showRecovery && lastError ? (
+                        <span className="text-muted-foreground break-words">
+                            {t('status_bar.realtime_reason', {
+                                reason: lastError
+                            })}
+                        </span>
+                    ) : null}
+                    {canRetryNow ? (
+                        <span className="text-muted-foreground">
+                            {t('status_bar.realtime_retry_now')}
+                        </span>
+                    ) : null}
+                </div>
+            }
+        />
     );
 }
