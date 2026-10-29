@@ -8,6 +8,7 @@ import { Button } from '@/ui/shadcn/button';
 type UserDetailContentProps = {
     imageUrl?: string;
     statusDotClassName?: string;
+    avatarClassName?: string;
     avatarFrame?: ReactNode;
     displayName: ReactNode;
     namePrefix?: ReactNode;
@@ -18,6 +19,7 @@ type UserDetailContentProps = {
 export function UserDetailContent({
     imageUrl = '',
     statusDotClassName = '',
+    avatarClassName,
     avatarFrame,
     displayName,
     namePrefix,
@@ -29,6 +31,7 @@ export function UserDetailContent({
             <UserStatusAvatar
                 imageUrl={imageUrl}
                 statusDotClassName={statusDotClassName}
+                className={avatarClassName}
                 frame={avatarFrame}
             />
             <span className="min-w-0 flex-1 overflow-hidden">

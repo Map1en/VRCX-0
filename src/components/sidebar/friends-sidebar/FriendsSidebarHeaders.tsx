@@ -7,7 +7,7 @@ import { Badge } from '@/ui/shadcn/badge';
 import { StaticSidebarLocation } from './FriendsSidebarLocation';
 import type { SidebarVirtualRow } from './friendsSidebarVirtualRowBuilder';
 
-const FRIEND_ROW_SIZE = 49;
+const FRIEND_ROW_SIZE = 53;
 const SECTION_HEADER_ROW_SIZE = 38;
 const SECTION_HEADER_TOP_GAP = 16;
 const INSTANCE_HEADER_ROW_SIZE = 26;

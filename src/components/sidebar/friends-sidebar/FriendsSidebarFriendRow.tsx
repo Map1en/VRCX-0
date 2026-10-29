@@ -263,6 +263,7 @@ export function FriendRow({
             <UserDetailContent
                 imageUrl={imageUrl}
                 statusDotClassName={statusDotClassName}
+                avatarClassName="size-10"
                 avatarFrame={
                     iconFrameId ? (
                         <ProfileAvatarFrame
