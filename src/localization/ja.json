@@ -1995,7 +1995,13 @@
                 "new_this_session": "今回の新着",
                 "expires_in": "{time}に期限切れ",
                 "action_all_done": "すべて対応済み",
-                "action_all_done_description": "今対応が必要な通知はありません。"
+                "action_all_done_description": "今対応が必要な通知はありません。",
+                "group": {
+                    "from_actor": "{name}から{count}件",
+                    "from_people": "{name}ほか{count}件",
+                    "expand": "すべて表示",
+                    "collapse": "折りたたむ"
+                }
             },
             "responses": {
                 "acknowledge_and_dismiss": "閉じる",

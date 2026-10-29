@@ -830,5 +830,6 @@ fn notification_from_value(value: &Value, version: i64) -> NotificationListItemO
         details: value.get("details").cloned().unwrap_or_else(|| json!({})),
         location: value_string(value, &["location"]),
         expired: value_bool(value, &["expired"]),
+        group_key: None,
     }
 }

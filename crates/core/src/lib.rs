@@ -14,6 +14,7 @@ pub mod group_permission;
 pub mod image_sniff;
 pub mod json;
 pub mod location;
+pub mod notification_group;
 pub mod notification_kind;
 mod open_string_enum;
 pub mod owner;

@@ -1999,7 +1999,13 @@
                 "new_this_session": "本次新到",
                 "expires_in": "{time}过期",
                 "action_all_done": "已全部处理",
-                "action_all_done_description": "目前没有需要你处理的通知。"
+                "action_all_done_description": "目前没有需要你处理的通知。",
+                "group": {
+                    "from_actor": "来自 {name} 的 {count} 条",
+                    "from_people": "{name} 等 {count} 条",
+                    "expand": "展开全部",
+                    "collapse": "收起"
+                }
             },
             "responses": {
                 "acknowledge_and_dismiss": "忽略",

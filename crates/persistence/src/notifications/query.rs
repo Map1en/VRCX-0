@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use chrono::{DateTime, Utc};
 use serde_json::{json, Value};
+use vrcx_0_core::notification_group::{notification_group_key, NotificationGroupFacts};
 use vrcx_0_core::text::contains_lowercase_query_case_insensitive;
 
 use crate::common::{
@@ -129,6 +130,17 @@ fn notification_matches_filters(
     filters.is_empty() || filters.iter().any(|filter| filter == &notification.r#type)
 }
 
+fn with_group_key(mut notification: NotificationListItemOutput) -> NotificationListItemOutput {
+    notification.group_key = notification_group_key(&NotificationGroupFacts {
+        kind: &notification.r#type,
+        sender_user_id: &notification.sender_user_id,
+        created_at: &notification.created_at,
+        data: &notification.data,
+        details: &notification.details,
+    });
+    notification
+}
+
 fn notification_v1_list_item(row: NotificationV1RowOutput) -> NotificationListItemOutput {
     let details = json!({
         "worldId": row.world_id,
@@ -138,7 +150,7 @@ fn notification_v1_list_item(row: NotificationV1RowOutput) -> NotificationListIt
         "requestMessage": row.request_message,
         "responseMessage": row.response_message,
     });
-    NotificationListItemOutput {
+    with_group_key(NotificationListItemOutput {
         id: row.id,
         version: 1,
         created_at: row.created_at.clone(),
@@ -160,7 +172,8 @@ fn notification_v1_list_item(row: NotificationV1RowOutput) -> NotificationListIt
         details,
         location: row.location,
         expired: row.expired == 1,
-    }
+        group_key: None,
+    })
 }
 
 fn notification_v2_list_item(
@@ -172,7 +185,7 @@ fn notification_v2_list_item(
     let data = parse_json_value(&Value::String(row.data), json!({}));
     let responses = parse_json_value(&Value::String(row.responses), json!([]));
     let details = parse_json_value(&Value::String(row.details), json!({}));
-    NotificationListItemOutput {
+    with_group_key(NotificationListItemOutput {
         id: row.id,
         version: 2,
         created_at: row.created_at.clone(),
@@ -202,7 +215,8 @@ fn notification_v2_list_item(
         },
         location: String::new(),
         expired,
-    }
+        group_key: None,
+    })
 }
 
 fn notification_push_dedup(

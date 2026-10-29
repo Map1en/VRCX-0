@@ -2004,7 +2004,13 @@
                 "new_this_session": "New this session",
                 "expires_in": "Expires {time}",
                 "action_all_done": "All caught up",
-                "action_all_done_description": "Nothing needs your response right now."
+                "action_all_done_description": "Nothing needs your response right now.",
+                "group": {
+                    "from_actor": "{count} from {name}",
+                    "from_people": "{name} and others ({count})",
+                    "expand": "Show all",
+                    "collapse": "Show less"
+                }
             },
             "responses": {
                 "acknowledge_and_dismiss": "Dismiss",

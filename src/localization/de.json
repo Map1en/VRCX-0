@@ -2001,7 +2001,13 @@
                 "new_this_session": "Neu in dieser Sitzung",
                 "expires_in": "Läuft ab {time}",
                 "action_all_done": "Alles erledigt",
-                "action_all_done_description": "Gerade wartet nichts auf deine Antwort."
+                "action_all_done_description": "Gerade wartet nichts auf deine Antwort.",
+                "group": {
+                    "from_actor": "{count} von {name}",
+                    "from_people": "{name} und weitere ({count})",
+                    "expand": "Alle anzeigen",
+                    "collapse": "Weniger anzeigen"
+                }
             },
             "responses": {
                 "acknowledge_and_dismiss": "Ausblenden",

@@ -6072,6 +6072,7 @@ export type NotificationListItemOutput = {
     details: JsonValue;
     location: string;
     expired: boolean;
+    groupKey?: string | null;
 };
 export type NotificationListQueryInput = {
     userId: string;

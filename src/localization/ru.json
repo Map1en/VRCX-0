@@ -2017,7 +2017,13 @@
                 "new_this_session": "Новое за этот сеанс",
                 "expires_in": "Истекает {time}",
                 "action_all_done": "Всё обработано",
-                "action_all_done_description": "Сейчас ничто не требует вашего ответа."
+                "action_all_done_description": "Сейчас ничто не требует вашего ответа.",
+                "group": {
+                    "from_actor": "От {name}: {count}",
+                    "from_people": "{name} и другие: {count}",
+                    "expand": "Показать все",
+                    "collapse": "Свернуть"
+                }
             },
             "responses": {
                 "acknowledge_and_dismiss": "Скрыть",

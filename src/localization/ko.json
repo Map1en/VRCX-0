@@ -1942,7 +1942,13 @@
                 "new_this_session": "이번에 새로 온 알림",
                 "expires_in": "{time} 만료",
                 "action_all_done": "모두 처리함",
-                "action_all_done_description": "지금 처리할 알림이 없습니다."
+                "action_all_done_description": "지금 처리할 알림이 없습니다.",
+                "group": {
+                    "from_actor": "{name}의 알림 {count}개",
+                    "from_people": "{name} 외 알림 {count}개",
+                    "expand": "모두 보기",
+                    "collapse": "접기"
+                }
             },
             "responses": {
                 "acknowledge_and_dismiss": "닫기",

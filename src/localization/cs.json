@@ -2019,7 +2019,13 @@
                 "new_this_session": "Nové v této relaci",
                 "expires_in": "Vyprší {time}",
                 "action_all_done": "Vše vyřízeno",
-                "action_all_done_description": "Momentálně nic nečeká na vaši odpověď."
+                "action_all_done_description": "Momentálně nic nečeká na vaši odpověď.",
+                "group": {
+                    "from_actor": "Od {name}: {count}",
+                    "from_people": "{name} a další: {count}",
+                    "expand": "Zobrazit vše",
+                    "collapse": "Zobrazit méně"
+                }
             },
             "responses": {
                 "acknowledge_and_dismiss": "Zavřít",

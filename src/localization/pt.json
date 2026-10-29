@@ -2001,7 +2001,13 @@
                 "new_this_session": "Nova nesta sessão",
                 "expires_in": "Expira {time}",
                 "action_all_done": "Tudo em dia",
-                "action_all_done_description": "Nada precisa da sua resposta agora."
+                "action_all_done_description": "Nada precisa da sua resposta agora.",
+                "group": {
+                    "from_actor": "{count} de {name}",
+                    "from_people": "{name} e outros ({count})",
+                    "expand": "Ver tudo",
+                    "collapse": "Ver menos"
+                }
             },
             "responses": {
                 "acknowledge_and_dismiss": "Dispensar",

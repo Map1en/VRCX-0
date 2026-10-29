@@ -340,3 +340,36 @@ fn unseen_indicator_matches_frontend_action_required_rules() -> Result<(), Error
     assert!(!notification_has_unseen_action_required(&db, user_id)?);
     Ok(())
 }
+
+#[test]
+fn notification_list_attaches_group_keys_only_to_groupable_rows() -> Result<(), Error> {
+    let (_dir, db) = test_db("group-key")?;
+    let user_id = "usr_owner";
+    add_v1(&db, user_id, "notif_invite", "2026-01-02T12:00:00Z", "join")?;
+    notification_add_v2(
+        &db,
+        user_id.into(),
+        json!({
+            "id": "notif_announcement",
+            "createdAt": "2026-01-02T12:00:00Z",
+            "type": "group.announcement",
+            "seen": false,
+            "senderUserId": "usr_admin",
+            "data": { "groupId": "grp_club" },
+            "responses": [],
+            "details": {}
+        }),
+    )?;
+
+    let rows = query(&db, user_id, 10, 10, true)?;
+    let group_key = |id: &str| {
+        rows.iter()
+            .find(|row| row.id == id)
+            .map(|row| row.group_key.clone())
+    };
+
+    assert_eq!(group_key("notif_invite"), Some(None));
+    let announcement = group_key("notif_announcement").flatten().unwrap();
+    assert!(announcement.starts_with("group.announcement:grp_club:2026-01-0"));
+    Ok(())
+}

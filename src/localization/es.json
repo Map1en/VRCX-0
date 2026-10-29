@@ -2004,7 +2004,13 @@
                 "new_this_session": "Nueva en esta sesión",
                 "expires_in": "Caduca {time}",
                 "action_all_done": "Todo al día",
-                "action_all_done_description": "Ahora mismo nada necesita tu respuesta."
+                "action_all_done_description": "Ahora mismo nada necesita tu respuesta.",
+                "group": {
+                    "from_actor": "{count} de {name}",
+                    "from_people": "{name} y otros ({count})",
+                    "expand": "Ver todo",
+                    "collapse": "Ver menos"
+                }
             },
             "responses": {
                 "acknowledge_and_dismiss": "Descartar",

@@ -2,6 +2,7 @@ use serde_json::{json, Map, Value};
 use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_contracts::realtime::{NotificationExpiration, NotificationV2Update};
 use vrcx_0_core::json::{text_of, JsonExt};
+use vrcx_0_core::notification_group::{notification_group_key, NotificationGroupFacts};
 use vrcx_0_core::realtime::RealtimeWsMessagePayload;
 use vrcx_0_core::text::first_non_empty;
 use vrcx_0_core::text::first_owned;
@@ -59,7 +60,7 @@ pub(crate) fn apply_notification_ws_event(
                 notify_menu: true,
                 deliver_runtime: true,
                 run_automation: true,
-                notification: notification.into(),
+                notification: with_group_key(notification).into(),
             });
         }
         RealtimeWsEventKind::NotificationV2 => {
@@ -73,7 +74,7 @@ pub(crate) fn apply_notification_ws_event(
                 notify_menu: should_notify_menu(&notification),
                 deliver_runtime: true,
                 run_automation: true,
-                notification: notification.into(),
+                notification: with_group_key(notification).into(),
             });
         }
         RealtimeWsEventKind::NotificationV2Update => {
@@ -363,6 +364,21 @@ fn apply_boop_legacy_handling(object: &mut Map<String, Value>, endpoint: &str) {
             )),
         );
     }
+}
+
+fn with_group_key(mut notification: Value) -> Value {
+    let empty = json!({});
+    let group_key = notification_group_key(&NotificationGroupFacts {
+        kind: &notification.text_field("type"),
+        sender_user_id: &notification.text_field("senderUserId"),
+        created_at: &notification.text_field("createdAt"),
+        data: notification.get("data").unwrap_or(&empty),
+        details: notification.get("details").unwrap_or(&empty),
+    });
+    if let (Some(group_key), Some(object)) = (group_key, notification.as_object_mut()) {
+        object.insert("groupKey".into(), Value::String(group_key));
+    }
+    notification
 }
 
 fn sanitize_object(content: &Value) -> Map<String, Value> {
