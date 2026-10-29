@@ -124,7 +124,7 @@ export function NotificationGroupSummary({
                 'flex w-full items-center gap-3 text-left transition-colors duration-150 ease-out',
                 variant === 'page'
                     ? 'rounded-lg px-2 py-2.5'
-                    : 'border-border/50 border-b px-4 py-3',
+                    : cn('px-4 py-3', !expanded && 'border-border/50 border-b'),
                 newThisSession
                     ? 'bg-(--state-selected-surface) hover:bg-(--state-selected-hover-surface)'
                     : 'hover:bg-(--state-hover-surface)'

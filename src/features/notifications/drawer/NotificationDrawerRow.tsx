@@ -97,12 +97,14 @@ export function NotificationDrawerRow({
     isUnseen,
     currentUserId,
     canInviteFromCurrentLocation,
-    handlers
+    handlers,
+    nested = false
 }: {
     canInviteFromCurrentLocation: boolean;
     currentUserId?: string;
     handlers: NotificationDrawerHandlers;
     isUnseen: boolean;
+    nested?: boolean;
     notification: NotificationRow;
 }) {
     const { t } = useTranslation();
@@ -213,7 +215,7 @@ export function NotificationDrawerRow({
                                             )}
                                         </TooltipContent>
                                     </Tooltip>
-                                ) : showUnreadDot ? (
+                                ) : showUnreadDot && !nested ? (
                                     <span className="bg-primary size-2 rounded-full">
                                         <span className="sr-only">
                                             {t('view.notification.feed.unread')}

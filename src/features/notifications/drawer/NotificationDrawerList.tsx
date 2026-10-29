@@ -8,6 +8,7 @@ import type {
     NotificationCategories
 } from '@/state/vrcNotificationStore';
 
+import { NotificationGroupBranch } from '../components/NotificationGroupBranch';
 import { NotificationGroupSummary } from '../components/NotificationGroupSummary';
 import {
     foldAdjacentNotifications,
@@ -74,13 +75,15 @@ export function NotificationDrawerList({
 
     function renderRow(
         bucket: NotificationLifecycleBucket,
-        entry: NotificationDrawerEntry
+        entry: NotificationDrawerEntry,
+        nested = false
     ) {
         return (
             <NotificationDrawerRow
                 key={`${bucket}:${entry.notification.id}`}
                 notification={entry.notification}
                 isUnseen={entry.isUnseen}
+                nested={nested}
                 currentUserId={currentUserId}
                 canInviteFromCurrentLocation={canInviteFromCurrentLocation}
                 handlers={handlers}
@@ -119,6 +122,11 @@ export function NotificationDrawerList({
                                         return (
                                             <div
                                                 key={`${bucket}:group:${fold.runKey}`}
+                                                className={
+                                                    isExpanded
+                                                        ? 'border-border/50 border-b'
+                                                        : undefined
+                                                }
                                             >
                                                 <NotificationGroupSummary
                                                     variant="drawer"
@@ -136,15 +144,24 @@ export function NotificationDrawerList({
                                                     }
                                                 />
                                                 {isExpanded ? (
-                                                    <div className="border-border/60 ml-6 border-l">
-                                                        {fold.items.map(
-                                                            (entry) =>
-                                                                renderRow(
-                                                                    bucket,
-                                                                    entry
-                                                                )
-                                                        )}
-                                                    </div>
+                                                    <NotificationGroupBranch
+                                                        variant="drawer"
+                                                        items={fold.items}
+                                                        getKey={(entry) =>
+                                                            String(
+                                                                entry
+                                                                    .notification
+                                                                    .id
+                                                            )
+                                                        }
+                                                        renderItem={(entry) =>
+                                                            renderRow(
+                                                                bucket,
+                                                                entry,
+                                                                true
+                                                            )
+                                                        }
+                                                    />
                                                 ) : null}
                                             </div>
                                         );

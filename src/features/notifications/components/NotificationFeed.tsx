@@ -28,6 +28,7 @@ import type {
     NotificationRow as NotificationRecord
 } from '../notificationPageTypes';
 import type { NotificationQuickFilter } from '../useNotificationFilters';
+import { NotificationGroupBranch } from './NotificationGroupBranch';
 import { NotificationGroupSummary } from './NotificationGroupSummary';
 import {
     NotificationRow,
@@ -114,11 +115,12 @@ export function NotificationFeed({
     const todayKey = dayKey(nowMs);
     const yesterdayKey = dayKey(nowMs - 86_400_000);
 
-    function renderRow(notification: NotificationRecord) {
+    function renderRow(notification: NotificationRecord, nested = false) {
         return (
             <NotificationRow
                 key={String(notification.id)}
                 notification={notification}
+                nested={nested}
                 currentUserId={currentUserId}
                 canInviteFromCurrentLocation={canInviteFromCurrentLocation}
                 handlers={handlers}
@@ -223,14 +225,16 @@ export function NotificationFeed({
                                                     }
                                                 />
                                                 {isExpanded ? (
-                                                    <div
-                                                        role="list"
-                                                        className="border-border/60 ml-6 border-l pl-2"
-                                                    >
-                                                        {fold.items.map(
-                                                            renderRow
-                                                        )}
-                                                    </div>
+                                                    <NotificationGroupBranch
+                                                        variant="page"
+                                                        items={fold.items}
+                                                        getKey={(row) =>
+                                                            String(row.id)
+                                                        }
+                                                        renderItem={(row) =>
+                                                            renderRow(row, true)
+                                                        }
+                                                    />
                                                 ) : null}
                                             </div>
                                         );

@@ -58,11 +58,13 @@ export function NotificationRow({
     notification,
     currentUserId,
     canInviteFromCurrentLocation,
-    handlers
+    handlers,
+    nested = false
 }: {
     canInviteFromCurrentLocation: boolean;
     currentUserId?: string;
     handlers: NotificationFeedHandlers;
+    nested?: boolean;
     notification: NotificationRecord;
 }) {
     const { t } = useTranslation();
@@ -178,7 +180,7 @@ export function NotificationRow({
             )}
         >
             <span className="mt-1.5 flex w-2 shrink-0 justify-center">
-                {view.unseen ? (
+                {nested ? null : view.unseen ? (
                     <span className="bg-primary size-2 rounded-full">
                         <span className="sr-only">
                             {t('view.notification.feed.unread')}
