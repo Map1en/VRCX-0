@@ -273,12 +273,6 @@ export function useMutualFriendsPageState() {
         }
     }
 
-    function handleResetLayoutAndHidden() {
-        resetLayoutSettings();
-        setExcludedFriendIds([]);
-        clearFilters();
-    }
-
     return {
         actions: {
             cancelFetch: handleCancelFetch,
@@ -287,7 +281,7 @@ export function useMutualFriendsPageState() {
             openNode,
             refreshPage: () => setReloadToken((value) => value + 1),
             refreshSelectedNode: handleRefreshSelectedNode,
-            resetLayoutAndHidden: handleResetLayoutAndHidden,
+            resetLayoutSettings,
             clearSelection: () => handleSelectNode(''),
             setMinDegree,
             setSearchQuery,

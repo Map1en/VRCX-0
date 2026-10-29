@@ -19,7 +19,7 @@ export const MUTUAL_GRAPH_LAYOUT_DEFAULTS: MutualFriendsLayoutSettings = {
     layoutIterations: 800,
     layoutSpacing: 60,
     edgeCurvature: 0.1,
-    communitySeparation: 0
+    communitySeparation: 0.5
 };
 
 export const MUTUAL_GRAPH_EMPTY_USER_ID =

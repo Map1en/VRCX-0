@@ -58,7 +58,7 @@ function controllerValue(currentUserId: string, friendCount: number) {
             openNode: noop,
             refreshPage: noop,
             refreshSelectedNode: noop,
-            resetLayoutAndHidden: noop,
+            resetLayoutSettings: noop,
             setMinDegree: noop,
             setSearchQuery: noop,
             toggleExcludedFriendId: noop,
