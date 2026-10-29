@@ -4,7 +4,8 @@ use vrcx_0_application::auth::AuthCredentialStore;
 use vrcx_0_application_activity::notification::{
     apply_location_notification_rules, extract_file_version, fallback_file_version,
     load_overlay_activity_filters, rename_local_favorite_group_in_activity_filters,
-    CachedNotificationUserImageResolver, NotificationConfig, NotificationResolver,
+    CachedNotificationUserImageResolver, NotificationConfig, NotificationRemoteFuture,
+    NotificationResolver,
 };
 use vrcx_0_application_activity::{ActivityRouter, ActivitySink, ActivitySinkRegistry};
 use vrcx_0_application_core::{
@@ -365,6 +366,18 @@ impl VrOverlayRuntimeServices for DesktopRuntimeServices {
 
     fn notification_friend_image(&self, endpoint: &str, user_id: &str) -> Option<String> {
         self.notification_resolver.friend_image(endpoint, user_id)
+    }
+
+    fn cached_notification_group_name(&self, group_id: &str) -> Option<String> {
+        self.notification_resolver.cached_group_name(group_id)
+    }
+
+    fn notification_group_name<'a>(
+        &'a self,
+        endpoint: &'a str,
+        group_id: &'a str,
+    ) -> NotificationRemoteFuture<'a, String> {
+        Box::pin(self.notification_resolver.group_name(endpoint, group_id))
     }
 
     fn set_hmd_afk(&self, is_hmd_afk: bool) {

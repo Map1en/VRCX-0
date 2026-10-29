@@ -33,6 +33,11 @@ pub trait NotificationRemote: Send + Sync {
         endpoint: &'a str,
         world_id: &'a str,
     ) -> NotificationRemoteFuture<'a, String>;
+    fn group_name<'a>(
+        &'a self,
+        endpoint: &'a str,
+        group_id: &'a str,
+    ) -> NotificationRemoteFuture<'a, String>;
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

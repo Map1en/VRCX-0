@@ -3,11 +3,11 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use chrono::Utc;
+use vrcx_0_application_activity::notification::unresolved_group_id;
 use vrcx_0_application_activity::{
     ActivityActorRelation, ActivityCategory, ActivityContent, ActivityDelivery, ActivityEntry,
     ActivityText,
 };
-use vrcx_0_application_core::WorldCache;
 use vrcx_0_contracts::activity::ActivityKind;
 use vrcx_0_core::location::{is_meaningful_world_name, parse_location, world_id_from_location};
 use vrcx_0_i18n::OverlayMessage;
@@ -20,10 +20,11 @@ use super::super::runtime::{
 use super::super::service::HostVrOverlayService;
 use super::super::test_preview::test_hmd_toast_views;
 use super::super::tracker_watch::TrackerDisconnect;
+use super::super::VrOverlayRuntimeServices;
 use super::main::{build_main_surface_model, HmdToastView, MainOverlayFrameInput};
 
 const HMD_TOAST_CAPACITY: usize = 3;
-const HMD_TOAST_WORLD_RESOLVE_BUDGET: Duration = Duration::from_secs(2);
+const HMD_TOAST_LOCATION_RESOLVE_BUDGET: Duration = Duration::from_secs(2);
 const HMD_JOIN_LEAVE_MERGE_WINDOW: Duration = Duration::from_secs(4);
 
 #[derive(Clone)]
@@ -48,12 +49,10 @@ impl VrOverlayRuntime {
             self.deliver_hmd_toast(entry);
             return;
         }
-        let pending = self
-            .services
-            .as_ref()
-            .cloned()
-            .zip(unresolved_entry_world_id(&entry));
-        let Some((services, world_id)) = pending else {
+        let world_id = unresolved_entry_world_id(&entry);
+        let group_id = unresolved_group_id(&entry.content);
+        let services = self.services.as_ref().cloned();
+        let Some(services) = services.filter(|_| world_id.is_some() || group_id.is_some()) else {
             self.deliver_hmd_toast(entry);
             return;
         };
@@ -63,15 +62,32 @@ impl VrOverlayRuntime {
             let mut entry = entry;
             let endpoint = services.auth_scope().snapshot().endpoint;
             if !endpoint.trim().is_empty() {
-                let resolve = services.world_cache().resolve_name(
-                    services.web_client().as_ref(),
-                    &endpoint,
-                    &world_id,
-                );
-                if let Ok(Some(world_name)) =
-                    tokio::time::timeout(HMD_TOAST_WORLD_RESOLVE_BUDGET, resolve).await
-                {
+                let world_name = async {
+                    let world_id = world_id.as_deref()?;
+                    let resolve = services.world_cache().resolve_name(
+                        services.web_client().as_ref(),
+                        &endpoint,
+                        world_id,
+                    );
+                    tokio::time::timeout(HMD_TOAST_LOCATION_RESOLVE_BUDGET, resolve)
+                        .await
+                        .ok()
+                        .flatten()
+                };
+                let group_name = async {
+                    let group_id = group_id.as_deref()?;
+                    let resolve = services.notification_group_name(&endpoint, group_id);
+                    tokio::time::timeout(HMD_TOAST_LOCATION_RESOLVE_BUDGET, resolve)
+                        .await
+                        .ok()
+                        .flatten()
+                };
+                let (world_name, group_name) = tokio::join!(world_name, group_name);
+                if let Some(world_name) = world_name {
                     entry.content.world_name = world_name;
+                }
+                if let Some(group_name) = group_name {
+                    entry.content.group_name = group_name;
                 }
             }
             runtime.deliver_hmd_toast(entry);
@@ -218,7 +234,7 @@ impl VrOverlayRuntime {
             .iter_mut()
             .map(|toast| {
                 if let Some(services) = &self.services {
-                    refresh_cached_world_name(services.world_cache(), &mut toast.entry);
+                    refresh_cached_location_names(services.as_ref(), &mut toast.entry);
                 }
                 let show_avatar = avatars && self.is_current_hmd_friend(&toast.entry.actor_user_id);
                 HmdToastView {
@@ -421,12 +437,19 @@ pub(crate) fn unresolved_entry_world_id(entry: &ActivityEntry) -> Option<String>
     (!world_id.is_empty()).then_some(world_id)
 }
 
-pub(crate) fn refresh_cached_world_name(world_cache: &WorldCache, entry: &mut ActivityEntry) {
-    let Some(world_id) = unresolved_entry_world_id(entry) else {
-        return;
-    };
-    if let Some(world_name) = world_cache.get_name(&world_id) {
+pub(crate) fn refresh_cached_location_names(
+    services: &dyn VrOverlayRuntimeServices,
+    entry: &mut ActivityEntry,
+) {
+    if let Some(world_name) = unresolved_entry_world_id(entry)
+        .and_then(|world_id| services.world_cache().get_name(&world_id))
+    {
         entry.content.world_name = world_name;
+    }
+    if let Some(group_name) = unresolved_group_id(&entry.content)
+        .and_then(|group_id| services.cached_notification_group_name(&group_id))
+    {
+        entry.content.group_name = group_name;
     }
 }
 

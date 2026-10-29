@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use vrcx_0_application_activity::notification::NotificationRemoteFuture;
 use vrcx_0_application_activity::{
     ActivityActorRelation, ActivityCategory, ActivityContent, ActivityDelivery, ActivityEntry,
     ActivityRouter,
@@ -68,6 +69,18 @@ impl VrOverlayRuntimeServices for TestServices {
 
     fn notification_friend_image(&self, _endpoint: &str, _user_id: &str) -> Option<String> {
         None
+    }
+
+    fn cached_notification_group_name(&self, _group_id: &str) -> Option<String> {
+        None
+    }
+
+    fn notification_group_name<'a>(
+        &'a self,
+        _endpoint: &'a str,
+        _group_id: &'a str,
+    ) -> NotificationRemoteFuture<'a, String> {
+        Box::pin(async { None })
     }
 
     fn set_hmd_afk(&self, _is_hmd_afk: bool) {}

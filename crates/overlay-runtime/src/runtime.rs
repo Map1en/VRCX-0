@@ -1,5 +1,5 @@
 use std::cell::RefCell;
-use std::collections::VecDeque;
+use std::collections::{BTreeSet, VecDeque};
 use std::sync::{
     atomic::{AtomicBool, AtomicU64, Ordering},
     Arc, Condvar, Mutex, Weak,
@@ -9,6 +9,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use chrono::{DateTime, Local, Timelike};
 use serde::Serialize;
+use vrcx_0_application_activity::notification::unresolved_group_id;
 use vrcx_0_application_activity::{ActivityDelivery, ActivitySink, ActivitySnapshot};
 use vrcx_0_application_core::{GameProcessEvent, GameProcessEventSink, TaskSupervisor};
 use vrcx_0_core::text::first_non_empty_owned;
@@ -29,7 +30,7 @@ use super::{
     localization::OverlayLocale,
     manager::VrOverlayManager,
     service::{HostVrOverlayService, OverlayBackendPreference},
-    surfaces::hmd_toast::{refresh_cached_world_name, HmdToastState},
+    surfaces::hmd_toast::{refresh_cached_location_names, HmdToastState},
     surfaces::wrist::compact_duration,
     test_preview::test_wrist_frame_input,
     tracker_watch::{TrackerDisconnect, TrackerWatch},
@@ -314,8 +315,9 @@ impl VrOverlayActivitySink {
 }
 
 impl ActivitySink for VrOverlayActivitySink {
-    fn emit_overlay_activity_snapshot(&self, _snapshot: ActivitySnapshot) {
+    fn emit_overlay_activity_snapshot(&self, snapshot: ActivitySnapshot) {
         if let Some(runtime) = self.runtime.upgrade() {
+            runtime.prefetch_wrist_group_names(&snapshot);
             runtime.reconcile_current();
         }
     }
@@ -328,6 +330,39 @@ impl ActivitySink for VrOverlayActivitySink {
 }
 
 impl VrOverlayRuntime {
+    fn prefetch_wrist_group_names(self: &Arc<Self>, snapshot: &ActivitySnapshot) {
+        let Some(services) = self.services.clone() else {
+            return;
+        };
+        let group_ids = snapshot
+            .entries
+            .iter()
+            .filter_map(|entry| unresolved_group_id(&entry.content))
+            .filter(|group_id| services.cached_notification_group_name(group_id).is_none())
+            .collect::<BTreeSet<_>>();
+        if group_ids.is_empty() {
+            return;
+        }
+        let endpoint = services.auth_scope().snapshot().endpoint;
+        if endpoint.trim().is_empty() {
+            return;
+        }
+        let runtime = Arc::downgrade(self);
+        let tasks = services.tasks().clone();
+        tasks.spawn(async move {
+            let mut resolved = false;
+            for group_id in group_ids {
+                resolved |= services
+                    .notification_group_name(&endpoint, &group_id)
+                    .await
+                    .is_some();
+            }
+            if let Some(runtime) = runtime.upgrade().filter(|_| resolved) {
+                runtime.reconcile_current();
+            }
+        });
+    }
+
     pub fn new<S>(services: Arc<S>) -> Self
     where
         S: VrOverlayRuntimeServices + 'static,
@@ -1202,7 +1237,7 @@ pub(super) fn build_wrist_frame_input(
     let captured_at_ms = now_ms();
     let mut activity = services.activity_router().snapshot();
     for entry in &mut activity.entries {
-        refresh_cached_world_name(services.world_cache(), entry);
+        refresh_cached_location_names(services, entry);
     }
     WristOverlayFrameInput {
         activity,

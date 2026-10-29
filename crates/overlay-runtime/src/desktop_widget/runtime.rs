@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 
+use vrcx_0_application_activity::notification::unresolved_group_id;
 use vrcx_0_application_activity::{ActivityDelivery, ActivityEntry};
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_vr_overlay::DesktopWidgetRow;
@@ -51,7 +52,7 @@ pub trait DesktopWidgetWindow: Send {
     fn close(self: Box<Self>);
 }
 
-const WORLD_NAME_RESOLVE_BUDGET: Duration = Duration::from_secs(2);
+const LOCATION_NAME_RESOLVE_BUDGET: Duration = Duration::from_secs(2);
 
 struct Inner {
     settings: DesktopWidgetSettings,
@@ -328,9 +329,17 @@ impl DesktopWidgetRuntime {
                     &world_id,
                 );
                 if let Ok(Some(world_name)) =
-                    tokio::time::timeout(WORLD_NAME_RESOLVE_BUDGET, resolve).await
+                    tokio::time::timeout(LOCATION_NAME_RESOLVE_BUDGET, resolve).await
                 {
                     runtime.update_row(|feed| feed.resolve_world_name(&source_id, &world_name));
+                }
+            }
+            if let Some(group_id) = unresolved_group_id(&entry.content) {
+                let resolve = services.notification_group_name(&endpoint, &group_id);
+                if let Ok(Some(group_name)) =
+                    tokio::time::timeout(LOCATION_NAME_RESOLVE_BUDGET, resolve).await
+                {
+                    runtime.update_row(|feed| feed.resolve_group_name(&source_id, &group_name));
                 }
             }
             let user_id = entry.actor_user_id.trim();

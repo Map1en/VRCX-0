@@ -4,6 +4,7 @@ mod discord;
 mod generic_webhook;
 mod image_file;
 mod localization;
+mod lookup_cache;
 mod ports;
 mod preferences;
 mod rendered;
@@ -41,7 +42,7 @@ pub use ports::{
 pub use preferences::{config_bool, parse_webhook_fields, NotificationWebhookFormat};
 pub use rendered::RenderedNotification;
 pub use rendering::{load_notification_locale, render_delivery};
-pub use resolver::NotificationResolver;
+pub use resolver::{unresolved_group_id, NotificationResolver};
 pub use user_image::normalize_avatar_image_url_128;
 pub use webhook::{
     discord_webhook_url_with_wait, send_json_webhook_with_retry, webhook_local_time_string,

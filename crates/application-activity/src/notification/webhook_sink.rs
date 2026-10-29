@@ -11,8 +11,9 @@ use super::preferences::{load_webhook_preferences, NotificationWebhookPreference
 use super::webhook::{discord_webhook_url_with_wait, wait_for_webhook_stop};
 use super::webhook_delivery::{WebhookDeliveryChannel, WebhookDeliveryMonitor};
 use super::{
-    load_notification_locale, render_delivery, send_json_webhook_with_retry, NotificationConfig,
-    NotificationResolver, NotificationWebhookFormat, NotificationWebhookTransport,
+    load_notification_locale, render_delivery, send_json_webhook_with_retry, unresolved_group_id,
+    NotificationConfig, NotificationResolver, NotificationWebhookFormat,
+    NotificationWebhookTransport,
 };
 
 const NOTIFICATION_WEBHOOK_QUEUE_CAPACITY: usize = 64;
@@ -147,6 +148,15 @@ async fn deliver_notification_webhook(
     deps: &NotificationWebhookWorkerDeps,
     mut job: NotificationWebhookJob,
 ) {
+    if let Some(group_id) = unresolved_group_id(&job.delivery.entry.content) {
+        if let Some(group_name) = deps
+            .resolver
+            .group_name(&job.vrchat_endpoint, &group_id)
+            .await
+        {
+            job.delivery.entry.content.group_name = group_name;
+        }
+    }
     if let Some((world_name, display_location)) = deps
         .resolver
         .world_name(&job.vrchat_endpoint, &job.delivery)

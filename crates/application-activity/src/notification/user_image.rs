@@ -1,24 +1,15 @@
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex, MutexGuard, Weak};
 use std::time::Duration;
 
-use moka::policy::EvictionPolicy;
-use moka::sync::Cache;
 use serde_json::Value;
 use vrcx_0_core::json::JsonExt;
 
+use super::lookup_cache::{LookupCache, LookupCacheLimits};
 use super::NotificationRemote;
 
 const FETCH_TIMEOUT: Duration = Duration::from_secs(5);
-const SUCCESS_TTL: Duration = Duration::from_secs(15 * 60);
-const FAILURE_TTL: Duration = Duration::from_secs(60);
-const SUCCESS_CAPACITY: u64 = 128;
-const FAILURE_CAPACITY: u64 = 32;
 
 pub struct UserImageCache {
-    success: Cache<String, String>,
-    failures: Cache<String, ()>,
-    inflight: Mutex<HashMap<String, Weak<tokio::sync::Mutex<()>>>>,
+    lookups: LookupCache,
 }
 
 impl Default for UserImageCache {
@@ -30,17 +21,12 @@ impl Default for UserImageCache {
 impl UserImageCache {
     pub fn new() -> Self {
         Self {
-            success: Cache::builder()
-                .max_capacity(SUCCESS_CAPACITY)
-                .time_to_live(SUCCESS_TTL)
-                .eviction_policy(EvictionPolicy::lru())
-                .build(),
-            failures: Cache::builder()
-                .max_capacity(FAILURE_CAPACITY)
-                .time_to_live(FAILURE_TTL)
-                .eviction_policy(EvictionPolicy::lru())
-                .build(),
-            inflight: Mutex::new(HashMap::new()),
+            lookups: LookupCache::new(LookupCacheLimits {
+                success_capacity: 128,
+                success_ttl: Duration::from_secs(15 * 60),
+                failure_capacity: 32,
+                failure_ttl: Duration::from_secs(60),
+            }),
         }
     }
 
@@ -58,30 +44,9 @@ impl UserImageCache {
         if endpoint.is_empty() {
             return None;
         }
-        if let Some(url) = self.cached(user_id) {
-            return Some(url);
-        }
-        if self.recently_failed(user_id) {
-            return None;
-        }
-        let inflight = self.inflight_lock(user_id);
-        let _guard = inflight.lock().await;
-        if let Some(url) = self.cached(user_id) {
-            return Some(url);
-        }
-        if self.recently_failed(user_id) {
-            return None;
-        }
-        match fetch_user_image(remote, endpoint, user_id).await {
-            Some(url) => {
-                self.store(user_id, &url);
-                Some(url)
-            }
-            None => {
-                self.record_failure(user_id);
-                None
-            }
-        }
+        self.lookups
+            .resolve(user_id, fetch_user_image(remote, endpoint, user_id))
+            .await
     }
 
     pub fn cached_url(&self, user_id: &str) -> Option<String> {
@@ -89,41 +54,8 @@ impl UserImageCache {
         if !user_id.starts_with("usr_") {
             return None;
         }
-        self.cached(user_id)
+        self.lookups.cached(user_id)
     }
-
-    fn cached(&self, key: &str) -> Option<String> {
-        self.success.get(key)
-    }
-
-    fn store(&self, key: &str, url: &str) {
-        self.success.insert(key.to_string(), url.to_string());
-    }
-
-    fn recently_failed(&self, key: &str) -> bool {
-        self.failures.get(key).is_some()
-    }
-
-    fn record_failure(&self, key: &str) {
-        self.failures.insert(key.to_string(), ());
-    }
-
-    fn inflight_lock(&self, key: &str) -> Arc<tokio::sync::Mutex<()>> {
-        let mut map = lock(&self.inflight);
-        if let Some(existing) = map.get(key).and_then(Weak::upgrade) {
-            return existing;
-        }
-        map.retain(|_, weak| weak.strong_count() > 0);
-        let guard = Arc::new(tokio::sync::Mutex::new(()));
-        map.insert(key.to_string(), Arc::downgrade(&guard));
-        guard
-    }
-}
-
-fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
-    mutex
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
 async fn fetch_user_image(
@@ -196,22 +128,6 @@ fn is_vrchat_file_id(value: &str) -> bool {
 mod tests {
     use super::*;
     use serde_json::json;
-
-    #[test]
-    fn user_image_cache_uses_bounded_moka_storage() {
-        let cache = UserImageCache::new();
-
-        for index in 0..SUCCESS_CAPACITY * 2 {
-            let key = format!("usr_{index}");
-            cache.store(&key, &format!("https://img.example/{index}"));
-            cache.record_failure(&key);
-        }
-        cache.success.run_pending_tasks();
-        cache.failures.run_pending_tasks();
-
-        assert!(cache.success.entry_count() <= SUCCESS_CAPACITY);
-        assert!(cache.failures.entry_count() <= FAILURE_CAPACITY);
-    }
 
     #[test]
     fn downscales_icon_url_to_128() {
