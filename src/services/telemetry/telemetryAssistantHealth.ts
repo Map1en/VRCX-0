@@ -79,6 +79,20 @@ function classifyToolResult(summary?: string): string | undefined {
     if (!normalized) {
         return undefined;
     }
+    if (
+        /\bwas not run: the response hit the output token limit\b/.test(
+            normalized
+        )
+    ) {
+        return 'truncated';
+    }
+    if (
+        /\bwas not run: its arguments are not a valid json object\b/.test(
+            normalized
+        )
+    ) {
+        return 'malformed_args';
+    }
     if (/\b(time(?:d)? out|timeout|deadline|elapsed)\b/.test(normalized)) {
         return 'timeout';
     }
