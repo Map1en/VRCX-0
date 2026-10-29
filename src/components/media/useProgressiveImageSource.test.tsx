@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { act, renderHook } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
     clearDecodedImagesForTest,
@@ -47,6 +47,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+    vi.useRealTimers();
     Reflect.deleteProperty(HTMLImageElement.prototype, 'decode');
 });
 
@@ -78,7 +79,7 @@ describe('useProgressiveImageSource', () => {
         rerender({ src: 'b.png' });
         expect(result.current.shownSrc).toBe('a.png');
         expect(result.current.status).toBe('loading');
-        expect(result.current.isInterim).toBe(true);
+        expect(result.current.isInterim).toBe(false);
 
         await act(async () => {
             settle('b.png');
@@ -101,27 +102,56 @@ describe('useProgressiveImageSource', () => {
         expect(result.current.status).toBe('ready');
     });
 
-    it('shows the thumbnail first and hard-switches to the full image', async () => {
+    it('shows the thumbnail once the full image is slow and hard-switches to it', async () => {
+        vi.useFakeTimers();
         const { result } = renderHook(() =>
             useProgressiveImageSource('full.png', 'thumb.png')
         );
-        expect(result.current.shownSrc).toBe('');
+        act(() => {
+            vi.advanceTimersByTime(119);
+        });
+        expect(decodeCalls).toEqual(['full.png']);
 
+        act(() => {
+            vi.advanceTimersByTime(1);
+        });
         await act(async () => {
             settle('thumb.png');
         });
         expect(result.current.shownSrc).toBe('thumb.png');
+        expect(result.current.isInterim).toBe(true);
 
         await act(async () => {
             settle('full.png');
         });
         expect(result.current.shownSrc).toBe('full.png');
+        expect(result.current.isInterim).toBe(false);
     });
 
-    it('ignores a thumbnail that decodes after the full image', async () => {
+    it('never shows the thumbnail when the full image decodes quickly', async () => {
+        vi.useFakeTimers();
         const { result } = renderHook(() =>
             useProgressiveImageSource('full.png', 'thumb.png')
         );
+
+        await act(async () => {
+            settle('full.png');
+        });
+        act(() => {
+            vi.advanceTimersByTime(1000);
+        });
+        expect(decodeCalls).toEqual(['full.png']);
+        expect(result.current.shownSrc).toBe('full.png');
+    });
+
+    it('ignores a thumbnail that decodes after the full image', async () => {
+        vi.useFakeTimers();
+        const { result } = renderHook(() =>
+            useProgressiveImageSource('full.png', 'thumb.png')
+        );
+        act(() => {
+            vi.advanceTimersByTime(120);
+        });
 
         await act(async () => {
             settle('full.png');

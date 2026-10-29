@@ -10,6 +10,8 @@ type ProgressiveImageState = {
     target: string;
 };
 
+const PLACEHOLDER_DELAY_MS = 120;
+
 export function useProgressiveImageSource(src: string, placeholderSrc = '') {
     const [state, setState] = useState<ProgressiveImageState>(() => ({
         shownSrc: isImageDecoded(src) ? src : '',
@@ -18,7 +20,30 @@ export function useProgressiveImageSource(src: string, placeholderSrc = '') {
     }));
 
     useEffect(() => {
+        if (src && isImageDecoded(src)) {
+            setState({ shownSrc: src, status: 'ready', target: src });
+            return undefined;
+        }
+
         let active = true;
+        const placeholderTimer = placeholderSrc
+            ? window.setTimeout(() => {
+                  decodeImage(placeholderSrc).then(
+                      () => {
+                          if (!active) {
+                              return;
+                          }
+                          setState((current) =>
+                              current.status === 'ready' ||
+                              current.status === 'error'
+                                  ? current
+                                  : { ...current, shownSrc: placeholderSrc }
+                          );
+                      },
+                      () => {}
+                  );
+              }, PLACEHOLDER_DELAY_MS)
+            : undefined;
 
         if (!src) {
             setState((current) => ({
@@ -26,9 +51,6 @@ export function useProgressiveImageSource(src: string, placeholderSrc = '') {
                 status: 'idle',
                 target: ''
             }));
-        } else if (isImageDecoded(src)) {
-            setState({ shownSrc: src, status: 'ready', target: src });
-            return undefined;
         } else {
             setState((current) => ({
                 shownSrc: current.shownSrc,
@@ -37,6 +59,7 @@ export function useProgressiveImageSource(src: string, placeholderSrc = '') {
             }));
             decodeImage(src).then(
                 () => {
+                    window.clearTimeout(placeholderTimer);
                     if (active) {
                         setState({
                             shownSrc: src,
@@ -46,6 +69,7 @@ export function useProgressiveImageSource(src: string, placeholderSrc = '') {
                     }
                 },
                 () => {
+                    window.clearTimeout(placeholderTimer);
                     if (active) {
                         setState({
                             shownSrc: '',
@@ -57,29 +81,18 @@ export function useProgressiveImageSource(src: string, placeholderSrc = '') {
             );
         }
 
-        if (placeholderSrc) {
-            decodeImage(placeholderSrc).then(
-                () => {
-                    if (!active) {
-                        return;
-                    }
-                    setState((current) =>
-                        current.status === 'ready' || current.status === 'error'
-                            ? current
-                            : { ...current, shownSrc: placeholderSrc }
-                    );
-                },
-                () => {}
-            );
-        }
-
         return () => {
             active = false;
+            window.clearTimeout(placeholderTimer);
         };
     }, [placeholderSrc, src]);
 
     return {
-        isInterim: Boolean(state.shownSrc && state.shownSrc !== state.target),
+        isInterim: Boolean(
+            placeholderSrc &&
+            state.shownSrc === placeholderSrc &&
+            state.shownSrc !== state.target
+        ),
         shownSrc: state.shownSrc,
         status: state.status
     };
