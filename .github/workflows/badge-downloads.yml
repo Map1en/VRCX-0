@@ -24,7 +24,8 @@ jobs:
                   GH_TOKEN: ${{ github.token }}
               run: |
                   count="$(gh api --paginate "repos/${{ github.repository }}/releases" \
-                      --jq '[.[].assets[] | select(.name | test("\\.(exe|msi|rpm|deb|dmg|AppImage)$"; "i")) | .download_count] | add // 0')"
+                      --jq '.[].assets[] | select(.name | test("\\.(exe|msi|rpm|deb|dmg|AppImage)$"; "i")) | .download_count' \
+                      | jq -s 'add // 0')"
                   echo "count=$count" >> "$GITHUB_OUTPUT"
 
             - name: Compute latest release version
