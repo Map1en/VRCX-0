@@ -239,6 +239,37 @@ describe('useScreenshotMetadataNavigation', () => {
 
         expect(props.onPathChange).not.toHaveBeenCalled();
     });
+
+    it('ignores Arrow keys during IME input or on keyboard controls', () => {
+        const props = createProps();
+        props.onPathChange = vi.fn();
+        const { unmount } = renderHook(() =>
+            useScreenshotMetadataNavigation(props)
+        );
+        const combobox = document.createElement('div');
+        combobox.setAttribute('role', 'combobox');
+        document.body.append(combobox);
+
+        act(() => {
+            window.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    isComposing: true,
+                    key: 'ArrowRight'
+                })
+            );
+            combobox.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    bubbles: true,
+                    key: 'ArrowRight'
+                })
+            );
+        });
+        combobox.remove();
+        unmount();
+
+        expect(props.onPathChange).not.toHaveBeenCalled();
+    });
+
     it('steps through the grid order before leaving the browse list', async () => {
         const props = createProps();
         props.browseNavigationPaths = ['a.png', 'b.png', 'c.png'];

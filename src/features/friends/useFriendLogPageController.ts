@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { useAppTable } from '@/components/data-table/appTable';
 import type { LogFilterCommands } from '@/components/data-table/LogFilterContextMenu';
 import { sortTableRowsByDateAndType } from '@/components/data-table/sortRowsByDateAndType';
+import { useShiftKeyHeld } from '@/components/keyboard/useShiftKeyHeld';
 import { FRIEND_LOG_TYPES } from '@/domain/friends/friendLog';
 
 import { useFriendLogColumns } from './components/FriendLogColumns';
@@ -10,7 +11,6 @@ import { getFriendLogRowKey } from './friendLogRows';
 import { useFriendLogFilters } from './useFriendLogFilters';
 import { useFriendLogRowActions } from './useFriendLogRowActions';
 import { useFriendLogRows } from './useFriendLogRows';
-import { useFriendLogShiftKey } from './useFriendLogShiftKey';
 import { useFriendLogTableState } from './useFriendLogTableState';
 
 export function useFriendLogPageController() {
@@ -53,7 +53,7 @@ export function useFriendLogPageController() {
         searchQuery: filters.searchQuery,
         selectedTypes: filters.selectedTypes
     });
-    const shiftHeld = useFriendLogShiftKey();
+    const shiftHeld = useShiftKeyHeld();
     const rowActions = useFriendLogRowActions({
         currentUserId: rows.currentUserId,
         loadStatus: rows.loadStatus,

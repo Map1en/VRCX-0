@@ -3,6 +3,7 @@ import { useEffect, useMemo } from 'react';
 import { useAppTable } from '@/components/data-table/appTable';
 import type { LogFilterCommands } from '@/components/data-table/LogFilterContextMenu';
 import { sortTableRowsByDateAndType } from '@/components/data-table/sortRowsByDateAndType';
+import { useShiftKeyHeld } from '@/components/keyboard/useShiftKeyHeld';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import { useGameLogColumns } from './components/GameLogColumns';
@@ -13,7 +14,6 @@ import { useGameLogFilters } from './useGameLogFilters';
 import { useGameLogPreviousInstancesDialog } from './useGameLogPreviousInstancesDialog';
 import { useGameLogRowActions } from './useGameLogRowActions';
 import { useGameLogRows } from './useGameLogRows';
-import { useGameLogShiftKey } from './useGameLogShiftKey';
 import { useGameLogTableState } from './useGameLogTableState';
 
 export function useGameLogPageController() {
@@ -97,7 +97,7 @@ export function useGameLogPageController() {
         removeRowByKey: rowsState.removeRowByKey
     });
     const previousInstancesDialog = useGameLogPreviousInstancesDialog();
-    const shiftHeld = useGameLogShiftKey();
+    const shiftHeld = useShiftKeyHeld();
     const columns = useGameLogColumns({
         deletingGameLogKey: rowActions.deletingGameLogKey,
         loadingPreviousInstancesKey: previousInstancesDialog.loadingKey,

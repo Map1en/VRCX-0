@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useRef } from 'react';
 
+import {
+    hasCommandModifier,
+    isImeComposing,
+    isKeyboardControlTarget
+} from '@/components/keyboard/keyboardShortcutGuards';
+
 import type { NormalizedScreenshotMetadata } from './screenshotMetadataValues';
 
 type NavigationTarget = {
@@ -193,18 +199,12 @@ export function useScreenshotMetadataNavigation({
 
     useEffect(() => {
         function handleKeyDown(event: KeyboardEvent) {
-            const target = event.target;
             if (
                 !enabled ||
-                event.altKey ||
-                event.ctrlKey ||
-                event.metaKey ||
+                isImeComposing(event) ||
+                hasCommandModifier(event) ||
                 event.shiftKey ||
-                (target instanceof HTMLElement &&
-                    (target.isContentEditable ||
-                        target.tagName === 'INPUT' ||
-                        target.tagName === 'TEXTAREA' ||
-                        target.tagName === 'SELECT'))
+                isKeyboardControlTarget(event.target)
             ) {
                 return;
             }

@@ -451,7 +451,11 @@ export function FavoritesContentPanel({
         selection.clearSelection()
     );
     const handleEscapeKeyDown = useStableEvent((event: KeyboardEvent) => {
-        if (event.key !== 'Escape' || isTextEntryTarget(event.target)) {
+        if (
+            event.key !== 'Escape' ||
+            event.defaultPrevented ||
+            isTextEntryTarget(event.target)
+        ) {
             return;
         }
         selection.clearSelection();

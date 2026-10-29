@@ -12,6 +12,7 @@ import {
 import { Fragment, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { isImeComposing } from '@/components/keyboard/keyboardShortcutGuards';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -111,7 +112,10 @@ export function ToolbarSearch({
                 onChange={(event) => onValueChange(event.target.value)}
                 onBlur={commitOnBlur ? onCommit : undefined}
                 onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
+                    if (
+                        event.key === 'Enter' &&
+                        !isImeComposing(event.nativeEvent)
+                    ) {
                         onCommit?.();
                     }
                 }}

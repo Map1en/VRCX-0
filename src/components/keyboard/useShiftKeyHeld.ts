@@ -1,20 +1,22 @@
 import { useEffect, useState } from 'react';
 
-export function useModerationShiftKey() {
+export function useShiftKeyHeld() {
     const [shiftHeld, setShiftHeld] = useState(false);
 
     useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
+        function handleKeyDown(event: KeyboardEvent) {
             if (event.key === 'Shift') {
                 setShiftHeld(true);
             }
-        };
-        const handleKeyUp = (event: KeyboardEvent) => {
+        }
+        function handleKeyUp(event: KeyboardEvent) {
             if (event.key === 'Shift') {
                 setShiftHeld(false);
             }
-        };
-        const handleBlur = () => setShiftHeld(false);
+        }
+        function handleBlur() {
+            setShiftHeld(false);
+        }
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('keyup', handleKeyUp);
         window.addEventListener('blur', handleBlur);

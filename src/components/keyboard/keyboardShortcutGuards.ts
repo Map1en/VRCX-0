@@ -29,6 +29,25 @@ export function isTextEntryTarget(target: EventTarget | null) {
     );
 }
 
+export function isKeyboardControlTarget(target: EventTarget | null) {
+    return (
+        target instanceof Element &&
+        Boolean(target.closest(KEYBOARD_CONTROL_SELECTOR))
+    );
+}
+
+export function isImeComposing(
+    event: Pick<KeyboardEvent, 'isComposing' | 'keyCode'>
+) {
+    return event.isComposing || event.keyCode === 229;
+}
+
+export function hasCommandModifier(
+    event: Pick<KeyboardEvent, 'altKey' | 'ctrlKey' | 'metaKey'>
+) {
+    return event.altKey || event.ctrlKey || event.metaKey;
+}
+
 export function isShortcutBlocked(
     event: Event,
     owner: Element,

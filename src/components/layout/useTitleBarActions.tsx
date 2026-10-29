@@ -14,7 +14,6 @@ import {
 import {
     type ComponentProps,
     useCallback,
-    useEffect,
     useRef,
     type ReactNode
 } from 'react';
@@ -22,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router';
 
 import { KeyboardShortcut } from '@/components/keyboard/KeyboardShortcut';
+import { useShortcutHandler } from '@/components/keyboard/shortcutDispatcher';
 import { ShortcutHintPanel } from '@/components/keyboard/ShortcutHintPanel';
 import { cn } from '@/lib/utils';
 import {
@@ -326,39 +326,12 @@ export function useTitleBarActions(
         </TitleBarButton>
     );
 
-    useEffect(() => {
-        if (!isSessionReady) {
-            return undefined;
-        }
-
-        const handleKeyDown = (event: KeyboardEvent) => {
-            const hasModifier = isMacHost
-                ? event.metaKey
-                : event.ctrlKey || event.metaKey;
-            if (!hasModifier) {
-                return;
-            }
-
-            const key = event.key.toLowerCase();
-            if (key === 'k') {
-                event.preventDefault();
-                openQuickSearch();
-                return;
-            }
-            if (key === 'd') {
-                event.preventDefault();
-                openDirectAccessFromClipboard();
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [
-        isSessionReady,
-        isMacHost,
+    useShortcutHandler('quick-search', openQuickSearch, isSessionReady);
+    useShortcutHandler(
+        'direct-access',
         openDirectAccessFromClipboard,
-        openQuickSearch
-    ]);
+        isSessionReady
+    );
 
     async function markAllNotificationsRead() {
         await markAllNotificationsSeenWithFeedback(

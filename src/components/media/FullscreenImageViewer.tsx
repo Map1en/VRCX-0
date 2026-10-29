@@ -11,6 +11,11 @@ import {
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+    hasCommandModifier,
+    isImeComposing,
+    isTextEntryTarget
+} from '@/components/keyboard/keyboardShortcutGuards';
 import { cn } from '@/lib/utils';
 import { commands } from '@/platform/tauri/bindings';
 import { toast } from '@/services/toastService';
@@ -169,6 +174,20 @@ export function FullscreenImageViewer({
         }
 
         function handleKeyDown(event: KeyboardEvent) {
+            if (event.key.toLowerCase() === 'r') {
+                event.preventDefault();
+                rotateClockwise();
+                return;
+            }
+
+            if (
+                isImeComposing(event) ||
+                hasCommandModifier(event) ||
+                isTextEntryTarget(event.target)
+            ) {
+                return;
+            }
+
             if (event.key === '+' || event.key === '=') {
                 event.preventDefault();
                 zoomIn();
@@ -178,12 +197,6 @@ export function FullscreenImageViewer({
             if (event.key === '-' || event.key === '_') {
                 event.preventDefault();
                 zoomOut();
-                return;
-            }
-
-            if (event.key.toLowerCase() === 'r') {
-                event.preventDefault();
-                rotateClockwise();
                 return;
             }
 

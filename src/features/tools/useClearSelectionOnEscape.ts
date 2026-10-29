@@ -11,7 +11,11 @@ export function useClearSelectionOnEscape(
             return undefined;
         }
         function handleKeyDown(event: KeyboardEvent) {
-            if (event.key !== 'Escape' || isTextEntryTarget(event.target)) {
+            if (
+                event.key !== 'Escape' ||
+                event.defaultPrevented ||
+                isTextEntryTarget(event.target)
+            ) {
                 return;
             }
             clearSelection();

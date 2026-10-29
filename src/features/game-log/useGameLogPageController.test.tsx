@@ -88,8 +88,8 @@ vi.mock('./useGameLogRowActions', () => ({
     useGameLogRowActions: () => ({})
 }));
 
-vi.mock('./useGameLogShiftKey', () => ({
-    useGameLogShiftKey: () => false
+vi.mock('@/components/keyboard/useShiftKeyHeld', () => ({
+    useShiftKeyHeld: () => false
 }));
 
 vi.mock('./useGameLogTableState', () => ({

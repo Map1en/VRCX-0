@@ -4,6 +4,11 @@ import { useSearchParams } from 'react-router';
 
 import { FileDropOverlay } from '@/components/file-drop/FileDropOverlay';
 import { useFileDropTarget } from '@/components/file-drop/useFileDropTarget';
+import {
+    hasCommandModifier,
+    isImeComposing,
+    isKeyboardControlTarget
+} from '@/components/keyboard/keyboardShortcutGuards';
 import { PageScaffold } from '@/components/layout/PageScaffold';
 import { ToolPageHeader } from '@/components/layout/ToolPageHeader';
 import { preloadImages } from '@/components/media/imageDecodeCache';
@@ -376,20 +381,14 @@ export function ScreenshotMetadataPage() {
 
     useEffect(() => {
         function handleDetailsShortcut(event: KeyboardEvent) {
-            const target = event.target;
             if (
                 isGalleryMode ||
                 searchViewMode !== 'detail' ||
-                event.altKey ||
-                event.ctrlKey ||
-                event.metaKey ||
+                isImeComposing(event) ||
+                hasCommandModifier(event) ||
                 event.shiftKey ||
                 event.key.toLowerCase() !== 'i' ||
-                (target instanceof HTMLElement &&
-                    (target.isContentEditable ||
-                        target.tagName === 'INPUT' ||
-                        target.tagName === 'TEXTAREA' ||
-                        target.tagName === 'SELECT'))
+                isKeyboardControlTarget(event.target)
             ) {
                 return;
             }
