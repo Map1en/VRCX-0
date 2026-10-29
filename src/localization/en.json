@@ -3941,7 +3941,10 @@
             "description": "Where your time went, summarised over a period",
             "range": {
                 "all": "All time",
-                "days": "Last {days} days"
+                "days": "Last {days} days",
+                "previous": "Previous period",
+                "next": "Next period",
+                "custom": "Custom range"
             },
             "stat": {
                 "total_time": "Total time",
@@ -3977,7 +3980,10 @@
             },
             "empty": {
                 "title": "Nothing recorded yet",
-                "description": "Play some VRChat and your activity will show up here."
+                "description": "Keep VRCX-0 running while you play VRChat, and your activity will show up here.",
+                "window_title": "Nothing recorded in this period",
+                "unsupported": "VRCX-0 can't read VRChat's game logs on this platform, so activity isn't recorded here.",
+                "unavailable": "VRCX-0 couldn't find VRChat's log folder, so new activity isn't being recorded. You can import existing log files instead."
             },
             "error": {
                 "failed_to_load": "Could not load your activity"
@@ -4036,11 +4042,23 @@
                 "photo_count_other": "{count} screenshots",
                 "empty": {
                     "title": "No visits recorded yet",
-                    "description": "A visit shows up here once you leave the world.",
+                    "description": "Keep VRCX-0 running while you play VRChat. Each visit shows up here once you leave the world.",
                     "filtered_title": "No visits in this date range"
                 },
                 "all_dates": "All dates",
                 "screenshots": "Screenshots"
+            },
+            "previous": {
+                "summary": "Previous {days} days: {hours} · days played: {activeDays}",
+                "none": "Nothing recorded in the previous {days} days",
+                "more": "More than the previous period",
+                "less": "Less than the previous period",
+                "same": "Same as the previous period"
+            },
+            "stale": "This may not be the latest data",
+            "chart": {
+                "series_summary": "{label}, {from} to {to}: {total} in total. Highest: {peak}, {peakHours}.",
+                "heatmap_summary": "Play time by weekday and hour. Busiest hour: {peak}."
             }
         },
         "my_groups": {

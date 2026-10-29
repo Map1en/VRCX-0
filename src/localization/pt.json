@@ -3937,7 +3937,10 @@
             "description": "Para onde foi o seu tempo, resumido por período",
             "range": {
                 "all": "Tudo",
-                "days": "Últimos {days} dias"
+                "days": "Últimos {days} dias",
+                "previous": "Período anterior",
+                "next": "Próximo período",
+                "custom": "Intervalo personalizado"
             },
             "stat": {
                 "total_time": "Tempo total",
@@ -3973,7 +3976,10 @@
             },
             "empty": {
                 "title": "Ainda sem registros",
-                "description": "Jogue um pouco de VRChat e a atividade aparecerá aqui."
+                "description": "Mantenha o VRCX-0 aberto enquanto joga VRChat e sua atividade aparecerá aqui.",
+                "window_title": "Nada registrado neste período",
+                "unsupported": "Nesta plataforma o VRCX-0 não consegue ler os logs do VRChat, então a atividade não é registrada aqui.",
+                "unavailable": "O VRCX-0 não encontrou a pasta de logs do VRChat e não está registrando atividade nova. Você pode importar arquivos de log existentes."
             },
             "error": {
                 "failed_to_load": "Não foi possível carregar a sua atividade"
@@ -4032,11 +4038,23 @@
                 "photo_count_other": "{count} capturas",
                 "empty": {
                     "title": "Nenhuma visita ainda",
-                    "description": "A visita aparece aqui depois que você sai do mundo.",
+                    "description": "Mantenha o VRCX-0 aberto enquanto joga VRChat. Cada visita aparece aqui quando você sai do mundo.",
                     "filtered_title": "Nenhuma visita neste período"
                 },
                 "all_dates": "Todas as datas",
                 "screenshots": "Capturas"
+            },
+            "previous": {
+                "summary": "{days} dias anteriores: {hours} · dias jogados: {activeDays}",
+                "none": "Nada registrado nos {days} dias anteriores",
+                "more": "Mais que no período anterior",
+                "less": "Menos que no período anterior",
+                "same": "Igual ao período anterior"
+            },
+            "stale": "Pode não estar atualizado",
+            "chart": {
+                "series_summary": "{label}, de {from} a {to}: {total} no total. Maior valor: {peak}, {peakHours}.",
+                "heatmap_summary": "Tempo de jogo por dia da semana e hora. Horário com mais jogo: {peak}."
             }
         },
         "my_groups": {

@@ -3931,7 +3931,10 @@
             "description": "期間ごとに、時間の使い方をまとめて振り返る",
             "range": {
                 "all": "全期間",
-                "days": "直近 {days} 日"
+                "days": "直近 {days} 日",
+                "previous": "前の期間",
+                "next": "次の期間",
+                "custom": "期間を指定"
             },
             "stat": {
                 "total_time": "合計プレイ時間",
@@ -3967,7 +3970,10 @@
             },
             "empty": {
                 "title": "まだ記録がありません",
-                "description": "VRChat で少し遊ぶと、ここにアクティビティが表示されます。"
+                "description": "VRCX-0 を起動したまま VRChat で遊ぶと、ここにアクティビティが表示されます。",
+                "window_title": "この期間の記録はありません",
+                "unsupported": "このプラットフォームでは VRCX-0 が VRChat のゲームログを読み取れないため、アクティビティは記録されません。",
+                "unavailable": "VRChat のログフォルダが見つからないため、新しいアクティビティを記録できません。手元のログファイルから補完できます。"
             },
             "error": {
                 "failed_to_load": "アクティビティを読み込めませんでした"
@@ -4022,11 +4028,23 @@
                 "photo_count_other": "スクリーンショット{count}枚",
                 "empty": {
                     "title": "まだ記録がありません",
-                    "description": "ワールドを出ると、ここに記録されます。",
+                    "description": "VRCX-0 を起動したまま VRChat で遊ぶと、ワールドを出たあとにここへ記録されます。",
                     "filtered_title": "この期間の記録はありません"
                 },
                 "all_dates": "すべての日付",
                 "screenshots": "スクリーンショット"
+            },
+            "previous": {
+                "summary": "前の{days}日間：{hours}・プレイした日 {activeDays}日",
+                "none": "前の{days}日間の記録はありません",
+                "more": "前の期間より多い",
+                "less": "前の期間より少ない",
+                "same": "前の期間と同じ"
+            },
+            "stale": "最新のデータではない可能性があります",
+            "chart": {
+                "series_summary": "{label}、{from}〜{to}：合計 {total}。最多：{peak}（{peakHours}）。",
+                "heatmap_summary": "曜日と時間帯ごとのプレイ時間。いちばん多い時間帯：{peak}。"
             }
         },
         "my_groups": {

@@ -1,6 +1,8 @@
 import {
     ActivityIcon,
     CalendarRangeIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon,
     Rows2Icon,
     Rows3Icon,
     Rows4Icon
@@ -23,6 +25,7 @@ import {
 } from '@/components/layout/PageScaffold';
 import {
     ToolbarActions,
+    ToolbarIconButton,
     ToolbarRefreshButton,
     ToolbarSegmented,
     ToolbarTabs,
@@ -31,7 +34,10 @@ import {
 } from '@/components/layout/ToolbarControls';
 import { formatDateTime } from '@/lib/dateTime';
 import { useTodayDate } from '@/lib/useTodayDate';
-import type { ActivityCompanionOrder } from '@/platform/tauri/bindings';
+import type {
+    ActivityCompanionOrder,
+    ActivitySeriesPoint
+} from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import { getResolvedThemeMode } from '@/services/themeService';
 import { usePreferencesStore } from '@/state/preferencesStore';
@@ -56,14 +62,25 @@ import {
     ACTIVITY_RANGE_OPTIONS,
     DEFAULT_ACTIVITY_RANGE,
     DEFAULT_COMPANION_ORDER,
+    canPageBack,
+    customWindow,
     hasAnyActivity,
     homeWorldIdFrom,
+    localDateRange,
+    nextWindow,
     normalizeActivityRange,
     normalizeCompanionOrder,
-    type ActivityRange
+    previousWindow,
+    rangeDaysFor,
+    utcOffsetMinutes,
+    windowDateRange,
+    windowEndsNow,
+    type ActivityRange,
+    type ActivityWindowOverride
 } from './activityPageModel';
 import { ActivityAccessExhibit } from './components/ActivityAccessExhibit';
 import { ActivityAvatarsExhibit } from './components/ActivityAvatarsExhibit';
+import { ActivityNoHistoryState } from './components/ActivityEmptyState';
 import { ActivityJourneyView } from './components/ActivityJourneyView';
 import { ActivityPeopleExhibit } from './components/ActivityPeopleExhibit';
 import { ActivityRhythmExhibit } from './components/ActivityRhythmExhibit';
@@ -101,6 +118,8 @@ export function ActivityPageImpl() {
     const isDarkMode = getResolvedThemeMode(themeMode) === 'dark';
     const [mode, setMode] = useState<ActivityPageMode | null>(null);
     const [range, setRange] = useState<ActivityRange>(DEFAULT_ACTIVITY_RANGE);
+    const [windowOverride, setWindowOverride] =
+        useState<ActivityWindowOverride | null>(null);
     const [companionOrder, setCompanionOrder] =
         useState<ActivityCompanionOrder>(DEFAULT_COMPANION_ORDER);
     const [showHomeWorld, setShowHomeWorld] = useState(false);
@@ -110,6 +129,12 @@ export function ActivityPageImpl() {
         from: null,
         to: null
     });
+    const [windowOwnerId, setWindowOwnerId] = useState(ownerUserId);
+    if (windowOwnerId !== ownerUserId) {
+        setWindowOwnerId(ownerUserId);
+        setWindowOverride(null);
+        setJourneyRange({ from: null, to: null });
+    }
     const [skinElement, setSkinElement] = useState<HTMLDivElement | null>(null);
     const homeWorldId = useRuntimeStore((state) =>
         homeWorldIdFrom(state.auth.currentUserSnapshot?.homeLocation)
@@ -155,13 +180,17 @@ export function ActivityPageImpl() {
     const journeyOwnerId = mode === 'journey' ? (ownerUserId ?? '') : '';
     const { view, loading, error, refresh } = useActivityPageResource(
         overviewOwnerId,
-        range,
+        windowOverride?.rangeDays ?? rangeDaysFor(range),
+        windowOverride?.windowToMs ?? null,
         companionOrder
     );
-    const heatmap = useActivityHeatmap(overviewOwnerId, range);
+    const heatmap = useActivityHeatmap(
+        windowOverride ? '' : overviewOwnerId,
+        range
+    );
     const avatarUsage = useActivityAvatarUsage(
         overviewOwnerId,
-        range === 'all'
+        range === 'all' && !windowOverride
     );
     const journey = useActivityJourneyFeed(
         journeyOwnerId,
@@ -227,6 +256,11 @@ export function ActivityPageImpl() {
         [t, weekStartsOn]
     );
 
+    const pagingAvailable = windowOverride !== null || range !== 'all';
+    const windowKey = windowOverride
+        ? `${windowOverride.rangeDays}:${windowOverride.windowToMs}`
+        : range;
+
     function onModeChange(next: ActivityPageMode) {
         setMode(next);
         void configRepository.setString(ACTIVITY_PAGE_MODE_KEY, next);
@@ -237,9 +271,42 @@ export function ActivityPageImpl() {
         void configRepository.setString(ACTIVITY_JOURNEY_DENSITY_KEY, next);
     }
 
-    function onRangeChange(next: ActivityRange) {
+    function onRangeChange(next: ActivityRange | '') {
+        if (!next) {
+            return;
+        }
         setRange(next);
+        setWindowOverride(null);
         void configRepository.setString(ACTIVITY_PAGE_RANGE_KEY, next);
+    }
+
+    function onPreviousWindow() {
+        if (view) {
+            setWindowOverride(previousWindow(view, windowOverride));
+        }
+    }
+
+    function onNextWindow() {
+        if (view) {
+            setWindowOverride(nextWindow(view, windowOverride, Date.now()));
+        }
+    }
+
+    function onCustomWindowChange(next: DateTimeRangeValue) {
+        setWindowOverride(
+            next.from
+                ? customWindow(
+                      next.from,
+                      next.to ?? next.from,
+                      utcOffsetMinutes()
+                  )
+                : null
+        );
+    }
+
+    function onSelectSeriesPoint(point: ActivitySeriesPoint) {
+        setJourneyRange(localDateRange(point.startDate, point.endDate));
+        onModeChange('journey');
     }
 
     function onCompanionOrderChange(next: ActivityCompanionOrder) {
@@ -275,11 +342,89 @@ export function ActivityPageImpl() {
                             <ToolbarTabs options={modeOptions} />
                             {mode ? <Separator orientation="vertical" /> : null}
                             {mode === 'overview' ? (
-                                <ToolbarSegmented
-                                    value={range}
-                                    onValueChange={onRangeChange}
-                                    options={rangeOptions}
-                                />
+                                <>
+                                    <ToolbarSegmented<ActivityRange | ''>
+                                        value={windowOverride ? '' : range}
+                                        onValueChange={onRangeChange}
+                                        options={rangeOptions}
+                                    />
+                                    {pagingAvailable ? (
+                                        <ToolbarIconButton
+                                            icon={ChevronLeftIcon}
+                                            label={t(
+                                                'view.activity.range.previous'
+                                            )}
+                                            disabled={
+                                                loading ||
+                                                !view ||
+                                                !canPageBack(view)
+                                            }
+                                            onClick={onPreviousWindow}
+                                        />
+                                    ) : null}
+                                    <DateTimeRangePicker
+                                        value={
+                                            windowOverride
+                                                ? windowDateRange(
+                                                      windowOverride,
+                                                      view?.utcOffsetMinutes ??
+                                                          utcOffsetMinutes()
+                                                  )
+                                                : { from: null, to: null }
+                                        }
+                                        onChange={onCustomWindowChange}
+                                        placeholder={t(
+                                            'view.activity.range.custom'
+                                        )}
+                                        startLabel={t(
+                                            'view.game_log.label.start'
+                                        )}
+                                        endLabel={t('view.game_log.label.end')}
+                                        clearLabel={t('common.actions.clear')}
+                                        confirmLabel={t(
+                                            'common.actions.confirm'
+                                        )}
+                                        formatValue={(date) =>
+                                            formatDateTime(date, {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric'
+                                            })
+                                        }
+                                        disabled={{ after: todayDate }}
+                                        renderTrigger={({ active, label }) => (
+                                            <Button
+                                                type="button"
+                                                variant={
+                                                    active
+                                                        ? 'secondary'
+                                                        : 'outline'
+                                                }
+                                            >
+                                                <CalendarRangeIcon data-icon="inline-start" />
+                                                {label}
+                                            </Button>
+                                        )}
+                                    />
+                                    {pagingAvailable ? (
+                                        <ToolbarIconButton
+                                            icon={ChevronRightIcon}
+                                            label={t(
+                                                'view.activity.range.next'
+                                            )}
+                                            disabled={
+                                                loading ||
+                                                !view ||
+                                                !windowOverride ||
+                                                windowEndsNow(
+                                                    view,
+                                                    todayDate.getTime()
+                                                )
+                                            }
+                                            onClick={onNextWindow}
+                                        />
+                                    ) : null}
+                                </>
                             ) : null}
                             {mode === 'journey' ? (
                                 <DateTimeRangePicker
@@ -370,23 +515,40 @@ export function ActivityPageImpl() {
                         ) : loading && !view ? (
                             <LoadingState />
                         ) : !hasAnyActivity(view) ? (
-                            <EmptyState
-                                icon={ActivityIcon}
-                                title={t('view.activity.empty.title')}
-                                description={t(
-                                    'view.activity.empty.description'
-                                )}
-                            />
+                            view?.coverage.firstSourceAt ? (
+                                <EmptyState
+                                    icon={ActivityIcon}
+                                    title={t(
+                                        'view.activity.empty.window_title'
+                                    )}
+                                />
+                            ) : (
+                                <ActivityNoHistoryState
+                                    icon={ActivityIcon}
+                                    title={t('view.activity.empty.title')}
+                                    description={t(
+                                        'view.activity.empty.description'
+                                    )}
+                                />
+                            )
                         ) : view ? (
                             <div
-                                key={range}
+                                key={windowKey}
                                 className="mx-auto max-w-[120rem] [columns:1] gap-3 pb-4 [column-fill:balance] min-[1600px]:[columns:3] xl:[columns:2]"
                             >
+                                {view.stale ? (
+                                    <p className="text-muted-foreground/80 mb-3 px-1 text-xs [column-span:all]">
+                                        {t('view.activity.stale')}
+                                    </p>
+                                ) : null}
                                 <Staggered index={0}>
                                     <ActivityTimeExhibit
                                         summary={view.summary}
+                                        previous={view.previous}
+                                        rangeDays={view.rangeDays}
                                         series={view.series}
                                         isDarkMode={isDarkMode}
+                                        onSelectPoint={onSelectSeriesPoint}
                                     />
                                 </Staggered>
                                 <Staggered index={1}>
@@ -436,7 +598,7 @@ export function ActivityPageImpl() {
                                         slices={view.accessSplit}
                                     />
                                 </Staggered>
-                                {range === 'all' ? (
+                                {range === 'all' && !windowOverride ? (
                                     <Staggered index={5}>
                                         <ActivityAvatarsExhibit
                                             rows={avatarUsage}

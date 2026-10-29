@@ -23,12 +23,12 @@ export function useActivityHeatmap(
     const requestIdRef = useRef(0);
 
     useEffect(() => {
+        const requestId = requestIdRef.current + 1;
+        requestIdRef.current = requestId;
         if (!ownerUserId) {
             setRawBuckets(EMPTY_BUCKETS);
             return;
         }
-        const requestId = requestIdRef.current + 1;
-        requestIdRef.current = requestId;
         void userActivityViewService
             .loadActivityView({
                 userId: ownerUserId,

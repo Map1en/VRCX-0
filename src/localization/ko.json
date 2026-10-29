@@ -3878,7 +3878,10 @@
             "description": "기간별로 시간을 어디에 썼는지 정리해서 보여줍니다",
             "range": {
                 "all": "전체",
-                "days": "최근 {days}일"
+                "days": "최근 {days}일",
+                "previous": "이전 기간",
+                "next": "다음 기간",
+                "custom": "기간 지정"
             },
             "stat": {
                 "total_time": "총 플레이 시간",
@@ -3914,7 +3917,10 @@
             },
             "empty": {
                 "title": "아직 기록이 없습니다",
-                "description": "VRChat을 잠시 플레이하면 여기에 활동이 표시됩니다."
+                "description": "VRCX-0을 켜 둔 채 VRChat을 플레이하면 여기에 활동이 표시됩니다.",
+                "window_title": "이 기간에는 기록이 없습니다",
+                "unsupported": "이 플랫폼에서는 VRCX-0이 VRChat 게임 로그를 읽을 수 없어 활동이 기록되지 않습니다.",
+                "unavailable": "VRChat 로그 폴더를 찾지 못해 새 활동을 기록할 수 없습니다. 기존 로그 파일로 보충할 수 있습니다."
             },
             "error": {
                 "failed_to_load": "활동을 불러오지 못했습니다"
@@ -3969,11 +3975,23 @@
                 "photo_count_other": "스크린샷 {count}장",
                 "empty": {
                     "title": "아직 방문 기록이 없습니다",
-                    "description": "월드를 나가면 여기에 방문 기록이 표시됩니다.",
+                    "description": "VRCX-0을 켜 둔 채 VRChat을 플레이하세요. 월드를 나가면 방문 기록이 여기에 표시됩니다.",
                     "filtered_title": "이 기간에는 방문 기록이 없습니다"
                 },
                 "all_dates": "전체 기간",
                 "screenshots": "스크린샷"
+            },
+            "previous": {
+                "summary": "이전 {days}일: {hours} · 플레이한 날 {activeDays}일",
+                "none": "이전 {days}일 동안 기록이 없습니다",
+                "more": "이전 기간보다 많음",
+                "less": "이전 기간보다 적음",
+                "same": "이전 기간과 같음"
+            },
+            "stale": "최신 데이터가 아닐 수 있습니다",
+            "chart": {
+                "series_summary": "{label}, {from}~{to}: 총 {total}. 가장 많은 구간: {peak}, {peakHours}.",
+                "heatmap_summary": "요일·시간대별 플레이 시간. 가장 많이 플레이한 시간대: {peak}."
             }
         },
         "my_groups": {

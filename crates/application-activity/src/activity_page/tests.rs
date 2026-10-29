@@ -132,6 +132,7 @@ fn input() -> ActivityPageBuildInput {
         range_days: 7,
         utc_offset_minutes: 0,
         now_ms: 1_736_035_200_000,
+        window_to_ms: None,
         companion_order: Default::default(),
         force_refresh: false,
     }
@@ -163,7 +164,7 @@ fn cache_hit_skips_rebuild_and_all_operations_stay_inside_owner_lock() {
     let store = Store::default();
     let first = activity_page_view_build(&store, input()).unwrap();
     assert_eq!(first.summary.total_minutes, 60);
-    assert_eq!(store.cached.borrow().as_ref().unwrap().payload_version, 4);
+    assert_eq!(store.cached.borrow().as_ref().unwrap().payload_version, 5);
     store.calls.borrow_mut().clear();
     assert_eq!(activity_page_view_build(&store, input()).unwrap(), first);
     assert_eq!(*store.calls.borrow(), vec!["cursor", "cache_read"]);
@@ -226,6 +227,35 @@ fn timezone_order_and_payload_version_changes_invalidate_cache() {
     store.calls.borrow_mut().clear();
     activity_page_view_build(&store, query).unwrap();
     assert!(store.calls.borrow().contains(&"cache_write"));
+}
+
+#[test]
+fn paged_window_ends_on_a_local_day_boundary_and_skips_the_cache() {
+    let store = Store::default();
+    let day_ms = 86_400_000;
+    let mut query = input();
+    query.window_to_ms = Some(input().now_ms - 10 * day_ms + 5_000);
+
+    let view = activity_page_view_build(&store, query).unwrap();
+
+    assert_eq!(view.window_to_ms, input().now_ms - 9 * day_ms);
+    assert_eq!(view.window_from_ms, view.window_to_ms - 7 * day_ms);
+    assert_eq!(view.series.points.len(), 7);
+    assert!(!store.calls.borrow().contains(&"cache_read"));
+    assert!(!store.calls.borrow().contains(&"cache_write"));
+    assert!(store.cached.borrow().is_none());
+}
+
+#[test]
+fn window_end_in_the_future_is_clamped_to_today() {
+    let store = Store::default();
+    let current = activity_page_view_build(&store, input()).unwrap();
+    let mut query = input();
+    query.window_to_ms = Some(input().now_ms + 30 * 86_400_000);
+
+    let view = activity_page_view_build(&store, query).unwrap();
+
+    assert_eq!(view.window_to_ms, current.window_to_ms);
 }
 
 #[test]

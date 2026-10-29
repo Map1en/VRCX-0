@@ -3160,6 +3160,7 @@ export type ActivityPageBuildInput = {
     rangeDays: number;
     utcOffsetMinutes: number;
     nowMs: number;
+    windowToMs: number | null;
     companionOrder: ActivityCompanionOrder;
     forceRefresh: boolean;
 };
@@ -3251,7 +3252,11 @@ export type ActivityScope =
     | 'allFavorites'
     | 'everyoneInInstance';
 export type ActivitySeriesBucket = 'day' | 'week';
-export type ActivitySeriesPoint = { startDate: string; minutes: number };
+export type ActivitySeriesPoint = {
+    startDate: string;
+    endDate: string;
+    minutes: number;
+};
 export type ActivityTypeDefinition = {
     key: ActivityKind;
     category: ActivityCategory;

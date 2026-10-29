@@ -3935,7 +3935,10 @@
             "description": "按时间段汇总你的时间都花在了哪里",
             "range": {
                 "all": "全部",
-                "days": "近 {days} 天"
+                "days": "近 {days} 天",
+                "previous": "上一时段",
+                "next": "下一时段",
+                "custom": "自定义范围"
             },
             "stat": {
                 "total_time": "总时长",
@@ -3971,7 +3974,10 @@
             },
             "empty": {
                 "title": "还没有记录",
-                "description": "玩一会儿 VRChat，你的活动就会出现在这里。"
+                "description": "保持 VRCX-0 运行并启动 VRChat，你的活动就会出现在这里。",
+                "window_title": "这段时间没有记录",
+                "unsupported": "此平台上 VRCX-0 无法读取 VRChat 的游戏日志，因此不会记录活动。",
+                "unavailable": "VRCX-0 没有找到 VRChat 的日志文件夹，暂时无法记录新的活动。可以手动补录已有的日志文件。"
             },
             "error": {
                 "failed_to_load": "无法加载你的活动数据"
@@ -4026,11 +4032,23 @@
                 "photo_count_other": "{count} 张截图",
                 "empty": {
                     "title": "还没有访问记录",
-                    "description": "离开世界后，这次访问就会出现在这里。",
+                    "description": "保持 VRCX-0 运行并游玩 VRChat，离开世界后，这次访问就会出现在这里。",
                     "filtered_title": "这段时间没有访问记录"
                 },
                 "all_dates": "全部日期",
                 "screenshots": "截图"
+            },
+            "previous": {
+                "summary": "上一 {days} 天：{hours} · 玩了 {activeDays} 天",
+                "none": "上一 {days} 天没有记录",
+                "more": "比上一时段多",
+                "less": "比上一时段少",
+                "same": "与上一时段持平"
+            },
+            "stale": "数据可能不是最新",
+            "chart": {
+                "series_summary": "{label}，{from} 至 {to}：共 {total}。最高：{peak}，{peakHours}。",
+                "heatmap_summary": "按星期和小时分布的游戏时长。玩得最多的时段：{peak}。"
             }
         },
         "my_groups": {

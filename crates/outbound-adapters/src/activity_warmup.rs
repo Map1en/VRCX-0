@@ -43,6 +43,7 @@ impl ActivityPageWarmupStore for LocalActivityPageWarmupStore {
                 range_days,
                 utc_offset_minutes: local_utc_offset_minutes(),
                 now_ms: Utc::now().timestamp_millis(),
+                window_to_ms: None,
                 companion_order: Default::default(),
                 force_refresh: false,
             },

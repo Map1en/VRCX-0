@@ -9,6 +9,7 @@ pub struct ActivityPageBuildInput {
     pub range_days: i64,
     pub utc_offset_minutes: i64,
     pub now_ms: i64,
+    pub window_to_ms: Option<i64>,
     pub companion_order: ActivityCompanionOrder,
     pub force_refresh: bool,
 }
@@ -51,6 +52,7 @@ pub struct ActivityPagePreviousSummary {
 #[serde(rename_all = "camelCase")]
 pub struct ActivitySeriesPoint {
     pub start_date: String,
+    pub end_date: String,
     pub minutes: i64,
 }
 

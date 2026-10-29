@@ -3935,7 +3935,10 @@
             "description": "依時間區間彙總你的時間都花在哪裡",
             "range": {
                 "all": "全部",
-                "days": "近 {days} 天"
+                "days": "近 {days} 天",
+                "previous": "上一段時間",
+                "next": "下一段時間",
+                "custom": "自訂範圍"
             },
             "stat": {
                 "total_time": "總時長",
@@ -3971,7 +3974,10 @@
             },
             "empty": {
                 "title": "還沒有紀錄",
-                "description": "玩一下 VRChat，你的活動就會出現在這裡。"
+                "description": "讓 VRCX-0 保持執行並啟動 VRChat，你的活動就會出現在這裡。",
+                "window_title": "這段時間沒有紀錄",
+                "unsupported": "在此平台上 VRCX-0 無法讀取 VRChat 的遊戲紀錄，因此不會記錄活動。",
+                "unavailable": "VRCX-0 找不到 VRChat 的紀錄資料夾，暫時無法記錄新的活動。你可以手動補錄現有的紀錄檔。"
             },
             "error": {
                 "failed_to_load": "無法載入你的活動資料"
@@ -4026,11 +4032,23 @@
                 "photo_count_other": "{count} 張截圖",
                 "empty": {
                     "title": "還沒有造訪紀錄",
-                    "description": "離開世界後，這次造訪就會出現在這裡。",
+                    "description": "讓 VRCX-0 保持執行並遊玩 VRChat，離開世界後，這次造訪就會出現在這裡。",
                     "filtered_title": "這段時間沒有造訪紀錄"
                 },
                 "all_dates": "全部日期",
                 "screenshots": "截圖"
+            },
+            "previous": {
+                "summary": "上一 {days} 天：{hours} · 玩了 {activeDays} 天",
+                "none": "上一 {days} 天沒有紀錄",
+                "more": "比上一段時間多",
+                "less": "比上一段時間少",
+                "same": "與上一段時間持平"
+            },
+            "stale": "資料可能不是最新的",
+            "chart": {
+                "series_summary": "{label}，{from} 至 {to}：共 {total}。最高：{peak}，{peakHours}。",
+                "heatmap_summary": "依星期與小時分布的遊戲時間。玩得最多的時段：{peak}。"
             }
         },
         "my_groups": {

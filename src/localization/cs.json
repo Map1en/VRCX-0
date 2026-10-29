@@ -3959,7 +3959,10 @@
             "description": "Kam šel váš čas — souhrn za období",
             "range": {
                 "all": "Vše",
-                "days": "Posledních {days} dní"
+                "days": "Posledních {days} dní",
+                "previous": "Předchozí období",
+                "next": "Další období",
+                "custom": "Vlastní rozsah"
             },
             "stat": {
                 "total_time": "Celkový čas",
@@ -3995,7 +3998,10 @@
             },
             "empty": {
                 "title": "Zatím nic zaznamenáno",
-                "description": "Zahrajte si VRChat a aktivita se objeví tady."
+                "description": "Nech VRCX-0 spuštěné, když hraješ VRChat, a aktivita se objeví tady.",
+                "window_title": "V tomto období nic nezaznamenáno",
+                "unsupported": "Na této platformě VRCX-0 neumí číst herní logy VRChatu, takže se tu aktivita nezaznamenává.",
+                "unavailable": "VRCX-0 nenašel složku s logy VRChatu, takže teď nezaznamenává novou aktivitu. Existující logy můžeš importovat."
             },
             "error": {
                 "failed_to_load": "Aktivitu se nepodařilo načíst"
@@ -4062,11 +4068,23 @@
                 "photo_count_other": "{count} snímků",
                 "empty": {
                     "title": "Zatím žádné návštěvy",
-                    "description": "Návštěva se zde zobrazí, jakmile opustíš svět.",
+                    "description": "Nech VRCX-0 spuštěné, když hraješ VRChat. Návštěva se tu zobrazí, jakmile opustíš svět.",
                     "filtered_title": "V tomto období žádné návštěvy"
                 },
                 "all_dates": "Všechna data",
                 "screenshots": "Snímky"
+            },
+            "previous": {
+                "summary": "Předchozích {days} dní: {hours} · odehraných dní: {activeDays}",
+                "none": "Za předchozích {days} dní nic nezaznamenáno",
+                "more": "Víc než v předchozím období",
+                "less": "Méně než v předchozím období",
+                "same": "Stejně jako v předchozím období"
+            },
+            "stale": "Data nemusí být aktuální",
+            "chart": {
+                "series_summary": "{label}, {from} až {to}: celkem {total}. Nejvíc: {peak}, {peakHours}.",
+                "heatmap_summary": "Herní čas podle dne v týdnu a hodiny. Nejčastější hodina: {peak}."
             }
         },
         "my_groups": {
