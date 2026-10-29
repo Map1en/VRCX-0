@@ -14,7 +14,10 @@ import { useSettingsSearch } from '@/lib/useSettingsSearch';
 import { cn } from '@/lib/utils';
 import { triggerToolByKey } from '@/services/toolActionService';
 import { setRgb } from '@/services/vrcx0CssLayerService';
-import type { SettingsManifestEntry } from '@/shared/constants/settingsManifest';
+import {
+    getSettingDeepLinkPath,
+    type SettingsManifestEntry
+} from '@/shared/constants/settingsManifest';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import {
     Command,
@@ -160,11 +163,7 @@ export function QuickSearchDialog({
     function selectSetting(entry: SettingsManifestEntry) {
         onOpenChange(false);
         onQueryChange('');
-        const params = new URLSearchParams({
-            tab: entry.tab,
-            setting: entry.id
-        });
-        navigate(`/settings?${params.toString()}`);
+        navigate(getSettingDeepLinkPath(entry.id));
     }
 
     return (

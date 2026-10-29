@@ -3,6 +3,7 @@ import {
     ArrowUpToLineIcon,
     GripVerticalIcon,
     MoreHorizontalIcon,
+    RssIcon,
     SettingsIcon,
     Trash2Icon
 } from 'lucide-react';
@@ -15,7 +16,9 @@ import type {
     FeedLocationActionPayload,
     FeedRow
 } from '@/components/feed/feedTypes';
+import { EmptyState } from '@/components/layout/PageScaffold';
 import { cn } from '@/lib/utils';
+import { FEED_FILTER_TYPES } from '@/repositories/feedRepository';
 import type { FeedTimeDisplayModePreference } from '@/state/preferencesStore';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -234,6 +237,10 @@ export function FeedColumnPane({
     const typeLabels = column.feedTypes.map((type) =>
         t(`view.feed.filters.${type}`)
     );
+    const columnCoversAllFeed =
+        column.friendScope.kind === 'all' &&
+        !exclusionLabel &&
+        FEED_FILTER_TYPES.every((type) => column.feedTypes.includes(type));
     const visibleTypeLabels = typeLabels.slice(0, 3);
     const hiddenTypeCount = Math.max(
         0,
@@ -396,14 +403,35 @@ export function FeedColumnPane({
                                 </div>
                             ))}
                         </div>
-                    ) : (
+                    ) : loadStatus === 'error' ? (
                         <div className="text-muted-foreground flex h-full items-center justify-center px-4 text-center text-sm">
-                            {loadStatus === 'error'
-                                ? t('view.feed.error.feed_query_failed')
-                                : t(
-                                      'view.feed.empty.no_feed_rows_match_the_current_filters'
-                                  )}
+                            {t('view.feed.error.feed_query_failed')}
                         </div>
+                    ) : columnCoversAllFeed ? (
+                        <EmptyState
+                            variant="panel"
+                            className="h-full"
+                            icon={RssIcon}
+                            title={t('empty_state.feed_title')}
+                            description={t('empty_state.feed_description')}
+                        />
+                    ) : (
+                        <EmptyState
+                            variant="panel"
+                            className="h-full"
+                            title={t('view.feed.columns.empty_title')}
+                            description={t(
+                                'view.feed.columns.empty_description'
+                            )}
+                        >
+                            <Button
+                                type="button"
+                                variant="link"
+                                onClick={() => onEdit(column.id)}
+                            >
+                                {t('common.actions.configure')}
+                            </Button>
+                        </EmptyState>
                     )}
                     {loadingOlder ? (
                         <div className="text-muted-foreground flex justify-center py-2">

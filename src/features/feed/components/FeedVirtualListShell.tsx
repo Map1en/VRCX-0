@@ -38,10 +38,12 @@ import { Spinner } from '@/ui/shadcn/spinner';
 
 import { getFeedRowFilterTarget } from '../feedRowFilterTarget';
 import { useFeedNewTopRowKeys } from '../useFeedNewTopRowKeys';
+import { FeedEmptyState, type FeedEmptyFilterModel } from './FeedEmptyState';
 import { FeedExpandedRow, FeedUserLink } from './FeedTableParts';
 
 type FeedVirtualListShellProps = {
     actions: FeedFriendActions;
+    emptyFilterModel: FeedEmptyFilterModel;
     filterCommands: LogFilterCommands;
     favoritesOnly: boolean;
     friendLogNamesById: Record<string, string>;
@@ -258,6 +260,7 @@ function FeedVirtualListRow({
 
 export function FeedVirtualListShell({
     actions,
+    emptyFilterModel,
     filterCommands,
     favoritesOnly,
     friendLogNamesById,
@@ -386,9 +389,7 @@ export function FeedVirtualListShell({
                         ) : loadStatus === 'error' ? (
                             t('view.feed.error.feed_query_failed')
                         ) : (
-                            t(
-                                'view.feed.empty.no_feed_rows_match_the_current_filters'
-                            )
+                            <FeedEmptyState {...emptyFilterModel} />
                         )
                     }
                 />

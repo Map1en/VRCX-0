@@ -2,6 +2,7 @@ import { HistoryIcon, SearchXIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import {
+    EmptyState,
     LoadingState,
     PageBody,
     PageScaffold
@@ -10,7 +11,6 @@ import { Button } from '@/ui/shadcn/button';
 
 import { FriendLogPageTable } from './components/FriendLogPageTable';
 import { FriendLogPageToolbar } from './components/FriendLogPageToolbar';
-import { FriendLogEmptyState } from './components/FriendLogViewParts';
 import { FriendLogVirtualList } from './components/FriendLogVirtualList';
 import { useFriendLogPageController } from './useFriendLogPageController';
 
@@ -72,12 +72,12 @@ export function FriendLogPage({
                         )}
                     />
                 ) : isError ? (
-                    <FriendLogEmptyState
+                    <EmptyState
                         title={t(
                             'view.friend_log.error.friend_history_failed_to_load'
                         )}
                         description={
-                            rows.detail || 'The history query did not complete.'
+                            rows.detail || t('common.error.failed_to_load_data')
                         }
                     />
                 ) : (hasRows || rows.hasMore) && !rows.searchMode ? (
@@ -113,7 +113,7 @@ export function FriendLogPage({
                         onPageSizeChange={tableState.setPageSize}
                     />
                 ) : (
-                    <FriendLogEmptyState
+                    <EmptyState
                         icon={hasHistory ? SearchXIcon : HistoryIcon}
                         title={t(
                             hasHistory
@@ -140,7 +140,7 @@ export function FriendLogPage({
                                 {t('common.actions.clear')}
                             </Button>
                         ) : null}
-                    </FriendLogEmptyState>
+                    </EmptyState>
                 )}
             </PageBody>
         </PageScaffold>

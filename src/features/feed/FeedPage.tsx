@@ -10,6 +10,7 @@ import {
 import { Spinner } from '@/ui/shadcn/spinner';
 
 import { FeedColumnsMode } from './columns/FeedColumnsMode';
+import { FeedFirstRunTip } from './components/FeedFirstRunTip';
 import { FeedTableShell } from './components/FeedTableShell';
 import { FeedToolbar } from './components/FeedToolbar';
 import { FeedVirtualListShell } from './components/FeedVirtualListShell';
@@ -78,6 +79,7 @@ export function FeedPage({ embedded = false }: FeedPageProps = {}) {
 
     return (
         <PageScaffold embedded={embedded} className={embedded ? '' : 'feed'}>
+            {embedded ? null : <FeedFirstRunTip />}
             {effectiveViewMode === 'columns' ? (
                 <PageBody className="gap-2">
                     <FeedColumnsMode
@@ -203,6 +205,41 @@ function FeedTableMode({
         ]
     );
 
+    const emptyFilterModel = useMemo(
+        () => ({
+            hasActiveFilters: Boolean(
+                filters.deferredSearchQuery.trim() ||
+                scopedUserIds.length ||
+                dateFrom ||
+                dateTo ||
+                activeFilters.length ||
+                favoritesOnly
+            ),
+            onClearFilters: () => {
+                setFeedFilters([]);
+                clearSearch();
+                setDateRange('', '');
+                setFavoritesOnly(false);
+                setUserScope([]);
+                setRouteScopedUserIds([]);
+            }
+        }),
+        [
+            activeFilters.length,
+            clearSearch,
+            dateFrom,
+            dateTo,
+            favoritesOnly,
+            filters.deferredSearchQuery,
+            scopedUserIds.length,
+            setDateRange,
+            setFavoritesOnly,
+            setFeedFilters,
+            setRouteScopedUserIds,
+            setUserScope
+        ]
+    );
+
     return (
         <>
             <FeedToolbar
@@ -214,6 +251,7 @@ function FeedTableMode({
             <PageBody>
                 {searchMode ? (
                     <FeedTableShell
+                        emptyFilterModel={emptyFilterModel}
                         filterCommands={rowFilterCommands}
                         favoritesOnly={filters.favoritesOnly}
                         isFavoritesLoaded={isFavoritesLoaded}
@@ -235,6 +273,7 @@ function FeedTableMode({
                 ) : (
                     <FeedVirtualListShell
                         actions={friendActions}
+                        emptyFilterModel={emptyFilterModel}
                         filterCommands={rowFilterCommands}
                         favoritesOnly={filters.favoritesOnly}
                         friendLogNamesById={friendLogNamesById}

@@ -64,6 +64,10 @@ const onlyType = vi.fn();
 
 const props = {
     actions,
+    emptyFilterModel: {
+        hasActiveFilters: false,
+        onClearFilters: () => undefined
+    },
     filterCommands: { onlyType },
     favoritesOnly: false,
     friendLogNamesById: {},
@@ -168,6 +172,35 @@ describe('FeedVirtualListShell', () => {
             })
         );
         expect(onReloadLatest).toHaveBeenCalledOnce();
+    });
+
+    it('tells a feed with no history apart from one emptied by filters', () => {
+        const onClearFilters = vi.fn();
+        const view = render(
+            <FeedVirtualListShell {...props} rows={[]} sourceRows={[]} />
+        );
+        expect(screen.getByText('empty_state.feed_title')).not.toBeNull();
+        expect(screen.queryByRole('button')).toBeNull();
+
+        view.rerender(
+            <FeedVirtualListShell
+                {...props}
+                emptyFilterModel={{ hasActiveFilters: true, onClearFilters }}
+                rows={[]}
+                sourceRows={[]}
+            />
+        );
+        expect(
+            screen.getByText(
+                'view.feed.empty.no_feed_rows_match_the_current_filters'
+            )
+        ).not.toBeNull();
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'empty_state.clear_search_and_filters'
+            })
+        );
+        expect(onClearFilters).toHaveBeenCalledOnce();
     });
 
     it('offers type filters from the row context menu', async () => {

@@ -11,8 +11,14 @@
         "app_launcher_description": "アプリまたはショートカットを追加し、起動するタイミングを選びます。",
         "app_launcher_selection_title": "アプリまたはショートカットを選択",
         "app_launcher_selection_description": "アプリを選ぶと、起動タイミングを編集できます。",
+        "feed_title": "フレンドのアクティビティはまだありません",
+        "feed_description": "VRCX-0 の起動中は、フレンドのオンラインやワールド移動、プロフィールの更新などがここに表示されます。",
         "game_log_title": "VRChatのアクティビティはまだありません",
-        "game_log_description": "プレイ中に訪れたワールドや一緒になったプレイヤーなどがここに表示されます。",
+        "game_log_description": "VRCX-0 を起動したまま VRChat を始めると、訪れたワールドや一緒になったプレイヤーなどがここに表示されます。",
+        "game_log_disabled_description": "ゲームログの記録がオフのため、新しいアクティビティは保存されません。",
+        "game_log_enable_action": "設定でオンにする",
+        "game_log_unavailable_description": "この PC で VRChat のログフォルダーが見つからないため、新しいアクティビティを記録できません。ログファイルを手動でインポートすることはできます。",
+        "game_log_unsupported_description": "このシステムでは VRChat のログを読み取れないため、ゲームのアクティビティは記録されません。",
         "my_avatars_title": "アップロードしたアバターはまだありません",
         "my_avatars_description": "VRChatにアップロードしたアバターがここに表示されます。",
         "search_no_results": "検索結果がありません",
@@ -1318,7 +1324,9 @@
                 "restore_preset": "プリセットに戻す",
                 "restore_preset_title": "フィードカラムのプリセットに戻しますか？",
                 "restore_preset_description": "プリセットのカラム（Favorites、Location、Profile、Presence）に戻します。",
-                "restore_preset_confirm": "プリセットに戻す"
+                "restore_preset_confirm": "プリセットに戻す",
+                "empty_title": "このカラムにはまだ何もありません",
+                "empty_description": "このカラムの対象フレンドと種類に合うアクティビティがここに表示されます。"
             },
             "error": {
                 "avatar_author_unavailable": "アバター作者を取得できません",
@@ -1347,6 +1355,12 @@
             },
             "empty": {
                 "no_feed_rows_match_the_current_filters": "現在のフィルターに一致するフィードはありません"
+            },
+            "first_run_tip": {
+                "title": "VRCX-0 へようこそ",
+                "description": "フレンドのアクティビティやゲームの履歴は、VRCX-0 の起動中にだけ記録されます。それ以前の履歴は、VRCX のデータや VRChat のログファイルをインポートすれば取り込めます。",
+                "description_without_logs": "フレンドのアクティビティは、VRCX-0 の起動中にだけ記録されます。それ以前の履歴は、VRCX のデータをインポートすれば取り込めます。",
+                "dismiss": "了解"
             },
             "toast": {
                 "failed_to_resolve_avatar_author": "アバターの作者が見つかりませんでした",

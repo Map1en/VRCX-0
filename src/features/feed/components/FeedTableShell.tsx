@@ -32,9 +32,11 @@ import { Table, TableBody } from '@/ui/shadcn/table';
 
 import { getFeedRowFilterTarget } from '../feedRowFilterTarget';
 import { shouldSkipFeedRowToggle } from '../feedRowInteraction';
+import { FeedEmptyState, type FeedEmptyFilterModel } from './FeedEmptyState';
 import { FeedExpandedRow } from './FeedTableParts';
 
 type FeedTableShellProps = {
+    emptyFilterModel: FeedEmptyFilterModel;
     favoritesOnly: boolean;
     filterCommands: LogFilterCommands;
     isFavoritesLoaded: boolean;
@@ -55,6 +57,7 @@ type FeedTableShellProps = {
 };
 
 export function FeedTableShell({
+    emptyFilterModel,
     favoritesOnly,
     filterCommands,
     isFavoritesLoaded,
@@ -181,9 +184,9 @@ export function FeedTableShell({
                                                 'view.feed.error.feed_query_failed'
                                             )
                                         ) : (
-                                            t(
-                                                'view.feed.empty.no_feed_rows_match_the_current_filters'
-                                            )
+                                            <FeedEmptyState
+                                                {...emptyFilterModel}
+                                            />
                                         )}
                                     </DataTableEmptyRow>
                                 )}

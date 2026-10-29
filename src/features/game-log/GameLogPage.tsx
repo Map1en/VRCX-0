@@ -1,17 +1,22 @@
 import { HistoryIcon, SearchXIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router';
 
 import { PreviousInstancesTableDialog } from '@/components/dialogs/PreviousInstancesTableDialog';
 import {
+    EmptyState,
     LoadingState,
     PageBody,
     PageScaffold
 } from '@/components/layout/PageScaffold';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import { getSettingDeepLinkPath } from '@/shared/constants/settingsManifest';
+import { useRuntimeStore } from '@/state/runtimeStore';
 import { Alert, AlertDescription, AlertTitle } from '@/ui/shadcn/alert';
+import { Button } from '@/ui/shadcn/button';
 
 import { GameLogSessionsView } from './components/GameLogSessionsView';
-import { GameLogEmptyState } from './components/GameLogTableParts';
 import { GameLogTableShell } from './components/GameLogTableShell';
 import { GameLogToolbar } from './components/GameLogToolbar';
 import { GameLogFilterCommandsContext } from './gameLogFilterCommands';
@@ -19,8 +24,60 @@ import { GameLogSessionAffinityContext } from './gameLogSessionAffinity';
 import { useGameLogPageController } from './useGameLogPageController';
 import { useGameLogSessionExpansion } from './useGameLogSessionExpansion';
 
+const GAME_LOG_IMPORT_ACTION = {
+    labelKey:
+        'view.settings.advanced.advanced_ui.import_recovery.game_log.label',
+    settingId: 'advanced.import-recovery.gamelog-import'
+};
+
+function resolveNoHistoryCopy({
+    ingestSupported,
+    ingestAvailable,
+    gameLogDisabled
+}: {
+    ingestSupported: boolean;
+    ingestAvailable: boolean;
+    gameLogDisabled: boolean;
+}): {
+    descriptionKey: string;
+    action: { labelKey: string; settingId: string } | null;
+} {
+    if (!ingestSupported) {
+        return {
+            descriptionKey: 'empty_state.game_log_unsupported_description',
+            action: null
+        };
+    }
+    if (gameLogDisabled) {
+        return {
+            descriptionKey: 'empty_state.game_log_disabled_description',
+            action: {
+                labelKey: 'empty_state.game_log_enable_action',
+                settingId: 'advanced.storage.gamelog'
+            }
+        };
+    }
+    if (!ingestAvailable) {
+        return {
+            descriptionKey: 'empty_state.game_log_unavailable_description',
+            action: GAME_LOG_IMPORT_ACTION
+        };
+    }
+    return {
+        descriptionKey: 'empty_state.game_log_description',
+        action: GAME_LOG_IMPORT_ACTION
+    };
+}
+
 export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
     const { t } = useTranslation();
+    const navigate = useNavigate();
+    const gameLogIngestSupported = useRuntimeStore(
+        (state) => state.hostCapabilities.runtimeGameLogIngest.supported
+    );
+    const gameLogIngestAvailable = useRuntimeStore(
+        (state) => state.hostCapabilities.runtimeGameLogIngest.available
+    );
     const {
         annotations,
         filters,
@@ -54,21 +111,59 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
         (filters.viewMode === 'sessions' &&
             (filters.sessionDateFrom || filters.sessionDateTo))
     );
-    const emptyIcon = hasActiveFilters ? SearchXIcon : HistoryIcon;
-    let emptyTitleKey = 'empty_state.game_log_title';
-    let emptyDescriptionKey = 'empty_state.game_log_description';
+    const showsNoHistory =
+        !hasActiveFilters &&
+        (filters.viewMode === 'sessions' ? !hasSessions : !hasRows);
+    let emptyState: ReactNode;
     if (hasActiveFilters) {
-        if (filters.viewMode === 'sessions') {
-            emptyTitleKey =
-                'view.game_log.empty.no_game_log_sessions_match_the_current_filters';
-            emptyDescriptionKey =
-                'view.game_log.description.broaden_the_filters_or_search_query_to_see_more_recent_sessions';
-        } else {
-            emptyTitleKey =
-                'view.game_log.empty.no_game_log_rows_match_the_current_filters';
-            emptyDescriptionKey =
-                'view.game_log.description.broaden_the_filters_or_search_query_to_see_more_results';
-        }
+        const sessionsMode = filters.viewMode === 'sessions';
+        emptyState = (
+            <EmptyState
+                icon={SearchXIcon}
+                title={t(
+                    sessionsMode
+                        ? 'view.game_log.empty.no_game_log_sessions_match_the_current_filters'
+                        : 'view.game_log.empty.no_game_log_rows_match_the_current_filters'
+                )}
+                description={
+                    filters.favoritesOnly && !rowsState.isFavoritesLoaded
+                        ? t(
+                              'view.game_log.description.favorites_are_still_hydrating'
+                          )
+                        : t(
+                              sessionsMode
+                                  ? 'view.game_log.description.broaden_the_filters_or_search_query_to_see_more_recent_sessions'
+                                  : 'view.game_log.description.broaden_the_filters_or_search_query_to_see_more_results'
+                          )
+                }
+            />
+        );
+    } else {
+        const { action, descriptionKey } = resolveNoHistoryCopy({
+            ingestSupported: gameLogIngestSupported,
+            ingestAvailable: gameLogIngestAvailable,
+            gameLogDisabled: rowsState.gameLogDisabled
+        });
+        emptyState = (
+            <EmptyState
+                icon={HistoryIcon}
+                title={t('empty_state.game_log_title')}
+                description={t(descriptionKey)}
+            >
+                {action ? (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                            navigate(getSettingDeepLinkPath(action.settingId))
+                        }
+                    >
+                        {t(action.labelKey)}
+                    </Button>
+                ) : null}
+            </EmptyState>
+        );
     }
 
     return (
@@ -78,7 +173,7 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
                     rowsState.detail
                         ? userFacingErrorMessage(
                               rowsState.detail,
-                              'Failed to load the game log snapshot.'
+                              t('view.game_log.error.game_log_failed_to_load')
                           )
                         : ''
                 }
@@ -96,7 +191,7 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
                 }}
             />
 
-            {rowsState.gameLogDisabled ? (
+            {rowsState.gameLogDisabled && !showsNoHistory ? (
                 <Alert className="mb-3">
                     <AlertTitle>
                         {t('view.game_log.label.game_log_is_disabled')}
@@ -118,13 +213,13 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
                             )}
                         />
                     ) : isError ? (
-                        <GameLogEmptyState
+                        <EmptyState
                             title={t(
                                 'view.game_log.error.game_log_failed_to_load'
                             )}
                             description={
                                 rowsState.detail ||
-                                'The game log query did not complete.'
+                                t('common.error.failed_to_load_data')
                             }
                         />
                     ) : filters.viewMode === 'sessions' ? (
@@ -156,18 +251,7 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
                                 />
                             </GameLogSessionAffinityContext>
                         ) : (
-                            <GameLogEmptyState
-                                icon={emptyIcon}
-                                title={t(emptyTitleKey)}
-                                description={
-                                    filters.favoritesOnly &&
-                                    !rowsState.isFavoritesLoaded
-                                        ? t(
-                                              'view.game_log.description.favorites_are_still_hydrating'
-                                          )
-                                        : t(emptyDescriptionKey)
-                                }
-                            />
+                            emptyState
                         )
                     ) : hasRows ? (
                         <GameLogTableShell
@@ -178,18 +262,7 @@ export function GameLogPage({ embedded = false }: { embedded?: boolean } = {}) {
                             setPagination={tableState.setPagination}
                         />
                     ) : (
-                        <GameLogEmptyState
-                            icon={emptyIcon}
-                            title={t(emptyTitleKey)}
-                            description={
-                                filters.favoritesOnly &&
-                                !rowsState.isFavoritesLoaded
-                                    ? t(
-                                          'view.game_log.description.favorites_are_still_hydrating'
-                                      )
-                                    : t(emptyDescriptionKey)
-                            }
-                        />
+                        emptyState
                     )}
                 </PageBody>
             </GameLogFilterCommandsContext>

@@ -1429,6 +1429,15 @@ export function getSettingsManifestEntry(
     return id ? entriesById.get(id) : undefined;
 }
 
+export function getSettingDeepLinkPath(id: string): string {
+    const entry = getSettingsManifestEntry(id);
+    if (!entry) {
+        return '/settings';
+    }
+    const params = new URLSearchParams({ tab: entry.tab, setting: entry.id });
+    return `/settings?${params.toString()}`;
+}
+
 export function getSettingsCard(
     id: string
 ): SettingsCardDefinition | undefined {

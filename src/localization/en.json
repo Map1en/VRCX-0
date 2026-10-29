@@ -11,8 +11,14 @@
         "app_launcher_description": "Add an app or shortcut and choose when you want it to open.",
         "app_launcher_selection_title": "Choose an app or shortcut",
         "app_launcher_selection_description": "Select an app to edit when it starts.",
+        "feed_title": "No friend activity yet",
+        "feed_description": "While VRCX-0 is running, friends coming online, changing worlds, or updating their profiles will appear here.",
         "game_log_title": "No VRChat activity yet",
-        "game_log_description": "World visits, players, and other VRChat activity will appear here as you play.",
+        "game_log_description": "Keep VRCX-0 running and start VRChat. World visits, players, and other activity will appear here as you play.",
+        "game_log_disabled_description": "Game Log recording is turned off, so new activity isn't being saved.",
+        "game_log_enable_action": "Turn on in Settings",
+        "game_log_unavailable_description": "VRCX-0 couldn't find VRChat's log folder on this computer, so new activity isn't being recorded. You can still import log files manually.",
+        "game_log_unsupported_description": "Reading VRChat logs isn't supported on this system, so game activity can't be recorded here.",
         "my_avatars_title": "No uploaded avatars yet",
         "my_avatars_description": "Avatars you upload to VRChat will appear here.",
         "search_no_results": "No results found",
@@ -1324,7 +1330,9 @@
                 "restore_preset": "Restore preset",
                 "restore_preset_title": "Restore the preset feed columns?",
                 "restore_preset_description": "This restores the preset columns: Favorites, Location, Profile, Presence.",
-                "restore_preset_confirm": "Restore preset"
+                "restore_preset_confirm": "Restore preset",
+                "empty_title": "Nothing in this column yet",
+                "empty_description": "Activity matching this column's friends and types will appear here."
             },
             "error": {
                 "avatar_author_unavailable": "Avatar author unavailable",
@@ -1353,6 +1361,12 @@
             },
             "empty": {
                 "no_feed_rows_match_the_current_filters": "No feed entries match the current filters"
+            },
+            "first_run_tip": {
+                "title": "Welcome to VRCX-0",
+                "description": "Friend activity and game history are saved only while VRCX-0 is running. To bring over earlier history, import your VRCX data or VRChat log files.",
+                "description_without_logs": "Friend activity is saved only while VRCX-0 is running. To bring over earlier history, import your VRCX data.",
+                "dismiss": "Got it"
             },
             "toast": {
                 "failed_to_resolve_avatar_author": "Couldn't find the avatar's author",

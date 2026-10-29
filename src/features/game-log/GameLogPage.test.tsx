@@ -2,7 +2,13 @@
 
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import {
+    createUnavailableHostCapabilities,
+    useRuntimeStore
+} from '@/state/runtimeStore';
 
 import { GameLogPage } from './GameLogPage';
 import { getGameLogSessionKey } from './gameLogRows';
@@ -11,7 +17,55 @@ import type { GameLogSession, GameLogViewMode } from './gameLogTypes';
 const mocks = vi.hoisted<{
     viewMode: GameLogViewMode;
     sessions: GameLogSession[];
-}>(() => ({ viewMode: 'table', sessions: [] }));
+    rows: Array<{ rowId: number }>;
+    gameLogDisabled: boolean;
+    isLoading: boolean;
+}>(() => ({
+    viewMode: 'table',
+    sessions: [],
+    rows: [{ rowId: 1 }, { rowId: 2 }],
+    gameLogDisabled: true,
+    isLoading: false
+}));
+
+const availableCapability = {
+    supported: true,
+    enabled: true,
+    available: true
+};
+
+function setGameLogIngest(supported: boolean, available: boolean) {
+    useRuntimeStore.setState({
+        hostCapabilities: {
+            ...createUnavailableHostCapabilities(),
+            runtimeGameLogIngest: {
+                ...availableCapability,
+                supported,
+                available
+            }
+        }
+    });
+}
+
+function SettingsLocation() {
+    const location = useLocation();
+    return <div>{`settings:${location.search}`}</div>;
+}
+
+function pageTree() {
+    return (
+        <MemoryRouter initialEntries={['/game-log']}>
+            <Routes>
+                <Route path="/game-log" element={<GameLogPage />} />
+                <Route path="/settings" element={<SettingsLocation />} />
+            </Routes>
+        </MemoryRouter>
+    );
+}
+
+function renderPage() {
+    return render(pageTree());
+}
 
 vi.mock('@/components/dialogs/PreviousInstancesTableDialog', () => ({
     PreviousInstancesTableDialog: () => null
@@ -80,10 +134,6 @@ vi.mock('./components/GameLogSessionsView', () => ({
     )
 }));
 
-vi.mock('./components/GameLogTableParts', () => ({
-    GameLogEmptyState: ({ title }: { title: string }) => <div>{title}</div>
-}));
-
 vi.mock('./useGameLogPageController', () => ({
     useGameLogPageController: () => ({
         annotations: {
@@ -102,7 +152,7 @@ vi.mock('./useGameLogPageController', () => ({
         hasMoreSessions: false,
         isError: false,
         isGameRunning: false,
-        isLoading: false,
+        isLoading: mocks.isLoading,
         isLoadingMoreSessions: false,
         pageCount: 1,
         previousInstancesDialog: {
@@ -115,10 +165,10 @@ vi.mock('./useGameLogPageController', () => ({
         rowsState: {
             currentUserId: 'usr_test',
             detail: '',
-            gameLogDisabled: true,
+            gameLogDisabled: mocks.gameLogDisabled,
             isFavoritesLoaded: true,
             loadStatus: 'ready',
-            rows: [{ rowId: 1 }, { rowId: 2 }],
+            rows: mocks.rows,
             sessions: mocks.sessions
         },
         table: {},
@@ -135,10 +185,104 @@ describe('GameLogPage', () => {
         cleanup();
         mocks.viewMode = 'table';
         mocks.sessions = [];
+        mocks.rows = [{ rowId: 1 }, { rowId: 2 }];
+        mocks.gameLogDisabled = true;
+        mocks.isLoading = false;
+        useRuntimeStore.setState({
+            hostCapabilities: createUnavailableHostCapabilities()
+        });
+    });
+
+    it('asks to keep VRCX-0 running and offers the log backfill when there is no history', async () => {
+        setGameLogIngest(true, true);
+        mocks.rows = [];
+        mocks.gameLogDisabled = false;
+        renderPage();
+
+        expect(
+            screen.getByText('empty_state.game_log_description')
+        ).toBeTruthy();
+        await userEvent.click(
+            screen.getByRole('button', {
+                name: 'view.settings.advanced.advanced_ui.import_recovery.game_log.label'
+            })
+        );
+        expect(
+            screen.getByText(
+                'settings:?tab=advanced&setting=advanced.import-recovery.gamelog-import'
+            )
+        ).toBeTruthy();
+    });
+
+    it('points to the recording setting instead of the warning when recording is off and nothing is saved', async () => {
+        setGameLogIngest(true, true);
+        mocks.rows = [];
+        renderPage();
+
+        expect(
+            screen.queryByText('view.game_log.label.game_log_is_disabled')
+        ).toBeNull();
+        expect(
+            screen.getByText('empty_state.game_log_disabled_description')
+        ).toBeTruthy();
+        await userEvent.click(
+            screen.getByRole('button', {
+                name: 'empty_state.game_log_enable_action'
+            })
+        );
+        expect(
+            screen.getByText(
+                'settings:?tab=advanced&setting=advanced.storage.gamelog'
+            )
+        ).toBeTruthy();
+    });
+
+    it('keeps the recording warning hidden while a history-less game log reloads', () => {
+        setGameLogIngest(true, true);
+        mocks.rows = [];
+        mocks.isLoading = true;
+        renderPage();
+
+        expect(
+            screen.getByText(
+                'view.game_log.loading.loading_the_game_log_snapshot'
+            )
+        ).toBeTruthy();
+        expect(
+            screen.queryByText('view.game_log.label.game_log_is_disabled')
+        ).toBeNull();
+    });
+
+    it('offers manual log import when the VRChat log folder is not found', () => {
+        setGameLogIngest(true, false);
+        mocks.rows = [];
+        mocks.gameLogDisabled = false;
+        renderPage();
+
+        expect(
+            screen.getByText('empty_state.game_log_unavailable_description')
+        ).toBeTruthy();
+        expect(
+            screen.getByRole('button', {
+                name: 'view.settings.advanced.advanced_ui.import_recovery.game_log.label'
+            })
+        ).toBeTruthy();
+    });
+
+    it('explains that game activity cannot be recorded on unsupported platforms', () => {
+        setGameLogIngest(false, false);
+        mocks.rows = [];
+        mocks.gameLogDisabled = false;
+        renderPage();
+
+        expect(
+            screen.getByText('empty_state.game_log_unsupported_description')
+        ).toBeTruthy();
+        expect(screen.queryByRole('button')).toBeNull();
     });
 
     it('keeps history and refresh available while showing the write warning', () => {
-        render(<GameLogPage />);
+        renderPage();
 
         expect(
             screen.getByText('view.game_log.label.game_log_is_disabled')
@@ -167,7 +311,7 @@ describe('GameLogPage', () => {
             playerDurationRows: [],
             events: []
         }));
-        const view = render(<GameLogPage />);
+        const view = renderPage();
         const user = userEvent.setup();
 
         await user.click(screen.getByRole('button', { name: 'Collapse all' }));
@@ -187,9 +331,9 @@ describe('GameLogPage', () => {
 
         await user.click(screen.getByRole('button', { name: 'Collapse all' }));
         mocks.viewMode = 'table';
-        view.rerender(<GameLogPage />);
+        view.rerender(pageTree());
         mocks.viewMode = 'sessions';
-        view.rerender(<GameLogPage />);
+        view.rerender(pageTree());
         expect(
             screen.getByRole('button', { name: 'World 1' }).dataset.open
         ).toBe('true');

@@ -1,6 +1,5 @@
 import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
 import { LogFilterMenuItems } from '@/components/data-table/LogFilterContextMenu';
-import { EmptyState } from '@/components/layout/PageScaffold';
 import { Location } from '@/components/Location';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
@@ -10,14 +9,6 @@ import {
     resolveGameLogWorldId
 } from '../gameLogRows';
 import { type GameLogDetailValue, type GameLogRow } from '../gameLogTypes';
-
-function GameLogEmptyState({
-    title,
-    description,
-    ...props
-}: ComponentProps<typeof EmptyState>) {
-    return <EmptyState {...props} title={title} description={description} />;
-}
 
 function EmptyTableValue(): null {
     return null;
@@ -104,8 +95,6 @@ function GameLogLocationDetail({
 
 export {
     EmptyTableValue,
-    GameLogEmptyState,
     GameLogLocationDetail,
     DataTableSortButton as SortButton
 };
-import type { ComponentProps } from 'react';

@@ -11,8 +11,14 @@
         "app_launcher_description": "앱이나 바로가기를 추가하고 언제 실행할지 선택하세요.",
         "app_launcher_selection_title": "앱 또는 바로가기 선택",
         "app_launcher_selection_description": "앱을 선택하면 실행 시점을 편집할 수 있습니다.",
+        "feed_title": "아직 친구 활동이 없습니다",
+        "feed_description": "VRCX-0이 실행 중일 때 친구가 접속하거나 월드를 옮기거나 프로필을 바꾸면 여기에 표시됩니다.",
         "game_log_title": "아직 VRChat 활동이 없습니다",
-        "game_log_description": "플레이하면서 방문한 월드, 만난 플레이어와 그 밖의 VRChat 활동이 여기에 표시됩니다.",
+        "game_log_description": "VRCX-0을 실행한 채로 VRChat을 시작하세요. 플레이하면서 방문한 월드, 만난 플레이어와 그 밖의 활동이 여기에 표시됩니다.",
+        "game_log_disabled_description": "게임 로그 저장이 꺼져 있어 새 활동이 저장되지 않습니다.",
+        "game_log_enable_action": "설정에서 켜기",
+        "game_log_unavailable_description": "이 컴퓨터에서 VRChat 로그 폴더를 찾지 못해 새 활동을 기록할 수 없습니다. 로그 파일은 직접 가져올 수 있습니다.",
+        "game_log_unsupported_description": "이 시스템에서는 VRChat 로그를 읽을 수 없어 게임 활동을 기록할 수 없습니다.",
         "my_avatars_title": "아직 업로드한 아바타가 없습니다",
         "my_avatars_description": "VRChat에 업로드한 아바타가 여기에 표시됩니다.",
         "search_no_results": "검색 결과가 없습니다",
@@ -1265,7 +1271,9 @@
                 "restore_preset": "프리셋 복원",
                 "restore_preset_title": "피드 열 프리셋을 복원할까요?",
                 "restore_preset_description": "즐겨찾기, 위치, 프로필, 현재 상태 등 미리 설정된 열이 복원됩니다.",
-                "restore_preset_confirm": "프리셋 복원"
+                "restore_preset_confirm": "프리셋 복원",
+                "empty_title": "이 열에는 아직 항목이 없습니다",
+                "empty_description": "이 열의 친구 범위와 유형에 맞는 활동이 여기에 표시됩니다."
             },
             "error": {
                 "avatar_author_unavailable": "아바타 제작자 정보를 확인할 수 없습니다.",
@@ -1294,6 +1302,12 @@
             },
             "empty": {
                 "no_feed_rows_match_the_current_filters": "현재 필터와 일치하는 피드 항목이 없습니다."
+            },
+            "first_run_tip": {
+                "title": "VRCX-0에 오신 것을 환영합니다",
+                "description": "친구 활동과 게임 기록은 VRCX-0이 실행 중일 때만 저장됩니다. 이전 기록은 VRCX 데이터나 VRChat 로그 파일을 가져와 채울 수 있습니다.",
+                "description_without_logs": "친구 활동은 VRCX-0이 실행 중일 때만 저장됩니다. 이전 기록은 VRCX 데이터를 가져와 채울 수 있습니다.",
+                "dismiss": "확인"
             },
             "toast": {
                 "failed_to_resolve_avatar_author": "아바타 제작자를 찾지 못했습니다.",

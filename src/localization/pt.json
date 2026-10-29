@@ -11,8 +11,14 @@
         "app_launcher_description": "Adicione um aplicativo ou atalho e escolha quando ele deve abrir.",
         "app_launcher_selection_title": "Escolha um aplicativo ou atalho",
         "app_launcher_selection_description": "Selecione um app para editar quando ele inicia.",
+        "feed_title": "Ainda não há atividade de amigos",
+        "feed_description": "Enquanto o VRCX-0 estiver em execução, aparecerá aqui quando seus amigos ficarem online, mudarem de mundo ou atualizarem o perfil.",
         "game_log_title": "Ainda não há atividade do VRChat",
-        "game_log_description": "Os mundos visitados, jogadores e outras atividades do VRChat aparecerão aqui enquanto você joga.",
+        "game_log_description": "Mantenha o VRCX-0 em execução e abra o VRChat. Os mundos visitados, jogadores e outras atividades aparecerão aqui enquanto você joga.",
+        "game_log_disabled_description": "A gravação do registro do jogo está desativada, então novas atividades não são salvas.",
+        "game_log_enable_action": "Ativar nas Configurações",
+        "game_log_unavailable_description": "O VRCX-0 não encontrou a pasta de logs do VRChat neste computador, então novas atividades não estão sendo registradas. Você ainda pode importar arquivos de log manualmente.",
+        "game_log_unsupported_description": "Este sistema não permite ler os logs do VRChat, então a atividade do jogo não pode ser registrada aqui.",
         "my_avatars_title": "Ainda não há avatares enviados",
         "my_avatars_description": "Os avatares que você enviar ao VRChat aparecerão aqui.",
         "search_no_results": "Nenhum resultado encontrado",
@@ -1324,7 +1330,9 @@
                 "restore_preset": "Restaurar predefinição",
                 "restore_preset_title": "Restaurar a predefinição de colunas do feed?",
                 "restore_preset_description": "Isso restaura as colunas predefinidas: Favorites, Location, Profile, Presence.",
-                "restore_preset_confirm": "Restaurar predefinição"
+                "restore_preset_confirm": "Restaurar predefinição",
+                "empty_title": "Esta coluna ainda está vazia",
+                "empty_description": "As atividades que correspondem aos amigos e tipos desta coluna aparecerão aqui."
             },
             "error": {
                 "avatar_author_unavailable": "Autor do avatar indisponível",
@@ -1353,6 +1361,12 @@
             },
             "empty": {
                 "no_feed_rows_match_the_current_filters": "Nenhuma linha do feed corresponde aos filtros atuais"
+            },
+            "first_run_tip": {
+                "title": "Boas-vindas ao VRCX-0",
+                "description": "A atividade de amigos e o histórico do jogo só são salvos enquanto o VRCX-0 está em execução. Para trazer o histórico anterior, importe seus dados do VRCX ou os arquivos de log do VRChat.",
+                "description_without_logs": "A atividade de amigos só é salva enquanto o VRCX-0 está em execução. Para trazer o histórico anterior, importe seus dados do VRCX.",
+                "dismiss": "Entendi"
             },
             "toast": {
                 "failed_to_resolve_avatar_author": "Falha ao resolver o autor do avatar",
