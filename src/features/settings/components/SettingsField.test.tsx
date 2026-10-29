@@ -83,7 +83,7 @@ describe('settings Field metadata', () => {
         expect(screen.getByTestId('probe').dataset.disabled).toBe('true');
     });
 
-    it('marks a changed preference with text and resets through the provided handler', () => {
+    it('marks a changed preference and resets through the provided handler', () => {
         const onReset = vi.fn();
         usePreferencesStore.getState().patchPreferences({
             hmdNotificationsEnabled: true,
@@ -108,6 +108,29 @@ describe('settings Field metadata', () => {
             screen.getByRole('button', { name: 'view.settings.field.reset' })
         );
         expect(onReset).toHaveBeenCalledTimes(1);
+    });
+
+    it('marks a changed switch preference without a reset button', () => {
+        usePreferencesStore
+            .getState()
+            .patchPreferences({ wristOverlayShowBatteryPercent: true });
+
+        render(
+            <Field
+                settingId="vr.wrist.battery-percent"
+                label="Battery"
+                onReset={vi.fn()}
+            >
+                <Probe />
+            </Field>
+        );
+
+        expect(
+            row('vr.wrist.battery-percent')?.getAttribute('data-modified')
+        ).toBe('true');
+        expect(
+            screen.queryByRole('button', { name: 'view.settings.field.reset' })
+        ).toBeNull();
     });
 
     it('shows no marker or reset while the preference is at its default', () => {

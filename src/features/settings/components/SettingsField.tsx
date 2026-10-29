@@ -30,8 +30,14 @@ import {
     ToggleGroupItem,
     ToggleGroupSeparator
 } from '@/ui/shadcn/toggle-group';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-import { findDisabledAncestor, isSettingModified } from '../settingsFieldState';
+import {
+    findDisabledAncestor,
+    getSettingPreferenceKey,
+    isSettingModified,
+    SETTINGS_DEFAULT_VALUES
+} from '../settingsFieldState';
 import { useSettingsHighlightStore } from '../settingsHighlightStore';
 
 type AttachableControlProps = {
@@ -166,7 +172,11 @@ export function Field({
     );
     const blockedBy = getSettingsManifestEntry(blockedById);
     const isDisabled = disabled || Boolean(blockedBy);
-    const showReset = modified && Boolean(onReset);
+    const prefKey = getSettingPreferenceKey(entry);
+    const showReset =
+        modified &&
+        Boolean(onReset) &&
+        !(prefKey && typeof SETTINGS_DEFAULT_VALUES[prefKey] === 'boolean');
     const isInvalid = invalid || Boolean(error);
     const generatedControlId = useId();
     const attachableControl = getAttachableControl(children);
@@ -189,30 +199,28 @@ export function Field({
             className={cn(
                 'border-stroke-subtle relative grid gap-3 border-b py-3 last:border-b-0 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-center',
                 modified &&
-                    'before:bg-muted-foreground before:absolute before:inset-y-3 before:-left-3 before:w-0.5 before:rounded-full',
+                    'before:bg-primary before:absolute before:inset-y-2 before:-left-4 before:w-0.75 before:rounded-r-full',
                 highlighted &&
                     'outline-ring rounded-sm outline-2 outline-offset-2',
                 className
             )}
         >
             <FieldContent className={contentClassName}>
-                {entry?.requiresRestart || modified ? (
+                {entry?.requiresRestart ? (
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         {fieldLabel}
-                        {entry?.requiresRestart ? (
-                            <Badge variant="outline">
-                                {t('view.settings.field.restart_required')}
-                            </Badge>
-                        ) : null}
-                        {modified ? (
-                            <span className="text-muted-foreground text-xs">
-                                {t('view.settings.field.modified')}
-                            </span>
-                        ) : null}
+                        <Badge variant="outline">
+                            {t('view.settings.field.restart_required')}
+                        </Badge>
                     </div>
                 ) : (
                     fieldLabel
                 )}
+                {modified ? (
+                    <span className="sr-only">
+                        {t('view.settings.field.modified')}
+                    </span>
+                ) : null}
                 {description ? (
                     <FieldDescription>{description}</FieldDescription>
                 ) : null}
@@ -233,17 +241,27 @@ export function Field({
                 )}
             >
                 {showReset ? (
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        data-setting-reset
-                        disabled={isDisabled}
-                        onClick={onReset}
-                    >
-                        <RotateCcwIcon data-icon="inline-start" />
-                        {t('view.settings.field.reset')}
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    className="text-muted-foreground"
+                                    aria-label={t('view.settings.field.reset')}
+                                    data-setting-reset
+                                    disabled={isDisabled}
+                                    onClick={onReset}
+                                >
+                                    <RotateCcwIcon />
+                                </Button>
+                            }
+                        />
+                        <TooltipContent>
+                            {t('view.settings.field.reset')}
+                        </TooltipContent>
+                    </Tooltip>
                 ) : null}
                 {Children.map(controls, (control) =>
                     isDisabled ? disableNode(control) : control
