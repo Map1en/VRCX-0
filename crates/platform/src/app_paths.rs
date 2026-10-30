@@ -97,13 +97,13 @@ pub fn default_app_data_dir() -> Result<PathBuf, Error> {
 }
 
 pub fn resolve_app_data_dir() -> Result<AppDataDirResolution, Error> {
-    resolve_app_data_dir_from_args(std::env::args_os().skip(1))
+    resolve_app_data_dir_from_args(default_app_data_dir()?, std::env::args_os().skip(1))
 }
 
-pub fn resolve_app_data_dir_from_args(
+fn resolve_app_data_dir_from_args(
+    default_dir: PathBuf,
     args: impl IntoIterator<Item = OsString>,
 ) -> Result<AppDataDirResolution, Error> {
-    let default_dir = default_app_data_dir()?;
     let cli_dir = parse_data_dir_arg(args)?;
     if let Some(cli_dir) = cli_dir.clone() {
         let current_dir = validate_startup_app_data_dir(&cli_dir, true)?.resolved_path();
@@ -119,7 +119,16 @@ pub fn resolve_app_data_dir_from_args(
         });
     }
 
-    let persisted_dir = read_persisted_app_data_dir_from_default(&default_dir)?;
+    let persisted_dir = match read_persisted_app_data_dir_from_default(&default_dir) {
+        Ok(persisted_dir) => persisted_dir,
+        Err(error) => {
+            tracing::warn!(
+                error = %error,
+                "ignored unreadable persisted data directory pointer; using the default data directory"
+            );
+            None
+        }
+    };
     let (current_dir, source) = if let Some(persisted_dir) = persisted_dir.clone() {
         (
             validate_startup_app_data_dir(&persisted_dir, false)?.resolved_path(),
@@ -144,14 +153,10 @@ pub fn resolve_app_data_dir_from_args(
 pub fn app_data_dir_state(resolution: &AppDataDirResolution) -> Result<AppDataDirState, Error> {
     let persisted_dir = match read_persisted_app_data_dir_from_default(&resolution.default_dir) {
         Ok(persisted_dir) => persisted_dir,
-        Err(error) if resolution.source == AppDataDirSource::Cli => {
-            tracing::warn!(
-                error = %error,
-                "ignored invalid persisted data directory pointer while --data-dir is active"
-            );
+        Err(error) => {
+            tracing::warn!(error = %error, "ignored unreadable persisted data directory pointer");
             resolution.persisted_dir.clone()
         }
-        Err(error) => return Err(error),
     };
     Ok(AppDataDirState {
         current_dir: path_string(&resolution.current_dir),
@@ -551,6 +556,24 @@ mod tests {
             read_persisted_app_data_dir_from_default(&dir.path).unwrap(),
             Some(PathBuf::from("second"))
         );
+    }
+
+    #[test]
+    fn startup_falls_back_to_the_default_dir_when_the_pointer_is_unreadable() {
+        let dir = TestDir::new("unreadable-pointer");
+        std::fs::write(
+            app_data_dir_pointer_path(&dir.path),
+            "{\n  \"data_dir\": \"D:\\\\elsewhere\"\n}",
+        )
+        .unwrap();
+
+        let resolution = resolve_app_data_dir_from_args(dir.path.clone(), Vec::new()).unwrap();
+        assert_eq!(resolution.source, AppDataDirSource::Default);
+        assert_eq!(resolution.current_dir, dir.path.canonicalize().unwrap());
+        assert_eq!(resolution.persisted_dir, None);
+
+        let state = app_data_dir_state(&resolution).unwrap();
+        assert_eq!(state.persisted_dir, None);
     }
 
     struct TestDir {
