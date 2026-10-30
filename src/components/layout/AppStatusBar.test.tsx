@@ -103,6 +103,30 @@ describe('AppStatusBar', () => {
         expect(segmentRenders).toEqual(['VRChat']);
     });
 
+    it('shows the media details on hover and holds the time while paused', async () => {
+        useRuntimeStore.getState().setNowPlayingState({
+            url: 'https://youtu.be/abc',
+            name: 'Song',
+            displayName: 'Alice',
+            thumbnailUrl: 'https://img.test/a.jpg',
+            length: 200,
+            position: 30,
+            startedAt: '2026-10-30T00:00:00.000Z',
+            paused: true
+        });
+        render(<AppStatusBar />);
+        await act(async () => {});
+
+        const tooltip = screen
+            .getAllByRole('tooltip')
+            .find((element) => element.textContent?.includes('Alice'));
+        expect(tooltip?.querySelector('img')?.getAttribute('src')).toBe(
+            'https://img.test/a.jpg'
+        );
+        expect(tooltip?.textContent).toContain('https://youtu.be/abc');
+        expect(screen.getByText('00:30 / 03:20')).not.toBeNull();
+    });
+
     it('shows the reconnect state as text and retries on click', async () => {
         vi.mocked(commands.appRealtimeRetryNow).mockResolvedValue();
         render(<AppStatusBar />);

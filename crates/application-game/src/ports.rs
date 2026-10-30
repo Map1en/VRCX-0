@@ -408,6 +408,7 @@ impl GameStateStore for TestGameStateStore {
         Ok(GameLogWriteCount {
             inserted,
             location_times_updated,
+            video_names_updated: 0,
         })
     }
 

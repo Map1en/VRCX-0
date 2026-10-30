@@ -3,6 +3,7 @@ use std::io::{BufRead, BufReader};
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
+use vrcx_0_contracts::game_log::GameLogVideoPlayName;
 use vrcx_0_core::game_log_parser::{parse_authenticated_user, parse_log_line_header};
 use vrcx_0_core::vrchat_log_reader::parse_output_log_file_timestamp;
 use vrcx_0_core::OwnerId;
@@ -88,8 +89,22 @@ pub fn import_game_log_file(
     );
     let mut batch = output.batch;
     for side_effect in output.side_effects {
-        let GameLogSideEffect::Video(mut input) = side_effect else {
-            continue;
+        let mut input = match side_effect {
+            GameLogSideEffect::Video(input) => input,
+            GameLogSideEffect::VideoDetails {
+                created_at,
+                video_url,
+                video_name,
+                ..
+            } if !video_name.is_empty() => {
+                batch.video_play_names.push(GameLogVideoPlayName {
+                    created_at,
+                    video_url,
+                    video_name,
+                });
+                continue;
+            }
+            _ => continue,
         };
         if normalize_video_input(&mut input).is_none() {
             continue;

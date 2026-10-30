@@ -711,3 +711,30 @@ fn incomplete_player_markers_do_not_panic_or_create_players() {
     assert_eq!(user.display_name, "Name)");
     assert_eq!(user.user_id, "usr_partial");
 }
+
+#[test]
+fn parses_now_playing_lines_with_a_producer_suffix() {
+    let mut sink = RecordingParseSink::default();
+    let line = "2026.10.30 21:00:00 Debug      -  nowplaying {\"id\":\"ProTV-1\",\"type\":\"mediaStop\"} (ProTV)";
+    let plain = "2026.10.30 21:00:01 Debug      -  nowplaying is not json";
+
+    assert!(media::parse_now_playing_log(
+        &mut sink,
+        FILE,
+        line,
+        content(line),
+    ));
+    assert!(!media::parse_now_playing_log(
+        &mut sink,
+        FILE,
+        plain,
+        content(plain),
+    ));
+    assert_eq!(
+        sink.payloads(),
+        vec![payload(&[
+            "nowplaying",
+            "{\"id\":\"ProTV-1\",\"type\":\"mediaStop\"}"
+        ])]
+    );
+}

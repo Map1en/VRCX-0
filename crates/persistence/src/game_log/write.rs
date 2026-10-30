@@ -319,6 +319,20 @@ pub fn write_batch(
         for entry in &batch.video_plays {
             inserted = inserted.saturating_add(insert_video_play_on(tx, owner_id, entry)?);
         }
+        let mut video_names_updated = 0_u64;
+        for entry in &batch.video_play_names {
+            video_names_updated = video_names_updated.saturating_add(
+                tx.execute_non_query(
+                    &format!("UPDATE {TABLE_VIDEO_PLAY} SET {COL_VIDEO_NAME} = @{COL_VIDEO_NAME} WHERE {COL_CREATED_AT} = @{COL_CREATED_AT} AND {COL_VIDEO_URL} = @{COL_VIDEO_URL}"),
+                    &ParamsBuilder::new()
+                        .set(COL_CREATED_AT, entry.created_at.clone())
+                        .set(COL_VIDEO_URL, entry.video_url.clone())
+                        .set(COL_VIDEO_NAME, entry.video_name.clone())
+                        .build(),
+                )
+                .map(affected_count)?,
+            );
+        }
         for entry in &batch.resource_loads {
             inserted = inserted.saturating_add(insert_resource_load_on(tx, owner_id, entry)?);
         }
@@ -340,6 +354,7 @@ pub fn write_batch(
         Ok(GameLogWriteCount {
             inserted,
             location_times_updated,
+            video_names_updated,
         })
     })
 }

@@ -11,7 +11,7 @@ use serde_json::json;
 use super::super::tables::ensure_game_log_tables;
 use super::super::types::{
     GameLogEventEntry, GameLogJoinLeaveEntry, GameLogLocationEntry, GameLogPortalSpawnEntry,
-    GameLogResourceLoadEntry, GameLogWriteBatch,
+    GameLogResourceLoadEntry, GameLogVideoPlayEntry, GameLogVideoPlayName, GameLogWriteBatch,
 };
 use super::{
     fill_location_group_name, insert_event, insert_join_leave, insert_location,
@@ -191,6 +191,55 @@ fn updates_location_duration_by_created_at() -> Result<(), Error> {
     update_location_time(db, "2026-05-14T03:00:00.000Z", 2500)?;
     let rows = db.execute("SELECT time FROM gamelog_location", &Default::default())?;
     assert_eq!(rows[0][0], serde_json::json!(2500));
+    Ok(())
+}
+
+#[test]
+fn renames_only_the_matching_video_play() -> Result<(), Error> {
+    let test_db = test_db("store-gamelog-video-name")?;
+    let db = &test_db.db;
+    let owner = OwnerId::new("usr_test");
+    let video = |created_at: &str| GameLogVideoPlayEntry {
+        created_at: created_at.into(),
+        video_url: "https://video.example/a".into(),
+        video_name: "https://video.example/a".into(),
+        video_id: String::new(),
+        location: "wrld_video:1".into(),
+        display_name: String::new(),
+        user_id: String::new(),
+    };
+    write_batch(
+        db,
+        &owner,
+        &GameLogWriteBatch {
+            video_plays: vec![
+                video("2026-05-14T03:00:00.000Z"),
+                video("2026-05-14T04:00:00.000Z"),
+            ],
+            ..Default::default()
+        },
+    )?;
+
+    let count = write_batch(
+        db,
+        &owner,
+        &GameLogWriteBatch {
+            video_play_names: vec![GameLogVideoPlayName {
+                created_at: "2026-05-14T03:00:00.000Z".into(),
+                video_url: "https://video.example/a".into(),
+                video_name: "Song".into(),
+            }],
+            ..Default::default()
+        },
+    )?;
+    assert_eq!(count.video_names_updated, 1);
+
+    let rows = db.execute(
+        "SELECT video_name FROM gamelog_video_play ORDER BY created_at",
+        &Default::default(),
+    )?;
+    assert_eq!(rows[0][0], serde_json::json!("Song"));
+    assert_eq!(rows[1][0], serde_json::json!("https://video.example/a"));
     Ok(())
 }
 

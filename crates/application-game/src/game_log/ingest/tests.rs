@@ -396,3 +396,141 @@ fn external_vrcx_event_emits_mirror_when_external_row_is_written() {
     assert_eq!(output.runtime_persisted_mirrors.len(), 1);
     assert_eq!(output.runtime_persisted_mirrors[0][2], "vrcx");
 }
+
+fn now_playing(created_at: &str, data: &str) -> GameLogEvent {
+    event(
+        created_at,
+        GameLogEventKind::NowPlaying { data: data.into() },
+    )
+}
+
+#[test]
+fn now_playing_log_takes_over_video_lines_and_follows_one_producer() {
+    let mut engine = GameLogIngestEngine::default();
+    let output = engine.ingest_events(
+        &[
+            event(
+                "2026-10-30T00:00:00.000Z",
+                GameLogEventKind::Location {
+                    location: "wrld_club:1".into(),
+                    world_name: "Club".into(),
+                },
+            ),
+            now_playing(
+                "2026-10-30T00:00:01.000Z",
+                r#"{"id":"ProTV-1","type":"mediaLoading","loading":true}"#,
+            ),
+            event(
+                "2026-10-30T00:00:02.000Z",
+                GameLogEventKind::VideoPlay {
+                    video_url: "https://youtu.be/abcdefghijk".into(),
+                    display_name: String::new(),
+                },
+            ),
+            now_playing(
+                "2026-10-30T00:00:03.000Z",
+                r#"{"id":"ProTV-1","type":"mediaChange","mediaUrl":"https://youtu.be/abcdefghijk","mediaName":"Song","mediaImage":"https://img.test/a.jpg","mediaOwnerName":"Alice","mediaLength":200}"#,
+            ),
+            now_playing(
+                "2026-10-30T00:00:04.000Z",
+                r#"{"id":"ProTV-1","type":"mediaInfo","mediaName":"Song (Live)"}"#,
+            ),
+            now_playing(
+                "2026-10-30T00:00:05.000Z",
+                r#"{"id":"ProTV-1","type":"mediaPause","mediaTime":30}"#,
+            ),
+            now_playing(
+                "2026-10-30T00:00:06.000Z",
+                r#"{"id":"ProTV-2","type":"mediaPlay","mediaTime":99}"#,
+            ),
+        ],
+        GameLogIngestOptions::default(),
+    );
+
+    let [GameLogSideEffect::Video(input), GameLogSideEffect::NowPlayingTransport {
+        created_at,
+        position,
+        paused,
+    }] = output.side_effects.as_slice()
+    else {
+        panic!("unexpected side effects: {:?}", output.side_effects);
+    };
+    assert_eq!(input.created_at, "2026-10-30T00:00:03.000Z");
+    assert_eq!(input.video_url, "https://youtu.be/abcdefghijk");
+    assert_eq!(input.video_id, "YouTube");
+    assert_eq!(input.video_name, "Song (Live)");
+    assert_eq!(input.thumbnail_url, "https://img.test/a.jpg");
+    assert_eq!(input.display_name, "Alice");
+    assert_eq!(input.video_length, 200);
+    assert_eq!(
+        (created_at.as_str(), *position, *paused),
+        ("2026-10-30T00:00:05.000Z", 30, true)
+    );
+
+    let output = engine.ingest_events(
+        &[
+            now_playing(
+                "2026-10-30T00:01:00.000Z",
+                r#"{"id":"ProTV-1","type":"mediaInfo","mediaName":"Encore"}"#,
+            ),
+            now_playing(
+                "2026-10-30T00:01:01.000Z",
+                r#"{"id":"ProTV-1","type":"mediaStop","ended":true}"#,
+            ),
+        ],
+        GameLogIngestOptions::default(),
+    );
+    assert_eq!(
+        output.side_effects,
+        vec![
+            GameLogSideEffect::VideoDetails {
+                created_at: "2026-10-30T00:00:03.000Z".into(),
+                video_url: "https://youtu.be/abcdefghijk".into(),
+                video_name: "Encore".into(),
+                thumbnail_url: String::new(),
+            },
+            GameLogSideEffect::NowPlayingReset,
+        ]
+    );
+}
+
+#[test]
+fn now_playing_log_titles_a_video_already_logged_by_vrchat() {
+    let mut engine = GameLogIngestEngine::default();
+    engine.ingest_events(
+        &[
+            event(
+                "2026-10-30T00:00:00.000Z",
+                GameLogEventKind::Location {
+                    location: "wrld_club:1".into(),
+                    world_name: "Club".into(),
+                },
+            ),
+            event(
+                "2026-10-30T00:00:02.000Z",
+                GameLogEventKind::VideoPlay {
+                    video_url: "https://example.test/a.mp4".into(),
+                    display_name: String::new(),
+                },
+            ),
+        ],
+        GameLogIngestOptions::default(),
+    );
+
+    let output = engine.ingest_events(
+        &[now_playing(
+            "2026-10-30T00:00:03.000Z",
+            r#"{"id":"ProTV-1","type":"mediaChange","mediaUrl":"https://example.test/a.mp4","mediaName":"Song"}"#,
+        )],
+        GameLogIngestOptions::default(),
+    );
+    assert_eq!(
+        output.side_effects,
+        vec![GameLogSideEffect::VideoDetails {
+            created_at: "2026-10-30T00:00:02.000Z".into(),
+            video_url: "https://example.test/a.mp4".into(),
+            video_name: "Song".into(),
+            thumbnail_url: String::new(),
+        }]
+    );
+}

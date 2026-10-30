@@ -118,6 +118,13 @@ pub struct GameLogPreviousInstanceWorldOutput {
     pub world_name: String,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct GameLogVideoPlayName {
+    pub created_at: String,
+    pub video_url: String,
+    pub video_name: String,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
 pub struct GameLogWriteBatch {
     pub replay_checkpoint: Option<String>,
@@ -126,6 +133,7 @@ pub struct GameLogWriteBatch {
     pub join_leave: Vec<GameLogJoinLeaveEntry>,
     pub portal_spawns: Vec<GameLogPortalSpawnEntry>,
     pub video_plays: Vec<GameLogVideoPlayEntry>,
+    pub video_play_names: Vec<GameLogVideoPlayName>,
     pub resource_loads: Vec<GameLogResourceLoadEntry>,
     pub events: Vec<GameLogEventEntry>,
     pub externals: Vec<GameLogExternalEntry>,
@@ -139,6 +147,7 @@ impl GameLogWriteBatch {
             && self.join_leave.is_empty()
             && self.portal_spawns.is_empty()
             && self.video_plays.is_empty()
+            && self.video_play_names.is_empty()
             && self.resource_loads.is_empty()
             && self.events.is_empty()
             && self.externals.is_empty()
@@ -149,11 +158,14 @@ impl GameLogWriteBatch {
 pub struct GameLogWriteCount {
     pub inserted: u64,
     pub location_times_updated: u64,
+    pub video_names_updated: u64,
 }
 
 impl GameLogWriteCount {
     pub fn affected(self) -> u64 {
-        self.inserted.saturating_add(self.location_times_updated)
+        self.inserted
+            .saturating_add(self.location_times_updated)
+            .saturating_add(self.video_names_updated)
     }
 }
 

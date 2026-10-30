@@ -3,7 +3,7 @@ use chrono::Utc;
 use crate::game_log::host::GameLogHostActions;
 use crate::game_log::runtime_state::parse_event_time_ms;
 use crate::Result;
-use crate::{GameLogSideEffectEvent, GameLogSideEffectSink, GameNoVrPayload, NowPlayingPayload};
+use crate::{GameLogSideEffectEvent, GameLogSideEffectSink, GameNoVrPayload};
 
 pub fn set_game_no_vr(
     store: &dyn crate::GameStateStore,
@@ -40,21 +40,5 @@ pub fn handle_vrc_quit(
     let killed = host_actions.quit_game();
     if killed > 0 {
         tracing::info!(killed, "closed lingering VRChat processes after quit");
-    }
-}
-
-pub(crate) fn video_sync_payload(timestamp: &str, created_at: &str) -> NowPlayingPayload {
-    let position = timestamp
-        .replace(',', "")
-        .parse::<i64>()
-        .ok()
-        .filter(|value| *value >= 0)
-        .unwrap_or(0);
-
-    NowPlayingPayload {
-        position,
-        started_at: created_at.into(),
-        updated_at: Utc::now().to_rfc3339(),
-        ..Default::default()
     }
 }

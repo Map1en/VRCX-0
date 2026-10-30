@@ -54,8 +54,12 @@ pub struct NowPlayingPayload {
     pub thumbnail_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub length: Option<i64>,
-    pub position: i64,
-    pub started_at: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub started_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub paused: Option<bool>,
     #[serde(rename = "created_at", skip_serializing_if = "Option::is_none")]
     pub created_at: Option<String>,
     #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
@@ -124,8 +128,12 @@ impl NowPlayingSnapshot {
         if let Some(value) = patch.length {
             self.length = value;
         }
-        self.position = patch.position;
-        self.started_at = Some(patch.started_at.clone());
+        if let Some(value) = patch.position {
+            self.position = value;
+        }
+        if let Some(value) = &patch.started_at {
+            self.started_at = Some(value.clone());
+        }
         if let Some(value) = &patch.created_at {
             self.created_at = Some(value.clone());
         }
@@ -313,8 +321,8 @@ mod tests {
         assert_eq!(
             serde_json::to_value(GameLogSideEffectEvent::NowPlaying(Box::new(
                 NowPlayingPayload {
-                    position: 42,
-                    started_at: "start".into(),
+                    position: Some(42),
+                    started_at: Some("start".into()),
                     updated_at: "update".into(),
                     ..Default::default()
                 },
@@ -344,8 +352,9 @@ mod tests {
                     location: Some("wrld_test:1".into()),
                     thumbnail_url: Some("thumbnail".into()),
                     length: Some(120),
-                    position: 42,
-                    started_at: "start".into(),
+                    position: Some(42),
+                    started_at: Some("start".into()),
+                    paused: Some(false),
                     created_at: Some("start".into()),
                     activity_type: Some("VideoPlay".into()),
                     video_url: Some("url".into()),
@@ -368,6 +377,7 @@ mod tests {
                     "length": 120,
                     "position": 42,
                     "startedAt": "start",
+                    "paused": false,
                     "created_at": "start",
                     "type": "VideoPlay",
                     "videoUrl": "url",
@@ -402,8 +412,8 @@ mod tests {
         let mut snapshot = NowPlayingSnapshot::default();
         snapshot.apply(&NowPlayingPayload {
             name: Some("Test Track".into()),
-            position: 42,
-            started_at: "start".into(),
+            position: Some(42),
+            started_at: Some("start".into()),
             updated_at: "update".into(),
             ..Default::default()
         });

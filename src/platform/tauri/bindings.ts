@@ -6196,8 +6196,9 @@ export type NowPlayingPayload = {
     location?: string | null;
     thumbnailUrl?: string | null;
     length?: number | null;
-    position: number;
-    startedAt: string;
+    position?: number | null;
+    startedAt?: string | null;
+    paused?: boolean | null;
     created_at?: string | null;
     type?: string | null;
     videoUrl?: string | null;

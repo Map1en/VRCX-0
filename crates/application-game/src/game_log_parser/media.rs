@@ -134,6 +134,28 @@ pub(super) fn parse_video_error(
     false
 }
 
+pub(super) fn parse_now_playing_log(
+    out: &mut dyn GameLogParseSink,
+    fname: &str,
+    line: &str,
+    content: &str,
+) -> bool {
+    let Some(data) = content.strip_prefix("nowplaying ") else {
+        return false;
+    };
+    let Some(end) = data.rfind('}').filter(|_| data.starts_with('{')) else {
+        return false;
+    };
+    out.push_event(
+        fname,
+        line,
+        GameLogEventKind::NowPlaying {
+            data: data[..=end].into(),
+        },
+    );
+    true
+}
+
 pub(super) fn parse_video_change(
     out: &mut dyn GameLogParseSink,
     fname: &str,

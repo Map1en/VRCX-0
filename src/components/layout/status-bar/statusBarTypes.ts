@@ -24,7 +24,7 @@ export type StatusBarInstanceQueue = InstanceQueueState;
 
 export type StatusBarNowPlaying = Pick<
     NowPlayingState,
-    'length' | 'name' | 'position' | 'startedAt' | 'url'
+    'length' | 'paused' | 'position' | 'startedAt'
 >;
 
 export type StatusBarFooterProps = ComponentPropsWithoutRef<'footer'> & {
