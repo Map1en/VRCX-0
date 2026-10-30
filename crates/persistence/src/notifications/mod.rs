@@ -6,6 +6,7 @@ mod write;
 pub use query::{
     notification_has_unseen_action_required, notification_list_query, notification_rows_query,
 };
+pub(crate) use schema::APP_NOTIFICATION_COLUMNS;
 pub use types::{
     NotificationListItemOutput, NotificationListQueryInput, NotificationRowsOutput,
     NotificationRowsQueryInput, NotificationV1RowOutput, NotificationV2RowOutput,

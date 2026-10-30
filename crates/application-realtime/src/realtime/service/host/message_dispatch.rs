@@ -4,6 +4,7 @@ use vrcx_0_core::realtime::RealtimeWsMessagePayload;
 use crate::realtime::activity_events::queue_ready_activity_event;
 use crate::realtime::connection::RealtimeMessageSink;
 use crate::realtime::event_kind::RealtimeWsEventKind;
+use crate::realtime::group_changes::group_change_event;
 use crate::realtime::instance_queue::apply_instance_queue_ws_event;
 use crate::realtime::notifications::{apply_instance_closed_ws_event, apply_notification_ws_event};
 use crate::realtime::print_content_refresh::is_print_created_content_refresh_event;
@@ -92,6 +93,16 @@ impl RealtimeMessageSink for RealtimeHostRuntimeMessageSink {
                 session_generation,
                 session.clone(),
                 output,
+            );
+            return;
+        }
+
+        if let Some(event) = group_change_event(&session.user_id, &event_kind, payload) {
+            self.runtime.schedule_group_change(
+                generation,
+                session_generation,
+                session.clone(),
+                event,
             );
             return;
         }

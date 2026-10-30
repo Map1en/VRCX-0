@@ -113,6 +113,22 @@
                     "source": "notifications.group_transfer_request_title"
                 },
                 {
+                    "key": "notifications.group_left",
+                    "source": "notifications.group_left"
+                },
+                {
+                    "key": "notifications.group_member_updated",
+                    "source": "notifications.group_member_updated"
+                },
+                {
+                    "key": "notifications.group_member_roles",
+                    "source": "notifications.group_member_roles"
+                },
+                {
+                    "key": "notifications.group_role_updated",
+                    "source": "notifications.group_role_updated"
+                },
+                {
                     "key": "notifications.group_queue_ready_title",
                     "source": "notifications.group_queue_ready_title"
                 },

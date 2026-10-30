@@ -35,3 +35,14 @@ pub(super) const NOTIFICATION_V2_COLUMNS: &[&str] = &[
     "responses",
     "details",
 ];
+
+pub(crate) const APP_NOTIFICATION_COLUMNS: &[&str] = &[
+    "id",
+    "created_at",
+    "type",
+    "subject_id",
+    "subject_name",
+    "image_url",
+    "message_key",
+    "message_params",
+];

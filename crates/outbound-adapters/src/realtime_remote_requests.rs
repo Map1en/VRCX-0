@@ -74,6 +74,10 @@ impl RealtimeRemoteRequests for VrchatRealtimeRemoteRequests {
         )?)
     }
 
+    fn group(&self, endpoint: String, group_id: String) -> crate::Result<VrchatApiRequest> {
+        Ok(vrcx_0_vrchat_client::groups::profile_get_input(endpoint, group_id, true)?.1)
+    }
+
     fn invite_send(
         &self,
         endpoint: String,

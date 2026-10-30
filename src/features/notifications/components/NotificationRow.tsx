@@ -74,8 +74,8 @@ export function NotificationRow({
     const [mediaFailed, setMediaFailed] = useState(false);
     const unknownLabel = t('view.notification.feed.unknown');
     const view = useMemo(
-        () => toNotificationViewModel(notification, { unknownLabel }),
-        [notification, unknownLabel]
+        () => toNotificationViewModel(notification, { unknownLabel, t }),
+        [notification, unknownLabel, t]
     );
     const typeLabel = t(view.typeLabelKey, {
         defaultValue: notification.type || 'unknown'

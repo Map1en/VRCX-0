@@ -109,7 +109,7 @@ export function NotificationDrawerRow({
 }) {
     const { t } = useTranslation();
     const actionPending = useNotificationActionPending(notification);
-    const rawMessage = String(getNotificationMessage(notification) || '');
+    const rawMessage = String(getNotificationMessage(notification, t) || '');
     const typeLabel = getNotificationTypeLabel(notification, t);
     const nowMs = useMinuteNowMs();
     const relativeTime = getNotificationRelativeTime(notification, nowMs);
@@ -123,8 +123,8 @@ export function NotificationDrawerRow({
     const isQueueReady = notification?.type === 'group.queueReady';
     const showAvatar = usesAvatar(notification);
     const view = useMemo(
-        () => toNotificationViewModel(notification),
-        [notification]
+        () => toNotificationViewModel(notification, { t }),
+        [notification, t]
     );
     const isBroadcast = view.template === 'broadcast';
     const senderName = isBroadcast

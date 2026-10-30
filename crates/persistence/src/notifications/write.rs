@@ -372,16 +372,12 @@ pub fn notification_delete(db: &DatabaseService, user_id: String, id: String) ->
     if id.is_empty() {
         return Ok(());
     }
-    let v1_table = format!("{user_prefix}_notifications");
-    let v2_table = format!("{user_prefix}_notifications_v2");
-    let delete_v1_sql = delete_by_key_sql(&v1_table, "id");
-    let delete_v2_sql = delete_by_key_sql(&v2_table, "id");
+    let delete_sqls = ["notifications", "notifications_v2", "app_notification_log"]
+        .map(|table| delete_by_key_sql(&format!("{user_prefix}_{table}"), "id"));
     db.write_transaction(|tx| {
-        tx.execute_non_query(
-            &delete_v1_sql,
-            &ParamsBuilder::new().set("id", id.clone()).build(),
-        )?;
-        tx.execute_non_query(&delete_v2_sql, &ParamsBuilder::new().set("id", id).build())?;
+        for sql in &delete_sqls {
+            tx.execute_non_query(sql, &ParamsBuilder::new().set("id", id.clone()).build())?;
+        }
         Ok(())
     })?;
     Ok(())

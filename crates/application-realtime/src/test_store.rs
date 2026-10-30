@@ -16,7 +16,9 @@ use vrcx_0_contracts::friend_log::{
     FriendLogHistoryEntryInput, FriendLogHistoryOutput, FriendLogHistoryQueryInput,
     FriendLogMutationResult, FriendLogReplaceOptionsInput, FriendLogUpsertOptionsInput,
 };
-use vrcx_0_contracts::notifications::{NotificationListItemOutput, NotificationListQueryInput};
+use vrcx_0_contracts::notifications::{
+    AppNotification, NotificationListItemOutput, NotificationListQueryInput,
+};
 use vrcx_0_contracts::realtime::{
     FriendLogDelete, FriendLogUpsert, RealtimePersistenceBatch, RealtimeWriteCounts,
 };
@@ -35,6 +37,7 @@ struct TestRealtimeStoreState {
     feeds: HashMap<String, Vec<FeedLiveEntry>>,
     notifications_v1: HashMap<String, Vec<Value>>,
     notifications_v2: HashMap<String, Vec<Value>>,
+    app_notifications: HashMap<String, Vec<AppNotification>>,
     game_world_names: HashMap<String, String>,
     game_log_join_counts: HashMap<String, i64>,
     next_history_id: i64,
@@ -132,6 +135,14 @@ impl TestRealtimeStore {
                     .into_iter()
                     .flatten()
                     .map(|value| notification_from_value(value, 2)),
+            )
+            .chain(
+                state
+                    .app_notifications
+                    .get(&query.user_id)
+                    .into_iter()
+                    .flatten()
+                    .map(AppNotification::list_item),
             )
             .filter(|row| query.filters.is_empty() || query.filters.contains(&row.r#type))
             .filter(|row| {
@@ -462,6 +473,13 @@ impl RealtimeStore for TestRealtimeStore {
                 entry.clone(),
             );
             affected = affected.saturating_add(1);
+        }
+        for notification in &batch.app_notification_upserts {
+            let rows = state.app_notifications.entry(owner_id.clone()).or_default();
+            if !rows.iter().any(|row| row.id == notification.id) {
+                rows.push(notification.clone());
+                affected = affected.saturating_add(1);
+            }
         }
         for update in &batch.notification_v2_updates {
             let rows = state.notifications_v2.entry(owner_id.clone()).or_default();

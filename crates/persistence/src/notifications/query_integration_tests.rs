@@ -2,10 +2,12 @@ use std::path::PathBuf;
 
 use serde_json::json;
 
+use super::types::AppNotification;
 use super::{
-    notification_add_v1, notification_add_v2, notification_friend_requests_sync,
-    notification_has_unseen_action_required, notification_list_query, notification_mark_seen,
-    NotificationListItemOutput, NotificationListQueryInput,
+    notification_add_v1, notification_add_v2, notification_delete,
+    notification_friend_requests_sync, notification_has_unseen_action_required,
+    notification_list_query, notification_mark_seen, NotificationListItemOutput,
+    NotificationListQueryInput,
 };
 use crate::{DatabaseService, Error};
 
@@ -287,6 +289,67 @@ fn instance_closed_keeps_its_location_after_a_reload() -> Result<(), Error> {
     let rows = query(&db, user_id, 10, 10, true)?;
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0].location, "wrld_home:12345");
+    Ok(())
+}
+
+#[test]
+fn app_notifications_list_with_their_message_key_and_can_be_deleted() -> Result<(), Error> {
+    let (_dir, db) = test_db("app-notifications")?;
+    let user_id = "usr_owner";
+    crate::realtime::write_realtime_batch(
+        &db,
+        &crate::ownership::OwnerId::new(user_id),
+        &crate::realtime::RealtimePersistenceBatch {
+            app_notification_upserts: vec![AppNotification {
+                id: "groupChange:grp_1:2026-10-30T00:00:00Z".into(),
+                created_at: "2026-10-30T00:00:00Z".into(),
+                r#type: "groupChange".into(),
+                subject_id: "grp_1".into(),
+                subject_name: "Club".into(),
+                image_url: "https://example.test/icon.png".into(),
+                message_key: "notifications.group_member_roles".into(),
+                message_params: [("roles".to_string(), "Staff".to_string())].into(),
+            }],
+            ..Default::default()
+        },
+    )?;
+    add_v1(
+        &db,
+        user_id,
+        "legacy_invite",
+        "2026-09-01T00:00:00Z",
+        "invite",
+    )?;
+
+    let rows = query(&db, user_id, 10, 10, true)?;
+    assert_eq!(rows.len(), 2);
+    let app = &rows[0];
+    assert_eq!(app.r#type, "groupChange");
+    assert_eq!(app.sender_user_id, "grp_1");
+    assert_eq!(app.sender_username, "Club");
+    assert_eq!(
+        app.details,
+        json!({
+            "messageKey": "notifications.group_member_roles",
+            "messageParams": { "roles": "Staff" }
+        })
+    );
+
+    let filtered = notification_list_query(
+        &db,
+        NotificationListQueryInput {
+            user_id: user_id.into(),
+            search: "club".into(),
+            filters: vec!["groupChange".into()],
+            per_table_limit: 10,
+            limit: 10,
+            include_unseen: true,
+        },
+    )?;
+    assert_eq!(filtered.len(), 1);
+
+    notification_delete(&db, user_id.into(), app.id.clone())?;
+    assert_eq!(query(&db, user_id, 10, 10, true)?.len(), 1);
     Ok(())
 }
 

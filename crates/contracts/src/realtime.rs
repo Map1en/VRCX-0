@@ -3,6 +3,7 @@ use serde_json::Value;
 
 use crate::feed_live::FeedLiveEntry;
 use crate::game_log::{GameLogLocationEntry, GameLogLocationTimeUpdate};
+use crate::notifications::AppNotification;
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -69,6 +70,8 @@ pub struct RealtimePersistenceBatch {
     #[serde(default)]
     pub notification_seen: Vec<String>,
     #[serde(default)]
+    pub app_notification_upserts: Vec<AppNotification>,
+    #[serde(default)]
     pub avatar_history_upserts: Vec<AvatarHistoryUpsert>,
     #[serde(default)]
     pub avatar_time_spent_upserts: Vec<AvatarTimeSpentUpsert>,
@@ -90,6 +93,7 @@ impl RealtimePersistenceBatch {
             && self.notification_v2_updates.is_empty()
             && self.notification_expirations.is_empty()
             && self.notification_seen.is_empty()
+            && self.app_notification_upserts.is_empty()
             && self.avatar_history_upserts.is_empty()
             && self.avatar_time_spent_upserts.is_empty()
             && self.game_log_locations.is_empty()

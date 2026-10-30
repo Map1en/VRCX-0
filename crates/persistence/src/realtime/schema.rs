@@ -90,6 +90,8 @@ fn realtime_table_statements(user_prefix: &str) -> Vec<String> {
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_notifications_v2_created_id_idx ON {user_prefix}_notifications_v2 (created_at DESC, id DESC)"),
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_notifications_v2_seen_created_id_idx ON {user_prefix}_notifications_v2 (seen, created_at DESC, id DESC)"),
         format!("CREATE INDEX IF NOT EXISTS {user_prefix}_notifications_v2_type_created_id_idx ON {user_prefix}_notifications_v2 (type, created_at DESC, id DESC)"),
+        format!("CREATE TABLE IF NOT EXISTS {user_prefix}_app_notification_log (id TEXT PRIMARY KEY, created_at TEXT NOT NULL, type TEXT NOT NULL, subject_id TEXT NOT NULL DEFAULT '', subject_name TEXT NOT NULL DEFAULT '', image_url TEXT NOT NULL DEFAULT '', message_key TEXT NOT NULL, message_params TEXT NOT NULL DEFAULT '{{}}')"),
+        format!("CREATE INDEX IF NOT EXISTS {user_prefix}_app_notification_log_created_id_idx ON {user_prefix}_app_notification_log (created_at DESC, id DESC)"),
         format!("CREATE TABLE IF NOT EXISTS {user_prefix}_avatar_history (avatar_id TEXT PRIMARY KEY, created_at TEXT, time INTEGER)"),
         // Recorded since 2026-08-26; earlier visits only have the cumulative `_avatar_history.time`.
         format!("CREATE TABLE IF NOT EXISTS {user_prefix}_avatar_wear_log (id INTEGER PRIMARY KEY AUTOINCREMENT, avatar_id TEXT NOT NULL, started_at TEXT NOT NULL, ended_at TEXT NOT NULL, time INTEGER NOT NULL)"),

@@ -78,9 +78,9 @@ export function NotificationGroupSummary({
     const views = useMemo(
         () =>
             rows.map((notification) =>
-                toNotificationViewModel(notification, { unknownLabel })
+                toNotificationViewModel(notification, { unknownLabel, t })
             ),
-        [rows, unknownLabel]
+        [rows, unknownLabel, t]
     );
     const actors = useMemo(() => {
         const seen = new Map<string, StackedActor>();

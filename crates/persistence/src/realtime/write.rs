@@ -3,13 +3,14 @@ use std::collections::HashSet;
 use serde_json::Value;
 
 use crate::activity::{activity_iso_from_ms, parse_activity_time_ms};
-use crate::common::{row_i64, row_string, ParamsBuilder};
+use crate::common::{insert_or_ignore_sql, row_i64, row_string, ParamsBuilder};
 use crate::database::{DatabaseService, DatabaseWriteTransaction};
 use crate::game_log::{ensure_game_log_tables, GameLogLocationEntry, GameLogLocationTimeUpdate};
 use crate::ownership::{owner_id_get_or_insert, OwnerId, OwnerRowId};
 use crate::Error;
 use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_contracts::friend_log::FriendLogCurrentOutput;
+use vrcx_0_contracts::notifications::AppNotification;
 use vrcx_0_contracts::profile_bio::RecordedProfileBio;
 use vrcx_0_core::friend_log::{plan_friend_log_upsert, FriendLogCurrent, FriendLogUpsertInput};
 
@@ -81,6 +82,9 @@ pub fn write_realtime_batch(
         }
         for id in &batch.notification_seen {
             counts.add_realtime_rows(mark_notification_seen(tx, &user_prefix, id)?);
+        }
+        for notification in &batch.app_notification_upserts {
+            counts.add_realtime_rows(insert_app_notification(tx, &user_prefix, notification)?);
         }
         for entry in &batch.avatar_history_upserts {
             counts.add_realtime_rows(upsert_avatar_history(tx, &user_prefix, entry)?);
@@ -623,6 +627,41 @@ fn insert_feed_entry(
             )));
         }
     };
+    Ok(affected_count(affected))
+}
+
+fn insert_app_notification(
+    tx: &mut DatabaseWriteTransaction<'_>,
+    user_prefix: &str,
+    notification: &AppNotification,
+) -> Result<u64, Error> {
+    if notification.id.is_empty()
+        || notification.created_at.is_empty()
+        || notification.r#type.is_empty()
+        || notification.message_key.is_empty()
+    {
+        return Err(Error::InvalidData(
+            "App notification requires id, createdAt, type, and messageKey.".into(),
+        ));
+    }
+    let message_params = serde_json::to_string(&notification.message_params)
+        .map_err(|error| Error::InvalidData(error.to_string()))?;
+    let affected = tx.execute_non_query(
+        &insert_or_ignore_sql(
+            &format!("{user_prefix}_app_notification_log"),
+            crate::notifications::APP_NOTIFICATION_COLUMNS,
+        ),
+        &ParamsBuilder::new()
+            .set("id", notification.id.clone())
+            .set("created_at", notification.created_at.clone())
+            .set("type", notification.r#type.clone())
+            .set("subject_id", notification.subject_id.clone())
+            .set("subject_name", notification.subject_name.clone())
+            .set("image_url", notification.image_url.clone())
+            .set("message_key", notification.message_key.clone())
+            .set("message_params", message_params)
+            .build(),
+    )?;
     Ok(affected_count(affected))
 }
 

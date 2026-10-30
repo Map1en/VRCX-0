@@ -22,6 +22,8 @@ import { parseLocation } from '@/shared/utils/location';
 import { getNotificationTs } from '@/shared/utils/notificationCategory';
 import { isRecord } from '@/shared/utils/record';
 
+import { getNotificationBodyText } from './notificationViewModel';
+
 type CachedInstanceLike = Record<string, unknown> & {
     closedAt?: string | null;
 };
@@ -36,11 +38,12 @@ function normalizeWorldTarget(value: string) {
 }
 
 export function getNotificationMessage(
-    notification: NotificationRow | null | undefined
+    notification: NotificationRow | null | undefined,
+    t: TFunction
 ) {
     return [
         notification?.title,
-        notification?.message,
+        getNotificationBodyText(notification, t),
         notification?.details?.inviteMessage,
         notification?.details?.requestMessage,
         notification?.details?.responseMessage,

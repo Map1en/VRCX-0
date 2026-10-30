@@ -637,6 +637,14 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
         ))
     }
 
+    fn group(
+        &self,
+        endpoint: String,
+        group_id: String,
+    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
+        Ok(test_request(endpoint, &format!("/groups/{group_id}")))
+    }
+
     fn invite_send(
         &self,
         endpoint: String,
