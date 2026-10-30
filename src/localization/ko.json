@@ -3104,8 +3104,8 @@
                     "show_details_in_private": "프라이빗 인스턴스에 세부 정보 표시",
                     "show_images": "월드 이미지 표시",
                     "show_current_platform": "현재 플랫폼 표시",
-                    "world_integration": "월드 연동",
-                    "world_integration_tooltip": "Popcorn Palace, PyPyDance, VRDancing, LS Media에서 \"시청 중/듣는 중\"으로 표시",
+                    "world_integration": "재생 중인 미디어 표시",
+                    "world_integration_tooltip": "Discord 상태에 재생 중인 영상과 진행 상황을 표시합니다. Popcorn Palace, PyPyDance, VRDancing, LS Media와 ProTV 재생 정보를 지원하는 플레이어가 있는 월드에서 작동합니다",
                     "display_world_name_as_discord_status": "월드 이름을 활동으로 사용"
                 },
                 "rpc": {

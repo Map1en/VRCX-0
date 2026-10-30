@@ -60,6 +60,8 @@ pub struct NowPlayingPayload {
     pub started_at: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub paused: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub titled: Option<bool>,
     #[serde(rename = "created_at", skip_serializing_if = "Option::is_none")]
     pub created_at: Option<String>,
     #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
@@ -89,6 +91,8 @@ pub struct NowPlayingSnapshot {
     pub length: i64,
     pub position: i64,
     pub started_at: Option<String>,
+    pub paused: bool,
+    pub titled: bool,
     #[serde(rename = "created_at", skip_serializing_if = "Option::is_none")]
     pub created_at: Option<String>,
     #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
@@ -133,6 +137,12 @@ impl NowPlayingSnapshot {
         }
         if let Some(value) = &patch.started_at {
             self.started_at = Some(value.clone());
+        }
+        if let Some(value) = patch.paused {
+            self.paused = value;
+        }
+        if let Some(value) = patch.titled {
+            self.titled = value;
         }
         if let Some(value) = &patch.created_at {
             self.created_at = Some(value.clone());
@@ -355,6 +365,7 @@ mod tests {
                     position: Some(42),
                     started_at: Some("start".into()),
                     paused: Some(false),
+                    titled: Some(true),
                     created_at: Some("start".into()),
                     activity_type: Some("VideoPlay".into()),
                     video_url: Some("url".into()),
@@ -378,6 +389,7 @@ mod tests {
                     "position": 42,
                     "startedAt": "start",
                     "paused": false,
+                    "titled": true,
                     "created_at": "start",
                     "type": "VideoPlay",
                     "videoUrl": "url",
@@ -402,6 +414,8 @@ mod tests {
                 "length": 0,
                 "position": 0,
                 "startedAt": null,
+                "paused": false,
+                "titled": false,
                 "updatedAt": null,
             })
         );
@@ -429,6 +443,8 @@ mod tests {
                 "length": 0,
                 "position": 42,
                 "startedAt": "start",
+                "paused": false,
+                "titled": false,
                 "updatedAt": "update",
             })
         );

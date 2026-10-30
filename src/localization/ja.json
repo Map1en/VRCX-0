@@ -3163,8 +3163,8 @@
                     "show_details_in_private": "プライベートでもワールド詳細を表示",
                     "show_images": "ワールド画像を表示",
                     "show_current_platform": "現在のプラットフォームを表示",
-                    "world_integration": "ワールド連携",
-                    "world_integration_tooltip": "Popcorn Palace, PyPyDance, VRDancing, LS Media で \"Watching/Listening to\" を表示",
+                    "world_integration": "再生中のメディアを表示",
+                    "world_integration_tooltip": "Discord のステータスに再生中の動画と進行状況を表示します。Popcorn Palace、PyPyDance、VRDancing、LS Media と、ProTV の再生情報に対応したプレイヤーがあるワールドで使えます",
                     "display_world_name_as_discord_status": "ワールド名を Discord のアクティビティに表示"
                 },
                 "rpc": {

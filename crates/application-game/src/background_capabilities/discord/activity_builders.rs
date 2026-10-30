@@ -144,26 +144,31 @@ pub(super) fn build_discord_activity(
     }
 
     if config.discord_world_integration {
-        if let Some(rpc_config) = rpc_world_config(&parsed.world_id) {
+        let now_playing = &facts.now_playing;
+        let rpc_config = rpc_world_config(&parsed.world_id);
+        if let Some(rpc_config) = rpc_config {
             activity_type = rpc_config.activity_type;
             status_display_type = rpc_config.status_display_type;
             app_id = rpc_config.app_id.into();
             big_icon = rpc_config.big_icon.into();
-            if is_popcorn_palace_world(&parsed.world_id)
-                && !config.discord_hide_image
-                && !facts.now_playing.thumbnail_url.trim().is_empty()
-            {
-                big_icon = facts.now_playing.thumbnail_url.trim().to_string();
+            if !now_playing.name.trim().is_empty() {
+                details_text = now_playing.name.trim().to_string();
             }
-            if !facts.now_playing.name.trim().is_empty() {
-                details_text = facts.now_playing.name.trim().to_string();
+        }
+        if now_playing.has_content()
+            && !now_playing.paused
+            && (rpc_config.is_some() || now_playing.titled)
+        {
+            if rpc_config.is_none() {
+                activity_type = 3;
             }
-            if facts.now_playing.has_content() {
-                let now_playing_times = now_playing_activity_times(&facts.now_playing);
-                if !now_playing_times.start_time.is_empty() {
-                    start_time = now_playing_times.start_time;
-                    end_time = now_playing_times.end_time;
-                }
+            if let Some(times) = now_playing_activity_times(now_playing) {
+                start_time = times.start_time;
+                end_time = times.end_time;
+            }
+            let cover = now_playing.thumbnail_url.trim();
+            if !config.discord_hide_image && cover.starts_with("https://") && cover.len() <= 256 {
+                big_icon = cover.to_string();
             }
         }
     }
@@ -448,38 +453,26 @@ struct NowPlayingActivityTimes {
     end_time: String,
 }
 
-fn now_playing_activity_times(now_playing: &crate::NowPlayingSnapshot) -> NowPlayingActivityTimes {
-    let start_time = trimmed_non_empty(now_playing.started_at.as_deref())
+fn now_playing_activity_times(
+    now_playing: &crate::NowPlayingSnapshot,
+) -> Option<NowPlayingActivityTimes> {
+    let start_seconds = trimmed_non_empty(now_playing.started_at.as_deref())
         .or_else(|| trimmed_non_empty(now_playing.created_at.as_deref()))
-        .map(str::to_string)
-        .unwrap_or_default();
-    let Some(start_seconds) = timestamp_seconds(&start_time).filter(|value| *value > 0) else {
-        return NowPlayingActivityTimes {
-            start_time,
-            end_time: String::new(),
-        };
-    };
-    let length = now_playing.length;
-    let end_time = if length > 0 {
-        (start_seconds + length).to_string()
-    } else {
-        String::new()
-    };
-    NowPlayingActivityTimes {
-        start_time,
-        end_time,
-    }
+        .and_then(timestamp_seconds)
+        .filter(|value| *value > 0)?
+        - now_playing.position;
+    Some(NowPlayingActivityTimes {
+        start_time: start_seconds.to_string(),
+        end_time: if now_playing.length > 0 {
+            (start_seconds + now_playing.length).to_string()
+        } else {
+            String::new()
+        },
+    })
 }
 
 fn trimmed_non_empty(value: Option<&str>) -> Option<&str> {
     value.map(str::trim).filter(|value| !value.is_empty())
-}
-
-fn is_popcorn_palace_world(world_id: &str) -> bool {
-    matches!(
-        world_id,
-        "wrld_266523e8-9161-40da-acd0-6bd82e075833" | "wrld_27c7e6b2-d938-447e-a270-3d1a873e2cf3"
-    )
 }
 
 fn rpc_world_config(world_id: &str) -> Option<RpcWorldConfig> {

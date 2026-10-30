@@ -6199,6 +6199,7 @@ export type NowPlayingPayload = {
     position?: number | null;
     startedAt?: string | null;
     paused?: boolean | null;
+    titled?: boolean | null;
     created_at?: string | null;
     type?: string | null;
     videoUrl?: string | null;
@@ -6217,6 +6218,8 @@ export type NowPlayingSnapshot = {
     length: number;
     position: number;
     startedAt: string | null;
+    paused: boolean;
+    titled: boolean;
     created_at?: string | null;
     type?: string | null;
     videoUrl?: string | null;

@@ -3169,8 +3169,8 @@
                     "show_details_in_private": "Details in privaten Instanzen anzeigen",
                     "show_images": "Weltbilder anzeigen",
                     "show_current_platform": "Aktuelle Plattform anzeigen",
-                    "world_integration": "Welt-Integration",
-                    "world_integration_tooltip": "Zeigt \"Schaut/Hört\" für Popcorn Palace, PyPyDance, VRDancing und LS Media",
+                    "world_integration": "Aktuelle Wiedergabe anzeigen",
+                    "world_integration_tooltip": "Zeigt das laufende Video und seinen Fortschritt in deinem Discord-Status. Funktioniert in Popcorn Palace, PyPyDance, VRDancing und LS Media sowie in Welten, deren Player die Wiedergabeinfos von ProTV unterstützt",
                     "display_world_name_as_discord_status": "Weltname als Aktivität verwenden"
                 },
                 "rpc": {

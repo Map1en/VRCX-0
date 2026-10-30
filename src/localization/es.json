@@ -3173,8 +3173,8 @@
                     "show_details_in_private": "Mostrar detalles en instancias privadas",
                     "show_images": "Mostrar imágenes del mundo",
                     "show_current_platform": "Mostrar la plataforma actual",
-                    "world_integration": "Integración con el mundo",
-                    "world_integration_tooltip": "Muestra \"Viendo/Escuchando\" para Popcorn Palace, PyPyDance, VRDancing y LS Media",
+                    "world_integration": "Mostrar lo que se reproduce",
+                    "world_integration_tooltip": "Muestra en tu estado de Discord el video que se está reproduciendo y su progreso. Funciona en Popcorn Palace, PyPyDance, VRDancing y LS Media, y en mundos cuyo reproductor admite la información de reproducción de ProTV",
                     "display_world_name_as_discord_status": "Usar el nombre del mundo como actividad"
                 },
                 "rpc": {

@@ -180,14 +180,17 @@ pub(crate) async fn handle_video_play(
     owner_user_id: &OwnerId,
     mut input: VideoInput,
 ) -> Result<Option<VideoPlayed>> {
+    let mut titled = !input.video_name.is_empty();
     let Some(youtube_id) = normalize_video_input(&mut input) else {
         return Ok(None);
     };
+    titled &= input.video_name != youtube_id;
 
     if !youtube_id.is_empty() {
         if let Some(metadata) = lookup_youtube_video(store, video_metadata, &youtube_id).await? {
             if !metadata.video_name.is_empty() {
                 input.video_name = metadata.video_name;
+                titled = true;
             }
             if metadata.video_length > 0 {
                 input.video_length = metadata.video_length;
@@ -244,6 +247,7 @@ pub(crate) async fn handle_video_play(
         position: Some(input.video_pos),
         started_at: Some(input.created_at.clone()),
         paused: Some(false),
+        titled: Some(titled),
         created_at: Some(input.created_at),
         activity_type: Some("VideoPlay".into()),
         video_url: Some(input.video_url),

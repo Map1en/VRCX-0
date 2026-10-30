@@ -3187,8 +3187,8 @@
                     "show_details_in_private": "Show world details in private",
                     "show_images": "Show world images",
                     "show_current_platform": "Zobrazit aktuální platformu",
-                    "world_integration": "Integrace světa",
-                    "world_integration_tooltip": "Zobrazí „Watching/Listening to“ pro Popcorn Palace, PyPyDance, VRDancing a LS Media",
+                    "world_integration": "Zobrazit, co se přehrává",
+                    "world_integration_tooltip": "Zobrazí ve stavu na Discordu přehrávané video a jeho průběh. Funguje v Popcorn Palace, PyPyDance, VRDancing a LS Media a ve světech, jejichž přehrávač podporuje informace o přehrávání z ProTV",
                     "display_world_name_as_discord_status": "Použít název světa jako aktivitu"
                 },
                 "rpc": {

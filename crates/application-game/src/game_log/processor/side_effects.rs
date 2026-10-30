@@ -152,6 +152,7 @@ pub(super) fn dispatch_side_effect(
             announce_now_playing(
                 &deps,
                 NowPlayingPayload {
+                    titled: name.as_ref().map(|_| true),
                     name: name.clone(),
                     video_name: name,
                     thumbnail_url: (!thumbnail_url.is_empty()).then_some(thumbnail_url),

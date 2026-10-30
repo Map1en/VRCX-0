@@ -314,6 +314,8 @@ function createAncillaryRuntimeSnapshot(
             length: 0,
             position: 0,
             startedAt: null,
+            paused: false,
+            titled: false,
             created_at: null,
             type: null,
             videoUrl: null,

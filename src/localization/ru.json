@@ -3185,8 +3185,8 @@
                     "show_details_in_private": "Показывать детали мира в приватном режиме",
                     "show_images": "Показывать изображение мира",
                     "show_current_platform": "Показать текущую платформу",
-                    "world_integration": "Интеграция с миром",
-                    "world_integration_tooltip": "Показать \"Смотрит/Слушает\" для Popcorn Palace, PyPyDance, VRDancing и LS Media",
+                    "world_integration": "Показывать, что сейчас играет",
+                    "world_integration_tooltip": "Показывает в статусе Discord текущее видео и его прогресс. Работает в Popcorn Palace, PyPyDance, VRDancing и LS Media, а также в мирах, где плеер поддерживает данные воспроизведения ProTV",
                     "display_world_name_as_discord_status": "Отображать название мира как статус Discord"
                 },
                 "rpc": {

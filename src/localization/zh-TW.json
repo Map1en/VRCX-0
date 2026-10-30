@@ -3167,8 +3167,8 @@
                     "show_details_in_private": "顯示在私人房間時的世界資訊",
                     "show_images": "顯示世界圖片",
                     "show_current_platform": "顯示目前平台",
-                    "world_integration": "世界整合",
-                    "world_integration_tooltip": "在 Popcorn Palace、PyPyDance、VRDancing 和 LS Media 顯示“正在觀看／正在聆聽”狀態",
+                    "world_integration": "顯示正在播放",
+                    "world_integration_tooltip": "在 Discord 狀態中顯示正在播放的影片與進度。支援 Popcorn Palace、PyPyDance、VRDancing、LS Media，以及播放器支援 ProTV 播放資訊的世界",
                     "display_world_name_as_discord_status": "將世界名稱顯示為 Discord 狀態"
                 },
                 "rpc": {
