@@ -12,6 +12,7 @@ import type {
 } from '@/components/feed/feedTypes';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { timeToText } from '@/lib/dateTime';
+import { replaceBioSymbols } from '@/shared/utils/string';
 import { useModalStore } from '@/state/modalStore';
 import { Button } from '@/ui/shadcn/button';
 
@@ -216,7 +217,10 @@ function FeedExpandedRow({
                 <pre
                     className="font-inherit max-w-prose text-sm leading-6 whitespace-pre-wrap"
                     dangerouslySetInnerHTML={{
-                        __html: formatDifferenceHtml(row.previousBio, row.bio)
+                        __html: formatDifferenceHtml(
+                            replaceBioSymbols(row.previousBio),
+                            replaceBioSymbols(row.bio)
+                        )
                     }}
                 />
             </ExpandedRowShell>

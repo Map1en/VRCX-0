@@ -4,6 +4,7 @@ import type {
     FriendRecordInput
 } from '@/domain/friends/types';
 import removeConfusables, { removeWhitespace } from '@/services/confusables';
+import { replaceBioSymbols } from '@/shared/utils/string';
 
 const FRIEND_LIST_DEFAULT_SEARCH_FILTER_IDS = [
     'displayName',
@@ -149,8 +150,8 @@ export function matchesFriendListSearch(
 
     if (
         filters.has('bio') &&
-        [friend?.bio ?? '', ...(friend?.bioLinks ?? [])].some((text) =>
-            text.toLowerCase().includes(loweredQuery)
+        [replaceBioSymbols(friend?.bio), ...(friend?.bioLinks ?? [])].some(
+            (text) => text.toLowerCase().includes(loweredQuery)
         )
     ) {
         return true;

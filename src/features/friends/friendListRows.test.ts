@@ -112,13 +112,22 @@ describe('friendListRows', () => {
         const friend: Parameters<typeof matchesFriendListSearch>[0] = {
             id: 'usr_friend',
             displayName: 'Alice',
-            bio: 'Weekend DJ',
+            bio: 'Weekend DJ ＠ Club˸ Nova',
             bioLinks: ['https://twitter.com/alice_vr']
         };
         const empty = new Map<string, string>();
 
         expect(
             matchesFriendListSearch(friend, 'dj', new Set(), empty, empty)
+        ).toBe(true);
+        expect(
+            matchesFriendListSearch(
+                friend,
+                '@ club: nova',
+                new Set(['bio']),
+                empty,
+                empty
+            )
         ).toBe(true);
         expect(
             matchesFriendListSearch(

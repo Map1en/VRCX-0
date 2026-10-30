@@ -105,3 +105,31 @@ describe('Feed avatar info loading', () => {
         });
     });
 });
+
+describe('Feed bio display', () => {
+    afterEach(cleanup);
+
+    const bioRow: FeedRow = {
+        type: 'Bio',
+        userId: 'usr_feed',
+        previousBio: 'Old˸ text',
+        bio: 'Find me ＠ discord˸ maple'
+    };
+
+    it('restores the symbols VRChat swaps in bios', () => {
+        render(<FeedDetailCell row={bioRow} />);
+        expect(screen.getByText('Find me @ discord: maple')).toBeTruthy();
+
+        cleanup();
+        const { container } = render(
+            <FeedExpandedRow
+                loadingHistoryKey=""
+                onNewInstance={vi.fn()}
+                onOpenPreviousInstances={vi.fn()}
+                row={bioRow}
+            />
+        );
+        expect(container.textContent).toContain('discord: maple');
+        expect(container.textContent).not.toContain('˸');
+    });
+});

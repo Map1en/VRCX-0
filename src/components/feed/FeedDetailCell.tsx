@@ -5,6 +5,7 @@ import {
     type LogFilterCommands
 } from '@/components/data-table/LogFilterContextMenu';
 import { parseLocation } from '@/shared/utils/location';
+import { replaceBioSymbols } from '@/shared/utils/string';
 
 import { AvatarInfoLine } from './FeedAvatarInfoLine';
 import { FeedLocationLink } from './FeedLocationLink';
@@ -96,7 +97,7 @@ function FeedDetailCell({
     if (type === 'Bio') {
         return (
             <span className="block w-full min-w-0 truncate">
-                {row.bio || ''}
+                {replaceBioSymbols(row.bio)}
             </span>
         );
     }

@@ -20,6 +20,7 @@ import { isActionRecent } from '@/services/recentActionService';
 import { MINUTE_MS } from '@/shared/constants/time';
 import { vrchatUserUrl } from '@/shared/constants/vrchatWebUrls';
 import { parseLocation } from '@/shared/utils/location';
+import { replaceBioSymbols } from '@/shared/utils/string';
 import { usePreferencesStore } from '@/state/preferencesStore';
 
 import {
@@ -404,9 +405,11 @@ export function UserDialogTabbedView({
             ? profile.username
             : '';
     const profileTitle = profile.displayName || profile.username || 'User';
-    const pronounsText = Array.isArray(profile.pronouns)
-        ? profile.pronouns.join(', ')
-        : normalizedText(profile.pronouns);
+    const pronounsText = replaceBioSymbols(
+        Array.isArray(profile.pronouns)
+            ? profile.pronouns.join(', ')
+            : normalizedText(profile.pronouns)
+    );
     const {
         previousDisplayNames,
         statusStateText,
