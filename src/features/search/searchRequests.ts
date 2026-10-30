@@ -5,7 +5,7 @@ import type {
 } from '@/platform/tauri/bindings';
 import { replaceBioSymbols } from '@/shared/utils/string';
 
-export const SEARCH_PAGE_SIZE = 10;
+import { DEFAULT_SEARCH_PAGE_SIZE } from './searchPageSizes';
 
 export type WorldSearchCategory = {
     index?: string | number;
@@ -19,10 +19,11 @@ export function buildWorldSearchRequest(
     searchText: string,
     category: WorldSearchCategory | null | undefined,
     includeCommunityLabs: boolean,
+    pageSize = DEFAULT_SEARCH_PAGE_SIZE,
     offset = 0
 ) {
     const params: WorldSearchParams & { n: number; offset: number } = {
-        n: SEARCH_PAGE_SIZE,
+        n: pageSize,
         offset: Math.max(0, offset)
     };
     let option;
@@ -95,9 +96,13 @@ export function buildWorldSearchRequest(
     };
 }
 
-export function buildGroupSearchRequest(searchText: string, offset = 0) {
+export function buildGroupSearchRequest(
+    searchText: string,
+    pageSize = DEFAULT_SEARCH_PAGE_SIZE,
+    offset = 0
+) {
     const params: GroupSearchParams & { n: number; offset: number } = {
-        n: SEARCH_PAGE_SIZE,
+        n: pageSize,
         offset: Math.max(0, offset),
         query: replaceBioSymbols(searchText)
     };
@@ -122,10 +127,11 @@ export function buildUserSearchRequest(
     searchText: string,
     searchByBio = false,
     sortByLastLoggedIn = false,
+    pageSize = DEFAULT_SEARCH_PAGE_SIZE,
     offset = 0
 ) {
     const params: UserSearchParams & { n: number; offset: number } = {
-        n: SEARCH_PAGE_SIZE,
+        n: pageSize,
         offset: Math.max(0, offset),
         search: searchText,
         customFields: searchByBio ? 'bio' : 'displayName',

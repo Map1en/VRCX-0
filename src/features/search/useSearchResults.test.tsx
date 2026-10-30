@@ -27,11 +27,13 @@ const options = {
     activeTab: 'group' as const,
     avatarProviderEnabled: false,
     includeCommunityLabs: false,
+    pageSizes: { user: 10, world: 10, avatar: 10, group: 20 },
     searchText: 'ocean',
     searchUserByBio: false,
     searchUserSortByLastLoggedIn: false,
     selectedAvatarProvider: '',
     selectedWorldCategory: '',
+    setPageSize: vi.fn(),
     setSearchText: vi.fn(),
     setSelectedWorldCategory: vi.fn(),
     worldCategories: []
@@ -59,6 +61,28 @@ describe('search page session', () => {
         expect(restored.result.current.hasGroupSearched).toBe(true);
         expect(getGroups).toHaveBeenCalledTimes(2);
         restored.unmount();
+    });
+
+    it('searches with the tab page size and restarts from the first page when it changes', async () => {
+        getGroups.mockResolvedValue({ json: [{ id: 'grp_ocean' }] });
+        const { result, unmount } = renderHook(() => useSearchResults(options));
+        await act(async () => result.current.handleSearch());
+        await act(async () => result.current.pagination.onNext());
+        expect(getGroups).toHaveBeenLastCalledWith({
+            n: 20,
+            offset: 20,
+            query: 'ocean'
+        });
+
+        await act(async () => result.current.pagination.onPageSizeChange(50));
+
+        expect(options.setPageSize).toHaveBeenCalledWith('group', 50);
+        expect(getGroups).toHaveBeenLastCalledWith({
+            n: 50,
+            offset: 0,
+            query: 'ocean'
+        });
+        unmount();
     });
 
     it('finishes an in-flight search while the page is unmounted', async () => {

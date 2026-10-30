@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
+import { DEFAULT_SEARCH_PAGE_SIZE } from './searchPageSizes';
 import {
     buildAvatarSearchRequest,
     buildGroupSearchRequest,
     buildUserSearchRequest,
-    buildWorldSearchRequest,
-    SEARCH_PAGE_SIZE
+    buildWorldSearchRequest
 } from './searchRequests';
 
 describe('search request helpers', () => {
     it('builds a display-name user search by default', () => {
-        expect(buildUserSearchRequest('maple', false, false, -20)).toEqual({
+        expect(buildUserSearchRequest('maple', false, false, 10, -20)).toEqual({
             params: {
-                n: SEARCH_PAGE_SIZE,
+                n: DEFAULT_SEARCH_PAGE_SIZE,
                 offset: 0,
                 search: 'maple',
                 customFields: 'displayName',
@@ -22,9 +22,11 @@ describe('search request helpers', () => {
     });
 
     it('builds a bio user search sorted by last login', () => {
-        expect(buildUserSearchRequest('avatar maker', true, true, 30)).toEqual({
+        expect(
+            buildUserSearchRequest('avatar maker', true, true, 40, 30)
+        ).toEqual({
             params: {
-                n: SEARCH_PAGE_SIZE,
+                n: 40,
                 offset: 30,
                 search: 'avatar maker',
                 customFields: 'bio',
@@ -54,7 +56,7 @@ describe('search request helpers', () => {
             categoryIndex: null,
             option: undefined,
             params: {
-                n: SEARCH_PAGE_SIZE,
+                n: DEFAULT_SEARCH_PAGE_SIZE,
                 offset: 0,
                 sort: 'relevance',
                 search: 'hangout',
@@ -76,13 +78,14 @@ describe('search request helpers', () => {
                     sortOwnership: 'mine'
                 },
                 true,
+                20,
                 20
             )
         ).toEqual({
             categoryIndex: 7,
             option: undefined,
             params: {
-                n: SEARCH_PAGE_SIZE,
+                n: 20,
                 offset: 20,
                 sort: 'popularity',
                 featured: false,
@@ -105,7 +108,7 @@ describe('search request helpers', () => {
             categoryIndex: 3,
             option: 'favorites',
             params: {
-                n: SEARCH_PAGE_SIZE,
+                n: DEFAULT_SEARCH_PAGE_SIZE,
                 offset: 0,
                 order: 'descending',
                 tag: 'system_approved'
@@ -114,9 +117,9 @@ describe('search request helpers', () => {
     });
 
     it('builds group and avatar searches with normalized offsets', () => {
-        expect(buildGroupSearchRequest('club', -1)).toEqual({
+        expect(buildGroupSearchRequest('club', 50, -1)).toEqual({
             params: {
-                n: SEARCH_PAGE_SIZE,
+                n: 50,
                 offset: 0,
                 query: 'club'
             }

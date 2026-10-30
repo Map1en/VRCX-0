@@ -1,9 +1,17 @@
-import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react';
+import { ArrowLeftIcon, ArrowRightIcon, Rows3Icon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { KeyboardShortcut } from '@/components/keyboard/KeyboardShortcut';
 import { usePaginationKeyboardShortcuts } from '@/components/keyboard/usePaginationKeyboardShortcuts';
 import { Button } from '@/ui/shadcn/button';
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from '@/ui/shadcn/select';
 
 export function SearchPagination({
     show = false,
@@ -11,7 +19,10 @@ export function SearchPagination({
     prevDisabled = true,
     nextDisabled = true,
     onPrev,
-    onNext
+    onNext,
+    pageSize,
+    pageSizes = [],
+    onPageSizeChange
 }: {
     show?: boolean;
     page?: number;
@@ -19,6 +30,9 @@ export function SearchPagination({
     nextDisabled?: boolean;
     onPrev: () => void;
     onNext: () => void;
+    pageSize?: number;
+    pageSizes?: readonly number[];
+    onPageSizeChange?: (pageSize: number) => void;
 }) {
     const { t } = useTranslation();
     const paginationRef = usePaginationKeyboardShortcuts<HTMLDivElement>({
@@ -55,6 +69,35 @@ export function SearchPagination({
                 <span className="text-muted-foreground px-2 font-medium whitespace-nowrap tabular-nums">
                     {t('table.pagination.page_number', { page })}
                 </span>
+                {pageSize && pageSizes.length && onPageSizeChange ? (
+                    <Select<string>
+                        value={String(pageSize)}
+                        onValueChange={(value) => {
+                            if (value) {
+                                onPageSizeChange(Number(value));
+                            }
+                        }}
+                    >
+                        <SelectTrigger
+                            size="sm"
+                            aria-label={t('table.pagination.rows_per_page')}
+                            title={t('table.pagination.rows_per_page')}
+                            className="w-auto rounded-full border-0 bg-transparent dark:bg-transparent"
+                        >
+                            <Rows3Icon className="text-muted-foreground size-4" />
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent align="center">
+                            <SelectGroup>
+                                {pageSizes.map((size) => (
+                                    <SelectItem key={size} value={String(size)}>
+                                        {size}
+                                    </SelectItem>
+                                ))}
+                            </SelectGroup>
+                        </SelectContent>
+                    </Select>
+                ) : null}
                 <Button
                     type="button"
                     variant="ghost"

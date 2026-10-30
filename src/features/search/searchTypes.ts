@@ -34,4 +34,6 @@ export type SearchPaginationState = {
     nextDisabled: boolean;
     onPrev: () => void;
     onNext: () => void;
+    pageSize: number;
+    onPageSizeChange: (pageSize: number) => void;
 };

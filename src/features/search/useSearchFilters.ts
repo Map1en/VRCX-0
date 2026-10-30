@@ -1,6 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
+import {
+    readSearchPageSizes,
+    writeSearchPageSizes,
+    type SearchPageSizes
+} from './searchPageSizes';
 import { useSearchPageField } from './searchPageStore';
 import type { SearchActiveTab } from './searchTypes';
 
@@ -27,6 +32,13 @@ export function useSearchFilters() {
     const [includeCommunityLabs, setIncludeCommunityLabs] = useSearchPageField(
         'includeCommunityLabs'
     );
+    const [pageSizes, setPageSizes] =
+        useState<SearchPageSizes>(readSearchPageSizes);
+    const setPageSize = (tab: SearchActiveTab, pageSize: number) => {
+        const nextPageSizes = { ...pageSizes, [tab]: pageSize };
+        setPageSizes(nextPageSizes);
+        writeSearchPageSizes(nextPageSizes);
+    };
     useEffect(() => {
         setRememberedTab(activeTab);
     }, [activeTab, setRememberedTab]);
@@ -53,12 +65,14 @@ export function useSearchFilters() {
     return {
         activeTab,
         includeCommunityLabs,
+        pageSizes,
         searchText,
         searchUserByBio,
         searchUserSortByLastLoggedIn,
         selectedWorldCategory,
         setActiveTab,
         setIncludeCommunityLabs,
+        setPageSize,
         setSearchText,
         setSearchUserByBio,
         setSearchUserSortByLastLoggedIn,
