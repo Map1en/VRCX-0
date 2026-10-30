@@ -97,17 +97,11 @@ pub(super) fn parse_video_error(
     content: &str,
     ctx: &mut LogContext,
 ) -> bool {
-    const YT_BOT_ERROR: &str = "Sign in to confirm";
-    const YT_BOT_FIX: &str = "[VRCX] Fix error with this: https://github.com/EllyVR/VRCVideoCacher";
-
     if content.contains("[Video Playback] ERROR: ") {
         if let Some(pos) = content.find("[Video Playback] ERROR: ") {
-            let mut data = content[pos + 24..].to_string();
+            let data = content[pos + 24..].to_string();
             if !ctx.video_errors.insert(data.clone()) {
                 return true;
-            }
-            if data.contains(YT_BOT_ERROR) {
-                data = format!("{YT_BOT_FIX}\n{data}");
             }
             out.push_event(
                 fname,
@@ -122,12 +116,9 @@ pub(super) fn parse_video_error(
 
     if content.contains("[AVProVideo] Error: ") {
         if let Some(pos) = content.find("[AVProVideo] Error: ") {
-            let mut data = content[pos + 20..].to_string();
+            let data = content[pos + 20..].to_string();
             if !ctx.video_errors.insert(data.clone()) {
                 return true;
-            }
-            if data.contains(YT_BOT_ERROR) {
-                data = format!("{YT_BOT_FIX}\n{data}");
             }
             out.push_event(
                 fname,
