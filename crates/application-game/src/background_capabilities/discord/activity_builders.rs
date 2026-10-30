@@ -499,13 +499,6 @@ fn rpc_world_config(world_id: &str) -> Option<RpcWorldConfig> {
             status_display_type: 2,
             big_icon: "vr_dancing",
         }),
-        "wrld_52bdcdab-11cd-4325-9655-0fb120846945"
-        | "wrld_2d40da63-8f1f-4011-8a9e-414eb8530acd" => Some(RpcWorldConfig {
-            app_id: "939473404808007731",
-            activity_type: 2,
-            status_display_type: 2,
-            big_icon: "zuwa_zuwa_dance",
-        }),
         "wrld_74970324-58e8-4239-a17b-2c59dfdf00db"
         | "wrld_db9d878f-6e76-4776-8bf2-15bcdd7fc445"
         | "wrld_435bbf25-f34f-4b8b-82c6-cd809057eb8e"

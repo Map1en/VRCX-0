@@ -307,9 +307,7 @@ pub fn parse_provider_video(created_at: &str, location: &str, data: &str) -> Pro
             .map(ProviderVideoEvent::Video)
             .unwrap_or(ProviderVideoEvent::Ignored);
     }
-    if trimmed.starts_with("VideoPlay(VRDancing) ")
-        || trimmed.starts_with("VideoPlay(ZuwaZuwaDance) ")
-    {
+    if trimmed.starts_with("VideoPlay(VRDancing) ") {
         return parse_vr_dancing(created_at, location, trimmed)
             .map(Box::new)
             .map(ProviderVideoEvent::Video)
@@ -335,8 +333,6 @@ pub(super) fn uses_provider_video_events(location: &str) -> bool {
             | "wrld_04899f23-e182-4a8d-b2c7-2c74c7c15534"
             | "wrld_42377cf1-c54f-45ed-8996-5875b0573a83"
             | "wrld_dd6d2888-dbdc-47c2-bc98-3d631b2acd7c"
-            | "wrld_52bdcdab-11cd-4325-9655-0fb120846945"
-            | "wrld_2d40da63-8f1f-4011-8a9e-414eb8530acd"
             | "wrld_74970324-58e8-4239-a17b-2c59dfdf00db"
             | "wrld_db9d878f-6e76-4776-8bf2-15bcdd7fc445"
             | "wrld_435bbf25-f34f-4b8b-82c6-cd809057eb8e"
