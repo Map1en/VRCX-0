@@ -273,12 +273,16 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
 
     if final_answer.trim().is_empty() {
         working.push(ChatMessage::user(final_answer_retry_prompt(used_tools)));
+        let retry_options = LlmRequestOptions {
+            forbid_tool_calls: true,
+            ..ctx.options.clone()
+        };
         let turn = {
             let emitter = &ctx.emitter;
             let stream = ctx.client.stream_chat(
                 &working,
-                &[],
-                &ctx.options,
+                tool_defs,
+                &retry_options,
                 Box::new(|delta| {
                     emitter.delta(delta);
                 }),

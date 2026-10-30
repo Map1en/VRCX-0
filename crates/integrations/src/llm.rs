@@ -60,6 +60,8 @@ struct ChatRequestBody<'a> {
     messages: &'a [ChatMessage],
     #[serde(skip_serializing_if = "Vec::is_empty")]
     tools: Vec<RequestTool<'a>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tool_choice: Option<&'static str>,
     stream: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     reasoning: Option<ReasoningRequest>,
@@ -241,6 +243,7 @@ impl LlmClient {
             model: &self.model,
             messages,
             tools: Vec::new(),
+            tool_choice: None,
             stream: false,
             reasoning: reasoning_request(options),
         };
@@ -285,6 +288,7 @@ impl LlmClient {
             model: &self.model,
             messages,
             tools: request_tools,
+            tool_choice: (options.forbid_tool_calls && !tools.is_empty()).then_some("none"),
             stream: true,
             reasoning: reasoning_request(options),
         };

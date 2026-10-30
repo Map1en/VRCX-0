@@ -20,6 +20,7 @@ pub struct LlmEndpointDetectModelsResult {
 #[derive(Debug, Clone, Default)]
 pub struct LlmRequestOptions {
     pub reasoning_effort: Option<String>,
+    pub forbid_tool_calls: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

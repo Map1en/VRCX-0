@@ -242,6 +242,7 @@ fn chat_request_body_omits_reasoning_when_effort_is_none() {
         model: "m",
         messages: &messages,
         tools: Vec::new(),
+        tool_choice: None,
         stream: false,
         reasoning: None,
     };
@@ -256,6 +257,7 @@ fn chat_request_body_includes_reasoning_effort_verbatim() {
         model: "m",
         messages: &messages,
         tools: Vec::new(),
+        tool_choice: None,
         stream: false,
         reasoning: Some(ReasoningRequest {
             effort: "medium".into(),
@@ -270,11 +272,13 @@ fn chat_request_body_omits_reasoning_when_effort_is_empty() {
     let messages: Vec<ChatMessage> = vec![ChatMessage::user("hi")];
     let options = LlmRequestOptions {
         reasoning_effort: Some(String::new()),
+        forbid_tool_calls: false,
     };
     let body = ChatRequestBody {
         model: "m",
         messages: &messages,
         tools: Vec::new(),
+        tool_choice: None,
         stream: false,
         reasoning: reasoning_request(&options),
     };
@@ -287,11 +291,13 @@ fn streaming_chat_request_body_includes_reasoning_effort_verbatim() {
     let messages = vec![ChatMessage::user("hi")];
     let options = LlmRequestOptions {
         reasoning_effort: Some("xhigh".into()),
+        forbid_tool_calls: false,
     };
     let body = ChatRequestBody {
         model: "m",
         messages: &messages,
         tools: Vec::new(),
+        tool_choice: None,
         stream: true,
         reasoning: reasoning_request(&options),
     };
@@ -701,6 +707,68 @@ async fn rate_limited_requests_retry_after_the_server_delay() {
     assert_eq!(turn.content, "ok");
     assert!(!turn.truncated());
     assert_eq!(hits.load(Ordering::SeqCst), 3);
+}
+
+async fn stream_and_capture_body(tools: &[ToolDefinition], options: &LlmRequestOptions) -> Value {
+    let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
+    let base_url = format!("http://{}/v1", listener.local_addr().unwrap());
+    let server = tokio::spawn(async move {
+        let (mut stream, _) = listener.accept().await.unwrap();
+        let mut request = Vec::new();
+        let mut chunk = [0_u8; 4096];
+        let body_start = loop {
+            let read = stream.read(&mut chunk).await.unwrap();
+            request.extend_from_slice(&chunk[..read]);
+            if let Some(end) = request.windows(4).position(|window| window == b"\r\n\r\n") {
+                break end + 4;
+            }
+        };
+        let headers = String::from_utf8_lossy(&request[..body_start]).to_ascii_lowercase();
+        let length: usize = headers
+            .lines()
+            .find_map(|line| line.strip_prefix("content-length:"))
+            .unwrap()
+            .trim()
+            .parse()
+            .unwrap();
+        while request.len() < body_start + length {
+            let read = stream.read(&mut chunk).await.unwrap();
+            request.extend_from_slice(&chunk[..read]);
+        }
+        stream.write_all(SSE_STOP.as_bytes()).await.unwrap();
+        let _ = stream.shutdown().await;
+        serde_json::from_slice::<Value>(&request[body_start..body_start + length]).unwrap()
+    });
+
+    LlmClient::new(base_url, "", "model", None)
+        .unwrap()
+        .stream_chat(&[ChatMessage::user("hi")], tools, options, |_| {})
+        .await
+        .unwrap();
+    server.await.unwrap()
+}
+
+#[tokio::test]
+async fn forbidding_tool_calls_keeps_tools_declared_with_tool_choice_none() {
+    let tools = [ToolDefinition {
+        name: "search".into(),
+        description: "search".into(),
+        parameters: serde_json::json!({ "type": "object" }),
+    }];
+
+    let allowed = stream_and_capture_body(&tools, &LlmRequestOptions::default()).await;
+    assert!(allowed.get("tool_choice").is_none());
+
+    let forbidden = stream_and_capture_body(
+        &tools,
+        &LlmRequestOptions {
+            forbid_tool_calls: true,
+            ..LlmRequestOptions::default()
+        },
+    )
+    .await;
+    assert_eq!(forbidden["tool_choice"], "none");
+    assert_eq!(forbidden["tools"][0]["function"]["name"], "search");
 }
 
 #[tokio::test]
