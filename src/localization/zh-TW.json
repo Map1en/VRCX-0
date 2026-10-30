@@ -2447,7 +2447,7 @@
                 "edit_invite_message": "編輯邀請訊息",
                 "edit_invite_message_description": "編輯邀請與回覆邀請的訊息",
                 "moderation_reports": "我的檢舉",
-                "moderation_reports_description": "查看或撤回你提交過的檢舉",
+                "moderation_reports_description": "查看你提交過的檢舉",
                 "purchase_history": "購買紀錄",
                 "purchase_history_description": "查看購買過的商品與 VRChat 點數收支"
             },
@@ -6344,10 +6344,6 @@
             "empty_open": "沒有處理中的檢舉",
             "empty_closed": "沒有已結案的檢舉",
             "failed_to_load": "無法載入檢舉",
-            "withdraw": "撤回",
-            "withdraw_title": "要撤回對 {value} 的檢舉嗎？",
-            "withdraw_description": "撤回後無法復原。",
-            "failed_to_withdraw": "無法撤回檢舉",
             "status_open": "處理中",
             "status_closed": "已結案",
             "type_filter": {

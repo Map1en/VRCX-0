@@ -43,9 +43,9 @@ use vrcx_0_vrchat_client::tools::{
     following_calendars_get_input, group_calendar_event_get_input, group_calendar_get_input,
     group_calendar_ics_get_input, group_event_create_input, group_event_delete_input,
     group_event_follow_input, group_event_update_input, invite_message_edit_input,
-    invite_messages_get_input, moderation_report_delete_input, moderation_reports_get_input,
-    user_note_save_input, user_report_input, CalendarListParams, GroupCalendarEventMutation,
-    InviteMessageType, ModerationReportType,
+    invite_messages_get_input, moderation_reports_get_input, user_note_save_input,
+    user_report_input, CalendarListParams, GroupCalendarEventMutation, InviteMessageType,
+    ModerationReportType,
 };
 use vrcx_0_vrchat_client::users::{
     account_standing_get_input, profile_get_input, user_represented_group_get_input,
@@ -702,18 +702,6 @@ impl DesktopVrchatRemoteFacade {
         self.execute(
             "app__vrchat_tools_moderation_reports_get",
             format!("Getting moderation reports submitted by {current_user_id}."),
-            request,
-            VrchatScope::Vrchat,
-        )
-        .await
-    }
-
-    pub async fn delete_moderation_report(&self, report_id: String) -> Result<VrchatApiResponse> {
-        let (report_id, request) =
-            moderation_report_delete_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), report_id)?;
-        self.execute(
-            "app__vrchat_tools_moderation_report_delete",
-            format!("Deleting moderation report {report_id}."),
             request,
             VrchatScope::Vrchat,
         )

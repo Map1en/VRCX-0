@@ -10,8 +10,8 @@ use super::types::{
     VrchatToolsCalendarEventInput, VrchatToolsCalendarGroupInput, VrchatToolsCalendarListInput,
     VrchatToolsFollowGroupEventInput, VrchatToolsGroupEventCreateInput,
     VrchatToolsGroupEventUpdateInput, VrchatToolsInviteMessageEditInput,
-    VrchatToolsInviteMessagesInput, VrchatToolsModerationReportDeleteInput,
-    VrchatToolsModerationReportsInput, VrchatToolsUserNoteSaveInput, VrchatToolsUserReportInput,
+    VrchatToolsInviteMessagesInput, VrchatToolsModerationReportsInput,
+    VrchatToolsUserNoteSaveInput, VrchatToolsUserReportInput,
 };
 
 #[tauri::command]
@@ -174,20 +174,6 @@ pub async fn app__vrchat_tools_moderation_reports_get(
             input.closed_only,
             input.report_type,
         )
-        .await
-        .map_err(AppError::from)
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn app__vrchat_tools_moderation_report_delete(
-    state: State<'_, AppState>,
-    input: VrchatToolsModerationReportDeleteInput,
-) -> Result<VrchatApiResponse, AppError> {
-    state
-        .runtime_host()
-        .vrchat_remote()
-        .delete_moderation_report(input.report_id)
         .await
         .map_err(AppError::from)
 }

@@ -272,25 +272,6 @@ pub fn moderation_reports_get_input(
     ))
 }
 
-pub fn moderation_report_delete_input(
-    endpoint: String,
-    report_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
-    let report_id = require_text(
-        report_id,
-        "VrchatToolsModerationReportDelete requires reportId.",
-    )?;
-    Ok((
-        report_id.clone(),
-        api_input(
-            endpoint,
-            "DELETE",
-            format!("moderationReports/{}", encode_path_segment(&report_id)),
-            None,
-        ),
-    ))
-}
-
 pub fn invite_messages_get_input(
     endpoint: String,
     current_user_id: String,
@@ -514,12 +495,6 @@ mod tests {
                 ("type".into(), json!("world")),
             ]))
         );
-
-        let (report_id, delete) =
-            moderation_report_delete_input("endpoint".into(), " mrpt/1 ".into()).unwrap();
-        assert_eq!(report_id, "mrpt/1");
-        assert_eq!(delete.method.as_deref(), Some("DELETE"));
-        assert_eq!(delete.path.as_deref(), Some("moderationReports/mrpt%2F1"));
     }
 
     #[test]
@@ -657,7 +632,6 @@ mod tests {
         )
         .is_err());
         assert!(moderation_reports_get_input("".into(), " ".into(), 100, 0, false, None).is_err());
-        assert!(moderation_report_delete_input("".into(), " ".into()).is_err());
         assert!(serde_json::from_str::<InviteMessageType>(r#""invite""#).is_err());
     }
 }

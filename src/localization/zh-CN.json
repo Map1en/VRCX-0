@@ -2447,7 +2447,7 @@
                 "edit_invite_message": "消息模板",
                 "edit_invite_message_description": "编辑邀请或申请加入时使用的消息",
                 "moderation_reports": "我的举报",
-                "moderation_reports_description": "查看或撤回你提交过的举报",
+                "moderation_reports_description": "查看你提交过的举报",
                 "purchase_history": "购买记录",
                 "purchase_history_description": "查看购买过的商品和 VRChat 点数收支"
             },
@@ -6353,10 +6353,6 @@
             "empty_open": "没有处理中的举报",
             "empty_closed": "没有已关闭的举报",
             "failed_to_load": "无法加载举报",
-            "withdraw": "撤回",
-            "withdraw_title": "撤回对 {value} 的举报？",
-            "withdraw_description": "撤回后无法恢复。",
-            "failed_to_withdraw": "无法撤回举报",
             "status_open": "处理中",
             "status_closed": "已关闭",
             "type_filter": {

@@ -2467,7 +2467,7 @@
                 "edit_invite_message": "Šablony zpráv",
                 "edit_invite_message_description": "Upravte šablony zpráv pro pozvánky a žádosti",
                 "moderation_reports": "Moje nahlášení",
-                "moderation_reports_description": "Zobrazit nebo stáhnout odeslaná nahlášení",
+                "moderation_reports_description": "Zobrazit odeslaná nahlášení",
                 "purchase_history": "Historie nákupů",
                 "purchase_history_description": "Zobrazit nákupy a pohyby kreditů"
             },
@@ -6347,10 +6347,6 @@
             "empty_open": "Žádná otevřená nahlášení",
             "empty_closed": "Žádná uzavřená nahlášení",
             "failed_to_load": "Nahlášení se nepodařilo načíst",
-            "withdraw": "Stáhnout",
-            "withdraw_title": "Stáhnout nahlášení {value}?",
-            "withdraw_description": "Tuto akci nelze vrátit zpět.",
-            "failed_to_withdraw": "Nahlášení se nepodařilo stáhnout",
             "status_open": "Otevřené",
             "status_closed": "Uzavřené",
             "type_filter": {

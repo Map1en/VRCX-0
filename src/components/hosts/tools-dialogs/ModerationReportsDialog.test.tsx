@@ -20,9 +20,7 @@ import type { ModerationReportRecord } from '@/repositories/vrchatToolsRepositor
 
 const mocks = vi.hoisted(() => ({
     getModerationReports: vi.fn(),
-    deleteModerationReport: vi.fn(),
     openUserDialog: vi.fn(),
-    confirm: vi.fn(),
     toastAdd: vi.fn()
 }));
 
@@ -35,8 +33,7 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('@/repositories/vrchatToolsRepository', () => ({
     default: {
-        getModerationReports: mocks.getModerationReports,
-        deleteModerationReport: mocks.deleteModerationReport
+        getModerationReports: mocks.getModerationReports
     }
 }));
 
@@ -53,10 +50,6 @@ vi.mock('./toolsDialogUtils', () => ({
 
 vi.mock('@/services/toastService', () => ({
     toast: { add: mocks.toastAdd }
-}));
-
-vi.mock('@/state/modalStore', () => ({
-    useModalStore: { getState: () => ({ confirm: mocks.confirm }) }
 }));
 
 vi.mock('@/lib/dateTime', () => ({
@@ -198,8 +191,6 @@ describe('ModerationReportsDialog', () => {
                     hasNext: false
                 })
         );
-        mocks.deleteModerationReport.mockResolvedValue({ success: true });
-        mocks.confirm.mockResolvedValue({ ok: true, reason: 'ok' });
     });
 
     afterEach(() => {
@@ -280,47 +271,6 @@ describe('ModerationReportsDialog', () => {
             closedOnly: true,
             reportType: 'world'
         });
-    });
-
-    it('withdraws a confirmed report and drops it from the list', async () => {
-        await openDialog();
-
-        fireEvent.click(
-            screen.getAllByRole('button', {
-                name: 'dialog.moderation_reports.withdraw'
-            })[0]
-        );
-
-        await waitFor(() => {
-            expect(screen.queryByText('Milfy')).toBeNull();
-        });
-        expect(mocks.deleteModerationReport).toHaveBeenCalledWith({
-            reportId: 'mr_1'
-        });
-        expect(screen.getByText('Mafuyu')).toBeTruthy();
-    });
-
-    it('keeps the report listed when the withdrawal is rejected', async () => {
-        mocks.deleteModerationReport.mockRejectedValue(
-            new Error('Report is already closed')
-        );
-        await openDialog();
-
-        fireEvent.click(
-            screen.getAllByRole('button', {
-                name: 'dialog.moderation_reports.withdraw'
-            })[0]
-        );
-
-        await waitFor(() => {
-            expect(mocks.toastAdd).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    type: 'error',
-                    title: 'dialog.moderation_reports.failed_to_withdraw'
-                })
-            );
-        });
-        expect(screen.getByText('Milfy')).toBeTruthy();
     });
 
     it('loads the next page from the current list length', async () => {

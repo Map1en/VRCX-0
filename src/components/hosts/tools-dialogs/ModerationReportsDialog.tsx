@@ -1,4 +1,4 @@
-import { FlagIcon, Undo2Icon } from 'lucide-react';
+import { FlagIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -18,7 +18,6 @@ import {
     openWorldDialog
 } from '@/services/dialogService';
 import { toast } from '@/services/toastService';
-import { useModalStore } from '@/state/modalStore';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -189,7 +188,6 @@ function ModerationReportList({
         status: 'loading'
     });
     const [loadingMore, setLoadingMore] = useState(false);
-    const [withdrawingId, setWithdrawingId] = useState('');
 
     useEffect(() => {
         let active = true;
@@ -254,48 +252,6 @@ function ModerationReportList({
         }
     }
 
-    async function handleWithdraw(report: ModerationReportRecord) {
-        const reportId = report.id;
-        if (!reportId) {
-            return;
-        }
-        const result = await useModalStore.getState().confirm({
-            title: t('dialog.moderation_reports.withdraw_title', {
-                value: report.contentName || report.contentId || reportId
-            }),
-            description: t('dialog.moderation_reports.withdraw_description'),
-            confirmText: t('dialog.moderation_reports.withdraw'),
-            cancelText: t('common.actions.cancel'),
-            destructive: true
-        });
-        if (!result.ok) {
-            return;
-        }
-
-        setWithdrawingId(reportId);
-        try {
-            await vrchatToolsRepository.deleteModerationReport({ reportId });
-            setLoadState((current) =>
-                current.status === 'ready'
-                    ? {
-                          ...current,
-                          reports: current.reports.filter(
-                              (item) => item.id !== reportId
-                          )
-                      }
-                    : current
-            );
-        } catch (error) {
-            toast.add({
-                type: 'error',
-                title: t('dialog.moderation_reports.failed_to_withdraw'),
-                description: userFacingErrorMessage(error)
-            });
-        } finally {
-            setWithdrawingId('');
-        }
-    }
-
     if (loadState.status === 'loading') {
         return <LoadingState variant="panel" />;
     }
@@ -326,15 +282,7 @@ function ModerationReportList({
         <div className="flex min-h-0 flex-col gap-2 overflow-y-auto">
             <ul className="divide-stroke-subtle shrink-0 divide-y overflow-hidden rounded-lg border">
                 {loadState.reports.map((report) => (
-                    <ModerationReportRow
-                        key={report.id}
-                        report={report}
-                        withdrawing={withdrawingId === report.id}
-                        disabled={Boolean(withdrawingId)}
-                        onWithdraw={() => {
-                            void handleWithdraw(report);
-                        }}
-                    />
+                    <ModerationReportRow key={report.id} report={report} />
                 ))}
             </ul>
             {loadState.hasNext ? (
@@ -356,17 +304,7 @@ function ModerationReportList({
     );
 }
 
-function ModerationReportRow({
-    report,
-    withdrawing,
-    disabled,
-    onWithdraw
-}: {
-    report: ModerationReportRecord;
-    withdrawing: boolean;
-    disabled: boolean;
-    onWithdraw: () => void;
-}) {
+function ModerationReportRow({ report }: { report: ModerationReportRecord }) {
     const { t } = useTranslation();
     const type = report.type ?? '';
     const contentId = report.contentId ?? '';
@@ -377,10 +315,9 @@ function ModerationReportRow({
     const thumbnailFallback = (
         <FlagIcon className="text-muted-foreground size-4" />
     );
-    const withdrawLabel = t('dialog.moderation_reports.withdraw');
 
     return (
-        <li className="group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-(--state-hover-surface)">
+        <li className="flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-(--state-hover-surface)">
             <div
                 className={cn(
                     'bg-muted flex size-10 shrink-0 items-center justify-center overflow-hidden',
@@ -440,28 +377,6 @@ function ModerationReportRow({
                     </Tooltip>
                 ) : null}
             </div>
-            <Tooltip>
-                <TooltipTrigger
-                    render={
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            aria-label={withdrawLabel}
-                            className={cn(
-                                'shrink-0',
-                                !withdrawing &&
-                                    'transition-opacity duration-150 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-visible:opacity-100'
-                            )}
-                            disabled={disabled}
-                            onClick={onWithdraw}
-                        >
-                            {withdrawing ? <Spinner /> : <Undo2Icon />}
-                        </Button>
-                    }
-                />
-                <TooltipContent>{withdrawLabel}</TooltipContent>
-            </Tooltip>
         </li>
     );
 }

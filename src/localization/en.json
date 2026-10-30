@@ -2453,7 +2453,7 @@
                 "edit_invite_message": "Message Templates",
                 "edit_invite_message_description": "Edit invite and request message templates",
                 "moderation_reports": "My Reports",
-                "moderation_reports_description": "View or withdraw reports you've submitted",
+                "moderation_reports_description": "View reports you've submitted",
                 "purchase_history": "Purchase History",
                 "purchase_history_description": "View items you bought and your VRChat Credits activity"
             },
@@ -6363,10 +6363,6 @@
             "empty_open": "No open reports",
             "empty_closed": "No closed reports",
             "failed_to_load": "Couldn't load reports",
-            "withdraw": "Withdraw",
-            "withdraw_title": "Withdraw your report on {value}?",
-            "withdraw_description": "This can't be undone.",
-            "failed_to_withdraw": "Couldn't withdraw the report",
             "status_open": "Open",
             "status_closed": "Closed",
             "type_filter": {

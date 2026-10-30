@@ -2465,7 +2465,7 @@
                 "edit_invite_message": "Образцы сообщений",
                 "edit_invite_message_description": "Редактировать шаблоны предложений и запросов сообщений",
                 "moderation_reports": "Мои жалобы",
-                "moderation_reports_description": "Просмотр и отзыв отправленных жалоб",
+                "moderation_reports_description": "Просмотр отправленных жалоб",
                 "purchase_history": "История покупок",
                 "purchase_history_description": "Просмотр покупок и операций с Credits"
             },
@@ -6341,10 +6341,6 @@
             "empty_open": "Нет открытых жалоб",
             "empty_closed": "Нет закрытых жалоб",
             "failed_to_load": "Не удалось загрузить жалобы",
-            "withdraw": "Отозвать",
-            "withdraw_title": "Отозвать жалобу на {value}?",
-            "withdraw_description": "Это действие нельзя отменить.",
-            "failed_to_withdraw": "Не удалось отозвать жалобу",
             "status_open": "Открыта",
             "status_closed": "Закрыта",
             "type_filter": {

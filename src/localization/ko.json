@@ -2384,7 +2384,7 @@
                 "edit_invite_message": "메시지 템플릿",
                 "edit_invite_message_description": "초대 및 요청 메시지 템플릿 편집",
                 "moderation_reports": "신고 내역",
-                "moderation_reports_description": "제출한 신고를 확인하거나 철회",
+                "moderation_reports_description": "제출한 신고 확인",
                 "purchase_history": "구매 내역",
                 "purchase_history_description": "구매한 상품과 크레딧 내역 확인"
             },
@@ -6291,10 +6291,6 @@
             "empty_open": "처리 중인 신고가 없습니다",
             "empty_closed": "종료된 신고가 없습니다",
             "failed_to_load": "신고 내역을 불러오지 못했습니다",
-            "withdraw": "철회",
-            "withdraw_title": "{value}에 대한 신고를 철회하시겠습니까?",
-            "withdraw_description": "이 작업은 되돌릴 수 없습니다.",
-            "failed_to_withdraw": "신고를 철회하지 못했습니다",
             "status_open": "처리 중",
             "status_closed": "종료됨",
             "type_filter": {

@@ -2443,7 +2443,7 @@
                 "edit_invite_message": "メッセージテンプレート",
                 "edit_invite_message_description": "招待とリクエストのメッセージテンプレートを編集",
                 "moderation_reports": "通報履歴",
-                "moderation_reports_description": "送信した通報を確認・取り消しする",
+                "moderation_reports_description": "送信した通報を確認する",
                 "purchase_history": "購入履歴",
                 "purchase_history_description": "購入したアイテムとクレジットの履歴を確認する"
             },
@@ -6349,10 +6349,6 @@
             "empty_open": "対応中の通報はありません",
             "empty_closed": "終了した通報はありません",
             "failed_to_load": "通報を読み込めませんでした",
-            "withdraw": "取り消す",
-            "withdraw_title": "{value} への通報を取り消しますか？",
-            "withdraw_description": "この操作は元に戻せません。",
-            "failed_to_withdraw": "通報を取り消せませんでした",
             "status_open": "対応中",
             "status_closed": "終了",
             "type_filter": {

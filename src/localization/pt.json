@@ -2449,7 +2449,7 @@
                 "edit_invite_message": "Modelos de mensagem",
                 "edit_invite_message_description": "Editar modelos de mensagem de convite e pedido",
                 "moderation_reports": "Minhas denúncias",
-                "moderation_reports_description": "Veja ou retire as denúncias que você enviou",
+                "moderation_reports_description": "Veja as denúncias que você enviou",
                 "purchase_history": "Histórico de compras",
                 "purchase_history_description": "Veja suas compras e movimentações de Credits"
             },
@@ -6315,10 +6315,6 @@
             "empty_open": "Nenhuma denúncia aberta",
             "empty_closed": "Nenhuma denúncia encerrada",
             "failed_to_load": "Não foi possível carregar as denúncias",
-            "withdraw": "Retirar",
-            "withdraw_title": "Retirar sua denúncia sobre {value}?",
-            "withdraw_description": "Esta ação não pode ser desfeita.",
-            "failed_to_withdraw": "Não foi possível retirar a denúncia",
             "status_open": "Aberta",
             "status_closed": "Encerrada",
             "type_filter": {
