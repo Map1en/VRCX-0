@@ -5107,7 +5107,29 @@
                 "failed_to_search": "멤버를 검색하지 못했습니다."
             },
             "gallery": {
-                "header": "갤러리"
+                "header": "갤러리",
+                "create": "갤러리 만들기",
+                "edit": "갤러리 편집",
+                "delete": "갤러리 삭제",
+                "add_image": "이미지 추가",
+                "delete_image": "이미지 삭제",
+                "name": "이름",
+                "description": "설명",
+                "members_only": "그룹 멤버에게만 공개",
+                "visibility_public": "모두에게 공개",
+                "visibility_members": "그룹 멤버만",
+                "visibility_roles": "특정 역할만",
+                "created": "갤러리를 만들었습니다",
+                "saved": "갤러리를 수정했습니다",
+                "deleted": "갤러리를 삭제했습니다",
+                "image_added": "이미지를 추가했습니다",
+                "image_pending_approval": "이미지를 제출했습니다. 승인을 기다리는 중입니다",
+                "image_deleted": "이미지를 삭제했습니다",
+                "save_failed": "갤러리를 저장하지 못했습니다",
+                "delete_failed": "삭제하지 못했습니다",
+                "delete_confirm": "이 갤러리를 삭제할까요?",
+                "delete_confirm_description": "{name} 갤러리와 안의 모든 이미지가 삭제됩니다.",
+                "delete_image_confirm": "이 이미지를 삭제할까요?"
             },
             "json": {
                 "header": "JSON"

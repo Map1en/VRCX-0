@@ -1,5 +1,5 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
-pub use vrcx_0_contracts::vrchat_requests::GroupRoleMutation;
+pub use vrcx_0_contracts::vrchat_requests::{GroupGalleryMutation, GroupRoleMutation};
 use vrcx_0_core::GroupJoinRequestAction;
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
@@ -216,6 +216,55 @@ pub struct VrchatGroupUpdateInput {
     #[serde(default)]
     pub group_id: String,
     pub params: GroupProfileUpdate,
+}
+
+#[derive(Debug, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct VrchatGroupGalleryCreateInput {
+    #[serde(default)]
+    pub group_id: String,
+    pub params: GroupGalleryMutation,
+}
+
+#[derive(Debug, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct VrchatGroupGalleryEditInput {
+    #[serde(default)]
+    pub group_id: String,
+    #[serde(default)]
+    pub gallery_id: String,
+    pub params: GroupGalleryMutation,
+}
+
+#[derive(Debug, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct VrchatGroupGalleryDeleteInput {
+    #[serde(default)]
+    pub group_id: String,
+    #[serde(default)]
+    pub gallery_id: String,
+}
+
+#[derive(Debug, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct VrchatGroupGalleryImageAddInput {
+    #[serde(default)]
+    pub group_id: String,
+    #[serde(default)]
+    pub gallery_id: String,
+    #[serde(default)]
+    pub file_id: String,
+}
+
+#[derive(Debug, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct VrchatGroupGalleryImageDeleteInput {
+    #[serde(default)]
+    pub group_id: String,
+    #[serde(default)]
+    pub gallery_id: String,
+    #[serde(default)]
+    pub image_id: String,
 }
 
 #[derive(Debug, Deserialize, specta::Type)]

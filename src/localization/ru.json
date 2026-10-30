@@ -5162,7 +5162,29 @@
                 "failed_to_search": "Не удалось найти участников"
             },
             "gallery": {
-                "header": "Фото"
+                "header": "Фото",
+                "create": "Новая галерея",
+                "edit": "Изменить галерею",
+                "delete": "Удалить галерею",
+                "add_image": "Добавить изображение",
+                "delete_image": "Удалить изображение",
+                "name": "Название",
+                "description": "Описание",
+                "members_only": "Видно только участникам группы",
+                "visibility_public": "Видно всем",
+                "visibility_members": "Только участники группы",
+                "visibility_roles": "Только выбранные роли",
+                "created": "Галерея создана",
+                "saved": "Галерея обновлена",
+                "deleted": "Галерея удалена",
+                "image_added": "Изображение добавлено",
+                "image_pending_approval": "Изображение отправлено и ждёт одобрения",
+                "image_deleted": "Изображение удалено",
+                "save_failed": "Не удалось сохранить галерею",
+                "delete_failed": "Не удалось удалить",
+                "delete_confirm": "Удалить эту галерею?",
+                "delete_confirm_description": "Галерея {name} и все изображения в ней будут удалены.",
+                "delete_image_confirm": "Удалить это изображение?"
             },
             "json": {
                 "header": "JSON"

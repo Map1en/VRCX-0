@@ -1,12 +1,13 @@
 use super::types::{
-    VrchatGroupGalleryInput, VrchatGroupIdInput, VrchatGroupJoinRequestRespondInput,
-    VrchatGroupJoinRequestsInput, VrchatGroupLogsInput, VrchatGroupMemberPropsInput,
-    VrchatGroupMemberRoleInput, VrchatGroupMembersInput, VrchatGroupMembersSearchInput,
-    VrchatGroupMembershipListInput, VrchatGroupPagedInput, VrchatGroupPostCreateInput,
-    VrchatGroupPostDeleteInput, VrchatGroupPostEditInput, VrchatGroupProfileInput,
-    VrchatGroupRepresentationInput, VrchatGroupRoleCreateInput, VrchatGroupRoleInput,
-    VrchatGroupRoleUpdateInput, VrchatGroupUpdateInput, VrchatGroupUserGroupsInput,
-    VrchatGroupUserInput,
+    VrchatGroupGalleryCreateInput, VrchatGroupGalleryDeleteInput, VrchatGroupGalleryEditInput,
+    VrchatGroupGalleryImageAddInput, VrchatGroupGalleryImageDeleteInput, VrchatGroupGalleryInput,
+    VrchatGroupIdInput, VrchatGroupJoinRequestRespondInput, VrchatGroupJoinRequestsInput,
+    VrchatGroupLogsInput, VrchatGroupMemberPropsInput, VrchatGroupMemberRoleInput,
+    VrchatGroupMembersInput, VrchatGroupMembersSearchInput, VrchatGroupMembershipListInput,
+    VrchatGroupPagedInput, VrchatGroupPostCreateInput, VrchatGroupPostDeleteInput,
+    VrchatGroupPostEditInput, VrchatGroupProfileInput, VrchatGroupRepresentationInput,
+    VrchatGroupRoleCreateInput, VrchatGroupRoleInput, VrchatGroupRoleUpdateInput,
+    VrchatGroupUpdateInput, VrchatGroupUserGroupsInput, VrchatGroupUserInput,
 };
 use crate::remote::VrchatRequestPort;
 use std::{sync::Arc, time::Duration};
@@ -27,6 +28,11 @@ pub enum GroupRemoteRequest {
     GetMember(VrchatGroupUserInput),
     SearchMembers(VrchatGroupMembersSearchInput),
     GetGallery(VrchatGroupGalleryInput),
+    CreateGallery(VrchatGroupGalleryCreateInput),
+    EditGallery(VrchatGroupGalleryEditInput),
+    DeleteGallery(VrchatGroupGalleryDeleteInput),
+    AddGalleryImage(VrchatGroupGalleryImageAddInput),
+    DeleteGalleryImage(VrchatGroupGalleryImageDeleteInput),
     GetBans(VrchatGroupPagedInput),
     GetInvites(VrchatGroupPagedInput),
     GetJoinRequests(VrchatGroupJoinRequestsInput),
@@ -301,6 +307,103 @@ pub async fn get_gallery(
         "app__vrchat_group_gallery_get",
         format!(
             "Getting gallery {} for group {}.",
+            built.secondary_id.as_deref().unwrap_or_default(),
+            built.primary_id
+        ),
+        built.request,
+    )
+    .await
+}
+
+pub async fn create_gallery(
+    deps: GroupApiDeps,
+    input: VrchatGroupGalleryCreateInput,
+) -> Result<VrchatApiResponse> {
+    let built = deps
+        .remote_requests
+        .build(GroupRemoteRequest::CreateGallery(input))?;
+    execute_group_api(
+        &deps,
+        "app__vrchat_group_gallery_create",
+        format!("Creating gallery in group {}.", built.primary_id),
+        built.request,
+    )
+    .await
+}
+
+pub async fn edit_gallery(
+    deps: GroupApiDeps,
+    input: VrchatGroupGalleryEditInput,
+) -> Result<VrchatApiResponse> {
+    let built = deps
+        .remote_requests
+        .build(GroupRemoteRequest::EditGallery(input))?;
+    execute_group_api(
+        &deps,
+        "app__vrchat_group_gallery_edit",
+        format!(
+            "Editing gallery {} in group {}.",
+            built.secondary_id.as_deref().unwrap_or_default(),
+            built.primary_id
+        ),
+        built.request,
+    )
+    .await
+}
+
+pub async fn delete_gallery(
+    deps: GroupApiDeps,
+    input: VrchatGroupGalleryDeleteInput,
+) -> Result<VrchatApiResponse> {
+    let built = deps
+        .remote_requests
+        .build(GroupRemoteRequest::DeleteGallery(input))?;
+    execute_group_api(
+        &deps,
+        "app__vrchat_group_gallery_delete",
+        format!(
+            "Deleting gallery {} in group {}.",
+            built.secondary_id.as_deref().unwrap_or_default(),
+            built.primary_id
+        ),
+        built.request,
+    )
+    .await
+}
+
+pub async fn add_gallery_image(
+    deps: GroupApiDeps,
+    input: VrchatGroupGalleryImageAddInput,
+) -> Result<VrchatApiResponse> {
+    let built = deps
+        .remote_requests
+        .build(GroupRemoteRequest::AddGalleryImage(input))?;
+    execute_group_api(
+        &deps,
+        "app__vrchat_group_gallery_image_add",
+        format!(
+            "Adding image to gallery {} in group {}.",
+            built.secondary_id.as_deref().unwrap_or_default(),
+            built.primary_id
+        ),
+        built.request,
+    )
+    .await
+}
+
+pub async fn delete_gallery_image(
+    deps: GroupApiDeps,
+    input: VrchatGroupGalleryImageDeleteInput,
+) -> Result<VrchatApiResponse> {
+    let built = deps
+        .remote_requests
+        .build(GroupRemoteRequest::DeleteGalleryImage(input))?;
+    execute_group_api(
+        &deps,
+        "app__vrchat_group_gallery_image_delete",
+        format!(
+            "Deleting image {} from gallery {} in group {}.",
+            built.tertiary_id.as_deref().unwrap_or_default(),
             built.secondary_id.as_deref().unwrap_or_default(),
             built.primary_id
         ),

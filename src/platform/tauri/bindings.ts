@@ -1796,6 +1796,39 @@ const generatedCommands = {
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_group_delete', { input });
     },
+    async appVrchatGroupGalleryCreate(
+        input: VrchatGroupGalleryCreateInput
+    ): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE('app__vrchat_group_gallery_create', {
+            input
+        });
+    },
+    async appVrchatGroupGalleryEdit(
+        input: VrchatGroupGalleryEditInput
+    ): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE('app__vrchat_group_gallery_edit', { input });
+    },
+    async appVrchatGroupGalleryDelete(
+        input: VrchatGroupGalleryDeleteInput
+    ): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE('app__vrchat_group_gallery_delete', {
+            input
+        });
+    },
+    async appVrchatGroupGalleryImageAdd(
+        input: VrchatGroupGalleryImageAddInput
+    ): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE('app__vrchat_group_gallery_image_add', {
+            input
+        });
+    },
+    async appVrchatGroupGalleryImageDelete(
+        input: VrchatGroupGalleryImageDeleteInput
+    ): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE('app__vrchat_group_gallery_image_delete', {
+            input
+        });
+    },
     async appVrchatGroupPostCreate(
         input: VrchatGroupPostCreateInput
     ): Promise<HttpApiExecuteResponse> {
@@ -5297,6 +5330,11 @@ export type GroupCalendarSnapshot = {
     groupNames: Partial<{ [key in string]: string }>;
     groupProfiles: Partial<{ [key in string]: RawJson }>;
 };
+export type GroupGalleryMutation = {
+    name: string;
+    description?: string;
+    membersOnly?: boolean;
+};
 export type GroupJoinRequestAction = 'accept' | 'reject';
 export type GroupMemberPatch = {
     isSubscribedToAnnouncements?: boolean | null;
@@ -7222,6 +7260,29 @@ export type VrchatFavoriteWorldsInput = {
     tag?: string;
 };
 export type VrchatFriendUserInput = { userId?: string };
+export type VrchatGroupGalleryCreateInput = {
+    groupId?: string;
+    params: GroupGalleryMutation;
+};
+export type VrchatGroupGalleryDeleteInput = {
+    groupId?: string;
+    galleryId?: string;
+};
+export type VrchatGroupGalleryEditInput = {
+    groupId?: string;
+    galleryId?: string;
+    params: GroupGalleryMutation;
+};
+export type VrchatGroupGalleryImageAddInput = {
+    groupId?: string;
+    galleryId?: string;
+    fileId?: string;
+};
+export type VrchatGroupGalleryImageDeleteInput = {
+    groupId?: string;
+    galleryId?: string;
+    imageId?: string;
+};
 export type VrchatGroupGalleryInput = {
     groupId?: string;
     galleryId?: string;

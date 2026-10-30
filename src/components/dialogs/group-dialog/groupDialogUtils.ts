@@ -45,9 +45,6 @@ export function groupRowsEmptyTitle(kind: string) {
     if (kind === 'members') {
         return 'No members';
     }
-    if (kind === 'photos') {
-        return 'No photos';
-    }
     return 'No rows';
 }
 

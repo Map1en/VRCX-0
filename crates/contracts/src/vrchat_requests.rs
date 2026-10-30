@@ -493,6 +493,16 @@ pub struct GroupCalendarRecurrence {
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct GroupGalleryMutation {
+    pub name: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub members_only: bool,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct GroupRoleMutation {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,

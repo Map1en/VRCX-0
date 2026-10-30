@@ -5165,7 +5165,29 @@
                 "failed_to_search": "搜尋成員失敗"
             },
             "gallery": {
-                "header": "畫廊"
+                "header": "畫廊",
+                "create": "新增相簿",
+                "edit": "編輯相簿",
+                "delete": "刪除相簿",
+                "add_image": "新增圖片",
+                "delete_image": "刪除圖片",
+                "name": "名稱",
+                "description": "描述",
+                "members_only": "僅群組成員可見",
+                "visibility_public": "所有人可見",
+                "visibility_members": "僅群組成員",
+                "visibility_roles": "僅指定角色",
+                "created": "相簿已建立",
+                "saved": "相簿已更新",
+                "deleted": "相簿已刪除",
+                "image_added": "圖片已新增",
+                "image_pending_approval": "圖片已送出，等待審核",
+                "image_deleted": "圖片已刪除",
+                "save_failed": "相簿儲存失敗",
+                "delete_failed": "刪除失敗",
+                "delete_confirm": "要刪除這個相簿嗎？",
+                "delete_confirm_description": "{name}及其中的所有圖片都會被刪除。",
+                "delete_image_confirm": "要刪除這張圖片嗎？"
             },
             "json": {
                 "header": "原始資料"

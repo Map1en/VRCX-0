@@ -6,15 +6,16 @@ use vrcx_0_application::social::{
 use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Result};
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 use vrcx_0_vrchat_client::groups::{
-    current_user_group_instances_get_input, delete_input, gallery_get_input, group_block_input,
-    group_get_no_params_input, group_paged_get_input, invite_decline_input, invite_delete_input,
-    invite_send_input, join_input, join_request_respond_input, join_requests_get_input,
-    leave_input, logs_get_input, member_ban_input, member_kick_input, member_props_set_input,
-    member_role_add_input, member_role_remove_input, member_unban_input, members_get_input,
-    members_search_input, post_create_input, post_delete_input, post_edit_input, profile_get_input,
-    profile_update_input, representation_set_input, request_cancel_input, role_create_input,
-    role_delete_input, role_update_input, unblock_input, user_groups_by_membership_get_input,
-    user_groups_get_input,
+    current_user_group_instances_get_input, delete_input, gallery_create_input,
+    gallery_delete_input, gallery_edit_input, gallery_get_input, gallery_image_add_input,
+    gallery_image_delete_input, group_block_input, group_get_no_params_input,
+    group_paged_get_input, invite_decline_input, invite_delete_input, invite_send_input,
+    join_input, join_request_respond_input, join_requests_get_input, leave_input, logs_get_input,
+    member_ban_input, member_kick_input, member_props_set_input, member_role_add_input,
+    member_role_remove_input, member_unban_input, members_get_input, members_search_input,
+    post_create_input, post_delete_input, post_edit_input, profile_get_input, profile_update_input,
+    representation_set_input, request_cancel_input, role_create_input, role_delete_input,
+    role_update_input, unblock_input, user_groups_by_membership_get_input, user_groups_get_input,
 };
 
 pub struct VrchatGroupRemoteRequests;
@@ -83,6 +84,30 @@ impl GroupRemoteRequests for VrchatGroupRemoteRequests {
                 let (group_id, gallery_id, request) =
                     gallery_get_input(input.group_id, input.gallery_id, input.n, input.offset)?;
                 Ok(built2(group_id, gallery_id, request))
+            }
+            GroupRemoteRequest::CreateGallery(input) => {
+                let (group_id, request) = gallery_create_input(input.group_id, input.params)?;
+                Ok(built1(group_id, request))
+            }
+            GroupRemoteRequest::EditGallery(input) => {
+                let (group_id, gallery_id, request) =
+                    gallery_edit_input(input.group_id, input.gallery_id, input.params)?;
+                Ok(built2(group_id, gallery_id, request))
+            }
+            GroupRemoteRequest::DeleteGallery(input) => {
+                let (group_id, gallery_id, request) =
+                    gallery_delete_input(input.group_id, input.gallery_id)?;
+                Ok(built2(group_id, gallery_id, request))
+            }
+            GroupRemoteRequest::AddGalleryImage(input) => {
+                let (group_id, gallery_id, request) =
+                    gallery_image_add_input(input.group_id, input.gallery_id, input.file_id)?;
+                Ok(built2(group_id, gallery_id, request))
+            }
+            GroupRemoteRequest::DeleteGalleryImage(input) => {
+                let (group_id, gallery_id, image_id, request) =
+                    gallery_image_delete_input(input.group_id, input.gallery_id, input.image_id)?;
+                Ok(built3(group_id, gallery_id, image_id, request))
             }
             GroupRemoteRequest::GetBans(input) => {
                 let (group_id, request) = group_paged_get_input(
@@ -439,6 +464,67 @@ mod tests {
             ("PUT", "groups/grp%5F1/roles/grol%5F1")
         );
         assert_eq!(body, Some(role));
+    }
+
+    #[test]
+    fn gallery_writes_target_the_gallery_and_its_images() {
+        let gallery = json!({ "name": "Events", "description": "Photos", "membersOnly": true });
+
+        assert_eq!(
+            built(GroupRemoteRequest::CreateGallery(input(
+                json!({ "groupId": "grp_1", "params": gallery }),
+            ))),
+            (
+                "POST".into(),
+                "groups/grp%5F1/galleries".into(),
+                Some(gallery.clone())
+            )
+        );
+        assert_eq!(
+            built(GroupRemoteRequest::EditGallery(input(
+                json!({ "groupId": "grp_1", "galleryId": "ggal_1", "params": gallery }),
+            ))),
+            (
+                "PUT".into(),
+                "groups/grp%5F1/galleries/ggal%5F1".into(),
+                Some(gallery)
+            )
+        );
+        assert_eq!(
+            built(GroupRemoteRequest::DeleteGallery(input(
+                json!({ "groupId": "grp_1", "galleryId": "ggal_1" }),
+            ))),
+            (
+                "DELETE".into(),
+                "groups/grp%5F1/galleries/ggal%5F1".into(),
+                None
+            )
+        );
+        assert_eq!(
+            built(GroupRemoteRequest::AddGalleryImage(input(
+                json!({ "groupId": "grp_1", "galleryId": "ggal_1", "fileId": "file_1" }),
+            ))),
+            (
+                "POST".into(),
+                "groups/grp%5F1/galleries/ggal%5F1/images".into(),
+                Some(json!({ "fileId": "file_1" }))
+            )
+        );
+        assert_eq!(
+            built(GroupRemoteRequest::DeleteGalleryImage(input(
+                json!({ "groupId": "grp_1", "galleryId": "ggal_1", "imageId": "ggim_1" }),
+            ))),
+            (
+                "DELETE".into(),
+                "groups/grp%5F1/galleries/ggal%5F1/images/ggim%5F1".into(),
+                None
+            )
+        );
+        assert!(VrchatGroupRemoteRequests
+            .build(GroupRemoteRequest::CreateGallery(input(
+                json!({ "groupId": "grp_1", "params": { "name": "  " } }),
+            )))
+            .is_err());
     }
 
     #[test]

@@ -36,6 +36,7 @@ import {
     announcementUserId,
     announcementUserLabel
 } from './groupDialogUtils';
+import { GroupGalleryPanel } from './GroupGalleryPanel';
 import { GroupInstanceRows } from './GroupInstanceRows';
 import { GroupMembersPanel } from './GroupMembersPanel';
 import { GroupPostUserButton, RowList } from './GroupRowList';
@@ -247,6 +248,8 @@ export function GroupDialogTabPanels({
         onPreviousInstancesChange,
         onPreviewImage,
         onPreviewRowImage,
+        onGalleriesChanged,
+        onPhotosChanged,
         onRefreshEvents,
         onRefreshMembers,
         onSearchMembersChange,
@@ -601,13 +604,15 @@ export function GroupDialogTabPanels({
                 value="photos"
                 className="flex flex-col gap-2"
             >
-                <RowList
-                    rows={photos}
+                <GroupGalleryPanel
                     group={group}
-                    kind="photos"
+                    rows={photos}
                     loading={remoteStatus.photos === 'running'}
-                    error={remoteErrors.photos}
+                    error={remoteErrors.photos ?? ''}
+                    currentUserId={currentUserId}
                     onPreviewImage={onPreviewRowImage}
+                    onGalleriesChanged={onGalleriesChanged}
+                    onImagesChanged={onPhotosChanged}
                 />
             </EntityDialogTabContent>
             {group.storeId ? (

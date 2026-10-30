@@ -5174,7 +5174,29 @@
                 "failed_to_search": "搜索成员失败"
             },
             "gallery": {
-                "header": "相册"
+                "header": "相册",
+                "create": "新建相册",
+                "edit": "编辑相册",
+                "delete": "删除相册",
+                "add_image": "添加图片",
+                "delete_image": "删除图片",
+                "name": "名称",
+                "description": "描述",
+                "members_only": "仅群组成员可见",
+                "visibility_public": "所有人可见",
+                "visibility_members": "仅群组成员",
+                "visibility_roles": "仅指定角色",
+                "created": "相册已创建",
+                "saved": "相册已更新",
+                "deleted": "相册已删除",
+                "image_added": "图片已添加",
+                "image_pending_approval": "图片已提交，等待审核",
+                "image_deleted": "图片已删除",
+                "save_failed": "相册保存失败",
+                "delete_failed": "删除失败",
+                "delete_confirm": "删除这个相册？",
+                "delete_confirm_description": "{name}及其中的所有图片都会被删除。",
+                "delete_image_confirm": "删除这张图片？"
             },
             "json": {
                 "header": "原始 JSON 信息"

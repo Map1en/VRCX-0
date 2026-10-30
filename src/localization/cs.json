@@ -5168,7 +5168,29 @@
                 "failed_to_search": "Nepodařilo se vyhledat členy"
             },
             "gallery": {
-                "header": "Fotografie"
+                "header": "Fotografie",
+                "create": "Nová galerie",
+                "edit": "Upravit galerii",
+                "delete": "Smazat galerii",
+                "add_image": "Přidat obrázek",
+                "delete_image": "Smazat obrázek",
+                "name": "Název",
+                "description": "Popis",
+                "members_only": "Viditelné jen pro členy skupiny",
+                "visibility_public": "Viditelné pro všechny",
+                "visibility_members": "Jen členové skupiny",
+                "visibility_roles": "Jen vybrané role",
+                "created": "Galerie vytvořena",
+                "saved": "Galerie upravena",
+                "deleted": "Galerie smazána",
+                "image_added": "Obrázek přidán",
+                "image_pending_approval": "Obrázek odeslán a čeká na schválení",
+                "image_deleted": "Obrázek smazán",
+                "save_failed": "Galerii se nepodařilo uložit",
+                "delete_failed": "Smazání se nezdařilo",
+                "delete_confirm": "Smazat tuto galerii?",
+                "delete_confirm_description": "Galerie {name} a všechny obrázky v ní budou smazány.",
+                "delete_image_confirm": "Smazat tento obrázek?"
             },
             "json": {
                 "header": "JSON"

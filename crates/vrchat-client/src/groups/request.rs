@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-pub use vrcx_0_contracts::vrchat_requests::GroupRoleMutation;
+pub use vrcx_0_contracts::vrchat_requests::{GroupGalleryMutation, GroupRoleMutation};
 
 use crate::http_api::{require_text, HttpApiError};
 

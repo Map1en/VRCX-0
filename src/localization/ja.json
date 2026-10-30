@@ -5170,7 +5170,29 @@
                 "failed_to_search": "メンバーを検索できませんでした"
             },
             "gallery": {
-                "header": "写真"
+                "header": "写真",
+                "create": "ギャラリーを作成",
+                "edit": "ギャラリーを編集",
+                "delete": "ギャラリーを削除",
+                "add_image": "画像を追加",
+                "delete_image": "画像を削除",
+                "name": "名前",
+                "description": "説明",
+                "members_only": "グループメンバーのみに公開",
+                "visibility_public": "全員に公開",
+                "visibility_members": "グループメンバーのみ",
+                "visibility_roles": "特定のロールのみ",
+                "created": "ギャラリーを作成しました",
+                "saved": "ギャラリーを更新しました",
+                "deleted": "ギャラリーを削除しました",
+                "image_added": "画像を追加しました",
+                "image_pending_approval": "画像を送信しました。承認待ちです",
+                "image_deleted": "画像を削除しました",
+                "save_failed": "ギャラリーを保存できませんでした",
+                "delete_failed": "削除できませんでした",
+                "delete_confirm": "このギャラリーを削除しますか？",
+                "delete_confirm_description": "{name} とその中の画像はすべて削除されます。",
+                "delete_image_confirm": "この画像を削除しますか？"
             },
             "json": {
                 "header": "JSON"

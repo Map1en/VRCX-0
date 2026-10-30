@@ -82,6 +82,7 @@ export type GroupDialogControls = {
         SetStateAction<GroupPreviousInstanceRow[]>
     >;
     onRefresh: () => void;
+    onReloadProfile: () => void;
     onJoin: () => void;
     onLeave: () => void;
     onDelete: () => void;
@@ -129,6 +130,8 @@ export type GroupDialogTabCommands = {
     onDeletePost: (post: GroupPostRecord) => void;
     onEditEvent: (event: GroupCalendarEventRecord) => void;
     onEditPost: (post: GroupPostRecord) => void;
+    onGalleriesChanged: () => void;
+    onPhotosChanged: () => void;
     onExportMembers: (scope: 'loaded' | 'all') => void;
     onLoadMoreMembers: () => void;
     onOpenLink: (url: string) => void;

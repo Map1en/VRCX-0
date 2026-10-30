@@ -5136,7 +5136,29 @@
                 "failed_to_search": "Mitgliedersuche fehlgeschlagen"
             },
             "gallery": {
-                "header": "Fotos"
+                "header": "Fotos",
+                "create": "Neue Galerie",
+                "edit": "Galerie bearbeiten",
+                "delete": "Galerie löschen",
+                "add_image": "Bild hinzufügen",
+                "delete_image": "Bild löschen",
+                "name": "Name",
+                "description": "Beschreibung",
+                "members_only": "Nur für Gruppenmitglieder sichtbar",
+                "visibility_public": "Für alle sichtbar",
+                "visibility_members": "Nur Gruppenmitglieder",
+                "visibility_roles": "Nur bestimmte Rollen",
+                "created": "Galerie erstellt",
+                "saved": "Galerie aktualisiert",
+                "deleted": "Galerie gelöscht",
+                "image_added": "Bild hinzugefügt",
+                "image_pending_approval": "Bild eingereicht, wartet auf Freigabe",
+                "image_deleted": "Bild gelöscht",
+                "save_failed": "Galerie konnte nicht gespeichert werden",
+                "delete_failed": "Löschen fehlgeschlagen",
+                "delete_confirm": "Diese Galerie löschen?",
+                "delete_confirm_description": "{name} und alle Bilder darin werden gelöscht.",
+                "delete_image_confirm": "Dieses Bild löschen?"
             },
             "json": {
                 "header": "JSON"

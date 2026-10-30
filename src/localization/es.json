@@ -5184,7 +5184,29 @@
                 "failed_to_search": "No se pudo buscar entre los miembros"
             },
             "gallery": {
-                "header": "Fotos"
+                "header": "Fotos",
+                "create": "Nueva galería",
+                "edit": "Editar galería",
+                "delete": "Eliminar galería",
+                "add_image": "Añadir imagen",
+                "delete_image": "Eliminar imagen",
+                "name": "Nombre",
+                "description": "Descripción",
+                "members_only": "Visible solo para miembros del grupo",
+                "visibility_public": "Visible para todos",
+                "visibility_members": "Solo miembros del grupo",
+                "visibility_roles": "Solo roles concretos",
+                "created": "Galería creada",
+                "saved": "Galería actualizada",
+                "deleted": "Galería eliminada",
+                "image_added": "Imagen añadida",
+                "image_pending_approval": "Imagen enviada, pendiente de aprobación",
+                "image_deleted": "Imagen eliminada",
+                "save_failed": "No se pudo guardar la galería",
+                "delete_failed": "No se pudo eliminar",
+                "delete_confirm": "¿Eliminar esta galería?",
+                "delete_confirm_description": "Se eliminarán {name} y todas sus imágenes.",
+                "delete_image_confirm": "¿Eliminar esta imagen?"
             },
             "json": {
                 "header": "JSON"

@@ -1,8 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { EyeIcon, ImageIcon, PencilIcon, Trash2Icon } from 'lucide-react';
+import { EyeIcon, PencilIcon, Trash2Icon } from 'lucide-react';
 import {
     Fragment,
-    useEffect,
     useLayoutEffect,
     useRef,
     useState,
@@ -13,7 +12,6 @@ import { useTranslation } from 'react-i18next';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { TranslatableText } from '@/components/translation/TranslatableText';
 import type {
-    GroupGalleryPhotoRow,
     GroupPostRecord,
     GroupProfileRecord
 } from '@/domain/entities/group';
@@ -32,13 +30,10 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Separator } from '@/ui/shadcn/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     getGroupRoleNameMap,
-    getGroupRowImage,
-    getGroupRowLabel,
     getGroupRowRawImage,
     groupRowsEmptyTitle
 } from './groupDialogUtils';
@@ -58,13 +53,11 @@ type RowListBaseProps = RowListActions & {
     error?: string;
 };
 
-type RowListProps =
-    | (RowListBaseProps & {
-          kind: 'posts';
-          rows: GroupPostRecord[];
-          canManagePosts?: boolean;
-      })
-    | (RowListBaseProps & { kind: 'photos'; rows: GroupGalleryPhotoRow[] });
+type RowListProps = RowListBaseProps & {
+    kind: 'posts';
+    rows: GroupPostRecord[];
+    canManagePosts?: boolean;
+};
 
 function text(value: unknown): string {
     return typeof value === 'string' ? value : '';
@@ -438,138 +431,6 @@ function PostList({
     );
 }
 
-type GalleryEntry = {
-    gallery: { id: string; name: string; description?: string };
-    rows: GroupGalleryPhotoRow[];
-};
-
-function PhotoGalleryRows({
-    rows,
-    loading,
-    error,
-    onPreviewImage
-}: RowListActions & {
-    rows: GroupGalleryPhotoRow[];
-    loading: boolean;
-    error: string;
-}) {
-    const { t } = useTranslation();
-
-    const groups = new Map<string, GalleryEntry>();
-    for (const row of rows) {
-        const galleryId = text(row.$galleryId) || 'gallery';
-        if (!groups.has(galleryId)) {
-            groups.set(galleryId, {
-                gallery: {
-                    id: galleryId,
-                    name: text(row.$galleryName) || 'Gallery'
-                },
-                rows: []
-            });
-        }
-        groups.get(galleryId)?.rows.push(row);
-    }
-    const galleryEntries = Array.from(groups.values());
-    const [activeGallery, setActiveGallery] = useState(
-        galleryEntries[0]?.gallery?.id || ''
-    );
-
-    useEffect(() => {
-        if (
-            galleryEntries.length &&
-            !galleryEntries.some((entry) => entry.gallery.id === activeGallery)
-        ) {
-            setActiveGallery(galleryEntries[0].gallery.id);
-        }
-    }, [activeGallery, galleryEntries]);
-
-    if (loading) {
-        return (
-            <GroupListState title={t('dialog.group.gallery.header')} loading />
-        );
-    }
-    if (error) {
-        return (
-            <GroupListState
-                title={t('dialog.group.gallery.header')}
-                error={error}
-            />
-        );
-    }
-    if (!galleryEntries.length) {
-        return <GroupListState title={t('dialog.group.gallery.header')} />;
-    }
-
-    return (
-        <Tabs
-            value={activeGallery}
-            onValueChange={setActiveGallery}
-            className="gap-2"
-        >
-            <TabsList className="max-w-full justify-start overflow-x-auto">
-                {galleryEntries.map(({ gallery, rows: galleryRows }) => (
-                    <TabsTrigger
-                        key={gallery.id}
-                        value={gallery.id}
-                        className="flex-none px-3"
-                    >
-                        <span className="font-bold">
-                            {gallery.name || 'Gallery'}
-                        </span>
-                        <span className="text-muted-foreground ml-1.5 text-xs">
-                            {galleryRows.length}
-                        </span>
-                    </TabsTrigger>
-                ))}
-            </TabsList>
-            {galleryEntries.map(({ gallery, rows: galleryRows }) => (
-                <TabsContent
-                    key={gallery.id}
-                    value={gallery.id}
-                    className="m-0"
-                >
-                    {gallery.description ? (
-                        <div className="text-muted-foreground px-2 py-1 text-sm">
-                            {gallery.description}
-                        </div>
-                    ) : null}
-                    <div className="grid max-h-[60vh] gap-4 overflow-y-auto p-1 pt-2 sm:grid-cols-2 lg:grid-cols-3">
-                        {galleryRows.map((row, index) => {
-                            const image = getGroupRowImage(row, 'photos');
-                            return (
-                                <Button
-                                    key={`${getGroupRowLabel(row)}:${index}`}
-                                    type="button"
-                                    variant="ghost"
-                                    className="h-auto w-full flex-col items-stretch overflow-hidden rounded-md border p-0 text-left text-sm"
-                                    onClick={() =>
-                                        onPreviewImage?.(
-                                            getGroupRowRawImage(row),
-                                            getGroupRowLabel(row)
-                                        )
-                                    }
-                                >
-                                    {image ? (
-                                        <FadeInImage
-                                            src={image}
-                                            alt={getGroupRowLabel(row)}
-                                            className="max-h-52 w-full object-contain"
-                                        />
-                                    ) : (
-                                        <div className="bg-muted flex h-52 w-full items-center justify-center">
-                                            <ImageIcon className="text-muted-foreground" />
-                                        </div>
-                                    )}
-                                </Button>
-                            );
-                        })}
-                    </div>
-                </TabsContent>
-            ))}
-        </Tabs>
-    );
-}
-
 export function RowList(props: RowListProps) {
     const { kind, loading = false, error = '' } = props;
     if (loading) {
@@ -580,31 +441,17 @@ export function RowList(props: RowListProps) {
             <GroupListState title={groupRowsEmptyTitle(kind)} error={error} />
         );
     }
-    if (props.kind === 'photos') {
-        return (
-            <PhotoGalleryRows
-                rows={props.rows}
-                loading={loading}
-                error={error}
-                onPreviewImage={props.onPreviewImage}
-            />
-        );
-    }
     if (!props.rows.length) {
         return <GroupListState title={groupRowsEmptyTitle(kind)} />;
     }
-    if (props.kind === 'posts') {
-        return (
-            <PostList
-                rows={props.rows}
-                group={props.group ?? null}
-                onPreviewImage={props.onPreviewImage}
-                canManagePosts={props.canManagePosts ?? false}
-                onEditPost={props.onEditPost}
-                onDeletePost={props.onDeletePost}
-            />
-        );
-    }
-
-    return null;
+    return (
+        <PostList
+            rows={props.rows}
+            group={props.group ?? null}
+            onPreviewImage={props.onPreviewImage}
+            canManagePosts={props.canManagePosts ?? false}
+            onEditPost={props.onEditPost}
+            onDeletePost={props.onDeletePost}
+        />
+    );
 }

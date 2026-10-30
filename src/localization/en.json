@@ -5184,7 +5184,29 @@
                 "failed_to_search": "Failed to search members"
             },
             "gallery": {
-                "header": "Photos"
+                "header": "Photos",
+                "create": "New gallery",
+                "edit": "Edit gallery",
+                "delete": "Delete gallery",
+                "add_image": "Add image",
+                "delete_image": "Delete image",
+                "name": "Name",
+                "description": "Description",
+                "members_only": "Visible to group members only",
+                "visibility_public": "Visible to everyone",
+                "visibility_members": "Group members only",
+                "visibility_roles": "Specific roles only",
+                "created": "Gallery created",
+                "saved": "Gallery updated",
+                "deleted": "Gallery deleted",
+                "image_added": "Image added",
+                "image_pending_approval": "Image submitted and waiting for approval",
+                "image_deleted": "Image deleted",
+                "save_failed": "Couldn't save the gallery",
+                "delete_failed": "Couldn't delete",
+                "delete_confirm": "Delete this gallery?",
+                "delete_confirm_description": "{name} and every image in it will be deleted.",
+                "delete_image_confirm": "Delete this image?"
             },
             "json": {
                 "header": "JSON"
