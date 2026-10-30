@@ -213,7 +213,7 @@ impl RuntimeHostState {
                 LoginSessionState::Failed { reason, .. } => {
                     return Err(NonInteractiveAuthError::Failed(reason.clone()));
                 }
-                LoginSessionState::Cancelled => {
+                LoginSessionState::Cancelled | LoginSessionState::DeviceApproval { .. } => {
                     return Err(NonInteractiveAuthError::Failed(
                         "Login was cancelled.".into(),
                     ));

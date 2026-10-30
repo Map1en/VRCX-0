@@ -2,6 +2,10 @@ use std::time::Duration;
 
 use serde_json::Value;
 use vrcx_0_contracts::vrchat_api::{vrchat_response, VrchatResponse};
+use vrcx_0_contracts::vrchat_device_login::{
+    interpret_device_code_response, interpret_device_status_response, VrchatDeviceAuthorization,
+    VrchatDeviceStatus,
+};
 use vrcx_0_contracts::vrchat_login::{
     interpret_cookie_probe_config_response, interpret_cookie_probe_current_user_response,
     interpret_login_config_response, interpret_login_response,
@@ -16,8 +20,9 @@ use vrcx_0_core::vrchat_endpoints::{
 use vrcx_0_core::TwoFactorMethod;
 use vrcx_0_logger_protocol::wire::SnapshotPayload;
 use vrcx_0_vrchat_client::auth::{
-    config_get_input, current_user_get_input, email_otp_verify_input, login_basic_input,
-    otp_verify_input, session_get_input, totp_verify_input,
+    config_get_input, current_user_get_input, device_code_input, device_status_input,
+    email_otp_verify_input, login_basic_input, logout_input, otp_verify_input, session_get_input,
+    totp_verify_input,
 };
 use vrcx_0_vrchat_client::friends::friends_get_input;
 use vrcx_0_vrchat_client::http_api::{build_web_execute_request, ApiScope, HttpApiRequestInput};
@@ -154,6 +159,46 @@ impl Vrchat {
         TwoFactorOutcome::Login(login_outcome(interpret_two_factor_current_user_response(
             &user,
         )))
+    }
+
+    pub async fn request_device_authorization(&self) -> Result<VrchatDeviceAuthorization, String> {
+        let config = self.execute(config_get_input(ENDPOINT.into())).await;
+        match transport_outcome(&config) {
+            Some(LoginOutcome::Network { reason }) => return Err(reason),
+            Some(LoginOutcome::RateLimited) => {
+                return Err("VRChat is rate limiting logins; try again later".into())
+            }
+            _ => {}
+        }
+        if let Some(VrchatLoginStep::Failed { reason, .. }) =
+            interpret_login_config_response(&config)
+        {
+            return Err(reason);
+        }
+        let response = self.execute(device_code_input(ENDPOINT.into())).await;
+        if response.status == NETWORK_STATUS {
+            return Err(response.data);
+        }
+        interpret_device_code_response(&response)
+    }
+
+    pub async fn device_status(&self, device_code: String) -> Option<VrchatDeviceStatus> {
+        let response = self
+            .execute(device_status_input(ENDPOINT.into(), device_code))
+            .await;
+        (response.status != NETWORK_STATUS).then(|| interpret_device_status_response(&response))
+    }
+
+    pub async fn logout(&self) {
+        self.execute(logout_input(ENDPOINT.into())).await;
+    }
+
+    pub async fn complete_device_login(&self) -> LoginOutcome {
+        let response = self.execute(current_user_get_input(ENDPOINT.into())).await;
+        if let Some(outcome) = transport_outcome(&response) {
+            return outcome;
+        }
+        login_outcome(interpret_login_response(&response))
     }
 
     pub async fn probe(&self, expected_account_id: &str) -> ProbeOutcome {

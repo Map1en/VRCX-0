@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use tauri::State;
-use vrcx_0_logger_protocol::wire::{SessionState, WebhookFormat};
+use vrcx_0_logger_protocol::wire::{DeviceLoginState, SessionState, WebhookFormat};
 use vrcx_0_runtime_host_desktop::feed_logger::{
     FeedLoggerBackfillHistory, FeedLoggerProbe, FeedLoggerSettingsView, FeedLoggerSyncReport,
     SettingsCheck,
@@ -86,6 +86,32 @@ pub async fn app__feed_logger_push_credentials(
         .runtime_host()
         .feed_logger()
         .push_credentials(username, password, save_password)
+        .await
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__feed_logger_start_device_login(
+    state: State<'_, AppState>,
+) -> Result<DeviceLoginState, AppError> {
+    state
+        .runtime_host()
+        .feed_logger()
+        .start_device_login()
+        .await
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__feed_logger_cancel_device_login(
+    state: State<'_, AppState>,
+) -> Result<(), AppError> {
+    state
+        .runtime_host()
+        .feed_logger()
+        .cancel_device_login()
         .await
         .map_err(AppError::from)
 }

@@ -1,13 +1,18 @@
-import { ArrowLeftIcon } from 'lucide-react';
+import { ArrowLeftIcon, QrCodeIcon } from 'lucide-react';
 import type { Dispatch, FormEventHandler, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { SavedCredentialRecord } from '@/repositories/authRepository';
+import { userImage } from '@/services/entityMediaService';
+import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/shadcn/card';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
+
+import { getLoginUserDisplayName } from '../loginDisplay';
 
 type LoginFormState = {
     password: string;
@@ -28,7 +33,9 @@ type LoginFormCardProps = {
     onCancelAutoLogin: () => void;
     onOpenForgotPassword: () => void;
     onOpenRegister: () => void;
+    onStartQrLogin: () => void;
     onSubmit: FormEventHandler<HTMLFormElement>;
+    preparedAccount: SavedCredentialRecord | null;
     setLoginErrors: Dispatch<SetStateAction<LoginErrors>>;
     setLoginForm: Dispatch<SetStateAction<LoginFormState>>;
     showBackToSavedAccounts: boolean;
@@ -47,9 +54,14 @@ export function LoginFormCard({
     onBackToSavedAccounts,
     onOpenRegister,
     onOpenForgotPassword,
+    onStartQrLogin,
+    preparedAccount,
     showBackToSavedAccounts
 }: LoginFormCardProps) {
     const { t } = useTranslation();
+    const preparedAvatarUrl = preparedAccount
+        ? userImage(preparedAccount.user, 64)
+        : '';
 
     return (
         <Card className="flex flex-1 flex-col gap-3 pt-2">
@@ -70,6 +82,29 @@ export function LoginFormCard({
                 </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-1 flex-col gap-4">
+                {preparedAccount ? (
+                    <div className="bg-muted/40 flex items-center gap-3 rounded-lg border px-3 py-2.5">
+                        <Avatar>
+                            {preparedAvatarUrl ? (
+                                <AvatarImage src={preparedAvatarUrl} alt="" />
+                            ) : null}
+                            <AvatarFallback>
+                                {getLoginUserDisplayName(preparedAccount.user)
+                                    .trim()
+                                    .slice(0, 2)
+                                    .toUpperCase() || '?'}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="flex min-w-0 flex-col">
+                            <span className="truncate text-sm font-medium">
+                                {getLoginUserDisplayName(preparedAccount.user)}
+                            </span>
+                            <span className="text-muted-foreground text-xs">
+                                {t('view.login.passwordless_account_hint')}
+                            </span>
+                        </div>
+                    </div>
+                ) : null}
                 <form
                     className="flex flex-1 flex-col gap-4"
                     onSubmit={onSubmit}
@@ -176,6 +211,22 @@ export function LoginFormCard({
                         )}
                     </Button>
                 </form>
+                <div className="text-muted-foreground flex items-center gap-3 text-xs">
+                    <span className="bg-border h-px flex-1" />
+                    {t('view.login.or')}
+                    <span className="bg-border h-px flex-1" />
+                </div>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    className="w-full"
+                    disabled={busy}
+                    onClick={onStartQrLogin}
+                >
+                    <QrCodeIcon data-icon="inline-start" />
+                    {t('view.login.qr.button')}
+                </Button>
                 <div className="text-muted-foreground flex items-center justify-center gap-2 text-xs">
                     <Button
                         type="button"

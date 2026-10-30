@@ -69,6 +69,7 @@ vi.mock('./i18nService', () => ({
     }
 }));
 
+import { usePendingLoginAccountStore } from '@/state/pendingLoginAccountStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
@@ -285,6 +286,23 @@ describe('authAutoLoginService', () => {
             'frontend-auto-login-expired'
         );
         expect(mocks.showAuthFailureToast).not.toHaveBeenCalled();
+    });
+
+    it('hands an expired passwordless account to the sign-in page', async () => {
+        const passwordless = snapshot({ credential: savedCredential(false) });
+        mocks.autoLoginStart.mockResolvedValueOnce({
+            status: 'expired',
+            snapshot: passwordless
+        });
+
+        await expect(
+            executeReactAutoLogin(passwordless)
+        ).resolves.toMatchObject({ status: 'expired' });
+
+        expect(usePendingLoginAccountStore.getState().take()).toEqual({
+            account: savedCredential(false),
+            reason: 'expired'
+        });
     });
 
     it('returns a cancelled result when the auto-login delay is aborted before waiting', async () => {

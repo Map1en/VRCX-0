@@ -75,7 +75,9 @@ pub use log_watcher::{
     HostLogLocationSnapshotScanner, LogLocationSnapshot, LogWatcher,
 };
 pub use media::DesktopMediaRuntime;
-pub use privacy_lock::{PrivacyLockOutcome, PrivacyLockRuntime, PrivacyLockSnapshot};
+pub use privacy_lock::{
+    PrivacyLockDeviceStart, PrivacyLockOutcome, PrivacyLockRuntime, PrivacyLockSnapshot,
+};
 pub use process_monitor::HostGameProcessMonitorActions;
 pub use profile_backup::{
     DesktopProfileBackupRuntime, DesktopProfileRestoreRequest, ProfileBackupSettingsError,

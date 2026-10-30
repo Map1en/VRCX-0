@@ -8,7 +8,7 @@ use super::super::storage::{
     read_saved_credentials, LAST_USER_LOGGED_IN_KEY, SAVED_CREDENTIALS_KEY,
 };
 use super::super::types::LoginSuccessRecordInput;
-use super::record_login_success;
+use super::{clear_saved_password, record_login_success};
 
 fn contains_secret_key(value: &serde_json::Value) -> bool {
     match value {
@@ -95,7 +95,7 @@ fn record_login_success_with_save_credentials_captures_live_cookies(
             })
             .into(),
             stored_login_params: None,
-            save_credentials: true,
+            record: crate::auth::SavedCredentialRecordMode::WithPassword,
         },
     )?;
 
@@ -125,7 +125,7 @@ fn record_login_success_without_save_credentials_does_not_persist_a_new_entry(
             })
             .into(),
             stored_login_params: None,
-            save_credentials: false,
+            record: crate::auth::SavedCredentialRecordMode::ExistingOnly,
         },
     )?;
 
@@ -170,7 +170,7 @@ fn record_login_success_without_save_credentials_refreshes_an_existing_record_in
             })
             .into(),
             stored_login_params: None,
-            save_credentials: false,
+            record: crate::auth::SavedCredentialRecordMode::ExistingOnly,
         },
     )?;
 
@@ -276,5 +276,65 @@ fn legacy_records_decode_to_typed_credentials_and_keep_snapshot_ordering(
     );
     assert_eq!(persisted["usr_a"]["loginParams"]["endpoint"], "");
     assert_eq!(persisted["usr_a"]["loginParams"]["websocket"], "");
+    Ok(())
+}
+
+fn seed_password_record(config: &MemoryAuthCredentialStore) -> vrcx_0_application_core::Result<()> {
+    config.set_string(
+        SAVED_CREDENTIALS_KEY,
+        &json!({
+            "usr_1": {
+                "user": { "id": "usr_1", "displayName": "Name" },
+                "loginParams": {
+                    "username": "login@example.com",
+                    "password": "original-secret"
+                },
+                "cookies": "stored-cookie"
+            }
+        })
+        .to_string(),
+    )
+}
+
+#[test]
+fn a_qr_login_keeps_the_saved_password_of_an_existing_record() -> vrcx_0_application_core::Result<()>
+{
+    let config = MemoryAuthCredentialStore::default();
+    seed_password_record(&config)?;
+
+    record_login_success(
+        &config,
+        &MemoryAuthSessionCookies::default(),
+        LoginSuccessRecordInput {
+            user: json!({ "id": "usr_1", "displayName": "Name" }).into(),
+            login_params: json!({}).into(),
+            stored_login_params: None,
+            record: crate::auth::SavedCredentialRecordMode::WithoutPassword,
+        },
+    )?;
+
+    let saved_credentials = read_saved_credentials(&config)?;
+    assert_eq!(
+        saved_credentials["usr_1"].login_params.password.as_deref(),
+        Some("original-secret")
+    );
+    Ok(())
+}
+
+#[test]
+fn clearing_the_saved_password_keeps_a_passwordless_record() -> vrcx_0_application_core::Result<()>
+{
+    let config = MemoryAuthCredentialStore::default();
+    seed_password_record(&config)?;
+
+    let snapshot = clear_saved_password(&config, "usr_1".into())?;
+
+    let record = &read_saved_credentials(&config)?["usr_1"];
+    assert_eq!(record.login_params.username, "login@example.com");
+    assert!(record.login_params.password.is_none());
+    assert!(record.cookies.is_none());
+    let listed = &snapshot.saved_credentials_list[0];
+    assert!(!listed.has_login_credentials);
+    assert!(clear_saved_password(&config, "usr_missing".into()).is_err());
     Ok(())
 }

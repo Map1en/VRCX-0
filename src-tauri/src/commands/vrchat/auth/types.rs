@@ -17,3 +17,10 @@ pub struct VrchatAuthSavedCredentialDeleteInput {
     #[serde(default)]
     pub(crate) user_id: String,
 }
+
+#[derive(Debug, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct VrchatAuthSavedPasswordClearInput {
+    #[serde(default)]
+    pub(crate) user_id: String,
+}

@@ -545,7 +545,14 @@
             "backfilled": "기록기에서 피드 {count}개를 채웠습니다",
             "backfill_failed": "기록기에서 채우지 못했습니다",
             "skipped": "시작점이 될 친구 목록이 없어 기록 {count}개를 채우지 못했습니다"
-        }
+        },
+        "qr_description": "QR 코드는 기록기가 만듭니다. 기록기는 자체 세션을 받으므로 비밀번호가 네트워크를 거치지 않습니다.",
+        "qr_no_auto_relogin": "QR 코드로 로그인하면 기록기는 자동으로 다시 로그인하지 않습니다. 연결이 끊기면 기록을 멈추고 Webhook 알림을 보내므로, 여기로 돌아와 QR 코드를 다시 스캔하세요. 자동으로 다시 로그인하려면 비밀번호로 로그인하고 \"기록기에 비밀번호 저장\"을 켜세요.",
+        "qr_cancel": "QR 로그인 취소",
+        "qr_start": "QR 코드 표시",
+        "login_method_password": "비밀번호",
+        "login_method_qr": "QR 코드",
+        "qr_requires_update": "기록기를 업데이트하면 QR 코드로 로그인할 수 있습니다."
     },
     "common": {
         "no_data": "데이터 없음",
@@ -1205,6 +1212,25 @@
                 "description": "저장된 계정 목록에서 {name} 계정을 삭제할까요?",
                 "confirm": "제거",
                 "removing": "삭제 중"
+            },
+            "or": "또는",
+            "passwordless_account_hint": "이 계정은 비밀번호가 저장되어 있지 않습니다. 비밀번호를 입력하거나 QR 코드로 로그인하세요",
+            "qr": {
+                "button": "QR 코드로 로그인",
+                "title": "QR 코드로 로그인",
+                "use_password": "비밀번호로 로그인"
+            },
+            "saved_group": {
+                "with_password": "비밀번호 저장됨",
+                "with_password_hint": "클릭하여 로그인",
+                "without_password": "비밀번호 저장 안 됨",
+                "without_password_hint": "클릭 후 비밀번호 또는 QR 코드로 로그인",
+                "requires_login": "로그인 필요",
+                "switch_requires_login": "비밀번호 저장 안 됨 · 로그인 화면으로 이동"
+            },
+            "expired_account": {
+                "title": "{name}의 세션이 만료되었습니다",
+                "description": "이 계정은 비밀번호가 저장되어 있지 않아 자동으로 다시 로그인하지 않습니다. 비밀번호를 입력하거나 QR 코드를 다시 스캔하세요."
             }
         },
         "feed": {
@@ -6402,7 +6428,8 @@
             "auto_login_failed": "자동 로그인에 실패했습니다",
             "session_expired": "VRChat 세션이 만료되었습니다. 로그인으로 돌아갑니다.",
             "session_restore_available": "저장된 계정을 사용할 수 있는 경우 VRCX-0은 자동으로 다시 로그인을 시도합니다.",
-            "offline": "오프라인 상태입니다"
+            "offline": "오프라인 상태입니다",
+            "session_requires_login": "이 계정은 비밀번호가 저장되어 있지 않아 자동으로 다시 로그인하지 않습니다. QR 코드를 다시 스캔하거나 비밀번호를 입력하세요."
         },
         "vrcx_updater": {
             "failed": "업데이트를 확인하지 못했습니다. {message}",
@@ -7245,7 +7272,11 @@
             "clear_description": "VRChat 계정 비밀번호를 입력하면 잠금 비밀번호를 제거합니다. VRCX-0에 로컬로 저장된 비밀번호와만 비교하며 VRChat 서버로는 아무것도 전송하지 않습니다."
         },
         "recover": {
-            "description": "VRChat 계정 비밀번호를 입력하면 잠금을 제거합니다. VRCX-0에 로컬로 저장된 비밀번호와만 비교하며 VRChat 서버로는 아무것도 전송하지 않습니다."
+            "description": "VRChat 계정 비밀번호를 입력하면 잠금을 제거합니다. VRCX-0에 로컬로 저장된 비밀번호와만 비교하며 VRChat 서버로는 아무것도 전송하지 않습니다.",
+            "method_password": "계정 비밀번호",
+            "method_qr": "QR 코드 인증",
+            "password_unavailable": "이 계정은 비밀번호가 저장되어 있지 않습니다. QR 코드 인증을 사용하세요.",
+            "qr_description": "이 VRChat 계정에 로그인된 휴대폰으로 스캔하고 승인하면 잠금이 제거됩니다. 본인 확인에만 쓰이며 현재 로그인은 바뀌지 않습니다."
         },
         "settings": {
             "label": "개인정보 잠금",
@@ -7268,7 +7299,9 @@
             "password_not_set": "잠금 비밀번호가 설정되어 있지 않습니다",
             "password_already_set": "잠금 비밀번호가 이미 설정되어 있습니다",
             "no_session": "잠금을 사용하려면 먼저 로그인하세요",
-            "failed": "잠금 작업에 실패했습니다"
+            "failed": "잠금 작업에 실패했습니다",
+            "account_mismatch": "승인한 계정이 잠긴 계정과 달라 잠금을 제거하지 않았습니다. 새 QR 코드를 만들었습니다.",
+            "verification_cancelled": "인증이 취소되었습니다."
         }
     },
     "linux_rendering": {
@@ -7285,5 +7318,27 @@
     "mutual_graph_hint": {
         "build": "공통 친구 그래프가 아직 없습니다 · 만들기",
         "room_scan_running": "이 인스턴스의 공통 친구를 조회하는 중입니다. 완료된 후 다시 시도하세요"
+    },
+    "device_login": {
+        "qr_label": "VRChat 로그인 QR 코드",
+        "steps": {
+            "scan": "VRChat에 로그인된 휴대폰으로 QR 코드를 스캔하세요",
+            "approve": "휴대폰에서 이 로그인을 확인하고 승인하세요"
+        },
+        "waiting": "휴대폰에서 승인을 기다리는 중…",
+        "expires_in": "{time} 후 만료",
+        "expired_title": "QR 코드가 만료되었습니다",
+        "expired_description": "제한 시간 안에 승인되지 않았습니다.",
+        "refresh": "새 QR 코드 받기",
+        "failed_title": "QR 코드 로그인 실패",
+        "retry": "다시 시도",
+        "denied": "다른 기기에서 로그인이 거부되었습니다.",
+        "no_auto_relogin": "QR 코드로 로그인하면 자동으로 다시 로그인하지 않습니다. 연결이 끊기면 QR 코드를 다시 스캔해야 합니다. 자동으로 다시 로그인하려면 비밀번호로 로그인하세요.",
+        "saved_password": {
+            "title": "이 계정의 비밀번호가 저장되어 있습니다",
+            "description": "삭제할까요? 삭제하면 연결이 끊겨도 자동으로 다시 로그인하지 않습니다.",
+            "clear": "삭제",
+            "cleared": "저장된 비밀번호를 삭제했습니다"
+        }
     }
 }

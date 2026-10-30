@@ -85,6 +85,8 @@ fn operation_name(operation: &LoginRemoteOperation) -> &'static str {
         LoginRemoteOperation::VerifyTotp { .. } => "verify_totp",
         LoginRemoteOperation::VerifyEmailOtp { .. } => "verify_email_otp",
         LoginRemoteOperation::VerifyOtp { .. } => "verify_otp",
+        LoginRemoteOperation::DeviceCode { .. } => "device_code",
+        LoginRemoteOperation::DeviceStatus { .. } => "device_status",
     }
 }
 
@@ -143,7 +145,7 @@ pub(super) fn seed_saved_credential(
             user: json!({ "id": user_id, "displayName": "Saved User" }).into(),
             login_params: json!({ "username": "saved@example.test", "password": "secret" }).into(),
             stored_login_params: None,
-            save_credentials: true,
+            record: crate::auth::SavedCredentialRecordMode::WithPassword,
         },
     )
     .unwrap();

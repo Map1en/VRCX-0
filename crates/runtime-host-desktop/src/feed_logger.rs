@@ -19,10 +19,11 @@ use vrcx_0_core::realtime::RealtimeWsStatus;
 use vrcx_0_core::OwnerId;
 use vrcx_0_integrations::feed_logger::{FeedLoggerClient, FeedLoggerClientError};
 use vrcx_0_logger_protocol::wire::{
-    AckRequest, CredentialsRequest, FrameKind, FramesRequest, FramesResponse, HelloResponse,
-    OkResponse, PresenceRequest, PresenceResponse, ProfileCheck, SessionState, StatusResponse,
-    TwoFactorRequest, WebhookFormat, WebhookRequest, WireFrame, CAPTURE_FORMAT_VERSION,
-    MAX_FRAMES_PAGE, PRESENCE_INTERVAL_SECS, PRESENCE_TTL_SECS, PROTOCOL_VERSION,
+    AckRequest, CredentialsRequest, DeviceLoginRequest, DeviceLoginState, FrameKind, FramesRequest,
+    FramesResponse, HelloResponse, OkResponse, PresenceRequest, PresenceResponse, ProfileCheck,
+    SessionState, StatusResponse, TwoFactorRequest, WebhookFormat, WebhookRequest, WireFrame,
+    CAPTURE_FORMAT_VERSION, MAX_FRAMES_PAGE, PRESENCE_INTERVAL_SECS, PRESENCE_TTL_SECS,
+    PROTOCOL_VERSION,
 };
 use vrcx_0_persistence::profile_bio::profile_bio_checked_at_list;
 use vrcx_0_persistence::realtime::BackfillWrites;
@@ -502,6 +503,16 @@ impl DesktopFeedLoggerRuntime {
         }
         saved_login_credentials(self.auth_credentials.as_ref(), &scope.current_user_id)
             .map_err(storage)
+    }
+
+    pub async fn start_device_login(&self) -> Result<DeviceLoginState> {
+        let account_id = self.signed_in_user()?;
+        self.call("/device-login", &DeviceLoginRequest { account_id })
+            .await
+    }
+
+    pub async fn cancel_device_login(&self) -> Result<()> {
+        self.call_ok("/device-login-cancel", &OkResponse {}).await
     }
 
     pub async fn submit_two_factor(&self, method: String, code: String) -> Result<SessionState> {

@@ -9,7 +9,10 @@ use super::storage::{
     get_config_string, read_saved_credentials, remove_config_value, set_config_string,
     write_saved_credentials, LAST_USER_LOGGED_IN_KEY,
 };
-use super::types::{LoginSuccessRecordInput, LogoutRecordInput, SavedAuthSnapshot};
+use super::types::{
+    LoginSuccessRecordInput, LogoutRecordInput, SavedAuthSnapshot, SavedCredential,
+    SavedCredentialRecordMode,
+};
 use vrcx_0_application_core::{Error, Result};
 
 pub fn delete_saved_credential(
@@ -26,6 +29,23 @@ pub fn delete_saved_credential(
         remove_config_value(config, LAST_USER_LOGGED_IN_KEY)?;
     }
 
+    build_saved_auth_snapshot(config)
+}
+
+pub fn clear_saved_password(
+    config: &dyn AuthCredentialStore,
+    user_id: String,
+) -> Result<SavedAuthSnapshot> {
+    let user_id = normalize_text(user_id);
+    let mut saved_credentials = read_saved_credentials(config)?;
+    let Some(record) = saved_credentials.get_mut(&user_id) else {
+        return Err(Error::Custom(
+            "No saved credential exists for this account.".into(),
+        ));
+    };
+    record.login_params.password = None;
+    record.cookies = None;
+    write_saved_credentials(config, &saved_credentials)?;
     build_saved_auth_snapshot(config)
 }
 
@@ -46,22 +66,41 @@ pub fn record_login_success(
         cookies => Some(cookies),
     };
 
-    if input.save_credentials {
-        let login_params = input
-            .stored_login_params
-            .as_ref()
-            .unwrap_or(&input.login_params);
-        saved_credentials.insert(
-            user_id.clone(),
-            super::types::SavedCredential {
-                user,
-                login_params: saved_login_params_from_value(login_params.as_value()),
-                cookies,
-            },
-        );
-    } else if let Some(existing_record) = saved_credentials.get_mut(&user_id) {
-        existing_record.user = user;
-        existing_record.cookies = cookies;
+    let login_params = input
+        .stored_login_params
+        .as_ref()
+        .unwrap_or(&input.login_params);
+    match (input.record, saved_credentials.get_mut(&user_id)) {
+        (SavedCredentialRecordMode::WithPassword, _) => {
+            saved_credentials.insert(
+                user_id.clone(),
+                SavedCredential {
+                    user,
+                    login_params: saved_login_params_from_value(login_params.as_value()),
+                    cookies,
+                },
+            );
+        }
+        (_, Some(existing_record)) => {
+            existing_record.user = user;
+            existing_record.cookies = cookies.filter(|_| existing_record.has_saved_password());
+        }
+        (SavedCredentialRecordMode::WithoutPassword, None) => {
+            let mut params = saved_login_params_from_value(login_params.as_value());
+            if params.username.trim().is_empty() {
+                params.username = user.username.clone().unwrap_or_default();
+            }
+            params.password = None;
+            saved_credentials.insert(
+                user_id.clone(),
+                SavedCredential {
+                    user,
+                    login_params: params,
+                    cookies: None,
+                },
+            );
+        }
+        (SavedCredentialRecordMode::ExistingOnly, None) => {}
     }
 
     write_saved_credentials(config, &saved_credentials)?;
@@ -96,7 +135,8 @@ pub(super) fn sync_saved_credential_cookies(
     let mut saved_credentials = read_saved_credentials(config)?;
     if let Some(existing_record) = saved_credentials.get_mut(&user_id) {
         let cookies = cookies.get();
-        existing_record.cookies = (!cookies.is_empty()).then_some(cookies);
+        existing_record.cookies =
+            (!cookies.is_empty() && existing_record.has_saved_password()).then_some(cookies);
         write_saved_credentials(config, &saved_credentials)?;
     }
     Ok(())

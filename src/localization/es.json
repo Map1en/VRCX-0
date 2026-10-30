@@ -545,7 +545,14 @@
             "backfilled": "Se completaron {count} entradas del Feed desde el grabador",
             "backfill_failed": "No se pudieron completar las entradas del grabador",
             "skipped": "No se pudieron completar {count} registros porque el grabador no tenía una lista de amigos de partida"
-        }
+        },
+        "qr_description": "El código QR lo genera el grabador. El grabador obtiene su propia sesión y tu contraseña no viaja por la red.",
+        "qr_no_auto_relogin": "Al iniciar sesión con código QR, el grabador no vuelve a iniciar sesión automáticamente. Si su sesión se cae, deja de grabar y envía un aviso por webhook; vuelve aquí para escanear un código nuevo. Para que vuelva a iniciar sesión automáticamente, usa la contraseña y activa «Guardar la contraseña en el grabador».",
+        "qr_cancel": "Cancelar el inicio con QR",
+        "qr_start": "Mostrar código QR",
+        "login_method_password": "Contraseña",
+        "login_method_qr": "Código QR",
+        "qr_requires_update": "Actualiza el grabador para iniciar sesión con código QR."
     },
     "common": {
         "no_data": "Sin datos",
@@ -1054,7 +1061,11 @@
             "clear_description": "Introduce la contraseña de tu cuenta de VRChat para quitar la contraseña de bloqueo. Solo se compara con la contraseña guardada localmente en VRCX-0; no se envía nada a los servidores de VRChat."
         },
         "recover": {
-            "description": "Introduce la contraseña de tu cuenta de VRChat para quitar el bloqueo. Solo se compara con la contraseña guardada localmente en VRCX-0; no se envía nada a los servidores de VRChat."
+            "description": "Introduce la contraseña de tu cuenta de VRChat para quitar el bloqueo. Solo se compara con la contraseña guardada localmente en VRCX-0; no se envía nada a los servidores de VRChat.",
+            "method_password": "Contraseña de la cuenta",
+            "method_qr": "Verificar con código QR",
+            "password_unavailable": "Esta cuenta no tiene contraseña guardada. Verifica con un código QR.",
+            "qr_description": "Escanéalo con un móvil que tenga iniciada esta cuenta de VRChat y apruébalo para quitar el bloqueo. Solo confirma tu identidad y no cambia la sesión actual."
         },
         "settings": {
             "label": "Bloqueo de privacidad",
@@ -1077,7 +1088,9 @@
             "password_not_set": "No hay contraseña de bloqueo establecida",
             "password_already_set": "Ya hay una contraseña de bloqueo establecida",
             "no_session": "Inicia sesión antes de usar el bloqueo",
-            "failed": "La operación de bloqueo falló"
+            "failed": "La operación de bloqueo falló",
+            "account_mismatch": "La cuenta aprobada no es la cuenta bloqueada, así que no se quitó el bloqueo. Se ha generado un código QR nuevo.",
+            "verification_cancelled": "Verificación cancelada."
         }
     },
     "side_panel": {
@@ -1264,6 +1277,25 @@
                 "description": "Se eliminará {name}",
                 "confirm": "Eliminar",
                 "removing": "Eliminando"
+            },
+            "or": "o",
+            "passwordless_account_hint": "Esta cuenta no tiene contraseña guardada. Introduce la contraseña o inicia sesión con un código QR",
+            "qr": {
+                "button": "Iniciar sesión con código QR",
+                "title": "Iniciar sesión con código QR",
+                "use_password": "Usar la contraseña"
+            },
+            "saved_group": {
+                "with_password": "Contraseña guardada",
+                "with_password_hint": "Haz clic para entrar",
+                "without_password": "Sin contraseña guardada",
+                "without_password_hint": "Haz clic para usar contraseña o código QR",
+                "requires_login": "Requiere iniciar sesión",
+                "switch_requires_login": "Sin contraseña guardada · abre el inicio de sesión"
+            },
+            "expired_account": {
+                "title": "La sesión de {name} ha caducado",
+                "description": "Esta cuenta no tiene contraseña guardada, así que VRCX-0 no volverá a iniciar sesión automáticamente. Introduce la contraseña o escanea un código QR nuevo."
             }
         },
         "feed": {
@@ -6468,7 +6500,8 @@
             "auto_login_failed": "No se pudo iniciar sesión automáticamente",
             "session_expired": "La sesión de VRChat ha caducado. Volviendo al inicio de sesión.",
             "session_restore_available": "Si hay una cuenta guardada disponible, VRCX-0 intentará iniciar sesión de nuevo automáticamente.",
-            "offline": "Estás sin conexión"
+            "offline": "Estás sin conexión",
+            "session_requires_login": "Esta cuenta no tiene contraseña guardada, así que VRCX-0 no volverá a iniciar sesión automáticamente. Escanea un código QR nuevo o introduce la contraseña."
         },
         "vrcx_updater": {
             "failed": "No se pudo buscar actualizaciones: {message}",
@@ -7294,5 +7327,27 @@
     "mutual_graph_hint": {
         "build": "Aún no hay gráfico de amigos en común · Crearlo",
         "room_scan_running": "Consultando amigos en común de esta instancia. Inténtalo de nuevo cuando termine."
+    },
+    "device_login": {
+        "qr_label": "Código QR para iniciar sesión en VRChat",
+        "steps": {
+            "scan": "Escanea el código QR con un móvil que tenga la sesión de VRChat iniciada",
+            "approve": "Confirma y aprueba el inicio de sesión en el móvil"
+        },
+        "waiting": "Esperando la aprobación en el móvil…",
+        "expires_in": "Caduca en {time}",
+        "expired_title": "El código QR ha caducado",
+        "expired_description": "No se aprobó a tiempo.",
+        "refresh": "Obtener un código QR nuevo",
+        "failed_title": "No se pudo iniciar sesión con el código QR",
+        "retry": "Reintentar",
+        "denied": "El inicio de sesión se rechazó en el otro dispositivo.",
+        "no_auto_relogin": "Al iniciar sesión con código QR no se vuelve a iniciar sesión automáticamente. Si la sesión se cae, tendrás que escanear un código nuevo. Para volver a iniciar sesión automáticamente, usa la contraseña.",
+        "saved_password": {
+            "title": "Esta cuenta tiene una contraseña guardada",
+            "description": "¿Borrarla? Si la sesión se cae, ya no se volverá a iniciar sesión automáticamente.",
+            "clear": "Borrar",
+            "cleared": "Contraseña guardada borrada"
+        }
     }
 }

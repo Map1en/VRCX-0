@@ -9,6 +9,7 @@ const recoveryMocks = vi.hoisted(() => ({
     resetCurrentUserRuntimeAuth: vi.fn(),
     setSignedOutSessionState: vi.fn(),
     applySavedAuthSnapshot: vi.fn(),
+    getCachedAuthSnapshot: vi.fn(),
     t: vi.fn()
 }));
 
@@ -37,7 +38,8 @@ vi.mock('./authExecutionService', () => ({
 }));
 
 vi.mock('./authSnapshotService', () => ({
-    applySavedAuthSnapshot: recoveryMocks.applySavedAuthSnapshot
+    applySavedAuthSnapshot: recoveryMocks.applySavedAuthSnapshot,
+    getCachedAuthSnapshot: recoveryMocks.getCachedAuthSnapshot
 }));
 
 vi.mock('./i18nService', () => ({
@@ -107,6 +109,35 @@ describe('authSessionRecoveryService public guardrails', () => {
         );
         recoveryMocks.t.mockImplementation((key: string) =>
             Promise.resolve(key)
+        );
+    });
+
+    it('tells a passwordless account that it will not sign in again by itself', async () => {
+        useSessionStore.getState().setSessionState({
+            sessionPhase: 'ready',
+            isLoggedIn: true
+        });
+        useRuntimeStore.getState().setAuthBootstrap({
+            currentUserId: 'usr_1'
+        });
+        recoveryMocks.getCachedAuthSnapshot.mockReturnValue({
+            ...savedSnapshot('usr_1'),
+            savedCredentialsList: [
+                {
+                    user: { id: 'usr_1' },
+                    loginParams: { username: '' },
+                    hasLoginCredentials: false,
+                    hasCookies: false
+                }
+            ]
+        });
+
+        await handleRuntimeAuthFailure(failure());
+
+        expect(recoveryMocks.toastWarning).toHaveBeenCalledWith(
+            expect.objectContaining({
+                description: 'message.auth.session_requires_login'
+            })
         );
     });
 

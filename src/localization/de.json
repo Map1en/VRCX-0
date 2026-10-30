@@ -545,7 +545,14 @@
             "backfilled": "{count} Feed-Einträge vom Rekorder ergänzt",
             "backfill_failed": "Einträge vom Rekorder konnten nicht ergänzt werden",
             "skipped": "{count} Aufzeichnungen konnten nicht ergänzt werden, weil dem Rekorder eine Freundesliste als Ausgangspunkt fehlte"
-        }
+        },
+        "qr_description": "Der QR-Code kommt vom Rekorder. Der Rekorder erhält eine eigene Sitzung, dein Passwort geht nicht über das Netzwerk.",
+        "qr_no_auto_relogin": "Bei der QR-Anmeldung meldet sich der Rekorder nicht automatisch erneut an. Bricht seine Sitzung ab, stoppt er die Aufzeichnung und schickt eine Webhook-Benachrichtigung; scanne dann hier einen neuen QR-Code. Für eine automatische Neuanmeldung melde dich mit Passwort an und aktiviere „Passwort auf dem Rekorder speichern“.",
+        "qr_cancel": "QR-Anmeldung abbrechen",
+        "qr_start": "QR-Code anzeigen",
+        "login_method_password": "Passwort",
+        "login_method_qr": "QR-Code",
+        "qr_requires_update": "Aktualisiere den Rekorder, um dich per QR-Code anzumelden."
     },
     "common": {
         "no_data": "Keine Daten",
@@ -1054,7 +1061,11 @@
             "clear_description": "Gib dein VRChat-Kontopasswort ein, um den Sperrcode zu entfernen. Es wird nur mit dem lokal in VRCX-0 gespeicherten Passwort verglichen; nichts wird an die VRChat-Server gesendet."
         },
         "recover": {
-            "description": "Gib dein VRChat-Kontopasswort ein, um die Sperre zu entfernen. Es wird nur mit dem lokal in VRCX-0 gespeicherten Passwort verglichen; nichts wird an die VRChat-Server gesendet."
+            "description": "Gib dein VRChat-Kontopasswort ein, um die Sperre zu entfernen. Es wird nur mit dem lokal in VRCX-0 gespeicherten Passwort verglichen; nichts wird an die VRChat-Server gesendet.",
+            "method_password": "Kontopasswort",
+            "method_qr": "Per QR-Code bestätigen",
+            "password_unavailable": "Für dieses Konto ist kein Passwort gespeichert. Bestätige stattdessen per QR-Code.",
+            "qr_description": "Scanne den Code mit einem Handy, auf dem dieses VRChat-Konto angemeldet ist, und bestätige, um die Sperre zu entfernen. Das bestätigt nur deine Identität und ändert die aktuelle Anmeldung nicht."
         },
         "settings": {
             "label": "Privatsphäre-Sperre",
@@ -1077,7 +1088,9 @@
             "password_not_set": "Es ist kein Sperrpasswort festgelegt",
             "password_already_set": "Es ist bereits ein Sperrpasswort festgelegt",
             "no_session": "Melde dich an, bevor du die Sperre verwendest",
-            "failed": "Der Sperrvorgang ist fehlgeschlagen"
+            "failed": "Der Sperrvorgang ist fehlgeschlagen",
+            "account_mismatch": "Das bestätigte Konto ist nicht das gesperrte Konto, die Sperre wurde nicht entfernt. Ein neuer QR-Code wurde erstellt.",
+            "verification_cancelled": "Überprüfung abgebrochen."
         }
     },
     "side_panel": {
@@ -1264,6 +1277,25 @@
                 "description": "{name} wird entfernt",
                 "confirm": "Entfernen",
                 "removing": "Wird entfernt"
+            },
+            "or": "oder",
+            "passwordless_account_hint": "Für dieses Konto ist kein Passwort gespeichert. Gib dein Passwort ein oder melde dich per QR-Code an",
+            "qr": {
+                "button": "Mit QR-Code anmelden",
+                "title": "Mit QR-Code anmelden",
+                "use_password": "Stattdessen Passwort verwenden"
+            },
+            "saved_group": {
+                "with_password": "Passwort gespeichert",
+                "with_password_hint": "Zum Anmelden klicken",
+                "without_password": "Kein Passwort gespeichert",
+                "without_password_hint": "Klicken, um Passwort oder QR-Code zu nutzen",
+                "requires_login": "Anmeldung nötig",
+                "switch_requires_login": "Kein Passwort gespeichert · öffnet die Anmeldung"
+            },
+            "expired_account": {
+                "title": "Sitzung von {name} abgelaufen",
+                "description": "Für dieses Konto ist kein Passwort gespeichert, daher meldet sich VRCX-0 nicht automatisch erneut an. Gib dein Passwort ein oder scanne einen neuen QR-Code."
             }
         },
         "feed": {
@@ -6420,7 +6452,8 @@
             "auto_login_failed": "Automatische Anmeldung fehlgeschlagen",
             "session_expired": "VRChat-Sitzung abgelaufen. Zurück zur Anmeldung.",
             "session_restore_available": "Falls ein gespeicherter Account verfügbar ist, versucht VRCX-0 automatisch, dich erneut anzumelden.",
-            "offline": "Du bist offline"
+            "offline": "Du bist offline",
+            "session_requires_login": "Für dieses Konto ist kein Passwort gespeichert, daher meldet sich VRCX-0 nicht automatisch erneut an. Scanne einen neuen QR-Code oder gib dein Passwort ein."
         },
         "vrcx_updater": {
             "failed": "Update-Prüfung fehlgeschlagen, {message}",
@@ -7238,5 +7271,27 @@
     "mutual_graph_hint": {
         "build": "Noch kein Gemeinsame-Freunde-Graph · Jetzt erstellen",
         "room_scan_running": "Gemeinsame Freunde für diese Instanz werden abgefragt. Bitte danach erneut versuchen."
+    },
+    "device_login": {
+        "qr_label": "VRChat-Anmelde-QR-Code",
+        "steps": {
+            "scan": "Scanne den QR-Code mit einem Handy, auf dem du bei VRChat angemeldet bist",
+            "approve": "Bestätige die Anmeldung auf deinem Handy"
+        },
+        "waiting": "Warte auf Bestätigung am Handy…",
+        "expires_in": "Läuft in {time} ab",
+        "expired_title": "QR-Code abgelaufen",
+        "expired_description": "Die Anmeldung wurde nicht rechtzeitig bestätigt.",
+        "refresh": "Neuen QR-Code anfordern",
+        "failed_title": "QR-Anmeldung fehlgeschlagen",
+        "retry": "Erneut versuchen",
+        "denied": "Die Anmeldung wurde auf dem anderen Gerät abgelehnt.",
+        "no_auto_relogin": "Bei der QR-Anmeldung meldet sich VRCX-0 nicht automatisch erneut an. Bricht die Sitzung ab, musst du einen neuen QR-Code scannen. Für eine automatische Neuanmeldung melde dich mit Passwort an.",
+        "saved_password": {
+            "title": "Für dieses Konto ist ein Passwort gespeichert",
+            "description": "Löschen? Danach meldet sich VRCX-0 nach einem Verbindungsabbruch nicht mehr automatisch an.",
+            "clear": "Löschen",
+            "cleared": "Gespeichertes Passwort gelöscht"
+        }
     }
 }

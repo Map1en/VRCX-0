@@ -1,4 +1,9 @@
-import { useState } from 'react';
+import { TriangleAlertIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { usePendingLoginAccountStore } from '@/state/pendingLoginAccountStore';
+import { Alert, AlertDescription, AlertTitle } from '@/ui/shadcn/alert';
 
 import { DeleteSavedAccountDialog } from './components/DeleteSavedAccountDialog';
 import { LoginFormCard } from './components/LoginFormCard';
@@ -7,10 +12,13 @@ import { LoginPageHeader } from './components/LoginPageHeader';
 import { LoginPageUtilities } from './components/LoginPageUtilities';
 import { LoginProxySettingsDialog } from './components/LoginProxySettingsDialog';
 import { LoginServerStatusAlert } from './components/LoginServerStatusAlert';
+import { QrLoginCard } from './components/QrLoginCard';
 import { SavedAccountsCard } from './components/SavedAccountsCard';
+import { getLoginUserDisplayName } from './loginDisplay';
 import { useLoginPageController } from './useLoginPageController';
 
 export function LoginPage() {
+    const { t } = useTranslation();
     const [manualLoginSelected, setManualLoginSelected] = useState(false);
     const {
         actions,
@@ -18,11 +26,31 @@ export function LoginPage() {
         form,
         header,
         proxyDialog,
+        qrLogin,
         savedAccounts,
         serverStatus,
         utilities
     } = useLoginPageController();
+    const showQrLogin =
+        qrLogin.view.status !== 'closed' || qrLogin.pending !== null;
+    const [preparedAccountExpired, setPreparedAccountExpired] = useState(false);
+    const pendingLoginAccount = usePendingLoginAccountStore(
+        (state) => state.pending
+    );
+    const { onCancelAutoLogin, onPrepareSavedAccount } = form;
+
+    useEffect(() => {
+        if (!pendingLoginAccount) {
+            return;
+        }
+        usePendingLoginAccountStore.getState().take();
+        onCancelAutoLogin();
+        onPrepareSavedAccount(pendingLoginAccount.account);
+        setPreparedAccountExpired(pendingLoginAccount.reason === 'expired');
+        setManualLoginSelected(true);
+    }, [pendingLoginAccount, onCancelAutoLogin, onPrepareSavedAccount]);
     const showSavedAccounts = savedAccounts.visible && !manualLoginSelected;
+    const expiredAccount = preparedAccountExpired ? form.preparedAccount : null;
 
     return (
         <div
@@ -41,7 +69,37 @@ export function LoginPage() {
                         summary={serverStatus.summary}
                         onOpenStatusPage={serverStatus.onOpenStatusPage}
                     />
-                    {showSavedAccounts ? (
+                    {expiredAccount ? (
+                        <Alert>
+                            <TriangleAlertIcon />
+                            <AlertTitle>
+                                {t('view.login.expired_account.title', {
+                                    name: getLoginUserDisplayName(
+                                        expiredAccount.user
+                                    )
+                                })}
+                            </AlertTitle>
+                            <AlertDescription>
+                                {t('view.login.expired_account.description')}
+                            </AlertDescription>
+                        </Alert>
+                    ) : null}
+                    {showQrLogin ? (
+                        <QrLoginCard
+                            view={qrLogin.view}
+                            pending={qrLogin.pending}
+                            onCancel={() => {
+                                void qrLogin.onCancel();
+                            }}
+                            onRetry={() => {
+                                void qrLogin.onRetry();
+                            }}
+                            onUsePassword={() => {
+                                qrLogin.onUsePassword();
+                                setManualLoginSelected(true);
+                            }}
+                        />
+                    ) : showSavedAccounts ? (
                         <SavedAccountsCard
                             accounts={savedAccounts.accounts}
                             activeSavedUserId={savedAccounts.activeSavedUserId}
@@ -52,8 +110,11 @@ export function LoginPage() {
                             onCancelAutoLogin={savedAccounts.onCancelAutoLogin}
                             onUseOtherAccount={(entry) => {
                                 form.onCancelAutoLogin();
+                                setPreparedAccountExpired(false);
                                 if (entry) {
                                     form.onPrepareSavedAccount(entry);
+                                } else {
+                                    form.onClearPreparedAccount();
                                 }
                                 setManualLoginSelected(true);
                             }}
@@ -69,11 +130,20 @@ export function LoginPage() {
                             onSubmit={form.onSubmit}
                             onCancelAutoLogin={form.onCancelAutoLogin}
                             onBackToSavedAccounts={() => {
+                                form.onClearPreparedAccount();
                                 setManualLoginSelected(false);
                             }}
                             showBackToSavedAccounts={savedAccounts.visible}
                             onOpenRegister={actions.openRegister}
                             onOpenForgotPassword={actions.openForgotPassword}
+                            onStartQrLogin={() => {
+                                void form.onStartQrLogin();
+                            }}
+                            preparedAccount={
+                                preparedAccountExpired
+                                    ? null
+                                    : form.preparedAccount
+                            }
                         />
                     )}
                     <LoginPageUtilities

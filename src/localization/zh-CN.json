@@ -545,7 +545,14 @@
             "backfilled": "已从记录端补回 {count} 条好友动态",
             "backfill_failed": "从记录端补回失败",
             "skipped": "{count} 条记录缺少好友列表起点，未能补回"
-        }
+        },
+        "qr_description": "二维码由记录端生成，记录端拿到的是自己的登录会话，密码不会经过网络。",
+        "qr_no_auto_relogin": "扫码登录不会自动重新登录。记录端掉线后会停止记录并发送 Webhook 提醒，需要回到这里重新扫码。需要自动重新登录请使用密码登录，并开启“在记录端保存密码”。",
+        "qr_cancel": "取消扫码",
+        "qr_start": "显示二维码",
+        "login_method_password": "密码登录",
+        "login_method_qr": "扫码登录",
+        "qr_requires_update": "更新记录端后可以使用扫码登录。"
     },
     "common": {
         "no_data": "这里空空如也~",
@@ -1054,7 +1061,11 @@
             "clear_description": "输入 VRChat 账号密码以移除锁定密码。只与本地保存的密码比对，不连接 VRChat 服务器。"
         },
         "recover": {
-            "description": "输入 VRChat 账号密码以移除锁定。只与本地保存的密码比对，不连接 VRChat 服务器。"
+            "description": "输入 VRChat 账号密码以移除锁定。只与本地保存的密码比对，不连接 VRChat 服务器。",
+            "method_password": "VRChat 账号密码",
+            "method_qr": "扫码验证",
+            "password_unavailable": "这个账号没有保存密码，请使用扫码验证。",
+            "qr_description": "用已登录这个 VRChat 账号的手机扫码并批准，验证通过后移除锁定。只用来确认身份，不会改变当前登录。"
         },
         "settings": {
             "label": "隐私锁定",
@@ -1077,7 +1088,9 @@
             "password_not_set": "尚未设置锁定密码",
             "password_already_set": "已经设置过锁定密码",
             "no_session": "请先登录再使用锁定",
-            "failed": "锁定操作失败"
+            "failed": "锁定操作失败",
+            "account_mismatch": "批准的账号不是被锁定的账号，未移除锁定。已生成新的二维码。",
+            "verification_cancelled": "验证已取消。"
         }
     },
     "side_panel": {
@@ -1262,6 +1275,25 @@
                 "description": "将移除 {name}",
                 "confirm": "移除",
                 "removing": "正在移除"
+            },
+            "or": "或",
+            "passwordless_account_hint": "这个账号没有保存密码，请输入密码或扫码登录",
+            "qr": {
+                "button": "扫码登录",
+                "title": "扫码登录",
+                "use_password": "改用密码登录"
+            },
+            "saved_group": {
+                "with_password": "已保存密码",
+                "with_password_hint": "点击直接登录",
+                "without_password": "未保存密码",
+                "without_password_hint": "点击后输入密码或扫码",
+                "requires_login": "需登录",
+                "switch_requires_login": "未保存密码 · 点击回到登录页"
+            },
+            "expired_account": {
+                "title": "{name} 的会话已失效",
+                "description": "这个账号没有保存密码，不会自动重新登录。请输入密码或重新扫码。"
             }
         },
         "feed": {
@@ -6458,7 +6490,8 @@
             "auto_login_failed": "自动登录失败",
             "session_expired": "VRChat 会话已过期，正在返回登录界面。",
             "session_restore_available": "如果有已保存的账号，VRCX-0 会尝试自动重新登录。",
-            "offline": "你现在处于离线状态"
+            "offline": "你现在处于离线状态",
+            "session_requires_login": "这个账号没有保存密码，不会自动重新登录。请重新扫码或输入密码。"
         },
         "vrcx_updater": {
             "failed": "无法检查更新，{message}",
@@ -7284,5 +7317,27 @@
     "mutual_graph_hint": {
         "build": "尚未生成好友关系图，去生成",
         "room_scan_running": "正在查询本房间的共同好友，请稍后再试"
+    },
+    "device_login": {
+        "qr_label": "VRChat 登录二维码",
+        "steps": {
+            "scan": "用已登录 VRChat 的手机扫描二维码",
+            "approve": "在手机上确认并批准这次登录"
+        },
+        "waiting": "等待手机批准…",
+        "expires_in": "{time} 后过期",
+        "expired_title": "二维码已过期",
+        "expired_description": "没有在有效期内批准。",
+        "refresh": "重新获取二维码",
+        "failed_title": "扫码登录失败",
+        "retry": "重试",
+        "denied": "这次登录在另一台设备上被拒绝。",
+        "no_auto_relogin": "扫码登录不会自动重新登录，掉线后需要重新扫码。需要自动重新登录请使用密码登录。",
+        "saved_password": {
+            "title": "此账号在 VRCX-0 中保存了密码",
+            "description": "要清除吗？清除后掉线将不再自动重新登录。",
+            "clear": "清除",
+            "cleared": "已清除保存的密码"
+        }
     }
 }

@@ -545,7 +545,14 @@
             "backfilled": "Filled in {count} Feed entries from the recorder",
             "backfill_failed": "Couldn't fill in entries from the recorder",
             "skipped": "{count} recorded events could not be filled in because the recorder had no friend list to start from"
-        }
+        },
+        "qr_description": "The QR code comes from the recorder. The recorder gets its own session, and your password never crosses the network.",
+        "qr_no_auto_relogin": "QR sign-in does not sign in again automatically. If the recorder's session drops, it stops recording and sends a webhook alert; come back here to scan a new QR code. To sign in again automatically, use password sign-in with “Remember password on the recorder” turned on.",
+        "qr_cancel": "Cancel QR sign-in",
+        "qr_start": "Show QR code",
+        "login_method_password": "Password",
+        "login_method_qr": "QR code",
+        "qr_requires_update": "Update the recorder to sign in with a QR code."
     },
     "common": {
         "no_data": "No data",
@@ -1054,7 +1061,11 @@
             "clear_description": "Enter your VRChat account password to remove the lock password. It is only checked against the password saved locally in VRCX-0; nothing is sent to the VRChat servers."
         },
         "recover": {
-            "description": "Enter your VRChat account password to remove the lock. It is only checked against the password saved locally in VRCX-0; nothing is sent to the VRChat servers."
+            "description": "Enter your VRChat account password to remove the lock. It is only checked against the password saved locally in VRCX-0; nothing is sent to the VRChat servers.",
+            "method_password": "Account password",
+            "method_qr": "QR verification",
+            "password_unavailable": "This account has no saved password. Use QR verification instead.",
+            "qr_description": "Scan with a phone signed in to this VRChat account and approve to remove the lock. This only confirms your identity and does not change the current sign-in."
         },
         "settings": {
             "label": "Privacy Lock",
@@ -1077,7 +1088,9 @@
             "password_not_set": "No lock password is set",
             "password_already_set": "A lock password is already set",
             "no_session": "Sign in before using the lock",
-            "failed": "The lock operation failed"
+            "failed": "The lock operation failed",
+            "account_mismatch": "The approved account is not the locked account, so the lock was not removed. A new QR code has been generated.",
+            "verification_cancelled": "Verification was cancelled."
         }
     },
     "side_panel": {
@@ -1264,6 +1277,25 @@
                 "description": "{name} will be removed",
                 "confirm": "Remove",
                 "removing": "Removing"
+            },
+            "or": "or",
+            "passwordless_account_hint": "No password saved for this account. Enter your password or sign in with a QR code.",
+            "qr": {
+                "button": "Sign in with QR code",
+                "title": "Sign In with QR Code",
+                "use_password": "Use password instead"
+            },
+            "saved_group": {
+                "with_password": "Password saved",
+                "with_password_hint": "Click to sign in",
+                "without_password": "No password saved",
+                "without_password_hint": "Click to enter a password or scan a QR code",
+                "requires_login": "Sign-in needed",
+                "switch_requires_login": "No password saved · opens sign-in"
+            },
+            "expired_account": {
+                "title": "{name}'s session has expired",
+                "description": "No password is saved for this account, so VRCX-0 will not sign in again automatically. Enter your password or scan a new QR code."
             }
         },
         "feed": {
@@ -6468,7 +6500,8 @@
             "auto_login_failed": "Failed to sign in automatically",
             "session_expired": "VRChat session expired. Returning to sign-in.",
             "session_restore_available": "If a saved account is available, VRCX-0 will try to sign in again automatically.",
-            "offline": "You're offline"
+            "offline": "You're offline",
+            "session_requires_login": "This account has no saved password, so VRCX-0 will not sign in again automatically. Scan a new QR code or enter your password."
         },
         "vrcx_updater": {
             "failed": "Failed to check for updates: {message}",
@@ -7294,5 +7327,27 @@
     "mutual_graph_hint": {
         "build": "No mutual friend graph yet · Build it",
         "room_scan_running": "Checking mutual friends for this instance. Try again when it finishes."
+    },
+    "device_login": {
+        "qr_label": "VRChat sign-in QR code",
+        "steps": {
+            "scan": "Scan the QR code with a phone signed in to VRChat",
+            "approve": "Confirm and approve the sign-in on your phone"
+        },
+        "waiting": "Waiting for approval on your phone…",
+        "expires_in": "Expires in {time}",
+        "expired_title": "QR code expired",
+        "expired_description": "It was not approved in time.",
+        "refresh": "Get a new QR code",
+        "failed_title": "QR sign-in failed",
+        "retry": "Try again",
+        "denied": "The sign-in was denied on the other device.",
+        "no_auto_relogin": "QR sign-in does not sign in again automatically. If the session drops, scan a new QR code. To sign in again automatically, use password sign-in.",
+        "saved_password": {
+            "title": "This account has a saved password",
+            "description": "Clear it? Automatic re-login after a disconnect will stop working.",
+            "clear": "Clear",
+            "cleared": "Saved password cleared"
+        }
     }
 }

@@ -6,6 +6,7 @@ import {
 import { flashWindow } from '@/platform/tauri/webview';
 import type { SavedAuthSnapshot } from '@/repositories/authRepository';
 import { toast } from '@/services/toastService';
+import { usePendingLoginAccountStore } from '@/state/pendingLoginAccountStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
 import {
@@ -296,6 +297,16 @@ export async function executeReactAutoLogin(
         if (outcome.status === 'expired') {
             setSignedOutSessionState();
             applySavedAuthSnapshot(outcome.snapshot);
+            const expiredAccount = outcome.snapshot.savedCredentialsList.find(
+                (credential) =>
+                    credential.user.id === throttleKey &&
+                    !credential.hasLoginCredentials
+            );
+            if (expiredAccount) {
+                usePendingLoginAccountStore
+                    .getState()
+                    .request({ account: expiredAccount, reason: 'expired' });
+            }
             runtimeStore.setStartupTask(
                 'auth',
                 'completed',

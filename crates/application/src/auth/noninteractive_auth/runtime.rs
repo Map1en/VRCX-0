@@ -13,7 +13,7 @@ use super::{
 };
 use crate::auth::{
     LoginSuccessRecordInput, LogoutRecordInput, SavedAuthAutoLoginStatus, SavedAuthSnapshot,
-    SavedCredentialLoginStartInput, SavedCredentialSessionData,
+    SavedCredentialLoginStartInput, SavedCredentialRecordMode, SavedCredentialSessionData,
 };
 
 pub type NonInteractiveAuthProbeFuture<'a> =
@@ -165,13 +165,12 @@ impl NonInteractiveAuthRuntime {
         }
 
         let fallback_available = snapshot.auto_login_status == SavedAuthAutoLoginStatus::Available
-            && snapshot
-                .saved_credentials_list
-                .iter()
-                .any(|credential| credential.user.id == user_id);
+            && snapshot.saved_credentials_list.iter().any(|credential| {
+                credential.user.id == user_id && credential.has_login_credentials
+            });
         if !fallback_available {
-            return Err(NonInteractiveAuthError::Failed(
-                "Saved credentials are not available for headless login.".into(),
+            return Err(NonInteractiveAuthError::InteractionRequired(
+                "The VRChat session expired and this account has no saved password; sign in again with a password or QR code.".into(),
             ));
         }
 
@@ -215,7 +214,7 @@ impl NonInteractiveAuthRuntime {
                 })
                 .into(),
                 stored_login_params: None,
-                save_credentials: false,
+                record: SavedCredentialRecordMode::ExistingOnly,
             })
             .map_err(|error| NonInteractiveAuthError::Failed(error.to_string()))
     }
@@ -363,7 +362,7 @@ mod tests {
         }
 
         fn record_login_success(&self, input: LoginSuccessRecordInput) -> Result<()> {
-            assert!(!input.save_credentials);
+            assert_eq!(input.record, SavedCredentialRecordMode::ExistingOnly);
             self.events.lock().unwrap().push("record_success".into());
             Ok(())
         }

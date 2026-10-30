@@ -48,6 +48,7 @@ fn policy_with_isolation(
         PrivacyLockRuntime::new(
             Arc::new(LocalAuthCredentialStore::from_repository(config.clone())),
             RuntimeEventBus::new(),
+            None,
         )
         .unwrap(),
     );

@@ -545,7 +545,14 @@
             "backfilled": "{count} entradas do Feed preenchidas pelo gravador",
             "backfill_failed": "Não foi possível preencher as entradas do gravador",
             "skipped": "Não foi possível preencher {count} registros porque o gravador não tinha uma lista de amigos de partida"
-        }
+        },
+        "qr_description": "O código QR é gerado pelo gravador. O gravador recebe a própria sessão, e sua senha não passa pela rede.",
+        "qr_no_auto_relogin": "Ao entrar com código QR, o gravador não refaz o login automaticamente. Se a sessão dele cair, ele para de gravar e envia um alerta por webhook; volte aqui para escanear um novo código. Para que ele entre de novo automaticamente, use a senha e ative \"Salvar a senha no gravador\".",
+        "qr_cancel": "Cancelar login com QR",
+        "qr_start": "Mostrar código QR",
+        "login_method_password": "Senha",
+        "login_method_qr": "Código QR",
+        "qr_requires_update": "Atualize o gravador para entrar com código QR."
     },
     "common": {
         "no_data": "Sem dados",
@@ -1054,7 +1061,11 @@
             "clear_description": "Digite a senha da sua conta VRChat para remover o código de bloqueio. Ela é comparada apenas com a senha salva localmente no VRCX-0; nada é enviado aos servidores do VRChat."
         },
         "recover": {
-            "description": "Digite a senha da sua conta VRChat para remover o bloqueio. Ela é comparada apenas com a senha salva localmente no VRCX-0; nada é enviado aos servidores do VRChat."
+            "description": "Digite a senha da sua conta VRChat para remover o bloqueio. Ela é comparada apenas com a senha salva localmente no VRCX-0; nada é enviado aos servidores do VRChat.",
+            "method_password": "Senha da conta",
+            "method_qr": "Verificar com código QR",
+            "password_unavailable": "Esta conta não tem senha salva. Use a verificação por código QR.",
+            "qr_description": "Escaneie com um celular conectado a esta conta do VRChat e aprove para remover o bloqueio. Isso só confirma sua identidade e não altera o login atual."
         },
         "settings": {
             "label": "Bloqueio de privacidade",
@@ -1077,7 +1088,9 @@
             "password_not_set": "Nenhuma senha de bloqueio definida",
             "password_already_set": "Já existe uma senha de bloqueio definida",
             "no_session": "Entre antes de usar o bloqueio",
-            "failed": "A operação de bloqueio falhou"
+            "failed": "A operação de bloqueio falhou",
+            "account_mismatch": "A conta aprovada não é a conta bloqueada, então o bloqueio não foi removido. Um novo código QR foi gerado.",
+            "verification_cancelled": "Verificação cancelada."
         }
     },
     "side_panel": {
@@ -1264,6 +1277,25 @@
                 "description": "{name} será removido",
                 "confirm": "Remover",
                 "removing": "Removendo"
+            },
+            "or": "ou",
+            "passwordless_account_hint": "Esta conta não tem senha salva. Digite a senha ou entre com um código QR",
+            "qr": {
+                "button": "Entrar com código QR",
+                "title": "Entrar com código QR",
+                "use_password": "Usar senha"
+            },
+            "saved_group": {
+                "with_password": "Senha salva",
+                "with_password_hint": "Clique para entrar",
+                "without_password": "Sem senha salva",
+                "without_password_hint": "Clique para usar senha ou código QR",
+                "requires_login": "Requer login",
+                "switch_requires_login": "Sem senha salva · abre a tela de login"
+            },
+            "expired_account": {
+                "title": "A sessão de {name} expirou",
+                "description": "Esta conta não tem senha salva, então o VRCX-0 não vai entrar de novo automaticamente. Digite a senha ou escaneie um novo código QR."
             }
         },
         "feed": {
@@ -6420,7 +6452,8 @@
             "auto_login_failed": "Falha no login automático.",
             "session_expired": "Sessão do VRChat expirada. Voltando para o login.",
             "session_restore_available": "Se houver uma conta salva, o VRCX-0 tentará fazer login novamente de forma automática.",
-            "offline": "Você está offline."
+            "offline": "Você está offline.",
+            "session_requires_login": "Esta conta não tem senha salva, então o VRCX-0 não vai entrar de novo automaticamente. Escaneie um novo código QR ou digite a senha."
         },
         "vrcx_updater": {
             "failed": "Falha ao verificar atualização, {message}",
@@ -7238,5 +7271,27 @@
     "mutual_graph_hint": {
         "build": "Ainda não há grafo de amigos mútuos · Criar",
         "room_scan_running": "Consultando amigos mútuos desta instância. Tente novamente quando terminar."
+    },
+    "device_login": {
+        "qr_label": "Código QR para entrar no VRChat",
+        "steps": {
+            "scan": "Escaneie o código QR com um celular conectado ao VRChat",
+            "approve": "Confirme e aprove o login no celular"
+        },
+        "waiting": "Aguardando aprovação no celular…",
+        "expires_in": "Expira em {time}",
+        "expired_title": "O código QR expirou",
+        "expired_description": "O login não foi aprovado a tempo.",
+        "refresh": "Gerar novo código QR",
+        "failed_title": "Falha ao entrar com código QR",
+        "retry": "Tentar novamente",
+        "denied": "O login foi recusado no outro dispositivo.",
+        "no_auto_relogin": "Ao entrar com código QR, o login não é refeito automaticamente. Se a sessão cair, será preciso escanear um novo código. Para entrar de novo automaticamente, use a senha.",
+        "saved_password": {
+            "title": "Esta conta tem uma senha salva",
+            "description": "Apagar? Se a sessão cair, o login não será refeito automaticamente.",
+            "clear": "Apagar",
+            "cleared": "Senha salva apagada"
+        }
     }
 }

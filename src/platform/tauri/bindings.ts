@@ -187,6 +187,19 @@ const generatedCommands = {
             accountPassword
         });
     },
+    async appPrivacyLockDeviceVerifyStart(): Promise<PrivacyLockDeviceStart> {
+        return await TAURI_INVOKE('app__privacy_lock_device_verify_start');
+    },
+    async appPrivacyLockDeviceVerifyWait(
+        attemptId: string
+    ): Promise<PrivacyLockOutcome> {
+        return await TAURI_INVOKE('app__privacy_lock_device_verify_wait', {
+            attemptId
+        });
+    },
+    async appPrivacyLockDeviceVerifyCancel(): Promise<void> {
+        await TAURI_INVOKE('app__privacy_lock_device_verify_cancel');
+    },
     async appDrainPendingDeepLinks(): Promise<DeepLinkAction[]> {
         return await TAURI_INVOKE('app__drain_pending_deep_links');
     },
@@ -423,6 +436,12 @@ const generatedCommands = {
         return await TAURI_INVOKE('app__feed_logger_push_saved_credentials', {
             savePassword
         });
+    },
+    async appFeedLoggerStartDeviceLogin(): Promise<FeedLoggerDeviceLogin> {
+        return await TAURI_INVOKE('app__feed_logger_start_device_login');
+    },
+    async appFeedLoggerCancelDeviceLogin(): Promise<null> {
+        return await TAURI_INVOKE('app__feed_logger_cancel_device_login');
     },
     async appFeedLoggerSubmitTwoFactor(
         method: string,
@@ -1457,6 +1476,13 @@ const generatedCommands = {
         input: VrchatAuthSavedCredentialDeleteInput
     ): Promise<SavedAuthSnapshot> {
         return await TAURI_INVOKE('app__vrchat_auth_saved_credential_delete', {
+            input
+        });
+    },
+    async appVrchatAuthSavedPasswordClear(
+        input: VrchatAuthSavedPasswordClearInput
+    ): Promise<SavedAuthSnapshot> {
+        return await TAURI_INVOKE('app__vrchat_auth_saved_password_clear', {
             input
         });
     },
@@ -4608,6 +4634,10 @@ export type FeedLoggerBackfillHistory = {
     recent: FeedLoggerBackfillRecord[];
 };
 export type FeedLoggerBackfillRecord = { at: number; inserted: number };
+export type FeedLoggerDeviceLogin =
+    | { state: 'waiting'; verificationUrl: string; expiresAt: number }
+    | { state: 'expired' }
+    | { state: 'failed'; reason: string };
 export type FeedLoggerErrorCode =
     | 'notConfigured'
     | 'notSignedIn'
@@ -4676,6 +4706,7 @@ export type FeedLoggerStatus = {
     webhookFormat: FeedLoggerWebhookFormat | null;
     lastWebhookAt: number | null;
     lastWebhookOk: boolean | null;
+    deviceLogin?: FeedLoggerDeviceLogin | null;
 };
 export type FeedLoggerSyncEvent =
     | { state: 'pulling'; frames: number }
@@ -5756,6 +5787,8 @@ export type LoginFailureKind =
     | 'missingCredentials'
     | 'sessionInvalidated'
     | 'twoFactorUnavailable'
+    | 'deviceCodeExpired'
+    | 'deviceDenied'
     | 'network'
     | 'other';
 export type LoginSessionCancelInput = { attemptId?: string };
@@ -5779,7 +5812,8 @@ export type LoginSessionStartInput =
           password?: string;
           saveCredentials?: boolean;
       }
-    | { mode: 'savedCredential'; userId?: string };
+    | { mode: 'savedCredential'; userId?: string }
+    | { mode: 'device' };
 export type LoginSessionState =
     | {
           status: 'authenticated';
@@ -5792,6 +5826,12 @@ export type LoginSessionState =
           methods: string[];
           mode: string;
           error: string | null;
+      }
+    | {
+          status: 'deviceApproval';
+          attemptId: string;
+          verificationUrl: string;
+          expiresAt: number;
       }
     | {
           status: 'failed';
@@ -6282,13 +6322,27 @@ export type PrintFavoriteState = {
     warning: CleanupWarning | null;
 };
 export type PrintUploadParams = { note: string; timestamp: string };
+export type PrivacyLockDeviceStart =
+    | {
+          status: 'pending';
+          attemptId: string;
+          verificationUrl: string;
+          expiresAt: number;
+      }
+    | { status: 'noActiveSession' }
+    | { status: 'failed'; reason: string };
 export type PrivacyLockOutcome =
     | { status: 'ok'; snapshot: PrivacyLockSnapshot }
     | { status: 'noActiveSession' }
     | { status: 'passwordNotSet' }
     | { status: 'passwordAlreadySet' }
     | { status: 'wrongPassword' }
-    | { status: 'accountPasswordUnavailable' };
+    | { status: 'accountPasswordUnavailable' }
+    | { status: 'accountMismatch' }
+    | { status: 'deviceCodeExpired' }
+    | { status: 'deviceDenied' }
+    | { status: 'deviceFailed'; reason: string }
+    | { status: 'cancelled' };
 export type PrivacyLockSnapshot = {
     revision: number;
     userId: string;
@@ -7089,6 +7143,7 @@ export type VrchatAuthFileAnalysisInput = {
     variant?: string;
 };
 export type VrchatAuthSavedCredentialDeleteInput = { userId?: string };
+export type VrchatAuthSavedPasswordClearInput = { userId?: string };
 export type VrchatAvatarIdInput = { avatarId?: string };
 export type VrchatAvatarListByUserInput = {
     userId?: string;

@@ -7,7 +7,9 @@ mod types;
 
 pub use login::saved_credential_login_start;
 pub(crate) use login::saved_credential_login_start_with_api;
-pub use service::{delete_saved_credential, record_login_success, record_logout};
+pub use service::{
+    clear_saved_password, delete_saved_credential, record_login_success, record_logout,
+};
 pub use snapshot::saved_snapshot;
 pub(crate) use storage::saved_credential_password;
 pub use storage::{
@@ -16,6 +18,6 @@ pub use storage::{
 };
 pub use types::{
     LoginSuccessRecordInput, LogoutRecordInput, SavedAuthAutoLoginStatus, SavedAuthSnapshot,
-    SavedCredentialLoginStartInput, SavedCredentialSessionData, SavedCredentialSnapshot,
-    SavedCredentialUser, SavedLoginParamsSnapshot,
+    SavedCredentialLoginStartInput, SavedCredentialRecordMode, SavedCredentialSessionData,
+    SavedCredentialSnapshot, SavedCredentialUser, SavedLoginParamsSnapshot,
 };

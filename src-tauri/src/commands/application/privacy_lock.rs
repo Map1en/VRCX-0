@@ -5,7 +5,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 use crate::bootstrap;
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_runtime_host_desktop::PrivacyLockOutcome;
+use vrcx_0_runtime_host_desktop::{PrivacyLockDeviceStart, PrivacyLockOutcome};
 
 const PRIVACY_LOCK_SETUP_REQUESTED_EVENT: &str = "privacyLockSetupRequested";
 
@@ -74,6 +74,43 @@ pub fn app__privacy_lock_password_clear(
         .clear_with_account_password(&account_password)?;
     refresh_tray_after(&app_handle, &outcome);
     Ok(outcome)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__privacy_lock_device_verify_start(
+    state: State<'_, AppState>,
+) -> Result<PrivacyLockDeviceStart, AppError> {
+    Ok(state
+        .runtime_host()
+        .privacy_lock()
+        .start_device_verification(env!("CARGO_PKG_VERSION"))
+        .await)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__privacy_lock_device_verify_wait(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    attempt_id: String,
+) -> Result<PrivacyLockOutcome, AppError> {
+    let outcome = state
+        .runtime_host()
+        .privacy_lock()
+        .await_device_verification(&attempt_id)
+        .await?;
+    refresh_tray_after(&app_handle, &outcome);
+    Ok(outcome)
+}
+
+#[tauri::command(async)]
+#[specta::specta]
+pub fn app__privacy_lock_device_verify_cancel(state: State<'_, AppState>) {
+    state
+        .runtime_host()
+        .privacy_lock()
+        .cancel_device_verification();
 }
 
 pub(crate) fn engage_privacy_lock(

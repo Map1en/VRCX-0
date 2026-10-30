@@ -545,7 +545,14 @@
             "backfilled": "已從記錄端補回 {count} 筆動態",
             "backfill_failed": "從記錄端補回失敗",
             "skipped": "{count} 筆紀錄缺少好友清單起點，未能補回"
-        }
+        },
+        "qr_description": "QR 碼由記錄端產生，記錄端會取得自己的登入工作階段，密碼不會經過網路。",
+        "qr_no_auto_relogin": "掃碼登入不會自動重新登入。記錄端斷線後會停止記錄並傳送 Webhook 提醒，需要回到這裡重新掃碼。若需要自動重新登入，請使用密碼登入並開啟「在記錄端儲存密碼」。",
+        "qr_cancel": "取消掃碼",
+        "qr_start": "顯示 QR 碼",
+        "login_method_password": "密碼登入",
+        "login_method_qr": "掃碼登入",
+        "qr_requires_update": "更新記錄端後即可使用掃碼登入。"
     },
     "common": {
         "no_data": "無資料",
@@ -1054,7 +1061,11 @@
             "clear_description": "輸入 VRChat 帳號密碼以移除鎖定密碼。只與 VRCX-0 本機儲存的密碼比對，不會傳送任何資料至 VRChat 伺服器。"
         },
         "recover": {
-            "description": "輸入 VRChat 帳號密碼以移除鎖定。只與 VRCX-0 本機儲存的密碼比對，不會傳送任何資料至 VRChat 伺服器。"
+            "description": "輸入 VRChat 帳號密碼以移除鎖定。只與 VRCX-0 本機儲存的密碼比對，不會傳送任何資料至 VRChat 伺服器。",
+            "method_password": "VRChat 帳號密碼",
+            "method_qr": "掃碼驗證",
+            "password_unavailable": "這個帳號沒有儲存密碼，請使用掃碼驗證。",
+            "qr_description": "用已登入這個 VRChat 帳號的手機掃碼並核准，驗證通過後即移除鎖定。只用來確認身分，不會改變目前的登入。"
         },
         "settings": {
             "label": "隱私鎖定",
@@ -1077,7 +1088,9 @@
             "password_not_set": "尚未設定鎖定密碼",
             "password_already_set": "已經設定過鎖定密碼",
             "no_session": "請先登入再使用鎖定",
-            "failed": "鎖定操作失敗"
+            "failed": "鎖定操作失敗",
+            "account_mismatch": "核准的帳號不是被鎖定的帳號，未移除鎖定。已產生新的 QR 碼。",
+            "verification_cancelled": "驗證已取消。"
         }
     },
     "side_panel": {
@@ -1262,6 +1275,25 @@
                 "description": "將移除 {name}",
                 "confirm": "移除",
                 "removing": "正在移除"
+            },
+            "or": "或",
+            "passwordless_account_hint": "這個帳號沒有儲存密碼，請輸入密碼或掃碼登入",
+            "qr": {
+                "button": "掃碼登入",
+                "title": "掃碼登入",
+                "use_password": "改用密碼登入"
+            },
+            "saved_group": {
+                "with_password": "已儲存密碼",
+                "with_password_hint": "點擊直接登入",
+                "without_password": "未儲存密碼",
+                "without_password_hint": "點擊後輸入密碼或掃碼",
+                "requires_login": "需登入",
+                "switch_requires_login": "未儲存密碼 · 點擊回到登入畫面"
+            },
+            "expired_account": {
+                "title": "{name} 的工作階段已失效",
+                "description": "這個帳號沒有儲存密碼，不會自動重新登入。請輸入密碼或重新掃碼。"
             }
         },
         "feed": {
@@ -6449,7 +6481,8 @@
             "auto_login_failed": "自動登入失敗。",
             "session_expired": "VRChat 工作階段已過期，正在返回登入畫面。",
             "session_restore_available": "如果有已儲存的帳號，VRCX-0 會嘗試自動重新登入。",
-            "offline": "你目前處於離線狀態。"
+            "offline": "你目前處於離線狀態。",
+            "session_requires_login": "這個帳號沒有儲存密碼，不會自動重新登入。請重新掃碼或輸入密碼。"
         },
         "vrcx_updater": {
             "failed": "檢查更新失敗，{message}",
@@ -7275,5 +7308,27 @@
     "mutual_graph_hint": {
         "build": "尚未建立共同好友關係圖，前往建立",
         "room_scan_running": "正在查詢此房間的共同好友，請稍後再試"
+    },
+    "device_login": {
+        "qr_label": "VRChat 登入 QR 碼",
+        "steps": {
+            "scan": "用已登入 VRChat 的手機掃描 QR 碼",
+            "approve": "在手機上確認並核准這次登入"
+        },
+        "waiting": "等待手機核准…",
+        "expires_in": "{time} 後過期",
+        "expired_title": "QR 碼已過期",
+        "expired_description": "未在有效時間內核准。",
+        "refresh": "重新取得 QR 碼",
+        "failed_title": "掃碼登入失敗",
+        "retry": "重試",
+        "denied": "這次登入在另一部裝置上遭到拒絕。",
+        "no_auto_relogin": "掃碼登入不會自動重新登入，斷線後需要重新掃碼。若需要自動重新登入，請使用密碼登入。",
+        "saved_password": {
+            "title": "此帳號在 VRCX-0 中儲存了密碼",
+            "description": "要清除嗎？清除後斷線將不再自動重新登入。",
+            "clear": "清除",
+            "cleared": "已清除儲存的密碼"
+        }
     }
 }

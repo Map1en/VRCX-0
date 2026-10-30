@@ -104,6 +104,7 @@ impl DesktopRuntimeServices {
         let privacy_lock = Arc::new(PrivacyLockRuntime::new(
             deps.auth_credentials,
             deps.event_bus.clone(),
+            deps.web.proxy_url().map(str::to_string),
         )?);
         deps.auth_scope.add_observer(privacy_lock.clone());
         let notification_policy = Arc::new(LocalNotificationPolicy::new(

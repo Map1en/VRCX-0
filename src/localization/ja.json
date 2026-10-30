@@ -545,7 +545,14 @@
             "backfilled": "レコーダーからフィードを {count} 件補完しました",
             "backfill_failed": "レコーダーからの補完に失敗しました",
             "skipped": "起点となるフレンドリストがなかったため、{count} 件の記録を補完できませんでした"
-        }
+        },
+        "qr_description": "QR コードはレコーダーが発行します。レコーダーは専用のセッションを取得するため、パスワードがネットワークを通ることはありません。",
+        "qr_no_auto_relogin": "QR コードでログインした場合、レコーダーは自動では再ログインしません。接続が切れると記録を停止して Webhook で通知するので、ここで QR コードを読み取り直してください。自動で再ログインしたい場合は、パスワードでログインして「レコーダーにパスワードを保存」をオンにしてください。",
+        "qr_cancel": "QR ログインをキャンセル",
+        "qr_start": "QR コードを表示",
+        "login_method_password": "パスワード",
+        "login_method_qr": "QR コード",
+        "qr_requires_update": "レコーダーを更新すると QR コードでログインできます。"
     },
     "common": {
         "no_data": "データがありません",
@@ -1050,7 +1057,11 @@
             "clear_description": "VRChat アカウントのパスワードを入力するとロックパスワードを削除できます。ローカルに保存されたパスワードとだけ照合し、VRChat のサーバーには何も送信されません。"
         },
         "recover": {
-            "description": "VRChat アカウントのパスワードを入力するとロックを解除できます。ローカルに保存されたパスワードとだけ照合し、VRChat のサーバーには何も送信されません。"
+            "description": "VRChat アカウントのパスワードを入力するとロックを解除できます。ローカルに保存されたパスワードとだけ照合し、VRChat のサーバーには何も送信されません。",
+            "method_password": "アカウントのパスワード",
+            "method_qr": "QR コードで確認",
+            "password_unavailable": "このアカウントはパスワードが保存されていません。QR コードで確認してください。",
+            "qr_description": "この VRChat アカウントでログインしているスマートフォンで読み取って承認すると、ロックが解除されます。本人確認のためだけに使い、現在のログインは変わりません。"
         },
         "settings": {
             "label": "プライバシーロック",
@@ -1073,7 +1084,9 @@
             "password_not_set": "ロックパスワードが設定されていません",
             "password_already_set": "ロックパスワードはすでに設定されています",
             "no_session": "ロックを使うには先にログインしてください",
-            "failed": "ロックの操作に失敗しました"
+            "failed": "ロックの操作に失敗しました",
+            "account_mismatch": "承認されたアカウントがロック中のアカウントと異なるため、ロックは解除されていません。新しい QR コードを発行しました。",
+            "verification_cancelled": "確認をキャンセルしました。"
         }
     },
     "side_panel": {
@@ -1258,6 +1271,25 @@
                 "description": "{name} を削除します",
                 "confirm": "削除",
                 "removing": "削除中"
+            },
+            "or": "または",
+            "passwordless_account_hint": "このアカウントはパスワードが保存されていません。パスワードを入力するか、QR コードでログインしてください",
+            "qr": {
+                "button": "QR コードでログイン",
+                "title": "QR コードでログイン",
+                "use_password": "パスワードでログイン"
+            },
+            "saved_group": {
+                "with_password": "パスワード保存済み",
+                "with_password_hint": "クリックでログイン",
+                "without_password": "パスワード未保存",
+                "without_password_hint": "クリックしてパスワードまたは QR コードでログイン",
+                "requires_login": "要ログイン",
+                "switch_requires_login": "パスワード未保存・ログイン画面へ"
+            },
+            "expired_account": {
+                "title": "{name} のセッションが切れました",
+                "description": "このアカウントはパスワードが保存されていないため、自動では再ログインしません。パスワードを入力するか、QR コードを読み取り直してください。"
             }
         },
         "feed": {
@@ -6454,7 +6486,8 @@
             "auto_login_failed": "自動ログインに失敗しました",
             "session_expired": "VRChat セッションの有効期限が切れました。ログイン画面に戻ります。",
             "session_restore_available": "保存済みアカウントがある場合、VRCX-0 は自動的に再ログインを試みます。",
-            "offline": "オフラインです"
+            "offline": "オフラインです",
+            "session_requires_login": "このアカウントはパスワードが保存されていないため、自動では再ログインしません。QR コードを読み取り直すか、パスワードを入力してください。"
         },
         "vrcx_updater": {
             "failed": "アップデートの確認に失敗しました: {message}",
@@ -7280,5 +7313,27 @@
     "mutual_graph_hint": {
         "build": "共通のフレンドのグラフが未作成です · 作成する",
         "room_scan_running": "このインスタンスの共通のフレンドを確認中です。完了後にもう一度お試しください"
+    },
+    "device_login": {
+        "qr_label": "VRChat ログイン用 QR コード",
+        "steps": {
+            "scan": "VRChat にログイン済みのスマートフォンで QR コードを読み取ります",
+            "approve": "スマートフォンでログインを確認して承認します"
+        },
+        "waiting": "スマートフォンでの承認を待っています…",
+        "expires_in": "残り {time}",
+        "expired_title": "QR コードの有効期限が切れました",
+        "expired_description": "時間内に承認されませんでした。",
+        "refresh": "QR コードを再発行",
+        "failed_title": "QR コードでのログインに失敗しました",
+        "retry": "再試行",
+        "denied": "別の端末でログインが拒否されました。",
+        "no_auto_relogin": "QR コードでログインした場合、自動では再ログインしません。接続が切れたら QR コードを読み取り直してください。自動で再ログインしたい場合はパスワードでログインしてください。",
+        "saved_password": {
+            "title": "このアカウントのパスワードが保存されています",
+            "description": "削除しますか？削除すると、切断時に自動で再ログインしなくなります。",
+            "clear": "削除",
+            "cleared": "保存済みのパスワードを削除しました"
+        }
     }
 }

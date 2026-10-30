@@ -109,6 +109,23 @@ pub fn email_otp_verify_input(endpoint: String, code: String) -> HttpApiRequestI
     )
 }
 
+pub fn device_code_input(endpoint: String) -> HttpApiRequestInput {
+    api_input(endpoint, "POST", "auth/device/code", Some(json!({})))
+}
+
+pub fn device_status_input(endpoint: String, device_code: String) -> HttpApiRequestInput {
+    api_input(
+        endpoint,
+        "POST",
+        "auth/device/status",
+        Some(json!({ "deviceCode": device_code })),
+    )
+}
+
+pub fn logout_input(endpoint: String) -> HttpApiRequestInput {
+    api_input(endpoint, "PUT", "logout", None)
+}
+
 pub fn visits_get_input(endpoint: String) -> HttpApiRequestInput {
     get_input(endpoint, "visits", HashMap::new())
 }

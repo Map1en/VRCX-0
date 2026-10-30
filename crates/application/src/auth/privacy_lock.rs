@@ -301,7 +301,7 @@ mod tests {
                 })
                 .into(),
                 stored_login_params: None,
-                save_credentials: true,
+                record: crate::auth::SavedCredentialRecordMode::WithPassword,
             },
         )?;
 

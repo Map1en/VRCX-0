@@ -545,7 +545,14 @@
             "backfilled": "Ze záznamníku doplněno záznamů do Zdroje: {count}",
             "backfill_failed": "Záznamy ze záznamníku se nepodařilo doplnit",
             "skipped": "Nepodařilo se doplnit {count} záznamů, protože záznamník neměl výchozí seznam přátel"
-        }
+        },
+        "qr_description": "QR kód vytváří záznamník. Záznamník získá vlastní relaci a vaše heslo neprochází sítí.",
+        "qr_no_auto_relogin": "Při přihlášení QR kódem se záznamník automaticky znovu nepřihlásí. Když jeho relace spadne, přestane zaznamenávat a pošle upozornění přes webhook; vraťte se sem a naskenujte nový QR kód. Pro automatické opětovné přihlášení použijte heslo a zapněte „Uložit heslo v záznamníku“.",
+        "qr_cancel": "Zrušit přihlášení QR kódem",
+        "qr_start": "Zobrazit QR kód",
+        "login_method_password": "Heslo",
+        "login_method_qr": "QR kód",
+        "qr_requires_update": "Aktualizujte záznamník, abyste se mohli přihlásit QR kódem."
     },
     "common": {
         "no_data": "Žádná data",
@@ -1062,7 +1069,11 @@
             "clear_description": "Zadejte heslo k účtu VRChat, aby se kód zámku odebral. Porovnává se pouze s heslem uloženým lokálně ve VRCX-0; na servery VRChat se nic neposílá."
         },
         "recover": {
-            "description": "Zadejte heslo k účtu VRChat, aby se zámek odebral. Porovnává se pouze s heslem uloženým lokálně ve VRCX-0; na servery VRChat se nic neposílá."
+            "description": "Zadejte heslo k účtu VRChat, aby se zámek odebral. Porovnává se pouze s heslem uloženým lokálně ve VRCX-0; na servery VRChat se nic neposílá.",
+            "method_password": "Heslo k účtu",
+            "method_qr": "Ověření QR kódem",
+            "password_unavailable": "U tohoto účtu není uložené heslo. Použijte ověření QR kódem.",
+            "qr_description": "Naskenujte kód telefonem přihlášeným k tomuto účtu VRChat a schvalte – zámek se odebere. Slouží jen k ověření totožnosti a aktuální přihlášení nemění."
         },
         "settings": {
             "label": "Zámek soukromí",
@@ -1085,7 +1096,9 @@
             "password_not_set": "Heslo zámku není nastaveno",
             "password_already_set": "Heslo zámku už je nastaveno",
             "no_session": "Před použitím zámku se přihlaste",
-            "failed": "Operace zámku selhala"
+            "failed": "Operace zámku selhala",
+            "account_mismatch": "Schválený účet není zamčený účet, zámek proto nebyl odebrán. Byl vytvořen nový QR kód.",
+            "verification_cancelled": "Ověření bylo zrušeno."
         }
     },
     "side_panel": {
@@ -1276,6 +1289,25 @@
                 "description": "{name} bude odebrán",
                 "confirm": "Odebrat",
                 "removing": "Odebírání"
+            },
+            "or": "nebo",
+            "passwordless_account_hint": "U tohoto účtu není uložené heslo. Zadejte heslo nebo se přihlaste QR kódem",
+            "qr": {
+                "button": "Přihlásit QR kódem",
+                "title": "Přihlášení QR kódem",
+                "use_password": "Použít heslo"
+            },
+            "saved_group": {
+                "with_password": "Heslo uloženo",
+                "with_password_hint": "Kliknutím se přihlásíte",
+                "without_password": "Heslo neuloženo",
+                "without_password_hint": "Kliknutím zadáte heslo nebo použijete QR kód",
+                "requires_login": "Nutné přihlášení",
+                "switch_requires_login": "Heslo neuloženo · otevře přihlášení"
+            },
+            "expired_account": {
+                "title": "Relace účtu {name} vypršela",
+                "description": "U tohoto účtu není uložené heslo, proto se VRCX-0 automaticky znovu nepřihlásí. Zadejte heslo nebo naskenujte nový QR kód."
             }
         },
         "feed": {
@@ -6452,7 +6484,8 @@
             "auto_login_failed": "Automatické přihlášení se nezdařilo",
             "session_expired": "Relace VRChat vypršela. Návrat na přihlašovací obrazovku.",
             "session_restore_available": "Pokud je k dispozici uložený účet, VRCX-0 se pokusí znovu automaticky přihlásit.",
-            "offline": "Jste offline"
+            "offline": "Jste offline",
+            "session_requires_login": "U tohoto účtu není uložené heslo, proto se VRCX-0 automaticky znovu nepřihlásí. Naskenujte nový QR kód nebo zadejte heslo."
         },
         "vrcx_updater": {
             "failed": "Nepodařilo se zkontrolovat aktualizace: {message}",
@@ -7270,5 +7303,27 @@
     "mutual_graph_hint": {
         "build": "Graf společných přátel zatím neexistuje · Vytvořit",
         "room_scan_running": "Probíhá zjišťování společných přátel v této instanci. Zkuste to po dokončení znovu."
+    },
+    "device_login": {
+        "qr_label": "QR kód pro přihlášení do VRChatu",
+        "steps": {
+            "scan": "Naskenujte QR kód telefonem přihlášeným do VRChatu",
+            "approve": "Na telefonu přihlášení potvrďte a schvalte"
+        },
+        "waiting": "Čeká se na schválení v telefonu…",
+        "expires_in": "Vyprší za {time}",
+        "expired_title": "Platnost QR kódu vypršela",
+        "expired_description": "Přihlášení nebylo schváleno včas.",
+        "refresh": "Získat nový QR kód",
+        "failed_title": "Přihlášení QR kódem se nezdařilo",
+        "retry": "Zkusit znovu",
+        "denied": "Přihlášení bylo na druhém zařízení zamítnuto.",
+        "no_auto_relogin": "Při přihlášení QR kódem se VRCX-0 automaticky znovu nepřihlásí. Když relace spadne, je potřeba naskenovat nový QR kód. Pro automatické opětovné přihlášení použijte přihlášení heslem.",
+        "saved_password": {
+            "title": "Tento účet má uložené heslo",
+            "description": "Smazat ho? Po výpadku relace se VRCX-0 už automaticky znovu nepřihlásí.",
+            "clear": "Smazat",
+            "cleared": "Uložené heslo bylo smazáno"
+        }
     }
 }

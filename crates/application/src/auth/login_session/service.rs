@@ -1,6 +1,9 @@
 use crate::auth::AuthCredentialStore;
 use serde_json::Value;
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse as HttpApiExecuteResponse;
+use vrcx_0_contracts::vrchat_device_login::{
+    interpret_device_code_response, VrchatDeviceAuthorization,
+};
 use vrcx_0_contracts::vrchat_login::{
     auth_response_error_message, classify_vrchat_login_failure, cookie_probe_rejection_reason,
     interpret_login_config_response, interpret_login_response,
@@ -131,6 +134,46 @@ pub(super) async fn start_gui_basic_login(
     }
 
     execute_basic_login(api, endpoint, operation).await
+}
+
+pub(super) async fn start_device_login(
+    api: &dyn LoginApi,
+    endpoint: &str,
+) -> std::result::Result<VrchatDeviceAuthorization, Box<LoginSessionState>> {
+    let config_response = execute_or_fail(
+        api,
+        LoginRemoteOperation::Config {
+            endpoint: endpoint.to_string(),
+        },
+    )
+    .await?;
+    if let Some(step) = interpret_login_config_response(&config_response) {
+        return Err(Box::new(session_state(step, endpoint.to_string())));
+    }
+    let response = execute_or_fail(
+        api,
+        LoginRemoteOperation::DeviceCode {
+            endpoint: endpoint.to_string(),
+        },
+    )
+    .await?;
+    interpret_device_code_response(&response)
+        .map_err(|reason| Box::new(LoginSessionState::failed(reason, LoginFailureKind::Other)))
+}
+
+pub(super) async fn complete_device_login(api: &dyn LoginApi, endpoint: &str) -> LoginSessionState {
+    let response = match execute_or_fail(
+        api,
+        LoginRemoteOperation::CurrentUser {
+            endpoint: endpoint.to_string(),
+        },
+    )
+    .await
+    {
+        Ok(response) => response,
+        Err(state) => return *state,
+    };
+    session_state(interpret_login_response(&response), endpoint.to_string())
 }
 
 pub(super) async fn start_saved_credential_login(

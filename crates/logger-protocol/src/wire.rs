@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-pub const PROTOCOL_VERSION: u32 = 1;
+pub const PROTOCOL_VERSION: u32 = 2;
 pub const MIN_CLIENT_PROTOCOL_VERSION: u32 = 1;
 pub const CAPTURE_FORMAT_VERSION: u32 = 1;
 pub const MAX_FRAMES_PAGE: u32 = 2000;
@@ -46,6 +46,25 @@ pub enum SessionState {
 #[cfg_attr(
     feature = "specta",
     derive(specta::Type),
+    specta(rename = "FeedLoggerDeviceLogin")
+)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "state", rename_all = "camelCase")]
+pub enum DeviceLoginState {
+    #[serde(rename_all = "camelCase")]
+    Waiting {
+        verification_url: String,
+        expires_at: i64,
+    },
+    Expired,
+    Failed {
+        reason: String,
+    },
+}
+
+#[cfg_attr(
+    feature = "specta",
+    derive(specta::Type),
     specta(rename = "FeedLoggerStatus")
 )]
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -80,6 +99,8 @@ pub struct StatusResponse {
     pub webhook_format: Option<WebhookFormat>,
     pub last_webhook_at: Option<i64>,
     pub last_webhook_ok: Option<bool>,
+    #[serde(default)]
+    pub device_login: Option<DeviceLoginState>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -88,6 +109,12 @@ pub struct CredentialsRequest {
     pub username: String,
     pub password: String,
     pub save_password: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeviceLoginRequest {
+    pub account_id: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

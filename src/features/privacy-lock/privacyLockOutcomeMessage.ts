@@ -17,5 +17,15 @@ export function privacyLockOutcomeMessage(
             return t('privacy_lock.error.password_already_set');
         case 'noActiveSession':
             return t('privacy_lock.error.no_session');
+        case 'accountMismatch':
+            return t('privacy_lock.error.account_mismatch');
+        case 'deviceCodeExpired':
+            return t('device_login.expired_title');
+        case 'deviceDenied':
+            return t('device_login.denied');
+        case 'deviceFailed':
+            return outcome.reason || t('device_login.failed_title');
+        case 'cancelled':
+            return t('privacy_lock.error.verification_cancelled');
     }
 }

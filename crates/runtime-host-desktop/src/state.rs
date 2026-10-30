@@ -1592,6 +1592,13 @@ impl DesktopRuntimeHostState {
         )?)
     }
 
+    pub fn clear_saved_password(&self, user_id: String) -> Result<SavedAuthSnapshot> {
+        Ok(vrcx_0_application::auth::clear_saved_password(
+            self.runtime.desktop_assembly().auth_credentials(),
+            user_id,
+        )?)
+    }
+
     pub async fn start_login_session(&self, input: LoginSessionStartInput) -> LoginSessionState {
         let diagnostics = self.runtime.desktop_assembly().diagnostics();
         diagnostics.record_command(

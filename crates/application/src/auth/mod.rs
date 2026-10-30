@@ -3,6 +3,7 @@ mod authenticated_session_maintenance;
 mod authenticated_session_storage;
 mod background_auth_recovery;
 mod cookie_session;
+mod device_authorization;
 mod login_session;
 mod noninteractive_auth;
 mod privacy_lock;
@@ -13,12 +14,13 @@ mod test_support;
 mod vrchat_config;
 
 pub use auth_credentials::{
-    delete_saved_credential, migrate_saved_credential_secrets, record_login_success, record_logout,
-    saved_credential_login_start, saved_credential_session_data, saved_login_credentials,
-    saved_snapshot, AuthCredentialStore, LoginSuccessRecordInput, LogoutRecordInput,
-    SavedAuthAutoLoginStatus, SavedAuthSnapshot, SavedCredentialLoginStartInput,
-    SavedCredentialSessionData, SavedCredentialSnapshot, SavedCredentialUser,
-    SavedLoginCredentials, SavedLoginParamsSnapshot, SealedAuthSecret,
+    clear_saved_password, delete_saved_credential, migrate_saved_credential_secrets,
+    record_login_success, record_logout, saved_credential_login_start,
+    saved_credential_session_data, saved_login_credentials, saved_snapshot, AuthCredentialStore,
+    LoginSuccessRecordInput, LogoutRecordInput, SavedAuthAutoLoginStatus, SavedAuthSnapshot,
+    SavedCredentialLoginStartInput, SavedCredentialRecordMode, SavedCredentialSessionData,
+    SavedCredentialSnapshot, SavedCredentialUser, SavedLoginCredentials, SavedLoginParamsSnapshot,
+    SealedAuthSecret,
 };
 pub use authenticated_session_maintenance::{
     run_authenticated_session_maintenance, AuthenticatedSessionMaintenance,
@@ -31,6 +33,7 @@ pub use background_auth_recovery::{
     invalidate_background_auth_scope, BackgroundAuthRecoveryActions, BackgroundAuthRecoveryContext,
     BackgroundAuthRecoveryFuture, BackgroundAuthRecoveryOrchestrator,
 };
+pub use device_authorization::{wait_for_device_approval, DeviceApprovalOutcome};
 pub use login_session::{
     AuthSessionCookies, AutoLoginOutcome, AutoLoginStartInput, AutoLoginTerminalOutcome, LoginApi,
     LoginApiFuture, LoginFailureKind, LoginRemoteOperation, LoginRuntimeTransition,
