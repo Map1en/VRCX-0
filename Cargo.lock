@@ -9270,6 +9270,7 @@ dependencies = [
  "cargo_metadata 0.23.1",
  "chrono",
  "image",
+ "libc",
  "libloading 0.9.0",
  "percent-encoding",
  "rust-ini",
@@ -9313,6 +9314,7 @@ dependencies = [
  "vrcx-0-mcp",
  "vrcx-0-platform",
  "vrcx-0-runtime-host-desktop",
+ "webkit2gtk",
  "webkit2gtk-nvidia-quirk",
  "windows-sys 0.61.2",
 ]
