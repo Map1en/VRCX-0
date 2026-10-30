@@ -534,3 +534,70 @@ fn now_playing_log_titles_a_video_already_logged_by_vrchat() {
         }]
     );
 }
+
+#[test]
+fn provider_world_keeps_its_video_line_and_takes_cover_and_transport_from_now_playing() {
+    let mut engine = GameLogIngestEngine::default();
+    let output = engine.ingest_events(
+        &[
+            event(
+                "2026-10-30T13:40:47.000Z",
+                GameLogEventKind::Location {
+                    location: "wrld_f20326da-f1ac-45fc-a062-609723b097b1:93480~region(jp)".into(),
+                    world_name: "PyPyDance".into(),
+                },
+            ),
+            now_playing(
+                "2026-10-30T13:40:56.000Z",
+                r#"{"type":"mediaLoading","loading":true,"id":"PyPyDance-28582"}"#,
+            ),
+            event(
+                "2026-10-30T13:40:56.000Z",
+                GameLogEventKind::VideoPlay {
+                    video_url: "http://api.pypy.dance/video?id=4480".into(),
+                    display_name: String::new(),
+                },
+            ),
+            event(
+                "2026-10-30T13:40:57.000Z",
+                GameLogEventKind::Vrcx {
+                    data: r#"VideoPlay(PyPyDance) "http://api.pypy.dance/video?id=4480",129.6963,216,"4480 : [KPOP] Sistar - Touch My Body (KannaLulu)""#.into(),
+                },
+            ),
+            now_playing(
+                "2026-10-30T13:41:00.000Z",
+                r#"{"type":"mediaChange","mediaName":"[KPOP] Sistar - Touch My Body","mediaUrl":"http://api.pypy.dance/video?id=4480","mediaOwnerName":"KannaLulu","highPriority":true,"mediaId":4480,"mediaImage":"https://api.pypy.dance/thumb?id=4480","mediaLength":216,"id":"PyPyDance-28582"}"#,
+            ),
+            now_playing(
+                "2026-10-30T13:41:00.000Z",
+                r#"{"type":"mediaPause","mediaTime":132.549,"id":"PyPyDance-28582"}"#,
+            ),
+            event(
+                "2026-10-30T13:41:00.000Z",
+                GameLogEventKind::Vrcx {
+                    data: r#"VideoPlay(PyPyDance) "http://api.pypy.dance/video?id=4480",132.7312,216,"4480 : [KPOP] Sistar - Touch My Body (KannaLulu)""#.into(),
+                },
+            ),
+            now_playing(
+                "2026-10-30T13:41:00.000Z",
+                r#"{"type":"mediaPlay","mediaTime":132.7317,"id":"PyPyDance-28582"}"#,
+            ),
+        ],
+        GameLogIngestOptions::default(),
+    );
+
+    let [GameLogSideEffect::Video(input), GameLogSideEffect::NowPlayingTransport { paused: true, .. }, GameLogSideEffect::NowPlayingTransport {
+        position: 132,
+        paused: false,
+        ..
+    }] = output.side_effects.as_slice()
+    else {
+        panic!("unexpected side effects: {:?}", output.side_effects);
+    };
+    assert_eq!(input.created_at, "2026-10-30T13:40:57.000Z");
+    assert_eq!(input.video_id, "4480");
+    assert_eq!(input.video_name, "[KPOP] Sistar - Touch My Body");
+    assert_eq!(input.display_name, "KannaLulu");
+    assert_eq!(input.video_pos, 129);
+    assert_eq!(input.thumbnail_url, "https://api.pypy.dance/thumb?id=4480");
+}

@@ -282,9 +282,7 @@ impl GameLogIngestEngine {
                         data,
                     ) {
                         video::ProviderVideoEvent::Video(input) => {
-                            if !self.now_playing_log_active()
-                                && self.accept_video_url(&input.video_url)
-                            {
+                            if self.accept_video_url(&input.video_url) {
                                 self.push_video(&mut output, *input);
                             }
                         }
