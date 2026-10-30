@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 
+import { commands } from '@/platform/tauri/bindings';
 import memoPersistenceRepository from '@/repositories/memoPersistenceRepository';
 import type { GroupCalendarEventRecord } from '@/repositories/vrchatToolsRepository';
 import { formatCsvField } from '@/shared/utils/csv';
@@ -94,6 +95,16 @@ export async function getUserMemoMap() {
             .filter((row) => typeof row?.userId === 'string' && row.userId)
             .map((row) => [row.userId, row.memo || ''] as const)
     );
+}
+
+export async function getProfileBioMap() {
+    const currentUserId = getCurrentUserId();
+    const rows = currentUserId
+        ? await commands
+              .appFriendProfileBioList(currentUserId)
+              .catch((): never[] => [])
+        : [];
+    return new Map(rows.map((row) => [row.userId, row.bio] as const));
 }
 
 export function normalizeAutoAcceptValue(

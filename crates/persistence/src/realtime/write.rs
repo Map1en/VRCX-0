@@ -390,12 +390,16 @@ fn apply_backfilled_profile_bio(
     }
     tx.execute_non_query(
         &format!(
-            "INSERT INTO {user_prefix}_profile_bio (user_id, bio, checked_at) VALUES (@user_id, @bio, @checked_at) \
-             ON CONFLICT(user_id) DO UPDATE SET bio = excluded.bio, checked_at = excluded.checked_at"
+            "INSERT INTO {user_prefix}_profile_bio (user_id, bio, bio_links, checked_at) VALUES (@user_id, @bio, @bio_links, @checked_at) \
+             ON CONFLICT(user_id) DO UPDATE SET bio = excluded.bio, bio_links = excluded.bio_links, checked_at = excluded.checked_at"
         ),
         &ParamsBuilder::new()
             .set("user_id", observation.user_id.clone())
             .set("bio", observation.bio.clone())
+            .set(
+                "bio_links",
+                crate::profile_bio::encode_bio_links(&observation.bio_links),
+            )
             .set("checked_at", profile_bio.observed_at.clone())
             .build(),
     )?;

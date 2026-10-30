@@ -2069,7 +2069,8 @@
                 "rank": "ランク",
                 "status": "ステータス",
                 "note": "VRChat のノート",
-                "memo": "ローカルノート"
+                "memo": "ローカルノート",
+                "bio": "自己紹介・リンク"
             },
             "label": {
                 "friend_details_are_already_loaded": "フレンド詳細はすでに読み込まれています",

@@ -19,7 +19,8 @@ export const FRIEND_LIST_SEARCH_FILTERS = [
     { id: 'rank', labelKey: 'view.friend_list.search_filters.rank' },
     { id: 'status', labelKey: 'view.friend_list.search_filters.status' },
     { id: 'note', labelKey: 'view.friend_list.search_filters.note' },
-    { id: 'memo', labelKey: 'view.friend_list.search_filters.memo' }
+    { id: 'memo', labelKey: 'view.friend_list.search_filters.memo' },
+    { id: 'bio', labelKey: 'view.friend_list.search_filters.bio' }
 ];
 
 const VISIBLE_COLUMN_IDS = [

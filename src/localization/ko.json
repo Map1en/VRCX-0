@@ -2010,7 +2010,8 @@
                 "rank": "신뢰 등급",
                 "status": "상태",
                 "note": "VRChat 메모",
-                "memo": "로컬 메모"
+                "memo": "로컬 메모",
+                "bio": "자기소개·링크"
             },
             "label": {
                 "friend_details_are_already_loaded": "친구 세부정보를 이미 불러왔습니다.",

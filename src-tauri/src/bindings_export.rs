@@ -381,6 +381,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::local::friends::app__friend_log_current_list,
             commands::local::friends::app__friend_log_history_query,
             commands::local::friends::app__friend_log_history_delete,
+            commands::local::friends::app__friend_profile_bio_list,
             commands::local::notifications::app__notification_list_query,
             commands::local::notifications::app__notification_add_v1,
             commands::local::notifications::app__notification_v2_expire,

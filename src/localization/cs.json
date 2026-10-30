@@ -2093,7 +2093,8 @@
                 "rank": "Hodnost",
                 "status": "Stav",
                 "note": "Poznámka",
-                "memo": "Lokální poznámka"
+                "memo": "Lokální poznámka",
+                "bio": "Bio a odkazy"
             },
             "label": {
                 "friend_details_are_already_loaded": "Podrobnosti o příteli jsou již načteny",

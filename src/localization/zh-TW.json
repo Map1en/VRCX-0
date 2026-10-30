@@ -2073,7 +2073,8 @@
                 "rank": "信用等級",
                 "status": "狀態",
                 "note": "備註",
-                "memo": "本機備註"
+                "memo": "本機備註",
+                "bio": "自我介紹與連結"
             },
             "label": {
                 "friend_details_are_already_loaded": "好友詳細資訊已載入",

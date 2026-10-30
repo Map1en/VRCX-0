@@ -108,6 +108,38 @@ describe('friendListRows', () => {
         ).toBe(false);
     });
 
+    it('searches profile bio text and bio links by default', () => {
+        const friend: Parameters<typeof matchesFriendListSearch>[0] = {
+            id: 'usr_friend',
+            displayName: 'Alice',
+            bio: 'Weekend DJ',
+            bioLinks: ['https://twitter.com/alice_vr']
+        };
+        const empty = new Map<string, string>();
+
+        expect(
+            matchesFriendListSearch(friend, 'dj', new Set(), empty, empty)
+        ).toBe(true);
+        expect(
+            matchesFriendListSearch(
+                friend,
+                'twitter.com/alice',
+                new Set(['bio']),
+                empty,
+                empty
+            )
+        ).toBe(true);
+        expect(
+            matchesFriendListSearch(
+                friend,
+                'dj',
+                new Set(['displayName']),
+                empty,
+                empty
+            )
+        ).toBe(false);
+    });
+
     it('returns the friends a user expects after combining favorites-only and search', () => {
         const rows = [
             {

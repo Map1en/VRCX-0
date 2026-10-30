@@ -2078,7 +2078,8 @@
                 "rank": "Rank",
                 "status": "Status",
                 "note": "VRChat Note",
-                "memo": "Local Note"
+                "memo": "Local Note",
+                "bio": "Bio & Links"
             },
             "label": {
                 "friend_details_are_already_loaded": "Friend details are already loaded",

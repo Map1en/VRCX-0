@@ -2078,7 +2078,8 @@
                 "rank": "Rango",
                 "status": "Estado",
                 "note": "Nota de VRChat",
-                "memo": "Nota local"
+                "memo": "Nota local",
+                "bio": "Biografía y enlaces"
             },
             "label": {
                 "friend_details_are_already_loaded": "Los detalles del amigo ya están cargados",

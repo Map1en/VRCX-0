@@ -406,6 +406,7 @@ impl Desktop {
             user_id,
             &ProfileBioRecord {
                 bio: bio.into(),
+                bio_links: Vec::new(),
                 checked_at: at_millis(checked_at_seconds),
             },
         )

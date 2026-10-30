@@ -2075,7 +2075,8 @@
                 "rank": "Rank",
                 "status": "Status",
                 "note": "Nota",
-                "memo": "Nota Local"
+                "memo": "Nota Local",
+                "bio": "Bio e links"
             },
             "label": {
                 "friend_details_are_already_loaded": "Os detalhes do amigo já estão carregados",

@@ -2073,7 +2073,8 @@
                 "rank": "信誉等级",
                 "status": "状态",
                 "note": "备注",
-                "memo": "本地备注"
+                "memo": "本地备注",
+                "bio": "简介与链接"
             },
             "label": {
                 "friend_details_are_already_loaded": "已加载好友详情",

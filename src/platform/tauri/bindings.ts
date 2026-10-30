@@ -1288,6 +1288,13 @@ const generatedCommands = {
             entry
         });
     },
+    async appFriendProfileBioList(
+        ownerUserId: OwnerId
+    ): Promise<ProfileBioOutput[]> {
+        return await TAURI_INVOKE('app__friend_profile_bio_list', {
+            ownerUserId
+        });
+    },
     async appNotificationListQuery(
         query: NotificationListQueryInput
     ): Promise<NotificationListItemOutput[]> {
@@ -6393,6 +6400,11 @@ export type ProfileBackupStatus = {
     lastOutcome: ProfileBackupOutcome | null;
 };
 export type ProfileBannerType = 'avatarBanner' | 'customImage' | 'color';
+export type ProfileBioOutput = {
+    userId: string;
+    bio: string;
+    bioLinks: string[];
+};
 export type ProfileDecorationEquipSlot =
     | 'iconFrame'
     | 'profileEffect'
