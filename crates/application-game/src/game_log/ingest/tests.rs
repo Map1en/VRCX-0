@@ -601,3 +601,31 @@ fn provider_world_keeps_its_video_line_and_takes_cover_and_transport_from_now_pl
     assert_eq!(input.video_pos, 129);
     assert_eq!(input.thumbnail_url, "https://api.pypy.dance/thumb?id=4480");
 }
+
+#[test]
+fn now_playing_media_id_names_the_video_source_when_the_world_writes_no_video_line() {
+    let mut engine = GameLogIngestEngine::default();
+    let output = engine.ingest_events(
+        &[
+            event(
+                "2026-10-30T13:40:47.000Z",
+                GameLogEventKind::Location {
+                    location: "wrld_f20326da-f1ac-45fc-a062-609723b097b1:93480~region(jp)".into(),
+                    world_name: "PyPyDance".into(),
+                },
+            ),
+            now_playing(
+                "2026-10-30T13:42:30.000Z",
+                r#"{"type":"mediaChange","mediaName":"[KPOP] TWICE - ONE SPARK","mediaUrl":"http://api.pypy.dance/video?id=3781","mediaOwnerName":"Nanashi Neko","highPriority":true,"mediaId":3781,"mediaImage":"https://api.pypy.dance/thumb?id=3781","mediaLength":190,"id":"PyPyDance-28582"}"#,
+            ),
+        ],
+        GameLogIngestOptions::default(),
+    );
+
+    let [GameLogSideEffect::Video(input)] = output.side_effects.as_slice() else {
+        panic!("unexpected side effects: {:?}", output.side_effects);
+    };
+    assert_eq!(input.video_id, "3781");
+    assert_eq!(input.video_name, "[KPOP] TWICE - ONE SPARK");
+    assert_eq!(input.display_name, "Nanashi Neko");
+}

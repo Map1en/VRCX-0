@@ -11,6 +11,7 @@ pub(crate) struct NowPlayingLogEvent {
 pub(crate) enum NowPlayingLogKind {
     Change {
         url: String,
+        media_id: String,
         name: String,
         image: String,
         owner: String,
@@ -48,6 +49,7 @@ pub(crate) fn parse_now_playing_log(data: &str) -> Option<NowPlayingLogEvent> {
     let kind = match json.get("type")?.as_str()? {
         "mediaChange" => NowPlayingLogKind::Change {
             url: json.trimmed_text("mediaUrl"),
+            media_id: json.scalar_field("mediaId").unwrap_or_default(),
             name: json.trimmed_text("mediaName"),
             image: json.trimmed_text("mediaImage"),
             owner: json.trimmed_text("mediaOwnerName"),
@@ -84,12 +86,13 @@ mod tests {
     fn reads_the_events_vrcx_follows() {
         assert_eq!(
             parse_now_playing_log(
-                r#"{"id":"ProTV-1","type":"mediaChange","mediaUrl":"https://youtu.be/abc","mediaName":"Song","mediaImage":"https://img.test/a.jpg","mediaOwnerName":"Alice","mediaLength":212.7}"#
+                r#"{"id":"ProTV-1","type":"mediaChange","mediaUrl":"https://youtu.be/abc","mediaName":"Song","mediaImage":"https://img.test/a.jpg","mediaOwnerName":"Alice","mediaLength":212.7,"mediaId":4480}"#
             ),
             Some(NowPlayingLogEvent {
                 producer_id: "ProTV-1".into(),
                 kind: NowPlayingLogKind::Change {
                     url: "https://youtu.be/abc".into(),
+                    media_id: "4480".into(),
                     name: "Song".into(),
                     image: "https://img.test/a.jpg".into(),
                     owner: "Alice".into(),

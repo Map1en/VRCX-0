@@ -651,6 +651,7 @@ impl GameLogIngestEngine {
         }
         if let NowPlayingLogKind::Change {
             url,
+            media_id,
             name,
             image,
             owner,
@@ -679,7 +680,9 @@ impl GameLogIngestEngine {
             }
             self.accept_video_url(&url);
             self.now_playing_log.video = Some((event.created_at.clone(), url.clone()));
-            let video_id = if video::parse_youtube_video_id(&url).is_empty() {
+            let video_id = if !media_id.is_empty() {
+                media_id
+            } else if video::parse_youtube_video_id(&url).is_empty() {
                 String::new()
             } else {
                 "YouTube".to_string()
