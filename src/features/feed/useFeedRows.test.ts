@@ -3,10 +3,7 @@
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type {
-    FavoriteGroupMap,
-    FavoriteRecord
-} from '@/domain/favorites/types';
+import type { FavoriteGroup, FavoriteGroupMap } from '@/domain/favorites/types';
 
 const mocks = vi.hoisted(() => ({
     queryFeedLatest: vi.fn(),
@@ -17,7 +14,9 @@ const mocks = vi.hoisted(() => ({
     runtime: { auth: { currentUserId: 'usr_self' } },
     session: { isFavoritesLoaded: true },
     favorites: {
-        remoteFavoritesById: {} as Record<string, FavoriteRecord>,
+        favoriteFriendGroups: [] as FavoriteGroup[],
+        groupedFavoriteFriendIdsByGroupKey: {} as Record<string, string[]>,
+        localFriendFavoriteGroups: [] as string[],
         localFriendFavorites: {} as FavoriteGroupMap
     },
     preferences: {

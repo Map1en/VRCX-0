@@ -62,8 +62,14 @@ export function useFeedRows({
     const isFavoritesLoaded = useSessionStore(
         (state) => state.isFavoritesLoaded
     );
-    const remoteFavoritesById = useFavoriteStore(
-        (state) => state.remoteFavoritesById
+    const favoriteFriendGroups = useFavoriteStore(
+        (state) => state.favoriteFriendGroups
+    );
+    const groupedFavoriteFriendIdsByGroupKey = useFavoriteStore(
+        (state) => state.groupedFavoriteFriendIdsByGroupKey
+    );
+    const localFriendFavoriteGroups = useFavoriteStore(
+        (state) => state.localFriendFavoriteGroups
     );
     const localFriendFavorites = useFavoriteStore(
         (state) => state.localFriendFavorites
@@ -109,12 +115,24 @@ export function useFeedRows({
 
     const favoriteIdSet = useMemo(
         () =>
-            buildFavoriteIdSet(
-                remoteFavoritesById,
+            buildFavoriteIdSet({
+                remoteGroupKeys: favoriteFriendGroups
+                    .map((group) => normalizeId(group.key))
+                    .filter(Boolean),
+                remoteIdsByGroupKey: groupedFavoriteFriendIdsByGroupKey,
+                localGroupNames: localFriendFavoriteGroups.length
+                    ? localFriendFavoriteGroups
+                    : Object.keys(localFriendFavorites),
                 localFriendFavorites,
-                favoriteGroupFilterIds
-            ),
-        [favoriteGroupFilterIds, localFriendFavorites, remoteFavoritesById]
+                selectedGroupKeys: favoriteGroupFilterIds
+            }),
+        [
+            favoriteFriendGroups,
+            favoriteGroupFilterIds,
+            groupedFavoriteFriendIdsByGroupKey,
+            localFriendFavoriteGroups,
+            localFriendFavorites
+        ]
     );
     const searchMode = Boolean(
         deferredSearchQuery.trim() || scopedUserIds.length || dateFrom || dateTo
