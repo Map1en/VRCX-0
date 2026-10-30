@@ -772,6 +772,16 @@ async fn forbidding_tool_calls_keeps_tools_declared_with_tool_choice_none() {
 }
 
 #[tokio::test]
+async fn connections_dropped_before_the_response_are_retried() {
+    let (base_url, hits) = serve_scripted(vec![String::new(), SSE_STOP.into()]).await;
+
+    let turn = stream_once(base_url).await.unwrap();
+
+    assert_eq!(turn.content, "ok");
+    assert_eq!(hits.load(Ordering::SeqCst), 2);
+}
+
+#[tokio::test]
 async fn exhausted_quota_and_client_errors_are_not_retried() {
     for response in [
         json_error_response(

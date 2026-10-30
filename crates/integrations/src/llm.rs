@@ -379,7 +379,9 @@ impl LlmClient {
                         },
                     )
                 }
-                Err(error) if error.is_connect() => (Some(backoff_delay(attempt)), error.into()),
+                Err(error) if error.is_connect() || (error.is_request() && !error.is_timeout()) => {
+                    (Some(backoff_delay(attempt)), error.into())
+                }
                 Err(error) => return Err(error.into()),
             };
             let Some(delay) = delay.filter(|_| attempt < MAX_RETRIES) else {
