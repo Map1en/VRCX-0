@@ -1493,6 +1493,8 @@
                 "played_by": "Проиграл {name}",
                 "expand_session": "Расширенная сессия",
                 "collapse_session": "Свернуть сеанс",
+                "other_device": "Другое устройство",
+                "other_device_description": "Записано по вашему онлайн-статусу, пока VRChat не был запущен на этом ПК, поэтому сведений об игроках и видео нет.",
                 "expand_all": "Расширить все",
                 "collapse_all": "Свернуть все",
                 "players_count": "Игроков: {count}",

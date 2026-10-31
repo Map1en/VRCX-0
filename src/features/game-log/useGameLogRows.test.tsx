@@ -69,6 +69,7 @@ function session(id: number): GameLogSession {
         worldId: 'wrld_test',
         worldName: `World ${id}`,
         groupName: '',
+        remote: false,
         playerDurationRows: [],
         events: []
     };

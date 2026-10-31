@@ -1479,6 +1479,8 @@
                 "played_by": "Played by {name}",
                 "expand_session": "Expand session",
                 "collapse_session": "Collapse session",
+                "other_device": "Other device",
+                "other_device_description": "Recorded from your online status while VRChat wasn't running on this PC, so there are no player or video details.",
                 "expand_all": "Expand all",
                 "collapse_all": "Collapse all",
                 "players_count": "{count} players",

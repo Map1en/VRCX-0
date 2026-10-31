@@ -1493,6 +1493,8 @@
                 "played_by": "Přehráno uživatelem {name}",
                 "expand_session": "Rozbalit relaci",
                 "collapse_session": "Sbalit relaci",
+                "other_device": "Jiné zařízení",
+                "other_device_description": "Zaznamenáno podle vašeho online stavu, když VRChat na tomto PC neběžel, proto chybí podrobnosti o hráčích a videích.",
                 "expand_all": "Rozbalit vše",
                 "collapse_all": "Sbalit vše",
                 "players_count": "Hráči: {count}",

@@ -5198,6 +5198,7 @@ export type GameLogSessionDto = {
     groupName: string;
     duration: number | null;
     playerDurationRows: GameLogSessionPlayerDurationRowDto[];
+    remote: boolean;
     events: GameLogSessionEventDto[];
 };
 export type GameLogSessionEventDto = {

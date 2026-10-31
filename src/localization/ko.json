@@ -1414,6 +1414,8 @@
                 "played_by": "{name}님이 재생함",
                 "expand_session": "세션 펼치기",
                 "collapse_session": "세션 접기",
+                "other_device": "다른 기기",
+                "other_device_description": "이 PC에서 VRChat이 실행 중이지 않을 때 온라인 상태를 바탕으로 기록되어 플레이어와 영상 정보가 없습니다.",
                 "expand_all": "모두 펼치기",
                 "collapse_all": "모두 접기",
                 "players_count": "{count}명",

@@ -1479,6 +1479,8 @@
                 "played_by": "Abgespielt von {name}",
                 "expand_session": "Sitzung erweitern",
                 "collapse_session": "Sitzung einklappen",
+                "other_device": "Anderes Gerät",
+                "other_device_description": "Anhand deines Online-Status aufgezeichnet, während VRChat nicht auf diesem PC lief – daher ohne Spieler- und Videodetails.",
                 "expand_all": "Alle erweitern",
                 "collapse_all": "Alle einklappen",
                 "players_count": "{count} Spieler",

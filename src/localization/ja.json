@@ -1473,6 +1473,8 @@
                 "played_by": "{name} が再生",
                 "expand_session": "セッションを展開",
                 "collapse_session": "セッションを折りたたむ",
+                "other_device": "他のデバイス",
+                "other_device_description": "このPCでVRChatを起動していない間にオンライン状態から記録したため、プレイヤーや動画の詳細はありません。",
                 "expand_all": "すべて展開",
                 "collapse_all": "すべて折りたたむ",
                 "players_count": "{count} 人",

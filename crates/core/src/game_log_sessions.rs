@@ -82,6 +82,7 @@ pub struct SessionSegmentOut {
     pub world_name: String,
     pub group_name: String,
     pub duration: Option<i64>,
+    pub remote: bool,
     pub events: Vec<SessionEventOut>,
 }
 
@@ -453,6 +454,7 @@ pub fn build_game_log_sessions(
             world_name: segment.world_name,
             group_name: segment.group_name,
             duration: segment.duration,
+            remote: segment.events.is_empty(),
             events: segment.events.into_iter().map(node_to_out).collect(),
         })
         .collect()

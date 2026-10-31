@@ -1477,6 +1477,8 @@
                 "played_by": "{name} 播放",
                 "expand_session": "展開遊玩時段",
                 "collapse_session": "收合遊玩時段",
+                "other_device": "其他裝置",
+                "other_device_description": "VRChat 未在這台電腦上執行時依據你的線上狀態記錄，因此沒有玩家與影片詳細資料。",
                 "expand_all": "展開全部",
                 "collapse_all": "收合全部",
                 "players_count": "{count} 人",

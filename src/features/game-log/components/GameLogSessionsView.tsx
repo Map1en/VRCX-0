@@ -33,6 +33,7 @@ import {
 } from '@/ui/shadcn/hover-card';
 import { Separator } from '@/ui/shadcn/separator';
 import { Spinner } from '@/ui/shadcn/spinner';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { useGameLogFilterCommands } from '../gameLogFilterCommands';
 import {
@@ -499,29 +500,33 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
                 )}
             >
                 <div className="flex min-h-9 w-full items-center gap-2 px-3 py-1.5 text-left">
-                    <CollapsibleTrigger
-                        render={
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-xs"
-                                aria-label={t(
-                                    isOpen
-                                        ? 'view.game_log.sessions.collapse_session'
-                                        : 'view.game_log.sessions.expand_session'
-                                )}
-                                className="-ml-1 shrink-0"
-                            >
-                                <ChevronRightIcon
-                                    data-icon="inline-start"
-                                    className={cn(
-                                        'text-muted-foreground shrink-0 transition-transform duration-150',
-                                        isOpen && 'rotate-90'
+                    {session.remote ? (
+                        <span aria-hidden className="-ml-1 size-6 shrink-0" />
+                    ) : (
+                        <CollapsibleTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    aria-label={t(
+                                        isOpen
+                                            ? 'view.game_log.sessions.collapse_session'
+                                            : 'view.game_log.sessions.expand_session'
                                     )}
-                                />
-                            </Button>
-                        }
-                    />
+                                    className="-ml-1 shrink-0"
+                                >
+                                    <ChevronRightIcon
+                                        data-icon="inline-start"
+                                        className={cn(
+                                            'text-muted-foreground shrink-0 transition-transform duration-150',
+                                            isOpen && 'rotate-90'
+                                        )}
+                                    />
+                                </Button>
+                            }
+                        />
+                    )}
                     <div className="min-w-0 flex-1">
                         {sessionLocation ? (
                             <Location
@@ -545,6 +550,27 @@ const GameLogSessionSegment = memo(function GameLogSessionSegment({
                             <span className="truncate text-sm" />
                         )}
                     </div>
+                    {session.remote ? (
+                        <Tooltip>
+                            <TooltipTrigger
+                                render={
+                                    <Badge
+                                        variant="outline"
+                                        className="text-muted-foreground h-4 shrink-0 px-1 text-xs"
+                                    >
+                                        {t(
+                                            'view.game_log.sessions.other_device'
+                                        )}
+                                    </Badge>
+                                }
+                            />
+                            <TooltipContent>
+                                {t(
+                                    'view.game_log.sessions.other_device_description'
+                                )}
+                            </TooltipContent>
+                        </Tooltip>
+                    ) : null}
                     {sessionFriends.length ? (
                         <SessionFriendFacepile friends={sessionFriends} />
                     ) : null}

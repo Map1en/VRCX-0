@@ -1479,6 +1479,8 @@
                 "played_by": "Reproducido por {name}",
                 "expand_session": "Expandir sesión",
                 "collapse_session": "Contraer sesión",
+                "other_device": "Otro dispositivo",
+                "other_device_description": "Registrado a partir de tu estado en línea mientras VRChat no se ejecutaba en este PC, por lo que no hay detalles de jugadores ni vídeos.",
                 "expand_all": "Expandir todo",
                 "collapse_all": "Contraer todo",
                 "players_count": "{count} jugadores",
