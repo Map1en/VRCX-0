@@ -28,7 +28,7 @@ function handlers() {
     };
 }
 
-const RESPONSE_KEY = 'inviteResponse:*:2026-10-29';
+const RESPONSE_KEY = 'inviteResponse:*';
 
 function activity(
     id: string,
@@ -49,9 +49,12 @@ function activity(
     };
 }
 
-function renderDrawer(unseen: NotificationRow[]) {
+function renderDrawer(
+    unseen: NotificationRow[],
+    recent: NotificationRow[] = []
+) {
     const categories: NotificationCategories = {
-        friend: { unseen, recent: [] },
+        friend: { unseen, recent },
         group: { unseen: [], recent: [] },
         other: { unseen: [], recent: [] }
     };
@@ -128,14 +131,33 @@ describe('NotificationDrawerList', () => {
         expect(screen.queryByText('reply not_reply_1')).toBeNull();
     });
 
-    it('expands separated runs of the same group key independently', () => {
+    it('gathers unseen rows of the same group key across other rows', () => {
         renderDrawer([
             activity('not_reply_1', 5),
-            activity('not_reply_2', 4),
-            activity('not_message', 3, 'message', ''),
-            activity('not_reply_3', 2),
-            activity('not_reply_4', 1)
+            activity('not_message', 4, 'message', ''),
+            activity('not_reply_2', 3)
         ]);
+
+        const [summary] = screen.getAllByRole('button', { expanded: false });
+        expect(screen.getByText('reply not_message')).toBeTruthy();
+        expect(screen.queryByText('reply not_reply_2')).toBeNull();
+
+        fireEvent.click(summary);
+        expect(screen.getByText('reply not_reply_1')).toBeTruthy();
+        expect(screen.getByText('reply not_reply_2')).toBeTruthy();
+    });
+
+    it('expands separated runs of seen rows with the same group key independently', () => {
+        renderDrawer(
+            [],
+            [
+                activity('not_reply_1', 5),
+                activity('not_reply_2', 4),
+                activity('not_message', 3, 'message', ''),
+                activity('not_reply_3', 2),
+                activity('not_reply_4', 1)
+            ]
+        );
 
         expect(screen.getByText('(5)')).toBeTruthy();
         const [first, second] = screen.getAllByRole('button', {

@@ -6,25 +6,39 @@ export type NotificationFold<T> =
     | { kind: 'single'; item: T }
     | { kind: 'group'; key: string; runKey: string; items: T[] };
 
+type NotificationRun<T> = { key: string; gathered: boolean; items: T[] };
+
 function notificationGroupKey(notification: NotificationRow): string {
     return typeof notification.groupKey === 'string'
         ? notification.groupKey
         : '';
 }
 
-export function foldAdjacentNotifications<T>(
+export function foldNotifications<T>(
     items: readonly T[],
-    rowOf: (item: T) => NotificationRow
+    rowOf: (item: T) => NotificationRow,
+    gathersAcrossGaps: (item: T) => boolean = () => false
 ): NotificationFold<T>[] {
-    const runs: { key: string; items: T[] }[] = [];
+    const runs: NotificationRun<T>[] = [];
+    const gatheredRuns = new Map<string, NotificationRun<T>>();
     for (const item of items) {
         const key = notificationGroupKey(rowOf(item));
+        const gathered = key !== '' && gathersAcrossGaps(item);
+        const gatheredRun = gathered ? gatheredRuns.get(key) : undefined;
+        if (gatheredRun) {
+            gatheredRun.items.push(item);
+            continue;
+        }
         const current = runs.at(-1);
-        if (key && current?.key === key) {
+        if (key && !gathered && current?.key === key && !current.gathered) {
             current.items.push(item);
             continue;
         }
-        runs.push({ key, items: [item] });
+        const run = { key, gathered, items: [item] };
+        runs.push(run);
+        if (gathered) {
+            gatheredRuns.set(key, run);
+        }
     }
     return runs.map((run) =>
         run.key && run.items.length > 1

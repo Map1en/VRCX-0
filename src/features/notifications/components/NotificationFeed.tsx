@@ -20,7 +20,7 @@ import { getNotificationTs } from '@/shared/utils/notificationCategory';
 import { Button } from '@/ui/shadcn/button';
 
 import {
-    foldAdjacentNotifications,
+    foldNotifications,
     useExpandedNotificationGroups
 } from '../notificationGroups';
 import type {
@@ -201,7 +201,7 @@ export function NotificationFeed({
                                     {dayLabel(day)}
                                 </h3>
                                 <div role="list">
-                                    {foldAdjacentNotifications(
+                                    {foldNotifications(
                                         day.rows,
                                         (row) => row
                                     ).map((fold) => {

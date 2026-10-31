@@ -21,7 +21,7 @@ function inviteResponse(id: string, senderUserId: string): NotificationRow {
         senderUsername: senderUserId,
         seen: true,
         createdAt: '2026-10-29T10:00:00.000Z',
-        groupKey: 'inviteResponse:*:2026-10-29'
+        groupKey: 'inviteResponse:*'
     };
 }
 

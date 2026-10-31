@@ -131,24 +131,31 @@ export function NotificationGroupSummary({
             )}
             onClick={onToggle}
         >
-            <span className="flex w-2 shrink-0 justify-center self-start pt-1.5">
-                {hasUnseen ? (
-                    <span className="bg-primary size-2 rounded-full">
-                        <span className="sr-only">
-                            {t('view.notification.feed.unread')}
+            <span
+                className={cn(
+                    'flex shrink-0 items-center',
+                    variant === 'page' ? 'gap-3' : 'gap-1.5'
+                )}
+            >
+                <span className="flex w-2 shrink-0 justify-center self-start pt-1.5">
+                    {hasUnseen ? (
+                        <span className="bg-primary size-2 rounded-full">
+                            <span className="sr-only">
+                                {t('view.notification.feed.unread')}
+                            </span>
                         </span>
-                    </span>
-                ) : null}
-            </span>
-            <span className="flex shrink-0 -space-x-3">
-                {actors.slice(0, MAX_STACKED_AVATARS).map((entry) => (
-                    <StackedAvatar
-                        key={entry.key}
-                        actor={entry.actor}
-                        notification={entry.notification}
-                        className="ring-background size-9 ring-2"
-                    />
-                ))}
+                    ) : null}
+                </span>
+                <span className="flex shrink-0 -space-x-3">
+                    {actors.slice(0, MAX_STACKED_AVATARS).map((entry) => (
+                        <StackedAvatar
+                            key={entry.key}
+                            actor={entry.actor}
+                            notification={entry.notification}
+                            className="ring-background size-9 ring-2"
+                        />
+                    ))}
+                </span>
             </span>
             <span className="flex min-w-0 flex-1 flex-col gap-1">
                 <span className="flex min-w-0 items-center gap-2">

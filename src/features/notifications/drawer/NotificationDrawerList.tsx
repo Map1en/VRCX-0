@@ -11,7 +11,7 @@ import type {
 import { NotificationGroupBranch } from '../components/NotificationGroupBranch';
 import { NotificationGroupSummary } from '../components/NotificationGroupSummary';
 import {
-    foldAdjacentNotifications,
+    foldNotifications,
     useExpandedNotificationGroups
 } from '../notificationGroups';
 import type { NotificationRowActionHandlers } from '../notificationRowActions';
@@ -109,9 +109,10 @@ export function NotificationDrawerList({
                                         </span>
                                         <span>({items.length})</span>
                                     </div>
-                                    {foldAdjacentNotifications(
+                                    {foldNotifications(
                                         items,
-                                        (entry) => entry.notification
+                                        (entry) => entry.notification,
+                                        (entry) => entry.isUnseen
                                     ).map((fold) => {
                                         if (fold.kind === 'single') {
                                             return renderRow(bucket, fold.item);

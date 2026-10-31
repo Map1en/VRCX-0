@@ -1,4 +1,3 @@
-use chrono::{DateTime, Local, TimeZone};
 use serde_json::Value;
 
 use crate::json::JsonExt;
@@ -25,7 +24,6 @@ fn group_scope(kind: &NotificationKind) -> Option<GroupScope> {
 pub struct NotificationGroupFacts<'a> {
     pub kind: &'a str,
     pub sender_user_id: &'a str,
-    pub created_at: &'a str,
     pub data: &'a Value,
     pub details: &'a Value,
 }
@@ -47,13 +45,7 @@ fn group_id(facts: &NotificationGroupFacts<'_>) -> String {
     .unwrap_or_default()
 }
 
-pub fn notification_group_key_in<Tz: TimeZone>(
-    facts: &NotificationGroupFacts<'_>,
-    timezone: &Tz,
-) -> Option<String>
-where
-    Tz::Offset: std::fmt::Display,
-{
+pub fn notification_group_key(facts: &NotificationGroupFacts<'_>) -> Option<String> {
     let kind = NotificationKind::from(facts.kind.trim());
     let scope_id = match group_scope(&kind)? {
         GroupScope::Group => group_id(facts),
@@ -62,49 +54,25 @@ where
     if scope_id.is_empty() {
         return None;
     }
-    let date = DateTime::parse_from_rfc3339(facts.created_at.trim())
-        .ok()?
-        .with_timezone(timezone)
-        .format("%Y-%m-%d");
-    Some(format!("{}:{scope_id}:{date}", kind.as_str()))
-}
-
-pub fn notification_group_key(facts: &NotificationGroupFacts<'_>) -> Option<String> {
-    notification_group_key_in(facts, &Local)
+    Some(format!("{}:{scope_id}", kind.as_str()))
 }
 
 #[cfg(test)]
 mod tests {
-    use chrono::FixedOffset;
     use serde_json::{json, Value};
 
-    use super::{notification_group_key_in, NotificationGroupFacts};
+    use super::{notification_group_key, NotificationGroupFacts};
 
     const SENDER: &str = "usr_12345678-1234-1234-1234-1234567890ab";
     const GROUP: &str = "grp_12345678-1234-1234-1234-1234567890ab";
 
-    fn key_at(
-        kind: &str,
-        sender_user_id: &str,
-        created_at: &str,
-        data: &Value,
-        offset_hours: i32,
-    ) -> Option<String> {
-        let timezone = FixedOffset::east_opt(offset_hours * 3600).unwrap();
-        notification_group_key_in(
-            &NotificationGroupFacts {
-                kind,
-                sender_user_id,
-                created_at,
-                data,
-                details: &json!({}),
-            },
-            &timezone,
-        )
-    }
-
     fn key(kind: &str, sender_user_id: &str, data: &Value) -> Option<String> {
-        key_at(kind, sender_user_id, "2026-10-29T10:00:00.000Z", data, 0)
+        notification_group_key(&NotificationGroupFacts {
+            kind,
+            sender_user_id,
+            data,
+            details: &json!({}),
+        })
     }
 
     #[test]
@@ -114,11 +82,11 @@ mod tests {
 
         assert_eq!(
             key("inviteResponse", SENDER, &empty).as_deref(),
-            Some("inviteResponse:*:2026-10-29")
+            Some("inviteResponse:*")
         );
         assert_eq!(
             key("requestInviteResponse", SENDER, &empty).as_deref(),
-            Some("requestInviteResponse:*:2026-10-29")
+            Some("requestInviteResponse:*")
         );
         for kind in [
             "group.announcement",
@@ -128,7 +96,7 @@ mod tests {
         ] {
             assert_eq!(
                 key(kind, SENDER, &group_data),
-                Some(format!("{kind}:{GROUP}:2026-10-29")),
+                Some(format!("{kind}:{GROUP}")),
                 "{kind}"
             );
         }
@@ -162,39 +130,9 @@ mod tests {
 
         assert_eq!(
             key("group.announcement", GROUP, &empty),
-            Some(format!("group.announcement:{GROUP}:2026-10-29"))
+            Some(format!("group.announcement:{GROUP}"))
         );
         assert_eq!(key("group.announcement", SENDER, &empty), None);
         assert_eq!(key("group.announcement", "", &empty), None);
-    }
-
-    #[test]
-    fn separates_days_in_the_local_timezone() {
-        let empty = json!({});
-        let at = |created_at: &str, offset_hours: i32| {
-            key_at("group.post", GROUP, created_at, &empty, offset_hours)
-        };
-
-        assert_ne!(
-            at("2026-10-29T23:30:00.000Z", 0),
-            at("2026-10-30T00:30:00.000Z", 0)
-        );
-        assert_eq!(
-            at("2026-10-29T23:30:00.000Z", 9),
-            at("2026-10-30T00:30:00.000Z", 9)
-        );
-        assert_eq!(
-            at("2026-10-29T23:30:00.000Z", 9),
-            Some(format!("group.post:{GROUP}:2026-10-30"))
-        );
-    }
-
-    #[test]
-    fn skips_unparseable_timestamps() {
-        assert_eq!(key_at("inviteResponse", SENDER, "", &json!({}), 0), None);
-        assert_eq!(
-            key_at("inviteResponse", SENDER, "yesterday", &json!({}), 0),
-            None
-        );
     }
 }

@@ -371,7 +371,6 @@ fn with_group_key(mut notification: Value) -> Value {
     let group_key = notification_group_key(&NotificationGroupFacts {
         kind: &notification.text_field("type"),
         sender_user_id: &notification.text_field("senderUserId"),
-        created_at: &notification.text_field("createdAt"),
         data: notification.get("data").unwrap_or(&empty),
         details: notification.get("details").unwrap_or(&empty),
     });

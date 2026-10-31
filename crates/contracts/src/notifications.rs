@@ -137,7 +137,6 @@ impl AppNotification {
         let group_key = notification_group_key(&NotificationGroupFacts {
             kind: &self.r#type,
             sender_user_id: &self.subject_id,
-            created_at: &self.created_at,
             data: &data,
             details: &details,
         });

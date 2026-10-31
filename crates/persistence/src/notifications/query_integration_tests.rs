@@ -432,7 +432,9 @@ fn notification_list_attaches_group_keys_only_to_groupable_rows() -> Result<(), 
     };
 
     assert_eq!(group_key("notif_invite"), Some(None));
-    let announcement = group_key("notif_announcement").flatten().unwrap();
-    assert!(announcement.starts_with("group.announcement:grp_club:2026-01-0"));
+    assert_eq!(
+        group_key("notif_announcement"),
+        Some(Some("group.announcement:grp_club".to_string()))
+    );
     Ok(())
 }
