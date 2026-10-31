@@ -135,12 +135,6 @@ fn command_succeeds(program: &str, args: &[&str], stdout_match: Option<&str>) ->
 
 #[cfg(target_os = "linux")]
 fn current_linux_package_kind() -> LinuxPackageKind {
-    static PACKAGE_KIND: std::sync::OnceLock<LinuxPackageKind> = std::sync::OnceLock::new();
-    *PACKAGE_KIND.get_or_init(probe_linux_package_kind)
-}
-
-#[cfg(target_os = "linux")]
-fn probe_linux_package_kind() -> LinuxPackageKind {
     if std::env::var_os("APPIMAGE").is_some() {
         return LinuxPackageKind::Appimage;
     }

@@ -365,10 +365,7 @@ impl RuntimeTaskExecutor for TauriRuntimeTaskExecutor {
     }
 }
 
-pub(super) fn start_host_services(app: &tauri::AppHandle, state: &AppState) {
-    state
-        .runtime_host()
-        .set_runtime_event_sink(TauriRuntimeEventSink::new(app.clone()));
+pub(super) fn observe_tray_realtime_phase(app: &tauri::AppHandle, state: &AppState) {
     let tray_app = app.clone();
     state
         .runtime_host()
@@ -380,6 +377,12 @@ pub(super) fn start_host_services(app: &tauri::AppHandle, state: &AppState) {
                 );
             },
         ));
+}
+
+pub(super) fn start_host_services(app: &tauri::AppHandle, state: &AppState) {
+    state
+        .runtime_host()
+        .set_runtime_event_sink(TauriRuntimeEventSink::new(app.clone()));
     state
         .runtime_host()
         .set_runtime_host_actions(TauriRuntimeHostActions::new(app.clone()));
