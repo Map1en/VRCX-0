@@ -16,16 +16,23 @@ pub struct VrcProcessStatus {
 }
 
 pub struct ProcessStatusDetector {
+    /// Avoid caching a long-lived `sysinfo::System` on Linux to prevent leaking `/proc/*/stat` file descriptors.
+    #[cfg(not(target_os = "linux"))]
     sys: System,
     #[cfg(windows)]
     process_handles: ProcessHandleCache<WindowsProcessHandle>,
+    #[cfg(target_os = "linux")]
+    process_handles: ProcessHandleCache<LinuxProcessHandle>,
 }
 
 impl ProcessStatusDetector {
     pub fn new() -> Self {
         Self {
+            #[cfg(not(target_os = "linux"))]
             sys: System::new(),
             #[cfg(windows)]
+            process_handles: ProcessHandleCache::default(),
+            #[cfg(target_os = "linux")]
             process_handles: ProcessHandleCache::default(),
         }
     }
@@ -54,7 +61,30 @@ impl ProcessStatusDetector {
             )
         }
 
-        #[cfg(not(windows))]
+        #[cfg(target_os = "linux")]
+        {
+            let cached_status = self
+                .process_handles
+                .retain_running(LinuxProcessHandle::is_running);
+            if cached_status.is_game_running && cached_status.is_steamvr_running {
+                return cached_status;
+            }
+
+            let mut sys = System::new();
+            sys.refresh_processes_specifics(
+                ProcessesToUpdate::All,
+                true,
+                ProcessRefreshKind::nothing(),
+            );
+            self.process_handles.update_from_processes(
+                sys.processes()
+                    .values()
+                    .map(|process| (process.pid(), process.name().to_string_lossy())),
+                LinuxProcessHandle::open,
+            )
+        }
+
+        #[cfg(not(any(windows, target_os = "linux")))]
         {
             self.sys.refresh_processes_specifics(
                 ProcessesToUpdate::All,
@@ -71,13 +101,13 @@ impl ProcessStatusDetector {
     }
 }
 
-#[cfg(any(windows, test))]
+#[cfg(any(windows, target_os = "linux", test))]
 struct ProcessHandleCache<H> {
     game: Option<H>,
     steamvr: Option<H>,
 }
 
-#[cfg(any(windows, test))]
+#[cfg(any(windows, target_os = "linux", test))]
 impl<H> ProcessHandleCache<H> {
     fn retain_running(&mut self, mut is_running: impl FnMut(&H) -> bool) -> VrcProcessStatus {
         self.game = self.game.take().filter(|handle| is_running(handle));
@@ -125,7 +155,7 @@ impl<H> ProcessHandleCache<H> {
     }
 }
 
-#[cfg(any(windows, test))]
+#[cfg(any(windows, target_os = "linux", test))]
 impl<H> Default for ProcessHandleCache<H> {
     fn default() -> Self {
         Self {
@@ -157,6 +187,41 @@ impl Drop for WindowsProcessHandle {
     fn drop(&mut self) {
         unsafe {
             CloseHandle(self.handle.get() as HANDLE);
+        }
+    }
+}
+
+#[cfg(target_os = "linux")]
+#[derive(Debug)]
+struct LinuxProcessHandle {
+    pid: Pid,
+    name: Option<String>,
+}
+
+#[cfg(target_os = "linux")]
+impl LinuxProcessHandle {
+    fn open(pid: Pid) -> Option<Self> {
+        let name = std::fs::read_to_string(format!("/proc/{}/comm", pid.as_u32()))
+            .ok()
+            .map(|s| s.trim_end_matches('\n').to_string())?;
+        Some(Self {
+            pid,
+            name: Some(name),
+        })
+    }
+
+    fn is_running(&self) -> bool {
+        let path = format!("/proc/{}/comm", self.pid.as_u32());
+        match std::fs::read_to_string(&path) {
+            Ok(comm) => {
+                let current_name = comm.trim_end_matches('\n');
+                if let Some(expected) = &self.name {
+                    current_name == expected
+                } else {
+                    is_vrchat_process_name(current_name) || is_steamvr_process_name(current_name)
+                }
+            }
+            Err(_) => false,
         }
     }
 }
@@ -234,7 +299,7 @@ fn is_legacy_vrcx_process_name(name: &str) -> bool {
     name.eq_ignore_ascii_case("VRCX.exe") || name.eq_ignore_ascii_case("VRCX")
 }
 
-#[cfg(any(not(windows), test))]
+#[cfg(any(not(any(windows, target_os = "linux")), test))]
 fn detect_process_status_from_names<I, S>(names: I) -> VrcProcessStatus
 where
     I: IntoIterator<Item = S>,
@@ -448,6 +513,56 @@ mod tests {
         assert!(handle.is_running());
         assert!(child.wait().unwrap().success());
         assert!(!handle.is_running());
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn linux_process_handle_detects_current_process() {
+        let handle = super::LinuxProcessHandle::open(Pid::from_u32(std::process::id())).unwrap();
+        assert!(handle.is_running());
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn linux_process_handle_detects_process_exit() {
+        let mut child = std::process::Command::new("sleep")
+            .arg("10")
+            .spawn()
+            .unwrap();
+        let handle = super::LinuxProcessHandle::open(Pid::from_u32(child.id())).unwrap();
+
+        assert!(handle.is_running());
+        child.kill().unwrap();
+        let _ = child.wait().unwrap();
+        assert!(!handle.is_running());
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn linux_process_handle_detects_name_mismatch() {
+        let handle = super::LinuxProcessHandle {
+            pid: Pid::from_u32(std::process::id()),
+            name: Some("non_existent_process_name_xyz".to_string()),
+        };
+        assert!(!handle.is_running());
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn detector_does_not_leak_stat_file_descriptors() {
+        let mut detector = super::ProcessStatusDetector::new();
+        detector.detect();
+        detector.detect();
+        let stat_fds = std::fs::read_dir("/proc/self/fd")
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .filter(|e| {
+                std::fs::read_link(e.path())
+                    .map(|target| target.to_string_lossy().contains("/stat"))
+                    .unwrap_or(false)
+            })
+            .count();
+        assert_eq!(stat_fds, 0, "stat file descriptors should not be leaked");
     }
 
     #[test]
