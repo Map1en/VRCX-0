@@ -201,7 +201,7 @@ impl RealtimeHostRuntime {
             state.friend_profile.refetches.clear();
             state.world_enrichment.inflight.clear();
             state.world_enrichment.pending_corrections.clear();
-            state.automation.invite.clear_all();
+            state.automation.invite.retain_for_session(&session);
             let friend_user_ids =
                 if let Some(friends_by_id) = queued_friends.or_else(|| supplied_friends.take()) {
                     if self
@@ -560,6 +560,7 @@ impl RealtimeHostRuntime {
         state.friend_profile.refetches.clear();
         state.world_enrichment.inflight.clear();
         state.world_enrichment.pending_corrections.clear();
+        state.automation.invite.clear_all();
         let _ = self.cancel_tx.send(state.connection.generation);
         self.deps.session.clear_realtime_context();
     }

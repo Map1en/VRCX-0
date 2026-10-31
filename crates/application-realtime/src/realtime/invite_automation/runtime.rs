@@ -1,5 +1,7 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
+use vrcx_0_core::realtime::RealtimeSessionContext;
+
 use super::decision::CooldownView;
 
 const CLOSED_LOCATIONS_CAPACITY: usize = 512;
@@ -14,6 +16,7 @@ pub(crate) enum InviteOutcome {
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct InviteAutomationState {
+    session: Option<RealtimeSessionContext>,
     cooldowns: HashMap<String, i64>,
     pending: HashSet<String>,
     failure_backoff: HashMap<String, i64>,
@@ -55,7 +58,15 @@ impl InviteAutomationState {
         }
     }
 
+    pub(crate) fn retain_for_session(&mut self, session: &RealtimeSessionContext) {
+        if self.session.as_ref() != Some(session) {
+            self.clear_all();
+            self.session = Some(session.clone());
+        }
+    }
+
     pub(crate) fn clear_all(&mut self) {
+        self.session = None;
         self.cooldowns.clear();
         self.pending.clear();
         self.failure_backoff.clear();
@@ -133,6 +144,35 @@ mod tests {
         assert!(!view.is_pending);
         assert_eq!(view.last_sent_at_ms, None);
         assert!(!view.in_failure_backoff);
+    }
+
+    #[test]
+    fn same_session_keeps_invite_state_and_a_new_session_clears_it() {
+        let session = RealtimeSessionContext::new(
+            "usr_self".into(),
+            "https://api.example.test/api/1".into(),
+            "wss://pipeline.example.test".into(),
+        );
+        let mut state = InviteAutomationState::default();
+        state.retain_for_session(&session);
+        state.begin("scope");
+        state.finish("scope", InviteOutcome::Sent, 1_000);
+        state.record_closed_location("wrld_closed:1");
+
+        state.retain_for_session(&session);
+        assert_eq!(
+            state.cooldown_view("scope", 1_000).last_sent_at_ms,
+            Some(1_000)
+        );
+        assert!(state.closed_locations().contains("wrld_closed:1"));
+
+        state.retain_for_session(&RealtimeSessionContext::new(
+            "usr_other".into(),
+            "https://api.example.test/api/1".into(),
+            "wss://pipeline.example.test".into(),
+        ));
+        assert_eq!(state.cooldown_view("scope", 1_000).last_sent_at_ms, None);
+        assert!(state.closed_locations().is_empty());
     }
 
     #[test]

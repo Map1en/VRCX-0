@@ -1153,6 +1153,69 @@ fn unexpected_exit_keeps_old_roster_until_pending_baseline_replacement_starts() 
 }
 
 #[test]
+fn reconnect_keeps_invite_cooldowns_until_the_session_stops() -> Result<()> {
+    use crate::realtime::invite_automation::runtime::{sender_scope_key, InviteOutcome};
+
+    let (_dir, runtime, active_session) = runtime_with_active_session("invite-cooldown")?;
+    let old_transport = active_transport(&runtime);
+    seed_online_friend(&runtime, &active_session)?;
+    let scope_key = sender_scope_key(
+        &active_session.endpoint,
+        &active_session.user_id,
+        "usr_sender",
+    );
+    let last_sent = |runtime: &TestRealtimeHostRuntime| {
+        runtime
+            .runtime()
+            .state
+            .lock()
+            .unwrap()
+            .automation
+            .invite
+            .cooldown_view(&scope_key, 1_000)
+            .last_sent_at_ms
+    };
+    {
+        let mut state = runtime.runtime().state.lock().unwrap();
+        state.automation.invite.retain_for_session(&active_session);
+        state.automation.invite.begin(&scope_key);
+        state
+            .automation
+            .invite
+            .finish(&scope_key, InviteOutcome::Sent, 1_000);
+    }
+    runtime.runtime().finish_realtime_transport(
+        old_transport,
+        RealtimeTransportTermination::UnexpectedExit {
+            reason: "websocket stream ended".into(),
+            connected_secs: None,
+        },
+    );
+    runtime
+        .runtime()
+        .deps
+        .tasks
+        .set_executor(DiscardTaskExecutor);
+
+    let replacement = runtime.runtime().start_from_friend_baseline(
+        active_session.user_id.clone(),
+        active_session.endpoint.clone(),
+        active_session.websocket.clone(),
+        2,
+        json!({"id": active_session.user_id}),
+    )?;
+    assert_eq!(last_sent(&runtime), Some(1_000));
+
+    runtime.runtime().stop(RealtimeStopRequest {
+        client_run_id: Some(replacement.client_run_id),
+        generation: Some(replacement.generation),
+        ..Default::default()
+    });
+    assert_eq!(last_sent(&runtime), None);
+    Ok(())
+}
+
+#[test]
 fn reconnect_without_a_fresh_baseline_preserves_the_latest_canonical_roster() -> Result<()> {
     let (_dir, runtime, active_session) =
         runtime_with_active_session("unexpected-exit-preserved-baseline")?;
