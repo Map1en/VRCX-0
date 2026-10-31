@@ -54,7 +54,7 @@ impl LocalGameFacts {
             is_steamvr_running: host_session.is_steamvr_running,
             is_game_no_vr: context
                 .config
-                .get_bool("isGameNoVR", false)
+                .get_bool(vrcx_0_application_game::IS_GAME_NO_VR_CONFIG_KEY, false)
                 .unwrap_or(false),
             last_game_started_at: host_session.last_game_started_at,
             game_log_snapshot: context.desktop_services.game_log_snapshot(),

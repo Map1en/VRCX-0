@@ -3,6 +3,10 @@ use vrcx_0_core::json::RawJson;
 
 use crate::remote::VrchatRequestPort;
 use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Result, RuntimeAuthScope};
+pub use vrcx_0_contracts::mutual_graph::{
+    MutualGraphLinkOutput, MutualGraphMetaInput, MutualGraphMetaOutput,
+    MutualGraphSnapshotEntryInput, MutualGraphSnapshotOutput,
+};
 use vrcx_0_core::OwnerId;
 
 #[derive(Debug, Deserialize, specta::Type)]
@@ -81,41 +85,6 @@ impl<'a> MutualGraphRequestDeps<'a> {
             auth_scope,
         }
     }
-}
-
-#[derive(Clone, Debug)]
-pub struct MutualGraphSnapshotEntryInput {
-    pub friend_id: String,
-    pub mutual_ids: Vec<String>,
-}
-
-#[derive(Clone, Debug)]
-pub struct MutualGraphMetaInput {
-    pub friend_id: String,
-    pub last_fetched_at: String,
-    pub opted_out: bool,
-    pub total_count: Option<usize>,
-}
-
-#[derive(Clone, Debug)]
-pub struct MutualGraphLinkOutput {
-    pub friend_id: String,
-    pub mutual_id: String,
-}
-
-#[derive(Clone, Debug)]
-pub struct MutualGraphMetaOutput {
-    pub friend_id: String,
-    pub last_fetched_at: String,
-    pub opted_out: bool,
-    pub total_count: Option<usize>,
-}
-
-#[derive(Clone, Debug)]
-pub struct MutualGraphSnapshotOutput {
-    pub friend_ids: Vec<String>,
-    pub links: Vec<MutualGraphLinkOutput>,
-    pub meta: Vec<MutualGraphMetaOutput>,
 }
 
 pub trait MutualGraphStore: Send + Sync {

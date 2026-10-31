@@ -1,8 +1,4 @@
-use vrcx_0_application::social::{
-    GroupBuiltRequest, GroupMemberPatch, GroupMemberSort, GroupMemberVisibility, GroupPostMutation,
-    GroupPostVisibility, GroupProfileJoinState, GroupProfileUpdate, GroupRemoteRequest,
-    GroupRemoteRequests,
-};
+use vrcx_0_application::social::{GroupBuiltRequest, GroupRemoteRequest, GroupRemoteRequests};
 use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Result};
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 use vrcx_0_vrchat_client::groups::{
@@ -63,16 +59,13 @@ impl GroupRemoteRequests for VrchatGroupRemoteRequests {
                 Ok(built2(group_id, user_id, request))
             }
             GroupRemoteRequest::GetMembers(input) => {
-                let sort = match input.sort {
-                    GroupMemberSort::JoinedAtAsc => {
-                        vrcx_0_vrchat_client::groups::GroupMemberSort::JoinedAtAsc
-                    }
-                    GroupMemberSort::JoinedAtDesc => {
-                        vrcx_0_vrchat_client::groups::GroupMemberSort::JoinedAtDesc
-                    }
-                };
-                let (group_id, request) =
-                    members_get_input(input.group_id, input.n, input.offset, sort, input.role_id)?;
+                let (group_id, request) = members_get_input(
+                    input.group_id,
+                    input.n,
+                    input.offset,
+                    input.sort,
+                    input.role_id,
+                )?;
                 Ok(built1(group_id, request))
             }
             GroupRemoteRequest::SearchMembers(input) => {
@@ -155,8 +148,7 @@ impl GroupRemoteRequests for VrchatGroupRemoteRequests {
                 Ok(built1(user_id, request))
             }
             GroupRemoteRequest::Update(input) => {
-                let (group_id, request) =
-                    profile_update_input(input.group_id, profile_update(input.params))?;
+                let (group_id, request) = profile_update_input(input.group_id, input.params)?;
                 Ok(built1(group_id, request))
             }
             GroupRemoteRequest::Delete(input) => {
@@ -164,12 +156,12 @@ impl GroupRemoteRequests for VrchatGroupRemoteRequests {
                 Ok(built1(group_id, request))
             }
             GroupRemoteRequest::CreatePost(input) => {
-                let (group_id, request) = post_create_input(input.group_id, post(input.params))?;
+                let (group_id, request) = post_create_input(input.group_id, input.params)?;
                 Ok(built1(group_id, request))
             }
             GroupRemoteRequest::EditPost(input) => {
                 let (group_id, post_id, request) =
-                    post_edit_input(input.group_id, input.post_id, post(input.params))?;
+                    post_edit_input(input.group_id, input.post_id, input.params)?;
                 Ok(built2(group_id, post_id, request))
             }
             GroupRemoteRequest::DeletePost(input) => {
@@ -250,7 +242,7 @@ impl GroupRemoteRequests for VrchatGroupRemoteRequests {
                     VRCHAT_API_DEFAULT_ENDPOINT.into(),
                     input.group_id,
                     input.user_id,
-                    member_patch(input.params),
+                    input.params,
                 )?;
                 Ok(built2(group_id, user_id, request))
             }
@@ -298,69 +290,6 @@ impl GroupRemoteRequests for VrchatGroupRemoteRequests {
                 Ok(built2(group_id, user_id, request))
             }
         }
-    }
-}
-
-fn post(input: GroupPostMutation) -> vrcx_0_vrchat_client::groups::GroupPostMutation {
-    vrcx_0_vrchat_client::groups::GroupPostMutation {
-        title: input.title,
-        text: input.text,
-        send_notification: input.send_notification,
-        visibility: match input.visibility {
-            GroupPostVisibility::Group => vrcx_0_vrchat_client::groups::GroupPostVisibility::Group,
-            GroupPostVisibility::Public => {
-                vrcx_0_vrchat_client::groups::GroupPostVisibility::Public
-            }
-        },
-        role_ids: input.role_ids,
-        image_id: input.image_id,
-    }
-}
-
-fn profile_update(input: GroupProfileUpdate) -> vrcx_0_vrchat_client::groups::GroupProfileUpdate {
-    vrcx_0_vrchat_client::groups::GroupProfileUpdate {
-        name: input.name,
-        short_code: input.short_code,
-        description: input.description,
-        join_state: match input.join_state {
-            GroupProfileJoinState::Closed => {
-                vrcx_0_vrchat_client::groups::GroupProfileJoinState::Closed
-            }
-            GroupProfileJoinState::Invite => {
-                vrcx_0_vrchat_client::groups::GroupProfileJoinState::Invite
-            }
-            GroupProfileJoinState::Open => {
-                vrcx_0_vrchat_client::groups::GroupProfileJoinState::Open
-            }
-            GroupProfileJoinState::Request => {
-                vrcx_0_vrchat_client::groups::GroupProfileJoinState::Request
-            }
-        },
-        languages: input.languages,
-        rules: input.rules,
-        links: input.links,
-        icon_id: input.icon_id,
-        banner_id: input.banner_id,
-        allow_group_join_prompt: input.allow_group_join_prompt,
-    }
-}
-
-fn member_patch(input: GroupMemberPatch) -> vrcx_0_vrchat_client::groups::GroupMemberPatch {
-    vrcx_0_vrchat_client::groups::GroupMemberPatch {
-        is_subscribed_to_announcements: input.is_subscribed_to_announcements,
-        is_subscribed_to_event_announcements: input.is_subscribed_to_event_announcements,
-        manager_notes: input.manager_notes,
-        visibility: input.visibility.map(|visibility| match visibility {
-            GroupMemberVisibility::Friends => {
-                vrcx_0_vrchat_client::groups::GroupMemberVisibility::Friends
-            }
-            GroupMemberVisibility::Hidden => {
-                vrcx_0_vrchat_client::groups::GroupMemberVisibility::Hidden
-            }
-            GroupMemberVisibility::Visible => {
-                vrcx_0_vrchat_client::groups::GroupMemberVisibility::Visible
-            }
-        }),
     }
 }
 

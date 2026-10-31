@@ -246,7 +246,12 @@ pub fn load_overlay_activity_filters(config: &dyn NotificationConfig) -> Activit
     filters
 }
 
-pub fn apply_location_notification_rules(
+pub fn reload_activity_router(activity_router: &ActivityRouter, config: &dyn NotificationConfig) {
+    activity_router.set_filters(load_overlay_activity_filters(config));
+    apply_location_notification_rules(activity_router, config);
+}
+
+fn apply_location_notification_rules(
     activity_router: &ActivityRouter,
     config: &dyn NotificationConfig,
 ) {

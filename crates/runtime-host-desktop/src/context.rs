@@ -2,10 +2,9 @@ use std::sync::{Arc, Mutex};
 
 use vrcx_0_application::auth::AuthCredentialStore;
 use vrcx_0_application_activity::notification::{
-    apply_location_notification_rules, extract_file_version, fallback_file_version,
-    load_overlay_activity_filters, rename_local_favorite_group_in_activity_filters,
-    CachedNotificationUserImageResolver, NotificationConfig, NotificationRemoteFuture,
-    NotificationResolver,
+    extract_file_version, fallback_file_version, reload_activity_router,
+    rename_local_favorite_group_in_activity_filters, CachedNotificationUserImageResolver,
+    NotificationConfig, NotificationRemoteFuture, NotificationResolver,
 };
 use vrcx_0_application_activity::{ActivityRouter, ActivitySink, ActivitySinkRegistry};
 use vrcx_0_application_core::{
@@ -178,11 +177,7 @@ impl DesktopRuntimeServices {
     }
 
     pub fn reload_overlay_activity_filters(&self) {
-        self.activity_router
-            .set_filters(load_overlay_activity_filters(
-                self.notification_config.as_ref(),
-            ));
-        apply_location_notification_rules(&self.activity_router, self.notification_config.as_ref());
+        reload_activity_router(&self.activity_router, self.notification_config.as_ref());
     }
 
     pub fn set_overlay_activity_extra_sink(&self, extra_sink: Arc<dyn ActivitySink>) {

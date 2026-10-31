@@ -106,7 +106,6 @@ const USER_GENERATED_CONTENT_PATH_CONFIG_KEY: &str = "userGeneratedContentPath";
 const REGISTRY_BACKUP_MAINTENANCE_JOB: &str = "registryBackupMaintenance";
 const REGISTRY_BACKUP_MAINTENANCE_CADENCE_SECONDS: u64 = 3 * 60 * 60;
 const REGISTRY_BACKUP_FOREGROUND_REUSE_WINDOW: Duration = Duration::from_secs(60);
-const BACKGROUND_OVERLAY_ACTIVITY_CONFIG_CADENCE: Duration = Duration::from_secs(5);
 const DESKTOP_MAINTENANCE_STOP_POLL_INTERVAL: Duration = Duration::from_millis(50);
 const SHARE_EDITOR_ORIGIN: &str = "https://worlds.vrcx-0.dev";
 
@@ -2871,7 +2870,7 @@ impl DesktopRuntimeProfileExtension {
                 let mut last_discord_output: Option<String> = None;
                 let mut next_presence = Instant::now();
                 let mut next_discord = Instant::now();
-                let mut next_overlay_activity_config = Instant::now();
+                let mut overlay_activity_config_generation = None;
                 let mut observed_discord_reconcile_generation =
                     discord_reconcile_generation.load(Ordering::Acquire);
                 let mut active_scope_key =
@@ -2904,12 +2903,12 @@ impl DesktopRuntimeProfileExtension {
                         last_discord_output = None;
                         next_presence = now;
                         next_discord = now;
-                        next_overlay_activity_config = now;
+                        overlay_activity_config_generation = None;
                     }
-                    if now >= next_overlay_activity_config {
+                    let config_generation = config.write_generation();
+                    if overlay_activity_config_generation != Some(config_generation) {
                         desktop_services.reload_overlay_activity_filters();
-                        next_overlay_activity_config =
-                            now + BACKGROUND_OVERLAY_ACTIVITY_CONFIG_CADENCE;
+                        overlay_activity_config_generation = Some(config_generation);
                     }
                     let tick_context = BackgroundTickContext {
                         db: &db,

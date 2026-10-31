@@ -1,19 +1,8 @@
-use serde::{Deserialize, Serialize};
+pub use vrcx_0_contracts::vrchat_requests::GroupMemberSort;
 
-#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
-pub enum GroupMemberSort {
-    #[serde(rename = "joinedAt:asc")]
-    JoinedAtAsc,
-    #[default]
-    #[serde(rename = "joinedAt:desc")]
-    JoinedAtDesc,
-}
-
-impl GroupMemberSort {
-    pub(super) const fn as_str(self) -> &'static str {
-        match self {
-            Self::JoinedAtAsc => "joinedAt:asc",
-            Self::JoinedAtDesc => "joinedAt:desc",
-        }
+pub(super) const fn member_sort_param(sort: GroupMemberSort) -> &'static str {
+    match sort {
+        GroupMemberSort::JoinedAtAsc => "joinedAt:asc",
+        GroupMemberSort::JoinedAtDesc => "joinedAt:desc",
     }
 }

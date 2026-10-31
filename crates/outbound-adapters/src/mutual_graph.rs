@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use vrcx_0_application::social::{
-    MutualGraphLinkOutput, MutualGraphMetaInput, MutualGraphMetaOutput, MutualGraphRemoteRequests,
-    MutualGraphSnapshotEntryInput, MutualGraphSnapshotOutput, MutualGraphStore,
+    MutualGraphMetaInput, MutualGraphRemoteRequests, MutualGraphSnapshotEntryInput,
+    MutualGraphSnapshotOutput, MutualGraphStore,
 };
 use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Result};
 use vrcx_0_persistence::{mutual_graph, DatabaseService};
@@ -39,29 +39,7 @@ impl MutualGraphStore for LocalMutualGraphStore {
     }
 
     fn snapshot_get(&self, owner_user_id: String) -> Result<MutualGraphSnapshotOutput> {
-        mutual_graph::mutual_graph_snapshot_get(&self.db, owner_user_id)
-            .map(|snapshot| MutualGraphSnapshotOutput {
-                friend_ids: snapshot.friend_ids,
-                links: snapshot
-                    .links
-                    .into_iter()
-                    .map(|link| MutualGraphLinkOutput {
-                        friend_id: link.friend_id,
-                        mutual_id: link.mutual_id,
-                    })
-                    .collect(),
-                meta: snapshot
-                    .meta
-                    .into_iter()
-                    .map(|meta| MutualGraphMetaOutput {
-                        friend_id: meta.friend_id,
-                        last_fetched_at: meta.last_fetched_at,
-                        opted_out: meta.opted_out,
-                        total_count: meta.total_count.map(|count| count as usize),
-                    })
-                    .collect(),
-            })
-            .map_err(crate::Error::from)
+        mutual_graph::mutual_graph_snapshot_get(&self.db, owner_user_id).map_err(crate::Error::from)
     }
 
     fn snapshot_commit(
@@ -70,26 +48,8 @@ impl MutualGraphStore for LocalMutualGraphStore {
         entries: Vec<MutualGraphSnapshotEntryInput>,
         meta: Vec<MutualGraphMetaInput>,
     ) -> Result<()> {
-        mutual_graph::mutual_graph_snapshot_commit(
-            &self.db,
-            owner_user_id,
-            entries
-                .into_iter()
-                .map(|entry| mutual_graph::MutualGraphSnapshotEntryInput {
-                    friend_id: entry.friend_id,
-                    mutual_ids: entry.mutual_ids,
-                })
-                .collect(),
-            meta.into_iter()
-                .map(|entry| mutual_graph::MutualGraphMetaInput {
-                    friend_id: entry.friend_id,
-                    last_fetched_at: entry.last_fetched_at,
-                    opted_out: entry.opted_out,
-                    total_count: entry.total_count,
-                })
-                .collect(),
-        )
-        .map_err(crate::Error::from)
+        mutual_graph::mutual_graph_snapshot_commit(&self.db, owner_user_id, entries, meta)
+            .map_err(crate::Error::from)
     }
 }
 

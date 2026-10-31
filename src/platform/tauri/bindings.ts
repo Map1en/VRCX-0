@@ -5943,13 +5943,6 @@ export type Message = {
     toolResult: ToolResultRecord | null;
 };
 export type ModerationReportType = 'avatar' | 'group' | 'user' | 'world';
-export type ModerationSyncLocalOutput = {
-    userId: string;
-    updatedAt: string;
-    displayName: string;
-    block: boolean;
-    mute: boolean;
-};
 export type ModerationSyncMutationInput = {
     targetUserId: string;
     targetDisplayName?: string;
@@ -5961,7 +5954,7 @@ export type ModerationSyncMutationOutput = {
     targetUserId: string;
     type: string;
     enabled: boolean;
-    local: ModerationSyncLocalOutput | null;
+    local: LocalModerationOutput | null;
 };
 export type ModerationSyncRefreshInput = { userId: string; endpoint?: string };
 export type ModerationSyncRefreshOutput = {

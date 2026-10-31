@@ -196,7 +196,10 @@ impl GameClientProcessor {
                 .deps
                 .store
                 .get_bool("relaunchVRChatAfterCrash", false)?,
-            is_game_no_vr: self.deps.store.get_bool("isGameNoVR", false)?,
+            is_game_no_vr: self
+                .deps
+                .store
+                .get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?,
             launch_arguments: self.deps.store.get_string("launchArguments", "")?,
             launch_path_override: self.deps.store.get_string("vrcLaunchPathOverride", "")?,
         };

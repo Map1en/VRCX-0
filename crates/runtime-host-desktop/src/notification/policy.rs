@@ -33,7 +33,9 @@ impl NotificationSettings {
             busy_status_do_not_disturb: config
                 .get_bool(BUSY_STATUS_DO_NOT_DISTURB_CONFIG_KEY, true)
                 .unwrap_or(true),
-            is_game_no_vr: config.get_bool("isGameNoVR", false).unwrap_or(false),
+            is_game_no_vr: config
+                .get_bool(vrcx_0_application_game::IS_GAME_NO_VR_CONFIG_KEY, false)
+                .unwrap_or(false),
         }
     }
 }

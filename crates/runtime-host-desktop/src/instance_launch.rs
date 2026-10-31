@@ -143,7 +143,8 @@ struct DesktopInstanceLaunchPipe {
 
 fn should_focus_game_window(db: &DatabaseService) -> bool {
     config_store::get_bool(db, "focusVrchatOnJoin", false).unwrap_or(false)
-        && config_store::get_bool(db, "isGameNoVR", false).unwrap_or(false)
+        && config_store::get_bool(db, vrcx_0_application_game::IS_GAME_NO_VR_CONFIG_KEY, false)
+            .unwrap_or(false)
 }
 
 impl InstanceLaunchPipe for DesktopInstanceLaunchPipe {
@@ -203,7 +204,8 @@ mod tests {
     fn focus_stays_off_until_the_user_enables_it() {
         let dir = TestDir::new("default-off");
         let db = database(&dir);
-        config_store::set_bool(&db, "isGameNoVR", true).unwrap();
+        config_store::set_bool(&db, vrcx_0_application_game::IS_GAME_NO_VR_CONFIG_KEY, true)
+            .unwrap();
 
         assert!(!should_focus_game_window(&db));
     }
@@ -213,7 +215,8 @@ mod tests {
         let dir = TestDir::new("desktop-mode");
         let db = database(&dir);
         config_store::set_bool(&db, "focusVrchatOnJoin", true).unwrap();
-        config_store::set_bool(&db, "isGameNoVR", true).unwrap();
+        config_store::set_bool(&db, vrcx_0_application_game::IS_GAME_NO_VR_CONFIG_KEY, true)
+            .unwrap();
 
         assert!(should_focus_game_window(&db));
     }
@@ -223,7 +226,12 @@ mod tests {
         let dir = TestDir::new("vr-mode");
         let db = database(&dir);
         config_store::set_bool(&db, "focusVrchatOnJoin", true).unwrap();
-        config_store::set_bool(&db, "isGameNoVR", false).unwrap();
+        config_store::set_bool(
+            &db,
+            vrcx_0_application_game::IS_GAME_NO_VR_CONFIG_KEY,
+            false,
+        )
+        .unwrap();
 
         assert!(!should_focus_game_window(&db));
     }

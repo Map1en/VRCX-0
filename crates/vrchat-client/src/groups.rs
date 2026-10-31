@@ -164,7 +164,10 @@ pub fn members_get_input(
     let mut params = HashMap::from([
         ("n".to_string(), serde_json::json!(n)),
         ("offset".to_string(), serde_json::json!(offset)),
-        ("sort".to_string(), Value::String(sort.as_str().to_string())),
+        (
+            "sort".to_string(),
+            Value::String(params::member_sort_param(sort).to_string()),
+        ),
     ]);
     if !role_id.is_empty() {
         params.insert("roleId".to_string(), Value::String(role_id));
@@ -423,7 +426,7 @@ pub fn profile_update_input(
     params: GroupProfileUpdate,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let group_id = require_text(group_id, "VrchatGroupUpdate requires groupId.")?;
-    let params = params.validated()?;
+    let params = request::validated_profile_update(params)?;
     Ok((
         group_id.clone(),
         api_input(
@@ -453,7 +456,7 @@ pub fn post_create_input(
     params: GroupPostMutation,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
     let group_id = require_text(group_id, "VrchatGroupPostCreate requires groupId.")?;
-    let params = params.validated()?;
+    let params = request::validated_post(params)?;
     Ok((
         group_id.clone(),
         api_input(
@@ -472,7 +475,7 @@ pub fn post_edit_input(
 ) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
     let group_id = require_text(group_id, "VrchatGroupPostEdit requires groupId.")?;
     let post_id = require_text(post_id, "VrchatGroupPostEdit requires postId.")?;
-    let params = params.validated()?;
+    let params = request::validated_post(params)?;
     Ok((
         group_id.clone(),
         post_id.clone(),
