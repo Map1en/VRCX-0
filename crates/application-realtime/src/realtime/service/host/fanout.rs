@@ -307,9 +307,7 @@ impl RealtimeHostRuntime {
                         .collect(),
                 );
             }
-            self.deps
-                .event_bus
-                .emit_realtime_notification_projection(projection.clone());
+            self.deps.event_bus.emit(projection.clone());
             self.schedule_invite_automation(&projection);
             self.schedule_friend_request_auto_decline(auto_declines);
         }
@@ -374,9 +372,7 @@ impl RealtimeHostRuntime {
         {
             self.apply_current_user_snapshot_sink(&active, &snapshot);
         }
-        self.deps
-            .event_bus
-            .emit_realtime_current_user_projection(projection);
+        self.deps.event_bus.emit(projection);
     }
 
     pub(super) fn apply_current_user_snapshot_sink(
@@ -437,9 +433,7 @@ impl RealtimeHostRuntime {
                 &projection.notification,
             )]);
         }
-        self.deps
-            .event_bus
-            .emit_realtime_instance_closed_projection(projection);
+        self.deps.event_bus.emit(projection);
         self.emit_feed_entries(generation, owner_user_id, vec![feed_entry]);
     }
 }

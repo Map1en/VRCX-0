@@ -123,12 +123,10 @@ impl RealtimeHostRuntime {
             self.emit_feed_patch(entry.id, fields);
             return;
         }
-        self.deps
-            .event_bus
-            .emit_realtime_entry_correction(RealtimeEntryCorrection {
-                stream: entry.stream,
-                id: entry.id,
-                fields,
-            });
+        self.deps.event_bus.emit(RealtimeEntryCorrection {
+            stream: entry.stream,
+            id: entry.id,
+            fields,
+        });
     }
 }

@@ -459,9 +459,7 @@ impl RealtimeHostRuntime {
                 tracing::warn!("{label} local notification expiration failed: {error}");
             }
         }
-        self.deps
-            .event_bus
-            .emit_realtime_notification_projection(projection);
+        self.deps.event_bus.emit(projection);
         tracing::debug!(
             notification_id = facts.id,
             notification_type = facts.notification_type,

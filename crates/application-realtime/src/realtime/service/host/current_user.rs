@@ -214,11 +214,7 @@ impl RealtimeHostRuntime {
             let state = self.state.lock().ok()?;
             state.connection.active_context.clone()?
         };
-        if !self
-            .deps
-            .session
-            .is_realtime_generation_active(active.session_generation)
-        {
+        if !self.is_session_live(&active) {
             return None;
         }
         Some(active)

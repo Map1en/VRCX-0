@@ -19,11 +19,7 @@ impl RealtimeHostRuntime {
         let Some(active) = state.connection.active_context.as_ref() else {
             return false;
         };
-        active.generation == projection.generation
-            && self
-                .deps
-                .session
-                .is_realtime_generation_active(active.session_generation)
+        active.generation == projection.generation && self.is_session_live(active)
     }
 
     pub(super) fn is_message_current_locked(

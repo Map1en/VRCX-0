@@ -161,14 +161,12 @@ impl RealtimeHostRuntime {
         if users.is_empty() {
             return;
         }
-        self.deps
-            .event_bus
-            .emit_realtime_user_projection(RealtimeUserProjection {
-                users: users
-                    .into_iter()
-                    .map(|user| RawJson::from(Value::Object(user.into_map())))
-                    .collect(),
-            });
+        self.deps.event_bus.emit(RealtimeUserProjection {
+            users: users
+                .into_iter()
+                .map(|user| RawJson::from(Value::Object(user.into_map())))
+                .collect(),
+        });
     }
 
     pub(super) fn collect_friend_record_cache_changes<'a>(
@@ -419,12 +417,7 @@ impl RealtimeHostRuntime {
             let Some(active) = state.connection.active_context.clone() else {
                 return;
             };
-            if active.generation != generation
-                || !self
-                    .deps
-                    .session
-                    .is_realtime_generation_active(active.session_generation)
-            {
+            if active.generation != generation || !self.is_session_live(&active) {
                 return;
             }
             let mut refetches = Vec::new();

@@ -119,13 +119,12 @@ impl FavoriteMutationCoordinator {
         if !local_changed && !remote_changed {
             return;
         }
-        self.event_bus
-            .emit_favorites_changed(FavoritesChangedPayload::invalidated(
-                scope,
-                kind,
-                local_changed,
-                remote_changed,
-            ));
+        self.event_bus.emit(FavoritesChangedPayload::invalidated(
+            scope,
+            kind,
+            local_changed,
+            remote_changed,
+        ));
     }
 
     pub fn add_local(

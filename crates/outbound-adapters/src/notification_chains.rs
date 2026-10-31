@@ -256,13 +256,12 @@ impl NotificationChainActions for LocalNotificationChainActions<'_> {
     }
 
     fn emit_expired(&self, expired_ids: Vec<String>) {
-        self.event_bus
-            .emit_realtime_notification_projection(RealtimeNotificationProjection {
-                generation: 0,
-                expired_ids,
-                seen_ids: Vec::new(),
-                clear_menu_if_no_unseen: true,
-                ..RealtimeNotificationProjection::default()
-            });
+        self.event_bus.emit(RealtimeNotificationProjection {
+            generation: 0,
+            expired_ids,
+            seen_ids: Vec::new(),
+            clear_menu_if_no_unseen: true,
+            ..RealtimeNotificationProjection::default()
+        });
     }
 }

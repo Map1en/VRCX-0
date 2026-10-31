@@ -141,7 +141,7 @@ fn notify_local_favorite_change(
             vec![change],
         )
     };
-    deps.event_bus.emit_favorites_changed(payload);
+    deps.event_bus.emit(payload);
 }
 
 pub(super) fn add_local_favorite_scoped(
@@ -315,13 +315,12 @@ pub(super) fn reorder_local_favorite_groups_scoped(
         group_names,
     )?;
     deps.mutation.ensure_current()?;
-    deps.event_bus
-        .emit_favorites_changed(FavoritesChangedPayload::invalidated(
-            deps.mutation.scope(),
-            kind.into(),
-            true,
-            false,
-        ));
+    deps.event_bus.emit(FavoritesChangedPayload::invalidated(
+        deps.mutation.scope(),
+        kind.into(),
+        true,
+        false,
+    ));
     Ok(groups)
 }
 

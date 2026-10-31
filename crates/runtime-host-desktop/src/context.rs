@@ -13,8 +13,8 @@ use vrcx_0_application_core::{
     TaskSupervisor, WebClient, WorldCache,
 };
 use vrcx_0_application_game::{
-    GameLogSideEffectEvent, GameLogSideEffectObserver, NowPlayingSnapshot, RuntimeSnapshot,
-    RuntimeSnapshotStore,
+    GameLogSideEffectEvent, GameLogSideEffectObserver, NowPlayingSnapshot, NowPlayingStore,
+    RuntimeSnapshot, RuntimeSnapshotStore,
 };
 use vrcx_0_application_realtime::{FriendProjectionObserver, RealtimeHostRuntime};
 use vrcx_0_core::files::extract_file_id;
@@ -76,7 +76,7 @@ pub struct DesktopRuntimeServices {
     notification_resolver: Arc<NotificationResolver>,
     realtime_user_image_resolver_owner: Mutex<Option<Arc<dyn CachedNotificationUserImageResolver>>>,
     game_log_snapshot: RuntimeSnapshotStore,
-    now_playing: Arc<Mutex<Arc<NowPlayingSnapshot>>>,
+    now_playing: NowPlayingStore,
 }
 
 impl DesktopRuntimeServices {
@@ -158,7 +158,7 @@ impl DesktopRuntimeServices {
             notification_resolver: deps.notification_resolver,
             realtime_user_image_resolver_owner: Mutex::new(None),
             game_log_snapshot: RuntimeSnapshotStore::default(),
-            now_playing: Arc::new(Mutex::new(Arc::new(NowPlayingSnapshot::default()))),
+            now_playing: NowPlayingStore::default(),
         })
     }
 
@@ -220,10 +220,7 @@ impl DesktopRuntimeServices {
     }
 
     pub fn now_playing(&self) -> Arc<NowPlayingSnapshot> {
-        self.now_playing
-            .lock()
-            .map(|snapshot| Arc::clone(&snapshot))
-            .unwrap_or_else(|_| Arc::new(NowPlayingSnapshot::default()))
+        self.now_playing.snapshot()
     }
 
     pub fn activity_router(&self) -> ActivityRouter {
@@ -252,29 +249,6 @@ impl DesktopRuntimeServices {
 
     pub fn privacy_lock(&self) -> Arc<PrivacyLockRuntime> {
         Arc::clone(&self.privacy_lock)
-    }
-
-    fn observe_game_log_side_effect(&self, event: &GameLogSideEffectEvent) {
-        match event {
-            GameLogSideEffectEvent::NowPlaying(payload) => match self.now_playing.lock() {
-                Ok(mut current) => {
-                    Arc::make_mut(&mut current).apply(payload);
-                }
-                Err(error) => {
-                    tracing::warn!("failed to lock now playing snapshot: {error}");
-                }
-            },
-            GameLogSideEffectEvent::NowPlayingReset(_) => match self.now_playing.lock() {
-                Ok(mut current) => {
-                    *current = Arc::new(NowPlayingSnapshot::default());
-                }
-                Err(error) => {
-                    tracing::warn!("failed to lock now playing snapshot: {error}");
-                }
-            },
-            GameLogSideEffectEvent::ScreenshotProcessed(_)
-            | GameLogSideEffectEvent::GameNoVr(_) => {}
-        }
     }
 
     fn prefetch_online_friend_avatars(&self, projection: &FriendProjection) {
@@ -320,7 +294,7 @@ impl DesktopRuntimeServices {
 
 impl GameLogSideEffectObserver for DesktopRuntimeServices {
     fn on_game_log_side_effect(&self, event: &GameLogSideEffectEvent) {
-        self.observe_game_log_side_effect(event);
+        self.now_playing.observe(event);
     }
 }
 

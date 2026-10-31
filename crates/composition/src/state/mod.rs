@@ -1,4 +1,4 @@
-use crate::{Result, RuntimeHostContext, RuntimeHostEventSink, RuntimeHostProfile};
+use crate::{Result, RuntimeHostContext, RuntimeHostProfile};
 use vrcx_0_application::auth::{
     current_user_from_cookie, AuthenticatedRuntimeSession, AuthenticatedSessionProjection,
     AutoLoginOutcome, AutoLoginStartInput, LoginRuntimeTransition, LoginSessionCancelInput,

@@ -36,7 +36,7 @@ pub use game_client::{
 pub use game_event_bus::{
     CrashRelaunchDecisionPayload, EmptyEventPayload, GameClientEvent,
     GameLogPersistenceFallbackPayload, GameLogSideEffectEvent, GameLogSideEffectObserver,
-    GameLogSideEffectSink, GameNoVrPayload, NowPlayingPayload, NowPlayingSnapshot,
+    GameLogSideEffectSink, GameNoVrPayload, NowPlayingPayload, NowPlayingSnapshot, NowPlayingStore,
     RuntimeGameEventBusExt, RuntimeGameLogEventPayload, RuntimeNotificationLevel,
     RuntimeNotificationPayload, RuntimeWorkerErrorPayload, ScreenshotProcessedPayload,
 };

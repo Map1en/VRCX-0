@@ -227,48 +227,6 @@ impl RuntimeEventBus {
     pub fn take_events_for_test(&self) -> Vec<RuntimeEventForTest> {
         std::mem::take(&mut *self.events.lock().unwrap())
     }
-
-    pub fn emit_realtime_user_projection(&self, payload: RealtimeUserProjection) {
-        self.emit(payload);
-    }
-
-    pub fn emit_realtime_notification_projection(&self, payload: RealtimeNotificationProjection) {
-        self.emit(payload);
-    }
-
-    pub fn emit_realtime_entry_correction(&self, payload: RealtimeEntryCorrection) {
-        self.emit(payload);
-    }
-
-    pub fn emit_realtime_current_user_projection(&self, payload: RealtimeCurrentUserProjection) {
-        self.emit(payload);
-    }
-
-    pub fn emit_realtime_instance_closed_projection(
-        &self,
-        payload: RealtimeInstanceClosedProjection,
-    ) {
-        self.emit(payload);
-    }
-
-    pub fn emit_realtime_instance_queue_projection(
-        &self,
-        payload: RealtimeInstanceQueueProjection,
-    ) {
-        self.emit(payload);
-    }
-
-    pub fn emit_realtime_economy_balance(&self, payload: RealtimeEconomyBalancePayload) {
-        self.emit(payload);
-    }
-
-    pub fn emit_prints_auto_cleanup(&self, payload: PrintAutoCleanupEvent) {
-        self.emit(payload);
-    }
-
-    pub fn emit_favorites_changed(&self, payload: FavoritesChangedPayload) {
-        self.emit(payload);
-    }
 }
 
 #[cfg(test)]
@@ -288,7 +246,7 @@ mod tests {
             active: true,
         };
 
-        bus.emit_favorites_changed(FavoritesChangedPayload::from_changes(
+        bus.emit(FavoritesChangedPayload::from_changes(
             &scope,
             FavoriteChangeScope::Friend,
             true,

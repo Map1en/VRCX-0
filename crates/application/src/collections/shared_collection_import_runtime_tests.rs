@@ -100,13 +100,12 @@ impl BlockingCompletion {
 
 impl SharedCollectionImportCompletion for BlockingCompletion {
     fn complete(&self, scope: &RuntimeAuthScopeSnapshot, _imported: usize) {
-        self.event_bus
-            .emit_favorites_changed(FavoritesChangedPayload::invalidated(
-                scope,
-                FavoriteChangeScope::World,
-                true,
-                false,
-            ));
+        self.event_bus.emit(FavoritesChangedPayload::invalidated(
+            scope,
+            FavoriteChangeScope::World,
+            true,
+            false,
+        ));
         let (state, changed) = self.state.as_ref();
         let mut state = state.lock().unwrap();
         state.entered = true;

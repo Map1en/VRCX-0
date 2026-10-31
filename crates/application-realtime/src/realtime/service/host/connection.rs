@@ -88,11 +88,7 @@ impl RealtimeHostRuntime {
                     .connection
                     .active_context
                     .as_ref()
-                    .is_some_and(|active| {
-                        active.client_run_id == transport.client_run_id
-                            && active.generation == transport.generation
-                            && active.session_generation == transport.session_generation
-                    })
+                    .is_some_and(|active| active.matches_transport(transport))
             })
             .unwrap_or(false)
     }
@@ -365,11 +361,7 @@ impl RealtimeHostRuntime {
                     .connection
                     .active_context
                     .as_ref()
-                    .filter(|active| {
-                        active.generation == transport.generation
-                            && active.client_run_id == transport.client_run_id
-                            && active.session_generation == transport.session_generation
-                    })
+                    .filter(|active| active.matches_transport(&transport))
                     .cloned();
                 active.map(|active| {
                     let final_current_user_output = if preserve_snapshot {
@@ -562,6 +554,29 @@ impl RealtimeHostRuntime {
         self.is_message_current_locked(&state, generation, session_generation, session)
     }
 
+    fn teardown_session_locked(&self, state: &mut RealtimeHostRuntimeState) {
+        state.connection.generation = state.connection.generation.saturating_add(1);
+        state.friend_baseline.queued = None;
+        state.friend_profile.refetches.clear();
+        state.world_enrichment.inflight.clear();
+        state.world_enrichment.pending_corrections.clear();
+        let _ = self.cancel_tx.send(state.connection.generation);
+        self.deps.session.clear_realtime_context();
+    }
+
+    fn clear_session_caches(&self) {
+        self.user_facts.clear();
+        self.user_query_cache.clear();
+        self.world_cache.clear_working();
+        self.reset_feed_live_cache();
+    }
+
+    pub(super) fn is_session_live(&self, active: &ActiveRealtimeContext) -> bool {
+        self.deps
+            .session
+            .is_realtime_generation_active(active.session_generation)
+    }
+
     pub fn stop(&self, request: RealtimeStopRequest) {
         let friend_owner = self.lock_friend_owner();
         let stopped = {
@@ -576,13 +591,7 @@ impl RealtimeHostRuntime {
             match state.connection.active_context.clone() {
                 None => {
                     if !request.has_scope() {
-                        state.connection.generation = state.connection.generation.saturating_add(1);
-                        state.friend_baseline.queued = None;
-                        state.friend_profile.refetches.clear();
-                        state.world_enrichment.inflight.clear();
-                        state.world_enrichment.pending_corrections.clear();
-                        let _ = self.cancel_tx.send(state.connection.generation);
-                        self.deps.session.clear_realtime_context();
+                        self.teardown_session_locked(&mut state);
                         if self.friends.session_context().is_some() {
                             self.friends.clear();
                         }
@@ -606,14 +615,8 @@ impl RealtimeHostRuntime {
                         normalize_vrchat_websocket_endpoint(&active.session.websocket);
                     let final_current_user_output =
                         self.current_user_transport_finalization_output(active.generation);
-                    state.connection.generation = state.connection.generation.saturating_add(1);
                     state.connection.active_context = None;
-                    state.friend_baseline.queued = None;
-                    state.friend_profile.refetches.clear();
-                    state.world_enrichment.inflight.clear();
-                    state.world_enrichment.pending_corrections.clear();
-                    let _ = self.cancel_tx.send(state.connection.generation);
-                    self.deps.session.clear_realtime_context();
+                    self.teardown_session_locked(&mut state);
                     self.friends.clear();
                     self.current_user.clear();
                     Some((
@@ -639,19 +642,12 @@ impl RealtimeHostRuntime {
         else {
             self.cancel_friend_profile_bulk_load_for_stop_request(&request);
             if !request.has_scope() {
-                self.user_facts.clear();
-                self.user_query_cache.clear();
-                self.world_cache.clear_working();
-                self.reset_feed_live_cache();
+                self.clear_session_caches();
             }
             return;
         };
         self.cancel_friend_profile_bulk_load_for_session(&stopped_active.session);
-
-        self.user_facts.clear();
-        self.user_query_cache.clear();
-        self.world_cache.clear_working();
-        self.reset_feed_live_cache();
+        self.clear_session_caches();
 
         if let Some(output) = final_current_user_output {
             self.apply_current_user_output(output);

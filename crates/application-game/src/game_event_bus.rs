@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use vrcx_0_application_core::RuntimeEventPayload;
 
@@ -178,6 +178,44 @@ pub enum GameLogSideEffectEvent {
     ScreenshotProcessed(ScreenshotProcessedPayload),
     #[serde(rename = "gameNoVR")]
     GameNoVr(GameNoVrPayload),
+}
+
+#[derive(Clone, Default)]
+pub struct NowPlayingStore {
+    snapshot: Arc<Mutex<Arc<NowPlayingSnapshot>>>,
+}
+
+impl NowPlayingStore {
+    pub fn snapshot(&self) -> Arc<NowPlayingSnapshot> {
+        self.snapshot
+            .lock()
+            .map(|snapshot| Arc::clone(&snapshot))
+            .unwrap_or_else(|_| Arc::new(NowPlayingSnapshot::default()))
+    }
+
+    pub fn observe(&self, event: &GameLogSideEffectEvent) {
+        match event {
+            GameLogSideEffectEvent::NowPlaying(payload) => {
+                if let Some(mut current) = self.lock() {
+                    Arc::make_mut(&mut current).apply(payload);
+                }
+            }
+            GameLogSideEffectEvent::NowPlayingReset(_) => {
+                if let Some(mut current) = self.lock() {
+                    *current = Arc::new(NowPlayingSnapshot::default());
+                }
+            }
+            GameLogSideEffectEvent::ScreenshotProcessed(_)
+            | GameLogSideEffectEvent::GameNoVr(_) => {}
+        }
+    }
+
+    fn lock(&self) -> Option<MutexGuard<'_, Arc<NowPlayingSnapshot>>> {
+        self.snapshot
+            .lock()
+            .map_err(|error| tracing::warn!("failed to lock now playing snapshot: {error}"))
+            .ok()
+    }
 }
 
 pub trait GameLogSideEffectObserver: Send + Sync {

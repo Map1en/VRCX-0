@@ -1,4 +1,4 @@
-use super::{BackendRuntimeSnapshot, RuntimeEventSink, RuntimeHostEventSink, RuntimeHostState};
+use super::{BackendRuntimeSnapshot, RuntimeEventSink, RuntimeHostState};
 use vrcx_0_application_core::BackendRuntimeStatusPublisher;
 
 impl RuntimeHostState {
@@ -6,9 +6,7 @@ impl RuntimeHostState {
     where
         S: RuntimeEventSink + 'static,
     {
-        self.runtime_context
-            .event_bus
-            .set_sink(RuntimeHostEventSink::new(sink));
+        self.runtime_context.event_bus.set_sink(sink);
     }
 
     pub fn snapshot_backend_runtime(&self) -> BackendRuntimeSnapshot {

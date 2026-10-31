@@ -126,7 +126,7 @@ impl RealtimeMessageSink for RealtimeHostRuntimeMessageSink {
                 .and_then(|content| content.get("walletBalance"))
                 .and_then(serde_json::Value::as_i64)
             {
-                self.runtime.deps.event_bus.emit_realtime_economy_balance(
+                self.runtime.deps.event_bus.emit(
                     vrcx_0_application_core::RealtimeEconomyBalancePayload {
                         user_id: session.user_id.clone(),
                         wallet_balance,
@@ -146,10 +146,7 @@ impl RealtimeMessageSink for RealtimeHostRuntimeMessageSink {
             {
                 activity.ingest_activity(vec![queue_ready_activity_event(&projection)]);
             }
-            self.runtime
-                .deps
-                .event_bus
-                .emit_realtime_instance_queue_projection(projection);
+            self.runtime.deps.event_bus.emit(projection);
             return;
         }
 

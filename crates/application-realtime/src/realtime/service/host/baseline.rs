@@ -261,10 +261,7 @@ impl RealtimeHostRuntime {
                 || generation
                     .map(|generation| generation != active.generation)
                     .unwrap_or(false)
-                || !self
-                    .deps
-                    .session
-                    .is_realtime_generation_active(active.session_generation)
+                || !self.is_session_live(&active)
             {
                 self.deps.sync.record(
                     "realtimeFriends",
