@@ -1,6 +1,6 @@
 [package]
 name = "vrcx-0-logger"
-version = "2.33.0"
+version = "2.34.0-beta.2"
 edition = "2021"
 license.workspace = true
 description = "Self-hosted recorder that keeps VRChat realtime frames while the desktop app is offline"
