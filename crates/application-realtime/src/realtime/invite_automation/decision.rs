@@ -252,7 +252,7 @@ fn can_invite_from_location(
         return false;
     }
     if facts.closed_locations.contains(location)
-        || facts.closed_locations.contains(&location_cache_key(parsed))
+        || facts.closed_locations.contains(&parsed.instance_key())
     {
         return false;
     }
@@ -266,14 +266,6 @@ fn can_invite_from_location(
         return false;
     }
     facts.last_location.trim() == location
-}
-
-fn location_cache_key(parsed: &vrcx_0_core::location::ParsedLocation) -> String {
-    if parsed.world_id.is_empty() || parsed.instance_id.is_empty() {
-        String::new()
-    } else {
-        format!("{}:{}", parsed.world_id, parsed.instance_id)
-    }
 }
 
 #[cfg(test)]

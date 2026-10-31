@@ -117,15 +117,31 @@ pub struct ActivityRule {
     pub favorite_group_keys: ActivityFavoriteGroupKeys,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+#[specta(rename = "NotificationActivityFilterSurface")]
 pub enum NotificationSurface {
     Wrist,
-    Desktop,
+    #[serde(rename = "vr")]
     ExternalOverlay,
     Hmd,
+    Desktop,
     Webhook,
     Tts,
+    #[serde(rename = "widget")]
     DesktopWidget,
+}
+
+impl NotificationSurface {
+    pub const ALL: [Self; 7] = [
+        Self::Wrist,
+        Self::ExternalOverlay,
+        Self::Hmd,
+        Self::Desktop,
+        Self::Webhook,
+        Self::Tts,
+        Self::DesktopWidget,
+    ];
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, specta::Type)]

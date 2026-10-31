@@ -12,8 +12,11 @@ use crate::common::{
 };
 use crate::database::{DatabaseService, DatabaseWriteTransaction};
 use crate::ownership::OwnerId;
-use crate::realtime::{ensure_realtime_tables, normalize_user_table_prefix};
+use crate::realtime::{
+    ensure_realtime_tables, normalize_user_table_prefix, write_friend_log_current,
+};
 use crate::Error;
+use vrcx_0_core::friend_log::FriendLogUpsertInput;
 
 pub fn friend_log_current_list(
     db: &DatabaseService,
@@ -306,39 +309,38 @@ pub fn friend_log_upsert_current(
     let user_prefix = normalize_user_table_prefix(&owner_user_id)?;
     ensure_realtime_tables(db, &user_prefix)?;
     let result = db.write_transaction(|tx| {
-        let insert_count = tx.execute_non_query(
-            &format!("INSERT OR IGNORE INTO {user_prefix}_friend_log_current (user_id, display_name, trust_level, friend_number) VALUES (@user_id, @display_name, @trust_level, @friend_number)"),
-            &ParamsBuilder::new()
-                .set("user_id", target_user_id.clone())
-                .set("display_name", entry.display_name.clone())
-                .set("trust_level", current_friend_trust_level(&entry))
-                .set("friend_number", value_as_i64(&entry.friend_number))
-                .build(),
-        )?;
-        let inserted = insert_count > 0;
-        if !inserted {
-            tx.execute_non_query(
-                &format!("UPDATE {user_prefix}_friend_log_current SET display_name = @display_name, trust_level = @trust_level, friend_number = CASE WHEN @friend_number > 0 THEN @friend_number ELSE friend_number END WHERE user_id = @user_id"),
-                &ParamsBuilder::new()
-                    .set("user_id", target_user_id.clone())
-                    .set("display_name", entry.display_name.clone())
-                    .set("trust_level", current_friend_trust_level(&entry))
-                    .set("friend_number", value_as_i64(&entry.friend_number))
-                    .build(),
-            )?;
-        }
+        let Some(written) = write_friend_log_current(
+            tx,
+            &user_prefix,
+            FriendLogUpsertInput {
+                target_user_id: &target_user_id,
+                display_name: &entry.display_name,
+                trust_level: entry.trust_level.as_deref().unwrap_or_default(),
+                friend_number: value_as_i64(&entry.friend_number),
+                force_history: options.force_history,
+            },
+        )?
+        else {
+            return Ok::<(bool, i64), crate::Error>((false, 0));
+        };
         let mut history_count = 0;
         if let Some(history_entry) = options
             .history_entry
             .as_ref()
-            .filter(|_| inserted || options.force_history)
+            .filter(|_| written.inserted || options.force_history)
         {
             let mut history_entry = history_entry.clone();
             history_entry.user_id = target_user_id.clone();
+            if history_entry.trust_level.trim().is_empty() {
+                history_entry.trust_level = written.plan.trust_level.clone();
+            }
+            if value_as_i64(&history_entry.friend_number) <= 0 {
+                history_entry.friend_number = Value::from(written.plan.friend_number);
+            }
             add_friend_log_history_entry(tx, &user_prefix, &history_entry)?;
             history_count = 1;
         }
-        Ok::<(bool, i64), crate::Error>((inserted, history_count))
+        Ok((written.inserted, history_count))
     })?;
     Ok(FriendLogMutationResult {
         user_id: owner_user_id,

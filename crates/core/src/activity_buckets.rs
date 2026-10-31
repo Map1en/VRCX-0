@@ -230,7 +230,7 @@ fn month_label(key: &str) -> Option<String> {
     Some(format!("{name} {year}"))
 }
 
-fn weekday_label(key: &str) -> Option<&'static str> {
+pub fn weekday_label(key: &str) -> Option<&'static str> {
     match key {
         "0" => Some("Monday"),
         "1" => Some("Tuesday"),

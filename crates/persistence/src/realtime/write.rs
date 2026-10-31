@@ -12,7 +12,9 @@ use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_contracts::friend_log::FriendLogCurrentOutput;
 use vrcx_0_contracts::notifications::AppNotification;
 use vrcx_0_contracts::profile_bio::RecordedProfileBio;
-use vrcx_0_core::friend_log::{plan_friend_log_upsert, FriendLogCurrent, FriendLogUpsertInput};
+use vrcx_0_core::friend_log::{
+    plan_friend_log_upsert, FriendLogCurrent, FriendLogUpsertInput, FriendLogUpsertPlan,
+};
 
 use super::schema::{ensure_realtime_tables, normalize_user_table_prefix};
 use super::types::*;
@@ -179,14 +181,20 @@ fn has_matching_friend_log_upsert(
         })
 }
 
-fn upsert_friend_log_current(
+pub(crate) struct WrittenFriendLogCurrent {
+    pub(crate) plan: FriendLogUpsertPlan,
+    pub(crate) inserted: bool,
+    pub(crate) affected: u64,
+}
+
+pub(crate) fn write_friend_log_current(
     tx: &mut DatabaseWriteTransaction<'_>,
     user_prefix: &str,
-    entry: &FriendLogUpsert,
-) -> Result<u64, Error> {
-    let target_user_id = normalize_user_id(&entry.target_user_id);
+    entry: FriendLogUpsertInput<'_>,
+) -> Result<Option<WrittenFriendLogCurrent>, Error> {
+    let target_user_id = normalize_user_id(entry.target_user_id);
     if target_user_id.is_empty() {
-        return Ok(0);
+        return Ok(None);
     }
     let existing_rows = tx.execute(
         &format!(
@@ -198,13 +206,7 @@ fn upsert_friend_log_current(
         .first()
         .map(|row| existing_friend_log_row(row));
     let Some(plan) = plan_friend_log_upsert(
-        FriendLogUpsertInput {
-            target_user_id: &entry.target_user_id,
-            display_name: &entry.display_name,
-            trust_level: &entry.trust_level,
-            friend_number: entry.friend_number,
-            force_history: entry.force_history,
-        },
+        entry,
         existing.as_ref().map(|existing| FriendLogCurrent {
             display_name: &existing.display_name,
             trust_level: &existing.trust_level,
@@ -213,7 +215,7 @@ fn upsert_friend_log_current(
         || next_friend_number(tx, user_prefix),
     )?
     else {
-        return Ok(0);
+        return Ok(None);
     };
     let params = ParamsBuilder::new()
         .set("user_id", plan.user_id.clone())
@@ -227,8 +229,9 @@ fn upsert_friend_log_current(
         ),
         &params,
     )?;
+    let inserted = insert_count > 0;
     let mut affected = affected_count(insert_count);
-    if insert_count <= 0 {
+    if !inserted {
         affected = affected.saturating_add(affected_count(tx.execute_non_query(
             &format!(
                 "UPDATE {user_prefix}_friend_log_current SET display_name = @display_name, trust_level = @trust_level, friend_number = CASE WHEN @friend_number > 0 THEN @friend_number ELSE friend_number END WHERE user_id = @user_id"
@@ -236,6 +239,34 @@ fn upsert_friend_log_current(
             &params,
         )?));
     }
+    Ok(Some(WrittenFriendLogCurrent {
+        plan,
+        inserted,
+        affected,
+    }))
+}
+
+fn upsert_friend_log_current(
+    tx: &mut DatabaseWriteTransaction<'_>,
+    user_prefix: &str,
+    entry: &FriendLogUpsert,
+) -> Result<u64, Error> {
+    let Some(WrittenFriendLogCurrent {
+        plan, mut affected, ..
+    }) = write_friend_log_current(
+        tx,
+        user_prefix,
+        FriendLogUpsertInput {
+            target_user_id: &entry.target_user_id,
+            display_name: &entry.display_name,
+            trust_level: &entry.trust_level,
+            friend_number: entry.friend_number,
+            force_history: entry.force_history,
+        },
+    )?
+    else {
+        return Ok(0);
+    };
     for history in &plan.history {
         affected = affected.saturating_add(add_friend_log_history(
             tx,

@@ -32,7 +32,9 @@ pub fn get_friend_activity_pattern(
     let tz_modifier = tz_offset_modifier(offset_minutes);
     let bucket_expr = match input.bucket {
         ActivityBucket::HourOfDay => "strftime('%H', created_at, @tz)",
-        ActivityBucket::DayOfWeek => "strftime('%w', created_at, @tz)",
+        ActivityBucket::DayOfWeek => {
+            "CAST((CAST(strftime('%w', created_at, @tz) AS INTEGER) + 6) % 7 AS TEXT)"
+        }
     };
     let mut sql = format!(
         "WITH filtered AS (

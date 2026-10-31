@@ -300,8 +300,7 @@ fn is_closed_location(
     parsed: &ParsedLocation,
     closed_locations: &HashSet<String>,
 ) -> bool {
-    closed_locations.contains(location.trim())
-        || closed_locations.contains(&location_cache_key(parsed))
+    closed_locations.contains(location.trim()) || closed_locations.contains(&parsed.instance_key())
 }
 
 fn closed_location_set(locations: Vec<String>) -> HashSet<String> {
@@ -310,18 +309,10 @@ fn closed_location_set(locations: Vec<String>) -> HashSet<String> {
         .flat_map(|location| {
             let trimmed = location.trim().to_string();
             let parsed = parse_location(&trimmed);
-            [trimmed, location_cache_key(&parsed)]
+            [trimmed, parsed.instance_key()]
         })
         .filter(|value| !value.is_empty())
         .collect()
-}
-
-fn location_cache_key(parsed: &ParsedLocation) -> String {
-    if parsed.world_id.is_empty() || parsed.instance_id.is_empty() {
-        String::new()
-    } else {
-        format!("{}:{}", parsed.world_id, parsed.instance_id)
-    }
 }
 
 fn same_non_empty(left: &str, right: &str) -> bool {
