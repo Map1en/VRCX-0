@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::fs;
+use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
@@ -10,7 +11,7 @@ use chrono::{Local, NaiveDateTime, Utc};
 use vrcx_0_core::game_log_parser::LogLocationSnapshot;
 use vrcx_0_core::vrchat_log_reader::parse_output_log_file_timestamp;
 
-use crate::game_log_parser::{self, GameLogEvent, LogContext, LogReader};
+use crate::game_log_parser::{self, GameLogEvent, LogContext, LogReader, APPLICATION_QUIT_MARKERS};
 
 use super::queue;
 use super::sink::GameLogEventSink;
@@ -292,14 +293,6 @@ pub(super) fn update(
             contexts.insert(scan.cursor.file_name, scan.cursor.context);
         }
     }
-    let till_date_utc = inner
-        .till_date
-        .lock()
-        .unwrap()
-        .unwrap_or(chrono::DateTime::UNIX_EPOCH.naive_utc());
-
-    let till_date = chrono::TimeZone::from_utc_datetime(&Local, &till_date_utc).naive_local();
-
     if !log_dir.exists() {
         *first_run = false;
         return false;
@@ -321,14 +314,18 @@ pub(super) fn update(
     if (!*first_run || inner.initial_scan_latest_file_only.load(Ordering::Acquire))
         && entries.len() > 1
     {
-        let latest = entries
-            .into_iter()
-            .max_by(|left, right| left.1.cmp(&right.1))
-            .expect("multiple GameLog entries");
-        entries = vec![latest];
+        entries = vec![followed_entry(inner, entries)];
     } else {
         entries.sort_by(|left, right| left.1.cmp(&right.1));
     }
+
+    let till_date_utc = inner
+        .till_date
+        .lock()
+        .unwrap()
+        .unwrap_or(chrono::DateTime::UNIX_EPOCH.naive_utc());
+
+    let till_date = chrono::TimeZone::from_utc_datetime(&Local, &till_date_utc).naive_local();
 
     let latest_name = entries.last().map(|(_, _, name)| name.clone());
     let resume_cursor = inner
@@ -347,9 +344,10 @@ pub(super) fn update(
     let mut saw_new_data = false;
     let mut present = HashSet::with_capacity(entries.len());
     for (entry, _, name) in entries {
-        if resume_cursor
-            .as_ref()
-            .is_some_and(|cursor| name < cursor.file_name)
+        if latest_name.as_ref() != Some(&name)
+            && resume_cursor
+                .as_ref()
+                .is_some_and(|cursor| name < cursor.file_name)
         {
             continue;
         }
@@ -464,6 +462,55 @@ pub(super) fn update(
     queue::flush_game_log_events(inner, *first_run);
     *first_run = false;
     saw_new_data
+}
+
+type LogEntry = (fs::DirEntry, std::ffi::OsString, String);
+
+fn followed_entry(inner: &Inner, entries: Vec<LogEntry>) -> LogEntry {
+    let mut entries: Vec<_> = entries
+        .into_iter()
+        .map(|entry| {
+            let modified = entry.0.metadata().and_then(|meta| meta.modified()).ok();
+            (entry, modified)
+        })
+        .collect();
+    entries.sort_by(|left, right| right.0 .1.cmp(&left.0 .1));
+    let mut followed = 0;
+    while let Some(last_write) = entries[followed].1 {
+        let Some(later) = entries
+            .iter()
+            .position(|(_, modified)| modified.is_some_and(|modified| modified > last_write))
+        else {
+            break;
+        };
+        if !log_has_application_quit(&entries[followed].0 .0.path()) {
+            break;
+        }
+        let quit_at = chrono::DateTime::<Utc>::from(last_write).naive_utc();
+        let mut till_date = inner.till_date.lock().unwrap();
+        if till_date.is_none_or(|till_date| till_date < quit_at) {
+            *till_date = Some(quit_at);
+        }
+        followed = later;
+    }
+    entries.swap_remove(followed).0
+}
+
+fn log_has_application_quit(path: &Path) -> bool {
+    let read_tail = || -> std::io::Result<Vec<u8>> {
+        let mut file = fs::File::open(path)?;
+        let len = file.metadata()?.len();
+        file.seek(SeekFrom::Start(len.saturating_sub(64 * 1024)))?;
+        let mut tail = Vec::new();
+        file.read_to_end(&mut tail)?;
+        Ok(tail)
+    };
+    read_tail().is_ok_and(|tail| {
+        let tail = String::from_utf8_lossy(&tail);
+        APPLICATION_QUIT_MARKERS
+            .iter()
+            .any(|marker| tail.contains(marker))
+    })
 }
 
 fn file_created_at(metadata: &fs::Metadata) -> Option<u64> {
