@@ -55,8 +55,9 @@ pub use runtime_phase::{
     AuthenticatedRuntimeStepSnapshot, AuthenticatedRuntimeStepStatus,
 };
 pub use session_projection::{
-    authenticated_session_projection_matches, clear_authenticated_session_projection,
-    establish_authenticated_session_projection,
+    background_capability_session, background_capability_session_identity,
+    background_capability_session_matches, background_capability_session_scope_key,
+    clear_authenticated_session_projection, establish_authenticated_session_projection,
     replace_authenticated_session_user_if_session_matches, AuthenticatedSessionProjection,
     AuthenticatedSessionSnapshot,
 };

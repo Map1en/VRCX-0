@@ -188,13 +188,7 @@ impl RealtimeHostRuntime {
             state.connection.generation
         };
         self.cancel_friend_profile_bulk_load_for_replacement(&session);
-        let session_generation = self.deps.session.set_realtime_context(
-            vrcx_0_application_core::HostRealtimeSessionContext::new(
-                session.user_id.clone(),
-                session.endpoint.clone(),
-                session.websocket.clone(),
-            ),
-        );
+        let session_generation = self.deps.session.set_realtime_context(session.clone());
         {
             let mut state = self
                 .state

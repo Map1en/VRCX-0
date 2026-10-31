@@ -80,15 +80,14 @@ pub use instance_dwell::{
 pub use interruptible_sleep::sleep_interruptibly;
 pub use ports::{
     ActivityIngress, BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity,
-    CurrentUserSnapshot, GameProcessEvent, GameProcessEventSink, HostRealtimeSessionContext,
-    HostSessionGameProcessStatus, HostSessionProjection, HostSessionRuntime, InstanceRosterMember,
-    InstanceRosterObserver, InstanceRosterSnapshot, LocalGameContextSnapshot,
-    LocalGameContextSource, NoopPrintCleanupInputSink, NoopUpdaterPort, PrintCleanupInputSink,
-    PrintCleanupTrigger, RealtimeNotificationProjectionObserver,
-    RealtimeNotificationProjectionObserverRegistry, SessionHostRuntime,
-    UnavailableLocalGameContextSource, UpdaterCheckRequest, UpdaterDownloadOutcome,
-    UpdaterDownloadProgress, UpdaterInstallHandle, UpdaterMetadata, UpdaterPort,
-    UpdaterProgressCallback,
+    CurrentUserSnapshot, GameProcessEvent, GameProcessEventSink, HostSessionGameProcessStatus,
+    HostSessionProjection, HostSessionRuntime, InstanceRosterMember, InstanceRosterObserver,
+    InstanceRosterSnapshot, LocalGameContextSnapshot, LocalGameContextSource,
+    NoopPrintCleanupInputSink, NoopUpdaterPort, PrintCleanupInputSink, PrintCleanupTrigger,
+    RealtimeNotificationProjectionObserver, RealtimeNotificationProjectionObserverRegistry,
+    SessionHostRuntime, UnavailableLocalGameContextSource, UpdaterCheckRequest,
+    UpdaterDownloadOutcome, UpdaterDownloadProgress, UpdaterInstallHandle, UpdaterMetadata,
+    UpdaterPort, UpdaterProgressCallback,
 };
 pub use proxy::{
     load_proxy_url, test_proxy_connectivity, ProxyConnectivityPort, ProxySettingsTestResult,

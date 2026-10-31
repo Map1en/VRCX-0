@@ -215,6 +215,7 @@ impl AuthenticatedRuntimeOrchestrator {
     pub fn start(
         &self,
         session: AuthenticatedRuntimeSession,
+        scope: RuntimeAuthScopeSnapshot,
     ) -> Result<AuthenticatedRuntimePhaseSnapshot> {
         if session.user_id.trim().is_empty() {
             return Err(Error::Custom(
@@ -222,11 +223,6 @@ impl AuthenticatedRuntimeOrchestrator {
             ));
         }
 
-        let scope = self.auth_scope.set_identity(
-            &session.user_id,
-            &session.display_name,
-            &session.endpoint,
-        );
         let current = self.phase_snapshot();
         let same_session = snapshot_matches_session(&current, &session, scope.generation);
         let already_active = match current.phase {

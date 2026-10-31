@@ -180,6 +180,15 @@ impl RuntimeAuthScope {
         }
     }
 
+    pub fn rename_current_user(&self, generation: u64, display_name: &str) -> bool {
+        let mut state = self.lock_state();
+        if !state.snapshot.active || state.snapshot.generation != generation {
+            return false;
+        }
+        state.display_name = normalize_display_name(display_name, &state.snapshot.current_user_id);
+        true
+    }
+
     pub fn matches(&self, user_id: &str, endpoint: &str) -> bool {
         let state = self.lock_state();
         state.snapshot.active

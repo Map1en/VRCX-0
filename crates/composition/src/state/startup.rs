@@ -272,7 +272,8 @@ impl RuntimeHostState {
         );
         self.backend_runtime.set_phase(BackendRuntimePhase::Running);
         self.establish_authenticated_session_projection(&session, auth_scope.generation);
-        self.authenticated_runtime.start(session)?;
+        self.authenticated_runtime
+            .start(session, auth_scope.clone())?;
         self.activity_warmup
             .schedule(activity_warmup_user_id, auth_scope.generation);
         self.start_social_maintenance_loops();

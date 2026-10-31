@@ -27,7 +27,7 @@ use vrcx_0_application::social::{
 };
 use vrcx_0_application_activity::ActivityWarmupRuntime;
 use vrcx_0_application_core::{
-    BackendRuntime, BackendRuntimeStatusPublisher, BackgroundCapabilitySession, ImageCache,
+    BackendRuntime, BackendRuntimeStatusPublisher, BackgroundCapabilitySessionIdentity, ImageCache,
     RuntimeTaskExecutor, TaskStopReport, TaskSupervisor, UnavailableLocalGameContextSource,
     WebClient,
 };
@@ -435,19 +435,20 @@ impl RuntimeHostStateBuilder {
             Arc::new(Mutex::new(AuthenticatedSessionProjection::default()));
         let current_user_snapshot_sink: Option<RealtimeCurrentUserSnapshotSink> = {
             let session_slot = Arc::clone(&authenticated_session_projection);
+            let auth_scope = self.runtime_context.auth_scope.clone();
             Some(Arc::new(
                 move |session: &RealtimeSessionContext,
                       auth_scope_generation: u64,
                       snapshot: Value| {
-                    let expected = BackgroundCapabilitySession {
+                    let expected = BackgroundCapabilitySessionIdentity {
                         auth_scope_generation,
                         current_user_id: session.user_id.clone(),
                         endpoint: session.endpoint.clone(),
                         websocket: session.websocket.clone(),
-                        current_user_snapshot: Value::Null.into(),
                     };
                     replace_authenticated_session_user_if_session_matches(
                         &session_slot,
+                        &auth_scope,
                         &expected,
                         snapshot,
                     );

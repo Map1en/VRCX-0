@@ -8,8 +8,8 @@ use vrcx_0_application::auth::{
 use vrcx_0_application::social::{PrintCleanupDeps, PrintCleanupTrigger};
 use vrcx_0_application_core::{
     BackendRuntime, BackendRuntimePhase, BackendRuntimeSnapshot, BackendRuntimeTelemetryKind,
-    BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity, GuiRuntimeMode,
-    RuntimeBackgroundJobs, RuntimeEventSink, RuntimeRealtimeTransportEpoch, WebClient,
+    GuiRuntimeMode, RuntimeBackgroundJobs, RuntimeEventSink, RuntimeRealtimeTransportEpoch,
+    WebClient,
 };
 use vrcx_0_application_realtime::RealtimeHostRuntime;
 use vrcx_0_persistence::DatabaseService;

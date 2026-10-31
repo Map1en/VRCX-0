@@ -358,14 +358,13 @@ impl FavoriteMutationCoordinator {
             RuntimeOperationStatus::Running,
             format!("Removing {target_count} favorite item(s)."),
         );
-        let expected_scope = self.capture("Favorite bulk remove")?.scope().clone();
+        let mutation = self.capture("Favorite bulk remove")?;
+        let expected_scope = mutation.scope().clone();
         let result = remove_favorites_selection(
             &FavoriteBulkRemoveDeps {
                 store: self.store.as_ref(),
                 remote: self.remote.as_ref(),
-                auth_scope: &self.auth_scope,
-                expected_scope: expected_scope.clone(),
-                remote_mutation_gate: &self.remote_mutations,
+                mutation,
             },
             input,
         )

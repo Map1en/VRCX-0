@@ -33,18 +33,10 @@ pub(super) struct FriendEntry {
 
 #[derive(Clone, Debug)]
 pub(super) struct Roster {
-    pub(super) current_user_id: String,
-    pub(super) endpoint: String,
-    pub(super) websocket: String,
+    pub(super) session: RealtimeSessionContext,
     pub(super) generation: u64,
     pub(super) baseline_revision: u64,
     pub(super) entries: HashMap<String, FriendEntry>,
-}
-
-impl Roster {
-    fn is_session(&self, user_id: &str, endpoint: &str, websocket: &str) -> bool {
-        self.current_user_id == user_id && self.endpoint == endpoint && self.websocket == websocket
-    }
 }
 
 pub(crate) enum RosterDelta {
@@ -168,13 +160,12 @@ impl RealtimeFriendsRuntime {
             .as_ref()
             .map(|roster| roster.entries.keys().cloned().collect::<HashSet<_>>())
             .unwrap_or_default();
-        let existing = replaced.filter(|roster| {
-            roster.is_session(
-                &baseline.current_user_id,
-                &baseline.endpoint,
-                &baseline.websocket,
-            )
-        });
+        let baseline_session = RealtimeSessionContext {
+            user_id: baseline.current_user_id,
+            endpoint: baseline.endpoint,
+            websocket: baseline.websocket,
+        };
+        let existing = replaced.filter(|roster| roster.session == baseline_session);
         let new_generation = existing
             .as_ref()
             .is_none_or(|roster| roster.generation != generation);
@@ -293,9 +284,7 @@ impl RealtimeFriendsRuntime {
                 .any(|user_id| !entries.contains_key(user_id));
         let friend_count = entries.len();
         let roster = Roster {
-            current_user_id: baseline.current_user_id,
-            endpoint: baseline.endpoint,
-            websocket: baseline.websocket,
+            session: baseline_session,
             generation,
             baseline_revision,
             entries,
@@ -355,9 +344,10 @@ impl RealtimeFriendsRuntime {
         generation: u64,
     ) -> Option<(Vec<String>, Vec<FriendWake>)> {
         let mut state = self.lock_state();
-        let roster = state.roster.as_mut().filter(|roster| {
-            roster.is_session(&session.user_id, &session.endpoint, &session.websocket)
-        })?;
+        let roster = state
+            .roster
+            .as_mut()
+            .filter(|roster| roster.session == *session)?;
         roster.generation = generation;
         roster.baseline_revision = 0;
         let schedules = roster
@@ -379,9 +369,9 @@ impl RealtimeFriendsRuntime {
         let state = self.lock_state();
         let roster = state.roster.as_ref()?;
         Some(RealtimeFriendSnapshot {
-            current_user_id: roster.current_user_id.clone(),
-            endpoint: roster.endpoint.clone(),
-            websocket: roster.websocket.clone(),
+            current_user_id: roster.session.user_id.clone(),
+            endpoint: roster.session.endpoint.clone(),
+            websocket: roster.session.websocket.clone(),
             generation: roster.generation,
             baseline_revision: roster.baseline_revision,
             friends_by_id: roster
@@ -406,7 +396,7 @@ impl RealtimeFriendsRuntime {
         let state = self.lock_state();
         let roster = state.roster.as_ref()?;
         Some(RealtimeFriendRecordSnapshot {
-            endpoint: roster.endpoint.clone(),
+            endpoint: roster.session.endpoint.clone(),
             record: roster.entries.get(user_id)?.record.clone(),
         })
     }
@@ -434,7 +424,7 @@ impl RealtimeFriendsRuntime {
         let state = self.lock_state();
         let roster = state.roster.as_ref()?;
         let mut records = roster.entries.values().map(|entry| &entry.record);
-        Some(visit(&roster.endpoint, &mut records))
+        Some(visit(&roster.session.endpoint, &mut records))
     }
 
     pub fn roster_snapshot(&self) -> Option<RealtimeFriendRosterSnapshot> {
@@ -452,11 +442,7 @@ impl RealtimeFriendsRuntime {
         self.lock_state()
             .roster
             .as_ref()
-            .map(|roster| RealtimeSessionContext {
-                user_id: roster.current_user_id.clone(),
-                endpoint: roster.endpoint.clone(),
-                websocket: roster.websocket.clone(),
-            })
+            .map(|roster| roster.session.clone())
     }
 
     pub fn has_friend(&self, generation: u64, user_id: &str) -> bool {
@@ -551,8 +537,8 @@ impl RealtimeFriendsRuntime {
             return RealtimeFriendApplyResult::MissingBaseline;
         };
         if expected_scope.is_some_and(|expected| {
-            roster.current_user_id != expected.owner_user_id.as_str().trim()
-                || normalize_vrchat_api_endpoint(Some(&roster.endpoint))
+            roster.session.user_id != expected.owner_user_id.as_str().trim()
+                || normalize_vrchat_api_endpoint(Some(&roster.session.endpoint))
                     != normalize_vrchat_api_endpoint(Some(expected.endpoint))
         }) {
             return RealtimeFriendApplyResult::MissingBaseline;
@@ -612,7 +598,7 @@ impl RealtimeFriendsRuntime {
             .as_ref()
             .filter(|roster| roster.generation == generation)?;
         let mut output = RealtimeFriendOutput::new(
-            OwnerId::new(roster.current_user_id.clone()),
+            OwnerId::new(roster.session.user_id.clone()),
             roster.generation,
             roster.baseline_revision,
         );

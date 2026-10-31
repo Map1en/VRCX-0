@@ -1,11 +1,14 @@
 use std::sync::{Arc, Mutex};
 
 use vrcx_0_application::auth::AuthenticatedSessionProjection;
+pub(in crate::state) use vrcx_0_application::auth::{
+    background_capability_session, background_capability_session_identity,
+    background_capability_session_matches,
+};
 use vrcx_0_application_core::{
     BackendRuntime, BackendRuntimePhase, BackendRuntimeStatusPublisher,
-    BackendRuntimeTelemetryKind, BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity,
-    HostSessionRuntime, RemoteMutationGate, RuntimeAuthScope, RuntimeBackgroundJobs,
-    RuntimeEventBus,
+    BackendRuntimeTelemetryKind, HostSessionRuntime, RemoteMutationGate, RuntimeAuthScope,
+    RuntimeBackgroundJobs, RuntimeEventBus,
 };
 use vrcx_0_application_game::{NowPlayingSnapshot, RuntimeSnapshot};
 use vrcx_0_application_realtime::RealtimeHostRuntime;
@@ -78,57 +81,6 @@ pub(in crate::state) struct BackgroundTickContext<'a> {
     pub(in crate::state) desktop_services: &'a Arc<crate::DesktopRuntimeServices>,
     pub(in crate::state) backend_runtime: &'a BackendRuntime,
     pub(in crate::state) background_jobs: &'a RuntimeBackgroundJobs,
-}
-
-pub(in crate::state) fn background_capability_session(
-    session_slot: &Arc<Mutex<AuthenticatedSessionProjection>>,
-) -> Option<BackgroundCapabilitySession> {
-    let slot = session_slot
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
-    slot.session
-        .as_ref()
-        .map(|session| BackgroundCapabilitySession {
-            auth_scope_generation: session.auth_scope_generation,
-            current_user_id: session.user_id.clone(),
-            endpoint: session.endpoint.clone(),
-            websocket: session.websocket.clone(),
-            current_user_snapshot: session.current_user_snapshot.clone(),
-        })
-}
-
-pub(in crate::state) fn background_capability_session_identity(
-    session_slot: &Arc<Mutex<AuthenticatedSessionProjection>>,
-) -> Option<BackgroundCapabilitySessionIdentity> {
-    let slot = session_slot
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
-    slot.session
-        .as_ref()
-        .map(|session| BackgroundCapabilitySessionIdentity {
-            auth_scope_generation: session.auth_scope_generation,
-            current_user_id: session.user_id.clone(),
-            endpoint: session.endpoint.clone(),
-            websocket: session.websocket.clone(),
-        })
-}
-
-pub(in crate::state) fn background_capability_session_matches(
-    session_slot: &Arc<Mutex<AuthenticatedSessionProjection>>,
-    expected: &BackgroundCapabilitySessionIdentity,
-) -> bool {
-    let slot = session_slot
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
-    slot.session
-        .as_ref()
-        .map(|current| {
-            current.auth_scope_generation == expected.auth_scope_generation
-                && current.user_id == expected.current_user_id
-                && current.endpoint == expected.endpoint
-                && current.websocket == expected.websocket
-        })
-        .unwrap_or(false)
 }
 
 pub(in crate::state) fn emit_background_info(

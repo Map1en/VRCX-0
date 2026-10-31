@@ -1345,16 +1345,18 @@ impl DesktopRuntimeHostState {
         &self,
         input: vrcx_0_application::social::AvatarContentTagsBatchInput,
     ) -> Result<vrcx_0_application::social::BatchMutationResult> {
-        let expected_scope = self.require_active_scope("Batch action")?;
+        let mutation = vrcx_0_application_core::AuthenticatedMutationContext::capture(
+            self.runtime.desktop_assembly().auth_scope(),
+            self.runtime.desktop_assembly().remote_mutations(),
+            "Batch mutation",
+        )?;
         Ok(vrcx_0_application::social::run_avatar_content_tags_batch(
             &vrcx_0_application::social::VrchatBatchMutationActions::new(
                 &vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(
                     self.runtime.web_client(),
                 )),
                 &vrcx_0_outbound_adapters::VrchatBatchMutationRemoteRequests,
-                self.runtime.desktop_assembly().auth_scope(),
-                expected_scope,
-                self.runtime.desktop_assembly().remote_mutations(),
+                mutation,
             ),
             input,
         )
@@ -1366,7 +1368,11 @@ impl DesktopRuntimeHostState {
         coordinator: &vrcx_0_application::social::GroupMembershipBatchCoordinator,
         input: vrcx_0_application::social::GroupMembershipBatchInput,
     ) -> Result<vrcx_0_application::social::GroupMembershipBatchResult> {
-        let expected_scope = self.require_active_scope("Batch action")?;
+        let mutation = vrcx_0_application_core::AuthenticatedMutationContext::capture(
+            self.runtime.desktop_assembly().auth_scope(),
+            self.runtime.desktop_assembly().remote_mutations(),
+            "Group membership batch",
+        )?;
         Ok(vrcx_0_application::social::run_group_membership_batch(
             coordinator,
             &vrcx_0_application::social::VrchatGroupMembershipBatchActions::new(
@@ -1374,10 +1380,8 @@ impl DesktopRuntimeHostState {
                     self.runtime.web_client(),
                 )),
                 &vrcx_0_outbound_adapters::VrchatGroupRemoteRequests,
-                self.runtime.desktop_assembly().auth_scope(),
-                expected_scope,
+                mutation,
                 self.runtime.desktop_assembly().event_bus().clone(),
-                self.runtime.desktop_assembly().remote_mutations(),
             ),
             input,
         )
@@ -1389,7 +1393,11 @@ impl DesktopRuntimeHostState {
         coordinator: &vrcx_0_application::social::GroupModerationBatchCoordinator,
         input: vrcx_0_application::social::GroupModerationBatchInput,
     ) -> Result<vrcx_0_application::social::GroupModerationBatchResult> {
-        let expected_scope = self.require_active_scope("Batch action")?;
+        let mutation = vrcx_0_application_core::AuthenticatedMutationContext::capture(
+            self.runtime.desktop_assembly().auth_scope(),
+            self.runtime.desktop_assembly().remote_mutations(),
+            "Group moderation batch",
+        )?;
         Ok(vrcx_0_application::social::run_group_moderation_batch(
             coordinator,
             &vrcx_0_application::social::VrchatGroupModerationBatchActions::new(
@@ -1397,10 +1405,8 @@ impl DesktopRuntimeHostState {
                     self.runtime.web_client(),
                 )),
                 &vrcx_0_outbound_adapters::VrchatGroupModerationRemoteRequests,
-                self.runtime.desktop_assembly().auth_scope(),
-                expected_scope,
+                mutation,
                 self.runtime.desktop_assembly().event_bus().clone(),
-                self.runtime.desktop_assembly().remote_mutations(),
             ),
             input,
         )
@@ -1411,14 +1417,16 @@ impl DesktopRuntimeHostState {
         &self,
         input: vrcx_0_application::social::NotificationMarkSeenBatchInput,
     ) -> Result<vrcx_0_application::social::NotificationMarkSeenBatchResult> {
-        let expected_scope = self.require_active_scope("Batch action")?;
+        let mutation = vrcx_0_application_core::AuthenticatedMutationContext::capture(
+            self.runtime.desktop_assembly().auth_scope(),
+            self.runtime.desktop_assembly().remote_mutations(),
+            "Notification action",
+        )?;
         let result = vrcx_0_application::social::mark_notifications_seen_batch(
             &vrcx_0_outbound_adapters::LocalNotificationMarkSeenActions::new(
                 self.runtime.database().as_ref(),
                 self.runtime.web_client().as_ref(),
-                self.runtime.desktop_assembly().auth_scope(),
-                expected_scope,
-                self.runtime.desktop_assembly().remote_mutations(),
+                mutation,
             ),
             input,
         )
@@ -1431,16 +1439,18 @@ impl DesktopRuntimeHostState {
         &self,
         input: vrcx_0_application::social::InstanceInviteBatchInput,
     ) -> Result<vrcx_0_application::social::InstanceInviteBatchResult> {
-        let expected_scope = self.require_active_scope("Batch action")?;
+        let mutation = vrcx_0_application_core::AuthenticatedMutationContext::capture(
+            self.runtime.desktop_assembly().auth_scope(),
+            self.runtime.desktop_assembly().remote_mutations(),
+            "Batch action",
+        )?;
         Ok(vrcx_0_application::social::send_instance_invites_batch(
             &vrcx_0_application::social::VrchatInstanceInviteBatchActions::new(
                 &vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(
                     self.runtime.web_client(),
                 )),
                 &vrcx_0_outbound_adapters::VrchatInstanceInviteRemoteRequests,
-                self.runtime.desktop_assembly().auth_scope(),
-                expected_scope,
-                self.runtime.desktop_assembly().remote_mutations(),
+                mutation,
                 &vrcx_0_outbound_adapters::CachedWorldNameResolver::new(
                     Arc::clone(self.runtime.desktop_assembly().world_cache()),
                     Arc::clone(self.runtime.web_client()),
@@ -1660,14 +1670,13 @@ impl DesktopRuntimeHostState {
         &self,
         input: ShareCollectionCreateInput,
     ) -> Result<ShareCollectionCreateResult> {
-        let auth_scope = self.runtime.desktop_assembly().auth_scope().snapshot();
-        let display_name = self.runtime.snapshot_backend_runtime().auth_display_name;
+        let identity = self.runtime.desktop_assembly().auth_scope().identity();
         Ok(share_collection_create(
             ShareCollectionDeps::new(
                 &self.world_collections,
                 &self.world_collections,
-                &auth_scope.current_user_id,
-                &display_name,
+                &identity.user_id,
+                &identity.display_name,
             ),
             input,
         )
@@ -2866,7 +2875,7 @@ impl DesktopRuntimeProfileExtension {
                 let mut observed_discord_reconcile_generation =
                     discord_reconcile_generation.load(Ordering::Acquire);
                 let mut active_scope_key =
-                    background_capability_session_scope_key(&session_slot).unwrap_or_default();
+                    vrcx_0_application::auth::background_capability_session_scope_key(&session_slot).unwrap_or_default();
                 loop {
                     if stop_token.is_stop_requested()
                         || !is_authenticated_maintenance_active_parts(
@@ -2885,7 +2894,7 @@ impl DesktopRuntimeProfileExtension {
                         next_discord = now;
                     }
                     let scope_key =
-                        background_capability_session_scope_key(&session_slot).unwrap_or_default();
+                        vrcx_0_application::auth::background_capability_session_scope_key(&session_slot).unwrap_or_default();
                     if scope_key != active_scope_key {
                         active_scope_key = scope_key;
                         presence_state =
@@ -3100,22 +3109,6 @@ fn is_authenticated_maintenance_active(
     )
 }
 
-fn session_matches_auth_scope(
-    session: Option<&vrcx_0_application_core::BackgroundCapabilitySessionIdentity>,
-    auth_scope: &vrcx_0_application_core::RuntimeAuthScopeSnapshot,
-) -> bool {
-    session
-        .map(|session| {
-            auth_scope.active
-                && session.auth_scope_generation == auth_scope.generation
-                && session.current_user_id == auth_scope.current_user_id
-                && vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint(Some(
-                    &session.endpoint,
-                )) == auth_scope.endpoint
-        })
-        .unwrap_or(false)
-}
-
 fn is_authenticated_maintenance_active_parts(
     runtime: &vrcx_0_application_core::BackendRuntime,
     auth_scope: &vrcx_0_application_core::RuntimeAuthScope,
@@ -3128,23 +3121,8 @@ fn is_authenticated_maintenance_active_parts(
     {
         return false;
     }
-    session_matches_auth_scope(
-        background_ticks::background_capability_session_identity(session_slot).as_ref(),
-        &auth_scope,
-    )
-}
-
-fn background_capability_session_scope_key(
-    session_slot: &Arc<Mutex<vrcx_0_application::auth::AuthenticatedSessionProjection>>,
-) -> Option<String> {
-    background_ticks::background_capability_session_identity(session_slot).map(|session| {
-        format!(
-            "{}:{}:{}",
-            session.auth_scope_generation,
-            session.current_user_id,
-            vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint(Some(&session.endpoint))
-        )
-    })
+    background_ticks::background_capability_session_identity(session_slot)
+        .is_some_and(|session| session.matches_auth_scope(&auth_scope))
 }
 
 fn observe_discord_reconcile_request(generation: &AtomicU64, observed: &mut u64) -> bool {
@@ -3322,13 +3300,6 @@ mod background {
                 &generation,
                 &mut observed
             ));
-            let auth_scope = vrcx_0_application_core::RuntimeAuthScopeSnapshot {
-                current_user_id: "usr_test".into(),
-                endpoint: "https://api.vrchat.cloud/api/1".into(),
-                generation: 1,
-                active: true,
-            };
-            assert!(!session_matches_auth_scope(None, &auth_scope));
         }
     }
 }

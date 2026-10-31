@@ -12,13 +12,13 @@ use super::*;
 
 struct FakeActions {
     calls: Mutex<Vec<String>>,
-    outcomes: Mutex<VecDeque<Result<GroupMembershipRemoteOutcome>>>,
+    outcomes: Mutex<VecDeque<Result<RemoteMutationOutcome>>>,
     progress: Mutex<Vec<(u32, u32)>>,
     scope_current: AtomicBool,
 }
 
 impl FakeActions {
-    fn new(outcomes: Vec<Result<GroupMembershipRemoteOutcome>>) -> Self {
+    fn new(outcomes: Vec<Result<RemoteMutationOutcome>>) -> Self {
         Self {
             calls: Mutex::new(Vec::new()),
             outcomes: Mutex::new(outcomes.into()),
@@ -27,13 +27,13 @@ impl FakeActions {
         }
     }
 
-    fn run(&self, call: String) -> Result<GroupMembershipRemoteOutcome> {
+    fn run(&self, call: String) -> Result<RemoteMutationOutcome> {
         self.calls.lock().unwrap().push(call);
         self.outcomes
             .lock()
             .unwrap()
             .pop_front()
-            .unwrap_or(Ok(GroupMembershipRemoteOutcome::Applied))
+            .unwrap_or(Ok(RemoteMutationOutcome::Applied))
     }
 }
 
@@ -41,7 +41,7 @@ impl GroupMembershipBatchActions for FakeActions {
     fn execute<'a>(
         &'a self,
         operation: GroupMembershipOperation<'a>,
-    ) -> BoxFuture<'a, Result<GroupMembershipRemoteOutcome>> {
+    ) -> BoxFuture<'a, Result<RemoteMutationOutcome>> {
         Box::pin(async move {
             let call = match operation {
                 GroupMembershipOperation::Leave { group_id } => format!("leave:{group_id}"),
@@ -87,9 +87,9 @@ fn input(action: GroupMembershipBatchAction, group_ids: &[&str]) -> GroupMembers
 #[tokio::test]
 async fn leave_batch_continues_after_item_failure_without_rollback() {
     let actions = FakeActions::new(vec![
-        Ok(GroupMembershipRemoteOutcome::Applied),
+        Ok(RemoteMutationOutcome::Applied),
         Err(Error::Custom("denied".into())),
-        Ok(GroupMembershipRemoteOutcome::Applied),
+        Ok(RemoteMutationOutcome::Applied),
     ]);
 
     let result = run_group_membership_batch_with_actions(
@@ -155,8 +155,8 @@ async fn visibility_batch_targets_the_authenticated_member() {
 #[tokio::test]
 async fn scope_change_stops_the_batch_and_marks_remaining_groups() {
     let actions = FakeActions::new(vec![
-        Ok(GroupMembershipRemoteOutcome::Applied),
-        Ok(GroupMembershipRemoteOutcome::AppliedScopeChanged),
+        Ok(RemoteMutationOutcome::Applied),
+        Ok(RemoteMutationOutcome::AppliedScopeChanged),
     ]);
 
     let result = run_group_membership_batch_with_actions(

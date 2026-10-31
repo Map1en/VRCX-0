@@ -4,11 +4,10 @@ use std::{collections::HashSet, time::Duration};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use vrcx_0_application_core::{
-    Error, FavoriteEntityKind, RemoteMutationGate, Result, RuntimeAuthScope,
-    RuntimeAuthScopeSnapshot,
-};
+use vrcx_0_application_core::{AuthenticatedMutationContext, Error, FavoriteEntityKind, Result};
 use vrcx_0_core::OwnerId;
+
+use crate::scope_gate::RemoteMutationOutcome;
 
 pub const FAVORITE_BULK_REMOVE_MAX_ITEMS: usize = 250;
 const FAVORITE_BULK_REMOVE_REMOTE_INTERVAL: Duration = Duration::from_millis(250);
@@ -74,15 +73,7 @@ pub struct FavoriteBulkRemoveResult {
 pub(super) struct FavoriteBulkRemoveDeps<'a> {
     pub store: &'a dyn super::FavoriteStore,
     pub remote: &'a dyn super::FavoriteRemote,
-    pub auth_scope: &'a RuntimeAuthScope,
-    pub expected_scope: RuntimeAuthScopeSnapshot,
-    pub remote_mutation_gate: &'a RemoteMutationGate,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum RemoteRemoveOutcome {
-    Removed,
-    RemovedScopeChanged,
+    pub mutation: AuthenticatedMutationContext<'a>,
 }
 
 struct FavoriteBulkRemoveWorkItem {
@@ -95,7 +86,7 @@ trait FavoriteBulkRemoveActions: Send + Sync {
     fn remove_remote<'a>(
         &'a self,
         item: &'a FavoriteBulkRemoveItem,
-    ) -> BoxFuture<'a, Result<RemoteRemoveOutcome>>;
+    ) -> BoxFuture<'a, Result<RemoteMutationOutcome>>;
     fn scope_matches(&self) -> bool;
     fn wait_for_remote_slot<'a>(&'a self) -> BoxFuture<'a, ()> {
         Box::pin(async {})
@@ -107,20 +98,12 @@ struct VrchatFavoriteBulkRemoveActions<'a> {
 }
 
 impl VrchatFavoriteBulkRemoveActions<'_> {
-    fn ensure_scope(&self) -> Result<()> {
-        crate::scope_gate::ensure_scope_matches(
-            self.deps.auth_scope,
-            &self.deps.expected_scope,
-            "Favorite bulk remove",
-        )
-    }
-
-    async fn execute_remote(&self, object_id: String) -> Result<RemoteRemoveOutcome> {
-        self.ensure_scope()?;
+    async fn execute_remote(&self, object_id: String) -> Result<RemoteMutationOutcome> {
+        self.deps.mutation.ensure_current()?;
         let (_, response) = self
             .deps
             .remote
-            .delete(self.deps.expected_scope.endpoint.clone(), object_id, None)
+            .delete(self.deps.mutation.scope().endpoint.clone(), object_id, None)
             .await?;
         let fallback_payload = Value::String(response.data.clone());
         if !(200..300).contains(&response.status) {
@@ -145,19 +128,19 @@ impl VrchatFavoriteBulkRemoveActions<'_> {
             )));
         }
         if self.scope_matches() {
-            Ok(RemoteRemoveOutcome::Removed)
+            Ok(RemoteMutationOutcome::Applied)
         } else {
-            Ok(RemoteRemoveOutcome::RemovedScopeChanged)
+            Ok(RemoteMutationOutcome::AppliedScopeChanged)
         }
     }
 }
 
 impl FavoriteBulkRemoveActions for VrchatFavoriteBulkRemoveActions<'_> {
     fn remove_local(&self, kind: FavoriteEntityKind, item: &FavoriteBulkRemoveItem) -> Result<i64> {
-        self.ensure_scope()?;
+        self.deps.mutation.ensure_current()?;
         self.deps.store.remove(
             Some(&OwnerId::new(
-                self.deps.expected_scope.current_user_id.clone(),
+                self.deps.mutation.scope().current_user_id.clone(),
             )),
             kind,
             item.entity_id.clone(),
@@ -168,25 +151,19 @@ impl FavoriteBulkRemoveActions for VrchatFavoriteBulkRemoveActions<'_> {
     fn remove_remote<'a>(
         &'a self,
         item: &'a FavoriteBulkRemoveItem,
-    ) -> BoxFuture<'a, Result<RemoteRemoveOutcome>> {
+    ) -> BoxFuture<'a, Result<RemoteMutationOutcome>> {
         Box::pin(async move { self.execute_remote(item.entity_id.clone()).await })
     }
 
     fn scope_matches(&self) -> bool {
-        self.deps
-            .auth_scope
-            .snapshot()
-            .generation_matches(&self.deps.expected_scope)
+        self.deps.mutation.is_current()
     }
 
     fn wait_for_remote_slot<'a>(&'a self) -> BoxFuture<'a, ()> {
         Box::pin(async move {
             self.deps
-                .remote_mutation_gate
-                .wait(
-                    &self.deps.expected_scope,
-                    FAVORITE_BULK_REMOVE_REMOTE_INTERVAL,
-                )
+                .mutation
+                .pace(FAVORITE_BULK_REMOVE_REMOTE_INTERVAL)
                 .await;
         })
     }
@@ -196,17 +173,12 @@ pub(super) async fn remove_favorites_bulk(
     deps: &FavoriteBulkRemoveDeps<'_>,
     input: FavoriteBulkRemoveInput,
 ) -> Result<FavoriteBulkRemoveResult> {
-    if !deps.expected_scope.active
-        || !deps
-            .auth_scope
-            .snapshot()
-            .generation_matches(&deps.expected_scope)
-    {
+    if !deps.mutation.is_current() {
         return Err(Error::Custom(
             "Favorite bulk remove is stale for the current auth scope.".into(),
         ));
     }
-    let owner_user_id = deps.expected_scope.current_user_id.clone();
+    let owner_user_id = deps.mutation.scope().current_user_id.clone();
     let kind = input.kind;
     let items = normalize_items(kind, input.items)?;
     let actions = VrchatFavoriteBulkRemoveActions { deps };
@@ -221,7 +193,7 @@ pub(super) async fn remove_favorites_selection(
         return remove_favorites_bulk(deps, input).await;
     }
     let mut result = FavoriteBulkRemoveResult {
-        owner_user_id: OwnerId::new(deps.expected_scope.current_user_id.clone()),
+        owner_user_id: OwnerId::new(deps.mutation.scope().current_user_id.clone()),
         kind: input.kind,
         total: 0,
         succeeded: 0,
@@ -249,11 +221,7 @@ pub(super) async fn remove_favorites_selection(
         result.remote_changed |= chunk.remote_changed;
         result.items.extend(chunk.items);
         result.last_error = chunk.last_error.or(result.last_error);
-        if !deps
-            .auth_scope
-            .snapshot()
-            .generation_matches(&deps.expected_scope)
-        {
+        if !deps.mutation.is_current() {
             break;
         }
     }
@@ -301,7 +269,7 @@ async fn run_favorite_bulk_remove(
                 actions
                     .remove_remote(item)
                     .await
-                    .map(|outcome| (0, outcome == RemoteRemoveOutcome::RemovedScopeChanged))
+                    .map(|outcome| (0, outcome == RemoteMutationOutcome::AppliedScopeChanged))
             }
         };
         match outcome {

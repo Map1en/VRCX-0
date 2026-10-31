@@ -11,7 +11,7 @@ use vrcx_0_core::location::parse_location;
 use crate::remote::VrchatRequestPort;
 use vrcx_0_application_core::{
     vrchat_api::{VrchatApiRequest, VrchatScope},
-    Error, RemoteMutationGate, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot,
+    AuthenticatedMutationContext, Error, Result,
 };
 
 const INSTANCE_INVITE_MAX_RETRIES: usize = 3;
@@ -136,9 +136,7 @@ pub trait WorldNameResolver: Send + Sync {
 pub struct VrchatInstanceInviteBatchActions<'a> {
     remote: &'a dyn VrchatRequestPort,
     remote_requests: &'a dyn InstanceInviteRemoteRequests,
-    pub auth_scope: &'a RuntimeAuthScope,
-    pub expected_scope: RuntimeAuthScopeSnapshot,
-    pub remote_mutation_gate: &'a RemoteMutationGate,
+    mutation: AuthenticatedMutationContext<'a>,
     world_names: &'a dyn WorldNameResolver,
 }
 
@@ -146,17 +144,13 @@ impl<'a> VrchatInstanceInviteBatchActions<'a> {
     pub fn new(
         remote: &'a dyn VrchatRequestPort,
         remote_requests: &'a dyn InstanceInviteRemoteRequests,
-        auth_scope: &'a RuntimeAuthScope,
-        expected_scope: RuntimeAuthScopeSnapshot,
-        remote_mutation_gate: &'a RemoteMutationGate,
+        mutation: AuthenticatedMutationContext<'a>,
         world_names: &'a dyn WorldNameResolver,
     ) -> Self {
         Self {
             remote,
             remote_requests,
-            auth_scope,
-            expected_scope,
-            remote_mutation_gate,
+            mutation,
             world_names,
         }
     }
@@ -214,15 +208,13 @@ impl InstanceInviteBatchActions for VrchatInstanceInviteBatchActions<'_> {
         target: &'a InstanceInviteTarget,
     ) -> BoxFuture<'a, std::result::Result<(), InstanceInviteRemoteError>> {
         Box::pin(async move {
-            self.remote_mutation_gate
-                .wait(&self.expected_scope, INSTANCE_INVITE_REMOTE_INTERVAL)
-                .await;
+            self.mutation.pace(INSTANCE_INVITE_REMOTE_INTERVAL).await;
             let (request, fallback_message, allow_success_plain_text) = match target.kind {
                 InstanceInviteTargetKind::SelfInvite => {
                     let request = self
                         .remote_requests
                         .self_invite(
-                            self.expected_scope.endpoint.clone(),
+                            self.mutation.scope().endpoint.clone(),
                             context.world_id.clone(),
                             context.instance_id.clone(),
                             context.short_name.clone(),
@@ -234,7 +226,7 @@ impl InstanceInviteBatchActions for VrchatInstanceInviteBatchActions<'_> {
                     let request = self
                         .remote_requests
                         .user_invite(
-                            self.expected_scope.endpoint.clone(),
+                            self.mutation.scope().endpoint.clone(),
                             target.receiver_user_id.clone(),
                             context.location.clone(),
                             context.world_id.clone(),
@@ -250,9 +242,7 @@ impl InstanceInviteBatchActions for VrchatInstanceInviteBatchActions<'_> {
     }
 
     fn scope_matches(&self) -> bool {
-        self.auth_scope
-            .snapshot()
-            .generation_matches(&self.expected_scope)
+        self.mutation.is_current()
     }
 }
 
@@ -260,11 +250,11 @@ pub async fn send_instance_invites_batch(
     actions: &VrchatInstanceInviteBatchActions<'_>,
     input: InstanceInviteBatchInput,
 ) -> Result<InstanceInviteBatchResult> {
-    let (mut context, targets) = normalize_input(input, &actions.expected_scope.current_user_id)?;
+    let (mut context, targets) = normalize_input(input, &actions.mutation.scope().current_user_id)?;
     if context.world_name == context.world_id {
         if let Some(world_name) = actions
             .world_names
-            .resolve(&actions.expected_scope.endpoint, &context.world_id)
+            .resolve(&actions.mutation.scope().endpoint, &context.world_id)
             .await
         {
             context.world_name = world_name;
