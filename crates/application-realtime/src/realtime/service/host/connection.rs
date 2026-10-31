@@ -7,7 +7,9 @@ use tokio::sync::{broadcast, watch};
 use vrcx_0_application_core::{Error, Result};
 use vrcx_0_contracts::realtime::{NotificationExpiration, RealtimePersistenceBatch};
 use vrcx_0_core::friends::{FriendBaselineEntry, FriendRosterBaseline};
-use vrcx_0_core::vrchat_endpoints::normalize_vrchat_websocket_endpoint;
+use vrcx_0_core::vrchat_endpoints::{
+    normalize_vrchat_api_endpoint, normalize_vrchat_websocket_endpoint,
+};
 
 use crate::realtime::connection::RealtimeMessageSink;
 use crate::realtime::current_user::RealtimeCurrentUserRuntime;
@@ -474,7 +476,8 @@ impl RealtimeHostRuntime {
                         auth_scope.active
                             && active.auth_scope_generation == auth_scope.generation
                             && active.session.user_id == auth_scope.current_user_id
-                            && active.session.endpoint == auth_scope.endpoint
+                            && normalize_vrchat_api_endpoint(Some(&active.session.endpoint))
+                                == auth_scope.endpoint
                     })
                     .map(|active| active.session.endpoint.clone())
             })
@@ -713,6 +716,38 @@ mod cached_user_profile_tests {
         assert!(runtime
             .cached_user_profiles(&replacement_scope, &user_ids)
             .is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn cached_user_profiles_normalize_the_session_endpoint_like_the_auth_scope() -> Result<()> {
+        let (_dir, test_runtime, _session) =
+            runtime_with_active_session("cached-user-profile-endpoint")?;
+        let runtime = test_runtime.runtime();
+        runtime
+            .state
+            .lock()
+            .unwrap()
+            .connection
+            .active_context
+            .as_mut()
+            .unwrap()
+            .session
+            .endpoint = "https://api.vrchat.cloud/api/1/".into();
+        runtime.ingest_user_facts(vec![json!({
+            "user": {
+                "id": "usr_target",
+                "tags": ["language_eng"]
+            },
+            "isFriend": true
+        })]);
+
+        let profiles = runtime.cached_user_profiles(
+            &test_runtime.auth_scope().snapshot(),
+            &["usr_target".to_string()],
+        );
+
+        assert_eq!(profiles.len(), 1);
         Ok(())
     }
 }
