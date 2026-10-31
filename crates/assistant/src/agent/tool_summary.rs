@@ -267,26 +267,18 @@ pub(super) fn apply_tool_summary_fallback(
     true
 }
 
-pub(super) fn parse_arguments(raw: &str) -> Option<serde_json::Map<String, Value>> {
+pub(super) fn parse_arguments(raw: &str) -> Result<Option<Map<String, Value>>, String> {
     let trimmed = raw.trim();
     if trimmed.is_empty() {
-        return None;
+        return Ok(None);
     }
-    let mut map = match serde_json::from_str::<serde_json::Map<String, Value>>(trimmed) {
-        Ok(map) => map,
-        Err(error) => {
-            // Distinguish "model sent no args" (empty, handled above) from
-            // "model sent malformed JSON we dropped" — the latter usually means
-            // a truncated stream or a weak model and is worth surfacing.
-            tracing::warn!(args = %trimmed, %error, "assistant: tool arguments were not valid JSON; dispatching with none");
-            return None;
-        }
-    };
+    let mut map =
+        serde_json::from_str::<Map<String, Value>>(trimmed).map_err(|error| error.to_string())?;
     // Models routinely emit explicit `null` for optional parameters. serde's
     // `#[serde(default)]` only covers a missing key, not an explicit null, so
     // drop null-valued keys to let tool defaults apply.
     map.retain(|_, value| !value.is_null());
-    Some(map)
+    Ok(Some(map))
 }
 
 pub(super) fn truncate(text: &str) -> String {

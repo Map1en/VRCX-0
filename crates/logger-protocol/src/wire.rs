@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-pub const PROTOCOL_VERSION: u32 = 1;
+pub const PROTOCOL_VERSION: u32 = 2;
 pub const MIN_CLIENT_PROTOCOL_VERSION: u32 = 1;
 pub const CAPTURE_FORMAT_VERSION: u32 = 1;
 pub const MAX_FRAMES_PAGE: u32 = 2000;
@@ -46,6 +46,25 @@ pub enum SessionState {
 #[cfg_attr(
     feature = "specta",
     derive(specta::Type),
+    specta(rename = "FeedLoggerDeviceLogin")
+)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "state", rename_all = "camelCase")]
+pub enum DeviceLoginState {
+    #[serde(rename_all = "camelCase")]
+    Waiting {
+        verification_url: String,
+        expires_at: i64,
+    },
+    Expired,
+    Failed {
+        reason: String,
+    },
+}
+
+#[cfg_attr(
+    feature = "specta",
+    derive(specta::Type),
     specta(rename = "FeedLoggerStatus")
 )]
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -80,6 +99,8 @@ pub struct StatusResponse {
     pub webhook_format: Option<WebhookFormat>,
     pub last_webhook_at: Option<i64>,
     pub last_webhook_ok: Option<bool>,
+    #[serde(default)]
+    pub device_login: Option<DeviceLoginState>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -88,6 +109,12 @@ pub struct CredentialsRequest {
     pub username: String,
     pub password: String,
     pub save_password: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeviceLoginRequest {
+    pub account_id: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -189,4 +216,53 @@ pub struct OkResponse {}
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ErrorResponse {
     pub message: String,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SnapshotPayload {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub after_seq: Option<i64>,
+    #[serde(default)]
+    pub current_user: serde_json::Value,
+    #[serde(default)]
+    pub online_friends: Vec<serde_json::Value>,
+    #[serde(default)]
+    pub offline_friends: Vec<serde_json::Value>,
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::SnapshotPayload;
+
+    #[test]
+    fn a_snapshot_frame_carries_the_baseline_under_its_wire_keys() {
+        let payload = SnapshotPayload {
+            after_seq: Some(7),
+            current_user: json!({ "id": "usr_self" }),
+            online_friends: vec![json!({ "id": "usr_a" })],
+            offline_friends: vec![json!({ "id": "usr_b" })],
+        };
+
+        assert_eq!(
+            serde_json::to_value(&payload).unwrap(),
+            json!({
+                "afterSeq": 7,
+                "currentUser": { "id": "usr_self" },
+                "onlineFriends": [{ "id": "usr_a" }],
+                "offlineFriends": [{ "id": "usr_b" }],
+            })
+        );
+    }
+
+    #[test]
+    fn a_snapshot_recorded_before_its_sequence_was_known_still_reads() {
+        let payload: SnapshotPayload =
+            serde_json::from_value(json!({ "onlineFriends": [], "offlineFriends": [] })).unwrap();
+
+        assert_eq!(payload.after_seq, None);
+        assert!(payload.current_user.is_null());
+    }
 }

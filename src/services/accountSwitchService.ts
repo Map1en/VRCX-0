@@ -1,29 +1,73 @@
 import { type SavedCredentialRecord } from '@/repositories/authRepository';
 import { toast } from '@/services/toastService';
+import { usePendingLoginAccountStore } from '@/state/pendingLoginAccountStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 
-import { executeSavedCredentialLogin } from './authExecutionService';
+import {
+    executeSavedCredentialLogin,
+    logoutFromReactShell
+} from './authExecutionService';
 import i18n from './i18nService';
 
 function savedAccountId(entry: SavedCredentialRecord): string {
     return typeof entry.user?.id === 'string' ? entry.user.id : '';
 }
 
-export function canQuickSwitchTo(
-    entry: SavedCredentialRecord,
+export function partitionSavedAccounts(
+    accounts: SavedCredentialRecord[],
     currentUserId: string | null
-): boolean {
-    const targetId = savedAccountId(entry);
-    return Boolean(
-        targetId && entry.hasLoginCredentials && targetId !== currentUserId
-    );
+): {
+    switchable: SavedCredentialRecord[];
+    requiresLogin: SavedCredentialRecord[];
+} {
+    const switchable: SavedCredentialRecord[] = [];
+    const requiresLogin: SavedCredentialRecord[] = [];
+    for (const entry of accounts) {
+        if (
+            entry.hasLoginCredentials ||
+            (currentUserId !== null && savedAccountId(entry) === currentUserId)
+        ) {
+            switchable.push(entry);
+        } else {
+            requiresLogin.push(entry);
+        }
+    }
+    return { switchable, requiresLogin };
 }
 
-export async function switchToSavedAccount(
+async function openLoginForSavedAccount(
     entry: SavedCredentialRecord
 ): Promise<void> {
-    const currentUserId = useRuntimeStore.getState().auth.currentUserId;
-    if (!canQuickSwitchTo(entry, currentUserId)) {
+    const pendingLogin = usePendingLoginAccountStore.getState();
+    pendingLogin.request({ account: entry, reason: 'switch' });
+    try {
+        if (!(await logoutFromReactShell())) {
+            pendingLogin.clear();
+        }
+    } catch (error) {
+        pendingLogin.clear();
+        toast.add({
+            type: 'error',
+            title:
+                error instanceof Error && error.message
+                    ? error.message
+                    : i18n.t('app_menu.messages.logout_failed')
+        });
+    }
+}
+
+export async function activateSavedAccount(
+    entry: SavedCredentialRecord
+): Promise<void> {
+    const targetId = savedAccountId(entry);
+    if (
+        !targetId ||
+        targetId === useRuntimeStore.getState().auth.currentUserId
+    ) {
+        return;
+    }
+    if (!entry.hasLoginCredentials) {
+        await openLoginForSavedAccount(entry);
         return;
     }
 

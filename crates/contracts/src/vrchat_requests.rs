@@ -491,6 +491,116 @@ pub struct GroupCalendarRecurrence {
     pub end: Option<GroupCalendarRecurrenceEnd>,
 }
 
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+pub enum GroupMemberSort {
+    #[serde(rename = "joinedAt:asc")]
+    JoinedAtAsc,
+    #[default]
+    #[serde(rename = "joinedAt:desc")]
+    JoinedAtDesc,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+pub enum GroupPostVisibility {
+    #[serde(rename = "group")]
+    Group,
+    #[serde(rename = "public")]
+    Public,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct GroupPostMutation {
+    pub title: String,
+    pub text: String,
+    pub send_notification: bool,
+    pub visibility: GroupPostVisibility,
+    #[serde(default)]
+    pub role_ids: Vec<String>,
+    pub image_id: Option<String>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+pub enum GroupProfileJoinState {
+    #[serde(rename = "closed")]
+    Closed,
+    #[serde(rename = "invite")]
+    Invite,
+    #[serde(rename = "open")]
+    Open,
+    #[serde(rename = "request")]
+    Request,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct GroupProfileUpdate {
+    pub name: String,
+    pub short_code: String,
+    pub description: String,
+    pub join_state: GroupProfileJoinState,
+    pub languages: Vec<String>,
+    pub rules: String,
+    pub links: Vec<String>,
+    pub icon_id: Option<String>,
+    pub banner_id: Option<String>,
+    pub allow_group_join_prompt: bool,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+pub enum GroupMemberVisibility {
+    #[serde(rename = "friends")]
+    Friends,
+    #[serde(rename = "hidden")]
+    Hidden,
+    #[serde(rename = "visible")]
+    Visible,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct GroupMemberPatch {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub is_subscribed_to_announcements: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub is_subscribed_to_event_announcements: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub manager_notes: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub visibility: Option<GroupMemberVisibility>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct GroupGalleryMutation {
+    pub name: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub members_only: bool,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct GroupRoleMutation {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub is_self_assignable: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub is_added_on_join: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub requires_two_factor: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub requires_purchase: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub permissions: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub order: Option<i32>,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct GroupCalendarEventMutation {

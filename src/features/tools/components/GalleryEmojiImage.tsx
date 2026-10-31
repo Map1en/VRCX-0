@@ -26,6 +26,7 @@ function ensureEmojiKeyframes(frameCount: number) {
 
 export function GalleryEmojiImage({
     file,
+    fadeIn = true,
     imageUrl,
     alt,
     className
@@ -34,6 +35,7 @@ export function GalleryEmojiImage({
         MediaFileRecord,
         'frames' | 'framesOverTime' | 'loopStyle'
     > | null;
+    fadeIn?: boolean;
     imageUrl: string;
     alt: string;
     className?: string;
@@ -52,6 +54,7 @@ export function GalleryEmojiImage({
         return (
             <FadeInImage
                 src={imageUrl}
+                fade={fadeIn}
                 alt={alt}
                 loading="lazy"
                 className={className}

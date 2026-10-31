@@ -5,7 +5,8 @@ use std::path::PathBuf;
 
 #[cfg(target_os = "windows")]
 use vrcx_0_core::vrchat_registry_policy::{
-    registry_backup_binary_bytes, registry_backup_binary_data,
+    add_hash_to_key_name, ascii_decode, ascii_encode, registry_backup_binary_bytes,
+    registry_backup_binary_data, strip_hash_from_key_name,
 };
 use vrcx_0_platform::Error;
 
@@ -388,31 +389,6 @@ pub fn validate_registry_key(key: &str) -> Result<(), Error> {
 }
 
 #[cfg(target_os = "windows")]
-fn add_hash_to_key_name(key: &str) -> String {
-    let mut hash: u32 = 5381;
-    for unit in key.encode_utf16() {
-        hash = hash.wrapping_mul(33) ^ unit as u32;
-    }
-    format!("{key}_h{hash}")
-}
-
-#[cfg(target_os = "windows")]
-fn ascii_decode(bytes: &[u8]) -> String {
-    bytes
-        .iter()
-        .map(|byte| if byte.is_ascii() { *byte as char } else { '?' })
-        .collect()
-}
-
-#[cfg(target_os = "windows")]
-fn ascii_encode(value: &str) -> Vec<u8> {
-    value
-        .chars()
-        .map(|ch| if ch.is_ascii() { ch as u8 } else { b'?' })
-        .collect()
-}
-
-#[cfg(target_os = "windows")]
 fn json_value_to_i32(value: &serde_json::Value, key: &str) -> Result<i32, Error> {
     let raw = value
         .as_i64()
@@ -420,35 +396,12 @@ fn json_value_to_i32(value: &serde_json::Value, key: &str) -> Result<i32, Error>
     i32::try_from(raw).map_err(|_| Error::Custom(format!("invalid dword data: {key}")))
 }
 
-#[cfg(target_os = "windows")]
-fn strip_hash_from_key_name(key: &str) -> Option<&str> {
-    let (prefix, suffix) = key.rsplit_once("_h")?;
-    if !suffix.is_empty() && !prefix.is_empty() {
-        Some(prefix)
-    } else {
-        None
-    }
-}
-
 #[cfg(all(test, target_os = "windows"))]
 mod tests {
     use super::*;
 
     #[test]
-    fn handles_vrchat_registry_helpers() -> Result<(), Error> {
-        assert_eq!(
-            add_hash_to_key_name("playerHeight"),
-            "playerHeight_h56066313"
-        );
-        assert_eq!(ascii_encode("abc\u{00e9}"), b"abc?".to_vec());
-        assert_eq!(ascii_decode(b"abc\xff"), "abc?");
-        assert_eq!(
-            strip_hash_from_key_name("playerHeight_h56066313"),
-            Some("playerHeight")
-        );
-        assert_eq!(strip_hash_from_key_name("_h56066313"), None);
-        assert_eq!(strip_hash_from_key_name("playerHeight_h"), None);
-
+    fn windows_dword_values_must_be_in_range_integers() -> Result<(), Error> {
         assert_eq!(json_value_to_i32(&serde_json::json!(42), "height")?, 42);
         assert!(json_value_to_i32(&serde_json::json!(2147483648i64), "height").is_err());
         assert!(json_value_to_i32(&serde_json::json!("42"), "height").is_err());

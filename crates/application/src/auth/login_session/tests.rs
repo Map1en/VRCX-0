@@ -1644,3 +1644,172 @@ async fn a_manual_start_supersedes_an_auto_login_waiting_on_the_network() {
             if mode == &TwoFactorMethod::EmailOtp
     ));
 }
+
+fn device_code_body(expires_in: u64) -> serde_json::Value {
+    json!({
+        "deviceCode": "dev_1",
+        "verificationUrlComplete": "https://vrchat.com/home/device?code=ABCD",
+        "interval": 5,
+        "expiresIn": expires_in
+    })
+}
+
+fn device_respond_input(attempt_id: String) -> LoginSessionRespondInput {
+    LoginSessionRespondInput {
+        attempt_id,
+        method: TwoFactorMethod::default(),
+        code: String::new(),
+    }
+}
+
+fn device_attempt_id(state: &LoginSessionState) -> String {
+    match state {
+        LoginSessionState::DeviceApproval { attempt_id, .. } => attempt_id.clone(),
+        state => panic!("expected DeviceApproval, got {state:?}"),
+    }
+}
+
+#[tokio::test(start_paused = true)]
+async fn device_login_waits_for_approval_and_saves_the_account_without_password_or_cookies() {
+    let (_dir, config, web, _db) = test_env("device-login-approved");
+    let runtime = LoginSessionRuntime::new();
+    let api = Arc::new(FakeLoginApi::new(vec![
+        (200, json!({})),
+        (200, device_code_body(300)),
+        (
+            400,
+            json!({ "error": { "message": "authorization_pending" } }),
+        ),
+        (200, json!({ "user": user_json() })),
+        (200, user_json()),
+    ]));
+
+    let state = runtime
+        .start_with(api.clone(), &web, &config, LoginSessionStartInput::Device)
+        .await;
+    let LoginSessionState::DeviceApproval {
+        verification_url, ..
+    } = &state
+    else {
+        panic!("expected DeviceApproval, got {state:?}");
+    };
+    assert_eq!(verification_url, "https://vrchat.com/home/device?code=ABCD");
+    web.set_cookies("auth=device-session").unwrap();
+
+    let state = runtime
+        .respond(
+            device_respond_input(device_attempt_id(&state)),
+            &web,
+            &config,
+        )
+        .await;
+
+    let LoginSessionState::Authenticated { snapshot, .. } = state else {
+        panic!("expected Authenticated, got {state:?}");
+    };
+    let snapshot = snapshot.expect("authenticated login carries a snapshot");
+    let saved = snapshot
+        .saved_credentials_list
+        .iter()
+        .find(|credential| credential.user.id == "usr_123")
+        .expect("device login records the account");
+    assert!(!saved.has_login_credentials);
+    assert!(!saved.has_cookies);
+    assert_eq!(snapshot.last_user_logged_in.as_deref(), Some("usr_123"));
+    assert_eq!(
+        api.call_names(),
+        [
+            "config",
+            "device_code",
+            "device_status",
+            "device_status",
+            "current_user"
+        ]
+    );
+}
+
+#[tokio::test(start_paused = true)]
+async fn an_unapproved_device_login_expires_with_its_own_failure_kind() {
+    let (_dir, config, web, _db) = test_env("device-login-expired");
+    let runtime = LoginSessionRuntime::new();
+    let api = Arc::new(FakeLoginApi::new(vec![
+        (200, json!({})),
+        (200, device_code_body(10)),
+        (
+            400,
+            json!({ "error": { "message": "authorization_pending" } }),
+        ),
+    ]));
+
+    let state = runtime
+        .start_with(api.clone(), &web, &config, LoginSessionStartInput::Device)
+        .await;
+    let state = runtime
+        .respond(
+            device_respond_input(device_attempt_id(&state)),
+            &web,
+            &config,
+        )
+        .await;
+
+    assert!(matches!(
+        state,
+        LoginSessionState::Failed {
+            kind: LoginFailureKind::DeviceCodeExpired,
+            ..
+        }
+    ));
+    assert_eq!(api.call_names(), ["config", "device_code", "device_status"]);
+}
+
+#[tokio::test(start_paused = true)]
+async fn cancelling_a_device_login_ends_the_wait_without_polling_again() {
+    let (_dir, config, web, _db) = test_env("device-login-cancelled");
+    let runtime = LoginSessionRuntime::new();
+    let api = Arc::new(FakeLoginApi::new(vec![
+        (200, json!({})),
+        (200, device_code_body(300)),
+    ]));
+
+    let state = runtime
+        .start_with(api.clone(), &web, &config, LoginSessionStartInput::Device)
+        .await;
+    let attempt_id = device_attempt_id(&state);
+
+    let (waited, cancelled) = tokio::join!(
+        runtime.respond(device_respond_input(attempt_id.clone()), &web, &config),
+        async {
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            runtime.cancel(attempt_id.clone(), &web, &|_| Ok(())).await
+        }
+    );
+
+    assert!(matches!(waited, LoginSessionState::Cancelled));
+    assert!(matches!(cancelled, LoginSessionState::Cancelled));
+    assert_eq!(api.call_names(), ["config", "device_code"]);
+}
+
+#[tokio::test]
+async fn a_basic_login_without_saving_the_password_is_listed_without_password_or_cookies() {
+    let (_dir, config, web, _db) = test_env("basic-login-without-password");
+    let runtime = LoginSessionRuntime::new();
+    let api = Arc::new(FakeLoginApi::new(vec![
+        (200, json!({})),
+        (200, user_json()),
+    ]));
+
+    let state = start_runtime_basic(&runtime, api, &web, &config, "self@example.test", false).await;
+
+    let LoginSessionState::Authenticated { snapshot, .. } = state else {
+        panic!("expected Authenticated, got {state:?}");
+    };
+    let snapshot = snapshot.expect("authenticated login carries a snapshot");
+    let saved = snapshot
+        .saved_credentials_list
+        .iter()
+        .find(|credential| credential.user.id == "usr_123")
+        .expect("the account is listed for switching");
+    assert_eq!(saved.login_params.username, "self@example.test");
+    assert!(!saved.has_login_credentials);
+    assert!(!saved.has_cookies);
+}

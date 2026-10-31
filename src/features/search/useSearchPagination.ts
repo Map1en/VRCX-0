@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { SEARCH_PAGE_SIZE as PAGE_SIZE } from './searchRequests';
+import { DEFAULT_SEARCH_PAGE_SIZE as PAGE_SIZE } from './searchPageSizes';
 import type { SearchPaginationState } from './searchTypes';
 
 type PagedSearchRequest = {
@@ -29,6 +29,7 @@ export function useSearchPagination<
     TWorldRequest extends PagedSearchRequest
 >({
     activeTab,
+    avatarPageSize,
     avatarRequest,
     avatarResults,
     groupRequest,
@@ -47,6 +48,7 @@ export function useSearchPagination<
     worldResults
 }: {
     activeTab: string;
+    avatarPageSize: number;
     avatarRequest: TAvatarRequest | null;
     avatarResults: readonly unknown[];
     groupRequest: TGroupRequest | null;
@@ -63,7 +65,7 @@ export function useSearchPagination<
     userResults: readonly unknown[];
     worldRequest: TWorldRequest | null;
     worldResults: readonly unknown[];
-}): SearchPaginationState {
+}): Omit<SearchPaginationState, 'pageSize' | 'onPageSizeChange'> {
     return useMemo(() => {
         if (activeTab === 'user') {
             return {
@@ -200,16 +202,16 @@ export function useSearchPagination<
             const offset = avatarRequest?.offset ?? 0;
             return {
                 show: avatarResults.length > 0 && !isAvatarLoading,
-                page: pageOf(offset, PAGE_SIZE),
+                page: pageOf(offset, avatarPageSize),
                 prevDisabled: offset <= 0,
-                nextDisabled: offset + PAGE_SIZE >= avatarResults.length,
+                nextDisabled: offset + avatarPageSize >= avatarResults.length,
                 onPrev() {
                     if (!avatarRequest) {
                         return;
                     }
                     setAvatarRequest({
                         ...avatarRequest,
-                        offset: Math.max(0, offset - PAGE_SIZE)
+                        offset: Math.max(0, offset - avatarPageSize)
                     });
                 },
                 onNext() {
@@ -218,7 +220,7 @@ export function useSearchPagination<
                     }
                     setAvatarRequest({
                         ...avatarRequest,
-                        offset: offset + PAGE_SIZE
+                        offset: offset + avatarPageSize
                     });
                 }
             };
@@ -234,6 +236,7 @@ export function useSearchPagination<
         };
     }, [
         activeTab,
+        avatarPageSize,
         avatarRequest,
         avatarResults.length,
         groupRequest,

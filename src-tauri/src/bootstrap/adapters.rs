@@ -1,6 +1,7 @@
 use std::fs;
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::Duration;
 use vrcx_0_application_core::RuntimeOperationStatus;
 
@@ -10,6 +11,7 @@ use sha2::{Digest, Sha256};
 use tauri::{Emitter, Manager, Url};
 use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_updater::{Update, UpdaterExt};
+use vrcx_0_application::auth::AuthenticatedRuntimePhaseSnapshot;
 use vrcx_0_application_core::RuntimeEventSink;
 use vrcx_0_application_core::{format_runtime_output_event, RuntimeOutputLevel, RuntimeOutputMode};
 use vrcx_0_application_core::{
@@ -344,7 +346,7 @@ impl RuntimeTaskHandle for TauriRuntimeTaskHandle {
     }
 }
 
-fn block_on_runtime_task<F>(future: F) -> Option<F::Output>
+pub(crate) fn block_on_runtime_task<F>(future: F) -> Option<F::Output>
 where
     F: std::future::Future,
 {
@@ -361,6 +363,20 @@ impl RuntimeTaskExecutor for TauriRuntimeTaskExecutor {
     fn spawn(&self, task: RuntimeTask) -> Box<dyn RuntimeTaskHandle> {
         Box::new(TauriRuntimeTaskHandle(tauri::async_runtime::spawn(task)))
     }
+}
+
+pub(super) fn observe_tray_realtime_phase(app: &tauri::AppHandle, state: &AppState) {
+    let tray_app = app.clone();
+    state
+        .runtime_host()
+        .add_authenticated_runtime_phase_observer(Arc::new(
+            move |snapshot: &AuthenticatedRuntimePhaseSnapshot| {
+                crate::commands::host::window::set_tray_realtime_interrupted(
+                    &tray_app,
+                    snapshot.realtime_interrupted(),
+                );
+            },
+        ));
 }
 
 pub(super) fn start_host_services(app: &tauri::AppHandle, state: &AppState) {

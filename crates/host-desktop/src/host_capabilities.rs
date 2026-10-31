@@ -6,7 +6,7 @@ pub use vrcx_0_platform::host_capabilities::{
 };
 use vrcx_0_platform::Error;
 
-#[derive(Clone, Debug, Serialize, specta::Type)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct CapabilityStatus {
     pub supported: bool,
@@ -91,6 +91,7 @@ impl CapabilityStatus {
 }
 
 impl HostCapabilities {
+    #[cfg(any(test, not(target_os = "linux")))]
     fn status(&self, capability: HostCapability) -> &CapabilityStatus {
         match capability {
             HostCapability::GameLogWatcher => &self.game_log_watcher,
@@ -262,32 +263,12 @@ fn linux_host_capabilities(
         Err(reason) => CapabilityStatus::unavailable(&reason),
     };
 
-    let vrchat_path_discovery = match crate::vrchat_paths::discover_linux_vrchat_paths() {
-        Ok(_) => available.clone(),
-        Err(reason) => CapabilityStatus::unavailable(&reason),
-    };
-    let game_log_watcher = match crate::vrchat_paths::discover_linux_vrchat_log_paths() {
-        Ok(_) => available.clone(),
-        Err(reason) => CapabilityStatus::unavailable(&reason),
-    };
-    let game_launch = match crate::vrchat_paths::discover_linux_game_launch() {
-        Ok(_) => available.clone(),
-        Err(reason) => CapabilityStatus::unavailable(&reason),
-    };
-    let registry_prefs = match crate::linux_registry::discover_linux_registry_context() {
-        Ok(_) => available.clone(),
-        Err(reason) => CapabilityStatus::unavailable(&reason),
-    };
-    let vrchat_launch_pipe = match crate::vrchat_paths::discover_linux_instance_launch() {
-        Ok(_) => available.clone(),
-        Err(reason) => CapabilityStatus::unavailable(&format!(
-            "VRChat launch pipe bridge unavailable: {reason}"
-        )),
-    };
-    let screenshot_cache = match crate::vrchat_paths::discover_linux_screenshot_cache() {
-        Ok(_) => available.clone(),
-        Err(reason) => CapabilityStatus::unavailable(&reason),
-    };
+    let vrchat_path_discovery = linux_capability_status(HostCapability::VrchatPathDiscovery);
+    let game_log_watcher = linux_capability_status(HostCapability::GameLogWatcher);
+    let game_launch = linux_capability_status(HostCapability::GameLaunch);
+    let registry_prefs = linux_capability_status(HostCapability::RegistryPrefs);
+    let vrchat_launch_pipe = linux_capability_status(HostCapability::VrchatLaunchPipe);
+    let screenshot_cache = linux_capability_status(HostCapability::ScreenshotCache);
 
     let runtime_game_client_lifecycle = if game_launch.available && game_log_watcher.available {
         available.clone()
@@ -322,38 +303,97 @@ fn linux_host_capabilities(
     }
 }
 
+#[cfg(target_os = "linux")]
+fn linux_capability_status(capability: HostCapability) -> CapabilityStatus {
+    let probe = match capability {
+        HostCapability::GameLogWatcher => {
+            crate::vrchat_paths::discover_linux_vrchat_log_paths().map(drop)
+        }
+        HostCapability::GameProcessMonitor => Ok(()),
+        HostCapability::VrchatPathDiscovery => {
+            crate::vrchat_paths::discover_linux_vrchat_paths().map(drop)
+        }
+        HostCapability::RegistryPrefs => {
+            crate::linux_registry::discover_linux_registry_context().map(drop)
+        }
+        HostCapability::GameLaunch => crate::vrchat_paths::discover_linux_game_launch(),
+        HostCapability::VrchatLaunchPipe => crate::vrchat_paths::discover_linux_instance_launch()
+            .map_err(|reason| format!("VRChat launch pipe bridge unavailable: {reason}")),
+        HostCapability::ScreenshotCache => crate::vrchat_paths::discover_linux_screenshot_cache(),
+    };
+    match probe {
+        Ok(()) => CapabilityStatus::available(),
+        Err(reason) => CapabilityStatus::unavailable(&reason),
+    }
+}
+
+fn host_capability_status(capability: HostCapability) -> CapabilityStatus {
+    #[cfg(target_os = "linux")]
+    {
+        linux_capability_status(capability)
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        current_host_capabilities().status(capability).clone()
+    }
+}
+
 pub fn require_host_capability(capability: HostCapability) -> Result<(), Error> {
-    let capabilities = current_host_capabilities();
-    let status = capabilities.status(capability);
+    let status = host_capability_status(capability);
     if status.available {
         return Ok(());
     }
 
-    Err(Error::Custom(status.reason.clone().unwrap_or_else(|| {
+    Err(Error::Custom(status.reason.unwrap_or_else(|| {
         format!(
             "{} is unavailable on {}",
             capability.label(),
-            capabilities.platform
+            current_host_platform()
         )
     })))
 }
 
 pub fn require_host_capability_supported(capability: HostCapability) -> Result<(), Error> {
-    let capabilities = current_host_capabilities();
-    let status = capabilities.status(capability);
+    let status = host_capability_status(capability);
     if status.supported && status.enabled {
         return Ok(());
     }
 
-    Err(Error::Custom(status.reason.clone().unwrap_or_else(|| {
+    Err(Error::Custom(status.reason.unwrap_or_else(|| {
         format!(
             "{} is unsupported on {}",
             capability.label(),
-            capabilities.platform
+            current_host_platform()
         )
     })))
 }
 
 pub fn is_host_capability_available(capability: HostCapability) -> bool {
-    current_host_capabilities().status(capability).available
+    host_capability_status(capability).available
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn single_capability_probe_matches_the_full_capability_table() {
+        let capabilities = current_host_capabilities();
+        for capability in [
+            HostCapability::GameLogWatcher,
+            HostCapability::GameProcessMonitor,
+            HostCapability::VrchatPathDiscovery,
+            HostCapability::RegistryPrefs,
+            HostCapability::GameLaunch,
+            HostCapability::VrchatLaunchPipe,
+            HostCapability::ScreenshotCache,
+        ] {
+            assert_eq!(
+                &host_capability_status(capability),
+                capabilities.status(capability),
+                "{}",
+                capability.label()
+            );
+        }
+    }
 }

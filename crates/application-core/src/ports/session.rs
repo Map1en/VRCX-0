@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use serde::Serialize;
 use serde_json::Value;
+use vrcx_0_core::realtime::RealtimeSessionContext;
 
 use super::process_monitor::{GameProcessEvent, GameProcessEventSink};
 use crate::BackendRuntimeStatusPublisher;
@@ -11,13 +12,6 @@ pub struct GameProcessStatus {
     pub is_game_running: bool,
     pub is_steamvr_running: bool,
     pub changed_at: String,
-}
-
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct HostRealtimeSessionContext {
-    pub current_user_id: String,
-    pub endpoint: String,
-    pub websocket: String,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -124,6 +118,16 @@ pub struct BackgroundCapabilitySessionIdentity {
     pub websocket: String,
 }
 
+impl BackgroundCapabilitySessionIdentity {
+    pub fn matches_auth_scope(&self, auth_scope: &crate::RuntimeAuthScopeSnapshot) -> bool {
+        auth_scope.active
+            && self.auth_scope_generation == auth_scope.generation
+            && self.current_user_id == auth_scope.current_user_id
+            && vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint(Some(&self.endpoint))
+                == auth_scope.endpoint
+    }
+}
+
 impl BackgroundCapabilitySession {
     pub fn identity(&self) -> BackgroundCapabilitySessionIdentity {
         BackgroundCapabilitySessionIdentity {
@@ -158,6 +162,36 @@ mod background_capability_session_tests {
     }
 
     #[test]
+    fn identity_matches_only_the_active_auth_scope_generation() {
+        let identity = BackgroundCapabilitySessionIdentity {
+            auth_scope_generation: 3,
+            current_user_id: "usr_owner".into(),
+            endpoint: "https://api.example.test/api/1/".into(),
+            websocket: "wss://pipeline.example.test".into(),
+        };
+        let auth_scope = crate::RuntimeAuthScopeSnapshot {
+            current_user_id: "usr_owner".into(),
+            endpoint: "https://api.example.test/api/1".into(),
+            generation: 3,
+            active: true,
+        };
+
+        assert!(identity.matches_auth_scope(&auth_scope));
+        assert!(
+            !identity.matches_auth_scope(&crate::RuntimeAuthScopeSnapshot {
+                generation: 4,
+                ..auth_scope.clone()
+            })
+        );
+        assert!(
+            !identity.matches_auth_scope(&crate::RuntimeAuthScopeSnapshot {
+                active: false,
+                ..auth_scope
+            })
+        );
+    }
+
+    #[test]
     fn cloning_a_capability_session_shares_the_current_user_snapshot() {
         let first = BackgroundCapabilitySession {
             current_user_snapshot: json!({"large": [1, 2, 3]}).into(),
@@ -189,16 +223,6 @@ mod background_capability_session_tests {
     }
 }
 
-impl HostRealtimeSessionContext {
-    pub fn new(current_user_id: String, endpoint: String, websocket: String) -> Self {
-        Self {
-            current_user_id: current_user_id.trim().to_string(),
-            endpoint: endpoint.trim().to_string(),
-            websocket: websocket.trim().to_string(),
-        }
-    }
-}
-
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct HostSessionSnapshot {
     pub is_game_running: bool,
@@ -208,7 +232,7 @@ pub struct HostSessionSnapshot {
     pub last_game_state_changed_at: Option<String>,
     pub generation: u64,
     pub realtime_generation: u64,
-    pub realtime_context: Option<HostRealtimeSessionContext>,
+    pub realtime_context: Option<RealtimeSessionContext>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, specta::Type)]
@@ -227,21 +251,9 @@ pub struct HostSessionProjection {
     pub changed_at: String,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-struct HostSessionState {
-    is_game_running: bool,
-    is_steamvr_running: bool,
-    is_hmd_afk: bool,
-    last_game_started_at: Option<String>,
-    last_game_state_changed_at: Option<String>,
-    generation: u64,
-    realtime_generation: u64,
-    realtime_context: Option<HostRealtimeSessionContext>,
-}
-
 #[derive(Clone, Debug, Default)]
 pub struct HostSessionRuntime {
-    state: Arc<Mutex<HostSessionState>>,
+    state: Arc<Mutex<HostSessionSnapshot>>,
 }
 
 impl HostSessionRuntime {
@@ -281,17 +293,7 @@ impl HostSessionRuntime {
     }
 
     pub fn snapshot(&self) -> HostSessionSnapshot {
-        let state = self.lock_state();
-        HostSessionSnapshot {
-            is_game_running: state.is_game_running,
-            is_steamvr_running: state.is_steamvr_running,
-            is_hmd_afk: state.is_hmd_afk,
-            last_game_started_at: state.last_game_started_at.clone(),
-            last_game_state_changed_at: state.last_game_state_changed_at.clone(),
-            generation: state.generation,
-            realtime_generation: state.realtime_generation,
-            realtime_context: state.realtime_context.clone(),
-        }
+        self.lock_state().clone()
     }
 
     pub fn projection_snapshot(&self) -> HostSessionProjection {
@@ -308,7 +310,7 @@ impl HostSessionRuntime {
         }
     }
 
-    pub fn set_realtime_context(&self, context: HostRealtimeSessionContext) -> u64 {
+    pub fn set_realtime_context(&self, context: RealtimeSessionContext) -> u64 {
         let mut state = self.lock_state();
         state.realtime_generation = state.realtime_generation.saturating_add(1);
         state.realtime_context = Some(context);
@@ -337,7 +339,7 @@ impl HostSessionRuntime {
         state.realtime_generation == generation && state.realtime_context.is_some()
     }
 
-    fn lock_state(&self) -> std::sync::MutexGuard<'_, HostSessionState> {
+    fn lock_state(&self) -> std::sync::MutexGuard<'_, HostSessionSnapshot> {
         self.state.lock().unwrap_or_else(|error| error.into_inner())
     }
 }

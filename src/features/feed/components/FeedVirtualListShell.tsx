@@ -1,9 +1,21 @@
 import { ChevronRightIcon } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+    type ColumnGridLayout,
+    getColumnGridLayout,
+    getColumnSizeVars
+} from '@/components/data-table/columnSizing';
 import { DataTableColumnResizeHandle } from '@/components/data-table/DataTableColumnResizeHandle';
 import { DataTableHeaderLabel } from '@/components/data-table/DataTableSortButton';
+import {
+    LogFilterContextMenu,
+    getLogFilterRowAttributes,
+    type LogFilterCommands
+} from '@/components/data-table/LogFilterContextMenu';
+import { TableColumnContextMenu } from '@/components/data-table/TableColumnVisibilityMenu';
+import { TimestampText } from '@/components/data-table/TimestampText';
 import { VirtualHistoryList } from '@/components/data-table/VirtualHistoryList';
 import { FeedDetailCell } from '@/components/feed/FeedDetailCell';
 import {
@@ -23,18 +35,16 @@ import { cn } from '@/lib/utils';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { getFeedRowFilterTarget } from '../feedRowFilterTarget';
 import { useFeedNewTopRowKeys } from '../useFeedNewTopRowKeys';
-import {
-    FeedExpandedRow,
-    FeedUserLink,
-    formatTimestampLong,
-    formatTimestampParts
-} from './FeedTableParts';
+import { FeedEmptyState, type FeedEmptyFilterModel } from './FeedEmptyState';
+import { FeedExpandedRow, FeedUserLink } from './FeedTableParts';
 
 type FeedVirtualListShellProps = {
     actions: FeedFriendActions;
+    emptyFilterModel: FeedEmptyFilterModel;
+    filterCommands: LogFilterCommands;
     favoritesOnly: boolean;
     friendLogNamesById: Record<string, string>;
     hasMore: boolean;
@@ -43,6 +53,7 @@ type FeedVirtualListShellProps = {
     loadStatus: FeedLoadStatus;
     loadingOlder: boolean;
     loadingPreviousInstancesKey: string;
+    newCount?: number;
     onLoadOlder(): void;
     onReloadLatest(): void;
     onOpenPreviousInstances(payload?: FeedLocationActionPayload): void;
@@ -58,22 +69,21 @@ type FeedVirtualRow = {
     row: FeedRow;
 };
 
-type FeedListLayout = {
-    gridTemplateColumns: string;
-    minWidth: number;
-};
+type FeedListLayout = ColumnGridLayout;
 
-function getFeedListLayout(table: FeedTableInstance): FeedListLayout {
-    const expanderWidth = table.getColumn('expander')?.getSize() ?? 40;
-    const timeWidth = table.getColumn('created_at')?.getSize() ?? 144;
-    const userWidth = table.getColumn('displayName')?.getSize() ?? 160;
-    const typeWidth = table.getColumn('type')?.getSize() ?? 96;
-    const detailWidth = table.getColumn('detail')?.getSize() ?? 240;
-    return {
-        gridTemplateColumns: `${expanderWidth}px ${timeWidth}px ${userWidth}px ${typeWidth}px minmax(${detailWidth}px, 1fr)`,
-        minWidth:
-            expanderWidth + timeWidth + userWidth + typeWidth + detailWidth
-    };
+const FEED_LIST_COLUMN_IDS = [
+    'expander',
+    'created_at',
+    'displayName',
+    'type',
+    'detail'
+] as const;
+
+function getFeedListColumns(table: FeedTableInstance) {
+    return FEED_LIST_COLUMN_IDS.flatMap((id) => {
+        const column = table.getColumn(id);
+        return column ? [column] : [];
+    });
 }
 
 function FeedListHeader({
@@ -99,11 +109,8 @@ function FeedListHeader({
             <span aria-hidden="true" />
             {definitions.map(({ id, label }) => {
                 const header = headers.find((entry) => entry.column.id === id);
-                return (
-                    <div
-                        key={id}
-                        className="relative flex h-full min-w-0 items-center px-[var(--vrcx-0-table-cell-padding-inline)]"
-                    >
+                const cell = (
+                    <div className="relative flex h-full min-w-0 items-center px-[var(--vrcx-0-table-cell-padding-inline)]">
                         <DataTableHeaderLabel className="min-w-0 truncate">
                             {label}
                         </DataTableHeaderLabel>
@@ -115,27 +122,30 @@ function FeedListHeader({
                         ) : null}
                     </div>
                 );
+                return header ? (
+                    <TableColumnContextMenu
+                        key={id}
+                        column={header.column}
+                        table={table}
+                        enableColumnReorder={false}
+                    >
+                        {cell}
+                    </TableColumnContextMenu>
+                ) : (
+                    <Fragment key={id}>{cell}</Fragment>
+                );
             })}
         </div>
     );
 }
 
 function FeedListTime({ row }: { row: FeedRow }) {
-    const { date, time } = formatTimestampParts(row.created_at);
     return (
-        <Tooltip>
-            <TooltipTrigger
-                render={
-                    <span className="text-muted-foreground text-sm tabular-nums">
-                        <span>{date}</span>
-                        {time ? <span className="ml-1">{time}</span> : null}
-                    </span>
-                }
-            />
-            <TooltipContent side="right">
-                {formatTimestampLong(row.created_at)}
-            </TooltipContent>
-        </Tooltip>
+        <TimestampText
+            value={row.created_at}
+            tooltipSide="right"
+            className="text-muted-foreground text-sm tabular-nums"
+        />
     );
 }
 
@@ -144,6 +154,7 @@ function FeedVirtualListRow({
     cachedDisplayName,
     expanded,
     layout,
+    filterCommands,
     loadingPreviousInstancesKey,
     onOpenPreviousInstances,
     onToggle,
@@ -152,6 +163,7 @@ function FeedVirtualListRow({
     actions: FeedFriendActions;
     cachedDisplayName: string;
     expanded: boolean;
+    filterCommands: LogFilterCommands;
     layout: FeedListLayout;
     loadingPreviousInstancesKey: string;
     onOpenPreviousInstances(payload?: FeedLocationActionPayload): void;
@@ -172,6 +184,13 @@ function FeedVirtualListRow({
         >
             <div
                 data-feed-list-summary=""
+                {...getLogFilterRowAttributes(
+                    getFeedRowFilterTarget(
+                        row,
+                        typeLabel,
+                        cachedDisplayName || row.displayName || ''
+                    )
+                )}
                 className="grid h-[var(--vrcx-0-table-row-height)] items-center border-b border-[var(--vrcx-0-table-divider)] text-sm hover:bg-[var(--vrcx-0-table-row-hover-surface)] [&>*]:px-[var(--vrcx-0-table-cell-padding-inline)]"
                 style={layout}
             >
@@ -207,12 +226,14 @@ function FeedVirtualListRow({
                         actions={actions}
                         cachedDisplayName={cachedDisplayName}
                         className="px-0 py-0"
+                        filterCommands={filterCommands}
                         row={row}
                     />
                 </div>
                 <FeedTypeIndicator label={typeLabel} type={row.type} />
                 <div className="min-w-0 truncate">
                     <FeedDetailCell
+                        filterCommands={filterCommands}
                         loadingHistoryKey={loadingPreviousInstancesKey}
                         onNewInstance={actions.openFeedNewInstance}
                         onOpenPreviousInstances={onOpenPreviousInstances}
@@ -239,6 +260,8 @@ function FeedVirtualListRow({
 
 export function FeedVirtualListShell({
     actions,
+    emptyFilterModel,
+    filterCommands,
     favoritesOnly,
     friendLogNamesById,
     hasMore,
@@ -247,6 +270,7 @@ export function FeedVirtualListShell({
     loadStatus,
     loadingOlder,
     loadingPreviousInstancesKey,
+    newCount = 0,
     onLoadOlder,
     onReloadLatest,
     onOpenPreviousInstances,
@@ -271,7 +295,8 @@ export function FeedVirtualListShell({
         () => new Set<string>()
     );
     const newRowKeys = useFeedNewTopRowKeys(sourceRows, resetKey);
-    const layout = getFeedListLayout(table);
+    const listColumns = getFeedListColumns(table);
+    const layout = getColumnGridLayout(listColumns, 'detail');
     useEffect(() => {
         setExpandedRowKeys(new Set());
     }, [resetKey]);
@@ -286,72 +311,89 @@ export function FeedVirtualListShell({
     }, [rowKeys]);
 
     return (
-        <VirtualHistoryList
-            rows={entries}
-            estimatedRowHeight={estimatedRowHeight}
-            resetKey={resetKey}
-            minWidth={layout.minWidth}
-            header={<FeedListHeader layout={layout} table={table} />}
-            hasMore={hasMore}
-            loadingOlder={loadingOlder}
-            onLoadOlder={onLoadOlder}
-            hasUnloadedLatest={hasUnloadedLatest}
-            onReloadLatest={onReloadLatest}
-            onViewingLatestChange={onViewingLatestChange}
-            latestLabel={t('view.feed.columns.latest')}
-            rowClassName={(entry) =>
-                newRowKeys.has(entry.key) ? 'feed-column-row-new' : undefined
-            }
-            renderRow={(entry) => (
-                <FeedVirtualListRow
-                    actions={actions}
-                    cachedDisplayName={
-                        friendLogNamesById[resolveFeedUserId(entry.row)] || ''
+        <LogFilterContextMenu commands={filterCommands}>
+            <div className="flex min-h-0 flex-1 flex-col">
+                <VirtualHistoryList
+                    rows={entries}
+                    estimatedRowHeight={estimatedRowHeight}
+                    resetKey={resetKey}
+                    minWidth={layout.minWidth}
+                    sizingStyle={getColumnSizeVars(listColumns)}
+                    header={<FeedListHeader layout={layout} table={table} />}
+                    hasMore={hasMore}
+                    loadingOlder={loadingOlder}
+                    onLoadOlder={onLoadOlder}
+                    hasUnloadedLatest={hasUnloadedLatest}
+                    onReloadLatest={onReloadLatest}
+                    onViewingLatestChange={onViewingLatestChange}
+                    latestLabel={t('view.feed.columns.latest')}
+                    newCount={newCount}
+                    rowClassName={(entry) =>
+                        newRowKeys.has(entry.key)
+                            ? 'feed-column-row-new'
+                            : undefined
                     }
-                    expanded={expandedRowKeys.has(entry.key)}
-                    layout={layout}
-                    loadingPreviousInstancesKey={loadingPreviousInstancesKey}
-                    onOpenPreviousInstances={onOpenPreviousInstances}
-                    onToggle={() =>
-                        setExpandedRowKeys((current) => {
-                            const next = new Set(current);
-                            if (next.has(entry.key)) next.delete(entry.key);
-                            else next.add(entry.key);
-                            return next;
-                        })
+                    renderRow={(entry) => (
+                        <FeedVirtualListRow
+                            actions={actions}
+                            cachedDisplayName={
+                                friendLogNamesById[
+                                    resolveFeedUserId(entry.row)
+                                ] || ''
+                            }
+                            expanded={expandedRowKeys.has(entry.key)}
+                            filterCommands={filterCommands}
+                            layout={layout}
+                            loadingPreviousInstancesKey={
+                                loadingPreviousInstancesKey
+                            }
+                            onOpenPreviousInstances={onOpenPreviousInstances}
+                            onToggle={() =>
+                                setExpandedRowKeys((current) => {
+                                    const next = new Set(current);
+                                    if (next.has(entry.key))
+                                        next.delete(entry.key);
+                                    else next.add(entry.key);
+                                    return next;
+                                })
+                            }
+                            row={entry.row}
+                        />
+                    )}
+                    footer={
+                        loadingOlder ? (
+                            <>
+                                <Spinner
+                                    data-icon="inline-start"
+                                    className="mr-2"
+                                />
+                                {t('common.load_more')}...
+                            </>
+                        ) : hasMore ? (
+                            <span>{t('common.load_more')}</span>
+                        ) : (
+                            <span>
+                                {rows.length} {t('view.feed.label.rows')} ·{' '}
+                                {t('common.no_more')}
+                            </span>
+                        )
                     }
-                    row={entry.row}
+                    emptyState={
+                        loadStatus === 'running' ? (
+                            <span className="inline-flex items-center gap-2">
+                                <Spinner />
+                                {t('view.feed.loading.loading_feed_rows')}
+                            </span>
+                        ) : favoritesOnly && !isFavoritesLoaded ? (
+                            t('view.feed.label.favorites_are_still_hydrating')
+                        ) : loadStatus === 'error' ? (
+                            t('view.feed.error.feed_query_failed')
+                        ) : (
+                            <FeedEmptyState {...emptyFilterModel} />
+                        )
+                    }
                 />
-            )}
-            footer={
-                loadingOlder ? (
-                    <>
-                        <Spinner data-icon="inline-start" className="mr-2" />
-                        {t('common.load_more')}...
-                    </>
-                ) : hasMore ? (
-                    <span>{t('common.load_more')}</span>
-                ) : (
-                    <span>
-                        {rows.length} {t('view.feed.label.rows')} ·{' '}
-                        {t('common.no_more')}
-                    </span>
-                )
-            }
-            emptyState={
-                loadStatus === 'running' ? (
-                    <span className="inline-flex items-center gap-2">
-                        <Spinner />
-                        {t('view.feed.loading.loading_feed_rows')}
-                    </span>
-                ) : favoritesOnly && !isFavoritesLoaded ? (
-                    t('view.feed.label.favorites_are_still_hydrating')
-                ) : loadStatus === 'error' ? (
-                    t('view.feed.error.feed_query_failed')
-                ) : (
-                    t('view.feed.empty.no_feed_rows_match_the_current_filters')
-                )
-            }
-        />
+            </div>
+        </LogFilterContextMenu>
     );
 }

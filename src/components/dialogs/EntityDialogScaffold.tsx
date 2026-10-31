@@ -271,6 +271,7 @@ function EntityActionDropdown({
     dangerous?: boolean;
     indicator?: boolean;
 }) {
+    const { t } = useTranslation();
     return (
         <DropdownMenu>
             <DropdownMenuTrigger
@@ -279,7 +280,7 @@ function EntityActionDropdown({
                         type="button"
                         size="icon-lg"
                         variant={dangerous ? 'destructive' : 'outline'}
-                        aria-label={'Open entity actions'}
+                        aria-label={t('common.actions.more_actions')}
                         className="relative"
                     >
                         {busy ? (

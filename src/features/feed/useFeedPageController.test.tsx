@@ -49,6 +49,7 @@ vi.mock('./useFeedFilters', () => ({
         deferredSearchQuery: '',
         deferredScopedUserIds: [],
         favoritesOnly: false,
+        scopedUserIds: [],
         setFavoritesOnly: vi.fn(),
         setFeedFilters: vi.fn()
     })
@@ -134,7 +135,10 @@ describe('useFeedPageController', () => {
                 { rowId: 2, type: 'GPS', created_at: '2026-08-30T00:00:00Z' }
             ];
             const { result, rerender } = renderHook(() =>
-                useFeedPageController({ routeScopedUserIds: [] })
+                useFeedPageController({
+                    routeScopedUserIds: [],
+                    setRouteScopedUserIds: vi.fn()
+                })
             );
             act(() => result.current.table.setSorting([{ id, desc: false }]));
             const rowModel = result.current.table.getCoreRowModel();
@@ -161,7 +165,10 @@ describe('useFeedPageController', () => {
         ];
         mocks.meta.friendLogNamesById = { usr_1: 'Alice', usr_2: 'Bob' };
         const { result, rerender } = renderHook(() =>
-            useFeedPageController({ routeScopedUserIds: [] })
+            useFeedPageController({
+                routeScopedUserIds: [],
+                setRouteScopedUserIds: vi.fn()
+            })
         );
         act(() => {
             result.current.table.setSorting([
@@ -186,7 +193,10 @@ describe('useFeedPageController', () => {
             type: 'GPS'
         }));
         const { result } = renderHook(() =>
-            useFeedPageController({ routeScopedUserIds: [] })
+            useFeedPageController({
+                routeScopedUserIds: [],
+                setRouteScopedUserIds: vi.fn()
+            })
         );
 
         expect(result.current.rows).toBe(mocks.rows);
@@ -228,7 +238,10 @@ describe('useFeedPageController', () => {
             ).toISOString()
         }));
         const { result } = renderHook(() =>
-            useFeedPageController({ routeScopedUserIds: [] })
+            useFeedPageController({
+                routeScopedUserIds: [],
+                setRouteScopedUserIds: vi.fn()
+            })
         );
 
         act(() => {
@@ -273,7 +286,10 @@ describe('useFeedPageController', () => {
             { rowId: 2, type: 'GPS', created_at: '2026-08-30T00:00:00Z' }
         ];
         const { result } = renderHook(() =>
-            useFeedPageController({ routeScopedUserIds: [] })
+            useFeedPageController({
+                routeScopedUserIds: [],
+                setRouteScopedUserIds: vi.fn()
+            })
         );
 
         act(() => {
@@ -299,7 +315,10 @@ describe('useFeedPageController', () => {
         }));
         const rowId = getFeedRowId(mocks.rows[0]);
         const { result } = renderHook(() =>
-            useFeedPageController({ routeScopedUserIds: [] })
+            useFeedPageController({
+                routeScopedUserIds: [],
+                setRouteScopedUserIds: vi.fn()
+            })
         );
 
         act(() => result.current.table.getRow(rowId).toggleExpanded(true));
@@ -316,7 +335,10 @@ describe('useFeedPageController', () => {
             type: 'GPS'
         }));
         const { result, rerender } = renderHook(() =>
-            useFeedPageController({ routeScopedUserIds: [] })
+            useFeedPageController({
+                routeScopedUserIds: [],
+                setRouteScopedUserIds: vi.fn()
+            })
         );
         act(() => result.current.table.lastPage());
         mocks.rows = mocks.rows.slice(0, 12);
@@ -342,7 +364,10 @@ describe('useFeedPageController', () => {
         const rowId = getFeedRowId(row);
         mocks.rows = [row];
         const { result, rerender } = renderHook(() =>
-            useFeedPageController({ routeScopedUserIds: [] })
+            useFeedPageController({
+                routeScopedUserIds: [],
+                setRouteScopedUserIds: vi.fn()
+            })
         );
 
         act(() => {

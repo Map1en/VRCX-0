@@ -62,6 +62,7 @@ import {
     type JourneyVisitView
 } from '../activityJourneyModel';
 import { useActivityUserAvatars } from '../useActivityUserAvatars';
+import { ActivityNoHistoryState } from './ActivityEmptyState';
 
 type JourneyPhotos = ReadonlyMap<string, ScreenshotWindowImages>;
 
@@ -858,14 +859,16 @@ export function ActivityJourneyView({
         return <LoadingState />;
     }
     if (visits.length === 0 && !hasMore) {
-        return (
+        return filtered ? (
             <EmptyState
                 icon={CalendarDaysIcon}
-                title={t(
-                    filtered
-                        ? 'view.activity.journey.empty.filtered_title'
-                        : 'view.activity.journey.empty.title'
-                )}
+                title={t('view.activity.journey.empty.filtered_title')}
+                description={t('view.activity.journey.empty.description')}
+            />
+        ) : (
+            <ActivityNoHistoryState
+                icon={CalendarDaysIcon}
+                title={t('view.activity.journey.empty.title')}
                 description={t('view.activity.journey.empty.description')}
             />
         );

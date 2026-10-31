@@ -11,6 +11,7 @@ use vrcx_0_application_activity::notification::{
 };
 use vrcx_0_application_core::{FileCache, WebClient, WebExecuteRequest, WorldCache};
 use vrcx_0_application_realtime::RealtimeHostRuntime;
+use vrcx_0_core::json::JsonExt;
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_vrchat_client::http_api::ApiScope;
 
@@ -119,6 +120,27 @@ impl NotificationRemote for VrchatNotificationRemote {
             self.world_cache
                 .resolve_image_url(self.web.as_ref(), endpoint, world_id)
                 .await
+        })
+    }
+
+    fn group_name<'a>(
+        &'a self,
+        endpoint: &'a str,
+        group_id: &'a str,
+    ) -> NotificationRemoteFuture<'a, String> {
+        Box::pin(async move {
+            let (_, request) = vrcx_0_vrchat_client::groups::profile_get_input(
+                endpoint.to_string(),
+                group_id.to_string(),
+                false,
+            )
+            .ok()?;
+            let response = self.web.execute_api(request, ApiScope::Vrchat).await.ok()?;
+            if !(200..=299).contains(&response.status) {
+                return None;
+            }
+            let group: Value = serde_json::from_str(&response.data).ok()?;
+            group.trimmed_field("name").map(str::to_string)
         })
     }
 }

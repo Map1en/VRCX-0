@@ -88,11 +88,20 @@ vi.mock('@/ui/shadcn/slider', () => ({
 vi.mock('../SettingsField', () => ({
     Field: ({
         children,
-        label
+        label,
+        disabled = false
     }: {
         children?: ReactNode;
         label?: ReactNode;
-    }) => <section data-field-label={String(label)}>{children}</section>
+        disabled?: boolean;
+    }) => (
+        <section
+            data-field-label={String(label)}
+            data-field-disabled={disabled ? 'true' : 'false'}
+        >
+            {children}
+        </section>
+    )
 }));
 
 vi.mock('../SettingsViewParts', () => ({
@@ -173,7 +182,9 @@ function createProps(overrides: Partial<TabProps> = {}): TabProps {
 function selectDisabled(id: string) {
     const trigger = document.getElementById(id);
     expect(trigger).not.toBeNull();
-    return trigger?.parentElement?.getAttribute('data-select-disabled');
+    return trigger
+        ?.closest('[data-field-label]')
+        ?.getAttribute('data-field-disabled');
 }
 
 function ttsPreviewSwitch() {

@@ -8,8 +8,9 @@ use vrcx_0_core::game_log_parser::parse_log_line_header;
 use super::context::LogContext;
 use super::media::{
     parse_api_request, parse_avatar_change, parse_avatar_pedestal_change, parse_avpro_video_change,
-    parse_join_blocked, parse_screenshot, parse_sdk2_video_play, parse_usharp_video_play,
-    parse_usharp_video_sync, parse_video_change, parse_video_error, parse_world_vrcx,
+    parse_join_blocked, parse_now_playing_log, parse_screenshot, parse_sdk2_video_play,
+    parse_usharp_video_play, parse_usharp_video_sync, parse_video_change, parse_video_error,
+    parse_world_vrcx,
 };
 use super::presence::{
     parse_location, parse_location_destination, parse_notification, parse_player_joined_or_left,
@@ -207,7 +208,8 @@ fn parse_opened_log(
                 || parse_vote_kick_success(out, file_name, trimmed, content)
                 || parse_sticker_spawn(out, file_name, trimmed, content);
         } else {
-            let _ = parse_shader_keywords_limit(out, file_name, trimmed, content, ctx)
+            let _ = parse_now_playing_log(out, file_name, trimmed, content)
+                || parse_shader_keywords_limit(out, file_name, trimmed, content, ctx)
                 || parse_sdk2_video_play(out, file_name, trimmed, content)
                 || parse_application_quit(out, file_name, trimmed, content)
                 || parse_openvr_init(out, file_name, trimmed, content)

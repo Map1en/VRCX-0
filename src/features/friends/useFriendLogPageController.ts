@@ -1,14 +1,16 @@
 import { useMemo } from 'react';
 
 import { useAppTable } from '@/components/data-table/appTable';
+import type { LogFilterCommands } from '@/components/data-table/LogFilterContextMenu';
 import { sortTableRowsByDateAndType } from '@/components/data-table/sortRowsByDateAndType';
+import { useShiftKeyHeld } from '@/components/keyboard/useShiftKeyHeld';
+import { FRIEND_LOG_TYPES } from '@/domain/friends/friendLog';
 
 import { useFriendLogColumns } from './components/FriendLogColumns';
 import { getFriendLogRowKey } from './friendLogRows';
 import { useFriendLogFilters } from './useFriendLogFilters';
 import { useFriendLogRowActions } from './useFriendLogRowActions';
 import { useFriendLogRows } from './useFriendLogRows';
-import { useFriendLogShiftKey } from './useFriendLogShiftKey';
 import { useFriendLogTableState } from './useFriendLogTableState';
 
 export function useFriendLogPageController() {
@@ -19,8 +21,30 @@ export function useFriendLogPageController() {
         searchQuery: filters.searchQuery,
         dateFrom: filters.dateFrom,
         dateTo: filters.dateTo,
-        selectedTypes: filters.selectedTypes
+        selectedTypes: filters.selectedTypes,
+        targetUserId: filters.targetUser?.id
     });
+    const { selectedTypes, setSelectedTypes, setTargetUser } = filters;
+    const rowFilterCommands = useMemo<LogFilterCommands>(() => {
+        const currentTypes = selectedTypes.length
+            ? selectedTypes
+            : FRIEND_LOG_TYPES;
+        return {
+            onlyUser: (userId, userName) =>
+                setTargetUser({ id: userId, name: userName }),
+            canFilterType: (type) =>
+                FRIEND_LOG_TYPES.some(
+                    (friendLogType) => friendLogType === type
+                ),
+            onlyType: (type) => setSelectedTypes([type]),
+            canExcludeType: (type) =>
+                currentTypes.some((current) => current !== type),
+            excludeType: (type) =>
+                setSelectedTypes(
+                    currentTypes.filter((current) => current !== type)
+                )
+        };
+    }, [selectedTypes, setSelectedTypes, setTargetUser]);
     const tableState = useFriendLogTableState({
         hideUnfriends: rows.hideUnfriends,
         dateFrom: filters.dateFrom,
@@ -29,7 +53,7 @@ export function useFriendLogPageController() {
         searchQuery: filters.searchQuery,
         selectedTypes: filters.selectedTypes
     });
-    const shiftHeld = useFriendLogShiftKey();
+    const shiftHeld = useShiftKeyHeld();
     const rowActions = useFriendLogRowActions({
         currentUserId: rows.currentUserId,
         loadStatus: rows.loadStatus,
@@ -99,6 +123,7 @@ export function useFriendLogPageController() {
 
     return {
         filters,
+        rowFilterCommands,
         isError,
         isLoading,
         rows,

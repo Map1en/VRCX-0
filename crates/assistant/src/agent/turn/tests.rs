@@ -70,6 +70,74 @@ fn utc_offset_acceptance_is_read_from_the_tool_schema() {
     assert!(!tool_accepts_utc_offset(&tool_defs, "unknown_tool"));
 }
 
+fn tool_call(name: &str, arguments: &str) -> ToolCall {
+    ToolCall {
+        id: "call_0".into(),
+        kind: "function".into(),
+        function: vrcx_0_contracts::llm::FunctionCall {
+            name: name.into(),
+            arguments: arguments.into(),
+        },
+    }
+}
+
+fn copresence_tool_defs() -> Vec<ToolDefinition> {
+    vec![crate::test_support::tool_def(
+        "get_copresence_summary",
+        serde_json::json!({ "type": "object", "properties": {} }),
+    )]
+}
+
+#[test]
+fn malformed_tool_arguments_are_returned_to_the_model_instead_of_dispatched() {
+    let tool_defs = copresence_tool_defs();
+    let mut dispatched = HashSet::new();
+    let call = tool_call("get_copresence_summary", r#"{"timeWindow": "this we"#);
+
+    let prepared = prepare_call(&call, &tool_defs, &tool_defs, 0, false, &mut dispatched);
+
+    let resolved = prepared
+        .resolved
+        .expect("malformed arguments must not dispatch");
+    assert!(!resolved.ok);
+    assert!(resolved.content.contains("not a valid JSON object"));
+    assert!(resolved.content.contains(r#"{"timeWindow": "this we"#));
+    assert!(dispatched.is_empty());
+}
+
+#[test]
+fn empty_tool_arguments_still_dispatch_with_defaults() {
+    let tool_defs = copresence_tool_defs();
+    let mut dispatched = HashSet::new();
+    let call = tool_call("get_copresence_summary", "  ");
+
+    let prepared = prepare_call(&call, &tool_defs, &tool_defs, 0, false, &mut dispatched);
+
+    assert!(prepared.resolved.is_none());
+    assert_eq!(
+        prepared
+            .arguments
+            .and_then(|arguments| arguments.get("limit").and_then(Value::as_i64)),
+        Some(10)
+    );
+}
+
+#[test]
+fn tool_calls_from_a_truncated_response_are_not_dispatched() {
+    let tool_defs = copresence_tool_defs();
+    let mut dispatched = HashSet::new();
+    let call = tool_call("get_copresence_summary", r#"{"limit": 5}"#);
+
+    let prepared = prepare_call(&call, &tool_defs, &tool_defs, 0, true, &mut dispatched);
+
+    let resolved = prepared
+        .resolved
+        .expect("truncated calls must not dispatch");
+    assert!(!resolved.ok);
+    assert!(resolved.content.contains("output token limit"));
+    assert!(dispatched.is_empty());
+}
+
 #[test]
 fn empty_final_answer_falls_back_to_last_tool_summary() {
     let resolved = resolve_tool_outcome(Ok(ToolCallOutcome {
@@ -200,6 +268,16 @@ fn empty_final_answer_without_tools_still_allows_no_answer_error() {
 
     assert!(!apply_empty_tool_answer_fallback(&mut final_answer, false));
     assert!(final_answer.is_empty());
+}
+
+#[test]
+fn no_answer_message_reports_both_finish_reasons() {
+    let message = no_answer_message(Some("length"), None);
+
+    assert!(
+        message.contains("(finish_reason: length → none)"),
+        "{message}"
+    );
 }
 
 #[test]

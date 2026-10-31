@@ -2,6 +2,7 @@ import { SearchIcon, XIcon } from 'lucide-react';
 import { memo, useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { isImeComposing } from '@/components/keyboard/keyboardShortcutGuards';
 import type { FriendRecord } from '@/domain/friends/types';
 import { userImage } from '@/services/entityMediaService';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
@@ -164,6 +165,9 @@ export const FeedSearchBox = memo(function FeedSearchBox({
                                     onKeyDown={(event) => {
                                         if (
                                             event.key === 'Enter' &&
+                                            !isImeComposing(
+                                                event.nativeEvent
+                                            ) &&
                                             !event.currentTarget.hasAttribute(
                                                 'aria-activedescendant'
                                             )

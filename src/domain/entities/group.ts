@@ -14,7 +14,7 @@ export type GroupRoleRecord = EntityRecord & {
     permissions?: string[];
 };
 
-type GroupGallerySummary = EntityRecord & {
+export type GroupGallerySummary = EntityRecord & {
     createdAt?: string;
     description?: string;
     id: string;

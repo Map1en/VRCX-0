@@ -27,6 +27,7 @@ import {
     restoreSidebarWindowModeAfterLogin,
     subscribeSidebarModeToggle
 } from '@/services/windowModeService';
+import { useDeviceLoginStore } from '@/state/deviceLoginStore';
 import { useNavigationCacheStore } from '@/state/navigationCacheStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
@@ -90,9 +91,13 @@ function RememberedPageRedirect() {
 
 function RedirectIfAuthenticated() {
     const sessionPhase = useSessionStore((state) => state.sessionPhase);
+    const isWaitingForDeviceApproval = useDeviceLoginStore(
+        (state) => state.active
+    );
     const isSessionReady = sessionPhase === 'ready';
     const isSessionPending =
-        sessionPhase === 'authenticating' || sessionPhase === 'bootstrapping';
+        (sessionPhase === 'authenticating' && !isWaitingForDeviceApproval) ||
+        sessionPhase === 'bootstrapping';
     const backendRuntimeReady = useRuntimeStore(
         (state) =>
             state.shell.backendRuntimeSnapshotHydrated &&

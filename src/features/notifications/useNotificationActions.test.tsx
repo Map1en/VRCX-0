@@ -13,7 +13,6 @@ const mocks = vi.hoisted(() => ({
     deleteNotification: vi.fn(),
     expireLocally: vi.fn(),
     hideRemote: vi.fn(),
-    markAllSeen: vi.fn(),
     markSeen: vi.fn(),
     openImagePreview: vi.fn(),
     reload: vi.fn(),
@@ -58,12 +57,10 @@ vi.mock('@/state/modalStore', () => ({
 vi.mock('@/state/vrcNotificationStore', () => ({
     useVrcNotificationStore: (
         selector: (state: {
-            markAllSeen: typeof mocks.markAllSeen;
             markNotificationSeen: typeof mocks.markSeen;
         }) => unknown
     ) =>
         selector({
-            markAllSeen: mocks.markAllSeen,
             markNotificationSeen: mocks.markSeen
         })
 }));
@@ -249,5 +246,38 @@ describe('useNotificationActions', () => {
                 title: 'view.notifications.toast.invite_response_sent'
             })
         );
+    });
+
+    it('ignores repeat actions on a notification while one is still running', async () => {
+        mocks.confirm.mockResolvedValue({ ok: true, value: undefined });
+        let finishHide!: () => void;
+        mocks.hideRemote.mockReturnValue(
+            new Promise<void>((resolve) => {
+                finishHide = resolve;
+            })
+        );
+        const { result } = renderActions();
+
+        let first!: Promise<void>;
+        await act(async () => {
+            first = result.current.hideNotification(notification, {
+                skipConfirm: true
+            });
+            await Promise.resolve();
+        });
+        expect(result.current.pendingNotificationKeys.has('not_1')).toBe(true);
+
+        await act(async () =>
+            result.current.hideNotification(notification, {
+                skipConfirm: true
+            })
+        );
+        expect(mocks.hideRemote).toHaveBeenCalledTimes(1);
+
+        await act(async () => {
+            finishHide();
+            await first;
+        });
+        expect(result.current.pendingNotificationKeys.has('not_1')).toBe(false);
     });
 });

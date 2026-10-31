@@ -13,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     getUserMemoMap: vi.fn(),
+    getProfileBioMap: vi.fn(),
     getMyAvatars: vi.fn(),
     t: (key: string) => key
 }));
@@ -23,6 +24,7 @@ vi.mock('@/repositories/myAvatarRepository', () => ({
 }));
 vi.mock('./toolsDialogUtils', () => ({
     getUserMemoMap: mocks.getUserMemoMap,
+    getProfileBioMap: mocks.getProfileBioMap,
     getFriendIds: (ids: string[]) => ids,
     csvEscape: (value: string) => value
 }));
@@ -55,6 +57,7 @@ import { useFriendRosterStore } from '@/state/friendRosterStore';
 
 import {
     ExportAvatarsListDialog,
+    ExportDiscordNamesDialog,
     ExportFriendsListDialog
 } from './ExportListDialogs';
 
@@ -130,6 +133,39 @@ describe('export dialog data lifetime', () => {
         await screen.findByDisplayValue(
             'UserID,DisplayName,LocalNote\nusr_one,Changed,memo',
             { normalizer: (value) => value }
+        );
+    });
+
+    it('takes Discord names from the status first and the stored bio otherwise', async () => {
+        const roster = useFriendRosterStore.getState();
+        roster.applyFriendPatch({
+            userId: 'usr_one',
+            patch: { statusDescription: 'dc: status_one' }
+        });
+        roster.applyFriendPatch({
+            userId: 'usr_two',
+            patch: { displayName: 'Two', statusDescription: 'hello' }
+        });
+        roster.applyFriendPatch({
+            userId: 'usr_three',
+            patch: { displayName: 'Three' }
+        });
+        mocks.getProfileBioMap.mockResolvedValue(
+            new Map([
+                ['usr_one', 'discord: bio_one'],
+                ['usr_two', 'Find me\nDiscord˸ bio_two'],
+                ['usr_three', 'no handle here']
+            ])
+        );
+
+        render(<ExportDiscordNamesDialog open onOpenChange={vi.fn()} />);
+
+        const textbox = await screen.findByRole('textbox');
+        await waitFor(() =>
+            expect(textbox).toHaveProperty(
+                'value',
+                'DisplayName,DiscordName\nOne,status_one\nTwo,bio_two'
+            )
         );
     });
 

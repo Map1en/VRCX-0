@@ -3,7 +3,10 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use serde_json::Value;
-use vrcx_0_core::vrchat_registry_policy::registry_backup_binary_data;
+use vrcx_0_core::vrchat_registry_policy::{
+    add_hash_to_key_name, ascii_decode, ascii_encode, registry_backup_binary_data,
+    strip_hash_from_key_name,
+};
 
 use crate::vrchat_paths::quoted_tokens;
 
@@ -423,37 +426,6 @@ fn json_value_to_i32(value: &Value) -> Result<i32, String> {
             .map_err(|_| "Invalid dword registry data".to_string());
     }
     Err("Invalid dword registry data".into())
-}
-
-fn add_hash_to_key_name(key: &str) -> String {
-    let mut hash: u32 = 5381;
-    for unit in key.encode_utf16() {
-        hash = hash.wrapping_mul(33) ^ unit as u32;
-    }
-    format!("{key}_h{hash}")
-}
-
-fn strip_hash_from_key_name(key: &str) -> Option<&str> {
-    let (prefix, suffix) = key.rsplit_once("_h")?;
-    if !suffix.is_empty() && !prefix.is_empty() {
-        Some(prefix)
-    } else {
-        None
-    }
-}
-
-fn ascii_decode(bytes: &[u8]) -> String {
-    bytes
-        .iter()
-        .map(|byte| if byte.is_ascii() { *byte as char } else { '?' })
-        .collect()
-}
-
-fn ascii_encode(value: &str) -> Vec<u8> {
-    value
-        .chars()
-        .map(|ch| if ch.is_ascii() { ch as u8 } else { b'?' })
-        .collect()
 }
 
 fn format_hex_bytes(bytes: &[u8]) -> String {

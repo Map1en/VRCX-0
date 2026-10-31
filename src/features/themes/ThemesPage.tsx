@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -6,6 +7,7 @@ import {
     PageScaffold,
     PageTitle
 } from '@/components/layout/PageScaffold';
+import { useRouteScrollMemory } from '@/lib/useRouteScrollMemory';
 
 import { AccentColorPicker } from './components/AccentColorPicker';
 import { BackgroundImageSection } from './components/BackgroundImageSection';
@@ -63,6 +65,8 @@ export function ThemesPage() {
         updateThemeMode,
         updateThemeColor
     } = useThemesController();
+    const scrollRef = useRef<HTMLDivElement | null>(null);
+    useRouteScrollMemory(scrollRef, 'themes');
 
     return (
         <PageScaffold className="flex-1">
@@ -70,7 +74,10 @@ export function ThemesPage() {
                 <PageTitle>{t('view.themes.header')}</PageTitle>
             </PageHeader>
             <PageBody>
-                <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+                <div
+                    ref={scrollRef}
+                    className="min-h-0 flex-1 overflow-y-auto pr-1"
+                >
                     <div className="mx-auto flex w-full max-w-6xl flex-col gap-3">
                         <ThemeSourceSelector
                             customCssBadge={customCssBadge}

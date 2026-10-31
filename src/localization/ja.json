@@ -11,8 +11,14 @@
         "app_launcher_description": "アプリまたはショートカットを追加し、起動するタイミングを選びます。",
         "app_launcher_selection_title": "アプリまたはショートカットを選択",
         "app_launcher_selection_description": "アプリを選ぶと、起動タイミングを編集できます。",
+        "feed_title": "フレンドのアクティビティはまだありません",
+        "feed_description": "VRCX-0 の起動中は、フレンドのオンラインやワールド移動、プロフィールの更新などがここに表示されます。",
         "game_log_title": "VRChatのアクティビティはまだありません",
-        "game_log_description": "プレイ中に訪れたワールドや一緒になったプレイヤーなどがここに表示されます。",
+        "game_log_description": "VRCX-0 を起動したまま VRChat を始めると、訪れたワールドや一緒になったプレイヤーなどがここに表示されます。",
+        "game_log_disabled_description": "ゲームログの記録がオフのため、新しいアクティビティは保存されません。",
+        "game_log_enable_action": "設定でオンにする",
+        "game_log_unavailable_description": "この PC で VRChat のログフォルダーが見つからないため、新しいアクティビティを記録できません。ログファイルを手動でインポートすることはできます。",
+        "game_log_unsupported_description": "このシステムでは VRChat のログを読み取れないため、ゲームのアクティビティは記録されません。",
         "my_avatars_title": "アップロードしたアバターはまだありません",
         "my_avatars_description": "VRChatにアップロードしたアバターがここに表示されます。",
         "search_no_results": "検索結果がありません",
@@ -134,6 +140,10 @@
         "untitled": "新しい会話",
         "close": "閉じる",
         "thinking": "回答を生成中",
+        "trace": {
+            "working": "データを確認中",
+            "done": "データを確認しました"
+        },
         "scroll_to_latest": "一番下までスクロール",
         "connection": {
             "checking": "接続を確認中",
@@ -169,7 +179,10 @@
         "in_private_world": "プライベートワールド",
         "mutual_friends": "共通のフレンド {count}人",
         "no_mutual_friends": "共通のフレンドはいません",
-        "name_separator": "、"
+        "name_separator": "、",
+        "open_world": "ワールドを開く",
+        "unknown_user": "不明なユーザー",
+        "load_failed": "このユーザーのプロフィールを読み込めませんでした"
     },
     "group_event_hover_card": {
         "following": "フォロー中",
@@ -532,7 +545,14 @@
             "backfilled": "レコーダーからフィードを {count} 件補完しました",
             "backfill_failed": "レコーダーからの補完に失敗しました",
             "skipped": "起点となるフレンドリストがなかったため、{count} 件の記録を補完できませんでした"
-        }
+        },
+        "qr_description": "QR コードはレコーダーが発行します。レコーダーは専用のセッションを取得するため、パスワードがネットワークを通ることはありません。",
+        "qr_no_auto_relogin": "QR コードでログインした場合、レコーダーは自動では再ログインしません。接続が切れると記録を停止して Webhook で通知するので、ここで QR コードを読み取り直してください。自動で再ログインしたい場合は、パスワードでログインして「レコーダーにパスワードを保存」をオンにしてください。",
+        "qr_cancel": "QR ログインをキャンセル",
+        "qr_start": "QR コードを表示",
+        "login_method_password": "パスワード",
+        "login_method_qr": "QR コード",
+        "qr_requires_update": "レコーダーを更新すると QR コードでログインできます。"
     },
     "common": {
         "no_data": "データがありません",
@@ -562,7 +582,8 @@
             "view_options": "表示オプション",
             "cut": "切り取り",
             "paste": "貼り付け",
-            "select_all": "すべて選択"
+            "select_all": "すべて選択",
+            "more_actions": "その他の操作"
         },
         "sort_by": "並べ替え:",
         "time_units": {
@@ -599,6 +620,7 @@
             "database_initialization_is_still_pending": "データベースを起動中です。しばらくしてからもう一度お試しください。"
         },
         "label": {
+            "terminal": "ターミナル",
             "authenticated_and_prepared_the_session": "ログインしました",
             "auto_login": "自動ログイン",
             "vrchat_launched": "VRChat を起動しました"
@@ -674,6 +696,29 @@
             "show": "最前面に表示"
         }
     },
+    "game_isolation": {
+        "confirm_title": "ゲーム分離モードをオンにしますか？",
+        "active_title": "ゲーム分離モード中",
+        "summary": "このアカウントは、このPCでVRChatをプレイしているアカウントではありません。",
+        "effect_game_log": "ゲームログを記録しません",
+        "effect_presence": "自分の現在地とステータスはVRChatのサーバー情報のみを使います",
+        "effect_vr": "VRオーバーレイ、XSOverlay、OVR Toolkit、テキスト読み上げをオフにします",
+        "effect_automation": "ゲーム連動の自動化、Discordステータス、スクリーンショット情報の書き込み、クラッシュ後の再起動をオフにします",
+        "unchanged": "デスクトップ通知とデスクトップのオーバーレイはそのまま使えます。",
+        "hint_before_launch": "VRChatを起動する前にオンにするのがおすすめです。ゲームを複数起動するときもおすすめです。",
+        "hint_running_enable": "VRChatの起動中です。今いるルームはそのまま記録され、次のルームから記録を止めます。",
+        "hint_running_active": "VRChatの起動中です。解除すると、次のルームから記録を再開します。",
+        "cancel": "キャンセル",
+        "confirm": "オンにする",
+        "close": "閉じる",
+        "turn_off": "ゲーム分離モードを解除",
+        "toast_on": "ゲーム分離モードをオンにしました",
+        "toast_off": "ゲーム分離モードを解除しました",
+        "toast_off_running": "ゲーム分離モードを解除しました · 次のルームから記録を再開します",
+        "failed": "ゲーム分離モードを切り替えられませんでした",
+        "badge": "分離中",
+        "menu_item": "ゲーム分離モード…"
+    },
     "nativeShell": {
         "tray": {
             "open": "VRCX-0 を開く",
@@ -684,10 +729,12 @@
             "doNotDisturbThreeHours": "3時間",
             "doNotDisturbUntilStopped": "オフにするまで",
             "doNotDisturbTurnOff": "一時停止を解除",
+            "gameIsolation": "ゲーム分離モード",
             "rebuildUi": "UI を再読み込み",
             "sidebarMode": "サイドバーモード",
             "disableTheme": "テーマを無効化",
-            "exit": "終了"
+            "exit": "終了",
+            "realtimeReconnecting": "リアルタイム接続が切れたため、再接続しています"
         },
         "notification": {
             "backgroundModeStarted": {
@@ -747,7 +794,6 @@
                 "keyboardShortcuts": "キーボードショートカット",
                 "sendFeedback": "フィードバックを送信",
                 "reportIssue": "GitHub で問題を報告",
-                "qqGroup": "QQグループ",
                 "openDevtools": "DevTools を開く",
                 "supportVrcx": "VRCX-0 をサポート"
             }
@@ -779,7 +825,6 @@
         "toggle_theme": "テーマを切り替える"
     },
     "nav_menu": {
-        "qq_group": "QQグループ",
         "changelog": "新機能 (更新履歴)",
         "update": "アップデート",
         "update_downloading": "ダウンロード中",
@@ -970,12 +1015,16 @@
             "pagination": "検索・テーブルのページ切り替え",
             "screenshots": "スクリーンショットの詳細",
             "image_viewer": "全画面画像ビューアー",
-            "selection": "スクリーンショット・お気に入りの選択"
+            "selection": "スクリーンショット・お気に入りの選択",
+            "gallery_inventory": "ギャラリー・インベントリ"
         },
         "navigation_items": "ナビゲーションの1～9番目を開く",
         "hold_for_hints": "ショートカットのヒントを表示（長押し）",
         "toggle_details": "詳細の表示／非表示",
-        "clear_selection": "選択を解除"
+        "clear_selection": "選択を解除",
+        "toggle_theme_safe_mode": "コミュニティテーマを一時的に無効化",
+        "theme_safe_mode_on": "コミュニティテーマを一時的に無効にしました",
+        "theme_safe_mode_off": "コミュニティテーマを元に戻しました"
     },
     "privacy_lock": {
         "locked_title": "ロック中",
@@ -1008,7 +1057,11 @@
             "clear_description": "VRChat アカウントのパスワードを入力するとロックパスワードを削除できます。ローカルに保存されたパスワードとだけ照合し、VRChat のサーバーには何も送信されません。"
         },
         "recover": {
-            "description": "VRChat アカウントのパスワードを入力するとロックを解除できます。ローカルに保存されたパスワードとだけ照合し、VRChat のサーバーには何も送信されません。"
+            "description": "VRChat アカウントのパスワードを入力するとロックを解除できます。ローカルに保存されたパスワードとだけ照合し、VRChat のサーバーには何も送信されません。",
+            "method_password": "アカウントのパスワード",
+            "method_qr": "QR コードで確認",
+            "password_unavailable": "このアカウントはパスワードが保存されていません。QR コードで確認してください。",
+            "qr_description": "この VRChat アカウントでログインしているスマートフォンで読み取って承認すると、ロックが解除されます。本人確認のためだけに使い、現在のログインは変わりません。"
         },
         "settings": {
             "label": "プライバシーロック",
@@ -1031,7 +1084,9 @@
             "password_not_set": "ロックパスワードが設定されていません",
             "password_already_set": "ロックパスワードはすでに設定されています",
             "no_session": "ロックを使うには先にログインしてください",
-            "failed": "ロックの操作に失敗しました"
+            "failed": "ロックの操作に失敗しました",
+            "account_mismatch": "承認されたアカウントがロック中のアカウントと異なるため、ロックは解除されていません。新しい QR コードを発行しました。",
+            "verification_cancelled": "確認をキャンセルしました。"
         }
     },
     "side_panel": {
@@ -1153,6 +1208,8 @@
             "title": "通知センター",
             "view_more": "さらに表示",
             "mark_all_read": "すべて既読にする",
+            "marking_all_read": "既読にしています…",
+            "mark_read_failed": "既読にできませんでした",
             "mark_as_read": "既読にする",
             "more_actions": "その他の操作",
             "join_now": "今すぐ参加",
@@ -1161,7 +1218,8 @@
             "group_system": "システム",
             "tab_friend": "フレンド",
             "no_new_notifications": "過去24時間以内に新しい通知はありません",
-            "no_unseen_notifications": "未読の通知はありません"
+            "no_unseen_notifications": "未読の通知はありません",
+            "title_with_count": "通知（未読 {count} 件）"
         },
         "success": {
             "vrchat_launch_request_sent": "VRChat で開きました",
@@ -1213,6 +1271,25 @@
                 "description": "{name} を削除します",
                 "confirm": "削除",
                 "removing": "削除中"
+            },
+            "or": "または",
+            "passwordless_account_hint": "このアカウントはパスワードが保存されていません。パスワードを入力するか、QR コードでログインしてください",
+            "qr": {
+                "button": "QR コードでログイン",
+                "title": "QR コードでログイン",
+                "use_password": "パスワードでログイン"
+            },
+            "saved_group": {
+                "with_password": "パスワード保存済み",
+                "with_password_hint": "クリックでログイン",
+                "without_password": "パスワード未保存",
+                "without_password_hint": "クリックしてパスワードまたは QR コードでログイン",
+                "requires_login": "要ログイン",
+                "switch_requires_login": "パスワード未保存・ログイン画面へ"
+            },
+            "expired_account": {
+                "title": "{name} のセッションが切れました",
+                "description": "このアカウントはパスワードが保存されていないため、自動では再ログインしません。パスワードを入力するか、QR コードを読み取り直してください。"
             }
         },
         "feed": {
@@ -1280,7 +1357,9 @@
                 "restore_preset": "プリセットに戻す",
                 "restore_preset_title": "フィードカラムのプリセットに戻しますか？",
                 "restore_preset_description": "プリセットのカラム（Favorites、Location、Profile、Presence）に戻します。",
-                "restore_preset_confirm": "プリセットに戻す"
+                "restore_preset_confirm": "プリセットに戻す",
+                "empty_title": "このカラムにはまだ何もありません",
+                "empty_description": "このカラムの対象フレンドと種類に合うアクティビティがここに表示されます。"
             },
             "error": {
                 "avatar_author_unavailable": "アバター作者を取得できません",
@@ -1309,6 +1388,12 @@
             },
             "empty": {
                 "no_feed_rows_match_the_current_filters": "現在のフィルターに一致するフィードはありません"
+            },
+            "first_run_tip": {
+                "title": "VRCX-0 へようこそ",
+                "description": "フレンドのアクティビティやゲームの履歴は、VRCX-0 の起動中にだけ記録されます。それ以前の履歴は、VRCX のデータや VRChat のログファイルをインポートすれば取り込めます。",
+                "description_without_logs": "フレンドのアクティビティは、VRCX-0 の起動中にだけ記録されます。それ以前の履歴は、VRCX のデータをインポートすれば取り込めます。",
+                "dismiss": "了解"
             },
             "toast": {
                 "failed_to_resolve_avatar_author": "アバターの作者が見つかりませんでした",
@@ -1388,8 +1473,13 @@
                 "played_by": "{name} が再生",
                 "expand_session": "セッションを展開",
                 "collapse_session": "セッションを折りたたむ",
+                "other_device": "他のデバイス",
+                "other_device_description": "このPCでVRChatを起動していない間にオンライン状態から記録したため、プレイヤーや動画の詳細はありません。",
                 "expand_all": "すべて展開",
-                "collapse_all": "すべて折りたたむ"
+                "collapse_all": "すべて折りたたむ",
+                "players_count": "{count} 人",
+                "videos_count": "動画 {count} 件",
+                "latest": "最新"
             },
             "label": {
                 "sessions": "セッション",
@@ -1949,6 +2039,17 @@
                     "group": "グループ",
                     "moderation": "モデレーション",
                     "other": "その他"
+                },
+                "pending_count": "新着通知 {count} 件",
+                "new_this_session": "今回の新着",
+                "expires_in": "{time}に期限切れ",
+                "action_all_done": "すべて対応済み",
+                "action_all_done_description": "今対応が必要な通知はありません。",
+                "group": {
+                    "from_actor": "{name}から{count}件",
+                    "from_people": "{name}ほか{count}件",
+                    "expand": "すべて表示",
+                    "collapse": "折りたたむ"
                 }
             },
             "responses": {
@@ -1970,7 +2071,8 @@
                 "rank": "ランク",
                 "status": "ステータス",
                 "note": "VRChat のノート",
-                "memo": "ローカルノート"
+                "memo": "ローカルノート",
+                "bio": "自己紹介・リンク"
             },
             "label": {
                 "friend_details_are_already_loaded": "フレンド詳細はすでに読み込まれています",
@@ -2305,6 +2407,7 @@
                 "friend_groups": "フレンドグループ",
                 "world_groups": "ワールドのお気に入りグループ",
                 "world_groups_hint": "空のままにするとすべてのお気に入りグループが対象になります。",
+                "instance_groups": "グループ",
                 "minimum_friends": "最小フレンド数",
                 "minimum_players": "最小プレイヤー数",
                 "room_types": "インスタンスタイプ",
@@ -2319,6 +2422,7 @@
                 "preset_with_selected_friend": "選択したフレンドと一緒",
                 "preset_in_selected_room_types": "選択したインスタンスタイプ内",
                 "preset_in_favorite_worlds": "お気に入りワールド内",
+                "preset_in_selected_group_instances": "選択したグループのインスタンス内",
                 "preset_custom": "カスタム",
                 "auto_send_invites_for_request_invite": "招待リクエストに自動返信",
                 "auto_send_invites_description": "許可リスト内のお気に入りフレンドだけを自動処理します。",
@@ -2330,6 +2434,8 @@
                 "allowed_statuses_label": "自分のステータスがこれらのときだけ",
                 "allowed_statuses_description": "何も選ばなければ、どのステータスでも返信します。",
                 "automatic_replies_note": "VRChat 起動中かつ招待可能な場所でのみ動作します。送信者ごとにクールダウンがあります。",
+                "invite_message": "招待メッセージ",
+                "invite_message_description": "そのスロットの現在の文面を送ります。文面を編集すると送る内容も変わります。",
                 "failed_to_load_schedule_rules": "スケジュールルールの読み込みに失敗しました。",
                 "failed_to_save_schedule_rules": "スケジュールルールの保存に失敗しました。",
                 "failed_to_load_room_rules": "インスタンスルールの読み込みに失敗しました。",
@@ -2342,7 +2448,7 @@
                 "edit_invite_message": "メッセージテンプレート",
                 "edit_invite_message_description": "招待とリクエストのメッセージテンプレートを編集",
                 "moderation_reports": "通報履歴",
-                "moderation_reports_description": "送信した通報を確認・取り消しする",
+                "moderation_reports_description": "送信した通報を確認する",
                 "purchase_history": "購入履歴",
                 "purchase_history_description": "購入したアイテムとクレジットの履歴を確認する"
             },
@@ -2642,13 +2748,13 @@
                     "port_active_connections": "ポート {port}、アクティブ接続 {count}",
                     "client_config": "クライアント設定",
                     "client_config_description": "Claude Code: 一度だけ実行するターミナルコマンド。汎用 (HTTP): 直接接続用の JSON 設定。汎用 (mcp-remote): ネイティブ HTTP 非対応クライアント向けの Node.js プロキシ経由 JSON 設定（PATH に Node.js が必要）。LAN 有効時は設定に `YOUR-LAN-IP` が入ります。別のデバイスで使う前にこのコンピューターのローカル IP に置き換えてください。",
+                    "view_client_config": "設定を表示",
                     "copy_mcp_remote": "汎用 (mcp-remote)",
                     "copy_generic": "汎用 (HTTP)",
                     "security_note": "クライアント設定には平文のトークンが含まれます。信頼できるツールまたはデバイスにのみ共有してください。",
                     "rotate_token": "トークンを再生成",
                     "rotate_token_description": "再生成すると、古いクライアント設定は使用できなくなります。",
                     "token_rotated": "MCP トークンを再生成しました",
-                    "copied": "{target} 設定をコピーしました",
                     "status": {
                         "loading": "読み込み中",
                         "disabled": "停止",
@@ -3061,8 +3167,8 @@
                     "show_details_in_private": "プライベートでもワールド詳細を表示",
                     "show_images": "ワールド画像を表示",
                     "show_current_platform": "現在のプラットフォームを表示",
-                    "world_integration": "ワールド連携",
-                    "world_integration_tooltip": "Popcorn Palace, PyPyDance, VRDancing, LS Media で \"Watching/Listening to\" を表示",
+                    "world_integration": "再生中のメディアを表示",
+                    "world_integration_tooltip": "Discord のステータスに再生中の動画と進行状況を表示します。Popcorn Palace、PyPyDance、VRDancing、LS Media と、ProTV の再生情報に対応したプレイヤーがあるワールドで使えます",
                     "display_world_name_as_discord_status": "ワールド名を Discord のアクティビティに表示"
                 },
                 "rpc": {
@@ -3353,6 +3459,17 @@
             "restart_pending": {
                 "description": "一部の設定は VRCX-0 を再起動すると反映されます。",
                 "restart_now": "今すぐ再起動"
+            },
+            "field": {
+                "modified": "変更済み",
+                "reset": "リセット",
+                "restart_required": "再起動が必要",
+                "requires_parent": "先に「{name}」をオンにしてください"
+            },
+            "search": {
+                "placeholder": "設定を検索",
+                "results": "設定の検索結果",
+                "no_results": "一致する設定がありません"
             }
         },
         "dashboard": {
@@ -3660,7 +3777,10 @@
                 "accept_friend_request": "フレンドリクエストを承認",
                 "decline_notification": "通知を断る",
                 "decline": "断る",
-                "send_invite": "招待を送信"
+                "send_invite": "招待を送信",
+                "accept_friend_request_consequence": "相手がフレンドリストに追加されます。",
+                "decline_notification_consequence": "この通知は VRChat 上から削除されます。",
+                "send_invite_consequence": "招待は今いるインスタンスに送られます。"
             },
             "dynamic": {
                 "accept_the_friend_request_from_value": "{value} からのフレンドリクエストを承認しますか？",
@@ -3675,7 +3795,8 @@
             },
             "status": {
                 "active": "有効",
-                "installed": "インストール済み"
+                "installed": "インストール済み",
+                "tested_with_older": "{version} で動作確認済み。このバージョンでは表示が崩れる可能性があります"
             },
             "field": {
                 "name": "名前",
@@ -3848,7 +3969,10 @@
             "description": "期間ごとに、時間の使い方をまとめて振り返る",
             "range": {
                 "all": "全期間",
-                "days": "直近 {days} 日"
+                "days": "直近 {days} 日",
+                "previous": "前の期間",
+                "next": "次の期間",
+                "custom": "期間を指定"
             },
             "stat": {
                 "total_time": "合計プレイ時間",
@@ -3884,7 +4008,10 @@
             },
             "empty": {
                 "title": "まだ記録がありません",
-                "description": "VRChat で少し遊ぶと、ここにアクティビティが表示されます。"
+                "description": "VRCX-0 を起動したまま VRChat で遊ぶと、ここにアクティビティが表示されます。",
+                "window_title": "この期間の記録はありません",
+                "unsupported": "このプラットフォームでは VRCX-0 が VRChat のゲームログを読み取れないため、アクティビティは記録されません。",
+                "unavailable": "VRChat のログフォルダが見つからないため、新しいアクティビティを記録できません。手元のログファイルから補完できます。"
             },
             "error": {
                 "failed_to_load": "アクティビティを読み込めませんでした"
@@ -3939,11 +4066,23 @@
                 "photo_count_other": "スクリーンショット{count}枚",
                 "empty": {
                     "title": "まだ記録がありません",
-                    "description": "ワールドを出ると、ここに記録されます。",
+                    "description": "VRCX-0 を起動したまま VRChat で遊ぶと、ワールドを出たあとにここへ記録されます。",
                     "filtered_title": "この期間の記録はありません"
                 },
                 "all_dates": "すべての日付",
                 "screenshots": "スクリーンショット"
+            },
+            "previous": {
+                "summary": "前の{days}日間：{hours}・プレイした日 {activeDays}日",
+                "none": "前の{days}日間の記録はありません",
+                "more": "前の期間より多い",
+                "less": "前の期間より少ない",
+                "same": "前の期間と同じ"
+            },
+            "stale": "最新のデータではない可能性があります",
+            "chart": {
+                "series_summary": "{label}、{from}〜{to}：合計 {total}。最多：{peak}（{peakHours}）。",
+                "heatmap_summary": "曜日と時間帯ごとのプレイ時間。いちばん多い時間帯：{peak}。"
             }
         },
         "my_groups": {
@@ -4457,6 +4596,28 @@
                 "issue_clear_days": "問題が解消されるまでの日数",
                 "sanctions": "処分",
                 "load_failed": "アカウントの状態を読み込めませんでした"
+            },
+            "relationship": {
+                "friend": "フレンド",
+                "request_received": "フレンドリクエスト受信",
+                "request_sent": "フレンドリクエスト送信済み",
+                "avatar_hidden": "アバター非表示中",
+                "interaction_off": "アバターインタラクション無効",
+                "chatbox_muted": "チャットボックスをミュート中"
+            },
+            "friend_request": {
+                "incoming_banner": "フレンドリクエストが届いています"
+            },
+            "consequence": {
+                "block_on": "VRChat 内で {name} とお互いに姿も声も届かなくなります。",
+                "block_off": "VRChat 内で {name} とまたお互いの姿と声が届くようになります。",
+                "mute_on": "VRChat 内で {name} の声が聞こえなくなります。",
+                "mute_off": "VRChat 内で {name} の声がまた聞こえるようになります。",
+                "interactOff_on": "VRChat 内で {name} はあなたのアバターに干渉できなくなります。",
+                "interactOff_off": "VRChat 内で {name} がまたあなたのアバターに干渉できるようになります。",
+                "muteChat_on": "VRChat 内で {name} のチャットボックスが表示されなくなります。",
+                "muteChat_off": "VRChat 内で {name} のチャットボックスがまた表示されるようになります。",
+                "unfriend": "{name} がフレンドリストから外れます。もう一度フレンドになるには、どちらかが改めてフレンドリクエストを送る必要があります。"
             }
         },
         "world": {
@@ -4984,7 +5145,10 @@
                 "edited_at": "編集日時:",
                 "created_at": "作成日時:",
                 "edited_by": "編集者:",
-                "search_placeholder": "検索"
+                "search_placeholder": "検索",
+                "expand": "続きを読む",
+                "collapse": "閉じる",
+                "edited": "編集済み"
             },
             "role_name": {
                 "group_owner": "グループ所有者",
@@ -5010,7 +5174,29 @@
                 "failed_to_search": "メンバーを検索できませんでした"
             },
             "gallery": {
-                "header": "写真"
+                "header": "写真",
+                "create": "ギャラリーを作成",
+                "edit": "ギャラリーを編集",
+                "delete": "ギャラリーを削除",
+                "add_image": "画像を追加",
+                "delete_image": "画像を削除",
+                "name": "名前",
+                "description": "説明",
+                "members_only": "グループメンバーのみに公開",
+                "visibility_public": "全員に公開",
+                "visibility_members": "グループメンバーのみ",
+                "visibility_roles": "特定のロールのみ",
+                "created": "ギャラリーを作成しました",
+                "saved": "ギャラリーを更新しました",
+                "deleted": "ギャラリーを削除しました",
+                "image_added": "画像を追加しました",
+                "image_pending_approval": "画像を送信しました。承認待ちです",
+                "image_deleted": "画像を削除しました",
+                "save_failed": "ギャラリーを保存できませんでした",
+                "delete_failed": "削除できませんでした",
+                "delete_confirm": "このギャラリーを削除しますか？",
+                "delete_confirm_description": "{name} とその中の画像はすべて削除されます。",
+                "delete_image_confirm": "この画像を削除しますか？"
             },
             "json": {
                 "header": "JSON"
@@ -5254,7 +5440,10 @@
             },
             "dynamic": {
                 "edit_slot_value": "スロット {value} を編集"
-            }
+            },
+            "no_message": "メッセージなし",
+            "slot_value": "スロット {value}",
+            "attach_image": "画像を添付"
         },
         "invite_request_message": {
             "header": "メッセージ付きでリクエスト"
@@ -5282,16 +5471,11 @@
             }
         },
         "edit_invite_message": {
-            "header": "メッセージテンプレートを編集",
             "save": "保存"
         },
         "edit_send_invite_message": {
-            "header": "メッセージテンプレートを編集して送信",
             "description": "編集後は1時間クールダウンが必要です。",
             "send": "送信"
-        },
-        "edit_send_invite_response_message": {
-            "description": "編集後は1時間クールダウンが必要です。"
         },
         "export_friends_list": {
             "header": "フレンドリストをエクスポート",
@@ -5338,6 +5522,7 @@
             "inventory": "インベントリ",
             "refresh": "更新",
             "upload": "アップロード",
+            "paste_upload": "画像を貼り付け",
             "clear": "消去",
             "banner": "プロフィール写真",
             "profile_photo": "プロフィール写真",
@@ -5484,6 +5669,15 @@
             "result_count": "{count} 件の結果",
             "gallery": "ギャラリー",
             "folders": "フォルダ",
+            "favorites": "お気に入り",
+            "favorite": "お気に入りに追加",
+            "unfavorite": "お気に入りから外す",
+            "favorites_missing": "お気に入りのうち {count} 枚が見つかりません",
+            "forget_missing_favorites": "見つからないものを外す",
+            "forget_missing_favorites_confirm_title": "見つからないお気に入りを外しますか？",
+            "forget_missing_favorites_confirm_description": "お気に入りのうち {count} 枚は、元の場所にファイルがありません。外すと、いま接続していないドライブにファイルがあっても、あとから自動で見つけ直すことはできません。",
+            "empty_favorites": "お気に入りはまだありません",
+            "empty_favorites_description": "スクリーンショットに星を付けると、ここに表示されます。",
             "scanning": "スクリーンショットをスキャン中",
             "image_count": "{count} 枚",
             "feeling_lucky": "おまかせで1枚",
@@ -6182,10 +6376,6 @@
             "empty_open": "対応中の通報はありません",
             "empty_closed": "終了した通報はありません",
             "failed_to_load": "通報を読み込めませんでした",
-            "withdraw": "取り消す",
-            "withdraw_title": "{value} への通報を取り消しますか？",
-            "withdraw_description": "この操作は元に戻せません。",
-            "failed_to_withdraw": "通報を取り消せませんでした",
             "status_open": "対応中",
             "status_closed": "終了",
             "type_filter": {
@@ -6319,7 +6509,8 @@
             "auto_login_failed": "自動ログインに失敗しました",
             "session_expired": "VRChat セッションの有効期限が切れました。ログイン画面に戻ります。",
             "session_restore_available": "保存済みアカウントがある場合、VRCX-0 は自動的に再ログインを試みます。",
-            "offline": "オフラインです"
+            "offline": "オフラインです",
+            "session_requires_login": "このアカウントはパスワードが保存されていないため、自動では再ログインしません。QR コードを読み取り直すか、パスワードを入力してください。"
         },
         "vrcx_updater": {
             "failed": "アップデートの確認に失敗しました: {message}",
@@ -6392,6 +6583,7 @@
         "file": {
             "not_image": "ファイルが画像ではありません",
             "too_large": "ファイルサイズが大きすぎます",
+            "clipboard_no_image": "クリップボードに画像がありません。先に画像か画像ファイルをコピーしてください",
             "folder_opened": "フォルダを開きました",
             "folder_missing": "フォルダが存在しません"
         },
@@ -6518,6 +6710,10 @@
         "group_invite_title": "グループへの招待",
         "group_join_request_title": "グループ参加リクエスト",
         "group_transfer_request_title": "グループ譲渡リクエスト",
+        "group_left": "このグループのメンバーではなくなりました",
+        "group_member_updated": "このグループでのメンバー情報が更新されました",
+        "group_member_roles": "現在のロール：{roles}",
+        "group_role_updated": "ロール「{role}」が変更されました",
         "group_queue_ready_title": "インスタンスキュー準備完了",
         "group_instance_opened": "新しいインスタンスを作成しました",
         "group_instance_opened_location": "新しいインスタンスを作成しました：{location}",
@@ -6620,10 +6816,7 @@
         },
         "profile": {
             "invite_messages": {
-                "slot": "スロット",
-                "message": "メッセージ",
-                "cool_down": "クールダウン",
-                "action": "アクション"
+                "cool_down": "クールダウン"
             }
         },
         "import": {
@@ -6649,13 +6842,28 @@
             "table_layout": "テーブルレイアウト",
             "columns": "列",
             "lock_column_order": "列順をロック",
-            "unlock_column_order": "列順のロックを解除"
+            "unlock_column_order": "列順のロックを解除",
+            "new_items_count": "新着 {count} 件"
         },
         "action": {
-            "reset_columns": "列をリセット"
+            "reset_columns": "列をリセット",
+            "sort_ascending": "昇順で並べ替え",
+            "sort_descending": "降順で並べ替え",
+            "clear_sort": "並べ替えを解除",
+            "hide_column": "この列を非表示",
+            "move_column_left": "左へ移動",
+            "move_column_right": "右へ移動"
         },
         "empty": {
             "no_rows_yet": "データはまだありません。"
+        },
+        "filter_action": {
+            "label": "フィルター",
+            "only_user": "{value} だけを表示",
+            "add_user_to_scope": "{value} をフィルターに追加",
+            "only_type": "「{value}」だけを表示",
+            "exclude_type": "「{value}」を除外",
+            "only_world": "{value} だけを表示"
         }
     },
     "accessibility": {
@@ -6680,7 +6888,8 @@
         "open_player": "プレイヤーのプロフィールを開く：{player}",
         "player": "プレイヤー",
         "remove_value": "{value} を削除",
-        "add_table_page_size": "1ページあたりの表示数を追加"
+        "add_table_page_size": "1ページあたりの表示数を追加",
+        "column_width_value": "{value} ピクセル"
     },
     "status_bar": {
         "do_not_disturb": "通知を一時停止",
@@ -6690,6 +6899,8 @@
         "do_not_disturb_three_hours": "3時間",
         "do_not_disturb_until_stopped": "オフにするまで",
         "do_not_disturb_turn_off": "一時停止を解除",
+        "game_isolation": "ゲーム分離モード",
+        "game_isolation_active": "ゲーム分離モード中 · クリックで解除",
         "do_not_disturb_failed": "通知の一時停止を変更できませんでした",
         "world_collection_importing": "ワールドコレクションをインポート中（{progress}/{total}）",
         "game": "VRChat",
@@ -6703,6 +6914,14 @@
         "realtime_connection": "リアルタイム",
         "ws_connected": "接続済み",
         "ws_disconnected": "未接続",
+        "realtime_connecting": "接続中",
+        "realtime_reconnecting": "再接続中",
+        "realtime_retry_in": "{seconds} 秒後に再試行",
+        "realtime_retry_soon": "まもなく再試行",
+        "realtime_last_connected": "最終接続：{time}",
+        "realtime_disconnected_since": "{time} から切断中",
+        "realtime_reason": "原因：{reason}",
+        "realtime_retry_now": "クリックですぐに再試行",
         "zoom": "ズーム",
         "zoom_tooltip": "クリックしてズームレベルを調整",
         "app_uptime": "VRCX-0 の稼働時間",
@@ -6732,7 +6951,8 @@
         "desktop_widget_off": "デスクトップのオーバーレイはオフです",
         "desktop_widget_on": "デスクトップのオーバーレイはオンです",
         "desktop_widget_click_through": "デスクトップのオーバーレイはオンです（クリックを透過中）",
-        "desktop_widget_failed": "デスクトップのオーバーレイを変更できませんでした"
+        "desktop_widget_failed": "デスクトップのオーバーレイを変更できませんでした",
+        "desktop_widget_menu_hint": "右クリックでメニューを表示"
     },
     "component": {
         "favorite_action_menu": {
@@ -6909,6 +7129,7 @@
         "vrc_notification_center": {
             "toast": {
                 "failed_to_mark_notifications_as_seen": "通知を既読にできませんでした",
+                "mark_all_seen_partially_failed": "一部の通知を既読にできませんでした",
                 "failed_to_accept_friend_request": "フレンドリクエストの承認に失敗しました",
                 "failed_to_decline_notification": "通知を断れませんでした",
                 "failed_to_send_invite": "招待の送信に失敗しました",
@@ -7119,5 +7340,27 @@
     "mutual_graph_hint": {
         "build": "共通のフレンドのグラフが未作成です · 作成する",
         "room_scan_running": "このインスタンスの共通のフレンドを確認中です。完了後にもう一度お試しください"
+    },
+    "device_login": {
+        "qr_label": "VRChat ログイン用 QR コード",
+        "steps": {
+            "scan": "VRChat にログイン済みのスマートフォンで QR コードを読み取ります",
+            "approve": "スマートフォンでログインを確認して承認します"
+        },
+        "waiting": "スマートフォンでの承認を待っています…",
+        "expires_in": "残り {time}",
+        "expired_title": "QR コードの有効期限が切れました",
+        "expired_description": "時間内に承認されませんでした。",
+        "refresh": "QR コードを再発行",
+        "failed_title": "QR コードでのログインに失敗しました",
+        "retry": "再試行",
+        "denied": "別の端末でログインが拒否されました。",
+        "no_auto_relogin": "QR コードでログインした場合、自動では再ログインしません。接続が切れたら QR コードを読み取り直してください。自動で再ログインしたい場合はパスワードでログインしてください。",
+        "saved_password": {
+            "title": "このアカウントのパスワードが保存されています",
+            "description": "削除しますか？削除すると、切断時に自動で再ログインしなくなります。",
+            "clear": "削除",
+            "cleared": "保存済みのパスワードを削除しました"
+        }
     }
 }

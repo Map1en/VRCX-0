@@ -11,7 +11,11 @@ vi.mock('react-i18next', async (importOriginal) => ({
         t: (key: string, values?: { count?: number }) =>
             key === 'view.game_log.sessions.friends_count'
                 ? `${values?.count ?? 0} friends`
-                : key
+                : key === 'view.game_log.sessions.players_count'
+                  ? `${values?.count ?? 0} players`
+                  : key === 'view.game_log.sessions.videos_count'
+                    ? `${values?.count ?? 0} videos`
+                    : key
     })
 }));
 
@@ -120,6 +124,7 @@ describe('GameLogSessionsView', () => {
                         worldId: 'wrld_test',
                         worldName: 'Test World',
                         groupName: '',
+                        remote: false,
                         playerDurationRows: [],
                         events: friends.map(([userId, displayName], index) => ({
                             type: 'OnPlayerJoined',
@@ -202,6 +207,7 @@ describe('GameLogSessionsView', () => {
                         worldId: 'wrld_test',
                         worldName: 'Test World',
                         groupName: '',
+                        remote: false,
                         playerDurationRows: [
                             {
                                 displayName: 'Alice',
@@ -233,5 +239,156 @@ describe('GameLogSessionsView', () => {
         );
 
         expect(screen.getByText(/2m/)).not.toBeNull();
+    });
+
+    it('groups sessions by day and summarizes players and videos', () => {
+        const view = render(
+            <GameLogSessionsView
+                isGameRunning={false}
+                defaultOpen
+                sessionOpenOverrides={new Map()}
+                onSessionOpenChange={vi.fn()}
+                sessions={[
+                    {
+                        id: 2,
+                        created_at: '2026-08-11T12:00:00',
+                        duration: 0,
+                        location: 'wrld_b:1',
+                        worldId: 'wrld_b',
+                        worldName: 'Second World',
+                        groupName: '',
+                        remote: false,
+                        playerDurationRows: [],
+                        events: [
+                            {
+                                type: 'OnPlayerJoined',
+                                created_at: '2026-08-11T12:01:00',
+                                userId: 'usr_alice',
+                                displayName: 'Alice'
+                            },
+                            {
+                                type: 'JoinGroup',
+                                created_at: '2026-08-11T12:02:00',
+                                count: 2,
+                                members: [
+                                    {
+                                        userId: 'usr_alice',
+                                        displayName: 'Alice',
+                                        created_at: '2026-08-11T12:02:00',
+                                        isFavorite: false
+                                    },
+                                    {
+                                        userId: 'usr_bob',
+                                        displayName: 'Bob',
+                                        created_at: '2026-08-11T12:02:00',
+                                        isFavorite: false
+                                    }
+                                ]
+                            },
+                            {
+                                type: 'VideoPlay',
+                                created_at: '2026-08-11T12:03:00',
+                                playCount: 2
+                            }
+                        ]
+                    },
+                    {
+                        id: 1,
+                        created_at: '2026-08-10T12:00:00',
+                        duration: 0,
+                        location: 'wrld_a:1',
+                        worldId: 'wrld_a',
+                        worldName: 'First World',
+                        groupName: '',
+                        remote: false,
+                        playerDurationRows: [
+                            {
+                                displayName: 'Carol',
+                                userId: 'usr_carol',
+                                time: 60_000
+                            }
+                        ],
+                        events: []
+                    }
+                ]}
+            />,
+            {
+                wrapper: ({ children }) => (
+                    <GameLogSessionAffinityContext
+                        value={{
+                            favoriteIdSet: new Set(),
+                            friendIdSet: new Set()
+                        }}
+                    >
+                        {children}
+                    </GameLogSessionAffinityContext>
+                )
+            }
+        );
+
+        const sections = view.container.querySelectorAll('section');
+        expect(sections).toHaveLength(2);
+        expect(
+            within(sections[0] as HTMLElement).getByText(/2 players · 2 videos/)
+        ).not.toBeNull();
+        expect(
+            within(sections[1] as HTMLElement).getByText(/1 players/)
+        ).not.toBeNull();
+    });
+
+    it('labels remote sessions as another device without an expand toggle', () => {
+        const session = {
+            created_at: '2026-08-10T12:00:00',
+            duration: 60_000,
+            worldId: 'wrld_a',
+            groupName: '',
+            playerDurationRows: [],
+            events: []
+        };
+        render(
+            <GameLogSessionsView
+                isGameRunning={false}
+                defaultOpen={false}
+                sessionOpenOverrides={new Map()}
+                onSessionOpenChange={vi.fn()}
+                sessions={[
+                    {
+                        ...session,
+                        id: 2,
+                        location: 'wrld_a:2',
+                        worldName: 'Quest World',
+                        remote: true
+                    },
+                    {
+                        ...session,
+                        id: 1,
+                        location: 'wrld_a:1',
+                        worldName: 'PC World',
+                        remote: false
+                    }
+                ]}
+            />,
+            {
+                wrapper: ({ children }) => (
+                    <GameLogSessionAffinityContext
+                        value={{
+                            favoriteIdSet: new Set(),
+                            friendIdSet: new Set()
+                        }}
+                    >
+                        {children}
+                    </GameLogSessionAffinityContext>
+                )
+            }
+        );
+
+        expect(
+            screen.getAllByText('view.game_log.sessions.other_device')
+        ).toHaveLength(1);
+        expect(
+            screen.getAllByRole('button', {
+                name: 'view.game_log.sessions.expand_session'
+            })
+        ).toHaveLength(1);
     });
 });

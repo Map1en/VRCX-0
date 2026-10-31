@@ -105,14 +105,64 @@ describe('status bar desktop overlay toggle', () => {
         expect(toggle()?.getAttribute('aria-pressed')).toBe('false');
     });
 
-    it('says when the open window lets clicks pass through', () => {
+    it('says when the open window lets clicks pass through and where to turn it off', () => {
         widgetIs({ enabled: true, clickThrough: true });
 
         render(<DesktopWidgetToggle />);
 
         expect(screen.getByRole('tooltip').textContent).toBe(
-            'status_bar.desktop_widget_click_through'
+            'status_bar.desktop_widget_click_throughstatus_bar.desktop_widget_menu_hint'
         );
+    });
+
+    it('turns click-through off from the right-click menu', async () => {
+        widgetIs({ enabled: true, clickThrough: true });
+        vi.mocked(
+            commands.appDesktopWidgetClickThroughToggle
+        ).mockResolvedValue({
+            supported: true,
+            enabled: true,
+            pinned: true,
+            clickThrough: false
+        });
+        render(<DesktopWidgetToggle />);
+
+        fireEvent.contextMenu(toggle()!);
+        const item = await screen.findByRole('menuitemcheckbox', {
+            name: 'desktop_widget.menu.click_through'
+        });
+        expect(item.getAttribute('aria-checked')).toBe('true');
+        await act(async () => {
+            fireEvent.click(item);
+        });
+
+        expect(commands.appDesktopWidgetClickThroughToggle).toHaveBeenCalled();
+        expect(useRuntimeStore.getState().desktopWidget.clickThrough).toBe(
+            false
+        );
+    });
+
+    it('closes the desktop overlay from the right-click menu', async () => {
+        widgetIs({ enabled: true });
+        vi.mocked(commands.appDesktopWidgetEnabledSet).mockResolvedValue({
+            supported: true,
+            enabled: false,
+            pinned: true,
+            clickThrough: false
+        });
+        render(<DesktopWidgetToggle />);
+
+        fireEvent.contextMenu(toggle()!);
+        await act(async () => {
+            fireEvent.click(
+                await screen.findByRole('menuitem', {
+                    name: 'desktop_widget.menu.close'
+                })
+            );
+        });
+
+        expect(commands.appDesktopWidgetEnabledSet).toHaveBeenCalledWith(false);
+        expect(toggle()?.getAttribute('aria-pressed')).toBe('false');
     });
 
     it('tells the user when the window could not be switched', async () => {

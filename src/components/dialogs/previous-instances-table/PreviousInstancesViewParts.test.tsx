@@ -85,12 +85,18 @@ vi.mock('@/ui/shadcn/button', () => ({
 vi.mock('./PreviousInstanceInfoChart', () => ({
     PreviousInstanceInfoChart: () => null
 }));
+vi.mock('@/components/LocationWorld', () => ({
+    LocationWorld: ({ instanceOwnerName }: { instanceOwnerName?: string }) => (
+        <span>creator:{instanceOwnerName}</span>
+    )
+}));
 
 import {
     CopyInstanceWorldNameButton,
     InstanceCreatorCell,
     InstanceOwnerCell,
-    instanceDetailsSummary
+    instanceDetailsSummary,
+    PreviousInstanceWorldLocation
 } from './PreviousInstancesViewParts';
 
 describe('instanceDetailsSummary', () => {
@@ -205,6 +211,33 @@ describe('InstanceOwnerCell', () => {
 
         expect(screen.getByText('Known owner')).toBeTruthy();
         expect(mocks.getUserProfile).not.toHaveBeenCalled();
+    });
+});
+
+describe('PreviousInstanceWorldLocation', () => {
+    afterEach(cleanup);
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mocks.knownUser = null;
+        mocks.queryData = null;
+    });
+
+    it('shows the resolved creator name instead of the user id', async () => {
+        mocks.queryData = { id: 'usr_owner', displayName: 'Resolved owner' };
+
+        render(
+            <PreviousInstanceWorldLocation
+                row={{ location: 'wrld_test:12345~friends(usr_owner)' }}
+            />
+        );
+
+        await waitFor(() => {
+            expect(mocks.getUserProfile).toHaveBeenCalledWith({
+                userId: 'usr_owner'
+            });
+        });
+        expect(screen.getByText('creator:Resolved owner')).toBeTruthy();
     });
 });
 

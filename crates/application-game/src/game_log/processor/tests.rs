@@ -217,7 +217,7 @@ fn enabled_initial_scan_keeps_persistence_and_side_effects() -> Result<()> {
     ])?;
 
     assert_eq!(store.locations(&OwnerId::new("")).len(), 1);
-    assert!(store.get_bool("isGameNoVR", false)?);
+    assert!(store.get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
     let events = processor.deps.event_bus.take_events_for_test();
     assert!(events.iter().any(|event| {
         event.name == "backendRuntimeTelemetry"
@@ -303,7 +303,7 @@ fn disabled_persistence_keeps_live_state_projection_overlay_and_side_effects() -
     let snapshot = processor.deps.snapshot.snapshot();
     assert_eq!(snapshot.location, "wrld_disabled:1");
     assert_eq!(snapshot.players[0].user_id, "usr_live");
-    assert!(store.get_bool("isGameNoVR", false)?);
+    assert!(store.get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
     assert_eq!(
         test_overlay().snapshot().entries[0].actor_user_id,
         "usr_live"
@@ -378,7 +378,7 @@ fn disabled_initial_scan_rebuilds_memory_without_replaying_side_effects() -> Res
         timers.snapshot()[0].source,
         vrcx_0_application_core::FriendLocationTimeSource::GameLog
     );
-    assert!(!store.get_bool("isGameNoVR", false)?);
+    assert!(!store.get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
     assert!(test_overlay().snapshot().entries.is_empty());
     Ok(())
 }
@@ -995,7 +995,7 @@ fn enabled_write_failure_emits_fallback_and_skips_persisted_outputs() -> Result<
     processor.request_stop();
     assert!(worker.join().unwrap().is_err());
 
-    assert!(store.get_bool("isGameNoVR", false)?);
+    assert!(store.get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
     assert!(test_overlay().snapshot().entries.is_empty());
     let events = processor.deps.event_bus.take_events_for_test();
     assert!(events
@@ -2034,8 +2034,8 @@ fn duplicate_scan_can_publish_without_replaying_rows_or_side_effects() -> Result
     );
     processor.handle_jobs(vec![scan.clone()])?;
     assert!(!processor.deps.snapshot.snapshot().ready);
-    assert!(store.get_bool("isGameNoVR", false)?);
-    store.set_bool("isGameNoVR", false)?;
+    assert!(store.get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
+    store.set_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?;
     processor.deps.event_bus.take_events_for_test();
     if let GameLogWorkerJob::Scan { publish, .. } = &mut scan {
         *publish = true;
@@ -2044,7 +2044,7 @@ fn duplicate_scan_can_publish_without_replaying_rows_or_side_effects() -> Result
     assert!(processor.deps.snapshot.snapshot().ready);
     assert_eq!(processor.deps.snapshot.snapshot().location, "wrld_once:1");
     assert!(
-        !store.get_bool("isGameNoVR", false)?,
+        !store.get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?,
         "the already handled DesktopMode event must not run again"
     );
     assert_eq!(store.locations(&OwnerId::new("")).len(), 1);

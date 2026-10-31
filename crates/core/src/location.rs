@@ -74,6 +74,14 @@ pub struct ParsedLocation {
 }
 
 impl ParsedLocation {
+    pub fn instance_key(&self) -> String {
+        if self.world_id.is_empty() || self.instance_id.is_empty() {
+            String::new()
+        } else {
+            format!("{}:{}", self.world_id, self.instance_id)
+        }
+    }
+
     pub fn to_frontend_value(&self, tag: &str) -> Value {
         json!({
             "tag": tag,

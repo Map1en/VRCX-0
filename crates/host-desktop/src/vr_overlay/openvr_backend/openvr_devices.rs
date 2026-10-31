@@ -12,7 +12,7 @@ use openvr::{
 use super::super::openvr_helpers::{
     device_sort_key, device_status, is_display_device_class, short_device_label,
 };
-use super::super::types::VrDeviceSnapshot;
+use super::super::types::{VrDeviceRole, VrDeviceSnapshot};
 use super::controller_role;
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -58,18 +58,28 @@ pub(super) fn snapshot_openvr_devices(
         let role = controller_role(system, device);
         let serial = string_property(system, device, SerialNumber_String);
         let model = string_property(system, device, ModelNumber_String);
-        let label = match class {
-            TrackedDeviceClass::HMD => "HMD".to_string(),
+        let (device_role, label) = match class {
+            TrackedDeviceClass::HMD => (VrDeviceRole::Hmd, "HMD".to_string()),
             TrackedDeviceClass::Controller => match role {
-                Some(TrackedControllerRole::LeftHand) => "L".to_string(),
-                Some(TrackedControllerRole::RightHand) => "R".to_string(),
-                _ => short_device_label(model.as_deref(), serial.as_deref(), "C"),
+                Some(TrackedControllerRole::LeftHand) => {
+                    (VrDeviceRole::LeftController, "L".to_string())
+                }
+                Some(TrackedControllerRole::RightHand) => {
+                    (VrDeviceRole::RightController, "R".to_string())
+                }
+                _ => (
+                    VrDeviceRole::Other,
+                    short_device_label(model.as_deref(), serial.as_deref(), "C"),
+                ),
             },
             TrackedDeviceClass::GenericTracker => {
                 tracker_index += 1;
-                format!("T{tracker_index}")
+                (VrDeviceRole::Tracker, format!("T{tracker_index}"))
             }
-            _ => short_device_label(model.as_deref(), serial.as_deref(), "VR"),
+            _ => (
+                VrDeviceRole::Other,
+                short_device_label(model.as_deref(), serial.as_deref(), "VR"),
+            ),
         };
         let battery_properties_available = reads_battery_properties(
             class,
@@ -101,6 +111,7 @@ pub(super) fn snapshot_openvr_devices(
             sort_key: device_sort_key(class, role, tracker_index),
             snapshot: VrDeviceSnapshot {
                 label,
+                role: device_role,
                 serial,
                 status,
                 battery_percent,

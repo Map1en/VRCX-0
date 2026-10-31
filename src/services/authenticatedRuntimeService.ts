@@ -145,11 +145,21 @@ function applyFavoritesStep(snapshot: AuthenticatedRuntimePhaseSnapshot): void {
     appliedFavoritesRunId = snapshot.runId;
 }
 
+const CLEARED_REALTIME_RECOVERY = {
+    interrupted: false,
+    retryWaiting: false,
+    retryAt: null,
+    retryAttempt: 0,
+    lastError: null,
+    outageStartedAt: null
+};
+
 function applyRealtimeStep(snapshot: AuthenticatedRuntimePhaseSnapshot): void {
     if (snapshot.phase === 'error') {
         pendingRealtimeStatus = null;
         initializedTransportKey = `${snapshot.runId}:error`;
         useRuntimeStore.getState().setTransportState({
+            ...CLEARED_REALTIME_RECOVERY,
             websocketConnected: false,
             websocketDomain: snapshot.websocket,
             lastDisconnectedAt: snapshot.updatedAt || new Date().toISOString()
@@ -161,6 +171,7 @@ function applyRealtimeStep(snapshot: AuthenticatedRuntimePhaseSnapshot): void {
         pendingRealtimeStatus = null;
         initializedTransportKey = `${snapshot.runId}:stopped`;
         useRuntimeStore.getState().setTransportState({
+            ...CLEARED_REALTIME_RECOVERY,
             websocketConnected: false,
             websocketDomain: snapshot.websocket,
             lastDisconnectedAt: snapshot.updatedAt || new Date().toISOString()
@@ -168,6 +179,16 @@ function applyRealtimeStep(snapshot: AuthenticatedRuntimePhaseSnapshot): void {
         useSessionStore.getState().setTransportStatus('disconnected');
         return;
     }
+
+    const health = snapshot.realtimeHealth;
+    useRuntimeStore.getState().setTransportState({
+        interrupted: health.interrupted,
+        retryWaiting: snapshot.realtime.status === 'retryWaiting',
+        retryAt: health.retryAt,
+        retryAttempt: snapshot.realtime.attempt,
+        lastError: snapshot.realtime.lastError,
+        outageStartedAt: health.disconnectedAt
+    });
 
     const transport = snapshot.realtimeTransport;
     const transportKey = transport
@@ -186,10 +207,12 @@ function applyRealtimeStep(snapshot: AuthenticatedRuntimePhaseSnapshot): void {
     useRuntimeStore.getState().setTransportState({
         websocketConnected: connected,
         websocketDomain: snapshot.websocket,
-        lastConnectedAt: connected
-            ? snapshot.updatedAt || new Date().toISOString()
-            : null,
-        lastDisconnectedAt: null
+        ...(connected
+            ? {
+                  lastConnectedAt:
+                      snapshot.updatedAt || new Date().toISOString()
+              }
+            : {})
     });
     useSessionStore
         .getState()

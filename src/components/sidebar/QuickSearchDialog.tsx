@@ -10,9 +10,14 @@ import type { KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
+import { useSettingsSearch } from '@/lib/useSettingsSearch';
 import { cn } from '@/lib/utils';
 import { triggerToolByKey } from '@/services/toolActionService';
 import { setRgb } from '@/services/vrcx0CssLayerService';
+import {
+    getSettingDeepLinkPath,
+    type SettingsManifestEntry
+} from '@/shared/constants/settingsManifest';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import {
     Command,
@@ -43,10 +48,15 @@ import { useQuickSearchResults } from './quick-search/useQuickSearchResults';
 import { useQuickSearchSelectResult } from './quick-search/useQuickSearchSelectResult';
 import {
     NavResultGroup,
+    SettingsResultGroup,
     useNavCommands,
+    useNavShortcutPositions,
     type QuickSearchNavCommand
 } from './QuickSearchNavCommands';
 import { ResultGroup } from './QuickSearchResults';
+
+const SETTINGS_QUERY_MIN_LENGTH = 2;
+const SETTINGS_RESULT_LIMIT = 5;
 
 export function QuickSearchDialog({
     open,
@@ -86,6 +96,11 @@ export function QuickSearchDialog({
     );
     const showSearchOverview = normalizedQuery.length < USER_QUERY_MIN_LENGTH;
     const navCommands = useNavCommands(normalizedQuery);
+    const navShortcutPositions = useNavShortcutPositions(open);
+    const settingsResults = useSettingsSearch(
+        normalizedQuery.length < SETTINGS_QUERY_MIN_LENGTH ? '' : query,
+        SETTINGS_RESULT_LIMIT
+    );
     const results = useQuickSearchResults({
         currentEndpoint,
         currentUserId,
@@ -101,6 +116,7 @@ export function QuickSearchDialog({
     const hasResults =
         canDirectAccess ||
         navCommands.length ||
+        settingsResults.length ||
         results.friends.length ||
         results.ownAvatars.length ||
         results.favoriteAvatars.length ||
@@ -142,6 +158,12 @@ export function QuickSearchDialog({
             return;
         }
         await triggerToolByKey(item.target.toolKey, { navigate, t });
+    }
+
+    function selectSetting(entry: SettingsManifestEntry) {
+        onOpenChange(false);
+        onQueryChange('');
+        navigate(getSettingDeepLinkPath(entry.id));
     }
 
     return (
@@ -314,6 +336,7 @@ export function QuickSearchDialog({
                                         'side_panel.search_pages_and_tools'
                                     )}
                                     items={navCommands}
+                                    shortcutPositions={navShortcutPositions}
                                     onSelect={(item: QuickSearchNavCommand) => {
                                         void selectNavCommand(item);
                                     }}
@@ -352,6 +375,11 @@ export function QuickSearchDialog({
                                     title={t('side_panel.search_joined_groups')}
                                     items={results.joinedGroups}
                                     onSelect={selectResult}
+                                />
+                                <SettingsResultGroup
+                                    title={t('view.settings.header')}
+                                    items={settingsResults}
+                                    onSelect={selectSetting}
                                 />
                             </>
                         ) : results.status === 'running' ? null : (

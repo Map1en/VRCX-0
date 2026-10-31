@@ -7,6 +7,7 @@ use vrcx_0_core::game_log_parser::{GameLogEvent, GameLogEventKind};
 use vrcx_0_core::game_process::GameProcessEvent;
 use vrcx_0_core::location::parse_location;
 
+use super::now_playing_log::{parse_now_playing_log, NowPlayingLogKind};
 use super::runtime_state::{
     duration_ms, parse_event_time_ms, player_key, world_id_from_location, GameLogProjection,
     GameLogRuntimeState, PlayerState, RuntimeSnapshot,
@@ -34,11 +35,18 @@ pub struct ScreenshotInput {
 #[derive(Clone, Debug, PartialEq)]
 pub enum GameLogSideEffect {
     Video(VideoInput),
-    VideoSync {
-        timestamp: String,
-        created_at: String,
-    },
     NowPlayingReset,
+    VideoDetails {
+        created_at: String,
+        video_url: String,
+        video_name: String,
+        thumbnail_url: String,
+    },
+    NowPlayingTransport {
+        created_at: String,
+        position: i64,
+        paused: bool,
+    },
     Screenshot(ScreenshotInput),
     ApiRequest {
         url: String,
@@ -123,6 +131,16 @@ impl GameLogIngestOutput {
 pub struct GameLogIngestEngine {
     state: GameLogRuntimeState,
     has_seen_process_event: bool,
+    last_video_created_at: String,
+    now_playing_log: NowPlayingLogFollow,
+}
+
+#[derive(Clone, Debug, Default)]
+struct NowPlayingLogFollow {
+    location: String,
+    producer_id: String,
+    video: Option<(String, String)>,
+    paused: bool,
 }
 
 impl GameLogIngestEngine {
@@ -240,11 +258,22 @@ impl GameLogIngestEngine {
                         self.push_video(&mut output, input);
                     }
                 }
+                GameLogEventKind::NowPlaying { data } => {
+                    self.ingest_now_playing_log(&mut output, event, data);
+                }
                 GameLogEventKind::VideoSync { timestamp } => {
-                    output.side_effects.push(GameLogSideEffect::VideoSync {
-                        timestamp: timestamp.clone(),
-                        created_at: event.created_at.clone(),
-                    });
+                    output
+                        .side_effects
+                        .push(GameLogSideEffect::NowPlayingTransport {
+                            created_at: event.created_at.clone(),
+                            position: timestamp
+                                .replace(',', "")
+                                .parse::<i64>()
+                                .ok()
+                                .filter(|value| *value >= 0)
+                                .unwrap_or(0),
+                            paused: false,
+                        });
                 }
                 GameLogEventKind::Vrcx { data } => {
                     match video::parse_provider_video(
@@ -369,6 +398,7 @@ impl GameLogIngestEngine {
     }
 
     fn push_video(&mut self, output: &mut GameLogIngestOutput, input: VideoInput) {
+        self.last_video_created_at = input.created_at.clone();
         output.side_effects.push(GameLogSideEffect::Video(input));
         if self.has_seen_process_event && !self.state.is_game_running {
             self.reset_now_playing(output);
@@ -578,7 +608,9 @@ impl GameLogIngestEngine {
         video_url: &str,
         display_name: &str,
     ) -> Option<VideoInput> {
-        if video::uses_provider_video_events(&self.state.current_location) {
+        if video::uses_provider_video_events(&self.state.current_location)
+            || self.now_playing_log_active()
+        {
             return None;
         }
 
@@ -595,6 +627,118 @@ impl GameLogIngestEngine {
             display_name: display_name.to_string(),
             ..Default::default()
         })
+    }
+
+    fn now_playing_log_active(&self) -> bool {
+        !self.state.current_location.is_empty()
+            && self.now_playing_log.location == self.state.current_location
+    }
+
+    fn ingest_now_playing_log(
+        &mut self,
+        output: &mut GameLogIngestOutput,
+        event: &GameLogEvent,
+        data: &str,
+    ) {
+        let Some(log) = parse_now_playing_log(data) else {
+            return;
+        };
+        if !self.now_playing_log_active() {
+            self.now_playing_log = NowPlayingLogFollow {
+                location: self.state.current_location.clone(),
+                ..NowPlayingLogFollow::default()
+            };
+        }
+        if let NowPlayingLogKind::Change {
+            url,
+            media_id,
+            name,
+            image,
+            owner,
+            length,
+        } = log.kind
+        {
+            let url = decode_video_url(&url);
+            if url.is_empty() {
+                return;
+            }
+            self.now_playing_log.producer_id = log.producer_id;
+            self.now_playing_log.paused = false;
+            if url == self.state.last_video_url && !self.last_video_created_at.is_empty() {
+                let created_at = self.last_video_created_at.clone();
+                self.now_playing_log.video = Some((created_at.clone(), url.clone()));
+                if let Some(input) = pending_video(output, &created_at, &url) {
+                    if length > 0 {
+                        input.video_length = length;
+                    }
+                    if !owner.is_empty() {
+                        input.display_name = owner;
+                    }
+                }
+                push_video_details(output, created_at, url, name, image);
+                return;
+            }
+            self.accept_video_url(&url);
+            self.now_playing_log.video = Some((event.created_at.clone(), url.clone()));
+            let video_id = if !media_id.is_empty() {
+                media_id
+            } else if video::parse_youtube_video_id(&url).is_empty() {
+                String::new()
+            } else {
+                "YouTube".to_string()
+            };
+            self.push_video(
+                output,
+                VideoInput {
+                    created_at: event.created_at.clone(),
+                    location: self.state.current_location.clone(),
+                    world_name: self.state.current_world_name.clone(),
+                    video_url: url,
+                    video_id,
+                    video_name: name,
+                    video_length: length,
+                    display_name: owner,
+                    thumbnail_url: image,
+                    ..Default::default()
+                },
+            );
+            return;
+        }
+        if log.producer_id != self.now_playing_log.producer_id {
+            return;
+        }
+        let Some((created_at, video_url)) = self.now_playing_log.video.clone() else {
+            return;
+        };
+        let transport = |position: i64, paused: bool| GameLogSideEffect::NowPlayingTransport {
+            created_at: event.created_at.clone(),
+            position,
+            paused,
+        };
+        match log.kind {
+            NowPlayingLogKind::Info { name, image } => {
+                push_video_details(output, created_at, video_url, name, image);
+            }
+            NowPlayingLogKind::Play { position } => {
+                self.now_playing_log.paused = false;
+                output.side_effects.push(transport(position, false));
+            }
+            NowPlayingLogKind::Pause { position } => {
+                self.now_playing_log.paused = true;
+                output.side_effects.push(transport(position, true));
+            }
+            NowPlayingLogKind::Seek { position } => {
+                output
+                    .side_effects
+                    .push(transport(position, self.now_playing_log.paused));
+            }
+            NowPlayingLogKind::Stop => {
+                self.now_playing_log.producer_id.clear();
+                self.now_playing_log.video = None;
+                self.reset_now_playing(output);
+            }
+            NowPlayingLogKind::Change { .. } | NowPlayingLogKind::Other => {}
+        }
     }
 
     fn accept_video_url(&mut self, video_url: &str) -> bool {
@@ -630,6 +774,52 @@ fn remove_player_for_leave(
         .collect::<Vec<_>>();
     let key = super::roster::resolve_leave_key(&candidates, user_id, display_name)?;
     state.players_by_key.remove(&key)
+}
+
+fn pending_video<'a>(
+    output: &'a mut GameLogIngestOutput,
+    created_at: &str,
+    video_url: &str,
+) -> Option<&'a mut VideoInput> {
+    output
+        .side_effects
+        .iter_mut()
+        .rev()
+        .find_map(|side_effect| match side_effect {
+            GameLogSideEffect::Video(input)
+                if input.created_at == created_at && input.video_url == video_url =>
+            {
+                Some(input)
+            }
+            _ => None,
+        })
+}
+
+fn push_video_details(
+    output: &mut GameLogIngestOutput,
+    created_at: String,
+    video_url: String,
+    video_name: String,
+    thumbnail_url: String,
+) {
+    if video_name.is_empty() && thumbnail_url.is_empty() {
+        return;
+    }
+    if let Some(input) = pending_video(output, &created_at, &video_url) {
+        if !video_name.is_empty() {
+            input.video_name = video_name;
+        }
+        if !thumbnail_url.is_empty() {
+            input.thumbnail_url = thumbnail_url;
+        }
+        return;
+    }
+    output.side_effects.push(GameLogSideEffect::VideoDetails {
+        created_at,
+        video_url,
+        video_name,
+        thumbnail_url,
+    });
 }
 
 fn decode_video_url(value: &str) -> String {

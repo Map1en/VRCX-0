@@ -14,6 +14,11 @@ type FriendStatsState = {
         ownerUserId: string,
         mutualById: Record<string, FriendMutualStats>
     ): void;
+    markSeen(
+        ownerUserId: string,
+        userIds: readonly string[],
+        seenAt: string
+    ): void;
     reset(): void;
 };
 
@@ -41,6 +46,30 @@ export const useFriendStatsStore = create<FriendStatsState>((set) => ({
                 ownerUserId,
                 byUserId: replaceEqualDeep(previous, next)
             };
+        });
+    },
+    markSeen(ownerUserId, userIds, seenAt) {
+        set((state) => {
+            if (state.ownerUserId !== ownerUserId) {
+                return state;
+            }
+            const seenAtMs = Date.parse(seenAt);
+            if (Number.isNaN(seenAtMs)) {
+                return state;
+            }
+            let next: FriendStatsById | null = null;
+            for (const userId of userIds) {
+                const stats = state.byUserId[userId];
+                if (
+                    !stats ||
+                    (stats.lastSeen && Date.parse(stats.lastSeen) >= seenAtMs)
+                ) {
+                    continue;
+                }
+                next ??= { ...state.byUserId };
+                next[userId] = { ...stats, lastSeen: seenAt };
+            }
+            return next ? { byUserId: next } : state;
         });
     },
     reset() {

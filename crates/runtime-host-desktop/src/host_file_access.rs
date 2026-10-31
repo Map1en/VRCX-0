@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use crate::{Error, Result};
+use crate::Result;
 use vrcx_0_platform::app_paths::AppPaths;
 
 #[derive(Clone, Default)]
@@ -36,7 +36,7 @@ impl HostFileAccess {
     pub fn ensure_read_allowed(&self, path: impl AsRef<Path>, app_paths: &AppPaths) -> Result<()> {
         let requested = path.as_ref();
         let requested = canonicalize_existing(requested).map_err(|error| {
-            Error::Custom(format!(
+            vrcx_0_application_core::Error::Custom(format!(
                 "File access denied for '{}': {error}",
                 requested.display()
             ))
@@ -46,16 +46,16 @@ impl HostFileAccess {
             return Ok(());
         }
 
-        Err(Error::Custom(format!(
+        Err(vrcx_0_application_core::Error::Custom(format!(
             "File access denied for '{}'. Select the file first or use an application/VRChat data path.",
             requested.display()
-        )))
+        )).into())
     }
 
     pub fn ensure_write_allowed(&self, path: impl AsRef<Path>, app_paths: &AppPaths) -> Result<()> {
         let requested = path.as_ref();
         let requested = normalize_existing_or_creatable(requested).map_err(|error| {
-            Error::Custom(format!(
+            vrcx_0_application_core::Error::Custom(format!(
                 "File access denied for '{}': {error}",
                 requested.display()
             ))
@@ -65,10 +65,10 @@ impl HostFileAccess {
             return Ok(());
         }
 
-        Err(Error::Custom(format!(
+        Err(vrcx_0_application_core::Error::Custom(format!(
             "File access denied for '{}'. Select the folder first or use an application/VRChat data path.",
             requested.display()
-        )))
+        )).into())
     }
 
     fn is_registered(&self, requested: &Path) -> bool {
@@ -94,9 +94,10 @@ pub fn ensure_vrchat_launch_path_allowed(
         root.join("launch.exe")
     };
     if !launch_file.is_file() {
-        return Err(Error::Custom(
+        return Err(vrcx_0_application_core::Error::Custom(
             "VRChat launch path does not contain a supported launcher.".into(),
-        ));
+        )
+        .into());
     }
 
     Ok(root.to_string_lossy().into_owned())
@@ -105,21 +106,27 @@ pub fn ensure_vrchat_launch_path_allowed(
 fn normalize_vrchat_launch_root(path: &str) -> Result<PathBuf> {
     let path = PathBuf::from(path.trim());
     if path.as_os_str().is_empty() {
-        return Err(Error::Custom("VRChat launch path is empty.".into()));
+        return Err(
+            vrcx_0_application_core::Error::Custom("VRChat launch path is empty.".into()).into(),
+        );
     }
     let root = if path
         .file_name()
         .and_then(|name| name.to_str())
         .is_some_and(|name| name.eq_ignore_ascii_case("launch.exe") || name == "steam.sh")
     {
-        path.parent()
-            .map(Path::to_path_buf)
-            .ok_or_else(|| Error::Custom("VRChat launch path has no parent.".into()))?
+        path.parent().map(Path::to_path_buf).ok_or_else(|| {
+            vrcx_0_application_core::Error::Custom("VRChat launch path has no parent.".into())
+        })?
     } else {
         path
     };
-    root.canonicalize()
-        .map_err(|error| Error::Custom(format!("VRChat launch path is not accessible: {error}")))
+    root.canonicalize().map_err(|error| {
+        vrcx_0_application_core::Error::Custom(format!(
+            "VRChat launch path is not accessible: {error}"
+        ))
+        .into()
+    })
 }
 
 fn canonicalize_existing(path: &Path) -> std::io::Result<PathBuf> {

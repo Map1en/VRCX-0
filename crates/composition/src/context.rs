@@ -14,15 +14,13 @@ use vrcx_0_application::social::{
     ModerationSyncRuntime, MutualGraphFetchRuntime, PrintCleanupQueue,
 };
 use vrcx_0_application_activity::notification::{
-    apply_location_notification_rules, load_overlay_activity_filters,
-    save_notification_activity_filters, ActivityFilterProfile, AuthWebhookEvent, AuthWebhookQueue,
-    AuthWebhookQueueDeps, NotificationActivityFilterProfiles, NotificationActivityFiltersSetInput,
-    NotificationConfig, NotificationRemote, NotificationResolver, NotificationWebhookSink,
-    NotificationWebhookSinkDeps, WebhookDeliveryMonitor, WebhookDeliverySnapshot,
+    reload_activity_router, save_notification_activity_filters, ActivityFilterProfile,
+    AuthWebhookEvent, AuthWebhookQueue, AuthWebhookQueueDeps, NotificationActivityFilterProfiles,
+    NotificationActivityFiltersSetInput, NotificationConfig, NotificationRemote,
+    NotificationResolver, NotificationWebhookSink, NotificationWebhookSinkDeps,
+    WebhookDeliveryMonitor, WebhookDeliverySnapshot,
 };
-use vrcx_0_application_activity::{
-    ActivityRouter, ActivitySink, ActivitySinkRegistry, GroupInstanceMonitor,
-};
+use vrcx_0_application_activity::{ActivityRouter, ActivitySinkRegistry, GroupInstanceMonitor};
 use vrcx_0_application_core::RemoteMutationGate;
 use vrcx_0_application_core::{
     AvatarCache, FileCache, HostSessionRuntime, ImageCache, InstanceDwellRegistry,
@@ -205,10 +203,6 @@ impl RuntimeHostDesktopAssemblyDeps {
         self.context.activity_router()
     }
 
-    pub fn add_overlay_activity_sink(&self, sink: Arc<dyn ActivitySink>) {
-        self.context.add_overlay_activity_sink(sink);
-    }
-
     pub fn activity_sink_registry(&self) -> ActivitySinkRegistry {
         self.context.activity_sink_registry()
     }
@@ -309,10 +303,8 @@ impl RuntimeHostContext {
             Arc::clone(&db),
             FILE_CACHE_WORKING_CAPACITY,
         ));
-        let activity_router = ActivityRouter::with_filters(load_overlay_activity_filters(
-            notification_config.as_ref(),
-        ));
-        apply_location_notification_rules(&activity_router, notification_config.as_ref());
+        let activity_router = ActivityRouter::new();
+        reload_activity_router(&activity_router, notification_config.as_ref());
         let activity_sinks = ActivitySinkRegistry::default();
         let notification_projection_observers =
             RealtimeNotificationProjectionObserverRegistry::default();
@@ -528,10 +520,6 @@ impl RuntimeHostContext {
         self.group_instance_monitor.clear();
     }
 
-    pub fn add_overlay_activity_sink(&self, sink: Arc<dyn ActivitySink>) {
-        self.activity_sinks.add(sink);
-    }
-
     pub fn activity_sink_registry(&self) -> ActivitySinkRegistry {
         self.activity_sinks.clone()
     }
@@ -566,11 +554,7 @@ impl RuntimeHostContext {
     }
 
     pub fn reload_overlay_activity_filters(&self) {
-        self.activity_router
-            .set_filters(load_overlay_activity_filters(
-                self.notification_config.as_ref(),
-            ));
-        apply_location_notification_rules(&self.activity_router, self.notification_config.as_ref());
+        reload_activity_router(&self.activity_router, self.notification_config.as_ref());
     }
 
     pub fn notification_activity_filter_profiles(&self) -> NotificationActivityFilterProfiles {

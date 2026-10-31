@@ -3,17 +3,20 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+use vrcx_0_application::media::ScreenshotFavorites;
 use vrcx_0_application_core::RuntimeEventBus;
-use vrcx_0_core::screenshots::ScreenshotExportProgress;
 use vrcx_0_core::screenshots::{
     plan_screenshot_zip_entries, screenshot_export_file_name, ScreenshotZipEntry,
 };
+use vrcx_0_core::screenshots::{FavoriteScreenshots, ScreenshotExportProgress};
 use vrcx_0_outbound_adapters::screenshots::{
-    self as screenshot, ScreenshotExportOutcome, ScreenshotFolderTree, ScreenshotLibraryImage,
+    self as screenshot, LocalScreenshotFavoriteStore, LocalScreenshotLibraryAdapter,
+    ScreenshotExportOutcome, ScreenshotFolderTree, ScreenshotLibraryImage,
     ScreenshotLibraryScanStatus, ScreenshotSearchResult, ScreenshotTimeWindow,
     ScreenshotWindowImages,
 };
 use vrcx_0_persistence::screenshot_cache::MetadataCacheDb;
+use vrcx_0_persistence::DatabaseService;
 use vrcx_0_platform::app_paths::AppPaths;
 
 use crate::{HostFileAccess, Result};
@@ -38,9 +41,9 @@ fn ensure_export_space(output_path: &Path, required_bytes: u64) -> Result<()> {
         return Ok(());
     };
     if available < required_bytes {
-        return Err(crate::Error::Custom(format!(
+        return Err(vrcx_0_application_core::Error::Custom(format!(
             "Not enough free space at the destination: {required_bytes} bytes needed, {available} bytes available."
-        )));
+        )).into());
     }
     Ok(())
 }
@@ -48,6 +51,7 @@ fn ensure_export_space(output_path: &Path, required_bytes: u64) -> Result<()> {
 #[derive(Clone)]
 pub struct DesktopScreenshotRuntime {
     cache: MetadataCacheDb,
+    favorites: ScreenshotFavorites,
     host_file_access: HostFileAccess,
     paths: AppPaths,
     photos_root: String,
@@ -58,13 +62,22 @@ pub struct DesktopScreenshotRuntime {
 impl DesktopScreenshotRuntime {
     pub(crate) fn new(
         cache: MetadataCacheDb,
+        db: Arc<DatabaseService>,
         host_file_access: HostFileAccess,
         paths: AppPaths,
         photos_root: String,
         event_bus: RuntimeEventBus,
     ) -> Self {
+        let favorites = ScreenshotFavorites::new(
+            Arc::new(LocalScreenshotFavoriteStore::new(db)),
+            Arc::new(LocalScreenshotLibraryAdapter::new(
+                cache.clone(),
+                paths.screenshot_thumbs.clone(),
+            )),
+        );
         Self {
             cache,
+            favorites,
             host_file_access,
             paths,
             photos_root,
@@ -87,10 +100,11 @@ impl DesktopScreenshotRuntime {
 
     fn ensure_managed_screenshot(&self, path: &str) -> Result<()> {
         if !screenshot::is_managed_screenshot_file_path(path, &self.photos_root) {
-            return Err(crate::Error::Custom(
+            return Err(vrcx_0_application_core::Error::Custom(
                 "Screenshot metadata commands require a VRChat screenshot or library PNG path."
                     .into(),
-            ));
+            )
+            .into());
         }
         Ok(())
     }
@@ -99,9 +113,10 @@ impl DesktopScreenshotRuntime {
         self.host_file_access
             .ensure_write_allowed(path, &self.paths)?;
         if !screenshot::is_vrchat_screenshot_file_path(Path::new(path)) {
-            return Err(crate::Error::Custom(
+            return Err(vrcx_0_application_core::Error::Custom(
                 "Screenshot metadata commands require a VRChat PNG screenshot path.".into(),
-            ));
+            )
+            .into());
         }
         Ok(())
     }
@@ -124,14 +139,30 @@ impl DesktopScreenshotRuntime {
     }
 
     pub fn delete_metadata(&self, path: &str) -> bool {
-        screenshot::delete_text_metadata(path, true)
+        self.favorites.delete_metadata(path)
     }
 
     pub fn delete_file(&self, path: &str) -> Result<()> {
         self.ensure_delete_allowed(path)?;
         vrcx_0_host_desktop::shell_actions::move_to_trash(Path::new(path))?;
         screenshot::forget_screenshot_file(&self.cache, &self.paths.screenshot_thumbs, path)?;
+        self.favorites.forget(path)?;
         Ok(())
+    }
+
+    pub fn set_favorite(&self, path: &str, favorite: bool) -> Result<()> {
+        if favorite {
+            self.ensure_read_allowed(path)?;
+        }
+        Ok(self.favorites.set_favorite(path, favorite)?)
+    }
+
+    pub fn forget_missing_favorites(&self) -> Result<u32> {
+        Ok(self.favorites.forget_missing()?)
+    }
+
+    pub fn favorites(&self) -> Result<FavoriteScreenshots> {
+        Ok(self.favorites.list(&self.photos_root)?)
     }
 
     pub fn add_metadata(
@@ -221,9 +252,10 @@ impl DesktopScreenshotRuntime {
     ) -> Result<ScreenshotExportPlan> {
         self.export_cancelled.store(false, Ordering::Release);
         if paths.is_empty() {
-            return Err(crate::Error::Custom(
+            return Err(vrcx_0_application_core::Error::Custom(
                 "Select at least one screenshot to export.".into(),
-            ));
+            )
+            .into());
         }
         for path in paths {
             self.ensure_managed_screenshot(path)?;
@@ -231,9 +263,10 @@ impl DesktopScreenshotRuntime {
 
         let entries = plan_screenshot_zip_entries(paths, group_by_folder);
         if entries.is_empty() {
-            return Err(crate::Error::Custom(
+            return Err(vrcx_0_application_core::Error::Custom(
                 "None of the selected screenshots have a usable file name.".into(),
-            ));
+            )
+            .into());
         }
 
         let total_bytes = screenshot::total_screenshot_export_bytes(&entries);
@@ -301,10 +334,10 @@ impl DesktopScreenshotRuntime {
     }
 
     pub fn delete_all_metadata(&self) {
-        screenshot::delete_all_screenshot_metadata(
-            &self.cache,
-            &self.paths.screenshot_thumbs,
-            &self.photos_root,
-        );
+        self.favorites.delete_all_metadata(&self.photos_root);
+    }
+
+    pub(crate) fn screenshot_favorites(&self) -> &ScreenshotFavorites {
+        &self.favorites
     }
 }

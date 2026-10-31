@@ -1,18 +1,14 @@
 import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
-import { EmptyState } from '@/components/layout/PageScaffold';
+import { LogFilterMenuItems } from '@/components/data-table/LogFilterContextMenu';
 import { Location } from '@/components/Location';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-import { getGameLogLocationTarget } from '../gameLogRows';
+import { useGameLogFilterCommands } from '../gameLogFilterCommands';
+import {
+    getGameLogLocationTarget,
+    resolveGameLogWorldId
+} from '../gameLogRows';
 import { type GameLogDetailValue, type GameLogRow } from '../gameLogTypes';
-
-function GameLogEmptyState({
-    title,
-    description,
-    ...props
-}: ComponentProps<typeof EmptyState>) {
-    return <EmptyState {...props} title={title} description={description} />;
-}
 
 function EmptyTableValue(): null {
     return null;
@@ -29,6 +25,7 @@ function GameLogLocationDetail({
     row: GameLogRow;
     worldTarget?: string;
 }) {
+    const filterCommands = useGameLogFilterCommands();
     const location = getGameLogLocationTarget(row);
     const targetLocation = location || worldTarget;
     const primary = String(detailValue.primary || '');
@@ -67,6 +64,15 @@ function GameLogLocationDetail({
                             grouphint={String(row?.groupName || '')}
                             enableContextMenu
                             showLaunchActions
+                            contextMenuExtraItems={
+                                <LogFilterMenuItems
+                                    commands={filterCommands}
+                                    target={{
+                                        worldId: resolveGameLogWorldId(row),
+                                        worldName: String(row?.worldName || '')
+                                    }}
+                                />
+                            }
                             onShowPreviousInstances={() => {
                                 onPreviousInstances?.(row);
                             }}
@@ -89,8 +95,6 @@ function GameLogLocationDetail({
 
 export {
     EmptyTableValue,
-    GameLogEmptyState,
     GameLogLocationDetail,
     DataTableSortButton as SortButton
 };
-import type { ComponentProps } from 'react';

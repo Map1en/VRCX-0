@@ -532,7 +532,6 @@ pub struct NoopAvatarCachePort;
 
 #[async_trait::async_trait]
 impl crate::AvatarCachePort for NoopAvatarCachePort {
-    fn clear_working(&self) {}
     fn invalidate(&self, _user_id: &str, _endpoint: &str, _avatar_id: &str) {}
     fn get_summary(
         &self,

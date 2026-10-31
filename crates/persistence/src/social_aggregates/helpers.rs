@@ -324,7 +324,9 @@ pub(crate) fn bucket_label(bucket: &ActivityBucket, key: &str) -> String {
             let hour = key.parse::<u8>().unwrap_or(0).min(23);
             format!("{hour:02}:00-{next:02}:00", next = (hour + 1) % 24)
         }
-        ActivityBucket::DayOfWeek => weekday_name(key).to_string(),
+        ActivityBucket::DayOfWeek => vrcx_0_core::activity_buckets::weekday_label(key)
+            .unwrap_or_default()
+            .to_string(),
     }
 }
 
@@ -344,18 +346,5 @@ impl LatestName {
 
     pub(crate) fn into_name(self) -> String {
         self.name
-    }
-}
-
-fn weekday_name(key: &str) -> &'static str {
-    match key {
-        "0" => "Sunday",
-        "1" => "Monday",
-        "2" => "Tuesday",
-        "3" => "Wednesday",
-        "4" => "Thursday",
-        "5" => "Friday",
-        "6" => "Saturday",
-        _ => "",
     }
 }

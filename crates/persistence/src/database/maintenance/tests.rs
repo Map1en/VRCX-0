@@ -790,24 +790,25 @@ fn concurrent_reads_survive_a_vacuum_instead_of_failing_busy() -> Result<(), Err
     db.execute_non_query("DELETE FROM bulk", &Default::default())?;
 
     let stop_reader = Arc::new(AtomicBool::new(false));
+    let (first_read_tx, first_read_rx) = std::sync::mpsc::channel();
     let reader_db = Arc::clone(&db);
     let reader_stop = Arc::clone(&stop_reader);
-    let reader = std::thread::spawn(move || -> Result<usize, Error> {
-        let mut completed_reads = 0;
+    let reader = std::thread::spawn(move || -> Result<(), Error> {
         while !reader_stop.load(Ordering::Acquire) {
             reader_db.execute("SELECT COUNT(*) FROM bulk", &Default::default())?;
-            completed_reads += 1;
+            let _ = first_read_tx.send(());
             std::thread::sleep(std::time::Duration::from_millis(1));
         }
-        Ok(completed_reads)
+        Ok(())
     });
 
+    if first_read_rx.recv().is_err() {
+        return reader.join().expect("reader thread panicked");
+    }
     assert!(database_vacuum_if_fragmented(&db)?);
     stop_reader.store(true, Ordering::Release);
 
-    let completed_reads = reader.join().expect("reader thread panicked")?;
-    assert!(completed_reads > 0, "the reader never completed a read");
-    Ok(())
+    reader.join().expect("reader thread panicked")
 }
 
 #[test]

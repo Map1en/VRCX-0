@@ -72,6 +72,7 @@ pub use vrcx_0_persistence::notifications::{
     NotificationListItemOutput, NotificationListQueryInput,
 };
 pub use vrcx_0_persistence::player_list::InstanceActivityRowOutput;
+pub use vrcx_0_persistence::profile_bio::ProfileBioOutput;
 pub use vrcx_0_persistence::social_aggregates::{WorldFriendVisitRow, WorldFriendVisitsOutput};
 pub use vrcx_0_persistence::worlds::WorldSummaryOutput;
 
@@ -889,6 +890,13 @@ impl LocalDataRuntime {
         Ok(vrcx_0_persistence::memos::memo_list_user_notes(
             self.db.as_ref(),
             owner_user_id,
+        )?)
+    }
+
+    pub fn profile_bio_list(&self, owner_user_id: OwnerId) -> Result<Vec<ProfileBioOutput>> {
+        Ok(vrcx_0_persistence::profile_bio::profile_bio_list(
+            self.db.as_ref(),
+            &owner_user_id,
         )?)
     }
 

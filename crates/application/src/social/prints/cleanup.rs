@@ -290,7 +290,7 @@ pub async fn run_print_auto_cleanup(
             .as_ref()
             .map(|warning| cleanup_warning_event_kind(&warning.kind).to_string()),
     };
-    deps.event_bus.emit_prints_auto_cleanup(event.clone());
+    deps.event_bus.emit(event.clone());
     Ok(Some(event))
 }
 

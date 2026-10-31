@@ -17,21 +17,29 @@ export function ScreenshotSelectableImageGrid({
     images,
     initialScrollTop,
     resetKey,
+    revealPath,
+    onRevealPathConsumed,
     hasSelection,
     selectedKeysSet,
     onOpen,
     onToggleSelect,
-    onScrollPositionChange
+    onScrollPositionChange,
+    favoritePaths,
+    onToggleFavorite
 }: {
     density: ScreenshotGridDensity;
     images: ScreenshotLibraryImage[];
     initialScrollTop: number;
     resetKey: string;
+    revealPath?: string;
+    onRevealPathConsumed?: () => void;
     hasSelection: boolean;
     selectedKeysSet: ReadonlySet<string>;
     onOpen: (path: string) => void;
     onToggleSelect: (path: string, checked: boolean, shift: boolean) => void;
     onScrollPositionChange?: (scrollTop: number) => void;
+    favoritePaths?: ReadonlySet<string>;
+    onToggleFavorite?: (path: string, favorite: boolean) => void;
 }) {
     const { t } = useTranslation();
     const {
@@ -45,7 +53,9 @@ export function ScreenshotSelectableImageGrid({
         density,
         initialScrollTop,
         items: images,
-        resetKey
+        onRevealPathConsumed,
+        resetKey,
+        revealPath
     });
     const compactCard = getScreenshotGridDensityConfig(density).compactCard;
     const visibleItems = useMemo(
@@ -57,7 +67,8 @@ export function ScreenshotSelectableImageGrid({
     return (
         <div
             ref={viewportRef}
-            className="min-h-0 flex-1 overflow-auto p-0.5 pr-1"
+            tabIndex={-1}
+            className="min-h-0 flex-1 overflow-auto p-0.5 pr-1 outline-none"
             onScroll={(event) =>
                 onScrollPositionChange?.(event.currentTarget.scrollTop)
             }
@@ -76,6 +87,7 @@ export function ScreenshotSelectableImageGrid({
                         {row.items.map((item: ScreenshotLibraryImage) => (
                             <ScreenshotThumbnailCard
                                 compact={compactCard}
+                                fadeIn={false}
                                 key={item.path}
                                 item={item}
                                 onOpen={onOpen}
@@ -86,6 +98,21 @@ export function ScreenshotSelectableImageGrid({
                                 selectLabel={`${t('common.actions.select')} ${item.fileName}`}
                                 onToggleSelect={(checked, shift) =>
                                     onToggleSelect(item.path, checked, shift)
+                                }
+                                favorite={favoritePaths?.has(item.path)}
+                                favoriteLabel={t(
+                                    favoritePaths?.has(item.path)
+                                        ? 'dialog.screenshot_metadata.unfavorite'
+                                        : 'dialog.screenshot_metadata.favorite'
+                                )}
+                                onToggleFavorite={
+                                    onToggleFavorite
+                                        ? (favorite) =>
+                                              onToggleFavorite(
+                                                  item.path,
+                                                  favorite
+                                              )
+                                        : undefined
                                 }
                             />
                         ))}

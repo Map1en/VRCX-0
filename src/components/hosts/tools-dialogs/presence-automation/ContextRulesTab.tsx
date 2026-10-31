@@ -61,11 +61,13 @@ import {
     removeRuleAction,
     ruleActionSummary,
     ruleTitle,
+    setContextPreset,
     updateRule,
     updateRuleAction
 } from './presenceAutomationDialogUtils';
 import { PresenceRuleActionFields } from './PresenceRuleActionFields';
 import { useFavoriteFriendGroupOptions } from './useFavoriteFriendGroupOptions';
+import { useJoinedGroupOptions } from './useJoinedGroupOptions';
 import { useRuleSelection } from './useRuleSelection';
 
 const I18N_ROOT = 'view.tools.social_automation';
@@ -111,6 +113,9 @@ export function ContextRulesTab({
         setSelectedRuleId,
         removeRule: removeRuleFromSelection
     } = useRuleSelection(rules);
+    const joinedGroupOptions = useJoinedGroupOptions(
+        selectedRule?.preset === 'inSelectedGroupInstances'
+    );
 
     function update(
         ruleId: string,
@@ -261,10 +266,12 @@ export function ContextRulesTab({
                                         })
                                     )}
                                     onValueChange={(value) =>
-                                        update(selectedRule.id, (current) => ({
-                                            ...current,
-                                            preset: value ?? ''
-                                        }))
+                                        update(selectedRule.id, (current) =>
+                                            setContextPreset(
+                                                current,
+                                                value ?? ''
+                                            )
+                                        )
                                     }
                                 >
                                     <SelectTrigger
@@ -332,6 +339,32 @@ export function ContextRulesTab({
                                                 (current) => ({
                                                     ...current,
                                                     selectedWorldGroups: next
+                                                })
+                                            )
+                                        }
+                                    />
+                                </Field>
+                            ) : null}
+                            {selectedRule.preset ===
+                            'inSelectedGroupInstances' ? (
+                                <Field>
+                                    <FieldLabel>
+                                        {t(`${I18N_ROOT}.instance_groups`)}
+                                    </FieldLabel>
+                                    <CompactCheckList
+                                        values={
+                                            selectedRule.selectedInstanceGroupIds ||
+                                            []
+                                        }
+                                        options={joinedGroupOptions}
+                                        disabled={loading}
+                                        onChange={(next) =>
+                                            update(
+                                                selectedRule.id,
+                                                (current) => ({
+                                                    ...current,
+                                                    selectedInstanceGroupIds:
+                                                        next
                                                 })
                                             )
                                         }

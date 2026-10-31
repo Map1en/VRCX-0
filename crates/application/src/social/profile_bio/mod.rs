@@ -58,6 +58,7 @@ pub fn observe_profile_bio(
 ) -> Result<ProfileBioOutcome> {
     let record = ProfileBioRecord {
         bio: observation.bio.clone(),
+        bio_links: observation.bio_links.clone(),
         checked_at: now.to_string(),
     };
     let Some(last) = store.last_seen(owner, &observation.user_id)? else {

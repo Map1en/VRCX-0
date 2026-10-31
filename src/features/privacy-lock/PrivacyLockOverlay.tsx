@@ -1,18 +1,24 @@
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { LockIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+    DeviceLoginQrCode,
+    DeviceLoginWaitingStatus
+} from '@/components/device-login/DeviceLoginQr';
 import { StatusDot } from '@/components/layout/status-bar/StatusBarParts';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
-import type { PrivacyLockOutcome } from '@/platform/tauri/bindings';
+import { commands, type PrivacyLockOutcome } from '@/platform/tauri/bindings';
 import { logoutWithoutConfirmation } from '@/services/authExecutionService';
+import { getCachedAuthSnapshot } from '@/services/authSnapshotService';
 import { startBackgroundModeForCurrentSession } from '@/services/backgroundModeService';
 import { userImage } from '@/services/entityMediaService';
 import {
     clearPrivacyLockPassword,
-    unlockPrivacyLock
+    unlockPrivacyLock,
+    waitPrivacyLockDeviceVerification
 } from '@/services/privacyLockService';
 import { usePrivacyLockPhase } from '@/state/privacyLockPhase';
 import { useRuntimeStore } from '@/state/runtimeStore';
@@ -21,6 +27,7 @@ import { Button } from '@/ui/shadcn/button';
 import { Field, FieldError, FieldLabel } from '@/ui/shadcn/field';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 import { LockCodeInput } from './LockCodeInput';
 import { privacyLockOutcomeMessage } from './privacyLockOutcomeMessage';
@@ -103,7 +110,7 @@ function LockedPanel() {
                 {t('privacy_lock.locked_title')}
             </DialogPrimitive.Title>
             {recovering ? (
-                <RecoverForm onBack={() => setRecovering(false)} />
+                <RecoverPanel onBack={() => setRecovering(false)} />
             ) : (
                 <UnlockForm onForgot={() => setRecovering(true)} />
             )}
@@ -236,7 +243,184 @@ function UnlockForm({ onForgot }: { onForgot: () => void }) {
     );
 }
 
-function RecoverForm({ onBack }: { onBack: () => void }) {
+function RecoverPanel({ onBack }: { onBack: () => void }) {
+    const { t } = useTranslation();
+    const currentUserId = useRuntimeStore((state) => state.auth.currentUserId);
+    const hasSavedPassword = Boolean(
+        getCachedAuthSnapshot()?.savedCredentialsList.find(
+            (credential) => credential.user.id === currentUserId
+        )?.hasLoginCredentials
+    );
+    const [method, setMethod] = useState<'password' | 'qr'>(
+        hasSavedPassword ? 'password' : 'qr'
+    );
+
+    return (
+        <div className="flex w-full flex-col items-center gap-3">
+            <Tabs
+                className="w-full"
+                value={method}
+                onValueChange={(value) =>
+                    setMethod(value === 'qr' ? 'qr' : 'password')
+                }
+            >
+                <TabsList className="w-full">
+                    <TabsTrigger value="password">
+                        {t('privacy_lock.recover.method_password')}
+                    </TabsTrigger>
+                    <TabsTrigger value="qr">
+                        {t('privacy_lock.recover.method_qr')}
+                    </TabsTrigger>
+                </TabsList>
+                <TabsContent value="password" className="pt-2">
+                    {hasSavedPassword ? (
+                        <RecoverForm />
+                    ) : (
+                        <p className="text-muted-foreground text-center text-xs">
+                            {t('privacy_lock.recover.password_unavailable')}
+                        </p>
+                    )}
+                </TabsContent>
+                <TabsContent value="qr" className="pt-2">
+                    {method === 'qr' ? <QrRecoverForm /> : null}
+                </TabsContent>
+            </Tabs>
+            <Button
+                type="button"
+                variant="link"
+                className="text-muted-foreground h-auto p-0 text-xs"
+                onClick={onBack}
+            >
+                {t('privacy_lock.action.back')}
+            </Button>
+        </div>
+    );
+}
+
+function QrRecoverForm() {
+    const { t } = useTranslation();
+    const [round, setRound] = useState(0);
+    const [pending, setPending] = useState<{
+        verificationUrl: string;
+        expiresAt: number;
+    } | null>(null);
+    const [phase, setPhase] = useState<
+        'starting' | 'waiting' | 'expired' | 'failed'
+    >('starting');
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        let active = true;
+        setPending(null);
+        setPhase('starting');
+
+        async function verify() {
+            const start = await commands.appPrivacyLockDeviceVerifyStart();
+            if (!active) {
+                return;
+            }
+            if (start.status !== 'pending') {
+                setError(
+                    start.status === 'failed'
+                        ? start.reason
+                        : t('privacy_lock.error.no_session')
+                );
+                setPhase('failed');
+                return;
+            }
+            setPending(start);
+            setPhase('waiting');
+            const outcome = await waitPrivacyLockDeviceVerification(
+                start.attemptId
+            );
+            if (
+                !active ||
+                outcome.status === 'ok' ||
+                outcome.status === 'cancelled'
+            ) {
+                return;
+            }
+            if (outcome.status === 'deviceCodeExpired') {
+                setPhase('expired');
+                return;
+            }
+            setError(privacyLockOutcomeMessage(t, outcome));
+            if (outcome.status === 'accountMismatch') {
+                setRound((value) => value + 1);
+                return;
+            }
+            setPhase('failed');
+        }
+
+        verify().catch((failure: unknown) => {
+            if (active) {
+                setError(
+                    userFacingErrorMessage(
+                        failure,
+                        t('privacy_lock.error.failed')
+                    )
+                );
+                setPhase('failed');
+            }
+        });
+        return () => {
+            active = false;
+        };
+    }, [round, t]);
+
+    useEffect(
+        () => () => {
+            void commands.appPrivacyLockDeviceVerifyCancel();
+        },
+        []
+    );
+
+    function retry() {
+        setError('');
+        setRound((value) => value + 1);
+    }
+
+    return (
+        <div className="flex w-full flex-col items-center gap-3">
+            {phase === 'waiting' && pending ? (
+                <>
+                    <DeviceLoginQrCode
+                        value={pending.verificationUrl}
+                        size={164}
+                    />
+                    <p className="text-muted-foreground text-center text-xs">
+                        {t('privacy_lock.recover.qr_description')}
+                    </p>
+                    <DeviceLoginWaitingStatus
+                        expiresAt={pending.expiresAt}
+                        className="w-full text-xs"
+                    />
+                </>
+            ) : null}
+            {phase === 'starting' ? <Spinner className="my-8" /> : null}
+            {phase === 'expired' ? (
+                <>
+                    <p className="text-muted-foreground text-center text-xs">
+                        {t('device_login.expired_title')}
+                    </p>
+                    <Button type="button" className="w-full" onClick={retry}>
+                        {t('device_login.refresh')}
+                    </Button>
+                </>
+            ) : null}
+            {phase === 'failed' ? (
+                <Button type="button" className="w-full" onClick={retry}>
+                    {t('device_login.retry')}
+                </Button>
+            ) : null}
+            {error ? (
+                <p className="text-destructive text-center text-xs">{error}</p>
+            ) : null}
+        </div>
+    );
+}
+
+function RecoverForm() {
     const { t } = useTranslation();
     const [password, setPassword] = useState('');
     const { error, clearError, submitting, submit } = useLockSubmit(
@@ -287,14 +471,6 @@ function RecoverForm({ onBack }: { onBack: () => void }) {
             >
                 {submitting ? <Spinner data-icon="inline-start" /> : null}
                 {t('privacy_lock.action.clear_and_unlock')}
-            </Button>
-            <Button
-                type="button"
-                variant="link"
-                className="text-muted-foreground h-auto p-0 text-xs"
-                onClick={onBack}
-            >
-                {t('privacy_lock.action.back')}
             </Button>
         </form>
     );

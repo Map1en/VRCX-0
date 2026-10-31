@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { CurrentUserSocialStatusDialog } from '@/components/dialogs/user-dialog/UserSelfEditDialogs';
 import { useLocationMetadataBatch } from '@/components/location/useLocationMetadata';
+import { handleSidebarRowArrowNavigation } from '@/components/sidebar/sidebarRowArrowNavigation';
 import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows';
 import {
     collectFavoriteGroupFriendIds,
@@ -821,7 +822,9 @@ export function FriendsSidebar({
         <>
             <div
                 ref={viewportRef}
+                role="presentation"
                 className="relative h-full overflow-auto overflow-x-hidden"
+                onKeyDown={handleSidebarRowArrowNavigation}
             >
                 <div className="px-1.5 pt-1 pb-2.5">
                     <div
@@ -832,6 +835,7 @@ export function FriendsSidebar({
                             <div
                                 key={String(item.key)}
                                 ref={getRowRef(item.key)}
+                                data-sidebar-row=""
                                 className="absolute top-0 left-0 w-full"
                                 style={{
                                     transform: `translateY(${item.start}px)`

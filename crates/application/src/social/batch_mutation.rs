@@ -11,7 +11,7 @@ use crate::remote::VrchatRequestPort;
 use vrcx_0_application_core::{
     is_remote_mutation_request,
     vrchat_api::{VrchatApiRequest, VrchatScope},
-    Error, RemoteMutationGate, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot,
+    AuthenticatedMutationContext, Error, Result,
 };
 
 pub const BATCH_MUTATION_MAX_ITEMS: usize = 1_000;
@@ -121,41 +121,33 @@ pub trait BatchMutationRemoteRequests: Send + Sync {
 pub struct VrchatBatchMutationActions<'a> {
     remote: &'a dyn VrchatRequestPort,
     remote_requests: &'a dyn BatchMutationRemoteRequests,
-    pub auth_scope: &'a RuntimeAuthScope,
-    pub expected_scope: RuntimeAuthScopeSnapshot,
-    pub remote_mutation_gate: &'a RemoteMutationGate,
+    mutation: AuthenticatedMutationContext<'a>,
 }
 
 impl<'a> VrchatBatchMutationActions<'a> {
     pub fn new(
         remote: &'a dyn VrchatRequestPort,
         remote_requests: &'a dyn BatchMutationRemoteRequests,
-        auth_scope: &'a RuntimeAuthScope,
-        expected_scope: RuntimeAuthScopeSnapshot,
-        remote_mutation_gate: &'a RemoteMutationGate,
+        mutation: AuthenticatedMutationContext<'a>,
     ) -> Self {
         Self {
             remote,
             remote_requests,
-            auth_scope,
-            expected_scope,
-            remote_mutation_gate,
+            mutation,
         }
     }
 }
 
 impl VrchatBatchMutationActions<'_> {
     async fn execute_json(&self, mut request: VrchatApiRequest, action: &str) -> Result<Value> {
-        ensure_scope_matches(&self.auth_scope.snapshot(), &self.expected_scope)?;
+        self.mutation.ensure_current()?;
         if is_remote_mutation_request(&request) {
-            self.remote_mutation_gate
-                .wait(&self.expected_scope, BATCH_REMOTE_MUTATION_INTERVAL)
-                .await;
-            ensure_scope_matches(&self.auth_scope.snapshot(), &self.expected_scope)?;
-            request.endpoint = Some(self.expected_scope.endpoint.clone());
+            self.mutation.pace(BATCH_REMOTE_MUTATION_INTERVAL).await;
+            self.mutation.ensure_current()?;
+            request.endpoint = Some(self.mutation.scope().endpoint.clone());
         }
         let response = self.remote.send(request, VrchatScope::Vrchat).await?;
-        ensure_scope_matches(&self.auth_scope.snapshot(), &self.expected_scope)?;
+        self.mutation.ensure_current()?;
         let payload = serde_json::from_str::<Value>(&response.data)
             .unwrap_or_else(|_| Value::String(response.data.clone()));
         if response.status >= 400 || payload.get("error").is_some() {
@@ -172,9 +164,10 @@ impl VrchatBatchMutationActions<'_> {
 impl BatchMutationActions for VrchatBatchMutationActions<'_> {
     fn fetch_avatar<'a>(&'a self, avatar_id: &'a str) -> BoxFuture<'a, Result<Value>> {
         Box::pin(async move {
-            let request = self
-                .remote_requests
-                .avatar(self.expected_scope.endpoint.clone(), avatar_id.to_string())?;
+            let request = self.remote_requests.avatar(
+                self.mutation.scope().endpoint.clone(),
+                avatar_id.to_string(),
+            )?;
             self.execute_json(request, "avatar snapshot").await
         })
     }
@@ -186,7 +179,7 @@ impl BatchMutationActions for VrchatBatchMutationActions<'_> {
     ) -> BoxFuture<'a, Result<Value>> {
         Box::pin(async move {
             let request = self.remote_requests.save_avatar_tags(
-                self.expected_scope.endpoint.clone(),
+                self.mutation.scope().endpoint.clone(),
                 avatar_id.to_string(),
                 tags.to_vec(),
             )?;
@@ -198,8 +191,8 @@ impl BatchMutationActions for VrchatBatchMutationActions<'_> {
     fn fetch_current_user_groups(&self) -> BoxFuture<'_, Result<Vec<Value>>> {
         Box::pin(async move {
             let request = self.remote_requests.user_groups(
-                self.expected_scope.endpoint.clone(),
-                self.expected_scope.current_user_id.clone(),
+                self.mutation.scope().endpoint.clone(),
+                self.mutation.scope().current_user_id.clone(),
             )?;
             let payload = self
                 .execute_json(request, "group membership snapshot")
@@ -215,9 +208,9 @@ impl BatchMutationActions for VrchatBatchMutationActions<'_> {
     ) -> BoxFuture<'a, Result<()>> {
         Box::pin(async move {
             let request = self.remote_requests.set_group_visibility(
-                self.expected_scope.endpoint.clone(),
+                self.mutation.scope().endpoint.clone(),
                 group_id.to_string(),
-                self.expected_scope.current_user_id.clone(),
+                self.mutation.scope().current_user_id.clone(),
                 visibility,
             )?;
             self.execute_json(request, "group visibility update")
@@ -230,14 +223,14 @@ impl BatchMutationActions for VrchatBatchMutationActions<'_> {
         Box::pin(async move {
             let request = self
                 .remote_requests
-                .leave_group(self.expected_scope.endpoint.clone(), group_id.to_string())?;
+                .leave_group(self.mutation.scope().endpoint.clone(), group_id.to_string())?;
             self.execute_json(request, "group leave").await?;
             Ok(())
         })
     }
 
     fn current_user_id(&self) -> &str {
-        &self.expected_scope.current_user_id
+        &self.mutation.scope().current_user_id
     }
 }
 
@@ -652,13 +645,6 @@ fn preflight_failure(ids: &[String], failed_index: usize, message: String) -> Ba
         items,
         last_error: Some(message),
     }
-}
-
-fn ensure_scope_matches(
-    current: &RuntimeAuthScopeSnapshot,
-    expected: &RuntimeAuthScopeSnapshot,
-) -> Result<()> {
-    crate::scope_gate::ensure_snapshot_scope_matches(current, expected, "Batch mutation")
 }
 
 #[cfg(test)]

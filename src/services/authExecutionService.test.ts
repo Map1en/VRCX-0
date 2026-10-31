@@ -5,6 +5,8 @@ import type { AppToastOptions } from '@/services/toastService';
 const mocks = vi.hoisted(() => ({
     toastSuccess: vi.fn(),
     toastError: vi.fn(),
+    toastInfo: vi.fn(),
+    clearSavedPassword: vi.fn(),
     toastClose: vi.fn(),
     endSession: vi.fn(),
     startLoginSession: vi.fn(),
@@ -31,6 +33,8 @@ vi.mock('@/services/toastService', () => ({
                     return mocks.toastSuccess(options);
                 case 'error':
                     return mocks.toastError(options);
+                case 'info':
+                    return mocks.toastInfo(options);
                 default:
                     throw new Error('Unhandled toast type: ' + options.type);
             }
@@ -63,7 +67,8 @@ vi.mock('@/platform/tauri/webview', async (importOriginal) => ({
 }));
 
 vi.mock('./authSnapshotService', () => ({
-    applySavedAuthSnapshot: mocks.applySavedAuthSnapshot
+    applySavedAuthSnapshot: mocks.applySavedAuthSnapshot,
+    clearSavedPassword: mocks.clearSavedPassword
 }));
 
 vi.mock('./domainIngestionService', () => ({
@@ -106,6 +111,7 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { useSessionStore } from '@/state/sessionStore';
 
 import {
+    executeDeviceLogin,
     executeManualLogin,
     executeSavedCredentialLogin,
     logoutFromReactShell,
@@ -244,6 +250,41 @@ describe('authExecutionService characterization', () => {
         mocks.confirm.mockResolvedValue({ ok: true });
         mocks.otpPrompt.mockResolvedValue({ ok: true, value: '123456' });
         mocks.flashWindow.mockResolvedValue(undefined);
+    });
+
+    it('offers to clear the saved password after a QR login on an account that has one', async () => {
+        mocks.clearSavedPassword.mockResolvedValue(savedSnapshot());
+
+        await executeDeviceLogin();
+
+        expect(mocks.startLoginSession).toHaveBeenCalledWith({
+            mode: 'device'
+        });
+        expect(mocks.toastInfo).toHaveBeenCalledTimes(1);
+        const [offer] = mocks.toastInfo.mock.calls[0] as [AppToastOptions];
+        offer.actionProps?.onClick?.(
+            {} as Parameters<
+                NonNullable<
+                    NonNullable<AppToastOptions['actionProps']>['onClick']
+                >
+            >[0]
+        );
+        await vi.waitFor(() => {
+            expect(mocks.toastSuccess).toHaveBeenCalledTimes(1);
+        });
+        expect(mocks.clearSavedPassword).toHaveBeenCalledWith('usr_self');
+    });
+
+    it('does not offer to clear a password after a QR login on a passwordless account', async () => {
+        const state = authenticatedState();
+        if (state.status === 'authenticated' && state.snapshot) {
+            state.snapshot.savedCredentialsList[0].hasLoginCredentials = false;
+        }
+        mocks.startLoginSession.mockResolvedValue(state);
+
+        await executeDeviceLogin();
+
+        expect(mocks.toastInfo).not.toHaveBeenCalled();
     });
 
     it('rejects manual login without username or password', async () => {

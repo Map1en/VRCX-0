@@ -129,6 +129,79 @@ fn discord_rpc_world_uses_now_playing_details_and_thumbnail() {
     );
 }
 
+fn now_playing_activity(now_playing: NowPlayingSnapshot) -> serde_json::Map<String, Value> {
+    let config = DiscordConfig {
+        discord_world_integration: true,
+        ..Default::default()
+    };
+    let facts = BackgroundPresenceFacts {
+        is_game_running: true,
+        current_location_started_at: "2026-10-30T13:00:00Z".into(),
+        current_user: json!({ "status": "active" }).into(),
+        now_playing: std::sync::Arc::new(now_playing),
+        ..Default::default()
+    };
+    let parsed = parse_location("wrld_club:1");
+    let details = DiscordLocationDetails {
+        world_name: "Club".into(),
+        thumbnail_image_url: "https://image.example/world.jpg".into(),
+        parsed: Some(parsed.clone()),
+        ..Default::default()
+    };
+    let payload = build_discord_activity(
+        &config,
+        &facts,
+        &DiscordPresenceLabels::default(),
+        &details,
+        &parsed,
+    );
+    assert_eq!(payload.app_id, DEFAULT_APP_ID);
+    payload.activity.as_object().unwrap().clone()
+}
+
+#[test]
+fn any_world_shows_titled_media_as_watching_from_its_real_position() {
+    let titled = NowPlayingSnapshot {
+        url: "https://youtu.be/abcdefghijk".into(),
+        name: "Song".into(),
+        thumbnail_url: "https://image.example/cover.jpg".into(),
+        started_at: Some("2026-10-30T13:40:57Z".into()),
+        position: 129,
+        length: 216,
+        titled: true,
+        ..Default::default()
+    };
+    let activity = now_playing_activity(titled.clone());
+    let started = timestamp_seconds("2026-10-30T13:40:57Z").unwrap() - 129;
+    assert_eq!(activity["type"], json!(3));
+    assert_eq!(activity["details"], json!("Club"));
+    assert_eq!(activity["timestamps"]["start"], json!(started));
+    assert_eq!(activity["timestamps"]["end"], json!(started + 216));
+    assert_eq!(
+        activity["assets"]["large_image"],
+        json!("https://image.example/cover.jpg")
+    );
+
+    for hidden in [
+        NowPlayingSnapshot {
+            paused: true,
+            ..titled.clone()
+        },
+        NowPlayingSnapshot {
+            titled: false,
+            ..titled
+        },
+    ] {
+        let activity = now_playing_activity(hidden);
+        assert_eq!(activity["type"], json!(0));
+        assert_eq!(activity["timestamps"].get("end"), None);
+        assert_eq!(
+            activity["assets"]["large_image"],
+            json!("https://image.example/world.jpg")
+        );
+    }
+}
+
 #[test]
 fn discord_payload_keeps_platform_spacing_labels_and_session_floor() {
     let config = DiscordConfig {

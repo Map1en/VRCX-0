@@ -112,6 +112,7 @@ export function GroupDialogTabbedView({
     const {
         onPreviousInstancesChange,
         onRefresh,
+        onReloadProfile,
         onJoin,
         onLeave,
         onDelete,
@@ -772,6 +773,10 @@ export function GroupDialogTabbedView({
         onPreviousInstancesChange,
         onPreviewImage: previewImage,
         onPreviewRowImage: previewRowImage,
+        onGalleriesChanged: onReloadProfile,
+        onPhotosChanged: () => {
+            loadTab('photos', { force: true });
+        },
         onRefreshEvents: () => {
             loadGroupEvents({ force: true });
             loadFollowingGroupEvents({ force: true });

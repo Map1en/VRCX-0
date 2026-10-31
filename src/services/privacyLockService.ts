@@ -29,6 +29,9 @@ export const changePrivacyLockPassword = (
 export const clearPrivacyLockPassword = (accountPassword: string) =>
     commands.appPrivacyLockPasswordClear(accountPassword).then(applyOutcome);
 
+export const waitPrivacyLockDeviceVerification = (attemptId: string) =>
+    commands.appPrivacyLockDeviceVerifyWait(attemptId).then(applyOutcome);
+
 export async function requestPrivacyLock(): Promise<void> {
     if (useRuntimeStore.getState().privacyLock.hasPassword) {
         await engagePrivacyLock();

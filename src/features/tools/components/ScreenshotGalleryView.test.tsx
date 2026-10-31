@@ -49,27 +49,54 @@ vi.mock('@/components/media/ScreenshotThumbnailCard', () => ({
     ScreenshotThumbnailCard: ({
         item,
         selected,
-        onToggleSelect
+        onToggleSelect,
+        favorite,
+        favoriteLabel,
+        onToggleFavorite
     }: {
         item: { path: string };
         selected?: boolean;
         onToggleSelect?: (checked: boolean, shift: boolean) => void;
+        favorite?: boolean;
+        favoriteLabel?: string;
+        onToggleFavorite?: (favorite: boolean) => void;
     }) => (
-        <button
-            type="button"
-            aria-pressed={Boolean(selected)}
-            onClick={() => onToggleSelect?.(!selected, false)}
-        >
-            {item.path}
-        </button>
+        <>
+            <button
+                type="button"
+                aria-pressed={Boolean(selected)}
+                onClick={() => onToggleSelect?.(!selected, false)}
+            >
+                {item.path}
+            </button>
+            {onToggleFavorite ? (
+                <button
+                    type="button"
+                    aria-label={`${favoriteLabel} ${item.path}`}
+                    onClick={() => onToggleFavorite(!favorite)}
+                />
+            ) : null}
+        </>
     ),
     useScreenshotThumbnailTitleMap: () => new Map()
 }));
 
 import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
 
+import { SCREENSHOT_FAVORITES_FOLDER } from '../screenshotMetadataValues';
 import { useScreenshotBrowseSelection } from '../useScreenshotBrowseSelection';
-import { ScreenshotGalleryView } from './ScreenshotGalleryView';
+import {
+    ScreenshotGalleryView,
+    type ScreenshotGalleryFavorites
+} from './ScreenshotGalleryView';
+
+const noFavorites: ScreenshotGalleryFavorites = {
+    paths: new Set(),
+    count: 0,
+    missingCount: 0,
+    onToggle: () => undefined,
+    onForgetMissing: () => undefined
+};
 
 const folderTree = {
     rootPath: 'C:\\VRChat',
@@ -121,7 +148,7 @@ describe('ScreenshotGalleryView folder tree', () => {
         );
 
         await waitFor(() => {
-            expect(container.querySelectorAll('nav button')).toHaveLength(3);
+            expect(container.querySelectorAll('nav button')).toHaveLength(4);
         });
         const selectedFolder = screen.getByRole('button', {
             name: '2026-07'
@@ -229,13 +256,15 @@ function GalleryHarness({
     images,
     selectedFolder,
     onDeleteSelection,
-    onSelectFolder = () => undefined
+    onSelectFolder = () => undefined,
+    favorites = noFavorites
 }: {
     folderTree?: typeof folderTree;
     images: ScreenshotLibraryImage[];
     selectedFolder: string;
     onDeleteSelection: (paths: string[]) => void;
     onSelectFolder?: (folder: string) => void;
+    favorites?: ScreenshotGalleryFavorites;
 }) {
     const selection = useScreenshotBrowseSelection(
         images.map((image) => image.path)
@@ -258,6 +287,9 @@ function GalleryHarness({
             isDeleteRunning={false}
             restoreScrollTop={0}
             selection={selection}
+            favorites={favorites}
+            sort="captured-desc"
+            onSortChange={() => undefined}
         />
     );
 }
@@ -406,5 +438,126 @@ describe('ScreenshotGalleryView selection', () => {
         expect(
             screen.queryByText('view.tools.gallery_selection.count:1')
         ).toBeNull();
+    });
+});
+
+describe('ScreenshotGalleryView favorites', () => {
+    beforeEach(() => {
+        HTMLElement.prototype.scrollIntoView = mocks.scrollIntoView;
+    });
+
+    afterEach(() => {
+        cleanup();
+        mocks.visibleRows = [];
+    });
+
+    it('opens favorites from the top of the folder tree', () => {
+        const onSelectFolder = vi.fn();
+        render(
+            <GalleryHarness
+                images={[]}
+                selectedFolder={julyFolder}
+                onDeleteSelection={() => undefined}
+                onSelectFolder={onSelectFolder}
+            />
+        );
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'dialog.screenshot_metadata.favorites'
+            })
+        );
+
+        expect(onSelectFolder).toHaveBeenCalledWith(
+            SCREENSHOT_FAVORITES_FOLDER
+        );
+    });
+
+    it('stars and unstars tiles through the favorite toggle', () => {
+        const onToggle = vi.fn();
+        mocks.visibleRows = [{ key: 'row-0', top: 0, items: galleryImages }];
+        render(
+            <GalleryHarness
+                images={galleryImages}
+                selectedFolder={julyFolder}
+                onDeleteSelection={() => undefined}
+                favorites={{
+                    ...noFavorites,
+                    paths: new Set([galleryImages[1].path]),
+                    count: 1,
+                    onToggle
+                }}
+            />
+        );
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: `dialog.screenshot_metadata.favorite ${galleryImages[0].path}`
+            })
+        );
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: `dialog.screenshot_metadata.unfavorite ${galleryImages[1].path}`
+            })
+        );
+
+        expect(onToggle).toHaveBeenNthCalledWith(
+            1,
+            galleryImages[0].path,
+            true
+        );
+        expect(onToggle).toHaveBeenNthCalledWith(
+            2,
+            galleryImages[1].path,
+            false
+        );
+    });
+
+    it('offers to remove missing favorites only in the favorites view', () => {
+        const onForgetMissing = vi.fn();
+        const favorites = { ...noFavorites, missingCount: 2, onForgetMissing };
+        const view = render(
+            <GalleryHarness
+                images={[]}
+                selectedFolder={julyFolder}
+                onDeleteSelection={() => undefined}
+                favorites={favorites}
+            />
+        );
+        const forgetButtonName =
+            'dialog.screenshot_metadata.forget_missing_favorites';
+        expect(
+            screen.queryByRole('button', { name: forgetButtonName })
+        ).toBeNull();
+
+        view.rerender(
+            <GalleryHarness
+                images={[]}
+                selectedFolder={SCREENSHOT_FAVORITES_FOLDER}
+                onDeleteSelection={() => undefined}
+                favorites={favorites}
+            />
+        );
+        fireEvent.click(screen.getByRole('button', { name: forgetButtonName }));
+
+        expect(onForgetMissing).toHaveBeenCalledTimes(1);
+    });
+
+    it('explains an empty favorites view and how many favorites are missing', () => {
+        render(
+            <GalleryHarness
+                images={[]}
+                selectedFolder={SCREENSHOT_FAVORITES_FOLDER}
+                onDeleteSelection={() => undefined}
+                favorites={{ ...noFavorites, missingCount: 2 }}
+            />
+        );
+
+        expect(
+            screen.getByText('dialog.screenshot_metadata.empty_favorites')
+        ).toBeTruthy();
+        expect(
+            screen.getByText('dialog.screenshot_metadata.favorites_missing:2')
+        ).toBeTruthy();
     });
 });

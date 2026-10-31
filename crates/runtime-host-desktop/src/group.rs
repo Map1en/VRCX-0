@@ -5,14 +5,15 @@ use vrcx_0_application::social::{
     GroupCalendarSnapshot, GroupQuickModerationActionInput, GroupQuickModerationActionOutput,
     GroupQuickModerationDeps, GroupQuickModerationInput, GroupQuickModerationOutput,
     UserGroupsOverviewDeps, UserGroupsOverviewInput, UserGroupsOverviewOutput,
-    VrchatGroupGalleryInput, VrchatGroupIdInput, VrchatGroupJoinRequestRespondInput,
-    VrchatGroupJoinRequestsInput, VrchatGroupLogsInput, VrchatGroupMemberPropsInput,
-    VrchatGroupMemberRoleInput, VrchatGroupMembersInput, VrchatGroupMembersSearchInput,
-    VrchatGroupMembershipListInput, VrchatGroupPagedInput, VrchatGroupPostCreateInput,
-    VrchatGroupPostDeleteInput, VrchatGroupPostEditInput, VrchatGroupProfileInput,
-    VrchatGroupRepresentationInput, VrchatGroupRoleCreateInput, VrchatGroupRoleInput,
-    VrchatGroupRoleUpdateInput, VrchatGroupUpdateInput, VrchatGroupUserGroupsInput,
-    VrchatGroupUserInput,
+    VrchatGroupGalleryCreateInput, VrchatGroupGalleryDeleteInput, VrchatGroupGalleryEditInput,
+    VrchatGroupGalleryImageAddInput, VrchatGroupGalleryImageDeleteInput, VrchatGroupGalleryInput,
+    VrchatGroupIdInput, VrchatGroupJoinRequestRespondInput, VrchatGroupJoinRequestsInput,
+    VrchatGroupLogsInput, VrchatGroupMemberPropsInput, VrchatGroupMemberRoleInput,
+    VrchatGroupMembersInput, VrchatGroupMembersSearchInput, VrchatGroupMembershipListInput,
+    VrchatGroupPagedInput, VrchatGroupPostCreateInput, VrchatGroupPostDeleteInput,
+    VrchatGroupPostEditInput, VrchatGroupProfileInput, VrchatGroupRepresentationInput,
+    VrchatGroupRoleCreateInput, VrchatGroupRoleInput, VrchatGroupRoleUpdateInput,
+    VrchatGroupUpdateInput, VrchatGroupUserGroupsInput, VrchatGroupUserInput,
 };
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::{
@@ -189,6 +190,41 @@ impl DesktopGroupRuntime {
 
     pub async fn delete(&self, input: VrchatGroupIdInput) -> Result<VrchatApiResponse> {
         Ok(application::delete_group(self.api_deps(), input).await?)
+    }
+
+    pub async fn create_gallery(
+        &self,
+        input: VrchatGroupGalleryCreateInput,
+    ) -> Result<VrchatApiResponse> {
+        Ok(application::create_gallery(self.api_deps(), input).await?)
+    }
+
+    pub async fn edit_gallery(
+        &self,
+        input: VrchatGroupGalleryEditInput,
+    ) -> Result<VrchatApiResponse> {
+        Ok(application::edit_gallery(self.api_deps(), input).await?)
+    }
+
+    pub async fn delete_gallery(
+        &self,
+        input: VrchatGroupGalleryDeleteInput,
+    ) -> Result<VrchatApiResponse> {
+        Ok(application::delete_gallery(self.api_deps(), input).await?)
+    }
+
+    pub async fn add_gallery_image(
+        &self,
+        input: VrchatGroupGalleryImageAddInput,
+    ) -> Result<VrchatApiResponse> {
+        Ok(application::add_gallery_image(self.api_deps(), input).await?)
+    }
+
+    pub async fn delete_gallery_image(
+        &self,
+        input: VrchatGroupGalleryImageDeleteInput,
+    ) -> Result<VrchatApiResponse> {
+        Ok(application::delete_gallery_image(self.api_deps(), input).await?)
     }
 
     pub async fn create_post(

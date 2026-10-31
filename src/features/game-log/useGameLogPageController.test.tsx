@@ -16,6 +16,7 @@ import type {
 const mocks = vi.hoisted(
     (): {
         rows: GameLogRow[];
+        searchQuery: string;
         sessions: GameLogSession[];
         viewMode: GameLogViewMode;
         favorites: {
@@ -23,12 +24,17 @@ const mocks = vi.hoisted(
             localFriendFavorites: FavoriteGroupMap;
         };
         friends: { friendsById: Record<string, object> };
+        applySearch: (value: string) => void;
+        setActiveSelectedTypes: (types: string[]) => void;
     } => ({
         rows: [],
+        searchQuery: '',
         sessions: [],
         viewMode: 'table',
         favorites: { favoriteFriendIds: [], localFriendFavorites: {} },
-        friends: { friendsById: {} }
+        friends: { friendsById: {} },
+        applySearch: vi.fn(),
+        setActiveSelectedTypes: vi.fn()
     })
 );
 
@@ -41,7 +47,13 @@ vi.mock('./components/GameLogColumns', () => ({
 
 vi.mock('./useGameLogFilters', () => ({
     useGameLogFilters: () => ({
-        deferredSearchQuery: '',
+        applySearch: mocks.applySearch,
+        availableFilterTypes:
+            mocks.viewMode === 'sessions'
+                ? ['OnPlayerJoined', 'OnPlayerLeft', 'VideoPlay']
+                : ['Location', 'OnPlayerJoined', 'OnPlayerLeft'],
+        setActiveSelectedTypes: mocks.setActiveSelectedTypes,
+        deferredSearchQuery: mocks.searchQuery,
         favoritesOnly: false,
         preferencesReady: true,
         queryFilterTypes: [],
@@ -76,8 +88,8 @@ vi.mock('./useGameLogRowActions', () => ({
     useGameLogRowActions: () => ({})
 }));
 
-vi.mock('./useGameLogShiftKey', () => ({
-    useGameLogShiftKey: () => false
+vi.mock('@/components/keyboard/useShiftKeyHeld', () => ({
+    useShiftKeyHeld: () => false
 }));
 
 vi.mock('./useGameLogTableState', () => ({
@@ -132,6 +144,7 @@ describe('useGameLogPageController', () => {
 
     beforeEach(() => {
         mocks.rows = createRows(45);
+        mocks.searchQuery = '';
         mocks.sessions = [];
         mocks.viewMode = 'table';
         mocks.favorites = { favoriteFriendIds: [], localFriendFavorites: {} };
@@ -229,18 +242,36 @@ describe('useGameLogPageController', () => {
         expect(result.current.rowsState.rows).toBe(mocks.rows);
     });
 
-    it('resets after refreshing or deleting rows and retains correct totals after resizing the page', () => {
+    it('keeps the current page when live rows arrive and resets when the query changes', () => {
+        const { result, rerender } = renderHook(useGameLogPageController);
+        act(() => result.current.table.nextPage());
+
+        mocks.rows = createRows(46);
+        rerender();
+
+        expect(result.current.tableState.pagination.pageIndex).toBe(1);
+        expect(result.current.table.getRowModel().rows[0].original.rowId).toBe(
+            26
+        );
+
+        mocks.searchQuery = 'usr_1';
+        rerender();
+
+        expect(result.current.tableState.pagination.pageIndex).toBe(0);
+    });
+
+    it('clamps the page after deleting rows and retains correct totals after resizing the page', () => {
         const { result, rerender } = renderHook(useGameLogPageController);
         act(() => result.current.table.lastPage());
 
         mocks.rows = createRows(25);
         rerender();
 
-        expect(result.current.tableState.pagination.pageIndex).toBe(0);
+        expect(result.current.tableState.pagination.pageIndex).toBe(1);
         expect(result.current.table.getRowCount()).toBe(25);
         expect(result.current.pageCount).toBe(2);
         expect(result.current.table.getRowModel().rows[0].original.rowId).toBe(
-            25
+            5
         );
 
         act(() =>
@@ -284,18 +315,18 @@ describe('useGameLogPageController', () => {
         mocks.friends.friendsById = { usr_25: {} };
         rerender();
 
-        expect(result.current.tableState.pagination.pageIndex).toBe(0);
-        expect(result.current.annotations.annotatedRows[0]).toMatchObject({
-            rowId: 45,
-            isFavorite: false,
-            isFriend: false
-        });
-        act(() => result.current.table.nextPage());
-
+        expect(result.current.tableState.pagination.pageIndex).toBe(1);
         expect(result.current.annotations.annotatedRows[0]).toMatchObject({
             rowId: 25,
             isFavorite: true,
             isFriend: true
+        });
+        act(() => result.current.table.previousPage());
+
+        expect(result.current.annotations.annotatedRows[0]).toMatchObject({
+            rowId: 45,
+            isFavorite: false,
+            isFriend: false
         });
         expect(mocks.rows[24].isFavorite).toBeUndefined();
         expect(mocks.rows[24].isFriend).toBeUndefined();
@@ -316,6 +347,7 @@ describe('useGameLogPageController', () => {
                 worldName: 'World',
                 groupName: '',
                 duration: 1000,
+                remote: false,
                 playerDurationRows: [
                     { userId: 'usr_1', displayName: 'User', time: 1000 }
                 ],
@@ -351,5 +383,23 @@ describe('useGameLogPageController', () => {
         expect(result.current.annotations.affinity.favoriteIdSet.size).toBe(0);
         expect(result.current.annotations.affinity.friendIdSet.size).toBe(0);
         expect(mocks.sessions[0].events[0].isFavorite).toBeUndefined();
+    });
+
+    it('routes row filter commands to the search box and the active view types', () => {
+        mocks.viewMode = 'sessions';
+        const { result } = renderHook(useGameLogPageController);
+        const commands = result.current.rowFilterCommands;
+
+        commands.onlyUser?.('usr_1', 'User');
+        commands.onlyWorld?.('wrld_test');
+        commands.excludeType?.('JoinGroup');
+
+        expect(mocks.applySearch).toHaveBeenNthCalledWith(1, 'usr_1');
+        expect(mocks.applySearch).toHaveBeenNthCalledWith(2, 'wrld_test');
+        expect(mocks.setActiveSelectedTypes).toHaveBeenCalledWith([
+            'OnPlayerLeft',
+            'VideoPlay'
+        ]);
+        expect(commands.canFilterType?.('Location')).toBe(false);
     });
 });

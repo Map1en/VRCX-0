@@ -175,8 +175,18 @@ export function useGroupDialogMembers({
         };
     }, [active, groupId, isSearching, trimmedQuery]);
 
+    const loweredQuery = trimmedQuery.toLowerCase();
     const visibleRows = isSearching
-        ? searchRows
+        ? searchStatus === 'ready'
+            ? appendUniqueMemberRows(
+                  searchRows,
+                  pages.rows.filter((row) =>
+                      (row.user?.displayName ?? '')
+                          .toLowerCase()
+                          .includes(loweredQuery)
+                  )
+              )
+            : searchRows
         : pages.status === 'ready' || pages.rows.length
           ? pages.rows
           : seedRows;

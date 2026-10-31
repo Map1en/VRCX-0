@@ -6,15 +6,19 @@ import {
     useState,
     type ReactNode
 } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useVirtualSidebarRows } from '@/components/sidebar/useVirtualSidebarRows';
 import { Button } from '@/ui/shadcn/button';
+
+import type { ColumnSizingStyle } from './columnSizing';
 
 export function VirtualHistoryList<TRow extends { key: string }>({
     rows,
     estimatedRowHeight,
     resetKey,
     minWidth,
+    sizingStyle,
     header,
     renderRow,
     rowClassName,
@@ -26,12 +30,14 @@ export function VirtualHistoryList<TRow extends { key: string }>({
     hasUnloadedLatest = false,
     onReloadLatest,
     onViewingLatestChange,
-    latestLabel
+    latestLabel,
+    newCount = 0
 }: {
     rows: TRow[];
     estimatedRowHeight: number;
     resetKey: string;
-    minWidth: number;
+    minWidth: number | string;
+    sizingStyle?: ColumnSizingStyle;
     header: ReactNode;
     renderRow(row: TRow): ReactNode;
     rowClassName?(row: TRow): string | undefined;
@@ -44,7 +50,9 @@ export function VirtualHistoryList<TRow extends { key: string }>({
     onReloadLatest?(): void;
     onViewingLatestChange?(value: boolean): void;
     latestLabel: string;
+    newCount?: number;
 }) {
+    const { t } = useTranslation();
     const [focusedRowKey, setFocusedRowKey] = useState<string | null>(null);
     const estimateSize = useCallback(
         () => estimatedRowHeight,
@@ -59,6 +67,7 @@ export function VirtualHistoryList<TRow extends { key: string }>({
         virtualItems
     } = useVirtualSidebarRows(rows, estimateSize, {
         preserveScrollAnchor: true,
+        anchorThreshold: estimatedRowHeight,
         resetKey,
         keepMountedKey: focusedRowKey
     });
@@ -113,7 +122,11 @@ export function VirtualHistoryList<TRow extends { key: string }>({
     }, [hasMore, loadingOlder, onLoadOlder, rows.length, viewportElement]);
 
     return (
-        <div className="vrcx-0-data-table relative flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div
+            data-column-sizing-root=""
+            className="vrcx-0-data-table relative flex min-h-0 flex-1 flex-col overflow-hidden"
+            style={sizingStyle}
+        >
             <div
                 ref={headerViewportRef}
                 className="shrink-0 overflow-hidden border-b bg-[var(--vrcx-0-table-header-surface)]"
@@ -129,7 +142,9 @@ export function VirtualHistoryList<TRow extends { key: string }>({
                     onClick={hasUnloadedLatest ? onReloadLatest : scrollToStart}
                 >
                     <ArrowUpToLineIcon data-icon="inline-start" />
-                    {latestLabel}
+                    {newCount > 0
+                        ? t('table.label.new_items_count', { count: newCount })
+                        : latestLabel}
                 </Button>
             ) : null}
             <div

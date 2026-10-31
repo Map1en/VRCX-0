@@ -70,8 +70,7 @@ impl NotificationSyncPort for LocalNotificationSyncAdapter {
                 .map(vrcx_0_core::json::RawJson::into_value)
                 .collect(),
             write.hidden_complete,
-        )
-        .map_err(crate::map_persistence_error)?;
+        )?;
         vrcx_0_persistence::realtime::write_realtime_batch(
             &self.db,
             &OwnerId::new(write.owner_user_id),
@@ -90,6 +89,6 @@ impl NotificationSyncPort for LocalNotificationSyncAdapter {
             },
         )
         .map(|_| ())
-        .map_err(crate::map_persistence_error)
+        .map_err(crate::Error::from)
     }
 }

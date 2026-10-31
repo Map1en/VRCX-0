@@ -84,6 +84,20 @@ export function setVrcxCssLayersSuppressed(
     renderCssLayers();
 }
 
+const COMMUNITY_THEME_LAYERS: VrcxCssLayer[] = [
+    'installed-theme',
+    'local-theme-preview',
+    'user-override'
+];
+
+export function toggleCommunityThemeLayersSuppressed(): boolean {
+    const suppressed = !COMMUNITY_THEME_LAYERS.every((layer) =>
+        suppressedLayers.has(layer)
+    );
+    setVrcxCssLayersSuppressed(COMMUNITY_THEME_LAYERS, suppressed);
+    return suppressed;
+}
+
 function applyRgb(enabled: boolean): void {
     document.documentElement.classList.toggle(RGB, enabled);
     setVrcxCssLayer(RGB, enabled ? vrcx0RgbCss : '');

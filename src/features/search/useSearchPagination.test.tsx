@@ -20,6 +20,7 @@ type AvatarRequest = {
 };
 type TestProps = {
     activeTab: string;
+    avatarPageSize: number;
     avatarRequest: AvatarRequest | null;
     avatarResults: Array<{ id: string }>;
     groupRequest: SearchRequest | null;
@@ -47,6 +48,7 @@ function results(length: number) {
 function createProps(): TestProps {
     return {
         activeTab: 'user',
+        avatarPageSize: 10,
         avatarRequest: null,
         avatarResults: results(0),
         groupRequest: null,
@@ -130,12 +132,13 @@ describe('useSearchPagination', () => {
     it('pages the already-fetched avatar result set locally', () => {
         const props = createProps();
         props.activeTab = 'avatar';
+        props.avatarPageSize = 20;
         props.avatarRequest = {
-            offset: 10,
+            offset: 20,
             provider: 'provider-a',
             query: 'avatar'
         };
-        props.avatarResults = results(21);
+        props.avatarResults = results(41);
         const { result } = renderHook(() => useSearchPagination(props));
 
         expect(result.current).toMatchObject({
@@ -151,7 +154,7 @@ describe('useSearchPagination', () => {
             query: 'avatar'
         });
         expect(props.setAvatarRequest).toHaveBeenNthCalledWith(2, {
-            offset: 20,
+            offset: 40,
             provider: 'provider-a',
             query: 'avatar'
         });

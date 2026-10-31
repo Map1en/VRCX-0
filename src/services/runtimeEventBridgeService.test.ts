@@ -220,6 +220,11 @@ function createAuthenticatedRuntimePhaseSnapshot(
             detail: 'Realtime ready.',
             lastError: null
         },
+        realtimeHealth: {
+            interrupted: false,
+            disconnectedAt: null,
+            retryAt: null
+        },
         friendBaselineRevision: 1,
         friendBaseline: null,
         favoritesBaseline: null,
@@ -309,6 +314,8 @@ function createAncillaryRuntimeSnapshot(
             length: 0,
             position: 0,
             startedAt: null,
+            paused: false,
+            titled: false,
             created_at: null,
             type: null,
             videoUrl: null,

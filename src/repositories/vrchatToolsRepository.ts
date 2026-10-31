@@ -252,16 +252,6 @@ async function getModerationReports({
     ).json;
 }
 
-async function deleteModerationReport({ reportId }: { reportId: string }) {
-    const response = await commands.appVrchatToolsModerationReportDelete({
-        reportId
-    });
-    return unwrapVrchatToolsResponse(
-        response,
-        `moderationReports/${encodeURIComponent(reportId)}`
-    ).json;
-}
-
 async function getInviteMessages({
     currentUserId,
     messageType
@@ -310,7 +300,6 @@ const vrchatToolsRepository = Object.freeze({
     saveUserNote,
     reportUser,
     getModerationReports,
-    deleteModerationReport,
     getInviteMessages,
     editInviteMessage
 });

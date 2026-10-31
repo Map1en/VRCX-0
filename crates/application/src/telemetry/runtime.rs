@@ -34,6 +34,8 @@ const ACCOUNT_SNAPSHOT_FRIEND_GRACE: Duration = Duration::from_secs(5 * 60);
 const TELEMETRY_CLIENT_ERROR_CURSOR_CONFIG_KEY: &str = "telemetryClientErrorCursor";
 const ANONYMOUS_USAGE_TELEMETRY_CONFIG_KEY: &str = "anonymousUsageTelemetry";
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(30 * 60);
+const EARLY_HEARTBEAT_INTERVALS: [Duration; 2] =
+    [Duration::from_secs(60), Duration::from_secs(4 * 60)];
 const LOOP_SLEEP: Duration = Duration::from_secs(1);
 const SHUTDOWN_FLUSH_TIMEOUT: Duration = Duration::from_secs(1);
 const SEND_RETRY_BACKOFF: Duration = Duration::from_secs(60);
@@ -136,7 +138,9 @@ struct TelemetryState {
     offline_record_checked_at: Option<Instant>,
     signed_in_at: Option<Instant>,
     last_heartbeat_at: Option<Instant>,
+    heartbeats_scheduled: usize,
     vrchat_seen: bool,
+    signed_in_seen: bool,
     pending_error_cursor: Option<String>,
     acc: TelemetryAccumulator,
 }
@@ -271,7 +275,7 @@ impl TelemetryRuntime {
         self.send_config_snapshot_once(&session).await;
         self.send_account_config_snapshot_once(&session).await;
         self.send_offline_record_change(&session).await;
-        self.observe_vrchat();
+        self.observe_activity();
         self.send_heartbeat_if_due(&session).await;
     }
 
@@ -284,7 +288,7 @@ impl TelemetryRuntime {
         };
         let _flush_guard = self.inner.flush_lock.lock().await;
         self.drain_rust_errors();
-        self.observe_vrchat();
+        self.observe_activity();
         let context = self.heartbeat_context(&session, Some(true));
         self.post_debug(
             "/api/v1/telemetry/session/heartbeat",
@@ -348,7 +352,10 @@ impl TelemetryRuntime {
             return;
         }
         let context = if usage_enabled {
-            self.context(session, None)
+            TelemetryContext {
+                signed_in: Some(self.inner.auth_scope.snapshot().active),
+                ..self.context(session, None)
+            }
         } else {
             self.basic_context(session)
         };
@@ -525,10 +532,15 @@ impl TelemetryRuntime {
                 state.last_heartbeat_at = Some(now);
                 return;
             }
-            if !is_heartbeat_due(state.last_heartbeat_at, now) {
+            if !is_heartbeat_due(
+                state.last_heartbeat_at,
+                now,
+                heartbeat_interval(state.heartbeats_scheduled),
+            ) {
                 return;
             }
             state.last_heartbeat_at = Some(now);
+            state.heartbeats_scheduled = state.heartbeats_scheduled.saturating_add(1);
         }
         if !self.usage_enabled() {
             return;
@@ -549,23 +561,18 @@ impl TelemetryRuntime {
         {
             if let Ok(mut state) = self.inner.state.lock() {
                 state.vrchat_seen = false;
+                state.signed_in_seen = false;
             }
         }
         self.flush_collectors_locked(session).await;
     }
 
-    fn observe_vrchat(&self) {
-        let seen = self
-            .inner
-            .state
-            .lock()
-            .map(|state| state.vrchat_seen)
-            .unwrap_or(true);
-        if seen || !self.inner.session.snapshot().is_game_running {
-            return;
-        }
+    fn observe_activity(&self) {
+        let game_running = self.inner.session.snapshot().is_game_running;
+        let signed_in = self.inner.auth_scope.snapshot().active;
         if let Ok(mut state) = self.inner.state.lock() {
-            state.vrchat_seen = true;
+            state.vrchat_seen |= game_running;
+            state.signed_in_seen |= signed_in;
         }
     }
 
@@ -702,6 +709,8 @@ impl TelemetryRuntime {
             local_hour: now.hour(),
             session_ended,
             vrchat_seen: None,
+            signed_in: None,
+            basic: None,
         }
     }
 
@@ -710,14 +719,15 @@ impl TelemetryRuntime {
         session: &TelemetrySession,
         session_ended: Option<bool>,
     ) -> TelemetryContext {
-        let vrchat_seen = self
+        let (vrchat_seen, signed_in) = self
             .inner
             .state
             .lock()
-            .map(|state| state.vrchat_seen)
-            .unwrap_or(false);
+            .map(|state| (state.vrchat_seen, state.signed_in_seen))
+            .unwrap_or((false, false));
         TelemetryContext {
             vrchat_seen: Some(vrchat_seen),
+            signed_in: Some(signed_in),
             ..self.context(session, session_ended)
         }
     }
@@ -725,6 +735,7 @@ impl TelemetryRuntime {
     fn basic_context(&self, session: &TelemetrySession) -> TelemetryContext {
         TelemetryContext {
             mode: TelemetryRuntimeMode::Foreground,
+            basic: Some(true),
             ..self.context(session, None)
         }
     }
@@ -965,8 +976,15 @@ fn runtime_mode(mode: BackendRuntimeMode) -> TelemetryRuntimeMode {
     }
 }
 
-fn is_heartbeat_due(last: Option<Instant>, now: Instant) -> bool {
-    last.is_some_and(|last| now.duration_since(last) >= HEARTBEAT_INTERVAL)
+fn heartbeat_interval(heartbeats_scheduled: usize) -> Duration {
+    EARLY_HEARTBEAT_INTERVALS
+        .get(heartbeats_scheduled)
+        .copied()
+        .unwrap_or(HEARTBEAT_INTERVAL)
+}
+
+fn is_heartbeat_due(last: Option<Instant>, now: Instant, interval: Duration) -> bool {
+    last.is_some_and(|last| now.duration_since(last) >= interval)
 }
 
 fn attempt_due(last_attempt: Option<Instant>, now: Instant) -> bool {

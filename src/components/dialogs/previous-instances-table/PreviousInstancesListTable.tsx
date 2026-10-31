@@ -13,9 +13,7 @@ import {
     DataTableRow
 } from '@/components/data-table/DataTableView';
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
-import { normalizeLocationText } from '@/components/location/locationModel';
 import { StaticLocation } from '@/components/location/StaticLocation';
-import { LocationWorld } from '@/components/LocationWorld';
 import { formatDateFilterOrFallback } from '@/lib/dateTime';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
@@ -35,12 +33,12 @@ import {
     type PreviousInstanceSortKey,
     type PreviousInstanceVariant,
     rowDuration,
-    rowLocation,
-    rowLocationObject
+    rowLocation
 } from './previousInstancesRows';
 import {
     DialogEmptyState,
-    InstanceCreatorCell
+    InstanceCreatorCell,
+    PreviousInstanceWorldLocation
 } from './PreviousInstancesViewParts';
 
 type PreviousInstancesListTableProps<TRow extends PreviousInstanceRow> = {
@@ -73,34 +71,21 @@ function renderLocationCell(
     row: PreviousInstanceRow,
     {
         variant,
-        currentUserId
+        currentUserId,
+        currentEndpoint
     }: {
         variant: PreviousInstanceVariant;
         currentUserId?: string | null;
+        currentEndpoint?: string;
     }
 ) {
     const location = rowLocation(row);
     if (variant === 'world') {
-        const locationObject = rowLocationObject(row);
         return (
-            <LocationWorld
-                locationObject={locationObject}
-                grouphint={row?.groupName}
+            <PreviousInstanceWorldLocation
+                row={row}
                 currentUserId={currentUserId}
-                worldDialogShortName={normalizeLocationText(
-                    locationObject.shortName
-                )}
-                instanceOwner={
-                    locationObject.ownerUserId || locationObject.userId || ''
-                }
-                instanceOwnerName={normalizeLocationText(
-                    locationObject.ownerDisplayName ||
-                        row?.ownerDisplayName ||
-                        row?.ownerName
-                )}
-                interactive={false}
-                hint={row?.worldName || ''}
-                className="max-w-full"
+                endpoint={currentEndpoint}
             />
         );
     }
@@ -296,7 +281,8 @@ export function PreviousInstancesListTable<TRow extends PreviousInstanceRow>({
                                                 {location
                                                     ? renderLocationCell(row, {
                                                           variant,
-                                                          currentUserId
+                                                          currentUserId,
+                                                          currentEndpoint
                                                       })
                                                     : '-'}
                                             </div>

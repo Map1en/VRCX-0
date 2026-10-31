@@ -20,7 +20,10 @@ use crate::realtime::friends::{baseline_friend_view, RealtimeFriendsRuntime};
 use crate::realtime::invite_automation::runtime::InviteAutomationState;
 use crate::realtime::user_facts::UserFactStore;
 use crate::realtime::user_query_cache::UserQueryCache;
-use crate::realtime::{FriendProjection, RealtimeSessionContext, RealtimeTransportLifecycleEvent};
+use crate::realtime::{
+    FriendProjection, RealtimeSessionContext, RealtimeTransportLifecycleEvent,
+    RealtimeTransportStartResult,
+};
 use crate::world_enrich::PendingEntryCorrection;
 
 pub type ReconnectBackfillCheck = Arc<dyn Fn() -> bool + Send + Sync>;
@@ -115,6 +118,14 @@ pub(super) struct ActiveRealtimeContext {
     pub(super) generation: u64,
     pub(super) client_run_id: u64,
     pub(super) session_generation: u64,
+}
+
+impl ActiveRealtimeContext {
+    pub(super) fn matches_transport(&self, transport: &RealtimeTransportStartResult) -> bool {
+        self.client_run_id == transport.client_run_id
+            && self.generation == transport.generation
+            && self.session_generation == transport.session_generation
+    }
 }
 
 #[derive(Clone, Debug)]

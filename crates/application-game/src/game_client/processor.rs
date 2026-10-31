@@ -196,7 +196,10 @@ impl GameClientProcessor {
                 .deps
                 .store
                 .get_bool("relaunchVRChatAfterCrash", false)?,
-            is_game_no_vr: self.deps.store.get_bool("isGameNoVR", false)?,
+            is_game_no_vr: self
+                .deps
+                .store
+                .get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?,
             launch_arguments: self.deps.store.get_string("launchArguments", "")?,
             launch_path_override: self.deps.store.get_string("vrcLaunchPathOverride", "")?,
         };
@@ -318,16 +321,20 @@ impl GameClientProcessor {
 
     fn persist_crash_relaunch_event(&self) -> Result<()> {
         let created_at = now_iso();
-        let affected_count = self.deps.store.write_game_log(
-            &OwnerId::new(self.deps.auth_scope.snapshot().current_user_id),
-            &GameLogWriteBatch {
-                events: vec![GameLogEventEntry {
-                    created_at: created_at.clone(),
-                    data: CRASH_RELAUNCH_MESSAGE.into(),
-                }],
-                ..Default::default()
-            },
-        )?;
+        let affected_count = self
+            .deps
+            .store
+            .write_game_log(
+                &OwnerId::new(self.deps.auth_scope.snapshot().current_user_id),
+                &GameLogWriteBatch {
+                    events: vec![GameLogEventEntry {
+                        created_at: created_at.clone(),
+                        data: CRASH_RELAUNCH_MESSAGE.into(),
+                    }],
+                    ..Default::default()
+                },
+            )?
+            .affected();
         self.deps
             .backend_status
             .publish_game_log_persisted(affected_count);

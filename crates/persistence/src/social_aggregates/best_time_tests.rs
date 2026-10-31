@@ -152,7 +152,7 @@ fn day_of_week_bucket_groups_by_weekday_with_readable_label() {
     .unwrap();
 
     assert_eq!(output.rows.len(), 1);
-    assert_eq!(output.rows[0].bucket, "1");
+    assert_eq!(output.rows[0].bucket, "0");
     assert_eq!(output.rows[0].label, "Monday");
     assert_eq!(output.rows[0].online_events, 2);
 }

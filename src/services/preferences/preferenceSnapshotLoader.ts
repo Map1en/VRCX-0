@@ -242,7 +242,7 @@ export async function loadPreferenceSnapshot() {
             DEFAULT_NOTIFICATION_LAYOUT
         ),
         configRepository.getBool('dataTableStriped', false),
-        configRepository.getString('tableDensity', null),
+        configRepository.getRawValue('tableDensity'),
         configRepository.getBool('compactTableMode', false),
         configRepository.getBool('reducedMotionAndBlur', false),
         configRepository.getBool('VRCX_accessibleStatusIndicators', false),

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { InviteMessageDialog } from '@/components/dialogs/InviteMessageDialog';
 import { BoopReplyDialog } from '@/features/notifications/components/NotificationViewParts';
 import { NotificationDrawerList } from '@/features/notifications/drawer/NotificationDrawerList';
+import { NotificationActionPendingContext } from '@/features/notifications/notificationActionPending';
 import type {
     NotificationDialogRequest,
     NotificationRow
@@ -60,6 +61,16 @@ export function VrcNotificationCenterHost() {
     const categories = useVrcNotificationStore((state) => state.categories);
     const unseenCount = useVrcNotificationStore((state) => state.unseenCount);
     const canMarkAllSeen = useVrcNotificationStore(selectCanMarkAllSeen);
+    const markAllSeenDone = useVrcNotificationStore(
+        (state) => state.markAllSeenProgress?.done ?? null
+    );
+    const markAllSeenTotal = useVrcNotificationStore(
+        (state) => state.markAllSeenProgress?.total ?? 0
+    );
+    const isMarkingAllSeen = markAllSeenDone !== null;
+    const markAllSeenLabel = isMarkingAllSeen
+        ? t('side_panel.notification_center.marking_all_read')
+        : t('side_panel.notification_center.mark_all_read');
     const loadStatus = useVrcNotificationStore((state) => state.loadStatus);
     const detail = useVrcNotificationStore((state) => state.detail);
     const setCenterOpen = useVrcNotificationStore(
@@ -80,6 +91,7 @@ export function VrcNotificationCenterHost() {
         ignoreNotificationLocally,
         markAllSeen,
         markSeen,
+        pendingNotificationKeys,
         sendBoopReply,
         sendInviteResponseSlot,
         sendInviteResponseWithMessage,
@@ -147,7 +159,7 @@ export function VrcNotificationCenterHost() {
                             'm-4 w-[calc(100%-(--spacing(8)))]! rounded-2xl border'
                     )}
                 >
-                    <SheetHeader className="border-b px-4 py-3">
+                    <SheetHeader className="relative border-b px-4 py-3">
                         <div className="flex items-center justify-between gap-3">
                             <SheetTitle className="flex items-center gap-2 text-base">
                                 <BellIcon className="text-muted-foreground size-4" />
@@ -162,6 +174,11 @@ export function VrcNotificationCenterHost() {
                                 ) : null}
                             </SheetTitle>
                             <div className="flex items-center gap-0.5">
+                                {isMarkingAllSeen ? (
+                                    <span className="text-muted-foreground mr-1 text-xs tabular-nums">
+                                        {markAllSeenDone} / {markAllSeenTotal}
+                                    </span>
+                                ) : null}
                                 <Tooltip>
                                     <TooltipTrigger
                                         render={
@@ -169,20 +186,20 @@ export function VrcNotificationCenterHost() {
                                                 type="button"
                                                 variant="ghost"
                                                 size="icon-sm"
-                                                aria-label={t(
-                                                    'side_panel.notification_center.mark_all_read'
-                                                )}
+                                                aria-label={markAllSeenLabel}
                                                 disabled={!canMarkAllSeen}
                                                 onClick={markAllRead}
                                             >
-                                                <CheckCheckIcon data-icon="inline-start" />
+                                                {isMarkingAllSeen ? (
+                                                    <Spinner data-icon="inline-start" />
+                                                ) : (
+                                                    <CheckCheckIcon data-icon="inline-start" />
+                                                )}
                                             </Button>
                                         }
                                     />
                                     <TooltipContent>
-                                        {t(
-                                            'side_panel.notification_center.mark_all_read'
-                                        )}
+                                        {markAllSeenLabel}
                                     </TooltipContent>
                                 </Tooltip>
                                 <Tooltip>
@@ -252,29 +269,46 @@ export function VrcNotificationCenterHost() {
                                 )}
                             </div>
                         ) : null}
+                        {isMarkingAllSeen ? (
+                            <div
+                                role="progressbar"
+                                aria-label={markAllSeenLabel}
+                                aria-valuemin={0}
+                                aria-valuemax={markAllSeenTotal}
+                                aria-valuenow={markAllSeenDone}
+                                className="bg-primary absolute -bottom-px left-0 h-0.5 transition-[width] duration-300"
+                                style={{
+                                    width: `${markAllSeenTotal ? (markAllSeenDone / markAllSeenTotal) * 100 : 0}%`
+                                }}
+                            />
+                        ) : null}
                     </SheetHeader>
-                    <NotificationDrawerList
-                        categories={categories}
-                        currentUserId={currentUserId ?? undefined}
-                        canInviteFromCurrentLocation={
-                            canInviteFromCurrentLocation
-                        }
-                        handlers={{
-                            onAcceptFriendRequest: acceptFriendRequest,
-                            onAcceptRequestInvite: acceptRequestInvite,
-                            onSendInviteResponseWithMessage:
-                                sendInviteResponseWithMessage,
-                            onSendNotificationResponse:
-                                sendNotificationResponse,
-                            onHideNotification: hideNotification,
-                            onIgnoreNotificationLocally:
-                                ignoreNotificationLocally,
-                            onDeleteNotification: deleteNotification,
-                            onMarkSeen: markSeen,
-                            onJoinQueueReady: joinQueueReady
-                        }}
-                        onNavigateToTable={navigateToTable}
-                    />
+                    <NotificationActionPendingContext
+                        value={pendingNotificationKeys}
+                    >
+                        <NotificationDrawerList
+                            categories={categories}
+                            currentUserId={currentUserId ?? undefined}
+                            canInviteFromCurrentLocation={
+                                canInviteFromCurrentLocation
+                            }
+                            handlers={{
+                                onAcceptFriendRequest: acceptFriendRequest,
+                                onAcceptRequestInvite: acceptRequestInvite,
+                                onSendInviteResponseWithMessage:
+                                    sendInviteResponseWithMessage,
+                                onSendNotificationResponse:
+                                    sendNotificationResponse,
+                                onHideNotification: hideNotification,
+                                onIgnoreNotificationLocally:
+                                    ignoreNotificationLocally,
+                                onDeleteNotification: deleteNotification,
+                                onMarkSeen: markSeen,
+                                onJoinQueueReady: joinQueueReady
+                            }}
+                            onNavigateToTable={navigateToTable}
+                        />
+                    </NotificationActionPendingContext>
                 </SheetContent>
             </Sheet>
             <InviteMessageDialog
@@ -287,7 +321,6 @@ export function VrcNotificationCenterHost() {
                 currentUserId={currentUserId}
                 endpoint={endpoint}
                 messageType={inviteResponseRequest?.messageType || 'response'}
-                mode="respond"
                 targetLabel={String(
                     inviteResponseRequest?.notification?.senderUsername ||
                         inviteResponseRequest?.notification?.senderUserId ||

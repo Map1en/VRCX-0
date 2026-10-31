@@ -5,6 +5,7 @@ pub(crate) mod current_user;
 pub(crate) mod event_kind;
 mod event_time;
 pub(crate) mod friends;
+pub(crate) mod group_changes;
 pub(crate) mod instance_queue;
 pub(crate) mod invite_automation;
 pub(crate) mod notifications;

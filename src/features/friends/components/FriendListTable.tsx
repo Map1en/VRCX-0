@@ -16,6 +16,7 @@ import {
 } from '@/components/data-table/DataTableView';
 import { ResizableTableCell } from '@/components/data-table/ResizableTableParts';
 import {
+    EmptyState,
     LoadingState,
     PageBody,
     PageFooter
@@ -23,7 +24,6 @@ import {
 import { Table, TableBody } from '@/ui/shadcn/table';
 
 import type { FriendListRow } from '../friendListRows';
-import { FriendListEmptyState } from './FriendListViewParts';
 
 const FriendListTableRow = memo(
     function FriendListTableRow({
@@ -105,7 +105,7 @@ export function FriendListTable({
     const { t } = useTranslation();
     const columnLayoutKey = table
         .getVisibleLeafColumns()
-        .map((column) => `${column.id}:${column.getSize()}`)
+        .map((column) => column.id)
         .join('|');
 
     return (
@@ -117,7 +117,7 @@ export function FriendListTable({
                     )}
                 />
             ) : isError ? (
-                <FriendListEmptyState
+                <EmptyState
                     title={t(
                         'view.friend_list.error.friend_roster_failed_to_load'
                     )}
@@ -190,7 +190,7 @@ export function FriendListTable({
                     </PageFooter>
                 </>
             ) : (
-                <FriendListEmptyState
+                <EmptyState
                     title={t(
                         'view.friend_list.empty.no_friends_match_the_current_filters'
                     )}

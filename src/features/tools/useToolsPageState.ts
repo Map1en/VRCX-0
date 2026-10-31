@@ -195,8 +195,6 @@ export function useToolsPageState() {
                 .filter((tool): tool is ToolDefinition => Boolean(tool)),
         [availableToolMap, quickAccessKeys]
     );
-    const shouldShowQuickAccess =
-        isQuickAccessEditing || quickAccessTools.length > 0;
     const recentToolCandidates = useRecentTools(availableToolMap);
     const recentTools = useMemo(
         () =>
@@ -444,7 +442,6 @@ export function useToolsPageState() {
         removeQuickAccessToolByKey,
         sensors,
         setIsQuickAccessEditing,
-        shouldShowQuickAccess,
         statusByToolKey,
         triggerTool,
         unpinToolFromNav

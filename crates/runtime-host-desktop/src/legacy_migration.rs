@@ -4,7 +4,7 @@ pub use vrcx_0_contracts::{
     LegacyMigrationPaths, LegacyVrcxDiscovery, LegacyVrcxMigrationStatus, LegacyVrcxSource,
 };
 
-use crate::{DesktopDatabaseUpgradeRuntime, Error, Result};
+use crate::{DesktopDatabaseUpgradeRuntime, Result};
 
 pub trait LegacyMigrationLifecycle: Send + Sync {
     fn stop_runtime_services(&self);
@@ -67,7 +67,9 @@ impl DesktopLegacyMigrationRuntime {
             }
         };
         let source = source.ok_or_else(|| {
-            Error::Custom(legacy_migration_unavailable_reason(&unavailable_status))
+            vrcx_0_application_core::Error::Custom(legacy_migration_unavailable_reason(
+                &unavailable_status,
+            ))
         })?;
         let plan = legacy_migration_execution_plan(mode, cfg!(debug_assertions));
         if plan.prepare_snapshot {
@@ -114,7 +116,12 @@ fn legacy_migration_execution_plan(
 async fn discover_supported_legacy_source() -> Result<LegacyVrcxDiscovery> {
     tokio::task::spawn_blocking(vrcx_0_persistence::legacy_vrcx::discover_supported_legacy_source)
         .await
-        .map_err(|error| Error::Custom(format!("legacy VRCX discovery task failed: {error}")))
+        .map_err(|error| {
+            vrcx_0_application_core::Error::Custom(format!(
+                "legacy VRCX discovery task failed: {error}"
+            ))
+            .into()
+        })
 }
 
 fn legacy_migration_unavailable_reason(status: &LegacyVrcxMigrationStatus) -> String {
@@ -129,10 +136,10 @@ fn ensure_legacy_vrcx_process_state(
     legacy_vrcx_running: bool,
 ) -> Result<()> {
     if !allow_running_legacy_vrcx && legacy_vrcx_running {
-        return Err(Error::Custom(
+        return Err(vrcx_0_application_core::Error::Custom(
             "VRCX is still running. Close it before migrating or explicitly allow migration while it is running."
                 .into(),
-        ));
+        ).into());
     }
     Ok(())
 }

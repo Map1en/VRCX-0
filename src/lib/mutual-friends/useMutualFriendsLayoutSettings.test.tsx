@@ -97,7 +97,7 @@ describe('mutual graph layout settings', () => {
             layoutIterations: 800,
             layoutSpacing: 60,
             edgeCurvature: 0.1,
-            communitySeparation: 0
+            communitySeparation: 0.5
         });
         expect(mocks.setInt).toHaveBeenCalledWith(
             'MutualGraphLayoutIterations',
@@ -105,7 +105,7 @@ describe('mutual graph layout settings', () => {
         );
         expect(mocks.setFloat).toHaveBeenCalledWith(
             'MutualGraphCommunitySeparation',
-            0
+            0.5
         );
     });
 });

@@ -32,9 +32,8 @@ fn player_joining_only_reaches_overlay_for_current_instance_absent_player() -> R
     let (_dir, runtime, active_session) = runtime_with_active_session("player-joining")?;
     let local_game_context = runtime.local_game_context_for_test();
     let activity_sink = runtime.activity_sink_for_test();
-    let baseline = runtime.runtime().sync_friend_snapshot(
-        active_session.clone(),
-        Some(7),
+    let baseline = runtime.sync_friend_baseline(
+        &active_session,
         [(
             "usr_friend".to_string(),
             FriendBaselineEntry {
@@ -59,7 +58,7 @@ fn player_joining_only_reaches_overlay_for_current_instance_absent_player() -> R
     let apply_joining = |destination: &str| {
         runtime.runtime().apply_friend_output(joining_output(
             &OwnerId::new(active_session.user_id.clone()),
-            baseline.baseline_revision,
+            baseline.result.baseline_revision,
             destination,
         ));
     };

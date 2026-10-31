@@ -4,6 +4,7 @@ import type { LanguageOption } from '@/shared/utils/userLanguage';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { TabsContent } from '@/ui/shadcn/tabs';
 
+import { SEARCH_PAGE_SIZE_OPTIONS } from '../searchPageSizes';
 import type {
     SearchAvatarResult,
     SearchGroupResult,
@@ -91,6 +92,9 @@ export function SearchUserTabPanel({
                 nextDisabled={pagination.nextDisabled}
                 onPrev={pagination.onPrev}
                 onNext={pagination.onNext}
+                pageSize={pagination.pageSize}
+                pageSizes={SEARCH_PAGE_SIZE_OPTIONS}
+                onPageSizeChange={pagination.onPageSizeChange}
             />
         </TabsContent>
     );
@@ -146,6 +150,9 @@ export function SearchWorldTabPanel({
                 nextDisabled={pagination.nextDisabled}
                 onPrev={pagination.onPrev}
                 onNext={pagination.onNext}
+                pageSize={pagination.pageSize}
+                pageSizes={SEARCH_PAGE_SIZE_OPTIONS}
+                onPageSizeChange={pagination.onPageSizeChange}
             />
         </TabsContent>
     );
@@ -209,6 +216,9 @@ export function SearchAvatarTabPanel({
                 nextDisabled={pagination.nextDisabled}
                 onPrev={pagination.onPrev}
                 onNext={pagination.onNext}
+                pageSize={pagination.pageSize}
+                pageSizes={SEARCH_PAGE_SIZE_OPTIONS}
+                onPageSizeChange={pagination.onPageSizeChange}
             />
         </TabsContent>
     );
@@ -263,6 +273,9 @@ export function SearchGroupTabPanel({
                 nextDisabled={pagination.nextDisabled}
                 onPrev={pagination.onPrev}
                 onNext={pagination.onNext}
+                pageSize={pagination.pageSize}
+                pageSizes={SEARCH_PAGE_SIZE_OPTIONS}
+                onPageSizeChange={pagination.onPageSizeChange}
             />
         </TabsContent>
     );

@@ -1,7 +1,7 @@
 use std::sync::{Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
-use vrcx_0_logger_protocol::wire::{SessionState, PRESENCE_TTL_SECS};
+use vrcx_0_logger_protocol::wire::{DeviceLoginState, SessionState, PRESENCE_TTL_SECS};
 
 const PRESENCE_TTL: Duration = Duration::from_secs(PRESENCE_TTL_SECS);
 
@@ -50,6 +50,7 @@ pub struct SessionInfo {
     pub relogin_attempts: u32,
     pub connected_since: Option<i64>,
     pub last_snapshot_at: Option<i64>,
+    pub device_login: Option<DeviceLoginState>,
 }
 
 #[derive(Default)]

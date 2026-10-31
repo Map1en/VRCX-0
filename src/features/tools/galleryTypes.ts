@@ -1,4 +1,4 @@
-import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 
 import type { UserProfileEntity } from '@/domain/entities/user';
 import type { AppToastOptions } from '@/services/toastService';
@@ -73,9 +73,6 @@ export type GalleryControllerDeps = {
     setLoadingByTab: Dispatch<SetStateAction<Record<string, boolean>>>;
     setMutatingKey: Dispatch<SetStateAction<string>>;
     setUploadingTab: Dispatch<SetStateAction<string>>;
-    uploadAuthTargetRef: MutableRefObject<GalleryAuthTarget | null>;
-    uploadInputRef: MutableRefObject<{ click(): void } | null>;
-    uploadTargetRef: MutableRefObject<GalleryUploadTarget | null>;
 };
 
 export type GalleryActionDeps = GalleryControllerDeps & {
@@ -95,7 +92,6 @@ export type GalleryActionDeps = GalleryControllerDeps & {
     toast: ToastApi;
     useRuntimeStore: typeof import('@/state/runtimeStore').useRuntimeStore;
     userProfileRepository: typeof import('@/repositories/userProfileRepository').default;
-    validateImageFile(file: Blob, t: Translation): boolean;
     withUploadTimeout<T>(promise: Promise<T>): Promise<T>;
 };
 
@@ -173,6 +169,7 @@ export type GalleryBulkCommands = {
 export type GalleryCommands = {
     onActiveTabChange(value: string): void;
     onBeginUpload(tab: GalleryUploadTarget): void;
+    onPasteUpload(tab: GalleryTab): void;
     onClearProfileField(fieldName: GalleryProfileField, fileId: string): void;
     onDeleteFile(tab: FileAssetTab, fileId: string): void;
     onDeletePrint(printId: string): void;
@@ -184,6 +181,7 @@ export type GalleryCommands = {
 export type GalleryModel = {
     activeTab: GalleryTab;
     assets: GalleryAssets;
+    clipboardPasting: boolean;
     currentUserId: string | null;
     gridDensityConfig: ReturnType<
         typeof import('./galleryDensity').getGalleryGridDensityConfig
@@ -203,6 +201,7 @@ export type GalleryFileTabState = Pick<
     GalleryModel,
     | 'activeTab'
     | 'assets'
+    | 'clipboardPasting'
     | 'currentUserId'
     | 'gridDensityConfig'
     | 'isVrcPlusSupporter'
@@ -217,6 +216,7 @@ export type GalleryFileTabState = Pick<
     Pick<
         GalleryCommands,
         | 'onBeginUpload'
+        | 'onPasteUpload'
         | 'onClearProfileField'
         | 'onDeleteFile'
         | 'onPreview'

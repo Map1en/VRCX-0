@@ -6,6 +6,7 @@ import type {
 import type { Dispatch, SetStateAction } from 'react';
 
 import type { AppColumnDef, AppTable } from '@/components/data-table/appTable';
+import type { LogFilterCommands } from '@/components/data-table/LogFilterContextMenu';
 import type { LocationNewInstanceTarget } from '@/components/Location';
 import type { LoadStatus } from '@/domain/shared/types';
 import type { UserFact } from '@/domain/users/userFacts';
@@ -39,6 +40,7 @@ export type FeedFriendActions = {
 
 export type FeedTableMeta = {
     actions: FeedFriendActions;
+    filterCommands?: LogFilterCommands;
     friendLogNamesById: Record<string, string>;
     knownUsersById: Record<string, UserFact>;
     loadingPreviousInstancesKey: string;

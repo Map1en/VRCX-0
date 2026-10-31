@@ -30,12 +30,7 @@ fn normalize_auto_login_delay_seconds(value: &str) -> i64 {
 
 impl SavedCredential {
     fn has_login_credentials(&self) -> bool {
-        !self.login_params.username.trim().is_empty()
-            && self
-                .login_params
-                .password
-                .as_deref()
-                .is_some_and(|password| !password.trim().is_empty())
+        !self.login_params.username.trim().is_empty() && self.has_saved_password()
     }
 
     fn has_cookies(&self) -> bool {

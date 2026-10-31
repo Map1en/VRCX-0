@@ -8,7 +8,6 @@ use crate::{Result, WebClient};
 
 #[async_trait]
 pub trait AvatarCachePort: Send + Sync {
-    fn clear_working(&self);
     fn invalidate(&self, user_id: &str, endpoint: &str, avatar_id: &str);
     fn get_summary(
         &self,
@@ -55,10 +54,6 @@ impl AvatarCache {
         Self {
             inner: Arc::new(inner),
         }
-    }
-
-    pub fn clear_working(&self) {
-        self.inner.clear_working();
     }
 
     pub fn invalidate(&self, user_id: &str, endpoint: &str, avatar_id: &str) {

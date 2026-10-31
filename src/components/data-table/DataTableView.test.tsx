@@ -55,4 +55,22 @@ describe('DataTableView', () => {
             .closest('td')?.classList;
         expect(cellClassList).toContain('text-clip');
     });
+
+    it('applies column header classes from column metadata', () => {
+        type Row = { count: number };
+        const columns: AppColumnDef<Row>[] = [
+            {
+                accessorKey: 'count',
+                header: 'Count',
+                meta: { tableHeadClassName: 'text-right' }
+            }
+        ];
+
+        render(<DataTableView columns={columns} data={[{ count: 1 }]} />);
+
+        const headClassList = screen
+            .getByText('Count')
+            .closest('th')?.classList;
+        expect(headClassList).toContain('text-right');
+    });
 });

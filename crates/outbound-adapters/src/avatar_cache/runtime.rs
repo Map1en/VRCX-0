@@ -49,10 +49,6 @@ impl AvatarCache {
         }
     }
 
-    pub fn clear_working(&self) {
-        self.working.invalidate_all();
-    }
-
     pub fn invalidate(&self, user_id: &str, endpoint: &str, avatar_id: &str) {
         self.working
             .invalidate(&cache_key(user_id, endpoint, avatar_id));
@@ -71,9 +67,7 @@ impl AvatarCache {
         if let Some(entry) = self.working.get(&key) {
             return Ok(Some(entry.summary.clone()));
         }
-        let Some(summary) = avatar_cache_get(self.db.as_ref(), key.avatar_id.clone())
-            .map_err(crate::map_persistence_error)?
-        else {
+        let Some(summary) = avatar_cache_get(self.db.as_ref(), key.avatar_id.clone())? else {
             return Ok(None);
         };
         if !is_meaningful_summary(&summary) {
@@ -92,9 +86,7 @@ impl AvatarCache {
         let Some(file_id) = extract_file_id(image_url) else {
             return Ok(None);
         };
-        let Some(summary) = avatar_cache_find_by_file_id(self.db.as_ref(), &file_id)
-            .map_err(crate::map_persistence_error)?
-        else {
+        let Some(summary) = avatar_cache_find_by_file_id(self.db.as_ref(), &file_id)? else {
             return Ok(None);
         };
         if !is_meaningful_summary(&summary) {
@@ -131,8 +123,7 @@ impl AvatarCache {
     }
 
     pub fn existing_summary_ids(&self, avatar_ids: &[String]) -> crate::Result<Vec<String>> {
-        avatar_cache_existing_ids(self.db.as_ref(), avatar_ids)
-            .map_err(crate::map_persistence_error)
+        avatar_cache_existing_ids(self.db.as_ref(), avatar_ids).map_err(crate::Error::from)
     }
 
     pub fn store_summaries(
@@ -145,8 +136,7 @@ impl AvatarCache {
             .iter()
             .filter_map(|entry| entry.id.as_str().map(str::to_string))
             .collect::<Vec<_>>();
-        let stored = avatar_cache_upsert_many(self.db.as_ref(), entries)
-            .map_err(crate::map_persistence_error)?;
+        let stored = avatar_cache_upsert_many(self.db.as_ref(), entries)?;
         for avatar_id in avatar_ids {
             self.invalidate(user_id, endpoint, &avatar_id);
         }
@@ -196,8 +186,7 @@ impl AvatarCache {
         web: &WebClient,
         key: &AvatarCacheKey,
     ) -> crate::Result<Arc<Value>> {
-        let (_, request) = avatar_get_input(key.endpoint.clone(), key.avatar_id.clone())
-            .map_err(crate::map_http_api_error)?;
+        let (_, request) = avatar_get_input(key.endpoint.clone(), key.avatar_id.clone())?;
         let response = tokio::time::timeout(
             AVATAR_RESOLVE_FETCH_TIMEOUT,
             web.execute_api(request, ApiScope::Vrchat),
@@ -279,10 +268,6 @@ impl AvatarCache {
 
 #[async_trait::async_trait]
 impl vrcx_0_application_core::AvatarCachePort for AvatarCache {
-    fn clear_working(&self) {
-        AvatarCache::clear_working(self);
-    }
-
     fn invalidate(&self, user_id: &str, endpoint: &str, avatar_id: &str) {
         AvatarCache::invalidate(self, user_id, endpoint, avatar_id);
     }

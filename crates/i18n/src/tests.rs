@@ -96,7 +96,7 @@ fn localized_catalog_reuses_one_resolved_locale_for_multiple_keys() {
 }
 
 #[test]
-fn activity_window_labels_are_localized_and_fall_back_to_english_where_untranslated() {
+fn activity_window_labels_are_localized() {
     assert_eq!(
         text("zh-CN", DesktopWidgetKey::DesktopWidgetMenuPin),
         "窗口置顶"
@@ -104,9 +104,5 @@ fn activity_window_labels_are_localized_and_fall_back_to_english_where_untransla
     assert_eq!(
         text("ja", DesktopWidgetKey::DesktopWidgetMenuClickThrough),
         "クリックを透過"
-    );
-    assert_eq!(
-        text("fr", DesktopWidgetKey::DesktopWidgetTitle),
-        text("en", DesktopWidgetKey::DesktopWidgetTitle)
     );
 }

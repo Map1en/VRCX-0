@@ -16,7 +16,8 @@ use crate::state::{AppState, BACKGROUND_MODE_RESUME_ROUTE_STORAGE_KEY};
 use vrcx_0_runtime_host_desktop::deep_link::{parse_deep_link, queue_deep_link_action};
 
 use super::adapters::{
-    start_host_services, start_mcp_server_if_enabled, TauriDesktopNotifier, TauriUpdaterPort,
+    observe_tray_realtime_phase, start_host_services, start_mcp_server_if_enabled,
+    TauriDesktopNotifier, TauriUpdaterPort,
 };
 use super::autostart::{apply_autostart_window_state_if_needed, sync_autostart_from_db};
 use super::shared::app_language;
@@ -293,6 +294,7 @@ pub fn setup_app_with_data_dir(
     sync_autostart_from_db(app, &state);
     apply_autostart_window_state_if_needed(app, &state);
     start_host_services(app.handle(), &state);
+    observe_tray_realtime_phase(app.handle(), &state);
     start_mcp_server_if_enabled(app.handle());
     wire_deep_links(app.handle());
     #[cfg(unix)]

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-import { isEditableTarget } from '@/components/layout/useGlobalKeyboardShortcuts';
+import { isTextEntryTarget } from '@/components/keyboard/keyboardShortcutGuards';
 
 export function useClearSelectionOnEscape(
     hasSelection: boolean,
@@ -11,7 +11,11 @@ export function useClearSelectionOnEscape(
             return undefined;
         }
         function handleKeyDown(event: KeyboardEvent) {
-            if (event.key !== 'Escape' || isEditableTarget(event.target)) {
+            if (
+                event.key !== 'Escape' ||
+                event.defaultPrevented ||
+                isTextEntryTarget(event.target)
+            ) {
                 return;
             }
             clearSelection();

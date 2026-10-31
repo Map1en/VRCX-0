@@ -26,9 +26,7 @@ vi.mock('@/state/preferencesStore', () => ({
 
 vi.mock('./FeedTableParts', () => ({
     FeedExpandedRow: () => <div>expanded detail</div>,
-    FeedUserLink: () => <button type="button">user</button>,
-    formatTimestampLong: () => 'long time',
-    formatTimestampParts: () => ({ date: 'time', time: '' })
+    FeedUserLink: () => <button type="button">user</button>
 }));
 
 import { FeedVirtualListShell } from './FeedVirtualListShell';
@@ -58,12 +56,19 @@ const row: FeedRow = {
 };
 
 const table = {
-    getColumn: () => ({ getSize: () => 120 }),
+    getColumn: (id: string) => ({ id, getSize: () => 120 }),
     getHeaderGroups: () => [{ headers: [] }]
 } as unknown as FeedTableInstance;
 
+const onlyType = vi.fn();
+
 const props = {
     actions,
+    emptyFilterModel: {
+        hasActiveFilters: false,
+        onClearFilters: () => undefined
+    },
+    filterCommands: { onlyType },
     favoritesOnly: false,
     friendLogNamesById: {},
     hasMore: false,
@@ -91,7 +96,7 @@ describe('FeedVirtualListShell', () => {
         const summary = view.container.querySelector(
             '[data-feed-list-summary]'
         );
-        expect(summary?.textContent).toContain('timeusertypedetail');
+        expect(summary?.textContent).toMatch(/:\d{2}usertypedetail$/);
     });
 
     it('renders static labels instead of sortable headers', () => {
@@ -167,5 +172,53 @@ describe('FeedVirtualListShell', () => {
             })
         );
         expect(onReloadLatest).toHaveBeenCalledOnce();
+    });
+
+    it('tells a feed with no history apart from one emptied by filters', () => {
+        const onClearFilters = vi.fn();
+        const view = render(
+            <FeedVirtualListShell {...props} rows={[]} sourceRows={[]} />
+        );
+        expect(screen.getByText('empty_state.feed_title')).not.toBeNull();
+        expect(screen.queryByRole('button')).toBeNull();
+
+        view.rerender(
+            <FeedVirtualListShell
+                {...props}
+                emptyFilterModel={{ hasActiveFilters: true, onClearFilters }}
+                rows={[]}
+                sourceRows={[]}
+            />
+        );
+        expect(
+            screen.getByText(
+                'view.feed.empty.no_feed_rows_match_the_current_filters'
+            )
+        ).not.toBeNull();
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'empty_state.clear_search_and_filters'
+            })
+        );
+        expect(onClearFilters).toHaveBeenCalledOnce();
+    });
+
+    it('offers type filters from the row context menu', async () => {
+        const view = render(<FeedVirtualListShell {...props} />);
+        const summary = view.container.querySelector(
+            '[data-feed-list-summary]'
+        );
+        if (!summary) {
+            throw new Error('missing summary row');
+        }
+
+        fireEvent.contextMenu(summary);
+        fireEvent.click(
+            await screen.findByRole('menuitem', {
+                name: 'table.filter_action.only_type'
+            })
+        );
+
+        expect(onlyType).toHaveBeenCalledWith('Status');
     });
 });

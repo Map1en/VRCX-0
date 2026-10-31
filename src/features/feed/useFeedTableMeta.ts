@@ -10,6 +10,7 @@ type UseFeedTableMetaOptions = Omit<FeedTableMeta, 'knownUsersById'> & {
 
 export function useFeedTableMeta({
     actions,
+    filterCommands,
     friendLogNamesById,
     loadingPreviousInstancesKey,
     onOpenPreviousInstances,
@@ -22,6 +23,7 @@ export function useFeedTableMeta({
     const knownUsersById = useKnownUserFacts(rowUserIds);
     const nextMeta: FeedTableMeta = {
         actions,
+        filterCommands,
         friendLogNamesById,
         knownUsersById,
         loadingPreviousInstancesKey,

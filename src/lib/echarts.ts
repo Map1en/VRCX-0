@@ -1,5 +1,6 @@
 import { BarChart, HeatmapChart } from 'echarts/charts';
 import {
+    AriaComponent,
     GridComponent,
     TooltipComponent,
     VisualMapComponent
@@ -10,6 +11,7 @@ import { CanvasRenderer } from 'echarts/renderers';
 echarts.use([
     BarChart,
     HeatmapChart,
+    AriaComponent,
     GridComponent,
     TooltipComponent,
     VisualMapComponent,

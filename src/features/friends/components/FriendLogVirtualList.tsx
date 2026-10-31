@@ -2,7 +2,18 @@ import { useMemo, type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { AppTable } from '@/components/data-table/appTable';
+import {
+    getColumnGridLayout,
+    getColumnSizeVars
+} from '@/components/data-table/columnSizing';
 import { DataTableColumnResizeHandle } from '@/components/data-table/DataTableColumnResizeHandle';
+import {
+    LogFilterContextMenu,
+    getLogFilterRowAttributes,
+    type LogFilterCommands
+} from '@/components/data-table/LogFilterContextMenu';
+import { getColumnOrderLocked } from '@/components/data-table/tableColumnLayout';
+import { TableColumnContextMenu } from '@/components/data-table/TableColumnVisibilityMenu';
 import { VirtualHistoryList } from '@/components/data-table/VirtualHistoryList';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { Button } from '@/ui/shadcn/button';
@@ -15,6 +26,7 @@ import { FriendLogTypeIndicator, renderUserCell } from './FriendLogViewParts';
 export function FriendLogVirtualList({
     rows,
     table,
+    filterCommands,
     resolveDisplayName,
     deleteAction,
     resetKey,
@@ -28,6 +40,7 @@ export function FriendLogVirtualList({
 }: {
     rows: FriendLogRow[];
     table: AppTable<FriendLogRow>;
+    filterCommands: LogFilterCommands;
     resolveDisplayName(row: FriendLogRow): string;
     deleteAction: Omit<ComponentProps<typeof FriendLogDeleteAction>, 'row'>;
     resetKey: string;
@@ -51,16 +64,7 @@ export function FriendLogVirtualList({
     );
     const headers = table.getHeaderGroups().flatMap((group) => group.headers);
     const columns = table.getVisibleLeafColumns();
-    const layout = {
-        gridTemplateColumns: columns
-            .map((column) =>
-                column.id === 'displayName'
-                    ? `minmax(${column.getSize()}px, 1fr)`
-                    : `${column.getSize()}px`
-            )
-            .join(' '),
-        minWidth: columns.reduce((width, column) => width + column.getSize(), 0)
-    };
+    const layout = getColumnGridLayout(columns, 'displayName');
     const labels: Record<string, string> = {
         created_at: t('table.friendLog.date'),
         type: t('table.friendLog.type'),
@@ -91,73 +95,98 @@ export function FriendLogVirtualList({
     );
 
     return (
-        <VirtualHistoryList
-            rows={entries}
-            estimatedRowHeight={density === 'compact' ? 32 : 40}
-            resetKey={resetKey}
-            minWidth={layout.minWidth}
-            hasMore={hasMore && !loadOlderFailed}
-            loadingOlder={loadingOlder}
-            onLoadOlder={onLoadOlder}
-            hasUnloadedLatest={hasUnloadedLatest}
-            onReloadLatest={onReloadLatest}
-            onViewingLatestChange={onViewingLatestChange}
-            latestLabel={t('view.friend_log.latest')}
-            header={
-                <div
-                    className="grid min-h-[var(--vrcx-0-table-header-height)] items-center text-xs text-[var(--vrcx-0-table-header-foreground)]"
-                    style={layout}
-                >
-                    {headers.map((header) => (
+        <LogFilterContextMenu commands={filterCommands}>
+            <div className="flex min-h-0 flex-1 flex-col">
+                <VirtualHistoryList
+                    rows={entries}
+                    estimatedRowHeight={density === 'compact' ? 32 : 40}
+                    resetKey={resetKey}
+                    minWidth={layout.minWidth}
+                    sizingStyle={getColumnSizeVars(columns)}
+                    hasMore={hasMore && !loadOlderFailed}
+                    loadingOlder={loadingOlder}
+                    onLoadOlder={onLoadOlder}
+                    hasUnloadedLatest={hasUnloadedLatest}
+                    onReloadLatest={onReloadLatest}
+                    onViewingLatestChange={onViewingLatestChange}
+                    latestLabel={t('view.friend_log.latest')}
+                    header={
                         <div
-                            key={header.id}
-                            className="relative flex h-full min-w-0 items-center px-[var(--vrcx-0-table-cell-padding-inline)]"
+                            className="grid min-h-[var(--vrcx-0-table-header-height)] items-center text-xs text-[var(--vrcx-0-table-header-foreground)]"
+                            style={layout}
                         >
-                            <span className="truncate">
-                                {labels[header.column.id]}
-                            </span>
-                            {header.column.getCanResize() ? (
-                                <DataTableColumnResizeHandle
-                                    header={header}
-                                    label={labels[header.column.id] ?? ''}
-                                />
-                            ) : null}
+                            {headers.map((header) => (
+                                <TableColumnContextMenu
+                                    key={header.id}
+                                    column={header.column}
+                                    table={table}
+                                    enableColumnReorder={
+                                        !getColumnOrderLocked(table)
+                                    }
+                                >
+                                    <div className="relative flex h-full min-w-0 items-center px-[var(--vrcx-0-table-cell-padding-inline)]">
+                                        <span className="truncate">
+                                            {labels[header.column.id]}
+                                        </span>
+                                        {header.column.getCanResize() ? (
+                                            <DataTableColumnResizeHandle
+                                                header={header}
+                                                label={
+                                                    labels[header.column.id] ??
+                                                    ''
+                                                }
+                                            />
+                                        ) : null}
+                                    </div>
+                                </TableColumnContextMenu>
+                            ))}
                         </div>
-                    ))}
-                </div>
-            }
-            renderRow={({ row }) => (
-                <div
-                    data-friend-history-row=""
-                    className="grid h-[var(--vrcx-0-table-row-height)] items-center border-b border-[var(--vrcx-0-table-divider)] hover:bg-[var(--vrcx-0-table-row-hover-surface)]"
-                    style={layout}
-                >
-                    {columns.map((column) => (
+                    }
+                    renderRow={({ row }) => (
                         <div
-                            key={column.id}
-                            className="min-w-0 truncate px-[var(--vrcx-0-table-cell-padding-inline)]"
+                            data-friend-history-row=""
+                            {...getLogFilterRowAttributes({
+                                userId: row.userId || '',
+                                userName: resolveDisplayName(row),
+                                type: row.type,
+                                typeLabel: t(
+                                    `view.friend_log.filters.${row.type}`
+                                )
+                            })}
+                            className="grid h-[var(--vrcx-0-table-row-height)] items-center border-b border-[var(--vrcx-0-table-divider)] hover:bg-[var(--vrcx-0-table-row-hover-surface)]"
+                            style={layout}
                         >
-                            {column.id === 'created_at' ? (
-                                <FriendLogDateCell row={row} />
-                            ) : column.id === 'type' ? (
-                                <FriendLogTypeIndicator type={row.type} />
-                            ) : column.id === 'displayName' ? (
-                                renderUserCell({
-                                    ...row,
-                                    resolvedDisplayName: resolveDisplayName(row)
-                                })
-                            ) : column.id === 'action' ? (
-                                <FriendLogDeleteAction
-                                    {...deleteAction}
-                                    row={row}
-                                />
-                            ) : null}
+                            {columns.map((column) => (
+                                <div
+                                    key={column.id}
+                                    className="min-w-0 truncate px-[var(--vrcx-0-table-cell-padding-inline)]"
+                                >
+                                    {column.id === 'created_at' ? (
+                                        <FriendLogDateCell row={row} />
+                                    ) : column.id === 'type' ? (
+                                        <FriendLogTypeIndicator
+                                            type={row.type}
+                                        />
+                                    ) : column.id === 'displayName' ? (
+                                        renderUserCell({
+                                            ...row,
+                                            resolvedDisplayName:
+                                                resolveDisplayName(row)
+                                        })
+                                    ) : column.id === 'action' ? (
+                                        <FriendLogDeleteAction
+                                            {...deleteAction}
+                                            row={row}
+                                        />
+                                    ) : null}
+                                </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
-            )}
-            footer={footer}
-            emptyState={footer}
-        />
+                    )}
+                    footer={footer}
+                    emptyState={footer}
+                />
+            </div>
+        </LogFilterContextMenu>
     );
 }

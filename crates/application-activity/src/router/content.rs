@@ -260,6 +260,9 @@ pub(super) fn build_activity_content(event: &ActivityEvent) -> ActivityContent {
         content.avatar_name.as_str(),
         content.display_location.as_str(),
     ]);
+    if let Some(body) = keyed_body(facts) {
+        content.body = body;
+    }
     content.summary = summary(&content.title.source_text(), &content.body.source_text());
     content
 }
@@ -291,6 +294,22 @@ fn activity_content(icon: &str, title: ActivityText, body: ActivityText) -> Acti
         title,
         body,
         ..ActivityContent::default()
+    }
+}
+
+fn keyed_body(facts: &ActivityFacts) -> Option<ActivityText> {
+    if facts.message_key.is_empty() {
+        return None;
+    }
+    match serde_json::from_value::<OverlayMessage>(serde_json::json!({
+        "key": facts.message_key,
+        "params": facts.message_params,
+    })) {
+        Ok(message) => Some(ActivityText::message(message)),
+        Err(error) => {
+            tracing::warn!(key = %facts.message_key, %error, "unknown activity message key");
+            None
+        }
     }
 }
 

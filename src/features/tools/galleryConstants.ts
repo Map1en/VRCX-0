@@ -54,6 +54,13 @@ export const UPLOAD_ASPECT_RATIOS: Record<GalleryTab, number> = {
     prints: 16 / 9
 };
 
+export function canUploadGalleryTarget(
+    tab: GalleryUploadTarget,
+    isVrcPlusSupporter: boolean
+) {
+    return tab === 'gallery' || tab === 'icons' || isVrcPlusSupporter;
+}
+
 export function sanitizeGalleryTab(
     value: string | null | undefined
 ): GalleryTab {

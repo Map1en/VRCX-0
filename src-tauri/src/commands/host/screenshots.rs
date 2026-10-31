@@ -8,7 +8,7 @@ use crate::commands::blocking::run_blocking;
 use crate::error::AppError;
 use crate::state::AppState;
 use vrcx_0_core::screenshots::{
-    ScreenshotExportProgress, ScreenshotFolderTree, ScreenshotLibraryImage,
+    FavoriteScreenshots, ScreenshotExportProgress, ScreenshotFolderTree, ScreenshotLibraryImage,
     ScreenshotLibraryScanStatus, ScreenshotSearchResult, ScreenshotTimeWindow,
     ScreenshotWindowImages,
 };
@@ -132,6 +132,44 @@ pub async fn app__pick_random_screenshot_in_folder_tree(
     let screenshots = state.runtime_host().screenshots().clone();
     run_blocking("random screenshot in folder tree", move || {
         screenshots.random_path_in_folder_tree(&folder_path)
+    })
+    .await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__get_favorite_screenshots(
+    state: State<'_, AppState>,
+) -> Result<FavoriteScreenshots, AppError> {
+    require_host_capability(HostCapability::ScreenshotCache)?;
+    let screenshots = state.runtime_host().screenshots().clone();
+    run_blocking("favorite screenshots", move || screenshots.favorites()).await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__forget_missing_screenshot_favorites(
+    state: State<'_, AppState>,
+) -> Result<u32, AppError> {
+    require_host_capability(HostCapability::ScreenshotCache)?;
+    let screenshots = state.runtime_host().screenshots().clone();
+    run_blocking("missing screenshot favorites", move || {
+        screenshots.forget_missing_favorites()
+    })
+    .await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__set_screenshot_favorite(
+    state: State<'_, AppState>,
+    path: String,
+    favorite: bool,
+) -> Result<(), AppError> {
+    require_host_capability(HostCapability::ScreenshotCache)?;
+    let screenshots = state.runtime_host().screenshots().clone();
+    run_blocking("screenshot favorite", move || {
+        screenshots.set_favorite(&path, favorite)
     })
     .await
 }

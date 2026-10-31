@@ -4,13 +4,15 @@ import type {
     FriendRecordInput
 } from '@/domain/friends/types';
 import removeConfusables, { removeWhitespace } from '@/services/confusables';
+import { replaceBioSymbols } from '@/shared/utils/string';
 
 const FRIEND_LIST_DEFAULT_SEARCH_FILTER_IDS = [
     'displayName',
     'rank',
     'status',
     'note',
-    'memo'
+    'memo',
+    'bio'
 ];
 
 export type FriendListRow = FriendRecordInput &
@@ -20,6 +22,8 @@ export type FriendListRow = FriendRecordInput &
         $mutualCount?: number | string;
         $mutualOptedOut?: boolean;
         $timeSpent?: number;
+        bio?: string;
+        bioLinks?: string[];
         friendNumber?: number;
         memo?: string;
         note?: string;
@@ -140,6 +144,15 @@ export function matchesFriendListSearch(
         )
             .toLowerCase()
             .includes(loweredQuery)
+    ) {
+        return true;
+    }
+
+    if (
+        filters.has('bio') &&
+        [replaceBioSymbols(friend?.bio), ...(friend?.bioLinks ?? [])].some(
+            (text) => text.toLowerCase().includes(loweredQuery)
+        )
     ) {
         return true;
     }

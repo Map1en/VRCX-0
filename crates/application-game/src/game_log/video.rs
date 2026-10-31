@@ -61,6 +61,22 @@ struct NowPlayingTrack {
     generation: u64,
     playing: bool,
     length_seconds: i64,
+    pending_transport: Option<NowPlayingTransport>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct NowPlayingTransport {
+    pub created_at: String,
+    pub position: i64,
+    pub paused: bool,
+}
+
+impl NowPlayingTransport {
+    pub(crate) fn apply_to(&self, payload: &mut NowPlayingPayload) {
+        payload.position = Some(self.position);
+        payload.started_at = Some(self.created_at.clone());
+        payload.paused = Some(self.paused);
+    }
 }
 
 impl NowPlayingClock {
@@ -73,19 +89,23 @@ impl NowPlayingClock {
         track.generation
     }
 
-    pub(crate) fn play(&self, generation: u64, length_seconds: i64) -> bool {
+    pub(crate) fn play(&self, generation: u64, payload: &mut NowPlayingPayload) -> bool {
         let mut track = self.lock();
         if track.generation != generation {
             return false;
         }
         track.playing = true;
-        track.length_seconds = length_seconds;
+        track.length_seconds = payload.length.unwrap_or(0);
+        if let Some(transport) = track.pending_transport.take() {
+            transport.apply_to(payload);
+        }
         true
     }
 
-    pub(crate) fn resync(&self) -> Option<(u64, i64)> {
+    pub(crate) fn transport(&self, transport: NowPlayingTransport) -> Option<(u64, i64)> {
         let mut track = self.lock();
         if !track.playing {
+            track.pending_transport = Some(transport);
             return None;
         }
         track.generation += 1;
@@ -110,9 +130,12 @@ impl NowPlayingClock {
 }
 
 pub(crate) fn now_playing_ends_at_ms(payload: &NowPlayingPayload) -> Option<i64> {
+    if payload.paused == Some(true) {
+        return None;
+    }
     let length_seconds = payload.length.filter(|length| *length > 0)?;
-    parse_event_time_ms(&payload.started_at)
-        .map(|started_ms| started_ms + (length_seconds - payload.position) * 1000)
+    parse_event_time_ms(payload.started_at.as_deref()?)
+        .map(|started_ms| started_ms + (length_seconds - payload.position.unwrap_or(0)) * 1000)
 }
 
 pub(crate) fn normalize_video_input(input: &mut VideoInput) -> Option<String> {
@@ -157,14 +180,17 @@ pub(crate) async fn handle_video_play(
     owner_user_id: &OwnerId,
     mut input: VideoInput,
 ) -> Result<Option<VideoPlayed>> {
+    let mut titled = !input.video_name.is_empty();
     let Some(youtube_id) = normalize_video_input(&mut input) else {
         return Ok(None);
     };
+    titled &= input.video_name != youtube_id;
 
     if !youtube_id.is_empty() {
         if let Some(metadata) = lookup_youtube_video(store, video_metadata, &youtube_id).await? {
             if !metadata.video_name.is_empty() {
                 input.video_name = metadata.video_name;
+                titled = true;
             }
             if metadata.video_length > 0 {
                 input.video_length = metadata.video_length;
@@ -191,7 +217,7 @@ pub(crate) async fn handle_video_play(
         ..Default::default()
     };
     let affected_count = match store.write_game_log(owner_user_id, &batch) {
-        Ok(affected_count) => affected_count,
+        Ok(count) => count.affected(),
         Err(error) => {
             let message = error.to_string();
             event_bus.emit_game_log_persistence_fallback(GameLogPersistenceFallbackPayload {
@@ -218,8 +244,10 @@ pub(crate) async fn handle_video_play(
         location: Some(input.location),
         thumbnail_url: Some(input.thumbnail_url),
         length: Some(input.video_length),
-        position: input.video_pos,
-        started_at: input.created_at.clone(),
+        position: Some(input.video_pos),
+        started_at: Some(input.created_at.clone()),
+        paused: Some(false),
+        titled: Some(titled),
         created_at: Some(input.created_at),
         activity_type: Some("VideoPlay".into()),
         video_url: Some(input.video_url),
@@ -283,9 +311,7 @@ pub fn parse_provider_video(created_at: &str, location: &str, data: &str) -> Pro
             .map(ProviderVideoEvent::Video)
             .unwrap_or(ProviderVideoEvent::Ignored);
     }
-    if trimmed.starts_with("VideoPlay(VRDancing) ")
-        || trimmed.starts_with("VideoPlay(ZuwaZuwaDance) ")
-    {
+    if trimmed.starts_with("VideoPlay(VRDancing) ") {
         return parse_vr_dancing(created_at, location, trimmed)
             .map(Box::new)
             .map(ProviderVideoEvent::Video)
@@ -311,8 +337,6 @@ pub(super) fn uses_provider_video_events(location: &str) -> bool {
             | "wrld_04899f23-e182-4a8d-b2c7-2c74c7c15534"
             | "wrld_42377cf1-c54f-45ed-8996-5875b0573a83"
             | "wrld_dd6d2888-dbdc-47c2-bc98-3d631b2acd7c"
-            | "wrld_52bdcdab-11cd-4325-9655-0fb120846945"
-            | "wrld_2d40da63-8f1f-4011-8a9e-414eb8530acd"
             | "wrld_74970324-58e8-4239-a17b-2c59dfdf00db"
             | "wrld_db9d878f-6e76-4776-8bf2-15bcdd7fc445"
             | "wrld_435bbf25-f34f-4b8b-82c6-cd809057eb8e"
@@ -574,7 +598,7 @@ fn parse_i64_lossy(value: &str) -> i64 {
 mod tests {
     use super::{
         convert_youtube_duration_to_seconds, now_playing_ends_at_ms, parse_provider_video,
-        parse_youtube_video_id, NowPlayingClock, ProviderVideoEvent,
+        parse_youtube_video_id, NowPlayingClock, NowPlayingTransport, ProviderVideoEvent,
     };
     use crate::NowPlayingPayload;
 
@@ -655,19 +679,37 @@ mod tests {
         assert_eq!(convert_youtube_duration_to_seconds("PT42S".into()), 42);
     }
 
+    fn video_payload() -> NowPlayingPayload {
+        NowPlayingPayload {
+            length: Some(60),
+            position: Some(0),
+            started_at: Some("2026-05-14T00:00:00.000Z".into()),
+            ..Default::default()
+        }
+    }
+
+    fn transport(position: i64, paused: bool) -> NowPlayingTransport {
+        NowPlayingTransport {
+            created_at: "2026-05-14T00:00:10.000Z".into(),
+            position,
+            paused,
+        }
+    }
+
     #[test]
     fn only_the_latest_video_announces_and_ends_now_playing() {
         let clock = NowPlayingClock::default();
         let first = clock.begin();
         let second = clock.begin();
-        assert!(!clock.play(first, 60));
-        assert!(clock.play(second, 60));
+        assert!(!clock.play(first, &mut video_payload()));
+        assert!(clock.play(second, &mut video_payload()));
 
-        let (synced, length) = clock.resync().expect("a video is playing");
+        let (synced, length) = clock
+            .transport(transport(5, false))
+            .expect("a video is playing");
         assert_eq!(length, 60);
         assert!(!clock.finish(second));
         assert!(clock.finish(synced));
-        assert!(clock.resync().is_none());
     }
 
     #[test]
@@ -675,16 +717,28 @@ mod tests {
         let clock = NowPlayingClock::default();
         let video = clock.begin();
         clock.begin();
-        assert!(!clock.play(video, 60));
-        assert!(clock.resync().is_none());
+        assert!(!clock.play(video, &mut video_payload()));
+    }
+
+    #[test]
+    fn transport_before_the_announcement_carries_into_it() {
+        let clock = NowPlayingClock::default();
+        let video = clock.begin();
+        assert!(clock.transport(transport(42, true)).is_none());
+
+        let mut payload = video_payload();
+        assert!(clock.play(video, &mut payload));
+        assert_eq!(payload.position, Some(42));
+        assert_eq!(payload.paused, Some(true));
+        assert_eq!(now_playing_ends_at_ms(&payload), None);
     }
 
     #[test]
     fn now_playing_ends_after_the_remaining_length() {
         let payload = |length| NowPlayingPayload {
             length,
-            position: 15,
-            started_at: "2026-05-14T00:00:00.000Z".into(),
+            position: Some(15),
+            started_at: Some("2026-05-14T00:00:00.000Z".into()),
             ..Default::default()
         };
         assert_eq!(

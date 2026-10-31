@@ -13,7 +13,10 @@ import {
     resetCurrentUserRuntimeAuth,
     setSignedOutSessionState
 } from './authExecutionService';
-import { applySavedAuthSnapshot } from './authSnapshotService';
+import {
+    applySavedAuthSnapshot,
+    getCachedAuthSnapshot
+} from './authSnapshotService';
 import i18n from './i18nService';
 
 let recoveryRun: {
@@ -80,9 +83,16 @@ async function runRuntimeAuthRecovery(
     ) {
         return;
     }
+    const expiredAccount = getCachedAuthSnapshot()?.savedCredentialsList.find(
+        (credential) => credential.user.id === endInput.expectedUserId
+    );
     const [title, description] = await Promise.all([
         i18n.t('message.auth.session_expired'),
-        i18n.t('message.auth.session_restore_available')
+        i18n.t(
+            expiredAccount && !expiredAccount.hasLoginCredentials
+                ? 'message.auth.session_requires_login'
+                : 'message.auth.session_restore_available'
+        )
     ]);
     if (!isCurrentAuthAttempt(attempt)) {
         return;

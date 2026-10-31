@@ -10,6 +10,7 @@ import { Spinner } from '@/ui/shadcn/spinner';
 import { Switch } from '@/ui/shadcn/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { SETTINGS_DEFAULT_VALUES } from '../../settingsFieldState';
 import { DeepLinkRegistrationField } from '../DeepLinkRegistrationField';
 import { SettingsCard } from '../SettingsCard';
 import { Field, JsonTreeView, SettingsSectionHeading } from '../SettingsField';
@@ -137,6 +138,12 @@ export function AdvancedTroubleshootingGroup({
                 title={t('view.settings.general.logging.header')}
             />
             <Field
+                settingId="advanced.troubleshooting.udon-exception-logging"
+                onReset={() =>
+                    onUdonExceptionLoggingChange(
+                        SETTINGS_DEFAULT_VALUES.udonExceptionLogging
+                    )
+                }
                 label={t(
                     'view.settings.advanced.advanced.cache_debug.udon_exception_logging'
                 )}
@@ -146,7 +153,15 @@ export function AdvancedTroubleshootingGroup({
                     onCheckedChange={onUdonExceptionLoggingChange}
                 />
             </Field>
-            <Field label={t('view.settings.general.logging.resource_load')}>
+            <Field
+                settingId="advanced.troubleshooting.resource-load-logging"
+                onReset={() =>
+                    onLogResourceLoadChange(
+                        SETTINGS_DEFAULT_VALUES.logResourceLoad
+                    )
+                }
+                label={t('view.settings.general.logging.resource_load')}
+            >
                 <Switch
                     checked={prefs.logResourceLoad}
                     onCheckedChange={onLogResourceLoadChange}
@@ -159,6 +174,7 @@ export function AdvancedTroubleshootingGroup({
             />
             <DeepLinkRegistrationField />
             <Field
+                settingId="advanced.troubleshooting.database-usage"
                 label={t(
                     'view.settings.advanced.advanced_ui.troubleshooting.database_usage'
                 )}
@@ -187,6 +203,7 @@ export function AdvancedTroubleshootingGroup({
                 </div>
             ) : null}
             <Field
+                settingId="advanced.troubleshooting.online-users"
                 label={t(
                     'view.settings.advanced.advanced_ui.troubleshooting.online_users'
                 )}
@@ -216,6 +233,7 @@ export function AdvancedTroubleshootingGroup({
                 </div>
             </Field>
             <Field
+                settingId="advanced.troubleshooting.vrchat-config"
                 label={t(
                     'view.settings.advanced.advanced_ui.troubleshooting.vrchat_config'
                 )}

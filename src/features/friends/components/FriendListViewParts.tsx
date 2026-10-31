@@ -1,9 +1,7 @@
 import { ListFilterIcon } from 'lucide-react';
-import type { ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
-import { EmptyState } from '@/components/layout/PageScaffold';
 import {
     ToolbarFilterMenu,
     toolbarSearchScopeTrigger
@@ -20,13 +18,6 @@ import { Tooltip } from '@/ui/shadcn/tooltip';
 import { FRIEND_LIST_SEARCH_FILTERS as SEARCH_FILTERS } from '../friendListState';
 
 export { DataTableSortButton as SortButton };
-
-export function FriendListEmptyState({
-    title,
-    description
-}: ComponentProps<typeof EmptyState>) {
-    return <EmptyState title={title} description={description} />;
-}
 
 export function FriendListFilterDropdown({
     favoritesOnly,

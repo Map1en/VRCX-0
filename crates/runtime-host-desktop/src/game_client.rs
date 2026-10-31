@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::game_isolation::GameIsolationRuntime;
 use crate::log_watcher::LogWatcher;
 use crate::{ensure_vrchat_launch_path_allowed, HostFileAccess, RuntimeHost};
 use vrcx_0_application_activity::ActivityRouter;
@@ -90,6 +91,7 @@ impl GameClientCacheActions for SystemGameClientCacheActions {
 #[derive(Clone)]
 struct LogWatcherLocationSource {
     log_watcher: LogWatcher,
+    isolation: GameIsolationRuntime,
 }
 
 impl GameClientLocationSource for LogWatcherLocationSource {
@@ -98,6 +100,9 @@ impl GameClientLocationSource for LogWatcherLocationSource {
     }
 
     fn current_location_snapshot(&self) -> Option<LogLocationSnapshot> {
+        if self.isolation.is_enabled() {
+            return None;
+        }
         self.log_watcher.current_location_snapshot()
     }
 }
@@ -130,6 +135,7 @@ pub struct GameClientHostRuntimeDeps {
     pub instance_roster_observer: Option<Arc<dyn InstanceRosterObserver>>,
     pub backend_status: BackendRuntimeStatusPublisher,
     pub activity_router: ActivityRouter,
+    pub isolation: GameIsolationRuntime,
 }
 
 struct GameClientRuntimeHostDeps {
@@ -143,6 +149,7 @@ struct GameClientRuntimeHostDeps {
     instance_roster_observer: Option<Arc<dyn InstanceRosterObserver>>,
     backend_status: BackendRuntimeStatusPublisher,
     activity_router: ActivityRouter,
+    isolation: GameIsolationRuntime,
 }
 
 impl GameClientHostRuntime {
@@ -163,6 +170,7 @@ impl GameClientHostRuntime {
                 instance_roster_observer: deps.instance_roster_observer,
                 backend_status: deps.backend_status,
                 activity_router: deps.activity_router,
+                isolation: deps.isolation,
             },
             actions,
         )
@@ -185,6 +193,7 @@ impl GameClientHostRuntime {
             Arc::new(SystemGameClientCacheActions),
             Arc::new(LogWatcherLocationSource {
                 log_watcher: deps.log_watcher,
+                isolation: deps.isolation,
             }),
             Arc::new(RuntimeGameClientWindowActions { host: deps.host }),
             Arc::new(SystemGameClientDebugLoggingActions),
@@ -232,6 +241,12 @@ impl GameClientHostRuntime {
             ),
             event_bus.clone(),
         );
+        let isolation = GameIsolationRuntime::new(
+            vrcx_0_persistence::config::ConfigRepository::new(Arc::clone(&db)),
+            event_bus.clone(),
+            RuntimeHost::new(),
+        )
+        .expect("test game isolation runtime");
         Self::new_with_actions(
             GameClientRuntimeHostDeps {
                 db,
@@ -244,6 +259,7 @@ impl GameClientHostRuntime {
                 instance_roster_observer: None,
                 backend_status,
                 activity_router: ActivityRouter::new(),
+                isolation,
             },
             actions,
         )

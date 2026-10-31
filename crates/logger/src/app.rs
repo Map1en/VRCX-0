@@ -162,12 +162,17 @@ impl App {
             last_webhook_ok: webhook.last_ok,
             account_id: info.account_id,
             session: info.state,
+            device_login: info.device_login,
         })
     }
 }
 
 pub fn now_unix() -> i64 {
     chrono::Utc::now().timestamp()
+}
+
+pub fn now_unix_millis() -> i64 {
+    chrono::Utc::now().timestamp_millis()
 }
 
 #[cfg(test)]

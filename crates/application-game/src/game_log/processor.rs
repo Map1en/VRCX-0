@@ -866,7 +866,7 @@ fn write_batch_with_retry(
     let mut delays = GAME_LOG_WRITE_RETRY_DELAYS_MS.iter();
     loop {
         match store.write_game_log(owner_user_id, batch) {
-            Ok(affected_count) => return Ok(affected_count),
+            Ok(count) => return Ok(count.affected()),
             Err(error) => {
                 let Some(delay_ms) = delays.next() else {
                     return Err(error);

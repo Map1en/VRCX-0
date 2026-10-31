@@ -1,4 +1,5 @@
 use super::super::export::write_screenshots_zip;
+use super::super::favorites::{LocalScreenshotFavoriteStore, LocalScreenshotLibraryAdapter};
 use super::super::library::{
     find_screenshots, forget_screenshot_file, scan_screenshot_library_in,
     start_screenshot_library_scan,
@@ -6,6 +7,7 @@ use super::super::library::{
 use super::super::paths::unix_time_millis;
 use super::super::{is_managed_screenshot_file_path, is_screenshot_library_file_path};
 use super::*;
+use vrcx_0_application::media::ScreenshotFavorites;
 use vrcx_0_application_core::{RuntimeEventBus, TaskSupervisor};
 use vrcx_0_core::screenshots::plan_screenshot_zip_entries;
 
@@ -69,8 +71,19 @@ fn screenshot_library_scan_emits_started_and_terminal_status_events() -> Result<
     let event_bus = RuntimeEventBus::new();
     let tasks = TaskSupervisor::new();
 
+    let favorites = ScreenshotFavorites::new(
+        std::sync::Arc::new(LocalScreenshotFavoriteStore::new(std::sync::Arc::new(
+            vrcx_0_persistence::DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?,
+        ))),
+        std::sync::Arc::new(LocalScreenshotLibraryAdapter::new(
+            cache.clone(),
+            dir.path.join("thumbnails"),
+        )),
+    );
+
     let started = start_screenshot_library_scan(
         &cache,
+        favorites,
         dir.path.join("thumbnails"),
         event_bus.clone(),
         tasks.clone(),

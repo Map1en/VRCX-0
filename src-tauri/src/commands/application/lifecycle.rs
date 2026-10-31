@@ -1,13 +1,16 @@
 #![allow(non_snake_case)]
 
-use tauri::State;
+use tauri::{AppHandle, Manager, State};
 
+use crate::commands::blocking::run_blocking;
 use crate::error::AppError;
 use crate::state::AppState;
 use vrcx_0_runtime_host_desktop::notification::{
     NotificationDoNotDisturbMode, NotificationDoNotDisturbSnapshot,
 };
-use vrcx_0_runtime_host_desktop::{AncillaryRuntimeSnapshot, RuntimeJobRecordInput};
+use vrcx_0_runtime_host_desktop::{
+    AncillaryRuntimeSnapshot, GameIsolationSnapshot, RuntimeJobRecordInput,
+};
 
 #[tauri::command]
 #[specta::specta]
@@ -26,6 +29,19 @@ pub fn app__notification_do_not_disturb_mode_set(
     Ok(state
         .runtime_host()
         .set_notification_do_not_disturb_mode(mode)?)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__game_isolation_set(
+    app: AppHandle,
+    enabled: bool,
+) -> Result<GameIsolationSnapshot, AppError> {
+    run_blocking("game isolation", move || {
+        let state = app.state::<AppState>();
+        state.runtime_host().set_game_isolation_enabled(enabled)
+    })
+    .await
 }
 
 #[tauri::command]

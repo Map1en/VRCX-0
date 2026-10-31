@@ -16,6 +16,7 @@ import {
     resolveGalleryFolder,
     resolvePathAfterScreenshotDelete,
     searchResultToLibraryImage,
+    SCREENSHOT_FAVORITES_FOLDER,
     SCREENSHOT_METADATA_SEARCH_TYPES,
     serializeGalleryScrollPositions,
     sortScreenshotRowsByNewest,
@@ -274,6 +275,15 @@ describe('screenshotMetadataValues', () => {
         expect(
             resolveGalleryFolder({ rootPath: 'D:\\Root', folders: [] }, '')
         ).toBe('D:\\Root');
+    });
+
+    it('keeps the favorites view selected even though it is not a real folder', () => {
+        expect(
+            resolveGalleryFolder({ rootPath: 'D:\\Root', folders: [] }, [
+                SCREENSHOT_FAVORITES_FOLDER,
+                'D:\\Root'
+            ])
+        ).toBe(SCREENSHOT_FAVORITES_FOLDER);
     });
 });
 

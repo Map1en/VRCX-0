@@ -4,6 +4,7 @@ import {
     useMemo,
     useRef,
     useState,
+    type MouseEvent as ReactMouseEvent,
     type PointerEvent as ReactPointerEvent,
     type WheelEvent as ReactWheelEvent
 } from 'react';
@@ -12,6 +13,7 @@ const MIN_SCALE = 0.1;
 const MAX_SCALE = 10;
 const ZOOM_STEP = 1.2;
 const WHEEL_ZOOM_STEP = 1.1;
+const DOUBLE_CLICK_ZOOM = 2;
 
 type FullscreenImageTransform = {
     scale: number;
@@ -161,6 +163,24 @@ export function useFullscreenImageTransform({
         [zoomAtPointer]
     );
 
+    const handleDoubleClick = useCallback(
+        (event: ReactMouseEvent<HTMLElement>) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (transformRef.current.scale !== 1) {
+                setTransform((current) => ({
+                    ...current,
+                    scale: 1,
+                    tx: 0,
+                    ty: 0
+                }));
+                return;
+            }
+            zoomAtPointer(event, DOUBLE_CLICK_ZOOM);
+        },
+        [zoomAtPointer]
+    );
+
     const handlePointerDown = useCallback(
         (event: ReactPointerEvent<HTMLImageElement>) => {
             if (event.button !== 0) {
@@ -232,6 +252,7 @@ export function useFullscreenImageTransform({
     return {
         viewerRef,
         transformStyle,
+        handleDoubleClick,
         handlePointerDown,
         handlePointerMove,
         handlePointerUp,

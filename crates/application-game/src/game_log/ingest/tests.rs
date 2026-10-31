@@ -396,3 +396,236 @@ fn external_vrcx_event_emits_mirror_when_external_row_is_written() {
     assert_eq!(output.runtime_persisted_mirrors.len(), 1);
     assert_eq!(output.runtime_persisted_mirrors[0][2], "vrcx");
 }
+
+fn now_playing(created_at: &str, data: &str) -> GameLogEvent {
+    event(
+        created_at,
+        GameLogEventKind::NowPlaying { data: data.into() },
+    )
+}
+
+#[test]
+fn now_playing_log_takes_over_video_lines_and_follows_one_producer() {
+    let mut engine = GameLogIngestEngine::default();
+    let output = engine.ingest_events(
+        &[
+            event(
+                "2026-10-30T00:00:00.000Z",
+                GameLogEventKind::Location {
+                    location: "wrld_club:1".into(),
+                    world_name: "Club".into(),
+                },
+            ),
+            now_playing(
+                "2026-10-30T00:00:01.000Z",
+                r#"{"id":"ProTV-1","type":"mediaLoading","loading":true}"#,
+            ),
+            event(
+                "2026-10-30T00:00:02.000Z",
+                GameLogEventKind::VideoPlay {
+                    video_url: "https://youtu.be/abcdefghijk".into(),
+                    display_name: String::new(),
+                },
+            ),
+            now_playing(
+                "2026-10-30T00:00:03.000Z",
+                r#"{"id":"ProTV-1","type":"mediaChange","mediaUrl":"https://youtu.be/abcdefghijk","mediaName":"Song","mediaImage":"https://img.test/a.jpg","mediaOwnerName":"Alice","mediaLength":200}"#,
+            ),
+            now_playing(
+                "2026-10-30T00:00:04.000Z",
+                r#"{"id":"ProTV-1","type":"mediaInfo","mediaName":"Song (Live)"}"#,
+            ),
+            now_playing(
+                "2026-10-30T00:00:05.000Z",
+                r#"{"id":"ProTV-1","type":"mediaPause","mediaTime":30}"#,
+            ),
+            now_playing(
+                "2026-10-30T00:00:06.000Z",
+                r#"{"id":"ProTV-2","type":"mediaPlay","mediaTime":99}"#,
+            ),
+        ],
+        GameLogIngestOptions::default(),
+    );
+
+    let [GameLogSideEffect::Video(input), GameLogSideEffect::NowPlayingTransport {
+        created_at,
+        position,
+        paused,
+    }] = output.side_effects.as_slice()
+    else {
+        panic!("unexpected side effects: {:?}", output.side_effects);
+    };
+    assert_eq!(input.created_at, "2026-10-30T00:00:03.000Z");
+    assert_eq!(input.video_url, "https://youtu.be/abcdefghijk");
+    assert_eq!(input.video_id, "YouTube");
+    assert_eq!(input.video_name, "Song (Live)");
+    assert_eq!(input.thumbnail_url, "https://img.test/a.jpg");
+    assert_eq!(input.display_name, "Alice");
+    assert_eq!(input.video_length, 200);
+    assert_eq!(
+        (created_at.as_str(), *position, *paused),
+        ("2026-10-30T00:00:05.000Z", 30, true)
+    );
+
+    let output = engine.ingest_events(
+        &[
+            now_playing(
+                "2026-10-30T00:01:00.000Z",
+                r#"{"id":"ProTV-1","type":"mediaInfo","mediaName":"Encore"}"#,
+            ),
+            now_playing(
+                "2026-10-30T00:01:01.000Z",
+                r#"{"id":"ProTV-1","type":"mediaStop","ended":true}"#,
+            ),
+        ],
+        GameLogIngestOptions::default(),
+    );
+    assert_eq!(
+        output.side_effects,
+        vec![
+            GameLogSideEffect::VideoDetails {
+                created_at: "2026-10-30T00:00:03.000Z".into(),
+                video_url: "https://youtu.be/abcdefghijk".into(),
+                video_name: "Encore".into(),
+                thumbnail_url: String::new(),
+            },
+            GameLogSideEffect::NowPlayingReset,
+        ]
+    );
+}
+
+#[test]
+fn now_playing_log_titles_a_video_already_logged_by_vrchat() {
+    let mut engine = GameLogIngestEngine::default();
+    engine.ingest_events(
+        &[
+            event(
+                "2026-10-30T00:00:00.000Z",
+                GameLogEventKind::Location {
+                    location: "wrld_club:1".into(),
+                    world_name: "Club".into(),
+                },
+            ),
+            event(
+                "2026-10-30T00:00:02.000Z",
+                GameLogEventKind::VideoPlay {
+                    video_url: "https://example.test/a.mp4".into(),
+                    display_name: String::new(),
+                },
+            ),
+        ],
+        GameLogIngestOptions::default(),
+    );
+
+    let output = engine.ingest_events(
+        &[now_playing(
+            "2026-10-30T00:00:03.000Z",
+            r#"{"id":"ProTV-1","type":"mediaChange","mediaUrl":"https://example.test/a.mp4","mediaName":"Song"}"#,
+        )],
+        GameLogIngestOptions::default(),
+    );
+    assert_eq!(
+        output.side_effects,
+        vec![GameLogSideEffect::VideoDetails {
+            created_at: "2026-10-30T00:00:02.000Z".into(),
+            video_url: "https://example.test/a.mp4".into(),
+            video_name: "Song".into(),
+            thumbnail_url: String::new(),
+        }]
+    );
+}
+
+#[test]
+fn provider_world_keeps_its_video_line_and_takes_cover_and_transport_from_now_playing() {
+    let mut engine = GameLogIngestEngine::default();
+    let output = engine.ingest_events(
+        &[
+            event(
+                "2026-10-30T13:40:47.000Z",
+                GameLogEventKind::Location {
+                    location: "wrld_f20326da-f1ac-45fc-a062-609723b097b1:93480~region(jp)".into(),
+                    world_name: "PyPyDance".into(),
+                },
+            ),
+            now_playing(
+                "2026-10-30T13:40:56.000Z",
+                r#"{"type":"mediaLoading","loading":true,"id":"PyPyDance-28582"}"#,
+            ),
+            event(
+                "2026-10-30T13:40:56.000Z",
+                GameLogEventKind::VideoPlay {
+                    video_url: "http://api.pypy.dance/video?id=4480".into(),
+                    display_name: String::new(),
+                },
+            ),
+            event(
+                "2026-10-30T13:40:57.000Z",
+                GameLogEventKind::Vrcx {
+                    data: r#"VideoPlay(PyPyDance) "http://api.pypy.dance/video?id=4480",129.6963,216,"4480 : [KPOP] Sistar - Touch My Body (KannaLulu)""#.into(),
+                },
+            ),
+            now_playing(
+                "2026-10-30T13:41:00.000Z",
+                r#"{"type":"mediaChange","mediaName":"[KPOP] Sistar - Touch My Body","mediaUrl":"http://api.pypy.dance/video?id=4480","mediaOwnerName":"KannaLulu","highPriority":true,"mediaId":4480,"mediaImage":"https://api.pypy.dance/thumb?id=4480","mediaLength":216,"id":"PyPyDance-28582"}"#,
+            ),
+            now_playing(
+                "2026-10-30T13:41:00.000Z",
+                r#"{"type":"mediaPause","mediaTime":132.549,"id":"PyPyDance-28582"}"#,
+            ),
+            event(
+                "2026-10-30T13:41:00.000Z",
+                GameLogEventKind::Vrcx {
+                    data: r#"VideoPlay(PyPyDance) "http://api.pypy.dance/video?id=4480",132.7312,216,"4480 : [KPOP] Sistar - Touch My Body (KannaLulu)""#.into(),
+                },
+            ),
+            now_playing(
+                "2026-10-30T13:41:00.000Z",
+                r#"{"type":"mediaPlay","mediaTime":132.7317,"id":"PyPyDance-28582"}"#,
+            ),
+        ],
+        GameLogIngestOptions::default(),
+    );
+
+    let [GameLogSideEffect::Video(input), GameLogSideEffect::NowPlayingTransport { paused: true, .. }, GameLogSideEffect::NowPlayingTransport {
+        position: 132,
+        paused: false,
+        ..
+    }] = output.side_effects.as_slice()
+    else {
+        panic!("unexpected side effects: {:?}", output.side_effects);
+    };
+    assert_eq!(input.created_at, "2026-10-30T13:40:57.000Z");
+    assert_eq!(input.video_id, "4480");
+    assert_eq!(input.video_name, "[KPOP] Sistar - Touch My Body");
+    assert_eq!(input.display_name, "KannaLulu");
+    assert_eq!(input.video_pos, 129);
+    assert_eq!(input.thumbnail_url, "https://api.pypy.dance/thumb?id=4480");
+}
+
+#[test]
+fn now_playing_media_id_names_the_video_source_when_the_world_writes_no_video_line() {
+    let mut engine = GameLogIngestEngine::default();
+    let output = engine.ingest_events(
+        &[
+            event(
+                "2026-10-30T13:40:47.000Z",
+                GameLogEventKind::Location {
+                    location: "wrld_f20326da-f1ac-45fc-a062-609723b097b1:93480~region(jp)".into(),
+                    world_name: "PyPyDance".into(),
+                },
+            ),
+            now_playing(
+                "2026-10-30T13:42:30.000Z",
+                r#"{"type":"mediaChange","mediaName":"[KPOP] TWICE - ONE SPARK","mediaUrl":"http://api.pypy.dance/video?id=3781","mediaOwnerName":"Nanashi Neko","highPriority":true,"mediaId":3781,"mediaImage":"https://api.pypy.dance/thumb?id=3781","mediaLength":190,"id":"PyPyDance-28582"}"#,
+            ),
+        ],
+        GameLogIngestOptions::default(),
+    );
+
+    let [GameLogSideEffect::Video(input)] = output.side_effects.as_slice() else {
+        panic!("unexpected side effects: {:?}", output.side_effects);
+    };
+    assert_eq!(input.video_id, "3781");
+    assert_eq!(input.video_name, "[KPOP] TWICE - ONE SPARK");
+    assert_eq!(input.display_name, "Nanashi Neko");
+}

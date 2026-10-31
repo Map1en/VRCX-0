@@ -11,6 +11,12 @@ import {
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+    hasCommandModifier,
+    isImeComposing,
+    isTextEntryTarget
+} from '@/components/keyboard/keyboardShortcutGuards';
+import { cn } from '@/lib/utils';
 import { commands } from '@/platform/tauri/bindings';
 import { toast } from '@/services/toastService';
 import { Button } from '@/ui/shadcn/button';
@@ -28,6 +34,7 @@ import {
     toFullSizeImageUrl
 } from './fullscreenImageViewerUtils';
 import { useFullscreenImageTransform } from './useFullscreenImageTransform';
+import { useProgressiveImageSource } from './useProgressiveImageSource';
 
 export function FullscreenImageViewer({
     open,
@@ -45,13 +52,12 @@ export function FullscreenImageViewer({
     onClose(): void;
 }) {
     const { t } = useTranslation();
-    const [imageLoading, setImageLoading] = useState(false);
-    const [imageLoadError, setImageLoadError] = useState(false);
     const [copying, setCopying] = useState(false);
     const [downloading, setDownloading] = useState(false);
     const {
         viewerRef,
         transformStyle,
+        handleDoubleClick,
         handlePointerDown,
         handlePointerMove,
         handlePointerUp,
@@ -64,17 +70,20 @@ export function FullscreenImageViewer({
     } = useFullscreenImageTransform({ open, url });
 
     const fullSizeUrl = toFullSizeImageUrl(url);
+    const placeholderUrl = url && url !== fullSizeUrl ? url : '';
+    const {
+        isInterim,
+        shownSrc,
+        status: imageStatus
+    } = useProgressiveImageSource(fullSizeUrl, placeholderUrl);
+    const imageLoading = !shownSrc && imageStatus === 'loading';
+    const imageLoadError = imageStatus === 'error';
     const resolvedTitle = title || t('message.image.preview_title');
     const resolvedFileName = deriveImageFileName({
         fileName,
         sourcePath,
         url: fullSizeUrl
     });
-
-    useEffect(() => {
-        setImageLoadError(false);
-        setImageLoading(Boolean(open && fullSizeUrl));
-    }, [fullSizeUrl, open]);
 
     async function copyImage() {
         if ((!url && !sourcePath) || copying) {
@@ -165,9 +174,17 @@ export function FullscreenImageViewer({
         }
 
         function handleKeyDown(event: KeyboardEvent) {
-            if (event.key === 'Escape') {
+            if (event.key.toLowerCase() === 'r') {
                 event.preventDefault();
-                onClose();
+                rotateClockwise();
+                return;
+            }
+
+            if (
+                isImeComposing(event) ||
+                hasCommandModifier(event) ||
+                isTextEntryTarget(event.target)
+            ) {
                 return;
             }
 
@@ -183,12 +200,6 @@ export function FullscreenImageViewer({
                 return;
             }
 
-            if (event.key.toLowerCase() === 'r') {
-                event.preventDefault();
-                rotateClockwise();
-                return;
-            }
-
             if (event.key === '0') {
                 event.preventDefault();
                 resetTransform();
@@ -197,7 +208,7 @@ export function FullscreenImageViewer({
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [onClose, open, resetTransform, rotateClockwise, zoomIn, zoomOut]);
+    }, [open, resetTransform, rotateClockwise, zoomIn, zoomOut]);
 
     return (
         <Dialog
@@ -431,31 +442,30 @@ export function FullscreenImageViewer({
                                     {t('message.image.load_failed')}
                                 </div>
                             ) : null}
-                            <img
-                                src={fullSizeUrl}
-                                alt={resolvedTitle}
-                                draggable={false}
-                                className="relative z-0 max-h-full max-w-full cursor-grab touch-none object-contain select-none active:cursor-grabbing data-[unavailable=true]:hidden"
-                                data-unavailable={
-                                    imageLoading || imageLoadError
-                                }
-                                style={transformStyle}
-                                onLoad={() => {
-                                    setImageLoading(false);
-                                    setImageLoadError(false);
-                                }}
-                                onError={() => {
-                                    setImageLoading(false);
-                                    setImageLoadError(true);
-                                }}
-                                onClick={(event) => event.stopPropagation()}
-                                onKeyDown={(event) => event.stopPropagation()}
-                                onDragStart={(event) => event.preventDefault()}
-                                onPointerDown={handlePointerDown}
-                                onPointerMove={handlePointerMove}
-                                onPointerUp={handlePointerUp}
-                                onPointerCancel={handlePointerUp}
-                            />
+                            {shownSrc && !imageLoadError ? (
+                                <img
+                                    src={shownSrc}
+                                    alt={resolvedTitle}
+                                    draggable={false}
+                                    className={cn(
+                                        'relative z-0 max-h-full max-w-full cursor-grab touch-none object-contain select-none active:cursor-grabbing',
+                                        isInterim && 'size-full'
+                                    )}
+                                    style={transformStyle}
+                                    onClick={(event) => event.stopPropagation()}
+                                    onDoubleClick={handleDoubleClick}
+                                    onKeyDown={(event) =>
+                                        event.stopPropagation()
+                                    }
+                                    onDragStart={(event) =>
+                                        event.preventDefault()
+                                    }
+                                    onPointerDown={handlePointerDown}
+                                    onPointerMove={handlePointerMove}
+                                    onPointerUp={handlePointerUp}
+                                    onPointerCancel={handlePointerUp}
+                                />
+                            ) : null}
                         </>
                     ) : null}
                 </div>

@@ -25,6 +25,16 @@ fn matches_frontend_location_parser_parity_cases() {
 }
 
 #[test]
+fn instance_key_joins_world_and_instance_and_needs_both() {
+    assert_eq!(
+        parse_location(" wrld_test:12345~private(usr_owner)~region(jp) ").instance_key(),
+        "wrld_test:12345~private(usr_owner)~region(jp)"
+    );
+    assert_eq!(parse_location("wrld_test").instance_key(), "");
+    assert_eq!(parse_location("offline").instance_key(), "");
+}
+
+#[test]
 fn sentinels_short_circuit_without_world() {
     for (tag, is_offline, is_private, is_traveling) in [
         ("offline", true, false, false),

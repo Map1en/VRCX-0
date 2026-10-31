@@ -5,7 +5,8 @@ import {
     cleanup,
     fireEvent,
     render,
-    screen
+    screen,
+    within
 } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -106,6 +107,7 @@ function createHeaderModel(effect?: InventoryItemRecord): UserHeaderModel {
             block: false,
             mute: false
         },
+        noteSummary: '',
         platform: {
             icon: null,
             label: 'PC'
@@ -368,7 +370,7 @@ describe('UserDialogHeaderSection friend actions', () => {
         );
 
         fireEvent.click(
-            screen.getByRole('button', { name: 'Open entity actions' })
+            screen.getByRole('button', { name: 'common.actions.more_actions' })
         );
 
         const label = await screen.findByText(
@@ -392,7 +394,7 @@ describe('UserDialogHeaderSection friend actions', () => {
         );
 
         fireEvent.click(
-            screen.getByRole('button', { name: 'Open entity actions' })
+            screen.getByRole('button', { name: 'common.actions.more_actions' })
         );
 
         expect(
@@ -416,7 +418,7 @@ describe('UserDialogHeaderSection friend actions', () => {
         );
 
         fireEvent.click(
-            screen.getByRole('button', { name: 'Open entity actions' })
+            screen.getByRole('button', { name: 'common.actions.more_actions' })
         );
 
         const label = await screen.findByText('dialog.user.actions.unfriend');
@@ -428,10 +430,116 @@ describe('UserDialogHeaderSection friend actions', () => {
     });
 });
 
+describe('UserDialogHeaderSection incoming friend request', () => {
+    it('accepts and declines from the header banner', () => {
+        const headerModel = createHeaderModel();
+        headerModel.isCurrentUser = false;
+        headerModel.friendRequestState.incoming = true;
+        const headerCommands = createHeaderCommands();
+        headerCommands.onFriendRequest = vi.fn();
+
+        render(
+            <UserDialogHeaderSection
+                headerModel={headerModel}
+                headerCommands={headerCommands}
+            />
+        );
+
+        const banner = screen.getByRole('group', {
+            name: 'dialog.user.friend_request.incoming_banner'
+        });
+        fireEvent.click(
+            within(banner).getByRole('button', {
+                name: 'common.actions.accept'
+            })
+        );
+        fireEvent.click(
+            within(banner).getByRole('button', {
+                name: 'common.actions.decline'
+            })
+        );
+
+        expect(headerCommands.onFriendRequest).toHaveBeenNthCalledWith(
+            1,
+            'accept'
+        );
+        expect(headerCommands.onFriendRequest).toHaveBeenNthCalledWith(
+            2,
+            'decline'
+        );
+    });
+
+    it('disables the banner actions while another action runs', () => {
+        const headerModel = createHeaderModel();
+        headerModel.isCurrentUser = false;
+        headerModel.friendRequestState.incoming = true;
+        headerModel.actionStatus = 'friend-request:accept';
+
+        render(
+            <UserDialogHeaderSection
+                headerModel={headerModel}
+                headerCommands={createHeaderCommands()}
+            />
+        );
+
+        const banner = screen.getByRole('group', {
+            name: 'dialog.user.friend_request.incoming_banner'
+        });
+        expect(
+            within(banner)
+                .getByRole('button', { name: 'common.actions.accept' })
+                .hasAttribute('disabled')
+        ).toBe(true);
+    });
+});
+
+describe('UserDialogHeaderSection relationship', () => {
+    it('labels moderation states with text next to the header', () => {
+        const headerModel = createHeaderModel();
+        headerModel.isCurrentUser = false;
+        headerModel.isFriend = true;
+        headerModel.moderationState.mute = true;
+        headerModel.extendedModerationState.muteChat = true;
+
+        render(
+            <UserDialogHeaderSection
+                headerModel={headerModel}
+                headerCommands={createHeaderCommands()}
+            />
+        );
+
+        expect(
+            screen.getByText('dialog.user.relationship.friend')
+        ).toBeTruthy();
+        expect(screen.getByText('dialog.user.label.muted')).toBeTruthy();
+        expect(
+            screen.getByText('dialog.user.relationship.chatbox_muted')
+        ).toBeTruthy();
+    });
+
+    it('opens the note editor from the note summary', () => {
+        const headerModel = createHeaderModel();
+        headerModel.noteSummary = 'Met at the meetup';
+        const headerCommands = createHeaderCommands();
+        headerCommands.onEditMemo = vi.fn();
+
+        render(
+            <UserDialogHeaderSection
+                headerModel={headerModel}
+                headerCommands={headerCommands}
+            />
+        );
+
+        fireEvent.click(screen.getByText('Met at the meetup'));
+
+        expect(headerCommands.onEditMemo).toHaveBeenCalledOnce();
+    });
+});
+
 describe('UserDialogHeaderSection account standing', () => {
     function actionMenuIndicator() {
         return screen
-            .getByRole('button', { name: 'Open entity actions' })
+            .getByRole('button', { name: 'common.actions.more_actions' })
             .querySelector('span.bg-primary');
     }
 
@@ -447,7 +555,7 @@ describe('UserDialogHeaderSection account standing', () => {
         );
 
         fireEvent.click(
-            screen.getByRole('button', { name: 'Open entity actions' })
+            screen.getByRole('button', { name: 'common.actions.more_actions' })
         );
         fireEvent.click(
             await screen.findByText('dialog.user.actions.account_standing')

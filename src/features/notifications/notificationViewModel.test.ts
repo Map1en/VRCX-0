@@ -1,8 +1,21 @@
+import type { TFunction } from 'i18next';
 import { describe, expect, it } from 'vitest';
 
 import type { NotificationRow } from '@/repositories/notificationPersistenceRepository';
 
-import { toNotificationViewModel } from './notificationViewModel';
+import {
+    toNotificationViewModel,
+    type NotificationViewModelOptions
+} from './notificationViewModel';
+
+const identityT = ((key: string) => key) as unknown as TFunction;
+
+function viewModel(
+    notification: NotificationRow,
+    options: Partial<NotificationViewModelOptions> = {}
+) {
+    return toNotificationViewModel(notification, { t: identityT, ...options });
+}
 
 function row(overrides: Record<string, unknown>): NotificationRow {
     return {
@@ -19,7 +32,7 @@ function row(overrides: Record<string, unknown>): NotificationRow {
 
 describe('notification view model', () => {
     it('maps group announcements to the broadcast template without the group name prefix', () => {
-        const view = toNotificationViewModel(
+        const view = viewModel(
             row({
                 type: 'group.announcement',
                 title: 'Maple Club: Weekly meetup',
@@ -50,7 +63,7 @@ describe('notification view model', () => {
     });
 
     it('falls back to owner fields for group event notifications', () => {
-        const view = toNotificationViewModel(
+        const view = viewModel(
             row({
                 type: 'group.event.created',
                 message: 'A new event was scheduled.',
@@ -75,7 +88,7 @@ describe('notification view model', () => {
     });
 
     it('resolves the group actor from an event response link', () => {
-        const view = toNotificationViewModel(
+        const view = viewModel(
             row({
                 type: 'event.announcement',
                 senderUserId: 'usr_system',
@@ -97,7 +110,7 @@ describe('notification view model', () => {
     });
 
     it('treats default_ images as missing media', () => {
-        const view = toNotificationViewModel(
+        const view = viewModel(
             row({
                 type: 'group.announcement',
                 imageUrl: 'default_group.png',
@@ -110,7 +123,7 @@ describe('notification view model', () => {
     });
 
     it('never falls back to the sender user icon for group notifications', () => {
-        const view = toNotificationViewModel(
+        const view = viewModel(
             row({
                 type: 'group.event.created',
                 senderUserId: 'usr_me',
@@ -123,7 +136,7 @@ describe('notification view model', () => {
     });
 
     it('maps invites to the compact template with world context', () => {
-        const view = toNotificationViewModel(
+        const view = viewModel(
             row({
                 type: 'invite',
                 senderUserId: 'usr_1',
@@ -155,7 +168,7 @@ describe('notification view model', () => {
     });
 
     it('leaves the context empty when an invite carries no location', () => {
-        const view = toNotificationViewModel(
+        const view = viewModel(
             row({
                 type: 'requestInvite',
                 senderUserId: 'usr_2',
@@ -168,8 +181,37 @@ describe('notification view model', () => {
         expect(view.body).toBe('');
     });
 
+    it('renders app notification bodies from their message key in the current language', () => {
+        const t = ((key: string, params?: Record<string, unknown>) =>
+            `${key}:${JSON.stringify(params)}`) as unknown as TFunction;
+        const appNotification = row({
+            type: 'groupChange',
+            senderUserId: 'grp_3',
+            senderUsername: 'Birch Club',
+            message: '',
+            details: {
+                messageKey: 'notifications.group_member_roles',
+                messageParams: { roles: 'Staff' }
+            }
+        });
+
+        expect(viewModel(appNotification, { t }).body).toBe(
+            'notifications.group_member_roles:{"roles":"Staff"}'
+        );
+        expect(
+            viewModel(
+                row({
+                    type: 'groupChange',
+                    senderUserId: 'grp_3',
+                    message: 'Role Staff added'
+                }),
+                { t }
+            ).body
+        ).toBe('Role Staff added');
+    });
+
     it('maps group changes and moderation notices to a group actor', () => {
-        const groupChange = toNotificationViewModel(
+        const groupChange = viewModel(
             row({
                 type: 'groupChange',
                 senderUserId: 'grp_3',
@@ -177,7 +219,7 @@ describe('notification view model', () => {
                 message: 'Group settings changed.'
             })
         );
-        const moderation = toNotificationViewModel(
+        const moderation = viewModel(
             row({
                 type: 'moderation.warning.group',
                 message: 'Please review the rules.',
@@ -196,7 +238,7 @@ describe('notification view model', () => {
     });
 
     it('keeps the boop actor avatar separate from the default emoji preview', () => {
-        const view = toNotificationViewModel(
+        const view = viewModel(
             row({
                 type: 'boop',
                 senderUserId: 'usr_3',
@@ -224,7 +266,7 @@ describe('notification view model', () => {
     });
 
     it('maps custom boop files to media without using them as the actor avatar', () => {
-        const view = toNotificationViewModel(
+        const view = viewModel(
             row({
                 type: 'boop',
                 senderUserId: 'usr_3',
@@ -244,7 +286,7 @@ describe('notification view model', () => {
     });
 
     it('exposes inventory boops for a sender-scoped item lookup instead of trusting the row image', () => {
-        const view = toNotificationViewModel(
+        const view = viewModel(
             row({
                 type: 'boop',
                 senderUserId: 'usr_3',
@@ -266,7 +308,7 @@ describe('notification view model', () => {
     });
 
     it('renders a starting group event like a created one, with its banner', () => {
-        const view = toNotificationViewModel(
+        const view = viewModel(
             row({
                 type: 'group.event.starting',
                 message: 'Starts in 15 minutes.',
@@ -288,10 +330,10 @@ describe('notification view model', () => {
     });
 
     it('renders newer VRChat notification types with their own labels instead of the fallback', () => {
-        const kick = toNotificationViewModel(
+        const kick = viewModel(
             row({ type: 'votetokick', title: 'Vote to kick', message: 'X' })
         );
-        const gated = toNotificationViewModel(
+        const gated = viewModel(
             row({
                 type: 'invite.instance.contentGated',
                 senderUserId: 'usr_friend',
@@ -310,11 +352,10 @@ describe('notification view model', () => {
     });
 
     it('falls back to a system actor for empty or unknown types', () => {
-        const empty = toNotificationViewModel(
-            row({ type: '', message: '', title: '' }),
-            { unknownLabel: 'Unknown notification' }
-        );
-        const unknown = toNotificationViewModel(
+        const empty = viewModel(row({ type: '', message: '', title: '' }), {
+            unknownLabel: 'Unknown notification'
+        });
+        const unknown = viewModel(
             row({ type: 'totally.new.type', message: 'Something happened' }),
             { unknownLabel: 'Unknown notification' }
         );
@@ -330,13 +371,11 @@ describe('notification view model', () => {
     });
 
     it('derives unseen and expired flags from the shared seen rules', () => {
-        const unseen = toNotificationViewModel(
-            row({ type: 'invite', seen: false })
-        );
-        const expired = toNotificationViewModel(
+        const unseen = viewModel(row({ type: 'invite', seen: false }));
+        const expired = viewModel(
             row({ type: 'invite', seen: false, expired: true })
         );
-        const legacySeen = toNotificationViewModel(
+        const legacySeen = viewModel(
             row({ type: 'group.announcement', version: 1, seen: false })
         );
 

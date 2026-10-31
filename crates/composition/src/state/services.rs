@@ -149,6 +149,18 @@ impl RuntimeHostState {
         self.runtime_context
             .vrc_status
             .start_loop(self.runtime_context.tasks.clone());
+        let vrc_status = self.runtime_context.vrc_status.clone();
+        let tasks = self.runtime_context.tasks.clone();
+        self.authenticated_runtime
+            .start_system_resume_watch(move || {
+                tracing::info!("system resume detected; re-verifying realtime connection");
+                let vrc_status = vrc_status.clone();
+                tasks.spawn(async move {
+                    if let Err(error) = vrc_status.refresh().await {
+                        tracing::warn!(error = %error, "failed to refresh VRChat status after resume");
+                    }
+                });
+            });
         self.profile_backup.start_scheduler();
     }
 }

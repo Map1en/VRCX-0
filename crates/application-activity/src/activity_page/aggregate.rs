@@ -83,25 +83,50 @@ pub(super) fn series(
     spans: &[LocationSpan],
     bucket: ActivitySeriesBucket,
     utc_offset_minutes: i64,
+    from_ms: Option<i64>,
+    to_ms: i64,
 ) -> ActivityPageSeries {
     let bucket_key = |day: NaiveDate| match bucket {
         ActivitySeriesBucket::Day => day,
         ActivitySeriesBucket::Week => week_start(day),
     };
+    let step = match bucket {
+        ActivitySeriesBucket::Day => Duration::days(1),
+        ActivitySeriesBucket::Week => Duration::days(7),
+    };
+    let offset_ms = utc_offset_minutes * MINUTE_MS;
+    let first_day = match from_ms {
+        Some(from_ms) => local_date(from_ms + offset_ms),
+        None => spans
+            .iter()
+            .map(|span| span.start_ms)
+            .min()
+            .and_then(|start_ms| local_date(start_ms + offset_ms)),
+    };
+    let last_day = local_date(to_ms - 1 + offset_ms);
+    let (Some(first_day), Some(last_day)) = (first_day, last_day) else {
+        return ActivityPageSeries {
+            bucket,
+            points: Vec::new(),
+        };
+    };
+
     let mut totals: BTreeMap<NaiveDate, i64> = BTreeMap::new();
     for (day, millis) in millis_by_local_day(spans, utc_offset_minutes) {
         *totals.entry(bucket_key(day)).or_insert(0) += millis;
     }
-    ActivityPageSeries {
-        bucket,
-        points: totals
-            .into_iter()
-            .map(|(start, millis)| ActivitySeriesPoint {
-                start_date: start.format("%Y-%m-%d").to_string(),
-                minutes: millis / MINUTE_MS,
-            })
-            .collect(),
+    let mut points = Vec::new();
+    let mut cursor = bucket_key(first_day);
+    while cursor <= last_day {
+        let bucket_end = cursor + step - Duration::days(1);
+        points.push(ActivitySeriesPoint {
+            start_date: cursor.max(first_day).format("%Y-%m-%d").to_string(),
+            end_date: bucket_end.min(last_day).format("%Y-%m-%d").to_string(),
+            minutes: totals.get(&cursor).copied().unwrap_or(0) / MINUTE_MS,
+        });
+        cursor += step;
     }
+    ActivityPageSeries { bucket, points }
 }
 
 pub(super) fn worlds(
@@ -339,6 +364,152 @@ mod tests {
             week_start(NaiveDate::from_ymd_opt(2024, 1, 7).expect("valid date")),
             monday
         );
+    }
+
+    fn day_ms(year: i32, month: u32, day: u32) -> i64 {
+        NaiveDate::from_ymd_opt(year, month, day)
+            .expect("valid date")
+            .and_hms_opt(0, 0, 0)
+            .expect("valid time")
+            .and_utc()
+            .timestamp_millis()
+    }
+
+    #[test]
+    fn day_series_fills_every_day_of_the_window() {
+        let spans = vec![
+            span(
+                day_ms(2024, 1, 2) + HOUR,
+                day_ms(2024, 1, 2) + 2 * HOUR,
+                "wrld_a",
+                "public",
+            ),
+            span(
+                day_ms(2024, 1, 5) + HOUR,
+                day_ms(2024, 1, 5) + 3 * HOUR,
+                "wrld_a",
+                "public",
+            ),
+        ];
+
+        let result = series(
+            &spans,
+            ActivitySeriesBucket::Day,
+            0,
+            Some(day_ms(2024, 1, 1)),
+            day_ms(2024, 1, 7),
+        );
+
+        let minutes: Vec<i64> = result.points.iter().map(|point| point.minutes).collect();
+        assert_eq!(minutes, vec![0, 60, 0, 0, 120, 0]);
+        assert_eq!(result.points[0].start_date, "2024-01-01");
+        assert_eq!(result.points[0].end_date, "2024-01-01");
+        assert_eq!(result.points[5].start_date, "2024-01-06");
+    }
+
+    #[test]
+    fn day_series_uses_local_days_for_the_window_edges() {
+        let offset_minutes = 9 * 60;
+        let offset_ms = offset_minutes * MINUTE_MS;
+
+        let result = series(
+            &[],
+            ActivitySeriesBucket::Day,
+            offset_minutes,
+            Some(day_ms(2024, 1, 1) - offset_ms),
+            day_ms(2024, 1, 4) - offset_ms,
+        );
+
+        let dates: Vec<&str> = result
+            .points
+            .iter()
+            .map(|point| point.start_date.as_str())
+            .collect();
+        assert_eq!(dates, vec!["2024-01-01", "2024-01-02", "2024-01-03"]);
+    }
+
+    #[test]
+    fn week_series_fills_empty_weeks_and_clamps_edges_to_the_window() {
+        let spans = vec![span(
+            day_ms(2024, 1, 3) + HOUR,
+            day_ms(2024, 1, 3) + 2 * HOUR,
+            "wrld_a",
+            "public",
+        )];
+
+        let result = series(
+            &spans,
+            ActivitySeriesBucket::Week,
+            0,
+            Some(day_ms(2024, 1, 3)),
+            day_ms(2024, 1, 25),
+        );
+
+        let ranges: Vec<(&str, &str, i64)> = result
+            .points
+            .iter()
+            .map(|point| {
+                (
+                    point.start_date.as_str(),
+                    point.end_date.as_str(),
+                    point.minutes,
+                )
+            })
+            .collect();
+        assert_eq!(
+            ranges,
+            vec![
+                ("2024-01-03", "2024-01-07", 60),
+                ("2024-01-08", "2024-01-14", 0),
+                ("2024-01-15", "2024-01-21", 0),
+                ("2024-01-22", "2024-01-24", 0),
+            ]
+        );
+    }
+
+    #[test]
+    fn all_time_series_starts_at_the_first_recorded_week() {
+        let spans = vec![
+            span(
+                day_ms(2024, 1, 10) + HOUR,
+                day_ms(2024, 1, 10) + 2 * HOUR,
+                "wrld_a",
+                "public",
+            ),
+            span(
+                day_ms(2024, 1, 31) + HOUR,
+                day_ms(2024, 1, 31) + 2 * HOUR,
+                "wrld_a",
+                "public",
+            ),
+        ];
+
+        let result = series(
+            &spans,
+            ActivitySeriesBucket::Week,
+            0,
+            None,
+            day_ms(2024, 2, 1),
+        );
+
+        let starts: Vec<&str> = result
+            .points
+            .iter()
+            .map(|point| point.start_date.as_str())
+            .collect();
+        assert_eq!(
+            starts,
+            vec!["2024-01-10", "2024-01-15", "2024-01-22", "2024-01-29"]
+        );
+        assert_eq!(result.points[1].minutes, 0);
+        assert_eq!(result.points[3].minutes, 60);
+    }
+
+    #[test]
+    fn all_time_series_without_data_is_empty() {
+        let result = series(&[], ActivitySeriesBucket::Week, 0, None, day_ms(2024, 2, 1));
+
+        assert!(result.points.is_empty());
     }
 
     #[test]

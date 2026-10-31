@@ -358,8 +358,12 @@ describe('useUserDialogSelfActions', () => {
                 pronouns: 'she/her'
             })
         );
-        await act(async () => rendered.result.current.profileDetails.onSave());
+        let saved = false;
+        await act(async () => {
+            saved = await rendered.result.current.profileDetails.onSave();
+        });
 
+        expect(saved).toBe(true);
         expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith({
             expectedUserId: 'usr_self',
             params: {

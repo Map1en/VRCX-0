@@ -239,6 +239,11 @@ export function useGameLogFilters() {
         setSearchQuery(searchDraft);
     }, [searchDraft]);
 
+    const applySearch = useCallback((value: string) => {
+        setSearchDraft(value);
+        setSearchQuery(value);
+    }, []);
+
     const clearSearch = useCallback(() => {
         setSearchDraft('');
         setSearchQuery('');
@@ -263,6 +268,7 @@ export function useGameLogFilters() {
 
     return {
         availableFilterTypes,
+        applySearch,
         deferredSearchQuery,
         favoritesOnly,
         preferencesReady,

@@ -1,7 +1,12 @@
-use vrcx_0_core::game_log_parser::GameLogEventKind;
+use vrcx_0_core::game_log_parser::{GameLogEventKind, VIDEO_ERROR_EVENT_PREFIX};
 
 use super::context::LogContext;
 use super::sink::GameLogParseSink;
+
+pub(crate) const APPLICATION_QUIT_MARKERS: [&str; 2] = [
+    "VRCApplication: OnApplicationQuit at ",
+    "VRCApplication: HandleApplicationQuit at ",
+];
 
 const VRCHAT_LOCAL_RESOURCE_URL_PREFIXES: [&str; 2] =
     ["http://127.0.0.1:22500", "http://localhost:22500"];
@@ -42,8 +47,9 @@ pub(super) fn parse_application_quit(
     line: &str,
     content: &str,
 ) -> bool {
-    if !content.starts_with("VRCApplication: OnApplicationQuit at ")
-        && !content.starts_with("VRCApplication: HandleApplicationQuit at ")
+    if !APPLICATION_QUIT_MARKERS
+        .iter()
+        .any(|marker| content.starts_with(marker))
     {
         return false;
     }
@@ -214,7 +220,7 @@ pub(super) fn parse_untrusted_url(
         fname,
         line,
         GameLogEventKind::Event {
-            data: format!("VideoError: {content}"),
+            data: format!("{VIDEO_ERROR_EVENT_PREFIX} {content}"),
         },
     );
     true

@@ -55,7 +55,12 @@ vi.mock('./useUserHoverCardData', () => ({
         populationLoading: false,
         memo: '',
         trustColor: false,
-        instanceEpoch: 0
+        instanceEpoch: 0,
+        profile: null,
+        relationshipBadges: [],
+        hasSeed: true,
+        loading: false,
+        loadFailed: false
     })
 }));
 

@@ -3,15 +3,12 @@ use futures_util::future::BoxFuture;
 use std::{collections::HashSet, sync::Mutex, time::Duration};
 
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
-use vrcx_0_application_core::{
-    vrchat_api::{VrchatApiRequest, VrchatScope},
-    Error, RemoteMutationGate, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus,
-};
+use vrcx_0_application_core::{AuthenticatedMutationContext, Error, Result, RuntimeEventBus};
 use vrcx_0_core::OwnerId;
 
 use crate::remote::VrchatRequestPort;
+use crate::scope_gate::{execute_vrchat_mutation, RemoteMutationOutcome};
 
 use super::service::{GroupRemoteRequest, GroupRemoteRequests};
 use super::types::{
@@ -112,12 +109,6 @@ pub struct GroupMembershipBatchProgress {
     pub total: u32,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum GroupMembershipRemoteOutcome {
-    Applied,
-    AppliedScopeChanged,
-}
-
 enum GroupMembershipOperation<'a> {
     Leave {
         group_id: &'a str,
@@ -133,7 +124,7 @@ trait GroupMembershipBatchActions: Send + Sync {
     fn execute<'a>(
         &'a self,
         operation: GroupMembershipOperation<'a>,
-    ) -> BoxFuture<'a, Result<GroupMembershipRemoteOutcome>>;
+    ) -> BoxFuture<'a, Result<RemoteMutationOutcome>>;
     fn scope_matches(&self) -> bool;
     fn current_user_id(&self) -> &str;
     fn current_endpoint(&self) -> &str;
@@ -146,69 +137,22 @@ trait GroupMembershipBatchActions: Send + Sync {
 pub struct VrchatGroupMembershipBatchActions<'a> {
     remote: &'a dyn VrchatRequestPort,
     remote_requests: &'a dyn GroupRemoteRequests,
-    auth_scope: &'a RuntimeAuthScope,
-    pub expected_scope: RuntimeAuthScopeSnapshot,
+    mutation: AuthenticatedMutationContext<'a>,
     event_bus: RuntimeEventBus,
-    remote_mutation_gate: &'a RemoteMutationGate,
 }
 
 impl<'a> VrchatGroupMembershipBatchActions<'a> {
     pub fn new(
         remote: &'a dyn VrchatRequestPort,
         remote_requests: &'a dyn GroupRemoteRequests,
-        auth_scope: &'a RuntimeAuthScope,
-        expected_scope: RuntimeAuthScopeSnapshot,
+        mutation: AuthenticatedMutationContext<'a>,
         event_bus: RuntimeEventBus,
-        remote_mutation_gate: &'a RemoteMutationGate,
     ) -> Self {
         Self {
             remote,
             remote_requests,
-            auth_scope,
-            expected_scope,
+            mutation,
             event_bus,
-            remote_mutation_gate,
-        }
-    }
-
-    async fn execute_request(
-        &self,
-        mut request: VrchatApiRequest,
-        action: &str,
-    ) -> Result<GroupMembershipRemoteOutcome> {
-        ensure_scope_matches(&self.auth_scope.snapshot(), &self.expected_scope)?;
-        request.endpoint = Some(self.expected_scope.endpoint.clone());
-        let response = self.remote.send(request, VrchatScope::Vrchat).await?;
-        let fallback_payload = Value::String(response.data.clone());
-        if !(200..300).contains(&response.status) {
-            return Err(Error::Custom(response_error_message(
-                &serde_json::from_str::<Value>(&response.data).unwrap_or(fallback_payload),
-                response.status,
-                action,
-            )));
-        }
-        let payload = if response.data.trim().is_empty() {
-            Value::Null
-        } else {
-            serde_json::from_str::<Value>(&response.data).map_err(|error| {
-                Error::Custom(format!("VRChat {action} returned invalid JSON: {error}"))
-            })?
-        };
-        if payload.get("error").is_some() {
-            return Err(Error::Custom(response_error_message(
-                &payload,
-                response.status,
-                action,
-            )));
-        }
-        if self
-            .auth_scope
-            .snapshot()
-            .generation_matches(&self.expected_scope)
-        {
-            Ok(GroupMembershipRemoteOutcome::Applied)
-        } else {
-            Ok(GroupMembershipRemoteOutcome::AppliedScopeChanged)
         }
     }
 }
@@ -217,7 +161,7 @@ impl GroupMembershipBatchActions for VrchatGroupMembershipBatchActions<'_> {
     fn execute<'a>(
         &'a self,
         operation: GroupMembershipOperation<'a>,
-    ) -> BoxFuture<'a, Result<GroupMembershipRemoteOutcome>> {
+    ) -> BoxFuture<'a, Result<RemoteMutationOutcome>> {
         Box::pin(async move {
             let (built, action) = match operation {
                 GroupMembershipOperation::Leave { group_id } => {
@@ -248,22 +192,20 @@ impl GroupMembershipBatchActions for VrchatGroupMembershipBatchActions<'_> {
                     (built, "group member visibility update")
                 }
             };
-            self.execute_request(built.request, action).await
+            execute_vrchat_mutation(self.remote, &self.mutation, built.request, action).await
         })
     }
 
     fn scope_matches(&self) -> bool {
-        self.auth_scope
-            .snapshot()
-            .generation_matches(&self.expected_scope)
+        self.mutation.is_current()
     }
 
     fn current_user_id(&self) -> &str {
-        &self.expected_scope.current_user_id
+        &self.mutation.scope().current_user_id
     }
 
     fn current_endpoint(&self) -> &str {
-        &self.expected_scope.endpoint
+        &self.mutation.scope().endpoint
     }
 
     fn report_progress(&self, progress: GroupMembershipBatchProgress) {
@@ -272,9 +214,7 @@ impl GroupMembershipBatchActions for VrchatGroupMembershipBatchActions<'_> {
 
     fn wait_for_remote_slot<'a>(&'a self) -> BoxFuture<'a, ()> {
         Box::pin(async move {
-            self.remote_mutation_gate
-                .wait(&self.expected_scope, GROUP_MEMBERSHIP_REMOTE_INTERVAL)
-                .await;
+            self.mutation.pace(GROUP_MEMBERSHIP_REMOTE_INTERVAL).await;
         })
     }
 }
@@ -284,15 +224,15 @@ pub async fn run_group_membership_batch(
     actions: &VrchatGroupMembershipBatchActions<'_>,
     input: GroupMembershipBatchInput,
 ) -> Result<GroupMembershipBatchResult> {
-    if input.expected_owner_user_id.as_str().trim() != actions.expected_scope.current_user_id
-        || input.expected_endpoint.trim() != actions.expected_scope.endpoint
+    if input.expected_owner_user_id.as_str().trim() != actions.mutation.scope().current_user_id
+        || input.expected_endpoint.trim() != actions.mutation.scope().endpoint
     {
         return Err(Error::Custom(
             "Group membership batch is stale for the current auth scope.".into(),
         ));
     }
     let _guard = coordinator.try_begin(&OwnerId::new(
-        actions.expected_scope.current_user_id.clone(),
+        actions.mutation.scope().current_user_id.clone(),
     ))?;
     run_group_membership_batch_with_actions(actions, input).await
 }
@@ -333,7 +273,7 @@ async fn run_group_membership_batch_with_actions(
         match actions.execute(operation).await {
             Ok(outcome) => {
                 items[index] = applied(group_id);
-                if outcome == GroupMembershipRemoteOutcome::AppliedScopeChanged {
+                if outcome == RemoteMutationOutcome::AppliedScopeChanged {
                     stop_after = Some((index + 1, SCOPE_CHANGED_MESSAGE.to_string()));
                 }
             }
@@ -467,17 +407,6 @@ fn not_attempted(group_id: &str) -> GroupMembershipBatchItemResult {
         state: GroupMembershipBatchItemState::NotAttempted,
         message: String::new(),
     }
-}
-
-fn ensure_scope_matches(
-    current: &RuntimeAuthScopeSnapshot,
-    expected: &RuntimeAuthScopeSnapshot,
-) -> Result<()> {
-    crate::scope_gate::ensure_snapshot_scope_matches(current, expected, "Group membership batch")
-}
-
-fn response_error_message(payload: &Value, status: i32, action: &str) -> String {
-    crate::scope_gate::response_error_message(payload, status, action)
 }
 
 #[cfg(test)]

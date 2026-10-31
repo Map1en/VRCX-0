@@ -91,6 +91,14 @@ pub struct ScreenshotLibraryImage {
     pub error: Option<String>,
 }
 
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct FavoriteScreenshots {
+    pub paths: Vec<String>,
+    pub images: Vec<ScreenshotLibraryImage>,
+    pub missing_count: u32,
+}
+
 #[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ScreenshotTimeWindow {

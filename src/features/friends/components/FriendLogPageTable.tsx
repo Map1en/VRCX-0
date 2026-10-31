@@ -13,6 +13,11 @@ import {
     DataTableSurface,
     getDataTableSizingStyle
 } from '@/components/data-table/DataTableView';
+import {
+    LogFilterContextMenu,
+    getLogFilterRowAttributes,
+    type LogFilterCommands
+} from '@/components/data-table/LogFilterContextMenu';
 import { ResizableTableCell } from '@/components/data-table/ResizableTableParts';
 import { PageFooter } from '@/components/layout/PageScaffold';
 import { Table, TableBody } from '@/ui/shadcn/table';
@@ -21,12 +26,14 @@ import type { FriendLogRow } from '../friendLogRows';
 
 export function FriendLogPageTable({
     table,
+    filterCommands,
     orderedRowsLength,
     pagination,
     pageSizes,
     onPageSizeChange
 }: {
     table: AppTable<FriendLogRow>;
+    filterCommands: LogFilterCommands;
     orderedRowsLength: number;
     pagination: PaginationState;
     pageSizes: number[];
@@ -45,26 +52,41 @@ export function FriendLogPageTable({
                         >
                             <DataTableColumnSizeColGroup table={table} />
                             <DataTableHeader table={table} />
-                            <TableBody>
-                                {table.getRowModel().rows.map((row) => (
-                                    <DataTableRow
-                                        key={row.original?.rowId || row.id}
-                                    >
-                                        <DataTableColumnSortableContext
-                                            table={table}
+                            <LogFilterContextMenu commands={filterCommands}>
+                                <TableBody>
+                                    {table.getRowModel().rows.map((row) => (
+                                        <DataTableRow
+                                            key={row.original?.rowId || row.id}
+                                            {...getLogFilterRowAttributes({
+                                                userId:
+                                                    row.original.userId || '',
+                                                userName:
+                                                    row.original
+                                                        .resolvedDisplayName ||
+                                                    row.original.displayName ||
+                                                    '',
+                                                type: row.original.type,
+                                                typeLabel: t(
+                                                    `view.friend_log.filters.${row.original.type}`
+                                                )
+                                            })}
                                         >
-                                            {row
-                                                .getVisibleCells()
-                                                .map((cell) => (
-                                                    <ResizableTableCell
-                                                        key={cell.id}
-                                                        cell={cell}
-                                                    />
-                                                ))}
-                                        </DataTableColumnSortableContext>
-                                    </DataTableRow>
-                                ))}
-                            </TableBody>
+                                            <DataTableColumnSortableContext
+                                                table={table}
+                                            >
+                                                {row
+                                                    .getVisibleCells()
+                                                    .map((cell) => (
+                                                        <ResizableTableCell
+                                                            key={cell.id}
+                                                            cell={cell}
+                                                        />
+                                                    ))}
+                                            </DataTableColumnSortableContext>
+                                        </DataTableRow>
+                                    ))}
+                                </TableBody>
+                            </LogFilterContextMenu>
                         </Table>
                     </DataTableColumnDndProvider>
                 </DataTableScrollArea>

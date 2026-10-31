@@ -139,8 +139,15 @@ pub(super) fn definition(kind: ActivityKind) -> KindDefinition {
             S::Off,
             S::Off,
         ),
-        K::GroupChange
-        | K::GroupAnnouncement
+        K::GroupChange => (
+            C::GroupSocial,
+            BOOLEAN_SCOPES,
+            S::Off,
+            S::Off,
+            S::Off,
+            S::Off,
+        ),
+        K::GroupAnnouncement
         | K::GroupEventCreated
         | K::GroupEventStarting
         | K::GroupInformative

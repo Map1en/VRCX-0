@@ -30,6 +30,7 @@ pub mod profile_bio;
 pub mod realtime;
 pub mod saved_group_favorites;
 pub mod screenshot_cache;
+pub mod screenshot_favorites;
 pub mod secrets;
 pub mod social_aggregates;
 pub mod storage;

@@ -102,6 +102,7 @@ pub trait RealtimeRemoteRequests: Send + Sync {
         offset: i32,
     ) -> Result<VrchatApiRequest>;
     fn world(&self, endpoint: String, world_id: String) -> Result<(String, VrchatApiRequest)>;
+    fn group(&self, endpoint: String, group_id: String) -> Result<VrchatApiRequest>;
     fn invite_send(
         &self,
         endpoint: String,

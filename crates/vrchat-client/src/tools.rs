@@ -70,9 +70,12 @@ pub fn group_event_follow_input(
 }
 
 fn group_event_body(event: GroupCalendarEventMutation) -> Result<Value, HttpApiError> {
-    require_text(&event.title, "VrchatToolsGroupEvent requires title.")?;
-    require_text(&event.starts_at, "VrchatToolsGroupEvent requires startsAt.")?;
-    require_text(&event.ends_at, "VrchatToolsGroupEvent requires endsAt.")?;
+    let event = GroupCalendarEventMutation {
+        title: require_text(event.title, "VrchatToolsGroupEvent requires title.")?,
+        starts_at: require_text(event.starts_at, "VrchatToolsGroupEvent requires startsAt.")?,
+        ends_at: require_text(event.ends_at, "VrchatToolsGroupEvent requires endsAt.")?,
+        ..event
+    };
     let is_series = event.recurrence.is_some();
     let mut body =
         serde_json::to_value(event).map_err(|error| HttpApiError::Custom(error.to_string()))?;
@@ -266,25 +269,6 @@ pub fn moderation_reports_get_input(
     Ok((
         reporting_user_id.clone(),
         get_input(endpoint, "moderationReports", query_params),
-    ))
-}
-
-pub fn moderation_report_delete_input(
-    endpoint: String,
-    report_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
-    let report_id = require_text(
-        report_id,
-        "VrchatToolsModerationReportDelete requires reportId.",
-    )?;
-    Ok((
-        report_id.clone(),
-        api_input(
-            endpoint,
-            "DELETE",
-            format!("moderationReports/{}", encode_path_segment(&report_id)),
-            None,
-        ),
     ))
 }
 
@@ -511,12 +495,6 @@ mod tests {
                 ("type".into(), json!("world")),
             ]))
         );
-
-        let (report_id, delete) =
-            moderation_report_delete_input("endpoint".into(), " mrpt/1 ".into()).unwrap();
-        assert_eq!(report_id, "mrpt/1");
-        assert_eq!(delete.method.as_deref(), Some("DELETE"));
-        assert_eq!(delete.path.as_deref(), Some("moderationReports/mrpt%2F1"));
     }
 
     #[test]
@@ -616,6 +594,22 @@ mod tests {
     }
 
     #[test]
+    fn group_events_send_their_title_and_times_trimmed() {
+        let mut padded = sample_event();
+        padded.title = " Meetup ".into();
+        padded.starts_at = " 2026-10-22T10:00:00.000Z ".into();
+        padded.ends_at = " 2026-10-22T12:00:00.000Z ".into();
+
+        let (_, create) =
+            group_event_create_input("endpoint".into(), "grp_1".into(), padded).unwrap();
+
+        let body = json_body(&create);
+        assert_eq!(body["title"], json!("Meetup"));
+        assert_eq!(body["startsAt"], json!("2026-10-22T10:00:00.000Z"));
+        assert_eq!(body["endsAt"], json!("2026-10-22T12:00:00.000Z"));
+    }
+
+    #[test]
     fn tool_requests_reject_blank_required_ids() {
         assert!(group_calendar_get_input("".into(), " ".into()).is_err());
         assert!(group_event_follow_input("".into(), "group".into(), " ".into(), false,).is_err());
@@ -638,7 +632,6 @@ mod tests {
         )
         .is_err());
         assert!(moderation_reports_get_input("".into(), " ".into(), 100, 0, false, None).is_err());
-        assert!(moderation_report_delete_input("".into(), " ".into()).is_err());
         assert!(serde_json::from_str::<InviteMessageType>(r#""invite""#).is_err());
     }
 }

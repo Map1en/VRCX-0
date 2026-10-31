@@ -152,7 +152,7 @@ fn log_in(store: &MachineStore, password: &str, cookies: &str) -> Result<()> {
             })
             .into(),
             stored_login_params: None,
-            save_credentials: true,
+            record: crate::auth::SavedCredentialRecordMode::WithPassword,
         },
     )?;
     Ok(())

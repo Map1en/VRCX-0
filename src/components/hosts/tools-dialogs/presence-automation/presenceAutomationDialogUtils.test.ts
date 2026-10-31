@@ -11,6 +11,7 @@ import {
     priorityNumberFromValue,
     priorityValueFromNumber,
     removeRuleAction,
+    setContextPreset,
     setGameRunningCondition,
     updateRule,
     updateRuleAction,
@@ -134,6 +135,11 @@ describe('presenceAutomationDialogUtils rule contracts', () => {
             'inFavoriteWorlds',
             { selectedWorldGroups: ['group_1'] },
             { type: 'worldInFavoriteGroups', values: ['group_1'] }
+        ],
+        [
+            'inSelectedGroupInstances',
+            { selectedInstanceGroupIds: ['grp_a'] },
+            { type: 'instanceGroupIn', values: ['grp_a'] }
         ]
     ])(
         'derives the %s preset from persisted editor fields',
@@ -168,6 +174,20 @@ describe('presenceAutomationDialogUtils rule contracts', () => {
                 values: ['public', 'groupPlus']
             }
         ]);
+    });
+
+    it('keeps only group instance types when switching to the group instance preset', () => {
+        const rule = createContextRule('Context');
+
+        expect(
+            setContextPreset(
+                { ...rule, selectedInstanceTypes: ['public', 'groupPlus'] },
+                'inSelectedGroupInstances'
+            ).selectedInstanceTypes
+        ).toEqual(['groupPlus']);
+        expect(
+            setContextPreset(rule, 'withAnyone').selectedInstanceTypes
+        ).toEqual(['public', 'friends+']);
     });
 
     it('rebuilds stale persisted conditions from the editable preset fields', () => {

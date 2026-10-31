@@ -7,6 +7,7 @@ use super::{
     ScreenshotLibraryScanStatus, ScreenshotMetadata, ScreenshotSearchResult, ScreenshotSearchType,
     ScreenshotTimeWindow, ScreenshotWindowImages, SCREENSHOT_LIBRARY_INDEX_VERSION,
 };
+use vrcx_0_application::media::ScreenshotFavorites;
 use vrcx_0_application_core::{RuntimeEventBus, TaskStopToken, TaskSupervisor};
 use vrcx_0_core::text::contains_lowercase_query_case_insensitive;
 
@@ -308,6 +309,7 @@ pub(super) fn scan_screenshot_library_in(
 
 pub fn start_screenshot_library_scan(
     cache: &MetadataCacheDb,
+    favorites: ScreenshotFavorites,
     thumbnail_cache_dir: PathBuf,
     event_bus: RuntimeEventBus,
     tasks: TaskSupervisor,
@@ -345,6 +347,11 @@ pub fn start_screenshot_library_scan(
             force,
             Some(&stop_token),
         );
+        if !stop_token.is_stop_requested() {
+            if let Err(error) = favorites.relink_missing(&root) {
+                tracing::warn!(%error, "failed to relink missing screenshot favorites");
+            }
+        }
         cache_for_scan.finish_scan(status.clone());
         event_bus.emit(status);
     });

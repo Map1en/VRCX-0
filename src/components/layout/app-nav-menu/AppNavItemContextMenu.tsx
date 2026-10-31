@@ -7,6 +7,7 @@ import {
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
 import { Button } from '@/ui/shadcn/button';
 import {
     ContextMenu,
@@ -153,6 +154,9 @@ function NavItemContextMenu({
     onOpenCustomNav: () => void;
 }) {
     const { t } = useTranslation();
+    const isMarkingAllRead = useVrcNotificationStore(
+        (state) => state.markAllSeenProgress !== null
+    );
     const isDashboard = isDashboardEntry(entry);
     const isTool = isToolEntry(entry);
 
@@ -163,6 +167,7 @@ function NavItemContextMenu({
                 {hasNotifications ? (
                     <ContextMenuGroup>
                         <ContextMenuItem
+                            disabled={isMarkingAllRead}
                             onClick={() => {
                                 onMarkAllRead();
                             }}

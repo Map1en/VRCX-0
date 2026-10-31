@@ -1,3 +1,5 @@
+pub const VIDEO_ERROR_EVENT_PREFIX: &str = "VideoError:";
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct GameLogEvent {
     pub file_name: String,
@@ -170,6 +172,9 @@ pub enum GameLogEventKind {
     VideoSync {
         timestamp: String,
     },
+    NowPlaying {
+        data: String,
+    },
     Vrcx {
         data: String,
     },
@@ -249,6 +254,7 @@ impl GameLogEventKind {
             }
             Self::VideoPlay { .. } => "video-play",
             Self::VideoSync { .. } => "video-sync",
+            Self::NowPlaying { .. } => "nowplaying",
             Self::Vrcx { .. } => "vrcx",
             Self::ApiRequest { .. } => "api-request",
             Self::Screenshot { .. } => "screenshot",
@@ -279,6 +285,7 @@ impl GameLogEventKind {
             } => vec![display_name.clone(), user_id.clone()],
             Self::PortalSpawn | Self::VrcQuit | Self::OpenVrInit | Self::DesktopMode => Vec::new(),
             Self::Notification { data }
+            | Self::NowPlaying { data }
             | Self::Vrcx { data }
             | Self::UdonException { data }
             | Self::Event { data }
@@ -339,6 +346,7 @@ impl GameLogEventKind {
                 display_name: arg(1),
             }),
             "video-sync" => Some(Self::VideoSync { timestamp: arg(0) }),
+            "nowplaying" => Some(Self::NowPlaying { data: arg(0) }),
             "api-request" => Some(Self::ApiRequest { url: arg(0) }),
             "screenshot" => Some(Self::Screenshot { path: arg(0) }),
             "sticker-spawn" => Some(Self::StickerSpawn {

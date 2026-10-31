@@ -12,7 +12,7 @@ use vrcx_0_core::proxy::with_remote_dns;
 
 #[derive(Debug, thiserror::Error)]
 pub enum LlmError {
-    #[error("LLM transport error: {0}")]
+    #[error("LLM transport error: {}", transport_error_detail(.0))]
     Http(#[from] reqwest::Error),
     #[error("LLM API error ({status}): {message}")]
     Api { status: u16, message: String },
@@ -22,6 +22,9 @@ pub enum LlmError {
 
 const OPENROUTER_REASONING_EFFORTS: &[&str] =
     &["max", "xhigh", "high", "medium", "low", "minimal", "none"];
+const MAX_RETRIES: u32 = 3;
+const MAX_SERVER_RETRY_DELAY: Duration = Duration::from_secs(60);
+const QUOTA_EXHAUSTED_MARKERS: &[&str] = &["insufficient_quota", "quota exceeded", "billing"];
 
 #[derive(Clone)]
 pub struct LlmClient {
@@ -57,6 +60,8 @@ struct ChatRequestBody<'a> {
     messages: &'a [ChatMessage],
     #[serde(skip_serializing_if = "Vec::is_empty")]
     tools: Vec<RequestTool<'a>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tool_choice: Option<&'static str>,
     stream: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     reasoning: Option<ReasoningRequest>,
@@ -66,6 +71,8 @@ struct ChatRequestBody<'a> {
 struct ChatChunk {
     #[serde(default)]
     choices: Vec<ChunkChoice>,
+    #[serde(default)]
+    error: Option<Value>,
 }
 
 #[derive(Deserialize)]
@@ -90,6 +97,8 @@ struct ChatCompletionMessage {
 struct ChunkChoice {
     #[serde(default)]
     delta: ChunkDelta,
+    #[serde(default)]
+    finish_reason: Option<String>,
 }
 
 #[derive(Deserialize, Default)]
@@ -124,6 +133,16 @@ struct ToolCallAcc {
     id: String,
     name_fragments: Vec<String>,
     argument_fragments: Vec<String>,
+}
+
+#[derive(Default)]
+struct ChatStreamState {
+    content: String,
+    tool_acc: Vec<ToolCallAcc>,
+    reasoning_details: Vec<Value>,
+    finish_reason: Option<String>,
+    done: bool,
+    error: Option<LlmError>,
 }
 
 #[derive(Deserialize)]
@@ -224,28 +243,21 @@ impl LlmClient {
             model: &self.model,
             messages,
             tools: Vec::new(),
+            tool_choice: None,
             stream: false,
             reasoning: reasoning_request(options),
         };
 
+        let url = format!("{}/chat/completions", self.base_url);
         let response = self
-            .authorized(
-                self.http
-                    .post(format!("{}/chat/completions", self.base_url)),
-            )
-            .json(&body)
-            .timeout(self.request_timeout)
-            .send()
+            .send_with_retry(|| {
+                self.authorized(self.http.post(&url))
+                    .json(&body)
+                    .timeout(self.request_timeout)
+            })
             .await?;
 
-        let status = response.status();
         let body = response.text().await?;
-        if !status.is_success() {
-            return Err(LlmError::Api {
-                status: status.as_u16(),
-                message: body,
-            });
-        }
         parse_chat_completion_content(&body)
     }
 
@@ -276,58 +288,45 @@ impl LlmClient {
             model: &self.model,
             messages,
             tools: request_tools,
+            tool_choice: (options.forbid_tool_calls && !tools.is_empty()).then_some("none"),
             stream: true,
             reasoning: reasoning_request(options),
         };
 
+        let url = format!("{}/chat/completions", self.base_url);
         let response = self
-            .authorized(
-                self.http
-                    .post(format!("{}/chat/completions", self.base_url)),
-            )
-            .json(&body)
-            .send()
+            .send_with_retry(|| self.authorized(self.http.post(&url)).json(&body))
             .await?;
-
-        if !response.status().is_success() {
-            let status = response.status().as_u16();
-            let message = response.text().await.unwrap_or_default();
-            return Err(LlmError::Api { status, message });
-        }
 
         let mut stream = response.bytes_stream();
         let mut buffer: Vec<u8> = Vec::new();
-        let mut content = String::new();
-        let mut tool_acc: Vec<ToolCallAcc> = Vec::new();
-        let mut reasoning_details = Vec::new();
+        let mut state = ChatStreamState::default();
 
         while let Some(chunk) = stream.next().await {
             buffer.extend_from_slice(&chunk?);
             drain_complete_lines(&mut buffer, |line| {
-                apply_chat_stream_line(
-                    line,
-                    &mut on_text,
-                    &mut content,
-                    &mut tool_acc,
-                    &mut reasoning_details,
-                );
+                apply_chat_stream_line(line, &mut on_text, &mut state);
             });
         }
         if let Some(line) = take_remaining_line(&mut buffer) {
-            apply_chat_stream_line(
-                &line,
-                &mut on_text,
-                &mut content,
-                &mut tool_acc,
-                &mut reasoning_details,
-            );
+            apply_chat_stream_line(&line, &mut on_text, &mut state);
+        }
+        if let Some(error) = state.error {
+            return Err(error);
+        }
+        if !state.done && state.finish_reason.is_none() {
+            return Err(LlmError::Api {
+                status: 200,
+                message: "chat stream ended before the model finished its response".into(),
+            });
         }
 
         let tool_names = tools
             .iter()
             .map(|tool| tool.name.as_str())
             .collect::<Vec<_>>();
-        let tool_calls = tool_acc
+        let tool_calls = state
+            .tool_acc
             .into_iter()
             .enumerate()
             .filter_map(|(index, acc)| {
@@ -353,10 +352,114 @@ impl LlmClient {
             .collect();
 
         Ok(AssistantTurn {
-            content,
+            content: state.content,
             tool_calls,
-            reasoning_details,
+            reasoning_details: state.reasoning_details,
+            finish_reason: state.finish_reason,
         })
+    }
+
+    async fn send_with_retry(
+        &self,
+        build: impl Fn() -> reqwest::RequestBuilder,
+    ) -> Result<reqwest::Response, LlmError> {
+        let mut attempt = 0;
+        loop {
+            let (delay, error) = match build().send().await {
+                Ok(response) if response.status().is_success() => return Ok(response),
+                Ok(response) => {
+                    let status = response.status();
+                    let headers = response.headers().clone();
+                    let message = response.text().await.unwrap_or_default();
+                    (
+                        retry_delay(status, &headers, &message, attempt),
+                        LlmError::Api {
+                            status: status.as_u16(),
+                            message,
+                        },
+                    )
+                }
+                Err(error) if error.is_connect() || (error.is_request() && !error.is_timeout()) => {
+                    (Some(backoff_delay(attempt)), error.into())
+                }
+                Err(error) => return Err(error.into()),
+            };
+            let Some(delay) = delay.filter(|_| attempt < MAX_RETRIES) else {
+                return Err(error);
+            };
+            tracing::warn!(attempt, delay_ms = delay.as_millis(), %error, "assistant: retrying LLM request");
+            tokio::time::sleep(delay).await;
+            attempt += 1;
+        }
+    }
+}
+
+fn retry_delay(
+    status: reqwest::StatusCode,
+    headers: &reqwest::header::HeaderMap,
+    body: &str,
+    attempt: u32,
+) -> Option<Duration> {
+    let retryable = matches!(status.as_u16(), 408 | 409 | 429) || status.is_server_error();
+    if !retryable {
+        return None;
+    }
+    let body = body.to_ascii_lowercase();
+    if QUOTA_EXHAUSTED_MARKERS
+        .iter()
+        .any(|marker| body.contains(marker))
+    {
+        return None;
+    }
+    match server_retry_delay(headers) {
+        Some(delay) if delay > MAX_SERVER_RETRY_DELAY => None,
+        Some(delay) => Some(delay),
+        None => Some(backoff_delay(attempt)),
+    }
+}
+
+fn server_retry_delay(headers: &reqwest::header::HeaderMap) -> Option<Duration> {
+    let header_secs = |name: &str, scale: f64| {
+        headers
+            .get(name)
+            .and_then(|value| value.to_str().ok())
+            .and_then(|value| value.trim().parse::<f64>().ok())
+            .and_then(|value| Duration::try_from_secs_f64(value / scale).ok())
+    };
+    header_secs("retry-after-ms", 1000.0).or_else(|| header_secs("retry-after", 1.0))
+}
+
+fn backoff_delay(attempt: u32) -> Duration {
+    Duration::from_secs(1 << attempt.min(3))
+}
+
+pub fn transport_error_detail(error: &reqwest::Error) -> String {
+    let kind = if error.is_timeout() {
+        Some("timeout")
+    } else if error.is_connect() {
+        Some("connect")
+    } else if error.is_body() {
+        Some("body")
+    } else if error.is_decode() {
+        Some("decode")
+    } else if error.is_request() {
+        Some("request")
+    } else {
+        None
+    };
+    let mut chain = error.to_string();
+    let mut source = std::error::Error::source(error);
+    while let Some(cause) = source {
+        let message = cause.to_string();
+        if !message.is_empty() && !chain.contains(&message) {
+            chain.push_str(": ");
+            chain.push_str(&message);
+        }
+        source = cause.source();
+    }
+    match kind {
+        Some(kind) => format!("{kind}: {chain}"),
+        None => chain,
     }
 }
 
@@ -419,36 +522,43 @@ fn reasoning_request(options: &LlmRequestOptions) -> Option<ReasoningRequest> {
         })
 }
 
-fn apply_chat_stream_line<F>(
-    line: &str,
-    on_text: &mut F,
-    content: &mut String,
-    tool_acc: &mut Vec<ToolCallAcc>,
-    reasoning_details: &mut Vec<Value>,
-) where
+fn apply_chat_stream_line<F>(line: &str, on_text: &mut F, state: &mut ChatStreamState)
+where
     F: FnMut(&str),
 {
     let Some(data) = line.trim_end().strip_prefix("data:") else {
         return;
     };
     let data = data.trim();
-    if data.is_empty() || data == "[DONE]" {
+    if data.is_empty() {
+        return;
+    }
+    if data == "[DONE]" {
+        state.done = true;
         return;
     }
     let Ok(parsed) = serde_json::from_str::<ChatChunk>(data) else {
         return;
     };
+    if let Some(error) = parsed.error {
+        state.error.get_or_insert_with(|| stream_error(&error));
+        return;
+    }
     for choice in parsed.choices {
         if let Some(text) = choice.delta.content {
             if !text.is_empty() {
                 on_text(&text);
-                content.push_str(&text);
+                state.content.push_str(&text);
             }
         }
         if let Some(details) = choice.delta.reasoning_details {
-            reasoning_details.extend(details);
+            state.reasoning_details.extend(details);
+        }
+        if let Some(reason) = choice.finish_reason.filter(|reason| !reason.is_empty()) {
+            state.finish_reason = Some(reason);
         }
         if let Some(calls) = choice.delta.tool_calls {
+            let tool_acc = &mut state.tool_acc;
             for call in calls {
                 if tool_acc.len() <= call.index {
                     tool_acc.resize_with(call.index + 1, ToolCallAcc::default);
@@ -468,6 +578,21 @@ fn apply_chat_stream_line<F>(
             }
         }
     }
+}
+
+fn stream_error(error: &Value) -> LlmError {
+    let status = error
+        .get("code")
+        .and_then(Value::as_u64)
+        .and_then(|code| u16::try_from(code).ok())
+        .filter(|code| (400..600).contains(code))
+        .unwrap_or(200);
+    let message = error
+        .get("message")
+        .and_then(Value::as_str)
+        .or_else(|| error.as_str())
+        .map_or_else(|| error.to_string(), str::to_string);
+    LlmError::Api { status, message }
 }
 
 fn assemble_tool_name(fragments: &[String], tool_names: &[&str]) -> String {

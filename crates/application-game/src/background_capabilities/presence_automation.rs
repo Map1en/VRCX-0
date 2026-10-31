@@ -467,6 +467,11 @@ fn condition_matches(condition: &Value, facts: &BackgroundPresenceFacts) -> bool
         Some("instanceTypeIn") => string_array_field(condition, "values")
             .iter()
             .any(|value| value == &facts.instance_type),
+        Some("instanceGroupIn") => facts
+            .parsed_location
+            .group_id
+            .as_ref()
+            .is_some_and(|group_id| string_array_field(condition, "values").contains(group_id)),
         Some("playerCount") => {
             facts.player_facts_known
                 && compare_numbers(
@@ -1221,6 +1226,31 @@ mod tests {
         assert!(!condition_matches(
             &any_group,
             &BackgroundPresenceFacts::default()
+        ));
+    }
+
+    #[test]
+    fn instance_group_in_matches_only_selected_group_instances() {
+        let facts = BackgroundPresenceFacts {
+            parsed_location: vrcx_0_core::location::parse_location(
+                "wrld_1:12345~group(grp_selected)~groupAccessType(members)~region(jp)",
+            ),
+            ..Default::default()
+        };
+
+        let selected = json!({ "type": "instanceGroupIn", "values": ["grp_selected"] });
+        let other = json!({ "type": "instanceGroupIn", "values": ["grp_other"] });
+        let none = json!({ "type": "instanceGroupIn", "values": [] });
+
+        assert!(condition_matches(&selected, &facts));
+        assert!(!condition_matches(&other, &facts));
+        assert!(!condition_matches(&none, &facts));
+        assert!(!condition_matches(
+            &selected,
+            &BackgroundPresenceFacts {
+                parsed_location: vrcx_0_core::location::parse_location("wrld_1:12345~region(jp)"),
+                ..Default::default()
+            }
         ));
     }
 }

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use chrono::{DateTime, Utc};
 use serde_json::{json, Value};
+use vrcx_0_core::notification_group::{notification_group_key, NotificationGroupFacts};
 use vrcx_0_core::text::contains_lowercase_query_case_insensitive;
 
 use crate::common::{
@@ -12,7 +13,7 @@ use crate::database::DatabaseService;
 use crate::realtime::{ensure_realtime_tables, normalize_user_table_prefix};
 use crate::Error;
 
-use super::schema::{NOTIFICATION_V1_COLUMNS, NOTIFICATION_V2_COLUMNS};
+use super::schema::{APP_NOTIFICATION_COLUMNS, NOTIFICATION_V1_COLUMNS, NOTIFICATION_V2_COLUMNS};
 use super::types::*;
 
 fn notification_select_sql(table: &str, columns: &[&str], where_sql: &str, limit: bool) -> String {
@@ -129,6 +130,17 @@ fn notification_matches_filters(
     filters.is_empty() || filters.iter().any(|filter| filter == &notification.r#type)
 }
 
+fn with_group_key(mut notification: NotificationListItemOutput) -> NotificationListItemOutput {
+    notification.group_key = notification_group_key(&NotificationGroupFacts {
+        kind: &notification.r#type,
+        sender_user_id: &notification.sender_user_id,
+        created_at: &notification.created_at,
+        data: &notification.data,
+        details: &notification.details,
+    });
+    notification
+}
+
 fn notification_v1_list_item(row: NotificationV1RowOutput) -> NotificationListItemOutput {
     let details = json!({
         "worldId": row.world_id,
@@ -138,7 +150,7 @@ fn notification_v1_list_item(row: NotificationV1RowOutput) -> NotificationListIt
         "requestMessage": row.request_message,
         "responseMessage": row.response_message,
     });
-    NotificationListItemOutput {
+    with_group_key(NotificationListItemOutput {
         id: row.id,
         version: 1,
         created_at: row.created_at.clone(),
@@ -160,7 +172,8 @@ fn notification_v1_list_item(row: NotificationV1RowOutput) -> NotificationListIt
         details,
         location: row.location,
         expired: row.expired == 1,
-    }
+        group_key: None,
+    })
 }
 
 fn notification_v2_list_item(
@@ -172,7 +185,7 @@ fn notification_v2_list_item(
     let data = parse_json_value(&Value::String(row.data), json!({}));
     let responses = parse_json_value(&Value::String(row.responses), json!([]));
     let details = parse_json_value(&Value::String(row.details), json!({}));
-    NotificationListItemOutput {
+    with_group_key(NotificationListItemOutput {
         id: row.id,
         version: 2,
         created_at: row.created_at.clone(),
@@ -202,7 +215,8 @@ fn notification_v2_list_item(
         },
         location: String::new(),
         expired,
-    }
+        group_key: None,
+    })
 }
 
 fn notification_push_dedup(
@@ -367,8 +381,14 @@ fn query_notification_list(
         notification_filter_params(&query.filters, &search, &v1_search_columns);
     let (v2_where_sql, mut v2_params) =
         notification_filter_params(&query.filters, &search, &v2_search_columns);
+    let (app_where_sql, mut app_params) = notification_filter_params(
+        &query.filters,
+        &search,
+        &["type", "subject_id", "subject_name"],
+    );
     v1_params.insert("@limit".into(), Value::from(per_table_limit));
     v2_params.insert("@limit".into(), Value::from(per_table_limit));
+    app_params.insert("@limit".into(), Value::from(per_table_limit));
 
     let v1_rows = db
         .execute(
@@ -408,7 +428,24 @@ fn query_notification_list(
         Vec::new()
     };
 
+    let app_rows = db
+        .execute(
+            &notification_select_sql(
+                &format!("{user_prefix}_app_notification_log"),
+                APP_NOTIFICATION_COLUMNS,
+                &app_where_sql,
+                true,
+            ),
+            &app_params,
+        )?
+        .into_iter()
+        .map(|row| app_notification_from_row(&row))
+        .collect::<Result<Vec<_>, _>>()?;
+
     let mut deduped = HashMap::new();
+    for row in app_rows {
+        notification_push_dedup(&mut deduped, row.list_item());
+    }
     for row in v1_rows {
         notification_push_dedup(&mut deduped, notification_v1_list_item(row));
     }
@@ -438,6 +475,19 @@ pub fn notification_list_query(
     query: NotificationListQueryInput,
 ) -> Result<Vec<NotificationListItemOutput>, Error> {
     query_notification_list(db, query)
+}
+
+fn app_notification_from_row(row: &[Value]) -> Result<AppNotification, Error> {
+    Ok(AppNotification {
+        id: strict_row_string(row, 0)?,
+        created_at: strict_row_string(row, 1)?,
+        r#type: strict_row_string(row, 2)?,
+        subject_id: strict_row_string(row, 3)?,
+        subject_name: strict_row_string(row, 4)?,
+        image_url: strict_row_string(row, 5)?,
+        message_key: strict_row_string(row, 6)?,
+        message_params: serde_json::from_str(&strict_row_string(row, 7)?).unwrap_or_default(),
+    })
 }
 
 fn notification_v1_from_row(row: &[Value]) -> Result<NotificationV1RowOutput, Error> {

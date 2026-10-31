@@ -1,17 +1,23 @@
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
+
+use chrono::Utc;
 
 use crate::auth::AuthCredentialStore;
 use serde::Deserialize;
 use serde_json::{json, Value};
-use tokio::sync::{Mutex as AsyncMutex, OwnedMutexGuard};
+use tokio::sync::{Mutex as AsyncMutex, Notify, OwnedMutexGuard};
+use tokio::time::Instant;
 use vrcx_0_application_core::RuntimeRealtimeTransportEpoch;
+use vrcx_0_contracts::vrchat_device_login::VrchatDeviceAuthorization;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 use vrcx_0_core::TwoFactorMethod;
 
 use crate::auth::{
     delete_saved_credential, record_login_success, record_logout, saved_snapshot,
-    AuthSessionCookies, AuthenticatedRuntimeSession, LoginSuccessRecordInput, LogoutRecordInput,
-    SavedAuthSnapshot,
+    wait_for_device_approval, AuthSessionCookies, AuthenticatedRuntimeSession,
+    DeviceApprovalOutcome, LoginSuccessRecordInput, LogoutRecordInput, SavedAuthSnapshot,
+    SavedCredentialRecordMode,
 };
 use vrcx_0_application_core::Error;
 
@@ -19,8 +25,11 @@ use super::auto_login::{
     drive_auto_login, AutoLoginDrive, AutoLoginOutcome, AutoLoginStartInput,
     AutoLoginTerminalOutcome, AutoLoginThrottle,
 };
-use super::service::{respond_to_challenge, start_gui_basic_login, start_saved_credential_login};
-use super::types::{LoginApi, LoginFailureKind, LoginSessionState};
+use super::service::{
+    complete_device_login, respond_to_challenge, start_device_login, start_gui_basic_login,
+    start_saved_credential_login,
+};
+use super::types::{LoginApi, LoginFailureKind, LoginRemoteOperation, LoginSessionState};
 
 #[derive(Debug, Clone, Deserialize, specta::Type)]
 #[serde(tag = "mode", rename_all = "camelCase")]
@@ -39,6 +48,7 @@ pub enum LoginSessionStartInput {
         #[serde(default)]
         user_id: String,
     },
+    Device,
 }
 
 #[derive(Debug, Clone, Deserialize, specta::Type)]
@@ -126,12 +136,63 @@ pub(super) enum LoginAttemptPolicy {
     SavedCredential {
         user_id: String,
     },
+    Device,
 }
 
 struct LoginSessionRuntimeInner {
     generation: u64,
-    active: Option<ActiveChallenge>,
+    active: Option<ActiveAttempt>,
     inflight_attempt_id: Option<String>,
+}
+
+enum ActiveAttempt {
+    Challenge(ActiveChallenge),
+    Device(ActiveDeviceApproval),
+}
+
+impl ActiveAttempt {
+    fn attempt_id(&self) -> &str {
+        match self {
+            Self::Challenge(challenge) => &challenge.attempt_id,
+            Self::Device(device) => &device.attempt_id,
+        }
+    }
+
+    fn generation(&self) -> u64 {
+        match self {
+            Self::Challenge(challenge) => challenge.generation,
+            Self::Device(device) => device.generation,
+        }
+    }
+
+    fn state(&self) -> LoginSessionState {
+        match self {
+            Self::Challenge(challenge) => challenge.state(),
+            Self::Device(device) => device.state(),
+        }
+    }
+}
+
+struct ActiveDeviceApproval {
+    generation: u64,
+    attempt_id: String,
+    api: Arc<dyn LoginApi>,
+    endpoint: String,
+    device_code: String,
+    interval: Duration,
+    deadline: Instant,
+    verification_url: String,
+    expires_at: i64,
+}
+
+impl ActiveDeviceApproval {
+    fn state(&self) -> LoginSessionState {
+        LoginSessionState::DeviceApproval {
+            attempt_id: self.attempt_id.clone(),
+            verification_url: self.verification_url.clone(),
+            expires_at: self.expires_at,
+        }
+    }
 }
 
 struct ActiveChallenge {
@@ -188,6 +249,7 @@ pub struct LoginSessionRuntime {
     inner: Arc<Mutex<LoginSessionRuntimeInner>>,
     network_gate: Arc<AsyncMutex<()>>,
     auto_login_throttle: Arc<AutoLoginThrottle>,
+    superseded: Arc<Notify>,
 }
 
 impl Default for LoginSessionRuntime {
@@ -206,6 +268,7 @@ impl LoginSessionRuntime {
             })),
             network_gate: Arc::new(AsyncMutex::new(())),
             auto_login_throttle: Arc::new(AutoLoginThrottle::new()),
+            superseded: Arc::new(Notify::new()),
         }
     }
 
@@ -321,6 +384,7 @@ impl LoginSessionRuntime {
             inner.generation = inner.generation.wrapping_add(1);
             inner.active = None;
             inner.inflight_attempt_id = None;
+            self.superseded.notify_waiters();
             LoginSessionOperation {
                 inner: Arc::clone(&self.inner),
                 generation: inner.generation,
@@ -388,7 +452,7 @@ impl LoginSessionRuntime {
         self.inner
             .lock()
             .ok()
-            .and_then(|inner| inner.active.as_ref().map(ActiveChallenge::state))
+            .and_then(|inner| inner.active.as_ref().map(ActiveAttempt::state))
             .unwrap_or(LoginSessionState::Cancelled)
     }
 
@@ -471,6 +535,18 @@ impl LoginSessionRuntime {
                     LoginAttemptPolicy::SavedCredential { user_id },
                 )
             }
+            LoginSessionStartInput::Device => {
+                let endpoint = VRCHAT_API_DEFAULT_ENDPOINT.to_string();
+                clear_auth_cookies_and_save(cookies);
+                match start_device_login(api.as_ref(), &endpoint).await {
+                    Ok(authorization) => {
+                        return self
+                            .install_device_approval(&operation, authorization, api, endpoint)
+                            .unwrap_or(LoginSessionState::Cancelled);
+                    }
+                    Err(state) => (*state, endpoint, LoginAttemptPolicy::Device),
+                }
+            }
         };
         self.install_state(
             &operation,
@@ -508,6 +584,14 @@ impl LoginSessionRuntime {
         let (operation, active) = match self.take_active(&input.attempt_id) {
             Ok(active) => active,
             Err(state) => return *state,
+        };
+        let active = match active {
+            ActiveAttempt::Challenge(active) => active,
+            ActiveAttempt::Device(device) => {
+                return self
+                    .await_device_approval(operation, device, cookies, config, transition)
+                    .await;
+            }
         };
         let _network = match self.acquire_network(&operation).await {
             Ok(guard) => guard,
@@ -550,18 +634,19 @@ impl LoginSessionRuntime {
             let matches_active = inner
                 .active
                 .as_ref()
-                .is_some_and(|active| active.attempt_id == attempt_id && !attempt_id.is_empty());
+                .is_some_and(|active| active.attempt_id() == attempt_id && !attempt_id.is_empty());
             let matches_inflight = inner.inflight_attempt_id.as_deref() == Some(&attempt_id);
             if !matches_active && !matches_inflight {
                 return inner
                     .active
                     .as_ref()
-                    .map(ActiveChallenge::state)
+                    .map(ActiveAttempt::state)
                     .unwrap_or(LoginSessionState::Cancelled);
             }
             inner.generation = inner.generation.wrapping_add(1);
             inner.active = None;
             inner.inflight_attempt_id = None;
+            self.superseded.notify_waiters();
             LoginSessionOperation {
                 inner: Arc::clone(&self.inner),
                 generation: inner.generation,
@@ -596,6 +681,7 @@ impl LoginSessionRuntime {
         inner.generation = inner.generation.wrapping_add(1);
         inner.active = None;
         inner.inflight_attempt_id = None;
+        self.superseded.notify_waiters();
         transition(LoginRuntimeTransition::Authenticating).map_err(Error::Custom)?;
         Ok(LoginSessionOperation {
             inner: Arc::clone(&self.inner),
@@ -616,7 +702,7 @@ impl LoginSessionRuntime {
     fn take_active(
         &self,
         attempt_id: &str,
-    ) -> Result<(LoginSessionOperation, ActiveChallenge), Box<LoginSessionState>> {
+    ) -> Result<(LoginSessionOperation, ActiveAttempt), Box<LoginSessionState>> {
         let mut inner = self
             .inner
             .lock()
@@ -624,17 +710,118 @@ impl LoginSessionRuntime {
         let Some(active) = inner.active.as_ref() else {
             return Err(Box::new(LoginSessionState::Cancelled));
         };
-        if attempt_id.is_empty() || active.attempt_id != attempt_id {
+        if attempt_id.is_empty() || active.attempt_id() != attempt_id {
             return Err(Box::new(active.state()));
         }
         let active = inner.active.take().expect("active session was checked");
         inner.inflight_attempt_id = Some(attempt_id.to_string());
         let operation = LoginSessionOperation {
             inner: Arc::clone(&self.inner),
-            generation: active.generation,
+            generation: active.generation(),
             attempt_id: attempt_id.to_string(),
         };
         Ok((operation, active))
+    }
+
+    fn install_device_approval(
+        &self,
+        operation: &LoginSessionOperation,
+        authorization: VrchatDeviceAuthorization,
+        api: Arc<dyn LoginApi>,
+        endpoint: String,
+    ) -> vrcx_0_application_core::Result<LoginSessionState> {
+        let mut inner = self
+            .inner
+            .lock()
+            .map_err(|_| Error::Custom("Login session state is unavailable.".into()))?;
+        if inner.generation != operation.generation {
+            return Err(superseded_error());
+        }
+        let expires_at = authorization.expires_at_unix_millis(Utc::now().timestamp_millis());
+        let device = ActiveDeviceApproval {
+            generation: operation.generation,
+            attempt_id: operation.attempt_id.clone(),
+            api,
+            endpoint,
+            device_code: authorization.device_code,
+            interval: authorization.interval,
+            deadline: Instant::now() + authorization.expires_in,
+            verification_url: authorization.verification_url,
+            expires_at,
+        };
+        let state = device.state();
+        inner.inflight_attempt_id = None;
+        inner.active = Some(ActiveAttempt::Device(device));
+        Ok(state)
+    }
+
+    async fn await_device_approval(
+        &self,
+        operation: LoginSessionOperation,
+        device: ActiveDeviceApproval,
+        cookies: &dyn AuthSessionCookies,
+        config: &dyn AuthCredentialStore,
+        transition: &TransitionSink<'_>,
+    ) -> LoginSessionState {
+        let outcome = wait_for_device_approval(
+            device.interval,
+            device.deadline,
+            &self.superseded,
+            || operation.ensure_current().is_ok(),
+            || {
+                let gate = Arc::clone(&self.network_gate);
+                let operation = operation.clone();
+                let api = Arc::clone(&device.api);
+                let request = LoginRemoteOperation::DeviceStatus {
+                    endpoint: device.endpoint.clone(),
+                    device_code: device.device_code.clone(),
+                };
+                async move {
+                    let _network = gate.lock_owned().await;
+                    operation
+                        .ensure_current()
+                        .map_err(|error| error.to_string())?;
+                    api.execute(request)
+                        .await
+                        .map_err(|error| error.to_string())
+                }
+            },
+        )
+        .await;
+        let _network = match self.acquire_network(&operation).await {
+            Ok(guard) => guard,
+            Err(_) => return LoginSessionState::Cancelled,
+        };
+        let state = match outcome {
+            DeviceApprovalOutcome::Approved => {
+                complete_device_login(device.api.as_ref(), &device.endpoint).await
+            }
+            DeviceApprovalOutcome::Expired => LoginSessionState::failed(
+                "The QR code expired before the login was approved.",
+                LoginFailureKind::DeviceCodeExpired,
+            ),
+            DeviceApprovalOutcome::Denied => LoginSessionState::failed(
+                "The login was denied on the other device.",
+                LoginFailureKind::DeviceDenied,
+            ),
+            DeviceApprovalOutcome::Failed(reason) => {
+                LoginSessionState::failed(reason, LoginFailureKind::Other)
+            }
+            DeviceApprovalOutcome::Superseded => return LoginSessionState::Cancelled,
+        };
+        self.install_state(
+            &operation,
+            state,
+            device.api,
+            device.endpoint,
+            LoginAttemptPolicy::Device,
+            LoginRuntimeDeps {
+                cookies,
+                config,
+                transition,
+            },
+        )
+        .unwrap_or(LoginSessionState::Cancelled)
     }
 
     fn install_state(
@@ -664,7 +851,7 @@ impl LoginSessionRuntime {
                 methods,
                 mode,
                 error,
-            } => Some(ActiveChallenge {
+            } => Some(ActiveAttempt::Challenge(ActiveChallenge {
                 generation: operation.generation,
                 attempt_id: attempt_id.clone(),
                 api,
@@ -673,7 +860,7 @@ impl LoginSessionRuntime {
                 mode: mode.clone(),
                 error: error.clone(),
                 policy,
-            }),
+            })),
             _ => None,
         };
         Ok(state)
@@ -701,7 +888,7 @@ fn apply_terminal_transition(
             ));
             state
         }
-        LoginSessionState::Challenge { .. } => state,
+        LoginSessionState::Challenge { .. } | LoginSessionState::DeviceApproval { .. } => state,
     }
 }
 
@@ -717,6 +904,7 @@ fn auto_login_failure_reason(outcome: &AutoLoginOutcome) -> Option<&str> {
         AutoLoginOutcome::Session(
             LoginSessionState::Authenticated { .. }
             | LoginSessionState::Challenge { .. }
+            | LoginSessionState::DeviceApproval { .. }
             | LoginSessionState::Cancelled,
         ) => None,
     }
@@ -750,7 +938,11 @@ fn finalize_authenticated_state(
                 user: session.current_user.clone(),
                 login_params: login_params.clone().into(),
                 stored_login_params: None,
-                save_credentials: *save_credentials,
+                record: if *save_credentials {
+                    SavedCredentialRecordMode::WithPassword
+                } else {
+                    SavedCredentialRecordMode::WithoutPassword
+                },
             },
         ),
         LoginAttemptPolicy::SavedCredential { .. } => record_login_success(
@@ -760,7 +952,17 @@ fn finalize_authenticated_state(
                 user: session.current_user.clone(),
                 login_params: Value::Null.into(),
                 stored_login_params: None,
-                save_credentials: false,
+                record: SavedCredentialRecordMode::ExistingOnly,
+            },
+        ),
+        LoginAttemptPolicy::Device => record_login_success(
+            config,
+            cookies,
+            LoginSuccessRecordInput {
+                user: session.current_user.clone(),
+                login_params: Value::Null.into(),
+                stored_login_params: None,
+                record: SavedCredentialRecordMode::WithoutPassword,
             },
         ),
     };
@@ -828,7 +1030,10 @@ fn auto_login_outcome_from_state(
                 },
             ))
         }
-        state @ LoginSessionState::Challenge { .. } => Ok(AutoLoginOutcome::Session(state)),
+        state
+        @ (LoginSessionState::Challenge { .. } | LoginSessionState::DeviceApproval { .. }) => {
+            Ok(AutoLoginOutcome::Session(state))
+        }
         LoginSessionState::Failed {
             reason,
             kind,
@@ -880,6 +1085,8 @@ pub(super) fn apply_login_failure_cleanup(
         }
         LoginFailureKind::InvalidCredentials => unreachable!(),
         LoginFailureKind::TwoFactorUnavailable
+        | LoginFailureKind::DeviceCodeExpired
+        | LoginFailureKind::DeviceDenied
         | LoginFailureKind::Network
         | LoginFailureKind::Other => saved_snapshot(config),
     }

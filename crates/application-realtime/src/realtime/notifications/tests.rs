@@ -221,3 +221,50 @@ fn instance_closed_routes_to_v1_notification_batch() {
     assert_eq!(output.persistence.notification_v1_upserts.len(), 1);
     assert!(apply_instance_closed_ws_message(7, &ws("notification", json!({}))).is_none());
 }
+
+#[test]
+fn notification_projection_carries_group_key_without_persisting_it() {
+    let announcement = apply_notification_ws_message(
+        &OwnerId::new("usr_self"),
+        "https://api.example.test/api/1",
+        7,
+        &ws(
+            "notification-v2",
+            json!({
+                "id": "notif_announcement",
+                "type": "group.announcement",
+                "senderUserId": "usr_admin",
+                "createdAt": "2026-06-08T10:00:00Z",
+                "data": { "groupId": "grp_club" }
+            }),
+        ),
+    )
+    .expect("announcement output");
+    let group_key = announcement.projection.upserts[0].notification["groupKey"]
+        .as_str()
+        .unwrap_or_default()
+        .to_string();
+    assert!(group_key.starts_with("group.announcement:grp_club:2026-06-0"));
+    assert!(announcement.persistence.notification_v2_upserts[0]
+        .get("groupKey")
+        .is_none());
+
+    let invite = apply_notification_ws_message(
+        &OwnerId::new("usr_self"),
+        "https://api.example.test/api/1",
+        7,
+        &ws(
+            "notification",
+            json!({
+                "id": "notif_invite",
+                "senderUserId": "usr_friend",
+                "type": "invite"
+            }),
+        ),
+    )
+    .expect("invite output");
+    assert!(invite.projection.upserts[0]
+        .notification
+        .get("groupKey")
+        .is_none());
+}

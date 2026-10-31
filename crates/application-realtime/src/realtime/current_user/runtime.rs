@@ -23,7 +23,7 @@ use super::state::{
 };
 use super::utils::{has_remote_current_user_presence, map_from_json};
 use crate::realtime::event_time::EventTime;
-use vrcx_0_contracts::realtime::RealtimePersistenceBatch;
+use vrcx_0_contracts::realtime::{AvatarTimeSpentUpsert, RealtimePersistenceBatch};
 use vrcx_0_core::friends::normalize_user_id;
 use vrcx_0_core::OwnerId;
 
@@ -103,6 +103,15 @@ impl RealtimeCurrentUserRuntime {
                 ..RealtimePersistenceBatch::default()
             },
         ))
+    }
+
+    pub fn restore_avatar_wear_checkpoint(&self, generation: u64, unsaved: &AvatarTimeSpentUpsert) {
+        let mut state = self.lock_state();
+        if state.generation == generation && state.avatar_wear_checkpoint_ms == unsaved.ended_at_ms
+        {
+            state.avatar_wear_checkpoint_ms =
+                unsaved.ended_at_ms.saturating_sub(unsaved.time_spent);
+        }
     }
 
     pub fn snapshot_value(&self) -> Option<serde_json::Value> {

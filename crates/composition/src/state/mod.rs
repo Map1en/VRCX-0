@@ -1,4 +1,4 @@
-use crate::{Result, RuntimeHostContext, RuntimeHostEventSink, RuntimeHostProfile};
+use crate::{Result, RuntimeHostContext, RuntimeHostProfile};
 use vrcx_0_application::auth::{
     current_user_from_cookie, AuthenticatedRuntimeSession, AuthenticatedSessionProjection,
     AutoLoginOutcome, AutoLoginStartInput, LoginRuntimeTransition, LoginSessionCancelInput,
@@ -8,8 +8,8 @@ use vrcx_0_application::auth::{
 use vrcx_0_application::social::{PrintCleanupDeps, PrintCleanupTrigger};
 use vrcx_0_application_core::{
     BackendRuntime, BackendRuntimePhase, BackendRuntimeSnapshot, BackendRuntimeTelemetryKind,
-    BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity, GuiRuntimeMode,
-    RuntimeBackgroundJobs, RuntimeEventSink, RuntimeRealtimeTransportEpoch, WebClient,
+    GuiRuntimeMode, RuntimeBackgroundJobs, RuntimeEventSink, RuntimeRealtimeTransportEpoch,
+    WebClient,
 };
 use vrcx_0_application_realtime::RealtimeHostRuntime;
 use vrcx_0_persistence::DatabaseService;

@@ -1,57 +1,15 @@
-use serde::{Deserialize, Serialize};
-
 use crate::common::{normalize_text, now_iso, row_i64, row_string, row_value, ParamsBuilder};
 use crate::database::schema::ensure_user_store_tables;
 use crate::database::{DatabaseService, DatabaseWriteTransaction};
 use crate::realtime::normalize_user_table_prefix;
 use crate::Error;
+pub use vrcx_0_contracts::mutual_graph::{
+    MutualGraphLinkOutput, MutualGraphMetaInput, MutualGraphMetaOutput,
+    MutualGraphSnapshotEntryInput, MutualGraphSnapshotOutput,
+};
 
 #[cfg(test)]
 mod tests;
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MutualGraphSnapshotEntryInput {
-    pub friend_id: String,
-    #[serde(default)]
-    pub mutual_ids: Vec<String>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MutualGraphMetaInput {
-    pub friend_id: String,
-    #[serde(default)]
-    pub last_fetched_at: String,
-    #[serde(default)]
-    pub opted_out: bool,
-    #[serde(default)]
-    pub total_count: Option<usize>,
-}
-
-#[derive(Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct MutualGraphLinkOutput {
-    pub friend_id: String,
-    pub mutual_id: String,
-}
-
-#[derive(Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct MutualGraphMetaOutput {
-    pub friend_id: String,
-    pub last_fetched_at: String,
-    pub opted_out: bool,
-    pub total_count: Option<u32>,
-}
-
-#[derive(Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct MutualGraphSnapshotOutput {
-    pub friend_ids: Vec<String>,
-    pub links: Vec<MutualGraphLinkOutput>,
-    pub meta: Vec<MutualGraphMetaOutput>,
-}
 
 pub fn mutual_graph_snapshot_get(
     db: &DatabaseService,

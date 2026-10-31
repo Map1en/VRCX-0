@@ -1,7 +1,9 @@
-use std::path::PathBuf;
+use std::io::Read;
+use std::path::{Path, PathBuf};
 
 use base64::{engine::general_purpose::STANDARD as B64, Engine};
 use fast_rsync::{Signature, SignatureOptions};
+use sha2::{Digest, Sha256};
 
 use crate::error::Error;
 use crate::ugc_image_files;
@@ -55,6 +57,20 @@ pub fn sign_file(data: &[u8]) -> Vec<u8> {
         },
     )
     .into_serialized()
+}
+
+pub fn file_sha256_hex(path: &Path) -> Result<String, Error> {
+    let mut file = std::fs::File::open(path)?;
+    let mut hasher = Sha256::new();
+    let mut buffer = vec![0u8; 64 * 1024];
+    loop {
+        let read = file.read(&mut buffer)?;
+        if read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..read]);
+    }
+    Ok(hex::encode(hasher.finalize()))
 }
 
 pub fn md5_base64(data: &[u8]) -> String {

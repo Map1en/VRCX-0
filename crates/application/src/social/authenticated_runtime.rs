@@ -6,8 +6,9 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
 
 use crate::auth::{
-    AuthenticatedRuntimePhase, AuthenticatedRuntimePhaseSnapshot, AuthenticatedRuntimeSession,
-    AuthenticatedRuntimeStepSnapshot, AuthenticatedRuntimeStepStatus,
+    AuthenticatedRuntimePhase, AuthenticatedRuntimePhaseObserver,
+    AuthenticatedRuntimePhaseSnapshot, AuthenticatedRuntimeRealtimeHealth,
+    AuthenticatedRuntimeSession, AuthenticatedRuntimeStepSnapshot, AuthenticatedRuntimeStepStatus,
 };
 use serde_json::{json, Value};
 use vrcx_0_application_core::{
@@ -23,11 +24,14 @@ use vrcx_0_application_realtime::{
     SocialFriendRosterBaselineOutput,
 };
 use vrcx_0_core::friends::FriendRecord;
-use vrcx_0_core::time::now_iso;
+use vrcx_0_core::time::{iso_millis, now_iso};
 use vrcx_0_core::OwnerId;
 
-const RETRY_DELAYS_SECONDS: [u64; 4] = [5, 15, 30, 60];
-const RETRY_SLEEP_POLL_INTERVAL: Duration = Duration::from_millis(250);
+mod reconnect;
+
+use reconnect::{random_retry_delay, RealtimeOutage, RetryWake, SystemResumeWatch};
+
+const TRANSPORT_MONITOR_POLL_INTERVAL: Duration = Duration::from_millis(250);
 
 #[derive(Clone, Copy)]
 enum RuntimeStep {
@@ -109,6 +113,9 @@ pub struct AuthenticatedRuntimeOrchestrator {
 struct AuthenticatedRuntimeShared {
     state: Mutex<AuthenticatedRuntimeState>,
     generation: AtomicU64,
+    retry_wake: RetryWake,
+    resume_watch: SystemResumeWatch,
+    phase_observers: Mutex<Vec<AuthenticatedRuntimePhaseObserver>>,
 }
 
 #[derive(Default)]
@@ -117,6 +124,7 @@ struct AuthenticatedRuntimeState {
     friend_baseline: Option<FriendBaselineMetadata>,
     favorites_baseline: Option<SocialFavoritesBaselineOutput>,
     favorite_group_memberships: Option<Arc<FavoriteGroupMemberships>>,
+    realtime_outage: RealtimeOutage,
 }
 
 #[derive(Clone, Debug)]
@@ -132,6 +140,9 @@ impl AuthenticatedRuntimeOrchestrator {
             shared: Arc::new(AuthenticatedRuntimeShared {
                 state: Mutex::new(AuthenticatedRuntimeState::default()),
                 generation: AtomicU64::new(0),
+                retry_wake: RetryWake::default(),
+                resume_watch: SystemResumeWatch::default(),
+                phase_observers: Mutex::new(Vec::new()),
             }),
             social_baseline: deps.social_baseline,
             auth_probe: deps.auth_probe,
@@ -169,6 +180,14 @@ impl AuthenticatedRuntimeOrchestrator {
         self.lock_state().phase.clone()
     }
 
+    pub fn add_phase_observer(&self, observer: AuthenticatedRuntimePhaseObserver) {
+        self.shared
+            .phase_observers
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .push(observer);
+    }
+
     pub fn update_favorites_baseline(&self, output: SocialFavoritesBaselineOutput) {
         let accepted = accept_favorites_baseline(&mut self.lock_state(), output);
         if let Some(snapshot) = accepted {
@@ -196,6 +215,7 @@ impl AuthenticatedRuntimeOrchestrator {
     pub fn start(
         &self,
         session: AuthenticatedRuntimeSession,
+        scope: RuntimeAuthScopeSnapshot,
     ) -> Result<AuthenticatedRuntimePhaseSnapshot> {
         if session.user_id.trim().is_empty() {
             return Err(Error::Custom(
@@ -203,11 +223,6 @@ impl AuthenticatedRuntimeOrchestrator {
             ));
         }
 
-        let scope = self.auth_scope.set_identity(
-            &session.user_id,
-            &session.display_name,
-            &session.endpoint,
-        );
         let current = self.phase_snapshot();
         let same_session = snapshot_matches_session(&current, &session, scope.generation);
         let already_active = match current.phase {
@@ -278,6 +293,34 @@ impl AuthenticatedRuntimeOrchestrator {
         };
         self.emit(snapshot.clone());
         snapshot
+    }
+
+    pub fn retry_now(&self) {
+        self.shared.retry_wake.wake();
+        self.trail(
+            "retryNowRequested",
+            json!({ "runId": self.shared.generation.load(Ordering::Acquire) }),
+        );
+    }
+
+    pub fn start_system_resume_watch<F>(&self, on_resume: F)
+    where
+        F: Fn() + Send + 'static,
+    {
+        let runtime = self.clone();
+        self.shared.resume_watch.start(&self.tasks, move || {
+            runtime.handle_system_resume();
+            on_resume();
+        });
+    }
+
+    fn handle_system_resume(&self) {
+        self.shared.retry_wake.wake_after_resume();
+        self.realtime_runtime.verify_transport_liveness();
+        self.trail(
+            "systemResumed",
+            json!({ "runId": self.shared.generation.load(Ordering::Acquire) }),
+        );
     }
 
     async fn run(
@@ -372,9 +415,18 @@ impl AuthenticatedRuntimeOrchestrator {
                 }
             };
 
-            let delay = retry_delay_seconds(attempt);
-            self.set_step_retry(run_id, RuntimeStep::Realtime, attempt, delay, reason);
-            if !self.wait_for_retry(delay, run_id, scope, stop_token).await {
+            self.mark_realtime_lost(run_id);
+            if !self
+                .wait_before_retry(
+                    run_id,
+                    RuntimeStep::Realtime,
+                    attempt,
+                    reason,
+                    scope,
+                    stop_token,
+                )
+                .await
+            {
                 self.trail(
                     "supervisionEnded",
                     json!({ "runId": run_id, "stage": "retryWait" }),
@@ -438,15 +490,17 @@ impl AuthenticatedRuntimeOrchestrator {
                 Ok(Some(friend_ids_by_roster_id)) => return Some(friend_ids_by_roster_id),
                 Ok(None) => return None,
                 Err(error) => {
-                    let delay = retry_delay_seconds(attempt);
-                    self.set_step_retry(
-                        run_id,
-                        RuntimeStep::Friends,
-                        attempt,
-                        delay,
-                        error.to_string(),
-                    );
-                    if !self.wait_for_retry(delay, run_id, scope, stop_token).await {
+                    if !self
+                        .wait_before_retry(
+                            run_id,
+                            RuntimeStep::Friends,
+                            attempt,
+                            error.to_string(),
+                            scope,
+                            stop_token,
+                        )
+                        .await
+                    {
                         return None;
                     }
                     attempt = attempt.saturating_add(1);
@@ -557,15 +611,17 @@ impl AuthenticatedRuntimeOrchestrator {
                         "runtime/social-baseline/favorites",
                         &error,
                     );
-                    let delay = retry_delay_seconds(attempt);
-                    self.set_step_retry(
-                        run_id,
-                        RuntimeStep::Favorites,
-                        attempt,
-                        delay,
-                        error.to_string(),
-                    );
-                    if !self.wait_for_retry(delay, run_id, scope, stop_token).await {
+                    if !self
+                        .wait_before_retry(
+                            run_id,
+                            RuntimeStep::Favorites,
+                            attempt,
+                            error.to_string(),
+                            scope,
+                            stop_token,
+                        )
+                        .await
+                    {
                         return;
                     }
                     attempt = attempt.saturating_add(1);
@@ -638,14 +694,17 @@ impl AuthenticatedRuntimeOrchestrator {
             if !self.is_active(run_id, scope, stop_token) {
                 return None;
             }
+            self.refresh_realtime_interruption(run_id);
             tokio::select! {
                 event = lifecycle.recv() => {
                     match event {
                         Ok(RealtimeTransportLifecycleEvent::Connected(connected))
                             if connected == transport =>
                         {
-                            self.update_snapshot(run_id, |snapshot| {
-                                apply_realtime_connected(snapshot, attempt, &transport);
+                            self.update_state(run_id, |state| {
+                                if apply_realtime_connected(&mut state.phase, attempt, &transport) {
+                                    state.realtime_outage.end();
+                                }
                             });
                             self.mark_ready_if_complete(run_id);
                         }
@@ -667,7 +726,7 @@ impl AuthenticatedRuntimeOrchestrator {
                         }
                     }
                 }
-                _ = tokio::time::sleep(RETRY_SLEEP_POLL_INTERVAL) => {}
+                _ = tokio::time::sleep(TRANSPORT_MONITOR_POLL_INTERVAL) => {}
             }
         }
     }
@@ -762,34 +821,35 @@ impl AuthenticatedRuntimeOrchestrator {
             )
     }
 
-    async fn wait_for_retry(
+    async fn wait_before_retry(
         &self,
-        delay_seconds: u64,
         run_id: u64,
+        step: RuntimeStep,
+        attempt: u32,
+        error: String,
         scope: &RuntimeAuthScopeSnapshot,
         stop_token: &TaskStopToken,
     ) -> bool {
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(delay_seconds);
-        loop {
-            if !self.is_active(run_id, scope, stop_token) {
-                return false;
-            }
-            let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
-            if remaining.is_zero() {
-                break;
-            }
-            let sleep_for = remaining.min(RETRY_SLEEP_POLL_INTERVAL);
-            tokio::time::sleep(sleep_for).await;
-        }
-        self.is_active(run_id, scope, stop_token)
+        let wake_epoch = self.shared.retry_wake.epoch();
+        let delay = random_retry_delay(attempt);
+        self.set_step_retry(run_id, step, attempt, delay, error);
+        self.shared
+            .retry_wake
+            .wait(delay, wake_epoch, || {
+                self.refresh_realtime_interruption(run_id);
+                self.is_active(run_id, scope, stop_token)
+            })
+            .await
     }
 
     fn set_step_running(&self, run_id: u64, step: RuntimeStep, attempt: u32) {
-        self.update_snapshot(run_id, |snapshot| {
+        self.update_state(run_id, |state| {
             if matches!(step, RuntimeStep::Realtime) {
-                snapshot.realtime_transport = None;
+                state.phase.realtime_transport = None;
+                state.phase.realtime_health.retry_at = None;
+                state.realtime_outage.begin(tokio::time::Instant::now());
             }
-            *step_snapshot_mut(snapshot, step) = AuthenticatedRuntimeStepSnapshot {
+            *step_snapshot_mut(&mut state.phase, step) = AuthenticatedRuntimeStepSnapshot {
                 status: AuthenticatedRuntimeStepStatus::Running,
                 attempt,
                 detail: format!("{} is starting.", step_name(step)),
@@ -803,21 +863,50 @@ impl AuthenticatedRuntimeOrchestrator {
         run_id: u64,
         step: RuntimeStep,
         attempt: u32,
-        delay_seconds: u64,
+        delay: Duration,
         error: String,
     ) {
         self.update_snapshot(run_id, |snapshot| {
             if matches!(step, RuntimeStep::Realtime) {
                 snapshot.realtime_transport = None;
+                snapshot.realtime_health.retry_at = chrono::Duration::from_std(delay)
+                    .ok()
+                    .map(|delay| iso_millis(chrono::Utc::now() + delay));
             }
             *step_snapshot_mut(snapshot, step) = AuthenticatedRuntimeStepSnapshot {
                 status: AuthenticatedRuntimeStepStatus::RetryWaiting,
                 attempt,
-                retry_delay_seconds: Some(delay_seconds),
+                retry_delay_seconds: Some(delay.as_secs_f64().ceil() as u64),
                 detail: format!("{} retry is waiting.", step_name(step)),
                 last_error: Some(error),
             };
         });
+    }
+
+    fn mark_realtime_lost(&self, run_id: u64) {
+        self.update_state(run_id, |state| {
+            if !state.realtime_outage.is_ongoing() {
+                state.phase.realtime_health.disconnected_at = Some(now_iso());
+            }
+            state.realtime_outage.begin(tokio::time::Instant::now());
+        });
+    }
+
+    fn refresh_realtime_interruption(&self, run_id: u64) {
+        let snapshot = {
+            let mut state = self.lock_state();
+            if state.phase.run_id != run_id
+                || state.phase.realtime_health.interrupted
+                || !state
+                    .realtime_outage
+                    .past_grace(tokio::time::Instant::now())
+            {
+                return;
+            }
+            state.phase.realtime_health.interrupted = true;
+            finish_state_update(&mut state)
+        };
+        self.emit(snapshot);
     }
 
     fn update_snapshot(
@@ -825,16 +914,17 @@ impl AuthenticatedRuntimeOrchestrator {
         run_id: u64,
         update: impl FnOnce(&mut AuthenticatedRuntimePhaseSnapshot),
     ) {
+        self.update_state(run_id, |state| update(&mut state.phase));
+    }
+
+    fn update_state(&self, run_id: u64, update: impl FnOnce(&mut AuthenticatedRuntimeState)) {
         let snapshot = {
             let mut state = self.lock_state();
             if state.phase.run_id != run_id {
                 return;
             }
-            update(&mut state.phase);
-            state.phase.friend_baseline = None;
-            state.phase.favorites_baseline = None;
-            state.phase.updated_at = now_iso();
-            state.phase.clone()
+            update(&mut state);
+            finish_state_update(&mut state)
         };
         self.emit(snapshot);
     }
@@ -888,6 +978,15 @@ impl AuthenticatedRuntimeOrchestrator {
     }
 
     fn emit(&self, snapshot: AuthenticatedRuntimePhaseSnapshot) {
+        let observers = self
+            .shared
+            .phase_observers
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .clone();
+        for observer in &observers {
+            observer(&snapshot);
+        }
         self.event_bus.emit(snapshot);
     }
 
@@ -897,6 +996,13 @@ impl AuthenticatedRuntimeOrchestrator {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
+}
+
+fn finish_state_update(state: &mut AuthenticatedRuntimeState) -> AuthenticatedRuntimePhaseSnapshot {
+    state.phase.friend_baseline = None;
+    state.phase.favorites_baseline = None;
+    state.phase.updated_at = now_iso();
+    state.phase.clone()
 }
 
 fn step_snapshot_mut(
@@ -1023,11 +1129,13 @@ fn apply_realtime_connected(
     snapshot: &mut AuthenticatedRuntimePhaseSnapshot,
     attempt: u32,
     transport: &RealtimeTransportStartResult,
-) {
+) -> bool {
     if snapshot.realtime_transport.as_ref() != Some(transport) {
-        return;
+        return false;
     }
     snapshot.realtime = ready_step(attempt, "Realtime transport connected.".into());
+    snapshot.realtime_health = AuthenticatedRuntimeRealtimeHealth::default();
+    true
 }
 
 fn accept_favorites_baseline(
@@ -1059,10 +1167,6 @@ fn require_favorites_baseline(
         return Err(Error::Custom("Favorites baseline was stale.".into()));
     }
     Ok(output)
-}
-
-fn retry_delay_seconds(attempt: u32) -> u64 {
-    RETRY_DELAYS_SECONDS[(attempt.saturating_sub(1) as usize).min(RETRY_DELAYS_SECONDS.len() - 1)]
 }
 
 fn vrchat_auth_failure_status(error: &Error) -> Option<i32> {

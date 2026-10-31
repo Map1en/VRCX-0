@@ -167,6 +167,68 @@ describe('useUserDialogTabData', () => {
         expect(result.current.visibleProfileAvatars).toEqual(avatars);
     });
 
+    it('keeps loaded rows on screen while a tab refresh is running', async () => {
+        const refresh = Promise.withResolvers<EntityRecord[]>();
+        mocks.getUserGroups
+            .mockResolvedValueOnce([{ id: 'grp_loaded', name: 'Loaded' }])
+            .mockReturnValueOnce(refresh.promise);
+        const { result } = renderCurrentUserTabs();
+
+        await act(async () => result.current.changeTab('groups'));
+        expect(result.current.profileGroups).toHaveLength(1);
+
+        act(() => {
+            void result.current.refreshGroups();
+        });
+
+        expect(result.current.remoteStatus.groups).toBe('running');
+        expect(result.current.profileGroups).toHaveLength(1);
+
+        await act(async () =>
+            refresh.resolve([
+                { id: 'grp_loaded', name: 'Loaded' },
+                { id: 'grp_new', name: 'New' }
+            ])
+        );
+        expect(result.current.profileGroups).toHaveLength(2);
+    });
+
+    it('keeps loaded rows when the whole dialog reloads the same user', async () => {
+        const reload = Promise.withResolvers<EntityRecord[]>();
+        mocks.getUserGroups
+            .mockResolvedValueOnce([{ id: 'grp_loaded', name: 'Loaded' }])
+            .mockReturnValueOnce(reload.promise);
+        const { result, rerender } = renderHook(
+            ({ reloadToken }) =>
+                useUserDialogTabData({
+                    profile: { id: 'usr_self' },
+                    reloadToken,
+                    isCurrentUser: true,
+                    currentEndpoint: 'https://api.example.test',
+                    currentUserId: 'usr_self',
+                    currentAvatarId: 'avtr_current',
+                    previousAvatarSwapTime: 0,
+                    currentUserHasSharedConnectionsOptOut: false,
+                    friendsById: {},
+                    inGameGroupOrder: []
+                }),
+            { initialProps: { reloadToken: 0 } }
+        );
+        resetActiveTab = () => result.current.changeTab('info');
+
+        await act(async () => result.current.changeTab('groups'));
+        expect(result.current.profileGroups).toHaveLength(1);
+
+        await act(async () => rerender({ reloadToken: 1 }));
+
+        expect(result.current.activeTab).toBe('groups');
+        expect(result.current.remoteStatus.groups).toBe('running');
+        expect(result.current.profileGroups).toHaveLength(1);
+
+        await act(async () => reload.resolve([]));
+        expect(result.current.profileGroups).toHaveLength(0);
+    });
+
     it('allows different tabs to finish loading independently', async () => {
         const avatars = Promise.withResolvers<EntityRecord[]>();
         const groups = Promise.withResolvers<EntityRecord[]>();

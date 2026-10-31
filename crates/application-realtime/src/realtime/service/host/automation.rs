@@ -14,8 +14,9 @@ use vrcx_0_core::OwnerId;
 
 use crate::realtime::invite_automation::decision::{
     context_gates, cooldown_gate, evaluate_invite_automation, normalize_invite_automation_mode,
-    CooldownView, InviteAutomationConfig, InviteAutomationInput, InviteAutomationSkipReason,
-    InviteDecision, InviteLocationFacts, InviteNotificationFacts, SenderAllowlist,
+    normalize_invite_message_slot, CooldownView, InviteAutomationConfig, InviteAutomationInput,
+    InviteAutomationSkipReason, InviteDecision, InviteLocationFacts, InviteNotificationFacts,
+    SenderAllowlist,
 };
 use crate::realtime::invite_automation::runtime::{sender_scope_key, InviteOutcome};
 use crate::realtime::{RealtimeNotificationProjection, RealtimeSessionContext};
@@ -236,6 +237,7 @@ impl RealtimeHostRuntime {
         let allowlist = self
             .build_sender_allowlist(&session, &notification_facts.sender_user_id)
             .await?;
+        let message_slot = config.message_slot;
         let input = InviteAutomationInput {
             notification: notification_facts.clone(),
             config,
@@ -280,12 +282,7 @@ impl RealtimeHostRuntime {
         let (_, request) = self.deps.remote_requests.invite_send(
             session.endpoint.clone(),
             receiver_user_id.clone(),
-            json!({
-                "instanceId": instance_id,
-                "worldId": world_id,
-                "worldName": world_name,
-                "rsvp": true,
-            }),
+            invite_automation_send_body(&instance_id, &world_id, &world_name, message_slot),
         )?;
         let mutation = AuthenticatedMutationContext::capture(
             &self.deps.auth_scope,
@@ -462,9 +459,7 @@ impl RealtimeHostRuntime {
                 tracing::warn!("{label} local notification expiration failed: {error}");
             }
         }
-        self.deps
-            .event_bus
-            .emit_realtime_notification_projection(projection);
+        self.deps.event_bus.emit(projection);
         tracing::debug!(
             notification_id = facts.id,
             notification_type = facts.notification_type,
@@ -505,7 +500,28 @@ fn load_invite_automation_config(
         mode,
         selected_groups: config_string_list(store, "autoAcceptInviteGroups")?,
         allowed_statuses: config_string_list(store, "autoAcceptInviteStatuses")?,
+        message_slot: normalize_invite_message_slot(
+            &store.get_string("autoAcceptInviteMessageSlot", "")?,
+        ),
     })
+}
+
+fn invite_automation_send_body(
+    instance_id: &str,
+    world_id: &str,
+    world_name: &str,
+    message_slot: Option<i32>,
+) -> Value {
+    let mut body = json!({
+        "instanceId": instance_id,
+        "worldId": world_id,
+        "worldName": world_name,
+        "rsvp": true,
+    });
+    if let Some(message_slot) = message_slot {
+        body["messageSlot"] = Value::from(message_slot);
+    }
+    body
 }
 
 fn config_string_list(store: &dyn crate::RealtimeStore, key: &str) -> Result<Vec<String>> {

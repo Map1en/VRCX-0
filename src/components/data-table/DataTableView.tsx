@@ -7,11 +7,9 @@ import {
     useSensor,
     useSensors
 } from '@dnd-kit/core';
-import type { UniqueIdentifier } from '@dnd-kit/core';
 import { restrictToHorizontalAxis } from '@dnd-kit/modifiers';
 import {
     SortableContext,
-    arrayMove,
     horizontalListSortingStrategy,
     sortableKeyboardCoordinates
 } from '@dnd-kit/sortable';
@@ -50,6 +48,12 @@ import {
 import type { AppColumn, AppColumnDef, AppHeader, AppTable } from './appTable';
 import { useAppTable } from './appTable';
 import {
+    type ColumnSizingStyle,
+    getColumnSizeSum,
+    getColumnSizeVar,
+    getColumnSizeVars
+} from './columnSizing';
+import {
     DataTableColumnDndContext,
     dataTableColumnDndDefaultState,
     useDataTableColumnDnd
@@ -66,10 +70,10 @@ import {
 } from './dataTableStyles';
 import { ResizableTableCell, ResizableTableHead } from './ResizableTableParts';
 import {
-    getColumnOrder,
     getColumnOrderLocked,
     getReorderableColumnIds,
-    getStretchColumnId
+    getStretchColumnId,
+    moveColumnTo
 } from './tableColumnLayout';
 import { TableColumnHeaderContextMenu } from './TableColumnVisibilityMenu';
 
@@ -84,28 +88,6 @@ export {
     DATA_TABLE_STICKY_ACTION_HEADER_CLASS_NAME
 } from './dataTableStyles';
 
-function moveColumnByDrag<TData extends RowData>(
-    table: AppTable<TData>,
-    activeId: UniqueIdentifier,
-    overId: UniqueIdentifier | undefined
-) {
-    if (!activeId || !overId || activeId === overId) {
-        return;
-    }
-
-    const activeColumnId = String(activeId);
-    const overColumnId = String(overId);
-    const columnOrder = getColumnOrder(table);
-    const activeIndex = columnOrder.indexOf(activeColumnId);
-    const overIndex = columnOrder.indexOf(overColumnId);
-
-    if (activeIndex < 0 || overIndex < 0 || activeIndex === overIndex) {
-        return;
-    }
-
-    table.setColumnOrder(arrayMove(columnOrder, activeIndex, overIndex));
-}
-
 function getColumnId<TData extends RowData>(column: AppColumnDef<TData>) {
     const columnId =
         ('id' in column ? column.id : undefined) ??
@@ -115,14 +97,17 @@ function getColumnId<TData extends RowData>(column: AppColumnDef<TData>) {
 
 export function getDataTableSizingStyle<TData extends RowData>(
     table: AppTable<TData>
-): CSSProperties {
+): ColumnSizingStyle {
+    const columns = table.getVisibleLeafColumns();
     const totalSize = table.getTotalSize();
     if (!Number.isFinite(totalSize) || totalSize <= 0) {
-        return { width: '100%' };
+        return { ...getColumnSizeVars(columns), width: '100%' };
     }
-    return getStretchColumnId(table)
-        ? { width: `max(100%, ${totalSize}px)` }
-        : { width: `${totalSize}px` };
+    const width = getColumnSizeSum(columns);
+    return {
+        ...getColumnSizeVars(columns),
+        width: getStretchColumnId(table) ? `max(100%, ${width})` : width
+    };
 }
 
 export function DataTableColumnSizeColGroup<TData extends RowData>({
@@ -140,7 +125,7 @@ export function DataTableColumnSizeColGroup<TData extends RowData>({
                     style={
                         column.id === stretchColumnId
                             ? undefined
-                            : { width: `${column.getSize()}px` }
+                            : { width: getColumnSizeVar(column.id) }
                     }
                 />
             ))}
@@ -218,7 +203,13 @@ export function DataTableColumnDndProvider<TData extends RowData>({
                 collisionDetection={closestCenter}
                 modifiers={[restrictToHorizontalAxis]}
                 onDragEnd={(event) => {
-                    moveColumnByDrag(table, event.active?.id, event.over?.id);
+                    if (event.over) {
+                        moveColumnTo(
+                            table,
+                            String(event.active.id),
+                            String(event.over.id)
+                        );
+                    }
                 }}
             >
                 {children}
@@ -281,7 +272,9 @@ export function DataTableHeader<TData extends RowData>({
                             <ResizableTableHead
                                 key={header.id}
                                 header={header}
+                                table={table}
                                 enableColumnReorder={canReorder}
+                                onResetLayout={onResetLayout}
                                 style={getHeaderStyle?.(header.column, header)}
                             />
                         ))}

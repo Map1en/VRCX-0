@@ -1,7 +1,13 @@
-import { TriangleAlertIcon } from 'lucide-react';
-import { useState } from 'react';
+import { KeyRoundIcon, QrCodeIcon, TriangleAlertIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+    DeviceLoginNotice,
+    DeviceLoginQrCode,
+    DeviceLoginSteps,
+    DeviceLoginWaitingStatus
+} from '@/components/device-login/DeviceLoginQr';
 import { commands, type FeedLoggerSession } from '@/platform/tauri/bindings';
 import { useOfflineRecordStore } from '@/state/offlineRecordStore';
 import { Alert, AlertDescription, AlertTitle } from '@/ui/shadcn/alert';
@@ -24,6 +30,7 @@ import {
     SelectValue
 } from '@/ui/shadcn/select';
 import { Switch } from '@/ui/shadcn/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 import { runThenRefreshStatus, type RunAction } from './offlineRecordModel';
 
@@ -254,6 +261,98 @@ function TwoFactorForm({
     );
 }
 
+const DEVICE_LOGIN_PROTOCOL_VERSION = 2;
+const DEVICE_LOGIN_STATUS_POLL_MS = 3000;
+
+function DeviceLoginForm({ busy, run }: { busy: boolean; run: RunAction }) {
+    const { t } = useTranslation();
+    const deviceLogin = useOfflineRecordStore((state) =>
+        state.health?.state === 'connected'
+            ? (state.health.status.deviceLogin ?? null)
+            : null
+    );
+    const waiting = deviceLogin?.state === 'waiting';
+
+    useEffect(() => {
+        if (!waiting) {
+            return undefined;
+        }
+        const timer = window.setInterval(() => {
+            commands.appFeedLoggerStatus().catch(() => {});
+        }, DEVICE_LOGIN_STATUS_POLL_MS);
+        return () => window.clearInterval(timer);
+    }, [waiting]);
+
+    const start = () =>
+        void runThenRefreshStatus(run, () =>
+            commands.appFeedLoggerStartDeviceLogin()
+        );
+
+    if (deviceLogin?.state === 'waiting') {
+        return (
+            <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-5">
+                    <DeviceLoginQrCode value={deviceLogin.verificationUrl} />
+                    <div className="flex min-w-0 flex-1 flex-col gap-3">
+                        <DeviceLoginSteps />
+                        <p className="text-muted-foreground text-xs leading-relaxed">
+                            {t('offline_record.qr_description')}
+                        </p>
+                        <DeviceLoginWaitingStatus
+                            expiresAt={deviceLogin.expiresAt}
+                        />
+                    </div>
+                </div>
+                <DeviceLoginNotice
+                    message={t('offline_record.qr_no_auto_relogin')}
+                />
+                <div className="flex justify-end">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={busy}
+                        onClick={() =>
+                            void runThenRefreshStatus(run, () =>
+                                commands.appFeedLoggerCancelDeviceLogin()
+                            )
+                        }
+                    >
+                        {t('offline_record.qr_cancel')}
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex flex-col gap-3">
+            {deviceLogin?.state === 'expired' ? (
+                <p className="text-muted-foreground text-xs">
+                    {t('device_login.expired_title')}
+                </p>
+            ) : null}
+            {deviceLogin?.state === 'failed' ? (
+                <p className="text-destructive text-xs leading-relaxed">
+                    {t('offline_record.login_failed_reason', {
+                        reason: deviceLogin.reason
+                    })}
+                </p>
+            ) : null}
+            <DeviceLoginNotice
+                message={t('offline_record.qr_no_auto_relogin')}
+            />
+            <div className="flex justify-end">
+                <Button type="button" disabled={busy} onClick={start}>
+                    <QrCodeIcon data-icon="inline-start" />
+                    {deviceLogin
+                        ? t('device_login.refresh')
+                        : t('offline_record.qr_start')}
+                </Button>
+            </div>
+        </div>
+    );
+}
+
 export function VrchatLoginForm({
     session,
     busy,
@@ -271,6 +370,25 @@ export function VrchatLoginForm({
     );
     const setAcknowledged = useOfflineRecordStore(
         (state) => state.setRiskAcknowledged
+    );
+    const deviceLoginSupported = useOfflineRecordStore(
+        (state) =>
+            state.health?.state === 'connected' &&
+            state.health.status.protocolVersion >= DEVICE_LOGIN_PROTOCOL_VERSION
+    );
+    const [method, setMethod] = useState<'password' | 'qr'>(() => {
+        const health = useOfflineRecordStore.getState().health;
+        return health?.state === 'connected' &&
+            health.status.deviceLogin?.state === 'waiting'
+            ? 'qr'
+            : 'password';
+    });
+    const credentials = (
+        <CredentialsForm
+            busy={busy || !acknowledged}
+            savedCredentialsAvailable={savedCredentialsAvailable}
+            run={run}
+        />
     );
 
     return (
@@ -292,12 +410,40 @@ export function VrchatLoginForm({
                     methods={session.methods}
                     run={run}
                 />
+            ) : deviceLoginSupported ? (
+                <Tabs
+                    value={method}
+                    onValueChange={(value) =>
+                        setMethod(value === 'qr' ? 'qr' : 'password')
+                    }
+                >
+                    <TabsList className="w-full">
+                        <TabsTrigger value="password">
+                            <KeyRoundIcon />
+                            {t('offline_record.login_method_password')}
+                        </TabsTrigger>
+                        <TabsTrigger value="qr">
+                            <QrCodeIcon />
+                            {t('offline_record.login_method_qr')}
+                        </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="password" className="pt-2">
+                        {credentials}
+                    </TabsContent>
+                    <TabsContent value="qr" className="pt-2">
+                        <DeviceLoginForm
+                            busy={busy || !acknowledged}
+                            run={run}
+                        />
+                    </TabsContent>
+                </Tabs>
             ) : (
-                <CredentialsForm
-                    busy={busy || !acknowledged}
-                    savedCredentialsAvailable={savedCredentialsAvailable}
-                    run={run}
-                />
+                <>
+                    {credentials}
+                    <p className="text-muted-foreground text-xs">
+                        {t('offline_record.qr_requires_update')}
+                    </p>
+                </>
             )}
         </div>
     );

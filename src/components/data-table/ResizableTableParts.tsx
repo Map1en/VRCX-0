@@ -3,216 +3,99 @@ import { CSS } from '@dnd-kit/utilities';
 import type { RowData } from '@tanstack/react-table';
 import { flexRender } from '@tanstack/react-table';
 import { GripVerticalIcon } from 'lucide-react';
-import type {
-    CSSProperties,
-    ComponentProps,
-    KeyboardEvent,
-    MouseEvent,
-    PointerEvent
-} from 'react';
-import { useRef } from 'react';
+import type { CSSProperties, ComponentProps, MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/shadcn/button';
 import { TableCell, TableHead } from '@/ui/shadcn/table';
 
-import type { AppCell, AppHeader } from './appTable';
+import type { AppCell, AppHeader, AppTable } from './appTable';
 import { useDataTableColumnDnd } from './dataTableColumnDndContext';
+import { DataTableColumnResizeHandle } from './DataTableColumnResizeHandle';
 import {
     DATA_TABLE_CELL_CLASS_NAME,
     DATA_TABLE_HEAD_CLASS_NAME
 } from './dataTableStyles';
-import { getStretchColumnId, isColumnReorderable } from './tableColumnLayout';
+import { isColumnReorderable, resolveColumnLabel } from './tableColumnLayout';
+import { TableColumnContextMenu } from './TableColumnVisibilityMenu';
 
 type DragHandleProps = Partial<ComponentProps<typeof Button>>;
 
-type StretchResizeSession = {
-    pointerId: number;
-    startX: number;
-    startWidth: number;
+type ColumnMenuProps<TData extends RowData> = {
+    table: AppTable<TData>;
+    enableColumnReorder: boolean;
+    onResetLayout?: (table: AppTable<TData>) => void;
 };
-
-function clampColumnSize<TData extends RowData>(
-    header: AppHeader<TData>,
-    size: number
-) {
-    const minSize = header.column.columnDef.minSize ?? 20;
-    const maxSize = header.column.columnDef.maxSize ?? Number.MAX_SAFE_INTEGER;
-    return Math.min(maxSize, Math.max(minSize, Math.round(size)));
-}
-
-function measureHeaderWidth<TData extends RowData>(
-    element: HTMLElement,
-    header: AppHeader<TData>
-) {
-    const headerCell = element.closest('th');
-    return headerCell
-        ? headerCell.getBoundingClientRect().width
-        : header.column.getSize();
-}
-
-function resizeHeaderFromKeyboard<TData extends RowData>(
-    event: KeyboardEvent<HTMLButtonElement>,
-    header: AppHeader<TData>,
-    baseSize: number
-) {
-    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
-        return;
-    }
-
-    event.preventDefault();
-
-    const table = header.getContext().table;
-    const direction = table.options.columnResizeDirection === 'rtl' ? -1 : 1;
-    const step = event.shiftKey ? 32 : 16;
-    const delta =
-        event.key === 'ArrowRight' ? step * direction : -step * direction;
-    const nextSize = clampColumnSize(header, baseSize + delta);
-
-    table.setColumnSizing((current) => ({
-        ...current,
-        [header.column.id]: nextSize
-    }));
-}
 
 function ResizableTableHeadContent<TData extends RowData>({
     header,
-    dragHandleProps
+    dragHandleProps,
+    columnMenu
 }: {
     header: AppHeader<TData>;
     dragHandleProps?: DragHandleProps;
+    columnMenu: ColumnMenuProps<TData>;
 }) {
     const { t } = useTranslation();
-    const canResize = header.column.getCanResize();
-    const minSize = header.column.columnDef.minSize ?? 20;
-    const maxSize = header.column.columnDef.maxSize ?? Number.MAX_SAFE_INTEGER;
-    const stretchResizeRef = useRef<StretchResizeSession | null>(null);
-    const stretchHeader =
-        getStretchColumnId(header.getContext().table) === header.column.id;
-
-    function startStretchResize(event: PointerEvent<HTMLButtonElement>) {
-        event.preventDefault();
-        event.currentTarget.setPointerCapture(event.pointerId);
-        stretchResizeRef.current = {
-            pointerId: event.pointerId,
-            startX: event.clientX,
-            startWidth: measureHeaderWidth(event.currentTarget, header)
-        };
-    }
-
-    function updateStretchResize(event: PointerEvent<HTMLButtonElement>) {
-        const session = stretchResizeRef.current;
-        if (!session || session.pointerId !== event.pointerId) {
-            return;
-        }
-
-        const nextSize = clampColumnSize(
-            header,
-            session.startWidth + event.clientX - session.startX
-        );
-        header.getContext().table.setColumnSizing((current) => ({
-            ...current,
-            [header.column.id]: nextSize
-        }));
-    }
-
-    function endStretchResize(event: PointerEvent<HTMLButtonElement>) {
-        const session = stretchResizeRef.current;
-        if (!session || session.pointerId !== event.pointerId) {
-            return;
-        }
-
-        updateStretchResize(event);
-        stretchResizeRef.current = null;
-        event.currentTarget.releasePointerCapture(event.pointerId);
-    }
+    const columnLabel = resolveColumnLabel(header.column);
 
     return (
-        <div className="flex min-w-0 items-center gap-2 pr-2">
-            <div className="flex min-w-0 flex-1 items-center gap-1.5">
-                <div className="min-w-0">
-                    {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                          )}
+        <TableColumnContextMenu
+            column={header.column}
+            table={columnMenu.table}
+            enableColumnReorder={columnMenu.enableColumnReorder}
+            onResetLayout={columnMenu.onResetLayout}
+        >
+            <div className="flex min-w-0 items-center gap-2 pr-2">
+                <div
+                    data-slot="table-head-content"
+                    className="flex min-w-0 flex-1 items-center gap-1.5"
+                >
+                    <div className="min-w-0">
+                        {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext()
+                              )}
+                    </div>
+                    {dragHandleProps ? (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-xs"
+                            aria-label={t('accessibility.reorder_column', {
+                                column: columnLabel
+                            })}
+                            className="shrink-0 cursor-grab opacity-0 group-hover:opacity-100 active:cursor-grabbing"
+                            {...dragHandleProps}
+                        >
+                            <GripVerticalIcon data-icon="inline-end" />
+                        </Button>
+                    ) : null}
                 </div>
-                {dragHandleProps ? (
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-xs"
-                        aria-label={t('accessibility.reorder_column', {
-                            column: header.column.id
-                        })}
-                        className="shrink-0 cursor-grab opacity-0 group-hover:opacity-100 active:cursor-grabbing"
-                        {...dragHandleProps}
-                    >
-                        <GripVerticalIcon data-icon="inline-end" />
-                    </Button>
+                {header.column.getCanResize() ? (
+                    <DataTableColumnResizeHandle
+                        header={header}
+                        label={columnLabel}
+                    />
                 ) : null}
             </div>
-            {canResize ? (
-                <Button
-                    type="button"
-                    variant="ghost"
-                    role="slider"
-                    aria-label={t('accessibility.resize_column', {
-                        column: header.column.id
-                    })}
-                    aria-orientation="horizontal"
-                    aria-valuemin={minSize}
-                    aria-valuemax={maxSize}
-                    aria-valuenow={header.column.getSize()}
-                    aria-valuetext={`${header.column.getSize()} pixels`}
-                    data-resizing={
-                        header.column.getIsResizing() ? '' : undefined
-                    }
-                    className="vrcx-0-column-resize absolute top-0 right-0 h-full w-1.5 cursor-col-resize touch-none rounded-none border-0 bg-transparent p-0 hover:bg-transparent"
-                    onMouseDown={
-                        stretchHeader ? undefined : header.getResizeHandler()
-                    }
-                    onTouchStart={
-                        stretchHeader ? undefined : header.getResizeHandler()
-                    }
-                    onPointerDown={
-                        stretchHeader ? startStretchResize : undefined
-                    }
-                    onPointerMove={
-                        stretchHeader ? updateStretchResize : undefined
-                    }
-                    onPointerUp={stretchHeader ? endStretchResize : undefined}
-                    onPointerCancel={
-                        stretchHeader ? endStretchResize : undefined
-                    }
-                    onKeyDown={(event) =>
-                        resizeHeaderFromKeyboard(
-                            event,
-                            header,
-                            stretchHeader
-                                ? measureHeaderWidth(
-                                      event.currentTarget,
-                                      header
-                                  )
-                                : header.column.getSize()
-                        )
-                    }
-                />
-            ) : null}
-        </div>
+        </TableColumnContextMenu>
     );
 }
 
 function ResizableTableHeadBase<TData extends RowData>({
     header,
     className = '',
-    style
+    style,
+    columnMenu
 }: {
     header: AppHeader<TData>;
     className?: string;
     style?: CSSProperties;
+    columnMenu: ColumnMenuProps<TData>;
 }) {
     return (
         <TableHead
@@ -223,7 +106,10 @@ function ResizableTableHeadBase<TData extends RowData>({
             )}
             style={style}
         >
-            <ResizableTableHeadContent header={header} />
+            <ResizableTableHeadContent
+                header={header}
+                columnMenu={columnMenu}
+            />
         </TableHead>
     );
 }
@@ -231,11 +117,13 @@ function ResizableTableHeadBase<TData extends RowData>({
 function SortableResizableTableHead<TData extends RowData>({
     header,
     className = '',
-    style
+    style,
+    columnMenu
 }: {
     header: AppHeader<TData>;
     className?: string;
     style?: CSSProperties;
+    columnMenu: ColumnMenuProps<TData>;
 }) {
     const {
         attributes,
@@ -273,6 +161,7 @@ function SortableResizableTableHead<TData extends RowData>({
             <ResizableTableHeadContent
                 header={header}
                 dragHandleProps={dragHandleProps}
+                columnMenu={columnMenu}
             />
         </TableHead>
     );
@@ -280,21 +169,32 @@ function SortableResizableTableHead<TData extends RowData>({
 
 export function ResizableTableHead<TData extends RowData>({
     header,
+    table,
     className = '',
     style,
-    enableColumnReorder = false
+    enableColumnReorder = false,
+    onResetLayout
 }: {
     header: AppHeader<TData>;
+    table: AppTable<TData>;
     className?: string;
     style?: CSSProperties;
     enableColumnReorder?: boolean;
+    onResetLayout?: (table: AppTable<TData>) => void;
 }) {
+    const resolvedClassName = cn(
+        header.column.columnDef.meta?.tableHeadClassName,
+        className
+    );
+    const columnMenu = { table, enableColumnReorder, onResetLayout };
+
     if (enableColumnReorder && isColumnReorderable(header?.column)) {
         return (
             <SortableResizableTableHead
                 header={header}
-                className={className}
+                className={resolvedClassName}
                 style={style}
+                columnMenu={columnMenu}
             />
         );
     }
@@ -302,8 +202,9 @@ export function ResizableTableHead<TData extends RowData>({
     return (
         <ResizableTableHeadBase
             header={header}
-            className={className}
+            className={resolvedClassName}
             style={style}
+            columnMenu={columnMenu}
         />
     );
 }

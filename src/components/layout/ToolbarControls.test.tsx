@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GridIcon, TableIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -8,9 +8,34 @@ import { afterEach, expect, it, vi } from 'vitest';
 
 import { Tabs, TabsContent } from '@/ui/shadcn/tabs';
 
-import { ToolbarSegmented, ToolbarTabs } from './ToolbarControls';
+import {
+    ToolbarSearch,
+    ToolbarSegmented,
+    ToolbarTabs
+} from './ToolbarControls';
 
 afterEach(cleanup);
+
+it('commits the search on Enter but not on the Enter that confirms an IME candidate', () => {
+    const onCommit = vi.fn();
+    render(
+        <ToolbarSearch
+            value="ねこ"
+            ariaLabel="Search"
+            commitOnBlur={false}
+            onValueChange={() => {}}
+            onCommit={onCommit}
+        />
+    );
+    const input = screen.getByRole('textbox', { name: 'Search' });
+
+    fireEvent.keyDown(input, { key: 'Enter', isComposing: true });
+    fireEvent.keyDown(input, { key: 'Enter', keyCode: 229 });
+    expect(onCommit).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(input, { key: 'Enter', keyCode: 13 });
+    expect(onCommit).toHaveBeenCalledOnce();
+});
 
 it('links counted navigation tabs to the selected page without losing its input state', async () => {
     const user = userEvent.setup();

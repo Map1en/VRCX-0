@@ -257,7 +257,7 @@ fn port_error(error: vrcx_0_persistence::Error) -> AssistantPortError {
 fn llm_error(error: vrcx_0_integrations::llm::LlmError) -> AssistantLlmError {
     match error {
         vrcx_0_integrations::llm::LlmError::Http(error) => {
-            AssistantLlmError::Http(error.to_string())
+            AssistantLlmError::Http(vrcx_0_integrations::llm::transport_error_detail(&error))
         }
         vrcx_0_integrations::llm::LlmError::Api { status, message } => {
             AssistantLlmError::Api { status, message }

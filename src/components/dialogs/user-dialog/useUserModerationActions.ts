@@ -83,7 +83,10 @@ export function useUserModerationActions({
             title: t('dialog.user.dynamic.value_user', {
                 value: label
             }),
-            description: profile?.displayName || rosterUserId,
+            description: t(
+                `dialog.user.consequence.${type}_${enabled ? 'on' : 'off'}`,
+                { name: profile?.displayName || rosterUserId }
+            ),
             confirmText: label,
             cancelText: t('common.actions.cancel'),
             destructive: enabled
@@ -168,7 +171,10 @@ export function useUserModerationActions({
         setActionStatus(actionStatusRef.current);
         const result = await confirm({
             title: t('dialog.user.dynamic.value', { value: label }),
-            description: profile?.displayName || rosterUserId,
+            description: t(
+                `dialog.user.consequence.${type}_${enabled ? 'on' : 'off'}`,
+                { name: profile?.displayName || rosterUserId }
+            ),
             confirmText: label,
             cancelText: t('common.actions.cancel'),
             destructive: enabled

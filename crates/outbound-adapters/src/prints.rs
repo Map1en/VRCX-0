@@ -28,8 +28,7 @@ impl LocalPrintAdapter {
             &self.db,
             PRINT_FAVORITE_IDS_BY_USER_CONFIG_KEY,
             json!({}),
-        )
-        .map_err(crate::map_persistence_error)?;
+        )?;
         Ok(match stored {
             Value::Object(by_user) => by_user,
             _ => Map::new(),
@@ -40,7 +39,7 @@ impl LocalPrintAdapter {
 impl PrintFavoritesStore for LocalPrintAdapter {
     fn auto_delete_enabled(&self) -> crate::Result<bool> {
         vrcx_0_persistence::config::get_bool(&self.db, AUTO_DELETE_OLD_PRINTS_CONFIG_KEY, false)
-            .map_err(crate::map_persistence_error)
+            .map_err(crate::Error::from)
     }
 
     fn auto_delete_limit(&self) -> crate::Result<String> {
@@ -49,12 +48,12 @@ impl PrintFavoritesStore for LocalPrintAdapter {
             AUTO_DELETE_PRINTS_LIMIT_CONFIG_KEY,
             &DEFAULT_AUTO_DELETE_PRINTS_LIMIT.to_string(),
         )
-        .map_err(crate::map_persistence_error)
+        .map_err(crate::Error::from)
     }
 
     fn legacy_favorite_ids(&self) -> crate::Result<Value> {
         vrcx_0_persistence::config::get_json(&self.db, PRINT_FAVORITE_IDS_CONFIG_KEY, json!([]))
-            .map_err(crate::map_persistence_error)
+            .map_err(crate::Error::from)
     }
 
     fn favorite_ids(&self, user_id: &str) -> crate::Result<Option<Value>> {
@@ -69,7 +68,7 @@ impl PrintFavoritesStore for LocalPrintAdapter {
             PRINT_FAVORITE_IDS_BY_USER_CONFIG_KEY,
             &Value::Object(by_user),
         )
-        .map_err(crate::map_persistence_error)
+        .map_err(crate::Error::from)
     }
 }
 
@@ -85,14 +84,7 @@ impl PrintRemote for LocalPrintAdapter {
             user_id.to_string(),
             count,
         );
-        Box::pin(async move {
-            self.web
-                .execute_api(
-                    request.map_err(crate::map_http_api_error)?,
-                    VrchatScope::Vrchat,
-                )
-                .await
-        })
+        Box::pin(async move { self.web.execute_api(request?, VrchatScope::Vrchat).await })
     }
 
     fn delete_print<'a>(&'a self, endpoint: &'a str, print_id: &'a str) -> PrintRemoteFuture<'a> {
@@ -100,13 +92,6 @@ impl PrintRemote for LocalPrintAdapter {
             endpoint.to_string(),
             print_id.to_string(),
         );
-        Box::pin(async move {
-            self.web
-                .execute_api(
-                    request.map_err(crate::map_http_api_error)?,
-                    VrchatScope::Vrchat,
-                )
-                .await
-        })
+        Box::pin(async move { self.web.execute_api(request?, VrchatScope::Vrchat).await })
     }
 }

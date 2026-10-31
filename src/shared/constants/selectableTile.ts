@@ -27,6 +27,9 @@ export const TILE_SELECT_TOGGLE =
 
 export const TILE_SELECT_TOGGLE_VISIBLE = 'opacity-100';
 
+export const TILE_FAVORITE_TOGGLE =
+    'group-has-[:focus-visible]/tile:opacity-100 pointer-fine:group-hover/tile:opacity-100 absolute top-2 right-2 z-20 opacity-0 transition-opacity';
+
 export const TILE_SELECT_OVERLAY_SHIFT =
     'group-has-[:focus-visible]/tile:left-9 pointer-fine:group-hover/tile:left-9 left-2 transition-[left] duration-150';
 

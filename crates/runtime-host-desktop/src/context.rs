@@ -2,9 +2,9 @@ use std::sync::{Arc, Mutex};
 
 use vrcx_0_application::auth::AuthCredentialStore;
 use vrcx_0_application_activity::notification::{
-    apply_location_notification_rules, extract_file_version, fallback_file_version,
-    load_overlay_activity_filters, rename_local_favorite_group_in_activity_filters,
-    CachedNotificationUserImageResolver, NotificationConfig, NotificationResolver,
+    extract_file_version, fallback_file_version, reload_activity_router,
+    rename_local_favorite_group_in_activity_filters, CachedNotificationUserImageResolver,
+    NotificationConfig, NotificationRemoteFuture, NotificationResolver,
 };
 use vrcx_0_application_activity::{ActivityRouter, ActivitySink, ActivitySinkRegistry};
 use vrcx_0_application_core::{
@@ -13,8 +13,8 @@ use vrcx_0_application_core::{
     TaskSupervisor, WebClient, WorldCache,
 };
 use vrcx_0_application_game::{
-    GameLogSideEffectEvent, GameLogSideEffectObserver, NowPlayingSnapshot, RuntimeSnapshot,
-    RuntimeSnapshotStore,
+    GameLogSideEffectEvent, GameLogSideEffectObserver, NowPlayingSnapshot, NowPlayingStore,
+    RuntimeSnapshot, RuntimeSnapshotStore,
 };
 use vrcx_0_application_realtime::{FriendProjectionObserver, RealtimeHostRuntime};
 use vrcx_0_core::files::extract_file_id;
@@ -24,6 +24,7 @@ use vrcx_0_host_desktop::tts::{SystemTtsEngine, TtsEngine};
 use vrcx_0_overlay_runtime::VrOverlayRuntimeServices;
 use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
 
+use crate::game_isolation::GameIsolationRuntime;
 use crate::host_actions::RuntimeHost;
 use crate::notification::{
     migrate_legacy_overlay_notification_keys, seed_hmd_notifications_default, DesktopNotifier,
@@ -65,6 +66,7 @@ pub struct DesktopRuntimeServices {
     activity_router: ActivityRouter,
     activity_sinks: ActivitySinkRegistry,
     notification_do_not_disturb: NotificationDoNotDisturbRuntime,
+    game_isolation: GameIsolationRuntime,
     notification_indicator: Arc<RealtimeNotificationIndicator>,
     privacy_lock: Arc<PrivacyLockRuntime>,
     notification_policy: Arc<LocalNotificationPolicy>,
@@ -74,7 +76,7 @@ pub struct DesktopRuntimeServices {
     notification_resolver: Arc<NotificationResolver>,
     realtime_user_image_resolver_owner: Mutex<Option<Arc<dyn CachedNotificationUserImageResolver>>>,
     game_log_snapshot: RuntimeSnapshotStore,
-    now_playing: Arc<Mutex<Arc<NowPlayingSnapshot>>>,
+    now_playing: NowPlayingStore,
 }
 
 impl DesktopRuntimeServices {
@@ -96,9 +98,12 @@ impl DesktopRuntimeServices {
             host.clone(),
             deps.tasks.clone(),
         )?;
+        let game_isolation =
+            GameIsolationRuntime::new(deps.config.clone(), deps.event_bus.clone(), host.clone())?;
         let privacy_lock = Arc::new(PrivacyLockRuntime::new(
             deps.auth_credentials,
             deps.event_bus.clone(),
+            deps.web.proxy_url().map(str::to_string),
         )?);
         deps.auth_scope.add_observer(privacy_lock.clone());
         let notification_policy = Arc::new(LocalNotificationPolicy::new(
@@ -106,6 +111,7 @@ impl DesktopRuntimeServices {
             deps.session.clone(),
             notification_do_not_disturb.clone(),
             privacy_lock.clone(),
+            game_isolation.clone(),
         ));
         let notification_indicator = Arc::new(RealtimeNotificationIndicator::new(
             Arc::clone(&deps.db),
@@ -142,6 +148,7 @@ impl DesktopRuntimeServices {
             activity_router: deps.activity_router,
             activity_sinks: deps.activity_sinks,
             notification_do_not_disturb,
+            game_isolation,
             notification_indicator,
             privacy_lock,
             notification_policy,
@@ -151,7 +158,7 @@ impl DesktopRuntimeServices {
             notification_resolver: deps.notification_resolver,
             realtime_user_image_resolver_owner: Mutex::new(None),
             game_log_snapshot: RuntimeSnapshotStore::default(),
-            now_playing: Arc::new(Mutex::new(Arc::new(NowPlayingSnapshot::default()))),
+            now_playing: NowPlayingStore::default(),
         })
     }
 
@@ -170,11 +177,7 @@ impl DesktopRuntimeServices {
     }
 
     pub fn reload_overlay_activity_filters(&self) {
-        self.activity_router
-            .set_filters(load_overlay_activity_filters(
-                self.notification_config.as_ref(),
-            ));
-        apply_location_notification_rules(&self.activity_router, self.notification_config.as_ref());
+        reload_activity_router(&self.activity_router, self.notification_config.as_ref());
     }
 
     pub fn set_overlay_activity_extra_sink(&self, extra_sink: Arc<dyn ActivitySink>) {
@@ -217,10 +220,7 @@ impl DesktopRuntimeServices {
     }
 
     pub fn now_playing(&self) -> Arc<NowPlayingSnapshot> {
-        self.now_playing
-            .lock()
-            .map(|snapshot| Arc::clone(&snapshot))
-            .unwrap_or_else(|_| Arc::new(NowPlayingSnapshot::default()))
+        self.now_playing.snapshot()
     }
 
     pub fn activity_router(&self) -> ActivityRouter {
@@ -235,6 +235,10 @@ impl DesktopRuntimeServices {
         self.notification_do_not_disturb.clone()
     }
 
+    pub fn game_isolation(&self) -> GameIsolationRuntime {
+        self.game_isolation.clone()
+    }
+
     pub fn event_bus(&self) -> RuntimeEventBus {
         self.event_bus.clone()
     }
@@ -245,29 +249,6 @@ impl DesktopRuntimeServices {
 
     pub fn privacy_lock(&self) -> Arc<PrivacyLockRuntime> {
         Arc::clone(&self.privacy_lock)
-    }
-
-    fn observe_game_log_side_effect(&self, event: &GameLogSideEffectEvent) {
-        match event {
-            GameLogSideEffectEvent::NowPlaying(payload) => match self.now_playing.lock() {
-                Ok(mut current) => {
-                    Arc::make_mut(&mut current).apply(payload);
-                }
-                Err(error) => {
-                    tracing::warn!("failed to lock now playing snapshot: {error}");
-                }
-            },
-            GameLogSideEffectEvent::NowPlayingReset(_) => match self.now_playing.lock() {
-                Ok(mut current) => {
-                    *current = Arc::new(NowPlayingSnapshot::default());
-                }
-                Err(error) => {
-                    tracing::warn!("failed to lock now playing snapshot: {error}");
-                }
-            },
-            GameLogSideEffectEvent::ScreenshotProcessed(_)
-            | GameLogSideEffectEvent::GameNoVr(_) => {}
-        }
     }
 
     fn prefetch_online_friend_avatars(&self, projection: &FriendProjection) {
@@ -313,7 +294,7 @@ impl DesktopRuntimeServices {
 
 impl GameLogSideEffectObserver for DesktopRuntimeServices {
     fn on_game_log_side_effect(&self, event: &GameLogSideEffectEvent) {
-        self.observe_game_log_side_effect(event);
+        self.now_playing.observe(event);
     }
 }
 
@@ -355,6 +336,18 @@ impl VrOverlayRuntimeServices for DesktopRuntimeServices {
 
     fn notification_friend_image(&self, endpoint: &str, user_id: &str) -> Option<String> {
         self.notification_resolver.friend_image(endpoint, user_id)
+    }
+
+    fn cached_notification_group_name(&self, group_id: &str) -> Option<String> {
+        self.notification_resolver.cached_group_name(group_id)
+    }
+
+    fn notification_group_name<'a>(
+        &'a self,
+        endpoint: &'a str,
+        group_id: &'a str,
+    ) -> NotificationRemoteFuture<'a, String> {
+        Box::pin(self.notification_resolver.group_name(endpoint, group_id))
     }
 
     fn set_hmd_afk(&self, is_hmd_afk: bool) {

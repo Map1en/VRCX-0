@@ -121,6 +121,39 @@ describe('useGroupDialogMembers', () => {
         expect(result.current.model.rows).toHaveLength(100);
     });
 
+    it('adds loaded members whose names match when the server search index lags behind', async () => {
+        const loaded = page(0, 3).map((row, index) => ({
+            ...row,
+            user: { displayName: ['Maple', 'Snow Maple', 'Ocean'][index] }
+        })) as GroupMemberRow[];
+        mocks.getGroupMembers.mockResolvedValue(loaded);
+        mocks.getGroupMembersSearch.mockResolvedValue([loaded[0]]);
+
+        const { result } = renderHook(() =>
+            useGroupDialogMembers({
+                endpoint: 'api',
+                groupId: 'grp_1',
+                active: true,
+                totalCount: 3,
+                staffRoleIds: [],
+                seedRows: []
+            })
+        );
+        await waitFor(() => expect(result.current.model.status).toBe('ready'));
+
+        act(() => {
+            result.current.setQuery('maple');
+        });
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(300);
+        });
+
+        expect(result.current.model.rows.map((row) => row.userId)).toEqual([
+            'usr_0',
+            'usr_1'
+        ]);
+    });
+
     it('loads staff by management role alongside the first page and dedupes across roles', async () => {
         mocks.getGroupMembers.mockImplementation(
             async ({ roleId, offset }: { roleId?: string; offset: number }) => {

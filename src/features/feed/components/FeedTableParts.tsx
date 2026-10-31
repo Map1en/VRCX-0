@@ -11,6 +11,10 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
+import {
+    LogFilterMenuItems,
+    type LogFilterCommands
+} from '@/components/data-table/LogFilterContextMenu';
 import { FeedDetailCell } from '@/components/feed/FeedDetailCell';
 import {
     canRequestInviteFromFeedFriend,
@@ -26,7 +30,6 @@ import type {
 } from '@/components/feed/feedTypes';
 import { LaunchModeContextMenuGroup } from '@/components/launch/LaunchModeContextMenuGroup';
 import { resolveFriendPresenceLocation } from '@/domain/friends/presence';
-import { formatDateFilter, formatDateTime } from '@/lib/dateTime';
 import { useKnownUserFact } from '@/lib/useKnownUser';
 import { cn } from '@/lib/utils';
 import userProfileRepository from '@/repositories/userProfileRepository';
@@ -54,34 +57,6 @@ import {
 
 import { FeedExpandedRow } from './FeedExpandedRow';
 
-function formatTimestampParts(value: string | null | undefined) {
-    if (!value) {
-        return { date: '-', time: '' };
-    }
-
-    const date = formatDateTime(value, { month: 'short', day: 'numeric' });
-    if (date === '-') {
-        return { date: '-', time: '' };
-    }
-
-    const time = formatDateTime(value, {
-        hour: 'numeric',
-        minute: '2-digit'
-    })
-        .replace(' AM', 'am')
-        .replace(' PM', 'pm');
-
-    return { date, time };
-}
-
-function formatTimestampLong(value: string | null | undefined) {
-    if (!value) {
-        return '-';
-    }
-
-    return formatDateFilter(value, 'long');
-}
-
 async function copyFeedText(text: string, successMessage: string) {
     const value = text.trim();
     if (!value) {
@@ -95,6 +70,7 @@ function FeedUserLink({
     avatarSize = 28,
     cachedDisplayName = '',
     className = '',
+    filterCommands,
     row,
     showAvatar = false
 }: {
@@ -102,6 +78,7 @@ function FeedUserLink({
     avatarSize?: number;
     cachedDisplayName?: string;
     className?: string;
+    filterCommands?: LogFilterCommands;
     row: FeedRow;
     showAvatar?: boolean;
 }) {
@@ -375,6 +352,10 @@ function FeedUserLink({
                         {t('dialog.user.info.copy_display_name')}
                     </ContextMenuItem>
                 </ContextMenuGroup>
+                <LogFilterMenuItems
+                    commands={filterCommands}
+                    target={{ userId, userName: userLabel }}
+                />
             </ContextMenuContent>
         </ContextMenu>
     );
@@ -457,7 +438,5 @@ export {
     FeedExpandedRow,
     FeedUserAvatarButton,
     FeedUserLink,
-    DataTableSortButton as SortButton,
-    formatTimestampLong,
-    formatTimestampParts
+    DataTableSortButton as SortButton
 };

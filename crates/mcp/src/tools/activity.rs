@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use chrono::{DateTime, Datelike, Duration, Utc};
+use chrono::{Duration, Utc};
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::CallToolResult;
 use rmcp::{schemars, tool, tool_router};
@@ -55,7 +55,7 @@ impl VrcxMcpServer {
     }
 
     #[tool(
-        description = "[L2·analyze] One friend's (or all friends') online activity bucketed by hour-of-day or weekday, from the online/offline log. Use for \"when is X usually online\". Buckets are UTC unless you pass utcOffsetMinutes (the user's offset, e.g. 540 for UTC+9) for the user's local time. For \"best time to catch the MOST people\" prefer get_best_time_to_play."
+        description = "[L2·analyze] One friend's (or all friends') online activity bucketed by hour-of-day or weekday, from the online/offline log. Use for \"when is X usually online\". Weekday bucket keys run 0=Monday through 6=Sunday. Buckets are UTC unless you pass utcOffsetMinutes (the user's offset, e.g. 540 for UTC+9) for the user's local time. For \"best time to catch the MOST people\" prefer get_best_time_to_play."
     )]
     async fn get_friend_activity_pattern(
         &self,
@@ -76,7 +76,10 @@ impl VrcxMcpServer {
             .friend_activity_pattern(social_aggregates::FriendActivityPatternInput {
                 owner_user_id: owner_user_id.clone(),
                 user_id,
-                time_window: input.time_window.into(),
+                time_window: input
+                    .time_window
+                    .in_utc_offset(input.utc_offset_minutes)?
+                    .into(),
                 bucket: input.bucket.into(),
                 utc_offset_minutes: input.utc_offset_minutes,
             })
@@ -140,7 +143,10 @@ impl VrcxMcpServer {
         Parameters(input): Parameters<ActivityTimelineParams>,
     ) -> Result<CallToolResult, String> {
         let owner_user_id = require_current_user_id(&self.runtime)?;
-        let time_window: social_aggregates::TimeWindow = input.time_window.into();
+        let time_window: social_aggregates::TimeWindow = input
+            .time_window
+            .in_utc_offset(input.utc_offset_minutes)?
+            .into();
         let bounds = time_window_bounds_ms(&time_window)?;
         let to_ms = bounds.to.unwrap_or_else(|| Utc::now().timestamp_millis());
         let sessions = self.play_sessions(&owner_user_id, bounds.from, to_ms)?;
@@ -193,15 +199,20 @@ impl VrcxMcpServer {
         Parameters(input): Parameters<BestTimeToPlayParams>,
     ) -> Result<CallToolResult, String> {
         let owner_user_id = require_current_user_id(&self.runtime)?;
-        application_query_result(self.runtime.activity_queries.best_time_to_play(
-            social_aggregates::BestTimeToPlayInput {
-                owner_user_id: owner_user_id.clone(),
-                time_window: input.time_window.into(),
-                bucket: input.bucket.into(),
-                limit: input.limit,
-                utc_offset_minutes: input.utc_offset_minutes,
-            },
-        ))
+        application_query_result(
+            self.runtime.activity_queries.best_time_to_play(
+                social_aggregates::BestTimeToPlayInput {
+                    owner_user_id: owner_user_id.clone(),
+                    time_window: input
+                        .time_window
+                        .in_utc_offset(input.utc_offset_minutes)?
+                        .into(),
+                    bucket: input.bucket.into(),
+                    limit: input.limit,
+                    utc_offset_minutes: input.utc_offset_minutes,
+                },
+            ),
+        )
     }
 
     #[tool(
@@ -256,10 +267,13 @@ impl VrcxMcpServer {
         owner_user_id: OwnerId,
         input: MyActivityParams,
     ) -> Result<MyActivityOutput, String> {
-        let time_window = input.time_window.unwrap_or_default().into();
+        let time_window = input
+            .time_window
+            .unwrap_or_default()
+            .in_utc_offset(input.utc_offset_minutes)?
+            .into();
         let bounds = time_window_bounds_ms(&time_window)?;
         let offset_minutes = input.utc_offset_minutes.unwrap_or(0);
-        let offset_ms = offset_minutes.saturating_mul(60_000);
         let to_ms = bounds.to.unwrap_or_else(|| Utc::now().timestamp_millis());
         let spans = self.play_spans(&owner_user_id, bounds.from, to_ms)?;
         let sessions = activity_buckets::merge_spans(&spans, PLAY_SESSION_MERGE_GAP_MS);
@@ -269,20 +283,19 @@ impl VrcxMcpServer {
             .map(|(start, end)| end - start)
             .max()
             .unwrap_or(0);
-        let mut total_ms = 0i64;
-        let mut by_weekday = BTreeMap::new();
-        for (start, end) in activity_buckets::merge_spans(&spans, 0) {
-            let duration_ms = end - start;
-            total_ms += duration_ms;
-            if let Some(start_at) =
-                DateTime::<Utc>::from_timestamp_millis(start.saturating_add(offset_ms))
-            {
-                *by_weekday
-                    .entry(start_at.weekday().to_string())
-                    .or_insert(0) += duration_ms / 60_000;
-            }
-        }
-        let total_minutes = total_ms / 60_000;
+        let played = activity_buckets::merge_spans(&spans, 0);
+        let total_minutes = played.iter().map(|(start, end)| end - start).sum::<i64>() / 60_000;
+        let by_weekday = activity_buckets::activity_timeline(
+            &played,
+            activity_buckets::ActivityTimeBucket::DayOfWeek,
+            offset_minutes,
+            None,
+            None,
+        )
+        .into_iter()
+        .filter(|bucket| bucket.minutes > 0)
+        .map(|bucket| (bucket.label, bucket.minutes))
+        .collect::<BTreeMap<_, _>>();
         Ok(MyActivityOutput {
             total_minutes,
             session_count,
@@ -326,7 +339,10 @@ impl VrcxMcpServer {
         owner_user_id: OwnerId,
         input: SummarizeSocialPeriodParams,
     ) -> Result<SocialPeriodSummaryOutput, String> {
-        let time_window_params = input.time_window.unwrap_or_default();
+        let time_window_params = input
+            .time_window
+            .unwrap_or_default()
+            .in_utc_offset(input.utc_offset_minutes)?;
         let time_window: social_aggregates::TimeWindow = time_window_params.clone().into();
         let activity = self.get_my_activity_output(
             owner_user_id.clone(),

@@ -8,7 +8,7 @@ use crate::state::AppState;
 
 use vrcx_0_runtime_host_desktop::local_data::{
     FriendLogCurrentOutput, FriendLogHistoryEntryInput, FriendLogHistoryOutput,
-    FriendLogHistoryQueryInput,
+    FriendLogHistoryQueryInput, OwnerId, ProfileBioOutput,
 };
 
 #[tauri::command(async)]
@@ -47,6 +47,19 @@ pub async fn app__friend_log_history_query(
     let local_data = state.runtime_host().local_data().clone();
     run_blocking("friend log history query", move || {
         local_data.friend_log_history_query(query)
+    })
+    .await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__friend_profile_bio_list(
+    state: State<'_, AppState>,
+    owner_user_id: OwnerId,
+) -> Result<Vec<ProfileBioOutput>, AppError> {
+    let local_data = state.runtime_host().local_data().clone();
+    run_blocking("friend profile bio list", move || {
+        local_data.profile_bio_list(owner_user_id)
     })
     .await
 }

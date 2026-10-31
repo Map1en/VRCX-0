@@ -1,10 +1,20 @@
-import { CheckCheckIcon, MoreHorizontalIcon, Trash2Icon } from 'lucide-react';
+import {
+    CheckCheckIcon,
+    MoreHorizontalIcon,
+    Trash2Icon,
+    TriangleAlertIcon
+} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useMinuteNowMs } from '@/lib/useMinuteNowMs';
 import { cn } from '@/lib/utils';
 import type { NotificationRow } from '@/repositories/notificationPersistenceRepository';
 import { getDismissResponse } from '@/shared/utils/notificationResponse';
+import {
+    selectMarkAllSeenRowState,
+    useVrcNotificationStore
+} from '@/state/vrcNotificationStore';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -16,6 +26,7 @@ import {
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 import { HoverCard, HoverCardTrigger } from '@/ui/shadcn/hover-card';
+import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { NotificationMessage } from '../components/NotificationMessage';
@@ -26,6 +37,7 @@ import {
     NotificationPersonAvatar
 } from '../components/NotificationRowParts';
 import { NotificationText } from '../components/NotificationText';
+import { useNotificationActionPending } from '../notificationActionPending';
 import {
     formatNotificationTime,
     getNotificationMessage,
@@ -85,18 +97,22 @@ export function NotificationDrawerRow({
     isUnseen,
     currentUserId,
     canInviteFromCurrentLocation,
-    handlers
+    handlers,
+    nested = false
 }: {
     canInviteFromCurrentLocation: boolean;
     currentUserId?: string;
     handlers: NotificationDrawerHandlers;
     isUnseen: boolean;
+    nested?: boolean;
     notification: NotificationRow;
 }) {
     const { t } = useTranslation();
-    const rawMessage = String(getNotificationMessage(notification) || '');
+    const actionPending = useNotificationActionPending(notification);
+    const rawMessage = String(getNotificationMessage(notification, t) || '');
     const typeLabel = getNotificationTypeLabel(notification, t);
-    const relativeTime = getNotificationRelativeTime(notification);
+    const nowMs = useMinuteNowMs();
+    const relativeTime = getNotificationRelativeTime(notification, nowMs);
     const absoluteTime =
         getNotificationAbsoluteTime(notification) ||
         formatNotificationTime(notification);
@@ -107,8 +123,8 @@ export function NotificationDrawerRow({
     const isQueueReady = notification?.type === 'group.queueReady';
     const showAvatar = usesAvatar(notification);
     const view = useMemo(
-        () => toNotificationViewModel(notification),
-        [notification]
+        () => toNotificationViewModel(notification, { t }),
+        [notification, t]
     );
     const isBroadcast = view.template === 'broadcast';
     const senderName = isBroadcast
@@ -127,6 +143,9 @@ export function NotificationDrawerRow({
             ? view.actor
             : { kind: 'system', name: '' };
     const actorImageUrl = useNotificationActorImage(actor);
+    const markAllSeenState = useVrcNotificationStore((state) =>
+        selectMarkAllSeenRowState(state, notification.id)
+    );
 
     const orderedActions = buildOrderedActions({
         notification,
@@ -166,10 +185,37 @@ export function NotificationDrawerRow({
                 delay={400}
                 closeDelay={100}
                 render={
-                    <div className="group border-border/50 relative flex items-start gap-3 border-b px-4 py-3 transition-colors last:border-b-0 hover:bg-(--state-hover-surface)">
+                    <div
+                        className={cn(
+                            'group border-border/50 relative flex items-start gap-3 border-b px-4 py-3 transition-[background-color,opacity] last:border-b-0 hover:bg-(--state-hover-surface)',
+                            markAllSeenState === 'queued' && 'opacity-60'
+                        )}
+                    >
                         <div className="flex shrink-0 items-start gap-1.5">
                             <span className="mt-1.5 flex w-2 shrink-0 justify-center">
-                                {showUnreadDot ? (
+                                {markAllSeenState === 'active' ? (
+                                    <Spinner className="text-muted-foreground size-3 shrink-0 -translate-y-0.5" />
+                                ) : markAllSeenState === 'failed' ? (
+                                    <Tooltip>
+                                        <TooltipTrigger
+                                            render={
+                                                <span className="flex shrink-0 -translate-y-0.5 text-amber-500">
+                                                    <TriangleAlertIcon className="size-3" />
+                                                    <span className="sr-only">
+                                                        {t(
+                                                            'side_panel.notification_center.mark_read_failed'
+                                                        )}
+                                                    </span>
+                                                </span>
+                                            }
+                                        />
+                                        <TooltipContent>
+                                            {t(
+                                                'side_panel.notification_center.mark_read_failed'
+                                            )}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                ) : showUnreadDot && !nested ? (
                                     <span className="bg-primary size-2 rounded-full">
                                         <span className="sr-only">
                                             {t('view.notification.feed.unread')}
@@ -414,11 +460,18 @@ export function NotificationDrawerRow({
                                     {isQueueReady ||
                                     inlineActions.length > 0 ? (
                                         <div
+                                            aria-busy={
+                                                actionPending || undefined
+                                            }
                                             className={cn(
                                                 'flex shrink-0 items-center gap-1.5',
-                                                NOTIFICATION_ROW_HOVER_REVEAL
+                                                !actionPending &&
+                                                    NOTIFICATION_ROW_HOVER_REVEAL
                                             )}
                                         >
+                                            {actionPending ? (
+                                                <Spinner className="text-muted-foreground size-3.5" />
+                                            ) : null}
                                             {isQueueReady ? (
                                                 <Button
                                                     type="button"
@@ -451,6 +504,7 @@ export function NotificationDrawerRow({
                                                     type="button"
                                                     size="xs"
                                                     variant="ghost"
+                                                    disabled={actionPending}
                                                     onClick={action.onClick}
                                                 >
                                                     {action.label}

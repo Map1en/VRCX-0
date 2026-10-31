@@ -2,6 +2,9 @@ use crate::remote::VrchatRequestPort;
 use serde::{Deserialize, Serialize};
 use vrcx_0_application_core::RemoteMutationGate;
 use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Result, RuntimeAuthScope};
+pub use vrcx_0_contracts::local_moderation::{
+    LocalModerationInput, LocalModerationOutput, RemoteModerationInput,
+};
 use vrcx_0_core::text::normalize_text;
 use vrcx_0_core::OwnerId;
 
@@ -29,34 +32,6 @@ impl<'a> ModerationSyncDeps<'a> {
             remote_mutations,
         }
     }
-}
-
-#[derive(Clone, Debug)]
-pub struct RemoteModerationInput {
-    pub r#type: String,
-    pub target_user_id: String,
-    pub target_display_name: String,
-    pub created: String,
-}
-
-#[derive(Clone, Debug)]
-pub struct LocalModerationInput {
-    pub user_id: String,
-    pub updated_at: String,
-    pub display_name: String,
-    pub block: bool,
-    pub mute: bool,
-}
-
-#[derive(Clone, Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-#[specta(rename = "ModerationSyncLocalOutput")]
-pub struct LocalModerationOutput {
-    pub user_id: String,
-    pub updated_at: String,
-    pub display_name: String,
-    pub block: bool,
-    pub mute: bool,
 }
 
 pub trait ModerationSyncStore: Send + Sync {

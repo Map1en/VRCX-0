@@ -1,4 +1,4 @@
-import { CameraIcon, ImageIcon } from 'lucide-react';
+import { CameraIcon, ImageIcon, StarIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -7,6 +7,7 @@ import {
     type LocationMetadataEntry
 } from '@/components/location/useLocationMetadata';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { rememberScreenshotThumbnailUrl } from '@/components/media/screenshotThumbnailUrlCache';
 import { TileShell } from '@/components/tile/TileShell';
 import { formatScreenshotDateTime } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
@@ -14,6 +15,7 @@ import { convertFileSrc } from '@/platform/tauri/assets';
 import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
 import { requestScreenshotThumbnail } from '@/services/screenshotThumbnailQueueService';
 import {
+    TILE_FAVORITE_TOGGLE,
     TILE_SELECT_BOX,
     TILE_SELECT_TOGGLE,
     TILE_SELECT_TOGGLE_VISIBLE
@@ -126,6 +128,7 @@ export function useScreenshotThumbnailTitleMap(
 
 export function ScreenshotThumbnailCard({
     compact = false,
+    fadeIn = true,
     item,
     onOpen,
     title = '',
@@ -134,9 +137,13 @@ export function ScreenshotThumbnailCard({
     selected = false,
     selectionActive = false,
     selectLabel = '',
-    onToggleSelect
+    onToggleSelect,
+    favorite = false,
+    favoriteLabel = '',
+    onToggleFavorite
 }: {
     compact?: boolean;
+    fadeIn?: boolean;
     item: ScreenshotThumbnailItem;
     onOpen: (path: string) => void;
     title?: string;
@@ -146,6 +153,9 @@ export function ScreenshotThumbnailCard({
     selectionActive?: boolean;
     selectLabel?: string;
     onToggleSelect?: (checked: boolean, shift: boolean) => void;
+    favorite?: boolean;
+    favoriteLabel?: string;
+    onToggleFavorite?: (favorite: boolean) => void;
 }) {
     const { i18n, t } = useTranslation();
     const shiftPressedRef = useRef(false);
@@ -163,9 +173,12 @@ export function ScreenshotThumbnailCard({
                 if (!active) {
                     return;
                 }
-                setThumbnailUrl(
-                    convertFileSrc(String(thumbnailPath || ''), 'vrcx-0-thumb')
+                const nextThumbnailUrl = convertFileSrc(
+                    String(thumbnailPath || ''),
+                    'vrcx-0-thumb'
                 );
+                rememberScreenshotThumbnailUrl(item.path, nextThumbnailUrl);
+                setThumbnailUrl(nextThumbnailUrl);
                 setLoadState('ready');
             })
             .catch(() => {
@@ -220,6 +233,7 @@ export function ScreenshotThumbnailCard({
                     {thumbnailUrl ? (
                         <FadeInImage
                             src={thumbnailUrl}
+                            fade={fadeIn}
                             alt={item.fileName}
                             className="size-full object-cover"
                             loading="lazy"
@@ -299,6 +313,27 @@ export function ScreenshotThumbnailCard({
                         }
                     />
                 </span>
+            ) : null}
+            {onToggleFavorite && !isSelectionActive ? (
+                <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon-xs"
+                    aria-label={favoriteLabel}
+                    aria-pressed={favorite}
+                    className={cn(
+                        TILE_FAVORITE_TOGGLE,
+                        'bg-background/85 shadow-sm',
+                        favorite && TILE_SELECT_TOGGLE_VISIBLE
+                    )}
+                    onClick={() => onToggleFavorite(!favorite)}
+                >
+                    <StarIcon
+                        className={cn(
+                            favorite && 'fill-current text-amber-400'
+                        )}
+                    />
+                </Button>
             ) : null}
         </div>
     );

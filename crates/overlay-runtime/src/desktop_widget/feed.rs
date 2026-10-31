@@ -59,6 +59,17 @@ impl DesktopWidgetFeed {
         true
     }
 
+    pub(crate) fn resolve_group_name(&mut self, source_id: &str, group_name: &str) -> bool {
+        let Some(row) = self.row_by_source_mut(source_id) else {
+            return false;
+        };
+        if row.entry.content.group_name == group_name {
+            return false;
+        }
+        row.entry.content.group_name = group_name.to_string();
+        true
+    }
+
     pub(crate) fn set_avatar(&mut self, source_id: &str, avatar: AvatarBitmap) -> bool {
         let Some(row) = self.row_by_source_mut(source_id) else {
             return false;

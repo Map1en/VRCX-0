@@ -22,7 +22,7 @@ use vrcx_0_application_realtime::{
 };
 use vrcx_0_persistence::DatabaseService;
 
-use crate::{Error, Result};
+use crate::Result;
 
 #[derive(Clone)]
 pub struct DesktopSocialRuntime {
@@ -124,21 +124,18 @@ impl DesktopSocialRuntime {
     fn notification_actions(
         &self,
     ) -> Result<vrcx_0_outbound_adapters::LocalNotificationChainActions<'_>> {
-        let expected_scope = self.auth_scope.snapshot();
-        if !expected_scope.active || expected_scope.current_user_id.trim().is_empty() {
-            return Err(Error::Custom(
-                "Notification action requires an authenticated session.".into(),
-            ));
-        }
+        let mutation = vrcx_0_application_core::AuthenticatedMutationContext::capture(
+            &self.auth_scope,
+            &self.remote_mutations,
+            "Notification action",
+        )?;
         Ok(
             vrcx_0_outbound_adapters::LocalNotificationChainActions::new(
                 self.db.as_ref(),
                 self.web.as_ref(),
-                &self.auth_scope,
-                expected_scope,
+                mutation,
                 &self.event_bus,
                 self.world_cache.as_ref(),
-                &self.remote_mutations,
                 &self.media_upload_adapter,
             ),
         )

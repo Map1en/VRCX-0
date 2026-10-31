@@ -57,7 +57,11 @@ vi.mock('@/services/shellIntegrationService', () => ({
 
 import { useRuntimeStore } from './runtimeStore';
 import { useShellStore } from './shellStore';
-import { useVrcNotificationStore } from './vrcNotificationStore';
+import {
+    selectCanMarkAllSeen,
+    selectMarkAllSeenRowState,
+    useVrcNotificationStore
+} from './vrcNotificationStore';
 
 describe('vrcNotificationStore', () => {
     beforeEach(() => {
@@ -437,7 +441,7 @@ describe('vrcNotificationStore', () => {
 
         await expect(
             useVrcNotificationStore.getState().markAllSeen()
-        ).rejects.toThrow('Failed to mark 1 notification(s) as seen.');
+        ).resolves.toEqual({ failedCount: 1 });
 
         expect(commandMocks.markSeenBatch).toHaveBeenCalledWith({
             items: [
@@ -504,7 +508,7 @@ describe('vrcNotificationStore', () => {
 
         await expect(
             useVrcNotificationStore.getState().markAllSeen()
-        ).rejects.toThrow('Failed to mark 1 notification(s) as seen.');
+        ).resolves.toEqual({ failedCount: 1 });
 
         expect(
             useVrcNotificationStore
@@ -787,7 +791,7 @@ describe('vrcNotificationStore', () => {
         });
     });
 
-    it('keeps notifications unread and throws when the server call fails', async () => {
+    it('keeps notifications unread and reports the failure when the server call fails', async () => {
         const activityNotification = {
             id: 'notif_failing',
             type: 'inviteResponse',
@@ -820,10 +824,16 @@ describe('vrcNotificationStore', () => {
 
         await expect(
             useVrcNotificationStore.getState().markAllSeen()
-        ).rejects.toThrow('Failed to mark 1 notification(s) as seen.');
+        ).resolves.toEqual({ failedCount: 1 });
 
         expect(commandMocks.markSeenBatch).toHaveBeenCalledTimes(1);
         expect(useVrcNotificationStore.getState().unseenCount).toBe(1);
+        expect(
+            selectMarkAllSeenRowState(
+                useVrcNotificationStore.getState(),
+                'notif_failing'
+            )
+        ).toBe('failed');
         expect(useVrcNotificationStore.getState().rows[0]).toMatchObject({
             id: 'notif_failing',
             seen: false
@@ -857,5 +867,121 @@ describe('vrcNotificationStore', () => {
             seen: false
         });
         expect(useVrcNotificationStore.getState().unseenCount).toBe(1);
+    });
+
+    it('marks plain notifications seen before dismissing the rest one by one', async () => {
+        const dismissResponse = {
+            type: 'delete',
+            icon: 'check',
+            text: 'Acknowledge and dismiss this notification'
+        };
+        const first = {
+            id: 'notif_dismiss_first',
+            type: 'group.announcement',
+            version: 2,
+            seen: false,
+            responses: [dismissResponse],
+            created_at: new Date().toISOString()
+        };
+        const second = {
+            id: 'notif_dismiss_second',
+            type: 'group.announcement',
+            version: 2,
+            seen: false,
+            responses: [dismissResponse],
+            created_at: new Date().toISOString()
+        };
+        const plain = {
+            id: 'notif_plain',
+            type: 'event.announcement',
+            version: 2,
+            seen: false,
+            created_at: new Date().toISOString()
+        };
+        useVrcNotificationStore.getState().upsertNotification(first);
+        useVrcNotificationStore.getState().upsertNotification(second);
+        useVrcNotificationStore.getState().upsertNotification(plain);
+        notificationRepositoryMock.queryNotifications.mockResolvedValue([]);
+        const dismissCalls: Deferred<void>[] = [];
+        notificationActionMocks.sendNotificationButtonResponse.mockImplementation(
+            () => {
+                const deferred = createDeferred<void>();
+                dismissCalls.push(deferred);
+                return deferred.promise;
+            }
+        );
+
+        const marking = useVrcNotificationStore.getState().markAllSeen();
+        await vi.waitFor(() => expect(dismissCalls).toHaveLength(1));
+
+        const activeId =
+            notificationActionMocks.sendNotificationButtonResponse.mock
+                .calls[0][0].notification.id;
+        const queuedId = activeId === first.id ? second.id : first.id;
+        let state = useVrcNotificationStore.getState();
+        expect(state.markAllSeenProgress).toEqual({
+            total: 3,
+            done: 1,
+            activeId,
+            queuedIds: [queuedId]
+        });
+        expect(state.rows.find((row) => row.id === plain.id)).toMatchObject({
+            seen: true
+        });
+        expect(selectMarkAllSeenRowState(state, activeId)).toBe('active');
+        expect(selectMarkAllSeenRowState(state, queuedId)).toBe('queued');
+        expect(selectCanMarkAllSeen(state)).toBe(false);
+
+        dismissCalls[0].resolve();
+        await vi.waitFor(() => expect(dismissCalls).toHaveLength(2));
+        state = useVrcNotificationStore.getState();
+        expect(state.markAllSeenProgress).toMatchObject({
+            done: 2,
+            activeId: queuedId,
+            queuedIds: []
+        });
+        expect(state.unseenCount).toBe(1);
+
+        dismissCalls[1].resolve();
+        await expect(marking).resolves.toEqual({ failedCount: 0 });
+        expect(useVrcNotificationStore.getState().markAllSeenProgress).toBe(
+            null
+        );
+    });
+
+    it('keeps mark-all-seen running once and remembers failed dismissals', async () => {
+        const announcement = {
+            id: 'notif_announcement',
+            type: 'group.announcement',
+            version: 2,
+            seen: false,
+            responses: [{ type: 'delete', icon: 'check', text: 'Dismiss' }],
+            created_at: new Date().toISOString()
+        };
+        useVrcNotificationStore.getState().upsertNotification(announcement);
+        notificationRepositoryMock.queryNotifications.mockResolvedValue([
+            announcement
+        ]);
+        const dismissal = createDeferred<void>();
+        notificationActionMocks.sendNotificationButtonResponse.mockReturnValue(
+            dismissal.promise
+        );
+
+        const marking = useVrcNotificationStore.getState().markAllSeen();
+        await expect(
+            useVrcNotificationStore.getState().markAllSeen()
+        ).resolves.toEqual({ failedCount: 0 });
+        dismissal.reject(new Error('Too many requests'));
+
+        await expect(marking).resolves.toEqual({ failedCount: 1 });
+        expect(
+            notificationActionMocks.sendNotificationButtonResponse
+        ).toHaveBeenCalledTimes(1);
+        const state = useVrcNotificationStore.getState();
+        expect(state.markAllSeenProgress).toBe(null);
+        expect(state.unseenCount).toBe(1);
+        expect(selectMarkAllSeenRowState(state, announcement.id)).toBe(
+            'failed'
+        );
     });
 });

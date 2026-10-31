@@ -1,5 +1,6 @@
 import { CalendarDaysIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Location } from '@/components/Location';
 import type { NotificationRow } from '@/repositories/notificationPersistenceRepository';
@@ -12,6 +13,7 @@ import {
     NotificationPersonAvatar
 } from '../components/NotificationRowParts';
 import { NotificationText } from '../components/NotificationText';
+import { getNotificationBodyText } from '../notificationViewModel';
 import {
     getFriendMessage,
     getHoverTitle,
@@ -95,6 +97,7 @@ export function NotificationHoverContent({
     senderName: string;
     typeLabel: string;
 }) {
+    const { t } = useTranslation();
     const groupNotification = isGroupNotification(notification);
     const friendNotification = isFriendNotification(notification);
     const hoverTitle = getHoverTitle(notification);
@@ -123,7 +126,7 @@ export function NotificationHoverContent({
                         notificationId={notification.id}
                         translatable={translatable}
                         headline={hoverTitle}
-                        message={notification.message || ''}
+                        message={getNotificationBodyText(notification, t)}
                     >
                         {({ headline, message }) => (
                             <>

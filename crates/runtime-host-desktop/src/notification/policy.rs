@@ -7,6 +7,7 @@ use vrcx_0_application_realtime::RealtimeHostRuntime;
 use vrcx_0_outbound_adapters::LocalNotificationConfig;
 use vrcx_0_persistence::config::ConfigRepository;
 
+use crate::game_isolation::GameIsolationRuntime;
 use crate::privacy_lock::PrivacyLockRuntime;
 
 use super::delivery::should_play_for_condition;
@@ -32,7 +33,9 @@ impl NotificationSettings {
             busy_status_do_not_disturb: config
                 .get_bool(BUSY_STATUS_DO_NOT_DISTURB_CONFIG_KEY, true)
                 .unwrap_or(true),
-            is_game_no_vr: config.get_bool("isGameNoVR", false).unwrap_or(false),
+            is_game_no_vr: config
+                .get_bool(vrcx_0_application_game::IS_GAME_NO_VR_CONFIG_KEY, false)
+                .unwrap_or(false),
         }
     }
 }
@@ -42,6 +45,7 @@ pub(crate) struct LocalNotificationPolicy {
     session: HostSessionRuntime,
     do_not_disturb: NotificationDoNotDisturbRuntime,
     privacy_lock: Arc<PrivacyLockRuntime>,
+    game_isolation: GameIsolationRuntime,
     realtime: Mutex<Weak<RealtimeHostRuntime>>,
     settings: Mutex<Option<(u64, Arc<NotificationSettings>)>>,
 }
@@ -52,12 +56,14 @@ impl LocalNotificationPolicy {
         session: HostSessionRuntime,
         do_not_disturb: NotificationDoNotDisturbRuntime,
         privacy_lock: Arc<PrivacyLockRuntime>,
+        game_isolation: GameIsolationRuntime,
     ) -> Self {
         Self {
             config,
             session,
             do_not_disturb,
             privacy_lock,
+            game_isolation,
             realtime: Mutex::new(Weak::new()),
             settings: Mutex::new(None),
         }
@@ -99,12 +105,21 @@ impl LocalNotificationPolicy {
         if self.paused(settings) {
             return NotificationDeliveryPlan::default();
         }
-        decide_notification_plan(delivery, &settings.preferences, &self.game_state(settings))
+        let plan =
+            decide_notification_plan(delivery, &settings.preferences, &self.game_state(settings));
+        if self.game_isolation.is_enabled() {
+            return NotificationDeliveryPlan {
+                desktop: plan.desktop,
+                ..NotificationDeliveryPlan::default()
+            };
+        }
+        plan
     }
 
     pub(crate) fn hmd_allowed(&self) -> bool {
         let settings = self.settings();
-        !self.paused(&settings)
+        !self.game_isolation.is_enabled()
+            && !self.paused(&settings)
             && should_play_for_condition(
                 settings.preferences.overlay_toast,
                 &self.game_state(&settings),

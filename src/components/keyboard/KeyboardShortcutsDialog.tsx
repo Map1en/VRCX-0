@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 
 import { KeyboardShortcut } from '@/components/keyboard/KeyboardShortcut';
 import { trayShortcutKeys } from '@/components/keyboard/trayShortcutKeys';
-import { SHORTCUT_GROUPS } from '@/shared/constants/keyboardShortcuts';
+import { SHORTCUT_GROUPS } from '@/shared/keyboard/shortcutRegistry';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { useTrayShortcutStore } from '@/state/trayShortcutStore';
 import { ScrollArea } from '@/ui/shadcn/scroll-area';

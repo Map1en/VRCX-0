@@ -2,14 +2,15 @@
 
 use tauri::State;
 use vrcx_0_application::social::{
-    VrchatGroupGalleryInput, VrchatGroupIdInput, VrchatGroupJoinRequestRespondInput,
-    VrchatGroupJoinRequestsInput, VrchatGroupLogsInput, VrchatGroupMemberPropsInput,
-    VrchatGroupMemberRoleInput, VrchatGroupMembersInput, VrchatGroupMembersSearchInput,
-    VrchatGroupMembershipListInput, VrchatGroupPagedInput, VrchatGroupPostCreateInput,
-    VrchatGroupPostDeleteInput, VrchatGroupPostEditInput, VrchatGroupProfileInput,
-    VrchatGroupRepresentationInput, VrchatGroupRoleCreateInput, VrchatGroupRoleInput,
-    VrchatGroupRoleUpdateInput, VrchatGroupUpdateInput, VrchatGroupUserGroupsInput,
-    VrchatGroupUserInput,
+    VrchatGroupGalleryCreateInput, VrchatGroupGalleryDeleteInput, VrchatGroupGalleryEditInput,
+    VrchatGroupGalleryImageAddInput, VrchatGroupGalleryImageDeleteInput, VrchatGroupGalleryInput,
+    VrchatGroupIdInput, VrchatGroupJoinRequestRespondInput, VrchatGroupJoinRequestsInput,
+    VrchatGroupLogsInput, VrchatGroupMemberPropsInput, VrchatGroupMemberRoleInput,
+    VrchatGroupMembersInput, VrchatGroupMembersSearchInput, VrchatGroupMembershipListInput,
+    VrchatGroupPagedInput, VrchatGroupPostCreateInput, VrchatGroupPostDeleteInput,
+    VrchatGroupPostEditInput, VrchatGroupProfileInput, VrchatGroupRepresentationInput,
+    VrchatGroupRoleCreateInput, VrchatGroupRoleInput, VrchatGroupRoleUpdateInput,
+    VrchatGroupUpdateInput, VrchatGroupUserGroupsInput, VrchatGroupUserInput,
 };
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 
@@ -222,6 +223,76 @@ pub async fn app__vrchat_group_delete(
         .runtime_host()
         .groups()
         .delete(input)
+        .await
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__vrchat_group_gallery_create(
+    state: State<'_, AppState>,
+    input: VrchatGroupGalleryCreateInput,
+) -> Result<VrchatApiResponse, AppError> {
+    state
+        .runtime_host()
+        .groups()
+        .create_gallery(input)
+        .await
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__vrchat_group_gallery_edit(
+    state: State<'_, AppState>,
+    input: VrchatGroupGalleryEditInput,
+) -> Result<VrchatApiResponse, AppError> {
+    state
+        .runtime_host()
+        .groups()
+        .edit_gallery(input)
+        .await
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__vrchat_group_gallery_delete(
+    state: State<'_, AppState>,
+    input: VrchatGroupGalleryDeleteInput,
+) -> Result<VrchatApiResponse, AppError> {
+    state
+        .runtime_host()
+        .groups()
+        .delete_gallery(input)
+        .await
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__vrchat_group_gallery_image_add(
+    state: State<'_, AppState>,
+    input: VrchatGroupGalleryImageAddInput,
+) -> Result<VrchatApiResponse, AppError> {
+    state
+        .runtime_host()
+        .groups()
+        .add_gallery_image(input)
+        .await
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__vrchat_group_gallery_image_delete(
+    state: State<'_, AppState>,
+    input: VrchatGroupGalleryImageDeleteInput,
+) -> Result<VrchatApiResponse, AppError> {
+    state
+        .runtime_host()
+        .groups()
+        .delete_gallery_image(input)
         .await
         .map_err(AppError::from)
 }

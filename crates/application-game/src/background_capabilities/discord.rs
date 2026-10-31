@@ -312,8 +312,9 @@ async fn load_discord_location_details(
                 if let Some(world) = parse_response_json(&response.data) {
                     details.world_name =
                         string_field(&world, "name").unwrap_or_else(|| parsed.world_id.clone());
-                    details.thumbnail_image_url = string_field(&world, "thumbnailImageUrl")
-                        .or_else(|| string_field(&world, "imageUrl"))
+                    details.thumbnail_image_url = remote
+                        .world_image_url(&facts.endpoint, &parsed.world_id)
+                        .await
                         .unwrap_or_default();
                     details.world_capacity = world.i64_field("capacity").unwrap_or(0);
                     if string_field(&world, "releaseStatus").as_deref() == Some("public") {

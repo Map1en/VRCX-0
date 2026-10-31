@@ -43,9 +43,10 @@ pub(super) use super::state::{
 };
 use crate::realtime::notifications::apply_notification_ws_message;
 use crate::realtime::{
-    RealtimeMessageSink, RealtimeSessionContext, RealtimeTransport, RealtimeTransportFuture,
-    RealtimeTransportStartResult, RealtimeTransportTermination,
+    FriendBaselineSyncOutcome, RealtimeMessageSink, RealtimeSessionContext, RealtimeTransport,
+    RealtimeTransportFuture, RealtimeTransportStartResult, RealtimeTransportTermination,
 };
+use crate::social_baseline::service::FriendStatusVerdicts;
 pub(super) use crate::test_store::TestRealtimeStore;
 
 impl RealtimeHostRuntime {
@@ -130,6 +131,20 @@ impl TestRealtimeHostRuntime {
         self.runtime.deps.tasks.set_executor(executor);
     }
 
+    pub fn sync_friend_baseline(
+        &self,
+        session: &RealtimeSessionContext,
+        friends_by_id: HashMap<String, FriendBaselineEntry>,
+    ) -> Result<FriendBaselineSyncOutcome> {
+        let watermark = self.runtime.capture_friend_baseline_watermark()?;
+        self.runtime.sync_friend_snapshot_with_watermark(
+            session.clone(),
+            watermark,
+            friends_by_id,
+            FriendStatusVerdicts::default(),
+        )
+    }
+
     pub fn prepare_pending_friend_baseline(
         &self,
         session: &RealtimeSessionContext,
@@ -137,8 +152,7 @@ impl TestRealtimeHostRuntime {
     ) -> Result<()> {
         self.runtime.state.lock().unwrap().connection.active_context = None;
         self.runtime.friends.clear();
-        self.runtime
-            .sync_friend_snapshot(session.clone(), None, friends_by_id)?;
+        self.sync_friend_baseline(session, friends_by_id)?;
         Ok(())
     }
 
@@ -623,6 +637,14 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
         ))
     }
 
+    fn group(
+        &self,
+        endpoint: String,
+        group_id: String,
+    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
+        Ok(test_request(endpoint, &format!("/groups/{group_id}")))
+    }
+
     fn invite_send(
         &self,
         endpoint: String,
@@ -687,12 +709,11 @@ fn runtime_with_active_session_game_context(
     let store = Arc::new(TestRealtimeStore::new(dir.path.join("VRCX-0.sqlite3")));
     let web = Arc::new(WebClient::new(NoopWebClientPort));
     let session = HostSessionRuntime::new();
-    let host_session_generation =
-        session.set_realtime_context(vrcx_0_application_core::HostRealtimeSessionContext::new(
-            "usr_self".into(),
-            "https://api.vrchat.cloud/api/1".into(),
-            "wss://pipeline.vrchat.cloud".into(),
-        ));
+    let host_session_generation = session.set_realtime_context(RealtimeSessionContext::new(
+        "usr_self".into(),
+        "https://api.vrchat.cloud/api/1".into(),
+        "wss://pipeline.vrchat.cloud".into(),
+    ));
     let world_cache_port = MemoryWorldCachePort::default();
     let world_cache = Arc::new(vrcx_0_application_core::WorldCache::new(
         world_cache_port.clone(),

@@ -19,7 +19,8 @@ export const DATA_TABLE_METADATA_CELL_CLASS_NAME = 'font-normal tabular-nums';
 export const DATA_TABLE_CONTROL_CELL_CLASS_NAME =
     'text-content-tertiary !py-[var(--vrcx-0-table-control-cell-padding-block)] text-clip';
 
-export const DATA_TABLE_NUMERIC_HEADER_CLASS_NAME = 'text-right';
+export const DATA_TABLE_NUMERIC_HEADER_CLASS_NAME =
+    'text-right [&_[data-slot=table-head-content]]:justify-end';
 
 export const DATA_TABLE_NUMERIC_CELL_CLASS_NAME =
     'font-normal tabular-nums text-right';

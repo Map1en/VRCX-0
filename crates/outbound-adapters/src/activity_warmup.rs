@@ -8,8 +8,6 @@ use vrcx_0_application_core::Result;
 use vrcx_0_core::OwnerId;
 use vrcx_0_persistence::DatabaseService;
 
-use crate::map_persistence_error;
-
 pub struct LocalActivitySessionWarmupStore {
     db: Arc<DatabaseService>,
 }
@@ -43,6 +41,7 @@ impl ActivityPageWarmupStore for LocalActivityPageWarmupStore {
                 range_days,
                 utc_offset_minutes: local_utc_offset_minutes(),
                 now_ms: Utc::now().timestamp_millis(),
+                window_to_ms: None,
                 companion_order: Default::default(),
                 force_refresh: false,
             },
@@ -62,8 +61,7 @@ impl ActivitySessionWarmupStore for LocalActivitySessionWarmupStore {
             owner_user_id,
             range_days,
             None,
-        )
-        .map_err(map_persistence_error)?;
+        )?;
         Ok(ActivitySessionWarmupOutput {
             cached_range_days: output.sync.cached_range_days,
             source_count: output.source_count,

@@ -117,6 +117,7 @@ pub struct GameLogSessionDto {
     pub group_name: String,
     pub duration: Option<i64>,
     pub player_duration_rows: Vec<GameLogSessionPlayerDurationRowDto>,
+    pub remote: bool,
     pub events: Vec<GameLogSessionEventDto>,
 }
 
@@ -177,6 +178,7 @@ impl GameLogSessionDto {
             group_name: segment.group_name,
             duration: segment.duration,
             player_duration_rows,
+            remote: segment.remote,
             events: segment.events.into_iter().map(Into::into).collect(),
         }
     }

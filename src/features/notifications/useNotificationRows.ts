@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { toast } from '@/services/toastService';
@@ -15,6 +15,15 @@ import type {
 } from './notificationPageTypes';
 import { filterNotificationRows } from './notificationRows';
 import type { NotificationQuickFilter } from './useNotificationFilters';
+
+export type NotificationQuickFilterCounts = Record<
+    NotificationQuickFilter,
+    number
+>;
+
+function notificationKey(notification: NotificationRow) {
+    return typeof notification.id === 'string' ? notification.id : '';
+}
 
 function matchesQuickFilter(
     notification: NotificationRow,
@@ -37,12 +46,14 @@ export function useNotificationRows({
     currentUserId,
     deferredSearchQuery,
     filtersReady,
+    holdNew = false,
     quickFilter
 }: {
     activeTypes: string[];
     currentUserId?: string;
     deferredSearchQuery: string;
     filtersReady: boolean;
+    holdNew?: boolean;
     quickFilter: NotificationQuickFilter;
 }) {
     const { t } = useTranslation();
@@ -59,6 +70,14 @@ export function useNotificationRows({
         useState<NotificationLoadStatus>('idle');
     const [detail, setDetail] = useState('');
     const [reloadToken, setReloadToken] = useState(0);
+    const [pendingCount, setPendingCount] = useState(0);
+    const [quickFilterCounts, setQuickFilterCounts] =
+        useState<NotificationQuickFilterCounts>({
+            all: 0,
+            action: 0,
+            unread: 0
+        });
+    const heldRef = useRef<{ key: string; ids: Set<string> } | null>(null);
 
     const reload = useCallback(() => {
         setReloadToken((value) => value + 1);
@@ -108,14 +127,44 @@ export function useNotificationRows({
         if (!filtersReady || !currentUserId) {
             return;
         }
-        const nextRows = filterNotificationRows(
+        const typedRows = filterNotificationRows(
             notificationRows,
             activeTypes,
             deferredSearchQuery
-        ).filter((notification) =>
+        );
+        const nextRows = typedRows.filter((notification) =>
             matchesQuickFilter(notification, quickFilter)
         );
-        setRows(nextRows);
+        const holdKey = JSON.stringify([
+            activeTypes,
+            deferredSearchQuery,
+            quickFilter
+        ]);
+        if (!holdNew) {
+            heldRef.current = null;
+        } else if (heldRef.current?.key !== holdKey) {
+            heldRef.current = {
+                key: holdKey,
+                ids: new Set(nextRows.map(notificationKey))
+            };
+        }
+        const held = heldRef.current;
+        const visibleRows = held
+            ? nextRows.filter((notification) =>
+                  held.ids.has(notificationKey(notification))
+              )
+            : nextRows;
+        setRows(visibleRows);
+        setPendingCount(nextRows.length - visibleRows.length);
+        setQuickFilterCounts({
+            all: typedRows.length,
+            action: typedRows.filter((notification) =>
+                matchesQuickFilter(notification, 'action')
+            ).length,
+            unread: typedRows.filter((notification) =>
+                matchesQuickFilter(notification, 'unread')
+            ).length
+        });
         setLoadStatus(notificationLoadStatus);
         setDetail(notificationDetail || '');
     }, [
@@ -123,6 +172,7 @@ export function useNotificationRows({
         currentUserId,
         deferredSearchQuery,
         filtersReady,
+        holdNew,
         notificationDetail,
         notificationLoadStatus,
         notificationRows,
@@ -132,6 +182,8 @@ export function useNotificationRows({
     return {
         detail,
         loadStatus,
+        pendingCount,
+        quickFilterCounts,
         reload,
         rows
     };

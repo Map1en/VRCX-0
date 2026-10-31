@@ -119,6 +119,9 @@ const generatedCommands = {
     async appCurrentUserRefresh(): Promise<CurrentUserRefreshOutcome> {
         return await TAURI_INVOKE('app__current_user_refresh');
     },
+    async appRealtimeRetryNow(): Promise<void> {
+        await TAURI_INVOKE('app__realtime_retry_now');
+    },
     async appIngestUserFacts(entries: JsonValue[]): Promise<null> {
         return await TAURI_INVOKE('app__ingest_user_facts', { entries });
     },
@@ -137,6 +140,11 @@ const generatedCommands = {
         return await TAURI_INVOKE('app__notification_do_not_disturb_mode_set', {
             mode
         });
+    },
+    async appGameIsolationSet(
+        enabled: boolean
+    ): Promise<GameIsolationSnapshot> {
+        return await TAURI_INVOKE('app__game_isolation_set', { enabled });
     },
     async appStartBackgroundMode(): Promise<BackendRuntimeSnapshot> {
         return await TAURI_INVOKE('app__start_background_mode');
@@ -178,6 +186,19 @@ const generatedCommands = {
         return await TAURI_INVOKE('app__privacy_lock_password_clear', {
             accountPassword
         });
+    },
+    async appPrivacyLockDeviceVerifyStart(): Promise<PrivacyLockDeviceStart> {
+        return await TAURI_INVOKE('app__privacy_lock_device_verify_start');
+    },
+    async appPrivacyLockDeviceVerifyWait(
+        attemptId: string
+    ): Promise<PrivacyLockOutcome> {
+        return await TAURI_INVOKE('app__privacy_lock_device_verify_wait', {
+            attemptId
+        });
+    },
+    async appPrivacyLockDeviceVerifyCancel(): Promise<void> {
+        await TAURI_INVOKE('app__privacy_lock_device_verify_cancel');
     },
     async appDrainPendingDeepLinks(): Promise<DeepLinkAction[]> {
         return await TAURI_INVOKE('app__drain_pending_deep_links');
@@ -415,6 +436,12 @@ const generatedCommands = {
         return await TAURI_INVOKE('app__feed_logger_push_saved_credentials', {
             savePassword
         });
+    },
+    async appFeedLoggerStartDeviceLogin(): Promise<FeedLoggerDeviceLogin> {
+        return await TAURI_INVOKE('app__feed_logger_start_device_login');
+    },
+    async appFeedLoggerCancelDeviceLogin(): Promise<null> {
+        return await TAURI_INVOKE('app__feed_logger_cancel_device_login');
     },
     async appFeedLoggerSubmitTwoFactor(
         method: string,
@@ -678,6 +705,15 @@ const generatedCommands = {
         return await TAURI_INVOKE('app__desktop_widget_enabled_set', {
             enabled
         });
+    },
+    async appDesktopWidgetPinnedToggle(): Promise<DesktopWidgetSnapshot> {
+        return await TAURI_INVOKE('app__desktop_widget_pinned_toggle');
+    },
+    async appDesktopWidgetClickThroughToggle(): Promise<DesktopWidgetSnapshot> {
+        return await TAURI_INVOKE('app__desktop_widget_click_through_toggle');
+    },
+    async appDesktopWidgetShow(): Promise<void> {
+        await TAURI_INVOKE('app__desktop_widget_show');
     },
     async appVrOverlayEnabledSet(
         enabled: boolean
@@ -1252,6 +1288,13 @@ const generatedCommands = {
             entry
         });
     },
+    async appFriendProfileBioList(
+        ownerUserId: OwnerId
+    ): Promise<ProfileBioOutput[]> {
+        return await TAURI_INVOKE('app__friend_profile_bio_list', {
+            ownerUserId
+        });
+    },
     async appNotificationListQuery(
         query: NotificationListQueryInput
     ): Promise<NotificationListItemOutput[]> {
@@ -1440,6 +1483,13 @@ const generatedCommands = {
         input: VrchatAuthSavedCredentialDeleteInput
     ): Promise<SavedAuthSnapshot> {
         return await TAURI_INVOKE('app__vrchat_auth_saved_credential_delete', {
+            input
+        });
+    },
+    async appVrchatAuthSavedPasswordClear(
+        input: VrchatAuthSavedPasswordClearInput
+    ): Promise<SavedAuthSnapshot> {
+        return await TAURI_INVOKE('app__vrchat_auth_saved_password_clear', {
             input
         });
     },
@@ -1745,6 +1795,39 @@ const generatedCommands = {
         input: VrchatGroupIdInput
     ): Promise<HttpApiExecuteResponse> {
         return await TAURI_INVOKE('app__vrchat_group_delete', { input });
+    },
+    async appVrchatGroupGalleryCreate(
+        input: VrchatGroupGalleryCreateInput
+    ): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE('app__vrchat_group_gallery_create', {
+            input
+        });
+    },
+    async appVrchatGroupGalleryEdit(
+        input: VrchatGroupGalleryEditInput
+    ): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE('app__vrchat_group_gallery_edit', { input });
+    },
+    async appVrchatGroupGalleryDelete(
+        input: VrchatGroupGalleryDeleteInput
+    ): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE('app__vrchat_group_gallery_delete', {
+            input
+        });
+    },
+    async appVrchatGroupGalleryImageAdd(
+        input: VrchatGroupGalleryImageAddInput
+    ): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE('app__vrchat_group_gallery_image_add', {
+            input
+        });
+    },
+    async appVrchatGroupGalleryImageDelete(
+        input: VrchatGroupGalleryImageDeleteInput
+    ): Promise<HttpApiExecuteResponse> {
+        return await TAURI_INVOKE('app__vrchat_group_gallery_image_delete', {
+            input
+        });
     },
     async appVrchatGroupPostCreate(
         input: VrchatGroupPostCreateInput
@@ -2293,14 +2376,6 @@ const generatedCommands = {
             input
         });
     },
-    async appVrchatToolsModerationReportDelete(
-        input: VrchatToolsModerationReportDeleteInput
-    ): Promise<HttpApiExecuteResponse> {
-        return await TAURI_INVOKE(
-            'app__vrchat_tools_moderation_report_delete',
-            { input }
-        );
-    },
     async appVrchatToolsModerationReportsGet(
         input: VrchatToolsModerationReportsInput
     ): Promise<HttpApiExecuteResponse> {
@@ -2715,6 +2790,9 @@ const generatedCommands = {
     async appGetClipboard(): Promise<string> {
         return await TAURI_INVOKE('app__get_clipboard');
     },
+    async appReadClipboardImage(): Promise<ClipboardImage | null> {
+        return await TAURI_INVOKE('app__read_clipboard_image');
+    },
     async appCopyImageToClipboard(path: string): Promise<null> {
         return await TAURI_INVOKE('app__copy_image_to_clipboard', { path });
     },
@@ -2904,6 +2982,21 @@ const generatedCommands = {
             'app__pick_random_screenshot_in_folder_tree',
             { folderPath }
         );
+    },
+    async appGetFavoriteScreenshots(): Promise<FavoriteScreenshots> {
+        return await TAURI_INVOKE('app__get_favorite_screenshots');
+    },
+    async appSetScreenshotFavorite(
+        path: string,
+        favorite: boolean
+    ): Promise<null> {
+        return await TAURI_INVOKE('app__set_screenshot_favorite', {
+            path,
+            favorite
+        });
+    },
+    async appForgetMissingScreenshotFavorites(): Promise<number> {
+        return await TAURI_INVOKE('app__forget_missing_screenshot_favorites');
     },
     async appGetWorldScreenshots(
         worldId: string
@@ -3128,6 +3221,7 @@ export type ActivityPageBuildInput = {
     rangeDays: number;
     utcOffsetMinutes: number;
     nowMs: number;
+    windowToMs: number | null;
     companionOrder: ActivityCompanionOrder;
     forceRefresh: boolean;
 };
@@ -3219,7 +3313,11 @@ export type ActivityScope =
     | 'allFavorites'
     | 'everyoneInInstance';
 export type ActivitySeriesBucket = 'day' | 'week';
-export type ActivitySeriesPoint = { startDate: string; minutes: number };
+export type ActivitySeriesPoint = {
+    startDate: string;
+    endDate: string;
+    minutes: number;
+};
 export type ActivityTypeDefinition = {
     key: ActivityKind;
     category: ActivityCategory;
@@ -3262,6 +3360,7 @@ export type AncillaryRuntimeSnapshot = {
     nowPlaying: NowPlayingSnapshot;
     backgroundImageState: BackgroundImageProjection;
     notificationDoNotDisturbState: NotificationDoNotDisturbSnapshot;
+    gameIsolationState: GameIsolationSnapshot;
     privacyLockState: PrivacyLockSnapshot;
     desktopWidgetState: DesktopWidgetSnapshot;
 };
@@ -3482,11 +3581,17 @@ export type AuthenticatedRuntimePhaseSnapshot = {
     friends: AuthenticatedRuntimeStepSnapshot;
     favorites: AuthenticatedRuntimeStepSnapshot;
     realtime: AuthenticatedRuntimeStepSnapshot;
+    realtimeHealth: AuthenticatedRuntimeRealtimeHealth;
     friendBaselineRevision: number;
     friendBaseline: SocialFriendRosterBaselineOutput | null;
     favoritesBaseline: SocialFavoritesBaselineOutput | null;
     realtimeTransport: RealtimeTransportStartResult | null;
     updatedAt: string;
+};
+export type AuthenticatedRuntimeRealtimeHealth = {
+    interrupted: boolean;
+    disconnectedAt: string | null;
+    retryAt: string | null;
 };
 export type AuthenticatedRuntimeSession = {
     userId: string;
@@ -3667,6 +3772,7 @@ export type BackendRuntimeEventPayloadMap = {
     feedLoggerSync: FeedLoggerSyncEvent;
     feedLoggerHealth: FeedLoggerProbe;
     notificationDoNotDisturbState: NotificationDoNotDisturbSnapshot;
+    gameIsolationState: GameIsolationSnapshot;
     privacyLockState: PrivacyLockSnapshot;
     desktopWidgetState: DesktopWidgetSnapshot;
 };
@@ -3847,6 +3953,11 @@ export type ClientConfigSnippets = {
     claudeCodeCommand: string;
     mcpRemoteJson: string;
     genericJson: string;
+};
+export type ClipboardImage = {
+    fileName: string;
+    mimeType: string;
+    dataBase64: string;
 };
 export type CommunityThemeAuthor = {
     name: string;
@@ -4323,6 +4434,11 @@ export type FavoriteRow = {
     avatarId?: string | null;
     worldId?: string | null;
 };
+export type FavoriteScreenshots = {
+    paths: string[];
+    images: ScreenshotLibraryImage[];
+    missingCount: number;
+};
 export type FavoriteTransferInput = {
     kind: FavoriteEntityKind;
     mode: FavoriteTransferMode;
@@ -4550,6 +4666,10 @@ export type FeedLoggerBackfillHistory = {
     recent: FeedLoggerBackfillRecord[];
 };
 export type FeedLoggerBackfillRecord = { at: number; inserted: number };
+export type FeedLoggerDeviceLogin =
+    | { state: 'waiting'; verificationUrl: string; expiresAt: number }
+    | { state: 'expired' }
+    | { state: 'failed'; reason: string };
 export type FeedLoggerErrorCode =
     | 'notConfigured'
     | 'notSignedIn'
@@ -4618,6 +4738,7 @@ export type FeedLoggerStatus = {
     webhookFormat: FeedLoggerWebhookFormat | null;
     lastWebhookAt: number | null;
     lastWebhookOk: boolean | null;
+    deviceLogin?: FeedLoggerDeviceLogin | null;
 };
 export type FeedLoggerSyncEvent =
     | { state: 'pulling'; frames: number }
@@ -4814,6 +4935,7 @@ export type GameClientEvent =
     | { kind: 'crashRelaunchDecision'; payload: CrashRelaunchDecisionPayload }
     | { kind: 'debugLoggingOutcome'; payload: DebugLoggingOutcome }
     | { kind: 'notification'; payload: RuntimeNotificationPayload };
+export type GameIsolationSnapshot = { revision: number; enabled: boolean };
 export type GameLogAllUserStatsOutput = {
     lastSeen: string;
     userId: string;
@@ -5076,6 +5198,7 @@ export type GameLogSessionDto = {
     groupName: string;
     duration: number | null;
     playerDurationRows: GameLogSessionPlayerDurationRowDto[];
+    remote: boolean;
     events: GameLogSessionEventDto[];
 };
 export type GameLogSessionEventDto = {
@@ -5207,6 +5330,11 @@ export type GroupCalendarSnapshot = {
     followingEventIds: string[];
     groupNames: Partial<{ [key in string]: string }>;
     groupProfiles: Partial<{ [key in string]: RawJson }>;
+};
+export type GroupGalleryMutation = {
+    name: string;
+    description?: string;
+    membersOnly?: boolean;
 };
 export type GroupJoinRequestAction = 'accept' | 'reject';
 export type GroupMemberPatch = {
@@ -5697,6 +5825,8 @@ export type LoginFailureKind =
     | 'missingCredentials'
     | 'sessionInvalidated'
     | 'twoFactorUnavailable'
+    | 'deviceCodeExpired'
+    | 'deviceDenied'
     | 'network'
     | 'other';
 export type LoginSessionCancelInput = { attemptId?: string };
@@ -5720,7 +5850,8 @@ export type LoginSessionStartInput =
           password?: string;
           saveCredentials?: boolean;
       }
-    | { mode: 'savedCredential'; userId?: string };
+    | { mode: 'savedCredential'; userId?: string }
+    | { mode: 'device' };
 export type LoginSessionState =
     | {
           status: 'authenticated';
@@ -5733,6 +5864,12 @@ export type LoginSessionState =
           methods: string[];
           mode: string;
           error: string | null;
+      }
+    | {
+          status: 'deviceApproval';
+          attemptId: string;
+          verificationUrl: string;
+          expiresAt: number;
       }
     | {
           status: 'failed';
@@ -5807,13 +5944,6 @@ export type Message = {
     toolResult: ToolResultRecord | null;
 };
 export type ModerationReportType = 'avatar' | 'group' | 'user' | 'world';
-export type ModerationSyncLocalOutput = {
-    userId: string;
-    updatedAt: string;
-    displayName: string;
-    block: boolean;
-    mute: boolean;
-};
 export type ModerationSyncMutationInput = {
     targetUserId: string;
     targetDisplayName?: string;
@@ -5825,7 +5955,7 @@ export type ModerationSyncMutationOutput = {
     targetUserId: string;
     type: string;
     enabled: boolean;
-    local: ModerationSyncLocalOutput | null;
+    local: LocalModerationOutput | null;
 };
 export type ModerationSyncRefreshInput = { userId: string; endpoint?: string };
 export type ModerationSyncRefreshOutput = {
@@ -6027,6 +6157,7 @@ export type NotificationListItemOutput = {
     details: JsonValue;
     location: string;
     expired: boolean;
+    groupKey?: string | null;
 };
 export type NotificationListQueryInput = {
     userId: string;
@@ -6097,8 +6228,10 @@ export type NowPlayingPayload = {
     location?: string | null;
     thumbnailUrl?: string | null;
     length?: number | null;
-    position: number;
-    startedAt: string;
+    position?: number | null;
+    startedAt?: string | null;
+    paused?: boolean | null;
+    titled?: boolean | null;
     created_at?: string | null;
     type?: string | null;
     videoUrl?: string | null;
@@ -6117,6 +6250,8 @@ export type NowPlayingSnapshot = {
     length: number;
     position: number;
     startedAt: string | null;
+    paused: boolean;
+    titled: boolean;
     created_at?: string | null;
     type?: string | null;
     videoUrl?: string | null;
@@ -6222,13 +6357,27 @@ export type PrintFavoriteState = {
     warning: CleanupWarning | null;
 };
 export type PrintUploadParams = { note: string; timestamp: string };
+export type PrivacyLockDeviceStart =
+    | {
+          status: 'pending';
+          attemptId: string;
+          verificationUrl: string;
+          expiresAt: number;
+      }
+    | { status: 'noActiveSession' }
+    | { status: 'failed'; reason: string };
 export type PrivacyLockOutcome =
     | { status: 'ok'; snapshot: PrivacyLockSnapshot }
     | { status: 'noActiveSession' }
     | { status: 'passwordNotSet' }
     | { status: 'passwordAlreadySet' }
     | { status: 'wrongPassword' }
-    | { status: 'accountPasswordUnavailable' };
+    | { status: 'accountPasswordUnavailable' }
+    | { status: 'accountMismatch' }
+    | { status: 'deviceCodeExpired' }
+    | { status: 'deviceDenied' }
+    | { status: 'deviceFailed'; reason: string }
+    | { status: 'cancelled' };
 export type PrivacyLockSnapshot = {
     revision: number;
     userId: string;
@@ -6287,6 +6436,11 @@ export type ProfileBackupStatus = {
     lastOutcome: ProfileBackupOutcome | null;
 };
 export type ProfileBannerType = 'avatarBanner' | 'customImage' | 'color';
+export type ProfileBioOutput = {
+    userId: string;
+    bio: string;
+    bioLinks: string[];
+};
 export type ProfileDecorationEquipSlot =
     | 'iconFrame'
     | 'profileEffect'
@@ -7029,6 +7183,7 @@ export type VrchatAuthFileAnalysisInput = {
     variant?: string;
 };
 export type VrchatAuthSavedCredentialDeleteInput = { userId?: string };
+export type VrchatAuthSavedPasswordClearInput = { userId?: string };
 export type VrchatAvatarIdInput = { avatarId?: string };
 export type VrchatAvatarListByUserInput = {
     userId?: string;
@@ -7099,6 +7254,29 @@ export type VrchatFavoriteWorldsInput = {
     tag?: string;
 };
 export type VrchatFriendUserInput = { userId?: string };
+export type VrchatGroupGalleryCreateInput = {
+    groupId?: string;
+    params: GroupGalleryMutation;
+};
+export type VrchatGroupGalleryDeleteInput = {
+    groupId?: string;
+    galleryId?: string;
+};
+export type VrchatGroupGalleryEditInput = {
+    groupId?: string;
+    galleryId?: string;
+    params: GroupGalleryMutation;
+};
+export type VrchatGroupGalleryImageAddInput = {
+    groupId?: string;
+    galleryId?: string;
+    fileId?: string;
+};
+export type VrchatGroupGalleryImageDeleteInput = {
+    groupId?: string;
+    galleryId?: string;
+    imageId?: string;
+};
 export type VrchatGroupGalleryInput = {
     groupId?: string;
     galleryId?: string;
@@ -7373,7 +7551,6 @@ export type VrchatToolsInviteMessagesInput = {
     currentUserId?: string;
     messageType: InviteMessageType;
 };
-export type VrchatToolsModerationReportDeleteInput = { reportId?: string };
 export type VrchatToolsModerationReportsInput = {
     currentUserId?: string;
     offset?: number;

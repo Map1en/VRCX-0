@@ -348,7 +348,7 @@ fn backend_save_normalizes_only_the_requested_surface(
     let saved = save_notification_activity_filters(
         &config,
         NotificationActivityFiltersSetInput {
-            surface: NotificationActivityFilterSurface::Webhook,
+            surface: NotificationSurface::Webhook,
             filters,
         },
     )?;
@@ -392,7 +392,7 @@ fn hmd_rules_live_only_under_their_own_key() -> std::result::Result<(), Box<dyn 
     save_notification_activity_filters(
         &config,
         NotificationActivityFiltersSetInput {
-            surface: NotificationActivityFilterSurface::Wrist,
+            surface: NotificationSurface::Wrist,
             filters: ActivityFilterProfile {
                 version: 1,
                 types: BTreeMap::new(),

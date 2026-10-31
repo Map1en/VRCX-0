@@ -48,19 +48,21 @@ export function NowPlayingProgress({
 }) {
     const lengthSeconds = nowPlaying.length ?? 0;
     const hasLength = lengthSeconds > 0;
-    const nowMs = useStatusNowMs(hasLength && Boolean(nowPlaying.startedAt));
+    const running = !nowPlaying.paused && Boolean(nowPlaying.startedAt);
+    const nowMs = useStatusNowMs(hasLength && running);
     if (!hasLength) {
         return null;
     }
 
-    const startedAtMs = nowPlaying.startedAt
-        ? Date.parse(nowPlaying.startedAt)
-        : Number.NaN;
+    const startedAtMs =
+        running && nowPlaying.startedAt
+            ? Date.parse(nowPlaying.startedAt)
+            : Number.NaN;
     const elapsedSeconds = Math.min(
         lengthSeconds,
         Math.max(
             0,
-            nowPlaying.position +
+            (nowPlaying.position ?? 0) +
                 (Number.isFinite(startedAtMs)
                     ? Math.floor((nowMs - startedAtMs) / 1000)
                     : 0)

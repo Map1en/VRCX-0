@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use chrono::{DateTime, Datelike, Duration, TimeZone, Utc};
+use chrono::{DateTime, Datelike, Duration, FixedOffset, Offset, Utc};
 use rmcp::model::CallToolResult;
 use rmcp::schemars;
 use serde::{Deserialize, Serialize};
@@ -32,6 +32,25 @@ where
 pub(super) struct TimeWindowParams {
     pub(super) from: Option<String>,
     pub(super) to: Option<String>,
+    source: Option<Value>,
+}
+
+impl TimeWindowParams {
+    pub(super) fn in_utc_offset(self, utc_offset_minutes: Option<i64>) -> Result<Self, String> {
+        let Some(offset) = utc_offset_minutes
+            .filter(|minutes| *minutes != 0)
+            .and_then(|minutes| i32::try_from(minutes.checked_mul(60)?).ok())
+            .and_then(FixedOffset::east_opt)
+        else {
+            return Ok(self);
+        };
+        let Some(source) = self.source else {
+            return Ok(self);
+        };
+        let mut window = time_window_from_value_at(&source, offset, Utc::now())?;
+        window.source = Some(source);
+        Ok(window)
+    }
 }
 
 impl schemars::JsonSchema for TimeWindowParams {
@@ -48,13 +67,13 @@ impl schemars::JsonSchema for TimeWindowParams {
             "oneOf": [
                 {
                     "type": "string",
-                    "description": "Relative window such as 90d or this week, a four-digit calendar year such as 2026, a UTC calendar day such as 2026-10-18, or all history."
+                    "description": "Relative window such as 90d or this week, a four-digit calendar year such as 2026, this year or last year, a calendar month such as 2026-10, a calendar day such as 2026-10-18, or all history. Calendar forms use the tool's utcOffsetMinutes when it takes one, otherwise UTC."
                 },
                 {
                     "type": "integer",
                     "minimum": 1000,
                     "maximum": 9998,
-                    "description": "Four-digit UTC calendar year such as 2026."
+                    "description": "Four-digit calendar year such as 2026, in the tool's utcOffsetMinutes when it takes one, otherwise UTC."
                 },
                 {
                     "type": "object",
@@ -75,7 +94,9 @@ impl<'de> Deserialize<'de> for TimeWindowParams {
         D: serde::Deserializer<'de>,
     {
         let value = Value::deserialize(deserializer)?;
-        time_window_from_value(&value).map_err(serde::de::Error::custom)
+        let mut window = time_window_from_value(&value).map_err(serde::de::Error::custom)?;
+        window.source = Some(value);
+        Ok(window)
     }
 }
 
@@ -89,19 +110,28 @@ impl From<TimeWindowParams> for social_aggregates::TimeWindow {
 }
 
 fn time_window_from_value(value: &Value) -> Result<TimeWindowParams, String> {
+    time_window_from_value_at(value, Utc.fix(), Utc::now())
+}
+
+fn time_window_from_value_at(
+    value: &Value,
+    offset: FixedOffset,
+    now: DateTime<Utc>,
+) -> Result<TimeWindowParams, String> {
     match value {
-        Value::String(text) => parse_relative_window(text),
+        Value::String(text) => parse_relative_window(text, offset, now),
         Value::Number(year) => year
             .as_i64()
             .ok_or_else(|| "timeWindow calendar year must be an integer".to_string())
-            .and_then(calendar_year_window),
+            .and_then(|year| calendar_year_window(year, offset)),
         Value::Object(map) => {
             if let Some(field) = map.keys().find(|field| *field != "from" && *field != "to") {
                 return Err(format!("unknown timeWindow field '{field}'"));
             }
             Ok(TimeWindowParams {
-                from: time_window_bound(map.get("from"), "from")?,
-                to: time_window_bound(map.get("to"), "to")?,
+                from: time_window_bound(map.get("from"), "from", offset, now)?,
+                to: time_window_bound(map.get("to"), "to", offset, now)?,
+                source: None,
             })
         }
         _ => Err(
@@ -111,15 +141,24 @@ fn time_window_from_value(value: &Value) -> Result<TimeWindowParams, String> {
     }
 }
 
-fn time_window_bound(value: Option<&Value>, field: &str) -> Result<Option<String>, String> {
+fn time_window_bound(
+    value: Option<&Value>,
+    field: &str,
+    offset: FixedOffset,
+    now: DateTime<Utc>,
+) -> Result<Option<String>, String> {
     match value {
         None | Some(Value::Null) => Ok(None),
-        Some(Value::String(value)) => normalize_time_bound(value),
+        Some(Value::String(value)) => normalize_time_bound(value, offset, now),
         Some(_) => Err(format!("timeWindow.{field} must be a string or null")),
     }
 }
 
-fn normalize_time_bound(raw: &str) -> Result<Option<String>, String> {
+fn normalize_time_bound(
+    raw: &str,
+    offset: FixedOffset,
+    now: DateTime<Utc>,
+) -> Result<Option<String>, String> {
     let trimmed = raw.trim();
     if trimmed.is_empty() {
         return Ok(None);
@@ -129,62 +168,76 @@ fn normalize_time_bound(raw: &str) -> Result<Option<String>, String> {
     }
     let lowered = trimmed.to_ascii_lowercase();
     if lowered == "now" || lowered == "today" {
-        return Ok(Some(Utc::now().to_rfc3339()));
+        return Ok(Some(now.to_rfc3339()));
     }
     if let Ok(date) = chrono::NaiveDate::parse_from_str(trimmed, "%Y-%m-%d") {
-        let naive = date.and_time(chrono::NaiveTime::MIN);
-        return Ok(Some(Utc.from_utc_datetime(&naive).to_rfc3339()));
+        return Ok(Some(local_midnight(date, offset).to_rfc3339()));
     }
     for fmt in ["%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"] {
         if let Ok(naive) = chrono::NaiveDateTime::parse_from_str(trimmed, fmt) {
-            return Ok(Some(Utc.from_utc_datetime(&naive).to_rfc3339()));
+            return Ok(Some(local_to_utc(naive, offset).to_rfc3339()));
         }
     }
     if let Some(duration) = parse_duration(&lowered) {
-        return Ok(Some((Utc::now() - duration).to_rfc3339()));
+        return Ok(Some((now - duration).to_rfc3339()));
     }
     Err(format!("unrecognized timeWindow bound '{raw}'"))
 }
 
-fn parse_relative_window(text: &str) -> Result<TimeWindowParams, String> {
+fn parse_relative_window(
+    text: &str,
+    offset: FixedOffset,
+    now: DateTime<Utc>,
+) -> Result<TimeWindowParams, String> {
     let normalized = text.trim().to_ascii_lowercase();
     if normalized.len() == 4 && normalized.chars().all(|ch| ch.is_ascii_digit()) {
         return normalized
             .parse::<i64>()
             .map_err(|_| format!("unrecognized timeWindow string '{text}'"))
-            .and_then(calendar_year_window);
+            .and_then(|year| calendar_year_window(year, offset));
     }
     if let Ok(date) = chrono::NaiveDate::parse_from_str(&normalized, "%Y-%m-%d") {
-        return calendar_day_window(date);
+        return calendar_day_window(date, offset);
     }
-    let now = Utc::now();
-    let rfc = |dt: DateTime<Utc>| Some(dt.to_rfc3339());
-    let window = |from, to| TimeWindowParams { from, to };
+    if normalized.len() == 7 && normalized.as_bytes()[4] == b'-' {
+        if let Ok(date) = chrono::NaiveDate::parse_from_str(&format!("{normalized}-01"), "%Y-%m-%d")
+        {
+            return calendar_month_window(date, offset);
+        }
+    }
+    let today = now.with_timezone(&offset).date_naive();
+    let rfc = |day: chrono::NaiveDate| Some(local_midnight(day, offset).to_rfc3339());
+    let window = |from, to| TimeWindowParams {
+        from,
+        to,
+        source: None,
+    };
 
     match normalized.as_str() {
         "" | "all" | "all time" | "alltime" | "all history" | "all-history" | "entire history"
         | "any" | "anytime" | "ever" | "always" | "so far" | "forever" | "lifetime" => {
             return Ok(TimeWindowParams::default());
         }
-        "today" => return Ok(window(rfc(start_of_day(now)), None)),
+        "today" => return Ok(window(rfc(today), None)),
         "yesterday" => {
-            let start_today = start_of_day(now);
-            return Ok(window(
-                rfc(start_today - Duration::days(1)),
-                rfc(start_today),
-            ));
+            return Ok(window(rfc(today - Duration::days(1)), rfc(today)));
         }
-        "this week" | "week" => return Ok(window(rfc(start_of_week(now)), None)),
+        "this week" | "week" => return Ok(window(rfc(start_of_week(today)), None)),
         "last week" | "past week" | "previous week" => {
-            let this = start_of_week(now);
+            let this = start_of_week(today);
             return Ok(window(rfc(this - Duration::days(7)), rfc(this)));
         }
-        "this month" | "month" => return Ok(window(rfc(start_of_month(now)), None)),
+        "this month" | "month" => return Ok(window(rfc(start_of_month(today)), None)),
         "last month" | "past month" | "previous month" => {
+            let this = start_of_month(today);
             return Ok(window(
-                rfc(start_of_prev_month(now)),
-                rfc(start_of_month(now)),
+                rfc(start_of_month(this - Duration::days(1))),
+                rfc(this),
             ));
+        }
+        "this year" | "year" => return calendar_year_window(i64::from(today.year()), offset),
+        "last year" | "past year" | "previous year" => {
+            return calendar_year_window(i64::from(today.year()) - 1, offset);
         }
         _ => {}
     }
@@ -196,37 +249,60 @@ fn parse_relative_window(text: &str) -> Result<TimeWindowParams, String> {
     Err(format!("unrecognized timeWindow string '{text}'"))
 }
 
-fn calendar_year_window(year: i64) -> Result<TimeWindowParams, String> {
+fn calendar_year_window(year: i64, offset: FixedOffset) -> Result<TimeWindowParams, String> {
     let year = i32::try_from(year)
         .ok()
         .filter(|year| (1000..=9998).contains(year))
         .ok_or_else(|| "timeWindow calendar year must be between 1000 and 9998".to_string())?;
-    let from = Utc
-        .with_ymd_and_hms(year, 1, 1, 0, 0, 0)
-        .single()
-        .ok_or_else(|| "timeWindow calendar year is out of range".to_string())?;
-    let to = Utc
-        .with_ymd_and_hms(year + 1, 1, 1, 0, 0, 0)
-        .single()
-        .ok_or_else(|| "timeWindow calendar year is out of range".to_string())?;
-    Ok(TimeWindowParams {
-        from: Some(from.to_rfc3339()),
-        to: Some(to.to_rfc3339()),
-    })
+    let first_day = |year| {
+        chrono::NaiveDate::from_ymd_opt(year, 1, 1)
+            .ok_or_else(|| "timeWindow calendar year is out of range".to_string())
+    };
+    Ok(date_range_window(
+        first_day(year)?,
+        first_day(year + 1)?,
+        offset,
+    ))
 }
 
-fn calendar_day_window(date: chrono::NaiveDate) -> Result<TimeWindowParams, String> {
+fn calendar_day_window(
+    date: chrono::NaiveDate,
+    offset: FixedOffset,
+) -> Result<TimeWindowParams, String> {
     let next = date
         .succ_opt()
         .ok_or_else(|| "timeWindow calendar day is out of range".to_string())?;
-    let start_of = |day: chrono::NaiveDate| {
-        Utc.from_utc_datetime(&day.and_time(chrono::NaiveTime::MIN))
-            .to_rfc3339()
-    };
-    Ok(TimeWindowParams {
-        from: Some(start_of(date)),
-        to: Some(start_of(next)),
-    })
+    Ok(date_range_window(date, next, offset))
+}
+
+fn calendar_month_window(
+    first_day: chrono::NaiveDate,
+    offset: FixedOffset,
+) -> Result<TimeWindowParams, String> {
+    let next = first_day
+        .checked_add_months(chrono::Months::new(1))
+        .ok_or_else(|| "timeWindow calendar month is out of range".to_string())?;
+    Ok(date_range_window(first_day, next, offset))
+}
+
+fn date_range_window(
+    from: chrono::NaiveDate,
+    to: chrono::NaiveDate,
+    offset: FixedOffset,
+) -> TimeWindowParams {
+    TimeWindowParams {
+        from: Some(local_midnight(from, offset).to_rfc3339()),
+        to: Some(local_midnight(to, offset).to_rfc3339()),
+        source: None,
+    }
+}
+
+fn local_midnight(day: chrono::NaiveDate, offset: FixedOffset) -> DateTime<Utc> {
+    local_to_utc(day.and_time(chrono::NaiveTime::MIN), offset)
+}
+
+fn local_to_utc(local: chrono::NaiveDateTime, offset: FixedOffset) -> DateTime<Utc> {
+    (local - Duration::seconds(i64::from(offset.local_minus_utc()))).and_utc()
 }
 
 fn parse_rolling_window(text: &str, now: DateTime<Utc>) -> Option<TimeWindowParams> {
@@ -234,6 +310,7 @@ fn parse_rolling_window(text: &str, now: DateTime<Utc>) -> Option<TimeWindowPara
     Some(TimeWindowParams {
         from: Some((now - duration).to_rfc3339()),
         to: None,
+        source: None,
     })
 }
 
@@ -275,30 +352,14 @@ fn compact_unit(text: &str) -> Option<char> {
     None
 }
 
-fn start_of_day(now: DateTime<Utc>) -> DateTime<Utc> {
-    now.date_naive()
-        .and_hms_opt(0, 0, 0)
-        .map(|naive| Utc.from_utc_datetime(&naive))
-        .unwrap_or(now)
+fn start_of_week(day: chrono::NaiveDate) -> chrono::NaiveDate {
+    day - Duration::days(i64::from(day.weekday().num_days_from_monday()))
 }
 
-fn start_of_week(now: DateTime<Utc>) -> DateTime<Utc> {
-    let days = now.weekday().num_days_from_monday() as i64;
-    start_of_day(now) - Duration::days(days)
+fn start_of_month(day: chrono::NaiveDate) -> chrono::NaiveDate {
+    day.with_day(1).unwrap_or(day)
 }
 
-fn start_of_month(now: DateTime<Utc>) -> DateTime<Utc> {
-    now.date_naive()
-        .with_day(1)
-        .and_then(|date| date.and_hms_opt(0, 0, 0))
-        .map(|naive| Utc.from_utc_datetime(&naive))
-        .unwrap_or(now)
-}
-
-fn start_of_prev_month(now: DateTime<Utc>) -> DateTime<Utc> {
-    let last_day_prev = start_of_month(now) - Duration::days(1);
-    start_of_month(last_day_prev)
-}
 pub(super) struct TimeWindowBoundsMs {
     pub(super) from: Option<i64>,
     pub(super) to: Option<i64>,
@@ -616,6 +677,46 @@ mod time_window_tests {
     }
 
     #[test]
+    fn calendar_month_string_covers_that_utc_month() {
+        let window = time_window_from_value(&serde_json::json!("2026-10")).unwrap();
+        assert_eq!(window.from.as_deref(), Some("2026-10-01T00:00:00+00:00"));
+        assert_eq!(window.to.as_deref(), Some("2026-11-01T00:00:00+00:00"));
+
+        let window = time_window_from_value(&serde_json::json!("2026-12")).unwrap();
+        assert_eq!(window.from.as_deref(), Some("2026-12-01T00:00:00+00:00"));
+        assert_eq!(window.to.as_deref(), Some("2027-01-01T00:00:00+00:00"));
+    }
+
+    #[test]
+    fn invalid_calendar_month_is_rejected() {
+        let error = time_window_from_value(&serde_json::json!("2026-13")).unwrap_err();
+        assert!(error.contains("unrecognized timeWindow string"));
+    }
+
+    #[test]
+    fn this_and_last_year_cover_whole_utc_years() {
+        let year = Utc::now().year();
+        for (phrase, expected) in [
+            ("this year", year),
+            ("This Year", year),
+            ("last year", year - 1),
+            ("previous year", year - 1),
+        ] {
+            let window = time_window_from_value(&serde_json::json!(phrase)).unwrap();
+            assert_eq!(
+                window.from,
+                Some(format!("{expected}-01-01T00:00:00+00:00")),
+                "{phrase}"
+            );
+            assert_eq!(
+                window.to,
+                Some(format!("{}-01-01T00:00:00+00:00", expected + 1)),
+                "{phrase}"
+            );
+        }
+    }
+
+    #[test]
     fn invalid_calendar_year_forms_fail_closed() {
         for value in [
             serde_json::json!(9999),
@@ -683,6 +784,88 @@ mod time_window_tests {
             time_window_from_value(&serde_json::json!({ "since": "7d" }))
                 .unwrap_err()
                 .contains("unknown timeWindow field")
+        );
+    }
+
+    fn utc_plus_nine() -> chrono::FixedOffset {
+        chrono::FixedOffset::east_opt(9 * 3600).unwrap()
+    }
+
+    fn local_window(value: Value, now: &str) -> TimeWindowParams {
+        let now = DateTime::parse_from_rfc3339(now)
+            .unwrap()
+            .with_timezone(&Utc);
+        time_window_from_value_at(&value, utc_plus_nine(), now).unwrap()
+    }
+
+    #[test]
+    fn calendar_forms_follow_the_local_offset() {
+        for (value, from, to) in [
+            (
+                serde_json::json!("2026-10"),
+                "2026-09-30T15:00:00+00:00",
+                Some("2026-10-31T15:00:00+00:00"),
+            ),
+            (
+                serde_json::json!("2026-10-18"),
+                "2026-10-17T15:00:00+00:00",
+                Some("2026-10-18T15:00:00+00:00"),
+            ),
+            (
+                serde_json::json!(2026),
+                "2025-12-31T15:00:00+00:00",
+                Some("2026-12-31T15:00:00+00:00"),
+            ),
+            (
+                serde_json::json!({ "from": "2026-10-18" }),
+                "2026-10-17T15:00:00+00:00",
+                None,
+            ),
+        ] {
+            let window = local_window(value.clone(), "2026-10-28T23:30:00Z");
+            assert_eq!(window.from.as_deref(), Some(from), "{value}");
+            assert_eq!(window.to.as_deref(), to, "{value}");
+        }
+    }
+
+    #[test]
+    fn relative_calendar_phrases_start_at_local_boundaries() {
+        for (phrase, from, to) in [
+            ("today", "2026-10-31T15:00:00+00:00", None),
+            (
+                "yesterday",
+                "2026-10-30T15:00:00+00:00",
+                Some("2026-10-31T15:00:00+00:00"),
+            ),
+            ("this week", "2026-10-25T15:00:00+00:00", None),
+            ("this month", "2026-10-31T15:00:00+00:00", None),
+            (
+                "last month",
+                "2026-09-30T15:00:00+00:00",
+                Some("2026-10-31T15:00:00+00:00"),
+            ),
+            (
+                "this year",
+                "2025-12-31T15:00:00+00:00",
+                Some("2026-12-31T15:00:00+00:00"),
+            ),
+        ] {
+            let window = local_window(serde_json::json!(phrase), "2026-10-31T23:30:00Z");
+            assert_eq!(window.from.as_deref(), Some(from), "{phrase}");
+            assert_eq!(window.to.as_deref(), to, "{phrase}");
+        }
+    }
+
+    #[test]
+    fn deserialized_windows_switch_to_the_tool_offset_only_when_one_is_given() {
+        let utc: TimeWindowParams = serde_json::from_value(serde_json::json!("2026-10")).unwrap();
+        assert_eq!(
+            utc.clone().in_utc_offset(None).unwrap().from.as_deref(),
+            Some("2026-10-01T00:00:00+00:00")
+        );
+        assert_eq!(
+            utc.in_utc_offset(Some(540)).unwrap().from.as_deref(),
+            Some("2026-09-30T15:00:00+00:00")
         );
     }
 

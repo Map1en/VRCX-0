@@ -49,6 +49,133 @@ export function utcOffsetMinutes(): number {
     return -new Date().getTimezoneOffset();
 }
 
+const DAY_MS = 86_400_000;
+const MINUTE_MS = 60_000;
+
+export type ActivityWindowOverride = {
+    rangeDays: number;
+    windowToMs: number;
+    custom: boolean;
+};
+
+export function localDayEndMs(ms: number, offsetMinutes: number): number {
+    const offsetMs = offsetMinutes * MINUTE_MS;
+    return Math.floor((ms + offsetMs) / DAY_MS) * DAY_MS + DAY_MS - offsetMs;
+}
+
+export function windowEndsNow(view: ActivityPageView, nowMs: number): boolean {
+    return view.windowToMs >= localDayEndMs(nowMs, view.utcOffsetMinutes);
+}
+
+export function canPageBack(view: ActivityPageView): boolean {
+    const firstSourceMs = Date.parse(view.coverage.firstSourceAt);
+    return (
+        view.rangeDays > 0 &&
+        Number.isFinite(firstSourceMs) &&
+        firstSourceMs < view.windowFromMs
+    );
+}
+
+export function previousWindow(
+    view: ActivityPageView,
+    override: ActivityWindowOverride | null
+): ActivityWindowOverride {
+    return {
+        rangeDays: view.rangeDays,
+        windowToMs: view.windowFromMs,
+        custom: override?.custom ?? false
+    };
+}
+
+export function nextWindow(
+    view: ActivityPageView,
+    override: ActivityWindowOverride | null,
+    nowMs: number
+): ActivityWindowOverride | null {
+    const currentEndMs = localDayEndMs(nowMs, view.utcOffsetMinutes);
+    const nextToMs = Math.min(
+        view.windowToMs + view.rangeDays * DAY_MS,
+        currentEndMs
+    );
+    const custom = override?.custom ?? false;
+    if (nextToMs >= currentEndMs && !custom) {
+        return null;
+    }
+    return { rangeDays: view.rangeDays, windowToMs: nextToMs, custom };
+}
+
+export function customWindow(
+    from: Date,
+    to: Date,
+    offsetMinutes: number
+): ActivityWindowOverride {
+    const fromDay = Date.UTC(
+        from.getFullYear(),
+        from.getMonth(),
+        from.getDate()
+    );
+    const toDay = Date.UTC(to.getFullYear(), to.getMonth(), to.getDate());
+    const startDay = Math.min(fromDay, toDay);
+    const endDay = Math.max(fromDay, toDay);
+    return {
+        rangeDays: Math.round((endDay - startDay) / DAY_MS) + 1,
+        windowToMs: endDay + DAY_MS - offsetMinutes * MINUTE_MS,
+        custom: true
+    };
+}
+
+export function parseLocalDate(dateKey: string): Date {
+    const [year, month, day] = dateKey
+        .split('-')
+        .map((value) => Number.parseInt(value, 10) || 0);
+    return new Date(year, Math.max(0, month - 1), day || 1);
+}
+
+function endOfLocalDay(date: Date): Date {
+    const end = new Date(date);
+    end.setHours(23, 59, 59, 999);
+    return end;
+}
+
+export function localDateRange(
+    startDate: string,
+    endDate: string
+): { from: Date; to: Date } {
+    return {
+        from: parseLocalDate(startDate),
+        to: endOfLocalDay(parseLocalDate(endDate))
+    };
+}
+
+function dateKeyAt(ms: number, offsetMinutes: number): string {
+    return new Date(ms + offsetMinutes * MINUTE_MS).toISOString().slice(0, 10);
+}
+
+export function windowDateRange(
+    override: ActivityWindowOverride,
+    offsetMinutes: number
+): { from: Date; to: Date } {
+    return localDateRange(
+        dateKeyAt(
+            override.windowToMs - override.rangeDays * DAY_MS,
+            offsetMinutes
+        ),
+        dateKeyAt(override.windowToMs - 1, offsetMinutes)
+    );
+}
+
+export type ActivityPeriodDirection = 'more' | 'less' | 'same';
+
+export function periodDirection(
+    currentMinutes: number,
+    previousMinutes: number
+): ActivityPeriodDirection {
+    if (currentMinutes === previousMinutes) {
+        return 'same';
+    }
+    return currentMinutes > previousMinutes ? 'more' : 'less';
+}
+
 export function averageMinutesPerDay(summary: ActivityPageSummary): number {
     return summary.windowDays > 0
         ? Math.round(summary.totalMinutes / summary.windowDays)

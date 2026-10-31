@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use super::resolver::RealtimeUserImageResolverSlot;
 use super::{
-    generic_webhook_payload, parse_webhook_fields, render_delivery,
+    generic_webhook_payload, parse_webhook_fields, render_delivery, unresolved_group_id,
     CachedNotificationUserImageResolver, NotificationRemote, NotificationRemoteFuture,
     NotificationResolver, OverlayLocale, RenderedNotification,
 };
@@ -187,6 +187,42 @@ fn friend_image_reads_only_the_friend_cache() {
     );
 }
 
+#[test]
+fn unresolved_group_id_reads_group_instance_until_name_is_readable() {
+    let location = "wrld_named:123~group(grp_abc)~groupAccessType(public)";
+    let mut content = ActivityContent {
+        location: location.into(),
+        group_name: "grp_abc".into(),
+        ..ActivityContent::default()
+    };
+    assert_eq!(unresolved_group_id(&content).as_deref(), Some("grp_abc"));
+
+    content.group_name = "Named Group".into();
+    assert_eq!(unresolved_group_id(&content), None);
+
+    let public = ActivityContent {
+        location: "wrld_named:123".into(),
+        ..ActivityContent::default()
+    };
+    assert_eq!(unresolved_group_id(&public), None);
+}
+
+#[test]
+fn rendered_group_instance_location_uses_resolved_group_name() {
+    let mut delivery = delivery();
+    delivery.entry.content.location =
+        "wrld_named:123~group(grp_abc)~groupAccessType(public)".into();
+    delivery.entry.content.body = ActivityText::message(
+        vrcx_0_i18n::OverlayMessage::notifications_gps("Named World Group Public"),
+    );
+    delivery.entry.content.group_name = "Named Group".into();
+
+    let render = render_delivery(&delivery, OverlayLocale::En, false);
+
+    assert!(render.display_location.contains("(Named Group)"));
+    assert!(render.body.contains("(Named Group)"));
+}
+
 struct NoRemote;
 
 impl NotificationRemote for NoRemote {
@@ -218,6 +254,14 @@ impl NotificationRemote for NoRemote {
         &'a self,
         _endpoint: &'a str,
         _world_id: &'a str,
+    ) -> NotificationRemoteFuture<'a, String> {
+        Box::pin(async { None })
+    }
+
+    fn group_name<'a>(
+        &'a self,
+        _endpoint: &'a str,
+        _group_id: &'a str,
     ) -> NotificationRemoteFuture<'a, String> {
         Box::pin(async { None })
     }

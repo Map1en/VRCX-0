@@ -1,3 +1,4 @@
+import { RotateCcwIcon } from 'lucide-react';
 import {
     Fragment,
     Children,
@@ -7,8 +8,14 @@ import {
     type ReactNode,
     useId
 } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 
 import { cn } from '@/lib/utils';
+import { getSettingsManifestEntry } from '@/shared/constants/settingsManifest';
+import { usePreferencesStore } from '@/state/preferencesStore';
+import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import {
     Field as ShadcnField,
     FieldContent,
@@ -23,6 +30,15 @@ import {
     ToggleGroupItem,
     ToggleGroupSeparator
 } from '@/ui/shadcn/toggle-group';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
+
+import {
+    findDisabledAncestor,
+    getSettingPreferenceKey,
+    isSettingModified,
+    SETTINGS_DEFAULT_VALUES
+} from '../settingsFieldState';
+import { useSettingsHighlightStore } from '../settingsHighlightStore';
 
 type AttachableControlProps = {
     id?: string;
@@ -30,7 +46,13 @@ type AttachableControlProps = {
     children?: ReactNode;
 };
 
+type DisableableProps = {
+    disabled?: boolean;
+    children?: ReactNode;
+};
+
 type FieldProps = {
+    settingId?: string;
     label?: ReactNode;
     description?: ReactNode;
     children?: ReactNode;
@@ -41,6 +63,7 @@ type FieldProps = {
     error?: ReactNode;
     invalid?: boolean;
     disabled?: boolean;
+    onReset?: () => void;
 };
 
 type SettingsSectionHeadingProps = {
@@ -103,7 +126,27 @@ function applyControlProps(
     });
 }
 
+function disableNode(node: ReactNode): ReactNode {
+    if (Array.isArray(node)) {
+        return node.map(disableNode);
+    }
+    if (!isValidElement<DisableableProps>(node)) {
+        return node;
+    }
+    if (typeof node.type !== 'string' && node.type !== Fragment) {
+        return cloneElement(node, { disabled: true });
+    }
+    const { children } = node.props;
+    if (children == null) {
+        return node;
+    }
+    return Array.isArray(children)
+        ? cloneElement(node, undefined, ...children.map(disableNode))
+        : cloneElement(node, undefined, disableNode(children));
+}
+
 export function Field({
+    settingId,
     label,
     description,
     children,
@@ -113,8 +156,27 @@ export function Field({
     controlId,
     error,
     invalid = false,
-    disabled = false
+    disabled = false,
+    onReset
 }: FieldProps) {
+    const { t } = useTranslation();
+    const entry = getSettingsManifestEntry(settingId);
+    const { modified, blockedById } = usePreferencesStore(
+        useShallow((state) => ({
+            modified: isSettingModified(entry, state),
+            blockedById: findDisabledAncestor(entry, state)?.id
+        }))
+    );
+    const highlighted = useSettingsHighlightStore(
+        (state) => Boolean(settingId) && state.settingId === settingId
+    );
+    const blockedBy = getSettingsManifestEntry(blockedById);
+    const isDisabled = disabled || Boolean(blockedBy);
+    const prefKey = getSettingPreferenceKey(entry);
+    const showReset =
+        modified &&
+        Boolean(onReset) &&
+        !(prefKey && typeof SETTINGS_DEFAULT_VALUES[prefKey] === 'boolean');
     const isInvalid = invalid || Boolean(error);
     const generatedControlId = useId();
     const attachableControl = getAttachableControl(children);
@@ -122,30 +184,88 @@ export function Field({
         controlId ||
         attachableControl?.props.id ||
         (attachableControl ? generatedControlId : undefined);
+    const fieldLabel = (
+        <FieldLabel htmlFor={labelControlId}>{label}</FieldLabel>
+    );
+    const controls = applyControlProps(children, labelControlId, isInvalid);
 
     return (
         <ShadcnField
-            data-disabled={disabled || undefined}
+            data-setting-id={settingId}
+            data-disabled={isDisabled || undefined}
             data-invalid={isInvalid || undefined}
+            data-modified={modified || undefined}
+            data-highlighted={highlighted || undefined}
             className={cn(
-                'border-stroke-subtle grid gap-3 border-b py-3 last:border-b-0 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-center',
+                'border-stroke-subtle relative grid gap-3 border-b py-3 last:border-b-0 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-center',
+                modified &&
+                    'before:bg-primary before:absolute before:inset-y-2 before:-left-4 before:w-0.75 before:rounded-r-full',
+                highlighted &&
+                    'outline-ring rounded-sm outline-2 outline-offset-2',
                 className
             )}
         >
             <FieldContent className={contentClassName}>
-                <FieldLabel htmlFor={labelControlId}>{label}</FieldLabel>
+                {entry?.requiresRestart ? (
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        {fieldLabel}
+                        <Badge variant="outline">
+                            {t('view.settings.field.restart_required')}
+                        </Badge>
+                    </div>
+                ) : (
+                    fieldLabel
+                )}
+                {modified ? (
+                    <span className="sr-only">
+                        {t('view.settings.field.modified')}
+                    </span>
+                ) : null}
                 {description ? (
                     <FieldDescription>{description}</FieldDescription>
+                ) : null}
+                {blockedBy ? (
+                    <FieldDescription>
+                        {t('view.settings.field.requires_parent', {
+                            name: t(blockedBy.labelKey)
+                        })}
+                    </FieldDescription>
                 ) : null}
                 {error ? <FieldError>{error}</FieldError> : null}
             </FieldContent>
             <div
                 className={cn(
                     'flex justify-self-start lg:w-full lg:justify-end lg:justify-self-stretch',
+                    showReset && 'items-center gap-2',
                     controlClassName
                 )}
             >
-                {applyControlProps(children, labelControlId, isInvalid)}
+                {showReset ? (
+                    <Tooltip>
+                        <TooltipTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    className="text-muted-foreground"
+                                    aria-label={t('view.settings.field.reset')}
+                                    data-setting-reset
+                                    disabled={isDisabled}
+                                    onClick={onReset}
+                                >
+                                    <RotateCcwIcon />
+                                </Button>
+                            }
+                        />
+                        <TooltipContent>
+                            {t('view.settings.field.reset')}
+                        </TooltipContent>
+                    </Tooltip>
+                ) : null}
+                {Children.map(controls, (control) =>
+                    isDisabled ? disableNode(control) : control
+                )}
             </div>
         </ShadcnField>
     );

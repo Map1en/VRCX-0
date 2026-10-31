@@ -11,6 +11,7 @@ import {
 } from '@/ui/shadcn/select';
 import { Switch } from '@/ui/shadcn/switch';
 
+import { SETTINGS_DEFAULT_VALUES } from '../../settingsFieldState';
 import { SettingsCard } from '../SettingsCard';
 import { Field } from '../SettingsField';
 
@@ -46,26 +47,31 @@ export function SettingsNotificationsInAppCard({
         })
     );
 
+    function changeNotificationLayout(value: string | null) {
+        if (value === 'notification-center' || value === 'table') {
+            onNotificationLayoutChange(value);
+        }
+    }
+
     return (
         <SettingsCard
             cardId="notifications.in-app"
             title={t('view.settings.notifications.notifications.in_app.header')}
         >
             <Field
+                settingId="notifications.in-app.layout"
+                onReset={() =>
+                    changeNotificationLayout(
+                        SETTINGS_DEFAULT_VALUES.notificationLayout
+                    )
+                }
                 label={t('view.settings.notifications.notifications.layout')}
                 controlId="settings-notification-layout"
             >
                 <Select
                     value={prefs.notificationLayout}
                     items={notificationLayoutItems}
-                    onValueChange={(value) => {
-                        if (
-                            value === 'notification-center' ||
-                            value === 'table'
-                        ) {
-                            onNotificationLayoutChange(value);
-                        }
-                    }}
+                    onValueChange={changeNotificationLayout}
                 >
                     <SelectTrigger
                         id="settings-notification-layout"
@@ -86,6 +92,12 @@ export function SettingsNotificationsInAppCard({
             </Field>
 
             <Field
+                settingId="notifications.in-app.icon-dot"
+                onReset={() =>
+                    onNotificationIconDotChange(
+                        SETTINGS_DEFAULT_VALUES.notificationIconDot
+                    )
+                }
                 label={t(
                     'view.settings.appearance.appearance.show_notification_icon_dot'
                 )}
@@ -98,6 +110,12 @@ export function SettingsNotificationsInAppCard({
 
             {showTaskbarIconDot ? (
                 <Field
+                    settingId="notifications.in-app.taskbar-dot"
+                    onReset={() =>
+                        onTaskbarIconDotChange(
+                            SETTINGS_DEFAULT_VALUES.taskbarIconDot
+                        )
+                    }
                     label={t(
                         'view.settings.appearance.appearance.show_taskbar_icon_dot'
                     )}
@@ -113,6 +131,12 @@ export function SettingsNotificationsInAppCard({
             ) : null}
 
             <Field
+                settingId="notifications.in-app.friend-log-dot"
+                onReset={() =>
+                    onFriendLogNotificationDotChange(
+                        SETTINGS_DEFAULT_VALUES.friendLogNotificationDot
+                    )
+                }
                 label={t(
                     'view.settings.appearance.friend_log.show_notification_dot'
                 )}

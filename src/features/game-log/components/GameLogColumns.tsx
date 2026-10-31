@@ -15,7 +15,7 @@ import {
     DATA_TABLE_METADATA_CELL_CLASS_NAME,
     DATA_TABLE_PRIMARY_CELL_CLASS_NAME
 } from '@/components/data-table/DataTableView';
-import { formatDateFilter } from '@/lib/dateTime';
+import { TimestampText } from '@/components/data-table/TimestampText';
 import { openWorldDialog } from '@/services/dialogService';
 import { openExternalLink } from '@/services/entityMediaService';
 import { openGameLogUser } from '@/services/gameLogUserDialogService';
@@ -53,20 +53,11 @@ type UseGameLogColumnsOptions = {
 };
 
 function DateCell({ row }: { row: AppRow<GameLogRow> }) {
-    const createdAt = row.original?.created_at || '';
     return (
-        <Tooltip>
-            <TooltipTrigger
-                render={
-                    <span className="text-sm">
-                        {formatDateFilter(createdAt, 'short')}
-                    </span>
-                }
-            />
-            <TooltipContent>
-                {formatDateFilter(createdAt, 'long')}
-            </TooltipContent>
-        </Tooltip>
+        <TimestampText
+            value={row.original?.created_at || ''}
+            className="text-sm"
+        />
     );
 }
 
@@ -97,6 +88,7 @@ export function useGameLogColumns({
                 size: 140,
                 accessorFn: (row: GameLogRow) => row?.created_at || '',
                 meta: {
+                    label: t('table.gameLog.date'),
                     tableCellClassName: DATA_TABLE_METADATA_CELL_CLASS_NAME
                 },
                 header: ({ column }) => (
@@ -111,6 +103,7 @@ export function useGameLogColumns({
                 id: 'type',
                 size: 150,
                 accessorFn: (row: GameLogRow) => row?.type || '',
+                meta: { label: t('table.gameLog.type') },
                 header: ({ column }) => (
                     <SortButton
                         column={column}
@@ -164,6 +157,7 @@ export function useGameLogColumns({
                     row?.displayName || row?.userId || '',
                 enableSorting: false,
                 meta: {
+                    label: t('table.gameLog.user'),
                     tableCellClassName: DATA_TABLE_PRIMARY_CELL_CLASS_NAME
                 },
                 header: () => t('table.gameLog.user'),
@@ -208,7 +202,7 @@ export function useGameLogColumns({
             {
                 id: 'detail',
                 minSize: 150,
-                meta: { stretch: true },
+                meta: { label: t('table.gameLog.detail'), stretch: true },
                 accessorFn: (row: GameLogRow) => {
                     const detailValue = describeGameLogDetail(row);
                     return [detailValue.primary, detailValue.secondary]
@@ -358,6 +352,7 @@ export function useGameLogColumns({
                 maxSize: 90,
                 enableResizing: false,
                 meta: {
+                    label: t('table.gameLog.action'),
                     tableCellClassName: DATA_TABLE_CONTROL_CELL_CLASS_NAME
                 },
                 header: () => t('table.gameLog.action'),

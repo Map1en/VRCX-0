@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router';
 import { buildFavoriteIdSet } from '@/domain/favorites/favoriteIdSet';
 import { localGameLocation } from '@/domain/friends/presence';
 import { resolveObservedPlayerUserIds } from '@/domain/friends/sameInstanceFriends';
+import { useDelayedFlag } from '@/lib/useDelayedFlag';
 import { recordKnownUser } from '@/services/domainIngestionService';
 import { userImage } from '@/services/entityMediaService';
 import { subscribeRecentActions } from '@/services/recentActionService';
@@ -48,28 +49,6 @@ import type {
 import { UserDialogTabbedView } from './UserDialogTabbedView';
 
 const userDialogSkeletonDelayMs = 160;
-
-function useDelayedUserDialogSkeleton(loading: boolean, identity: string) {
-    const [visible, setVisible] = useState(false);
-
-    useEffect(() => {
-        if (!loading) {
-            setVisible(false);
-            return undefined;
-        }
-
-        setVisible(false);
-        const timer = setTimeout(() => {
-            setVisible(true);
-        }, userDialogSkeletonDelayMs);
-
-        return () => {
-            clearTimeout(timer);
-        };
-    }, [identity, loading]);
-
-    return visible;
-}
 
 export function UserDialogContent({
     userId,
@@ -159,8 +138,9 @@ export function UserDialogContent({
     });
     const targetIdentity = `${currentEndpoint || ''}:${normalizedUserId || ''}:${openNonce}`;
     const profileIsLoading = loadStatus === 'running' && !profile;
-    const showProfileSkeleton = useDelayedUserDialogSkeleton(
+    const showProfileSkeleton = useDelayedFlag(
         profileIsLoading,
+        userDialogSkeletonDelayMs,
         targetIdentity
     );
     useEffect(() => {

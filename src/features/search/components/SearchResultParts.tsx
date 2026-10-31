@@ -25,6 +25,7 @@ import {
 } from '@/services/dialogService';
 import { getNameColour, userImage } from '@/services/entityMediaService';
 import type { UserNameColourStyle } from '@/shared/utils/entityMedia';
+import { replaceBioSymbols } from '@/shared/utils/string';
 import {
     languageOptionLabel,
     type LanguageOption,
@@ -392,7 +393,7 @@ export function UserRow({
                     <UserLanguageBadges user={user} languages={languages} />
                 ) : null
             }
-            description={user.bio || ''}
+            description={replaceBioSymbols(user.bio)}
             onClick={() =>
                 openUserDialog({
                     userId: user.id,

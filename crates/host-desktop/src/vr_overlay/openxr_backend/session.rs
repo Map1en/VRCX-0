@@ -11,7 +11,8 @@ use vrcx_0_vr_overlay::{OverlaySurfaceId, RgbaFrame};
 use super::super::{
     policy::WristVisibilityPolicy,
     types::{
-        BackendStartError, OverlayPlacement, OverlaySurfaceConfig, VrDeviceSnapshot, VrDeviceStatus,
+        BackendStartError, OverlayPlacement, OverlaySurfaceConfig, VrDeviceRole, VrDeviceSnapshot,
+        VrDeviceStatus,
     },
 };
 use super::backend::load_entry;
@@ -496,6 +497,7 @@ impl SessionContext {
                 .unwrap_or(false);
         rows.push(VrDeviceSnapshot {
             label: "HMD".to_string(),
+            role: VrDeviceRole::Hmd,
             serial: None,
             status: located(hmd_tracked),
             battery_percent: None,
@@ -508,6 +510,10 @@ impl SessionContext {
                 time.as_nanos() > 0 && self.input.hand_located(hand, &self.local_space, time);
             rows.push(VrDeviceSnapshot {
                 label: hand.label().to_string(),
+                role: match hand {
+                    Hand::Left => VrDeviceRole::LeftController,
+                    Hand::Right => VrDeviceRole::RightController,
+                },
                 serial: None,
                 status: located(tracked),
                 battery_percent: None,

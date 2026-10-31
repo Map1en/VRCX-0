@@ -1,6 +1,55 @@
 use serde_json::Value;
 
-use vrcx_0_application_core::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot};
+use vrcx_0_application_core::{
+    vrchat_api::{VrchatApiRequest, VrchatScope},
+    AuthenticatedMutationContext, Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot,
+};
+
+use crate::remote::VrchatRequestPort;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum RemoteMutationOutcome {
+    Applied,
+    AppliedScopeChanged,
+}
+
+pub(crate) async fn execute_vrchat_mutation(
+    remote: &dyn VrchatRequestPort,
+    mutation: &AuthenticatedMutationContext<'_>,
+    mut request: VrchatApiRequest,
+    action: &str,
+) -> Result<RemoteMutationOutcome> {
+    mutation.ensure_current()?;
+    request.endpoint = Some(mutation.scope().endpoint.clone());
+    let response = remote.send(request, VrchatScope::Vrchat).await?;
+    let fallback_payload = Value::String(response.data.clone());
+    if !(200..300).contains(&response.status) {
+        return Err(Error::Custom(response_error_message(
+            &serde_json::from_str::<Value>(&response.data).unwrap_or(fallback_payload),
+            response.status,
+            action,
+        )));
+    }
+    let payload = if response.data.trim().is_empty() {
+        Value::Null
+    } else {
+        serde_json::from_str::<Value>(&response.data).map_err(|error| {
+            Error::Custom(format!("VRChat {action} returned invalid JSON: {error}"))
+        })?
+    };
+    if payload.get("error").is_some() {
+        return Err(Error::Custom(response_error_message(
+            &payload,
+            response.status,
+            action,
+        )));
+    }
+    if mutation.is_current() {
+        Ok(RemoteMutationOutcome::Applied)
+    } else {
+        Ok(RemoteMutationOutcome::AppliedScopeChanged)
+    }
+}
 
 pub(crate) fn require_active_scope(
     auth_scope: &RuntimeAuthScope,

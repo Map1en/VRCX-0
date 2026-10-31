@@ -26,11 +26,13 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { formatStatsDate } from '../userDialogRows';
+import type { UserRelationshipBadgeKey } from '../userRelationshipBadges';
 import type { UserDialogProfileRecord } from '../useUserDialogProfileResource';
 import type {
     UserHeaderCommands,
     UserHeaderModel
 } from './UserDialogHeaderSection';
+import { UserRelationshipBadges } from './UserRelationshipBadges';
 
 function resolveBadgeImageUrl(badge: UserBadgeRecord) {
     const imageUrl =
@@ -77,10 +79,10 @@ export function hasRenderableUserProfileBadges(profile: unknown) {
 
 export function UserDialogHeaderFlags({
     profile,
-    moderationState
+    relationshipBadges
 }: {
     profile: UserDialogProfileRecord;
-    moderationState: UserHeaderModel['moderationState'];
+    relationshipBadges: readonly UserRelationshipBadgeKey[];
 }) {
     const { t } = useTranslation();
     const customTag =
@@ -90,8 +92,7 @@ export function UserDialogHeaderFlags({
             ? profile.$customTagColour
             : '';
     const hasFlags = Boolean(
-        moderationState.block ||
-        moderationState.mute ||
+        relationshipBadges.length ||
         profile.$isTroll ||
         profile.$isProbableTroll ||
         profile.$isModerator ||
@@ -104,16 +105,7 @@ export function UserDialogHeaderFlags({
 
     return (
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-            {moderationState.block ? (
-                <Badge variant="destructive">
-                    {t('dialog.user.error.blocked')}
-                </Badge>
-            ) : null}
-            {moderationState.mute ? (
-                <Badge variant="destructive">
-                    {t('dialog.user.label.muted')}
-                </Badge>
-            ) : null}
+            <UserRelationshipBadges badges={relationshipBadges} />
             {profile.$isTroll ? (
                 <Badge variant="destructive">
                     {t(

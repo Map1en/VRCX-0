@@ -23,6 +23,8 @@ pub struct ProcessStatusDetector {
 
 impl ProcessStatusDetector {
     pub fn new() -> Self {
+        #[cfg(target_os = "linux")]
+        sysinfo::set_open_files_limit(0);
         Self {
             sys: System::new(),
             #[cfg(windows)]
@@ -448,6 +450,21 @@ mod tests {
         assert!(handle.is_running());
         assert!(child.wait().unwrap().success());
         assert!(!handle.is_running());
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn linux_detector_does_not_keep_proc_stat_files_open() {
+        let mut detector = super::ProcessStatusDetector::new();
+        detector.detect();
+        let stat_fds = std::fs::read_dir("/proc/self/fd")
+            .unwrap()
+            .filter_map(|entry| std::fs::read_link(entry.ok()?.path()).ok())
+            .filter(|target| {
+                target.starts_with("/proc") && target.file_name().is_some_and(|name| name == "stat")
+            })
+            .count();
+        assert_eq!(stat_fds, 0);
     }
 
     #[test]

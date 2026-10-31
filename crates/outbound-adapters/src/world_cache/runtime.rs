@@ -97,9 +97,7 @@ impl WorldCache {
             }
             self.working.invalidate(&world_id);
         }
-        let Some(summary) = world_cache_get(self.db.as_ref(), world_id.clone())
-            .map_err(crate::map_persistence_error)?
-        else {
+        let Some(summary) = world_cache_get(self.db.as_ref(), world_id.clone())? else {
             return Ok(None);
         };
         if !is_meaningful_world_name(&summary.name) {
@@ -130,8 +128,7 @@ impl WorldCache {
         query: &str,
         limit: i64,
     ) -> crate::Result<Vec<WorldSummaryOutput>> {
-        let summaries = world_cache_search(self.db.as_ref(), query, limit)
-            .map_err(crate::map_persistence_error)?
+        let summaries = world_cache_search(self.db.as_ref(), query, limit)?
             .into_iter()
             .filter(|summary| is_meaningful_world_name(&summary.name))
             .collect::<Vec<_>>();
@@ -172,7 +169,7 @@ impl WorldCache {
             return Ok(None);
         };
         if let Some(entry) = entry {
-            world_cache_upsert(self.db.as_ref(), entry).map_err(crate::map_persistence_error)?;
+            world_cache_upsert(self.db.as_ref(), entry)?;
         }
         Ok(Some(summary.name))
     }
@@ -289,8 +286,7 @@ impl WorldCache {
         world_id: &str,
     ) -> Option<String> {
         self.resolve_image_url_with(endpoint, world_id, |endpoint, world_id| async move {
-            let (_, request) =
-                world_get_input(endpoint, world_id).map_err(crate::map_http_api_error)?;
+            let (_, request) = world_get_input(endpoint, world_id)?;
             web.execute_api(request, ApiScope::Vrchat).await
         })
         .await
@@ -388,8 +384,7 @@ impl WorldCache {
             }
         }
 
-        let (_, request) = world_get_input(key.endpoint.clone(), world_id.clone())
-            .map_err(crate::map_http_api_error)?;
+        let (_, request) = world_get_input(key.endpoint.clone(), world_id.clone())?;
         let response = web.execute_api(request, ApiScope::Vrchat).await;
         match response {
             Ok(response) => {

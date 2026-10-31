@@ -34,6 +34,7 @@ export function GameLogImportField() {
 
     return (
         <Field
+            settingId="advanced.import-recovery.gamelog-import"
             label={t(`${keyPrefix}.label`)}
             description={t(`${keyPrefix}.description`)}
         >

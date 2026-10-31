@@ -230,6 +230,35 @@ fn group_event_notifications_use_the_vrchat_title_when_it_is_given() {
 }
 
 #[test]
+fn group_change_renders_its_message_key_and_keeps_legacy_text() {
+    let mut keyed = ActivityEvent::new(ActivityKind::GroupChange, "groupChange:1", "2026-10-30");
+    keyed.actor = ActivityActor::new(String::new(), "Club".to_string());
+    keyed.facts.message_key = "notifications.group_member_roles".into();
+    keyed.facts.message_params = [("roles".to_string(), "Staff".to_string())].into();
+    let content = super::content::build_activity_content(&keyed);
+    assert_eq!(content.title, ActivityText::literal("Club"));
+    assert_eq!(
+        content.body.as_message().map(OverlayMessage::key),
+        Some(OverlayMessageKey::NotificationsGroupMemberRoles)
+    );
+    assert_eq!(
+        content
+            .body
+            .as_message()
+            .and_then(|message| message.params().get("roles"))
+            .map(String::as_str),
+        Some("Staff")
+    );
+
+    let mut legacy = ActivityEvent::new(ActivityKind::GroupChange, "groupChange:2", "2026-10-30");
+    legacy.facts.message = "Role Staff added".into();
+    assert_eq!(
+        super::content::build_activity_content(&legacy).body,
+        ActivityText::literal("Role Staff added")
+    );
+}
+
+#[test]
 fn unnamed_direct_actor_uses_the_user_id_as_title() {
     let (runtime, sink) = webhook_only_invite_runtime();
     let mut invite = recent_event(ActivityKind::Invite, "usr_sender");

@@ -42,6 +42,11 @@ impl RealtimeHostRuntime {
                 };
                 if let Err(error) = runtime.deps.store.write_realtime_batch(&owner, &batch) {
                     tracing::warn!("Avatar wear checkpoint persistence failed: {error}");
+                    for unsaved in &batch.avatar_time_spent_upserts {
+                        runtime
+                            .current_user
+                            .restore_avatar_wear_checkpoint(generation, unsaved);
+                    }
                 }
             }
         });
@@ -209,11 +214,7 @@ impl RealtimeHostRuntime {
             let state = self.state.lock().ok()?;
             state.connection.active_context.clone()?
         };
-        if !self
-            .deps
-            .session
-            .is_realtime_generation_active(active.session_generation)
-        {
+        if !self.is_session_live(&active) {
             return None;
         }
         Some(active)

@@ -43,6 +43,11 @@ function phaseSnapshot(
             detail: 'Realtime ready.',
             lastError: null
         },
+        realtimeHealth: {
+            interrupted: false,
+            disconnectedAt: null,
+            retryAt: null
+        },
         friendBaselineRevision: 1,
         friendBaseline: {
             userId: 'usr_self',
@@ -497,5 +502,54 @@ describe('authenticatedRuntimeService', () => {
         expect(useRuntimeStore.getState().transport.websocketConnected).toBe(
             false
         );
+    });
+
+    it('mirrors the reconnect countdown and reason while no transport is active', () => {
+        applyAuthenticatedRuntimePhaseSnapshot(phaseSnapshot());
+
+        applyAuthenticatedRuntimePhaseSnapshot(
+            phaseSnapshot({
+                updatedAt: '2026-07-17T00:01:00.000Z',
+                realtime: {
+                    status: 'retryWaiting',
+                    attempt: 2,
+                    retryDelaySeconds: 15,
+                    detail: 'Realtime transport retry is waiting.',
+                    lastError: 'websocket read: connection reset'
+                },
+                realtimeHealth: {
+                    interrupted: true,
+                    disconnectedAt: '2026-07-17T00:00:40.000Z',
+                    retryAt: '2026-07-17T00:01:15.000Z'
+                },
+                realtimeTransport: null
+            })
+        );
+
+        expect(useRuntimeStore.getState().transport).toMatchObject({
+            interrupted: true,
+            retryWaiting: true,
+            retryAt: '2026-07-17T00:01:15.000Z',
+            retryAttempt: 2,
+            lastError: 'websocket read: connection reset',
+            outageStartedAt: '2026-07-17T00:00:40.000Z',
+            lastConnectedAt: '2026-07-17T00:00:00.000Z'
+        });
+
+        applyAuthenticatedRuntimePhaseSnapshot(
+            phaseSnapshot({
+                phase: 'stopped',
+                updatedAt: '2026-07-17T00:02:00.000Z',
+                realtimeTransport: null
+            })
+        );
+
+        expect(useRuntimeStore.getState().transport).toMatchObject({
+            interrupted: false,
+            retryWaiting: false,
+            retryAt: null,
+            lastError: null,
+            outageStartedAt: null
+        });
     });
 });

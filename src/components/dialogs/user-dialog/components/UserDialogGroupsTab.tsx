@@ -133,7 +133,8 @@ export function UserDialogGroupsTab({
                     </Button>
                 ) : null}
             </UserDialogSearchHeader>
-            {remoteStatus.groups === 'running' || remoteErrors.groups ? (
+            {(remoteStatus.groups === 'running' && !profileGroups.length) ||
+            remoteErrors.groups ? (
                 <EntityList
                     rows={filteredProfileGroups}
                     kind="group"

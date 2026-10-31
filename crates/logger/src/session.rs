@@ -4,11 +4,14 @@ use std::time::Duration;
 use tokio::sync::{mpsc, oneshot, watch};
 use tokio::task::JoinHandle;
 use tokio::time::Instant;
+use vrcx_0_contracts::vrchat_device_login::{slowed_device_poll_interval, VrchatDeviceStatus};
 use vrcx_0_contracts::vrchat_login::VrchatLoginFailureKind;
 use vrcx_0_core::TwoFactorMethod;
-use vrcx_0_logger_protocol::wire::{CredentialsRequest, SessionState, TwoFactorRequest};
+use vrcx_0_logger_protocol::wire::{
+    CredentialsRequest, DeviceLoginRequest, DeviceLoginState, SessionState, TwoFactorRequest,
+};
 
-use crate::app::now_unix;
+use crate::app::{now_unix, now_unix_millis};
 use crate::credentials::{CredentialVault, StoredCredentials};
 use crate::profile_scan::ProfileScan;
 use crate::recorder::{Recorder, RecorderExit, Segments};
@@ -28,10 +31,25 @@ const RESTART_BASE_DELAY: Duration = Duration::from_secs(30);
 const RESTART_MAX_DELAY: Duration = Duration::from_secs(10 * 60);
 const RECORDER_STOP_TIMEOUT: Duration = Duration::from_secs(5);
 const SESSION_EXPIRED_WITHOUT_PASSWORD: &str =
-    "VRChat session expired and no password is saved; send credentials again from VRCX-0";
+    "VRChat session expired and no password is saved, so the logger will not sign in again by itself; sign in again from VRCX-0 with a QR code or password";
 const SHUTTING_DOWN: &str = "logger session is shutting down";
 
+struct PendingDevice {
+    client: Arc<Vrchat>,
+    account_id: String,
+    device_code: String,
+    interval: Duration,
+    deadline: Instant,
+}
+
 enum Command {
+    StartDeviceLogin {
+        request: DeviceLoginRequest,
+        reply: oneshot::Sender<Result<DeviceLoginState, String>>,
+    },
+    CancelDeviceLogin {
+        reply: oneshot::Sender<()>,
+    },
     SetCredentials {
         request: CredentialsRequest,
         reply: oneshot::Sender<Result<SessionState, String>>,
@@ -70,6 +88,21 @@ impl SessionHandle {
         self.ask(|reply| Command::Unpair { reply }).await.is_some()
     }
 
+    pub async fn start_device_login(
+        &self,
+        request: DeviceLoginRequest,
+    ) -> Result<DeviceLoginState, String> {
+        self.ask(|reply| Command::StartDeviceLogin { request, reply })
+            .await
+            .ok_or_else(|| SHUTTING_DOWN.to_string())?
+    }
+
+    pub async fn cancel_device_login(&self) -> bool {
+        self.ask(|reply| Command::CancelDeviceLogin { reply })
+            .await
+            .is_some()
+    }
+
     async fn ask<R>(&self, command: impl FnOnce(oneshot::Sender<R>) -> Command) -> Option<R> {
         let (reply, response) = oneshot::channel();
         self.commands.send(command(reply)).await.ok()?;
@@ -101,6 +134,8 @@ pub fn spawn(
         generation: 0,
         wake: None,
         restart_delay: RESTART_BASE_DELAY,
+        device: None,
+        device_wake: None,
     };
     tokio::spawn(supervisor.run(receiver, exit_receiver));
     SessionHandle { commands }
@@ -177,6 +212,8 @@ struct Supervisor {
     generation: u64,
     wake: Option<(Instant, Wake)>,
     restart_delay: Duration,
+    device: Option<PendingDevice>,
+    device_wake: Option<Instant>,
 }
 
 impl Supervisor {
@@ -207,6 +244,10 @@ impl Supervisor {
                     if let Some((_, wake)) = self.wake.take() {
                         self.on_wake(wake).await;
                     }
+                }
+                () = sleep_until(self.device_wake) => {
+                    self.device_wake = None;
+                    self.poll_device().await;
                 }
             }
         }
@@ -262,7 +303,113 @@ impl Supervisor {
                 self.reset(None).await;
                 let _ = reply.send(());
             }
+            Command::StartDeviceLogin { request, reply } => {
+                let result = self.start_device_login(request).await;
+                let _ = reply.send(result);
+            }
+            Command::CancelDeviceLogin { reply } => {
+                self.finish_device(None);
+                let _ = reply.send(());
+            }
         }
+    }
+
+    async fn start_device_login(
+        &mut self,
+        request: DeviceLoginRequest,
+    ) -> Result<DeviceLoginState, String> {
+        self.finish_device(None);
+        let client = Arc::new(Vrchat::new(None)?);
+        let authorization = client.request_device_authorization().await?;
+        let state = DeviceLoginState::Waiting {
+            expires_at: authorization.expires_at_unix_millis(now_unix_millis()),
+            verification_url: authorization.verification_url,
+        };
+        self.device_wake = Some(Instant::now() + authorization.interval);
+        self.device = Some(PendingDevice {
+            client,
+            account_id: request.account_id,
+            device_code: authorization.device_code,
+            interval: authorization.interval,
+            deadline: Instant::now() + authorization.expires_in,
+        });
+        self.shared
+            .update(|info| info.device_login = Some(state.clone()));
+        Ok(state)
+    }
+
+    async fn poll_device(&mut self) {
+        let Some(device) = self.device.as_ref() else {
+            return;
+        };
+        if Instant::now() >= device.deadline {
+            self.finish_device(Some(DeviceLoginState::Expired));
+            return;
+        }
+        let client = device.client.clone();
+        let status = client.device_status(device.device_code.clone()).await;
+        let Some(device) = self.device.as_mut() else {
+            return;
+        };
+        match status {
+            None | Some(VrchatDeviceStatus::Pending) => {
+                self.device_wake = Some(Instant::now() + device.interval);
+            }
+            Some(VrchatDeviceStatus::SlowDown) => {
+                device.interval = slowed_device_poll_interval(device.interval);
+                self.device_wake = Some(Instant::now() + device.interval);
+            }
+            Some(VrchatDeviceStatus::Approved) => {
+                let expected_account_id = device.account_id.clone();
+                self.complete_device_login(client, &expected_account_id)
+                    .await;
+            }
+            Some(VrchatDeviceStatus::Expired) => {
+                self.finish_device(Some(DeviceLoginState::Expired));
+            }
+            Some(VrchatDeviceStatus::Denied) => {
+                self.finish_device(Some(DeviceLoginState::Failed {
+                    reason: "The login was denied on the other device.".into(),
+                }))
+            }
+            Some(VrchatDeviceStatus::Failed { reason }) => {
+                self.finish_device(Some(DeviceLoginState::Failed { reason }));
+            }
+        }
+    }
+
+    async fn complete_device_login(&mut self, client: Arc<Vrchat>, expected_account_id: &str) {
+        let reason = match client.complete_device_login().await {
+            LoginOutcome::Authenticated { account_id } if account_id != expected_account_id => {
+                client.logout().await;
+                "The approved VRChat account is not the account signed in to VRCX-0".to_string()
+            }
+            LoginOutcome::Authenticated { account_id } => {
+                self.reset(Some(client)).await;
+                self.finish_login(
+                    CredentialsRequest {
+                        username: String::new(),
+                        password: String::new(),
+                        save_password: false,
+                    },
+                    account_id,
+                );
+                return;
+            }
+            LoginOutcome::TwoFactorRequired { .. } => {
+                "VRChat still requires two-factor verification; sign in with a password instead"
+                    .to_string()
+            }
+            LoginOutcome::Failed { reason, .. } | LoginOutcome::Network { reason } => reason,
+            LoginOutcome::RateLimited => "VRChat is rate limiting logins; try again later".into(),
+        };
+        self.finish_device(Some(DeviceLoginState::Failed { reason }));
+    }
+
+    fn finish_device(&mut self, state: Option<DeviceLoginState>) {
+        self.device = None;
+        self.device_wake = None;
+        self.shared.update(|info| info.device_login = state);
     }
 
     async fn set_credentials(
@@ -331,6 +478,8 @@ impl Supervisor {
         self.stop_recorder().await;
         self.wake = None;
         self.pending = None;
+        self.device = None;
+        self.device_wake = None;
         self.client = client;
         self.restart_delay = RESTART_BASE_DELAY;
         if let Err(error) = self.vault.clear() {

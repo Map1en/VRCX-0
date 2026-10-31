@@ -5,6 +5,7 @@ import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Switch } from '@/ui/shadcn/switch';
 
+import { SETTINGS_DEFAULT_VALUES } from '../../settingsFieldState';
 import { LinuxRenderingSetting } from '../LinuxRenderingSetting';
 import { PrivacyLockSetting } from '../PrivacyLockSetting';
 import { SettingsCard } from '../SettingsCard';
@@ -111,13 +112,30 @@ export function SettingsSystemTabContent({
                 cardId="system.startup"
                 title={t('view.settings.general.application.startup_header')}
             >
-                <Field label={startupLabel} description={startupDescription}>
+                <Field
+                    settingId="system.startup.start-at-login"
+                    onReset={() =>
+                        onStartAtWindowsStartupChange(
+                            SETTINGS_DEFAULT_VALUES.isStartAtWindowsStartup
+                        )
+                    }
+                    label={startupLabel}
+                    description={startupDescription}
+                >
                     <Switch
                         checked={isStartAtWindowsStartup}
                         onCheckedChange={onStartAtWindowsStartupChange}
                     />
                 </Field>
-                <Field label={t('view.settings.general.application.minimized')}>
+                <Field
+                    settingId="system.startup.start-minimized"
+                    onReset={() =>
+                        onStartAsMinimizedChange(
+                            SETTINGS_DEFAULT_VALUES.isStartAsMinimizedState
+                        )
+                    }
+                    label={t('view.settings.general.application.minimized')}
+                >
                     <Switch
                         checked={isStartAsMinimizedState}
                         onCheckedChange={onStartAsMinimizedChange}
@@ -129,6 +147,12 @@ export function SettingsSystemTabContent({
                 title={t('view.settings.general.application.window_header')}
             >
                 <Field
+                    settingId="system.window.close-to-tray"
+                    onReset={() =>
+                        onCloseToTrayChange(
+                            SETTINGS_DEFAULT_VALUES.isCloseToTray
+                        )
+                    }
                     label={t('view.settings.general.application.tray')}
                     description={t(
                         'view.settings.general.application.tray_description'
@@ -143,6 +167,12 @@ export function SettingsSystemTabContent({
                 <PrivacyLockSetting />
                 {hostPlatform === 'linux' ? <LinuxRenderingSetting /> : null}
                 <Field
+                    settingId="system.window.background-mode"
+                    onReset={() =>
+                        onBackgroundModeEnabledChange(
+                            SETTINGS_DEFAULT_VALUES.backgroundModeEnabled
+                        )
+                    }
                     label={t(
                         'view.settings.general.application.background_mode',
                         {
@@ -164,6 +194,12 @@ export function SettingsSystemTabContent({
                     />
                 </Field>
                 <Field
+                    settingId="system.window.background-mode-delay"
+                    onReset={() =>
+                        onBackgroundModeDelayEnabledChange(
+                            SETTINGS_DEFAULT_VALUES.backgroundModeDelayEnabled
+                        )
+                    }
                     label={t(
                         'view.settings.general.application.background_mode_delay'
                     )}
@@ -178,6 +214,7 @@ export function SettingsSystemTabContent({
                 </Field>
                 {backgroundModeDelayEnabled ? (
                     <Field
+                        settingId="system.window.background-mode-delay-minutes"
                         label={t(
                             'view.settings.general.application.background_mode_delay_button'
                         )}
@@ -202,6 +239,12 @@ export function SettingsSystemTabContent({
                 ) : null}
                 {isWindows ? (
                     <Field
+                        settingId="system.window.system-window-frame"
+                        onReset={() =>
+                            onSystemWindowFrameChange(
+                                SETTINGS_DEFAULT_VALUES.systemWindowFrame
+                            )
+                        }
                         label={t(
                             'view.settings.general.application.system_window_frame'
                         )}
@@ -221,6 +264,12 @@ export function SettingsSystemTabContent({
                 title={t('view.settings.advanced.advanced_ui.behavior.header')}
             >
                 <Field
+                    settingId="system.vrchat.relaunch-after-crash"
+                    onReset={() =>
+                        onRelaunchVRChatAfterCrashChange(
+                            SETTINGS_DEFAULT_VALUES.relaunchVRChatAfterCrash
+                        )
+                    }
                     label={t(
                         'view.settings.advanced.advanced.relaunch_vrchat.header'
                     )}
@@ -234,6 +283,10 @@ export function SettingsSystemTabContent({
                     />
                 </Field>
                 <Field
+                    settingId="system.vrchat.quit-fix"
+                    onReset={() =>
+                        onVrcQuitFixChange(SETTINGS_DEFAULT_VALUES.vrcQuitFix)
+                    }
                     label={t(
                         'view.settings.advanced.advanced_ui.behavior.quit_header'
                     )}
@@ -248,6 +301,12 @@ export function SettingsSystemTabContent({
                 </Field>
                 {isWindows ? (
                     <Field
+                        settingId="system.vrchat.focus-on-join"
+                        onReset={() =>
+                            onFocusVrchatOnJoinChange(
+                                SETTINGS_DEFAULT_VALUES.focusVrchatOnJoin
+                            )
+                        }
                         label={t(
                             'view.settings.advanced.advanced_ui.behavior.focus_on_join_header'
                         )}
@@ -268,6 +327,7 @@ export function SettingsSystemTabContent({
             >
                 {updateCheckDisabled ? (
                     <Field
+                        settingId="system.updates.update-check-disabled"
                         label={t(
                             'view.settings.general.application.check_for_updates_and_update'
                         )}
@@ -283,6 +343,12 @@ export function SettingsSystemTabContent({
                     </Field>
                 ) : (
                     <Field
+                        settingId="system.updates.auto-install"
+                        onReset={() =>
+                            onAutoInstallUpdatesOnStartupChange(
+                                SETTINGS_DEFAULT_VALUES.autoInstallUpdatesOnStartup
+                            )
+                        }
                         label={t(
                             'view.settings.general.application.auto_install_updates_on_startup'
                         )}
@@ -299,6 +365,12 @@ export function SettingsSystemTabContent({
                     </Field>
                 )}
                 <Field
+                    settingId="system.updates.changelog-prompt"
+                    onReset={() =>
+                        onPostUpdateChangelogToastChange(
+                            SETTINGS_DEFAULT_VALUES.showPostUpdateChangelogToast
+                        )
+                    }
                     label={t(
                         'view.settings.notifications.notifications.post_update_changelog_prompt'
                     )}
@@ -317,6 +389,12 @@ export function SettingsSystemTabContent({
                 title={t('view.settings.general.application.network_header')}
             >
                 <Field
+                    settingId="system.network.auto-login-delay"
+                    onReset={() =>
+                        onAutoLoginDelayEnabledChange(
+                            SETTINGS_DEFAULT_VALUES.autoLoginDelayEnabled
+                        )
+                    }
                     label={t('view.settings.general.logging.auto_login_delay')}
                 >
                     <Switch
@@ -326,6 +404,7 @@ export function SettingsSystemTabContent({
                 </Field>
                 {autoLoginDelayEnabled ? (
                     <Field
+                        settingId="system.network.auto-login-delay-seconds"
                         label={t(
                             'view.settings.general.logging.auto_login_delay_button'
                         )}
@@ -348,7 +427,15 @@ export function SettingsSystemTabContent({
                         </div>
                     </Field>
                 ) : null}
-                <Field label={t('view.settings.general.application.proxy')}>
+                <Field
+                    settingId="system.network.proxy"
+                    onReset={() =>
+                        onProxyEnabledChange(
+                            SETTINGS_DEFAULT_VALUES.proxyEnabled
+                        )
+                    }
+                    label={t('view.settings.general.application.proxy')}
+                >
                     <div className="flex flex-wrap items-center justify-end gap-2">
                         <Switch
                             checked={proxyEnabled}

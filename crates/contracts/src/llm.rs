@@ -20,6 +20,7 @@ pub struct LlmEndpointDetectModelsResult {
 #[derive(Debug, Clone, Default)]
 pub struct LlmRequestOptions {
     pub reasoning_effort: Option<String>,
+    pub forbid_tool_calls: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -95,9 +96,14 @@ pub struct AssistantTurn {
     pub content: String,
     pub tool_calls: Vec<ToolCall>,
     pub reasoning_details: Vec<Value>,
+    pub finish_reason: Option<String>,
 }
 
 impl AssistantTurn {
+    pub fn truncated(&self) -> bool {
+        self.finish_reason.as_deref() == Some("length")
+    }
+
     pub fn into_message(self) -> ChatMessage {
         ChatMessage {
             role: "assistant".into(),

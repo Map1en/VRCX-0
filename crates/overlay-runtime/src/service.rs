@@ -80,18 +80,12 @@ impl OverlayBackendPreference {
 
 pub trait VrOverlayServiceControl {
     fn start(&mut self) -> Result<(), OverlayServiceStartError>;
-    fn update_frame(&mut self, frame: RgbaFrame) -> Result<(), String>;
     fn update_surface_frame(
         &mut self,
-        _surface_id: &OverlaySurfaceId,
+        surface_id: &OverlaySurfaceId,
         frame: RgbaFrame,
-    ) -> Result<(), String> {
-        self.update_frame(frame)
-    }
-    fn show(&mut self) -> Result<(), String>;
-    fn show_surface(&mut self, _surface_id: &OverlaySurfaceId) -> Result<(), String> {
-        self.show()
-    }
+    ) -> Result<(), String>;
+    fn show_surface(&mut self, surface_id: &OverlaySurfaceId) -> Result<(), String>;
     fn hide_surface(&mut self, _surface_id: &OverlaySurfaceId) -> Result<(), String> {
         Ok(())
     }
@@ -133,9 +127,7 @@ pub struct HostVrOverlayService {
     backend: OverlayBackendKind,
     preference: OverlayBackendPreference,
     active_backend: Option<&'static str>,
-    last_frame: Option<RgbaFrame>,
     last_surface_frames: HashMap<OverlaySurfaceId, RgbaFrame>,
-    frame_dirty: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -176,9 +168,7 @@ impl HostVrOverlayService {
             backend,
             preference: OverlayBackendPreference::Auto,
             active_backend: None,
-            last_frame: None,
             last_surface_frames: HashMap::new(),
-            frame_dirty: true,
         }
     }
 
@@ -240,11 +230,9 @@ impl HostVrOverlayService {
     }
 
     fn clear_active_state(&mut self) {
-        self.last_frame = None;
         self.last_surface_frames.clear();
         self.active_backend = None;
         self.surfaces_registered = false;
-        self.frame_dirty = true;
     }
 
     fn condemn_active_actor(&mut self) {
@@ -382,38 +370,7 @@ impl VrOverlayServiceControl for HostVrOverlayService {
         };
         self.surface_ids = registered_surface_ids;
         self.surfaces_registered = true;
-        self.frame_dirty = true;
         tracing::info!(backend = backend_kind, "VR overlay service started");
-        Ok(())
-    }
-
-    fn update_frame(&mut self, frame: RgbaFrame) -> Result<(), String> {
-        if !self.frame_dirty && self.last_frame.as_ref() == Some(&frame) {
-            return Ok(());
-        }
-        let actor = self.active_actor()?;
-        let surface_ids = self.surface_ids.clone();
-        for surface_id in surface_ids {
-            if let Err(error) = actor.send(OverlayServiceCommand::UpdateFrame {
-                surface_id,
-                frame: frame.clone(),
-            }) {
-                return Err(self.map_actor_error(error));
-            }
-        }
-        self.last_frame = Some(frame);
-        self.frame_dirty = false;
-        Ok(())
-    }
-
-    fn show(&mut self) -> Result<(), String> {
-        let actor = self.active_actor()?;
-        let surface_ids = self.surface_ids.clone();
-        for surface_id in surface_ids {
-            if let Err(error) = actor.send(OverlayServiceCommand::Show(surface_id)) {
-                return Err(self.map_actor_error(error));
-            }
-        }
         Ok(())
     }
 
@@ -538,7 +495,6 @@ impl VrOverlayServiceControl for HostVrOverlayService {
             self.surfaces_registered = true;
             self.last_surface_frames
                 .retain(|surface_id, _| self.surface_ids.contains(surface_id));
-            self.frame_dirty = true;
             return Ok(());
         }
         self.configs = configs;
@@ -546,7 +502,6 @@ impl VrOverlayServiceControl for HostVrOverlayService {
         self.surfaces_registered = false;
         self.last_surface_frames
             .retain(|surface_id, _| self.surface_ids.contains(surface_id));
-        self.frame_dirty = true;
         Ok(())
     }
 

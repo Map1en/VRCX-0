@@ -2,6 +2,7 @@ import { CheckIcon, EyeIcon, ImageIcon, Trash2Icon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import type { MediaFileRecord } from '@/repositories/vrchatMediaRepository';
+import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { extractFileId } from '@/shared/utils/fileUtils';
 
 import type { FileAssetTab, FileTabDefinition } from '../galleryConstants';
@@ -44,7 +45,10 @@ export function GalleryFileCard({
 }) {
     const { t } = useTranslation();
 
-    const imageUrl = getLatestFileUrl(file);
+    const imageUrl = convertFileUrlToImageUrl(
+        getLatestFileUrl(file),
+        tab === 'icons' ? 256 : 512
+    );
     const displayName = getUsefulDisplayName(file);
     const activeFileId =
         tab === 'gallery'
@@ -101,6 +105,7 @@ export function GalleryFileCard({
                     ? ({ className }: { className: string }) => (
                           <GalleryEmojiImage
                               file={null}
+                              fadeIn={false}
                               imageUrl={imageUrl}
                               alt={file.displayName || file.name || file.id}
                               className={className}

@@ -1,4 +1,4 @@
-use vrcx_0_core::game_log_parser::GameLogEventKind;
+use vrcx_0_core::game_log_parser::{GameLogEventKind, VIDEO_ERROR_EVENT_PREFIX};
 
 use super::context::LogContext;
 use super::sink::GameLogParseSink;
@@ -97,23 +97,17 @@ pub(super) fn parse_video_error(
     content: &str,
     ctx: &mut LogContext,
 ) -> bool {
-    const YT_BOT_ERROR: &str = "Sign in to confirm";
-    const YT_BOT_FIX: &str = "[VRCX] Fix error with this: https://github.com/EllyVR/VRCVideoCacher";
-
     if content.contains("[Video Playback] ERROR: ") {
         if let Some(pos) = content.find("[Video Playback] ERROR: ") {
-            let mut data = content[pos + 24..].to_string();
+            let data = content[pos + 24..].to_string();
             if !ctx.video_errors.insert(data.clone()) {
                 return true;
-            }
-            if data.contains(YT_BOT_ERROR) {
-                data = format!("{YT_BOT_FIX}\n{data}");
             }
             out.push_event(
                 fname,
                 line,
                 GameLogEventKind::Event {
-                    data: format!("VideoError: {data}"),
+                    data: format!("{VIDEO_ERROR_EVENT_PREFIX} {data}"),
                 },
             );
         }
@@ -122,18 +116,15 @@ pub(super) fn parse_video_error(
 
     if content.contains("[AVProVideo] Error: ") {
         if let Some(pos) = content.find("[AVProVideo] Error: ") {
-            let mut data = content[pos + 20..].to_string();
+            let data = content[pos + 20..].to_string();
             if !ctx.video_errors.insert(data.clone()) {
                 return true;
-            }
-            if data.contains(YT_BOT_ERROR) {
-                data = format!("{YT_BOT_FIX}\n{data}");
             }
             out.push_event(
                 fname,
                 line,
                 GameLogEventKind::Event {
-                    data: format!("VideoError: {data}"),
+                    data: format!("{VIDEO_ERROR_EVENT_PREFIX} {data}"),
                 },
             );
         }
@@ -141,6 +132,28 @@ pub(super) fn parse_video_error(
     }
 
     false
+}
+
+pub(super) fn parse_now_playing_log(
+    out: &mut dyn GameLogParseSink,
+    fname: &str,
+    line: &str,
+    content: &str,
+) -> bool {
+    let Some(data) = content.strip_prefix("nowplaying ") else {
+        return false;
+    };
+    let Some(end) = data.rfind('}').filter(|_| data.starts_with('{')) else {
+        return false;
+    };
+    out.push_event(
+        fname,
+        line,
+        GameLogEventKind::NowPlaying {
+            data: data[..=end].into(),
+        },
+    );
+    true
 }
 
 pub(super) fn parse_video_change(

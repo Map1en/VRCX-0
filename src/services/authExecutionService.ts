@@ -14,6 +14,7 @@ import { toast } from '@/services/toastService';
 import { clearUserDialogCaches } from '@/services/userDialogSessionCacheService';
 import { isRecord } from '@/shared/utils/record';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
+import { useDeviceLoginStore } from '@/state/deviceLoginStore';
 import { useDialogStore } from '@/state/dialogStore';
 import { useFavoriteRevisionStore } from '@/state/favoriteRevisionStore';
 import { useFavoriteStore } from '@/state/favoriteStore';
@@ -34,7 +35,10 @@ import {
     isCurrentAuthAttempt,
     type AuthAttempt
 } from './authAttempt';
-import { applySavedAuthSnapshot } from './authSnapshotService';
+import {
+    applySavedAuthSnapshot,
+    clearSavedPassword
+} from './authSnapshotService';
 import {
     recordCurrentUserSnapshot,
     resetDomainFacts
@@ -350,6 +354,30 @@ async function completeTwoFactorChallenge(
     }
 }
 
+async function completeDeviceApproval(
+    approval: LoginSessionState & { status: 'deviceApproval' },
+    restartChallenge: RestartLoginChallenge,
+    attempt: AuthAttempt
+): Promise<ResolvedLoginSession> {
+    const deviceLogin = useDeviceLoginStore.getState();
+    deviceLogin.setPending({
+        attemptId: approval.attemptId,
+        verificationUrl: approval.verificationUrl,
+        expiresAt: approval.expiresAt
+    });
+    let next: LoginSessionState;
+    try {
+        next = await commands.appVrchatAuthSessionRespond({
+            attemptId: approval.attemptId,
+            method: '',
+            code: ''
+        });
+    } finally {
+        deviceLogin.clearPending();
+    }
+    return resolveLoginSessionState(next, restartChallenge, attempt);
+}
+
 export async function resolveLoginSessionState(
     state: LoginSessionState,
     restartChallenge: RestartLoginChallenge,
@@ -361,6 +389,9 @@ export async function resolveLoginSessionState(
     }
     if (state.status === 'challenge') {
         return completeTwoFactorChallenge(state, restartChallenge, attempt);
+    }
+    if (state.status === 'deviceApproval') {
+        return completeDeviceApproval(state, restartChallenge, attempt);
     }
     throw loginSessionFailureError(state);
 }
@@ -564,6 +595,73 @@ export async function executeManualLogin({
                 password: loginParams.password,
                 saveCredentials
             })
+    });
+}
+
+const SAVED_PASSWORD_TOAST_TIMEOUT_MS = 12000;
+
+function offerToClearSavedPassword(snapshot: SavedAuthSnapshot) {
+    const userId = useRuntimeStore.getState().auth.currentUserId;
+    const hasSavedPassword = snapshot.savedCredentialsList.some(
+        (entry) => entry.user.id === userId && entry.hasLoginCredentials
+    );
+    if (!userId || !hasSavedPassword) {
+        return;
+    }
+    toast.add({
+        type: 'info',
+        title: i18n.t('device_login.saved_password.title'),
+        description: i18n.t('device_login.saved_password.description'),
+        timeout: SAVED_PASSWORD_TOAST_TIMEOUT_MS,
+        actionProps: {
+            children: i18n.t('device_login.saved_password.clear'),
+            onClick: () => {
+                clearSavedPassword(userId)
+                    .then(() => {
+                        toast.add({
+                            type: 'success',
+                            title: i18n.t('device_login.saved_password.cleared')
+                        });
+                    })
+                    .catch((error: unknown) => {
+                        toast.add({
+                            type: 'error',
+                            title:
+                                error instanceof Error && error.message
+                                    ? error.message
+                                    : i18n.t('common.error.action_failed')
+                        });
+                    });
+            }
+        }
+    });
+}
+
+export async function executeDeviceLogin() {
+    const deviceLogin = useDeviceLoginStore.getState();
+    deviceLogin.begin();
+    let snapshot: SavedAuthSnapshot;
+    try {
+        snapshot = await executeLoginAttempt({
+            startupDetail: 'Waiting for QR code approval.',
+            successDetail: 'Authenticated with a QR code.',
+            startSession: () =>
+                commands.appVrchatAuthSessionStart({ mode: 'device' })
+        });
+    } finally {
+        deviceLogin.end();
+    }
+    offerToClearSavedPassword(snapshot);
+    return snapshot;
+}
+
+export async function cancelDeviceLogin() {
+    const pending = useDeviceLoginStore.getState().pending;
+    if (!pending) {
+        return;
+    }
+    await commands.appVrchatAuthSessionCancel({
+        attemptId: pending.attemptId
     });
 }
 

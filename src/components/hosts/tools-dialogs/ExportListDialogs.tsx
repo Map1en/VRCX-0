@@ -6,6 +6,7 @@ import type { FriendRosterById } from '@/domain/friends/types';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import myAvatarRepository from '@/repositories/myAvatarRepository';
 import { toast } from '@/services/toastService';
+import { replaceBioSymbols } from '@/shared/utils/string';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import {
     Dialog,
@@ -16,7 +17,12 @@ import {
 } from '@/ui/shadcn/dialog';
 
 import { ToolTextarea } from './ToolsDialogControls';
-import { csvEscape, getFriendIds, getUserMemoMap } from './toolsDialogUtils';
+import {
+    csvEscape,
+    getFriendIds,
+    getProfileBioMap,
+    getUserMemoMap
+} from './toolsDialogUtils';
 
 type ExportDialogProps = {
     open: boolean;
@@ -41,20 +47,34 @@ export function ExportDiscordNamesDialog({
 
     useEffect(() => {
         if (!open) {
-            return;
+            return undefined;
         }
-        const lines = ['DisplayName,DiscordName'];
-        const discordRegex = /(?:discord|dc|dis)(?: |=|:|\u02f8|;)(.*)/i;
-        for (const userId of getFriendIds(orderedFriendIds)) {
-            const friend = friendsById[userId];
-            const match = discordRegex.exec(friend?.statusDescription || '');
-            if (match?.[1]) {
-                lines.push(
-                    `${csvEscape(friend?.displayName || userId)},${csvEscape(match[1].trim())}`
-                );
+        let active = true;
+        void getProfileBioMap().then((bioById) => {
+            if (!active) {
+                return;
             }
-        }
-        setContent(lines.join('\n'));
+            const lines = ['DisplayName,DiscordName'];
+            const discordRegex = /(?:discord|dc|dis)(?: |=|:|\u02f8|;)(.*)/i;
+            for (const userId of getFriendIds(orderedFriendIds)) {
+                const friend = friendsById[userId];
+                const discordName = [
+                    friend?.statusDescription || '',
+                    replaceBioSymbols(bioById.get(userId) || '')
+                ]
+                    .map((text) => discordRegex.exec(text)?.[1]?.trim())
+                    .find(Boolean);
+                if (discordName) {
+                    lines.push(
+                        `${csvEscape(friend?.displayName || userId)},${csvEscape(discordName)}`
+                    );
+                }
+            }
+            setContent(lines.join('\n'));
+        });
+        return () => {
+            active = false;
+        };
     }, [friendsById, open, orderedFriendIds]);
 
     return (

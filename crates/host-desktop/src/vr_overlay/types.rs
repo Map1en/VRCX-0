@@ -75,9 +75,20 @@ pub enum OverlayActivationButton {
     Menu,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum VrDeviceRole {
+    Hmd,
+    LeftController,
+    RightController,
+    Tracker,
+    Other,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, specta::Type)]
 pub struct VrDeviceSnapshot {
     pub label: String,
+    pub role: VrDeviceRole,
     pub serial: Option<String>,
     pub status: VrDeviceStatus,
     pub battery_percent: Option<u8>,

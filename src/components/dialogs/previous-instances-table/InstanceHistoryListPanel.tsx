@@ -8,9 +8,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
-import { normalizeLocationText } from '@/components/location/locationModel';
 import { StaticLocation } from '@/components/location/StaticLocation';
-import { LocationWorld } from '@/components/LocationWorld';
 import { formatDateFilterOrFallback, formatDateTime } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import gameLogRepository from '@/repositories/gameLogRepository';
@@ -33,14 +31,14 @@ import {
     type PreviousInstanceRow,
     rowDuration,
     rowLocation,
-    rowLocationObject,
     rowMatchesSearch,
     sortPreviousInstanceRows
 } from './previousInstancesRows';
 import {
     DialogEmptyState,
     InstanceCreatorCell,
-    PreviousInstanceDetailsPanel
+    PreviousInstanceDetailsPanel,
+    PreviousInstanceWorldLocation
 } from './PreviousInstancesViewParts';
 
 export type InstanceHistoryListVariant = 'user' | 'world';
@@ -63,26 +61,10 @@ function InstanceHistoryRowLocation({
         return '-';
     }
     if (variant === 'world') {
-        const locationObject = rowLocationObject(row);
         return (
-            <LocationWorld
-                locationObject={locationObject}
-                grouphint={row?.groupName}
+            <PreviousInstanceWorldLocation
+                row={row}
                 currentUserId={currentUserId}
-                worldDialogShortName={normalizeLocationText(
-                    locationObject.shortName
-                )}
-                instanceOwner={
-                    locationObject.ownerUserId || locationObject.userId || ''
-                }
-                instanceOwnerName={normalizeLocationText(
-                    locationObject.ownerDisplayName ||
-                        row?.ownerDisplayName ||
-                        row?.ownerName
-                )}
-                interactive={false}
-                hint={row?.worldName || ''}
-                className="max-w-full"
             />
         );
     }

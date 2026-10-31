@@ -10,7 +10,10 @@ use vrcx_0_application::auth::{
 };
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 
-use super::types::{VrchatAuthFileAnalysisInput, VrchatAuthSavedCredentialDeleteInput};
+use super::types::{
+    VrchatAuthFileAnalysisInput, VrchatAuthSavedCredentialDeleteInput,
+    VrchatAuthSavedPasswordClearInput,
+};
 
 #[tauri::command(async)]
 #[specta::specta]
@@ -73,6 +76,18 @@ pub fn app__vrchat_auth_saved_credential_delete(
     state
         .runtime_host()
         .delete_saved_credential(input.user_id)
+        .map_err(AppError::from)
+}
+
+#[tauri::command(async)]
+#[specta::specta]
+pub fn app__vrchat_auth_saved_password_clear(
+    state: State<'_, AppState>,
+    input: VrchatAuthSavedPasswordClearInput,
+) -> Result<SavedAuthSnapshot, AppError> {
+    state
+        .runtime_host()
+        .clear_saved_password(input.user_id)
         .map_err(AppError::from)
 }
 

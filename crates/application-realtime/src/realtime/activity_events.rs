@@ -262,6 +262,18 @@ fn notification_facts(notification: &Value) -> ActivityFacts {
                 .trimmed_field("thumbnailUrl")
                 .unwrap_or_default(),
         ]),
+        message_key: nested_str(notification, &["details", "messageKey"]).to_string(),
+        message_params: notification
+            .get("details")
+            .and_then(|details| details.get("messageParams"))
+            .and_then(Value::as_object)
+            .map(|params| {
+                params
+                    .iter()
+                    .filter_map(|(name, value)| Some((name.clone(), value.as_str()?.to_string())))
+                    .collect()
+            })
+            .unwrap_or_default(),
         ..ActivityFacts::default()
     }
 }

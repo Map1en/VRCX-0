@@ -4,6 +4,7 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import { Switch } from '@/ui/shadcn/switch';
 
+import { SETTINGS_DEFAULT_VALUES } from '../../settingsFieldState';
 import { useSettingsPageSection } from '../../SettingsPageStateContext';
 import { SettingsCard } from '../SettingsCard';
 import { Field } from '../SettingsField';
@@ -49,6 +50,12 @@ export function SettingsIntegrationsTab() {
                 )}
             >
                 <Field
+                    settingId="integrations.discord.enabled"
+                    onReset={() =>
+                        onDiscordActiveChange(
+                            SETTINGS_DEFAULT_VALUES.discordActive
+                        )
+                    }
                     label={t(
                         'view.settings.discord_presence.discord_presence.enable'
                     )}
@@ -72,6 +79,12 @@ export function SettingsIntegrationsTab() {
                 </Field>
 
                 <Field
+                    settingId="integrations.discord.world-integration"
+                    onReset={() =>
+                        onDiscordWorldIntegrationChange(
+                            SETTINGS_DEFAULT_VALUES.discordWorldIntegration
+                        )
+                    }
                     label={t(
                         'view.settings.discord_presence.discord_presence.world_integration'
                     )}
@@ -81,51 +94,68 @@ export function SettingsIntegrationsTab() {
                 >
                     <Switch
                         checked={discordPrefs.discordWorldIntegration}
-                        disabled={!discordPrefs.discordActive}
                         onCheckedChange={onDiscordWorldIntegrationChange}
                     />
                 </Field>
 
                 <Field
+                    settingId="integrations.discord.instance"
+                    onReset={() =>
+                        onDiscordInstanceChange(
+                            SETTINGS_DEFAULT_VALUES.discordInstance
+                        )
+                    }
                     label={t(
                         'view.settings.discord_presence.discord_presence.instance_type_player_count'
                     )}
                 >
                     <Switch
                         checked={discordPrefs.discordInstance}
-                        disabled={!discordPrefs.discordActive}
                         onCheckedChange={onDiscordInstanceChange}
                     />
                 </Field>
 
                 <Field
+                    settingId="integrations.discord.show-platform"
+                    onReset={() =>
+                        onDiscordShowPlatformChange(
+                            SETTINGS_DEFAULT_VALUES.discordShowPlatform
+                        )
+                    }
                     label={t(
                         'view.settings.discord_presence.discord_presence.show_current_platform'
                     )}
                 >
                     <Switch
                         checked={discordPrefs.discordShowPlatform}
-                        disabled={
-                            !discordPrefs.discordActive ||
-                            !discordPrefs.discordInstance
-                        }
                         onCheckedChange={onDiscordShowPlatformChange}
                     />
                 </Field>
 
                 <Field
+                    settingId="integrations.discord.show-private-details"
+                    onReset={() =>
+                        onDiscordShowPrivateDetailsChange(
+                            !SETTINGS_DEFAULT_VALUES.discordHideInvite
+                        )
+                    }
                     label={t(
                         'view.settings.discord_presence.discord_presence.show_details_in_private'
                     )}
                 >
                     <Switch
                         checked={!discordPrefs.discordHideInvite}
-                        disabled={!discordPrefs.discordActive}
                         onCheckedChange={onDiscordShowPrivateDetailsChange}
                     />
                 </Field>
 
                 <Field
+                    settingId="integrations.discord.join-button"
+                    onReset={() =>
+                        onDiscordJoinButtonChange(
+                            SETTINGS_DEFAULT_VALUES.discordJoinButton
+                        )
+                    }
                     label={t(
                         'view.settings.discord_presence.discord_presence.join_button'
                     )}
@@ -135,31 +165,40 @@ export function SettingsIntegrationsTab() {
                 >
                     <Switch
                         checked={discordPrefs.discordJoinButton}
-                        disabled={!discordPrefs.discordActive}
                         onCheckedChange={onDiscordJoinButtonChange}
                     />
                 </Field>
 
                 <Field
+                    settingId="integrations.discord.show-images"
+                    onReset={() =>
+                        onDiscordShowImagesChange(
+                            !SETTINGS_DEFAULT_VALUES.discordHideImage
+                        )
+                    }
                     label={t(
                         'view.settings.discord_presence.discord_presence.show_images'
                     )}
                 >
                     <Switch
                         checked={!discordPrefs.discordHideImage}
-                        disabled={!discordPrefs.discordActive}
                         onCheckedChange={onDiscordShowImagesChange}
                     />
                 </Field>
 
                 <Field
+                    settingId="integrations.discord.world-name-as-status"
+                    onReset={() =>
+                        onDiscordWorldNameAsStatusChange(
+                            SETTINGS_DEFAULT_VALUES.discordWorldNameAsDiscordStatus
+                        )
+                    }
                     label={t(
                         'view.settings.discord_presence.discord_presence.display_world_name_as_discord_status'
                     )}
                 >
                     <Switch
                         checked={discordPrefs.discordWorldNameAsDiscordStatus}
-                        disabled={!discordPrefs.discordActive}
                         onCheckedChange={onDiscordWorldNameAsStatusChange}
                     />
                 </Field>
@@ -175,6 +214,12 @@ export function SettingsIntegrationsTab() {
                 )}
             >
                 <Field
+                    settingId="integrations.translation.enabled"
+                    onReset={() =>
+                        onTranslationApiEnabledChange(
+                            SETTINGS_DEFAULT_VALUES.translationAPI
+                        )
+                    }
                     label={t(
                         'view.settings.advanced.advanced.translation_api.enable'
                     )}
@@ -185,6 +230,7 @@ export function SettingsIntegrationsTab() {
                     />
                 </Field>
                 <Field
+                    settingId="integrations.translation.api-key"
                     label={t(
                         'view.settings.advanced.advanced.translation_api.translation_api_key'
                     )}
@@ -208,6 +254,12 @@ export function SettingsIntegrationsTab() {
                 )}
             >
                 <Field
+                    settingId="integrations.youtube.enabled"
+                    onReset={() =>
+                        onYoutubeApiEnabledChange(
+                            SETTINGS_DEFAULT_VALUES.youtubeAPI
+                        )
+                    }
                     label={t(
                         'view.settings.advanced.advanced.youtube_api.enable'
                     )}
@@ -218,6 +270,7 @@ export function SettingsIntegrationsTab() {
                     />
                 </Field>
                 <Field
+                    settingId="integrations.youtube.api-key"
                     label={t(
                         'view.settings.advanced.advanced.youtube_api.youtube_api_key'
                     )}
@@ -243,6 +296,7 @@ export function SettingsIntegrationsTab() {
                 )}
             >
                 <Field
+                    settingId="integrations.remote-database.enabled"
                     label={t(
                         'view.settings.advanced.advanced.remote_database.enable'
                     )}
@@ -254,6 +308,7 @@ export function SettingsIntegrationsTab() {
                 </Field>
 
                 <Field
+                    settingId="integrations.remote-database.providers"
                     label={t(
                         'view.settings.advanced.advanced.remote_database.avatar_database_provider'
                     )}

@@ -3,6 +3,7 @@ import {
     useRef,
     useState,
     type ComponentProps,
+    type PointerEvent,
     type ReactElement
 } from 'react';
 
@@ -17,6 +18,7 @@ import {
 
 import { UserHoverCardContent } from './UserHoverCardContent';
 import { getHoverOpenSuppressionDeadline } from './userHoverCardSuppression';
+import { prefetchUserHoverCardProfile } from './useUserHoverCardData';
 
 const MODAL_OVERLAY_SELECTOR =
     '[data-slot="dialog-overlay"][data-open],[data-slot="alert-dialog-overlay"][data-open],[data-slot="sheet-overlay"][data-open]';
@@ -48,6 +50,51 @@ export function UserHoverCard({
     const [scrollClosed, setScrollClosed] = useState(false);
     const [token] = useState(nextHoverCardToken);
     const suppressUntilRef = useRef(0);
+    const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+    const dismissedRef = useRef(false);
+    const openTimerRef = useRef(0);
+    const prefetchTimerRef = useRef(0);
+
+    function clearIntentTimers() {
+        window.clearTimeout(openTimerRef.current);
+        window.clearTimeout(prefetchTimerRef.current);
+    }
+
+    useEffect(() => clearIntentTimers, []);
+
+    function handleIntentPointerMove(event: PointerEvent<HTMLElement>) {
+        if (event.pointerType === 'touch' || dismissedRef.current) {
+            return;
+        }
+        const trigger = event.currentTarget;
+        const point = { x: event.clientX, y: event.clientY };
+        const lastPoint = lastPointRef.current;
+        lastPointRef.current = point;
+        if (
+            !lastPoint ||
+            (lastPoint.x === point.x && lastPoint.y === point.y) ||
+            open
+        ) {
+            return;
+        }
+        clearIntentTimers();
+        prefetchTimerRef.current = window.setTimeout(() => {
+            if (userId) {
+                prefetchUserHoverCardProfile(userId);
+            }
+        }, openDelay / 2);
+        openTimerRef.current = window.setTimeout(() => {
+            if (
+                Date.now() < suppressUntilRef.current ||
+                (!trigger.closest(MODAL_CONTENT_SELECTOR) &&
+                    document.querySelector(MODAL_OVERLAY_SELECTOR))
+            ) {
+                return;
+            }
+            setScrollClosed(false);
+            setOpen(true);
+        }, openDelay);
+    }
 
     useEffect(() => {
         if (!open) {
@@ -90,9 +137,15 @@ export function UserHoverCard({
     return (
         <HoverCard
             open={open}
-            onOpenChange={(next) => {
+            onOpenChange={(next, eventDetails) => {
+                if (next && eventDetails.reason === 'trigger-hover') {
+                    return;
+                }
                 if (next && Date.now() < suppressUntilRef.current) {
                     return;
+                }
+                if (!next) {
+                    clearIntentTimers();
                 }
                 if (next) {
                     setScrollClosed(false);
@@ -104,6 +157,20 @@ export function UserHoverCard({
                 delay={openDelay}
                 closeDelay={closeDelay}
                 render={children}
+                onPointerEnter={(event) => {
+                    if (event.pointerType !== 'touch') {
+                        lastPointRef.current = {
+                            x: event.clientX,
+                            y: event.clientY
+                        };
+                    }
+                }}
+                onPointerMove={handleIntentPointerMove}
+                onPointerLeave={() => {
+                    lastPointRef.current = null;
+                    dismissedRef.current = false;
+                    clearIntentTimers();
+                }}
                 onPointerOverCapture={(event) => {
                     if (
                         !event.currentTarget.closest(MODAL_CONTENT_SELECTOR) &&
@@ -117,6 +184,8 @@ export function UserHoverCard({
                     }
                 }}
                 onPointerDownCapture={() => {
+                    dismissedRef.current = true;
+                    clearIntentTimers();
                     suppressUntilRef.current = getHoverOpenSuppressionDeadline(
                         Date.now(),
                         openDelay

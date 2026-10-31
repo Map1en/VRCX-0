@@ -175,6 +175,35 @@ describe('assistant health telemetry', () => {
         });
     });
 
+    it('separates truncated responses from malformed tool arguments', async () => {
+        const { appTelemetryRecordEvent } = mockTelemetryCommand();
+        const mod = await import('./telemetryAssistantHealth');
+
+        mod.recordAssistantToolError({
+            source: 'get_activity_timeline',
+            args: '{"bucket":"mon',
+            summary:
+                'tool error: tool `get_activity_timeline` was not run: the response hit the output token limit, so its arguments may be cut off. Re-issue the call with complete arguments.'
+        });
+        mod.recordAssistantToolError({
+            source: 'get_activity_timeline',
+            args: "{bucket: 'month', note: 'timeout'}",
+            summary:
+                "tool error: tool `get_activity_timeline` was not run: its arguments are not a valid JSON object (key must be a string at line 1 column 2). Received arguments: {bucket: 'month', note: 'timeout'}. Re-issue the call with a valid JSON object."
+        });
+
+        expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(1, {
+            type: 'assistantToolError',
+            source: 'get_activity_timeline',
+            summary: 'args=<text>; result=truncated'
+        });
+        expect(appTelemetryRecordEvent).toHaveBeenNthCalledWith(2, {
+            type: 'assistantToolError',
+            source: 'get_activity_timeline',
+            summary: 'args=<text>; result=malformed_args'
+        });
+    });
+
     it('forwards assistant turn errors and ignores user cancellations', async () => {
         const { appTelemetryRecordEvent } = mockTelemetryCommand();
         const mod = await import('./telemetryAssistantHealth');

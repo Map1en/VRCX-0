@@ -1,7 +1,8 @@
-import type {
-    FavoriteGroupMap,
-    FavoriteRecord
-} from '@/domain/favorites/types';
+import {
+    collectFavoriteGroupFriendIds,
+    resolveSelectedFavoriteGroupKeys
+} from '@/domain/favorites/favoriteGroupSelection';
+import type { FavoriteGroupMap } from '@/domain/favorites/types';
 import {
     presenceCanRequestInvite,
     presenceOf
@@ -154,42 +155,28 @@ export function canRequestInviteFromFeedFriend(friend: FriendLike) {
     return Boolean(presence && presenceCanRequestInvite(presence));
 }
 
-export function buildFeedFavoriteIdSet(
-    remoteFavoritesById: Record<string, FavoriteRecord> | null | undefined,
-    localFriendFavorites: FavoriteGroupMap | null | undefined,
-    selectedFavoriteGroupIds: readonly string[] = []
-) {
-    const ids = new Set<string>();
-    const remoteFavorites = Object.values(remoteFavoritesById ?? {});
-    const hasRemoteGroupFilter = selectedFavoriteGroupIds.some(
-        (groupKey) => !groupKey.startsWith('local:')
+export function buildFeedFavoriteIdSet({
+    remoteGroupKeys,
+    remoteIdsByGroupKey,
+    localGroupNames,
+    localFriendFavorites,
+    selectedGroupKeys
+}: {
+    remoteGroupKeys: readonly string[];
+    remoteIdsByGroupKey: Readonly<Record<string, readonly string[]>>;
+    localGroupNames: readonly string[];
+    localFriendFavorites: FavoriteGroupMap;
+    selectedGroupKeys: readonly string[];
+}) {
+    const allGroupKeys = [
+        ...remoteGroupKeys,
+        ...localGroupNames.map((groupName) => `local:${groupName}`)
+    ];
+    return collectFavoriteGroupFriendIds(
+        resolveSelectedFavoriteGroupKeys(selectedGroupKeys, allGroupKeys),
+        remoteIdsByGroupKey,
+        localFriendFavorites
     );
-
-    for (const favorite of remoteFavorites) {
-        if (favorite?.type !== 'friend') {
-            continue;
-        }
-        if (
-            hasRemoteGroupFilter &&
-            !selectedFavoriteGroupIds.includes(favorite.$groupKey ?? '')
-        ) {
-            continue;
-        }
-        const favoriteId = normalizeFeedId(favorite.favoriteId);
-        if (favoriteId) {
-            ids.add(favoriteId);
-        }
-    }
-
-    for (const groupIds of Object.values(localFriendFavorites ?? {})) {
-        for (const id of groupIds) {
-            const normalized = normalizeFeedId(id);
-            if (normalized) {
-                ids.add(normalized);
-            }
-        }
-    }
-    return ids;
 }
 
 export function getFeedRowId(row: FeedRow | null | undefined) {

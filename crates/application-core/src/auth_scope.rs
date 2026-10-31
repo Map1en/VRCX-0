@@ -180,6 +180,15 @@ impl RuntimeAuthScope {
         }
     }
 
+    pub fn rename_current_user(&self, generation: u64, display_name: &str) -> bool {
+        let mut state = self.lock_state();
+        if !state.snapshot.active || state.snapshot.generation != generation {
+            return false;
+        }
+        state.display_name = normalize_display_name(display_name, &state.snapshot.current_user_id);
+        true
+    }
+
     pub fn matches(&self, user_id: &str, endpoint: &str) -> bool {
         let state = self.lock_state();
         state.snapshot.active
@@ -329,6 +338,16 @@ mod tests {
         }
 
         assert!(!scope.matches("usr_current", "https://api.example.test/api/1"));
+    }
+
+    #[test]
+    fn equivalent_identity_keeps_generation() {
+        let scope = RuntimeAuthScope::new();
+
+        let first = scope.set("usr_self", "https://api.vrchat.cloud/api/1");
+        let hydrated = scope.set(" usr_self ", "https://api.vrchat.cloud/api/1/");
+
+        assert_eq!(hydrated.generation, first.generation);
     }
 
     #[test]

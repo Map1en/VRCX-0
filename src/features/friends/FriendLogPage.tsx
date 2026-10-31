@@ -2,6 +2,7 @@ import { HistoryIcon, SearchXIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import {
+    EmptyState,
     LoadingState,
     PageBody,
     PageScaffold
@@ -10,7 +11,6 @@ import { Button } from '@/ui/shadcn/button';
 
 import { FriendLogPageTable } from './components/FriendLogPageTable';
 import { FriendLogPageToolbar } from './components/FriendLogPageToolbar';
-import { FriendLogEmptyState } from './components/FriendLogViewParts';
 import { FriendLogVirtualList } from './components/FriendLogVirtualList';
 import { useFriendLogPageController } from './useFriendLogPageController';
 
@@ -22,6 +22,7 @@ export function FriendLogPage({
         filters,
         isError,
         isLoading,
+        rowFilterCommands,
         rows,
         rowActions,
         shiftHeld,
@@ -32,13 +33,16 @@ export function FriendLogPage({
     const hasHistory =
         rows.rows.length > 0 ||
         rows.searchMode ||
-        filters.selectedTypes.length > 0;
+        filters.selectedTypes.length > 0 ||
+        Boolean(filters.targetUser);
 
     return (
         <PageScaffold embedded={embedded}>
             <FriendLogPageToolbar
                 selectedTypes={filters.selectedTypes}
                 onSelectedTypesChange={filters.setSelectedTypes}
+                targetUser={filters.targetUser}
+                onClearTargetUser={() => filters.setTargetUser(null)}
                 searchDraft={filters.searchDraft}
                 onSearchDraftChange={filters.setSearchDraft}
                 onCommitSearch={filters.commitSearch}
@@ -68,18 +72,19 @@ export function FriendLogPage({
                         )}
                     />
                 ) : isError ? (
-                    <FriendLogEmptyState
+                    <EmptyState
                         title={t(
                             'view.friend_log.error.friend_history_failed_to_load'
                         )}
                         description={
-                            rows.detail || 'The history query did not complete.'
+                            rows.detail || t('common.error.failed_to_load_data')
                         }
                     />
                 ) : (hasRows || rows.hasMore) && !rows.searchMode ? (
                     <FriendLogVirtualList
                         rows={rows.orderedRows}
                         table={table}
+                        filterCommands={rowFilterCommands}
                         resolveDisplayName={rows.resolveDisplayName}
                         resetKey={rows.normalQueryKey}
                         hasMore={rows.hasMore}
@@ -101,13 +106,14 @@ export function FriendLogPage({
                 ) : hasRows ? (
                     <FriendLogPageTable
                         table={table}
+                        filterCommands={rowFilterCommands}
                         orderedRowsLength={rows.orderedRows.length}
                         pagination={tableState.pagination}
                         pageSizes={tableState.pageSizes}
                         onPageSizeChange={tableState.setPageSize}
                     />
                 ) : (
-                    <FriendLogEmptyState
+                    <EmptyState
                         icon={hasHistory ? SearchXIcon : HistoryIcon}
                         title={t(
                             hasHistory
@@ -126,6 +132,7 @@ export function FriendLogPage({
                                 variant="link"
                                 onClick={() => {
                                     filters.setSelectedTypes([]);
+                                    filters.setTargetUser(null);
                                     filters.clearSearch();
                                     filters.setDateRange('', '');
                                 }}
@@ -133,7 +140,7 @@ export function FriendLogPage({
                                 {t('common.actions.clear')}
                             </Button>
                         ) : null}
-                    </FriendLogEmptyState>
+                    </EmptyState>
                 )}
             </PageBody>
         </PageScaffold>

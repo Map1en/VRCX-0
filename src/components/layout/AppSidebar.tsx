@@ -1,13 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
+import { useShortcutHandler } from '@/components/keyboard/shortcutDispatcher';
 import {
     setNavWidthPreference,
     setNavbarCollapsedPreference
 } from '@/services/preferencesService';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { normalizeNavWidth, useShellStore } from '@/state/shellStore';
-import { Sidebar, SidebarInset, SidebarProvider } from '@/ui/shadcn/sidebar';
+import {
+    Sidebar,
+    SidebarInset,
+    SidebarProvider,
+    useSidebar
+} from '@/ui/shadcn/sidebar';
 
 import { AppNavMenu } from './AppNavMenu';
 import {
@@ -15,6 +21,22 @@ import {
     useDelayedNavMenuCollapsed,
     useSidebarInstantTransition
 } from './navMenuCollapse';
+
+function NavSidebarShortcut({
+    onDesktopToggle
+}: {
+    onDesktopToggle?: () => void;
+}) {
+    const { isMobile, toggleSidebar } = useSidebar();
+    useShortcutHandler('collapse-nav', () => {
+        if (!isMobile && onDesktopToggle) {
+            onDesktopToggle();
+            return;
+        }
+        toggleSidebar();
+    });
+    return null;
+}
 
 export function AppSidebar({
     children,
@@ -170,9 +192,6 @@ export function AppSidebar({
             className="vrcx-0-sidebar-layout relative h-full min-h-0 w-full overflow-hidden"
             style={{ '--sidebar-width': `${navWidth}px` }}
             instantSidebarTransition={instantSidebarTransition}
-            onKeyboardShortcutToggle={
-                sidebarWindowMode ? undefined : toggleSidebarFromKeyboard
-            }
             onOpenChange={(open) => {
                 if (sidebarWindowMode) {
                     return;
@@ -181,6 +200,11 @@ export function AppSidebar({
                 void setNavbarCollapsedPreference(!open);
             }}
         >
+            <NavSidebarShortcut
+                onDesktopToggle={
+                    sidebarWindowMode ? undefined : toggleSidebarFromKeyboard
+                }
+            />
             {sidebarWindowMode ? null : (
                 <Sidebar
                     side="left"

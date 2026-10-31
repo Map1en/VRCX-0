@@ -44,6 +44,7 @@ export type ContextAutomationRule = PresenceAutomationRule & {
     playerCountValue?: number;
     preset?: string;
     selectedGroups?: string[];
+    selectedInstanceGroupIds?: string[];
     selectedInstanceTypes?: string[];
     selectedWorldGroups?: string[];
     specificFriendIds?: string[];
@@ -102,6 +103,11 @@ export const contextPresetOptions = [
     {
         value: 'inFavoriteWorlds',
         labelKey: 'view.tools.social_automation.preset_in_favorite_worlds'
+    },
+    {
+        value: 'inSelectedGroupInstances',
+        labelKey:
+            'view.tools.social_automation.preset_in_selected_group_instances'
     }
 ] as const;
 
@@ -390,6 +396,11 @@ export function buildContextConditions(rule: ContextAutomationRule) {
             type: 'worldInFavoriteGroups',
             values: rule.selectedWorldGroups || []
         });
+    } else if (rule.preset === 'inSelectedGroupInstances') {
+        conditions.push({
+            type: 'instanceGroupIn',
+            values: rule.selectedInstanceGroupIds || []
+        });
     }
 
     if (rule.selectedInstanceTypes?.length) {
@@ -401,6 +412,22 @@ export function buildContextConditions(rule: ContextAutomationRule) {
     return conditions;
 }
 
+export function setContextPreset(
+    rule: ContextAutomationRule,
+    preset: string
+): ContextAutomationRule {
+    if (preset !== 'inSelectedGroupInstances') {
+        return { ...rule, preset };
+    }
+    return {
+        ...rule,
+        preset,
+        selectedInstanceTypes: (rule.selectedInstanceTypes || []).filter(
+            (type) => type.startsWith('group')
+        )
+    };
+}
+
 export function createContextRule(label = ''): ContextAutomationRule {
     const rule: ContextAutomationRule = {
         id: createRuleId('context'),
@@ -410,6 +437,7 @@ export function createContextRule(label = ''): ContextAutomationRule {
         label,
         preset: 'alone',
         selectedGroups: [],
+        selectedInstanceGroupIds: [],
         selectedInstanceTypes: ['public', 'friends+'],
         selectedWorldGroups: [],
         specificFriendIds: [],
@@ -433,6 +461,9 @@ export function normalizeContextRule(rule: unknown): ContextAutomationRule {
         domain: 'context',
         preset: String(source.preset || 'alone'),
         selectedGroups: asStringArray(source.selectedGroups),
+        selectedInstanceGroupIds: asStringArray(
+            source.selectedInstanceGroupIds
+        ),
         selectedInstanceTypes: asStringArray(source.selectedInstanceTypes),
         selectedWorldGroups: asStringArray(source.selectedWorldGroups),
         specificFriendIds: asStringArray(source.specificFriendIds),

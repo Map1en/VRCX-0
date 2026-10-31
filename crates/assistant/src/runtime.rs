@@ -240,6 +240,7 @@ impl AssistantController {
                 model,
                 &stored_effort,
             ),
+            forbid_tool_calls: false,
         };
 
         let tool_defs = visible_tool_defs(&self.tool_defs, session.allow_writes);

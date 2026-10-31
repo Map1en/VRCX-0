@@ -30,13 +30,14 @@ export function getNotificationAbsoluteTime(
 }
 
 export function getNotificationRelativeTime(
-    notification: NotificationRow | null | undefined
+    notification: NotificationRow | null | undefined,
+    nowMs?: number
 ) {
     const timestamp = notification?.createdAt || notification?.created_at;
     if (!timestamp) {
         return '';
     }
-    return formatRelativeTime(timestamp);
+    return formatRelativeTime(timestamp, { nowMs, minUnit: 'minute' });
 }
 
 export function getHoverTitle(

@@ -4,6 +4,7 @@ mod discord;
 mod generic_webhook;
 mod image_file;
 mod localization;
+mod lookup_cache;
 mod ports;
 mod preferences;
 mod rendered;
@@ -18,10 +19,9 @@ mod webhook_sink;
 
 pub use activity_filters::save_notification_activity_filters;
 pub use activity_filters::{
-    apply_location_notification_rules, load_overlay_activity_filters,
+    load_overlay_activity_filters, reload_activity_router,
     rename_local_favorite_group_in_activity_filters, ActivityFilterProfile,
-    NotificationActivityFilterProfiles, NotificationActivityFilterSurface,
-    NotificationActivityFiltersSetInput,
+    NotificationActivityFilterProfiles, NotificationActivityFiltersSetInput,
 };
 pub use auth_webhook::{
     auth_webhook_generic_payload, auth_webhook_is_enabled, auth_webhook_should_recover,
@@ -41,7 +41,7 @@ pub use ports::{
 pub use preferences::{config_bool, parse_webhook_fields, NotificationWebhookFormat};
 pub use rendered::RenderedNotification;
 pub use rendering::{load_notification_locale, render_delivery};
-pub use resolver::NotificationResolver;
+pub use resolver::{unresolved_group_id, NotificationResolver};
 pub use user_image::normalize_avatar_image_url_128;
 pub use webhook::{
     discord_webhook_url_with_wait, send_json_webhook_with_retry, webhook_local_time_string,

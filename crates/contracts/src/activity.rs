@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 
 macro_rules! activity_kinds {
@@ -140,6 +142,8 @@ pub struct ActivityFacts {
     pub video: String,
     pub image_url: String,
     pub count: u64,
+    pub message_key: String,
+    pub message_params: BTreeMap<String, String>,
 }
 
 pub fn stable_source_hash(value: &str) -> String {

@@ -36,10 +36,11 @@ pub use game_client::{
 pub use game_event_bus::{
     CrashRelaunchDecisionPayload, EmptyEventPayload, GameClientEvent,
     GameLogPersistenceFallbackPayload, GameLogSideEffectEvent, GameLogSideEffectObserver,
-    GameLogSideEffectSink, GameNoVrPayload, NowPlayingPayload, NowPlayingSnapshot,
+    GameLogSideEffectSink, GameNoVrPayload, NowPlayingPayload, NowPlayingSnapshot, NowPlayingStore,
     RuntimeGameEventBusExt, RuntimeGameLogEventPayload, RuntimeNotificationLevel,
     RuntimeNotificationPayload, RuntimeWorkerErrorPayload, ScreenshotProcessedPayload,
 };
+pub use game_log::lifecycle::IS_GAME_NO_VR_CONFIG_KEY;
 pub use game_log::{
     duration_ms, game_log_sessions_query, instance_history_query, parse_event_time_ms, player_key,
     player_list_runtime_snapshot, world_id_from_location, GameLogAvatarChange, GameLogHostActions,

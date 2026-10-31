@@ -13,9 +13,9 @@ use vrcx_0_logger_protocol::envelope::{
     open_request, seal_response, Nonce, PROTOCOL_HEADER, TIMESTAMP_HEADER,
 };
 use vrcx_0_logger_protocol::wire::{
-    AckRequest, CredentialsRequest, ErrorResponse, FramesRequest, FramesResponse, HelloResponse,
-    OkResponse, PresenceRequest, PresenceResponse, TwoFactorRequest, WebhookRequest,
-    CAPTURE_FORMAT_VERSION, MIN_CLIENT_PROTOCOL_VERSION, PROTOCOL_VERSION,
+    AckRequest, CredentialsRequest, DeviceLoginRequest, ErrorResponse, FramesRequest,
+    FramesResponse, HelloResponse, OkResponse, PresenceRequest, PresenceResponse, TwoFactorRequest,
+    WebhookRequest, CAPTURE_FORMAT_VERSION, MIN_CLIENT_PROTOCOL_VERSION, PROTOCOL_VERSION,
 };
 
 use crate::app::{now_unix, App, LOGGER_VERSION};
@@ -27,6 +27,8 @@ pub fn router(app: Arc<App>) -> Router {
         .route("/status", post(status))
         .route("/credentials", post(credentials))
         .route("/two-factor", post(two_factor))
+        .route("/device-login", post(device_login))
+        .route("/device-login-cancel", post(device_login_cancel))
         .route("/presence", post(presence))
         .route("/unpair", post(unpair))
         .route("/webhook", post(webhook))
@@ -112,6 +114,27 @@ async fn two_factor(
     match app.session.two_factor(request).await {
         Ok(state) => seal(&app, &nonce, StatusCode::OK, &state),
         Err(message) => seal_error(&app, &nonce, StatusCode::CONFLICT, &message),
+    }
+}
+
+async fn device_login(
+    State(app): State<Arc<App>>,
+    Opened(request, nonce): Opened<DeviceLoginRequest>,
+) -> Response {
+    match app.session.start_device_login(request).await {
+        Ok(state) => seal(&app, &nonce, StatusCode::OK, &state),
+        Err(message) => seal_error(&app, &nonce, StatusCode::BAD_REQUEST, &message),
+    }
+}
+
+async fn device_login_cancel(
+    State(app): State<Arc<App>>,
+    Opened(OkResponse {}, nonce): Opened<OkResponse>,
+) -> Response {
+    if app.session.cancel_device_login().await {
+        seal(&app, &nonce, StatusCode::OK, &OkResponse {})
+    } else {
+        internal_error(&app, &nonce)
     }
 }
 

@@ -102,3 +102,15 @@ fn write_image_file_adds_extension_and_preserves_content() {
     );
     assert_eq!(std::fs::read(written).unwrap(), bytes);
 }
+
+#[test]
+fn file_sha256_hex_hashes_the_whole_file_content() {
+    let dir = TestDir::new("sha256");
+    let path = dir.path.join("shot.png");
+    std::fs::write(&path, b"abc").unwrap();
+
+    assert_eq!(
+        file_sha256_hex(&path).unwrap(),
+        "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    );
+}

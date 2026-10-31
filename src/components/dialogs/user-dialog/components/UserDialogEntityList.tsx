@@ -58,18 +58,18 @@ export function EntityList({
     const { t } = useTranslation();
     const nowMs = useNowMs({ active: kind === 'user' });
 
-    if (loading) {
-        return <EntityListState kind={kind} loading />;
-    }
     if (error) {
         return <EntityListState kind={kind} error={error} />;
     }
     if (!rows.length) {
-        return <EntityListState kind={kind} />;
+        return <EntityListState kind={kind} loading={loading} />;
     }
 
     return (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] items-start gap-1">
+        <div
+            aria-busy={loading || undefined}
+            className="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] items-start gap-1"
+        >
             {rows.map((row, index) => {
                 if (kind === 'group') {
                     const groupId = groupIdForRow(row);

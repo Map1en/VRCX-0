@@ -772,6 +772,58 @@ impl MetadataCacheDb {
         );
     }
 
+    pub fn list_library_images_by_paths_for_root(
+        &self,
+        root_path: &str,
+        paths: &[String],
+    ) -> Result<Vec<ScreenshotLibraryImage>> {
+        let conn = self.inner.conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare(
+                "SELECT path, folder_path, file_name, size_bytes, modified_at, created_at,
+                    width, height, world_id, world_name, captured_at, error, metadata_json,
+                    captured_at_ms
+             FROM screenshot_files
+             WHERE scan_root = ?1 AND path = ?2",
+            )
+            .map_err(|error| {
+                Error::sqlite_with_context("prepare screenshot images by path", error)
+            })?;
+        let mut images = Vec::new();
+        for path in paths {
+            if let Some(image) = stmt
+                .query_row([root_path, path.as_str()], Self::map_library_image_row)
+                .optional()
+                .map_err(|error| {
+                    Error::sqlite_with_context("read screenshot image by path", error)
+                })?
+            {
+                images.push(image);
+            }
+        }
+        Ok(images)
+    }
+
+    pub fn list_library_paths_with_size_for_root(
+        &self,
+        root_path: &str,
+        size_bytes: i64,
+    ) -> Result<Vec<String>> {
+        let conn = self.inner.conn.lock().unwrap();
+        let mut stmt = conn
+            .prepare("SELECT path FROM screenshot_files WHERE scan_root = ?1 AND size_bytes = ?2")
+            .map_err(|error| {
+                Error::sqlite_with_context("prepare screenshot paths by size", error)
+            })?;
+        let rows = stmt
+            .query_map(rusqlite::params![root_path, size_bytes], |row| {
+                row.get::<_, String>(0)
+            })
+            .map_err(|error| Error::sqlite_with_context("read screenshot paths by size", error))?;
+        rows.collect::<rusqlite::Result<Vec<_>>>()
+            .map_err(|error| Error::sqlite_with_context("read screenshot path by size", error))
+    }
+
     pub fn delete_screenshot_entry(&self, path: &str) -> Result<()> {
         let conn = self.inner.conn.lock().unwrap();
         let tx = conn.unchecked_transaction().map_err(|error| {

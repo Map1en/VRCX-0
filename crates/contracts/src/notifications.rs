@@ -1,5 +1,8 @@
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
+use vrcx_0_core::notification_group::{notification_group_key, NotificationGroupFacts};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -107,4 +110,60 @@ pub struct NotificationListItemOutput {
     #[serde(skip_serializing_if = "String::is_empty")]
     pub location: String,
     pub expired: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub group_key: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AppNotification {
+    pub id: String,
+    pub created_at: String,
+    pub r#type: String,
+    pub subject_id: String,
+    pub subject_name: String,
+    pub image_url: String,
+    pub message_key: String,
+    pub message_params: BTreeMap<String, String>,
+}
+
+impl AppNotification {
+    pub fn list_item(&self) -> NotificationListItemOutput {
+        let data = json!({});
+        let details = json!({
+            "messageKey": self.message_key,
+            "messageParams": self.message_params,
+        });
+        let group_key = notification_group_key(&NotificationGroupFacts {
+            kind: &self.r#type,
+            sender_user_id: &self.subject_id,
+            created_at: &self.created_at,
+            data: &data,
+            details: &details,
+        });
+        NotificationListItemOutput {
+            id: self.id.clone(),
+            version: 1,
+            created_at: self.created_at.clone(),
+            created_at_legacy: self.created_at.clone(),
+            updated_at: String::new(),
+            expires_at: String::new(),
+            r#type: self.r#type.clone(),
+            link: String::new(),
+            link_text: String::new(),
+            message: String::new(),
+            title: String::new(),
+            image_url: self.image_url.clone(),
+            seen: true,
+            sender_user_id: self.subject_id.clone(),
+            sender_username: self.subject_name.clone(),
+            receiver_user_id: String::new(),
+            data,
+            responses: json!([]),
+            details,
+            location: String::new(),
+            expired: false,
+            group_key,
+        }
+    }
 }

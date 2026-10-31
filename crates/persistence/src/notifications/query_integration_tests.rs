@@ -2,10 +2,12 @@ use std::path::PathBuf;
 
 use serde_json::json;
 
+use super::types::AppNotification;
 use super::{
-    notification_add_v1, notification_add_v2, notification_friend_requests_sync,
-    notification_has_unseen_action_required, notification_list_query, notification_mark_seen,
-    NotificationListItemOutput, NotificationListQueryInput,
+    notification_add_v1, notification_add_v2, notification_delete,
+    notification_friend_requests_sync, notification_has_unseen_action_required,
+    notification_list_query, notification_mark_seen, NotificationListItemOutput,
+    NotificationListQueryInput,
 };
 use crate::{DatabaseService, Error};
 
@@ -291,6 +293,67 @@ fn instance_closed_keeps_its_location_after_a_reload() -> Result<(), Error> {
 }
 
 #[test]
+fn app_notifications_list_with_their_message_key_and_can_be_deleted() -> Result<(), Error> {
+    let (_dir, db) = test_db("app-notifications")?;
+    let user_id = "usr_owner";
+    crate::realtime::write_realtime_batch(
+        &db,
+        &crate::ownership::OwnerId::new(user_id),
+        &crate::realtime::RealtimePersistenceBatch {
+            app_notification_upserts: vec![AppNotification {
+                id: "groupChange:grp_1:2026-10-30T00:00:00Z".into(),
+                created_at: "2026-10-30T00:00:00Z".into(),
+                r#type: "groupChange".into(),
+                subject_id: "grp_1".into(),
+                subject_name: "Club".into(),
+                image_url: "https://example.test/icon.png".into(),
+                message_key: "notifications.group_member_roles".into(),
+                message_params: [("roles".to_string(), "Staff".to_string())].into(),
+            }],
+            ..Default::default()
+        },
+    )?;
+    add_v1(
+        &db,
+        user_id,
+        "legacy_invite",
+        "2026-09-01T00:00:00Z",
+        "invite",
+    )?;
+
+    let rows = query(&db, user_id, 10, 10, true)?;
+    assert_eq!(rows.len(), 2);
+    let app = &rows[0];
+    assert_eq!(app.r#type, "groupChange");
+    assert_eq!(app.sender_user_id, "grp_1");
+    assert_eq!(app.sender_username, "Club");
+    assert_eq!(
+        app.details,
+        json!({
+            "messageKey": "notifications.group_member_roles",
+            "messageParams": { "roles": "Staff" }
+        })
+    );
+
+    let filtered = notification_list_query(
+        &db,
+        NotificationListQueryInput {
+            user_id: user_id.into(),
+            search: "club".into(),
+            filters: vec!["groupChange".into()],
+            per_table_limit: 10,
+            limit: 10,
+            include_unseen: true,
+        },
+    )?;
+    assert_eq!(filtered.len(), 1);
+
+    notification_delete(&db, user_id.into(), app.id.clone())?;
+    assert_eq!(query(&db, user_id, 10, 10, true)?.len(), 1);
+    Ok(())
+}
+
+#[test]
 fn unseen_indicator_matches_frontend_action_required_rules() -> Result<(), Error> {
     let (_dir, db) = test_db("unseen-indicator")?;
     let user_id = "usr_owner";
@@ -338,5 +401,38 @@ fn unseen_indicator_matches_frontend_action_required_rules() -> Result<(), Error
         "2000-01-01T00:00:00Z",
     )?;
     assert!(!notification_has_unseen_action_required(&db, user_id)?);
+    Ok(())
+}
+
+#[test]
+fn notification_list_attaches_group_keys_only_to_groupable_rows() -> Result<(), Error> {
+    let (_dir, db) = test_db("group-key")?;
+    let user_id = "usr_owner";
+    add_v1(&db, user_id, "notif_invite", "2026-01-02T12:00:00Z", "join")?;
+    notification_add_v2(
+        &db,
+        user_id.into(),
+        json!({
+            "id": "notif_announcement",
+            "createdAt": "2026-01-02T12:00:00Z",
+            "type": "group.announcement",
+            "seen": false,
+            "senderUserId": "usr_admin",
+            "data": { "groupId": "grp_club" },
+            "responses": [],
+            "details": {}
+        }),
+    )?;
+
+    let rows = query(&db, user_id, 10, 10, true)?;
+    let group_key = |id: &str| {
+        rows.iter()
+            .find(|row| row.id == id)
+            .map(|row| row.group_key.clone())
+    };
+
+    assert_eq!(group_key("notif_invite"), Some(None));
+    let announcement = group_key("notif_announcement").flatten().unwrap();
+    assert!(announcement.starts_with("group.announcement:grp_club:2026-01-0"));
     Ok(())
 }

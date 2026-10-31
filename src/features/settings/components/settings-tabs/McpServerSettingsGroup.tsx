@@ -1,15 +1,22 @@
-import { CopyIcon, KeyRoundIcon, RefreshCwIcon } from 'lucide-react';
+import { FileCodeIcon, KeyRoundIcon, RefreshCwIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { HighlightedCodeBlock } from '@/components/HighlightedCodeBlock';
 import {
     commands,
     type ClientConfigSnippets,
     type McpServerStatus
 } from '@/platform/tauri/bindings';
-import { copyTextToClipboard } from '@/services/clipboardService';
 import { toast } from '@/services/toastService';
 import { Button } from '@/ui/shadcn/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle
+} from '@/ui/shadcn/dialog';
 import { Input } from '@/ui/shadcn/input';
 import {
     NumberField,
@@ -19,6 +26,7 @@ import {
     NumberFieldInput
 } from '@/ui/shadcn/number-field';
 import { Switch } from '@/ui/shadcn/switch';
+import { Tabs, TabsList, TabsPanel, TabsTab } from '@/ui/shadcn/tabs';
 
 import { SettingsCard } from '../SettingsCard';
 import { Field } from '../SettingsField';
@@ -28,26 +36,85 @@ type McpCommandOptions = {
     toastError?: boolean;
 };
 
-type McpSnippetButton = {
+type McpSnippetTab = {
     snippetKey: keyof ClientConfigSnippets;
+    language: string;
     label?: string;
     labelKey?: string;
 };
 
-const MCP_SNIPPET_BUTTONS: McpSnippetButton[] = [
+const MCP_SNIPPET_TABS: McpSnippetTab[] = [
     {
         snippetKey: 'claudeCodeCommand',
+        language: 'bash',
         label: 'Claude Code'
     },
     {
         snippetKey: 'mcpRemoteJson',
+        language: 'json',
         labelKey: 'view.settings.integrations.mcp_server.copy_mcp_remote'
     },
     {
         snippetKey: 'genericJson',
+        language: 'json',
         labelKey: 'view.settings.integrations.mcp_server.copy_generic'
     }
 ];
+
+function McpClientConfigDialog({
+    open,
+    onOpenChange,
+    snippets
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    snippets: ClientConfigSnippets;
+}) {
+    const { t } = useTranslation();
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>
+                        {t(
+                            'view.settings.integrations.mcp_server.client_config'
+                        )}
+                    </DialogTitle>
+                    <DialogDescription>
+                        {t(
+                            'view.settings.integrations.mcp_server.client_config_description'
+                        )}
+                    </DialogDescription>
+                </DialogHeader>
+                <Tabs defaultValue={MCP_SNIPPET_TABS[0].snippetKey}>
+                    <TabsList>
+                        {MCP_SNIPPET_TABS.map((tab) => (
+                            <TabsTab
+                                key={tab.snippetKey}
+                                value={tab.snippetKey}
+                            >
+                                {tab.label ||
+                                    (tab.labelKey ? t(tab.labelKey) : '')}
+                            </TabsTab>
+                        ))}
+                    </TabsList>
+                    {MCP_SNIPPET_TABS.map((tab) => (
+                        <TabsPanel key={tab.snippetKey} value={tab.snippetKey}>
+                            <HighlightedCodeBlock
+                                code={snippets[tab.snippetKey]}
+                                language={tab.language}
+                                size="sm"
+                                wrap
+                                contentClassName="max-h-[50vh]"
+                            />
+                        </TabsPanel>
+                    ))}
+                </Tabs>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 export function McpServerSettingsGroup() {
     const { t } = useTranslation();
@@ -55,6 +122,7 @@ export function McpServerSettingsGroup() {
     const [mcpBusy, setMcpBusy] = useState(false);
     const [mcpError, setMcpError] = useState<string | null>(null);
     const [portInput, setPortInput] = useState('');
+    const [clientConfigOpen, setClientConfigOpen] = useState(false);
     const mcpClientConfig = mcpStatus?.clientConfig;
     const mcpStatusLabel = mcpStatus
         ? t(`view.settings.integrations.mcp_server.status.${mcpStatus.state}`)
@@ -163,22 +231,6 @@ export function McpServerSettingsGroup() {
         });
     }
 
-    async function copyMcpSnippet(
-        key: keyof ClientConfigSnippets,
-        target: string
-    ) {
-        const value = mcpClientConfig?.[key];
-        if (!value) {
-            return;
-        }
-        await copyTextToClipboard(value, {
-            successMessage: t('view.settings.integrations.mcp_server.copied', {
-                target
-            }),
-            errorMessage: (error) => String(error)
-        });
-    }
-
     return (
         <SettingsCard
             cardId="ai.mcp"
@@ -186,6 +238,7 @@ export function McpServerSettingsGroup() {
             description={t('view.settings.integrations.mcp_server.description')}
         >
             <Field
+                settingId="ai.mcp.enabled"
                 label={t('view.settings.integrations.mcp_server.enable')}
                 description={t(
                     'view.settings.integrations.mcp_server.enable_description'
@@ -199,6 +252,7 @@ export function McpServerSettingsGroup() {
             </Field>
 
             <Field
+                settingId="ai.mcp.allow-lan"
                 label={t(
                     'view.settings.integrations.mcp_server.allow_lan_connections'
                 )}
@@ -214,6 +268,7 @@ export function McpServerSettingsGroup() {
             </Field>
 
             <Field
+                settingId="ai.mcp.allow-vrchat-writes"
                 label={t(
                     'view.settings.integrations.mcp_server.allow_vrchat_writes'
                 )}
@@ -229,6 +284,7 @@ export function McpServerSettingsGroup() {
             </Field>
 
             <Field
+                settingId="ai.mcp.port"
                 label={t('view.settings.integrations.mcp_server.port_label')}
                 description={t(
                     'view.settings.integrations.mcp_server.port_description'
@@ -265,6 +321,7 @@ export function McpServerSettingsGroup() {
             </Field>
 
             <Field
+                settingId="ai.mcp.status"
                 label={t('view.settings.integrations.mcp_server.status_label')}
                 description={
                     mcpStatus?.port
@@ -297,53 +354,44 @@ export function McpServerSettingsGroup() {
             </Field>
 
             <Field
+                settingId="ai.mcp.client-config"
                 label={t('view.settings.integrations.mcp_server.client_config')}
-                description={
-                    <>
-                        {t(
-                            'view.settings.integrations.mcp_server.client_config_description'
-                        )}{' '}
-                        {t(
-                            'view.settings.integrations.mcp_server.security_note'
-                        )}
-                    </>
-                }
+                description={t(
+                    'view.settings.integrations.mcp_server.security_note'
+                )}
                 disabled={!mcpStatus?.token && !mcpClientConfig}
                 className="lg:grid-cols-1 lg:items-start"
                 controlClassName="lg:justify-start"
             >
-                <div className="flex w-full flex-col gap-2">
+                <div className="flex w-full gap-2">
                     <Input
                         value={mcpStatus?.token ?? ''}
                         readOnly
                         className="font-mono"
                     />
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                        {MCP_SNIPPET_BUTTONS.map((button) => {
-                            const label =
-                                button.label ||
-                                (button.labelKey ? t(button.labelKey) : '');
-                            return (
-                                <Button
-                                    key={button.snippetKey}
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={!mcpClientConfig}
-                                    onClick={() =>
-                                        copyMcpSnippet(button.snippetKey, label)
-                                    }
-                                >
-                                    <CopyIcon data-icon="inline-start" />
-                                    {label}
-                                </Button>
-                            );
-                        })}
-                    </div>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={!mcpClientConfig}
+                        onClick={() => setClientConfigOpen(true)}
+                    >
+                        <FileCodeIcon data-icon="inline-start" />
+                        {t(
+                            'view.settings.integrations.mcp_server.view_client_config'
+                        )}
+                    </Button>
                 </div>
+                {mcpClientConfig ? (
+                    <McpClientConfigDialog
+                        open={clientConfigOpen}
+                        onOpenChange={setClientConfigOpen}
+                        snippets={mcpClientConfig}
+                    />
+                ) : null}
             </Field>
 
             <Field
+                settingId="ai.mcp.rotate-token"
                 label={t('view.settings.integrations.mcp_server.rotate_token')}
                 description={t(
                     'view.settings.integrations.mcp_server.rotate_token_description'

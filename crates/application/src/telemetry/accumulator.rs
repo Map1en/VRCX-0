@@ -118,12 +118,15 @@ impl TelemetryAccumulator {
                 }
                 self.assistant.turn_errors = increment(self.assistant.turn_errors);
                 if should_record_assistant_turn_detail(&code, summary.as_deref()) {
+                    let summary = summary.as_deref().map(|summary| {
+                        llm_transport_error_category(&code, summary).unwrap_or(summary)
+                    });
                     self.assistant.details.record(build_error_detail(
                         "turn_error",
                         None,
                         Some(code.as_str()),
                         None,
-                        summary.as_deref(),
+                        summary,
                         None,
                     ));
                 }
@@ -524,6 +527,20 @@ fn should_record_assistant_turn_detail(code: &str, summary: Option<&str>) -> boo
     code != "llm" || !is_llm_http_error_summary(summary)
 }
 
+fn llm_transport_error_category<'a>(code: &str, summary: &'a str) -> Option<&'a str> {
+    const PREFIX: &str = "LLM transport error";
+    if code != "llm" || !summary.starts_with(PREFIX) {
+        return None;
+    }
+    let kind_len = summary[PREFIX.len()..]
+        .strip_prefix(": ")
+        .and_then(|detail| detail.split_once(": "))
+        .map(|(kind, _)| kind)
+        .filter(|kind| !kind.is_empty() && kind.chars().all(|ch| ch.is_ascii_lowercase()))
+        .map_or(0, |kind| ": ".len() + kind.len());
+    Some(&summary[..PREFIX.len() + kind_len])
+}
+
 fn is_llm_http_error_summary(summary: Option<&str>) -> bool {
     let Some(status) = summary
         .and_then(|value| value.strip_prefix("LLM API error ("))
@@ -646,6 +663,35 @@ mod tests {
         assert_eq!(tools.entries[0].opens, 1);
         acc.mark_tools_sent(tools.revision);
         assert!(acc.tool_snapshot().is_none());
+    }
+
+    #[test]
+    fn llm_transport_turn_errors_keep_only_the_error_kind() {
+        let mut acc = TelemetryAccumulator::default();
+        for summary in [
+            "LLM transport error: connect: error sending request for url (https://llm.corp.internal/v1/chat): client error (Connect): invalid peer certificate: certificate not valid for name \"llm.corp.internal\"; certificate is only valid for DnsName(\"proxy.corp.internal\")",
+            "LLM transport error: error decoding response body from 10.0.0.5",
+        ] {
+            acc.record(TelemetryClientEvent::AssistantTurnError {
+                code: "llm".into(),
+                summary: Some(summary.into()),
+            });
+        }
+
+        let snapshot = acc
+            .assistant_health_snapshot()
+            .expect("assistant health should be dirty");
+        let summaries = snapshot
+            .entry
+            .details
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(|detail| detail.summary)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            summaries,
+            vec!["LLM transport error", "LLM transport error: connect"]
+        );
     }
 
     #[test]

@@ -17,6 +17,7 @@ export function GalleryTabsSection({
     const {
         activeTab,
         assets,
+        clipboardPasting,
         currentUserId,
         gridDensityConfig,
         isVrcPlusSupporter,
@@ -32,6 +33,7 @@ export function GalleryTabsSection({
     const {
         onActiveTabChange,
         onBeginUpload,
+        onPasteUpload,
         onClearProfileField,
         onDeleteFile,
         onDeletePrint,
@@ -49,6 +51,7 @@ export function GalleryTabsSection({
                 ...galleryBulkCommands,
                 activeTab,
                 assets,
+                clipboardPasting,
                 loadingByTab,
                 uploadingTab,
                 mutatingKey,
@@ -60,6 +63,7 @@ export function GalleryTabsSection({
                 userIcon,
                 gridDensityConfig,
                 onBeginUpload,
+                onPasteUpload,
                 onClearProfileField,
                 onPreview,
                 onSetProfileField,
@@ -70,12 +74,14 @@ export function GalleryTabsSection({
                 activeTab,
                 prints: assets.prints,
                 loading: loadingByTab.prints,
+                clipboardPasting,
                 uploadingTab,
                 mutatingKey,
                 isVrcPlusSupporter,
                 gridDensityConfig,
                 onRefresh,
                 onBeginUpload,
+                onPasteUpload,
                 onPreview,
                 onDeletePrint
             }}

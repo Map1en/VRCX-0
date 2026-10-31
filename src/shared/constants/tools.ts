@@ -235,8 +235,8 @@ const toolDefinitions: ToolDefinition[] = [
     {
         key: 'offline-record',
         category: 'data',
-        iconKey: 'radio-tower',
-        navIcon: 'lucide:RadioTower',
+        iconKey: 'server',
+        navIcon: 'lucide:Server',
         titleKey: 'offline_record.header',
         descriptionKey: 'offline_record.tools_description',
         navEligible: true,

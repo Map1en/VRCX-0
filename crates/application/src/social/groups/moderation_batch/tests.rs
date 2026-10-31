@@ -12,13 +12,13 @@ use super::*;
 
 struct FakeActions {
     calls: Mutex<Vec<String>>,
-    outcomes: Mutex<VecDeque<Result<GroupModerationRemoteOutcome>>>,
+    outcomes: Mutex<VecDeque<Result<RemoteMutationOutcome>>>,
     progress: Mutex<Vec<(u32, u32)>>,
     scope_current: AtomicBool,
 }
 
 impl FakeActions {
-    fn new(outcomes: Vec<Result<GroupModerationRemoteOutcome>>) -> Self {
+    fn new(outcomes: Vec<Result<RemoteMutationOutcome>>) -> Self {
         Self {
             calls: Mutex::new(Vec::new()),
             outcomes: Mutex::new(outcomes.into()),
@@ -27,13 +27,13 @@ impl FakeActions {
         }
     }
 
-    fn run(&self, call: String) -> Result<GroupModerationRemoteOutcome> {
+    fn run(&self, call: String) -> Result<RemoteMutationOutcome> {
         self.calls.lock().unwrap().push(call);
         self.outcomes
             .lock()
             .unwrap()
             .pop_front()
-            .unwrap_or(Ok(GroupModerationRemoteOutcome::Applied))
+            .unwrap_or(Ok(RemoteMutationOutcome::Applied))
     }
 }
 
@@ -41,7 +41,7 @@ impl GroupModerationBatchActions for FakeActions {
     fn execute<'a>(
         &'a self,
         operation: GroupModerationOperation<'a>,
-    ) -> BoxFuture<'a, Result<GroupModerationRemoteOutcome>> {
+    ) -> BoxFuture<'a, Result<RemoteMutationOutcome>> {
         Box::pin(async move {
             let call = match operation {
                 GroupModerationOperation::Kick { group_id, user_id } => {
@@ -116,9 +116,9 @@ fn target(user_id: &str, role_ids: &[&str]) -> GroupModerationBatchTarget {
 #[tokio::test]
 async fn irreversible_batch_continues_after_item_failure_without_rollback() {
     let actions = FakeActions::new(vec![
-        Ok(GroupModerationRemoteOutcome::Applied),
+        Ok(RemoteMutationOutcome::Applied),
         Err(Error::Custom("denied".into())),
-        Ok(GroupModerationRemoteOutcome::Applied),
+        Ok(RemoteMutationOutcome::Applied),
     ]);
 
     let result = run_group_moderation_batch_with_actions(
@@ -159,9 +159,9 @@ async fn irreversible_batch_continues_after_item_failure_without_rollback() {
 #[tokio::test]
 async fn role_batch_reports_partial_target_and_keeps_explicit_operation_order() {
     let actions = FakeActions::new(vec![
-        Ok(GroupModerationRemoteOutcome::Applied),
+        Ok(RemoteMutationOutcome::Applied),
         Err(Error::Custom("role denied".into())),
-        Ok(GroupModerationRemoteOutcome::Applied),
+        Ok(RemoteMutationOutcome::Applied),
     ]);
 
     let result = run_group_moderation_batch_with_actions(
@@ -202,7 +202,7 @@ async fn role_batch_reports_partial_target_and_keeps_explicit_operation_order() 
 
 #[tokio::test]
 async fn scope_change_after_remote_success_stops_remaining_targets() {
-    let actions = FakeActions::new(vec![Ok(GroupModerationRemoteOutcome::AppliedScopeChanged)]);
+    let actions = FakeActions::new(vec![Ok(RemoteMutationOutcome::AppliedScopeChanged)]);
 
     let result = run_group_moderation_batch_with_actions(
         &actions,

@@ -528,3 +528,36 @@ fn friend_reorder_and_custom_order_are_owner_scoped() {
     assert_eq!(ids(&owner_a), vec!["usr_1", "usr_2"]);
     assert_eq!(ids(&owner_b), vec!["usr_2", "usr_1"]);
 }
+
+#[test]
+fn ensure_global_store_tables_bootstraps_tables_once_while_duplicate_favorites_keep_the_unique_index_pending(
+) {
+    let (_dir, db) = test_db("favorite-duplicate-tables-once");
+    db.execute_non_query(
+        "CREATE TABLE IF NOT EXISTS favorite_world (id INTEGER PRIMARY KEY, created_at TEXT, world_id TEXT, group_name TEXT)",
+        &Default::default(),
+    )
+    .unwrap();
+    for created_at in ["2026-01-01T00:00:00.000Z", "2026-01-02T00:00:00.000Z"] {
+        db.execute_non_query(
+            &format!(
+                "INSERT INTO favorite_world (created_at, world_id, group_name) VALUES ('{created_at}', 'wrld_1', 'group')"
+            ),
+            &Default::default(),
+        )
+        .unwrap();
+    }
+    ensure_global_store_tables(&db).unwrap();
+    db.execute_non_query("DROP TABLE memos", &Default::default())
+        .unwrap();
+
+    ensure_global_store_tables(&db).unwrap();
+
+    assert!(db
+        .execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'memos'",
+            &Default::default(),
+        )
+        .unwrap()
+        .is_empty());
+}

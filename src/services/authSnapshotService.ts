@@ -1,4 +1,7 @@
-import type { RuntimeOperationStatus } from '@/platform/tauri/bindings';
+import {
+    commands,
+    type RuntimeOperationStatus
+} from '@/platform/tauri/bindings';
 import authRepository, {
     type SavedAuthSnapshot
 } from '@/repositories/authRepository';
@@ -60,6 +63,12 @@ export async function refreshSavedAuthSnapshot() {
 
 export function getCachedAuthSnapshot(): SavedAuthSnapshot | null {
     return cachedAuthSnapshot;
+}
+
+export async function clearSavedPassword(userId: string) {
+    return applySavedAuthSnapshot(
+        await commands.appVrchatAuthSavedPasswordClear({ userId })
+    );
 }
 
 export async function deleteSavedAuthSnapshot(userId: string) {

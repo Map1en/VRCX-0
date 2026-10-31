@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { CurrentUserSocialStatusDialog } from '@/components/dialogs/user-dialog/UserSelfEditDialogs';
+import { useGameIsolationCardStore } from '@/components/layout/status-bar/gameIsolationCardStore';
 import { useLocationMetadata } from '@/components/location/useLocationMetadata';
 import {
     ProfileAvatarFrame,
@@ -31,6 +32,7 @@ import { UserStatusAvatar } from '@/components/UserStatusAvatar';
 import { presenceLocationTag, presenceOf } from '@/domain/friends/presence';
 import { cn } from '@/lib/utils';
 import { useModalStore } from '@/state/modalStore';
+import { useRuntimeStore } from '@/state/runtimeStore';
 import {
     ContextMenu,
     ContextMenuCheckboxItem,
@@ -103,6 +105,12 @@ export function SidePanelSelfHeader() {
     } = useFriendsSidebarDisplayPreferences();
     const { statusPresets } = useFriendsSidebarPreferences();
     const confirm = useModalStore((state) => state.confirm);
+    const gameIsolationAvailable = useRuntimeStore(
+        (state) => state.hostCapabilities.gameProcessMonitor.available
+    );
+    const gameIsolationEnabled = useRuntimeStore(
+        (state) => state.gameIsolation.enabled
+    );
     const {
         applyCurrentUserStatusPreset,
         changeCurrentUserStatus,
@@ -260,6 +268,11 @@ export function SidePanelSelfHeader() {
                                         >
                                             {displayName}
                                         </span>
+                                        {gameIsolationEnabled ? (
+                                            <span className="text-content-secondary shrink-0 rounded border px-1 text-[10px] leading-4">
+                                                {t('game_isolation.badge')}
+                                            </span>
+                                        ) : null}
                                         <ChevronDownIcon className="size-3.5 shrink-0" />
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent
@@ -270,6 +283,22 @@ export function SidePanelSelfHeader() {
                                             DROPDOWN_MENU_SLOTS,
                                             true
                                         )}
+                                        {gameIsolationAvailable ? (
+                                            <>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem
+                                                    onClick={() =>
+                                                        useGameIsolationCardStore
+                                                            .getState()
+                                                            .setOpen(true)
+                                                    }
+                                                >
+                                                    {t(
+                                                        'game_isolation.menu_item'
+                                                    )}
+                                                </DropdownMenuItem>
+                                            </>
+                                        ) : null}
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                                 {isEditingDescription ? (

@@ -1,4 +1,4 @@
-import type { KeyboardEvent, SyntheticEvent } from 'react';
+import type { KeyboardEvent, ReactNode, SyntheticEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { LocationContextMenu } from '@/components/location/LocationContextMenu';
@@ -47,6 +47,7 @@ export type LocationProps = {
     stopPropagation?: boolean;
     asButton?: boolean;
     showGroupLink?: boolean;
+    contextMenuExtraItems?: ReactNode;
     className?: string;
     worldNameClassName?: string;
 };
@@ -70,6 +71,7 @@ export function Location({
     stopPropagation = false,
     asButton = true,
     showGroupLink = true,
+    contextMenuExtraItems,
     className = '',
     worldNameClassName = ''
 }: LocationProps) {
@@ -274,6 +276,7 @@ export function Location({
             canOpenWorld={canOpenWorld}
             canOpenInstanceInGame={isGameRunning}
             canUseCurrentInstance={canUseCurrentInstance}
+            extraItems={contextMenuExtraItems}
             isOpenPreviousInstanceInfoDialog={isOpenPreviousInstanceInfoDialog}
             launchLocation={currentLocation}
             launchShortName={parsedLocation.shortName || ''}

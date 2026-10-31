@@ -72,6 +72,7 @@ export function TrayShortcutSetting() {
     return (
         <>
             <Field
+                settingId="system.window.tray-shortcut"
                 label={t('shortcuts.tray.title')}
                 description={
                     <>

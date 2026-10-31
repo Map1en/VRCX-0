@@ -194,19 +194,6 @@ impl SharedCollectionImportRuntime {
         status
     }
 
-    pub fn cancel_if_scope_mismatch(&self) -> SharedCollectionImportStatus {
-        let scope = self.auth_scope.snapshot();
-        let status = {
-            let mut inner = self.lock_inner();
-            if !mark_cancelling_if_scope_mismatch(&mut inner, &scope) {
-                return inner.status.clone();
-            }
-            inner.status.clone()
-        };
-        self.emit_status(status.clone());
-        status
-    }
-
     fn apply_progress(&self, run_id: &str, progress: SharedCollectionImportProgress) {
         let status = {
             let mut inner = self.lock_inner();
@@ -264,20 +251,6 @@ fn is_active_status(status: SharedCollectionImportState) -> bool {
         status,
         SharedCollectionImportState::Running | SharedCollectionImportState::Cancelling
     )
-}
-
-fn mark_cancelling_if_scope_mismatch(
-    inner: &mut SharedCollectionImportRuntimeInner,
-    scope: &RuntimeAuthScopeSnapshot,
-) -> bool {
-    if !is_active_status(inner.status.status) || inner.auth_generation == scope.generation {
-        return false;
-    }
-    if let Some(cancel) = &inner.cancel {
-        cancel.store(true, Ordering::Release);
-    }
-    inner.status.status = SharedCollectionImportState::Cancelling;
-    true
 }
 
 fn prepare_terminal_result(

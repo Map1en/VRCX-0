@@ -357,6 +357,67 @@ fn friend_log_upsert_current_update_preserves_friend_number_unless_new_value_is_
 }
 
 #[test]
+fn friend_log_upsert_current_numbers_new_friends_like_the_realtime_writer() {
+    let (_dir, db) = test_db("upsert-next-friend-number");
+    friend_log_upsert_current(
+        &db,
+        "usr_self".into(),
+        current_entry("usr_alice", "Alice", Some("Known"), 5),
+        FriendLogUpsertOptionsInput::default(),
+    )
+    .unwrap();
+
+    friend_log_upsert_current(
+        &db,
+        "usr_self".into(),
+        FriendLogCurrentEntryInput {
+            user_id: "usr_bob".into(),
+            display_name: "Bob".into(),
+            trust_level: None,
+            friend_number: Value::Null,
+        },
+        FriendLogUpsertOptionsInput {
+            history_entry: Some(history_entry("usr_bob", "Friend")),
+            force_history: false,
+        },
+    )
+    .unwrap();
+
+    let rows = friend_log_current_list(&db, "usr_self".into()).unwrap();
+    let bob = rows.iter().find(|row| row.user_id == "usr_bob").unwrap();
+    assert_eq!(bob.friend_number, 6);
+    assert_eq!(bob.trust_level, "Visitor");
+    let history = all_history(&db);
+    assert_eq!(history[0].friend_number, 6);
+    assert_eq!(history[0].trust_level, "Visitor");
+}
+
+#[test]
+fn friend_log_upsert_current_keeps_known_trust_and_name_when_the_update_lacks_them() {
+    let (_dir, db) = test_db("upsert-keep-known-facts");
+    friend_log_upsert_current(
+        &db,
+        "usr_self".into(),
+        current_entry("usr_alice", "Alice", Some("Trusted"), 3),
+        FriendLogUpsertOptionsInput::default(),
+    )
+    .unwrap();
+
+    friend_log_upsert_current(
+        &db,
+        "usr_self".into(),
+        current_entry("usr_alice", "Unknown", None, 0),
+        FriendLogUpsertOptionsInput::default(),
+    )
+    .unwrap();
+
+    let rows = friend_log_current_list(&db, "usr_self".into()).unwrap();
+    assert_eq!(rows[0].display_name, "Alice");
+    assert_eq!(rows[0].trust_level, "Trusted");
+    assert_eq!(rows[0].friend_number, 3);
+}
+
+#[test]
 fn friend_log_upsert_current_skips_history_on_update_unless_forced() {
     let (_dir, db) = test_db("upsert-update-history");
     friend_log_upsert_current(

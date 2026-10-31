@@ -32,6 +32,7 @@ import {
 import type { UserDialogPreviousInstance } from '@/services/userDialogSessionCacheService';
 import type { UserDialogRelationshipEvent } from '@/services/userDialogSessionCacheService';
 import { parseLocation } from '@/shared/utils/location';
+import { replaceBioSymbols } from '@/shared/utils/string';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -628,7 +629,7 @@ export function UserDialogBioPanel({
 
     return (
         <TranslatableText
-            source={profile.bio || ''}
+            source={replaceBioSymbols(profile.bio)}
             entityId={profile.id || ''}
             density="button"
         >

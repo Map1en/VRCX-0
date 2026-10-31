@@ -150,6 +150,7 @@ export function AssistantSettingsGroup({
                 ) : (
                     <>
                         <Field
+                            settingId="ai.assistant.default-model"
                             label={t('view.settings.ai.default_model')}
                             description={t(
                                 'view.settings.ai.default_model_description'
@@ -169,6 +170,7 @@ export function AssistantSettingsGroup({
                         </Field>
 
                         <Field
+                            settingId="ai.assistant.playbook-mode"
                             label={t('assistant.runtime.playbook_mode')}
                             description={t(
                                 'view.settings.ai.playbook_mode_description'
@@ -220,6 +222,7 @@ export function AssistantSettingsGroup({
                 }
             >
                 <Field
+                    settingId="ai.endpoints.follow-custom-proxy"
                     label={t('view.tools.llm_endpoints.follow_custom_proxy')}
                     description={t(
                         'view.tools.llm_endpoints.follow_custom_proxy_description'

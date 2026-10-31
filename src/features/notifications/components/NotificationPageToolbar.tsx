@@ -15,6 +15,7 @@ import { Button } from '@/ui/shadcn/button';
 
 import type { NotificationLoadStatus } from '../notificationPageTypes';
 import type { NotificationQuickFilter } from '../useNotificationFilters';
+import type { NotificationQuickFilterCounts } from '../useNotificationRows';
 import { NotificationTypeFilterDropdown } from './NotificationViewParts';
 
 const QUICK_FILTERS: { value: NotificationQuickFilter; labelKey: string }[] = [
@@ -28,6 +29,7 @@ const QUICK_FILTERS: { value: NotificationQuickFilter; labelKey: string }[] = [
 
 type NotificationPageToolbarProps = {
     activeTypes: string[];
+    quickFilterCounts: NotificationQuickFilterCounts;
     loadStatus: NotificationLoadStatus;
     notificationTypeLabel: (type: string) => string;
     onActiveTypesChange: (types: string[]) => void;
@@ -38,15 +40,18 @@ type NotificationPageToolbarProps = {
     quickFilter: NotificationQuickFilter;
     searchQuery: string;
     canMarkAllSeen: boolean;
+    isMarkingAllSeen: boolean;
 };
 
 export function NotificationPageToolbar({
     activeTypes,
+    quickFilterCounts,
     searchQuery,
     notificationTypeLabel,
     loadStatus,
     quickFilter,
     canMarkAllSeen,
+    isMarkingAllSeen,
     onActiveTypesChange,
     onSearchQueryChange,
     onMarkAllSeen,
@@ -57,7 +62,11 @@ export function NotificationPageToolbar({
     const quickFilterOptions: ToolbarSegmentOption<NotificationQuickFilter>[] =
         QUICK_FILTERS.map((entry) => ({
             value: entry.value,
-            label: t(entry.labelKey)
+            label: t(entry.labelKey),
+            count:
+                entry.value === 'all'
+                    ? undefined
+                    : quickFilterCounts[entry.value]
         }));
     const hasActiveFilters =
         activeTypes.length > 0 ||
@@ -102,6 +111,7 @@ export function NotificationPageToolbar({
                             'side_panel.notification_center.mark_all_read'
                         )}
                         disabled={!canMarkAllSeen}
+                        loading={isMarkingAllSeen}
                         onClick={onMarkAllSeen}
                     />
                 </ToolbarActions>

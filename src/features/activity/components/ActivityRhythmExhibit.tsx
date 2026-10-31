@@ -42,21 +42,23 @@ function HourStrip({ totals }: { totals: number[] }) {
                     const tint = heatStep(value, peak);
                     const share =
                         total > 0 ? Math.round((value / total) * 100) : 0;
+                    const label = `${USER_ACTIVITY_HOUR_LABELS[hour]} · ${share}% · ${(value / 60).toFixed(1)}${hoursUnit}`;
                     return (
                         <Tooltip key={hour}>
                             <TooltipTrigger
                                 render={
                                     <span
-                                        className="flex-1"
+                                        role="img"
+                                        tabIndex={0}
+                                        aria-label={label}
+                                        className="focus-visible:ring-ring/50 flex-1 rounded-[2px] outline-none focus-visible:ring-2"
                                         style={{
                                             backgroundImage: `linear-gradient(to top, ${tint} ${fill}%, transparent ${fill}%)`
                                         }}
                                     />
                                 }
                             />
-                            <TooltipContent>
-                                {`${USER_ACTIVITY_HOUR_LABELS[hour]} · ${share}% · ${(value / 60).toFixed(1)}${hoursUnit}`}
-                            </TooltipContent>
+                            <TooltipContent>{label}</TooltipContent>
                         </Tooltip>
                     );
                 })}
@@ -121,6 +123,10 @@ export function ActivityRhythmExhibit({
                         scaleColors={heatmapScaleColors(palette)}
                         unitLabel={t('view.activity.unit.minutes')}
                         squareCells
+                        ariaDescription={t(
+                            'view.activity.chart.heatmap_summary',
+                            { peak: USER_ACTIVITY_HOUR_LABELS[peak] }
+                        )}
                     />
                 ) : null
             }

@@ -66,9 +66,7 @@ export function MutualFriendsPage() {
                             onExcludedFriendIdsChange={
                                 exclusions.setExcludedFriendIds
                             }
-                            onResetLayoutAndHidden={
-                                actions.resetLayoutAndHidden
-                            }
+                            onResetLayoutSettings={actions.resetLayoutSettings}
                             setLayoutSetting={layout.setLayoutSetting}
                         />
                     }

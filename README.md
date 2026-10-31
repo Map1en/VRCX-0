@@ -77,13 +77,13 @@ VRCX-0 is a ground-up rewrite of VRCX by one of its former maintainers. Rebuilt 
 | **Social automation** | Switch status when alone or with others; auto-reply to invite requests | + Schedules, multiple context rules with priorities, previous status restored             |
 | **Notifications**     | Desktop, TTS, XSOverlay, OVR Toolkit, wrist overlay                    | + Desktop Overlay, Discord webhooks, Do Not Disturb; per-event filtering on every channel |
 | **VR overlay**        | Browser-rendered (100 MB+); OpenVR                                     | + Native rendering (tens of MB); OpenXR (**tested with WiVRn**)                           |
-| Screenshots           | View and search metadata                                               | + Grid view, batch management, ZIP export                                                 |
+| Screenshots           | View and search metadata                                               | + Grid view, favorites, batch management, ZIP export                                      |
 | Avatar details        | Performance rank and file size                                         | + Full performance stats against each platform's limits                                   |
 | Backup                | VRChat registry settings                                               | + Scheduled database backups, one-click restore                                           |
 | Friend locations      | Group friends by instance                                              | + Worlds view                                                                             |
 | Group management      | Set visibility one group at a time                                     | + Batch leave and batch visibility; group roles in the player list                        |
 | Themes                | Built-in themes, custom CSS file                                       | + Community themes, background image, in-app CSS editor, accent color                     |
-| Game log              | All accounts mixed together                                            | Stored per account                                                                        |
+| Multiple accounts     | Game logs from all accounts mixed together                             | Game log kept per account; play VRChat on another account without affecting this one      |
 
 Everything else VRCX does, VRCX-0 does too.
 

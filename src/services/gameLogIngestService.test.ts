@@ -39,16 +39,18 @@ function projection(overrides: Partial<GameLogProjection>): GameLogProjection {
 
 async function loadGameLogService() {
     vi.resetModules();
-    const [service, runtimeStore] = await Promise.all([
+    const [service, runtimeStore, friendStatsStore] = await Promise.all([
         import('./gameLogIngestService'),
-        import('@/state/runtimeStore')
+        import('@/state/runtimeStore'),
+        import('@/state/friendStatsStore')
     ]);
 
     runtimeStore.useRuntimeStore.getState().resetRuntimeState();
 
     return {
         service,
-        useRuntimeStore: runtimeStore.useRuntimeStore
+        useRuntimeStore: runtimeStore.useRuntimeStore,
+        useFriendStatsStore: friendStatsStore.useFriendStatsStore
     };
 }
 
@@ -114,6 +116,65 @@ describe('gameLogIngestService characterization', () => {
                 currentLocation: 'wrld_test:123',
                 currentWorldName: 'Test World'
             })
+        );
+    });
+
+    it('moves friends last seen forward when they join or leave the current room', async () => {
+        const { service, useRuntimeStore, useFriendStatsStore } =
+            await loadGameLogService();
+        useRuntimeStore
+            .getState()
+            .setAuthBootstrap({ currentUserId: 'usr_self' });
+        const friend = (lastSeen: string) => ({
+            lastSeen,
+            mutualCount: 0,
+            mutualOptedOut: false
+        });
+        useFriendStatsStore.getState().replaceStats('usr_self', {
+            usr_stay: friend('2026-05-01T00:00:00.000Z'),
+            usr_join: friend('2026-05-01T00:00:00.000Z'),
+            usr_newer: friend('2026-06-01T00:00:00.000Z')
+        });
+        const player = (userId: string) => ({
+            userId,
+            displayName: userId,
+            joinTimeMs: null
+        });
+
+        service.applyRuntimeGameLogProjection(
+            projection({
+                currentLocation: 'wrld_test:123',
+                lastGameLogAt: '2026-05-14T00:00:00.000Z',
+                currentLocationPlayers: [player('usr_stay')]
+            })
+        );
+        service.applyRuntimeGameLogProjection(
+            projection({
+                currentLocation: 'wrld_test:123',
+                lastGameLogAt: '2026-05-14T00:05:00.000Z',
+                currentLocationPlayers: [
+                    player('usr_stay'),
+                    player('usr_join'),
+                    player('usr_newer'),
+                    player('usr_stranger')
+                ]
+            })
+        );
+
+        const byUserId = useFriendStatsStore.getState().byUserId;
+        expect(byUserId.usr_stay?.lastSeen).toBe('2026-05-14T00:00:00.000Z');
+        expect(byUserId.usr_join?.lastSeen).toBe('2026-05-14T00:05:00.000Z');
+        expect(byUserId.usr_newer?.lastSeen).toBe('2026-06-01T00:00:00.000Z');
+        expect(byUserId.usr_stranger).toBeUndefined();
+
+        service.applyRuntimeGameLogProjection(
+            projection({
+                currentLocation: '',
+                lastGameLogAt: '2026-05-14T00:30:00.000Z'
+            })
+        );
+        expect(useFriendStatsStore.getState().byUserId.usr_stay?.lastSeen).toBe(
+            '2026-05-14T00:30:00.000Z'
         );
     });
 
@@ -278,6 +339,24 @@ describe('gameLogIngestService characterization', () => {
             lastGameLogAt: '2026-05-14T00:03:00.000Z',
             lastGameLogType: 'game-stopped'
         });
+    });
+
+    it('keeps the local game room out of an isolated account', async () => {
+        const { service, useRuntimeStore } = await loadGameLogService();
+        useRuntimeStore
+            .getState()
+            .setGameIsolation({ revision: 1, enabled: true });
+
+        service.applyRuntimeGameLogProjection(
+            projection({
+                currentLocation: 'wrld_alt:1',
+                currentWorldId: 'wrld_alt',
+                currentLocationStartedAt: '2026-05-14T00:00:00.000Z'
+            })
+        );
+
+        expect(useRuntimeStore.getState().gameState.currentLocation).toBe('');
+        expect(mocks.recordGameRuntimePresence).not.toHaveBeenCalled();
     });
 });
 

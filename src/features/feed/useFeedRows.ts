@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
     buildFeedFavoriteIdSet as buildFavoriteIdSet,
+    getFeedRowId,
     normalizeFeedId as normalizeId,
     resolveDisplayNameCandidate,
     resolveFeedUserId
@@ -61,8 +62,14 @@ export function useFeedRows({
     const isFavoritesLoaded = useSessionStore(
         (state) => state.isFavoritesLoaded
     );
-    const remoteFavoritesById = useFavoriteStore(
-        (state) => state.remoteFavoritesById
+    const favoriteFriendGroups = useFavoriteStore(
+        (state) => state.favoriteFriendGroups
+    );
+    const groupedFavoriteFriendIdsByGroupKey = useFavoriteStore(
+        (state) => state.groupedFavoriteFriendIdsByGroupKey
+    );
+    const localFriendFavoriteGroups = useFavoriteStore(
+        (state) => state.localFriendFavoriteGroups
     );
     const localFriendFavorites = useFavoriteStore(
         (state) => state.localFriendFavorites
@@ -94,6 +101,7 @@ export function useFeedRows({
     const [loadStatus, setLoadStatus] = useState<FeedLoadStatus>('idle');
     const [hasMore, setHasMore] = useState(false);
     const [hasUnloadedLatest, setHasUnloadedLatest] = useState(false);
+    const [newSinceLeftCount, setNewSinceLeftCount] = useState(0);
     const [latestReloadToken, setLatestReloadToken] = useState(0);
     const [loadingOlder, setLoadingOlder] = useState(false);
     const cursorRef = useRef<FeedCursor | null>(null);
@@ -107,12 +115,24 @@ export function useFeedRows({
 
     const favoriteIdSet = useMemo(
         () =>
-            buildFavoriteIdSet(
-                remoteFavoritesById,
+            buildFavoriteIdSet({
+                remoteGroupKeys: favoriteFriendGroups
+                    .map((group) => normalizeId(group.key))
+                    .filter(Boolean),
+                remoteIdsByGroupKey: groupedFavoriteFriendIdsByGroupKey,
+                localGroupNames: localFriendFavoriteGroups.length
+                    ? localFriendFavoriteGroups
+                    : Object.keys(localFriendFavorites),
                 localFriendFavorites,
-                favoriteGroupFilterIds
-            ),
-        [favoriteGroupFilterIds, localFriendFavorites, remoteFavoritesById]
+                selectedGroupKeys: favoriteGroupFilterIds
+            }),
+        [
+            favoriteFriendGroups,
+            favoriteGroupFilterIds,
+            groupedFavoriteFriendIdsByGroupKey,
+            localFriendFavoriteGroups,
+            localFriendFavorites
+        ]
     );
     const searchMode = Boolean(
         deferredSearchQuery.trim() || scopedUserIds.length || dateFrom || dateTo
@@ -155,16 +175,32 @@ export function useFeedRows({
         rowsRef.current = rows;
     }, [rows]);
 
-    const updateHasUnloadedLatest = useCallback((value: boolean) => {
-        hasUnloadedLatestRef.current = value;
-        setHasUnloadedLatest((current) =>
-            current === value ? current : value
-        );
+    const clearNewSinceLeftCount = useCallback(() => {
+        setNewSinceLeftCount((current) => (current === 0 ? current : 0));
     }, []);
 
-    const setViewingLatest = useCallback((value: boolean) => {
-        viewingLatestRef.current = value && !hasUnloadedLatestRef.current;
-    }, []);
+    const updateHasUnloadedLatest = useCallback(
+        (value: boolean) => {
+            hasUnloadedLatestRef.current = value;
+            setHasUnloadedLatest((current) =>
+                current === value ? current : value
+            );
+            if (!value) {
+                clearNewSinceLeftCount();
+            }
+        },
+        [clearNewSinceLeftCount]
+    );
+
+    const setViewingLatest = useCallback(
+        (value: boolean) => {
+            viewingLatestRef.current = value && !hasUnloadedLatestRef.current;
+            if (viewingLatestRef.current) {
+                clearNewSinceLeftCount();
+            }
+        },
+        [clearNewSinceLeftCount]
+    );
 
     const reloadLatest = useCallback(() => {
         viewingLatestRef.current = true;
@@ -559,6 +595,21 @@ export function useFeedRows({
                     if (result.maxSequence > lastLiveFeedSequenceRef.current) {
                         lastLiveFeedSequenceRef.current = result.maxSequence;
                     }
+                    if (!viewingLatestRef.current) {
+                        const previousKeys = new Set(
+                            rowsRef.current.map(getFeedRowId)
+                        );
+                        const added = result.rows.reduce(
+                            (count, row) =>
+                                previousKeys.has(getFeedRowId(row))
+                                    ? count
+                                    : count + 1,
+                            0
+                        );
+                        if (added > 0) {
+                            setNewSinceLeftCount((current) => current + added);
+                        }
+                    }
                     commitRowsToWindow(
                         result.rows,
                         viewingLatestRef.current ? 'latest' : 'oldest'
@@ -653,6 +704,7 @@ export function useFeedRows({
         loadOlder,
         loadStatus,
         loadingOlder,
+        newSinceLeftCount,
         normalQueryKey,
         reloadLatest,
         searchMode,

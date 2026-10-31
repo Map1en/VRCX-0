@@ -13,12 +13,12 @@ use vrcx_0_host_desktop::discord_rpc::DiscordRpc;
 use vrcx_0_i18n::{text, DiscordPresenceKey};
 use vrcx_0_persistence::config::ConfigRepository;
 
-use super::BackgroundTickContext;
 use super::{
     background_capability_session, emit_background_error, emit_background_info_if_changed,
     emit_background_warning, remember_background_output_if_changed,
     BACKGROUND_DISCORD_CADENCE_SECONDS, BACKGROUND_DISCORD_PRESENCE_JOB,
 };
+use super::{BackgroundTickContext, LocalGameFacts};
 
 const APP_LANGUAGE_CONFIG_KEY: &str = "appLanguage";
 #[derive(Default)]
@@ -95,25 +95,24 @@ pub(in crate::state) async fn run_background_discord_tick(
         );
         return;
     };
-    let host_session = context.host_session.snapshot();
+    let local_game = LocalGameFacts::from_context(context);
     let favorite_world_groups_by_key = HashMap::new();
     let game_state_store =
         crate::game_state_store::PersistenceGameStateStore::new(Arc::clone(context.db));
-    let background_remote =
-        crate::background_remote::DesktopBackgroundRemoteApi::new(Arc::clone(context.web));
+    let background_remote = crate::background_remote::DesktopBackgroundRemoteApi::new(
+        Arc::clone(context.web),
+        Arc::clone(context.world_cache),
+    );
     let facts = match build_background_presence_facts(
         &game_state_store,
         BackgroundPresenceFactsInput {
             session,
-            is_game_running: host_session.is_game_running,
-            is_steamvr_running: host_session.is_steamvr_running,
-            is_game_no_vr: context
-                .config
-                .get_bool("isGameNoVR", false)
-                .unwrap_or(false),
-            last_game_started_at: host_session.last_game_started_at,
-            game_log_snapshot: context.desktop_services.game_log_snapshot(),
-            now_playing: context.desktop_services.now_playing(),
+            is_game_running: local_game.is_game_running,
+            is_steamvr_running: local_game.is_steamvr_running,
+            is_game_no_vr: local_game.is_game_no_vr,
+            last_game_started_at: local_game.last_game_started_at,
+            game_log_snapshot: local_game.game_log_snapshot,
+            now_playing: local_game.now_playing,
             friend_user_ids,
             favorite_friend_groups_by_key,
             favorite_world_groups_by_key: &favorite_world_groups_by_key,

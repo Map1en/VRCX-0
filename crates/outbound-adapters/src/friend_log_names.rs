@@ -25,7 +25,7 @@ impl FriendLogNameStore for LocalFriendLogNameStore {
         user_ids: &[String],
     ) -> crate::Result<HashMap<String, String>> {
         vrcx_0_persistence::friends::friend_display_names(&self.db, owner_user_id.clone(), user_ids)
-            .map_err(crate::map_persistence_error)
+            .map_err(crate::Error::from)
     }
 
     fn game_log_user_stats(
@@ -40,8 +40,7 @@ impl FriendLogNameStore for LocalFriendLogNameStore {
                 user_ids: user_ids.to_vec(),
                 display_names: Vec::new(),
             },
-        )
-        .map_err(crate::map_persistence_error)?;
+        )?;
         match output {
             GameLogQueryOutput::AllUserStats(rows) => Ok(rows),
             _ => Ok(Vec::new()),

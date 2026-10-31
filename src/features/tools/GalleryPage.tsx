@@ -16,7 +16,7 @@ export function GalleryPage() {
     const pageState = useGalleryPageController();
 
     return (
-        <PageScaffold className="gallery-page">
+        <PageScaffold ref={pageState.pasteScopeRef} className="gallery-page">
             <GalleryHeader
                 uploadInputRef={pageState.uploadInputRef}
                 uploadingTab={pageState.uploadingTab}
@@ -44,6 +44,7 @@ export function GalleryPage() {
                     galleryModel={{
                         activeTab: pageState.activeTab,
                         assets: pageState.assets,
+                        clipboardPasting: pageState.clipboardPasting,
                         currentUserId: pageState.currentUserId,
                         gridDensityConfig: pageState.gridDensityConfig,
                         isVrcPlusSupporter: pageState.isVrcPlusSupporter,
@@ -59,6 +60,9 @@ export function GalleryPage() {
                     galleryCommands={{
                         onActiveTabChange: pageState.setActiveTab,
                         onBeginUpload: pageState.beginUpload,
+                        onPasteUpload: (tab: GalleryTab) => {
+                            void pageState.pasteClipboardUpload(tab);
+                        },
                         onClearProfileField: (
                             fieldName: GalleryProfileField,
                             fileId: string
@@ -92,9 +96,6 @@ export function GalleryPage() {
                     blob: Blob,
                     uploadOptions: GalleryUploadOptions = {}
                 ) => pageState.confirmCroppedUpload(blob, uploadOptions)}
-                onResetUploadAuthTarget={() => {
-                    pageState.uploadAuthTargetRef.current = null;
-                }}
             />
 
             <FileDropOverlay

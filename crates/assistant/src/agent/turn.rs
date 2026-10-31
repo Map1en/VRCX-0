@@ -180,6 +180,8 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
     let mut last_error_tool_summary: Option<String> = None;
     let mut last_supported_tool_summary: Option<String> = None;
     let mut dispatched_tools = HashSet::new();
+    let mut last_finish_reason: Option<String> = None;
+    let mut retry_finish_reason: Option<String> = None;
 
     for _round in 0..MAX_TOOL_ROUNDS {
         if ctx.cancel.is_cancelled() {
@@ -207,6 +209,7 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
             Ok(turn) => turn,
             Err(error) => return finish_llm_error(&ctx, &error),
         };
+        last_finish_reason = turn.finish_reason.clone();
 
         if turn.tool_calls.is_empty() {
             final_answer = turn.content;
@@ -231,6 +234,7 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
                     tool_defs,
                     ctx.tool_defs.as_slice(),
                     utc_offset_minutes,
+                    turn.truncated(),
                     &mut dispatched_tools,
                 )
             })
@@ -269,12 +273,16 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
 
     if final_answer.trim().is_empty() {
         working.push(ChatMessage::user(final_answer_retry_prompt(used_tools)));
+        let retry_options = LlmRequestOptions {
+            forbid_tool_calls: true,
+            ..ctx.options.clone()
+        };
         let turn = {
             let emitter = &ctx.emitter;
             let stream = ctx.client.stream_chat(
                 &working,
-                &[],
-                &ctx.options,
+                tool_defs,
+                &retry_options,
                 Box::new(|delta| {
                     emitter.delta(delta);
                 }),
@@ -288,6 +296,7 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
         match turn {
             Ok(turn) => {
                 final_answer = turn.content;
+                retry_finish_reason = turn.finish_reason;
             }
             Err(error) => return finish_llm_error(&ctx, &error),
         }
@@ -325,7 +334,10 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
         return finish_error(
             &ctx,
             "no_answer",
-            "The model returned no reply after a direct retry. Try rephrasing or checking the selected model.",
+            &no_answer_message(
+                last_finish_reason.as_deref(),
+                retry_finish_reason.as_deref(),
+            ),
         );
     }
 
@@ -375,11 +387,40 @@ fn prepare_call<'a>(
     tool_defs: &[ToolDefinition],
     all_tool_defs: &[ToolDefinition],
     utc_offset_minutes: i64,
+    output_truncated: bool,
     dispatched_tools: &mut HashSet<String>,
 ) -> PreparedCall<'a> {
+    let rejected = |message: String| PreparedCall {
+        call,
+        arguments: None,
+        resolved: Some(resolve_tool_outcome(Err(McpError::Custom(message)))),
+    };
+    if output_truncated {
+        tracing::warn!(tool = %call.function.name, "assistant: skipped tool call from a truncated response");
+        return rejected(format!(
+            "tool `{}` was not run: the response hit the output token limit, so its arguments may be cut off. Re-issue the call with complete arguments.",
+            call.function.name
+        ));
+    }
+    let parsed = match parse_arguments(&call.function.arguments) {
+        Ok(parsed) => parsed,
+        Err(error) => {
+            tracing::warn!(
+                tool = %call.function.name,
+                args = %call.function.arguments,
+                %error,
+                "assistant: tool arguments were not valid JSON"
+            );
+            return rejected(format!(
+                "tool `{}` was not run: its arguments are not a valid JSON object ({error}). Received arguments: {}. Re-issue the call with a valid JSON object.",
+                call.function.name,
+                truncate(&call.function.arguments)
+            ));
+        }
+    };
     let arguments = normalize_tool_arguments(
         &call.function.name,
-        parse_arguments(&call.function.arguments),
+        parsed,
         tool_accepts_utc_offset(all_tool_defs, &call.function.name).then_some(utc_offset_minutes),
     );
     let signature = tool_call_signature(&call.function.name, arguments.as_ref());
@@ -521,6 +562,14 @@ fn llm_error_summary(error: &AssistantLlmError) -> String {
         AssistantLlmError::Api { status, .. } => format!("LLM API error ({status})"),
         _ => error.to_string(),
     }
+}
+
+fn no_answer_message(first: Option<&str>, retry: Option<&str>) -> String {
+    format!(
+        "The model returned no reply after a direct retry (finish_reason: {} → {}). Try rephrasing or checking the selected model.",
+        first.unwrap_or("none"),
+        retry.unwrap_or("none"),
+    )
 }
 
 fn finish_error(ctx: &TurnContext, code: &str, message: &str) {

@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
+use chrono::DateTime;
 use rmcp::handler::server::wrapper::Parameters;
 use vrcx_0_application::favorites::{FavoriteMutationCoordinator, FavoriteMutationRuntimeDeps};
 use vrcx_0_application::social::MutualGraphFetchRuntime;
@@ -365,12 +366,41 @@ fn my_activity_buckets_weekdays_in_the_callers_timezone() {
         )
         .unwrap();
 
-    assert_eq!(output.by_weekday.get("Mon"), Some(&60));
-    assert_eq!(output.by_weekday.get("Sun"), None);
+    assert_eq!(output.by_weekday.get("Monday"), Some(&60));
+    assert_eq!(output.by_weekday.get("Sunday"), None);
     assert!(output
         .caveats
         .iter()
         .any(|caveat| caveat.contains("UTC+09:00")));
+}
+
+#[test]
+fn my_activity_reads_a_calendar_day_window_in_the_callers_timezone() {
+    let (_dir, runtime, db) =
+        crate::test_support::test_runtime_with_database("my-activity-local-day", "usr_owner")
+            .unwrap();
+    write_batch(
+        db.as_ref(),
+        &OwnerId::new("usr_owner"),
+        &GameLogWriteBatch {
+            join_leave: vec![closed_stay("2026-06-07T21:00:00.000Z", 60)],
+            ..GameLogWriteBatch::default()
+        },
+    )
+    .unwrap();
+    let server = VrcxMcpServer::new(runtime);
+
+    let output = server
+        .get_my_activity_output(
+            OwnerId::new("usr_owner"),
+            MyActivityParams {
+                time_window: Some(serde_json::from_value(serde_json::json!("2026-06-08")).unwrap()),
+                utc_offset_minutes: Some(540),
+            },
+        )
+        .unwrap();
+
+    assert_eq!(output.total_minutes, 60);
 }
 
 #[test]
@@ -460,7 +490,38 @@ fn my_activity_counts_only_closed_instance_stays() {
 
     assert_eq!(output.total_minutes, 60);
     assert_eq!(output.session_count, 1);
-    assert_eq!(output.by_weekday.get("Mon"), Some(&60));
+    assert_eq!(output.by_weekday.get("Monday"), Some(&60));
+}
+
+#[test]
+fn my_activity_splits_a_stay_across_local_midnight() {
+    let (_dir, runtime, db) =
+        crate::test_support::test_runtime_with_database("my-activity-midnight", "usr_owner")
+            .unwrap();
+    write_batch(
+        db.as_ref(),
+        &OwnerId::new("usr_owner"),
+        &GameLogWriteBatch {
+            join_leave: vec![closed_stay("2026-06-07T15:30:00.000Z", 60)],
+            ..GameLogWriteBatch::default()
+        },
+    )
+    .unwrap();
+    let server = VrcxMcpServer::new(runtime);
+
+    let output = server
+        .get_my_activity_output(
+            OwnerId::new("usr_owner"),
+            MyActivityParams {
+                time_window: None,
+                utc_offset_minutes: Some(540),
+            },
+        )
+        .unwrap();
+
+    assert_eq!(output.total_minutes, 60);
+    assert_eq!(output.by_weekday.get("Sunday"), Some(&30));
+    assert_eq!(output.by_weekday.get("Monday"), Some(&30));
 }
 
 struct FixedLocalGameContext(LocalGameContextSnapshot);

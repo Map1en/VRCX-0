@@ -1,5 +1,4 @@
 use chrono::{DateTime, FixedOffset};
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::common::{normalize_text, now_iso, strict_row_i64, strict_row_string, ParamsBuilder};
@@ -8,44 +7,9 @@ use crate::database::DatabaseService;
 use crate::ownership::OwnerId;
 use crate::realtime::normalize_user_table_prefix;
 use crate::Error;
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LocalModerationInput {
-    #[serde(default)]
-    pub user_id: String,
-    #[serde(default)]
-    pub updated_at: String,
-    #[serde(default)]
-    pub display_name: String,
-    #[serde(default)]
-    pub block: bool,
-    #[serde(default)]
-    pub mute: bool,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RemoteModerationInput {
-    #[serde(default)]
-    pub r#type: String,
-    #[serde(default)]
-    pub target_user_id: String,
-    #[serde(default)]
-    pub target_display_name: String,
-    #[serde(default)]
-    pub created: String,
-}
-
-#[derive(Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct LocalModerationOutput {
-    pub user_id: String,
-    pub updated_at: String,
-    pub display_name: String,
-    pub block: bool,
-    pub mute: bool,
-}
+pub use vrcx_0_contracts::local_moderation::{
+    LocalModerationInput, LocalModerationOutput, RemoteModerationInput,
+};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 struct ModerationMetadataCandidate {
@@ -72,20 +36,18 @@ pub fn local_moderation_list(
         &Default::default(),
     )?
     .into_iter()
-    .map(|row| LocalModerationOutput::from_row(&row))
+    .map(|row| local_moderation_from_row(&row))
     .collect()
 }
 
-impl LocalModerationOutput {
-    fn from_row(row: &[Value]) -> Result<Self, Error> {
-        Ok(Self {
-            user_id: strict_row_string(row, 0)?,
-            updated_at: strict_row_string(row, 1)?,
-            display_name: strict_row_string(row, 2)?,
-            block: strict_row_i64(row, 3)? == 1,
-            mute: strict_row_i64(row, 4)? == 1,
-        })
-    }
+fn local_moderation_from_row(row: &[Value]) -> Result<LocalModerationOutput, Error> {
+    Ok(LocalModerationOutput {
+        user_id: strict_row_string(row, 0)?,
+        updated_at: strict_row_string(row, 1)?,
+        display_name: strict_row_string(row, 2)?,
+        block: strict_row_i64(row, 3)? == 1,
+        mute: strict_row_i64(row, 4)? == 1,
+    })
 }
 
 pub fn local_moderation_get(
@@ -106,7 +68,7 @@ pub fn local_moderation_get(
             &ParamsBuilder::new().set("user_id", user_id).build(),
         )?
         .first()
-        .map(|row| LocalModerationOutput::from_row(row))
+        .map(|row| local_moderation_from_row(row))
         .transpose()
 }
 

@@ -1,4 +1,4 @@
-import { UploadIcon, XIcon } from 'lucide-react';
+import { ClipboardPasteIcon, UploadIcon, XIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -11,12 +11,22 @@ import { Button } from '@/ui/shadcn/button';
 import { DropdownMenuGroup, DropdownMenuItem } from '@/ui/shadcn/dropdown-menu';
 import { TabsContent } from '@/ui/shadcn/tabs';
 
-import type { FileAssetTab, FileTabDefinition } from '../galleryConstants';
+import {
+    UPLOAD_ASPECT_RATIOS,
+    type FileAssetTab,
+    type FileTabDefinition
+} from '../galleryConstants';
 import type { GalleryFileTabState } from '../galleryTypes';
+import { useVirtualTileGrid } from '../useVirtualTileGrid';
 import { GalleryFileCard } from './GalleryFileCard';
 import { GallerySelectionBar } from './GallerySelectionBar';
 import { EmptyState, LoadingState } from './GalleryViewParts';
 import { MediaLibraryToolbar } from './MediaLibraryToolbar';
+import { VirtualTileGridRows } from './VirtualTileGridRows';
+
+function getFileKey(file: { id: string }) {
+    return file.id;
+}
 
 export function GalleryFileTab({
     tab,
@@ -32,6 +42,7 @@ export function GalleryFileTab({
         assets,
         bulkRunning,
         loadingByTab,
+        clipboardPasting,
         uploadingTab,
         mutatingKey,
         currentUserId,
@@ -42,6 +53,7 @@ export function GalleryFileTab({
         userIcon,
         gridDensityConfig,
         onBeginUpload,
+        onPasteUpload,
         onBulkDelete,
         onClearProfileField,
         onPreview,
@@ -50,6 +62,7 @@ export function GalleryFileTab({
     } = fileTab;
     const files = assets[tab];
     const loading = loadingByTab[tab] || mediaProfileLoading;
+    const uploadBusy = Boolean(uploadingTab) || clipboardPasting;
     const { t } = useTranslation();
     const activeFileId =
         tab === 'gallery'
@@ -75,6 +88,13 @@ export function GalleryFileTab({
         () => selectedFileIds.filter((fileId) => fileId !== activeFileId),
         [activeFileId, selectedFileIds]
     );
+    const tileGrid = useVirtualTileGrid({
+        items: files,
+        minTileWidth: gridDensityConfig.fileTileMinWidth,
+        gap: gridDensityConfig.tileGridGap,
+        aspectRatio: UPLOAD_ASPECT_RATIOS[tab],
+        resetKey: tab
+    });
 
     return (
         <TabsContent
@@ -88,11 +108,20 @@ export function GalleryFileTab({
                             <Button
                                 variant="outline"
                                 size="sm"
-                                disabled={Boolean(uploadingTab)}
+                                disabled={uploadBusy}
                                 onClick={() => onBeginUpload(tab)}
                             >
                                 <UploadIcon data-icon="inline-start" />
                                 {t('dialog.gallery_icons.upload')}
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={uploadBusy}
+                                onClick={() => onPasteUpload(tab)}
+                            >
+                                <ClipboardPasteIcon data-icon="inline-start" />
+                                {t('dialog.gallery_icons.paste_upload')}
                             </Button>
                             {tab === 'gallery' ? (
                                 <ToolbarOverflowMenu>
@@ -152,18 +181,23 @@ export function GalleryFileTab({
                 {hasLockedFiles && !loading ? (
                     <VrcPlusLockedNotice className="mb-2" />
                 ) : null}
-                <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+                <div
+                    ref={tileGrid.viewportRef}
+                    className="min-h-0 flex-1 overflow-y-auto pr-1"
+                >
                     {loading ? (
                         <LoadingState />
                     ) : mediaProfileError ? (
                         <EmptyState title={mediaProfileError} />
                     ) : files.length > 0 ? (
-                        <div
-                            className={`${gridDensityConfig.fileGridClass} p-1`}
-                        >
-                            {files.map((file) => (
+                        <VirtualTileGridRows
+                            columnCount={tileGrid.columnCount}
+                            gap={gridDensityConfig.tileGridGap}
+                            getKey={getFileKey}
+                            totalHeight={tileGrid.totalHeight}
+                            visibleRows={tileGrid.visibleRows}
+                            renderItem={(file) => (
                                 <GalleryFileCard
-                                    key={file.id}
                                     tab={tab}
                                     definition={definition}
                                     file={file}
@@ -185,8 +219,8 @@ export function GalleryFileTab({
                                     onSetProfileField={onSetProfileField}
                                     onDeleteFile={onDeleteFile}
                                 />
-                            ))}
-                        </div>
+                            )}
+                        />
                     ) : (
                         <EmptyState
                             icon={UploadIcon}
@@ -198,7 +232,7 @@ export function GalleryFileTab({
                             <Button
                                 type="button"
                                 variant="link"
-                                disabled={Boolean(uploadingTab)}
+                                disabled={uploadBusy}
                                 onClick={() => onBeginUpload(tab)}
                             >
                                 {t('dialog.gallery_icons.upload')}

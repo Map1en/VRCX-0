@@ -185,6 +185,7 @@ export function buildUserDialogListViewData({
     profile,
     remoteData,
     remoteStatus,
+    loadedTabs,
     friendsById,
     search,
     mutualSort,
@@ -199,6 +200,7 @@ export function buildUserDialogListViewData({
     profile: DialogRecord;
     remoteData: DialogRecord;
     remoteStatus: UserDialogRemoteStatus;
+    loadedTabs: Partial<Record<keyof UserDialogRemoteStatus, boolean>>;
     friendsById?: Record<string, DialogRecord> | null;
     search: Record<string, string>;
     mutualSort: UserDialogMutualFriendSort;
@@ -214,7 +216,7 @@ export function buildUserDialogListViewData({
         .map((groupId) => groupId.trim())
         .filter(Boolean);
     const profileGroups = normalizeUserGroupMembershipRows(
-        remoteStatus.groups === 'ready'
+        remoteStatus.groups === 'ready' || loadedTabs.groups
             ? remoteData.groups
             : firstArray(
                   profile.groups,
@@ -224,24 +226,25 @@ export function buildUserDialogListViewData({
     );
     const mutualFriends = hydrateMutualFriendRows(
         rows(
-            remoteStatus.mutual === 'ready'
+            remoteStatus.mutual === 'ready' || loadedTabs.mutual
                 ? remoteData.mutual
                 : firstArray(profile.mutualFriends, profile.$mutualFriends)
         ),
         friendsById
     );
     const profileWorlds = rows(
-        remoteStatus.worlds === 'ready'
+        remoteStatus.worlds === 'ready' || loadedTabs.worlds
             ? remoteData.worlds
             : firstArray(profile.worlds, profile.$worlds, profile.recentWorlds)
     );
     const favoriteWorlds = rows(
-        remoteStatus['favorite-worlds'] === 'ready'
+        remoteStatus['favorite-worlds'] === 'ready' ||
+            loadedTabs['favorite-worlds']
             ? remoteData.favoriteWorlds
             : firstArray(profile.favoriteWorlds, profile.$favoriteWorlds)
     );
     const profileAvatars = rows(
-        remoteStatus.avatars === 'ready'
+        remoteStatus.avatars === 'ready' || loadedTabs.avatars
             ? remoteData.avatars
             : firstArray(profile.avatars, profile.$avatars)
     );

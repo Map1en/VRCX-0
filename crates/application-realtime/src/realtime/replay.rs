@@ -10,7 +10,7 @@ use vrcx_0_contracts::profile_bio::{ProfileBioObservation, RecordedProfileBio};
 use vrcx_0_core::friends::FriendRosterBaseline;
 use vrcx_0_core::realtime::{RealtimeMessageParseOutcome, RealtimeMessageParser};
 use vrcx_0_core::time::iso_millis;
-use vrcx_0_logger_protocol::wire::{FrameKind, WireFrame};
+use vrcx_0_logger_protocol::wire::{FrameKind, SnapshotPayload, WireFrame};
 
 use crate::realtime::avatar_change::resolve_avatar_feed_entry;
 use crate::realtime::event_kind::RealtimeWsEventKind;
@@ -176,9 +176,9 @@ fn replay_frames(frames: &[WireFrame], account_id: &str, clock_offset_ms: i64) -
 }
 
 fn snapshot_after_seq(frame: &WireFrame) -> i64 {
-    serde_json::from_str::<Value>(&frame.payload)
+    serde_json::from_str::<SnapshotPayload>(&frame.payload)
         .ok()
-        .and_then(|snapshot| snapshot.get("afterSeq").and_then(Value::as_i64))
+        .and_then(|snapshot| snapshot.after_seq)
         .unwrap_or(frame.seq)
 }
 
@@ -206,19 +206,14 @@ impl Replay<'_> {
     }
 
     fn apply_snapshot(&mut self, frame: &WireFrame, at_ms: i64) {
-        let Ok(mut snapshot) = serde_json::from_str::<Value>(&frame.payload) else {
+        let Ok(snapshot) = serde_json::from_str::<SnapshotPayload>(&frame.payload) else {
             return;
         };
-        let mut friends = |key: &str| match snapshot.get_mut(key).map(Value::take) {
-            Some(Value::Array(friends)) => friends,
-            _ => Vec::new(),
-        };
-        let online_friends = friends("onlineFriends");
-        let offline_friends = friends("offlineFriends");
-        let current_user = snapshot.get("currentUser").unwrap_or(&Value::Null);
-        let Ok(Some(friends_by_id)) =
-            friend_baseline_from_raw(current_user, online_friends, offline_friends)
-        else {
+        let Ok(Some(friends_by_id)) = friend_baseline_from_raw(
+            &snapshot.current_user,
+            snapshot.online_friends,
+            snapshot.offline_friends,
+        ) else {
             return;
         };
         self.runtime = RealtimeFriendsRuntime::default();

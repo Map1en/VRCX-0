@@ -1,4 +1,9 @@
-import { type ComponentProps } from 'react';
+import {
+    type ComponentProps,
+    type UIEvent,
+    useLayoutEffect,
+    useRef
+} from 'react';
 
 import {
     EntityDialogTabs,
@@ -121,6 +126,39 @@ type UserDialogTabsSectionProps = {
         };
 };
 
+function useTabScrollMemory(activeTab: string, resetKey: string) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const positionsRef = useRef(new Map<string, number>());
+    const resetKeyRef = useRef(resetKey);
+    const activeTabRef = useRef(activeTab);
+
+    useLayoutEffect(() => {
+        if (resetKeyRef.current !== resetKey) {
+            resetKeyRef.current = resetKey;
+            positionsRef.current = new Map();
+        }
+        activeTabRef.current = activeTab;
+        const panel = containerRef.current?.querySelector<HTMLElement>(
+            '[data-slot="tabs-content"]:not([hidden])'
+        );
+        if (panel) {
+            panel.scrollTop = positionsRef.current.get(activeTab) ?? 0;
+        }
+    }, [activeTab, resetKey]);
+
+    function onScrollCapture(event: UIEvent<HTMLDivElement>) {
+        const target = event.target;
+        if (
+            target instanceof HTMLElement &&
+            target.dataset.slot === 'tabs-content'
+        ) {
+            positionsRef.current.set(activeTabRef.current, target.scrollTop);
+        }
+    }
+
+    return { containerRef, onScrollCapture };
+}
+
 export function UserDialogTabsSection({
     tabsModel: model,
     tabsCommands: commands
@@ -158,6 +196,10 @@ export function UserDialogTabsSection({
         visibleHomeLocationTarget
     } = info;
     const { loadTab, remoteData, remoteErrors, remoteStatus, search } = remote;
+    const tabScrollMemory = useTabScrollMemory(
+        activeTab,
+        String(profile?.id ?? '')
+    );
     const {
         filteredMutualFriends,
         mutualFriends,
@@ -301,102 +343,108 @@ export function UserDialogTabsSection({
     };
 
     return (
-        <EntityDialogTabs
-            value={activeTab}
-            onValueChange={changeTab}
-            tabs={tabsWithCounts}
+        <div
+            ref={tabScrollMemory.containerRef}
+            className="contents"
+            onScrollCapture={tabScrollMemory.onScrollCapture}
         >
-            <UserDialogInfoTab
-                presenceSection={presenceSection}
-                notesSection={notesSection}
-                bioSection={bioSection}
-                profileLinksSection={profileLinksSection}
-                activitySummarySection={activitySummarySection}
-            />
-            <UserDialogMutualTab
-                profile={profile}
-                mutualFriends={mutualFriends}
-                filteredMutualFriends={filteredMutualFriends}
-                visibleMutualFriends={visibleMutualFriends}
-                remoteStatus={remoteStatus}
-                remoteErrors={remoteErrors}
-                loadTab={loadTab}
-                search={search}
-                setSearch={setSearch}
-                mutualSort={mutualSort}
-                setMutualSort={setMutualSort}
-            />
-            <UserDialogGroupsTab
-                profileGroups={profileGroups}
-                filteredProfileGroups={filteredProfileGroups}
-                remoteStatus={remoteStatus}
-                remoteErrors={remoteErrors}
-                loadTab={loadTab}
-                search={search}
-                setSearch={setSearch}
-                effectiveGroupSort={effectiveGroupSort}
-                setGroupSort={setGroupSort}
-                isCurrentUser={isCurrentUser}
-                groupSearchActive={groupSearchActive}
-                userGroupSections={userGroupSections}
-                ownGroupCountText={ownGroupCountText}
-                remainingGroupCountText={remainingGroupCountText}
-            />
-            <UserDialogWorldsTab
-                filteredProfileWorlds={filteredProfileWorlds}
-                profileWorlds={profileWorlds}
-                remoteStatus={remoteStatus}
-                remoteErrors={remoteErrors}
-                loadTab={loadTab}
-                search={search}
-                setSearch={setSearch}
-                worldSort={worldSort}
-                changeWorldSort={changeWorldSort}
-                worldOrder={worldOrder}
-                changeWorldOrder={changeWorldOrder}
-            />
-            <UserDialogFavoriteWorldsTab
-                remoteData={remoteData}
-                favoriteWorlds={favoriteWorldRows}
-                filteredFavoriteWorlds={filteredFavoriteWorlds}
-                remoteStatus={remoteStatus}
-                remoteErrors={remoteErrors}
-                loadTab={loadTab}
-                search={search}
-                setSearch={setSearch}
-            />
-            <UserDialogAvatarsTab
-                visibleProfileAvatars={visibleProfileAvatars}
-                profileAvatars={profileAvatars}
-                remoteStatus={remoteStatus}
-                remoteErrors={remoteErrors}
-                loadTab={loadTab}
-                search={search}
-                setSearch={setSearch}
-                profile={profile}
-                currentUserId={currentUserId}
-                avatarSort={avatarSort}
-                changeAvatarSort={changeAvatarSort}
-                avatarReleaseStatus={avatarReleaseStatus}
-                changeAvatarReleaseStatus={changeAvatarReleaseStatus}
-            />
-            <UserDialogInstanceHistoryTab
-                previousInstances={previousInstances}
-                previousInstancesError={previousInstancesError}
-                previousInstancesStatus={previousInstancesStatus}
-                profile={profile}
-                onPreviousInstancesChange={onPreviousInstancesChange}
-            />
-            <UserDialogFeedTab
-                active={activeTab === 'feed'}
-                currentUserId={presence.currentUserId || null}
-                profile={profile}
-            />
-            <UserDialogActivityTab
-                profile={profile}
-                active={activeTab === 'activity'}
-            />
-            <UserDialogJsonTab profile={profile} />
-        </EntityDialogTabs>
+            <EntityDialogTabs
+                value={activeTab}
+                onValueChange={changeTab}
+                tabs={tabsWithCounts}
+            >
+                <UserDialogInfoTab
+                    presenceSection={presenceSection}
+                    notesSection={notesSection}
+                    bioSection={bioSection}
+                    profileLinksSection={profileLinksSection}
+                    activitySummarySection={activitySummarySection}
+                />
+                <UserDialogMutualTab
+                    profile={profile}
+                    mutualFriends={mutualFriends}
+                    filteredMutualFriends={filteredMutualFriends}
+                    visibleMutualFriends={visibleMutualFriends}
+                    remoteStatus={remoteStatus}
+                    remoteErrors={remoteErrors}
+                    loadTab={loadTab}
+                    search={search}
+                    setSearch={setSearch}
+                    mutualSort={mutualSort}
+                    setMutualSort={setMutualSort}
+                />
+                <UserDialogGroupsTab
+                    profileGroups={profileGroups}
+                    filteredProfileGroups={filteredProfileGroups}
+                    remoteStatus={remoteStatus}
+                    remoteErrors={remoteErrors}
+                    loadTab={loadTab}
+                    search={search}
+                    setSearch={setSearch}
+                    effectiveGroupSort={effectiveGroupSort}
+                    setGroupSort={setGroupSort}
+                    isCurrentUser={isCurrentUser}
+                    groupSearchActive={groupSearchActive}
+                    userGroupSections={userGroupSections}
+                    ownGroupCountText={ownGroupCountText}
+                    remainingGroupCountText={remainingGroupCountText}
+                />
+                <UserDialogWorldsTab
+                    filteredProfileWorlds={filteredProfileWorlds}
+                    profileWorlds={profileWorlds}
+                    remoteStatus={remoteStatus}
+                    remoteErrors={remoteErrors}
+                    loadTab={loadTab}
+                    search={search}
+                    setSearch={setSearch}
+                    worldSort={worldSort}
+                    changeWorldSort={changeWorldSort}
+                    worldOrder={worldOrder}
+                    changeWorldOrder={changeWorldOrder}
+                />
+                <UserDialogFavoriteWorldsTab
+                    remoteData={remoteData}
+                    favoriteWorlds={favoriteWorldRows}
+                    filteredFavoriteWorlds={filteredFavoriteWorlds}
+                    remoteStatus={remoteStatus}
+                    remoteErrors={remoteErrors}
+                    loadTab={loadTab}
+                    search={search}
+                    setSearch={setSearch}
+                />
+                <UserDialogAvatarsTab
+                    visibleProfileAvatars={visibleProfileAvatars}
+                    profileAvatars={profileAvatars}
+                    remoteStatus={remoteStatus}
+                    remoteErrors={remoteErrors}
+                    loadTab={loadTab}
+                    search={search}
+                    setSearch={setSearch}
+                    profile={profile}
+                    currentUserId={currentUserId}
+                    avatarSort={avatarSort}
+                    changeAvatarSort={changeAvatarSort}
+                    avatarReleaseStatus={avatarReleaseStatus}
+                    changeAvatarReleaseStatus={changeAvatarReleaseStatus}
+                />
+                <UserDialogInstanceHistoryTab
+                    previousInstances={previousInstances}
+                    previousInstancesError={previousInstancesError}
+                    previousInstancesStatus={previousInstancesStatus}
+                    profile={profile}
+                    onPreviousInstancesChange={onPreviousInstancesChange}
+                />
+                <UserDialogFeedTab
+                    active={activeTab === 'feed'}
+                    currentUserId={presence.currentUserId || null}
+                    profile={profile}
+                />
+                <UserDialogActivityTab
+                    profile={profile}
+                    active={activeTab === 'activity'}
+                />
+                <UserDialogJsonTab profile={profile} />
+            </EntityDialogTabs>
+        </div>
     );
 }

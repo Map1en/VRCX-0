@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 
 import { useAppTable } from '@/components/data-table/appTable';
+import { useShiftKeyHeld } from '@/components/keyboard/useShiftKeyHeld';
 
 import { useModerationColumns } from './components/ModerationColumns';
 import {
@@ -11,7 +12,6 @@ import type { ModerationRow } from './moderationPageTypes';
 import { useModerationFilters } from './useModerationFilters';
 import { useModerationRowActions } from './useModerationRowActions';
 import { useModerationRows } from './useModerationRows';
-import { useModerationShiftKey } from './useModerationShiftKey';
 import { useModerationTableState } from './useModerationTableState';
 
 type ModerationPageControllerOptions = {
@@ -35,7 +35,7 @@ export function useModerationPageController({
         });
     }, [filters.searchQuery, filters.selectedTypes, rowsState.rows]);
     const tableState = useModerationTableState();
-    const shiftHeld = useModerationShiftKey();
+    const shiftHeld = useShiftKeyHeld();
     const actions = useModerationRowActions({
         setDetail: rowsState.setDetail,
         setRows: rowsState.setRows

@@ -4,6 +4,7 @@ mod instance_history;
 pub(crate) mod instance_media;
 pub(crate) mod lifecycle;
 mod local_game_context;
+mod now_playing_log;
 mod processor;
 mod roster;
 mod runtime;

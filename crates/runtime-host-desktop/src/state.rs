@@ -106,7 +106,6 @@ const USER_GENERATED_CONTENT_PATH_CONFIG_KEY: &str = "userGeneratedContentPath";
 const REGISTRY_BACKUP_MAINTENANCE_JOB: &str = "registryBackupMaintenance";
 const REGISTRY_BACKUP_MAINTENANCE_CADENCE_SECONDS: u64 = 3 * 60 * 60;
 const REGISTRY_BACKUP_FOREGROUND_REUSE_WINDOW: Duration = Duration::from_secs(60);
-const BACKGROUND_OVERLAY_ACTIVITY_CONFIG_CADENCE: Duration = Duration::from_secs(5);
 const DESKTOP_MAINTENANCE_STOP_POLL_INTERVAL: Duration = Duration::from_millis(50);
 const SHARE_EDITOR_ORIGIN: &str = "https://worlds.vrcx-0.dev";
 
@@ -307,7 +306,7 @@ impl DesktopRuntimeHostState {
         );
         let integration_api_controller = Arc::new(
             IntegrationApiController::new(integration_api_config, app_version.clone())
-                .map_err(|error| vrcx_0_composition::Error::Custom(error.to_string()))?,
+                .map_err(|error| vrcx_0_application_core::Error::Custom(error.to_string()))?,
         );
         let (integration_api_runtime, integration_api_enrichment_receiver) =
             DesktopIntegrationApiRuntime::new(
@@ -385,6 +384,7 @@ impl DesktopRuntimeHostState {
             instance_roster_observer: Some(Arc::clone(&game_roster_observer)),
             backend_status: backend_status.clone(),
             side_effect_sink: game_log_side_effect_sink,
+            isolation: desktop_services.game_isolation(),
         }));
         let vr_overlay_runtime =
             Arc::new(DesktopVrOverlayRuntime::new(Arc::clone(&desktop_services))?);
@@ -407,6 +407,7 @@ impl DesktopRuntimeHostState {
             instance_roster_observer: Some(Arc::clone(&game_roster_observer)),
             backend_status: backend_status.clone(),
             activity_router: desktop_services.activity_router(),
+            isolation: desktop_services.game_isolation(),
         }));
         let session_runtime = Arc::new(SessionHostRuntime::new(
             builder.desktop_assembly().session().clone(),
@@ -495,10 +496,14 @@ impl DesktopRuntimeHostState {
                 .app_data
                 .join("presenceAutomationState.json"),
         });
-        let local_game_context = Arc::new(GameLogLocalGameContextSource::new(
-            builder.desktop_assembly().session().clone(),
-            game_log_snapshot,
-        ));
+        let local_game_context =
+            Arc::new(crate::game_isolation::IsolatedLocalGameContextSource::new(
+                Arc::new(GameLogLocalGameContextSource::new(
+                    builder.desktop_assembly().session().clone(),
+                    game_log_snapshot,
+                )),
+                desktop_services.game_isolation(),
+            ));
         let friend_projection_observer: Arc<dyn FriendProjectionObserver> =
             desktop_services.clone();
         let instance_launch = crate::instance_launch::build_instance_launch_runtime(
@@ -518,6 +523,14 @@ impl DesktopRuntimeHostState {
             profile_extension: Some(extension.clone()),
         })?;
         current_user_presence_observer.bind(runtime.realtime_runtime());
+        let isolation_realtime = Arc::downgrade(runtime.realtime_runtime());
+        desktop_services
+            .game_isolation()
+            .add_observer(Arc::new(move |_enabled| {
+                if let Some(realtime_runtime) = isolation_realtime.upgrade() {
+                    realtime_runtime.refresh_current_user_local_presence();
+                }
+            }));
         let realtime_runtime = Arc::downgrade(runtime.realtime_runtime());
         runtime
             .desktop_assembly()
@@ -611,6 +624,7 @@ impl DesktopRuntimeHostState {
         );
         let screenshots = DesktopScreenshotRuntime::new(
             game.screenshot_cache.clone(),
+            Arc::clone(runtime.database()),
             desktop.host_file_access.clone(),
             runtime.paths().clone(),
             vrcx_0_host_desktop::vrchat_paths::vrchat_photos_location(),
@@ -758,21 +772,28 @@ impl DesktopRuntimeHostState {
         &self,
         requested_location: &str,
     ) -> vrcx_0_application_game::PlayerListSnapshotOutput {
-        let snapshot = if self.is_game_running() {
-            self.desktop.services.game_log_snapshot()
-        } else {
-            Arc::new(vrcx_0_application_game::RuntimeSnapshot::default())
-        };
+        let snapshot =
+            if self.is_game_running() && !self.desktop.services.game_isolation().is_enabled() {
+                self.desktop.services.game_log_snapshot()
+            } else {
+                Arc::new(vrcx_0_application_game::RuntimeSnapshot::default())
+            };
         vrcx_0_application_game::player_list_runtime_snapshot(&snapshot, requested_location)
     }
 
     pub fn current_log_location_snapshot(
         &self,
     ) -> Option<vrcx_0_application_game::LogLocationSnapshot> {
+        if self.desktop.services.game_isolation().is_enabled() {
+            return None;
+        }
         self.game.log_watcher.current_location_snapshot()
     }
 
     pub fn now_playing_snapshot(&self) -> vrcx_0_application_game::NowPlayingSnapshot {
+        if self.desktop.services.game_isolation().is_enabled() {
+            return vrcx_0_application_game::NowPlayingSnapshot::default();
+        }
         self.desktop.services.now_playing().as_ref().clone()
     }
 
@@ -855,7 +876,7 @@ impl DesktopRuntimeHostState {
             .telemetry
             .submit_feedback(content)
             .await
-            .map_err(|error| vrcx_0_composition::Error::Custom(error.to_string()))
+            .map_err(|error| vrcx_0_application_core::Error::Custom(error.to_string()).into())
     }
 
     pub async fn shutdown_telemetry_flush(&self) {
@@ -1323,16 +1344,18 @@ impl DesktopRuntimeHostState {
         &self,
         input: vrcx_0_application::social::AvatarContentTagsBatchInput,
     ) -> Result<vrcx_0_application::social::BatchMutationResult> {
-        let expected_scope = self.require_active_scope("Batch action")?;
+        let mutation = vrcx_0_application_core::AuthenticatedMutationContext::capture(
+            self.runtime.desktop_assembly().auth_scope(),
+            self.runtime.desktop_assembly().remote_mutations(),
+            "Batch mutation",
+        )?;
         Ok(vrcx_0_application::social::run_avatar_content_tags_batch(
             &vrcx_0_application::social::VrchatBatchMutationActions::new(
                 &vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(
                     self.runtime.web_client(),
                 )),
                 &vrcx_0_outbound_adapters::VrchatBatchMutationRemoteRequests,
-                self.runtime.desktop_assembly().auth_scope(),
-                expected_scope,
-                self.runtime.desktop_assembly().remote_mutations(),
+                mutation,
             ),
             input,
         )
@@ -1344,7 +1367,11 @@ impl DesktopRuntimeHostState {
         coordinator: &vrcx_0_application::social::GroupMembershipBatchCoordinator,
         input: vrcx_0_application::social::GroupMembershipBatchInput,
     ) -> Result<vrcx_0_application::social::GroupMembershipBatchResult> {
-        let expected_scope = self.require_active_scope("Batch action")?;
+        let mutation = vrcx_0_application_core::AuthenticatedMutationContext::capture(
+            self.runtime.desktop_assembly().auth_scope(),
+            self.runtime.desktop_assembly().remote_mutations(),
+            "Group membership batch",
+        )?;
         Ok(vrcx_0_application::social::run_group_membership_batch(
             coordinator,
             &vrcx_0_application::social::VrchatGroupMembershipBatchActions::new(
@@ -1352,10 +1379,8 @@ impl DesktopRuntimeHostState {
                     self.runtime.web_client(),
                 )),
                 &vrcx_0_outbound_adapters::VrchatGroupRemoteRequests,
-                self.runtime.desktop_assembly().auth_scope(),
-                expected_scope,
+                mutation,
                 self.runtime.desktop_assembly().event_bus().clone(),
-                self.runtime.desktop_assembly().remote_mutations(),
             ),
             input,
         )
@@ -1367,7 +1392,11 @@ impl DesktopRuntimeHostState {
         coordinator: &vrcx_0_application::social::GroupModerationBatchCoordinator,
         input: vrcx_0_application::social::GroupModerationBatchInput,
     ) -> Result<vrcx_0_application::social::GroupModerationBatchResult> {
-        let expected_scope = self.require_active_scope("Batch action")?;
+        let mutation = vrcx_0_application_core::AuthenticatedMutationContext::capture(
+            self.runtime.desktop_assembly().auth_scope(),
+            self.runtime.desktop_assembly().remote_mutations(),
+            "Group moderation batch",
+        )?;
         Ok(vrcx_0_application::social::run_group_moderation_batch(
             coordinator,
             &vrcx_0_application::social::VrchatGroupModerationBatchActions::new(
@@ -1375,10 +1404,8 @@ impl DesktopRuntimeHostState {
                     self.runtime.web_client(),
                 )),
                 &vrcx_0_outbound_adapters::VrchatGroupModerationRemoteRequests,
-                self.runtime.desktop_assembly().auth_scope(),
-                expected_scope,
+                mutation,
                 self.runtime.desktop_assembly().event_bus().clone(),
-                self.runtime.desktop_assembly().remote_mutations(),
             ),
             input,
         )
@@ -1389,14 +1416,16 @@ impl DesktopRuntimeHostState {
         &self,
         input: vrcx_0_application::social::NotificationMarkSeenBatchInput,
     ) -> Result<vrcx_0_application::social::NotificationMarkSeenBatchResult> {
-        let expected_scope = self.require_active_scope("Batch action")?;
+        let mutation = vrcx_0_application_core::AuthenticatedMutationContext::capture(
+            self.runtime.desktop_assembly().auth_scope(),
+            self.runtime.desktop_assembly().remote_mutations(),
+            "Notification action",
+        )?;
         let result = vrcx_0_application::social::mark_notifications_seen_batch(
             &vrcx_0_outbound_adapters::LocalNotificationMarkSeenActions::new(
                 self.runtime.database().as_ref(),
                 self.runtime.web_client().as_ref(),
-                self.runtime.desktop_assembly().auth_scope(),
-                expected_scope,
-                self.runtime.desktop_assembly().remote_mutations(),
+                mutation,
             ),
             input,
         )
@@ -1409,16 +1438,18 @@ impl DesktopRuntimeHostState {
         &self,
         input: vrcx_0_application::social::InstanceInviteBatchInput,
     ) -> Result<vrcx_0_application::social::InstanceInviteBatchResult> {
-        let expected_scope = self.require_active_scope("Batch action")?;
+        let mutation = vrcx_0_application_core::AuthenticatedMutationContext::capture(
+            self.runtime.desktop_assembly().auth_scope(),
+            self.runtime.desktop_assembly().remote_mutations(),
+            "Batch action",
+        )?;
         Ok(vrcx_0_application::social::send_instance_invites_batch(
             &vrcx_0_application::social::VrchatInstanceInviteBatchActions::new(
                 &vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(
                     self.runtime.web_client(),
                 )),
                 &vrcx_0_outbound_adapters::VrchatInstanceInviteRemoteRequests,
-                self.runtime.desktop_assembly().auth_scope(),
-                expected_scope,
-                self.runtime.desktop_assembly().remote_mutations(),
+                mutation,
                 &vrcx_0_outbound_adapters::CachedWorldNameResolver::new(
                     Arc::clone(self.runtime.desktop_assembly().world_cache()),
                     Arc::clone(self.runtime.web_client()),
@@ -1570,6 +1601,13 @@ impl DesktopRuntimeHostState {
         )?)
     }
 
+    pub fn clear_saved_password(&self, user_id: String) -> Result<SavedAuthSnapshot> {
+        Ok(vrcx_0_application::auth::clear_saved_password(
+            self.runtime.desktop_assembly().auth_credentials(),
+            user_id,
+        )?)
+    }
+
     pub async fn start_login_session(&self, input: LoginSessionStartInput) -> LoginSessionState {
         let diagnostics = self.runtime.desktop_assembly().diagnostics();
         diagnostics.record_command(
@@ -1631,14 +1669,13 @@ impl DesktopRuntimeHostState {
         &self,
         input: ShareCollectionCreateInput,
     ) -> Result<ShareCollectionCreateResult> {
-        let auth_scope = self.runtime.desktop_assembly().auth_scope().snapshot();
-        let display_name = self.runtime.snapshot_backend_runtime().auth_display_name;
+        let identity = self.runtime.desktop_assembly().auth_scope().identity();
         Ok(share_collection_create(
             ShareCollectionDeps::new(
                 &self.world_collections,
                 &self.world_collections,
-                &auth_scope.current_user_id,
-                &display_name,
+                &identity.user_id,
+                &identity.display_name,
             ),
             input,
         )
@@ -1655,7 +1692,7 @@ impl DesktopRuntimeHostState {
         .await?;
         let url = format!("{SHARE_EDITOR_ORIGIN}/mine#k={owner_token}");
         vrcx_0_host_desktop::shell_actions::open_link(&url)
-            .map_err(|error| vrcx_0_composition::Error::Custom(error.to_string()))
+            .map_err(|error| vrcx_0_application_core::Error::Custom(error.to_string()).into())
     }
 
     pub async fn register_world_open_share(&self, world_id: String) {
@@ -1881,11 +1918,24 @@ impl DesktopRuntimeHostState {
             .await;
     }
 
+    pub fn retry_realtime_now(&self) {
+        self.runtime.authenticated_runtime().retry_now();
+    }
+
     pub fn active_realtime_transport(&self) -> Option<RealtimeTransportStartResult> {
         self.runtime
             .authenticated_runtime()
             .snapshot()
             .realtime_transport
+    }
+
+    pub fn add_authenticated_runtime_phase_observer(
+        &self,
+        observer: vrcx_0_application::auth::AuthenticatedRuntimePhaseObserver,
+    ) {
+        self.runtime
+            .authenticated_runtime()
+            .add_phase_observer(observer);
     }
 
     pub fn set_runtime_event_sink<S>(&self, sink: S)
@@ -2017,6 +2067,7 @@ impl DesktopRuntimeHostState {
     ) -> vrcx_0_core::screenshots::ScreenshotLibraryScanStatus {
         vrcx_0_outbound_adapters::screenshots::start_screenshot_library_scan(
             &self.game.screenshot_cache,
+            self.screenshots.screenshot_favorites().clone(),
             self.runtime.paths().screenshot_thumbs.clone(),
             self.runtime.desktop_assembly().event_bus().clone(),
             self.runtime.desktop_assembly().tasks().clone(),
@@ -2032,7 +2083,7 @@ impl DesktopRuntimeHostState {
             &path,
         )?;
         vrcx_0_host_desktop::game_launch::start_game_from_path(&path, &launch_arguments)
-            .map_err(|error| vrcx_0_composition::Error::Custom(error.to_string()))
+            .map_err(|error| vrcx_0_application_core::Error::Custom(error.to_string()).into())
     }
 
     pub fn append_error_log(&self, entry: &str) {
@@ -2060,7 +2111,7 @@ impl DesktopRuntimeHostState {
             payload,
         )
         .await
-        .map_err(|error| vrcx_0_composition::Error::Custom(error.to_string()))
+        .map_err(|error| vrcx_0_application_core::Error::Custom(error.to_string()).into())
     }
 
     pub fn webhook_delivery_snapshot(
@@ -2194,6 +2245,17 @@ impl DesktopRuntimeHostState {
         Ok(removed)
     }
 
+    pub fn game_isolation_snapshot(&self) -> crate::GameIsolationSnapshot {
+        self.desktop.services.game_isolation().snapshot()
+    }
+
+    pub fn set_game_isolation_enabled(
+        &self,
+        enabled: bool,
+    ) -> vrcx_0_application_core::Result<crate::GameIsolationSnapshot> {
+        self.desktop.services.game_isolation().set_enabled(enabled)
+    }
+
     pub fn desktop_widget(&self) -> Arc<crate::desktop_widget::DesktopWidget> {
         Arc::clone(&self.desktop.desktop_widget)
     }
@@ -2269,14 +2331,14 @@ impl DesktopRuntimeHostState {
         self.game
             .auto_launch
             .test_entry(entry_id)
-            .map_err(vrcx_0_composition::Error::Custom)
+            .map_err(|error| vrcx_0_application_core::Error::Custom(error).into())
     }
 
     pub fn stop_app_launcher_test_run(&self, run_id: &str) -> Result<AppLauncherSnapshot> {
         self.game
             .auto_launch
             .stop_test_run(run_id)
-            .map_err(vrcx_0_composition::Error::Custom)
+            .map_err(|error| vrcx_0_application_core::Error::Custom(error).into())
     }
 
     pub fn registry_backup(&self) -> RegistryBackupRuntime {
@@ -2375,7 +2437,10 @@ impl RegistryBackupRuntime {
 
     fn acquire_lock(&self) -> Result<MutexGuard<'_, RegistryBackupMaintenanceState>> {
         self.state.lock().map_err(|error| {
-            vrcx_0_composition::Error::Custom(format!("registry backup lock poisoned: {error}"))
+            vrcx_0_application_core::Error::Custom(format!(
+                "registry backup lock poisoned: {error}"
+            ))
+            .into()
         })
     }
 }
@@ -2401,7 +2466,16 @@ impl RuntimeHostProfileExtension for DesktopRuntimeProfileExtension {
     fn start_profile_maintenance(&self, state: &RuntimeHostState) {
         self.start_registry_backup_loop(state);
         self.start_desktop_maintenance_loops(state);
-        self.desktop.feed_logger.start_presence_loop(state);
+        let feed_logger = &self.desktop.feed_logger;
+        let check = Arc::clone(feed_logger);
+        state
+            .realtime_runtime()
+            .set_reconnect_backfill_check(Arc::new(move || check.recorder_may_be_recording()));
+        feed_logger.start_presence_loop(
+            state.backend_runtime().clone(),
+            state.desktop_assembly().auth_scope().clone(),
+            state.desktop_assembly().tasks().clone(),
+        );
     }
 }
 
@@ -2766,6 +2840,7 @@ impl DesktopRuntimeProfileExtension {
         }
         let db = Arc::clone(state.database());
         let web = Arc::clone(state.web_client());
+        let world_cache = Arc::clone(state.desktop_assembly().world_cache());
         let backend_runtime = state.backend_runtime().clone();
         let background_jobs = state.desktop_assembly().background_jobs().clone();
         let running = Arc::clone(&self.desktop_maintenance_running);
@@ -2795,11 +2870,11 @@ impl DesktopRuntimeProfileExtension {
                 let mut last_discord_output: Option<String> = None;
                 let mut next_presence = Instant::now();
                 let mut next_discord = Instant::now();
-                let mut next_overlay_activity_config = Instant::now();
+                let mut overlay_activity_config_generation = None;
                 let mut observed_discord_reconcile_generation =
                     discord_reconcile_generation.load(Ordering::Acquire);
                 let mut active_scope_key =
-                    background_capability_session_scope_key(&session_slot).unwrap_or_default();
+                    vrcx_0_application::auth::background_capability_session_scope_key(&session_slot).unwrap_or_default();
                 loop {
                     if stop_token.is_stop_requested()
                         || !is_authenticated_maintenance_active_parts(
@@ -2818,7 +2893,7 @@ impl DesktopRuntimeProfileExtension {
                         next_discord = now;
                     }
                     let scope_key =
-                        background_capability_session_scope_key(&session_slot).unwrap_or_default();
+                        vrcx_0_application::auth::background_capability_session_scope_key(&session_slot).unwrap_or_default();
                     if scope_key != active_scope_key {
                         active_scope_key = scope_key;
                         presence_state =
@@ -2828,16 +2903,17 @@ impl DesktopRuntimeProfileExtension {
                         last_discord_output = None;
                         next_presence = now;
                         next_discord = now;
-                        next_overlay_activity_config = now;
+                        overlay_activity_config_generation = None;
                     }
-                    if now >= next_overlay_activity_config {
+                    let config_generation = config.write_generation();
+                    if overlay_activity_config_generation != Some(config_generation) {
                         desktop_services.reload_overlay_activity_filters();
-                        next_overlay_activity_config =
-                            now + BACKGROUND_OVERLAY_ACTIVITY_CONFIG_CADENCE;
+                        overlay_activity_config_generation = Some(config_generation);
                     }
                     let tick_context = BackgroundTickContext {
                         db: &db,
                         web: &web,
+                        world_cache: &world_cache,
                         session_slot: &session_slot,
                         realtime_runtime: &realtime_runtime,
                         host_session: &host_session,
@@ -3032,22 +3108,6 @@ fn is_authenticated_maintenance_active(
     )
 }
 
-fn session_matches_auth_scope(
-    session: Option<&vrcx_0_application_core::BackgroundCapabilitySessionIdentity>,
-    auth_scope: &vrcx_0_application_core::RuntimeAuthScopeSnapshot,
-) -> bool {
-    session
-        .map(|session| {
-            auth_scope.active
-                && session.auth_scope_generation == auth_scope.generation
-                && session.current_user_id == auth_scope.current_user_id
-                && vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint(Some(
-                    &session.endpoint,
-                )) == auth_scope.endpoint
-        })
-        .unwrap_or(false)
-}
-
 fn is_authenticated_maintenance_active_parts(
     runtime: &vrcx_0_application_core::BackendRuntime,
     auth_scope: &vrcx_0_application_core::RuntimeAuthScope,
@@ -3060,23 +3120,8 @@ fn is_authenticated_maintenance_active_parts(
     {
         return false;
     }
-    session_matches_auth_scope(
-        background_ticks::background_capability_session_identity(session_slot).as_ref(),
-        &auth_scope,
-    )
-}
-
-fn background_capability_session_scope_key(
-    session_slot: &Arc<Mutex<vrcx_0_application::auth::AuthenticatedSessionProjection>>,
-) -> Option<String> {
-    background_ticks::background_capability_session_identity(session_slot).map(|session| {
-        format!(
-            "{}:{}:{}",
-            session.auth_scope_generation,
-            session.current_user_id,
-            vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint(Some(&session.endpoint))
-        )
-    })
+    background_ticks::background_capability_session_identity(session_slot)
+        .is_some_and(|session| session.matches_auth_scope(&auth_scope))
 }
 
 fn observe_discord_reconcile_request(generation: &AtomicU64, observed: &mut u64) -> bool {
@@ -3254,13 +3299,6 @@ mod background {
                 &generation,
                 &mut observed
             ));
-            let auth_scope = vrcx_0_application_core::RuntimeAuthScopeSnapshot {
-                current_user_id: "usr_test".into(),
-                endpoint: "https://api.vrchat.cloud/api/1".into(),
-                generation: 1,
-                active: true,
-            };
-            assert!(!session_matches_auth_scope(None, &auth_scope));
         }
     }
 }

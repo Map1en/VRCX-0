@@ -69,6 +69,7 @@ export function DeepLinkRegistrationField() {
 
     return (
         <Field
+            settingId="advanced.troubleshooting.deep-link-registration"
             label={t(
                 'view.settings.advanced.advanced_ui.behavior.deep_link_registration'
             )}

@@ -131,35 +131,3 @@ pub use world_name_resolver::CachedWorldNameResolver;
 
 pub(crate) use vrcx_0_application_core::Error;
 pub(crate) type Result<T> = vrcx_0_application_core::Result<T>;
-
-pub(crate) fn map_persistence_error(error: vrcx_0_persistence::Error) -> Error {
-    match error {
-        vrcx_0_persistence::Error::Database(message) => Error::Database(message),
-        vrcx_0_persistence::Error::Sqlite { message, category } => {
-            Error::Sqlite { message, category }
-        }
-        vrcx_0_persistence::Error::Io(error) => Error::Io(error),
-        vrcx_0_persistence::Error::Json(error) => Error::Json(error),
-        vrcx_0_persistence::Error::InvalidData(message) => Error::PersistenceInvalidData(message),
-        vrcx_0_persistence::Error::Custom(message) => Error::Custom(message),
-    }
-}
-
-pub(crate) fn map_web_client_error(error: vrcx_0_vrchat_client::WebClientError) -> Error {
-    match error {
-        vrcx_0_vrchat_client::WebClientError::Custom(message) => Error::WebClient(message),
-        vrcx_0_vrchat_client::WebClientError::Io(error) => Error::Io(error),
-    }
-}
-
-pub(crate) fn map_image_fetch_error(error: vrcx_0_vrchat_client::ImageFetchError) -> Error {
-    match error {
-        vrcx_0_vrchat_client::ImageFetchError::Custom(message) => Error::Custom(message),
-    }
-}
-
-pub(crate) fn map_http_api_error(error: vrcx_0_vrchat_client::HttpApiError) -> Error {
-    match error {
-        vrcx_0_vrchat_client::HttpApiError::Custom(message) => Error::Custom(message),
-    }
-}

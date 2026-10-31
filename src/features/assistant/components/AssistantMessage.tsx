@@ -2,12 +2,10 @@ import { memo } from 'react';
 
 import type { UIMessage } from '@/domain/assistant/types';
 import { Bubble, BubbleContent } from '@/ui/shadcn/bubble';
-import { Marker, MarkerContent, MarkerIcon } from '@/ui/shadcn/marker';
 import { Message, MessageContent } from '@/ui/shadcn/message';
-import { Spinner } from '@/ui/shadcn/spinner';
 
 import { AssistantMarkdown } from './AssistantMarkdown';
-import { ToolCallStatus } from './ToolCallStatus';
+import { AssistantTrace } from './AssistantTrace';
 
 interface AssistantMessageProps {
     message: UIMessage;
@@ -22,13 +20,21 @@ function AssistantMessageImpl({
     const hasVisibleText = message.text.trim().length > 0;
     const renderPlain = isUser || message.streaming;
     const alignment = isUser ? 'end' : 'start';
+    const traceRunning =
+        message.streaming &&
+        (!hasVisibleText ||
+            message.toolCalls.some((call) => call.status === 'pending'));
 
     return (
         <Message align={alignment}>
             <MessageContent>
-                {message.toolCalls.map((call) => (
-                    <ToolCallStatus key={call.id} toolCall={call} />
-                ))}
+                {(message.toolCalls.length > 0 || traceRunning) && (
+                    <AssistantTrace
+                        toolCalls={message.toolCalls}
+                        running={traceRunning}
+                        thinkingLabel={thinkingLabel}
+                    />
+                )}
 
                 {hasVisibleText && (
                     <Bubble
@@ -53,17 +59,6 @@ function AssistantMessageImpl({
                             )}
                         </BubbleContent>
                     </Bubble>
-                )}
-
-                {message.streaming && !hasVisibleText && (
-                    <Marker role="status">
-                        <MarkerIcon>
-                            <Spinner />
-                        </MarkerIcon>
-                        <MarkerContent className="shimmer">
-                            {thinkingLabel}
-                        </MarkerContent>
-                    </Marker>
                 )}
 
                 {message.error && (

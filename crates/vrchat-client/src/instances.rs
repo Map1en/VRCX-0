@@ -113,19 +113,13 @@ pub fn instance_calendar_link_input(
     location: String,
     calendar_entry_id: Option<String>,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
-    let location = require_text(location, "VrchatInstanceCalendarLink requires location.")?;
-    let calendar_entry_id = calendar_entry_id
-        .map(|value| value.trim().to_string())
-        .filter(|value| !value.is_empty());
-    Ok((
-        location.clone(),
-        api_input(
-            endpoint,
-            "PUT",
-            format!("instances/{location}"),
-            json!({ "calendarEntryId": calendar_entry_id }),
-        ),
-    ))
+    instance_field_put_input(
+        endpoint,
+        location,
+        "VrchatInstanceCalendarLink requires location.",
+        "calendarEntryId",
+        calendar_entry_id,
+    )
 }
 
 pub fn instance_display_name_input(
@@ -133,8 +127,24 @@ pub fn instance_display_name_input(
     location: String,
     display_name: Option<String>,
 ) -> Result<(String, HttpApiRequestInput), HttpApiError> {
-    let location = require_text(location, "VrchatInstanceDisplayName requires location.")?;
-    let display_name = display_name
+    instance_field_put_input(
+        endpoint,
+        location,
+        "VrchatInstanceDisplayName requires location.",
+        "displayName",
+        display_name,
+    )
+}
+
+fn instance_field_put_input(
+    endpoint: String,
+    location: String,
+    location_message: &str,
+    field: &str,
+    value: Option<String>,
+) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+    let location = require_text(location, location_message)?;
+    let value = value
         .map(|value| value.trim().to_string())
         .filter(|value| !value.is_empty());
     Ok((
@@ -143,7 +153,7 @@ pub fn instance_display_name_input(
             endpoint,
             "PUT",
             format!("instances/{location}"),
-            json!({ "displayName": display_name }),
+            json!({ field: value }),
         ),
     ))
 }

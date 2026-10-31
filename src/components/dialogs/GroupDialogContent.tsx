@@ -52,6 +52,9 @@ export function GroupDialogContent({
                 onRefresh: () => {
                     actions.refreshGroup();
                 },
+                onReloadProfile: () => {
+                    actions.reloadGroupProfile().catch(() => {});
+                },
                 onJoin: () => {
                     actions.joinGroup();
                 },

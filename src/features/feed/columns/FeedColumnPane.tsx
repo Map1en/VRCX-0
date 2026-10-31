@@ -3,6 +3,7 @@ import {
     ArrowUpToLineIcon,
     GripVerticalIcon,
     MoreHorizontalIcon,
+    RssIcon,
     SettingsIcon,
     Trash2Icon
 } from 'lucide-react';
@@ -15,7 +16,9 @@ import type {
     FeedLocationActionPayload,
     FeedRow
 } from '@/components/feed/feedTypes';
+import { EmptyState } from '@/components/layout/PageScaffold';
 import { cn } from '@/lib/utils';
+import { FEED_FILTER_TYPES } from '@/repositories/feedRepository';
 import type { FeedTimeDisplayModePreference } from '@/state/preferencesStore';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -44,7 +47,6 @@ type FeedColumnPaneProps = {
         listeners?: NonNullable<ReturnType<typeof useSortable>['listeners']>;
     };
     loadingPreviousInstancesKey: string;
-    nowMs: number;
     onDelete(columnId: string): void;
     onEdit(columnId: string): void;
     onOpenPreviousInstances(payload?: FeedLocationActionPayload): void;
@@ -59,6 +61,7 @@ function useColumnViewport(
     const viewportRef = useRef<HTMLDivElement | null>(null);
     const previousRowsRef = useRef<FeedRow[]>(rows);
     const [viewport, setViewport] = useState({ height: 0, scrollTop: 0 });
+    const [newCount, setNewCount] = useState(0);
     const totalHeight = rows.length * itemStep;
 
     useLayoutEffect(() => {
@@ -81,6 +84,9 @@ function useColumnViewport(
         if (nextIndex < 0 || nextIndex === previousIndex) {
             return;
         }
+        if (nextIndex > previousIndex) {
+            setNewCount((current) => current + nextIndex - previousIndex);
+        }
         const offset = element.scrollTop - previousIndex * itemStep;
         element.scrollTop = nextIndex * itemStep + offset;
     }, [itemStep, rows]);
@@ -97,6 +103,9 @@ function useColumnViewport(
             }
             frameId = requestAnimationFrame(() => {
                 frameId = 0;
+                if (element.scrollTop <= itemStep) {
+                    setNewCount((current) => (current === 0 ? current : 0));
+                }
                 setViewport({
                     height: element.clientHeight,
                     scrollTop: element.scrollTop
@@ -118,7 +127,7 @@ function useColumnViewport(
             observer?.disconnect();
             element.removeEventListener('scroll', updateViewport);
         };
-    }, []);
+    }, [itemStep]);
 
     useEffect(() => {
         if (!viewport.height || !rows.length) {
@@ -167,6 +176,7 @@ function useColumnViewport(
     };
 
     return {
+        newCount,
         scrollToLatest,
         showLatestButton: viewport.scrollTop > itemStep,
         totalHeight,
@@ -181,7 +191,6 @@ export function FeedColumnPane({
     densityConfig,
     dragHandleProps,
     loadingPreviousInstancesKey,
-    nowMs,
     onDelete,
     onEdit,
     onOpenPreviousInstances,
@@ -201,6 +210,7 @@ export function FeedColumnPane({
     );
     const newRowKeys = useFeedNewTopRowKeys(rows, columnRowsResetKey);
     const {
+        newCount,
         scrollToLatest,
         showLatestButton,
         totalHeight,
@@ -227,6 +237,10 @@ export function FeedColumnPane({
     const typeLabels = column.feedTypes.map((type) =>
         t(`view.feed.filters.${type}`)
     );
+    const columnCoversAllFeed =
+        column.friendScope.kind === 'all' &&
+        !exclusionLabel &&
+        FEED_FILTER_TYPES.every((type) => column.feedTypes.includes(type));
     const visibleTypeLabels = typeLabels.slice(0, 3);
     const hiddenTypeCount = Math.max(
         0,
@@ -337,7 +351,11 @@ export function FeedColumnPane({
                         onClick={scrollToLatest}
                     >
                         <ArrowUpToLineIcon data-icon="inline-start" />
-                        {t('view.feed.columns.latest')}
+                        {newCount > 0
+                            ? t('table.label.new_items_count', {
+                                  count: newCount
+                              })
+                            : t('view.feed.columns.latest')}
                     </Button>
                 ) : null}
                 <div
@@ -373,7 +391,6 @@ export function FeedColumnPane({
                                             loadingPreviousInstancesKey
                                         }
                                         densityConfig={densityConfig}
-                                        nowMs={nowMs}
                                         onOpenPreviousInstances={
                                             onOpenPreviousInstances
                                         }
@@ -386,14 +403,35 @@ export function FeedColumnPane({
                                 </div>
                             ))}
                         </div>
-                    ) : (
+                    ) : loadStatus === 'error' ? (
                         <div className="text-muted-foreground flex h-full items-center justify-center px-4 text-center text-sm">
-                            {loadStatus === 'error'
-                                ? t('view.feed.error.feed_query_failed')
-                                : t(
-                                      'view.feed.empty.no_feed_rows_match_the_current_filters'
-                                  )}
+                            {t('view.feed.error.feed_query_failed')}
                         </div>
+                    ) : columnCoversAllFeed ? (
+                        <EmptyState
+                            variant="panel"
+                            className="h-full"
+                            icon={RssIcon}
+                            title={t('empty_state.feed_title')}
+                            description={t('empty_state.feed_description')}
+                        />
+                    ) : (
+                        <EmptyState
+                            variant="panel"
+                            className="h-full"
+                            title={t('view.feed.columns.empty_title')}
+                            description={t(
+                                'view.feed.columns.empty_description'
+                            )}
+                        >
+                            <Button
+                                type="button"
+                                variant="link"
+                                onClick={() => onEdit(column.id)}
+                            >
+                                {t('common.actions.configure')}
+                            </Button>
+                        </EmptyState>
                     )}
                     {loadingOlder ? (
                         <div className="text-muted-foreground flex justify-center py-2">

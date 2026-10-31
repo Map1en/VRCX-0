@@ -101,32 +101,47 @@ describe('feed row helpers', () => {
         ).toBe('private');
     });
 
-    it('builds favorite friend ids from selected remote groups and local favorites', () => {
-        const ids = buildFeedFavoriteIdSet(
-            {
-                fav_1: {
-                    type: 'friend',
-                    favoriteId: USER_ID,
-                    $groupKey: 'group_a'
-                },
-                fav_2: {
-                    type: 'friend',
-                    favoriteId: 'usr_other',
-                    $groupKey: 'group_b'
-                },
-                fav_3: {
-                    type: 'world',
-                    favoriteId: 'wrld_1',
-                    $groupKey: 'group_a'
-                }
+    it('counts only the selected local and remote favorite groups', () => {
+        const groups = {
+            remoteGroupKeys: ['group_a', 'group_b'],
+            remoteIdsByGroupKey: {
+                group_a: [USER_ID],
+                group_b: ['usr_other']
             },
-            {
-                Local: [' usr_local ', '']
-            },
-            ['group_a']
-        );
+            localGroupNames: ['Local', 'Close'],
+            localFriendFavorites: {
+                Local: [' usr_local ', ''],
+                Close: ['usr_close']
+            }
+        };
 
-        expect([...ids]).toEqual([USER_ID, 'usr_local']);
+        expect([
+            ...buildFeedFavoriteIdSet({
+                ...groups,
+                selectedGroupKeys: ['group_a', 'local:Close']
+            })
+        ]).toEqual([USER_ID, 'usr_close']);
+        expect([
+            ...buildFeedFavoriteIdSet({
+                ...groups,
+                selectedGroupKeys: ['local:Local']
+            })
+        ]).toEqual(['usr_local']);
+    });
+
+    it('counts every local and remote favorite group when no live group is selected', () => {
+        const groups = {
+            remoteGroupKeys: ['group_a'],
+            remoteIdsByGroupKey: { group_a: [USER_ID] },
+            localGroupNames: ['Local'],
+            localFriendFavorites: { Local: ['usr_local'] }
+        };
+
+        for (const selectedGroupKeys of [[], ['local:Deleted', 'group_gone']]) {
+            expect([
+                ...buildFeedFavoriteIdSet({ ...groups, selectedGroupKeys })
+            ]).toEqual([USER_ID, 'usr_local']);
+        }
     });
 
     it('resolves status display metadata', () => {

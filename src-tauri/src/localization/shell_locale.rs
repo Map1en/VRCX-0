@@ -10,6 +10,7 @@ pub(crate) struct TrayLabels {
     pub(crate) do_not_disturb_three_hours: String,
     pub(crate) do_not_disturb_until_stopped: String,
     pub(crate) do_not_disturb_turn_off: String,
+    pub(crate) game_isolation: String,
     pub(crate) rebuild_ui: String,
     pub(crate) sidebar_mode: String,
     pub(crate) disable_theme: String,
@@ -99,7 +100,6 @@ pub(crate) mod macos_menu {
         pub(crate) report_issue: String,
         pub(crate) github: String,
         pub(crate) discord: String,
-        pub(crate) qq_group: String,
         #[cfg(feature = "devtools")]
         pub(crate) open_devtools: String,
         pub(crate) support_vrcx: String,
@@ -174,7 +174,6 @@ pub(crate) mod macos_menu {
             report_issue: text(language, ShellKey::NativeShellMenuHelpReportIssue),
             github: "GitHub".to_string(),
             discord: "Discord".to_string(),
-            qq_group: text(language, ShellKey::NativeShellMenuHelpQqGroup),
             #[cfg(feature = "devtools")]
             open_devtools: text(language, ShellKey::NativeShellMenuHelpOpenDevtools),
             support_vrcx: text(language, ShellKey::NativeShellMenuHelpSupportVrcx),
@@ -195,6 +194,7 @@ pub(crate) fn tray_labels_for_language(language: &str) -> TrayLabels {
             ShellKey::NativeShellTrayDoNotDisturbUntilStopped,
         ),
         do_not_disturb_turn_off: text(language, ShellKey::NativeShellTrayDoNotDisturbTurnOff),
+        game_isolation: text(language, ShellKey::NativeShellTrayGameIsolation),
         rebuild_ui: text(language, ShellKey::NativeShellTrayRebuildUi),
         sidebar_mode: text(language, ShellKey::NativeShellTraySidebarMode),
         disable_theme: text(language, ShellKey::NativeShellTrayDisableTheme),
@@ -209,6 +209,10 @@ pub(crate) fn tray_labels_for_language(language: &str) -> TrayLabels {
         desktop_widget_close: native_text(language, DesktopWidgetKey::DesktopWidgetMenuClose),
         exit: text(language, ShellKey::NativeShellTrayExit),
     }
+}
+
+pub(crate) fn tray_realtime_reconnecting_for_language(language: &str) -> String {
+    text(language, ShellKey::NativeShellTrayRealtimeReconnecting)
 }
 
 pub(crate) fn background_mode_notification_labels_for_language(

@@ -43,6 +43,7 @@ export function SettingsCard({
     return (
         <Collapsible
             render={<section />}
+            data-settings-card-id={cardId}
             open={open}
             onOpenChange={(nextOpen) => setOpen(cardId, nextOpen)}
             className={cn('shrink-0', className)}

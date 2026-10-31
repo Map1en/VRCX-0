@@ -16,13 +16,10 @@ vi.mock('@/components/location/StaticLocation', () => ({
     StaticLocation: ({ hint }: { hint: string }) => <span>{hint}</span>
 }));
 
-vi.mock('@/components/LocationWorld', () => ({
-    LocationWorld: () => null
-}));
-
 vi.mock('./PreviousInstancesViewParts', () => ({
     DialogEmptyState: () => null,
     PreviousInstanceDetailsPanel: () => null,
+    PreviousInstanceWorldLocation: () => null,
     InstanceCreatorCell: ({ row }: { row: { location: string } }) => (
         <span>owner:{row.location}</span>
     )

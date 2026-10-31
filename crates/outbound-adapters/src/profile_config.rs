@@ -19,35 +19,35 @@ impl LocalProfileConfigStore {
 
 impl ProfileConfigStore for LocalProfileConfigStore {
     fn get_raw(&self, key: &str) -> Result<Option<String>> {
-        config::get_raw(&self.db, key).map_err(super::map_persistence_error)
+        config::get_raw(&self.db, key).map_err(crate::Error::from)
     }
 
     fn get_bool(&self, key: &str, default_value: bool) -> Result<bool> {
-        config::get_bool(&self.db, key, default_value).map_err(super::map_persistence_error)
+        config::get_bool(&self.db, key, default_value).map_err(crate::Error::from)
     }
 
     fn get_string(&self, key: &str, default_value: &str) -> Result<String> {
-        config::get_string(&self.db, key, default_value).map_err(super::map_persistence_error)
+        config::get_string(&self.db, key, default_value).map_err(crate::Error::from)
     }
 
     fn get_json(&self, key: &str, default_value: Value) -> Result<Value> {
-        config::get_json(&self.db, key, default_value).map_err(super::map_persistence_error)
+        config::get_json(&self.db, key, default_value).map_err(crate::Error::from)
     }
 
     fn apply_mutations(&self, mutations: Vec<ConfigMutation>) -> Result<()> {
-        config::config_apply_mutations(&self.db, &mutations).map_err(super::map_persistence_error)
+        config::config_apply_mutations(&self.db, &mutations).map_err(crate::Error::from)
     }
 
     fn list_values(&self) -> Result<Vec<ConfigReadEntry>> {
-        config::config_list_values(&self.db).map_err(super::map_persistence_error)
+        config::config_list_values(&self.db).map_err(crate::Error::from)
     }
 
     fn set_values(&self, entries: Vec<ConfigWriteEntry>) -> Result<()> {
-        config::config_set_values(&self.db, entries).map_err(super::map_persistence_error)
+        config::config_set_values(&self.db, entries).map_err(crate::Error::from)
     }
 
     fn remove_value(&self, key: String) -> Result<i64> {
-        config::config_remove_value(&self.db, key).map_err(super::map_persistence_error)
+        config::config_remove_value(&self.db, key).map_err(crate::Error::from)
     }
 
     fn storage_get(&self, key: &str) -> Option<String> {
@@ -59,6 +59,6 @@ impl ProfileConfigStore for LocalProfileConfigStore {
     }
 
     fn storage_save(&self) -> Result<()> {
-        self.storage.save().map_err(super::map_persistence_error)
+        self.storage.save().map_err(crate::Error::from)
     }
 }

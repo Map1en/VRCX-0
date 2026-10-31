@@ -11,10 +11,11 @@ use std::{
 use super::*;
 use crate::favorites::test_support::{TestFavoriteRemote, TestFavoriteStore};
 use crate::favorites::FavoriteStore;
+use vrcx_0_application_core::{RemoteMutationGate, RuntimeAuthScope};
 
 struct FakeActions {
     local_outcomes: Mutex<VecDeque<Result<i64>>>,
-    remote_outcomes: Mutex<VecDeque<Result<RemoteRemoveOutcome>>>,
+    remote_outcomes: Mutex<VecDeque<Result<RemoteMutationOutcome>>>,
     scope_current: AtomicBool,
 }
 
@@ -34,13 +35,13 @@ impl FavoriteBulkRemoveActions for FakeActions {
     fn remove_remote<'a>(
         &'a self,
         _item: &'a FavoriteBulkRemoveItem,
-    ) -> BoxFuture<'a, Result<RemoteRemoveOutcome>> {
+    ) -> BoxFuture<'a, Result<RemoteMutationOutcome>> {
         Box::pin(async move {
             self.remote_outcomes
                 .lock()
                 .unwrap()
                 .pop_front()
-                .unwrap_or(Ok(RemoteRemoveOutcome::Removed))
+                .unwrap_or(Ok(RemoteMutationOutcome::Applied))
         })
     }
 
@@ -68,7 +69,7 @@ async fn mixed_batch_keeps_per_item_results_and_continues_failures() {
         remote_outcomes: Mutex::new(
             vec![
                 Err(Error::Custom("remote denied".into())),
-                Ok(RemoteRemoveOutcome::Removed),
+                Ok(RemoteMutationOutcome::Applied),
             ]
             .into(),
         ),
@@ -109,7 +110,7 @@ async fn mixed_batch_keeps_per_item_results_and_continues_failures() {
 async fn remote_success_then_scope_change_stops_remaining_items() {
     let actions = FakeActions {
         local_outcomes: Mutex::new(VecDeque::new()),
-        remote_outcomes: Mutex::new(vec![Ok(RemoteRemoveOutcome::RemovedScopeChanged)].into()),
+        remote_outcomes: Mutex::new(vec![Ok(RemoteMutationOutcome::AppliedScopeChanged)].into()),
         scope_current: AtomicBool::new(true),
     };
 
@@ -136,7 +137,7 @@ async fn local_items_are_removed_from_account_scoped_persistence() {
     let store = TestFavoriteStore::default();
     let remote = TestFavoriteRemote::default();
     let auth_scope = RuntimeAuthScope::new();
-    let expected_scope = auth_scope.set("usr_self", "");
+    auth_scope.set("usr_self", "");
     let remote_mutation_gate = RemoteMutationGate::default();
     store
         .add(
@@ -151,9 +152,12 @@ async fn local_items_are_removed_from_account_scoped_persistence() {
         &FavoriteBulkRemoveDeps {
             store: &store,
             remote: &remote,
-            auth_scope: &auth_scope,
-            expected_scope,
-            remote_mutation_gate: &remote_mutation_gate,
+            mutation: AuthenticatedMutationContext::capture(
+                &auth_scope,
+                &remote_mutation_gate,
+                "Favorite bulk remove",
+            )
+            .unwrap(),
         },
         FavoriteBulkRemoveInput {
             kind: FavoriteEntityKind::Friend,
@@ -180,7 +184,7 @@ async fn selection_chunks_more_than_one_protected_batch() {
     let store = TestFavoriteStore::default();
     let remote = TestFavoriteRemote::default();
     let auth_scope = RuntimeAuthScope::new();
-    let expected_scope = auth_scope.set("usr_self", "");
+    auth_scope.set("usr_self", "");
     let remote_mutation_gate = RemoteMutationGate::default();
     let items = (0..=FAVORITE_BULK_REMOVE_MAX_ITEMS)
         .map(|index| {
@@ -206,9 +210,12 @@ async fn selection_chunks_more_than_one_protected_batch() {
         &FavoriteBulkRemoveDeps {
             store: &store,
             remote: &remote,
-            auth_scope: &auth_scope,
-            expected_scope,
-            remote_mutation_gate: &remote_mutation_gate,
+            mutation: AuthenticatedMutationContext::capture(
+                &auth_scope,
+                &remote_mutation_gate,
+                "Favorite bulk remove",
+            )
+            .unwrap(),
         },
         FavoriteBulkRemoveInput {
             kind: FavoriteEntityKind::Friend,
@@ -237,7 +244,7 @@ async fn selection_chunks_more_than_one_protected_batch() {
 async fn invalid_items_fail_individually_and_valid_items_still_run() {
     let actions = FakeActions {
         local_outcomes: Mutex::new(VecDeque::new()),
-        remote_outcomes: Mutex::new(vec![Ok(RemoteRemoveOutcome::Removed)].into()),
+        remote_outcomes: Mutex::new(vec![Ok(RemoteMutationOutcome::Applied)].into()),
         scope_current: AtomicBool::new(true),
     };
     let work_items = normalize_items(

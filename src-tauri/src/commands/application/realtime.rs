@@ -19,6 +19,12 @@ pub async fn app__current_user_refresh(
 
 #[tauri::command(async)]
 #[specta::specta]
+pub fn app__realtime_retry_now(state: State<'_, AppState>) {
+    state.runtime_host().retry_realtime_now();
+}
+
+#[tauri::command(async)]
+#[specta::specta]
 pub fn app__ingest_user_facts(
     state: State<'_, AppState>,
     entries: Vec<Value>,

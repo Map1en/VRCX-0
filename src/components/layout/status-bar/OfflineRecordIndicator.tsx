@@ -1,4 +1,4 @@
-import { RadioTowerIcon } from 'lucide-react';
+import { ServerIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
@@ -63,7 +63,7 @@ export function OfflineRecordIndicator() {
                             setSystemHostOpen('offlineRecordOpen', true)
                         }
                     >
-                        <RadioTowerIcon
+                        <ServerIcon
                             data-icon={progressLabel ? 'inline-start' : 'icon'}
                             className={cn(
                                 syncProgress && 'motion-safe:animate-pulse'

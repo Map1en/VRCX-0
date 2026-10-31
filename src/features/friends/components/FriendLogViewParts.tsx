@@ -10,11 +10,9 @@ import {
     XIcon,
     type LucideIcon
 } from 'lucide-react';
-import type { ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { DataTableSortButton } from '@/components/data-table/DataTableSortButton';
-import { EmptyState } from '@/components/layout/PageScaffold';
 import { ToolbarFilterMenu } from '@/components/layout/ToolbarControls';
 import {
     isFriendLogType,
@@ -70,14 +68,6 @@ const FRIEND_LOG_TYPE_META: Record<
 };
 
 export { DataTableSortButton as SortButton };
-
-export function FriendLogEmptyState({
-    title,
-    description,
-    ...props
-}: ComponentProps<typeof EmptyState>) {
-    return <EmptyState {...props} title={title} description={description} />;
-}
 
 function friendLogTypeLabel(type: string, t: TFunction) {
     return isFriendLogType(type) ? t(`view.friend_log.filters.${type}`) : '';

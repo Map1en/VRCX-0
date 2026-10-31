@@ -1,7 +1,7 @@
 import { useLayoutEffect, useState, type MutableRefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { InviteMessageUsePayload } from '@/components/dialogs/invite-message/InviteMessagePanel';
+import type { InviteMessageUsePayload } from '@/components/dialogs/invite-message/inviteMessageData';
 import {
     sendInviteToLocation,
     sendRequestInviteToUser

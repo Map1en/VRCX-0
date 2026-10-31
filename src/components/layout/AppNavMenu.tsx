@@ -9,6 +9,7 @@ import {
 } from '@/components/keyboard/ShortcutHintPanel';
 import type { Dashboard } from '@/repositories/dashboardRepository';
 import { startInventoryBundleWatch } from '@/services/inventoryBundleService';
+import { markAllNotificationsSeenWithFeedback } from '@/services/notificationMarkAllSeenService';
 import { setNavbarCollapsedPreference } from '@/services/preferencesService';
 import { toast } from '@/services/toastService';
 import { triggerToolByKey } from '@/services/toolActionService';
@@ -188,9 +189,6 @@ function useAppNavNotifications({
     const vrcUnseenNotificationCount = useVrcNotificationStore(
         (state) => state.unseenCount
     );
-    const markAllVrcNotificationsSeen = useVrcNotificationStore(
-        (state) => state.markAllSeen
-    );
     const loadVrcNotifications = useVrcNotificationStore(
         (state) => state.refreshForCurrentUser
     );
@@ -225,20 +223,12 @@ function useAppNavNotifications({
     }, [activeIndex, removeNavNotification]);
 
     async function markAllRead() {
-        try {
-            await markAllVrcNotificationsSeen();
-            removeNavNotification('notification');
-        } catch (error) {
-            toast.add({
-                type: 'error',
-                title:
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'component.app_nav_menu.toast.failed_to_mark_notifications_as_seen'
-                          )
-            });
-        }
+        await markAllNotificationsSeenWithFeedback(
+            t(
+                'component.app_nav_menu.toast.failed_to_mark_notifications_as_seen'
+            )
+        );
+        removeNavNotification('notification');
     }
 
     return {

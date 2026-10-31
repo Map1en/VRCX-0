@@ -30,6 +30,15 @@ pub(super) struct SavedCredential {
     pub cookies: Option<String>,
 }
 
+impl SavedCredential {
+    pub(super) fn has_saved_password(&self) -> bool {
+        self.login_params
+            .password
+            .as_deref()
+            .is_some_and(|password| !password.trim().is_empty())
+    }
+}
+
 pub(super) type SavedCredentials = BTreeMap<String, SavedCredential>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, specta::Type)]
@@ -67,11 +76,18 @@ pub struct SavedAuthSnapshot {
     pub auto_login_reason: String,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SavedCredentialRecordMode {
+    WithPassword,
+    WithoutPassword,
+    ExistingOnly,
+}
+
 pub struct LoginSuccessRecordInput {
     pub user: RawJson,
     pub login_params: RawJson,
     pub stored_login_params: Option<RawJson>,
-    pub save_credentials: bool,
+    pub record: SavedCredentialRecordMode,
 }
 
 pub struct LogoutRecordInput {

@@ -1,10 +1,8 @@
 // Keep the historical test namespace stable while production session ownership lives in ports.
 #[cfg(test)]
 mod tests {
-    use crate::ports::{
-        HostRealtimeSessionContext, HostSessionGameProcessStatus as GameProcessStatus,
-        HostSessionRuntime,
-    };
+    use crate::ports::{HostSessionGameProcessStatus as GameProcessStatus, HostSessionRuntime};
+    use vrcx_0_core::realtime::RealtimeSessionContext;
 
     #[test]
     fn tracks_game_process_generation_and_times() {
@@ -71,7 +69,7 @@ mod tests {
     #[test]
     fn tracks_realtime_context_generation() {
         let runtime = HostSessionRuntime::new();
-        let generation = runtime.set_realtime_context(HostRealtimeSessionContext::new(
+        let generation = runtime.set_realtime_context(RealtimeSessionContext::new(
             " usr_1 ".into(),
             " https://api.example.test ".into(),
             " wss://pipeline.example.test ".into(),
@@ -81,7 +79,7 @@ mod tests {
         assert!(runtime.is_realtime_generation_active(generation));
         let snapshot = runtime.snapshot();
         let context = snapshot.realtime_context.expect("context should exist");
-        assert_eq!(context.current_user_id, "usr_1");
+        assert_eq!(context.user_id, "usr_1");
         assert_eq!(context.endpoint, "https://api.example.test");
         assert_eq!(context.websocket, "wss://pipeline.example.test");
 
@@ -94,7 +92,7 @@ mod tests {
     #[test]
     fn clears_realtime_context_only_for_matching_generation() {
         let runtime = HostSessionRuntime::new();
-        let generation = runtime.set_realtime_context(HostRealtimeSessionContext::new(
+        let generation = runtime.set_realtime_context(RealtimeSessionContext::new(
             "usr_1".into(),
             "https://api.example.test".into(),
             "wss://pipeline.example.test".into(),

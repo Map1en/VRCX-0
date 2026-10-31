@@ -4,6 +4,7 @@ use vrcx_0_core::realtime::RealtimeWsMessagePayload;
 use crate::realtime::activity_events::queue_ready_activity_event;
 use crate::realtime::connection::RealtimeMessageSink;
 use crate::realtime::event_kind::RealtimeWsEventKind;
+use crate::realtime::group_changes::group_change_event;
 use crate::realtime::instance_queue::apply_instance_queue_ws_event;
 use crate::realtime::notifications::{apply_instance_closed_ws_event, apply_notification_ws_event};
 use crate::realtime::print_content_refresh::is_print_created_content_refresh_event;
@@ -96,6 +97,16 @@ impl RealtimeMessageSink for RealtimeHostRuntimeMessageSink {
             return;
         }
 
+        if let Some(event) = group_change_event(&session.user_id, &event_kind, payload) {
+            self.runtime.schedule_group_change(
+                generation,
+                session_generation,
+                session.clone(),
+                event,
+            );
+            return;
+        }
+
         if is_print_created_content_refresh_event(&event_kind, payload) {
             self.runtime
                 .deps
@@ -115,7 +126,7 @@ impl RealtimeMessageSink for RealtimeHostRuntimeMessageSink {
                 .and_then(|content| content.get("walletBalance"))
                 .and_then(serde_json::Value::as_i64)
             {
-                self.runtime.deps.event_bus.emit_realtime_economy_balance(
+                self.runtime.deps.event_bus.emit(
                     vrcx_0_application_core::RealtimeEconomyBalancePayload {
                         user_id: session.user_id.clone(),
                         wallet_balance,
@@ -135,10 +146,7 @@ impl RealtimeMessageSink for RealtimeHostRuntimeMessageSink {
             {
                 activity.ingest_activity(vec![queue_ready_activity_event(&projection)]);
             }
-            self.runtime
-                .deps
-                .event_bus
-                .emit_realtime_instance_queue_projection(projection);
+            self.runtime.deps.event_bus.emit(projection);
             return;
         }
 

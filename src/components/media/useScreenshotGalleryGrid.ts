@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import {
     getVisibleKnownSizeRows,
@@ -47,19 +47,60 @@ function buildGalleryGridRows({
     return positionKnownSizeRows<ScreenshotGalleryGridRow>(rows);
 }
 
+export function resolveScreenshotGridRevealScrollTop({
+    index,
+    columnCount,
+    rows,
+    scrollTop,
+    viewportHeight
+}: {
+    index: number;
+    columnCount: number;
+    rows: ReadonlyArray<{ top: number; height: number }>;
+    scrollTop: number;
+    viewportHeight: number;
+}) {
+    const row = index < 0 ? null : rows[Math.floor(index / columnCount)];
+    if (!row) {
+        return null;
+    }
+    if (
+        row.top >= scrollTop &&
+        row.top + row.height <= scrollTop + viewportHeight
+    ) {
+        return null;
+    }
+    return Math.max(0, Math.round(row.top - (viewportHeight - row.height) / 2));
+}
+
 export function useScreenshotGalleryGrid({
     density = DEFAULT_SCREENSHOT_GRID_DENSITY,
     initialScrollTop = 0,
     items,
-    resetKey
+    onRevealPathConsumed,
+    resetKey,
+    revealPath = ''
 }: {
     density?: ScreenshotGridDensity;
     initialScrollTop?: number;
     items: readonly ScreenshotLibraryImage[];
+    onRevealPathConsumed?: () => void;
     resetKey: string;
+    revealPath?: string;
 }) {
-    const { setScrollTop, viewportMetrics, viewportRef } =
-        useScrollViewportMetrics();
+    const {
+        setScrollTop,
+        viewportMetrics,
+        viewportRef: setViewportRef
+    } = useScrollViewportMetrics();
+    const viewportElementRef = useRef<HTMLElement | null>(null);
+    const viewportRef = useCallback(
+        (node: HTMLElement | null) => {
+            viewportElementRef.current = node;
+            setViewportRef(node);
+        },
+        [setViewportRef]
+    );
     const densityConfig = getScreenshotGridDensityConfig(density);
     const cardHeight = densityConfig.cardHeight;
     const gridGap = densityConfig.gridGap;
@@ -104,6 +145,43 @@ export function useScreenshotGalleryGrid({
         positionedRows.rows,
         viewportMetrics.scrollTop,
         viewportMetrics.viewportHeight
+    ]);
+
+    useEffect(() => {
+        if (
+            !revealPath ||
+            !items.length ||
+            viewportMetrics.width <= 0 ||
+            viewportMetrics.viewportHeight <= 0
+        ) {
+            return;
+        }
+        const index = items.findIndex((item) => item.path === revealPath);
+        onRevealPathConsumed?.();
+        if (index === -1) {
+            return;
+        }
+        const nextScrollTop = resolveScreenshotGridRevealScrollTop({
+            index,
+            columnCount: gridColumnCount,
+            rows: positionedRows.rows,
+            scrollTop: viewportMetrics.scrollTop,
+            viewportHeight: viewportMetrics.viewportHeight
+        });
+        if (nextScrollTop !== null) {
+            setScrollTop(nextScrollTop);
+        }
+        viewportElementRef.current?.focus({ preventScroll: true });
+    }, [
+        gridColumnCount,
+        items,
+        onRevealPathConsumed,
+        positionedRows.rows,
+        revealPath,
+        setScrollTop,
+        viewportMetrics.scrollTop,
+        viewportMetrics.viewportHeight,
+        viewportMetrics.width
     ]);
 
     return {

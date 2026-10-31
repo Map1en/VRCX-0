@@ -1,12 +1,16 @@
 use std::sync::{Arc, Mutex};
 
 use vrcx_0_application::auth::AuthenticatedSessionProjection;
+pub(in crate::state) use vrcx_0_application::auth::{
+    background_capability_session, background_capability_session_identity,
+    background_capability_session_matches,
+};
 use vrcx_0_application_core::{
     BackendRuntime, BackendRuntimePhase, BackendRuntimeStatusPublisher,
-    BackendRuntimeTelemetryKind, BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity,
-    HostSessionRuntime, RemoteMutationGate, RuntimeAuthScope, RuntimeBackgroundJobs,
-    RuntimeEventBus,
+    BackendRuntimeTelemetryKind, HostSessionRuntime, RemoteMutationGate, RuntimeAuthScope,
+    RuntimeBackgroundJobs, RuntimeEventBus,
 };
+use vrcx_0_application_game::{NowPlayingSnapshot, RuntimeSnapshot};
 use vrcx_0_application_realtime::RealtimeHostRuntime;
 use vrcx_0_persistence::config::ConfigRepository;
 
@@ -22,9 +26,51 @@ pub(in crate::state) const BACKGROUND_DISCORD_PRESENCE_JOB: &str = "backgroundDi
 pub(in crate::state) const BACKGROUND_PRESENCE_CADENCE_SECONDS: u64 = 3;
 pub(in crate::state) const BACKGROUND_DISCORD_CADENCE_SECONDS: u64 = 3;
 
+pub(in crate::state) struct LocalGameFacts {
+    pub(in crate::state) is_game_running: bool,
+    pub(in crate::state) is_steamvr_running: bool,
+    pub(in crate::state) is_game_no_vr: bool,
+    pub(in crate::state) last_game_started_at: Option<String>,
+    pub(in crate::state) game_log_snapshot: Arc<RuntimeSnapshot>,
+    pub(in crate::state) now_playing: Arc<NowPlayingSnapshot>,
+}
+
+impl LocalGameFacts {
+    fn isolated_from_game(self) -> Self {
+        Self {
+            is_game_running: false,
+            is_steamvr_running: self.is_steamvr_running,
+            is_game_no_vr: false,
+            last_game_started_at: None,
+            game_log_snapshot: Arc::new(RuntimeSnapshot::default()),
+            now_playing: Arc::new(NowPlayingSnapshot::default()),
+        }
+    }
+
+    pub(in crate::state) fn from_context(context: &BackgroundTickContext<'_>) -> Self {
+        let host_session = context.host_session.snapshot();
+        let facts = Self {
+            is_game_running: host_session.is_game_running,
+            is_steamvr_running: host_session.is_steamvr_running,
+            is_game_no_vr: context
+                .config
+                .get_bool(vrcx_0_application_game::IS_GAME_NO_VR_CONFIG_KEY, false)
+                .unwrap_or(false),
+            last_game_started_at: host_session.last_game_started_at,
+            game_log_snapshot: context.desktop_services.game_log_snapshot(),
+            now_playing: context.desktop_services.now_playing(),
+        };
+        if context.desktop_services.game_isolation().is_enabled() {
+            return facts.isolated_from_game();
+        }
+        facts
+    }
+}
+
 pub(in crate::state) struct BackgroundTickContext<'a> {
     pub(in crate::state) db: &'a Arc<vrcx_0_persistence::DatabaseService>,
     pub(in crate::state) web: &'a Arc<vrcx_0_application_core::WebClient>,
+    pub(in crate::state) world_cache: &'a Arc<vrcx_0_application_core::WorldCache>,
     pub(in crate::state) session_slot: &'a Arc<Mutex<AuthenticatedSessionProjection>>,
     pub(in crate::state) realtime_runtime: &'a Arc<RealtimeHostRuntime>,
     pub(in crate::state) host_session: &'a HostSessionRuntime,
@@ -35,57 +81,6 @@ pub(in crate::state) struct BackgroundTickContext<'a> {
     pub(in crate::state) desktop_services: &'a Arc<crate::DesktopRuntimeServices>,
     pub(in crate::state) backend_runtime: &'a BackendRuntime,
     pub(in crate::state) background_jobs: &'a RuntimeBackgroundJobs,
-}
-
-pub(in crate::state) fn background_capability_session(
-    session_slot: &Arc<Mutex<AuthenticatedSessionProjection>>,
-) -> Option<BackgroundCapabilitySession> {
-    let slot = session_slot
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
-    slot.session
-        .as_ref()
-        .map(|session| BackgroundCapabilitySession {
-            auth_scope_generation: session.auth_scope_generation,
-            current_user_id: session.user_id.clone(),
-            endpoint: session.endpoint.clone(),
-            websocket: session.websocket.clone(),
-            current_user_snapshot: session.current_user_snapshot.clone(),
-        })
-}
-
-pub(in crate::state) fn background_capability_session_identity(
-    session_slot: &Arc<Mutex<AuthenticatedSessionProjection>>,
-) -> Option<BackgroundCapabilitySessionIdentity> {
-    let slot = session_slot
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
-    slot.session
-        .as_ref()
-        .map(|session| BackgroundCapabilitySessionIdentity {
-            auth_scope_generation: session.auth_scope_generation,
-            current_user_id: session.user_id.clone(),
-            endpoint: session.endpoint.clone(),
-            websocket: session.websocket.clone(),
-        })
-}
-
-pub(in crate::state) fn background_capability_session_matches(
-    session_slot: &Arc<Mutex<AuthenticatedSessionProjection>>,
-    expected: &BackgroundCapabilitySessionIdentity,
-) -> bool {
-    let slot = session_slot
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
-    slot.session
-        .as_ref()
-        .map(|current| {
-            current.auth_scope_generation == expected.auth_scope_generation
-                && current.user_id == expected.current_user_id
-                && current.endpoint == expected.endpoint
-                && current.websocket == expected.websocket
-        })
-        .unwrap_or(false)
 }
 
 pub(in crate::state) fn emit_background_info(
@@ -163,4 +158,36 @@ fn emit_background_output(
     }
     BackendRuntimeStatusPublisher::new(backend_runtime.clone(), event_bus.clone())
         .publish_telemetry(kind, detail, snapshot);
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use vrcx_0_application_game::{NowPlayingSnapshot, RuntimeSnapshot};
+
+    use super::LocalGameFacts;
+
+    #[test]
+    fn isolated_automation_sees_the_account_as_not_in_game_while_steamvr_stays_a_pc_fact() {
+        let facts = LocalGameFacts {
+            is_game_running: true,
+            is_steamvr_running: true,
+            is_game_no_vr: true,
+            last_game_started_at: Some("2026-10-28T12:00:00.000Z".into()),
+            game_log_snapshot: Arc::new(RuntimeSnapshot {
+                ready: true,
+                location: "wrld_alt:1".into(),
+                ..RuntimeSnapshot::default()
+            }),
+            now_playing: Arc::new(NowPlayingSnapshot::default()),
+        }
+        .isolated_from_game();
+
+        assert!(!facts.is_game_running);
+        assert!(facts.is_steamvr_running);
+        assert!(!facts.is_game_no_vr);
+        assert_eq!(facts.last_game_started_at, None);
+        assert_eq!(*facts.game_log_snapshot, RuntimeSnapshot::default());
+    }
 }

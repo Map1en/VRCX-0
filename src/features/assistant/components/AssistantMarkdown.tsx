@@ -1,8 +1,35 @@
+import { Children, isValidElement, type ReactNode } from 'react';
 import type { Components } from 'react-markdown';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+import { HighlightedCodeBlock } from '@/components/HighlightedCodeBlock';
 import { openExternalLink } from '@/services/entityMediaService';
+
+function AssistantCodeBlock({ children }: { children?: ReactNode }) {
+    const codeElement = Children.toArray(children)[0];
+    const codeProps = isValidElement<{
+        className?: string;
+        children?: ReactNode;
+    }>(codeElement)
+        ? codeElement.props
+        : null;
+    const language =
+        codeProps?.className?.match(/(?:^|\s)language-(\S+)/)?.[1] ?? '';
+    const code = Children.toArray(codeProps?.children)
+        .filter((part) => typeof part === 'string')
+        .join('')
+        .replace(/\n$/, '');
+
+    return (
+        <HighlightedCodeBlock
+            code={code}
+            language={language}
+            size="sm"
+            className="my-1.5"
+        />
+    );
+}
 
 const markdownComponents: Components = {
     p: ({ children }) => (
@@ -26,11 +53,7 @@ const markdownComponents: Components = {
             {children}
         </code>
     ),
-    pre: ({ children }) => (
-        <pre className="bg-muted my-1.5 overflow-x-auto rounded-md p-2 font-mono text-xs">
-            {children}
-        </pre>
-    ),
+    pre: AssistantCodeBlock,
     a: ({ href, children }) => (
         <button
             type="button"

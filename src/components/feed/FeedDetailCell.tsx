@@ -1,5 +1,12 @@
 import { ArrowRightIcon } from 'lucide-react';
 
+import {
+    LogFilterMenuItems,
+    type LogFilterCommands
+} from '@/components/data-table/LogFilterContextMenu';
+import { parseLocation } from '@/shared/utils/location';
+import { replaceBioSymbols } from '@/shared/utils/string';
+
 import { AvatarInfoLine } from './FeedAvatarInfoLine';
 import { FeedLocationLink } from './FeedLocationLink';
 import { resolveFeedLocationForDisplay } from './feedRows';
@@ -7,6 +14,7 @@ import { FeedStatusBadge } from './FeedStatusBadge';
 import type { FeedLocationActionPayload, FeedRow } from './feedTypes';
 
 type FeedDetailCellProps = {
+    filterCommands?: LogFilterCommands;
     loadingHistoryKey?: string;
     locationClassName?: string;
     onNewInstance?(payload?: FeedLocationActionPayload): void;
@@ -15,6 +23,7 @@ type FeedDetailCellProps = {
 };
 
 function FeedDetailCell({
+    filterCommands,
     loadingHistoryKey = '',
     locationClassName = '',
     onNewInstance,
@@ -28,6 +37,17 @@ function FeedDetailCell({
         return (
             <FeedLocationLink
                 className={locationClassName}
+                contextMenuExtraItems={
+                    filterCommands ? (
+                        <LogFilterMenuItems
+                            commands={filterCommands}
+                            target={{
+                                worldId: parseLocation(location).worldId,
+                                worldName: row?.worldName || ''
+                            }}
+                        />
+                    ) : undefined
+                }
                 disableTooltip
                 groupName={row?.groupName}
                 loadingHistoryKey={loadingHistoryKey}
@@ -77,7 +97,7 @@ function FeedDetailCell({
     if (type === 'Bio') {
         return (
             <span className="block w-full min-w-0 truncate">
-                {row.bio || ''}
+                {replaceBioSymbols(row.bio)}
             </span>
         );
     }

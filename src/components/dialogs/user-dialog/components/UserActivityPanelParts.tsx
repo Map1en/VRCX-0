@@ -158,6 +158,7 @@ export function HeatmapChart({
     unitLabel,
     renderDelay = 0,
     squareCells = false,
+    ariaDescription,
     onContextMenu
 }: {
     rawBuckets?: number[];
@@ -171,6 +172,7 @@ export function HeatmapChart({
     unitLabel: string;
     renderDelay?: number;
     squareCells?: boolean;
+    ariaDescription?: string;
     onContextMenu?: () => void;
 }) {
     const [chartElement, setChartElement] = useState<HTMLDivElement | null>(
@@ -250,17 +252,30 @@ export function HeatmapChart({
             }
 
             chart.setOption(
-                buildHeatmapOption({
-                    data: toHeatmapSeriesData(normalizedBuckets, weekStartsOn),
-                    rawBuckets,
-                    dayLabels,
-                    hourLabels,
-                    weekStartsOn,
-                    isDarkMode,
-                    emptyColor,
-                    scaleColors,
-                    unitLabel
-                }),
+                {
+                    ...buildHeatmapOption({
+                        data: toHeatmapSeriesData(
+                            normalizedBuckets,
+                            weekStartsOn
+                        ),
+                        rawBuckets,
+                        dayLabels,
+                        hourLabels,
+                        weekStartsOn,
+                        isDarkMode,
+                        emptyColor,
+                        scaleColors,
+                        unitLabel
+                    }),
+                    ...(ariaDescription
+                        ? {
+                              aria: {
+                                  enabled: true,
+                                  label: { description: ariaDescription }
+                              }
+                          }
+                        : {})
+                },
                 { replaceMerge: ['series'] }
             );
         };
@@ -281,6 +296,7 @@ export function HeatmapChart({
             }
         };
     }, [
+        ariaDescription,
         chartElement,
         dayLabels,
         emptyColor,

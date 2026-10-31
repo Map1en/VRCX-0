@@ -13,12 +13,15 @@ use crate::game_log::instance_media::{
 };
 use crate::game_log::lifecycle as runtime_lifecycle;
 use crate::game_log::screenshot as runtime_screenshot;
-use crate::game_log::video::{self as runtime_video, now_playing_ends_at_ms, NowPlayingClock};
+use crate::game_log::video::{
+    self as runtime_video, now_playing_ends_at_ms, NowPlayingClock, NowPlayingTransport,
+};
 use crate::RuntimeEventBus;
 use crate::{EmptyEventPayload, GameLogSideEffectEvent, GameLogSideEffectSink};
 use crate::{InstanceMediaPort, NowPlayingPayload, TaskSupervisor, VideoMetadataPort};
 
 use super::GameLogProcessorDeps;
+use vrcx_0_contracts::game_log::{GameLogVideoPlayName, GameLogWriteBatch};
 use vrcx_0_core::OwnerId;
 
 #[derive(Clone)]
@@ -100,7 +103,7 @@ pub(super) fn dispatch_side_effect(
                     )
                     .await
                     {
-                        Ok(Some(played)) => {
+                        Ok(Some(mut played)) => {
                             if deliver_activity
                                 && deps
                                     .auth_scope
@@ -109,10 +112,7 @@ pub(super) fn dispatch_side_effect(
                             {
                                 deps.activity.ingest_activity(vec![played.activity]);
                             }
-                            if deps
-                                .now_playing
-                                .play(generation, played.now_playing.length.unwrap_or(0))
-                            {
+                            if deps.now_playing.play(generation, &mut played.now_playing) {
                                 if let Some(ends_at_ms) =
                                     announce_now_playing(&deps, played.now_playing)
                                 {
@@ -126,13 +126,60 @@ pub(super) fn dispatch_side_effect(
                     }
                 });
         }
-        GameLogSideEffect::VideoSync {
-            timestamp,
+        GameLogSideEffect::VideoDetails {
             created_at,
+            video_url,
+            video_name,
+            thumbnail_url,
         } => {
-            if let Some((generation, length_seconds)) = deps.now_playing.resync() {
-                let mut payload = runtime_lifecycle::video_sync_payload(&timestamp, &created_at);
-                payload.length = Some(length_seconds);
+            if !video_name.is_empty() {
+                let batch = GameLogWriteBatch {
+                    video_play_names: vec![GameLogVideoPlayName {
+                        created_at,
+                        video_url,
+                        video_name: video_name.clone(),
+                    }],
+                    ..Default::default()
+                };
+                if let Err(error) = deps
+                    .store
+                    .write_game_log(&OwnerId::new(deps.auth_identity.user_id.clone()), &batch)
+                {
+                    tracing::warn!("GameLog video name update failed: {error}");
+                }
+            }
+            let name = (!video_name.is_empty()).then_some(video_name);
+            announce_now_playing(
+                &deps,
+                NowPlayingPayload {
+                    titled: name.as_ref().map(|_| true),
+                    name: name.clone(),
+                    video_name: name,
+                    thumbnail_url: (!thumbnail_url.is_empty()).then_some(thumbnail_url),
+                    updated_at: chrono::Utc::now().to_rfc3339(),
+                    ..Default::default()
+                },
+            );
+        }
+        GameLogSideEffect::NowPlayingTransport {
+            created_at,
+            position,
+            paused,
+        } => {
+            let transport = NowPlayingTransport {
+                created_at,
+                position,
+                paused,
+            };
+            if let Some((generation, length_seconds)) =
+                deps.now_playing.transport(transport.clone())
+            {
+                let mut payload = NowPlayingPayload {
+                    length: Some(length_seconds),
+                    updated_at: chrono::Utc::now().to_rfc3339(),
+                    ..Default::default()
+                };
+                transport.apply_to(&mut payload);
                 if let Some(ends_at_ms) = announce_now_playing(&deps, payload) {
                     deps.tasks
                         .clone()

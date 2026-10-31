@@ -1,8 +1,9 @@
 use serde::Serialize;
 use serde_json::Value;
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse as HttpApiExecuteResponse;
-use vrcx_0_contracts::vrchat_api::vrchat_auth_error_message;
-use vrcx_0_contracts::vrchat_login::{CookieProbeResult, CookieProbeStage};
+use vrcx_0_contracts::vrchat_login::{
+    auth_response_error_message, cookie_probe_rejection_reason, CookieProbeResult, CookieProbeStage,
+};
 use vrcx_0_core::json::{JsonExt, RawJson};
 use vrcx_0_core::vrchat_endpoints::{
     normalize_vrchat_api_endpoint, normalize_vrchat_websocket_endpoint,
@@ -72,9 +73,6 @@ pub(crate) async fn probe_current_user_from_cookie_with_api(
     let result = probe_cookie_session(api, &endpoint, &user_id)
         .await
         .map_err(|error| NonInteractiveAuthError::Failed(error.to_string()))?;
-    if matches!(result, CookieProbeResult::RequiresTwoFactor(_)) {
-        return Ok(CookieSessionProbe::Fallback);
-    }
     map_fallback_probe(result, user_id, endpoint, websocket)
 }
 
@@ -115,10 +113,9 @@ fn map_fallback_probe(
         CookieProbeResult::Authenticated { user, .. } => Ok(CookieSessionProbe::Authenticated(
             AuthenticatedRuntimeSession::from_user(user, endpoint, websocket),
         )),
-        CookieProbeResult::MissingCredentials(_) | CookieProbeResult::UserMismatch { .. } => {
-            Ok(CookieSessionProbe::Fallback)
-        }
-        CookieProbeResult::RequiresTwoFactor(_) => unreachable!(),
+        CookieProbeResult::MissingCredentials(_)
+        | CookieProbeResult::UserMismatch { .. }
+        | CookieProbeResult::RequiresTwoFactor(_) => Ok(CookieSessionProbe::Fallback),
         CookieProbeResult::Rejected { response, .. } if response.status == 401 => {
             Ok(CookieSessionProbe::Fallback)
         }
@@ -184,17 +181,7 @@ fn rejected_probe_error<T>(
     stage: CookieProbeStage,
     response: HttpApiExecuteResponse,
 ) -> std::result::Result<T, NonInteractiveAuthError> {
-    let request_name = match stage {
-        CookieProbeStage::Config => "config",
-        CookieProbeStage::CurrentUser => "current-user",
-    };
-    let reason = auth_response_error_message(
-        &response,
-        format!(
-            "VRChat {request_name} request failed with HTTP {}.",
-            response.status
-        ),
-    );
+    let reason = cookie_probe_rejection_reason(stage, &response);
     if matches!(response.status, 401 | 403) {
         Err(NonInteractiveAuthError::SessionInvalidated {
             user_id,
@@ -204,10 +191,6 @@ fn rejected_probe_error<T>(
     } else {
         Err(NonInteractiveAuthError::Failed(reason))
     }
-}
-
-pub fn auth_response_error_message(response: &HttpApiExecuteResponse, fallback: String) -> String {
-    vrchat_auth_error_message(response).unwrap_or(fallback)
 }
 
 pub fn parse_current_user_response(

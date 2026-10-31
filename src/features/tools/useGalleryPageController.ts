@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router';
 
-import { useFileDropTarget } from '@/components/file-drop/useFileDropTarget';
-
+import { isRuntimeAuthTarget } from './galleryAuthTarget';
 import {
+    canUploadGalleryTarget,
     EMPTY_ASSETS,
     sanitizeGalleryTab,
     TAB_ORDER,
@@ -20,10 +19,10 @@ import type {
     GalleryControllerDeps,
     GalleryCropRequest
 } from './galleryTypes';
-import { readDroppedUploadImage } from './inventoryHelpers';
 import { useGalleryActions } from './useGalleryActions';
 import { useGalleryBulkActions } from './useGalleryBulkActions';
 import { useGalleryRuntimeState } from './useGalleryRuntimeState';
+import { useImageUploadIntake } from './useImageUploadIntake';
 
 const GALLERY_GRID_DENSITY_STORAGE_KEY = 'VRCX_0_GalleryGridDensity';
 
@@ -38,12 +37,8 @@ function writeGalleryGridDensityPreference(value: GalleryGridDensity) {
 }
 
 export function useGalleryPageController() {
-    const { t } = useTranslation();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
-    const uploadInputRef = useRef<HTMLInputElement | null>(null);
-    const uploadTargetRef = useRef<GalleryUploadTarget>('gallery');
-    const uploadAuthTargetRef = useRef<GalleryAuthTarget | null>(null);
     const {
         currentEndpoint,
         currentUserId,
@@ -91,9 +86,8 @@ export function useGalleryPageController() {
     const {
         refreshTab,
         refreshAll: refreshAllAssets,
-        beginUpload,
-        uploadSelectedFile,
-        uploadDroppedFile,
+        getAuthTarget,
+        openCropRequest,
         confirmCroppedUpload,
         deleteFileAsset,
         deletePrint,
@@ -122,21 +116,25 @@ export function useGalleryPageController() {
         setEmojiAnimationStyle,
         setLoadingByTab,
         setMutatingKey,
-        setUploadingTab,
-        uploadAuthTargetRef,
-        uploadInputRef,
-        uploadTargetRef
+        setUploadingTab
     } satisfies GalleryControllerDeps);
     const { bulkRunning, deleteSelection, setFavoriteSelection } =
         useGalleryBulkActions({ setAssets });
-    const fileDropActive = useFileDropTarget({
+    const {
+        beginUpload,
+        clipboardPasting,
+        fileDropActive,
+        pasteClipboardUpload,
+        pasteScopeRef,
+        uploadInputRef,
+        uploadSelectedFile
+    } = useImageUploadIntake<GalleryUploadTarget, GalleryAuthTarget>({
         enabled: Boolean(currentUserId) && !cropRequest && !uploadingTab,
-        onDrop: async (paths) => {
-            const file = await readDroppedUploadImage(paths, t);
-            if (file) {
-                uploadDroppedFile(file);
-            }
-        }
+        activeTarget: activeTab,
+        canUploadTo: (tab) => canUploadGalleryTarget(tab, isVrcPlusSupporter),
+        getAuthTarget,
+        isCurrentAuthTarget: isRuntimeAuthTarget,
+        openCropRequest
     });
     const refreshAllRef = useRef(refreshAllAssets);
     useEffect(() => {
@@ -187,6 +185,7 @@ export function useGalleryPageController() {
         uploadingTab,
         uploadSelectedFile,
         fileDropActive,
+        pasteScopeRef,
         gridDensity,
         changeGridDensity,
         navigate,
@@ -196,6 +195,7 @@ export function useGalleryPageController() {
         },
         setActiveTab,
         beginUpload,
+        pasteClipboardUpload,
         setProfileField,
         consumeInventoryBundle,
         deleteFileAsset,
@@ -209,6 +209,7 @@ export function useGalleryPageController() {
         refreshTab,
         activeTab,
         assets,
+        clipboardPasting,
         currentUserId,
         emojiAnimFps,
         emojiAnimFrameCount,
@@ -227,7 +228,6 @@ export function useGalleryPageController() {
         cropRequest,
         setCropRequest,
         confirmCroppedUpload,
-        openImagePreview,
-        uploadAuthTargetRef
+        openImagePreview
     };
 }

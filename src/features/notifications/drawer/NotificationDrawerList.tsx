@@ -8,6 +8,12 @@ import type {
     NotificationCategories
 } from '@/state/vrcNotificationStore';
 
+import { NotificationGroupBranch } from '../components/NotificationGroupBranch';
+import { NotificationGroupSummary } from '../components/NotificationGroupSummary';
+import {
+    foldAdjacentNotifications,
+    useExpandedNotificationGroups
+} from '../notificationGroups';
 import type { NotificationRowActionHandlers } from '../notificationRowActions';
 import {
     groupDrawerEntries,
@@ -62,9 +68,28 @@ export function NotificationDrawerList({
         }
         return groupDrawerEntries(entries);
     }, [categories]);
+    const { expanded, toggle } = useExpandedNotificationGroups();
     const hasAny = NOTIFICATION_LIFECYCLE_ORDER.some(
         (bucket: NotificationLifecycleBucket) => groups[bucket].length > 0
     );
+
+    function renderRow(
+        bucket: NotificationLifecycleBucket,
+        entry: NotificationDrawerEntry,
+        nested = false
+    ) {
+        return (
+            <NotificationDrawerRow
+                key={`${bucket}:${entry.notification.id}`}
+                notification={entry.notification}
+                isUnseen={entry.isUnseen}
+                nested={nested}
+                currentUserId={currentUserId}
+                canInviteFromCurrentLocation={canInviteFromCurrentLocation}
+                handlers={handlers}
+            />
+        );
+    }
 
     return (
         <div className="flex min-h-0 flex-1 flex-col">
@@ -84,18 +109,63 @@ export function NotificationDrawerList({
                                         </span>
                                         <span>({items.length})</span>
                                     </div>
-                                    {items.map((entry) => (
-                                        <NotificationDrawerRow
-                                            key={`${bucket}:${entry.notification.id}`}
-                                            notification={entry.notification}
-                                            isUnseen={entry.isUnseen}
-                                            currentUserId={currentUserId}
-                                            canInviteFromCurrentLocation={
-                                                canInviteFromCurrentLocation
-                                            }
-                                            handlers={handlers}
-                                        />
-                                    ))}
+                                    {foldAdjacentNotifications(
+                                        items,
+                                        (entry) => entry.notification
+                                    ).map((fold) => {
+                                        if (fold.kind === 'single') {
+                                            return renderRow(bucket, fold.item);
+                                        }
+                                        const isExpanded = expanded.has(
+                                            fold.runKey
+                                        );
+                                        return (
+                                            <div
+                                                key={`${bucket}:group:${fold.runKey}`}
+                                                className={
+                                                    isExpanded
+                                                        ? 'border-border/50 border-b'
+                                                        : undefined
+                                                }
+                                            >
+                                                <NotificationGroupSummary
+                                                    variant="drawer"
+                                                    rows={fold.items.map(
+                                                        (entry) =>
+                                                            entry.notification
+                                                    )}
+                                                    unseen={fold.items.some(
+                                                        (entry) =>
+                                                            entry.isUnseen
+                                                    )}
+                                                    expanded={isExpanded}
+                                                    onToggle={() =>
+                                                        toggle(fold.runKey)
+                                                    }
+                                                />
+                                                {isExpanded ? (
+                                                    <NotificationGroupBranch
+                                                        variant="drawer"
+                                                        items={fold.items}
+                                                        getKey={(entry) =>
+                                                            String(
+                                                                entry
+                                                                    .notification
+                                                                    .id
+                                                            )
+                                                        }
+                                                        renderItem={(entry) =>
+                                                            renderRow(
+                                                                bucket,
+                                                                entry,
+                                                                true
+                                                            )
+                                                        }
+                                                    />
+                                                ) : null}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             );
                         }

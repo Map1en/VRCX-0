@@ -7,18 +7,21 @@ use super::{
     run_background_print_cleanup, run_background_profile_bio_scan,
     run_background_social_baseline_refresh, AuthenticatedSessionProjection, BackendRuntime,
     BackendRuntimePhase, BackendRuntimeSnapshot, BackendRuntimeTelemetryKind,
-    BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity, BackgroundTickContext,
-    DatabaseService, RealtimeHostRuntime, RuntimeBackgroundJobs, RuntimeHostContext,
-    RuntimeHostState, SocialBaselineRefreshOutput, WebClient,
+    BackgroundTickContext, DatabaseService, RealtimeHostRuntime, RuntimeBackgroundJobs,
+    RuntimeHostContext, RuntimeHostState, SocialBaselineRefreshOutput, WebClient,
 };
 use crate::GroupOrderSource;
 use futures_util::future::BoxFuture;
+use vrcx_0_application::auth::background_capability_session_scope_key;
+pub(super) use vrcx_0_application::auth::{
+    background_capability_session, background_capability_session_identity,
+    background_capability_session_matches,
+};
 use vrcx_0_application::social::{
     AuthenticatedRuntimeOrchestrator, ProfileBioScanPacer, SocialMaintenanceActions,
 };
 use vrcx_0_application_activity::ActivityFavoriteGroups;
 use vrcx_0_core::OwnerId;
-use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
 
 pub(super) struct RuntimeHostSocialMaintenanceActions {
     pub(super) db: Arc<DatabaseService>,
@@ -281,8 +284,7 @@ pub(super) fn is_authenticated_maintenance_active(
         return false;
     }
     background_capability_session_identity(session_slot)
-        .map(|session| background_session_matches_auth(&session, &auth_scope))
-        .unwrap_or(false)
+        .is_some_and(|session| session.matches_auth_scope(&auth_scope))
 }
 
 pub(super) fn is_authenticated_maintenance_active_snapshot(
@@ -290,16 +292,6 @@ pub(super) fn is_authenticated_maintenance_active_snapshot(
 ) -> bool {
     snapshot.phase == BackendRuntimePhase::Running
         && snapshot.auth_status == vrcx_0_application_core::BackendRuntimeAuthStatus::Authenticated
-}
-
-pub(super) fn background_session_matches_auth(
-    session: &BackgroundCapabilitySessionIdentity,
-    auth_scope: &vrcx_0_application_core::RuntimeAuthScopeSnapshot,
-) -> bool {
-    auth_scope.active
-        && session.auth_scope_generation == auth_scope.generation
-        && session.current_user_id == auth_scope.current_user_id
-        && normalize_vrchat_api_endpoint(Some(&session.endpoint)) == auth_scope.endpoint
 }
 
 pub(super) fn gui_maintenance_runtime_mode(backend_runtime: &BackendRuntime) -> &'static str {
@@ -356,70 +348,6 @@ fn emit_background_output(
         runtime_context.event_bus.clone(),
     )
     .publish_telemetry(kind, detail, snapshot);
-}
-
-pub(super) fn background_capability_session(
-    session_slot: &Arc<Mutex<AuthenticatedSessionProjection>>,
-) -> Option<BackgroundCapabilitySession> {
-    let slot = session_slot
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
-    slot.session
-        .as_ref()
-        .map(|session| BackgroundCapabilitySession {
-            auth_scope_generation: session.auth_scope_generation,
-            current_user_id: session.user_id.clone(),
-            endpoint: session.endpoint.clone(),
-            websocket: session.websocket.clone(),
-            current_user_snapshot: session.current_user_snapshot.clone(),
-        })
-}
-
-pub(super) fn background_capability_session_identity(
-    session_slot: &Arc<Mutex<AuthenticatedSessionProjection>>,
-) -> Option<BackgroundCapabilitySessionIdentity> {
-    let slot = session_slot
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
-    slot.session
-        .as_ref()
-        .map(|session| BackgroundCapabilitySessionIdentity {
-            auth_scope_generation: session.auth_scope_generation,
-            current_user_id: session.user_id.clone(),
-            endpoint: session.endpoint.clone(),
-            websocket: session.websocket.clone(),
-        })
-}
-
-fn background_capability_session_scope_key(
-    session_slot: &Arc<Mutex<AuthenticatedSessionProjection>>,
-) -> Option<String> {
-    background_capability_session_identity(session_slot).map(|session| {
-        format!(
-            "{}:{}:{}",
-            session.auth_scope_generation,
-            session.current_user_id,
-            normalize_vrchat_api_endpoint(Some(&session.endpoint))
-        )
-    })
-}
-
-pub(super) fn background_capability_session_matches(
-    session_slot: &Arc<Mutex<AuthenticatedSessionProjection>>,
-    session: &BackgroundCapabilitySessionIdentity,
-) -> bool {
-    let slot = session_slot
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
-    slot.session
-        .as_ref()
-        .map(|current| {
-            current.auth_scope_generation == session.auth_scope_generation
-                && current.user_id == session.current_user_id
-                && current.endpoint == session.endpoint
-                && current.websocket == session.websocket
-        })
-        .unwrap_or(false)
 }
 
 #[cfg(test)]

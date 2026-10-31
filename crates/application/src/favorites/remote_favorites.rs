@@ -138,14 +138,13 @@ fn notify_favorite_change(
     kind: FavoriteChangeScope,
     changes: Vec<FavoriteChange>,
 ) {
-    deps.event_bus
-        .emit_favorites_changed(FavoritesChangedPayload::from_changes(
-            deps.mutation.scope(),
-            kind,
-            false,
-            true,
-            changes,
-        ));
+    deps.event_bus.emit(FavoritesChangedPayload::from_changes(
+        deps.mutation.scope(),
+        kind,
+        false,
+        true,
+        changes,
+    ));
 }
 
 pub(super) async fn add_remote_favorite(

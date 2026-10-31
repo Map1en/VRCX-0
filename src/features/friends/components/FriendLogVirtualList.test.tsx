@@ -1,9 +1,16 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import {
+    cleanup,
+    fireEvent,
+    render,
+    renderHook,
+    screen
+} from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { useAppTable } from '@/components/data-table/appTable';
+import { getToggleableColumns } from '@/components/data-table/tableColumnLayout';
 
 import type { FriendLogRow } from '../friendLogRows';
 import { useFriendLogColumns } from './FriendLogColumns';
@@ -26,6 +33,7 @@ const rows: FriendLogRow[] = Array.from({ length: 160 }, (_, index) => ({
     friendNumber: 0
 }));
 const onDelete = vi.fn(async () => {});
+const onlyUser = vi.fn();
 const resolveDisplayName = vi.fn((row: FriendLogRow) => row.displayName);
 
 function Harness() {
@@ -43,6 +51,7 @@ function Harness() {
         <FriendLogVirtualList
             rows={rows}
             table={table}
+            filterCommands={{ onlyUser }}
             resolveDisplayName={resolveDisplayName}
             deleteAction={deleteAction}
             resetKey="normal"
@@ -78,5 +87,44 @@ describe('Friend History virtual rows', () => {
         );
         expect(onDelete).toHaveBeenCalledWith(rows[0], { skipConfirm: false });
         expect(rows.every((row) => !('resolvedDisplayName' in row))).toBe(true);
+    });
+
+    it('offers every data column in the column visibility menu', () => {
+        const { result } = renderHook(() => {
+            const columns = useFriendLogColumns({
+                currentUserId: 'usr_owner',
+                rowsOwnerUserId: 'usr_owner',
+                loadStatus: 'ready',
+                deletingRowKey: '',
+                handleDeleteRow: onDelete,
+                shiftHeld: false
+            });
+            return useAppTable({ data: [], columns });
+        });
+
+        expect(
+            getToggleableColumns(result.current.getAllLeafColumns()).map(
+                (column) => column.id
+            )
+        ).toEqual(['created_at', 'type', 'displayName', 'action']);
+    });
+
+    it('filters to the right-clicked user from the row context menu', async () => {
+        const view = render(<Harness />);
+        const firstRow = view.container.querySelector(
+            '[data-friend-history-row]'
+        );
+        if (!firstRow) {
+            throw new Error('missing history row');
+        }
+
+        fireEvent.contextMenu(firstRow);
+        fireEvent.click(
+            await screen.findByRole('menuitem', {
+                name: 'table.filter_action.only_user'
+            })
+        );
+
+        expect(onlyUser).toHaveBeenCalledWith('usr_0', 'Name 0');
     });
 });

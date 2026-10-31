@@ -3,7 +3,9 @@ import {
     ChevronRightIcon,
     DicesIcon,
     FolderIcon,
-    RefreshCwIcon
+    RefreshCwIcon,
+    StarIcon,
+    Trash2Icon
 } from 'lucide-react';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -13,14 +15,11 @@ import { ToolbarViewMenu } from '@/components/layout/ToolbarControls';
 import { WorkspaceResizeHandle } from '@/components/layout/WorkspaceResizeHandle';
 import {
     readScreenshotGridDensity,
-    readScreenshotGridSort,
     sanitizeScreenshotGridDensity,
     sanitizeScreenshotGridSort,
     SCREENSHOT_GRID_DENSITY_OPTIONS,
     SCREENSHOT_GRID_SORT_OPTIONS,
-    sortScreenshotGridImages,
     writeScreenshotGridDensity,
-    writeScreenshotGridSort,
     type ScreenshotGridDensity,
     type ScreenshotGridSort
 } from '@/components/media/screenshotGridPreferences';
@@ -49,6 +48,7 @@ import {
 } from '@/ui/shadcn/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { SCREENSHOT_FAVORITES_FOLDER } from '../screenshotMetadataValues';
 import { useClearSelectionOnEscape } from '../useClearSelectionOnEscape';
 import type { useScreenshotBrowseSelection } from '../useScreenshotBrowseSelection';
 import { GallerySelectionBar } from './GallerySelectionBar';
@@ -58,6 +58,14 @@ import { ScreenshotSelectableImageGrid } from './ScreenshotSelectableImageGrid';
 type ScreenshotBrowseSelection = ReturnType<
     typeof useScreenshotBrowseSelection
 >;
+
+export type ScreenshotGalleryFavorites = {
+    paths: ReadonlySet<string>;
+    count: number;
+    missingCount: number;
+    onToggle: (path: string, favorite: boolean) => void;
+    onForgetMissing: () => void;
+};
 
 type FolderTreeNodeModel = ScreenshotFolderInfo & {
     synthetic?: boolean;
@@ -309,11 +317,14 @@ function ScreenshotGalleryGrid({
     density,
     error,
     initialScrollTop,
+    revealPath,
+    onRevealPathConsumed,
     images,
     isLoading,
     selectedFolder,
     hasSelection,
     selectedKeysSet,
+    favorites,
     onOpen,
     onToggleSelect,
     onScrollPositionChange
@@ -321,16 +332,20 @@ function ScreenshotGalleryGrid({
     density: ScreenshotGridDensity;
     error: string;
     initialScrollTop: number;
+    revealPath: string;
+    onRevealPathConsumed: () => void;
     images: ScreenshotLibraryImage[];
     isLoading: boolean;
     selectedFolder: string;
     hasSelection: boolean;
     selectedKeysSet: ReadonlySet<string>;
+    favorites: ScreenshotGalleryFavorites;
     onOpen: (path: string) => void;
     onToggleSelect: (path: string, checked: boolean, shift: boolean) => void;
     onScrollPositionChange: (folder: string, scrollTop: number) => void;
 }) {
     const { t } = useTranslation();
+    const isFavoritesFolder = selectedFolder === SCREENSHOT_FAVORITES_FOLDER;
 
     if (error) {
         return (
@@ -354,7 +369,14 @@ function ScreenshotGalleryGrid({
     }
 
     if (!images.length) {
-        return (
+        return isFavoritesFolder ? (
+            <EmptyState
+                title={t('dialog.screenshot_metadata.empty_favorites')}
+                description={t(
+                    'dialog.screenshot_metadata.empty_favorites_description'
+                )}
+            />
+        ) : (
             <EmptyState
                 title={t('dialog.screenshot_metadata.empty_gallery')}
                 description={t(
@@ -370,6 +392,8 @@ function ScreenshotGalleryGrid({
             images={images}
             initialScrollTop={initialScrollTop}
             resetKey={selectedFolder}
+            revealPath={revealPath}
+            onRevealPathConsumed={onRevealPathConsumed}
             hasSelection={hasSelection}
             selectedKeysSet={selectedKeysSet}
             onOpen={onOpen}
@@ -379,6 +403,8 @@ function ScreenshotGalleryGrid({
                     onScrollPositionChange(selectedFolder, scrollTop);
                 }
             }}
+            favoritePaths={favorites.paths}
+            onToggleFavorite={favorites.onToggle}
         />
     );
 }
@@ -482,8 +508,13 @@ export function ScreenshotGalleryView({
     onScrollPositionChange,
     isDeleteRunning,
     restoreScrollTop,
+    revealPath = '',
+    onRevealPathConsumed = () => {},
     selection,
-    onExportSelection
+    onExportSelection,
+    favorites,
+    sort,
+    onSortChange
 }: {
     folderTree: ScreenshotFolderTree | null;
     images: ScreenshotLibraryImage[];
@@ -499,36 +530,43 @@ export function ScreenshotGalleryView({
     onScrollPositionChange: (folder: string, scrollTop: number) => void;
     isDeleteRunning: boolean;
     restoreScrollTop: number;
+    revealPath?: string;
+    onRevealPathConsumed?: () => void;
     selection: ScreenshotBrowseSelection;
     onExportSelection: (paths: string[], groupByFolder: boolean) => void;
+    favorites: ScreenshotGalleryFavorites;
+    sort: ScreenshotGridSort;
+    onSortChange: (value: ScreenshotGridSort) => void;
 }) {
     const { t } = useTranslation();
+    const isFavoritesFolder = selectedFolder === SCREENSHOT_FAVORITES_FOLDER;
     const layout = useDefaultLayout({
         id: SCREENSHOT_GALLERY_LAYOUT_ID,
         panelIds: SCREENSHOT_GALLERY_PANEL_IDS
     });
     const [density, setDensity] = useState(readScreenshotGridDensity);
-    const [sort, setSort] = useState(readScreenshotGridSort);
-    const sortedImages = useMemo(
-        () => sortScreenshotGridImages(images, sort),
-        [images, sort]
-    );
     const root = useMemo(() => buildFolderTree(folderTree), [folderTree]);
     const activeFolder =
         folderTree?.folders.find((folder) => folder.path === selectedFolder) ||
         root;
-    const activeFolderPath =
-        selectedFolder || activeFolder?.path || folderTree?.rootPath || '';
+    const activeFolderPath = isFavoritesFolder
+        ? ''
+        : selectedFolder || activeFolder?.path || folderTree?.rootPath || '';
+    const activeFolderTitle = isFavoritesFolder
+        ? t('dialog.screenshot_metadata.favorites')
+        : activeFolder?.name || t('dialog.screenshot_metadata.gallery');
+    const activeFolderSubtitle = isFavoritesFolder
+        ? favorites.missingCount > 0
+            ? t('dialog.screenshot_metadata.favorites_missing', {
+                  count: favorites.missingCount
+              })
+            : '—'
+        : activeFolderPath || '—';
     useClearSelectionOnEscape(selection.hasSelection, selection.clearSelection);
 
     function onDensityChange(next: ScreenshotGridDensity) {
         setDensity(next);
         writeScreenshotGridDensity(next);
-    }
-
-    function onSortChange(next: ScreenshotGridSort) {
-        setSort(next);
-        writeScreenshotGridSort(next);
     }
 
     return (
@@ -582,11 +620,44 @@ export function ScreenshotGalleryView({
                             <Skeleton className="h-7 w-8/12" />
                         </div>
                     ) : root ? (
-                        <FolderTreeNode
-                            node={root}
-                            selectedFolder={selectedFolder}
-                            onSelectFolder={onSelectFolder}
-                        />
+                        <div className="flex flex-col gap-1">
+                            <Button
+                                type="button"
+                                variant={
+                                    isFavoritesFolder ? 'secondary' : 'ghost'
+                                }
+                                size="sm"
+                                className="w-full min-w-0 justify-start transition-none"
+                                aria-current={
+                                    isFavoritesFolder ? 'location' : undefined
+                                }
+                                onClick={() =>
+                                    onSelectFolder(SCREENSHOT_FAVORITES_FOLDER)
+                                }
+                            >
+                                <span
+                                    aria-hidden="true"
+                                    className="size-3.5 shrink-0"
+                                />
+                                <StarIcon data-icon="inline-start" />
+                                <span className="truncate text-left">
+                                    {t('dialog.screenshot_metadata.favorites')}
+                                </span>
+                                {favorites.count > 0 && (
+                                    <span
+                                        aria-hidden="true"
+                                        className="text-muted-foreground ml-auto min-w-5 text-right text-xs tabular-nums"
+                                    >
+                                        {favorites.count}
+                                    </span>
+                                )}
+                            </Button>
+                            <FolderTreeNode
+                                node={root}
+                                selectedFolder={selectedFolder}
+                                onSelectFolder={onSelectFolder}
+                            />
+                        </div>
                     ) : (
                         <EmptyState
                             title={t(
@@ -609,11 +680,10 @@ export function ScreenshotGalleryView({
                     <Tooltip disabled={!activeFolderPath}>
                         <TooltipTrigger render={<div className="min-w-0" />}>
                             <div className="truncate text-sm font-medium">
-                                {activeFolder?.name ||
-                                    t('dialog.screenshot_metadata.gallery')}
+                                {activeFolderTitle}
                             </div>
                             <div className="text-muted-foreground truncate text-xs">
-                                {activeFolderPath || '—'}
+                                {activeFolderSubtitle}
                             </div>
                         </TooltipTrigger>
                         <TooltipContent>{activeFolderPath}</TooltipContent>
@@ -624,12 +694,41 @@ export function ScreenshotGalleryView({
                                 count: images.length
                             })}
                         </span>
+                        {isFavoritesFolder && favorites.missingCount > 0 ? (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={favorites.onForgetMissing}
+                            >
+                                <Trash2Icon data-icon="inline-start" />
+                                {t(
+                                    'dialog.screenshot_metadata.forget_missing_favorites'
+                                )}
+                            </Button>
+                        ) : null}
                         <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            disabled={!activeFolder?.totalImageCount}
+                            disabled={
+                                isFavoritesFolder
+                                    ? !images.length
+                                    : !activeFolder?.totalImageCount
+                            }
                             onClick={() => {
+                                if (isFavoritesFolder) {
+                                    const image =
+                                        images[
+                                            Math.floor(
+                                                Math.random() * images.length
+                                            )
+                                        ];
+                                    if (image) {
+                                        onOpenImage(image.path);
+                                    }
+                                    return;
+                                }
                                 commands
                                     .appPickRandomScreenshotInFolderTree(
                                         activeFolderPath
@@ -667,11 +766,14 @@ export function ScreenshotGalleryView({
                     density={density}
                     error={error}
                     initialScrollTop={restoreScrollTop}
-                    images={sortedImages}
+                    revealPath={revealPath}
+                    onRevealPathConsumed={onRevealPathConsumed}
+                    images={images}
                     isLoading={isImagesLoading}
                     selectedFolder={selectedFolder}
                     hasSelection={selection.hasSelection}
                     selectedKeysSet={selection.selectedKeysSet}
+                    favorites={favorites}
                     onOpen={onOpenImage}
                     onToggleSelect={(path, checked, shift) =>
                         selection.selectItem(path, checked, { shift })

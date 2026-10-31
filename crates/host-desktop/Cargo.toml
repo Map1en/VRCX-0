@@ -17,6 +17,7 @@ chrono = { workspace = true }
 dirs = { workspace = true }
 fontdb = "0.24"
 hex = "0.4"
+image = { workspace = true }
 open = "5"
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }

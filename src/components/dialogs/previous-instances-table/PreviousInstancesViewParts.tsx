@@ -37,6 +37,8 @@ import {
 } from '@/components/layout/PageScaffold';
 import { ToolbarSegmented } from '@/components/layout/ToolbarControls';
 import { Location } from '@/components/Location';
+import { normalizeLocationText } from '@/components/location/locationModel';
+import { LocationWorld } from '@/components/LocationWorld';
 import type { LoadStatus } from '@/domain/shared/types';
 import {
     formatClock,
@@ -91,6 +93,7 @@ import {
     previousInstanceVisitWindow,
     rowDuration,
     rowLocation,
+    rowLocationObject,
     rowOwnerGroupId,
     rowOwnerUserId
 } from './previousInstancesRows';
@@ -229,13 +232,7 @@ export function instanceDetailsSummary(
         : t('dialog.previous_instances.description.instance_details');
 }
 
-export function InstanceOwnerCell({
-    userId,
-    endpoint = ''
-}: {
-    userId: string;
-    endpoint?: string;
-}) {
+function useInstanceOwnerProfile(userId: string, endpoint: string) {
     const knownUser = useKnownUserFact(userId, { endpoint });
     const knownDisplayName = String(
         knownUser?.displayName || knownUser?.username || knownUser?.name || ''
@@ -253,13 +250,65 @@ export function InstanceOwnerCell({
             entityQueryPolicies.userAvatarLookup.refetchOnWindowFocus
     });
     const queriedUser = userProfileQuery.data;
-    const displayName = String(
-        queriedUser?.displayName ||
-            queriedUser?.username ||
-            queriedUser?.name ||
-            knownDisplayName ||
-            userId
+    return {
+        displayName: String(
+            queriedUser?.displayName ||
+                queriedUser?.username ||
+                queriedUser?.name ||
+                knownDisplayName ||
+                userId
+        ),
+        seedData: queriedUser || knownUser || null
+    };
+}
+
+export function PreviousInstanceWorldLocation({
+    row,
+    currentUserId,
+    endpoint = ''
+}: {
+    row: PreviousInstanceRow;
+    currentUserId?: string | null;
+    endpoint?: string;
+}) {
+    const locationObject = rowLocationObject(row);
+    const ownerUserId = normalizeLocationText(
+        locationObject.ownerUserId || locationObject.userId
     );
+    const recordedOwnerName = normalizeLocationText(
+        locationObject.ownerDisplayName ||
+            row?.ownerDisplayName ||
+            row?.ownerName
+    );
+    const owner = useInstanceOwnerProfile(
+        recordedOwnerName ? '' : ownerUserId,
+        endpoint
+    );
+    return (
+        <LocationWorld
+            locationObject={locationObject}
+            grouphint={row?.groupName}
+            currentUserId={currentUserId}
+            worldDialogShortName={normalizeLocationText(
+                locationObject.shortName
+            )}
+            instanceOwner={ownerUserId}
+            instanceOwnerName={recordedOwnerName || owner.displayName}
+            interactive={false}
+            hint={row?.worldName || ''}
+            className="max-w-full"
+        />
+    );
+}
+
+export function InstanceOwnerCell({
+    userId,
+    endpoint = ''
+}: {
+    userId: string;
+    endpoint?: string;
+}) {
+    const { displayName, seedData } = useInstanceOwnerProfile(userId, endpoint);
 
     if (!userId) {
         return (
@@ -278,7 +327,7 @@ export function InstanceOwnerCell({
                 openUserDialog({
                     userId,
                     title: displayName || undefined,
-                    seedData: queriedUser || knownUser || null
+                    seedData
                 })
             }
         >

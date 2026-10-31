@@ -17,6 +17,7 @@ pub struct InviteAutomationConfig {
     pub mode: InviteAutomationMode,
     pub selected_groups: Vec<String>,
     pub allowed_statuses: Vec<String>,
+    pub message_slot: Option<i32>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -131,6 +132,14 @@ pub fn normalize_invite_automation_mode(value: &str) -> InviteAutomationMode {
     }
 }
 
+pub fn normalize_invite_message_slot(value: &str) -> Option<i32> {
+    value
+        .trim()
+        .parse::<i32>()
+        .ok()
+        .filter(|slot| (0..12).contains(slot))
+}
+
 pub fn context_gates(
     config: &InviteAutomationConfig,
     location: &InviteLocationFacts,
@@ -243,7 +252,7 @@ fn can_invite_from_location(
         return false;
     }
     if facts.closed_locations.contains(location)
-        || facts.closed_locations.contains(&location_cache_key(parsed))
+        || facts.closed_locations.contains(&parsed.instance_key())
     {
         return false;
     }
@@ -257,14 +266,6 @@ fn can_invite_from_location(
         return false;
     }
     facts.last_location.trim() == location
-}
-
-fn location_cache_key(parsed: &vrcx_0_core::location::ParsedLocation) -> String {
-    if parsed.world_id.is_empty() || parsed.instance_id.is_empty() {
-        String::new()
-    } else {
-        format!("{}:{}", parsed.world_id, parsed.instance_id)
-    }
 }
 
 #[cfg(test)]
@@ -297,6 +298,7 @@ mod tests {
                 mode: InviteAutomationMode::SelectedFavorites,
                 selected_groups: vec!["friend:group_0".into()],
                 allowed_statuses: Vec::new(),
+                message_slot: None,
             },
             allowlist: SenderAllowlist {
                 is_favorite: true,
@@ -519,5 +521,14 @@ mod tests {
                 reason: InviteAutomationSkipReason::FailureBackoff,
             }
         );
+    }
+
+    #[test]
+    fn message_slot_accepts_only_vrchat_slot_range() {
+        assert_eq!(normalize_invite_message_slot("0"), Some(0));
+        assert_eq!(normalize_invite_message_slot(" 11 "), Some(11));
+        assert_eq!(normalize_invite_message_slot(""), None);
+        assert_eq!(normalize_invite_message_slot("12"), None);
+        assert_eq!(normalize_invite_message_slot("-1"), None);
     }
 }

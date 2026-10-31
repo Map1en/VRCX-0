@@ -16,7 +16,6 @@ import {
     Sheet,
     SheetClose,
     SheetContent,
-    SheetFooter,
     SheetHeader,
     SheetTitle,
     SheetTrigger
@@ -48,7 +47,7 @@ export function MutualFriendsSettingsSheet({
     layoutSettings,
     nodeCount,
     onExcludedFriendIdsChange,
-    onResetLayoutAndHidden,
+    onResetLayoutSettings,
     setLayoutSetting
 }: {
     edgeCount: number;
@@ -57,7 +56,7 @@ export function MutualFriendsSettingsSheet({
     layoutSettings: MutualFriendsLayoutSettings;
     nodeCount: number;
     onExcludedFriendIdsChange: (next: string[]) => void;
-    onResetLayoutAndHidden: () => void;
+    onResetLayoutSettings: () => void;
     setLayoutSetting: (
         key: MutualFriendsLayoutSettingKey,
         value: number
@@ -124,11 +123,24 @@ export function MutualFriendsSettingsSheet({
                         <Separator />
 
                         <section className="flex flex-col gap-4">
-                            <SectionLabel>
-                                {t(
-                                    'view.charts.mutual_friend.settings.layout_section'
-                                )}
-                            </SectionLabel>
+                            <div className="flex items-center justify-between gap-2">
+                                <SectionLabel>
+                                    {t(
+                                        'view.charts.mutual_friend.settings.layout_section'
+                                    )}
+                                </SectionLabel>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="xs"
+                                    onClick={onResetLayoutSettings}
+                                >
+                                    <RotateCcwIcon data-icon="inline-start" />
+                                    {t(
+                                        'view.charts.mutual_friend.settings.reset_defaults'
+                                    )}
+                                </Button>
+                            </div>
                             <MutualFriendsLayoutControls
                                 layoutSettings={layoutSettings}
                                 setLayoutSetting={setLayoutSetting}
@@ -163,17 +175,6 @@ export function MutualFriendsSettingsSheet({
                         </section>
                     </div>
                 </div>
-
-                <SheetFooter className="border-border/60 shrink-0 border-t">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={onResetLayoutAndHidden}
-                    >
-                        <RotateCcwIcon data-icon="inline-start" />
-                        {t('view.charts.mutual_friend.settings.reset_defaults')}
-                    </Button>
-                </SheetFooter>
 
                 <SheetClose
                     render={

@@ -1,6 +1,7 @@
 import { InfoIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { InviteMessagePicker } from '@/components/dialogs/invite-message/InviteMessagePicker';
 import { userStatusLabel } from '@/shared/utils/userStatus';
 import { Alert, AlertDescription } from '@/ui/shadcn/alert';
 import {
@@ -22,6 +23,8 @@ import {
 import { Switch } from '@/ui/shadcn/switch';
 
 import {
+    getCurrentUserId,
+    getEndpoint,
     normalizeAutoAcceptMode,
     statusOptions,
     type AutoAcceptInviteRequestValue
@@ -35,6 +38,7 @@ export type InviteRulesTabValues = {
     autoAcceptInviteGroups: string[];
     autoAcceptInviteRequests: AutoAcceptInviteRequestValue;
     autoAcceptInviteStatuses: string[];
+    autoAcceptInviteMessageSlot: string;
 };
 
 type InviteRulesTabProps = {
@@ -60,6 +64,13 @@ export function InviteRulesTab({
     const autoAcceptEnabled = values.autoAcceptInviteRequests !== 'Off';
     const selectedFavoritesOnly =
         values.autoAcceptInviteRequests === 'Selected Favorites';
+    const parsedMessageSlot = Number.parseInt(
+        values.autoAcceptInviteMessageSlot,
+        10
+    );
+    const messageSlot = Number.isInteger(parsedMessageSlot)
+        ? parsedMessageSlot
+        : null;
 
     return (
         <FieldGroup className="gap-4">
@@ -193,6 +204,34 @@ export function InviteRulesTab({
                         </FieldDescription>
                     </Field>
                 </FieldGroup>
+            </FieldSet>
+            <FieldSet
+                className="bg-card/40 rounded-lg border p-3"
+                disabled={loading || !autoAcceptEnabled}
+                data-disabled={loading || !autoAcceptEnabled}
+            >
+                <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                        <FieldLegend variant="label">
+                            {t(`${I18N_ROOT}.invite_message`)}
+                        </FieldLegend>
+                        <FieldDescription>
+                            {t(`${I18N_ROOT}.invite_message_description`)}
+                        </FieldDescription>
+                    </div>
+                    <InviteMessagePicker
+                        currentUserId={getCurrentUserId()}
+                        endpoint={getEndpoint()}
+                        value={messageSlot}
+                        disabled={loading || !autoAcceptEnabled}
+                        onChange={(slot) => {
+                            onSaveValue(
+                                'autoAcceptInviteMessageSlot',
+                                slot === null ? '' : String(slot)
+                            );
+                        }}
+                    />
+                </div>
             </FieldSet>
             <Alert>
                 <InfoIcon data-icon="inline-start" />

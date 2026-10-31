@@ -8,6 +8,7 @@ mod system;
 pub(crate) use context::LogContext;
 pub(crate) use reader::{parse_log, LogReader};
 pub(crate) use sink::GameLogParseSink;
+pub(crate) use system::APPLICATION_QUIT_MARKERS;
 pub use vrcx_0_core::game_log_parser::GameLogEvent;
 
 #[cfg(test)]

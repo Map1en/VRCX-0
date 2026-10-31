@@ -527,19 +527,6 @@ impl NoteExportRuntime {
         status
     }
 
-    pub fn cancel_if_scope_mismatch(&self) -> NoteExportStatus {
-        let scope = self.auth_scope.snapshot();
-        let status = {
-            let mut inner = self.lock_inner();
-            if !mark_cancelling_if_scope_mismatch(&mut inner, &scope) {
-                return inner.status.clone();
-            }
-            inner.status.clone()
-        };
-        self.emit_status(status.clone());
-        status
-    }
-
     fn apply_progress(&self, run_id: &str, progress: NoteExportProgress) {
         let status = {
             let mut inner = self.lock_inner();
@@ -598,20 +585,6 @@ fn is_active_status(status: NoteExportState) -> bool {
         status,
         NoteExportState::Running | NoteExportState::Cancelling
     )
-}
-
-fn mark_cancelling_if_scope_mismatch(
-    inner: &mut NoteExportRuntimeInner,
-    scope: &RuntimeAuthScopeSnapshot,
-) -> bool {
-    if !is_active_status(inner.status.status) || inner.auth_generation == scope.generation {
-        return false;
-    }
-    if let Some(cancel) = &inner.cancel {
-        cancel.store(true, Ordering::Release);
-    }
-    inner.status.status = NoteExportState::Cancelling;
-    true
 }
 
 #[cfg(test)]
@@ -737,30 +710,5 @@ mod tests {
             401,
         );
         assert!(event_bus.take_events_for_test().is_empty());
-    }
-
-    #[test]
-    fn scope_change_marks_active_export_cancelling() {
-        let cancel = Arc::new(AtomicBool::new(false));
-        let mut inner = NoteExportRuntimeInner {
-            status: NoteExportStatus {
-                run_id: "run-1".into(),
-                status: NoteExportState::Running,
-                ..Default::default()
-            },
-            cancel: Some(Arc::clone(&cancel)),
-            auth_generation: 1,
-        };
-
-        assert!(mark_cancelling_if_scope_mismatch(
-            &mut inner,
-            &RuntimeAuthScopeSnapshot {
-                generation: 2,
-                active: true,
-                ..Default::default()
-            }
-        ));
-        assert_eq!(inner.status.status, NoteExportState::Cancelling);
-        assert!(cancel.load(Ordering::Acquire));
     }
 }

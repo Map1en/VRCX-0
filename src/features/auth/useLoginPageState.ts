@@ -8,6 +8,8 @@ import type {
 } from '@/repositories/authRepository';
 import { getLoginErrorMessage as getErrorMessage } from '@/services/authErrorDisplayService';
 import {
+    cancelDeviceLogin,
+    executeDeviceLogin,
     executeManualLogin,
     executeSavedCredentialLogin,
     getAuthSnapshotFromExecutionError,
@@ -31,12 +33,14 @@ import {
     testProxySettings as testProxySettingsConnectivity
 } from '@/services/proxySettingsService';
 import { toast } from '@/services/toastService';
+import { useDeviceLoginStore } from '@/state/deviceLoginStore';
 import { useModalStore } from '@/state/modalStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { markRestartPending } from '@/state/restartPendingStore';
 import { useSessionStore } from '@/state/sessionStore';
 import { useShellStore } from '@/state/shellStore';
 
+import type { QrLoginView } from './components/QrLoginCard';
 import {
     getLoginUserDisplayName as getUserDisplayName,
     shouldShowLegacyMigrationAction
@@ -89,6 +93,10 @@ export function useLoginPageState() {
         username: '',
         password: ''
     });
+    const [preparedAccount, setPreparedAccount] =
+        useState<SavedCredentialRecord | null>(null);
+    const [qrLogin, setQrLogin] = useState<QrLoginView>({ status: 'closed' });
+    const pendingDeviceLogin = useDeviceLoginStore((state) => state.pending);
 
     useEffect(() => {
         setProxyEnabledInput(proxyEnabled);
@@ -392,7 +400,65 @@ export function useLoginPageState() {
         }
     }
 
+    async function startQrLogin() {
+        if (!databaseReady) {
+            toast.add({
+                type: 'error',
+                title: t(
+                    'common.status.database_initialization_is_still_pending'
+                )
+            });
+            return;
+        }
+
+        cancelPendingAutoLogin();
+        setQrLogin({ status: 'starting' });
+        try {
+            const nextSnapshot = await executeDeviceLogin();
+            setSnapshot(nextSnapshot);
+            setQrLogin({ status: 'closed' });
+            toast.add({
+                type: 'success',
+                title: t('common.label.authenticated_and_prepared_the_session')
+            });
+        } catch (error) {
+            const failureSnapshot = getAuthSnapshotFromExecutionError(error);
+            if (failureSnapshot) {
+                setSnapshot(failureSnapshot);
+            }
+            const failure = error as { code?: string; kind?: string };
+            if (failure.code === 'AUTH_LOGIN_CANCELLED') {
+                return;
+            }
+            setQrLogin(
+                failure.kind === 'deviceCodeExpired'
+                    ? { status: 'expired' }
+                    : {
+                          status: 'failed',
+                          reason: getErrorMessage(
+                              error,
+                              t('device_login.failed_title')
+                          )
+                      }
+            );
+        }
+    }
+
+    async function cancelQrLogin() {
+        setQrLogin({ status: 'closed' });
+        await cancelDeviceLogin();
+    }
+
+    function closeQrLogin() {
+        setQrLogin({ status: 'closed' });
+    }
+
+    function clearPreparedAccount() {
+        setPreparedAccount(null);
+    }
+
     function prepareSavedAccountLogin(entry: SavedCredentialRecord) {
+        setPreparedAccount(entry.hasLoginCredentials ? null : entry);
         const loginUsername =
             typeof entry.loginParams?.username === 'string'
                 ? entry.loginParams.username
@@ -418,6 +484,9 @@ export function useLoginPageState() {
     return {
         activeSavedUserId,
         cancelPendingAutoLogin,
+        cancelQrLogin,
+        clearPreparedAccount,
+        closeQrLogin,
         deleteTarget,
         handleDeleteSavedAccount,
         handleLanguageChange,
@@ -437,9 +506,12 @@ export function useLoginPageState() {
         migrateLegacyVrcxData,
         openExternalLink,
         openProxyDialog,
+        pendingDeviceLogin,
         prepareSavedAccountLogin,
+        preparedAccount,
         proxyEnabledInput,
         proxyInput,
+        qrLogin,
         restoreProfileBackup,
         saveProxySettings,
         savedAccounts,
@@ -449,6 +521,7 @@ export function useLoginPageState() {
         setLoginForm,
         setProxyEnabledInput,
         setProxyInput,
+        startQrLogin,
         testProxySettings,
         showLegacyMigrationAction
     };

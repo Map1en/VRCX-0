@@ -33,6 +33,12 @@ export component WristPanel inherits Window {
     in property <string> now-playing-time;
     in property <bool> now-playing-has-progress: false;
     in property <float> now-playing-progress: 0;
+    in property <WristDeviceItem> device-probe;
+    out property <length> device-probe-width: device-label-probe.preferred-width
+        + (root.device-probe.show-percent ? root.device-gap + device-percent-probe.preferred-width : 0px)
+        + (root.device-probe.show-battery ? root.device-gap + root.battery-width : 0px);
+    out property <length> device-spacing: 10px;
+    out property <length> device-room: device-strip.width - 16px;
 
     property <color> background-color: root.dark-background ? #0d1117f2 : #0d1117b8;
     property <color> edge-color: #ffffff24;
@@ -42,6 +48,10 @@ export component WristPanel inherits Window {
     property <color> now-playing-title-color: root.dark-background ? #d5dbe4 : #e6ebf1;
     property <color> now-playing-accent-color: #38bdf8;
     property <length> header-height: 44px;
+    property <length> device-gap: 4px;
+    property <length> battery-width: 23px;
+    property <length> device-label-size: 14px;
+    property <length> device-percent-size: 12px;
     property <length> footer-height: 34px;
     property <length> row-height: 38px;
     property <length> feed-top: 49px;
@@ -84,7 +94,20 @@ export component WristPanel inherits Window {
             background: root.divider-color;
         }
 
-        Rectangle {
+        device-label-probe := Text {
+            visible: false;
+            text: root.device-probe.label;
+            font-size: root.device-label-size;
+            font-weight: 600;
+        }
+
+        device-percent-probe := Text {
+            visible: false;
+            text: root.device-probe.percent;
+            font-size: root.device-percent-size;
+        }
+
+        device-strip := Rectangle {
             x: 18px;
             y: 10px;
             width: parent.width - 36px;
@@ -95,15 +118,15 @@ export component WristPanel inherits Window {
                 x: 0px;
                 y: 0px;
                 height: 24px;
-                spacing: 10px;
+                spacing: root.device-spacing;
                 alignment: start;
 
                 for device in root.devices : HorizontalLayout {
-                    spacing: 4px;
+                    spacing: root.device-gap;
 
                     Text {
                         text: device.label;
-                        font-size: 14px;
+                        font-size: root.device-label-size;
                         font-weight: 600;
                         vertical-alignment: center;
                         color: device.label-color;
@@ -111,13 +134,13 @@ export component WristPanel inherits Window {
 
                     if device.show-percent: Text {
                         text: device.percent;
-                        font-size: 12px;
+                        font-size: root.device-percent-size;
                         vertical-alignment: center;
                         color: device.percent-color;
                     }
 
                     if device.show-battery: Rectangle {
-                        width: 23px;
+                        width: root.battery-width;
 
                         Rectangle {
                             x: 0px;

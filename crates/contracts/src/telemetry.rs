@@ -25,6 +25,10 @@ pub struct TelemetryContext {
     pub session_ended: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vrchat_seen: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub signed_in: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub basic: Option<bool>,
 }
 
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]

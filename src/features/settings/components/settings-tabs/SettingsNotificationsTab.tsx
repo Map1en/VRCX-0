@@ -20,6 +20,7 @@ import {
 import { Slider } from '@/ui/shadcn/slider';
 import { Switch } from '@/ui/shadcn/switch';
 
+import { SETTINGS_DEFAULT_VALUES } from '../../settingsFieldState';
 import { desktopWidgetOrderOptions } from '../../settingsOptions';
 import { SettingsCard } from '../SettingsCard';
 import { Field } from '../SettingsField';
@@ -178,6 +179,12 @@ export function SettingsNotificationsTabContent({
                 )}
             >
                 <Field
+                    settingId="notifications.dnd.end-on-game-start"
+                    onReset={() =>
+                        onNotificationDoNotDisturbEndOnGameStartChange(
+                            SETTINGS_DEFAULT_VALUES.notificationDoNotDisturbEndOnGameStart
+                        )
+                    }
                     label={t(
                         'view.settings.notifications.notifications.do_not_disturb.end_on_game_start'
                     )}
@@ -193,6 +200,12 @@ export function SettingsNotificationsTabContent({
                     />
                 </Field>
                 <Field
+                    settingId="notifications.dnd.busy-status"
+                    onReset={() =>
+                        onBusyStatusDoNotDisturbChange(
+                            SETTINGS_DEFAULT_VALUES.busyStatusDoNotDisturb
+                        )
+                    }
                     label={t(
                         'view.settings.notifications.notifications.do_not_disturb.busy_status'
                     )}
@@ -206,6 +219,12 @@ export function SettingsNotificationsTabContent({
                     />
                 </Field>
                 <Field
+                    settingId="notifications.dnd.hide-video-errors"
+                    onReset={() =>
+                        onHideVideoErrorNotificationsChange(
+                            SETTINGS_DEFAULT_VALUES.hideVideoErrorNotifications
+                        )
+                    }
                     label={t(
                         'view.settings.notifications.notifications.do_not_disturb.hide_video_errors'
                     )}
@@ -226,6 +245,12 @@ export function SettingsNotificationsTabContent({
                 )}
             >
                 <Field
+                    settingId="notifications.desktop.when-to-display"
+                    onReset={() =>
+                        onDesktopToastChange(
+                            SETTINGS_DEFAULT_VALUES.desktopToast
+                        )
+                    }
                     label={t(
                         'view.settings.notifications.notifications.desktop_notifications.when_to_display'
                     )}
@@ -262,6 +287,7 @@ export function SettingsNotificationsTabContent({
                 </Field>
 
                 <Field
+                    settingId="notifications.desktop.filters"
                     label={t(
                         'view.settings.notifications.notifications.desktop_notifications.notification_filters'
                     )}
@@ -276,6 +302,12 @@ export function SettingsNotificationsTabContent({
                 </Field>
 
                 <Field
+                    settingId="notifications.desktop.while-afk"
+                    onReset={() =>
+                        onAfkDesktopToastChange(
+                            SETTINGS_DEFAULT_VALUES.afkDesktopToast
+                        )
+                    }
                     label={t(
                         'view.settings.notifications.notifications.desktop_notifications.desktop_notification_while_afk'
                     )}
@@ -287,6 +319,12 @@ export function SettingsNotificationsTabContent({
                 </Field>
 
                 <Field
+                    settingId="notifications.desktop.sound"
+                    onReset={() =>
+                        onDesktopNotificationSoundChange(
+                            SETTINGS_DEFAULT_VALUES.desktopNotificationSound
+                        )
+                    }
                     label={t(
                         'view.settings.notifications.notifications.desktop_notifications.notification_sound'
                     )}
@@ -298,6 +336,12 @@ export function SettingsNotificationsTabContent({
                 </Field>
 
                 <Field
+                    settingId="notifications.desktop.friend-icons"
+                    onReset={() =>
+                        onDesktopNotificationAvatarsChange(
+                            SETTINGS_DEFAULT_VALUES.desktopNotificationAvatars
+                        )
+                    }
                     label={t(
                         'view.settings.notifications.notifications.desktop_notifications.friend_icons'
                     )}
@@ -324,6 +368,12 @@ export function SettingsNotificationsTabContent({
                         )}
                     </p>
                     <Field
+                        settingId="notifications.desktop_widget.opacity"
+                        onReset={() =>
+                            onDesktopWidgetOpacityChange(
+                                SETTINGS_DEFAULT_VALUES.desktopWidgetOpacity
+                            )
+                        }
                         label={t(
                             'view.settings.notifications.notifications.desktop_widget.background_opacity'
                         )}
@@ -354,6 +404,14 @@ export function SettingsNotificationsTabContent({
                         </div>
                     </Field>
                     <Field
+                        settingId="notifications.desktop_widget.order"
+                        onReset={() =>
+                            onDesktopWidgetOrderChange(
+                                SETTINGS_DEFAULT_VALUES.desktopWidgetNewestOnTop
+                                    ? 'top'
+                                    : 'bottom'
+                            )
+                        }
                         label={t(
                             'view.settings.notifications.notifications.desktop_widget.order'
                         )}
@@ -398,6 +456,7 @@ export function SettingsNotificationsTabContent({
                         </Select>
                     </Field>
                     <Field
+                        settingId="notifications.desktop_widget.filters"
                         label={t(
                             'view.settings.notifications.notifications.desktop_widget.activity_filters'
                         )}
@@ -419,6 +478,12 @@ export function SettingsNotificationsTabContent({
                 )}
             >
                 <Field
+                    settingId="notifications.tts.when-to-play"
+                    onReset={() =>
+                        onNotificationTtsModeChange(
+                            SETTINGS_DEFAULT_VALUES.notificationTTS
+                        )
+                    }
                     label={t(
                         'view.settings.notifications.notifications.text_to_speech.when_to_play'
                     )}
@@ -457,10 +522,12 @@ export function SettingsNotificationsTabContent({
                 </Field>
 
                 <Field
+                    settingId="notifications.tts.voice"
                     label={t(
                         'view.settings.notifications.notifications.text_to_speech.tts_voice'
                     )}
                     controlId="settings-notification-tts-voice"
+                    disabled={prefs.notificationTTS === 'Never'}
                 >
                     <Select
                         value={prefs.notificationTTSVoiceNative || 'default'}
@@ -479,7 +546,6 @@ export function SettingsNotificationsTabContent({
                                     : voice.name
                             }))
                         ]}
-                        disabled={prefs.notificationTTS === 'Never'}
                         onValueChange={(value) =>
                             onNotificationTtsVoiceChange(
                                 value === 'default' ? '' : (value ?? '')
@@ -521,6 +587,12 @@ export function SettingsNotificationsTabContent({
                 </Field>
 
                 <Field
+                    settingId="notifications.tts.volume"
+                    onReset={() =>
+                        onNotificationTtsVolumeChange(
+                            SETTINGS_DEFAULT_VALUES.notificationTTSVolume
+                        )
+                    }
                     label={t(
                         'view.settings.notifications.notifications.text_to_speech.tts_volume'
                     )}
@@ -553,6 +625,7 @@ export function SettingsNotificationsTabContent({
                 </Field>
 
                 <Field
+                    settingId="notifications.tts.filters"
                     label={t(
                         'view.settings.notifications.notifications.text_to_speech.notification_filters'
                     )}
@@ -567,10 +640,17 @@ export function SettingsNotificationsTabContent({
                 </Field>
 
                 <Field
+                    settingId="notifications.tts.name-mode"
+                    onReset={() =>
+                        onNotificationTtsNameModeChange(
+                            SETTINGS_DEFAULT_VALUES.notificationTTSNameMode
+                        )
+                    }
                     label={t(
                         'view.settings.notifications.notifications.text_to_speech.name_mode'
                     )}
                     controlId="settings-notification-tts-name-mode"
+                    disabled={prefs.notificationTTS === 'Never'}
                 >
                     <Select
                         value={ttsNameMode}
@@ -580,7 +660,6 @@ export function SettingsNotificationsTabContent({
                                 label: t(labelKey)
                             })
                         )}
-                        disabled={prefs.notificationTTS === 'Never'}
                         onValueChange={(value) =>
                             onNotificationTtsNameModeChange(value ?? 'username')
                         }
@@ -606,6 +685,7 @@ export function SettingsNotificationsTabContent({
                 </Field>
 
                 <Field
+                    settingId="notifications.tts.test"
                     label={t(
                         'view.settings.notifications.notifications.text_to_speech.tts_test_placeholder'
                     )}
@@ -653,6 +733,7 @@ export function SettingsNotificationsTabContent({
                 )}
             >
                 <Field
+                    settingId="notifications.test.send"
                     label={t(
                         'view.settings.notifications.notifications.test_notification.send'
                     )}

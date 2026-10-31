@@ -265,11 +265,6 @@ export function AppMenuBar({ showHelp = true }: { showHelp?: boolean }) {
                                 >
                                     Discord
                                 </MenuItem>
-                                <MenuItem
-                                    onClick={() => openLink(links.qqGroup)}
-                                >
-                                    {t('nav_menu.qq_group')}
-                                </MenuItem>
                             </MenubarGroup>
                             <MenubarSeparator />
                             {developerToolsAvailable ? (

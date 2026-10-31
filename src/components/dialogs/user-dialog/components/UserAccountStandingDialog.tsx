@@ -2,6 +2,7 @@ import { ShieldAlertIcon, ShieldCheckIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { HighlightedCodeBlock } from '@/components/HighlightedCodeBlock';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { commands } from '@/platform/tauri/bindings';
 import { unwrapVrchatResponse } from '@/repositories/vrchatRequest';
@@ -14,8 +15,6 @@ import {
     DialogTitle
 } from '@/ui/shadcn/dialog';
 import { Spinner } from '@/ui/shadcn/spinner';
-
-import { EntityRawJson } from '../../EntityDialogScaffold';
 
 type AccountStandingState =
     | { status: 'loading' }
@@ -139,7 +138,12 @@ function AccountStandingContent({ json }: { json: Record<string, unknown> }) {
                     </>
                 ) : null}
             </dl>
-            <EntityRawJson value={json} />
+            <HighlightedCodeBlock
+                code={JSON.stringify(json, null, 2)}
+                language="json"
+                size="sm"
+                contentClassName="max-h-[55vh]"
+            />
         </div>
     );
 }

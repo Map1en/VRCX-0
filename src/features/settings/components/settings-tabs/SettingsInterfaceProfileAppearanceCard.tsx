@@ -33,15 +33,18 @@ type ProfileDecorationToggle = {
 };
 
 function ProfileDecorationField({
+    settingId,
     label,
     toggles
 }: {
+    settingId: string;
     label: string;
     toggles: ProfileDecorationToggle[];
 }) {
     const { t } = useTranslation();
     return (
         <Field
+            settingId={settingId}
             label={label}
             className="lg:grid-cols-[minmax(0,1fr)_auto]"
             controlClassName="max-w-full overflow-x-auto"
@@ -130,6 +133,7 @@ export function SettingsInterfaceProfileAppearanceCard() {
         >
             <FieldGroup className="gap-0">
                 <ProfileDecorationField
+                    settingId="interface.profile-appearance.user-dialog"
                     label={t('view.settings.appearance.user_dialog.header')}
                     toggles={[
                         {
@@ -157,6 +161,7 @@ export function SettingsInterfaceProfileAppearanceCard() {
                     ]}
                 />
                 <ProfileDecorationField
+                    settingId="interface.profile-appearance.hover-card"
                     label={t(
                         'view.settings.appearance.profile_appearance.hover_card'
                     )}
@@ -179,6 +184,7 @@ export function SettingsInterfaceProfileAppearanceCard() {
                     ]}
                 />
                 <ProfileDecorationField
+                    settingId="interface.profile-appearance.sidebar"
                     label={t(
                         'view.settings.appearance.profile_appearance.sidebar'
                     )}
@@ -202,6 +208,7 @@ export function SettingsInterfaceProfileAppearanceCard() {
                     title={t('app.routes.friend_locations')}
                 />
                 <ProfileDecorationField
+                    settingId="interface.profile-appearance.friends-locations-people"
                     label={t('view.friends_locations.view_people')}
                     toggles={[
                         {
@@ -220,6 +227,7 @@ export function SettingsInterfaceProfileAppearanceCard() {
                     ]}
                 />
                 <ProfileDecorationField
+                    settingId="interface.profile-appearance.friends-locations-worlds"
                     label={t('view.friends_locations.view_worlds')}
                     toggles={[
                         {
@@ -241,6 +249,7 @@ export function SettingsInterfaceProfileAppearanceCard() {
             <FieldGroup className="gap-0">
                 <SettingsSectionHeading title={t('view.activity.title')} />
                 <ProfileDecorationField
+                    settingId="interface.profile-appearance.activity-journey"
                     label={t('view.activity.mode.journey')}
                     toggles={[
                         {

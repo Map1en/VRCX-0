@@ -131,16 +131,6 @@ impl OverlayLocalizer {
         )
     }
 
-    pub fn display_location_without_instance(
-        &self,
-        location: &str,
-        world_name: &str,
-        group_name: &str,
-    ) -> String {
-        let localizer = Self::new(self.locale);
-        localizer.display_location(location, world_name, group_name)
-    }
-
     pub fn discord_title(&self, kind: ActivityKind, name: &str) -> String {
         let name = name.trim();
         let Some(key) = discord_title_key(kind) else {

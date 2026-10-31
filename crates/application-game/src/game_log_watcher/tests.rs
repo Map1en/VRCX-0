@@ -430,3 +430,109 @@ fn retry_in_later_file_does_not_revisit_completed_earlier_files() {
         1
     );
 }
+
+#[test]
+fn follows_the_older_client_log_after_the_newer_client_quits() {
+    use std::io::Write;
+    use std::time::{Duration, SystemTime};
+    struct Sink(Mutex<Vec<(super::GameLogScanCursor, bool, Vec<GameLogEvent>)>>);
+    impl GameLogEventSink for Sink {
+        fn ingest_game_log_event(&self, _: &GameLogEvent) -> crate::Result<()> {
+            Ok(())
+        }
+        fn ingest_game_log_scan(
+            &self,
+            events: &[GameLogEvent],
+            _: GameLogEventOrigin,
+            cursor: super::GameLogScanCursor,
+            publish: bool,
+        ) -> crate::Result<()> {
+            self.0
+                .lock()
+                .unwrap()
+                .push((cursor, publish, events.to_vec()));
+            Ok(())
+        }
+    }
+    fn append(path: &Path, line: &str, modified: SystemTime) {
+        let mut file = std::fs::OpenOptions::new().append(true).open(path).unwrap();
+        writeln!(file, "{line}").unwrap();
+        file.set_modified(modified).unwrap();
+    }
+    let dir = TestDir::new("multi-client");
+    let older = dir.path().join("output_log_2026-08-01_00-00-00.txt");
+    let newer = dir.path().join("output_log_2026-08-02_00-00-00.txt");
+    std::fs::write(&older, []).unwrap();
+    std::fs::write(&newer, []).unwrap();
+    let now = SystemTime::now();
+    append(
+        &older,
+        "2020.01.01 00:00:00 Log        -  [Behaviour] Joining wrld_older:1",
+        now - Duration::from_secs(300),
+    );
+    append(
+        &newer,
+        "2020.01.01 00:00:01 Log        -  [Behaviour] Joining wrld_newer:2",
+        now - Duration::from_secs(240),
+    );
+    let sink = Arc::new(Sink(Mutex::new(Vec::new())));
+    let watcher = LogWatcher::new(Some(sink.clone()));
+    let mut reader = LogReader::new();
+    let mut contexts = HashMap::new();
+    let mut first = true;
+    let mut poll = || {
+        update(
+            &watcher.inner,
+            dir.path(),
+            &mut reader,
+            &mut contexts,
+            &mut first,
+        );
+    };
+    poll();
+    let scans_after_initial = sink.0.lock().unwrap().len();
+
+    append(
+        &older,
+        "2020.01.01 00:00:02 Log        -  [Behaviour] Joining wrld_older:3",
+        now - Duration::from_secs(180),
+    );
+    poll();
+    assert_eq!(sink.0.lock().unwrap().len(), scans_after_initial);
+
+    let quit_at = now - Duration::from_secs(120);
+    append(
+        &newer,
+        "2020.01.01 00:00:03 Log        -  VRCApplication: OnApplicationQuit at 2020.01.01 00:00:03",
+        quit_at,
+    );
+    poll();
+    append(
+        &older,
+        "2020.01.01 00:00:04 Log        -  [Behaviour] Joining wrld_older:4",
+        now - Duration::from_secs(60),
+    );
+    poll();
+    poll();
+
+    let scans = sink.0.lock().unwrap();
+    let (cursor, publish, events) = scans.last().unwrap();
+    assert_eq!(cursor.file_name, "output_log_2026-08-01_00-00-00.txt");
+    assert!(cursor.rebuild);
+    assert!(*publish);
+    assert_eq!(
+        cursor.cutoff,
+        chrono::DateTime::<chrono::Utc>::from(quit_at).to_rfc3339()
+    );
+    assert!(matches!(
+        &events.last().unwrap().kind,
+        GameLogEventKind::Location { location, .. } if location == "wrld_older:4"
+    ));
+    assert_eq!(
+        scans
+            .iter()
+            .filter(|(cursor, _, _)| cursor.file_name == "output_log_2026-08-01_00-00-00.txt")
+            .count(),
+        2
+    );
+}

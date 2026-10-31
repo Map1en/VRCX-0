@@ -14,7 +14,6 @@ import {
 import {
     type ComponentProps,
     useCallback,
-    useEffect,
     useRef,
     type ReactNode
 } from 'react';
@@ -22,12 +21,14 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router';
 
 import { KeyboardShortcut } from '@/components/keyboard/KeyboardShortcut';
+import { useShortcutHandler } from '@/components/keyboard/shortcutDispatcher';
 import { ShortcutHintPanel } from '@/components/keyboard/ShortcutHintPanel';
 import { cn } from '@/lib/utils';
 import {
     isBackgroundImageCustomSourceRotating,
     refreshBackgroundImage
 } from '@/services/background-image/backgroundImageService';
+import { markAllNotificationsSeenWithFeedback } from '@/services/notificationMarkAllSeenService';
 import { setThemeModePreference } from '@/services/preferencesService';
 import { useResolvedThemeMode } from '@/services/themeService';
 import { toast } from '@/services/toastService';
@@ -187,8 +188,8 @@ export function useTitleBarActions(
     const setVrcNotificationCenterOpen = useVrcNotificationStore(
         (state) => state.setCenterOpen
     );
-    const markAllVrcNotificationsSeen = useVrcNotificationStore(
-        (state) => state.markAllSeen
+    const isMarkingAllVrcNotificationsSeen = useVrcNotificationStore(
+        (state) => state.markAllSeenProgress !== null
     );
     const removeNavNotification = useShellStore((state) => state.removeNotify);
     const hostPlatform = useRuntimeStore(
@@ -325,55 +326,20 @@ export function useTitleBarActions(
         </TitleBarButton>
     );
 
-    useEffect(() => {
-        if (!isSessionReady) {
-            return undefined;
-        }
-
-        const handleKeyDown = (event: KeyboardEvent) => {
-            const hasModifier = isMacHost
-                ? event.metaKey
-                : event.ctrlKey || event.metaKey;
-            if (!hasModifier) {
-                return;
-            }
-
-            const key = event.key.toLowerCase();
-            if (key === 'k') {
-                event.preventDefault();
-                openQuickSearch();
-                return;
-            }
-            if (key === 'd') {
-                event.preventDefault();
-                openDirectAccessFromClipboard();
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [
-        isSessionReady,
-        isMacHost,
+    useShortcutHandler('quick-search', openQuickSearch, isSessionReady);
+    useShortcutHandler(
+        'direct-access',
         openDirectAccessFromClipboard,
-        openQuickSearch
-    ]);
+        isSessionReady
+    );
 
     async function markAllNotificationsRead() {
-        try {
-            await markAllVrcNotificationsSeen();
-            removeNavNotification('notification');
-        } catch (error) {
-            toast.add({
-                type: 'error',
-                title:
-                    error instanceof Error
-                        ? error.message
-                        : t(
-                              'component.app_title_bar.toast.failed_to_mark_notifications_as_seen'
-                          )
-            });
-        }
+        await markAllNotificationsSeenWithFeedback(
+            t(
+                'component.app_title_bar.toast.failed_to_mark_notifications_as_seen'
+            )
+        );
+        removeNavNotification('notification');
     }
 
     function openNotifications() {
@@ -388,7 +354,13 @@ export function useTitleBarActions(
 
     const notificationButton = (
         <TitleBarButton
-            label={t('side_panel.notification_center.title')}
+            label={
+                vrcUnseenNotificationCount > 0
+                    ? t('side_panel.notification_center.title_with_count', {
+                          count: vrcUnseenNotificationCount
+                      })
+                    : t('side_panel.notification_center.title')
+            }
             className="relative size-7 min-w-7 rounded-md px-0"
             onClick={openNotifications}
             onContextMenu={
@@ -420,12 +392,13 @@ export function useTitleBarActions(
     );
 
     const notificationAction = notificationActionVisible ? (
-        canMarkAllVrcNotificationsSeen ? (
+        canMarkAllVrcNotificationsSeen || isMarkingAllVrcNotificationsSeen ? (
             <ContextMenu>
                 <ContextMenuTrigger render={notificationButton} />
                 <ContextMenuContent className="w-48">
                     <ContextMenuGroup>
                         <ContextMenuItem
+                            disabled={isMarkingAllVrcNotificationsSeen}
                             onClick={() => {
                                 markAllNotificationsRead();
                             }}

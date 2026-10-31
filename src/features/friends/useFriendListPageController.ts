@@ -53,8 +53,7 @@ export function useFriendListPageController() {
         onConfirmDeleteFriend: actions.confirmDeleteFriend,
         onToggleSelectedFriend: actions.toggleSelectedFriend,
         randomUserColours,
-        randomUserColourStyle,
-        selectedFriendIds: selection.selectedFriendIds
+        randomUserColourStyle
     });
     const table = useAppTable({
         data: rows.filteredRows,
