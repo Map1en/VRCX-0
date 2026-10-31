@@ -247,7 +247,7 @@ impl NotificationChainActions for LocalNotificationChainActions<'_> {
             self.expected_scope.current_user_id.clone(),
             id,
         )
-        .map_err(crate::map_persistence_error)
+        .map_err(crate::Error::from)
     }
 
     fn query_boop_rows(&self) -> crate::Result<Vec<BoopNotificationRow>> {
@@ -262,8 +262,7 @@ impl NotificationChainActions for LocalNotificationChainActions<'_> {
                 limit: BOOP_DISMISS_QUERY_LIMIT,
                 include_unseen: false,
             },
-        )
-        .map_err(crate::map_persistence_error)?
+        )?
         .into_iter()
         .map(|row| BoopNotificationRow {
             id: row.id,

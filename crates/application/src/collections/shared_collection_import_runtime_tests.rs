@@ -20,34 +20,6 @@ fn running_inner() -> SharedCollectionImportRuntimeInner {
 }
 
 #[test]
-fn auth_scope_switch_marks_active_run_cancelling() {
-    let mut inner = running_inner();
-    let scope = RuntimeAuthScopeSnapshot {
-        generation: 2,
-        active: true,
-        ..Default::default()
-    };
-
-    assert!(mark_cancelling_if_scope_mismatch(&mut inner, &scope));
-    assert_eq!(inner.status.status, SharedCollectionImportState::Cancelling);
-    assert!(inner.cancel.as_ref().unwrap().load(Ordering::Acquire));
-}
-
-#[test]
-fn same_auth_scope_hydration_keeps_active_run_running() {
-    let auth_scope = RuntimeAuthScope::new();
-    let first = auth_scope.set("usr_self", "https://api.vrchat.cloud/api/1");
-    let hydrated = auth_scope.set(" usr_self ", "https://api.vrchat.cloud/api/1/");
-    let mut inner = running_inner();
-    inner.auth_generation = first.generation;
-
-    assert_eq!(hydrated.generation, first.generation);
-    assert!(!mark_cancelling_if_scope_mismatch(&mut inner, &hydrated));
-    assert_eq!(inner.status.status, SharedCollectionImportState::Running);
-    assert!(!inner.cancel.as_ref().unwrap().load(Ordering::Acquire));
-}
-
-#[test]
 fn cancelled_terminal_with_imports_is_prepared_once() {
     let mut inner = running_inner();
     let result = SharedCollectionImportResult {

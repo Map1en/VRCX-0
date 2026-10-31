@@ -14,6 +14,7 @@ pub trait BackgroundRemoteApi: Send + Sync {
         endpoint: &str,
         world_id: &str,
     ) -> Result<vrcx_0_contracts::VrchatResponse>;
+    async fn world_image_url(&self, endpoint: &str, world_id: &str) -> Option<String>;
     async fn get_group(
         &self,
         endpoint: &str,

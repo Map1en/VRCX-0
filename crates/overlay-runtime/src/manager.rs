@@ -99,20 +99,12 @@ where
         self.service.is_running()
     }
 
-    pub fn update_frame(&mut self, frame: RgbaFrame) -> Result<(), String> {
-        self.service.update_frame(frame)
-    }
-
     pub fn update_surface_frame(
         &mut self,
         surface_id: &OverlaySurfaceId,
         frame: RgbaFrame,
     ) -> Result<(), String> {
         self.service.update_surface_frame(surface_id, frame)
-    }
-
-    pub fn show(&mut self) -> Result<(), String> {
-        self.service.show()
     }
 
     pub fn show_surface(&mut self, surface_id: &OverlaySurfaceId) -> Result<(), String> {
@@ -255,14 +247,6 @@ mod tests {
         fn start(&mut self) -> Result<(), OverlayServiceStartError> {
             self.starts += 1;
             self.running = true;
-            Ok(())
-        }
-
-        fn update_frame(&mut self, _frame: RgbaFrame) -> Result<(), String> {
-            Ok(())
-        }
-
-        fn show(&mut self) -> Result<(), String> {
             Ok(())
         }
 

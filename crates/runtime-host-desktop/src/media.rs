@@ -18,7 +18,7 @@ use vrcx_0_application_core::{
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_platform::app_paths::AppPaths;
 
-use crate::{Error, HostFileAccess, Result};
+use crate::{HostFileAccess, Result};
 
 #[derive(Clone)]
 pub struct DesktopMediaRuntime {
@@ -102,8 +102,9 @@ impl DesktopMediaRuntime {
 
     pub fn crop_print_image(&self, path: &str) -> Result<bool> {
         self.file_access.ensure_write_allowed(path, &self.paths)?;
-        vrcx_0_media::image_processing::crop_print_file(Path::new(path))
-            .map_err(|error| Error::Custom(format!("{path}: {error}")))
+        vrcx_0_media::image_processing::crop_print_file(Path::new(path)).map_err(|error| {
+            vrcx_0_application_core::Error::Custom(format!("{path}: {error}")).into()
+        })
     }
 
     pub async fn save_ugc_category(

@@ -332,6 +332,16 @@ mod tests {
     }
 
     #[test]
+    fn equivalent_identity_keeps_generation() {
+        let scope = RuntimeAuthScope::new();
+
+        let first = scope.set("usr_self", "https://api.vrchat.cloud/api/1");
+        let hydrated = scope.set(" usr_self ", "https://api.vrchat.cloud/api/1/");
+
+        assert_eq!(hydrated.generation, first.generation);
+    }
+
+    #[test]
     fn bumps_generation_and_deactivates_when_cleared() {
         let scope = RuntimeAuthScope::new();
 

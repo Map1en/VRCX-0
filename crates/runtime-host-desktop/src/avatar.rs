@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{Error, Result};
+use crate::Result;
 use serde_json::Value;
 use vrcx_0_application::avatars::{
     self as application, AvatarModerationDeps, AvatarModerationRuntime, AvatarRemote,
@@ -198,9 +198,10 @@ impl DesktopAvatarRuntime {
     fn my_avatars_deps(&self) -> Result<MyAvatarsDeps<'_>> {
         let expected_scope = self.auth_scope.snapshot();
         if !expected_scope.active || expected_scope.current_user_id.trim().is_empty() {
-            return Err(Error::Custom(
+            return Err(vrcx_0_application_core::Error::Custom(
                 "My avatars query requires an authenticated session.".into(),
-            ));
+            )
+            .into());
         }
         Ok(MyAvatarsDeps::new(
             &self.application_adapter,

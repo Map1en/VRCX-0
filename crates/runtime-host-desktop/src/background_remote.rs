@@ -2,21 +2,21 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use serde_json::Value;
-use vrcx_0_application_core::WebClient;
+use vrcx_0_application_core::{WebClient, WorldCache};
 use vrcx_0_application_game::BackgroundRemoteApi;
 use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 use vrcx_0_vrchat_client::groups::profile_get_input as group_profile_get_input;
 use vrcx_0_vrchat_client::http_api::ApiScope;
 use vrcx_0_vrchat_client::users::{current_user_update_input, CurrentUserUpdateRequest};
-use vrcx_0_vrchat_client::worlds::world_get_input;
 
 pub(crate) struct DesktopBackgroundRemoteApi {
     web: Arc<WebClient>,
+    world_cache: Arc<WorldCache>,
 }
 
 impl DesktopBackgroundRemoteApi {
-    pub(crate) fn new(web: Arc<WebClient>) -> Self {
-        Self { web }
+    pub(crate) fn new(web: Arc<WebClient>, world_cache: Arc<WorldCache>) -> Self {
+        Self { web, world_cache }
     }
 }
 
@@ -27,11 +27,15 @@ impl BackgroundRemoteApi for DesktopBackgroundRemoteApi {
         endpoint: &str,
         world_id: &str,
     ) -> vrcx_0_application_core::Result<vrcx_0_contracts::VrchatResponse> {
-        let (_, request) = world_get_input(
-            normalize_vrchat_api_endpoint(Some(endpoint)),
-            world_id.to_string(),
-        )?;
-        self.web.execute_api(request, ApiScope::Vrchat).await
+        self.world_cache
+            .get(&self.web, endpoint, world_id, false, true)
+            .await
+    }
+
+    async fn world_image_url(&self, endpoint: &str, world_id: &str) -> Option<String> {
+        self.world_cache
+            .resolve_image_url(&self.web, endpoint, world_id)
+            .await
     }
 
     async fn get_group(

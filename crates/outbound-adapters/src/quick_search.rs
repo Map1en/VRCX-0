@@ -34,7 +34,7 @@ impl QuickSearchDetailStore for LocalQuickSearchDetailStore {
                     .map(|row| (row.user_id, row.memo))
                     .collect()
             })
-            .map_err(crate::map_persistence_error)
+            .map_err(crate::Error::from)
     }
 
     fn user_notes(&self, owner: OwnerId) -> Result<Vec<(String, String)>> {
@@ -44,7 +44,7 @@ impl QuickSearchDetailStore for LocalQuickSearchDetailStore {
                     .map(|row| (row.user_id, row.note))
                     .collect()
             })
-            .map_err(crate::map_persistence_error)
+            .map_err(crate::Error::from)
     }
 }
 

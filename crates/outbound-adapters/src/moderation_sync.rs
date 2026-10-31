@@ -34,13 +34,13 @@ impl ModerationSyncStore for LocalModerationSyncStore {
             rows.into_iter().map(remote_input).collect(),
         )
         .map(|rows| rows.into_iter().map(local_output).collect())
-        .map_err(crate::map_persistence_error)
+        .map_err(crate::Error::from)
     }
 
     fn get(&self, owner: OwnerId, user_id: String) -> Result<Option<LocalModerationOutput>> {
         local_moderation::local_moderation_get(&self.db, owner, user_id)
             .map(|row| row.map(local_output))
-            .map_err(crate::map_persistence_error)
+            .map_err(crate::Error::from)
     }
 
     fn set(&self, owner: OwnerId, entry: LocalModerationInput) -> Result<()> {
@@ -55,12 +55,12 @@ impl ModerationSyncStore for LocalModerationSyncStore {
                 mute: entry.mute,
             },
         )
-        .map_err(crate::map_persistence_error)
+        .map_err(crate::Error::from)
     }
 
     fn delete(&self, owner: OwnerId, user_id: String) -> Result<()> {
         local_moderation::local_moderation_delete(&self.db, owner, user_id)
-            .map_err(crate::map_persistence_error)
+            .map_err(crate::Error::from)
     }
 }
 

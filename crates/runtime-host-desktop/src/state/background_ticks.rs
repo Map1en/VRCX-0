@@ -67,6 +67,7 @@ impl LocalGameFacts {
 pub(in crate::state) struct BackgroundTickContext<'a> {
     pub(in crate::state) db: &'a Arc<vrcx_0_persistence::DatabaseService>,
     pub(in crate::state) web: &'a Arc<vrcx_0_application_core::WebClient>,
+    pub(in crate::state) world_cache: &'a Arc<vrcx_0_application_core::WorldCache>,
     pub(in crate::state) session_slot: &'a Arc<Mutex<AuthenticatedSessionProjection>>,
     pub(in crate::state) realtime_runtime: &'a Arc<RealtimeHostRuntime>,
     pub(in crate::state) host_session: &'a HostSessionRuntime,

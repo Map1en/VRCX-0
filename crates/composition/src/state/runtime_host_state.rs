@@ -177,10 +177,11 @@ fn prepare_data_dir_migration_startup(
     match journal.phase {
         DataDirMigrationJournalPhase::Copying => {
             if !app_data_paths_match(&resolution.current_dir, Path::new(&journal.source_dir)) {
-                return Err(crate::Error::Custom(format!(
+                return Err(vrcx_0_application_core::Error::Custom(format!(
                     "Interrupted data directory migration does not match the active directory: {}",
                     resolution.current_dir.display()
-                )));
+                ))
+                .into());
             }
             cleanup_interrupted_data_dir_migration(&resolution.default_dir, &journal)?;
             Ok(None)
@@ -192,10 +193,11 @@ fn prepare_data_dir_migration_startup(
                 commit_app_data_dir_pointer(&resolution.default_dir, &target_dir)?;
                 set_active_data_dir(resolution, target_dir);
             } else if !app_data_paths_match(&resolution.current_dir, &target_dir) {
-                return Err(crate::Error::Custom(format!(
+                return Err(vrcx_0_application_core::Error::Custom(format!(
                     "Pending data directory migration does not match the active directory: {}",
                     resolution.current_dir.display()
-                )));
+                ))
+                .into());
             }
             let outcome = finalize_data_dir_migration(&resolution.default_dir, &journal)?;
             Ok(Some(PreparedDataDirMigration { journal, outcome }))
@@ -408,16 +410,18 @@ impl RuntimeHostStateBuilder {
         match self.profile {
             RuntimeHostProfile::Desktop => {
                 if composition.profile_extension.is_none() {
-                    return Err(crate::Error::Custom(
+                    return Err(vrcx_0_application_core::Error::Custom(
                         "Desktop runtime profile requires a profile extension.".into(),
-                    ));
+                    )
+                    .into());
                 }
             }
             RuntimeHostProfile::HeadlessData => {
                 if composition.profile_extension.is_some() {
-                    return Err(crate::Error::Custom(
+                    return Err(vrcx_0_application_core::Error::Custom(
                         "HeadlessData runtime profile must not receive a profile extension.".into(),
-                    ));
+                    )
+                    .into());
                 }
             }
         }
@@ -755,9 +759,10 @@ impl RuntimeHostState {
     pub fn new(options: RuntimeHostOptions) -> Result<Self> {
         match options.profile {
             RuntimeHostProfile::Desktop => {
-                return Err(crate::Error::Custom(
+                return Err(vrcx_0_application_core::Error::Custom(
                     "Desktop runtime profile must be constructed by runtime-host-desktop.".into(),
-                ));
+                )
+                .into());
             }
             RuntimeHostProfile::HeadlessData => {}
         }

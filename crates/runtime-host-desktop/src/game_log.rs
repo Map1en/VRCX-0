@@ -178,9 +178,10 @@ impl GameLogHostRuntime {
 
     pub fn set_persistence_disabled(&self, log_watcher: &LogWatcher, disabled: bool) -> Result<()> {
         if self.session.snapshot().is_game_running {
-            return Err(crate::Error::Custom(
+            return Err(vrcx_0_application_core::Error::Custom(
                 "VRChat must be closed before changing GameLog history persistence.".into(),
-            ));
+            )
+            .into());
         }
 
         log_watcher

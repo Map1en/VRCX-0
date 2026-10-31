@@ -299,26 +299,6 @@ impl FavoriteImportRuntime {
         true
     }
 
-    pub fn cancel_if_scope_mismatch(&self) -> FavoriteImportStatus {
-        let scope = self.auth_scope.snapshot();
-        let status = {
-            let mut inner = self.lock_inner();
-            if !is_active_state(inner.status.status)
-                || inner.status.auth_scope_generation == scope.generation
-            {
-                return inner.status.clone();
-            }
-            if let Some(cancel) = &inner.cancel {
-                cancel.store(true, Ordering::Release);
-            }
-            inner.status.status = FavoriteImportState::Cancelling;
-            inner.status.cancel_requested = true;
-            inner.status.clone()
-        };
-        self.emit_status(status.clone());
-        status
-    }
-
     async fn run_job(
         &self,
         run_id: String,

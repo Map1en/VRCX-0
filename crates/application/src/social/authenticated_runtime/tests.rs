@@ -112,6 +112,30 @@ fn realtime_lifecycle_requires_matching_transport_identity() {
 }
 
 #[test]
+fn realtime_counts_as_interrupted_only_while_running_after_a_disconnect() {
+    let mut snapshot = AuthenticatedRuntimePhaseSnapshot {
+        phase: AuthenticatedRuntimePhase::Ready,
+        realtime_health: AuthenticatedRuntimeRealtimeHealth {
+            interrupted: true,
+            disconnected_at: Some("2026-10-31T00:00:00.000Z".into()),
+            retry_at: None,
+        },
+        ..Default::default()
+    };
+    assert!(snapshot.realtime_interrupted());
+
+    snapshot.phase = AuthenticatedRuntimePhase::Starting;
+    assert!(snapshot.realtime_interrupted());
+
+    snapshot.phase = AuthenticatedRuntimePhase::Stopped;
+    assert!(!snapshot.realtime_interrupted());
+
+    snapshot.phase = AuthenticatedRuntimePhase::Ready;
+    snapshot.realtime_health.disconnected_at = None;
+    assert!(!snapshot.realtime_interrupted());
+}
+
+#[test]
 fn runtime_is_ready_only_after_every_step_is_ready() {
     let mut snapshot = AuthenticatedRuntimePhaseSnapshot {
         friends: ready_step(1, "friends".into()),

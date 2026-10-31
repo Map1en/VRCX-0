@@ -307,7 +307,7 @@ impl DesktopRuntimeHostState {
         );
         let integration_api_controller = Arc::new(
             IntegrationApiController::new(integration_api_config, app_version.clone())
-                .map_err(|error| vrcx_0_composition::Error::Custom(error.to_string()))?,
+                .map_err(|error| vrcx_0_application_core::Error::Custom(error.to_string()))?,
         );
         let (integration_api_runtime, integration_api_enrichment_receiver) =
             DesktopIntegrationApiRuntime::new(
@@ -877,7 +877,7 @@ impl DesktopRuntimeHostState {
             .telemetry
             .submit_feedback(content)
             .await
-            .map_err(|error| vrcx_0_composition::Error::Custom(error.to_string()))
+            .map_err(|error| vrcx_0_application_core::Error::Custom(error.to_string()).into())
     }
 
     pub async fn shutdown_telemetry_flush(&self) {
@@ -1684,7 +1684,7 @@ impl DesktopRuntimeHostState {
         .await?;
         let url = format!("{SHARE_EDITOR_ORIGIN}/mine#k={owner_token}");
         vrcx_0_host_desktop::shell_actions::open_link(&url)
-            .map_err(|error| vrcx_0_composition::Error::Custom(error.to_string()))
+            .map_err(|error| vrcx_0_application_core::Error::Custom(error.to_string()).into())
     }
 
     pub async fn register_world_open_share(&self, world_id: String) {
@@ -1921,6 +1921,15 @@ impl DesktopRuntimeHostState {
             .realtime_transport
     }
 
+    pub fn add_authenticated_runtime_phase_observer(
+        &self,
+        observer: vrcx_0_application::auth::AuthenticatedRuntimePhaseObserver,
+    ) {
+        self.runtime
+            .authenticated_runtime()
+            .add_phase_observer(observer);
+    }
+
     pub fn set_runtime_event_sink<S>(&self, sink: S)
     where
         S: RuntimeEventSink + 'static,
@@ -2066,7 +2075,7 @@ impl DesktopRuntimeHostState {
             &path,
         )?;
         vrcx_0_host_desktop::game_launch::start_game_from_path(&path, &launch_arguments)
-            .map_err(|error| vrcx_0_composition::Error::Custom(error.to_string()))
+            .map_err(|error| vrcx_0_application_core::Error::Custom(error.to_string()).into())
     }
 
     pub fn append_error_log(&self, entry: &str) {
@@ -2094,7 +2103,7 @@ impl DesktopRuntimeHostState {
             payload,
         )
         .await
-        .map_err(|error| vrcx_0_composition::Error::Custom(error.to_string()))
+        .map_err(|error| vrcx_0_application_core::Error::Custom(error.to_string()).into())
     }
 
     pub fn webhook_delivery_snapshot(
@@ -2314,14 +2323,14 @@ impl DesktopRuntimeHostState {
         self.game
             .auto_launch
             .test_entry(entry_id)
-            .map_err(vrcx_0_composition::Error::Custom)
+            .map_err(|error| vrcx_0_application_core::Error::Custom(error).into())
     }
 
     pub fn stop_app_launcher_test_run(&self, run_id: &str) -> Result<AppLauncherSnapshot> {
         self.game
             .auto_launch
             .stop_test_run(run_id)
-            .map_err(vrcx_0_composition::Error::Custom)
+            .map_err(|error| vrcx_0_application_core::Error::Custom(error).into())
     }
 
     pub fn registry_backup(&self) -> RegistryBackupRuntime {
@@ -2420,7 +2429,10 @@ impl RegistryBackupRuntime {
 
     fn acquire_lock(&self) -> Result<MutexGuard<'_, RegistryBackupMaintenanceState>> {
         self.state.lock().map_err(|error| {
-            vrcx_0_composition::Error::Custom(format!("registry backup lock poisoned: {error}"))
+            vrcx_0_application_core::Error::Custom(format!(
+                "registry backup lock poisoned: {error}"
+            ))
+            .into()
         })
     }
 }
@@ -2820,6 +2832,7 @@ impl DesktopRuntimeProfileExtension {
         }
         let db = Arc::clone(state.database());
         let web = Arc::clone(state.web_client());
+        let world_cache = Arc::clone(state.desktop_assembly().world_cache());
         let backend_runtime = state.backend_runtime().clone();
         let background_jobs = state.desktop_assembly().background_jobs().clone();
         let running = Arc::clone(&self.desktop_maintenance_running);
@@ -2892,6 +2905,7 @@ impl DesktopRuntimeProfileExtension {
                     let tick_context = BackgroundTickContext {
                         db: &db,
                         web: &web,
+                        world_cache: &world_cache,
                         session_slot: &session_slot,
                         realtime_runtime: &realtime_runtime,
                         host_session: &host_session,

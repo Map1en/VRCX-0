@@ -62,7 +62,7 @@ impl NotificationMarkSeenActions for LocalNotificationMarkSeenActions<'_> {
             self.expected_scope.current_user_id.clone(),
             ids,
         )
-        .map_err(crate::map_persistence_error)
+        .map_err(crate::Error::from)
     }
 
     fn mark_remote<'a>(
@@ -106,7 +106,7 @@ impl NotificationMarkSeenActions for LocalNotificationMarkSeenActions<'_> {
                 id,
                 item.version,
             )
-            .map_err(crate::map_persistence_error)
+            .map_err(crate::Error::from)
             .map_err(NotificationRemoteActionError::terminal)
         })
     }

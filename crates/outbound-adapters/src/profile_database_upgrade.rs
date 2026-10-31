@@ -45,9 +45,7 @@ impl DatabaseUpgradeStore for LocalDatabaseUpgradeStore {
     }
 
     fn discard_failed_upgrade(&self) -> vrcx_0_application_core::Result<()> {
-        self.db
-            .discard_failed_upgrade()
-            .map_err(super::map_persistence_error)
+        self.db.discard_failed_upgrade().map_err(crate::Error::from)
     }
 
     fn archive_main_database_and_create_fresh_database(
@@ -55,7 +53,7 @@ impl DatabaseUpgradeStore for LocalDatabaseUpgradeStore {
     ) -> vrcx_0_application_core::Result<std::path::PathBuf> {
         self.db
             .archive_main_database_and_create_fresh_database()
-            .map_err(super::map_persistence_error)
+            .map_err(crate::Error::from)
     }
 
     fn prepare_legacy_migration(
@@ -67,7 +65,7 @@ impl DatabaseUpgradeStore for LocalDatabaseUpgradeStore {
         vrcx_0_persistence::legacy_vrcx::validate_legacy_source(source)
             .map_err(vrcx_0_application_core::Error::Custom)?;
         vrcx_0_persistence::legacy_migration::prepare_legacy_migration(paths, source, on_progress)
-            .map_err(super::map_persistence_error)
+            .map_err(crate::Error::from)
     }
 }
 

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use serde::Serialize;
 
 use vrcx_0_application_realtime::{
@@ -63,3 +65,16 @@ pub struct AuthenticatedRuntimePhaseSnapshot {
     pub realtime_transport: Option<RealtimeTransportStartResult>,
     pub updated_at: String,
 }
+
+impl AuthenticatedRuntimePhaseSnapshot {
+    pub fn realtime_interrupted(&self) -> bool {
+        matches!(
+            self.phase,
+            AuthenticatedRuntimePhase::Starting | AuthenticatedRuntimePhase::Ready
+        ) && self.realtime_health.interrupted
+            && self.realtime_health.disconnected_at.is_some()
+    }
+}
+
+pub type AuthenticatedRuntimePhaseObserver =
+    Arc<dyn Fn(&AuthenticatedRuntimePhaseSnapshot) + Send + Sync>;

@@ -119,15 +119,17 @@ impl DesktopDataDirRuntime {
 
     fn ensure_settings_available(&self) -> Result<()> {
         if self.resolution.source == AppDataDirSource::Cli {
-            return Err(vrcx_0_composition::Error::Custom(
+            return Err(vrcx_0_application_core::Error::Custom(
                 "Data directory settings are disabled while --data-dir is active.".into(),
-            ));
+            )
+            .into());
         }
         let directory = app_paths::app_data_dir_state(&self.resolution)?;
         if configured_data_dir_differs(&directory) {
-            return Err(vrcx_0_composition::Error::Custom(
+            return Err(vrcx_0_application_core::Error::Custom(
                 "Restart VRCX-0 before changing the data directory again.".into(),
-            ));
+            )
+            .into());
         }
         Ok(())
     }

@@ -11,7 +11,6 @@ use super::{
     delete_all_screenshot_metadata, delete_text_metadata, Error, MetadataCacheDb, Path, PathBuf,
     Result, ScreenshotLibraryImage,
 };
-use crate::map_persistence_error;
 
 pub struct LocalScreenshotFavoriteStore {
     db: Arc<DatabaseService>,
@@ -36,22 +35,19 @@ fn favorite_from_record(record: store::ScreenshotFavoriteRecord) -> ScreenshotFa
 
 impl ScreenshotFavoriteStore for LocalScreenshotFavoriteStore {
     fn list(&self) -> Result<Vec<ScreenshotFavorite>> {
-        Ok(store::list_screenshot_favorites(&self.db)
-            .map_err(map_persistence_error)?
+        Ok(store::list_screenshot_favorites(&self.db)?
             .into_iter()
             .map(favorite_from_record)
             .collect())
     }
 
     fn get(&self, path: &str) -> Result<Option<ScreenshotFavorite>> {
-        Ok(store::get_screenshot_favorite(&self.db, path)
-            .map_err(map_persistence_error)?
-            .map(favorite_from_record))
+        Ok(store::get_screenshot_favorite(&self.db, path)?.map(favorite_from_record))
     }
 
     fn add(&self, path: &str, fingerprint: &ScreenshotFingerprint) -> Result<()> {
         store::add_screenshot_favorite(&self.db, path, fingerprint.size_bytes, &fingerprint.sha256)
-            .map_err(map_persistence_error)
+            .map_err(Error::from)
     }
 
     fn update_file(&self, id: i64, path: &str, fingerprint: &ScreenshotFingerprint) -> Result<()> {
@@ -62,11 +58,11 @@ impl ScreenshotFavoriteStore for LocalScreenshotFavoriteStore {
             fingerprint.size_bytes,
             &fingerprint.sha256,
         )
-        .map_err(map_persistence_error)
+        .map_err(Error::from)
     }
 
     fn remove(&self, path: &str) -> Result<()> {
-        store::remove_screenshot_favorite(&self.db, path).map_err(map_persistence_error)
+        store::remove_screenshot_favorite(&self.db, path).map_err(Error::from)
     }
 }
 

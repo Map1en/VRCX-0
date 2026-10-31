@@ -25,22 +25,22 @@ impl LocalProfileBioStore {
 
 impl ProfileBioStore for LocalProfileBioStore {
     fn last_seen(&self, owner: &OwnerId, user_id: &str) -> Result<Option<ProfileBioRecord>> {
-        profile_bio::profile_bio_get(&self.db, owner, user_id).map_err(crate::map_persistence_error)
+        profile_bio::profile_bio_get(&self.db, owner, user_id).map_err(crate::Error::from)
     }
 
     fn record(&self, owner: &OwnerId, user_id: &str, record: &ProfileBioRecord) -> Result<()> {
         profile_bio::profile_bio_upsert(&self.db, owner, user_id, record)
-            .map_err(crate::map_persistence_error)
+            .map_err(crate::Error::from)
     }
 
     fn mark_checked(&self, owner: &OwnerId, user_id: &str, checked_at: &str) -> Result<()> {
         profile_bio::profile_bio_mark_checked(&self.db, owner, user_id, checked_at)
-            .map_err(crate::map_persistence_error)
+            .map_err(crate::Error::from)
     }
 
     fn next_stale_friend(&self, owner: &OwnerId, checked_before: &str) -> Result<Option<String>> {
         profile_bio::profile_bio_next_stale_friend(&self.db, owner, checked_before)
-            .map_err(crate::map_persistence_error)
+            .map_err(crate::Error::from)
     }
 
     fn observe_self_bio(&self, owner: &OwnerId, bio: &str, observed_at: &str) -> Result<()> {
@@ -57,7 +57,7 @@ impl ProfileBioStore for LocalProfileBioStore {
             },
         )
         .map(|_| ())
-        .map_err(crate::map_persistence_error)
+        .map_err(crate::Error::from)
     }
 }
 

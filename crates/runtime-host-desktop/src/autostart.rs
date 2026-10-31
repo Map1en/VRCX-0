@@ -14,7 +14,7 @@ pub fn set_autostart_preference(
     let previous_enabled = config.get_bool(START_AT_SYSTEM_STARTUP_CONFIG_KEY, false)?;
     platform
         .set_enabled(enabled)
-        .map_err(crate::Error::Custom)?;
+        .map_err(vrcx_0_application_core::Error::Custom)?;
     if let Err(error) = config.set_bool(START_AT_SYSTEM_STARTUP_CONFIG_KEY, enabled) {
         if let Err(rollback_error) = platform.set_enabled(previous_enabled) {
             tracing::warn!(

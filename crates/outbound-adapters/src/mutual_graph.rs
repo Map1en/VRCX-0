@@ -35,7 +35,7 @@ impl MutualGraphStore for LocalMutualGraphStore {
             total_count,
             opted_out,
         )
-        .map_err(crate::map_persistence_error)
+        .map_err(crate::Error::from)
     }
 
     fn snapshot_get(&self, owner_user_id: String) -> Result<MutualGraphSnapshotOutput> {
@@ -61,7 +61,7 @@ impl MutualGraphStore for LocalMutualGraphStore {
                     })
                     .collect(),
             })
-            .map_err(crate::map_persistence_error)
+            .map_err(crate::Error::from)
     }
 
     fn snapshot_commit(
@@ -89,7 +89,7 @@ impl MutualGraphStore for LocalMutualGraphStore {
                 })
                 .collect(),
         )
-        .map_err(crate::map_persistence_error)
+        .map_err(crate::Error::from)
     }
 }
 

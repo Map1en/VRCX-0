@@ -171,9 +171,56 @@ pub fn validate_registry_key(key: &str) -> Result<(), RegistryPolicyError> {
     Ok(())
 }
 
+pub fn add_hash_to_key_name(key: &str) -> String {
+    let mut hash: u32 = 5381;
+    for unit in key.encode_utf16() {
+        hash = hash.wrapping_mul(33) ^ unit as u32;
+    }
+    format!("{key}_h{hash}")
+}
+
+pub fn strip_hash_from_key_name(key: &str) -> Option<&str> {
+    let (prefix, suffix) = key.rsplit_once("_h")?;
+    if !suffix.is_empty() && !prefix.is_empty() {
+        Some(prefix)
+    } else {
+        None
+    }
+}
+
+pub fn ascii_decode(bytes: &[u8]) -> String {
+    bytes
+        .iter()
+        .map(|byte| if byte.is_ascii() { *byte as char } else { '?' })
+        .collect()
+}
+
+pub fn ascii_encode(value: &str) -> Vec<u8> {
+    value
+        .chars()
+        .map(|ch| if ch.is_ascii() { ch as u8 } else { b'?' })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn encodes_player_prefs_key_names_and_ascii_values() {
+        assert_eq!(
+            add_hash_to_key_name("playerHeight"),
+            "playerHeight_h56066313"
+        );
+        assert_eq!(
+            strip_hash_from_key_name("playerHeight_h56066313"),
+            Some("playerHeight")
+        );
+        assert_eq!(strip_hash_from_key_name("_h56066313"), None);
+        assert_eq!(strip_hash_from_key_name("playerHeight_h"), None);
+        assert_eq!(ascii_encode("abc\u{00e9}"), b"abc?".to_vec());
+        assert_eq!(ascii_decode(b"abc\xff"), "abc?");
+    }
 
     #[test]
     fn recognizes_allowed_registry_keys() {

@@ -32,13 +32,12 @@ impl LocalWorldCollectionAdapter {
 impl WorldCollectionStore for LocalWorldCollectionAdapter {
     fn world_summaries(&self, world_ids: &[String]) -> crate::Result<Vec<WorldSummaryOutput>> {
         vrcx_0_persistence::worlds::world_cache_get_many(&self.db, world_ids)
-            .map_err(crate::map_persistence_error)
+            .map_err(crate::Error::from)
     }
 
     fn world_memos(&self, world_ids: &[String]) -> crate::Result<Vec<WorldMemo>> {
         Ok(
-            vrcx_0_persistence::memos::memo_get_worlds_many(&self.db, world_ids)
-                .map_err(crate::map_persistence_error)?
+            vrcx_0_persistence::memos::memo_get_worlds_many(&self.db, world_ids)?
                 .into_iter()
                 .map(|memo| WorldMemo {
                     world_id: memo.world_id,
@@ -50,17 +49,17 @@ impl WorldCollectionStore for LocalWorldCollectionAdapter {
 
     fn world_summary(&self, world_id: &str) -> crate::Result<Option<WorldSummaryOutput>> {
         vrcx_0_persistence::worlds::world_cache_get(&self.db, world_id.to_string())
-            .map_err(crate::map_persistence_error)
+            .map_err(crate::Error::from)
     }
 
     fn read_owner_tokens(&self) -> crate::Result<Value> {
         vrcx_0_persistence::config::get_json(&self.db, SHARE_OWNER_TOKENS_CONFIG_KEY, json!({}))
-            .map_err(crate::map_persistence_error)
+            .map_err(crate::Error::from)
     }
 
     fn write_owner_tokens(&self, owner_tokens: &Value) -> crate::Result<()> {
         vrcx_0_persistence::config::set_json(&self.db, SHARE_OWNER_TOKENS_CONFIG_KEY, owner_tokens)
-            .map_err(crate::map_persistence_error)
+            .map_err(crate::Error::from)
     }
 }
 
@@ -156,8 +155,7 @@ impl SharedCollectionImportActions for LocalSharedCollectionImportActions {
             self.db.as_ref(),
             LOCAL_WORLD_FAVORITE_GROUPS_KEY,
             json!([]),
-        )
-        .map_err(crate::map_persistence_error)?
+        )?
         .as_array()
         .cloned()
         .unwrap_or_default()
@@ -174,7 +172,7 @@ impl SharedCollectionImportActions for LocalSharedCollectionImportActions {
             LOCAL_WORLD_FAVORITE_GROUPS_KEY,
             &json!(groups),
         )
-        .map_err(crate::map_persistence_error)
+        .map_err(crate::Error::from)
     }
 
     fn fetch_and_cache_world<'a>(&'a self, world_id: &'a str) -> BoxFuture<'a, crate::Result<()>> {
@@ -217,6 +215,6 @@ impl SharedCollectionImportActions for LocalSharedCollectionImportActions {
             group_name.to_string(),
         )
         .map(|_| ())
-        .map_err(crate::map_persistence_error)
+        .map_err(crate::Error::from)
     }
 }

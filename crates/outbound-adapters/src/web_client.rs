@@ -6,8 +6,8 @@ use vrcx_0_contracts::external_api::{
     ExternalWebExecuteRequest,
 };
 use vrcx_0_contracts::{
-    RealtimeConnectionOptions as ApplicationRealtimeConnectionOptions,
-    WebExecuteRequest as ApplicationWebExecuteRequest, WebUploadMode as ApplicationWebUploadMode,
+    RealtimeConnectionOptions as ApplicationRealtimeConnectionOptions, WebExecuteRequest,
+    WebUploadMode,
 };
 use vrcx_0_persistence::cookies;
 use vrcx_0_persistence::storage::StorageService;
@@ -17,7 +17,7 @@ use vrcx_0_vrchat_client::http_api::{
 };
 use vrcx_0_vrchat_client::image_fetcher::ImageFetcher;
 use vrcx_0_vrchat_client::realtime::RealtimeConnectionOptions;
-use vrcx_0_vrchat_client::web_client::{self as transport, WebExecuteRequest};
+use vrcx_0_vrchat_client::web_client as transport;
 
 use crate::Result;
 
@@ -90,14 +90,14 @@ impl WebClient {
             .unwrap_or_default();
         let proxy_url =
             vrcx_0_application_core::load_proxy_url(raw_enabled.as_deref(), &raw_proxy_url);
-        let persisted_cookies =
-            cookies::get_default_cookies(db.as_ref()).map_err(crate::map_persistence_error)?;
-        let inner = transport::WebClient::new(proxy_url, persisted_cookies.as_deref(), app_version)
-            .map_err(crate::map_web_client_error)?;
-        let image_fetcher = Arc::new(
-            ImageFetcher::new(inner.cookie_jar(), inner.proxy_url(), app_version)
-                .map_err(crate::map_image_fetch_error)?,
-        );
+        let persisted_cookies = cookies::get_default_cookies(db.as_ref())?;
+        let inner =
+            transport::WebClient::new(proxy_url, persisted_cookies.as_deref(), app_version)?;
+        let image_fetcher = Arc::new(ImageFetcher::new(
+            inner.cookie_jar(),
+            inner.proxy_url(),
+            app_version,
+        )?);
         Ok(Self {
             inner,
             db,
@@ -182,16 +182,14 @@ impl WebClient {
     }
 
     pub fn set_cookies(&self, b64: &str) -> Result<()> {
-        self.inner
-            .set_cookies(b64)
-            .map_err(crate::map_web_client_error)
+        self.inner.set_cookies(b64).map_err(crate::Error::from)
     }
 
     pub async fn execute(&self, request: WebExecuteRequest) -> Result<(i32, String)> {
         self.inner
             .execute(request)
             .await
-            .map_err(crate::map_web_client_error)
+            .map_err(crate::Error::from)
     }
 
     pub async fn execute_external(
@@ -204,12 +202,12 @@ impl WebClient {
             self.inner
                 .execute(request)
                 .await
-                .map_err(crate::map_web_client_error)
+                .map_err(crate::Error::from)
         } else {
             self.inner
                 .execute_without_redirects(request)
                 .await
-                .map_err(crate::map_web_client_error)
+                .map_err(crate::Error::from)
         }
     }
 
@@ -257,8 +255,7 @@ impl WebClient {
         let (pooled_status, pooled_data) = self
             .inner
             .execute(self.build_api_request(input.clone(), scope)?)
-            .await
-            .map_err(crate::map_web_client_error)?;
+            .await?;
         if (200..300).contains(&pooled_status) {
             return Ok(vrcx_0_contracts::RealtimeAuthTokenFetch {
                 response: self.finish_api_request(pooled_status, pooled_data)?,
@@ -269,8 +266,7 @@ impl WebClient {
         let (status, data) = self
             .inner
             .execute_fresh_standard(self.build_api_request(input, scope)?)
-            .await
-            .map_err(crate::map_web_client_error)?;
+            .await?;
         Ok(vrcx_0_contracts::RealtimeAuthTokenFetch {
             response: self.finish_api_request(status, data)?,
             rejected_pooled_status: Some(pooled_status),
@@ -384,8 +380,8 @@ impl vrcx_0_application_core::WebClientPort for WebClient {
         WebClient::set_cookies(self, b64)
     }
 
-    async fn execute(&self, request: ApplicationWebExecuteRequest) -> crate::Result<(i32, String)> {
-        WebClient::execute(self, application_request_to_transport(request)).await
+    async fn execute(&self, request: WebExecuteRequest) -> crate::Result<(i32, String)> {
+        WebClient::execute(self, request).await
     }
 
     async fn execute_external(
@@ -436,56 +432,13 @@ impl vrcx_0_application_core::WebClientPort for WebClient {
     }
 }
 
-fn application_request_to_transport(request: ApplicationWebExecuteRequest) -> WebExecuteRequest {
-    WebExecuteRequest {
-        url: request.url,
-        method: request.method,
-        headers: request.headers,
-        body: request.body,
-        upload: match request.upload {
-            ApplicationWebUploadMode::None => transport::WebUploadMode::None,
-            ApplicationWebUploadMode::FilePut {
-                file_data,
-                file_mime,
-                file_md5,
-            } => transport::WebUploadMode::FilePut {
-                file_data,
-                file_mime,
-                file_md5,
-            },
-            ApplicationWebUploadMode::LegacyImage {
-                image_data,
-                post_data,
-            } => transport::WebUploadMode::LegacyImage {
-                image_data,
-                post_data,
-            },
-            ApplicationWebUploadMode::Image {
-                image_data,
-                post_data,
-            } => transport::WebUploadMode::Image {
-                image_data,
-                post_data,
-            },
-            ApplicationWebUploadMode::PrintImage {
-                image_data,
-                post_data,
-            } => transport::WebUploadMode::PrintImage {
-                image_data,
-                post_data,
-            },
-        },
-        response_body_limit: request.response_body_limit,
-    }
-}
-
 fn external_request_to_transport(request: ExternalWebExecuteRequest) -> WebExecuteRequest {
     WebExecuteRequest {
         url: request.url,
         method: request.method,
         headers: request.headers,
         body: request.body,
-        upload: vrcx_0_vrchat_client::web_client::WebUploadMode::None,
+        upload: WebUploadMode::None,
         response_body_limit: request.response_body_limit,
     }
 }

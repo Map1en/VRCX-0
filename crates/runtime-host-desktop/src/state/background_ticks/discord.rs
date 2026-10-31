@@ -99,8 +99,10 @@ pub(in crate::state) async fn run_background_discord_tick(
     let favorite_world_groups_by_key = HashMap::new();
     let game_state_store =
         crate::game_state_store::PersistenceGameStateStore::new(Arc::clone(context.db));
-    let background_remote =
-        crate::background_remote::DesktopBackgroundRemoteApi::new(Arc::clone(context.web));
+    let background_remote = crate::background_remote::DesktopBackgroundRemoteApi::new(
+        Arc::clone(context.web),
+        Arc::clone(context.world_cache),
+    );
     let facts = match build_background_presence_facts(
         &game_state_store,
         BackgroundPresenceFactsInput {

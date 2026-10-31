@@ -41,9 +41,9 @@ fn ensure_export_space(output_path: &Path, required_bytes: u64) -> Result<()> {
         return Ok(());
     };
     if available < required_bytes {
-        return Err(crate::Error::Custom(format!(
+        return Err(vrcx_0_application_core::Error::Custom(format!(
             "Not enough free space at the destination: {required_bytes} bytes needed, {available} bytes available."
-        )));
+        )).into());
     }
     Ok(())
 }
@@ -100,10 +100,11 @@ impl DesktopScreenshotRuntime {
 
     fn ensure_managed_screenshot(&self, path: &str) -> Result<()> {
         if !screenshot::is_managed_screenshot_file_path(path, &self.photos_root) {
-            return Err(crate::Error::Custom(
+            return Err(vrcx_0_application_core::Error::Custom(
                 "Screenshot metadata commands require a VRChat screenshot or library PNG path."
                     .into(),
-            ));
+            )
+            .into());
         }
         Ok(())
     }
@@ -112,9 +113,10 @@ impl DesktopScreenshotRuntime {
         self.host_file_access
             .ensure_write_allowed(path, &self.paths)?;
         if !screenshot::is_vrchat_screenshot_file_path(Path::new(path)) {
-            return Err(crate::Error::Custom(
+            return Err(vrcx_0_application_core::Error::Custom(
                 "Screenshot metadata commands require a VRChat PNG screenshot path.".into(),
-            ));
+            )
+            .into());
         }
         Ok(())
     }
@@ -250,9 +252,10 @@ impl DesktopScreenshotRuntime {
     ) -> Result<ScreenshotExportPlan> {
         self.export_cancelled.store(false, Ordering::Release);
         if paths.is_empty() {
-            return Err(crate::Error::Custom(
+            return Err(vrcx_0_application_core::Error::Custom(
                 "Select at least one screenshot to export.".into(),
-            ));
+            )
+            .into());
         }
         for path in paths {
             self.ensure_managed_screenshot(path)?;
@@ -260,9 +263,10 @@ impl DesktopScreenshotRuntime {
 
         let entries = plan_screenshot_zip_entries(paths, group_by_folder);
         if entries.is_empty() {
-            return Err(crate::Error::Custom(
+            return Err(vrcx_0_application_core::Error::Custom(
                 "None of the selected screenshots have a usable file name.".into(),
-            ));
+            )
+            .into());
         }
 
         let total_bytes = screenshot::total_screenshot_export_bytes(&entries);

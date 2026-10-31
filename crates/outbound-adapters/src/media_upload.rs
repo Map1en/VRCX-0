@@ -89,8 +89,7 @@ impl LocalMediaUploadAdapter {
                     file_size_in_bytes,
                     signature_md5.clone(),
                     signature_size_in_bytes,
-                )
-                .map_err(crate::map_http_api_error)?,
+                )?,
                 &format!("{target_label} image upload failed"),
             )
             .await?;
@@ -115,8 +114,7 @@ impl LocalMediaUploadAdapter {
                 signature_md5,
             ),
         ] {
-            let stage_path = file_upload_stage_path(uploaded_file_id.clone(), file_version, kind)
-                .map_err(crate::map_http_api_error)?;
+            let stage_path = file_upload_stage_path(uploaded_file_id.clone(), file_version, kind)?;
             let start = self
                 .execute_json(
                     gate,
@@ -152,8 +150,7 @@ impl LocalMediaUploadAdapter {
             LegacyEntityImageKind::World => {
                 world_image_set_input(endpoint, request.entity_id, image_url.clone())
             }
-        }
-        .map_err(crate::map_http_api_error)?;
+        }?;
         let entity = self
             .execute_json(
                 gate,

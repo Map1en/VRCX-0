@@ -18,6 +18,6 @@ impl AuthenticatedSessionStorage for LocalAuthenticatedSessionStorage {
     fn ensure_user_scope(&self, user_id: &str) -> Result<()> {
         user_tables_ensure(self.db.as_ref(), user_id.to_string())
             .map(|_| ())
-            .map_err(crate::map_persistence_error)
+            .map_err(crate::Error::from)
     }
 }
