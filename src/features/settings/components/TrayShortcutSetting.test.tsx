@@ -185,10 +185,8 @@ describe('global tray shortcut setting', () => {
 
         fireEvent.focus(window);
 
-        await waitFor(() =>
-            expect(recorder.hasAttribute('disabled')).toBe(false)
-        );
-        expect(document.activeElement).toBe(recorder);
+        await waitFor(() => expect(document.activeElement).toBe(recorder));
+        expect(recorder.hasAttribute('disabled')).toBe(false);
         expect(screen.queryByRole('alert')).toBeNull();
     });
 
