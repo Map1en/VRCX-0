@@ -81,7 +81,7 @@ windows-sys = { version = "0.61", features = [
 libloading = "0.9"
 rust-ini = "=0.21.1"
 webkit2gtk-nvidia-quirk = "2"
-webkit2gtk = "2"
+webkit2gtk = { version = "2", features = ["v2_34"] }
 
 [target.'cfg(all(target_os = "linux", target_env = "gnu"))'.dependencies]
 libc = "0.2"

@@ -190,29 +190,10 @@ fn destroy_main_window_for_background_mode_if_hidden(
         return false;
     }
     state.runtime_host().set_frontend_tray_notification(false);
-    #[cfg(target_os = "linux")]
-    {
-        use webkit2gtk::WebViewExt;
-        if let Err(error) = window.with_webview(|platform_webview| {
-            platform_webview.inner().terminate_web_process();
-        }) {
-            tracing::warn!(
-                ?error,
-                "failed to terminate WebKit process for background mode"
-            );
-        }
-    }
-    if let Err(error) = window.destroy() {
+    if let Err(error) = super::window::destroy_main_window_releasing_web_process(&window) {
         tracing::warn!(error = %error, "failed to destroy main window for background mode");
         let _ = window.hide();
         let _ = window.set_skip_taskbar(true);
-        #[cfg(target_os = "linux")]
-        {
-            use webkit2gtk::WebViewExt;
-            let _ = window.with_webview(|platform_webview| {
-                platform_webview.inner().reload();
-            });
-        }
     }
     true
 }

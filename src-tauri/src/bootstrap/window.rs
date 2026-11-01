@@ -99,33 +99,37 @@ async fn wait_for_main_window_destroyed(
 pub fn destroy_main_window_for_background_mode(app: &tauri::AppHandle) {
     super::sidebar_auto_hide::park(app, true);
     if let Some(window) = app.get_webview_window("main") {
-        #[cfg(target_os = "linux")]
-        {
-            use webkit2gtk::WebViewExt;
-            if let Err(error) = window.with_webview(|platform_webview| {
-                platform_webview.inner().terminate_web_process();
-            }) {
-                tracing::warn!(
-                    ?error,
-                    "failed to terminate WebKit process for background mode"
-                );
-            }
-        }
-        if let Err(error) = window.destroy() {
+        if let Err(error) = destroy_main_window_releasing_web_process(&window) {
             tracing::warn!(error = %error, "failed to destroy main window for background mode");
             let _ = window.hide();
             let _ = window.set_skip_taskbar(true);
-            #[cfg(target_os = "linux")]
-            {
-                use webkit2gtk::WebViewExt;
-                let _ = window.with_webview(|platform_webview| {
-                    platform_webview.inner().reload();
-                });
-            }
         } else {
             vrcx_0_host_desktop::taskbar_overlay::forget_taskbar_overlay_notification();
         }
     }
+}
+
+pub(super) fn destroy_main_window_releasing_web_process(
+    window: &tauri::WebviewWindow,
+) -> tauri::Result<()> {
+    #[cfg(target_os = "linux")]
+    use webkit2gtk::WebViewExt;
+
+    #[cfg(target_os = "linux")]
+    if let Err(error) =
+        window.with_webview(|platform_webview| platform_webview.inner().terminate_web_process())
+    {
+        tracing::warn!(
+            ?error,
+            "failed to terminate WebKit process for background mode"
+        );
+    }
+    let result = window.destroy();
+    #[cfg(target_os = "linux")]
+    if result.is_err() {
+        let _ = window.with_webview(|platform_webview| platform_webview.inner().reload());
+    }
+    result
 }
 
 pub fn capture_background_resume_route(app: &tauri::AppHandle, state: &AppState) {
