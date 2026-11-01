@@ -36,7 +36,10 @@ function liveSession(
         worldId: 'wrld_test',
         worldName: `World ${id}`,
         groupName: '',
+<<<<<<< HEAD
+=======
         remote: false,
+>>>>>>> 8c88c5b0c9d6bec0a5241580c3343dc29fdc9c4d
         playerDurationRows: [],
         events: [],
         ...overrides
