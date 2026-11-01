@@ -367,6 +367,19 @@ pub fn run() {
                 }
             }
 
+            #[cfg(all(target_os = "linux", target_env = "gnu"))]
+            if matches!(event, WindowEvent::Destroyed) {
+                use webkit2gtk::glib;
+                glib::idle_add_once(|| {
+                    // SAFETY: `malloc_trim(0)` is a thread-safe glibc extension that releases free
+                    // heap memory back to the OS after GTK/WebKit widgets have been destroyed.
+                    // It takes a numeric pad argument and does not dereference any raw pointers.
+                    unsafe {
+                        libc::malloc_trim(0);
+                    }
+                });
+            }
+
             if let WindowEvent::CloseRequested { api, .. } = event {
                 let state = window.state::<AppState>();
                 let snapshot = state.runtime_host().backend_runtime_snapshot();
