@@ -240,11 +240,10 @@ fn notification_projection_carries_group_key_without_persisting_it() {
         ),
     )
     .expect("announcement output");
-    let group_key = announcement.projection.upserts[0].notification["groupKey"]
-        .as_str()
-        .unwrap_or_default()
-        .to_string();
-    assert!(group_key.starts_with("group.announcement:grp_club:2026-06-0"));
+    assert_eq!(
+        announcement.projection.upserts[0].notification["groupKey"],
+        json!("group.announcement:grp_club")
+    );
     assert!(announcement.persistence.notification_v2_upserts[0]
         .get("groupKey")
         .is_none());
