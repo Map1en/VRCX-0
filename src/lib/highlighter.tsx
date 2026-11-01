@@ -18,6 +18,7 @@ const languages = {
     markdown: () => import('shiki/langs/markdown.mjs'),
     python: () => import('shiki/langs/python.mjs'),
     sql: () => import('shiki/langs/sql.mjs'),
+    toml: () => import('shiki/langs/toml.mjs'),
     tsx: () => import('shiki/langs/tsx.mjs'),
     typescript: () => import('shiki/langs/typescript.mjs'),
     yaml: () => import('shiki/langs/yaml.mjs')

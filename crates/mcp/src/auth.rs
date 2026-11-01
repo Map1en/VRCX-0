@@ -1,7 +1,10 @@
+use base64::{engine::general_purpose::STANDARD as B64, Engine};
+use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
+use serde_json::json;
 use vrcx_0_local_server::{generate_token, is_allowed_authority, tokens_match};
 
 use crate::error::McpError;
-use crate::types::ClientConfigSnippets;
+use crate::types::{ClientConfigSnippets, McpInstallClient};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct McpAuthPolicy {
@@ -88,7 +91,48 @@ pub fn client_config_snippets(
         generic_json: format!(
             "{{\n  \"mcpServers\": {{\n    \"vrcx-0\": {{\n      \"url\": \"{url}\",\n      \"headers\": {{\n        \"Authorization\": \"Bearer {token}\"\n      }}\n    }}\n  }}\n}}"
         ),
+        codex_toml: format!(
+            "[mcp_servers.vrcx-0]\nurl = \"{url}\"\nhttp_headers = {{ \"Authorization\" = \"Bearer {token}\" }}"
+        ),
+        opencode_json: format!(
+            "{{\n  \"$schema\": \"https://opencode.ai/config.json\",\n  \"mcp\": {{\n    \"vrcx-0\": {{\n      \"type\": \"remote\",\n      \"url\": \"{url}\",\n      \"headers\": {{\n        \"Authorization\": \"Bearer {token}\"\n      }},\n      \"enabled\": true\n    }}\n  }}\n}}"
+        ),
     }
+}
+
+pub fn client_install_url(client: McpInstallClient, port: u16, token: &str) -> String {
+    let url = format!("http://127.0.0.1:{port}/mcp");
+    let headers = json!({ "Authorization": format!("Bearer {token}") });
+    let remote_config = || base64_query_value(&json!({ "url": url, "headers": headers }));
+    match client {
+        McpInstallClient::CherryStudio => format!(
+            "cherrystudio://mcp/install?servers={}",
+            base64_query_value(&json!({
+                "mcpServers": {
+                    "vrcx-0": { "type": "streamableHttp", "baseUrl": url, "headers": headers }
+                }
+            }))
+        ),
+        McpInstallClient::Cursor => format!(
+            "cursor://anysphere.cursor-deeplink/mcp/install?name=vrcx-0&config={}",
+            remote_config()
+        ),
+        McpInstallClient::LmStudio => {
+            format!("lmstudio://add_mcp?name=vrcx-0&config={}", remote_config())
+        }
+        McpInstallClient::VsCode => format!(
+            "vscode:mcp/install?{}",
+            utf8_percent_encode(
+                &json!({ "name": "vrcx-0", "type": "http", "url": url, "headers": headers })
+                    .to_string(),
+                NON_ALPHANUMERIC
+            )
+        ),
+    }
+}
+
+fn base64_query_value(config: &serde_json::Value) -> String {
+    utf8_percent_encode(&B64.encode(config.to_string()), NON_ALPHANUMERIC).to_string()
 }
 
 fn is_allowed_loopback_origin(origin: &str, port: u16) -> bool {
@@ -215,6 +259,31 @@ mod tests {
     }
 
     #[test]
+    fn codex_and_opencode_snippets_use_native_remote_config() {
+        let snippets = client_config_snippets(7654, "tok_secret", false);
+
+        assert_eq!(
+            snippets.codex_toml,
+            "[mcp_servers.vrcx-0]\nurl = \"http://127.0.0.1:7654/mcp\"\nhttp_headers = { \"Authorization\" = \"Bearer tok_secret\" }"
+        );
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&snippets.opencode_json)
+                .expect("opencode json"),
+            json!({
+                "$schema": "https://opencode.ai/config.json",
+                "mcp": {
+                    "vrcx-0": {
+                        "type": "remote",
+                        "url": "http://127.0.0.1:7654/mcp",
+                        "headers": { "Authorization": "Bearer tok_secret" },
+                        "enabled": true,
+                    }
+                }
+            })
+        );
+    }
+
+    #[test]
     fn client_help_snippets_use_lan_placeholder_when_lan_connections_are_enabled() {
         let snippets = client_config_snippets(7654, "tok_secret", true);
 
@@ -230,5 +299,84 @@ mod tests {
         assert!(!snippets.claude_code_command.contains("127.0.0.1"));
         assert!(!snippets.generic_json.contains("127.0.0.1"));
         assert!(!snippets.mcp_remote_json.contains("127.0.0.1"));
+        assert!(snippets.codex_toml.contains("http://YOUR-LAN-IP:7654/mcp"));
+        assert!(snippets
+            .opencode_json
+            .contains("http://YOUR-LAN-IP:7654/mcp"));
+    }
+
+    fn decoded_query_config(link: &str, prefix: &str) -> serde_json::Value {
+        let encoded = link.strip_prefix(prefix).expect("install link prefix");
+        let base64 = percent_encoding::percent_decode_str(encoded)
+            .decode_utf8()
+            .expect("utf8 config");
+        serde_json::from_slice(&B64.decode(base64.as_bytes()).expect("base64 config"))
+            .expect("json config")
+    }
+
+    #[test]
+    fn cursor_and_lm_studio_links_carry_base64_remote_config() {
+        let expected = json!({
+            "url": "http://127.0.0.1:7654/mcp",
+            "headers": { "Authorization": "Bearer tok_secret" },
+        });
+
+        let cursor = client_install_url(McpInstallClient::Cursor, 7654, "tok_secret");
+        assert_eq!(
+            decoded_query_config(
+                &cursor,
+                "cursor://anysphere.cursor-deeplink/mcp/install?name=vrcx-0&config="
+            ),
+            expected
+        );
+
+        let lm_studio = client_install_url(McpInstallClient::LmStudio, 7654, "tok_secret");
+        assert_eq!(
+            decoded_query_config(&lm_studio, "lmstudio://add_mcp?name=vrcx-0&config="),
+            expected
+        );
+    }
+
+    #[test]
+    fn cherry_studio_link_carries_base64_streamable_http_server_map() {
+        let link = client_install_url(McpInstallClient::CherryStudio, 7654, "tok_secret");
+
+        assert!(!link.contains('+'));
+        assert_eq!(
+            decoded_query_config(&link, "cherrystudio://mcp/install?servers="),
+            json!({
+                "mcpServers": {
+                    "vrcx-0": {
+                        "type": "streamableHttp",
+                        "baseUrl": "http://127.0.0.1:7654/mcp",
+                        "headers": { "Authorization": "Bearer tok_secret" },
+                    }
+                }
+            })
+        );
+    }
+
+    #[test]
+    fn vscode_link_carries_url_encoded_named_http_config() {
+        let link = client_install_url(McpInstallClient::VsCode, 7654, "tok_secret");
+        let encoded = link
+            .strip_prefix("vscode:mcp/install?")
+            .expect("install link prefix");
+        let config: serde_json::Value = serde_json::from_str(
+            &percent_encoding::percent_decode_str(encoded)
+                .decode_utf8()
+                .expect("utf8 config"),
+        )
+        .expect("json config");
+
+        assert_eq!(
+            config,
+            json!({
+                "name": "vrcx-0",
+                "type": "http",
+                "url": "http://127.0.0.1:7654/mcp",
+                "headers": { "Authorization": "Bearer tok_secret" },
+            })
+        );
     }
 }

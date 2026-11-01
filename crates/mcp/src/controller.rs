@@ -8,7 +8,7 @@ use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 use vrcx_0_local_server::bind_listener;
 
-use crate::auth::{client_config_snippets, generate_mcp_token, McpAuthPolicy};
+use crate::auth::{client_config_snippets, client_install_url, generate_mcp_token, McpAuthPolicy};
 use crate::config::{
     DEFAULT_MCP_PORT, MCP_ALLOW_LAN_CONNECTIONS_CONFIG_KEY, MCP_ALLOW_VRCHAT_WRITES_CONFIG_KEY,
     MCP_ENABLED_CONFIG_KEY, MCP_PORT_CONFIG_KEY, MCP_TOKEN_CONFIG_KEY,
@@ -16,7 +16,7 @@ use crate::config::{
 use crate::error::McpError;
 use crate::runtime::McpRuntime;
 use crate::transport::build_mcp_router;
-use crate::types::{McpServerState, McpServerStatus};
+use crate::types::{McpInstallClient, McpServerState, McpServerStatus};
 
 pub struct McpServerController {
     runtime: McpRuntime,
@@ -137,6 +137,14 @@ impl McpServerController {
             return Err(error);
         }
         self.status().await
+    }
+
+    pub async fn client_install_url(&self, client: McpInstallClient) -> Result<String, McpError> {
+        let handle = self.handle.lock().await;
+        let handle = handle
+            .as_ref()
+            .ok_or_else(|| McpError::Custom("MCP server is not running".into()))?;
+        Ok(client_install_url(client, handle.port, &handle.token))
     }
 
     pub async fn status(&self) -> Result<McpServerStatus, McpError> {

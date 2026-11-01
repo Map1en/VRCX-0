@@ -7,6 +7,17 @@ pub struct ClientConfigSnippets {
     pub claude_code_command: String,
     pub mcp_remote_json: String,
     pub generic_json: String,
+    pub codex_toml: String,
+    pub opencode_json: String,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub enum McpInstallClient {
+    CherryStudio,
+    Cursor,
+    VsCode,
+    LmStudio,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, Type)]

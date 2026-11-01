@@ -506,6 +506,13 @@ const generatedCommands = {
     async appMcpServerSetPort(port: number): Promise<McpServerStatus> {
         return await TAURI_INVOKE('app__mcp_server_set_port', { port });
     },
+    async appMcpServerOpenClientInstall(
+        client: McpInstallClient
+    ): Promise<null> {
+        return await TAURI_INVOKE('app__mcp_server_open_client_install', {
+            client
+        });
+    },
     async appMcpServerRotateToken(): Promise<McpServerStatus> {
         return await TAURI_INVOKE('app__mcp_server_rotate_token');
     },
@@ -3953,6 +3960,8 @@ export type ClientConfigSnippets = {
     claudeCodeCommand: string;
     mcpRemoteJson: string;
     genericJson: string;
+    codexToml: string;
+    opencodeJson: string;
 };
 export type ClipboardImage = {
     fileName: string;
@@ -5899,6 +5908,11 @@ export type MaintenanceTableSizesOutput = {
     external: number;
     resourceLoad: number;
 };
+export type McpInstallClient =
+    | 'cherryStudio'
+    | 'cursor'
+    | 'vsCode'
+    | 'lmStudio';
 export type McpServerState = 'disabled' | 'running';
 export type McpServerStatus = {
     enabled: boolean;

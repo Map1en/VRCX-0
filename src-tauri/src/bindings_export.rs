@@ -238,6 +238,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::application::mcp_server::app__mcp_server_set_allow_vrchat_writes,
             commands::application::mcp_server::app__mcp_server_set_allow_lan_connections,
             commands::application::mcp_server::app__mcp_server_set_port,
+            commands::application::mcp_server::app__mcp_server_open_client_install,
             commands::application::mcp_server::app__mcp_server_rotate_token,
             commands::application::integration_api::app__integration_api_status,
             commands::application::integration_api::app__integration_api_set_enabled,

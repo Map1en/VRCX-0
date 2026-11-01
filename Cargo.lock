@@ -9658,10 +9658,12 @@ name = "vrcx-0-mcp"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "base64 0.23.1",
  "chrono",
  "compact_str",
  "getrandom 0.4.3",
  "http-body",
+ "percent-encoding",
  "rmcp",
  "serde",
  "serde_json",

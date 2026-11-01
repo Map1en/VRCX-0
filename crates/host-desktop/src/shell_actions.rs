@@ -32,6 +32,10 @@ pub fn open_link(url: &str) -> Result<(), Error> {
     open::that(url).map_err(|e| Error::Custom(format!("open link: {e}")))
 }
 
+pub fn open_secret_uri(uri: &str) -> Result<(), Error> {
+    open::that(uri).map_err(|_| Error::Custom("open link failed".into()))
+}
+
 pub fn open_discord_profile(discord_id: &str) -> Result<(), Error> {
     let url = discord_profile_url(discord_id)?;
     open::that(&url).map_err(|e| Error::Custom(format!("open discord: {e}")))

@@ -4,12 +4,14 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-    appMcpServerStatus: vi.fn()
+    appMcpServerStatus: vi.fn(),
+    appMcpServerOpenClientInstall: vi.fn()
 }));
 
 vi.mock('@/platform/tauri/bindings', () => ({
     commands: {
-        appMcpServerStatus: mocks.appMcpServerStatus
+        appMcpServerStatus: mocks.appMcpServerStatus,
+        appMcpServerOpenClientInstall: mocks.appMcpServerOpenClientInstall
     }
 }));
 
@@ -24,49 +26,89 @@ function codeLines() {
     );
 }
 
+const RUNNING_STATUS = {
+    enabled: true,
+    allowLanConnections: false,
+    allowVrchatWrites: false,
+    state: 'running',
+    port: 8798,
+    token: 'secret',
+    activeConnections: 0,
+    lastError: null,
+    clientConfig: {
+        claudeCodeCommand: 'claude mcp add vrcx-0',
+        mcpRemoteJson: '{\n  "remote": true\n}',
+        genericJson: '{\n  "generic": true\n}',
+        codexToml: '[mcp_servers.vrcx-0]',
+        opencodeJson: '{\n  "opencode": true\n}'
+    }
+};
+
 describe('McpServerSettingsGroup', () => {
     afterEach(() => {
         cleanup();
         vi.clearAllMocks();
     });
 
-    it('shows each client config snippet in a tab of the config dialog', async () => {
-        mocks.appMcpServerStatus.mockResolvedValue({
-            enabled: true,
-            allowLanConnections: false,
-            allowVrchatWrites: false,
-            state: 'running',
-            port: 8798,
-            token: 'secret',
-            activeConnections: 0,
-            lastError: null,
-            clientConfig: {
-                claudeCodeCommand: 'claude mcp add vrcx-0',
-                mcpRemoteJson: '{\n  "remote": true\n}',
-                genericJson: '{\n  "generic": true\n}'
-            }
-        });
-
+    async function openConnectDialog() {
         render(<McpServerSettingsGroup />);
-
         fireEvent.click(
             await screen.findByRole('button', {
-                name: 'view.settings.integrations.mcp_server.view_client_config'
+                name: 'view.settings.integrations.mcp_server.connect_client_action'
             })
         );
-
         await screen.findByText(
-            'view.settings.integrations.mcp_server.client_config_description'
+            'view.settings.integrations.mcp_server.connect_dialog_description'
         );
+    }
+
+    it('shows each client its own guide and config', async () => {
+        mocks.appMcpServerStatus.mockResolvedValue(RUNNING_STATUS);
+
+        await openConnectDialog();
+
+        expect(
+            screen.getByText(
+                'view.settings.integrations.mcp_server.guide.claude_desktop'
+            )
+        ).toBeTruthy();
+        expect(codeLines()).toEqual(['{', '  "remote": true', '}']);
+
+        fireEvent.click(screen.getByRole('tab', { name: 'Claude Code' }));
         expect(codeLines()).toEqual(['claude mcp add vrcx-0']);
         expect(screen.getByText('common.label.terminal')).toBeTruthy();
 
+        fireEvent.click(screen.getByRole('tab', { name: 'Codex' }));
+        expect(
+            screen.getByText(
+                'view.settings.integrations.mcp_server.guide.codex'
+            )
+        ).toBeTruthy();
+        expect(codeLines()).toEqual(['[mcp_servers.vrcx-0]']);
+    });
+
+    it('asks the backend to open the selected client install link', async () => {
+        mocks.appMcpServerStatus.mockResolvedValue(RUNNING_STATUS);
+        mocks.appMcpServerOpenClientInstall.mockResolvedValue(null);
+
+        await openConnectDialog();
+        fireEvent.click(screen.getByRole('tab', { name: 'Cherry Studio' }));
         fireEvent.click(
-            screen.getByRole('tab', {
-                name: 'view.settings.integrations.mcp_server.copy_generic'
+            screen.getByRole('button', {
+                name: 'view.settings.integrations.mcp_server.install_in_client'
             })
         );
-        expect(codeLines()).toEqual(['{', '  "generic": true', '}']);
-        expect(screen.getByText('JSON')).toBeTruthy();
+
+        expect(mocks.appMcpServerOpenClientInstall).toHaveBeenCalledWith(
+            'cherryStudio'
+        );
+    });
+
+    it('keeps the port as plain digits without grouping', async () => {
+        mocks.appMcpServerStatus.mockResolvedValue(RUNNING_STATUS);
+
+        render(<McpServerSettingsGroup />);
+
+        expect(await screen.findByDisplayValue('8798')).toBeTruthy();
     });
 });

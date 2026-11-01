@@ -1,7 +1,8 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_mcp::McpServerStatus;
+use vrcx_0_host_desktop::shell_actions;
+use vrcx_0_mcp::{McpInstallClient, McpServerStatus};
 
 use crate::error::AppError;
 use crate::state::AppState;
@@ -68,6 +69,16 @@ pub async fn app__mcp_server_set_port(
         .set_port(port)
         .await
         .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__mcp_server_open_client_install(
+    state: State<'_, AppState>,
+    client: McpInstallClient,
+) -> Result<(), AppError> {
+    let url = state.mcp_controller().client_install_url(client).await?;
+    Ok(shell_actions::open_secret_uri(&url)?)
 }
 
 #[tauri::command]
