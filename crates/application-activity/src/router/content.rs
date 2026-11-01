@@ -195,7 +195,13 @@ pub(super) fn build_activity_content(event: &ActivityEvent) -> ActivityContent {
         ActivityKind::InstanceClosed => activity_content(
             "instance",
             ActivityText::message(OverlayMessage::notifications_instance_closed_title()),
-            literal_body(message),
+            if display_location.is_empty() {
+                ActivityText::default()
+            } else {
+                ActivityText::message(OverlayMessage::notifications_instance_closed_location(
+                    &display_location,
+                ))
+            },
         ),
         ActivityKind::Event => keyed_title_body(
             "system",

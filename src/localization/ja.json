@@ -6723,6 +6723,7 @@
         "group_instance_opened_location": "新しいインスタンスを作成しました：{location}",
         "group_instances_opened": "新しいインスタンスを {count} 件作成しました",
         "instance_closed_title": "インスタンスが閉じられました",
+        "instance_closed_location": "{location} が閉じられました",
         "event_title": "イベント",
         "external_title": "外部アプリ",
         "video_play_title": "動画再生",

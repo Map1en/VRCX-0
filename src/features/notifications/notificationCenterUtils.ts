@@ -66,8 +66,7 @@ export function getSenderName(
         notification?.data?.groupName ||
         notification?.groupName ||
         notification?.details?.groupName ||
-        notification?.type ||
-        'Notification'
+        ''
     );
 }
 

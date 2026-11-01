@@ -85,6 +85,9 @@ export function getNotificationBodyText(
     notification: NotificationRow | null | undefined,
     t: TFunction
 ): string {
+    if (notification?.type === 'instance.closed') {
+        return '';
+    }
     const messageKey = notification?.details?.messageKey;
     if (typeof messageKey === 'string' && messageKey) {
         const params = notification?.details?.messageParams;

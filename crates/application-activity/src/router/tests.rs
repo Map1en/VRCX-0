@@ -374,6 +374,28 @@ fn queue_ready_names_the_ready_instance() {
 }
 
 #[test]
+fn instance_closed_names_the_closed_instance() {
+    let runtime = ActivityRouter::new();
+    let mut closed = ActivityEvent::new(
+        ActivityKind::InstanceClosed,
+        "instance-closed:wrld_1:123:2026-05-31T00:03:10.000Z",
+        "2026-05-31T00:03:10.000Z",
+    );
+    closed.facts.location = "wrld_1:123".into();
+    closed.facts.world_name = "Closed World".into();
+    closed.facts.message = "Instance Closed".into();
+
+    runtime.ingest(closed);
+
+    let entries = runtime.snapshot().entries;
+    assert_eq!(entries.len(), 1);
+    assert_eq!(
+        entries[0].content.summary,
+        "Instance Closed Instance closed: Closed World public"
+    );
+}
+
+#[test]
 fn runtime_emits_snapshot_when_activity_changes_and_clears() {
     let runtime = ActivityRouter::with_filters(ActivityFilters::from_json(json!({
         "version": 1,

@@ -6718,6 +6718,7 @@
         "group_instance_opened_location": "建立了一個新房間：{location}",
         "group_instances_opened": "建立了 {count} 個新房間",
         "instance_closed_title": "房間已關閉",
+        "instance_closed_location": "房間已關閉：{location}",
         "event_title": "活動",
         "external_title": "外部應用程式",
         "video_play_title": "影片播放",

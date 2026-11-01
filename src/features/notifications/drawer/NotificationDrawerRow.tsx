@@ -273,6 +273,15 @@ export function NotificationDrawerRow({
                                         <span className="text-muted-foreground shrink-0 text-xs">
                                             · {typeLabel}
                                         </span>
+                                    ) : !senderName ? (
+                                        <span
+                                            className={cn(
+                                                'min-w-0 truncate text-sm',
+                                                showUnreadDot && 'font-medium'
+                                            )}
+                                        >
+                                            {typeLabel}
+                                        </span>
                                     ) : (
                                         <Badge
                                             className={cn(

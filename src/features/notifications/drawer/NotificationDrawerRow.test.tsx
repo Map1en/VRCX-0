@@ -170,17 +170,19 @@ describe('NotificationDrawerRow', () => {
         expect(handlers.onMarkSeen).toHaveBeenCalledWith(notification);
     });
 
-    it('hides a message that only restates the notification type', () => {
+    it('titles a senderless instance-closed row with its type label', () => {
         renderNotification({
             id: 'not_instance_closed',
             type: 'instance.closed',
-            message: 'view.notification.filters.instance.closed',
+            message: 'Instance Closed',
             seen: false
         });
 
         expect(
             screen.getAllByText('view.notification.filters.instance.closed')
         ).toHaveLength(1);
+        expect(screen.queryByText('instance.closed')).toBeNull();
+        expect(screen.queryByText('Instance Closed')).toBeNull();
     });
 
     it('drops mark as read when the notification offers a dismiss response', async () => {

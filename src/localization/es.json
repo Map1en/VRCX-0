@@ -6737,6 +6737,7 @@
         "group_role_updated": "Se modificó el rol «{role}»",
         "group_queue_ready_title": "Cola de la instancia lista",
         "instance_closed_title": "Instancia cerrada",
+        "instance_closed_location": "Instancia cerrada: {location}",
         "event_title": "Evento",
         "external_title": "App externa",
         "video_play_title": "Reproducción de vídeo",

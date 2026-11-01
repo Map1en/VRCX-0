@@ -153,6 +153,10 @@
                     "source": "notifications.instance_closed_title"
                 },
                 {
+                    "key": "notifications.instance_closed_location",
+                    "source": "notifications.instance_closed_location"
+                },
+                {
                     "key": "notifications.event_title",
                     "source": "notifications.event_title"
                 },

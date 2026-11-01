@@ -6688,6 +6688,7 @@
         "group_role_updated": "Die Rolle „{role}“ wurde geändert",
         "group_queue_ready_title": "Instanz-Warteschlange bereit",
         "instance_closed_title": "Instanz geschlossen",
+        "instance_closed_location": "Instanz geschlossen: {location}",
         "avatar_change": "hat zu Avatar {avatar} gewechselt",
         "blocked_player_joined": "Blockierter Nutzer ist beigetreten",
         "blocked_player_left": "Blockierter Nutzer hat verlassen",

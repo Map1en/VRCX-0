@@ -6688,6 +6688,7 @@
         "group_role_updated": "O cargo “{role}” foi alterado",
         "group_queue_ready_title": "Fila da Instância Pronta",
         "instance_closed_title": "Instância Fechada",
+        "instance_closed_location": "Instância fechada: {location}",
         "avatar_change": "trocou para o avatar {avatar}",
         "blocked_player_joined": "Um usuário bloqueado entrou",
         "blocked_player_left": "Um usuário bloqueado saiu",

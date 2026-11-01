@@ -6727,6 +6727,7 @@
         "group_instance_opened_location": "创建了一个新房间：{location}",
         "group_instances_opened": "创建了 {count} 个新房间",
         "instance_closed_title": "房间已关闭",
+        "instance_closed_location": "房间已关闭：{location}",
         "event_title": "事件",
         "external_title": "外部应用",
         "video_play_title": "视频播放",

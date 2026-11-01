@@ -6737,6 +6737,7 @@
         "group_instance_opened_location": "Created a new instance: {location}",
         "group_instances_opened": "Created {count} new instances",
         "instance_closed_title": "Instance Closed",
+        "instance_closed_location": "Instance closed: {location}",
         "event_title": "Event",
         "external_title": "External App",
         "video_play_title": "Video Play",
