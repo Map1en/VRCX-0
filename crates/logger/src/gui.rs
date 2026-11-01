@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::io::Cursor;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, UdpSocket};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -9,6 +10,7 @@ use std::time::Duration;
 use slint::{ModelRc, SharedString, Timer, TimerMode, VecModel};
 use tokio::runtime::Runtime;
 use tokio::sync::oneshot;
+use tray_icon::{Icon, MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
 use vrcx_0_logger_protocol::wire::{SessionState, StatusResponse};
 
 use crate::app::{App, LOGGER_VERSION};
@@ -33,15 +35,20 @@ slint::slint! {
         in property <[Field]> fields;
         in property <bool> changed;
         in property <bool> password-changed;
+        in property <bool> has-tray;
         in-out property <bool> show-password;
         callback edited(int, string);
         callback save();
         callback discard();
+        callback minimize-to-tray();
 
         ScrollView {
             VerticalBox {
                 alignment: start;
-                Text { text: "Status"; font-size: 18px; font-weight: 600; }
+                HorizontalLayout {
+                    Text { text: "Status"; font-size: 18px; font-weight: 600; horizontal-stretch: 1; vertical-alignment: center; }
+                    if root.has-tray: Button { text: "Minimize to tray"; clicked => { root.minimize-to-tray(); } }
+                }
                 for row in root.rows: HorizontalLayout {
                     spacing: 16px;
                     Text { text: row.label; width: 150px; }
@@ -92,6 +99,7 @@ slint::slint! {
 
 const APP_DIR: &str = "VRCX-0 Logger";
 const SETTINGS_FILE: &str = "logger.env";
+const TRAY_ICON_PNG: &[u8] = include_bytes!("../../../src-tauri/icons/32x32.png");
 const POLL_INTERVAL: Duration = Duration::from_secs(2);
 const SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(5);
 const PASSWORD_LENGTH: usize = 20;
@@ -398,7 +406,24 @@ pub fn run() -> ExitCode {
         }
     });
 
-    let result = window.run();
+    window.on_minimize_to_tray({
+        let window = window.as_weak();
+        move || {
+            if let Some(window) = window.upgrade() {
+                let _ = window.hide();
+            }
+        }
+    });
+    let tray = tray_icon(window.as_weak());
+    window.set_has_tray(tray.is_some());
+    window.window().on_close_requested(|| {
+        let _ = slint::quit_event_loop();
+        slint::CloseRequestResponse::HideWindow
+    });
+
+    let result = window
+        .show()
+        .and_then(|()| slint::run_event_loop_until_quit());
     if let Some(running) = state.borrow_mut().running.take() {
         running.stop();
     }
@@ -406,6 +431,33 @@ pub fn run() -> ExitCode {
         Ok(()) => ExitCode::SUCCESS,
         Err(_) => ExitCode::FAILURE,
     }
+}
+
+fn tray_icon(window: slint::Weak<LoggerWindow>) -> Option<TrayIcon> {
+    TrayIconEvent::set_event_handler(Some(move |event| {
+        if let TrayIconEvent::Click {
+            button: MouseButton::Left,
+            button_state: MouseButtonState::Up,
+            ..
+        } = event
+        {
+            let _ = window.upgrade_in_event_loop(|window| {
+                let _ = window.show();
+                window.window().set_minimized(false);
+            });
+        }
+    }));
+    let mut reader = png::Decoder::new(Cursor::new(TRAY_ICON_PNG))
+        .read_info()
+        .ok()?;
+    let mut rgba = vec![0; reader.output_buffer_size()?];
+    let frame = reader.next_frame(&mut rgba).ok()?;
+    let icon = Icon::from_rgba(rgba, frame.width, frame.height).ok()?;
+    TrayIconBuilder::new()
+        .with_icon(icon)
+        .with_tooltip("VRCX-0 Self-hosted Recorder")
+        .build()
+        .ok()
 }
 
 fn load_values(path: &Path, dir: &Path) -> Result<(Vec<String>, bool), String> {
