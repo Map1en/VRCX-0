@@ -61,7 +61,7 @@ pub use context::DesktopRuntimeServices;
 pub use database_upgrade::{DatabaseUpgradeLifecycle, DesktopDatabaseUpgradeRuntime};
 pub use external_api::{ExternalApiExecuteResponse, ExternalApiRuntime};
 pub use game_client::{GameClientHostRuntime, GameClientHostRuntimeDeps};
-pub use game_isolation::{GameIsolationRuntime, GameIsolationSnapshot};
+pub use game_isolation::{GameIsolationRuntime, GameIsolationSnapshot, LocalGameAccount};
 pub use game_log::{GameLogHostRuntime, GameLogHostRuntimeDeps};
 pub use group::DesktopGroupRuntime;
 pub use host_actions::{RuntimeHost, RuntimeHostActions};

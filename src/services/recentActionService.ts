@@ -1,6 +1,7 @@
 import { MINUTE_MS, MINUTES_PER_DAY } from '@/shared/constants/time';
 import { safeJsonParse } from '@/shared/utils/json';
 import { isRecord } from '@/shared/utils/record';
+import { useRuntimeStore } from '@/state/runtimeStore';
 
 const STORAGE_KEY = 'VRCX_recentActions';
 export type RecentActionType =
@@ -48,8 +49,13 @@ function actionKey(
     userId: string | null | undefined,
     actionType: RecentActionType
 ): string {
+    const ownerUserId = normalizeUserId(
+        useRuntimeStore.getState().auth.currentUserId
+    );
     const normalizedUserId = normalizeUserId(userId);
-    return normalizedUserId ? `${normalizedUserId}:${actionType}` : '';
+    return ownerUserId && normalizedUserId
+        ? `${ownerUserId}:${normalizedUserId}:${actionType}`
+        : '';
 }
 
 function notifyRecentActionListeners(): void {

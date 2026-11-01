@@ -5,6 +5,7 @@ mod reader;
 mod sink;
 mod system;
 
+pub use context::GameLogAuthenticatedUser;
 pub(crate) use context::LogContext;
 pub(crate) use reader::{parse_log, LogReader};
 pub(crate) use sink::GameLogParseSink;

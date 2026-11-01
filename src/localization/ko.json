@@ -721,7 +721,11 @@
         "toast_off_running": "게임 분리 모드를 껐습니다 · 다음 방부터 기록을 다시 시작합니다",
         "failed": "게임 분리 모드를 변경하지 못했습니다",
         "badge": "분리됨",
-        "menu_item": "게임 분리 모드…"
+        "menu_item": "게임 분리 모드…",
+        "prompt_other_account_title": "이 PC의 VRChat은 {name} 계정으로 로그인되어 있습니다",
+        "prompt_other_account_description": "현재 계정이 아닙니다. 게임 분리 모드를 켜면 그 계정의 게임 로그가 현재 계정에 기록되지 않습니다.",
+        "prompt_own_account_title": "이 PC에서 VRChat을 플레이 중인 계정은 현재 계정입니다",
+        "prompt_own_account_description": "게임 분리 모드가 켜져 있어 이번 게임 로그는 기록되지 않습니다."
     },
     "nativeShell": {
         "tray": {

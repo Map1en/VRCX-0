@@ -721,7 +721,11 @@
         "toast_off_running": "Game Isolation turned off · Recording resumes from the next room",
         "failed": "Couldn't change Game Isolation",
         "badge": "Isolated",
-        "menu_item": "Game Isolation…"
+        "menu_item": "Game Isolation…",
+        "prompt_other_account_title": "VRChat on this PC is signed in as {name}",
+        "prompt_other_account_description": "That's not the current account. Turn on Game Isolation so its Game Log isn't recorded under this account.",
+        "prompt_own_account_title": "This account is the one playing VRChat on this PC",
+        "prompt_own_account_description": "Game Isolation is still on, so this session's Game Log isn't being recorded."
     },
     "nativeShell": {
         "tray": {

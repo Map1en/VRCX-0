@@ -25,8 +25,15 @@ async function loadRecentActionService(
     vi.resetModules();
     const localStorage = createLocalStorage(initialStorage);
     vi.stubGlobal('localStorage', localStorage);
+    const { useRuntimeStore } = await import('@/state/runtimeStore');
+    const setCurrentUser = (currentUserId: string | null) => {
+        useRuntimeStore.setState((state) => ({
+            auth: { ...state.auth, currentUserId }
+        }));
+    };
+    setCurrentUser('usr_self');
     const service = await import('./recentActionService');
-    return { service, localStorage };
+    return { service, localStorage, setCurrentUser };
 }
 
 describe('recentActionService', () => {
@@ -58,6 +65,34 @@ describe('recentActionService', () => {
             String(localStorage.dump().VRCX_recentActions)
         );
         expect(stored).toEqual({});
+    });
+
+    it('keeps cooldowns separate for each logged-in account', async () => {
+        const { service, setCurrentUser } = await loadRecentActionService();
+
+        service.configureRecentActionCooldown({ enabled: true, minutes: 30 });
+        service.recordRecentAction('usr_abc', 'Send Friend Request');
+
+        setCurrentUser('usr_alt');
+        expect(service.isActionRecent('usr_abc', 'Send Friend Request')).toBe(
+            false
+        );
+
+        setCurrentUser('usr_self');
+        expect(service.isActionRecent('usr_abc', 'Send Friend Request')).toBe(
+            true
+        );
+    });
+
+    it('does not record actions without a logged-in account', async () => {
+        const { service, localStorage, setCurrentUser } =
+            await loadRecentActionService();
+
+        service.configureRecentActionCooldown({ enabled: true, minutes: 30 });
+        setCurrentUser(null);
+        service.recordRecentAction('usr_abc', 'Invite');
+
+        expect(localStorage.dump().VRCX_recentActions).toBeUndefined();
     });
 
     it('ignores recent actions when cooldown is disabled', async () => {

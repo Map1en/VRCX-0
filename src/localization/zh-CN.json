@@ -721,7 +721,11 @@
         "toast_off_running": "已关闭隔离模式 · 下次进房起恢复记录",
         "failed": "无法切换隔离模式",
         "badge": "隔离",
-        "menu_item": "隔离模式…"
+        "menu_item": "隔离模式…",
+        "prompt_other_account_title": "本机游戏登录的是 {name}",
+        "prompt_other_account_description": "不是当前账号。开启隔离模式，避免它的游戏日志记到当前账号下。",
+        "prompt_own_account_title": "本机游戏中正在玩的就是当前账号",
+        "prompt_own_account_description": "隔离模式仍开着，这次游戏的游戏日志不会记录。"
     },
     "nativeShell": {
         "tray": {

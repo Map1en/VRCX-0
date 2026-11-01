@@ -18,6 +18,14 @@ const GAME_ISOLATION_GAME_LOG_EFFECTIVE_CONFIG_KEY: &str = "gameIsolationGameLog
 pub struct GameIsolationSnapshot {
     pub revision: u64,
     pub enabled: bool,
+    pub local_game_account: Option<LocalGameAccount>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalGameAccount {
+    pub user_id: String,
+    pub display_name: String,
 }
 
 impl RuntimeEventPayload for GameIsolationSnapshot {
@@ -121,6 +129,7 @@ impl GameIsolationRuntime {
                 state: Mutex::new(GameIsolationSnapshot {
                     revision: 0,
                     enabled,
+                    local_game_account: None,
                 }),
                 gate: Mutex::new(GameLogIsolationGate::restore(effective, dropped_through)),
                 observers: Mutex::new(Vec::new()),
@@ -180,6 +189,20 @@ impl GameIsolationRuntime {
             observer(enabled);
         }
         Ok(snapshot)
+    }
+
+    pub(crate) fn set_local_game_account(&self, account: Option<LocalGameAccount>) {
+        let Ok(mut state) = self.inner.state.lock() else {
+            return;
+        };
+        if state.local_game_account == account {
+            return;
+        }
+        state.local_game_account = account;
+        state.revision = state.revision.wrapping_add(1);
+        let snapshot = state.clone();
+        drop(state);
+        self.inner.event_bus.emit(snapshot);
     }
 
     pub(crate) fn ingest_game_log(
@@ -252,7 +275,10 @@ mod tests {
     };
     use vrcx_0_core::game_log_parser::{GameLogEvent, GameLogEventKind};
 
-    use super::{GameIsolationRuntime, GameLogIsolationGate, IsolatedLocalGameContextSource};
+    use super::{
+        GameIsolationRuntime, GameLogIsolationGate, IsolatedLocalGameContextSource,
+        LocalGameAccount,
+    };
     use vrcx_0_persistence::config::ConfigRepository;
 
     use crate::notification::test_support::test_config;
@@ -439,6 +465,29 @@ mod tests {
         assert_eq!(refreshes.load(Ordering::Relaxed), 2);
         assert_eq!(*observed.lock().unwrap(), [true, false]);
         assert!(!config.get_bool("gameIsolationEnabled", true).unwrap());
+    }
+
+    #[test]
+    fn local_game_account_is_published_without_touching_the_persisted_switch() {
+        let (_dir, config) = test_config("game-isolation-local-account");
+        let runtime = isolation(&config);
+        let account = LocalGameAccount {
+            user_id: "usr_alt".into(),
+            display_name: "Alt".into(),
+        };
+
+        runtime.set_local_game_account(Some(account.clone()));
+        let published = runtime.snapshot();
+        runtime.set_local_game_account(Some(account.clone()));
+        assert_eq!(runtime.snapshot().revision, published.revision);
+
+        let toggled = runtime.set_enabled(true).unwrap();
+        assert_eq!(toggled.local_game_account, Some(account));
+        runtime.set_local_game_account(None);
+        let cleared = runtime.snapshot();
+        assert!(cleared.enabled);
+        assert!(cleared.local_game_account.is_none());
+        assert!(cleared.revision > toggled.revision);
     }
 
     fn ingest(runtime: &GameIsolationRuntime, events: &[GameLogEvent]) -> Vec<String> {

@@ -86,6 +86,44 @@ fn incremental_log_parsing_reuses_the_reader_buffer() {
 }
 
 #[test]
+fn remembers_the_authenticated_game_account_even_before_the_cutoff() {
+    let nonce = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let path = std::env::temp_dir().join(format!(
+        "vrcx-0-game-log-auth-{}-{nonce}.txt",
+        std::process::id()
+    ));
+    std::fs::write(
+        &path,
+        "2020.01.01 00:00:00 Debug      -  User Authenticated: Maple (usr_1)\n\
+         2020.01.01 00:00:05 Log        -  VR Disabled\n",
+    )
+    .unwrap();
+    let mut sink = RecordingParseSink::default();
+    let mut ctx = LogContext::new();
+    let mut reader = LogReader::new();
+    let cutoff = chrono::NaiveDate::from_ymd_opt(2020, 1, 1)
+        .unwrap()
+        .and_hms_opt(0, 0, 1)
+        .unwrap();
+
+    parse_log(&mut reader, &mut sink, &path, FILE, &mut ctx, cutoff);
+
+    assert_eq!(
+        ctx.authenticated_user,
+        Some(super::GameLogAuthenticatedUser {
+            user_id: "usr_1".into(),
+            display_name: "Maple".into(),
+        })
+    );
+    assert_eq!(sink.rows.len(), 1);
+    drop(reader);
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
 fn parse_user_info_keeps_display_name_and_filters_user_id() {
     let parsed = presence::parse_user_info("Maple (usr_1234-5678~90:abc!?)");
     assert_eq!(parsed.display_name, "Maple");

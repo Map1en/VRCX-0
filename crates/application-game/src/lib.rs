@@ -56,7 +56,7 @@ pub use game_log_import::{
     import_game_log_file, inspect_game_log_import_file, GameLogImportConsent, GameLogImportFile,
     GameLogImportFileStatus,
 };
-pub use game_log_parser::GameLogEvent;
+pub use game_log_parser::{GameLogAuthenticatedUser, GameLogEvent};
 pub use game_log_watcher::{
     GameLogEventOrigin, GameLogEventSink, GameLogScanCursor, LogLocationSnapshot,
     LogLocationSnapshotScanner, LogWatcher, NoopLogLocationSnapshotScanner,

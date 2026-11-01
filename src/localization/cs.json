@@ -729,7 +729,11 @@
         "toast_off_running": "Oddělení od hry vypnuto · Záznam se obnoví od další místnosti",
         "failed": "Oddělení od hry se nepodařilo změnit",
         "badge": "Odděleno",
-        "menu_item": "Oddělení od hry…"
+        "menu_item": "Oddělení od hry…",
+        "prompt_other_account_title": "VRChat na tomto PC je přihlášen jako {name}",
+        "prompt_other_account_description": "To není aktuální účet. Zapněte oddělení od hry, aby se jeho záznam hry neukládal pod tento účet.",
+        "prompt_own_account_title": "Na tomto PC se právě hraje VRChat s tímto účtem",
+        "prompt_own_account_description": "Oddělení od hry je stále zapnuté, takže se záznam hry z této relace neukládá."
     },
     "nativeShell": {
         "tray": {

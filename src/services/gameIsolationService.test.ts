@@ -37,7 +37,11 @@ describe('gameIsolationService', () => {
             currentLocationPlayerIds: ['usr_friend']
         });
 
-        service.applyGameIsolationSnapshot({ revision: 1, enabled: true });
+        service.applyGameIsolationSnapshot({
+            revision: 1,
+            enabled: true,
+            localGameAccount: null
+        });
 
         expect(useRuntimeStore.getState().gameIsolation.enabled).toBe(true);
         expect(useRuntimeStore.getState().gameState).toMatchObject({
@@ -50,9 +54,17 @@ describe('gameIsolationService', () => {
 
     it('brings the local game room back when isolation ends', async () => {
         const { service, useRuntimeStore } = await loadService();
-        service.applyGameIsolationSnapshot({ revision: 1, enabled: true });
+        service.applyGameIsolationSnapshot({
+            revision: 1,
+            enabled: true,
+            localGameAccount: null
+        });
 
-        service.applyGameIsolationSnapshot({ revision: 2, enabled: false });
+        service.applyGameIsolationSnapshot({
+            revision: 2,
+            enabled: false,
+            localGameAccount: null
+        });
 
         expect(useRuntimeStore.getState().gameIsolation.enabled).toBe(false);
         expect(mocks.hydrateRuntimeGameLogProjection).toHaveBeenCalledTimes(1);
@@ -63,12 +75,21 @@ describe('gameIsolationService', () => {
         useRuntimeStore.getState().setGameState({
             currentLocation: 'wrld_main:1'
         });
-        service.applyGameIsolationSnapshot({ revision: 3, enabled: false });
-        service.applyGameIsolationSnapshot({ revision: 2, enabled: true });
+        service.applyGameIsolationSnapshot({
+            revision: 3,
+            enabled: false,
+            localGameAccount: null
+        });
+        service.applyGameIsolationSnapshot({
+            revision: 2,
+            enabled: true,
+            localGameAccount: null
+        });
 
         expect(useRuntimeStore.getState().gameIsolation).toEqual({
             revision: 3,
-            enabled: false
+            enabled: false,
+            localGameAccount: null
         });
         expect(useRuntimeStore.getState().gameState.currentLocation).toBe(
             'wrld_main:1'

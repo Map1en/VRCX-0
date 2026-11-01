@@ -721,7 +721,11 @@
         "toast_off_running": "Spielentkopplung ausgeschaltet · Aufzeichnung ab dem nächsten Raum",
         "failed": "Spielentkopplung konnte nicht geändert werden",
         "badge": "Entkoppelt",
-        "menu_item": "Spielentkopplung…"
+        "menu_item": "Spielentkopplung…",
+        "prompt_other_account_title": "VRChat auf diesem PC ist als {name} angemeldet",
+        "prompt_other_account_description": "Das ist nicht das aktuelle Konto. Schalte die Spielentkopplung ein, damit dessen Spielprotokoll nicht unter diesem Konto aufgezeichnet wird.",
+        "prompt_own_account_title": "Auf diesem PC wird VRChat gerade mit diesem Konto gespielt",
+        "prompt_own_account_description": "Die Spielentkopplung ist noch eingeschaltet, daher wird das Spielprotokoll dieser Sitzung nicht aufgezeichnet."
     },
     "nativeShell": {
         "tray": {

@@ -345,7 +345,11 @@ describe('gameLogIngestService characterization', () => {
         const { service, useRuntimeStore } = await loadGameLogService();
         useRuntimeStore
             .getState()
-            .setGameIsolation({ revision: 1, enabled: true });
+            .setGameIsolation({
+                revision: 1,
+                enabled: true,
+                localGameAccount: null
+            });
 
         service.applyRuntimeGameLogProjection(
             projection({

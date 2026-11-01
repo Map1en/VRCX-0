@@ -16,5 +16,11 @@ pub struct GameLogScanCursor {
     pub rebuild: bool,
 }
 
+impl GameLogScanCursor {
+    pub fn authenticated_user(&self) -> Option<&crate::GameLogAuthenticatedUser> {
+        self.context.authenticated_user.as_ref()
+    }
+}
+
 #[cfg(test)]
 mod tests;

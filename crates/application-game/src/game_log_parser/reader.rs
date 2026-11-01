@@ -3,9 +3,9 @@ use std::io::{BufRead, BufReader, Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
 
 use chrono::{Local, NaiveDateTime};
-use vrcx_0_core::game_log_parser::parse_log_line_header;
+use vrcx_0_core::game_log_parser::{parse_authenticated_user, parse_log_line_header};
 
-use super::context::LogContext;
+use super::context::{GameLogAuthenticatedUser, LogContext};
 use super::media::{
     parse_api_request, parse_avatar_change, parse_avatar_pedestal_change, parse_avpro_video_change,
     parse_join_blocked, parse_now_playing_log, parse_screenshot, parse_sdk2_video_play,
@@ -171,6 +171,14 @@ fn parse_opened_log(
         let Some((line_date, content)) = parse_log_line_header(trimmed) else {
             continue;
         };
+
+        if let Some((display_name, user_id)) = parse_authenticated_user(content) {
+            ctx.authenticated_user = Some(GameLogAuthenticatedUser {
+                user_id: user_id.to_string(),
+                display_name: display_name.to_string(),
+            });
+            continue;
+        }
 
         if line_date <= till_date {
             continue;

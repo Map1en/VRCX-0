@@ -717,7 +717,11 @@
         "toast_off_running": "ゲーム分離モードを解除しました · 次のルームから記録を再開します",
         "failed": "ゲーム分離モードを切り替えられませんでした",
         "badge": "分離中",
-        "menu_item": "ゲーム分離モード…"
+        "menu_item": "ゲーム分離モード…",
+        "prompt_other_account_title": "このPCのVRChatには {name} でログインしています",
+        "prompt_other_account_description": "現在のアカウントではありません。ゲーム分離モードをオンにすると、そのゲームログがこのアカウントに記録されなくなります。",
+        "prompt_own_account_title": "このPCでVRChatをプレイしているのはこのアカウントです",
+        "prompt_own_account_description": "ゲーム分離モードがオンのままなので、今回のゲームログは記録されません。"
     },
     "nativeShell": {
         "tray": {

@@ -4935,7 +4935,11 @@ export type GameClientEvent =
     | { kind: 'crashRelaunchDecision'; payload: CrashRelaunchDecisionPayload }
     | { kind: 'debugLoggingOutcome'; payload: DebugLoggingOutcome }
     | { kind: 'notification'; payload: RuntimeNotificationPayload };
-export type GameIsolationSnapshot = { revision: number; enabled: boolean };
+export type GameIsolationSnapshot = {
+    revision: number;
+    enabled: boolean;
+    localGameAccount: LocalGameAccount | null;
+};
 export type GameLogAllUserStatsOutput = {
     lastSeen: string;
     userId: string;
@@ -5797,6 +5801,7 @@ export type LocalFavoriteSnapshot = {
     favorites: FavoriteRow[];
     groupNames: string[];
 };
+export type LocalGameAccount = { userId: string; displayName: string };
 export type LocalModerationOutput = {
     userId: string;
     updatedAt: string;

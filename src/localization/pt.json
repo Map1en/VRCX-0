@@ -721,7 +721,11 @@
         "toast_off_running": "Isolamento do jogo desativado · A gravação volta a partir da próxima sala",
         "failed": "Não foi possível alterar o isolamento do jogo",
         "badge": "Isolado",
-        "menu_item": "Isolamento do jogo…"
+        "menu_item": "Isolamento do jogo…",
+        "prompt_other_account_title": "O VRChat neste PC está conectado como {name}",
+        "prompt_other_account_description": "Essa não é a conta atual. Ative o isolamento do jogo para que o Registro do Jogo dela não seja gravado nesta conta.",
+        "prompt_own_account_title": "O VRChat neste PC está sendo jogado com esta conta",
+        "prompt_own_account_description": "O isolamento do jogo continua ativado, então o Registro do Jogo desta sessão não está sendo gravado."
     },
     "nativeShell": {
         "tray": {

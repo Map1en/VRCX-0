@@ -16,6 +16,7 @@ import {
     STATUS_BAR_TOGGLE_ACTIVE,
     STATUS_BAR_TOGGLE_IDLE
 } from './statusBarToggle';
+import { useGameIsolationAccountPrompt } from './useGameIsolationAccountPrompt';
 
 const EFFECT_KEYS = [
     'game_isolation.effect_game_log',
@@ -88,6 +89,13 @@ export function GameIsolationToggle(): ReactElement | null {
             setUpdating(false);
         }
     }
+
+    useGameIsolationAccountPrompt({
+        available,
+        onTurnOff: () => {
+            void setEnabled(false);
+        }
+    });
 
     if (!available) {
         return null;

@@ -721,7 +721,11 @@
         "toast_off_running": "Aislamiento del juego desactivado · El registro se reanuda en la siguiente sala",
         "failed": "No se pudo cambiar el aislamiento del juego",
         "badge": "Aislado",
-        "menu_item": "Aislamiento del juego…"
+        "menu_item": "Aislamiento del juego…",
+        "prompt_other_account_title": "VRChat en este PC ha iniciado sesión como {name}",
+        "prompt_other_account_description": "No es la cuenta actual. Activa el aislamiento del juego para que su Registro del juego no se guarde en esta cuenta.",
+        "prompt_own_account_title": "En este PC se está jugando a VRChat con esta cuenta",
+        "prompt_own_account_description": "El aislamiento del juego sigue activado, así que no se guarda el Registro del juego de esta sesión."
     },
     "nativeShell": {
         "tray": {
