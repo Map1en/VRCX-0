@@ -15,7 +15,7 @@ use crate::disambiguation::{
 };
 use crate::runtime::McpRuntime;
 
-const DATA_CAVEATS_URI: &str = "vrcx://data-caveats";
+const DATA_CAVEATS_URI: &str = "vrcx-0://data-caveats";
 
 const SERVER_INSTRUCTIONS: &str = "\
 VRCX-0 (the Tauri/React rewrite — always say \"VRCX-0\", never \"VRCX\", in user-facing replies) exposes the signed-in user's VRChat social facts from local, observer-centered history and the live session. \

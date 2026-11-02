@@ -119,6 +119,9 @@ user means all history (\"ever\", \"so far\"), and follow the selected tool's \
 all-history guard.
 - If a tool returns `needsDisambiguation`, ask the user to choose. Never invent a \
 usr_ id.
+- A user message may mention someone as [@Name](vrcx-0://user/open?id=usr_…). That id is \
+exactly the person meant: pass it as the user argument directly instead of searching \
+by name.
 
 Style:
 - Answer directly; do not narrate plans or tool calls.

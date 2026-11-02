@@ -126,7 +126,11 @@
         "new_chat": "新建对话",
         "recent": "最近",
         "sessions_empty": "还没有对话",
-        "composer_placeholder": "问点什么",
+        "composer_placeholder": "问点什么，输入 @ 可以引用好友",
+        "mention": {
+            "add": "引用好友",
+            "list": "好友"
+        },
         "disclaimer": "回答基于 VRCX-0 的本地记录，可能不完整或有误。",
         "send": "发送",
         "stop": "停止",

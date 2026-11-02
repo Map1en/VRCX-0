@@ -126,7 +126,11 @@
         "new_chat": "새 대화",
         "recent": "최근",
         "sessions_empty": "아직 대화가 없습니다",
-        "composer_placeholder": "무엇이든 물어보세요",
+        "composer_placeholder": "무엇이든 물어보세요. @로 친구를 언급할 수 있어요",
+        "mention": {
+            "add": "친구 언급",
+            "list": "친구"
+        },
         "disclaimer": "답변은 VRCX-0의 로컬 기록을 바탕으로 하므로 불완전하거나 틀릴 수 있어요.",
         "send": "보내기",
         "stop": "중지",

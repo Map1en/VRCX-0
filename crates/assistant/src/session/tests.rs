@@ -461,3 +461,15 @@ fn is_current_turn_tracks_the_latest_turn() {
     assert!(store.is_current_turn(&session.id, "turn_b"));
     assert!(!store.is_current_turn("missing", "turn_b"));
 }
+
+#[test]
+fn title_shows_mentions_by_name_without_their_ids() {
+    assert_eq!(
+        derive_title("how long with [@Alice [VR]](vrcx-0://user/open?id=usr_a) and [@Bob](vrcx-0://user/open?id=usr_b)?"),
+        "how long with @Alice [VR] and @Bob?"
+    );
+    assert_eq!(
+        derive_title("see [docs](vrcx-0://user/open?id=) later"),
+        "see [docs](vrcx-0://user/open?id=) later"
+    );
+}

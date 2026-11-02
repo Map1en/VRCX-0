@@ -7,6 +7,7 @@ import { Message, MessageContent } from '@/ui/shadcn/message';
 import { AssistantChoiceCard } from './AssistantChoiceCard';
 import { AssistantMarkdown } from './AssistantMarkdown';
 import { AssistantTrace } from './AssistantTrace';
+import { MentionText } from './MentionText';
 
 interface AssistantMessageProps {
     message: UIMessage;
@@ -19,7 +20,6 @@ function AssistantMessageImpl({
 }: AssistantMessageProps) {
     const isUser = message.role === 'user';
     const hasVisibleText = message.text.trim().length > 0;
-    const renderPlain = isUser || message.streaming;
     const alignment = isUser ? 'end' : 'start';
     const traceRunning =
         message.streaming &&
@@ -51,7 +51,9 @@ function AssistantMessageImpl({
                         variant={isUser ? 'secondary' : 'ghost'}
                     >
                         <BubbleContent>
-                            {renderPlain ? (
+                            {isUser ? (
+                                <MentionText text={message.text} />
+                            ) : message.streaming ? (
                                 <span className="whitespace-pre-wrap">
                                     {message.text}
                                 </span>

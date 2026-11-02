@@ -126,7 +126,11 @@
         "new_chat": "新しいチャット",
         "recent": "最近",
         "sessions_empty": "まだ会話がありません",
-        "composer_placeholder": "質問してみよう",
+        "composer_placeholder": "質問を入力（@ でフレンドをメンション）",
+        "mention": {
+            "add": "フレンドをメンション",
+            "list": "フレンド"
+        },
         "disclaimer": "回答は VRCX-0 のローカル記録にもとづくため、不完全だったり誤っていたりすることがあります。",
         "send": "送信",
         "stop": "停止",

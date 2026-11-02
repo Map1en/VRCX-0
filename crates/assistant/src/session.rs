@@ -902,13 +902,36 @@ fn parse_role(role: &str) -> Role {
 }
 
 fn derive_title(content: &str) -> String {
-    let trimmed = content.trim();
+    let plain = plain_mentions(content);
+    let trimmed = plain.trim();
     let title: String = trimmed.chars().take(40).collect();
     if trimmed.chars().count() > 40 {
         format!("{title}…")
     } else {
         title
     }
+}
+
+fn plain_mentions(text: &str) -> String {
+    const MARKER: &str = "](vrcx-0://user/open?id=";
+    let mut plain = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(marker) = rest.find(MARKER) {
+        let after = &rest[marker + MARKER.len()..];
+        match (rest[..marker].rfind("[@"), after.find(')')) {
+            (Some(open), Some(close)) => {
+                plain.push_str(&rest[..open]);
+                plain.push_str(&rest[open + 1..marker]);
+                rest = &after[close + 1..];
+            }
+            _ => {
+                plain.push_str(&rest[..marker + MARKER.len()]);
+                rest = after;
+            }
+        }
+    }
+    plain.push_str(rest);
+    plain
 }
 
 pub fn random_hex() -> String {

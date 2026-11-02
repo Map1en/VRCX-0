@@ -126,7 +126,11 @@
         "new_chat": "Neuer Chat",
         "recent": "Zuletzt",
         "sessions_empty": "Noch keine Unterhaltungen",
-        "composer_placeholder": "Frag etwas",
+        "composer_placeholder": "Frag etwas oder tippe @, um einen Freund zu erwähnen",
+        "mention": {
+            "add": "Freund erwähnen",
+            "list": "Freunde"
+        },
         "disclaimer": "Antworten beruhen auf den lokalen Aufzeichnungen von VRCX-0 und können unvollständig oder falsch sein.",
         "send": "Senden",
         "stop": "Stopp",

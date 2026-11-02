@@ -34,6 +34,24 @@ describe('AssistantMessage', () => {
         expect(html).toContain('Who was online last night?');
     });
 
+    it('shows a mentioned friend by name without the id link', () => {
+        const html = renderToStaticMarkup(
+            <AssistantMessage
+                thinkingLabel="Thinking…"
+                message={{
+                    id: 'user_2',
+                    role: 'user',
+                    text: 'When is [@Alice](vrcx-0://user/open?id=usr_a) online?',
+                    streaming: false,
+                    toolCalls: []
+                }}
+            />
+        );
+
+        expect(html).toContain('@Alice</button>');
+        expect(html).not.toContain('vrcx-0://');
+    });
+
     it('renders a completed assistant response as Markdown', () => {
         const html = renderToStaticMarkup(
             <AssistantMessage

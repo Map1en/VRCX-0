@@ -126,7 +126,11 @@
         "new_chat": "新對話",
         "recent": "最近",
         "sessions_empty": "目前尚無對話",
-        "composer_placeholder": "問個問題",
+        "composer_placeholder": "問點什麼，輸入 @ 可以引用好友",
+        "mention": {
+            "add": "引用好友",
+            "list": "好友"
+        },
         "disclaimer": "回答以 VRCX-0 的本機紀錄為準，可能不完整或有誤。",
         "send": "傳送",
         "stop": "停止",
