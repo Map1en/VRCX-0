@@ -27,6 +27,8 @@ use vrcx_0_platform::app_paths::{resolve_app_data_dir, AppDataDirResolution, App
 use crate::state::{assistant_controller_deps_for, mcp_runtime_for};
 
 const TURN_TIMEOUT: Duration = Duration::from_secs(240);
+// Kana inside a quoted display name must not pass for a Japanese reply.
+const JAPANESE_MIN_HIRAGANA: usize = 20;
 const WRITE_TOOLS: [&str; 3] = ["favorite_local", "favorite_vrchat", "set_friend_note"];
 
 struct HarnessEnv(HashMap<String, String>);
@@ -166,7 +168,17 @@ impl AssistantLlmClientPort for MeteredLlm {
         on_text: Box<dyn FnMut(&str) + Send + 'a>,
     ) -> AssistantLlmFuture<'a, AssistantTurn> {
         self.1.record(messages, tools);
-        self.0.stream_chat(messages, tools, options, on_text)
+        let turn = self.0.stream_chat(messages, tools, options, on_text);
+        if !tools.is_empty() {
+            return turn;
+        }
+        Box::pin(async move {
+            let turn = turn.await;
+            if let Ok(turn) = &turn {
+                println!("intent classifier replied: {:?}", turn.content);
+            }
+            turn
+        })
     }
 }
 
@@ -174,6 +186,7 @@ impl AssistantLlmClientPort for MeteredLlm {
 struct TurnLog {
     session_id: String,
     tool_calls: Vec<String>,
+    tool_arguments: Vec<String>,
     failed_tools: Vec<String>,
     choices: usize,
     answer: String,
@@ -193,6 +206,9 @@ impl TurnLog {
     fn print(&self, node: &str, question: &str) {
         println!("\n=== {node} ===\nQ: {question}");
         println!("tools: {:?}", self.tool_calls);
+        for (name, arguments) in self.tool_calls.iter().zip(&self.tool_arguments) {
+            println!("  {name} {arguments}");
+        }
         println!(
             "metrics: llm_requests={} prompt_chars={} tool_result_chars={} secs={:.1}",
             self.metrics.llm_requests,
@@ -255,9 +271,12 @@ impl Harness {
                 continue;
             }
             match event.as_str() {
-                "assistantToolCall" => log
-                    .tool_calls
-                    .push(payload["name"].as_str().unwrap_or_default().to_string()),
+                "assistantToolCall" => {
+                    log.tool_calls
+                        .push(payload["name"].as_str().unwrap_or_default().to_string());
+                    log.tool_arguments
+                        .push(payload["args"].as_str().unwrap_or_default().to_string());
+                }
                 "assistantToolResult" if payload["ok"] != json!(true) => log
                     .failed_tools
                     .push(payload["summary"].as_str().unwrap_or_default().to_string()),
@@ -312,7 +331,9 @@ impl Harness {
                 node,
                 log.answer
                     .chars()
-                    .any(|c| ('\u{3040}'..='\u{30ff}').contains(&c)),
+                    .filter(|c| ('\u{3041}'..='\u{309f}').contains(c))
+                    .count()
+                    >= JAPANESE_MIN_HIRAGANA,
                 "a Japanese question was not answered in Japanese",
             );
         }
@@ -535,7 +556,10 @@ fn name_fragments(database: &Path) -> Vec<String> {
         .collect()
 }
 
-async fn find_ambiguous_fragment(runtime: &RuntimeHostState, database: &Path) -> Option<String> {
+async fn find_ambiguous_fragment(
+    runtime: &RuntimeHostState,
+    database: &Path,
+) -> Option<(String, Vec<String>)> {
     let tools = vrcx_0_mcp::spawn_in_process_tools(mcp_runtime_for(runtime, McpCaller::Assistant))
         .await
         .expect("spawn probe tools");
@@ -545,14 +569,28 @@ async fn find_ambiguous_fragment(runtime: &RuntimeHostState, database: &Path) ->
             continue;
         };
         let structured = outcome.structured.unwrap_or_default();
-        if structured["candidates"]
+        let names: Vec<String> = structured["candidates"]
             .as_array()
-            .is_some_and(|candidates| candidates.len() >= 2)
-        {
-            return Some(fragment);
+            .into_iter()
+            .flatten()
+            .filter_map(|candidate| candidate["displayName"].as_str())
+            .map(str::to_string)
+            .collect();
+        if names.len() >= 2 {
+            return Some((fragment, names));
         }
     }
     None
+}
+
+async fn top_fading_friend(runtime: &RuntimeHostState) -> Option<String> {
+    let tools = vrcx_0_mcp::spawn_in_process_tools(mcp_runtime_for(runtime, McpCaller::Assistant))
+        .await
+        .expect("spawn probe tools");
+    let outcome = tools.call_tool("get_fading_friends", None).await.ok()?;
+    outcome.structured?["rows"][0]["displayName"]
+        .as_str()
+        .map(str::to_string)
 }
 
 #[tokio::test]
@@ -568,7 +606,18 @@ async fn assistant_answers_key_questions_with_a_real_llm() {
         database,
         ..
     } = Snapshot::take(&env, "harness");
+    let only = env.get("VRCX0_HARNESS_ONLY");
+    let runs = |scenario: &str| {
+        only.as_deref()
+            .is_none_or(|only| only.split(',').any(|name| name.trim() == scenario))
+    };
+    let playbook_mode = match env.get("VRCX0_HARNESS_PLAYBOOK").as_deref() {
+        Some("guided") => PlaybookMode::Guided,
+        Some("open") => PlaybookMode::Open,
+        _ => PlaybookMode::Auto,
+    };
     let ambiguous = find_ambiguous_fragment(&runtime, &database).await;
+    let fading_top = top_fading_friend(&runtime).await;
     let mut rig = Rig::start(scratch, runtime, |default| default).await;
     let harness = &mut rig.harness;
 
@@ -600,89 +649,127 @@ async fn assistant_answers_key_questions_with_a_real_llm() {
     );
     harness
         .controller
-        .set_default_runtime(
-            Some(endpoint.id.clone()),
-            Some(model),
-            false,
-            PlaybookMode::default(),
-        )
+        .set_default_runtime(Some(endpoint.id.clone()), Some(model), false, playbook_mode)
         .expect("select runtime");
 
-    let weekly = harness
-        .ask("weekly_top", None, "zh-CN", "这周我和谁一起玩得最多？")
-        .await;
-    harness.check(
-        "weekly_top",
-        !weekly.tool_calls.is_empty(),
-        "answered without reading any data",
-    );
+    if runs("weekly") {
+        let weekly = harness
+            .ask("weekly_top", None, "zh-CN", "这周我和谁一起玩得最多？")
+            .await;
+        harness.check(
+            "weekly_top",
+            !weekly.tool_calls.is_empty(),
+            "answered without reading any data",
+        );
 
-    let follow_up = harness
-        .ask(
+        let follow_up = harness
+            .ask(
+                "follow_up",
+                Some(weekly.session_id.clone()),
+                "zh-CN",
+                "那这些人里，有没有最近和我变疏远的？",
+            )
+            .await;
+        harness.check(
             "follow_up",
-            Some(weekly.session_id.clone()),
-            "zh-CN",
-            "那这些人里，有没有最近和我变疏远的？",
-        )
-        .await;
-    harness.check(
-        "follow_up",
-        !follow_up.tool_calls.is_empty(),
-        "follow-up did not read any data",
-    );
-
-    let ja_recent = harness
-        .ask(
-            "ja_recent",
-            None,
-            "ja",
-            "最近いちばんよく一緒に遊んでいるフレンドは誰？",
-        )
-        .await;
-    harness.check(
-        "ja_recent",
-        !ja_recent.tool_calls.is_empty(),
-        "answered without reading any data",
-    );
-
-    harness
-        .ask(
-            "unknown_person",
-            None,
-            "ja",
-            "Zyxwv Qprst さんとはどんな関係？",
-        )
-        .await;
-
-    match ambiguous {
-        Some(fragment) => {
-            let question = format!("{fragment} はいつも誰と遊んでる？");
-            let picked = harness.ask("ambiguous_name", None, "ja", &question).await;
-            harness.check(
-                "ambiguous_name",
-                picked.choices > 0,
-                "an ambiguous name never reached the choice card",
-            );
-        }
-        None => println!("\n=== ambiguous_name ===\nskipped: no ambiguous name in this history"),
+            !follow_up.tool_calls.is_empty(),
+            "follow-up did not read any data",
+        );
     }
 
-    let writes = harness
-        .ask(
+    if runs("ja_recent") {
+        let ja_recent = harness
+            .ask(
+                "ja_recent",
+                None,
+                "ja",
+                "最近いちばんよく一緒に遊んでいるフレンドは誰？",
+            )
+            .await;
+        harness.check(
+            "ja_recent",
+            !ja_recent.tool_calls.is_empty(),
+            "answered without reading any data",
+        );
+    }
+
+    if runs("unknown_person") {
+        harness
+            .ask(
+                "unknown_person",
+                None,
+                "ja",
+                "Zyxwv Qprst さんとはどんな関係？",
+            )
+            .await;
+    }
+
+    match ambiguous.filter(|_| runs("ambiguous_name")) {
+        Some((fragment, candidates)) => {
+            let question = format!("{fragment} はいつも誰と遊んでる？");
+            let picked = harness.ask("ambiguous_name", None, "ja", &question).await;
+            let asked_in_text = candidates
+                .iter()
+                .filter(|name| picked.answer.contains(name.as_str()))
+                .count()
+                >= 2;
+            harness.check(
+                "ambiguous_name",
+                picked.choices > 0 || asked_in_text,
+                "an ambiguous name was neither put on the choice card nor asked about",
+            );
+        }
+        None => println!("\n=== ambiguous_name ===\nskipped"),
+    }
+
+    if runs("writes_hidden") {
+        let writes = harness
+            .ask(
+                "writes_hidden",
+                None,
+                "zh-CN",
+                "把我最常一起玩的那个人加进我的本地收藏。",
+            )
+            .await;
+        harness.check(
             "writes_hidden",
-            None,
-            "zh-CN",
-            "把我最常一起玩的那个人加进我的本地收藏。",
-        )
-        .await;
-    harness.check(
-        "writes_hidden",
-        !writes
-            .tool_calls
-            .iter()
-            .any(|name| WRITE_TOOLS.contains(&name.as_str())),
-        "a write tool ran while writes are off",
-    );
+            !writes
+                .tool_calls
+                .iter()
+                .any(|name| WRITE_TOOLS.contains(&name.as_str())),
+            "a write tool ran while writes are off",
+        );
+    }
+
+    if runs("third_turn_recall") {
+        let first = harness
+            .ask("recall_1", None, "zh-CN", "最近有哪些好友和我变疏远了？")
+            .await;
+        harness
+            .ask(
+                "recall_2",
+                Some(first.session_id.clone()),
+                "zh-CN",
+                "我这个月一共玩了多久？",
+            )
+            .await;
+        let third = harness
+            .ask(
+                "recall_3",
+                Some(first.session_id.clone()),
+                "zh-CN",
+                "第一个问题里排第一的那位，我和他最后一次一起玩是什么时候？",
+            )
+            .await;
+        match fading_top.filter(|name| first.answer.contains(name.as_str())) {
+            Some(name) => harness.check(
+                "recall_3",
+                third.answer.contains(name.as_str()),
+                "the third turn lost the person ranked first two turns earlier",
+            ),
+            None => println!("recall_3: no snapshot fading friend named in the first answer"),
+        }
+    }
 
     harness.print_metrics();
     let _ = harness.controller.endpoint_delete(&endpoint.id);
