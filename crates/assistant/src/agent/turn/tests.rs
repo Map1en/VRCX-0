@@ -308,6 +308,21 @@ fn unfinished_answer_is_replaced_by_supported_tool_summary() {
 }
 
 #[test]
+fn a_full_answer_that_mentions_a_stalling_phrase_passes_the_guard() {
+    let mut answer = format!(
+        "{}\n\nフレンド登録済みであることも確認しています。",
+        "| 相手 | 時間 |\n|---|---|\n| Alice | 3時間 |\n".repeat(6)
+    );
+    let original = answer.clone();
+
+    assert_eq!(
+        guard_final_answer(&mut answer, Some("Alice tops the list.")),
+        FinalAnswerGuard::Valid
+    );
+    assert_eq!(answer, original);
+}
+
+#[test]
 fn completed_ranked_answer_passes_the_guard() {
     let mut answer = "| Rank | Friend | Connections |\n| 1 | Alice | 37 |".to_string();
 

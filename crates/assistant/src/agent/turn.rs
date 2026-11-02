@@ -70,6 +70,9 @@ const PLACEHOLDER_MARKERS: &[&str] = &[
     "[시간(분)",
 ];
 
+// A stalling reply ("let me check") is a sentence or two; a full answer that
+// merely contains one of these phrases must not be swapped for a tool summary.
+const DEFERRED_ANSWER_MAX_CHARS: usize = 120;
 const DEFERRED_ANSWER_MARKERS: &[&str] = &[
     "请稍等",
     "請稍等",
@@ -801,10 +804,11 @@ fn unfinished_answer_kind(answer: &str) -> Option<&'static str> {
     {
         return Some("placeholder");
     }
-    DEFERRED_ANSWER_MARKERS
-        .iter()
-        .any(|marker| normalized.contains(marker))
-        .then_some("deferred")
+    (normalized.chars().count() <= DEFERRED_ANSWER_MAX_CHARS
+        && DEFERRED_ANSWER_MARKERS
+            .iter()
+            .any(|marker| normalized.contains(marker)))
+    .then_some("deferred")
 }
 
 fn dedup_entities(entities: Vec<Entity>) -> Vec<Entity> {
