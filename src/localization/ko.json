@@ -185,7 +185,9 @@
             "reasoning_effort_provider_default": "제공업체 기본값",
             "scope_session": "아래 설정은 이 대화에만 적용됩니다",
             "scope_default": "아래 설정은 새 대화에 적용됩니다",
-            "more_settings": "AI 설정 더 보기"
+            "more_settings": "AI 설정 더 보기",
+            "guided_badge": "가이드 모드",
+            "guided_hint": "가이드 모드는 사용할 수 있는 도구를 제한해 성능이 낮은 로컬 모델에 맞춰요. 클라우드 API를 쓴다면 자동이나 개방으로 바꾸면 더 충실한 답변을 받을 수 있어요."
         }
     },
     "user_hover_card": {

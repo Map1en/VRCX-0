@@ -185,7 +185,9 @@
             "reasoning_effort_provider_default": "服务商默认",
             "scope_session": "以下设置仅对本次对话生效",
             "scope_default": "以下设置对之后的新对话生效",
-            "more_settings": "更多 AI 设置"
+            "more_settings": "更多 AI 设置",
+            "guided_badge": "引导模式",
+            "guided_hint": "引导模式会限制可用工具，适合本地弱模型。使用云端 API 时，切回自动或开放能得到更完整的回答。"
         }
     },
     "user_hover_card": {

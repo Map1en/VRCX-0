@@ -188,7 +188,9 @@
             "reasoning_effort_provider_default": "Výchozí nastavení poskytovatele",
             "scope_session": "Tato nastavení platí jen pro tuto konverzaci",
             "scope_default": "Tato nastavení platí pro nové konverzace",
-            "more_settings": "Další nastavení AI"
+            "more_settings": "Další nastavení AI",
+            "guided_badge": "Řízený režim",
+            "guided_hint": "Řízený režim omezuje nástroje pro slabší lokální modely. S cloudovým API přepněte na Automaticky nebo Otevřený pro úplnější odpovědi."
         }
     },
     "user_hover_card": {

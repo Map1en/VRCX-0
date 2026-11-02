@@ -525,6 +525,7 @@ function RuntimeToolbar({
     const providerDefaultEffort = t(
         'assistant.runtime.reasoning_effort_provider_default'
     );
+    const guided = selection.playbookMode === 'guided';
 
     return (
         <>
@@ -597,13 +598,26 @@ function RuntimeToolbar({
                 <DropdownMenuTrigger
                     render={
                         <InputGroupButton
-                            size="icon-sm"
-                            title={t('assistant.runtime.title')}
-                            aria-label={t('assistant.runtime.title')}
+                            size={guided ? 'sm' : 'icon-sm'}
+                            title={t(
+                                guided
+                                    ? 'assistant.runtime.guided_hint'
+                                    : 'assistant.runtime.title'
+                            )}
+                            aria-label={
+                                guided
+                                    ? undefined
+                                    : t('assistant.runtime.title')
+                            }
+                            className={cn(
+                                guided &&
+                                    'bg-amber-500/10 text-amber-600 hover:bg-amber-500/15 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-400'
+                            )}
                         />
                     }
                 >
                     <Settings2Icon />
+                    {guided && t('assistant.runtime.guided_badge')}
                 </DropdownMenuTrigger>
                 <DropdownMenuContent side="top" className="w-64">
                     <p className="text-muted-foreground px-1.5 py-1 text-xs">
@@ -639,6 +653,11 @@ function RuntimeToolbar({
                                 </DropdownMenuRadioItem>
                             ))}
                         </DropdownMenuRadioGroup>
+                        {guided && (
+                            <p className="px-1.5 py-1 text-xs text-amber-600 dark:text-amber-400">
+                                {t('assistant.runtime.guided_hint')}
+                            </p>
+                        )}
                     </DropdownMenuGroup>
                     <DropdownMenuSeparator />
                     <DropdownMenuCheckboxItem

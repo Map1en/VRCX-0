@@ -186,7 +186,9 @@
             "reasoning_effort_provider_default": "Provider default",
             "scope_session": "These settings apply to this conversation only",
             "scope_default": "These settings apply to new conversations",
-            "more_settings": "More AI settings"
+            "more_settings": "More AI settings",
+            "guided_badge": "Guided mode",
+            "guided_hint": "Guided mode limits the tools for weaker local models. With a cloud API, switch to Auto or Open for fuller answers."
         }
     },
     "user_hover_card": {

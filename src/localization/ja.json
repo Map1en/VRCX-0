@@ -185,7 +185,9 @@
             "reasoning_effort_provider_default": "プロバイダーのデフォルト",
             "scope_session": "この設定はこのチャットにだけ反映されます",
             "scope_default": "この設定は新しいチャットに反映されます",
-            "more_settings": "その他の AI 設定"
+            "more_settings": "その他の AI 設定",
+            "guided_badge": "ガイドモード",
+            "guided_hint": "ガイドモードは使えるツールを絞り、非力なローカルモデル向けです。クラウド API なら、自動かオープンに切り替えるとより踏み込んだ回答になります。"
         }
     },
     "user_hover_card": {

@@ -186,7 +186,9 @@
             "reasoning_effort_provider_default": "Standard des Anbieters",
             "scope_session": "Diese Einstellungen gelten nur für diese Unterhaltung",
             "scope_default": "Diese Einstellungen gelten für neue Unterhaltungen",
-            "more_settings": "Weitere KI-Einstellungen"
+            "more_settings": "Weitere KI-Einstellungen",
+            "guided_badge": "Geführter Modus",
+            "guided_hint": "Der geführte Modus schränkt die Werkzeuge für schwächere lokale Modelle ein. Mit einer Cloud-API wechsle zu Auto oder Offen, um ausführlichere Antworten zu erhalten."
         }
     },
     "user_hover_card": {

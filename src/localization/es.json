@@ -186,7 +186,9 @@
             "reasoning_effort_provider_default": "Predeterminado del proveedor",
             "scope_session": "Estos ajustes solo se aplican a esta conversación",
             "scope_default": "Estos ajustes se aplican a las conversaciones nuevas",
-            "more_settings": "Más ajustes de IA"
+            "more_settings": "Más ajustes de IA",
+            "guided_badge": "Modo guiado",
+            "guided_hint": "El modo guiado limita las herramientas para modelos locales más débiles. Con una API en la nube, cambia a Auto o Abierto para obtener respuestas más completas."
         }
     },
     "user_hover_card": {
