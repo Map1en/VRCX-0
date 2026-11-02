@@ -62,12 +62,21 @@ fn utc_offset_acceptance_is_read_from_the_tool_schema() {
         ),
     ];
 
-    assert!(tool_accepts_utc_offset(&tool_defs, "get_best_time_to_play"));
-    assert!(!tool_accepts_utc_offset(
+    assert!(tool_has_property(
         &tool_defs,
-        "get_copresence_summary"
+        "get_best_time_to_play",
+        "utcOffsetMinutes"
     ));
-    assert!(!tool_accepts_utc_offset(&tool_defs, "unknown_tool"));
+    assert!(!tool_has_property(
+        &tool_defs,
+        "get_copresence_summary",
+        "utcOffsetMinutes"
+    ));
+    assert!(!tool_has_property(
+        &tool_defs,
+        "unknown_tool",
+        "utcOffsetMinutes"
+    ));
 }
 
 fn tool_call(name: &str, arguments: &str) -> ToolCall {

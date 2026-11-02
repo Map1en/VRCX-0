@@ -267,6 +267,22 @@ pub(super) fn apply_tool_summary_fallback(
     true
 }
 
+// Models often pass a window as top-level `from`/`to`. Tools only read
+// `timeWindow`, and serde drops unknown keys, so the call would silently answer
+// for all history instead.
+pub(super) fn nest_time_window_bounds(arguments: &mut Map<String, Value>) {
+    if arguments.contains_key("timeWindow") {
+        return;
+    }
+    let window: Map<String, Value> = ["from", "to"]
+        .into_iter()
+        .filter_map(|key| arguments.remove(key).map(|value| (key.to_string(), value)))
+        .collect();
+    if !window.is_empty() {
+        arguments.insert("timeWindow".into(), Value::Object(window));
+    }
+}
+
 pub(super) fn parse_arguments(raw: &str) -> Result<Option<Map<String, Value>>, String> {
     let trimmed = raw.trim();
     if trimmed.is_empty() {
@@ -293,6 +309,43 @@ pub(super) fn truncate(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn top_level_window_bounds_are_nested_into_time_window() {
+        let mut arguments: Map<String, Value> = serde_json::from_value(serde_json::json!({
+            "from": "2026-10-01T00:00:00+09:00",
+            "to": "2026-10-03T00:00:00+09:00",
+            "limit": 20
+        }))
+        .unwrap();
+
+        nest_time_window_bounds(&mut arguments);
+
+        assert_eq!(
+            Value::Object(arguments),
+            serde_json::json!({
+                "timeWindow": {
+                    "from": "2026-10-01T00:00:00+09:00",
+                    "to": "2026-10-03T00:00:00+09:00"
+                },
+                "limit": 20
+            })
+        );
+    }
+
+    #[test]
+    fn an_explicit_time_window_keeps_unrelated_from_and_to_untouched() {
+        let mut arguments: Map<String, Value> = serde_json::from_value(serde_json::json!({
+            "timeWindow": "7d",
+            "from": "x"
+        }))
+        .unwrap();
+
+        nest_time_window_bounds(&mut arguments);
+
+        assert_eq!(arguments["timeWindow"], "7d");
+        assert_eq!(arguments["from"], "x");
+    }
+
     #[test]
     fn copresence_gets_a_default_limit_when_the_model_omits_it() {
         let arguments =

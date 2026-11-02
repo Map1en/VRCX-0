@@ -23,8 +23,8 @@ use crate::session::{
 use super::context::{build_context, latest_user_message, ContextMode};
 use super::tool_budget::tool_content;
 use super::tool_summary::{
-    apply_tool_summary_fallback, brief_summary_from_value, normalize_tool_arguments,
-    parse_arguments, tool_call_signature, tool_fact_summary, truncate,
+    apply_tool_summary_fallback, brief_summary_from_value, nest_time_window_bounds,
+    normalize_tool_arguments, parse_arguments, tool_call_signature, tool_fact_summary, truncate,
 };
 
 // Runaway protection only: a turn that still wants tools after this many
@@ -411,7 +411,16 @@ fn prepare_call<'a>(
         ));
     }
     let parsed = match parse_arguments(&call.function.arguments) {
-        Ok(parsed) => parsed,
+        Ok(mut parsed) => {
+            if tool_has_property(all_tool_defs, &call.function.name, "timeWindow")
+                && !tool_has_property(all_tool_defs, &call.function.name, "from")
+            {
+                if let Some(arguments) = parsed.as_mut() {
+                    nest_time_window_bounds(arguments);
+                }
+            }
+            parsed
+        }
         Err(error) => {
             tracing::warn!(
                 tool = %call.function.name,
@@ -429,7 +438,8 @@ fn prepare_call<'a>(
     let arguments = normalize_tool_arguments(
         &call.function.name,
         parsed,
-        tool_accepts_utc_offset(all_tool_defs, &call.function.name).then_some(utc_offset_minutes),
+        tool_has_property(all_tool_defs, &call.function.name, "utcOffsetMinutes")
+            .then_some(utc_offset_minutes),
     );
     let signature = tool_call_signature(&call.function.name, arguments.as_ref());
     let resolved = if !tool_is_available(tool_defs, &call.function.name) {
@@ -570,12 +580,12 @@ fn record_tool_result(ctx: &TurnContext, call: &ToolCall, resolved: &ResolvedToo
     }
 }
 
-fn tool_accepts_utc_offset(tool_defs: &[ToolDefinition], tool_name: &str) -> bool {
+fn tool_has_property(tool_defs: &[ToolDefinition], tool_name: &str, property: &str) -> bool {
     tool_defs
         .iter()
         .find(|tool| tool.name == tool_name)
         .and_then(|tool| tool.parameters.get("properties"))
-        .and_then(|properties| properties.get("utcOffsetMinutes"))
+        .and_then(|properties| properties.get(property))
         .is_some()
 }
 
