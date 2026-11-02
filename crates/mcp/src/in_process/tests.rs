@@ -134,6 +134,10 @@ async fn favorites_list_the_newest_rows_and_count_every_group() {
     assert_eq!(listed["rows"].as_array().unwrap().len(), 1);
     assert_eq!(listed["totalRows"], 3);
     assert_eq!(listed["truncated"], true);
+    assert!(listed["summary"]
+        .as_str()
+        .unwrap()
+        .contains("By kind: world 3, friend 0, avatar 0."));
     assert_eq!(
         listed["groups"],
         json!([

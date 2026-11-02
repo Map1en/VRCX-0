@@ -103,6 +103,22 @@ impl VrcxMcpServer {
         rows.truncate(input.limit.unwrap_or(50).clamp(1, 500) as usize);
         let truncated = rows.len() < total_rows;
         let mut summary = favorites_summary(requested_kind, total_rows);
+        if requested_kind.canonical_kinds().len() > 1 {
+            let by_kind = requested_kind
+                .canonical_kinds()
+                .iter()
+                .map(|kind| {
+                    let count = group_counts
+                        .iter()
+                        .filter(|((row_kind, _), _)| row_kind == kind.as_str())
+                        .map(|(_, count)| count)
+                        .sum::<usize>();
+                    format!("{} {count}", kind.as_str())
+                })
+                .collect::<Vec<_>>()
+                .join(", ");
+            summary.push_str(&format!(" By kind: {by_kind}."));
+        }
         if truncated {
             summary.push_str(&format!(
                 " Showing the {} newest; groups counts every favorite.",
