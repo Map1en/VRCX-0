@@ -344,6 +344,13 @@ impl Harness {
             !exposes_user_id(&log.answer),
             "answer exposes a raw usr_ id",
         );
+        self.check(
+            node,
+            !log.answer
+                .match_indices("VRCX")
+                .any(|(start, _)| !log.answer[start + 4..].starts_with("-0")),
+            "the answer calls the app VRCX instead of VRCX-0",
+        );
         if locale == "ja" {
             self.check(
                 node,
@@ -381,7 +388,7 @@ impl Harness {
             .any(|failure| failure.round == round && failure.node == node)
     }
 
-    fn report(&self, path: Option<&Path>) {
+    fn report(&self, path: Option<&Path>, baseline: Option<&Path>) {
         println!(
             "\n| round | node | passed | tool calls | LLM requests | prompt chars | tool result chars | secs |"
         );
@@ -437,6 +444,9 @@ impl Harness {
                 row["medianSecs"].as_f64().unwrap_or_default()
             );
         }
+        let regressions = baseline
+            .map(|baseline| compare_with_baseline(&summary, baseline))
+            .unwrap_or_default();
 
         let Some(path) = path else {
             return;
@@ -464,7 +474,12 @@ impl Harness {
                 json!({ "round": failure.round + 1, "node": failure.node, "problem": failure.problem })
             })
             .collect();
-        let body = json!({ "summary": summary, "runs": runs, "failures": failures });
+        let body = json!({
+            "summary": summary,
+            "runs": runs,
+            "failures": failures,
+            "regressions": regressions,
+        });
         std::fs::write(path, serde_json::to_string_pretty(&body).unwrap())
             .unwrap_or_else(|error| panic!("write the report to {}: {error}", path.display()));
         println!("report written to {}", path.display());
@@ -576,6 +591,70 @@ impl Rig {
             .collect();
         assert!(failures.is_empty(), "failures:\n{}", failures.join("\n"));
     }
+}
+
+fn compare_with_baseline(summary: &[Value], baseline: &Path) -> Vec<String> {
+    let text = std::fs::read_to_string(baseline)
+        .unwrap_or_else(|error| panic!("read the baseline {}: {error}", baseline.display()));
+    let baseline: Value = serde_json::from_str(&text).expect("parse the baseline report");
+    let before: HashMap<&str, &Value> = baseline["summary"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|row| Some((row["node"].as_str()?, row)))
+        .collect();
+    let rate = |row: &Value| {
+        row["passed"].as_f64().unwrap_or_default() / row["runs"].as_f64().unwrap_or(1.0).max(1.0)
+    };
+    let grew = |now: f64, then: f64, floor: f64| now >= then * 1.5 && now - then >= floor;
+    let mut regressions = Vec::new();
+    println!(
+        "\n| node | pass rate before → now | median tool calls before → now | median prompt chars before → now | flag |"
+    );
+    println!("|---|---|---|---|---|");
+    for row in summary {
+        let node = row["node"].as_str().unwrap_or_default();
+        let Some(then) = before.get(node) else {
+            println!("| {node} | new | | | |");
+            continue;
+        };
+        let calls = (
+            then["medianToolCalls"].as_f64().unwrap_or_default(),
+            row["medianToolCalls"].as_f64().unwrap_or_default(),
+        );
+        let chars = (
+            then["medianPromptChars"].as_f64().unwrap_or_default(),
+            row["medianPromptChars"].as_f64().unwrap_or_default(),
+        );
+        let mut flags = Vec::new();
+        if rate(row) < rate(then) {
+            flags.push("pass rate dropped");
+        }
+        if grew(calls.1, calls.0, 1.0) {
+            flags.push("tool calls grew");
+        }
+        if grew(chars.1, chars.0, 10_000.0) {
+            flags.push("prompt grew");
+        }
+        println!(
+            "| {node} | {:.0}% → {:.0}% | {} → {} | {} → {} | {} |",
+            rate(then) * 100.0,
+            rate(row) * 100.0,
+            calls.0,
+            calls.1,
+            chars.0,
+            chars.1,
+            flags.join(", ")
+        );
+        regressions.extend(flags.into_iter().map(|flag| format!("{node}: {flag}")));
+    }
+    if !regressions.is_empty() {
+        println!(
+            "REGRESSIONS against the baseline:\n{}",
+            regressions.join("\n")
+        );
+    }
+    regressions
 }
 
 fn median(values: impl Iterator<Item = f64>) -> f64 {
@@ -721,6 +800,106 @@ async fn top_fading_friend(runtime: &RuntimeHostState) -> Option<String> {
         .map(str::to_string)
 }
 
+fn utc_stamp(time: chrono::DateTime<chrono::Utc>) -> String {
+    time.format("%Y-%m-%dT%H:%M:%SZ").to_string()
+}
+
+async fn month_minutes(runtime: &RuntimeHostState) -> Option<i64> {
+    use chrono::Datelike;
+    let today = chrono::Local::now().date_naive();
+    let from = utc_midnight(today.with_day(1)?)?;
+    let tools = vrcx_0_mcp::spawn_in_process_tools(mcp_runtime_for(runtime, McpCaller::Assistant))
+        .await
+        .expect("spawn probe tools");
+    let arguments = Map::from_iter([(
+        "timeWindow".to_string(),
+        json!({ "from": from, "to": utc_stamp(chrono::Utc::now()) }),
+    )]);
+    let outcome = tools
+        .call_tool("get_my_activity", Some(arguments))
+        .await
+        .ok()?;
+    outcome.structured?["totalMinutes"].as_i64()
+}
+
+struct Truth {
+    week: Option<Vec<String>>,
+    seven_days: Option<Vec<String>>,
+    recent: Vec<String>,
+    month_minutes: Option<i64>,
+}
+
+impl Truth {
+    async fn take(sql: &SnapshotSql, runtime: &RuntimeHostState) -> Self {
+        use chrono::Datelike;
+        let now = chrono::Utc::now();
+        let to = utc_stamp(now);
+        let today = chrono::Local::now().date_naive();
+        let week_start = utc_midnight(
+            today - chrono::Days::new(u64::from(today.weekday().num_days_from_monday())),
+        );
+        let rolling =
+            |days: i64| sql.top_names(&utc_stamp(now - chrono::Duration::days(days)), &to);
+        let mut recent: Vec<String> = [7, 14, 30]
+            .into_iter()
+            .filter_map(rolling)
+            .flatten()
+            .collect();
+        recent.sort();
+        recent.dedup();
+        Self {
+            week: week_start.and_then(|from| sql.top_names(&from, &to)),
+            seven_days: rolling(7),
+            recent,
+            month_minutes: month_minutes(runtime).await,
+        }
+    }
+}
+
+fn names_any(answer: &str, names: &[String]) -> bool {
+    names.iter().any(|name| answer.contains(name.as_str()))
+}
+
+fn mentions_duration(answer: &str, minutes: i64) -> bool {
+    let chars: Vec<char> = answer.chars().collect();
+    let mut values = Vec::new();
+    let mut number = String::new();
+    for (index, c) in chars
+        .iter()
+        .copied()
+        .chain(std::iter::once(' '))
+        .enumerate()
+    {
+        let thousands = c == ','
+            && !number.is_empty()
+            && chars.get(index + 1).is_some_and(char::is_ascii_digit);
+        if c.is_ascii_digit() || (c == '.' && !number.is_empty()) {
+            number.push(c);
+        } else if !thousands && !number.is_empty() {
+            if let Ok(value) = number.trim_end_matches('.').parse::<f64>() {
+                values.push(value);
+            }
+            number.clear();
+        }
+    }
+    let hours = minutes as f64 / 60.0;
+    values
+        .iter()
+        .any(|value| (value - hours).abs() <= 1.0 || (value - minutes as f64).abs() <= 2.0)
+}
+
+fn reads_as_english(answer: &str) -> bool {
+    let words: Vec<String> = answer
+        .split(|c: char| !c.is_ascii_alphabetic())
+        .map(str::to_ascii_lowercase)
+        .collect();
+    ["the", "you", "with", "and", "your"]
+        .iter()
+        .filter(|word| words.iter().any(|candidate| candidate == *word))
+        .count()
+        >= 2
+}
+
 #[tokio::test]
 #[ignore = "calls a real LLM against a snapshot of the local VRCX-0 database; set VRCX0_HARNESS_LLM_BASE_URL, VRCX0_HARNESS_LLM_MODEL and VRCX0_HARNESS_LLM_API_KEY (env or .env.local)"]
 async fn assistant_answers_key_questions_with_a_real_llm() {
@@ -745,12 +924,16 @@ async fn assistant_answers_key_questions_with_a_real_llm() {
         .unwrap_or(1)
         .max(1);
     let report = env.get("VRCX0_HARNESS_REPORT").map(PathBuf::from);
+    let baseline = env.get("VRCX0_HARNESS_BASELINE").map(PathBuf::from);
+    let sql = SnapshotSql::open(&database, &user_id);
     let scenarios = Scenarios {
         only: env.get("VRCX0_HARNESS_ONLY"),
         ambiguous: find_ambiguous_fragment(&runtime, &database).await,
         fading_top: top_fading_friend(&runtime).await,
-        window: custom_window_case(&SnapshotSql::open(&database, &user_id)),
+        window: custom_window_case(&sql),
+        truth: Truth::take(&sql, &runtime).await,
     };
+    drop(sql);
     let mut rig = Rig::start(scratch, runtime, |default| default).await;
     let harness = &mut rig.harness;
 
@@ -793,7 +976,7 @@ async fn assistant_answers_key_questions_with_a_real_llm() {
         scenarios.play(harness).await;
     }
 
-    harness.report(report.as_deref());
+    harness.report(report.as_deref(), baseline.as_deref());
     let _ = harness.controller.endpoint_delete(&endpoint.id);
     rig.finish().await;
 }
@@ -808,6 +991,7 @@ struct Scenarios {
     ambiguous: Option<(String, Vec<String>)>,
     fading_top: Option<String>,
     window: Option<WindowCase>,
+    truth: Truth,
 }
 
 impl Scenarios {
@@ -836,6 +1020,29 @@ impl Scenarios {
                 None => println!("\n=== custom_window ===\nskipped"),
             }
         }
+        if self.runs("en_recent") {
+            let log = harness
+                .ask(
+                    "en_recent",
+                    None,
+                    "en",
+                    "Who have I spent the most time with over the last 7 days?",
+                )
+                .await;
+            harness.check(
+                "en_recent",
+                reads_as_english(&log.answer),
+                "an English question was not answered in English",
+            );
+            match &self.truth.seven_days {
+                Some(names) => harness.check(
+                    "en_recent",
+                    names_any(&log.answer, names),
+                    "the answer missed the top companion of the last 7 days",
+                ),
+                None => println!("en_recent: no co-presence in the last 7 days"),
+            }
+        }
     }
 
     async fn play_known(&self, harness: &mut Harness) {
@@ -849,6 +1056,14 @@ impl Scenarios {
                 !weekly.tool_calls.is_empty(),
                 "answered without reading any data",
             );
+            match &self.truth.week {
+                Some(names) => harness.check(
+                    "weekly_top",
+                    names_any(&weekly.answer, names),
+                    "the answer missed this week's top companion",
+                ),
+                None => println!("weekly_top: no co-presence this week, so no name to check"),
+            }
 
             let follow_up = harness
                 .ask(
@@ -878,6 +1093,11 @@ impl Scenarios {
                 "ja_recent",
                 !ja_recent.tool_calls.is_empty(),
                 "answered without reading any data",
+            );
+            harness.check(
+                "ja_recent",
+                self.truth.recent.is_empty() || names_any(&ja_recent.answer, &self.truth.recent),
+                "the answer named none of the top companions of the last 7, 14 or 30 days",
             );
         }
 
@@ -933,7 +1153,7 @@ impl Scenarios {
             let first = harness
                 .ask("recall_1", None, "zh-CN", "最近有哪些好友和我变疏远了？")
                 .await;
-            harness
+            let second = harness
                 .ask(
                     "recall_2",
                     Some(first.session_id.clone()),
@@ -941,6 +1161,13 @@ impl Scenarios {
                     "我这个月一共玩了多久？",
                 )
                 .await;
+            if let Some(minutes) = self.truth.month_minutes {
+                harness.check(
+                    "recall_2",
+                    mentions_duration(&second.answer, minutes),
+                    "the answer did not state this month's play time",
+                );
+            }
             let third = harness
                 .ask(
                     "recall_3",
@@ -1024,6 +1251,20 @@ fn custom_window_case(sql: &SnapshotSql) -> Option<WindowCase> {
         println!("custom_window: every candidate window shares the 30-day top companion");
     }
     fallback
+}
+
+#[test]
+fn answer_judges_read_durations_and_english() {
+    assert!(mentions_duration(
+        "这个月你一共玩了 41 小时 23 分钟。",
+        2483
+    ));
+    assert!(mentions_duration("About 41.4 hours this month.", 2483));
+    assert!(mentions_duration("合計 2,483 分です。", 2483));
+    assert!(!mentions_duration("这个月你玩了 12 小时。", 2483));
+    assert!(!mentions_duration("1, 2 and 3 sessions", 2483));
+    assert!(reads_as_english("You spent the most time with Alice."));
+    assert!(!reads_as_english("这周和你一起玩最多的是 Alice。"));
 }
 
 const SCRIPTED_MODEL: &str = "scripted";
@@ -1412,6 +1653,22 @@ impl SnapshotSql {
             .unwrap()
             .filter_map(Result::ok)
             .collect()
+    }
+
+    fn top_names(&self, from: &str, to: &str) -> Option<Vec<String>> {
+        let ranked = self.companions_between(from, to);
+        let top_minutes = ranked
+            .first()
+            .map(|(_, minutes)| *minutes)
+            .filter(|minutes| *minutes > 0)?;
+        let mut names: Vec<String> = ranked
+            .iter()
+            .take_while(|(_, minutes)| *minutes + 1 >= top_minutes)
+            .take(3)
+            .flat_map(|(user_id, _)| self.names_of(user_id, from, to))
+            .collect();
+        names.dedup();
+        (!names.is_empty()).then_some(names)
     }
 
     fn names_of(&self, user_id: &str, from: &str, to: &str) -> Vec<String> {
