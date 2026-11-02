@@ -36,5 +36,5 @@ pub struct RecallEncounterRow {
     pub first_seen: String,
     pub last_seen: String,
     pub is_friend: bool,
-    pub sample_locations: Vec<String>,
+    pub sample_worlds: Vec<String>,
 }

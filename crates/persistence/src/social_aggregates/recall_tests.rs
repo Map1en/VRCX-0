@@ -165,6 +165,13 @@ fn recall_encounter_filters_by_name_and_copresence_including_non_friends() {
         0,
     );
 
+    db.execute_non_query(
+        "INSERT INTO gamelog_location (created_at, location, world_id, world_name, time, group_name)
+         VALUES ('2026-06-10T21:00:00Z', 'wrld_party:1', 'wrld_party', 'Party World', 0, '')",
+        &Default::default(),
+    )
+    .unwrap();
+
     let output = recall_encounter(
         &db,
         RecallEncounterInput {
@@ -186,7 +193,7 @@ fn recall_encounter_filters_by_name_and_copresence_including_non_friends() {
     assert_eq!(row.encounter_days, 2);
     assert_eq!(row.last_seen, "2026-06-12T21:00:00Z");
     assert!(!row.is_friend);
-    assert_eq!(row.sample_locations, vec!["wrld_party:1".to_string()]);
+    assert_eq!(row.sample_worlds, ["Party World"]);
 
     // coPresentWith must not return the anchor user as their own companion.
     let anchored = recall_encounter(

@@ -1,4 +1,6 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
+
+use vrcx_0_core::location::parse_location;
 
 use crate::common::{row_string, ParamsBuilder};
 use crate::database::DatabaseService;
@@ -8,10 +10,13 @@ use crate::Error;
 use super::caveats::recall_encounter_caveats;
 use super::helpers::{
     append_time_window_filter, clamped_optional_limit, current_friend_id_set, date_part,
+    world_names_for_ids,
 };
 use super::types::{RecallEncounterInput, RecallEncounterOutput, RecallEncounterRow};
 
 const SCAN_LIMIT: i64 = 5000;
+const SAMPLE_WORLDS: usize = 2;
+const SUMMARY_NAMES: usize = 10;
 
 pub fn recall_encounter(
     db: &DatabaseService,
@@ -56,7 +61,9 @@ pub fn recall_encounter(
     sql.push_str(" ORDER BY created_at DESC, id DESC LIMIT @scan_limit");
 
     let mut grouped: BTreeMap<String, RecallAccumulator> = BTreeMap::new();
-    for row in db.execute(&sql, &params.build())? {
+    let scanned = db.execute(&sql, &params.build())?;
+    let scan_was_capped = scanned.len() as i64 >= SCAN_LIMIT;
+    for row in scanned {
         let user_id = row_string(&row, 0);
         let display_name = row_string(&row, 1);
         let key = if user_id.trim().is_empty() {
@@ -87,10 +94,19 @@ pub fn recall_encounter(
                 entry.last_seen = created_at;
             }
         }
-        if !location.is_empty() && entry.sample_locations.len() < 3 {
-            entry.sample_locations.insert(location);
+        let world_id = parse_location(&location).world_id;
+        if !world_id.is_empty()
+            && entry.sample_world_ids.len() < SAMPLE_WORLDS
+            && !entry.sample_world_ids.contains(&world_id)
+        {
+            entry.sample_world_ids.push(world_id);
         }
     }
+    let world_ids = grouped
+        .values()
+        .flat_map(|entry| entry.sample_world_ids.iter().cloned())
+        .collect::<BTreeSet<_>>();
+    let world_names = world_names_for_ids(db, &input.owner_user_id, &world_ids)?;
 
     let mut rows = grouped
         .into_values()
@@ -102,7 +118,11 @@ pub fn recall_encounter(
             encounter_days: entry.days.len(),
             first_seen: entry.first_seen,
             last_seen: entry.last_seen,
-            sample_locations: entry.sample_locations.into_iter().collect(),
+            sample_worlds: entry
+                .sample_world_ids
+                .iter()
+                .filter_map(|world_id| world_names.get(world_id).cloned())
+                .collect(),
         })
         .collect::<Vec<_>>();
     rows.sort_by(|left, right| {
@@ -115,10 +135,16 @@ pub fn recall_encounter(
     rows.truncate(clamped_optional_limit(input.limit, 50, 200) as usize);
 
     let summary = recall_encounter_summary(&rows);
+    let mut caveats = recall_encounter_caveats();
+    if scan_was_capped {
+        caveats.push(format!(
+            "Only the newest {SCAN_LIMIT} matching join events were scanned; narrow timeWindow or nameQuery to reach older encounters."
+        ));
+    }
     Ok(RecallEncounterOutput {
         rows,
         summary,
-        caveats: recall_encounter_caveats(),
+        caveats,
     })
 }
 
@@ -128,10 +154,16 @@ fn recall_encounter_summary(rows: &[RecallEncounterRow]) -> String {
     }
     let entries = rows
         .iter()
+        .take(SUMMARY_NAMES)
         .map(|row| format!("{} ({}x)", row.display_name, row.encounter_count))
         .collect::<Vec<_>>()
         .join(", ");
-    format!("{} match(es): {entries}.", rows.len())
+    let more = rows.len().saturating_sub(SUMMARY_NAMES);
+    if more == 0 {
+        format!("{} match(es): {entries}.", rows.len())
+    } else {
+        format!("{} match(es): {entries}, and {more} more.", rows.len())
+    }
 }
 
 fn trimmed(value: &Option<String>) -> Option<String> {
@@ -150,5 +182,5 @@ struct RecallAccumulator {
     days: HashSet<String>,
     first_seen: String,
     last_seen: String,
-    sample_locations: HashSet<String>,
+    sample_world_ids: Vec<String>,
 }

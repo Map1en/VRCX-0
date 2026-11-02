@@ -237,7 +237,7 @@ impl VrcxMcpServer {
     }
 
     #[tool(
-        description = "[L1·query] Fuzzy-recall people from the local game log by name fragment, time window, world, or who they shared an instance with; INCLUDES non-friends/strangers (each row flags isFriend). Use for \"who was that person I met at ...\". Recall only, not prediction."
+        description = "[L1·query] Fuzzy-recall people from the local game log by name fragment, time window, world, or who they shared an instance with; INCLUDES non-friends/strangers (each row flags isFriend and names up to two worlds you saw them in). Use for \"who was that person I met at ...\". Recall only, not prediction."
     )]
     async fn recall_encounter(
         &self,
@@ -261,7 +261,7 @@ impl VrcxMcpServer {
                 world_id: input.world_id,
                 co_present_with_user_id,
                 time_window: input.time_window.unwrap_or_default().into(),
-                limit: input.limit,
+                limit: input.limit.or(Some(20)),
             })
             .map_err(map_application_query_error)?;
         structured_result(WithResolution {
@@ -825,6 +825,7 @@ struct RecallEncounterParams {
     #[serde(alias = "coPresentWithUserId", alias = "co_present_with_user_id")]
     co_present_with: Option<String>,
     time_window: Option<TimeWindowParams>,
+    /// People to return, most recently seen first (default 20, max 200).
     limit: Option<i64>,
 }
 
