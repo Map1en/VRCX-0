@@ -124,7 +124,21 @@
     "assistant": {
         "title": "IA Social",
         "new_chat": "Nova conversa",
-        "recent": "Recentes",
+        "session_group": {
+            "pinned": "Fixadas",
+            "today": "Hoje",
+            "yesterday": "Ontem",
+            "week": "Últimos 7 dias",
+            "older": "Mais antigas"
+        },
+        "session_menu": {
+            "more": "Mais",
+            "pin": "Fixar",
+            "unpin": "Desafixar",
+            "rename": "Renomear"
+        },
+        "session_deleted": "Conversa excluída",
+        "undo": "Desfazer",
         "sessions_empty": "Nenhuma conversa ainda",
         "composer_placeholder": "Pergunte algo ou digite @ para mencionar um amigo",
         "mention": {

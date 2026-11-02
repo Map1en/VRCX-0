@@ -124,7 +124,21 @@
     "assistant": {
         "title": "Social AI",
         "new_chat": "Neuer Chat",
-        "recent": "Zuletzt",
+        "session_group": {
+            "pinned": "Angeheftet",
+            "today": "Heute",
+            "yesterday": "Gestern",
+            "week": "Letzte 7 Tage",
+            "older": "Älter"
+        },
+        "session_menu": {
+            "more": "Mehr",
+            "pin": "Anheften",
+            "unpin": "Lösen",
+            "rename": "Umbenennen"
+        },
+        "session_deleted": "Chat gelöscht",
+        "undo": "Rückgängig",
         "sessions_empty": "Noch keine Unterhaltungen",
         "composer_placeholder": "Frag etwas oder tippe @, um einen Freund zu erwähnen",
         "mention": {

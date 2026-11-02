@@ -124,7 +124,21 @@
     "assistant": {
         "title": "소셜 AI",
         "new_chat": "새 대화",
-        "recent": "최근",
+        "session_group": {
+            "pinned": "고정됨",
+            "today": "오늘",
+            "yesterday": "어제",
+            "week": "지난 7일",
+            "older": "이전"
+        },
+        "session_menu": {
+            "more": "더보기",
+            "pin": "고정",
+            "unpin": "고정 해제",
+            "rename": "이름 바꾸기"
+        },
+        "session_deleted": "대화를 삭제했어요",
+        "undo": "실행 취소",
         "sessions_empty": "아직 대화가 없습니다",
         "composer_placeholder": "무엇이든 물어보세요. @로 친구를 언급할 수 있어요",
         "mention": {

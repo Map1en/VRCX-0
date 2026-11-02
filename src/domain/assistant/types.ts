@@ -86,6 +86,7 @@ export type AssistantTurnEntitiesEvent = {
 export type SessionSummary = {
     id: string;
     title: string;
+    pinned: boolean;
     busy: boolean;
     updatedAt: string;
 };

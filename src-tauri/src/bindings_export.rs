@@ -253,6 +253,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::application::assistant::app__assistant_get_session,
             commands::application::assistant::app__assistant_new_session,
             commands::application::assistant::app__assistant_delete_session,
+            commands::application::assistant::app__assistant_rename_session,
+            commands::application::assistant::app__assistant_set_session_pinned,
             commands::application::assistant::app__assistant_set_panel_open,
             commands::application::assistant::app__assistant_runtime_status,
             commands::application::assistant::app__assistant_set_session_runtime,

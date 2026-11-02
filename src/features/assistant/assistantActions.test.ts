@@ -5,14 +5,23 @@ import type { Session } from '@/platform/tauri/bindings';
 const mocks = vi.hoisted(() => ({
     listSessions: vi.fn(),
     getSession: vi.fn(),
-    deleteSession: vi.fn()
+    deleteSession: vi.fn(),
+    renameSession: vi.fn(),
+    setPinned: vi.fn(),
+    toastAdd: vi.fn()
+}));
+
+vi.mock('@/services/toastService', () => ({
+    toast: { add: mocks.toastAdd }
 }));
 
 vi.mock('@/platform/tauri/bindings', () => ({
     commands: {
         appAssistantListSessions: mocks.listSessions,
         appAssistantGetSession: mocks.getSession,
-        appAssistantDeleteSession: mocks.deleteSession
+        appAssistantDeleteSession: mocks.deleteSession,
+        appAssistantRenameSession: mocks.renameSession,
+        appAssistantSetSessionPinned: mocks.setPinned
     }
 }));
 
@@ -21,7 +30,9 @@ import { useAssistantChatStore } from '@/state/assistantChatStore';
 import {
     deleteSession,
     openSession,
-    refreshSessions
+    refreshSessions,
+    renameSession,
+    setSessionPinned
 } from './assistantActions';
 
 function session(id: string): Session {
@@ -80,12 +91,14 @@ describe('assistantActions session lifecycle', () => {
                 {
                     id: 'session-1',
                     title: 'First',
+                    pinned: false,
                     busy: false,
                     updatedAt: '2026-08-11T00:00:00Z'
                 },
                 {
                     id: 'session-2',
                     title: 'Second',
+                    pinned: false,
                     busy: false,
                     updatedAt: '2026-08-11T00:00:00Z'
                 }
@@ -131,6 +144,7 @@ describe('assistantActions session lifecycle', () => {
             Array<{
                 id: string;
                 title: string;
+                pinned: boolean;
                 busy: boolean;
                 updatedAt: string;
             }>
@@ -143,6 +157,7 @@ describe('assistantActions session lifecycle', () => {
             {
                 id: 'session-old-account',
                 title: 'Old account',
+                pinned: false,
                 busy: false,
                 updatedAt: '2026-08-11T00:00:00Z'
             }
@@ -159,6 +174,7 @@ describe('assistantActions session lifecycle', () => {
                 {
                     id: 'session-1',
                     title: 'First',
+                    pinned: false,
                     busy: false,
                     updatedAt: '2026-08-11T00:00:00Z'
                 }
@@ -169,9 +185,13 @@ describe('assistantActions session lifecycle', () => {
             busySessions: { 'session-1': false }
         });
 
-        await deleteSession('session-1');
+        deleteSession('session-1');
 
-        expect(mocks.deleteSession).toHaveBeenCalledWith('session-1');
+        expect(mocks.deleteSession).not.toHaveBeenCalled();
+        mocks.toastAdd.mock.calls[0][0].onClose();
+        await vi.waitFor(() =>
+            expect(mocks.deleteSession).toHaveBeenCalledWith('session-1')
+        );
         const state = useAssistantChatStore.getState();
         expect(state.activeSessionId).toBeNull();
         expect(state.sessions).toEqual([]);
@@ -179,5 +199,58 @@ describe('assistantActions session lifecycle', () => {
         expect(state.surfacedEntitiesBySession).toEqual({});
         expect(state.entityPanelOpenBySession).toEqual({});
         expect(state.busySessions).toEqual({});
+    });
+
+    it('brings a deleted session back when the delete is undone', async () => {
+        const first = {
+            id: 'session-1',
+            title: 'First',
+            pinned: false,
+            busy: false,
+            updatedAt: '2026-08-11T00:00:00Z'
+        };
+        useAssistantChatStore.setState({ sessions: [first] });
+        mocks.listSessions.mockResolvedValue([first]);
+
+        deleteSession('session-1');
+        await refreshSessions();
+        expect(useAssistantChatStore.getState().sessions).toEqual([]);
+
+        const options = mocks.toastAdd.mock.calls[0][0];
+        options.actionProps.onClick();
+        options.onClose();
+
+        await vi.waitFor(() =>
+            expect(useAssistantChatStore.getState().sessions).toEqual([first])
+        );
+        expect(mocks.deleteSession).not.toHaveBeenCalled();
+    });
+
+    it('renames and pins a session right away and saves it', async () => {
+        const first = {
+            id: 'session-1',
+            title: 'who is online',
+            pinned: false,
+            busy: false,
+            updatedAt: '2026-08-11T00:00:00Z'
+        };
+        useAssistantChatStore.setState({ sessions: [first] });
+        mocks.listSessions.mockReturnValue(new Promise(() => {}));
+        mocks.renameSession.mockResolvedValue(null);
+        mocks.setPinned.mockResolvedValue(null);
+
+        void renameSession('session-1', '  Weekend recap ');
+        void setSessionPinned('session-1', true);
+
+        expect(useAssistantChatStore.getState().sessions).toEqual([
+            { ...first, title: 'Weekend recap', pinned: true }
+        ]);
+        await vi.waitFor(() =>
+            expect(mocks.setPinned).toHaveBeenCalledWith('session-1', true)
+        );
+        expect(mocks.renameSession).toHaveBeenCalledWith(
+            'session-1',
+            'Weekend recap'
+        );
     });
 });

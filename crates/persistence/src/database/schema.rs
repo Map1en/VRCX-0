@@ -199,6 +199,12 @@ pub(crate) fn ensure_assistant_tables(db: &DatabaseService) -> Result<(), Error>
             "playbook_mode",
             "TEXT NOT NULL DEFAULT 'auto'",
         )?;
+        add_column_if_missing(
+            db,
+            "assistant_session",
+            "pinned",
+            "INTEGER NOT NULL DEFAULT 0",
+        )?;
         Ok(())
     })
 }

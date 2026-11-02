@@ -139,6 +139,7 @@ impl AssistantSessionPersistencePort for DesktopAssistantSessionPersistenceAdapt
                         model: session.model,
                         allow_writes: session.allow_writes,
                         playbook_mode: session.playbook_mode,
+                        pinned: session.pinned,
                     })
                     .collect()
             })
@@ -203,6 +204,11 @@ impl AssistantSessionPersistencePort for DesktopAssistantSessionPersistenceAdapt
             input.playbook_mode,
         )
         .map_err(port_error)
+    }
+
+    fn set_pinned(&self, session_id: &str, pinned: bool) -> AssistantPortResult<()> {
+        assistant::assistant_session_set_pinned(self.db.as_ref(), session_id, pinned)
+            .map_err(port_error)
     }
 
     fn delete_session(&self, owner_user_id: &OwnerId, session_id: &str) -> AssistantPortResult<()> {

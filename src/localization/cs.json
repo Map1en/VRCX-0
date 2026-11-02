@@ -124,7 +124,21 @@
     "assistant": {
         "title": "Sociální AI",
         "new_chat": "Nový chat",
-        "recent": "Nedávné",
+        "session_group": {
+            "pinned": "Připnuté",
+            "today": "Dnes",
+            "yesterday": "Včera",
+            "week": "Posledních 7 dní",
+            "older": "Starší"
+        },
+        "session_menu": {
+            "more": "Další",
+            "pin": "Připnout",
+            "unpin": "Odepnout",
+            "rename": "Přejmenovat"
+        },
+        "session_deleted": "Konverzace smazána",
+        "undo": "Zpět",
         "sessions_empty": "Zatím žádné konverzace",
         "composer_placeholder": "Zeptejte se, nebo napište @ a zmiňte přítele",
         "mention": {

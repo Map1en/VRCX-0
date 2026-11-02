@@ -1,13 +1,20 @@
+import type { SessionSummary } from '@/domain/assistant/types';
 import { commands, type Session } from '@/platform/tauri/bindings';
 import i18n from '@/services/i18nService';
+import { toast } from '@/services/toastService';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
+
+const UNDO_DELETE_MS = 5000;
+const pendingDeletes = new Set<string>();
 
 export async function refreshSessions(): Promise<void> {
     const authScopeVersion = useAssistantChatStore.getState().authScopeVersion;
     const sessions = await commands.appAssistantListSessions();
     const current = useAssistantChatStore.getState();
     if (current.authScopeVersion === authScopeVersion) {
-        current.setSessions(sessions);
+        current.setSessions(
+            sessions.filter((session) => !pendingDeletes.has(session.id))
+        );
     }
 }
 
@@ -57,15 +64,93 @@ export async function startNewSession(): Promise<Session> {
     return session;
 }
 
-export async function deleteSession(sessionId: string): Promise<void> {
-    const authScopeVersion = useAssistantChatStore.getState().authScopeVersion;
-    await commands.appAssistantDeleteSession(sessionId);
+function reportError(error: unknown): void {
+    toast.add({
+        type: 'error',
+        title: error instanceof Error ? error.message : String(error)
+    });
+}
+
+async function updateSession(
+    sessionId: string,
+    patch: Partial<SessionSummary>,
+    persist: () => Promise<unknown>
+): Promise<void> {
     const store = useAssistantChatStore.getState();
-    if (store.authScopeVersion !== authScopeVersion) {
+    store.setSessions(
+        store.sessions.map((session) =>
+            session.id === sessionId ? { ...session, ...patch } : session
+        )
+    );
+    try {
+        await persist();
+    } catch (error) {
+        reportError(error);
+    }
+    await refreshSessions();
+}
+
+export async function renameSession(
+    sessionId: string,
+    title: string
+): Promise<void> {
+    const trimmed = title.trim();
+    if (!trimmed) {
         return;
     }
+    await updateSession(sessionId, { title: trimmed }, () =>
+        commands.appAssistantRenameSession(sessionId, trimmed)
+    );
+}
+
+export async function setSessionPinned(
+    sessionId: string,
+    pinned: boolean
+): Promise<void> {
+    await updateSession(sessionId, { pinned }, () =>
+        commands.appAssistantSetSessionPinned(sessionId, pinned)
+    );
+}
+
+async function commitDelete(
+    sessionId: string,
+    authScopeVersion: number
+): Promise<void> {
+    try {
+        await commands.appAssistantDeleteSession(sessionId);
+    } finally {
+        pendingDeletes.delete(sessionId);
+    }
+    if (
+        useAssistantChatStore.getState().authScopeVersion === authScopeVersion
+    ) {
+        await refreshSessions();
+    }
+}
+
+export function deleteSession(sessionId: string): void {
+    const store = useAssistantChatStore.getState();
+    const authScopeVersion = store.authScopeVersion;
+    let undone = false;
+    pendingDeletes.add(sessionId);
     store.removeSession(sessionId);
-    await refreshSessions();
+    toast.add({
+        title: i18n.t('assistant.session_deleted'),
+        timeout: UNDO_DELETE_MS,
+        actionProps: {
+            children: i18n.t('assistant.undo'),
+            onClick: () => {
+                undone = true;
+                pendingDeletes.delete(sessionId);
+                void refreshSessions();
+            }
+        },
+        onClose: () => {
+            if (!undone) {
+                commitDelete(sessionId, authScopeVersion).catch(reportError);
+            }
+        }
+    });
 }
 
 export async function sendMessage(text: string): Promise<void> {

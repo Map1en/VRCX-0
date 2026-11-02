@@ -124,7 +124,21 @@
     "assistant": {
         "title": "Социальный AI",
         "new_chat": "Новая беседа",
-        "recent": "Недавние",
+        "session_group": {
+            "pinned": "Закреплённые",
+            "today": "Сегодня",
+            "yesterday": "Вчера",
+            "week": "За 7 дней",
+            "older": "Ранее"
+        },
+        "session_menu": {
+            "more": "Ещё",
+            "pin": "Закрепить",
+            "unpin": "Открепить",
+            "rename": "Переименовать"
+        },
+        "session_deleted": "Чат удалён",
+        "undo": "Отменить",
         "sessions_empty": "Пока никаких разговоров.",
         "composer_placeholder": "Спросите что-нибудь или введите @, чтобы упомянуть друга",
         "mention": {

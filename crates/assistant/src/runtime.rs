@@ -181,6 +181,18 @@ impl AssistantController {
         }
     }
 
+    pub fn rename_session(&self, session_id: &str, title: &str) -> Result<(), AssistantError> {
+        self.sessions
+            .rename(&self.owner_user_id(), session_id, title)
+            .map_err(AssistantError::from)
+    }
+
+    pub fn set_session_pinned(&self, session_id: &str, pinned: bool) -> Result<(), AssistantError> {
+        self.sessions
+            .set_pinned(&self.owner_user_id(), session_id, pinned)
+            .map_err(AssistantError::from)
+    }
+
     pub fn delete_session(&self, session_id: &str) {
         let owner_user_id = self.owner_user_id();
         if self.sessions.is_visible_to(session_id, &owner_user_id) {

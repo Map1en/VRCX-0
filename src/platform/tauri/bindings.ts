@@ -581,6 +581,24 @@ const generatedCommands = {
             sessionId
         });
     },
+    async appAssistantRenameSession(
+        sessionId: string,
+        title: string
+    ): Promise<null> {
+        return await TAURI_INVOKE('app__assistant_rename_session', {
+            sessionId,
+            title
+        });
+    },
+    async appAssistantSetSessionPinned(
+        sessionId: string,
+        pinned: boolean
+    ): Promise<null> {
+        return await TAURI_INVOKE('app__assistant_set_session_pinned', {
+            sessionId,
+            pinned
+        });
+    },
     async appAssistantSetPanelOpen(
         sessionId: string,
         open: boolean
@@ -6931,6 +6949,7 @@ export type Session = {
 export type SessionSummary = {
     id: string;
     title: string;
+    pinned: boolean;
     busy: boolean;
     updatedAt: string;
 };

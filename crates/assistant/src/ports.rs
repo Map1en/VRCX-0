@@ -114,6 +114,7 @@ pub struct PersistedAssistantSession {
     pub model: String,
     pub allow_writes: bool,
     pub playbook_mode: String,
+    pub pinned: bool,
 }
 
 pub struct AssistantSessionUpsert<'a> {
@@ -163,6 +164,8 @@ pub trait AssistantSessionPersistencePort: Send + Sync {
     ) -> AssistantPortResult<()>;
 
     fn set_runtime(&self, input: AssistantSessionRuntimeUpdate<'_>) -> AssistantPortResult<()>;
+
+    fn set_pinned(&self, session_id: &str, pinned: bool) -> AssistantPortResult<()>;
 
     fn delete_session(&self, owner_user_id: &OwnerId, session_id: &str) -> AssistantPortResult<()>;
 

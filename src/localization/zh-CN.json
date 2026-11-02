@@ -124,7 +124,21 @@
     "assistant": {
         "title": "AI 助手",
         "new_chat": "新建对话",
-        "recent": "最近",
+        "session_group": {
+            "pinned": "置顶",
+            "today": "今天",
+            "yesterday": "昨天",
+            "week": "7 天内",
+            "older": "更早"
+        },
+        "session_menu": {
+            "more": "更多",
+            "pin": "置顶",
+            "unpin": "取消置顶",
+            "rename": "重命名"
+        },
+        "session_deleted": "对话已删除",
+        "undo": "撤销",
         "sessions_empty": "还没有对话",
         "composer_placeholder": "问点什么，输入 @ 可以引用好友",
         "mention": {

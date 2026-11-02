@@ -50,12 +50,14 @@ describe('assistantChatStore', () => {
                 {
                     id: 'session-completed',
                     title: 'Completed',
+                    pinned: false,
                     busy: false,
                     updatedAt: '2026-08-11T00:00:00Z'
                 },
                 {
                     id: 'session-running',
                     title: 'Running',
+                    pinned: false,
                     busy: true,
                     updatedAt: '2026-08-11T00:00:00Z'
                 }
@@ -102,12 +104,14 @@ describe('assistantChatStore', () => {
                 {
                     id: 'session-1',
                     title: 'First',
+                    pinned: false,
                     busy: false,
                     updatedAt: '2026-08-11T00:00:00Z'
                 },
                 {
                     id: 'session-2',
                     title: 'Second',
+                    pinned: false,
                     busy: false,
                     updatedAt: '2026-08-11T00:00:00Z'
                 }
@@ -310,6 +314,7 @@ describe('assistantChatStore', () => {
                 {
                     id: 'session-1',
                     title: 'First',
+                    pinned: false,
                     busy: true,
                     updatedAt: '2026-08-11T00:00:00Z'
                 }

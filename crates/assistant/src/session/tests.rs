@@ -484,3 +484,35 @@ fn title_shows_mentions_by_name_without_their_ids() {
         "see [docs](vrcx-0://user/open?id=) later"
     );
 }
+
+#[test]
+fn rename_and_pin_survive_a_reopen_without_reordering() {
+    let persistence = test_persistence();
+    let owner = OwnerId::new(TEST_OWNER);
+    let session = {
+        let store = SessionStore::with_test_persistence(&persistence);
+        let session = create_test_session(&store);
+        store
+            .push_message(&session.id, Role::User, "who is online".into())
+            .unwrap();
+        let before = store.list(&owner)[0].updated_at.clone();
+        store
+            .rename(&owner, &session.id, "  Weekend recap  ")
+            .unwrap();
+        store.set_pinned(&owner, &session.id, true).unwrap();
+        store.rename(&owner, &session.id, "   ").unwrap();
+        assert_eq!(store.list(&owner)[0].updated_at, before);
+        session
+    };
+
+    let reopened = SessionStore::with_test_persistence(&persistence);
+    let summary = &reopened.list(&owner)[0];
+    assert_eq!(summary.id, session.id);
+    assert_eq!(summary.title, "Weekend recap");
+    assert!(summary.pinned);
+
+    reopened
+        .push_message(&session.id, Role::User, "and today?".into())
+        .unwrap();
+    assert_eq!(reopened.list(&owner)[0].title, "Weekend recap");
+}

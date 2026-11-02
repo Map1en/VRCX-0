@@ -124,7 +124,21 @@
     "assistant": {
         "title": "社交 AI",
         "new_chat": "新對話",
-        "recent": "最近",
+        "session_group": {
+            "pinned": "釘選",
+            "today": "今天",
+            "yesterday": "昨天",
+            "week": "7 天內",
+            "older": "更早"
+        },
+        "session_menu": {
+            "more": "更多",
+            "pin": "釘選",
+            "unpin": "取消釘選",
+            "rename": "重新命名"
+        },
+        "session_deleted": "對話已刪除",
+        "undo": "復原",
         "sessions_empty": "目前尚無對話",
         "composer_placeholder": "問點什麼，輸入 @ 可以引用好友",
         "mention": {

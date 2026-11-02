@@ -15,6 +15,7 @@ use crate::ports::{
 use vrcx_0_core::OwnerId;
 
 const SESSION_CONTENT_CACHE_CAPACITY: usize = 8;
+const RENAMED_TITLE_LIMIT: usize = 80;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
 #[serde(rename_all = "snake_case")]
@@ -160,6 +161,7 @@ pub struct Session {
 pub struct SessionSummary {
     pub id: String,
     pub title: String,
+    pub pinned: bool,
     pub busy: bool,
     pub updated_at: String,
 }
@@ -168,6 +170,7 @@ pub struct SessionSummary {
 struct StoredSession {
     owner_user_id: OwnerId,
     title: String,
+    pinned: bool,
     active_turn: Option<ActiveTurn>,
     endpoint_id: Option<String>,
     model: Option<String>,
@@ -309,6 +312,7 @@ impl SessionStore {
                         StoredSession {
                             owner_user_id: entry.owner_user_id,
                             title: entry.title,
+                            pinned: entry.pinned,
                             active_turn: None,
                             endpoint_id: optional_string(entry.endpoint_id),
                             model: optional_string(entry.model),
@@ -488,6 +492,7 @@ impl SessionStore {
         let stored = StoredSession {
             owner_user_id: OwnerId::new(owner_user_id.as_str().trim()),
             title: String::new(),
+            pinned: false,
             active_turn: None,
             endpoint_id: normalize_optional(runtime.endpoint_id),
             model: normalize_optional(runtime.model),
@@ -596,6 +601,7 @@ impl SessionStore {
             .map(|(id, session)| SessionSummary {
                 id: id.clone(),
                 title: session.title.clone(),
+                pinned: session.pinned,
                 busy: session
                     .active_turn
                     .as_ref()
@@ -605,6 +611,54 @@ impl SessionStore {
             .collect();
         summaries.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
         summaries
+    }
+
+    pub fn rename(
+        &self,
+        owner_user_id: &OwnerId,
+        session_id: &str,
+        title: &str,
+    ) -> AssistantPortResult<()> {
+        let title: String = title.trim().chars().take(RENAMED_TITLE_LIMIT).collect();
+        if title.is_empty() || !self.is_visible_to(session_id, owner_user_id) {
+            return Ok(());
+        }
+        let stored = {
+            let mut state = self.state.lock().unwrap();
+            let Some(session) = state.sessions.get_mut(session_id) else {
+                return Ok(());
+            };
+            session.title = title;
+            session.clone()
+        };
+        if let Some(persistence) = self.persistence.as_ref() {
+            persistence.upsert_session(AssistantSessionUpsert {
+                owner_user_id: &stored.owner_user_id,
+                id: session_id,
+                title: &stored.title,
+                created_at: &stored.created_at,
+                updated_at: &stored.updated_at,
+            })?;
+        }
+        Ok(())
+    }
+
+    pub fn set_pinned(
+        &self,
+        owner_user_id: &OwnerId,
+        session_id: &str,
+        pinned: bool,
+    ) -> AssistantPortResult<()> {
+        if !self.is_visible_to(session_id, owner_user_id) {
+            return Ok(());
+        }
+        if let Some(session) = self.state.lock().unwrap().sessions.get_mut(session_id) {
+            session.pinned = pinned;
+        }
+        if let Some(persistence) = self.persistence.as_ref() {
+            persistence.set_pinned(session_id, pinned)?;
+        }
+        Ok(())
     }
 
     pub fn delete(&self, owner_user_id: &OwnerId, session_id: &str) {

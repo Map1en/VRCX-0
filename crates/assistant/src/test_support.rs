@@ -206,6 +206,7 @@ impl AssistantSessionPersistencePort for TestAssistantSessionPersistence {
                     model: String::new(),
                     allow_writes: false,
                     playbook_mode: "open".into(),
+                    pinned: false,
                 },
             );
         }
@@ -225,6 +226,17 @@ impl AssistantSessionPersistencePort for TestAssistantSessionPersistence {
         if let Some(session) = state.sessions.get_mut(session_id) {
             session.entity_panel_open = entity_panel_open;
             session.surfaced_entities = surfaced_entities.to_string();
+        }
+        Ok(())
+    }
+
+    fn set_pinned(&self, session_id: &str, pinned: bool) -> AssistantPortResult<()> {
+        let mut state = self.state.lock().unwrap();
+        if state.fail_writes {
+            return Err(test_failure("session pin write failed"));
+        }
+        if let Some(session) = state.sessions.get_mut(session_id) {
+            session.pinned = pinned;
         }
         Ok(())
     }
