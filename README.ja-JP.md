@@ -2,7 +2,7 @@
 
 # <img src="images/VRCX-0.png" alt="VRCX-0 Logo" width="25"> VRCX-0
 
-### もっと速く、もっと軽い VRCX。
+### もっと速く、使いやすく。AI 対応。
 
 [English](README.md) | [Français](README.fr-FR.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-Hant.md) | 日本語 | [한국어](README.ko-KR.md)
 
