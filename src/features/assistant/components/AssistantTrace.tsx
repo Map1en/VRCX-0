@@ -78,8 +78,10 @@ export function AssistantTrace({
                                     <TraceIcon>
                                         <Icon />
                                     </TraceIcon>
-                                    <TraceTitle className="font-mono text-xs">
-                                        {call.name}
+                                    <TraceTitle className="text-xs">
+                                        {t(`assistant.tools.${call.name}`, {
+                                            defaultValue: call.name
+                                        })}
                                     </TraceTitle>
                                 </TraceLine>
                             );
