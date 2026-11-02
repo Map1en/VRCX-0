@@ -24,6 +24,8 @@ const TOOLS_PROMPT: &str = "\
 Tools:
 - Choose tools by their descriptions. Multi-step investigation is fine: resolve a \
 person, drill into their companions or activity, compare periods, then answer.
+- Stop calling tools once a result answers the question. A result that is empty for the \
+period the user asked about is the answer; do not verify it with other tools.
 - Ranked tools pre-sort and limit rows; mention truncation or limited coverage when \
 it matters.";
 
