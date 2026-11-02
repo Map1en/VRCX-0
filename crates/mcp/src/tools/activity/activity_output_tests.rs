@@ -447,6 +447,46 @@ fn social_period_states_the_best_time_bucket_timezone() {
         .any(|caveat| caveat.contains("Best-time buckets are in UTC+09:00")));
 }
 
+#[tokio::test]
+async fn friend_activity_pattern_without_a_user_returns_the_most_active_friends() {
+    let (_dir, runtime, db) =
+        crate::test_support::test_runtime_with_database("activity-pattern-ranked", "usr_owner")
+            .unwrap();
+    for (user_id, online_events) in [("usr_quiet", 1), ("usr_busy", 3), ("usr_mid", 2)] {
+        for index in 0..online_events {
+            let created_at = format!("2026-06-0{}T10:00:00Z", index + 1);
+            vrcx_0_persistence::feed::test_support::seed_feed_online_row(
+                &db,
+                "usr_owner",
+                (&created_at, user_id, user_id),
+            )
+            .unwrap();
+        }
+    }
+    let server = VrcxMcpServer::new(runtime);
+
+    let result = server
+        .get_friend_activity_pattern(Parameters(
+            serde_json::from_value(serde_json::json!({ "limit": 2 })).unwrap(),
+        ))
+        .await
+        .unwrap();
+
+    let structured = result.structured_content.unwrap();
+    let users: Vec<&str> = structured["rows"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|row| row["userId"].as_str().unwrap())
+        .collect();
+    assert_eq!(users, ["usr_busy", "usr_mid"]);
+    assert!(structured["caveats"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|caveat| caveat.as_str().unwrap().contains("2 most active of 3")));
+}
+
 #[test]
 fn social_period_fading_splits_an_open_ended_window_at_its_midpoint() {
     let (_dir, runtime, _db) = crate::test_support::test_runtime_with_database(

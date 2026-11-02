@@ -49,6 +49,27 @@ pub fn seed_feed_bio_row(
     Ok(())
 }
 
+pub fn seed_feed_online_row(
+    db: &DatabaseService,
+    owner_user_id: &str,
+    (created_at, user_id, display_name): (&str, &str, &str),
+) -> Result<(), Error> {
+    let user_prefix = normalize_user_table_prefix(owner_user_id)?;
+    ensure_realtime_tables(db, &user_prefix)?;
+    db.execute_non_query(
+        &format!(
+            "INSERT INTO {user_prefix}_feed_online_offline (created_at, user_id, display_name, type) \
+             VALUES (@created_at, @user_id, @display_name, 'Online')"
+        ),
+        &ParamsBuilder::new()
+            .set("created_at", created_at)
+            .set("user_id", user_id)
+            .set("display_name", display_name)
+            .build(),
+    )?;
+    Ok(())
+}
+
 pub fn seed_feed_gps_rows(db: &DatabaseService, user_id: &str, rows: i64) -> Result<(), Error> {
     let user_prefix = normalize_user_table_prefix(user_id)?;
     ensure_realtime_tables(db, &user_prefix)?;

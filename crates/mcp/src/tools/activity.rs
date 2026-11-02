@@ -61,7 +61,7 @@ impl VrcxMcpServer {
     }
 
     #[tool(
-        description = "[L2·analyze] One friend's (or all friends') online activity bucketed by hour-of-day or weekday, from the online/offline log. Use for \"when is X usually online\". Weekday bucket keys run 0=Monday through 6=Sunday. Buckets are UTC unless you pass utcOffsetMinutes (the user's offset, e.g. 540 for UTC+9) for the user's local time. For \"best time to catch the MOST people\" prefer get_best_time_to_play."
+        description = "[L2·analyze] One friend's online activity bucketed by hour-of-day or weekday, from the online/offline log; without `user`, the most active friends (by online events, capped by `limit`). Use for \"when is X usually online\". Weekday bucket keys run 0=Monday through 6=Sunday. Buckets are UTC unless you pass utcOffsetMinutes (the user's offset, e.g. 540 for UTC+9) for the user's local time. For \"best time to catch the MOST people\" prefer get_best_time_to_play."
     )]
     async fn get_friend_activity_pattern(
         &self,
@@ -76,7 +76,8 @@ impl VrcxMcpServer {
                 Some(TargetResolutionOutcome::ToolResult(result)) => return Ok(result),
                 None => (None, None),
             };
-        let output = self
+        let all_friends = user_id.is_none();
+        let mut output = self
             .runtime
             .activity_queries
             .friend_activity_pattern(social_aggregates::FriendActivityPatternInput {
@@ -90,6 +91,20 @@ impl VrcxMcpServer {
                 utc_offset_minutes: input.utc_offset_minutes,
             })
             .map_err(map_application_query_error)?;
+        if all_friends {
+            let limit = input.limit.unwrap_or(10).clamp(1, 50) as usize;
+            let total = output.rows.len();
+            output
+                .rows
+                .sort_by_cached_key(|row| std::cmp::Reverse(row.buckets.values().sum::<i64>()));
+            output.rows.truncate(limit);
+            if total > output.rows.len() {
+                output.caveats.push(format!(
+                    "Showing the {} most active of {total} friends by online events.",
+                    output.rows.len()
+                ));
+            }
+        }
         structured_result(WithResolution {
             inner: output,
             resolved_user,
@@ -729,6 +744,9 @@ struct FriendActivityPatternParams {
     /// The user's UTC offset in minutes (e.g. 540 for UTC+9, -300 for UTC-5).
     /// Pass it so hour/weekday buckets come back in the user's local time.
     utc_offset_minutes: Option<i64>,
+    /// Without `user`, how many of the most active friends to return
+    /// (default 10, max 50).
+    limit: Option<i64>,
 }
 
 #[derive(Clone, Debug, Deserialize, schemars::JsonSchema)]
