@@ -333,9 +333,14 @@ impl VrcxMcpServer {
             .unwrap_or_default()
             .in_utc_offset(input.utc_offset_minutes)?;
         let time_window: social_aggregates::TimeWindow = time_window_params.clone().into();
-        let recent_changes =
+        let mut recent_changes =
             self.friend_profile_changes(&owner_user_id, &user_id, time_window.clone())?;
         let latest_bio = latest_bio_from_changes(&recent_changes);
+        for change in &mut recent_changes {
+            if change.kind == "bio" {
+                change.recent_events.clear();
+            }
+        }
         let current = self
             .runtime
             .realtime_runtime
@@ -694,11 +699,14 @@ struct FriendProfileOutput {
     user_id: String,
     current: Option<FriendProfileCurrent>,
     relationship: FriendRelationshipProfile,
+    #[serde(skip_serializing_if = "Option::is_none")]
     note: Option<FriendNoteRow>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     moderation: Option<FriendModerationStatus>,
     copresence: Option<social_aggregates::CopresenceSummaryRow>,
     activity_pattern: Option<social_aggregates::FriendActivityPatternRow>,
     recent_changes: Vec<FriendProfileChangeSummary>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     favorite_groups: Vec<String>,
     caveats: Vec<String>,
 }
@@ -708,12 +716,19 @@ struct FriendProfileOutput {
 struct FriendProfileCurrent {
     user_id: String,
     display_name: String,
+    #[serde(skip_serializing_if = "CompactString::is_empty")]
     state: CompactString,
+    #[serde(skip_serializing_if = "String::is_empty")]
     location: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
     world_id: String,
+    #[serde(skip_serializing_if = "CompactString::is_empty")]
     status: CompactString,
+    #[serde(skip_serializing_if = "CompactString::is_empty")]
     status_description: CompactString,
+    #[serde(skip_serializing_if = "String::is_empty")]
     bio: String,
+    #[serde(skip_serializing_if = "CompactString::is_empty")]
     platform: CompactString,
 }
 
@@ -726,7 +741,9 @@ struct FriendRelationshipProfile {
     friend_number: Option<i64>,
     friended_at: Option<String>,
     recent_events: Vec<social_aggregates::FriendLogRow>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     display_name_changes: Vec<social_aggregates::FriendLogRow>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     trust_changes: Vec<social_aggregates::FriendLogRow>,
 }
 
@@ -758,6 +775,7 @@ struct FriendProfileChangeSummary {
     kind: String,
     change_count: i64,
     last_changed_at: String,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     recent_events: Vec<social_aggregates::FriendChangeEvent>,
 }
 fn normalize_optional_text(value: Option<String>) -> Option<String> {

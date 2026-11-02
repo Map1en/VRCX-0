@@ -11,7 +11,7 @@ use super::types::{
     FriendChangeEvent, FriendChangeKind, FriendChangeRow, FriendChangesInput, FriendChangesOutput,
 };
 
-const RECENT_EVENTS_PER_FRIEND: i64 = 5;
+const RECENT_EVENTS_PER_FRIEND: i64 = 3;
 
 pub fn get_friend_changes(
     db: &DatabaseService,
@@ -75,8 +75,10 @@ pub fn get_friend_changes(
             FROM filtered
             JOIN counted ON counted.user_id = filtered.user_id
         )
-        SELECT ranked.user_id, ranked.display_name, ranked.created_at, ranked.previous_value,
-            ranked.new_value, counted.change_count, counted.last_changed_at
+        SELECT ranked.user_id, ranked.display_name,
+            COALESCE(strftime('%Y-%m-%dT%H:%M:%SZ', ranked.created_at), ranked.created_at),
+            ranked.previous_value, ranked.new_value, counted.change_count,
+            COALESCE(strftime('%Y-%m-%dT%H:%M:%SZ', counted.last_changed_at), counted.last_changed_at)
         FROM ranked
         JOIN counted ON counted.user_id = ranked.user_id
         WHERE ranked.rn <= @recent_events

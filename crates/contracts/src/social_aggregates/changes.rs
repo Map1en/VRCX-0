@@ -46,7 +46,9 @@ pub struct FriendChangeRow {
 #[serde(rename_all = "camelCase")]
 pub struct FriendChangeEvent {
     pub changed_at: String,
+    #[serde(skip_serializing, default)]
     pub kind: FriendChangeKind,
+    #[serde(skip_serializing_if = "String::is_empty", default)]
     pub previous_value: String,
     pub new_value: String,
 }
