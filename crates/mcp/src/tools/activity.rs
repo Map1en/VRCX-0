@@ -452,7 +452,10 @@ impl VrcxMcpServer {
         time_window: &social_aggregates::TimeWindow,
     ) -> Result<social_aggregates::FadingFriendsInput, String> {
         let bounds = time_window_bounds_ms(time_window)?;
-        let (prior_from, pivot, now) = match (bounds.from, bounds.to) {
+        let to = bounds
+            .from
+            .map(|_| bounds.to.unwrap_or_else(|| Utc::now().timestamp_millis()));
+        let (prior_from, pivot, now) = match (bounds.from, to) {
             (Some(from), Some(to)) if to > from => {
                 let mid = from + (to - from) / 2;
                 (

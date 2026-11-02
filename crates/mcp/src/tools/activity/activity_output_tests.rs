@@ -447,6 +447,36 @@ fn social_period_states_the_best_time_bucket_timezone() {
         .any(|caveat| caveat.contains("Best-time buckets are in UTC+09:00")));
 }
 
+#[test]
+fn social_period_fading_splits_an_open_ended_window_at_its_midpoint() {
+    let (_dir, runtime, _db) = crate::test_support::test_runtime_with_database(
+        "social-period-open-window-fading",
+        "usr_owner",
+    )
+    .unwrap();
+    let server = VrcxMcpServer::new(runtime);
+    let from = Utc::now() - chrono::Duration::days(14);
+
+    let input = server
+        .summary_fading_input(
+            &OwnerId::new("usr_owner"),
+            &social_aggregates::TimeWindow {
+                from: Some(rfc3339_z(from)),
+                to: None,
+            },
+        )
+        .unwrap();
+
+    assert_eq!(input.prior_from, rfc3339_z(from));
+    let pivot = DateTime::parse_from_rfc3339(&input.pivot).unwrap();
+    assert!(
+        (pivot.with_timezone(&Utc) - (from + chrono::Duration::days(7)))
+            .num_minutes()
+            .abs()
+            <= 1
+    );
+}
+
 fn closed_stay(left_at: &str, minutes: i64) -> GameLogJoinLeaveEntry {
     GameLogJoinLeaveEntry {
         created_at: left_at.into(),
