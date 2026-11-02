@@ -67,13 +67,13 @@ impl schemars::JsonSchema for TimeWindowParams {
             "oneOf": [
                 {
                     "type": "string",
-                    "description": "Relative window such as 90d or this week, a four-digit calendar year such as 2026, this year or last year, a calendar month such as 2026-10, a calendar day such as 2026-10-18, or all history. Calendar forms use the tool's utcOffsetMinutes when it takes one, otherwise UTC."
+                    "description": "90d, this week, last month, this year, 2026, 2026-10, 2026-10-18 or all; calendar forms use utcOffsetMinutes when the tool has it, else UTC."
                 },
                 {
                     "type": "integer",
                     "minimum": 1000,
                     "maximum": 9998,
-                    "description": "Four-digit calendar year such as 2026, in the tool's utcOffsetMinutes when it takes one, otherwise UTC."
+                    "description": "Calendar year, e.g. 2026."
                 },
                 {
                     "type": "object",
