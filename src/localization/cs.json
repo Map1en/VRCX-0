@@ -124,8 +124,10 @@
     "assistant": {
         "title": "Sociální AI",
         "new_chat": "Nový chat",
+        "recent": "Nedávné",
         "sessions_empty": "Zatím žádné konverzace",
         "composer_placeholder": "Zeptejte se na něco",
+        "disclaimer": "Odpovědi vycházejí z místních záznamů VRCX-0 a mohou být neúplné nebo chybné.",
         "send": "Odeslat",
         "stop": "Zastavit",
         "empty_title": "Co byste chtěli vědět?",

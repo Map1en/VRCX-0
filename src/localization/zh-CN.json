@@ -124,8 +124,10 @@
     "assistant": {
         "title": "AI 助手",
         "new_chat": "新建对话",
+        "recent": "最近",
         "sessions_empty": "还没有对话",
         "composer_placeholder": "问点什么",
+        "disclaimer": "回答基于 VRCX-0 的本地记录，可能不完整或有误。",
         "send": "发送",
         "stop": "停止",
         "empty_title": "想了解些什么？",

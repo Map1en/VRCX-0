@@ -124,8 +124,10 @@
     "assistant": {
         "title": "소셜 AI",
         "new_chat": "새 대화",
+        "recent": "최근",
         "sessions_empty": "아직 대화가 없습니다",
         "composer_placeholder": "무엇이든 물어보세요",
+        "disclaimer": "답변은 VRCX-0의 로컬 기록을 바탕으로 하므로 불완전하거나 틀릴 수 있어요.",
         "send": "보내기",
         "stop": "중지",
         "empty_title": "무엇이 궁금하세요?",

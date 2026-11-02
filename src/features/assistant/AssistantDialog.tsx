@@ -2,6 +2,7 @@ import {
     ArrowUpRightIcon,
     BrainIcon,
     ChevronDownIcon,
+    ChevronRightIcon,
     MessageCircleDashedIcon,
     PanelRightIcon,
     Settings2Icon,
@@ -141,6 +142,11 @@ export function AssistantDialog() {
     );
     const busy = useAssistantChatStore((state) =>
         activeSessionId ? Boolean(state.busySessions[activeSessionId]) : false
+    );
+    const activeTitle = useAssistantChatStore(
+        (state) =>
+            state.sessions.find((session) => session.id === activeSessionId)
+                ?.title ?? null
     );
     const selectedEndpoint = endpoints.find(
         (endpoint) => endpoint.id === runtimeSelection.endpointId
@@ -312,13 +318,23 @@ export function AssistantDialog() {
                 showCloseButton={false}
                 style={{ fontFamily: 'var(--vrcx-app-font-family, inherit)' }}
             >
-                <DialogHeader className="border-border/40 flex-row items-center justify-between space-y-0 border-b py-3 pr-3 pl-4">
-                    <DialogTitle
-                        className="text-sm"
-                        style={{ fontFamily: 'inherit' }}
-                    >
-                        {t('assistant.title')}
-                    </DialogTitle>
+                <DialogHeader className="border-border/40 flex-row items-center justify-between gap-3 space-y-0 border-b py-2.5 pr-3 pl-4">
+                    <div className="flex min-w-0 items-center gap-1.5 text-sm">
+                        <DialogTitle
+                            className="text-muted-foreground shrink-0 text-sm font-medium"
+                            style={{ fontFamily: 'inherit' }}
+                        >
+                            {t('assistant.title')}
+                        </DialogTitle>
+                        {activeTitle ? (
+                            <>
+                                <ChevronRightIcon className="text-muted-foreground/60 size-3.5 shrink-0" />
+                                <span className="truncate font-medium">
+                                    {activeTitle}
+                                </span>
+                            </>
+                        ) : null}
+                    </div>
                     <div className="flex items-center gap-1.5">
                         <button
                             type="button"
@@ -327,8 +343,8 @@ export function AssistantDialog() {
                             className={cn(
                                 'rounded-md p-1.5 transition-colors',
                                 entityPanelOpen
-                                    ? 'text-foreground bg-card'
-                                    : 'text-muted-foreground hover:text-foreground'
+                                    ? 'text-foreground bg-(--state-pressed-surface)'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-(--state-hover-surface)'
                             )}
                         >
                             <PanelRightIcon className="size-4" />
@@ -372,11 +388,11 @@ export function AssistantDialog() {
                                     'assistant.scroll_to_latest'
                                 )}
                                 emptyState={
-                                    <Empty className="py-12">
+                                    <Empty className="pb-16">
                                         <EmptyHeader className="max-w-md gap-3">
                                             <EmptyMedia
                                                 variant="icon"
-                                                className="size-12 rounded-xl [&_svg:not([class*='size-'])]:size-5"
+                                                className="border-border/60 text-muted-foreground size-12 rounded-2xl border bg-(--state-hover-surface) [&_svg:not([class*='size-'])]:size-5"
                                             >
                                                 <MessageCircleDashedIcon />
                                             </EmptyMedia>
@@ -415,7 +431,7 @@ export function AssistantDialog() {
                             />
 
                             {showSetupGate && messages?.length ? (
-                                <div className="text-muted-foreground flex flex-wrap items-center justify-center gap-2 px-3 pt-2 text-xs">
+                                <div className="text-muted-foreground flex flex-wrap items-center justify-center gap-2 px-6 pb-2 text-xs">
                                     <span>{t('assistant.not_configured')}</span>
                                     <Button
                                         type="button"

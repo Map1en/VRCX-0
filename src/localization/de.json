@@ -124,8 +124,10 @@
     "assistant": {
         "title": "Social AI",
         "new_chat": "Neuer Chat",
+        "recent": "Zuletzt",
         "sessions_empty": "Noch keine Unterhaltungen",
         "composer_placeholder": "Frag etwas",
+        "disclaimer": "Antworten beruhen auf den lokalen Aufzeichnungen von VRCX-0 und können unvollständig oder falsch sein.",
         "send": "Senden",
         "stop": "Stopp",
         "empty_title": "Was möchtest du wissen?",

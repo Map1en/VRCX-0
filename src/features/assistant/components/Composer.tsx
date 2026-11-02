@@ -41,7 +41,7 @@ export function Composer({
 
     return (
         <form
-            className="p-3 pt-2"
+            className="mx-auto w-full max-w-3xl px-6 pb-3"
             onSubmit={(event) => {
                 event.preventDefault();
                 submit();
@@ -55,7 +55,7 @@ export function Composer({
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="shrink-0"
+                            className="text-muted-foreground hover:text-foreground shrink-0 rounded-full font-normal"
                             onClick={() => onSend(suggestion)}
                         >
                             {suggestion}
@@ -63,7 +63,7 @@ export function Composer({
                     ))}
                 </div>
             ) : null}
-            <InputGroup className="dark:has-disabled:bg-input/30 rounded-xl has-disabled:bg-transparent has-disabled:opacity-100">
+            <InputGroup className="dark:has-disabled:bg-input/30 border-border/70 rounded-2xl shadow-sm has-disabled:bg-transparent has-disabled:opacity-100">
                 <InputGroupTextarea
                     value={value}
                     disabled={disabled}
@@ -110,6 +110,9 @@ export function Composer({
                     )}
                 </InputGroupAddon>
             </InputGroup>
+            <p className="text-muted-foreground/70 mt-2 text-center text-xs">
+                {t('assistant.disclaimer')}
+            </p>
         </form>
     );
 }

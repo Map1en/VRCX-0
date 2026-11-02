@@ -23,8 +23,8 @@ export function SessionSidebar() {
         <div className="flex h-full min-h-0 flex-col">
             <div className="p-2">
                 <Button
-                    variant="secondary"
-                    className="w-full justify-start gap-2"
+                    variant="ghost"
+                    className="text-muted-foreground hover:text-foreground w-full justify-start gap-2"
                     onClick={() => startNewSession()}
                 >
                     <PlusIcon className="size-4" />
@@ -33,30 +33,34 @@ export function SessionSidebar() {
             </div>
             <ScrollArea className="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]>div]:!block">
                 <div className="flex flex-col gap-0.5 p-2 pt-0">
-                    {sessions.length === 0 && (
+                    {sessions.length === 0 ? (
                         <p className="text-muted-foreground px-2 py-4 text-center text-xs">
                             {t('assistant.sessions_empty')}
+                        </p>
+                    ) : (
+                        <p className="text-muted-foreground/70 px-2.5 pt-2 pb-1 text-xs font-medium">
+                            {t('assistant.recent')}
                         </p>
                     )}
                     {sessions.map((session) => (
                         <div
                             key={session.id}
                             className={cn(
-                                'group flex items-center gap-1 rounded-md text-sm',
-                                'hover:bg-(--state-hover-surface)',
-                                session.id === activeSessionId &&
-                                    'bg-card text-foreground'
+                                'group flex items-center gap-1 rounded-lg text-sm transition-colors',
+                                session.id === activeSessionId
+                                    ? 'text-foreground bg-(--state-pressed-surface)'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-(--state-hover-surface)'
                             )}
                         >
                             <button
                                 type="button"
-                                className="flex min-w-0 flex-1 cursor-pointer items-center gap-1 px-2 py-1.5 text-left"
+                                className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 px-2.5 py-1.5 text-left"
                                 onClick={() => openSession(session.id)}
                             >
                                 {session.busy && (
                                     <Loader2Icon className="text-muted-foreground size-3 shrink-0 animate-spin" />
                                 )}
-                                <span className="text-muted-foreground group-hover:text-foreground min-w-0 flex-1 truncate">
+                                <span className="min-w-0 flex-1 truncate">
                                     {session.title || t('assistant.untitled')}
                                 </span>
                             </button>

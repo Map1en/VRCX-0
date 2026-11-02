@@ -36,7 +36,7 @@ export function AssistantTranscript({
         >
             <MessageScroller>
                 <MessageScrollerViewport>
-                    <MessageScrollerContent className="gap-4 p-4">
+                    <MessageScrollerContent className="mx-auto w-full max-w-3xl gap-6 px-6 py-6">
                         {messages?.length ? (
                             messages.map((message) => (
                                 <MessageScrollerItem
@@ -51,7 +51,7 @@ export function AssistantTranscript({
                                 </MessageScrollerItem>
                             ))
                         ) : (
-                            <MessageScrollerItem>
+                            <MessageScrollerItem className="flex flex-1">
                                 {emptyState}
                             </MessageScrollerItem>
                         )}
