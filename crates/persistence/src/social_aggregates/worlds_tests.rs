@@ -10,7 +10,7 @@ fn search_worlds_visited_returns_recent_world_candidates() {
     db.execute_non_query(
             "INSERT INTO gamelog_location (created_at, location, world_id, world_name, time, group_name)
              VALUES
-             ('2026-06-01T22:00:00Z', 'wrld_parkour:1', 'wrld_parkour', 'Parkour Night', 1800000, ''),
+             ('2026-06-01T22:00:00Z', 'wrld_parkour:1~hidden(usr_host)', 'wrld_parkour', 'Parkour Night', 1800000, ''),
              ('2026-06-01T20:00:00Z', 'wrld_chill:2', 'wrld_chill', 'Chill Room', 600000, '')",
             &Default::default(),
         )
@@ -37,6 +37,10 @@ fn search_worlds_visited_returns_recent_world_candidates() {
         output.rows[0].left_at.as_deref(),
         Some("2026-06-01T22:30:00.000Z")
     );
+    let row = serde_json::to_value(&output.rows[0]).unwrap();
+    assert_eq!(row["accessType"], "friends+");
+    assert!(!row.to_string().contains("usr_host"), "{row}");
+    assert!(output.summary.contains("Parkour Night (1)"));
 }
 
 #[test]

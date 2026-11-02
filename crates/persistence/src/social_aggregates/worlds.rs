@@ -5,6 +5,7 @@ use crate::database::DatabaseService;
 use crate::favorites;
 use crate::ownership::{owner_id_for_filter, OwnerId};
 use crate::Error;
+use vrcx_0_core::location::parse_location;
 use vrcx_0_core::FavoriteEntityKind;
 
 use super::caveats::{favorite_local_caveats, worlds_visited_caveats};
@@ -38,10 +39,12 @@ pub fn search_worlds_visited(
         .map(|row| {
             let visited_at = row_string(&row, 3);
             let stay_millis = row_i64(&row, 4).max(0);
+            let location = row_string(&row, 2);
             VisitedWorldRow {
                 world_id: row_string(&row, 0),
                 world_name: row_string(&row, 1),
-                location: row_string(&row, 2),
+                access_type: parse_location(&location).access_type,
+                location,
                 left_at: (stay_millis > 0)
                     .then(|| shift_timestamp(&visited_at, stay_millis))
                     .flatten(),
@@ -117,18 +120,28 @@ fn worlds_visited_summary(rows: &[VisitedWorldRow]) -> String {
     if rows.is_empty() {
         return "No world visits found in this window.".to_string();
     }
-    let names = rows
+    let mut visits_per_world: Vec<(&str, usize)> = Vec::new();
+    for row in rows {
+        let name = if row.world_name.is_empty() {
+            "an unnamed world"
+        } else {
+            row.world_name.as_str()
+        };
+        match visits_per_world.iter_mut().find(|(seen, _)| *seen == name) {
+            Some((_, count)) => *count += 1,
+            None => visits_per_world.push((name, 1)),
+        }
+    }
+    let names = visits_per_world
         .iter()
-        .map(|row| {
-            if row.world_name.is_empty() {
-                row.location.as_str()
-            } else {
-                row.world_name.as_str()
-            }
-        })
+        .map(|(name, count)| format!("{name} ({count})"))
         .collect::<Vec<_>>()
         .join(", ");
-    format!("{} recent world visit(s): {names}.", rows.len())
+    format!(
+        "{} recent world visit(s) across {} world(s), newest first: {names}.",
+        rows.len(),
+        visits_per_world.len()
+    )
 }
 
 pub fn favorite_local(

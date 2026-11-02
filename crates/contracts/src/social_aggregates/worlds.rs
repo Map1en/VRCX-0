@@ -23,7 +23,10 @@ pub struct SearchWorldsVisitedOutput {
 pub struct VisitedWorldRow {
     pub world_id: String,
     pub world_name: String,
+    #[serde(skip_serializing, default)]
     pub location: String,
+    #[serde(skip_serializing_if = "String::is_empty", default)]
+    pub access_type: String,
     pub visited_at: String,
     pub left_at: Option<String>,
     pub stay_minutes: i64,

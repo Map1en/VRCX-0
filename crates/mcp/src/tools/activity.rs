@@ -112,7 +112,7 @@ impl VrcxMcpServer {
     }
 
     #[tool(
-        description = "[L1·query] List worlds the signed-in user recently visited, newest first, from the local game log (worldId, worldName, location, visitedAt, leftAt, stayMinutes; leftAt is null for the visit still in progress or when the leave was not recorded). Leaf lookup. Drill into one row with get_visit_timeline (pass its visitedAt as `at`) to see who came and went. For \"which worlds did I play most\" use the aggregated summarize_social_period instead of counting these rows yourself."
+        description = "[L1·query] List worlds the signed-in user recently visited, newest first, from the local game log (worldId, worldName, accessType, visitedAt, leftAt, stayMinutes; leftAt is null for the visit still in progress or when the leave was not recorded). Leaf lookup. Drill into one row with get_visit_timeline (pass its visitedAt as `at`) to see who came and went. For \"which worlds did I play most\" use the aggregated summarize_social_period instead of counting these rows yourself."
     )]
     async fn search_worlds_visited(
         &self,
