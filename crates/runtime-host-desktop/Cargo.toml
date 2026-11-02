@@ -54,4 +54,5 @@ vrcx-0-assistant = { path = "../assistant" }
 vrcx-0-overlay-runtime = { path = "../overlay-runtime" }
 
 [dev-dependencies]
+rusqlite = { workspace = true }
 vrcx-0-application-core = { path = "../application-core", features = ["test-utils"] }

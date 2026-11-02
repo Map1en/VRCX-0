@@ -1248,64 +1248,11 @@ impl DesktopRuntimeHostState {
     }
 
     pub fn mcp_runtime(&self, caller: vrcx_0_mcp::McpCaller) -> vrcx_0_mcp::McpRuntime {
-        let db = self.runtime.database();
-        let assembly = self.runtime.desktop_assembly();
-        vrcx_0_mcp::McpRuntime::new(
-            vrcx_0_mcp::McpRuntimeDeps {
-                realtime_runtime: Arc::clone(self.runtime.realtime_runtime()),
-                auth_scope: assembly.auth_scope().clone(),
-                config: Arc::new(crate::mcp_adapters::DesktopMcpConfigAdapter::new(
-                    assembly.config().clone(),
-                )),
-                activity_queries: Arc::new(
-                    crate::mcp_adapters::DesktopMcpActivityQueryAdapter::new(Arc::clone(db)),
-                ),
-                social_history_queries: Arc::new(
-                    crate::mcp_adapters::DesktopMcpSocialHistoryQueryAdapter::new(Arc::clone(db)),
-                ),
-                friend_local_data: Arc::new(
-                    crate::mcp_adapters::DesktopMcpFriendLocalDataAdapter::new(Arc::clone(db)),
-                ),
-                favorites_queries: Arc::new(
-                    crate::mcp_adapters::DesktopMcpFavoritesQueryAdapter::new(Arc::clone(db)),
-                ),
-                feed_queries: Arc::new(crate::mcp_adapters::DesktopMcpFeedQueryAdapter::new(
-                    Arc::clone(db),
-                )),
-                mutual_graph: Arc::new(crate::mcp_adapters::DesktopMcpMutualGraphAdapter::new(
-                    assembly.mutual_graph_fetch().clone(),
-                    Arc::clone(db),
-                    Arc::clone(self.runtime.web_client()),
-                    assembly.auth_scope().clone(),
-                    assembly.tasks().clone(),
-                )),
-                favorite_mutations: assembly.favorite_mutations().clone(),
-                tasks: assembly.tasks().clone(),
-            },
-            caller,
-        )
+        mcp_runtime_for(&self.runtime, caller)
     }
 
     pub fn assistant_controller_deps(&self) -> vrcx_0_assistant::AssistantControllerDeps {
-        let assembly = self.runtime.desktop_assembly();
-        vrcx_0_assistant::AssistantControllerDeps {
-            config: Arc::new(
-                crate::assistant_adapters::DesktopAssistantConfigAdapter::new(
-                    assembly.config().clone(),
-                ),
-            ),
-            llm_factory: Arc::new(crate::assistant_adapters::DesktopAssistantLlmClientFactory),
-            proxy_url: self.runtime.web_client().proxy_url().map(str::to_string),
-            bus: assembly.event_bus().clone(),
-            tasks: assembly.tasks().clone(),
-            mcp_runtime: self.mcp_runtime(vrcx_0_mcp::McpCaller::Assistant),
-            session_persistence: Arc::new(
-                crate::assistant_adapters::DesktopAssistantSessionPersistenceAdapter::new(
-                    Arc::clone(self.runtime.database()),
-                ),
-            ),
-            auth_scope: assembly.auth_scope().clone(),
-        }
+        assistant_controller_deps_for(&self.runtime)
     }
 
     pub fn require_active_scope(
@@ -3174,6 +3121,72 @@ fn emit_profile_background_output(
         desktop_assembly.event_bus().clone(),
     )
     .publish_telemetry(kind, detail, snapshot);
+}
+
+pub(crate) fn mcp_runtime_for(
+    runtime: &RuntimeHostState,
+    caller: vrcx_0_mcp::McpCaller,
+) -> vrcx_0_mcp::McpRuntime {
+    let db = runtime.database();
+    let assembly = runtime.desktop_assembly();
+    vrcx_0_mcp::McpRuntime::new(
+        vrcx_0_mcp::McpRuntimeDeps {
+            realtime_runtime: Arc::clone(runtime.realtime_runtime()),
+            auth_scope: assembly.auth_scope().clone(),
+            config: Arc::new(crate::mcp_adapters::DesktopMcpConfigAdapter::new(
+                assembly.config().clone(),
+            )),
+            activity_queries: Arc::new(crate::mcp_adapters::DesktopMcpActivityQueryAdapter::new(
+                Arc::clone(db),
+            )),
+            social_history_queries: Arc::new(
+                crate::mcp_adapters::DesktopMcpSocialHistoryQueryAdapter::new(Arc::clone(db)),
+            ),
+            friend_local_data: Arc::new(
+                crate::mcp_adapters::DesktopMcpFriendLocalDataAdapter::new(Arc::clone(db)),
+            ),
+            favorites_queries: Arc::new(crate::mcp_adapters::DesktopMcpFavoritesQueryAdapter::new(
+                Arc::clone(db),
+            )),
+            feed_queries: Arc::new(crate::mcp_adapters::DesktopMcpFeedQueryAdapter::new(
+                Arc::clone(db),
+            )),
+            mutual_graph: Arc::new(crate::mcp_adapters::DesktopMcpMutualGraphAdapter::new(
+                assembly.mutual_graph_fetch().clone(),
+                Arc::clone(db),
+                Arc::clone(runtime.web_client()),
+                assembly.auth_scope().clone(),
+                assembly.tasks().clone(),
+            )),
+            favorite_mutations: assembly.favorite_mutations().clone(),
+            tasks: assembly.tasks().clone(),
+        },
+        caller,
+    )
+}
+
+pub(crate) fn assistant_controller_deps_for(
+    runtime: &RuntimeHostState,
+) -> vrcx_0_assistant::AssistantControllerDeps {
+    let assembly = runtime.desktop_assembly();
+    vrcx_0_assistant::AssistantControllerDeps {
+        config: Arc::new(
+            crate::assistant_adapters::DesktopAssistantConfigAdapter::new(
+                assembly.config().clone(),
+            ),
+        ),
+        llm_factory: Arc::new(crate::assistant_adapters::DesktopAssistantLlmClientFactory),
+        proxy_url: runtime.web_client().proxy_url().map(str::to_string),
+        bus: assembly.event_bus().clone(),
+        tasks: assembly.tasks().clone(),
+        mcp_runtime: mcp_runtime_for(runtime, vrcx_0_mcp::McpCaller::Assistant),
+        session_persistence: Arc::new(
+            crate::assistant_adapters::DesktopAssistantSessionPersistenceAdapter::new(Arc::clone(
+                runtime.database(),
+            )),
+        ),
+        auth_scope: assembly.auth_scope().clone(),
+    }
 }
 
 #[cfg(test)]

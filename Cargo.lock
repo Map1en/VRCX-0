@@ -9816,6 +9816,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "fs4",
+ "rusqlite",
  "serde",
  "serde_json",
  "specta",
