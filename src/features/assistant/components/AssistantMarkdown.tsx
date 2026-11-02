@@ -1,10 +1,16 @@
-import { Children, isValidElement, type ReactNode } from 'react';
+import { Children, isValidElement, useMemo, type ReactNode } from 'react';
 import type { Components } from 'react-markdown';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import { HighlightedCodeBlock } from '@/components/HighlightedCodeBlock';
+import type { Entity } from '@/domain/assistant/types';
 import { openExternalLink } from '@/services/entityMediaService';
+
+import { entityLinking, parseEntityHref } from '../entityLinks';
+import { EntityChip } from './EntityChip';
+
+const NO_ENTITIES: Entity[] = [];
 
 function AssistantCodeBlock({ children }: { children?: ReactNode }) {
     const codeElement = Children.toArray(children)[0];
@@ -54,19 +60,26 @@ const markdownComponents: Components = {
         </code>
     ),
     pre: AssistantCodeBlock,
-    a: ({ href, children }) => (
-        <button
-            type="button"
-            className="text-primary cursor-pointer underline underline-offset-2"
-            onClick={() => {
-                if (href) {
-                    openExternalLink(href);
-                }
-            }}
-        >
-            {children}
-        </button>
-    ),
+    a: ({ href, children }) => {
+        const entity = parseEntityHref(href);
+        return entity ? (
+            <EntityChip kind={entity.kind} id={entity.id}>
+                {children}
+            </EntityChip>
+        ) : (
+            <button
+                type="button"
+                className="text-primary cursor-pointer underline underline-offset-2"
+                onClick={() => {
+                    if (href) {
+                        openExternalLink(href);
+                    }
+                }}
+            >
+                {children}
+            </button>
+        );
+    },
     h1: ({ children }) => (
         <h1 className="mt-2 mb-1 text-base font-semibold">{children}</h1>
     ),
@@ -102,12 +115,20 @@ const markdownComponents: Components = {
 
 interface AssistantMarkdownProps {
     text: string;
+    entities?: readonly Entity[];
 }
 
-export function AssistantMarkdown({ text }: AssistantMarkdownProps) {
+export function AssistantMarkdown({
+    text,
+    entities = NO_ENTITIES
+}: AssistantMarkdownProps) {
+    const linking = useMemo(() => entityLinking(entities), [entities]);
     return (
         <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
+            remarkPlugins={[remarkGfm, linking.remarkPlugin]}
+            urlTransform={(url) =>
+                linking.isEntityHref(url) ? url : defaultUrlTransform(url)
+            }
             components={markdownComponents}
         >
             {text}

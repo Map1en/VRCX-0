@@ -42,8 +42,10 @@ pub fn extract_entities(value: &Value) -> Vec<Entity> {
 fn walk(value: &Value, found: &mut BTreeMap<String, Entity>) {
     match value {
         Value::Object(map) => {
-            if let Some(entity) = entity_from_object(map) {
-                found.entry(entity.id.clone()).or_insert(entity);
+            for kind in [EntityKind::User, EntityKind::World] {
+                if let Some(entity) = entity_from_object(map, kind) {
+                    found.entry(entity.id.clone()).or_insert(entity);
+                }
             }
             for nested in map.values() {
                 walk(nested, found);
@@ -58,16 +60,13 @@ fn walk(value: &Value, found: &mut BTreeMap<String, Entity>) {
     }
 }
 
-fn entity_from_object(map: &serde_json::Map<String, Value>) -> Option<Entity> {
-    let id = object_entity_id(map)?;
-    let kind = if id.starts_with("usr_") {
-        EntityKind::User
-    } else if id.starts_with("wrld_") {
-        EntityKind::World
-    } else {
-        return None;
+fn entity_from_object(map: &serde_json::Map<String, Value>, kind: EntityKind) -> Option<Entity> {
+    let (prefix, name_keys) = match kind {
+        EntityKind::User => ("usr_", ["display_name", "displayName", "name"]),
+        EntityKind::World => ("wrld_", ["world_name", "worldName", "name"]),
     };
-    let display_name = name_field(map).unwrap_or_default();
+    let id = object_entity_id(map, prefix)?;
+    let display_name = name_field(map, &name_keys).unwrap_or_default();
     Some(Entity {
         kind,
         id,
@@ -75,12 +74,12 @@ fn entity_from_object(map: &serde_json::Map<String, Value>) -> Option<Entity> {
     })
 }
 
-fn object_entity_id(map: &serde_json::Map<String, Value>) -> Option<String> {
+fn object_entity_id(map: &serde_json::Map<String, Value>, prefix: &str) -> Option<String> {
     for (key, value) in map {
         let Some(text) = value.as_str() else {
             continue;
         };
-        if !(text.starts_with("usr_") || text.starts_with("wrld_")) {
+        if !text.starts_with(prefix) {
             continue;
         }
         let lowered = key.to_ascii_lowercase();
@@ -91,9 +90,8 @@ fn object_entity_id(map: &serde_json::Map<String, Value>) -> Option<String> {
     None
 }
 
-fn name_field(map: &serde_json::Map<String, Value>) -> Option<String> {
-    const NAME_KEYS: [&str; 4] = ["display_name", "displayName", "name", "world_name"];
-    for key in NAME_KEYS {
+fn name_field(map: &serde_json::Map<String, Value>, name_keys: &[&str]) -> Option<String> {
+    for &key in name_keys {
         if let Some(text) = map.get(key).and_then(Value::as_str) {
             if !text.trim().is_empty() {
                 return Some(text.to_string());
@@ -155,6 +153,31 @@ mod tests {
         let surfaced = surfaced_entities(candidates, "You mostly play with Alice.");
         assert_eq!(surfaced.len(), 1);
         assert_eq!(surfaced[0].id, "usr_a");
+    }
+
+    #[test]
+    fn extracts_people_and_worlds_with_their_own_names() {
+        let entities = extract_entities(&serde_json::json!({
+            "topWorlds": [{ "worldId": "wrld_p", "worldName": "Papa's home", "visits": 618 }],
+            "pairs": [{
+                "userId": "usr_h",
+                "displayName": "Hanamizore",
+                "worldId": "wrld_r",
+                "worldName": "Room"
+            }]
+        }));
+        let named: Vec<(&str, &str)> = entities
+            .iter()
+            .map(|entity| (entity.id.as_str(), entity.display_name.as_str()))
+            .collect();
+        assert_eq!(
+            named,
+            [
+                ("usr_h", "Hanamizore"),
+                ("wrld_p", "Papa's home"),
+                ("wrld_r", "Room")
+            ]
+        );
     }
 
     #[test]

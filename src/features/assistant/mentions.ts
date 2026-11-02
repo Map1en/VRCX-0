@@ -1,4 +1,6 @@
-const MENTION_MARKER = '](vrcx-0://user/open?id=';
+import { entityHref } from './entityLinks';
+
+const MENTION_MARKER = `](${entityHref('user', '')}`;
 const MENTION_QUERY_LIMIT = 32;
 
 export type MentionSegment =
@@ -6,7 +8,7 @@ export type MentionSegment =
     | { kind: 'mention'; name: string; userId: string };
 
 function mentionToken(name: string, userId: string): string {
-    return `[@${name}](vrcx-0://user/open?id=${userId})`;
+    return `[@${name}](${entityHref('user', userId)})`;
 }
 
 export function encodeMentions(

@@ -1,7 +1,5 @@
-import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
-import { openUserDialog } from '@/services/dialogService';
-
 import { splitMentions } from '../mentions';
+import { EntityChip } from './EntityChip';
 
 export function MentionText({ text }: { text: string }) {
     return (
@@ -10,20 +8,13 @@ export function MentionText({ text }: { text: string }) {
                 segment.kind === 'text' ? (
                     segment.text
                 ) : (
-                    <UserHoverCard
+                    <EntityChip
                         key={`${segment.userId}-${index}`}
-                        userId={segment.userId}
+                        kind="user"
+                        id={segment.userId}
                     >
-                        <button
-                            type="button"
-                            className="text-foreground cursor-pointer rounded-md bg-(--state-hover-surface) px-1 font-medium hover:bg-(--state-pressed-surface)"
-                            onClick={() =>
-                                openUserDialog({ userId: segment.userId })
-                            }
-                        >
-                            @{segment.name}
-                        </button>
-                    </UserHoverCard>
+                        @{segment.name}
+                    </EntityChip>
                 )
             )}
         </span>

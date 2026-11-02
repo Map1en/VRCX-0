@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 
 import type { UIMessage } from '@/domain/assistant/types';
 import { Bubble, BubbleContent } from '@/ui/shadcn/bubble';
@@ -21,6 +21,10 @@ function AssistantMessageImpl({
     const isUser = message.role === 'user';
     const hasVisibleText = message.text.trim().length > 0;
     const alignment = isUser ? 'end' : 'start';
+    const entities = useMemo(
+        () => message.toolCalls.flatMap((call) => call.entities),
+        [message.toolCalls]
+    );
     const traceRunning =
         message.streaming &&
         (!hasVisibleText ||
@@ -58,7 +62,10 @@ function AssistantMessageImpl({
                                     {message.text}
                                 </span>
                             ) : (
-                                <AssistantMarkdown text={message.text} />
+                                <AssistantMarkdown
+                                    text={message.text}
+                                    entities={entities}
+                                />
                             )}
                             {message.streaming && (
                                 <span
