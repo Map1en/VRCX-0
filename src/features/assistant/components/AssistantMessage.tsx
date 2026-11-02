@@ -4,6 +4,7 @@ import type { UIMessage } from '@/domain/assistant/types';
 import { Bubble, BubbleContent } from '@/ui/shadcn/bubble';
 import { Message, MessageContent } from '@/ui/shadcn/message';
 
+import { AssistantChoiceCard } from './AssistantChoiceCard';
 import { AssistantMarkdown } from './AssistantMarkdown';
 import { AssistantTrace } from './AssistantTrace';
 
@@ -35,6 +36,14 @@ function AssistantMessageImpl({
                         thinkingLabel={thinkingLabel}
                     />
                 )}
+
+                {message.choices?.map((choice) => (
+                    <AssistantChoiceCard
+                        key={choice.id}
+                        choice={choice}
+                        active={message.streaming}
+                    />
+                ))}
 
                 {hasVisibleText && (
                     <Bubble

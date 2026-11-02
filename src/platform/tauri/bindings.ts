@@ -556,6 +556,17 @@ const generatedCommands = {
     async appAssistantCancel(sessionId: string): Promise<null> {
         return await TAURI_INVOKE('app__assistant_cancel', { sessionId });
     },
+    async appAssistantAnswerChoice(
+        sessionId: string,
+        choiceId: string,
+        userId: string | null
+    ): Promise<null> {
+        return await TAURI_INVOKE('app__assistant_answer_choice', {
+            sessionId,
+            choiceId,
+            userId
+        });
+    },
     async appAssistantListSessions(): Promise<SessionSummary[]> {
         return await TAURI_INVOKE('app__assistant_list_sessions');
     },
@@ -3519,6 +3530,22 @@ export type AppUpdateStatusSnapshot = {
     error: string | null;
     release: AppUpdateReleaseSnapshot | null;
     shouldNotify: boolean;
+};
+export type AssistantChoiceCandidate = {
+    userId: string;
+    displayName: string;
+    isFriend: boolean;
+    encounterCount: number;
+    lastSeen: string;
+};
+export type AssistantChoiceRequestEvent = {
+    ownerUserId: OwnerId;
+    sessionId: string;
+    turnId: string;
+    toolCallId: string;
+    choiceId: string;
+    query: string;
+    candidates: AssistantChoiceCandidate[];
 };
 export type AssistantDeltaEvent = {
     ownerUserId: OwnerId;

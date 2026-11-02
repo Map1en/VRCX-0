@@ -45,6 +45,24 @@ export type AssistantToolResultEvent = {
     entities: Entity[];
 };
 
+export type AssistantChoiceCandidate = {
+    userId: string;
+    displayName: string;
+    isFriend: boolean;
+    encounterCount: number;
+    lastSeen: string;
+};
+
+export type AssistantChoiceRequestEvent = {
+    ownerUserId: string;
+    sessionId: string;
+    turnId: string;
+    toolCallId: string;
+    choiceId: string;
+    query: string;
+    candidates: AssistantChoiceCandidate[];
+};
+
 export type AssistantTurnEntitiesEvent = {
     ownerUserId: string;
     sessionId: string;
@@ -70,6 +88,17 @@ export interface UIToolCall {
     entities: Entity[];
 }
 
+export type UserChoiceStatus = 'pending' | 'picked' | 'skipped';
+
+export interface UIUserChoice {
+    id: string;
+    sessionId: string;
+    query: string;
+    candidates: AssistantChoiceCandidate[];
+    status: UserChoiceStatus;
+    pickedUserId?: string;
+}
+
 export interface UIMessage {
     id: string;
     role: 'user' | 'assistant';
@@ -77,5 +106,6 @@ export interface UIMessage {
     turnId?: string;
     streaming: boolean;
     toolCalls: UIToolCall[];
+    choices?: UIUserChoice[];
     error?: string;
 }

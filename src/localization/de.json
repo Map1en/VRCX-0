@@ -144,6 +144,19 @@
             "working": "Durchsuche deine Daten",
             "done": "Daten durchsucht"
         },
+        "choice": {
+            "title": "Wen meinst du mit „{query}“?",
+            "description": "In deinem Verlauf passen mehrere Personen zu diesem Namen. Wähle eine aus, damit der Assistent die richtige Person nachschlägt.",
+            "friend": "Freund",
+            "encounters_one": "{count} Begegnung",
+            "encounters_other": "{count} Begegnungen",
+            "last_seen": "Zuletzt gesehen am {date}",
+            "required": "Wähle eine Person aus oder überspringe die Frage.",
+            "skip": "Überspringen",
+            "confirm": "Bestätigen",
+            "picked": "Ausgewählt: {name}",
+            "skipped": "Für „{query}“ wurde niemand ausgewählt"
+        },
         "scroll_to_latest": "Zum Ende scrollen",
         "connection": {
             "checking": "Verbindung wird geprüft",

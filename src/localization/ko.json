@@ -144,6 +144,18 @@
             "working": "데이터를 살펴보는 중",
             "done": "데이터를 살펴봤습니다"
         },
+        "choice": {
+            "title": "‘{query}’는 누구를 말하나요?",
+            "description": "기록에 이 이름과 맞는 사람이 여러 명 있어요. 한 명을 고르면 어시스턴트가 그 사람을 찾아봐요.",
+            "friend": "친구",
+            "encounters_other": "{count}번 마주침",
+            "last_seen": "마지막으로 본 날: {date}",
+            "required": "사람을 고르거나 건너뛰세요.",
+            "skip": "건너뛰기",
+            "confirm": "확인",
+            "picked": "{name} 님을 선택했어요",
+            "skipped": "‘{query}’에 해당하는 사람을 고르지 않았어요"
+        },
         "scroll_to_latest": "맨 아래로 스크롤",
         "connection": {
             "checking": "연결 확인 중",

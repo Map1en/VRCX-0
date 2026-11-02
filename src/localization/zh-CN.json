@@ -144,6 +144,18 @@
             "working": "正在查阅数据",
             "done": "已查阅数据"
         },
+        "choice": {
+            "title": "你说的“{query}”是哪一位？",
+            "description": "记录里有好几个人符合这个名字。选一位，助手就能查对人。",
+            "friend": "好友",
+            "encounters_other": "碰见过 {count} 次",
+            "last_seen": "最近见到：{date}",
+            "required": "请选择一位，或者跳过。",
+            "skip": "跳过",
+            "confirm": "确定",
+            "picked": "已选择 {name}",
+            "skipped": "没有为“{query}”选择任何人"
+        },
         "scroll_to_latest": "滚动到底部",
         "connection": {
             "checking": "正在检查连接",

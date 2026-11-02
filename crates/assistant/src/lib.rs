@@ -1,4 +1,5 @@
 mod agent;
+mod choices;
 mod config;
 mod endpoints;
 mod entities;
@@ -11,6 +12,7 @@ mod session;
 #[cfg(test)]
 mod test_support;
 
+pub use choices::AssistantChoiceCandidate;
 pub use config::PlaybookMode;
 pub use endpoints::{
     resolve_reasoning_effort, AssistantRuntimeSelection, AssistantRuntimeStatus, EndpointStore,
@@ -19,8 +21,8 @@ pub use endpoints::{
 pub use entities::{Entity, EntityKind};
 pub use error::AssistantError;
 pub use events::{
-    AssistantDeltaEvent, AssistantDoneEvent, AssistantErrorEvent, AssistantToolCallEvent,
-    AssistantToolResultEvent, AssistantTurnEntitiesEvent,
+    AssistantChoiceRequestEvent, AssistantDeltaEvent, AssistantDoneEvent, AssistantErrorEvent,
+    AssistantToolCallEvent, AssistantToolResultEvent, AssistantTurnEntitiesEvent,
 };
 pub use ports::{
     AssistantConfig, AssistantConfigPort, AssistantLlmClient, AssistantLlmClientFactory,

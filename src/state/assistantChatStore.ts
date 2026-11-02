@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import type {
+    AssistantChoiceRequestEvent,
     AssistantDeltaEvent,
     AssistantDoneEvent,
     AssistantErrorEvent,
@@ -36,6 +37,12 @@ interface AssistantChatState {
     applyDelta: (event: AssistantDeltaEvent) => void;
     applyToolCall: (event: AssistantToolCallEvent) => void;
     applyToolResult: (event: AssistantToolResultEvent) => void;
+    applyChoiceRequest: (event: AssistantChoiceRequestEvent) => void;
+    resolveChoice: (
+        sessionId: string,
+        choiceId: string,
+        userId: string | null
+    ) => void;
     applyTurnEntities: (event: AssistantTurnEntitiesEvent) => void;
     applyDone: (event: AssistantDoneEvent) => void;
     applyError: (event: AssistantErrorEvent) => void;
@@ -427,6 +434,49 @@ export const useAssistantChatStore = create<AssistantChatState>((set) => ({
                     );
                     return message;
                 })
+            )
+        ),
+
+    applyChoiceRequest: (event) =>
+        set((state) =>
+            updateMessages(state, event.sessionId, (messages) =>
+                withAssistantMessage(messages, event.turnId, (message) => {
+                    message.choices = [
+                        ...(message.choices ?? []),
+                        {
+                            id: event.choiceId,
+                            sessionId: event.sessionId,
+                            query: event.query,
+                            candidates: event.candidates,
+                            status: 'pending'
+                        }
+                    ];
+                    return message;
+                })
+            )
+        ),
+
+    resolveChoice: (sessionId, choiceId, userId) =>
+        set((state) =>
+            updateMessages(state, sessionId, (messages) =>
+                messages.map((message) =>
+                    message.choices?.some((choice) => choice.id === choiceId)
+                        ? {
+                              ...message,
+                              choices: message.choices.map((choice) =>
+                                  choice.id === choiceId
+                                      ? {
+                                            ...choice,
+                                            status: userId
+                                                ? 'picked'
+                                                : 'skipped',
+                                            pickedUserId: userId ?? undefined
+                                        }
+                                      : choice
+                              )
+                          }
+                        : message
+                )
             )
         ),
 

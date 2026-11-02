@@ -135,6 +135,50 @@ describe('useAssistantEvents auth scope', () => {
         ).toBeUndefined();
     });
 
+    it('attaches a choice request to the running turn as a pending choice', async () => {
+        renderHook(() => useAssistantEvents());
+        await waitFor(() => {
+            expect(mocks.handlers.has('assistantChoiceRequest')).toBe(true);
+        });
+        const candidate = {
+            userId: 'usr_alice',
+            displayName: 'Alice',
+            isFriend: true,
+            encounterCount: 4,
+            lastSeen: '2026-10-01T12:00:00Z'
+        };
+
+        act(() => {
+            mocks.handlers.get('assistantChoiceRequest')?.({
+                ownerUserId: 'usr_current',
+                sessionId: 'session-1',
+                turnId: 'turn-1',
+                toolCallId: 'call-1',
+                choiceId: 'choice-1',
+                query: 'Ali',
+                candidates: [candidate]
+            });
+        });
+
+        expect(
+            useAssistantChatStore.getState().messagesBySession['session-1']
+        ).toMatchObject([
+            {
+                role: 'assistant',
+                turnId: 'turn-1',
+                choices: [
+                    {
+                        id: 'choice-1',
+                        sessionId: 'session-1',
+                        query: 'Ali',
+                        status: 'pending',
+                        candidates: [candidate]
+                    }
+                ]
+            }
+        ]);
+    });
+
     it('evicts a retained busy transcript after it finishes while closed', async () => {
         renderHook(() => useAssistantEvents());
         await waitFor(() => {

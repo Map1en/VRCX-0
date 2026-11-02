@@ -144,6 +144,19 @@
             "working": "Looking through your data",
             "done": "Looked through your data"
         },
+        "choice": {
+            "title": "Who do you mean by “{query}”?",
+            "description": "Several people in your history match this name. Pick one so the assistant looks up the right person.",
+            "friend": "Friend",
+            "encounters_one": "Met {count} time",
+            "encounters_other": "Met {count} times",
+            "last_seen": "Last seen {date}",
+            "required": "Pick a person or skip.",
+            "skip": "Skip",
+            "confirm": "Confirm",
+            "picked": "Picked {name}",
+            "skipped": "No one picked for “{query}”"
+        },
         "scroll_to_latest": "Scroll to bottom",
         "connection": {
             "checking": "Checking connection",

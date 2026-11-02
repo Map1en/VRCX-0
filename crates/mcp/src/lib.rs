@@ -1,6 +1,7 @@
 mod auth;
 mod config;
 mod controller;
+mod disambiguation;
 mod error;
 mod in_process;
 mod ports;
@@ -20,6 +21,7 @@ pub use config::{
     DEFAULT_MCP_PORT, MCP_ENABLED_CONFIG_KEY, MCP_PORT_CONFIG_KEY, MCP_TOKEN_CONFIG_KEY,
 };
 pub use controller::McpServerController;
+pub use disambiguation::{apply_user_choice, UserChoiceRequest};
 pub use error::McpError;
 pub use in_process::{spawn_in_process_tools, InProcessMcpTools, ToolCallOutcome, ToolDescriptor};
 pub use ports::{

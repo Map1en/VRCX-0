@@ -7,14 +7,17 @@ use futures_util::future::join_all;
 use serde_json::Value;
 use tokio_util::sync::CancellationToken;
 use vrcx_0_contracts::llm::{ChatMessage, LlmRequestOptions, ToolCall, ToolDefinition};
-use vrcx_0_mcp::{InProcessMcpTools, McpError, ToolCallOutcome};
+use vrcx_0_mcp::{
+    apply_user_choice, InProcessMcpTools, McpError, ToolCallOutcome, UserChoiceRequest,
+};
 
+use crate::choices::{choice_candidates, PendingChoices};
 use crate::entities::{extract_entities, surfaced_entities, Entity};
 use crate::events::AssistantEmitter;
 use crate::playbook;
 use crate::ports::{AssistantLlmClient, AssistantLlmError};
 use crate::session::{
-    ActiveTurn, Role, SessionStore, ToolCallRecord, ToolResultRecord, TurnStatus,
+    random_hex, ActiveTurn, Role, SessionStore, ToolCallRecord, ToolResultRecord, TurnStatus,
 };
 
 use super::context::{build_context, latest_user_message, ContextMode};
@@ -123,6 +126,7 @@ concise; use tasteful emoji to keep the tone warm.
 pub(crate) struct TurnContext {
     pub tools: Arc<InProcessMcpTools>,
     pub sessions: Arc<SessionStore>,
+    pub choices: PendingChoices,
     pub emitter: AssistantEmitter,
     pub client: AssistantLlmClient,
     pub tool_defs: Arc<Vec<ToolDefinition>>,
@@ -455,21 +459,76 @@ async fn dispatch_call<'a>(
         return (call.call, Some(resolved));
     }
     let name = call.call.function.name.clone();
-    let outcome = match await_tool_call(
-        ctx.tools.call_tool(name.clone(), call.arguments),
-        &ctx.cancel,
-        TOOL_CALL_TIMEOUT,
-    )
-    .await
-    {
-        AwaitToolCall::Completed(outcome) => outcome,
-        AwaitToolCall::Cancelled => return (call.call, None),
-        AwaitToolCall::TimedOut => Err(McpError::Custom(format!(
-            "tool `{name}` timed out after {} seconds",
-            TOOL_CALL_TIMEOUT.as_secs()
-        ))),
-    };
-    (call.call, Some(resolve_tool_outcome(outcome)))
+    let mut arguments = call.arguments;
+    let mut asked = HashSet::new();
+    loop {
+        let outcome = match await_tool_call(
+            ctx.tools.call_tool(name.clone(), arguments.clone()),
+            &ctx.cancel,
+            TOOL_CALL_TIMEOUT,
+        )
+        .await
+        {
+            AwaitToolCall::Completed(outcome) => outcome,
+            AwaitToolCall::Cancelled => return (call.call, None),
+            AwaitToolCall::TimedOut => Err(McpError::Custom(format!(
+                "tool `{name}` timed out after {} seconds",
+                TOOL_CALL_TIMEOUT.as_secs()
+            ))),
+        };
+        let choice = outcome
+            .as_ref()
+            .ok()
+            .and_then(|result| UserChoiceRequest::from_structured(result.structured.as_ref()))
+            .filter(|choice| asked.insert(choice.query.clone()));
+        let (Some(choice), Some(arguments)) = (choice, arguments.as_mut()) else {
+            return (call.call, Some(resolve_tool_outcome(outcome)));
+        };
+        match ask_user_choice(ctx, &call.call.id, &choice).await {
+            UserChoice::Cancelled => return (call.call, None),
+            UserChoice::Picked(user_id)
+                if apply_user_choice(arguments, &choice.query, &user_id) => {}
+            UserChoice::Picked(_) | UserChoice::Skipped => {
+                return (call.call, Some(resolve_tool_outcome(outcome)));
+            }
+        }
+    }
+}
+
+enum UserChoice {
+    Picked(String),
+    Skipped,
+    Cancelled,
+}
+
+async fn ask_user_choice(
+    ctx: &TurnContext,
+    tool_call_id: &str,
+    choice: &UserChoiceRequest,
+) -> UserChoice {
+    if !ctx.sessions.is_current_turn(&ctx.session_id, &ctx.turn_id) {
+        return UserChoice::Skipped;
+    }
+    let choice_id = format!("choice_{}", random_hex());
+    let receiver = ctx
+        .choices
+        .register(choice_id.clone(), ctx.session_id.clone());
+    ctx.emitter.choice_request(
+        tool_call_id,
+        &choice_id,
+        &choice.query,
+        choice_candidates(choice),
+    );
+    tokio::select! {
+        picked = receiver => match picked.ok().flatten() {
+            Some(user_id) if choice.accepts(&user_id) => UserChoice::Picked(user_id),
+            _ => UserChoice::Skipped,
+        },
+        _ = ctx.cancel.cancelled() => {
+            ctx.choices.remove(&choice_id);
+            UserChoice::Cancelled
+        }
+    }
 }
 
 fn record_tool_call(ctx: &TurnContext, call: &ToolCall) {

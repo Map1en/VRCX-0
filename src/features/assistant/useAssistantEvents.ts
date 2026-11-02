@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 
 import type {
+    AssistantChoiceRequestEvent,
     AssistantDeltaEvent,
     AssistantDoneEvent,
     AssistantErrorEvent,
@@ -128,6 +129,12 @@ export function useAssistantEvents(): void {
                 }
                 toolCallsById.delete(event.toolCallId);
             },
+            assistantChoiceRequest: (event: AssistantChoiceRequestEvent) => {
+                if (isCurrentAccountEvent(event)) {
+                    flushNow();
+                    store.applyChoiceRequest(event);
+                }
+            },
             assistantTurnEntities: (event: AssistantTurnEntitiesEvent) => {
                 if (isCurrentAccountEvent(event)) {
                     store.applyTurnEntities(event);
@@ -182,6 +189,10 @@ export function useAssistantEvents(): void {
             tauriClient.events.subscribe(
                 'assistantToolResult',
                 handlers.assistantToolResult
+            ),
+            tauriClient.events.subscribe(
+                'assistantChoiceRequest',
+                handlers.assistantChoiceRequest
             ),
             tauriClient.events.subscribe(
                 'assistantTurnEntities',

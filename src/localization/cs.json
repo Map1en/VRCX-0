@@ -144,6 +144,21 @@
             "working": "Procházím vaše data",
             "done": "Data prohledána"
         },
+        "choice": {
+            "title": "Koho myslíte jménem „{query}“?",
+            "description": "Ve vaší historii tomuto jménu odpovídá více lidí. Vyberte jednoho, aby asistent vyhledal správnou osobu.",
+            "friend": "Přítel",
+            "encounters_one": "{count} setkání",
+            "encounters_few": "{count} setkání",
+            "encounters_many": "{count} setkání",
+            "encounters_other": "{count} setkání",
+            "last_seen": "Naposledy viděn {date}",
+            "required": "Vyberte osobu nebo otázku přeskočte.",
+            "skip": "Přeskočit",
+            "confirm": "Potvrdit",
+            "picked": "Vybráno: {name}",
+            "skipped": "Pro „{query}“ nebyl nikdo vybrán"
+        },
         "scroll_to_latest": "Posunout na konec",
         "connection": {
             "checking": "Kontrola připojení",

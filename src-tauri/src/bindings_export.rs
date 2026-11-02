@@ -28,8 +28,8 @@ use vrcx_0_application_game::{
 };
 use vrcx_0_application_realtime::RealtimeFeedProjection;
 use vrcx_0_assistant::{
-    AssistantDeltaEvent, AssistantDoneEvent, AssistantErrorEvent, AssistantToolCallEvent,
-    AssistantToolResultEvent, AssistantTurnEntitiesEvent,
+    AssistantChoiceRequestEvent, AssistantDeltaEvent, AssistantDoneEvent, AssistantErrorEvent,
+    AssistantToolCallEvent, AssistantToolResultEvent, AssistantTurnEntitiesEvent,
 };
 use vrcx_0_core::realtime::RealtimeWsStatusPayload;
 use vrcx_0_core::screenshots::{ScreenshotExportProgress, ScreenshotLibraryScanStatus};
@@ -106,6 +106,7 @@ pub fn builder() -> Builder<tauri::Wry> {
         .typ::<AssistantDeltaEvent>()
         .typ::<AssistantToolCallEvent>()
         .typ::<AssistantToolResultEvent>()
+        .typ::<AssistantChoiceRequestEvent>()
         .typ::<AssistantTurnEntitiesEvent>()
         .typ::<AssistantDoneEvent>()
         .typ::<AssistantErrorEvent>()
@@ -247,6 +248,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::application::integration_api::app__integration_api_rotate_token,
             commands::application::assistant::app__assistant_send_message,
             commands::application::assistant::app__assistant_cancel,
+            commands::application::assistant::app__assistant_answer_choice,
             commands::application::assistant::app__assistant_list_sessions,
             commands::application::assistant::app__assistant_get_session,
             commands::application::assistant::app__assistant_new_session,

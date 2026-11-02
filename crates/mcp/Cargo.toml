@@ -15,6 +15,7 @@ http-body = "1"
 percent-encoding = { workspace = true }
 rmcp = { version = "=3.7.0", features = [
     "client",
+    "elicitation",
     "server",
     "macros",
     "schemars",

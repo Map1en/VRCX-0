@@ -144,6 +144,18 @@
             "working": "データを確認中",
             "done": "データを確認しました"
         },
+        "choice": {
+            "title": "「{query}」はどの人ですか？",
+            "description": "履歴にこの名前の人が何人かいます。選ぶと、アシスタントがその人について調べます。",
+            "friend": "フレンド",
+            "encounters_other": "{count} 回一緒になった",
+            "last_seen": "最後に会った日：{date}",
+            "required": "人を選ぶか、スキップしてください。",
+            "skip": "スキップ",
+            "confirm": "決定",
+            "picked": "{name} を選びました",
+            "skipped": "「{query}」の人は選ばれませんでした"
+        },
         "scroll_to_latest": "一番下までスクロール",
         "connection": {
             "checking": "接続を確認中",

@@ -118,6 +118,15 @@ export async function cancelActiveTurn(): Promise<void> {
     }
 }
 
+export async function answerChoice(
+    sessionId: string,
+    choiceId: string,
+    userId: string | null
+): Promise<void> {
+    useAssistantChatStore.getState().resolveChoice(sessionId, choiceId, userId);
+    await commands.appAssistantAnswerChoice(sessionId, choiceId, userId);
+}
+
 export function setEntityPanelOpen(open: boolean): void {
     const store = useAssistantChatStore.getState();
     const sessionId = store.activeSessionId;

@@ -144,6 +144,18 @@
             "working": "正在查閱資料",
             "done": "已查閱資料"
         },
+        "choice": {
+            "title": "你說的「{query}」是哪一位？",
+            "description": "紀錄裡有好幾個人符合這個名字。選一位，助手就能查對人。",
+            "friend": "好友",
+            "encounters_other": "遇見過 {count} 次",
+            "last_seen": "最近見到：{date}",
+            "required": "請選擇一位，或者略過。",
+            "skip": "略過",
+            "confirm": "確定",
+            "picked": "已選擇 {name}",
+            "skipped": "沒有為「{query}」選擇任何人"
+        },
         "scroll_to_latest": "捲動到底部",
         "connection": {
             "checking": "檢查連線",

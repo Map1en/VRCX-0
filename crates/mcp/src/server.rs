@@ -4,12 +4,15 @@ use rmcp::handler::server::router::tool::ToolRouter;
 use rmcp::handler::server::tool::ToolCallContext;
 use rmcp::model::{
     CallToolRequestParams, CallToolResponse, Implementation, ListResourcesResult,
-    PaginatedRequestParams, ReadResourceRequestParams, ReadResourceResponse, ReadResourceResult,
-    Resource, ResourceContents, ServerCapabilities, ServerConfig,
+    PaginatedRequestParams, ProtocolVersion, ReadResourceRequestParams, ReadResourceResponse,
+    ReadResourceResult, Resource, ResourceContents, ServerCapabilities, ServerConfig,
 };
 use rmcp::service::{MaybeSendFuture, RequestContext, RoleServer};
 use rmcp::{tool_handler, ErrorData as RmcpError, ServerHandler};
 
+use crate::disambiguation::{
+    choices_from_state, with_choices, UserChoiceRequest, PICK_USER_INPUT_KEY,
+};
 use crate::runtime::McpRuntime;
 
 const DATA_CAVEATS_URI: &str = "vrcx://data-caveats";
@@ -59,20 +62,8 @@ pub(crate) struct VrcxMcpServer {
     pub(crate) tool_router: ToolRouter<Self>,
 }
 
-#[tool_handler(router = self.tool_router)]
-impl ServerHandler for VrcxMcpServer {
-    fn get_info(&self) -> ServerConfig {
-        ServerConfig::new(
-            ServerCapabilities::builder()
-                .enable_tools()
-                .enable_resources()
-                .build(),
-        )
-        .with_server_info(Implementation::new("vrcx-0", env!("CARGO_PKG_VERSION")))
-        .with_instructions(SERVER_INSTRUCTIONS)
-    }
-
-    async fn call_tool(
+impl VrcxMcpServer {
+    async fn run_tool(
         &self,
         request: CallToolRequestParams,
         context: RequestContext<RoleServer>,
@@ -95,6 +86,71 @@ impl ServerHandler for VrcxMcpServer {
         })
         .await
         .map_err(|error| RmcpError::internal_error(format!("tool task failed: {error}"), None))?
+    }
+}
+
+#[tool_handler(router = self.tool_router)]
+impl ServerHandler for VrcxMcpServer {
+    fn get_info(&self) -> ServerConfig {
+        ServerConfig::new(
+            ServerCapabilities::builder()
+                .enable_tools()
+                .enable_resources()
+                .build(),
+        )
+        .with_server_info(Implementation::new("vrcx-0", env!("CARGO_PKG_VERSION")))
+        .with_instructions(SERVER_INSTRUCTIONS)
+    }
+
+    async fn call_tool(
+        &self,
+        request: CallToolRequestParams,
+        context: RequestContext<RoleServer>,
+    ) -> Result<CallToolResponse, RmcpError> {
+        let can_elicit = context
+            .client_capabilities()
+            .and_then(|capabilities| capabilities.elicitation)
+            .is_some_and(|elicitation| elicitation.form.is_some() || elicitation.url.is_none());
+        let stateless = context
+            .protocol_version()
+            .is_some_and(|version| version >= ProtocolVersion::V_2026_07_28);
+        let mut choices = choices_from_state(&request);
+        let mut pending_reply = request
+            .input_responses
+            .as_ref()
+            .and_then(|responses| responses.get(PICK_USER_INPUT_KEY))
+            .cloned();
+        loop {
+            let response = self
+                .run_tool(with_choices(&request, &choices), context.clone())
+                .await?;
+            let CallToolResponse::Complete(result) = &response else {
+                return Ok(response);
+            };
+            let Some(choice) =
+                UserChoiceRequest::from_structured(result.structured_content.as_ref())
+            else {
+                return Ok(response);
+            };
+            if choices.contains_key(&choice.query) {
+                return Ok(response);
+            }
+            let reply = match pending_reply.take() {
+                Some(reply) => Some(reply),
+                None if !can_elicit => None,
+                None if stateless => return Ok(choice.input_required(&choices).into()),
+                None => tokio::select! {
+                    reply = context.peer.create_elicitation(choice.elicit_params()) => {
+                        reply.ok().and_then(|reply| serde_json::to_value(reply).ok())
+                    }
+                    () = context.ct.cancelled() => None,
+                },
+            };
+            let Some(user_id) = reply.and_then(|reply| choice.accepted_user_id(&reply)) else {
+                return Ok(response);
+            };
+            choices.insert(choice.query, user_id);
+        }
     }
 
     fn list_resources(

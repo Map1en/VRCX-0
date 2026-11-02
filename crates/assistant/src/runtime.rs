@@ -10,6 +10,7 @@ use vrcx_0_contracts::llm::{LlmEndpointDetectModelsResult, LlmRequestOptions, To
 use vrcx_0_mcp::{spawn_in_process_tools, InProcessMcpTools, McpRuntime};
 
 use crate::agent::{run_turn, TurnContext};
+use crate::choices::PendingChoices;
 use crate::config::{should_apply_playbook, PlaybookMode};
 use crate::endpoints::{
     resolve_reasoning_effort, AssistantRuntimeSelection, AssistantRuntimeStatus, EndpointStore,
@@ -35,6 +36,7 @@ pub struct AssistantController {
     tools: Arc<InProcessMcpTools>,
     tool_defs: Arc<Vec<ToolDefinition>>,
     sessions: Arc<SessionStore>,
+    choices: PendingChoices,
     auth_scope: RuntimeAuthScope,
     cancels: Arc<Mutex<HashMap<String, (String, CancellationToken)>>>,
 }
@@ -69,6 +71,7 @@ impl AssistantController {
             tools,
             tool_defs,
             sessions: Arc::new(SessionStore::with_persistence(deps.session_persistence)),
+            choices: PendingChoices::default(),
             auth_scope: deps.auth_scope,
             cancels: Arc::new(Mutex::new(HashMap::new())),
         })
@@ -195,6 +198,15 @@ impl AssistantController {
         }
     }
 
+    pub fn answer_choice(&self, session_id: &str, choice_id: &str, user_id: Option<String>) {
+        if self
+            .sessions
+            .is_visible_to(session_id, &self.owner_user_id())
+        {
+            self.choices.answer(session_id, choice_id, user_id);
+        }
+    }
+
     fn cancel_visible(&self, session_id: &str) {
         if let Some((_, token)) = self.cancels.lock().unwrap().remove(session_id) {
             token.cancel();
@@ -282,6 +294,7 @@ impl AssistantController {
         let context = TurnContext {
             tools: Arc::clone(&self.tools),
             sessions: Arc::clone(&self.sessions),
+            choices: self.choices.clone(),
             emitter: AssistantEmitter::new(
                 self.bus.clone(),
                 owner_user_id,

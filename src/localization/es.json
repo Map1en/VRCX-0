@@ -144,6 +144,19 @@
             "working": "Revisando tus datos",
             "done": "Datos revisados"
         },
+        "choice": {
+            "title": "¿A quién te refieres con «{query}»?",
+            "description": "Varias personas de tu historial tienen este nombre. Elige una para que el asistente busque a la persona correcta.",
+            "friend": "Amigo",
+            "encounters_one": "{count} encuentro",
+            "encounters_other": "{count} encuentros",
+            "last_seen": "Visto por última vez el {date}",
+            "required": "Elige a una persona u omite la pregunta.",
+            "skip": "Omitir",
+            "confirm": "Confirmar",
+            "picked": "Elegido: {name}",
+            "skipped": "No se eligió a nadie para «{query}»"
+        },
         "scroll_to_latest": "Desplazarse hasta el final",
         "connection": {
             "checking": "Comprobando conexión",

@@ -112,6 +112,8 @@ pub async fn spawn_in_process_tools(runtime: McpRuntime) -> Result<InProcessMcpT
 }
 
 #[cfg(test)]
+mod disambiguation_tests;
+#[cfg(test)]
 mod tests;
 #[cfg(test)]
 mod visit_timeline_tests;
