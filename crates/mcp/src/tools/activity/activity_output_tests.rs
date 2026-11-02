@@ -272,6 +272,7 @@ async fn copresence_summary_requires_auth_scope_owner() {
             min_minutes: None,
             limit: Some(5),
             friends_only: None,
+            utc_offset_minutes: None,
         }))
         .await
         .expect_err("empty auth_scope owner must reject the tool call");

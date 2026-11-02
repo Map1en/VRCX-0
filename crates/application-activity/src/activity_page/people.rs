@@ -82,6 +82,7 @@ fn companions(
         owner_user_id: Some(owner_user_id.clone()),
         audience,
         utc_offset_minutes: Some(utc_offset_minutes),
+        target_user_id: None,
     })?;
 
     Ok(summary

@@ -4,6 +4,7 @@ use rmcp::model::CallToolResult;
 use rmcp::{schemars, tool, tool_router};
 use serde::{Deserialize, Serialize};
 use vrcx_0_contracts::social_aggregates;
+use vrcx_0_core::activity_buckets;
 use vrcx_0_core::presence::PresenceView;
 
 use crate::server::VrcxMcpServer;
@@ -120,6 +121,7 @@ impl VrcxMcpServer {
             FriendProfileParams {
                 user: target.user_id,
                 time_window: input.time_window,
+                utc_offset_minutes: input.utc_offset_minutes,
             },
         )?;
         structured_result(WithResolution {
@@ -326,7 +328,10 @@ impl VrcxMcpServer {
         if user_id.is_empty() {
             return Err("get_friend_profile requires userId".into());
         }
-        let time_window_params = input.time_window.unwrap_or_default();
+        let time_window_params = input
+            .time_window
+            .unwrap_or_default()
+            .in_utc_offset(input.utc_offset_minutes)?;
         let time_window: social_aggregates::TimeWindow = time_window_params.clone().into();
         let recent_changes =
             self.friend_profile_changes(&owner_user_id, &user_id, time_window.clone())?;
@@ -379,16 +384,17 @@ impl VrcxMcpServer {
                 time_window: time_window.clone(),
                 group_by: social_aggregates::CopresenceGroupBy::Friend,
                 min_minutes: None,
-                limit: Some(100),
+                limit: Some(1),
                 owner_user_id: Some(owner_user_id.clone()),
                 audience: social_aggregates::CopresenceAudience::Everyone,
                 order_by: social_aggregates::CopresenceOrderBy::default(),
-                utc_offset_minutes: None,
+                utc_offset_minutes: input.utc_offset_minutes,
+                target_user_id: Some(user_id.clone()),
             })
             .map_err(map_application_query_error)?
             .rows
             .into_iter()
-            .find(|row| row.user_id == user_id);
+            .next();
         let activity_pattern = self
             .runtime
             .activity_queries
@@ -397,7 +403,7 @@ impl VrcxMcpServer {
                 user_id: Some(user_id.clone()),
                 time_window: time_window.clone(),
                 bucket: social_aggregates::ActivityBucket::HourOfDay,
-                utc_offset_minutes: None,
+                utc_offset_minutes: input.utc_offset_minutes,
             })
             .map_err(map_application_query_error)?
             .rows
@@ -419,6 +425,10 @@ impl VrcxMcpServer {
                 "Friend profile combines local VRCX-0 observations and current realtime memory; missing fields mean unobserved or not loaded.".into(),
                 "When realtime friend memory is unavailable, current uses the latest observed local profile fields where possible.".into(),
                 "Moderation status is read-only here; MCP does not execute block or mute actions.".into(),
+                format!(
+                    "activityPattern hour buckets are in {}.",
+                    activity_buckets::utc_offset_label(input.utc_offset_minutes.unwrap_or(0))
+                ),
             ],
         })
     }
@@ -622,6 +632,9 @@ struct FriendProfileParams {
     #[serde(alias = "userId", alias = "user_id")]
     user: String,
     time_window: Option<TimeWindowParams>,
+    /// The user's UTC offset in minutes (e.g. 540 for UTC+9, -300 for UTC-5).
+    /// Pass it so the activity pattern's hour buckets come back in local time.
+    utc_offset_minutes: Option<i64>,
 }
 #[derive(Clone, Debug, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "camelCase")]

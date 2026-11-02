@@ -74,6 +74,8 @@ mod router_tests {
         let router = VrcxMcpServer::tool_router();
         let tools = router.list_all();
         for name in [
+            "get_copresence_summary",
+            "get_friend_profile",
             "get_friend_activity_pattern",
             "get_best_time_to_play",
             "get_activity_timeline",

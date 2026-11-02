@@ -29,29 +29,35 @@ const PLAY_TIME_CAVEAT: &str =
 #[tool_router(router = activity_tool_router, vis = "pub(crate)")]
 impl VrcxMcpServer {
     #[tool(
-        description = "[L2·analyze] Ranked time-spent-together facts per person, aggregated from the local game log (reliable even inside private instances because you were there). THE tool for \"who I play/spend the most time with\". Defaults to current friends (friendsOnly=true). groupBy=friend ranks total minutes per person; groupBy=friend_world breaks one person's time down by world. For all-time/\"ever\"/\"so far\" questions OMIT timeWindow entirely — never pass a narrow window for an all-time question. Rows are pre-ranked and limited with isFriend; read the top rows, don't loop."
+        description = "[L2·analyze] Ranked time-spent-together facts per person, aggregated from the local game log (reliable even inside private instances because you were there). THE tool for \"who I play/spend the most time with\". Defaults to current friends (friendsOnly=true). groupBy=friend ranks total minutes per person; groupBy=friend_world ranks (person, world) pairs. For all-time/\"ever\"/\"so far\" questions OMIT timeWindow entirely — never pass a narrow window for an all-time question. Rows are pre-ranked and limited with isFriend; read the top rows, don't loop."
     )]
     async fn get_copresence_summary(
         &self,
         Parameters(input): Parameters<CopresenceSummaryParams>,
     ) -> Result<CallToolResult, String> {
         let owner_user_id = require_current_user_id(&self.runtime)?;
-        application_query_result(self.runtime.activity_queries.copresence_summary(
-            social_aggregates::CopresenceSummaryInput {
-                time_window: input.time_window.into(),
-                group_by: input.group_by.into(),
-                min_minutes: input.min_minutes,
-                limit: input.limit,
-                owner_user_id: Some(owner_user_id.clone()),
-                audience: if input.friends_only.unwrap_or(true) {
-                    social_aggregates::CopresenceAudience::Friends
-                } else {
-                    social_aggregates::CopresenceAudience::Everyone
+        application_query_result(
+            self.runtime.activity_queries.copresence_summary(
+                social_aggregates::CopresenceSummaryInput {
+                    time_window: input
+                        .time_window
+                        .in_utc_offset(input.utc_offset_minutes)?
+                        .into(),
+                    group_by: input.group_by.into(),
+                    min_minutes: input.min_minutes,
+                    limit: input.limit,
+                    owner_user_id: Some(owner_user_id.clone()),
+                    audience: if input.friends_only.unwrap_or(true) {
+                        social_aggregates::CopresenceAudience::Friends
+                    } else {
+                        social_aggregates::CopresenceAudience::Everyone
+                    },
+                    order_by: social_aggregates::CopresenceOrderBy::default(),
+                    utc_offset_minutes: input.utc_offset_minutes,
+                    target_user_id: None,
                 },
-                order_by: social_aggregates::CopresenceOrderBy::default(),
-                utc_offset_minutes: None,
-            },
-        ))
+            ),
+        )
     }
 
     #[tool(
@@ -364,6 +370,7 @@ impl VrcxMcpServer {
                 audience: social_aggregates::CopresenceAudience::Friends,
                 order_by: social_aggregates::CopresenceOrderBy::default(),
                 utc_offset_minutes: input.utc_offset_minutes,
+                target_user_id: None,
             })
             .map_err(map_application_query_error)?
             .rows;
@@ -685,12 +692,13 @@ struct CopresenceSummaryParams {
     /// Time window to search. Accepts {from, to} RFC3339, a four-digit calendar
     /// year, or a relative string ("today", "yesterday", "this week",
     /// "last week", "this month", "last month", or a rolling window like
-    /// "7d", "2w", "3mo"). Resolved in UTC; weeks start Monday. Omit only for
-    /// all history ("ever", "so far").
+    /// "7d", "2w", "3mo"). Calendar forms resolve in utcOffsetMinutes (UTC
+    /// when omitted); weeks start Monday. Omit only for all history ("ever",
+    /// "so far").
     #[serde(default)]
     time_window: TimeWindowParams,
-    /// friend (default) ranks total time per person; friend_world breaks one
-    /// person's time down per world (use only for a per-world breakdown).
+    /// friend (default) ranks total time per person; friend_world ranks
+    /// (person, world) pairs instead (use only for a per-world breakdown).
     #[serde(default)]
     group_by: CopresenceGroupByParam,
     /// Minimum co-presence minutes to include after aggregation.
@@ -701,6 +709,9 @@ struct CopresenceSummaryParams {
     /// strangers/acquaintances you are not friends with.
     #[serde(default, deserialize_with = "deserialize_optional_bool")]
     friends_only: Option<bool>,
+    /// The user's UTC offset in minutes (e.g. 540 for UTC+9, -300 for UTC-5).
+    /// Pass it so "this week", calendar days and coDays follow local time.
+    utc_offset_minutes: Option<i64>,
 }
 
 #[derive(Clone, Debug, Deserialize, schemars::JsonSchema)]

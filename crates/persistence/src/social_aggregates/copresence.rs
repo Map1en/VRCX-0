@@ -70,6 +70,15 @@ pub fn get_copresence_summary(
     append_copresence_window_filter(&mut sql, &mut params, &input.time_window);
 
     sql.push_str(" AND (@owner_user_id = '' OR COALESCE(g.user_id, '') <> @owner_user_id)");
+    if let Some(target_user_id) = input
+        .target_user_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        sql.push_str(" AND g.user_id = @target_user_id");
+        params = params.set("target_user_id", target_user_id);
+    }
 
     let empty_output = || CopresenceSummaryOutput {
         rows: Vec::new(),
