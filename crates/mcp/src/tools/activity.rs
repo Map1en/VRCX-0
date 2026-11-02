@@ -36,28 +36,38 @@ impl VrcxMcpServer {
         Parameters(input): Parameters<CopresenceSummaryParams>,
     ) -> Result<CallToolResult, String> {
         let owner_user_id = require_current_user_id(&self.runtime)?;
-        application_query_result(
-            self.runtime.activity_queries.copresence_summary(
-                social_aggregates::CopresenceSummaryInput {
-                    time_window: input
-                        .time_window
-                        .in_utc_offset(input.utc_offset_minutes)?
-                        .into(),
-                    group_by: input.group_by.into(),
-                    min_minutes: input.min_minutes,
-                    limit: input.limit,
-                    owner_user_id: Some(owner_user_id.clone()),
-                    audience: if input.friends_only.unwrap_or(true) {
-                        social_aggregates::CopresenceAudience::Friends
-                    } else {
-                        social_aggregates::CopresenceAudience::Everyone
-                    },
-                    order_by: social_aggregates::CopresenceOrderBy::default(),
-                    utc_offset_minutes: input.utc_offset_minutes,
-                    target_user_id: None,
+        let time_window: social_aggregates::TimeWindow = input
+            .time_window
+            .in_utc_offset(input.utc_offset_minutes)?
+            .into();
+        let mut output = self
+            .runtime
+            .activity_queries
+            .copresence_summary(social_aggregates::CopresenceSummaryInput {
+                time_window: time_window.clone(),
+                group_by: input.group_by.into(),
+                min_minutes: input.min_minutes,
+                limit: input.limit,
+                owner_user_id: Some(owner_user_id.clone()),
+                audience: if input.friends_only.unwrap_or(true) {
+                    social_aggregates::CopresenceAudience::Friends
+                } else {
+                    social_aggregates::CopresenceAudience::Everyone
                 },
-            ),
-        )
+                order_by: social_aggregates::CopresenceOrderBy::default(),
+                utc_offset_minutes: input.utc_offset_minutes,
+                target_user_id: None,
+            })
+            .map_err(map_application_query_error)?;
+        if output.rows.is_empty() {
+            if let Some(from) = time_window.from.as_deref() {
+                output.summary = format!(
+                    "No co-presence observed between {from} and {}. That is the complete answer for this window, not missing data to look up with other tools; offer a wider window if useful.",
+                    time_window.to.as_deref().unwrap_or("now")
+                );
+            }
+        }
+        structured_result(output)
     }
 
     #[tool(

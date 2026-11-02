@@ -487,6 +487,30 @@ async fn friend_activity_pattern_without_a_user_returns_the_most_active_friends(
         .any(|caveat| caveat.as_str().unwrap().contains("2 most active of 3")));
 }
 
+#[tokio::test]
+async fn empty_copresence_window_says_it_is_the_complete_answer() {
+    let (_dir, runtime, _db) =
+        crate::test_support::test_runtime_with_database("copresence-empty-window", "usr_owner")
+            .unwrap();
+    let server = VrcxMcpServer::new(runtime);
+
+    let result = server
+        .get_copresence_summary(Parameters(
+            serde_json::from_value(serde_json::json!({ "timeWindow": "7d" })).unwrap(),
+        ))
+        .await
+        .unwrap();
+
+    let summary = result.structured_content.unwrap()["summary"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    assert!(
+        summary.contains("complete answer for this window"),
+        "{summary}"
+    );
+}
+
 #[test]
 fn social_period_fading_splits_an_open_ended_window_at_its_midpoint() {
     let (_dir, runtime, _db) = crate::test_support::test_runtime_with_database(
