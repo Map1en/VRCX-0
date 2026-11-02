@@ -26,18 +26,9 @@ pub struct CompanionsOfOutput {
 pub struct CompanionOfRow {
     pub user_id: String,
     pub display_name: String,
+    pub is_friend: bool,
     pub overlap_minutes: i64,
-    pub overlap_events: i64,
     pub shared_instances: usize,
     pub last_seen_together: String,
-    pub world_count: usize,
-    pub worlds: Vec<CompanionWorldRow>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-#[serde(rename_all = "camelCase")]
-pub struct CompanionWorldRow {
-    pub location: String,
-    pub world_id: String,
-    pub world_name: String,
+    pub top_worlds: Vec<String>,
 }

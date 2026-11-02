@@ -78,9 +78,8 @@ fn companions_of_uses_gamelog_overlap_and_excludes_owner_and_non_overlap() {
     assert_eq!(output.rows[0].user_id, "usr_alice");
     assert_eq!(output.rows[0].overlap_minutes, 10);
     assert_eq!(output.rows[0].shared_instances, 1);
-    assert_eq!(output.rows[0].world_count, 1);
-    assert_eq!(output.rows[0].worlds[0].world_id, "wrld_public");
-    assert_eq!(output.rows[0].worlds[0].world_name, "Public World");
+    assert_eq!(output.rows[0].shared_instances, 1);
+    assert_eq!(output.rows[0].top_worlds, ["Public World"]);
     assert!(output.summary.contains("Target"));
 }
 
@@ -124,7 +123,7 @@ fn companions_of_renamed_user_shows_latest_name() {
 }
 
 #[test]
-fn companions_of_reports_world_count_and_truncates_world_samples() {
+fn companions_of_reports_shared_instances_and_caps_top_worlds() {
     let (_dir, db) = test_db("companions-of-world-count");
     create_game_log_tables(&db);
     for (index, location, world_id, world_name) in [
@@ -178,8 +177,8 @@ fn companions_of_reports_world_count_and_truncates_world_samples() {
     .unwrap();
 
     assert_eq!(output.rows.len(), 1);
-    assert_eq!(output.rows[0].world_count, 4);
-    assert_eq!(output.rows[0].worlds.len(), 3);
+    assert_eq!(output.rows[0].shared_instances, 4);
+    assert_eq!(output.rows[0].top_worlds, ["A World", "B World", "C World"]);
     assert!(output.summary.contains("Alice"));
 }
 

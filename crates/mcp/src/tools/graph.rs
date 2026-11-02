@@ -82,7 +82,7 @@ impl VrcxMcpServer {
     }
 
     #[tool(
-        description = "[L2·analyze] Infer who a given user is most often co-present with, from the local game log (instances the signed-in user attended). Ranked by shared instances. For \"who does X usually/often play with\" OMIT timeWindow so it covers all history — a narrow window will miss their regular companions. THIRD-PARTY blind spot: instances you were not in (especially private) are invisible — say the picture is partial; never conclude who they are \"closest\" to."
+        description = "[L2·analyze] Infer who a given user is most often co-present with, from the local game log (instances the signed-in user attended). Ranked by shared instances; each row flags isFriend and lists the top worlds you shared. For \"who does X usually/often play with\" OMIT timeWindow so it covers all history — a narrow window will miss their regular companions. THIRD-PARTY blind spot: instances you were not in (especially private) are invisible — say the picture is partial; never conclude who they are \"closest\" to."
     )]
     async fn get_companions_of(
         &self,
@@ -111,7 +111,7 @@ impl VrcxMcpServer {
                 owner_user_id: owner_user_id.clone(),
                 user_id: target.user_id,
                 time_window: input.time_window.into(),
-                limit: input.limit,
+                limit: input.limit.or(Some(10)),
             })
             .map_err(map_application_query_error)?;
         structured_result(WithResolution {
@@ -241,6 +241,7 @@ struct CompanionsOfParams {
     user: Option<String>,
     #[serde(default)]
     time_window: TimeWindowParams,
+    /// Ranked companions to return (default 10, max 100).
     limit: Option<i64>,
 }
 

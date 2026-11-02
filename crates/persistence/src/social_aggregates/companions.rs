@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use vrcx_0_core::location::parse_location;
 
@@ -9,10 +9,12 @@ use crate::Error;
 
 use super::caveats::companions_caveats;
 use super::helpers::{
-    append_time_window_filter, clamped_optional_limit, format_minutes,
+    append_time_window_filter, clamped_optional_limit, current_friend_id_set, format_minutes,
     latest_display_names_for_users, millis_to_minutes, world_names_for_ids,
 };
-use super::types::{CompanionOfRow, CompanionWorldRow, CompanionsOfInput, CompanionsOfOutput};
+use super::types::{CompanionOfRow, CompanionsOfInput, CompanionsOfOutput};
+
+const TOP_WORLDS_PER_COMPANION: usize = 3;
 
 pub fn get_companions_of(
     db: &DatabaseService,
@@ -90,38 +92,38 @@ pub fn get_companions_of(
     params = params.set("limit", limit);
 
     let mut rows = Vec::new();
+    let mut top_world_ids = Vec::new();
     let mut world_ids = BTreeSet::new();
     for row in db.execute(&sql, &params.build())? {
         let user_id = row_string(&row, 0);
         if user_id.is_empty() {
             continue;
         }
-        let mut worlds = row_string(&row, 5)
-            .split(',')
-            .filter(|location| !location.is_empty())
-            .map(|location| {
-                let world_id = parse_location(location).world_id;
-                if !world_id.is_empty() {
-                    world_ids.insert(world_id.clone());
-                }
-                CompanionWorldRow {
-                    location: location.to_string(),
-                    world_id,
-                    world_name: String::new(),
-                }
-            })
+        let mut instances_per_world = BTreeMap::<String, usize>::new();
+        for location in row_string(&row, 5).split(',') {
+            let world_id = parse_location(location).world_id;
+            if !world_id.is_empty() {
+                *instances_per_world.entry(world_id).or_default() += 1;
+            }
+        }
+        let mut ranked_worlds = instances_per_world.into_iter().collect::<Vec<_>>();
+        ranked_worlds
+            .sort_by(|left, right| right.1.cmp(&left.1).then_with(|| left.0.cmp(&right.0)));
+        let top = ranked_worlds
+            .into_iter()
+            .take(TOP_WORLDS_PER_COMPANION)
+            .map(|(world_id, _)| world_id)
             .collect::<Vec<_>>();
-        let world_count = worlds.len();
-        worlds.truncate(3);
+        world_ids.extend(top.iter().cloned());
+        top_world_ids.push(top);
         rows.push(CompanionOfRow {
             user_id,
             display_name: String::new(),
+            is_friend: false,
             overlap_minutes: millis_to_minutes(row_i64(&row, 1).max(0) * 1000),
-            overlap_events: row_i64(&row, 2).max(0),
             shared_instances: usize::try_from(row_i64(&row, 3).max(0)).unwrap_or(0),
             last_seen_together: row_string(&row, 4),
-            world_count,
-            worlds,
+            top_worlds: Vec::new(),
         });
     }
 
@@ -132,15 +134,16 @@ pub fn get_companions_of(
     user_ids.push(target_user_id.clone());
     let display_names = latest_display_names_for_users(db, &owner_user_id, &user_ids)?;
     let world_names = world_names_for_ids(db, &owner_user_id, &world_ids)?;
-    for row in &mut rows {
+    let friend_ids = current_friend_id_set(db, &owner_user_id)?;
+    for (row, top) in rows.iter_mut().zip(top_world_ids) {
         if let Some(name) = display_names.get(&row.user_id) {
             row.display_name = name.clone();
         }
-        for world in &mut row.worlds {
-            if let Some(name) = world_names.get(&world.world_id) {
-                world.world_name = name.clone();
-            }
-        }
+        row.is_friend = friend_ids.contains(&row.user_id);
+        row.top_worlds = top
+            .iter()
+            .filter_map(|world_id| world_names.get(world_id).cloned())
+            .collect();
     }
     let target_display_name = display_names
         .get(&target_user_id)

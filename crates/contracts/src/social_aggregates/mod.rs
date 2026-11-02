@@ -21,7 +21,7 @@ pub use changes::{
     FriendChangeEvent, FriendChangeKind, FriendChangeRow, FriendChangesInput, FriendChangesOutput,
 };
 pub use common::{ActivityBucket, TimeWindow};
-pub use companions::{CompanionOfRow, CompanionWorldRow, CompanionsOfInput, CompanionsOfOutput};
+pub use companions::{CompanionOfRow, CompanionsOfInput, CompanionsOfOutput};
 pub use copresence::{
     CopresenceAudience, CopresenceGroupBy, CopresenceOrderBy, CopresenceSummaryInput,
     CopresenceSummaryOutput, CopresenceSummaryRow,
