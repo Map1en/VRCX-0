@@ -2,6 +2,7 @@ import {
     ArrowUpRightIcon,
     BrainIcon,
     ChevronDownIcon,
+    MessageCircleDashedIcon,
     PanelRightIcon,
     Settings2Icon,
     XIcon
@@ -49,7 +50,9 @@ import {
 import {
     Empty,
     EmptyContent,
+    EmptyDescription,
     EmptyHeader,
+    EmptyMedia,
     EmptyTitle
 } from '@/ui/shadcn/empty';
 import { InputGroupButton } from '@/ui/shadcn/input-group';
@@ -370,17 +373,30 @@ export function AssistantDialog() {
                                 )}
                                 emptyState={
                                     <Empty className="py-12">
-                                        <EmptyHeader>
-                                            <EmptyTitle>
+                                        <EmptyHeader className="max-w-md gap-3">
+                                            <EmptyMedia
+                                                variant="icon"
+                                                className="size-12 rounded-xl [&_svg:not([class*='size-'])]:size-5"
+                                            >
+                                                <MessageCircleDashedIcon />
+                                            </EmptyMedia>
+                                            <EmptyTitle className="text-xl font-semibold">
                                                 {showSetupGate
                                                     ? t('assistant.setup_title')
                                                     : t(
                                                           'assistant.empty_title'
                                                       )}
                                             </EmptyTitle>
+                                            {showSetupGate ? null : (
+                                                <EmptyDescription>
+                                                    {t(
+                                                        'assistant.empty_description'
+                                                    )}
+                                                </EmptyDescription>
+                                            )}
                                         </EmptyHeader>
-                                        <EmptyContent>
-                                            {showSetupGate ? (
+                                        {showSetupGate ? (
+                                            <EmptyContent>
                                                 <Button
                                                     type="button"
                                                     size="sm"
@@ -392,24 +408,8 @@ export function AssistantDialog() {
                                                         'assistant.open_settings'
                                                     )}
                                                 </Button>
-                                            ) : (
-                                                examplePrompts.map((prompt) => (
-                                                    <Button
-                                                        key={prompt}
-                                                        type="button"
-                                                        size="xs"
-                                                        variant="outline"
-                                                        disabled={notConfigured}
-                                                        onClick={() =>
-                                                            sendMessage(prompt)
-                                                        }
-                                                        className="h-auto max-w-full whitespace-normal"
-                                                    >
-                                                        {prompt}
-                                                    </Button>
-                                                ))
-                                            )}
-                                        </EmptyContent>
+                                            </EmptyContent>
+                                        ) : null}
                                     </Empty>
                                 }
                             />
@@ -430,6 +430,11 @@ export function AssistantDialog() {
                             <Composer
                                 busy={busy}
                                 disabled={notConfigured}
+                                suggestions={
+                                    messages?.length || notConfigured
+                                        ? undefined
+                                        : examplePrompts
+                                }
                                 onSend={handleSend}
                                 onStop={() => cancelActiveTurn()}
                                 toolbar={

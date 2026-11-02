@@ -2,6 +2,7 @@ import { ArrowUpIcon, SquareIcon } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { Button } from '@/ui/shadcn/button';
 import {
     InputGroup,
     InputGroupAddon,
@@ -12,6 +13,7 @@ import {
 interface ComposerProps {
     busy: boolean;
     disabled: boolean;
+    suggestions?: string[];
     toolbar?: ReactNode;
     onSend: (text: string) => void;
     onStop: () => void;
@@ -20,6 +22,7 @@ interface ComposerProps {
 export function Composer({
     busy,
     disabled,
+    suggestions,
     toolbar,
     onSend,
     onStop
@@ -44,6 +47,22 @@ export function Composer({
                 submit();
             }}
         >
+            {suggestions?.length ? (
+                <div className="mb-2 flex [scrollbar-width:none] gap-2 overflow-x-auto overscroll-x-contain">
+                    {suggestions.map((suggestion) => (
+                        <Button
+                            key={suggestion}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0"
+                            onClick={() => onSend(suggestion)}
+                        >
+                            {suggestion}
+                        </Button>
+                    ))}
+                </div>
+            ) : null}
             <InputGroup className="dark:has-disabled:bg-input/30 rounded-xl has-disabled:bg-transparent has-disabled:opacity-100">
                 <InputGroupTextarea
                     value={value}

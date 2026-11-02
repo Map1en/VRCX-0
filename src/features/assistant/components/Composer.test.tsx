@@ -69,6 +69,29 @@ describe('Composer', () => {
         expect(screen.getByRole('button', { name: 'Model' })).toBeTruthy();
     });
 
+    it('sends a suggestion shown above the input as is', () => {
+        const onSend = vi.fn();
+        render(
+            <Composer
+                busy={false}
+                disabled={false}
+                suggestions={['Who did I play with most this week?']}
+                onSend={onSend}
+                onStop={vi.fn()}
+            />
+        );
+
+        fireEvent.click(
+            screen.getByRole('button', {
+                name: 'Who did I play with most this week?'
+            })
+        );
+
+        expect(onSend).toHaveBeenCalledWith(
+            'Who did I play with most this week?'
+        );
+    });
+
     it('keeps stop available while a disabled busy turn is running', () => {
         const onStop = vi.fn();
         render(<Composer busy disabled onSend={vi.fn()} onStop={onStop} />);
