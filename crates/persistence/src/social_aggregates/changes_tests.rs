@@ -42,6 +42,22 @@ fn friend_changes_returns_recent_status_events_by_friend() {
         FriendChangeKind::Status
     );
 
+    let top = get_friend_changes(
+        &db,
+        FriendChangesInput {
+            owner_user_id: OwnerId::new("usr_self"),
+            target_user_id: None,
+            time_window: TimeWindow::all(),
+            kind: FriendChangeKind::Status,
+            limit: Some(1),
+        },
+    )
+    .unwrap();
+    assert_eq!(top.rows.len(), 1);
+    assert_eq!(top.rows[0].user_id, "usr_alice");
+    assert_eq!(top.rows[0].change_count, 3);
+    assert_eq!(top.rows[0].last_changed_at, "2026-06-04T20:00:00Z");
+
     let bob = get_friend_changes(
         &db,
         FriendChangesInput {

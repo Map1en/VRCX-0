@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::common::{row_string, ParamsBuilder};
+use crate::common::{row_i64, row_string, ParamsBuilder};
 use crate::database::DatabaseService;
 use crate::realtime::normalize_user_table_prefix;
 use crate::Error;
@@ -11,6 +11,8 @@ use super::types::{
     FriendChangeEvent, FriendChangeKind, FriendChangeRow, FriendChangesInput, FriendChangesOutput,
 };
 
+const RECENT_EVENTS_PER_FRIEND: i64 = 5;
+
 pub fn get_friend_changes(
     db: &DatabaseService,
     input: FriendChangesInput,
@@ -19,15 +21,15 @@ pub fn get_friend_changes(
     let (table_name, select_sql) = match input.kind {
         FriendChangeKind::Status => (
             format!("{user_prefix}_feed_status"),
-            "SELECT user_id, display_name, created_at, previous_status || ' ' || previous_status_description, status || ' ' || status_description",
+            "SELECT user_id, display_name, created_at, previous_status || ' ' || previous_status_description AS previous_value, status || ' ' || status_description AS new_value",
         ),
         FriendChangeKind::Avatar => (
             format!("{user_prefix}_feed_avatar"),
-            "SELECT user_id, display_name, created_at, previous_current_avatar_image_url, avatar_name",
+            "SELECT user_id, display_name, created_at, '' AS previous_value, avatar_name AS new_value",
         ),
         FriendChangeKind::Bio => (
             format!("{user_prefix}_feed_bio"),
-            "SELECT user_id, display_name, created_at, previous_bio, bio",
+            "SELECT user_id, display_name, created_at, previous_bio AS previous_value, bio AS new_value",
         ),
     };
     if !table_exists(db, &table_name)? {
@@ -37,9 +39,14 @@ pub fn get_friend_changes(
         });
     }
 
-    let limit = clamped_optional_limit(input.limit, 200, 500);
-    let mut sql = format!("{select_sql} FROM {table_name} WHERE 1 = 1");
-    let mut params = ParamsBuilder::new().set("limit", limit);
+    let limit = clamped_optional_limit(input.limit, 25, 100);
+    let mut sql = format!(
+        "WITH filtered AS (
+            {select_sql}, id FROM {table_name} WHERE trim(COALESCE(user_id, '')) <> ''"
+    );
+    let mut params = ParamsBuilder::new()
+        .set("limit", limit)
+        .set("recent_events", RECENT_EVENTS_PER_FRIEND);
     if let Some(target_user_id) = input
         .target_user_id
         .as_deref()
@@ -50,37 +57,50 @@ pub fn get_friend_changes(
         params = params.set("target_user_id", target_user_id);
     }
     append_time_window_filter(&mut sql, &mut params, &input.time_window, "created_at");
-    sql.push_str(" ORDER BY created_at DESC, id DESC LIMIT @limit");
+    sql.push_str(
+        "
+        ), counted AS (
+            SELECT user_id, COUNT(*) AS change_count, MAX(created_at) AS last_changed_at
+            FROM filtered
+            GROUP BY user_id
+            ORDER BY change_count DESC, last_changed_at DESC, user_id ASC
+            LIMIT @limit
+        ), ranked AS (
+            SELECT
+                filtered.*,
+                ROW_NUMBER() OVER (
+                    PARTITION BY filtered.user_id
+                    ORDER BY filtered.created_at DESC, filtered.id DESC
+                ) AS rn
+            FROM filtered
+            JOIN counted ON counted.user_id = filtered.user_id
+        )
+        SELECT ranked.user_id, ranked.display_name, ranked.created_at, ranked.previous_value,
+            ranked.new_value, counted.change_count, counted.last_changed_at
+        FROM ranked
+        JOIN counted ON counted.user_id = ranked.user_id
+        WHERE ranked.rn <= @recent_events
+        ORDER BY ranked.user_id ASC, ranked.rn ASC",
+    );
 
     let mut grouped: BTreeMap<String, FriendChangeAccumulator> = BTreeMap::new();
     for row in db.execute(&sql, &params.build())? {
         let user_id = row_string(&row, 0);
-        if user_id.is_empty() {
-            continue;
-        }
-        let display_name = row_string(&row, 1);
-        let changed_at = row_string(&row, 2);
-        let previous_value = row_string(&row, 3).trim().to_string();
-        let new_value = row_string(&row, 4).trim().to_string();
         let entry = grouped
             .entry(user_id.clone())
             .or_insert_with(|| FriendChangeAccumulator {
                 user_id,
-                display_name,
-                ..FriendChangeAccumulator::default()
+                display_name: row_string(&row, 1),
+                change_count: row_i64(&row, 5),
+                last_changed_at: row_string(&row, 6),
+                recent_events: Vec::new(),
             });
-        entry.change_count += 1;
-        if changed_at > entry.last_changed_at {
-            entry.last_changed_at = changed_at.clone();
-        }
-        if entry.recent_events.len() < 5 {
-            entry.recent_events.push(FriendChangeEvent {
-                changed_at,
-                kind: input.kind.clone(),
-                previous_value,
-                new_value,
-            });
-        }
+        entry.recent_events.push(FriendChangeEvent {
+            changed_at: row_string(&row, 2),
+            kind: input.kind.clone(),
+            previous_value: row_string(&row, 3).trim().to_string(),
+            new_value: row_string(&row, 4).trim().to_string(),
+        });
     }
 
     let mut rows = grouped
