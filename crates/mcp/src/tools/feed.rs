@@ -444,7 +444,9 @@ impl SearchFriendFeedRow {
             user_id: value.user_id.unwrap_or_default(),
             display_name: value.display_name.unwrap_or_default(),
             location: value.location,
-            world_name: value.world_name,
+            world_name: value
+                .world_name
+                .filter(|name| !name.trim().is_empty() && !name.starts_with("wrld_")),
             previous_location: value.previous_location,
             group_name: value.group_name,
             status,
