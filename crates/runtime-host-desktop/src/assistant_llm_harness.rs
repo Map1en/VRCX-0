@@ -1,16 +1,18 @@
 use std::collections::{BTreeSet, HashMap, VecDeque};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use rusqlite::OpenFlags;
 use serde_json::{json, Map, Value};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use vrcx_0_application_core::RuntimeEventSink;
 use vrcx_0_assistant::{
-    AssistantController, AssistantLlmClientFactory, AssistantLlmClientFactoryPort,
-    AssistantLlmClientInput, AssistantLlmClientPort, AssistantLlmError, AssistantLlmFuture,
-    LlmEndpointDetectModelsInput, LlmEndpointUpsertInput, PlaybookMode, Role,
+    AssistantController, AssistantLlmClient, AssistantLlmClientFactory,
+    AssistantLlmClientFactoryPort, AssistantLlmClientInput, AssistantLlmClientPort,
+    AssistantLlmError, AssistantLlmFuture, LlmEndpointDetectModelsInput, LlmEndpointUpsertInput,
+    PlaybookMode, Role,
 };
 use vrcx_0_composition::{RuntimeHostOptions, RuntimeHostProfile, RuntimeHostState};
 use vrcx_0_contracts::llm::{
@@ -95,6 +97,80 @@ impl RuntimeEventSink for ChannelSink {
 }
 
 #[derive(Default)]
+struct LlmMeter {
+    requests: AtomicUsize,
+    prompt_chars: AtomicUsize,
+}
+
+impl LlmMeter {
+    fn record(&self, messages: &[ChatMessage], tools: &[ToolDefinition]) {
+        let tool_chars: usize = tools
+            .iter()
+            .map(|tool| {
+                tool.name.chars().count()
+                    + tool.description.chars().count()
+                    + tool.parameters.to_string().chars().count()
+            })
+            .sum();
+        let message_chars = serde_json::to_string(messages)
+            .map(|text| text.chars().count())
+            .unwrap_or_default();
+        self.requests.fetch_add(1, Ordering::Relaxed);
+        self.prompt_chars
+            .fetch_add(message_chars + tool_chars, Ordering::Relaxed);
+    }
+
+    fn reading(&self) -> (usize, usize) {
+        (
+            self.requests.load(Ordering::Relaxed),
+            self.prompt_chars.load(Ordering::Relaxed),
+        )
+    }
+}
+
+struct MeteredFactory(AssistantLlmClientFactory, Arc<LlmMeter>);
+
+impl AssistantLlmClientFactoryPort for MeteredFactory {
+    fn create(
+        &self,
+        input: AssistantLlmClientInput,
+    ) -> Result<Arc<dyn AssistantLlmClientPort>, AssistantLlmError> {
+        Ok(Arc::new(MeteredLlm(
+            self.0.create(input)?,
+            Arc::clone(&self.1),
+        )))
+    }
+}
+
+struct MeteredLlm(AssistantLlmClient, Arc<LlmMeter>);
+
+impl AssistantLlmClientPort for MeteredLlm {
+    fn list_models(&self) -> AssistantLlmFuture<'_, LlmEndpointDetectModelsResult> {
+        self.0.list_models()
+    }
+
+    fn complete_chat<'a>(
+        &'a self,
+        messages: &'a [ChatMessage],
+        options: &'a LlmRequestOptions,
+    ) -> AssistantLlmFuture<'a, String> {
+        self.1.record(messages, &[]);
+        self.0.complete_chat(messages, options)
+    }
+
+    fn stream_chat<'a>(
+        &'a self,
+        messages: &'a [ChatMessage],
+        tools: &'a [ToolDefinition],
+        options: &'a LlmRequestOptions,
+        on_text: Box<dyn FnMut(&str) + Send + 'a>,
+    ) -> AssistantLlmFuture<'a, AssistantTurn> {
+        self.1.record(messages, tools);
+        self.0.stream_chat(messages, tools, options, on_text)
+    }
+}
+
+#[derive(Default)]
 struct TurnLog {
     session_id: String,
     tool_calls: Vec<String>,
@@ -102,12 +178,28 @@ struct TurnLog {
     choices: usize,
     answer: String,
     error: Option<String>,
+    metrics: TurnMetrics,
+}
+
+#[derive(Clone, Default)]
+struct TurnMetrics {
+    llm_requests: usize,
+    prompt_chars: usize,
+    tool_result_chars: usize,
+    elapsed: Duration,
 }
 
 impl TurnLog {
     fn print(&self, node: &str, question: &str) {
         println!("\n=== {node} ===\nQ: {question}");
         println!("tools: {:?}", self.tool_calls);
+        println!(
+            "metrics: llm_requests={} prompt_chars={} tool_result_chars={} secs={:.1}",
+            self.metrics.llm_requests,
+            self.metrics.prompt_chars,
+            self.metrics.tool_result_chars,
+            self.metrics.elapsed.as_secs_f64()
+        );
         if !self.failed_tools.is_empty() {
             println!("failed tool results: {:?}", self.failed_tools);
         }
@@ -125,6 +217,8 @@ struct Harness {
     controller: AssistantController,
     events: UnboundedReceiver<(String, Value)>,
     failures: Vec<String>,
+    meter: Arc<LlmMeter>,
+    metrics: Vec<(String, usize, TurnMetrics)>,
 }
 
 impl Harness {
@@ -135,6 +229,11 @@ impl Harness {
         locale: &str,
         question: &str,
     ) -> TurnLog {
+        let tool_chars_before = session_id
+            .as_deref()
+            .map_or(0, |session_id| self.tool_result_chars(session_id));
+        let (requests_before, prompt_chars_before) = self.meter.reading();
+        let started = Instant::now();
         let sent = self
             .controller
             .send_message(session_id, question.to_string(), Some(locale.into()))
@@ -189,9 +288,25 @@ impl Harness {
                 _ => {}
             }
         }
+        let (requests_after, prompt_chars_after) = self.meter.reading();
+        log.metrics = TurnMetrics {
+            llm_requests: requests_after - requests_before,
+            prompt_chars: prompt_chars_after - prompt_chars_before,
+            tool_result_chars: self
+                .tool_result_chars(&log.session_id)
+                .saturating_sub(tool_chars_before),
+            elapsed: started.elapsed(),
+        };
+        self.metrics
+            .push((node.to_string(), log.tool_calls.len(), log.metrics.clone()));
         log.print(node, question);
         self.check(node, log.error.is_none(), "turn ended with an error");
         self.check(node, !log.answer.trim().is_empty(), "answer is empty");
+        self.check(
+            node,
+            !exposes_user_id(&log.answer),
+            "answer exposes a raw usr_ id",
+        );
         if locale == "ja" {
             self.check(
                 node,
@@ -202,6 +317,38 @@ impl Harness {
             );
         }
         log
+    }
+
+    fn tool_result_chars(&self, session_id: &str) -> usize {
+        self.controller
+            .get_session(session_id)
+            .ok()
+            .flatten()
+            .map(|session| {
+                session
+                    .messages
+                    .iter()
+                    .filter_map(|message| message.tool_content.as_deref())
+                    .map(|content| content.chars().count())
+                    .sum()
+            })
+            .unwrap_or_default()
+    }
+
+    fn print_metrics(&self) {
+        println!(
+            "\n| node | tool calls | LLM requests | prompt chars | tool result chars | secs |"
+        );
+        println!("|---|---|---|---|---|---|");
+        for (node, tool_calls, metrics) in &self.metrics {
+            println!(
+                "| {node} | {tool_calls} | {} | {} | {} | {:.1} |",
+                metrics.llm_requests,
+                metrics.prompt_chars,
+                metrics.tool_result_chars,
+                metrics.elapsed.as_secs_f64()
+            );
+        }
     }
 
     fn check(&mut self, node: &str, passed: bool, problem: &str) {
@@ -241,17 +388,19 @@ impl Rig {
     async fn start(
         scratch: ScratchDir,
         runtime: RuntimeHostState,
-        llm_factory: Option<AssistantLlmClientFactory>,
+        llm_factory: impl FnOnce(AssistantLlmClientFactory) -> AssistantLlmClientFactory,
     ) -> Self {
         let (sender, events) = unbounded_channel();
         runtime
             .desktop_assembly()
             .event_bus()
             .set_sink(ChannelSink(sender));
+        let meter = Arc::new(LlmMeter::default());
         let mut deps = assistant_controller_deps_for(&runtime);
-        if let Some(llm_factory) = llm_factory {
-            deps.llm_factory = llm_factory;
-        }
+        deps.llm_factory = Arc::new(MeteredFactory(
+            llm_factory(deps.llm_factory),
+            Arc::clone(&meter),
+        ));
         let controller = AssistantController::new(deps)
             .await
             .expect("assistant controller");
@@ -262,6 +411,8 @@ impl Rig {
                 controller,
                 events,
                 failures: Vec::new(),
+                meter,
+                metrics: Vec::new(),
             },
         }
     }
@@ -289,6 +440,59 @@ impl Rig {
         drop(runtime);
         scratch.remove_when_released().await;
         assert!(failures.is_empty(), "failures:\n{}", failures.join("\n"));
+    }
+}
+
+fn exposes_user_id(text: &str) -> bool {
+    text.match_indices("usr_").any(|(start, _)| {
+        let id = &text[start + 4..];
+        id.get(..8)
+            .is_some_and(|hex| hex.chars().all(|c| c.is_ascii_hexdigit()))
+            && id.get(8..).is_some_and(|rest| rest.starts_with('-'))
+    })
+}
+
+struct Snapshot {
+    scratch: ScratchDir,
+    runtime: RuntimeHostState,
+    database: PathBuf,
+    user_id: String,
+}
+
+impl Snapshot {
+    fn take(env: &HarnessEnv, kind: &str) -> Self {
+        let source_dir = env
+            .get("VRCX0_HARNESS_DATA_DIR")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| {
+                resolve_app_data_dir()
+                    .expect("resolve data dir")
+                    .current_dir
+            });
+        let scratch = ScratchDir::new(kind);
+        let database = scratch.0.join("app-data").join("VRCX-0.sqlite3");
+        std::fs::create_dir_all(database.parent().unwrap()).unwrap();
+        snapshot_database(&source_dir.join("VRCX-0.sqlite3"), &database);
+
+        let runtime = Rig::runtime(&scratch);
+        let user_id = env.get("VRCX0_HARNESS_USER_ID").unwrap_or_else(|| {
+            runtime
+                .desktop_assembly()
+                .config()
+                .get_string("lastUserLoggedIn", "")
+                .unwrap_or_default()
+        });
+        assert!(
+            !user_id.is_empty(),
+            "no signed-in account in the database; set VRCX0_HARNESS_USER_ID"
+        );
+        Rig::sign_in(&runtime, &user_id);
+        Self {
+            scratch,
+            runtime,
+            database,
+            user_id,
+        }
     }
 }
 
@@ -358,35 +562,14 @@ async fn assistant_answers_key_questions_with_a_real_llm() {
     let api_key = env.require("VRCX0_HARNESS_LLM_API_KEY");
     let base_url = env.require("VRCX0_HARNESS_LLM_BASE_URL");
     let model = env.require("VRCX0_HARNESS_LLM_MODEL");
-    let source_dir = env
-        .get("VRCX0_HARNESS_DATA_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| {
-            resolve_app_data_dir()
-                .expect("resolve data dir")
-                .current_dir
-        });
-
-    let scratch = ScratchDir::new("harness");
-    let database = scratch.0.join("app-data").join("VRCX-0.sqlite3");
-    std::fs::create_dir_all(database.parent().unwrap()).unwrap();
-    snapshot_database(&source_dir.join("VRCX-0.sqlite3"), &database);
-
-    let runtime = Rig::runtime(&scratch);
-    let user_id = env.get("VRCX0_HARNESS_USER_ID").unwrap_or_else(|| {
-        runtime
-            .desktop_assembly()
-            .config()
-            .get_string("lastUserLoggedIn", "")
-            .unwrap_or_default()
-    });
-    assert!(
-        !user_id.is_empty(),
-        "no signed-in account in the database; set VRCX0_HARNESS_USER_ID"
-    );
-    Rig::sign_in(&runtime, &user_id);
+    let Snapshot {
+        scratch,
+        runtime,
+        database,
+        ..
+    } = Snapshot::take(&env, "harness");
     let ambiguous = find_ambiguous_fragment(&runtime, &database).await;
-    let mut rig = Rig::start(scratch, runtime, None).await;
+    let mut rig = Rig::start(scratch, runtime, |default| default).await;
     let harness = &mut rig.harness;
 
     let endpoint = harness
@@ -462,7 +645,7 @@ async fn assistant_answers_key_questions_with_a_real_llm() {
         "answered without reading any data",
     );
 
-    let unknown = harness
+    harness
         .ask(
             "unknown_person",
             None,
@@ -470,11 +653,6 @@ async fn assistant_answers_key_questions_with_a_real_llm() {
             "Zyxwv Qprst さんとはどんな関係？",
         )
         .await;
-    harness.check(
-        "unknown_person",
-        !unknown.answer.contains("usr_"),
-        "answer exposes a user id for a person who is not in the history",
-    );
 
     match ambiguous {
         Some(fragment) => {
@@ -506,6 +684,7 @@ async fn assistant_answers_key_questions_with_a_real_llm() {
         "a write tool ran while writes are off",
     );
 
+    harness.print_metrics();
     let _ = harness.controller.endpoint_delete(&endpoint.id);
     rig.finish().await;
 }
@@ -645,12 +824,8 @@ impl ScriptedRun {
             turns: Mutex::new(turns.into()),
             ..ScriptedLlm::default()
         });
-        let rig = Rig::start(
-            scratch,
-            runtime,
-            Some(Arc::new(ScriptedFactory(Arc::clone(&llm)))),
-        )
-        .await;
+        let factory: AssistantLlmClientFactory = Arc::new(ScriptedFactory(Arc::clone(&llm)));
+        let rig = Rig::start(scratch, runtime, |_| factory).await;
         let controller = &rig.harness.controller;
         let endpoint = controller
             .endpoint_upsert(LlmEndpointUpsertInput {
@@ -765,4 +940,456 @@ async fn scripted_broken_and_truncated_calls_come_back_as_tool_errors() {
     assert!(run.llm.last_tool_message(2).contains("output token limit"));
     assert_eq!(log.answer, "I could not look that up.");
     run.finish().await;
+}
+
+struct ToolProbe {
+    tools: vrcx_0_mcp::InProcessMcpTools,
+    sizes: Vec<(String, usize)>,
+    dump_dir: Option<PathBuf>,
+}
+
+impl ToolProbe {
+    async fn call(&mut self, name: &'static str, arguments: Value) -> Value {
+        let outcome = self
+            .tools
+            .call_tool(name, arguments.as_object().cloned())
+            .await
+            .unwrap_or_else(|error| panic!("{name} failed to dispatch: {error}"));
+        assert!(
+            !outcome.is_error,
+            "{name} {arguments} failed: {}",
+            outcome.text
+        );
+        let value = outcome.structured.unwrap_or(Value::Null);
+        if let Some(dir) = &self.dump_dir {
+            let file = dir.join(format!("{:02}_{name}.json", self.sizes.len()));
+            let body = json!({ "arguments": arguments, "result": value });
+            std::fs::write(file, serde_json::to_string_pretty(&body).unwrap()).unwrap();
+        }
+        let keys = arguments
+            .as_object()
+            .map(|map| map.keys().cloned().collect::<Vec<_>>().join(","))
+            .unwrap_or_default();
+        self.sizes
+            .push((format!("{name}({keys})"), value.to_string().chars().count()));
+        value
+    }
+}
+
+struct SnapshotSql {
+    connection: rusqlite::Connection,
+    owner: String,
+    owner_row: i64,
+    prefix: String,
+}
+
+impl SnapshotSql {
+    fn open(database: &Path, owner: &str) -> Self {
+        let connection =
+            rusqlite::Connection::open_with_flags(database, OpenFlags::SQLITE_OPEN_READ_ONLY)
+                .expect("open the snapshot");
+        let owner_row = connection
+            .query_row("SELECT id FROM owners WHERE user_id = ?1", [owner], |row| {
+                row.get(0)
+            })
+            .unwrap_or(0);
+        Self {
+            connection,
+            owner: owner.to_string(),
+            owner_row,
+            prefix: owner.replace(['-', '_'], ""),
+        }
+    }
+
+    fn table(&self, suffix: &str) -> String {
+        format!("{}_{suffix}", self.prefix)
+    }
+
+    fn int(&self, sql: &str, params: impl rusqlite::Params) -> i64 {
+        self.connection
+            .query_row(sql, params, |row| row.get::<_, Option<i64>>(0))
+            .unwrap_or_else(|error| panic!("{sql}: {error}"))
+            .unwrap_or(0)
+    }
+
+    fn text(&self, sql: &str, params: impl rusqlite::Params) -> Option<String> {
+        self.connection
+            .query_row(sql, params, |row| row.get::<_, Option<String>>(0))
+            .ok()
+            .flatten()
+    }
+
+    fn copresence_minutes(&self, user_id: &str, from: &str, to: &str) -> i64 {
+        self.int(
+            "SELECT SUM(MAX(0,
+                 MIN(strftime('%s', created_at) * 1000, strftime('%s', ?4) * 1000)
+                 - MAX(strftime('%s', created_at) * 1000 - COALESCE(time, 0), strftime('%s', ?3) * 1000)
+             )) / 60000
+             FROM gamelog_join_leave
+             WHERE owner_id IN (0, ?1) AND type = 'OnPlayerLeft' AND user_id = ?2
+               AND strftime('%s', created_at) * 1000 > strftime('%s', ?3) * 1000
+               AND strftime('%s', created_at) * 1000 - COALESCE(time, 0) < strftime('%s', ?4) * 1000",
+            rusqlite::params![self.owner_row, user_id, from, to],
+        )
+    }
+
+    fn friends_by_copresence(&self) -> Vec<(String, i64)> {
+        let sql = format!(
+            "SELECT g.user_id, SUM(COALESCE(g.time, 0)) / 60000
+             FROM gamelog_join_leave g
+             WHERE g.owner_id IN (0, ?1) AND g.type = 'OnPlayerLeft' AND g.user_id <> ?2
+               AND EXISTS (SELECT 1 FROM {} f WHERE f.user_id = g.user_id)
+             GROUP BY g.user_id ORDER BY SUM(COALESCE(g.time, 0)) DESC, g.user_id",
+            self.table("friend_log_current")
+        );
+        let mut statement = self.connection.prepare(&sql).unwrap();
+        statement
+            .query_map(rusqlite::params![self.owner_row, self.owner], |row| {
+                Ok((row.get(0)?, row.get(1)?))
+            })
+            .unwrap()
+            .filter_map(Result::ok)
+            .collect()
+    }
+}
+
+#[derive(Default)]
+struct Verdicts(Vec<String>);
+
+impl Verdicts {
+    fn expect_eq<T: PartialEq + std::fmt::Debug>(&mut self, what: &str, tool: T, snapshot: T) {
+        if tool != snapshot {
+            self.0
+                .push(format!("{what}: tool={tool:?} snapshot={snapshot:?}"));
+        }
+    }
+
+    fn expect(&mut self, what: &str, passed: bool) {
+        if !passed {
+            self.0.push(what.to_string());
+        }
+    }
+}
+
+fn rows(value: &Value) -> &[Value] {
+    value["rows"]
+        .as_array()
+        .map(Vec::as_slice)
+        .unwrap_or_default()
+}
+
+fn bucket_total(row: &Value) -> i64 {
+    row["buckets"]
+        .as_object()
+        .into_iter()
+        .flatten()
+        .filter_map(|(_, count)| count.as_i64())
+        .sum()
+}
+
+#[tokio::test]
+#[ignore = "reads a snapshot of the local VRCX-0 database; optional VRCX0_HARNESS_DATA_DIR, VRCX0_HARNESS_USER_ID and VRCX0_HARNESS_DUMP_DIR (env or .env.local)"]
+async fn assistant_tools_agree_with_the_snapshot() {
+    let env = HarnessEnv::load();
+    let Snapshot {
+        scratch,
+        runtime,
+        database,
+        user_id,
+    } = Snapshot::take(&env, "tools");
+    let dump_dir = env.get("VRCX0_HARNESS_DUMP_DIR").map(PathBuf::from);
+    if let Some(dir) = &dump_dir {
+        std::fs::create_dir_all(dir).unwrap();
+    }
+    let mut probe = ToolProbe {
+        tools: vrcx_0_mcp::spawn_in_process_tools(mcp_runtime_for(&runtime, McpCaller::Assistant))
+            .await
+            .expect("spawn tools"),
+        sizes: Vec::new(),
+        dump_dir,
+    };
+    let sql = SnapshotSql::open(&database, &user_id);
+    let mut verdicts = Verdicts::default();
+    let now = chrono::Utc::now();
+    let to = now.format("%Y-%m-%dT%H:%M:%SZ").to_string();
+    let from = (now - chrono::Duration::days(30))
+        .format("%Y-%m-%dT%H:%M:%SZ")
+        .to_string();
+    let window = json!({ "from": from, "to": to });
+    let online = sql.table("feed_online_offline");
+    let status = sql.table("feed_status");
+
+    let ranked = sql.friends_by_copresence();
+    let top = probe
+        .call("get_copresence_summary", json!({ "limit": 3 }))
+        .await;
+    verdicts.expect_eq(
+        "copresence totalRows",
+        top["totalRows"].as_u64().unwrap_or_default() as usize,
+        ranked.len(),
+    );
+    for (row, (user, minutes)) in rows(&top).iter().zip(&ranked) {
+        verdicts.expect_eq(
+            "copresence all-time ranking",
+            (row["userId"].as_str(), row["totalMinutes"].as_i64()),
+            (Some(user.as_str()), Some(*minutes)),
+        );
+    }
+
+    let recent = probe
+        .call(
+            "get_copresence_summary",
+            json!({ "timeWindow": window, "limit": 5 }),
+        )
+        .await;
+    for row in rows(&recent) {
+        verdicts.expect_eq(
+            "copresence 30d minutes",
+            row["totalMinutes"].as_i64().unwrap_or_default(),
+            sql.copresence_minutes(row["userId"].as_str().unwrap_or_default(), &from, &to),
+        );
+    }
+
+    let changes = probe
+        .call(
+            "get_friend_changes",
+            json!({ "kind": "status", "timeWindow": window, "limit": 5 }),
+        )
+        .await;
+    verdicts.expect_eq(
+        "friend_changes busiest friend",
+        rows(&changes)
+            .first()
+            .and_then(|row| row["changeCount"].as_i64())
+            .unwrap_or_default(),
+        sql.int(
+            &format!(
+                "SELECT MAX(c) FROM (SELECT COUNT(*) AS c FROM {status}
+                 WHERE trim(user_id) <> '' AND created_at >= ?1 AND created_at <= ?2
+                 GROUP BY user_id)"
+            ),
+            rusqlite::params![from, to],
+        ),
+    );
+    for row in rows(&changes) {
+        verdicts.expect_eq(
+            "friend_changes per-friend count",
+            row["changeCount"].as_i64().unwrap_or_default(),
+            sql.int(
+                &format!(
+                    "SELECT COUNT(*) FROM {status}
+                     WHERE user_id = ?1 AND created_at >= ?2 AND created_at <= ?3"
+                ),
+                rusqlite::params![row["userId"].as_str().unwrap_or_default(), from, to],
+            ),
+        );
+    }
+
+    if let Some((friend, minutes)) = ranked.get(100).or(ranked.first()) {
+        let profile = probe
+            .call(
+                "get_friend_profile",
+                json!({ "user": friend, "utcOffsetMinutes": 540 }),
+            )
+            .await;
+        verdicts.expect_eq(
+            "friend_profile copresence minutes",
+            profile["copresence"]["totalMinutes"].as_i64(),
+            Some(*minutes),
+        );
+        let peak_hour = sql.text(
+            &format!(
+                "SELECT strftime('%H', created_at, '+540 minutes') AS hour FROM {online}
+                 WHERE type = 'Online' AND user_id = ?1
+                 GROUP BY hour ORDER BY COUNT(*) DESC, hour ASC LIMIT 1"
+            ),
+            [friend],
+        );
+        verdicts.expect_eq(
+            "friend_profile local peak hour",
+            profile["activityPattern"]["typicalOnlineWindow"]
+                .as_str()
+                .and_then(|label| label.get(..2))
+                .map(str::to_string),
+            peak_hour,
+        );
+        verdicts.expect_eq(
+            "friend_profile status changes",
+            profile["recentChanges"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .find(|row| row["kind"] == "status")
+                .and_then(|row| row["changeCount"].as_i64())
+                .unwrap_or_default(),
+            sql.int(
+                &format!("SELECT COUNT(*) FROM {status} WHERE user_id = ?1"),
+                [friend],
+            ),
+        );
+    }
+
+    let patterns = probe
+        .call(
+            "get_friend_activity_pattern",
+            json!({ "limit": 5, "utcOffsetMinutes": 540 }),
+        )
+        .await;
+    let totals: Vec<i64> = rows(&patterns).iter().map(bucket_total).collect();
+    verdicts.expect("friend_activity_pattern honours limit", totals.len() <= 5);
+    verdicts.expect(
+        "friend_activity_pattern is sorted by online events",
+        totals.windows(2).all(|pair| pair[0] >= pair[1]),
+    );
+    verdicts.expect_eq(
+        "friend_activity_pattern most active friend",
+        totals.first().copied().unwrap_or_default(),
+        sql.int(
+            &format!(
+                "SELECT MAX(c) FROM (SELECT COUNT(*) AS c FROM {online}
+                 WHERE type = 'Online' AND trim(user_id) <> '' GROUP BY user_id)"
+            ),
+            [],
+        ),
+    );
+
+    let best = probe
+        .call(
+            "get_best_time_to_play",
+            json!({ "utcOffsetMinutes": 540, "limit": 3 }),
+        )
+        .await;
+    for row in rows(&best) {
+        verdicts.expect_eq(
+            "best_time distinct friends per hour",
+            row["distinctFriends"].as_i64().unwrap_or_default(),
+            sql.int(
+                &format!(
+                    "SELECT COUNT(DISTINCT user_id) FROM {online}
+                     WHERE type = 'Online' AND trim(user_id) <> ''
+                       AND strftime('%H', created_at, '+540 minutes') = ?1"
+                ),
+                [row["bucket"].as_str().unwrap_or_default()],
+            ),
+        );
+    }
+
+    let visits = probe
+        .call(
+            "search_worlds_visited",
+            json!({ "timeWindow": window, "limit": 25 }),
+        )
+        .await;
+    verdicts.expect_eq(
+        "search_worlds_visited row count",
+        rows(&visits).len() as i64,
+        sql.int(
+            "SELECT COUNT(*) FROM gamelog_location WHERE owner_id IN (0, ?1)
+             AND created_at >= ?2 AND created_at <= ?3",
+            rusqlite::params![sql.owner_row, from, to],
+        )
+        .min(25),
+    );
+
+    let friend_log = probe.call("get_friend_log", json!({ "limit": 5 })).await;
+    let logged = sql.int(
+        &format!("SELECT COUNT(*) FROM {}", sql.table("friend_log_history")),
+        [],
+    );
+    verdicts.expect(
+        "friend_log summary reports the full total",
+        friend_log["summary"]
+            .as_str()
+            .unwrap_or_default()
+            .contains(&format!("of {logged} ")),
+    );
+
+    let notes = probe.call("get_friend_note", json!({})).await;
+    verdicts.expect_eq(
+        "friend_note totalRows",
+        notes["totalRows"].as_i64().unwrap_or_default(),
+        sql.int("SELECT COUNT(*) FROM memos", []),
+    );
+
+    if let Some((friend, _)) = ranked.first() {
+        let name = sql
+            .text(
+                &format!(
+                    "SELECT display_name FROM {} WHERE user_id = ?1",
+                    sql.table("friend_log_current")
+                ),
+                [friend],
+            )
+            .unwrap_or_default();
+        let found = probe.call("find_user", json!({ "name": name })).await;
+        verdicts.expect_eq(
+            "find_user ranks the exact friend first",
+            rows(&found).first().and_then(|row| row["userId"].as_str()),
+            Some(friend.as_str()),
+        );
+        probe
+            .call("get_companions_of", json!({ "user": friend }))
+            .await;
+        probe
+            .call(
+                "recall_encounter",
+                json!({ "coPresentWith": friend, "timeWindow": window }),
+            )
+            .await;
+        probe
+            .call(
+                "search_friend_feed",
+                json!({ "target": friend, "timeWindow": window }),
+            )
+            .await;
+    }
+
+    let summary = probe
+        .call("summarize_social_period", json!({ "timeWindow": window }))
+        .await;
+    verdicts.expect_eq(
+        "summarize top companion matches copresence",
+        summary["topCompanions"][0]["userId"].as_str(),
+        rows(&recent).first().and_then(|row| row["userId"].as_str()),
+    );
+    let activity = probe
+        .call("get_my_activity", json!({ "timeWindow": window }))
+        .await;
+    verdicts.expect_eq(
+        "summarize activity matches get_my_activity",
+        summary["activity"]["totalMinutes"].as_i64(),
+        activity["totalMinutes"].as_i64(),
+    );
+
+    for (name, arguments) in [
+        ("get_activity_streaks", json!({ "utcOffsetMinutes": 540 })),
+        ("get_activity_timeline", json!({ "utcOffsetMinutes": 540 })),
+        ("get_fading_friends", json!({})),
+        ("get_favorites", json!({})),
+        ("get_friend_circles", json!({})),
+        (
+            "get_invite_history",
+            json!({ "timeWindow": window, "limit": 25 }),
+        ),
+        ("get_social_graph", json!({})),
+        ("recall_encounter", json!({ "timeWindow": "7d" })),
+        ("search_friend_feed", json!({ "timeWindow": "7d" })),
+    ] {
+        probe.call(name, arguments).await;
+    }
+
+    println!("\n| tool call | result chars |\n|---|---|");
+    for (label, size) in &probe.sizes {
+        println!("| {label} | {size} |");
+    }
+    drop(probe);
+    drop(sql);
+    runtime.stop_runtime_tasks();
+    drop(runtime);
+    scratch.remove_when_released().await;
+    assert!(
+        verdicts.0.is_empty(),
+        "tool results disagree with the snapshot:\n{}",
+        verdicts.0.join("\n")
+    );
 }
