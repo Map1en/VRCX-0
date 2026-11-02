@@ -229,12 +229,26 @@ impl TurnLog {
     }
 }
 
+struct NodeRun {
+    round: usize,
+    node: String,
+    tool_calls: Vec<String>,
+    metrics: TurnMetrics,
+}
+
+struct Failure {
+    round: usize,
+    node: String,
+    problem: String,
+}
+
 struct Harness {
     controller: AssistantController,
     events: UnboundedReceiver<(String, Value)>,
-    failures: Vec<String>,
+    failures: Vec<Failure>,
     meter: Arc<LlmMeter>,
-    metrics: Vec<(String, usize, TurnMetrics)>,
+    runs: Vec<NodeRun>,
+    round: usize,
 }
 
 impl Harness {
@@ -316,8 +330,12 @@ impl Harness {
                 .saturating_sub(tool_chars_before),
             elapsed: started.elapsed(),
         };
-        self.metrics
-            .push((node.to_string(), log.tool_calls.len(), log.metrics.clone()));
+        self.runs.push(NodeRun {
+            round: self.round,
+            node: node.to_string(),
+            tool_calls: log.tool_calls.clone(),
+            metrics: log.metrics.clone(),
+        });
         log.print(node, question);
         self.check(node, log.error.is_none(), "turn ended with an error");
         self.check(node, !log.answer.trim().is_empty(), "answer is empty");
@@ -356,25 +374,109 @@ impl Harness {
             .unwrap_or_default()
     }
 
-    fn print_metrics(&self) {
+    fn passed(&self, round: usize, node: &str) -> bool {
+        !self
+            .failures
+            .iter()
+            .any(|failure| failure.round == round && failure.node == node)
+    }
+
+    fn report(&self, path: Option<&Path>) {
         println!(
-            "\n| node | tool calls | LLM requests | prompt chars | tool result chars | secs |"
+            "\n| round | node | passed | tool calls | LLM requests | prompt chars | tool result chars | secs |"
         );
-        println!("|---|---|---|---|---|---|");
-        for (node, tool_calls, metrics) in &self.metrics {
+        println!("|---|---|---|---|---|---|---|---|");
+        for run in &self.runs {
             println!(
-                "| {node} | {tool_calls} | {} | {} | {} | {:.1} |",
-                metrics.llm_requests,
-                metrics.prompt_chars,
-                metrics.tool_result_chars,
-                metrics.elapsed.as_secs_f64()
+                "| {} | {} | {} | {} | {} | {} | {} | {:.1} |",
+                run.round + 1,
+                run.node,
+                self.passed(run.round, &run.node),
+                run.tool_calls.len(),
+                run.metrics.llm_requests,
+                run.metrics.prompt_chars,
+                run.metrics.tool_result_chars,
+                run.metrics.elapsed.as_secs_f64()
             );
         }
+
+        let mut nodes: Vec<&str> = Vec::new();
+        for run in &self.runs {
+            if !nodes.contains(&run.node.as_str()) {
+                nodes.push(&run.node);
+            }
+        }
+        let summary: Vec<Value> = nodes
+            .into_iter()
+            .map(|node| {
+                let runs: Vec<&NodeRun> = self.runs.iter().filter(|run| run.node == node).collect();
+                let passed = runs
+                    .iter()
+                    .filter(|run| self.passed(run.round, node))
+                    .count();
+                json!({
+                    "node": node,
+                    "runs": runs.len(),
+                    "passed": passed,
+                    "medianToolCalls": median(runs.iter().map(|run| run.tool_calls.len() as f64)),
+                    "medianPromptChars": median(runs.iter().map(|run| run.metrics.prompt_chars as f64)),
+                    "medianSecs": median(runs.iter().map(|run| run.metrics.elapsed.as_secs_f64())),
+                })
+            })
+            .collect();
+        println!("\n| node | passed | median tool calls | median prompt chars | median secs |");
+        println!("|---|---|---|---|---|");
+        for row in &summary {
+            println!(
+                "| {} | {}/{} | {} | {} | {:.1} |",
+                row["node"].as_str().unwrap_or_default(),
+                row["passed"],
+                row["runs"],
+                row["medianToolCalls"],
+                row["medianPromptChars"],
+                row["medianSecs"].as_f64().unwrap_or_default()
+            );
+        }
+
+        let Some(path) = path else {
+            return;
+        };
+        let runs: Vec<Value> = self
+            .runs
+            .iter()
+            .map(|run| {
+                json!({
+                    "round": run.round + 1,
+                    "node": run.node,
+                    "passed": self.passed(run.round, &run.node),
+                    "tools": run.tool_calls,
+                    "llmRequests": run.metrics.llm_requests,
+                    "promptChars": run.metrics.prompt_chars,
+                    "toolResultChars": run.metrics.tool_result_chars,
+                    "secs": run.metrics.elapsed.as_secs_f64(),
+                })
+            })
+            .collect();
+        let failures: Vec<Value> = self
+            .failures
+            .iter()
+            .map(|failure| {
+                json!({ "round": failure.round + 1, "node": failure.node, "problem": failure.problem })
+            })
+            .collect();
+        let body = json!({ "summary": summary, "runs": runs, "failures": failures });
+        std::fs::write(path, serde_json::to_string_pretty(&body).unwrap())
+            .unwrap_or_else(|error| panic!("write the report to {}: {error}", path.display()));
+        println!("report written to {}", path.display());
     }
 
     fn check(&mut self, node: &str, passed: bool, problem: &str) {
         if !passed {
-            self.failures.push(format!("{node}: {problem}"));
+            self.failures.push(Failure {
+                round: self.round,
+                node: node.to_string(),
+                problem: problem.to_string(),
+            });
         }
     }
 }
@@ -433,7 +535,8 @@ impl Rig {
                 events,
                 failures: Vec::new(),
                 meter,
-                metrics: Vec::new(),
+                runs: Vec::new(),
+                round: 0,
             },
         }
     }
@@ -460,7 +563,32 @@ impl Rig {
         runtime.stop_runtime_tasks();
         drop(runtime);
         scratch.remove_when_released().await;
+        let failures: Vec<String> = failures
+            .iter()
+            .map(|failure| {
+                format!(
+                    "round {} {}: {}",
+                    failure.round + 1,
+                    failure.node,
+                    failure.problem
+                )
+            })
+            .collect();
         assert!(failures.is_empty(), "failures:\n{}", failures.join("\n"));
+    }
+}
+
+fn median(values: impl Iterator<Item = f64>) -> f64 {
+    let mut values: Vec<f64> = values.collect();
+    if values.is_empty() {
+        return 0.0;
+    }
+    values.sort_by(f64::total_cmp);
+    let middle = values.len() / 2;
+    if values.len().is_multiple_of(2) {
+        (values[middle - 1] + values[middle]) / 2.0
+    } else {
+        values[middle]
     }
 }
 
@@ -604,20 +732,25 @@ async fn assistant_answers_key_questions_with_a_real_llm() {
         scratch,
         runtime,
         database,
-        ..
+        user_id,
     } = Snapshot::take(&env, "harness");
-    let only = env.get("VRCX0_HARNESS_ONLY");
-    let runs = |scenario: &str| {
-        only.as_deref()
-            .is_none_or(|only| only.split(',').any(|name| name.trim() == scenario))
-    };
     let playbook_mode = match env.get("VRCX0_HARNESS_PLAYBOOK").as_deref() {
         Some("guided") => PlaybookMode::Guided,
         Some("open") => PlaybookMode::Open,
         _ => PlaybookMode::Auto,
     };
-    let ambiguous = find_ambiguous_fragment(&runtime, &database).await;
-    let fading_top = top_fading_friend(&runtime).await;
+    let rounds = env
+        .get("VRCX0_HARNESS_REPEAT")
+        .and_then(|value| value.parse::<usize>().ok())
+        .unwrap_or(1)
+        .max(1);
+    let report = env.get("VRCX0_HARNESS_REPORT").map(PathBuf::from);
+    let scenarios = Scenarios {
+        only: env.get("VRCX0_HARNESS_ONLY"),
+        ambiguous: find_ambiguous_fragment(&runtime, &database).await,
+        fading_top: top_fading_friend(&runtime).await,
+        window: custom_window_case(&SnapshotSql::open(&database, &user_id)),
+    };
     let mut rig = Rig::start(scratch, runtime, |default| default).await;
     let harness = &mut rig.harness;
 
@@ -652,128 +785,245 @@ async fn assistant_answers_key_questions_with_a_real_llm() {
         .set_default_runtime(Some(endpoint.id.clone()), Some(model), false, playbook_mode)
         .expect("select runtime");
 
-    if runs("weekly") {
-        let weekly = harness
-            .ask("weekly_top", None, "zh-CN", "这周我和谁一起玩得最多？")
-            .await;
-        harness.check(
-            "weekly_top",
-            !weekly.tool_calls.is_empty(),
-            "answered without reading any data",
-        );
-
-        let follow_up = harness
-            .ask(
-                "follow_up",
-                Some(weekly.session_id.clone()),
-                "zh-CN",
-                "那这些人里，有没有最近和我变疏远的？",
-            )
-            .await;
-        harness.check(
-            "follow_up",
-            !follow_up.tool_calls.is_empty(),
-            "follow-up did not read any data",
-        );
-    }
-
-    if runs("ja_recent") {
-        let ja_recent = harness
-            .ask(
-                "ja_recent",
-                None,
-                "ja",
-                "最近いちばんよく一緒に遊んでいるフレンドは誰？",
-            )
-            .await;
-        harness.check(
-            "ja_recent",
-            !ja_recent.tool_calls.is_empty(),
-            "answered without reading any data",
-        );
-    }
-
-    if runs("unknown_person") {
-        harness
-            .ask(
-                "unknown_person",
-                None,
-                "ja",
-                "Zyxwv Qprst さんとはどんな関係？",
-            )
-            .await;
-    }
-
-    match ambiguous.filter(|_| runs("ambiguous_name")) {
-        Some((fragment, candidates)) => {
-            let question = format!("{fragment} はいつも誰と遊んでる？");
-            let picked = harness.ask("ambiguous_name", None, "ja", &question).await;
-            let asked_in_text = candidates
-                .iter()
-                .filter(|name| picked.answer.contains(name.as_str()))
-                .count()
-                >= 2;
-            harness.check(
-                "ambiguous_name",
-                picked.choices > 0 || asked_in_text,
-                "an ambiguous name was neither put on the choice card nor asked about",
-            );
+    for round in 0..rounds {
+        harness.round = round;
+        if rounds > 1 {
+            println!("\n##### round {} of {rounds} #####", round + 1);
         }
-        None => println!("\n=== ambiguous_name ===\nskipped"),
+        scenarios.play(harness).await;
     }
 
-    if runs("writes_hidden") {
-        let writes = harness
-            .ask(
-                "writes_hidden",
-                None,
-                "zh-CN",
-                "把我最常一起玩的那个人加进我的本地收藏。",
-            )
-            .await;
-        harness.check(
-            "writes_hidden",
-            !writes
-                .tool_calls
-                .iter()
-                .any(|name| WRITE_TOOLS.contains(&name.as_str())),
-            "a write tool ran while writes are off",
-        );
-    }
-
-    if runs("third_turn_recall") {
-        let first = harness
-            .ask("recall_1", None, "zh-CN", "最近有哪些好友和我变疏远了？")
-            .await;
-        harness
-            .ask(
-                "recall_2",
-                Some(first.session_id.clone()),
-                "zh-CN",
-                "我这个月一共玩了多久？",
-            )
-            .await;
-        let third = harness
-            .ask(
-                "recall_3",
-                Some(first.session_id.clone()),
-                "zh-CN",
-                "第一个问题里排第一的那位，我和他最后一次一起玩是什么时候？",
-            )
-            .await;
-        match fading_top.filter(|name| first.answer.contains(name.as_str())) {
-            Some(name) => harness.check(
-                "recall_3",
-                third.answer.contains(name.as_str()),
-                "the third turn lost the person ranked first two turns earlier",
-            ),
-            None => println!("recall_3: no snapshot fading friend named in the first answer"),
-        }
-    }
-
-    harness.print_metrics();
+    harness.report(report.as_deref());
     let _ = harness.controller.endpoint_delete(&endpoint.id);
     rig.finish().await;
+}
+
+struct WindowCase {
+    question: String,
+    top_names: Vec<String>,
+}
+
+struct Scenarios {
+    only: Option<String>,
+    ambiguous: Option<(String, Vec<String>)>,
+    fading_top: Option<String>,
+    window: Option<WindowCase>,
+}
+
+impl Scenarios {
+    fn runs(&self, scenario: &str) -> bool {
+        self.only
+            .as_deref()
+            .is_none_or(|only| only.split(',').any(|name| name.trim() == scenario))
+    }
+
+    async fn play(&self, harness: &mut Harness) {
+        self.play_known(harness).await;
+        if self.runs("custom_window") {
+            match &self.window {
+                Some(case) => {
+                    let log = harness
+                        .ask("custom_window", None, "zh-CN", &case.question)
+                        .await;
+                    harness.check(
+                        "custom_window",
+                        case.top_names
+                            .iter()
+                            .any(|name| log.answer.contains(name.as_str())),
+                        "the answer missed the top companion of the asked dates",
+                    );
+                }
+                None => println!("\n=== custom_window ===\nskipped"),
+            }
+        }
+    }
+
+    async fn play_known(&self, harness: &mut Harness) {
+        let runs = |scenario: &str| self.runs(scenario);
+        if runs("weekly") {
+            let weekly = harness
+                .ask("weekly_top", None, "zh-CN", "这周我和谁一起玩得最多？")
+                .await;
+            harness.check(
+                "weekly_top",
+                !weekly.tool_calls.is_empty(),
+                "answered without reading any data",
+            );
+
+            let follow_up = harness
+                .ask(
+                    "follow_up",
+                    Some(weekly.session_id.clone()),
+                    "zh-CN",
+                    "那这些人里，有没有最近和我变疏远的？",
+                )
+                .await;
+            harness.check(
+                "follow_up",
+                !follow_up.tool_calls.is_empty(),
+                "follow-up did not read any data",
+            );
+        }
+
+        if runs("ja_recent") {
+            let ja_recent = harness
+                .ask(
+                    "ja_recent",
+                    None,
+                    "ja",
+                    "最近いちばんよく一緒に遊んでいるフレンドは誰？",
+                )
+                .await;
+            harness.check(
+                "ja_recent",
+                !ja_recent.tool_calls.is_empty(),
+                "answered without reading any data",
+            );
+        }
+
+        if runs("unknown_person") {
+            harness
+                .ask(
+                    "unknown_person",
+                    None,
+                    "ja",
+                    "Zyxwv Qprst さんとはどんな関係？",
+                )
+                .await;
+        }
+
+        match self.ambiguous.as_ref().filter(|_| runs("ambiguous_name")) {
+            Some((fragment, candidates)) => {
+                let question = format!("{fragment} はいつも誰と遊んでる？");
+                let picked = harness.ask("ambiguous_name", None, "ja", &question).await;
+                let asked_in_text = candidates
+                    .iter()
+                    .filter(|name| picked.answer.contains(name.as_str()))
+                    .count()
+                    >= 2;
+                harness.check(
+                    "ambiguous_name",
+                    picked.choices > 0 || asked_in_text,
+                    "an ambiguous name was neither put on the choice card nor asked about",
+                );
+            }
+            None => println!("\n=== ambiguous_name ===\nskipped"),
+        }
+
+        if runs("writes_hidden") {
+            let writes = harness
+                .ask(
+                    "writes_hidden",
+                    None,
+                    "zh-CN",
+                    "把我最常一起玩的那个人加进我的本地收藏。",
+                )
+                .await;
+            harness.check(
+                "writes_hidden",
+                !writes
+                    .tool_calls
+                    .iter()
+                    .any(|name| WRITE_TOOLS.contains(&name.as_str())),
+                "a write tool ran while writes are off",
+            );
+        }
+
+        if runs("third_turn_recall") {
+            let first = harness
+                .ask("recall_1", None, "zh-CN", "最近有哪些好友和我变疏远了？")
+                .await;
+            harness
+                .ask(
+                    "recall_2",
+                    Some(first.session_id.clone()),
+                    "zh-CN",
+                    "我这个月一共玩了多久？",
+                )
+                .await;
+            let third = harness
+                .ask(
+                    "recall_3",
+                    Some(first.session_id.clone()),
+                    "zh-CN",
+                    "第一个问题里排第一的那位，我和他最后一次一起玩是什么时候？",
+                )
+                .await;
+            match self
+                .fading_top
+                .as_deref()
+                .filter(|name| first.answer.contains(name))
+            {
+                Some(name) => harness.check(
+                    "recall_3",
+                    third.answer.contains(name),
+                    "the third turn lost the person ranked first two turns earlier",
+                ),
+                None => println!("recall_3: no snapshot fading friend named in the first answer"),
+            }
+        }
+    }
+}
+
+fn utc_midnight(day: chrono::NaiveDate) -> Option<String> {
+    Some(
+        day.and_hms_opt(0, 0, 0)?
+            .and_local_timezone(chrono::Local)
+            .earliest()?
+            .with_timezone(&chrono::Utc)
+            .format("%Y-%m-%dT%H:%M:%SZ")
+            .to_string(),
+    )
+}
+
+fn custom_window_case(sql: &SnapshotSql) -> Option<WindowCase> {
+    use chrono::Datelike;
+    let today = chrono::Local::now().date_naive();
+    let month_top = sql
+        .companions_between(
+            &utc_midnight(today - chrono::Days::new(30))?,
+            &utc_midnight(today + chrono::Days::new(1))?,
+        )
+        .into_iter()
+        .next()
+        .map(|(user_id, _)| user_id);
+    let mut fallback = None;
+    for back in 7..=60 {
+        let first_day = today - chrono::Days::new(back);
+        let last_day = first_day + chrono::Days::new(2);
+        let from = utc_midnight(first_day)?;
+        let to = utc_midnight(last_day + chrono::Days::new(1))?;
+        let ranked = sql.companions_between(&from, &to);
+        let Some((top, top_minutes)) = ranked.first() else {
+            continue;
+        };
+        let second_minutes = ranked.get(1).map_or(0, |(_, minutes)| *minutes);
+        if *top_minutes < 60 || top_minutes * 2 < second_minutes * 3 {
+            continue;
+        }
+        let top_names = sql.names_of(top, &from, &to);
+        if top_names.is_empty() {
+            continue;
+        }
+        let case = WindowCase {
+            question: format!(
+                "{}月{}日到{}月{}日这三天，我和哪位好友一起玩的时间最长？",
+                first_day.month(),
+                first_day.day(),
+                last_day.month(),
+                last_day.day()
+            ),
+            top_names,
+        };
+        if month_top.as_ref() != Some(top) {
+            return Some(case);
+        }
+        fallback.get_or_insert(case);
+    }
+    if fallback.is_some() {
+        println!("custom_window: every candidate window shares the 30-day top companion");
+    }
+    fallback
 }
 
 const SCRIPTED_MODEL: &str = "scripted";
@@ -1137,6 +1387,55 @@ impl SnapshotSql {
             .unwrap()
             .filter_map(Result::ok)
             .collect()
+    }
+
+    fn companions_between(&self, from: &str, to: &str) -> Vec<(String, i64)> {
+        let sql = format!(
+            "SELECT g.user_id, SUM(MAX(0,
+                 MIN(strftime('%s', g.created_at) * 1000, strftime('%s', ?4) * 1000)
+                 - MAX(strftime('%s', g.created_at) * 1000 - COALESCE(g.time, 0), strftime('%s', ?3) * 1000)
+             )) / 60000 AS minutes
+             FROM gamelog_join_leave g
+             WHERE g.owner_id IN (0, ?1) AND g.type = 'OnPlayerLeft' AND g.user_id <> ?2
+               AND strftime('%s', g.created_at) * 1000 > strftime('%s', ?3) * 1000
+               AND strftime('%s', g.created_at) * 1000 - COALESCE(g.time, 0) < strftime('%s', ?4) * 1000
+               AND EXISTS (SELECT 1 FROM {} f WHERE f.user_id = g.user_id)
+             GROUP BY g.user_id ORDER BY minutes DESC, g.user_id",
+            self.table("friend_log_current")
+        );
+        let mut statement = self.connection.prepare(&sql).unwrap();
+        statement
+            .query_map(
+                rusqlite::params![self.owner_row, self.owner, from, to],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap()
+            .filter_map(Result::ok)
+            .collect()
+    }
+
+    fn names_of(&self, user_id: &str, from: &str, to: &str) -> Vec<String> {
+        let current = self.text(
+            &format!(
+                "SELECT display_name FROM {} WHERE user_id = ?1",
+                self.table("friend_log_current")
+            ),
+            [user_id],
+        );
+        let observed = self.text(
+            "SELECT display_name FROM gamelog_join_leave
+             WHERE user_id = ?1 AND created_at >= ?2 AND created_at <= ?3
+             ORDER BY created_at DESC LIMIT 1",
+            rusqlite::params![user_id, from, to],
+        );
+        let mut names: Vec<String> = [current, observed]
+            .into_iter()
+            .flatten()
+            .map(|name| name.trim().to_string())
+            .filter(|name| !name.is_empty())
+            .collect();
+        names.dedup();
+        names
     }
 
     fn friend_components(&self) -> (usize, Vec<usize>) {
