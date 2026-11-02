@@ -102,6 +102,29 @@ async fn in_process_bridge_returns_structured_read_only_results() {
 }
 
 #[tokio::test]
+async fn an_unknown_name_says_the_empty_lookup_is_the_answer() {
+    let (_dir, runtime) = test_runtime("in-process-unknown-name", "usr_owner").unwrap();
+    let tools = spawn_in_process_tools(runtime).await.unwrap();
+
+    for (tool, argument) in [("find_user", "name"), ("get_friend_profile", "user")] {
+        let structured = tools
+            .call_tool(
+                tool,
+                Some(Map::from_iter([(argument.into(), json!("Nobody Here"))])),
+            )
+            .await
+            .unwrap()
+            .structured
+            .unwrap();
+        let summary = structured["summary"].as_str().unwrap_or_default();
+        assert!(
+            summary.contains("That is the answer"),
+            "{tool}: {structured}"
+        );
+    }
+}
+
+#[tokio::test]
 async fn favorites_list_the_newest_rows_and_count_every_group() {
     let (_dir, runtime, db) =
         crate::test_support::test_runtime_with_database("in-process-favorites", "usr_owner")

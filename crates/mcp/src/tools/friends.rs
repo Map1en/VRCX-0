@@ -11,7 +11,7 @@ use crate::server::VrcxMcpServer;
 use crate::{McpFriendMemo, McpLocalModeration};
 
 use super::common::{
-    application_query_result, map_application_query_error, require_current_user_id,
+    map_application_query_error, not_found_summary, require_current_user_id,
     resolve_optional_target_or_result, resolve_target_or_result, structured_result,
     TargetResolutionOutcome, TimeWindowParams, WithResolution,
 };
@@ -60,13 +60,21 @@ impl VrcxMcpServer {
         Parameters(input): Parameters<FindUserParams>,
     ) -> Result<CallToolResult, String> {
         let owner_user_id = require_current_user_id(&self.runtime)?;
-        application_query_result(self.runtime.social_history_queries.resolve_user(
-            social_aggregates::ResolveUserInput {
+        let name = input.name.trim().to_string();
+        let output = self
+            .runtime
+            .social_history_queries
+            .resolve_user(social_aggregates::ResolveUserInput {
                 owner_user_id: owner_user_id.clone(),
-                name_query: input.name,
+                name_query: name.clone(),
                 limit: input.limit,
-            },
-        ))
+            })
+            .map_err(map_application_query_error)?;
+        let summary = output.rows.is_empty().then(|| not_found_summary(&name));
+        structured_result(FindUserOutput {
+            inner: output,
+            summary,
+        })
     }
 
     #[tool(
@@ -652,6 +660,15 @@ struct FriendChangesParams {
     kind: FriendChangeKindParam,
     limit: Option<i64>,
 }
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct FindUserOutput {
+    #[serde(flatten)]
+    inner: social_aggregates::ResolveUserOutput,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    summary: Option<String>,
+}
+
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct FriendNoteOutput {

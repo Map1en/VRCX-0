@@ -553,7 +553,7 @@ struct DisambiguationOutput {
 struct NotFoundOutput {
     not_found: bool,
     query: String,
-    hint: &'static str,
+    summary: String,
 }
 
 pub(super) fn disambiguation_result(
@@ -571,8 +571,14 @@ pub(super) fn not_found_result(query: &str) -> Result<CallToolResult, String> {
     structured_result(NotFoundOutput {
         not_found: true,
         query: query.to_string(),
-        hint: "no user matching this name in local history",
+        summary: not_found_summary(query),
     })
+}
+
+pub(super) fn not_found_summary(query: &str) -> String {
+    format!(
+        "No one matching \"{query}\" appears in this profile's local history. That is the answer: say so, and do not search for the name with other tools."
+    )
 }
 
 pub(super) fn map_application_query_error(error: vrcx_0_application_core::Error) -> String {
