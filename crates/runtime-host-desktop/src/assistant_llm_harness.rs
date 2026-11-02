@@ -8,9 +8,9 @@ use serde_json::{json, Map, Value};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use vrcx_0_application_core::RuntimeEventSink;
 use vrcx_0_assistant::{
-    AssistantController, AssistantLlmClientFactoryPort, AssistantLlmClientInput,
-    AssistantLlmClientPort, AssistantLlmError, AssistantLlmFuture, LlmEndpointDetectModelsInput,
-    LlmEndpointUpsertInput, PlaybookMode, Role,
+    AssistantController, AssistantLlmClientFactory, AssistantLlmClientFactoryPort,
+    AssistantLlmClientInput, AssistantLlmClientPort, AssistantLlmError, AssistantLlmFuture,
+    LlmEndpointDetectModelsInput, LlmEndpointUpsertInput, PlaybookMode, Role,
 };
 use vrcx_0_composition::{RuntimeHostOptions, RuntimeHostProfile, RuntimeHostState};
 use vrcx_0_contracts::llm::{
@@ -211,23 +211,85 @@ impl Harness {
     }
 }
 
-fn headless_runtime(app_data: PathBuf) -> RuntimeHostState {
-    RuntimeHostState::new(RuntimeHostOptions {
-        realtime_origin: "http://localhost:9000".into(),
-        launched_from_autostart: false,
-        app_data_dir: AppDataDirResolution {
-            current_dir: app_data.clone(),
-            default_dir: app_data.clone(),
-            persisted_dir: None,
-            cli_dir: Some(app_data),
-            source: AppDataDirSource::Cli,
-        },
-        app_version: "0.0.0-harness".into(),
-        profile: RuntimeHostProfile::HeadlessData,
-        database_maintenance_cache_dir: None,
-        task_executor: None,
-    })
-    .expect("start headless runtime")
+struct Rig {
+    scratch: ScratchDir,
+    runtime: RuntimeHostState,
+    harness: Harness,
+}
+
+impl Rig {
+    fn runtime(scratch: &ScratchDir) -> RuntimeHostState {
+        let app_data = scratch.0.join("app-data");
+        RuntimeHostState::new(RuntimeHostOptions {
+            realtime_origin: "http://localhost:9000".into(),
+            launched_from_autostart: false,
+            app_data_dir: AppDataDirResolution {
+                current_dir: app_data.clone(),
+                default_dir: app_data.clone(),
+                persisted_dir: None,
+                cli_dir: Some(app_data),
+                source: AppDataDirSource::Cli,
+            },
+            app_version: "0.0.0-harness".into(),
+            profile: RuntimeHostProfile::HeadlessData,
+            database_maintenance_cache_dir: None,
+            task_executor: None,
+        })
+        .expect("start headless runtime")
+    }
+
+    async fn start(
+        scratch: ScratchDir,
+        runtime: RuntimeHostState,
+        llm_factory: Option<AssistantLlmClientFactory>,
+    ) -> Self {
+        let (sender, events) = unbounded_channel();
+        runtime
+            .desktop_assembly()
+            .event_bus()
+            .set_sink(ChannelSink(sender));
+        let mut deps = assistant_controller_deps_for(&runtime);
+        if let Some(llm_factory) = llm_factory {
+            deps.llm_factory = llm_factory;
+        }
+        let controller = AssistantController::new(deps)
+            .await
+            .expect("assistant controller");
+        Self {
+            scratch,
+            runtime,
+            harness: Harness {
+                controller,
+                events,
+                failures: Vec::new(),
+            },
+        }
+    }
+
+    fn sign_in(runtime: &RuntimeHostState, user_id: &str) {
+        runtime
+            .desktop_assembly()
+            .auth_scope()
+            .set(user_id, "https://api.vrchat.cloud/api/1");
+    }
+
+    async fn finish(self) {
+        let Self {
+            scratch,
+            runtime,
+            harness,
+        } = self;
+        let Harness {
+            controller,
+            failures,
+            ..
+        } = harness;
+        drop(controller);
+        runtime.stop_runtime_tasks();
+        drop(runtime);
+        scratch.remove_when_released().await;
+        assert!(failures.is_empty(), "failures:\n{}", failures.join("\n"));
+    }
 }
 
 fn snapshot_database(source: &Path, target: &Path) {
@@ -306,15 +368,14 @@ async fn assistant_answers_key_questions_with_a_real_llm() {
         });
 
     let scratch = ScratchDir::new("harness");
-    let app_data = scratch.0.join("app-data");
-    std::fs::create_dir_all(&app_data).unwrap();
-    let database = app_data.join("VRCX-0.sqlite3");
+    let database = scratch.0.join("app-data").join("VRCX-0.sqlite3");
+    std::fs::create_dir_all(database.parent().unwrap()).unwrap();
     snapshot_database(&source_dir.join("VRCX-0.sqlite3"), &database);
 
-    let runtime = headless_runtime(app_data);
-    let assembly = runtime.desktop_assembly();
+    let runtime = Rig::runtime(&scratch);
     let user_id = env.get("VRCX0_HARNESS_USER_ID").unwrap_or_else(|| {
-        assembly
+        runtime
+            .desktop_assembly()
             .config()
             .get_string("lastUserLoggedIn", "")
             .unwrap_or_default()
@@ -323,21 +384,10 @@ async fn assistant_answers_key_questions_with_a_real_llm() {
         !user_id.is_empty(),
         "no signed-in account in the database; set VRCX0_HARNESS_USER_ID"
     );
-    assembly
-        .auth_scope()
-        .set(&user_id, "https://api.vrchat.cloud/api/1");
-    let (sender, events) = unbounded_channel();
-    assembly.event_bus().set_sink(ChannelSink(sender));
-
+    Rig::sign_in(&runtime, &user_id);
     let ambiguous = find_ambiguous_fragment(&runtime, &database).await;
-    let controller = AssistantController::new(assistant_controller_deps_for(&runtime))
-        .await
-        .expect("assistant controller");
-    let mut harness = Harness {
-        controller,
-        events,
-        failures: Vec::new(),
-    };
+    let mut rig = Rig::start(scratch, runtime, None).await;
+    let harness = &mut rig.harness;
 
     let endpoint = harness
         .controller
@@ -457,20 +507,7 @@ async fn assistant_answers_key_questions_with_a_real_llm() {
     );
 
     let _ = harness.controller.endpoint_delete(&endpoint.id);
-    let Harness {
-        controller,
-        failures,
-        ..
-    } = harness;
-    drop(controller);
-    runtime.stop_runtime_tasks();
-    drop(runtime);
-    scratch.remove_when_released().await;
-    assert!(
-        failures.is_empty(),
-        "harness failures:\n{}",
-        failures.join("\n")
-    );
+    rig.finish().await;
 }
 
 const SCRIPTED_MODEL: &str = "scripted";
@@ -582,22 +619,16 @@ fn joined(created_at: &str, name: &str, user_id: &str) -> GameLogJoinLeaveEntry 
 }
 
 struct ScriptedRun {
-    scratch: ScratchDir,
-    runtime: RuntimeHostState,
-    harness: Harness,
+    rig: Rig,
     llm: Arc<ScriptedLlm>,
 }
 
 impl ScriptedRun {
     async fn start(turns: Vec<AssistantTurn>) -> Self {
         let scratch = ScratchDir::new("loop");
-        let app_data = scratch.0.join("app-data");
-        std::fs::create_dir_all(&app_data).unwrap();
-        let runtime = headless_runtime(app_data);
-        let assembly = runtime.desktop_assembly();
-        assembly
-            .auth_scope()
-            .set(SCRIPTED_OWNER, "https://api.vrchat.cloud/api/1");
+        std::fs::create_dir_all(scratch.0.join("app-data")).unwrap();
+        let runtime = Rig::runtime(&scratch);
+        Rig::sign_in(&runtime, SCRIPTED_OWNER);
         write_batch(
             runtime.database().as_ref(),
             &OwnerId::new(SCRIPTED_OWNER),
@@ -610,18 +641,17 @@ impl ScriptedRun {
             },
         )
         .expect("seed game log");
-        let (sender, events) = unbounded_channel();
-        assembly.event_bus().set_sink(ChannelSink(sender));
-
         let llm = Arc::new(ScriptedLlm {
             turns: Mutex::new(turns.into()),
             ..ScriptedLlm::default()
         });
-        let mut deps = assistant_controller_deps_for(&runtime);
-        deps.llm_factory = Arc::new(ScriptedFactory(Arc::clone(&llm)));
-        let controller = AssistantController::new(deps)
-            .await
-            .expect("assistant controller");
+        let rig = Rig::start(
+            scratch,
+            runtime,
+            Some(Arc::new(ScriptedFactory(Arc::clone(&llm)))),
+        )
+        .await;
+        let controller = &rig.harness.controller;
         let endpoint = controller
             .endpoint_upsert(LlmEndpointUpsertInput {
                 id: None,
@@ -640,43 +670,15 @@ impl ScriptedRun {
                 PlaybookMode::Open,
             )
             .expect("select runtime");
-        Self {
-            scratch,
-            runtime,
-            harness: Harness {
-                controller,
-                events,
-                failures: Vec::new(),
-            },
-            llm,
-        }
+        Self { rig, llm }
     }
 
     async fn ask(&mut self, question: &str) -> TurnLog {
-        self.harness.ask("scripted", None, "en", question).await
+        self.rig.harness.ask("scripted", None, "en", question).await
     }
 
     async fn finish(self) {
-        let Self {
-            scratch,
-            runtime,
-            harness,
-            ..
-        } = self;
-        let Harness {
-            controller,
-            failures,
-            ..
-        } = harness;
-        drop(controller);
-        runtime.stop_runtime_tasks();
-        drop(runtime);
-        scratch.remove_when_released().await;
-        assert!(
-            failures.is_empty(),
-            "loop failures:\n{}",
-            failures.join("\n")
-        );
+        self.rig.finish().await;
     }
 }
 
@@ -698,6 +700,7 @@ async fn scripted_turn_runs_a_real_tool_and_answers_from_its_result() {
     assert_eq!(log.answer, "Alice is in your history.");
     assert!(run.llm.last_tool_message(1).contains("usr_alice"));
     let session = run
+        .rig
         .harness
         .controller
         .get_session(&log.session_id)
