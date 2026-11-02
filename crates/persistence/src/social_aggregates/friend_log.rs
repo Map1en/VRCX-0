@@ -8,6 +8,8 @@ use super::helpers::{append_time_window_filter, clamped_optional_limit, table_ex
 use super::types::{FriendLogInput, FriendLogOutput, FriendLogRow};
 use crate::ownership::OwnerId;
 
+const SUMMARY_EVENTS: usize = 10;
+
 pub fn get_friend_log(
     db: &DatabaseService,
     input: FriendLogInput,
@@ -101,11 +103,15 @@ fn friend_log_summary(rows: &[FriendLogRow], total_rows: usize, truncated: bool)
     if rows.is_empty() {
         return "No relationship events found.".to_string();
     }
-    let entries = rows
+    let mut entries = rows
         .iter()
+        .take(SUMMARY_EVENTS)
         .map(|row| format!("{} {}", row.kind, row.display_name))
         .collect::<Vec<_>>()
         .join(", ");
+    if rows.len() > SUMMARY_EVENTS {
+        entries.push_str(&format!(", and {} more", rows.len() - SUMMARY_EVENTS));
+    }
     if truncated {
         format!(
             "{} of {} relationship event(s): {entries}.",

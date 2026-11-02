@@ -32,11 +32,11 @@ pub(super) fn normalize_tool_arguments(
         "get_copresence_summary" => {
             ensure_limit(&mut arguments, 10);
         }
-        "get_friend_changes" | "get_invite_history" | "search_worlds_visited" => {
+        "get_friend_changes"
+        | "get_friend_log"
+        | "get_invite_history"
+        | "search_worlds_visited" => {
             ensure_limit(&mut arguments, 25);
-        }
-        "get_friend_log" => {
-            ensure_limit(&mut arguments, 100);
         }
         _ => {}
     }

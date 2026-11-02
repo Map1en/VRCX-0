@@ -38,8 +38,10 @@ pub struct FriendLogRow {
     pub kind: String,
     pub user_id: String,
     pub display_name: String,
+    #[serde(skip_serializing_if = "String::is_empty", default)]
     pub previous_display_name: String,
     pub trust_level: String,
+    #[serde(skip_serializing_if = "String::is_empty", default)]
     pub previous_trust_level: String,
     pub friend_number: i64,
 }
