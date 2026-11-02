@@ -1,5 +1,6 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeSet, HashMap, VecDeque};
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use rusqlite::OpenFlags;
@@ -7,16 +8,22 @@ use serde_json::{json, Map, Value};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use vrcx_0_application_core::RuntimeEventSink;
 use vrcx_0_assistant::{
-    AssistantController, LlmEndpointDetectModelsInput, LlmEndpointUpsertInput, PlaybookMode,
+    AssistantController, AssistantLlmClientFactoryPort, AssistantLlmClientInput,
+    AssistantLlmClientPort, AssistantLlmError, AssistantLlmFuture, LlmEndpointDetectModelsInput,
+    LlmEndpointUpsertInput, PlaybookMode, Role,
 };
 use vrcx_0_composition::{RuntimeHostOptions, RuntimeHostProfile, RuntimeHostState};
+use vrcx_0_contracts::llm::{
+    AssistantTurn, ChatMessage, FunctionCall, LlmEndpointDetectModelsResult, LlmRequestOptions,
+    ToolCall, ToolDefinition,
+};
+use vrcx_0_core::OwnerId;
 use vrcx_0_mcp::McpCaller;
+use vrcx_0_persistence::game_log::{write_batch, GameLogJoinLeaveEntry, GameLogWriteBatch};
 use vrcx_0_platform::app_paths::{resolve_app_data_dir, AppDataDirResolution, AppDataDirSource};
 
 use crate::state::{assistant_controller_deps_for, mcp_runtime_for};
 
-const DEFAULT_BASE_URL: &str = "https://api.siliconflow.cn/v1";
-const DEFAULT_MODEL: &str = "deepseek-ai/DeepSeek-V3";
 const TURN_TIMEOUT: Duration = Duration::from_secs(240);
 const WRITE_TOOLS: [&str; 3] = ["favorite_local", "favorite_vrchat", "set_friend_note"];
 
@@ -41,11 +48,27 @@ impl HarnessEnv {
             .or_else(|| self.0.get(key).cloned())
             .filter(|value| !value.is_empty())
     }
+
+    fn require(&self, key: &str) -> String {
+        self.get(key)
+            .unwrap_or_else(|| panic!("set {key} in the environment or .env.local"))
+    }
 }
 
 struct ScratchDir(PathBuf);
 
 impl ScratchDir {
+    fn new(kind: &str) -> Self {
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos();
+        Self(std::env::temp_dir().join(format!(
+            "vrcx-0-assistant-{kind}-{}-{nonce}",
+            std::process::id()
+        )))
+    }
+
     async fn remove_when_released(self) {
         for _ in 0..40 {
             if std::fs::remove_dir_all(&self.0).is_ok() || !self.0.exists() {
@@ -105,10 +128,16 @@ struct Harness {
 }
 
 impl Harness {
-    async fn ask(&mut self, node: &str, session_id: Option<String>, question: &str) -> TurnLog {
+    async fn ask(
+        &mut self,
+        node: &str,
+        session_id: Option<String>,
+        locale: &str,
+        question: &str,
+    ) -> TurnLog {
         let sent = self
             .controller
-            .send_message(session_id, question.to_string(), Some("zh-CN".into()))
+            .send_message(session_id, question.to_string(), Some(locale.into()))
             .await
             .expect("send_message");
         let mut log = TurnLog {
@@ -163,6 +192,15 @@ impl Harness {
         log.print(node, question);
         self.check(node, log.error.is_none(), "turn ended with an error");
         self.check(node, !log.answer.trim().is_empty(), "answer is empty");
+        if locale == "ja" {
+            self.check(
+                node,
+                log.answer
+                    .chars()
+                    .any(|c| ('\u{3040}'..='\u{30ff}').contains(&c)),
+                "a Japanese question was not answered in Japanese",
+            );
+        }
         log
     }
 
@@ -171,6 +209,25 @@ impl Harness {
             self.failures.push(format!("{node}: {problem}"));
         }
     }
+}
+
+fn headless_runtime(app_data: PathBuf) -> RuntimeHostState {
+    RuntimeHostState::new(RuntimeHostOptions {
+        realtime_origin: "http://localhost:9000".into(),
+        launched_from_autostart: false,
+        app_data_dir: AppDataDirResolution {
+            current_dir: app_data.clone(),
+            default_dir: app_data.clone(),
+            persisted_dir: None,
+            cli_dir: Some(app_data),
+            source: AppDataDirSource::Cli,
+        },
+        app_version: "0.0.0-harness".into(),
+        profile: RuntimeHostProfile::HeadlessData,
+        database_maintenance_cache_dir: None,
+        task_executor: None,
+    })
+    .expect("start headless runtime")
 }
 
 fn snapshot_database(source: &Path, target: &Path) {
@@ -233,18 +290,12 @@ async fn find_ambiguous_fragment(runtime: &RuntimeHostState, database: &Path) ->
 }
 
 #[tokio::test]
-#[ignore = "calls a real LLM against a snapshot of the local VRCX-0 database; set VRCX0_HARNESS_LLM_API_KEY (env or .env.local)"]
+#[ignore = "calls a real LLM against a snapshot of the local VRCX-0 database; set VRCX0_HARNESS_LLM_BASE_URL, VRCX0_HARNESS_LLM_MODEL and VRCX0_HARNESS_LLM_API_KEY (env or .env.local)"]
 async fn assistant_answers_key_questions_with_a_real_llm() {
     let env = HarnessEnv::load();
-    let api_key = env
-        .get("VRCX0_HARNESS_LLM_API_KEY")
-        .expect("set VRCX0_HARNESS_LLM_API_KEY in the environment or .env.local");
-    let base_url = env
-        .get("VRCX0_HARNESS_LLM_BASE_URL")
-        .unwrap_or_else(|| DEFAULT_BASE_URL.into());
-    let model = env
-        .get("VRCX0_HARNESS_LLM_MODEL")
-        .unwrap_or_else(|| DEFAULT_MODEL.into());
+    let api_key = env.require("VRCX0_HARNESS_LLM_API_KEY");
+    let base_url = env.require("VRCX0_HARNESS_LLM_BASE_URL");
+    let model = env.require("VRCX0_HARNESS_LLM_MODEL");
     let source_dir = env
         .get("VRCX0_HARNESS_DATA_DIR")
         .map(PathBuf::from)
@@ -254,30 +305,13 @@ async fn assistant_answers_key_questions_with_a_real_llm() {
                 .current_dir
         });
 
-    let scratch = ScratchDir(
-        std::env::temp_dir().join(format!("vrcx-0-assistant-harness-{}", std::process::id())),
-    );
+    let scratch = ScratchDir::new("harness");
     let app_data = scratch.0.join("app-data");
     std::fs::create_dir_all(&app_data).unwrap();
     let database = app_data.join("VRCX-0.sqlite3");
     snapshot_database(&source_dir.join("VRCX-0.sqlite3"), &database);
 
-    let runtime = RuntimeHostState::new(RuntimeHostOptions {
-        realtime_origin: "http://localhost:9000".into(),
-        launched_from_autostart: false,
-        app_data_dir: AppDataDirResolution {
-            current_dir: app_data.clone(),
-            default_dir: app_data.clone(),
-            persisted_dir: None,
-            cli_dir: Some(app_data),
-            source: AppDataDirSource::Cli,
-        },
-        app_version: "0.0.0-harness".into(),
-        profile: RuntimeHostProfile::HeadlessData,
-        database_maintenance_cache_dir: None,
-        task_executor: None,
-    })
-    .expect("start headless runtime on the snapshot");
+    let runtime = headless_runtime(app_data);
     let assembly = runtime.desktop_assembly();
     let user_id = env.get("VRCX0_HARNESS_USER_ID").unwrap_or_else(|| {
         assembly
@@ -342,7 +376,7 @@ async fn assistant_answers_key_questions_with_a_real_llm() {
         .expect("select runtime");
 
     let weekly = harness
-        .ask("weekly_top", None, "这周我和谁一起玩得最多？")
+        .ask("weekly_top", None, "zh-CN", "这周我和谁一起玩得最多？")
         .await;
     harness.check(
         "weekly_top",
@@ -354,6 +388,7 @@ async fn assistant_answers_key_questions_with_a_real_llm() {
         .ask(
             "follow_up",
             Some(weekly.session_id.clone()),
+            "zh-CN",
             "那这些人里，有没有最近和我变疏远的？",
         )
         .await;
@@ -363,8 +398,27 @@ async fn assistant_answers_key_questions_with_a_real_llm() {
         "follow-up did not read any data",
     );
 
+    let ja_recent = harness
+        .ask(
+            "ja_recent",
+            None,
+            "ja",
+            "最近いちばんよく一緒に遊んでいるフレンドは誰？",
+        )
+        .await;
+    harness.check(
+        "ja_recent",
+        !ja_recent.tool_calls.is_empty(),
+        "answered without reading any data",
+    );
+
     let unknown = harness
-        .ask("unknown_person", None, "我和 Zyxwv Qprst 关系怎么样？")
+        .ask(
+            "unknown_person",
+            None,
+            "ja",
+            "Zyxwv Qprst さんとはどんな関係？",
+        )
         .await;
     harness.check(
         "unknown_person",
@@ -374,8 +428,8 @@ async fn assistant_answers_key_questions_with_a_real_llm() {
 
     match ambiguous {
         Some(fragment) => {
-            let question = format!("{fragment} 平时都和谁一起玩？");
-            let picked = harness.ask("ambiguous_name", None, &question).await;
+            let question = format!("{fragment} はいつも誰と遊んでる？");
+            let picked = harness.ask("ambiguous_name", None, "ja", &question).await;
             harness.check(
                 "ambiguous_name",
                 picked.choices > 0,
@@ -389,6 +443,7 @@ async fn assistant_answers_key_questions_with_a_real_llm() {
         .ask(
             "writes_hidden",
             None,
+            "zh-CN",
             "把我最常一起玩的那个人加进我的本地收藏。",
         )
         .await;
@@ -416,4 +471,295 @@ async fn assistant_answers_key_questions_with_a_real_llm() {
         "harness failures:\n{}",
         failures.join("\n")
     );
+}
+
+const SCRIPTED_MODEL: &str = "scripted";
+const SCRIPTED_OWNER: &str = "usr_owner";
+
+#[derive(Default)]
+struct ScriptedLlm {
+    turns: Mutex<VecDeque<AssistantTurn>>,
+    requests: Mutex<Vec<Vec<ChatMessage>>>,
+}
+
+impl ScriptedLlm {
+    fn last_tool_message(&self, request: usize) -> String {
+        self.requests.lock().unwrap()[request]
+            .iter()
+            .rev()
+            .find(|message| message.role == "tool")
+            .and_then(|message| message.content.clone())
+            .unwrap_or_default()
+    }
+}
+
+impl AssistantLlmClientPort for ScriptedLlm {
+    fn list_models(&self) -> AssistantLlmFuture<'_, LlmEndpointDetectModelsResult> {
+        Box::pin(async {
+            Ok(LlmEndpointDetectModelsResult {
+                models: vec![SCRIPTED_MODEL.into()],
+                model_reasoning: Vec::new(),
+            })
+        })
+    }
+
+    fn complete_chat<'a>(
+        &'a self,
+        _messages: &'a [ChatMessage],
+        _options: &'a LlmRequestOptions,
+    ) -> AssistantLlmFuture<'a, String> {
+        Box::pin(async { Ok(String::new()) })
+    }
+
+    fn stream_chat<'a>(
+        &'a self,
+        messages: &'a [ChatMessage],
+        _tools: &'a [ToolDefinition],
+        _options: &'a LlmRequestOptions,
+        mut on_text: Box<dyn FnMut(&str) + Send + 'a>,
+    ) -> AssistantLlmFuture<'a, AssistantTurn> {
+        self.requests.lock().unwrap().push(messages.to_vec());
+        let turn = self.turns.lock().unwrap().pop_front();
+        Box::pin(async move {
+            let turn =
+                turn.ok_or_else(|| AssistantLlmError::Http("the script ran out of turns".into()))?;
+            on_text(&turn.content);
+            Ok(turn)
+        })
+    }
+}
+
+struct ScriptedFactory(Arc<ScriptedLlm>);
+
+impl AssistantLlmClientFactoryPort for ScriptedFactory {
+    fn create(
+        &self,
+        _input: AssistantLlmClientInput,
+    ) -> Result<Arc<dyn AssistantLlmClientPort>, AssistantLlmError> {
+        Ok(self.0.clone())
+    }
+}
+
+fn call(id: &str, name: &str, arguments: &str) -> ToolCall {
+    ToolCall {
+        id: id.into(),
+        kind: "function".into(),
+        function: FunctionCall {
+            name: name.into(),
+            arguments: arguments.into(),
+        },
+    }
+}
+
+fn tool_turn(calls: Vec<ToolCall>, finish_reason: &str) -> AssistantTurn {
+    AssistantTurn {
+        content: String::new(),
+        tool_calls: calls,
+        reasoning_details: Vec::new(),
+        finish_reason: Some(finish_reason.into()),
+    }
+}
+
+fn answer(text: &str) -> AssistantTurn {
+    AssistantTurn {
+        content: text.into(),
+        tool_calls: Vec::new(),
+        reasoning_details: Vec::new(),
+        finish_reason: Some("stop".into()),
+    }
+}
+
+fn joined(created_at: &str, name: &str, user_id: &str) -> GameLogJoinLeaveEntry {
+    GameLogJoinLeaveEntry {
+        created_at: created_at.into(),
+        event_type: "OnPlayerJoined".into(),
+        display_name: name.into(),
+        location: "wrld_a:1".into(),
+        user_id: user_id.into(),
+        world_name: "World A".into(),
+        time: 0,
+    }
+}
+
+struct ScriptedRun {
+    scratch: ScratchDir,
+    runtime: RuntimeHostState,
+    harness: Harness,
+    llm: Arc<ScriptedLlm>,
+}
+
+impl ScriptedRun {
+    async fn start(turns: Vec<AssistantTurn>) -> Self {
+        let scratch = ScratchDir::new("loop");
+        let app_data = scratch.0.join("app-data");
+        std::fs::create_dir_all(&app_data).unwrap();
+        let runtime = headless_runtime(app_data);
+        let assembly = runtime.desktop_assembly();
+        assembly
+            .auth_scope()
+            .set(SCRIPTED_OWNER, "https://api.vrchat.cloud/api/1");
+        write_batch(
+            runtime.database().as_ref(),
+            &OwnerId::new(SCRIPTED_OWNER),
+            &GameLogWriteBatch {
+                join_leave: vec![
+                    joined("2026-06-01T20:00:00.000Z", "Alice", "usr_alice"),
+                    joined("2026-06-02T20:00:00.000Z", "Alicia", "usr_alicia"),
+                ],
+                ..GameLogWriteBatch::default()
+            },
+        )
+        .expect("seed game log");
+        let (sender, events) = unbounded_channel();
+        assembly.event_bus().set_sink(ChannelSink(sender));
+
+        let llm = Arc::new(ScriptedLlm {
+            turns: Mutex::new(turns.into()),
+            ..ScriptedLlm::default()
+        });
+        let mut deps = assistant_controller_deps_for(&runtime);
+        deps.llm_factory = Arc::new(ScriptedFactory(Arc::clone(&llm)));
+        let controller = AssistantController::new(deps)
+            .await
+            .expect("assistant controller");
+        let endpoint = controller
+            .endpoint_upsert(LlmEndpointUpsertInput {
+                id: None,
+                name: "Scripted".into(),
+                base_url: "https://llm.invalid/v1".into(),
+                api_key: Some("test-key".into()),
+                models: vec![SCRIPTED_MODEL.into()],
+                model_reasoning: None,
+            })
+            .expect("save endpoint");
+        controller
+            .set_default_runtime(
+                Some(endpoint.id),
+                Some(SCRIPTED_MODEL.into()),
+                false,
+                PlaybookMode::Open,
+            )
+            .expect("select runtime");
+        Self {
+            scratch,
+            runtime,
+            harness: Harness {
+                controller,
+                events,
+                failures: Vec::new(),
+            },
+            llm,
+        }
+    }
+
+    async fn ask(&mut self, question: &str) -> TurnLog {
+        self.harness.ask("scripted", None, "en", question).await
+    }
+
+    async fn finish(self) {
+        let Self {
+            scratch,
+            runtime,
+            harness,
+            ..
+        } = self;
+        let Harness {
+            controller,
+            failures,
+            ..
+        } = harness;
+        drop(controller);
+        runtime.stop_runtime_tasks();
+        drop(runtime);
+        scratch.remove_when_released().await;
+        assert!(
+            failures.is_empty(),
+            "loop failures:\n{}",
+            failures.join("\n")
+        );
+    }
+}
+
+#[tokio::test]
+async fn scripted_turn_runs_a_real_tool_and_answers_from_its_result() {
+    let mut run = ScriptedRun::start(vec![
+        tool_turn(
+            vec![call("call_1", "find_user", r#"{"name":"Alice"}"#)],
+            "tool_calls",
+        ),
+        answer("Alice is in your history."),
+    ])
+    .await;
+
+    let log = run.ask("Who is Alice?").await;
+
+    assert_eq!(log.tool_calls, ["find_user"]);
+    assert!(log.failed_tools.is_empty(), "{:?}", log.failed_tools);
+    assert_eq!(log.answer, "Alice is in your history.");
+    assert!(run.llm.last_tool_message(1).contains("usr_alice"));
+    let session = run
+        .harness
+        .controller
+        .get_session(&log.session_id)
+        .unwrap()
+        .unwrap();
+    let roles: Vec<Role> = session
+        .messages
+        .iter()
+        .map(|message| message.role)
+        .collect();
+    assert_eq!(
+        roles,
+        [
+            Role::User,
+            Role::ToolCall,
+            Role::ToolResult,
+            Role::Assistant
+        ]
+    );
+    run.finish().await;
+}
+
+#[tokio::test]
+async fn scripted_ambiguous_name_waits_for_a_pick_and_feeds_the_rerun_back() {
+    let mut run = ScriptedRun::start(vec![
+        tool_turn(
+            vec![call("call_1", "get_companions_of", r#"{"user":"Ali"}"#)],
+            "tool_calls",
+        ),
+        answer("Here is who they play with."),
+    ])
+    .await;
+
+    let log = run.ask("Who does Ali play with?").await;
+
+    assert_eq!(log.choices, 1);
+    assert!(log.failed_tools.is_empty(), "{:?}", log.failed_tools);
+    let fed_back = run.llm.last_tool_message(1);
+    assert!(!fed_back.contains("needsDisambiguation"), "{fed_back}");
+    run.finish().await;
+}
+
+#[tokio::test]
+async fn scripted_broken_and_truncated_calls_come_back_as_tool_errors() {
+    let mut run = ScriptedRun::start(vec![
+        tool_turn(vec![call("call_1", "find_user", "{not json")], "tool_calls"),
+        tool_turn(
+            vec![call("call_2", "find_user", r#"{"name":"Alice"}"#)],
+            "length",
+        ),
+        answer("I could not look that up."),
+    ])
+    .await;
+
+    let log = run.ask("Who is Alice?").await;
+
+    assert_eq!(log.failed_tools.len(), 2, "{:?}", log.failed_tools);
+    assert!(run
+        .llm
+        .last_tool_message(1)
+        .contains("not a valid JSON object"));
+    assert!(run.llm.last_tool_message(2).contains("output token limit"));
+    assert_eq!(log.answer, "I could not look that up.");
+    run.finish().await;
 }
