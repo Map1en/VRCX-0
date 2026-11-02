@@ -213,7 +213,7 @@ impl VrcxMcpServer {
     }
 
     #[tool(
-        description = "[L2·analyze] The hour-of-day or weekday buckets where the most distinct friends are observed coming online (best time to catch people), across all friends. Use for \"when should I log on to find people\". Buckets are UTC unless you pass utcOffsetMinutes (e.g. 540 for UTC+9) for the user's local time. For a single named friend prefer get_friend_activity_pattern."
+        description = "[L2·analyze] The hour-of-day or weekday buckets where the most distinct friends are observed coming online (best time to catch people), across all friends, ranked with each bucket's top friends by name. Use for \"when should I log on to find people\". Buckets are UTC unless you pass utcOffsetMinutes (e.g. 540 for UTC+9) for the user's local time. For a single named friend prefer get_friend_activity_pattern."
     )]
     async fn get_best_time_to_play(
         &self,
@@ -229,7 +229,7 @@ impl VrcxMcpServer {
                         .in_utc_offset(input.utc_offset_minutes)?
                         .into(),
                     bucket: input.bucket.into(),
-                    limit: input.limit,
+                    limit: input.limit.or(Some(5)),
                     utc_offset_minutes: input.utc_offset_minutes,
                 },
             ),
@@ -810,6 +810,7 @@ struct BestTimeToPlayParams {
     time_window: TimeWindowParams,
     #[serde(default)]
     bucket: ActivityBucketParam,
+    /// Ranked buckets to return (default 5, max 50).
     limit: Option<i64>,
     /// The user's UTC offset in minutes (e.g. 540 for UTC+9, -300 for UTC-5).
     /// Pass it so hour/weekday buckets come back in the user's local time.

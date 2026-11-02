@@ -36,6 +36,7 @@ pub struct BestTimeBucketRow {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct BestTimeFriend {
+    #[serde(skip_serializing, default)]
     pub user_id: String,
     pub display_name: String,
     pub online_events: i64,

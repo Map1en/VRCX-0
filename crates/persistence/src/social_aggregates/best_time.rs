@@ -109,7 +109,7 @@ pub fn get_best_time_to_play(
                     .then_with(|| left.user_id.cmp(&right.user_id))
             });
             let distinct_friends = top_friends.len();
-            top_friends.truncate(5);
+            top_friends.truncate(3);
             BestTimeBucketRow {
                 label: bucket_label(&input.bucket, &bucket),
                 bucket,

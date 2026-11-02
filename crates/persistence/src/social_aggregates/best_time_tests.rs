@@ -115,7 +115,7 @@ fn ranks_buckets_by_distinct_friends_before_online_event_count() {
 }
 
 #[test]
-fn truncates_top_friends_to_five_but_keeps_true_distinct_count() {
+fn truncates_top_friends_to_three_but_keeps_true_distinct_count() {
     let (_dir, db) = test_db("best-time-truncate");
     ensure_realtime_tables(&db, "usrself").unwrap();
     for index in 0..6 {
@@ -135,7 +135,9 @@ fn truncates_top_friends_to_five_but_keeps_true_distinct_count() {
 
     assert_eq!(output.rows.len(), 1);
     assert_eq!(output.rows[0].distinct_friends, 6);
-    assert_eq!(output.rows[0].top_friends.len(), 5);
+    assert_eq!(output.rows[0].top_friends.len(), 3);
+    let friend = serde_json::to_value(&output.rows[0].top_friends[0]).unwrap();
+    assert!(friend.get("userId").is_none(), "{friend}");
 }
 
 #[test]
