@@ -172,9 +172,9 @@
         },
         "runtime": {
             "title": "執行環境",
-            "connection_unset": "未選擇端點",
             "model": "模型",
             "model_unset": "目前沒有可用的模型",
+            "search_models": "搜尋模型",
             "playbook_mode": "分析模式",
             "allow_writes": "允許寫入操作",
             "manage_endpoints": "管理 LLM 端點",

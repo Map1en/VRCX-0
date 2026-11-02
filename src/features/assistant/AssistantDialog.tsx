@@ -1,4 +1,10 @@
-import { PanelRightIcon, Settings2Icon, XIcon } from 'lucide-react';
+import {
+    BrainIcon,
+    ChevronDownIcon,
+    PanelRightIcon,
+    Settings2Icon,
+    XIcon
+} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
@@ -28,33 +34,29 @@ import {
     DialogTitle
 } from '@/ui/shadcn/dialog';
 import {
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
+} from '@/ui/shadcn/dropdown-menu';
+import {
     Empty,
     EmptyContent,
     EmptyHeader,
     EmptyTitle
 } from '@/ui/shadcn/empty';
-import { Label } from '@/ui/shadcn/label';
-import {
-    Popover,
-    PopoverContent,
-    PopoverHeader,
-    PopoverTitle,
-    PopoverTrigger
-} from '@/ui/shadcn/popover';
+import { InputGroupButton } from '@/ui/shadcn/input-group';
 import {
     ResizableHandle,
     ResizablePanel,
     ResizablePanelGroup
 } from '@/ui/shadcn/resizable';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/ui/shadcn/select';
-import { Switch } from '@/ui/shadcn/switch';
 
 import {
     cancelActiveTurn,
@@ -314,100 +316,6 @@ export function AssistantDialog() {
                         {t('assistant.title')}
                     </DialogTitle>
                     <div className="flex items-center gap-1.5">
-                        <Popover
-                            onOpenChange={(popoverOpen) => {
-                                if (popoverOpen) {
-                                    refreshSelectableModels();
-                                }
-                            }}
-                        >
-                            <PopoverTrigger
-                                render={
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-8 gap-1.5 px-2 text-xs"
-                                    >
-                                        <Settings2Icon
-                                            data-icon="inline-start"
-                                            className="size-4"
-                                        />
-                                        <span className="hidden max-w-40 truncate sm:inline">
-                                            {selectedEndpoint?.name ||
-                                                t(
-                                                    'assistant.runtime.connection_unset'
-                                                )}
-                                        </span>
-                                    </Button>
-                                }
-                            />
-                            <PopoverContent align="end" className="w-80">
-                                <PopoverHeader>
-                                    <PopoverTitle>
-                                        {t('assistant.runtime.title')}
-                                    </PopoverTitle>
-                                </PopoverHeader>
-                                <div className="grid gap-3">
-                                    {showSetupGate ? (
-                                        <div className="grid gap-2.5 pb-1">
-                                            <span className="text-muted-foreground">
-                                                {t('assistant.setup_title')}
-                                            </span>
-                                            <Button
-                                                type="button"
-                                                size="sm"
-                                                onClick={openAssistantSettings}
-                                            >
-                                                {t('assistant.open_settings')}
-                                            </Button>
-                                        </div>
-                                    ) : (
-                                        <RuntimeSettings
-                                            selection={runtimeSelection}
-                                            sessionScoped={Boolean(
-                                                activeSessionId
-                                            )}
-                                            reasoningEffort={
-                                                showReasoningEffort
-                                                    ? effectiveAssistantEffort
-                                                    : null
-                                            }
-                                            reasoningEffortOptions={
-                                                reasoningEffortOptions
-                                            }
-                                            onSelectionChange={(patch) =>
-                                                void updateRuntimeSelection(
-                                                    patch
-                                                )
-                                            }
-                                            onReasoningEffortChange={(effort) =>
-                                                void updateReasoningEffort(
-                                                    effort
-                                                )
-                                            }
-                                            onOpenSettings={
-                                                openAssistantSettings
-                                            }
-                                        />
-                                    )}
-                                </div>
-                            </PopoverContent>
-                        </Popover>
-                        <span
-                            className="text-muted-foreground mr-1 flex items-center gap-1.5 text-xs"
-                            title={t(`assistant.connection.${health}`)}
-                        >
-                            <span
-                                className={cn(
-                                    'size-2 rounded-full',
-                                    HEALTH_DOT_CLASS[health]
-                                )}
-                            />
-                            <span className="hidden sm:inline">
-                                {t(`assistant.connection.${health}`)}
-                            </span>
-                        </span>
                         <button
                             type="button"
                             onClick={() => setEntityPanelOpen(!entityPanelOpen)}
@@ -523,6 +431,29 @@ export function AssistantDialog() {
                                 disabled={notConfigured}
                                 onSend={handleSend}
                                 onStop={() => cancelActiveTurn()}
+                                toolbar={
+                                    <RuntimeToolbar
+                                        selection={runtimeSelection}
+                                        sessionScoped={Boolean(activeSessionId)}
+                                        health={health}
+                                        reasoningEffort={
+                                            showReasoningEffort
+                                                ? effectiveAssistantEffort
+                                                : null
+                                        }
+                                        reasoningEffortOptions={
+                                            reasoningEffortOptions
+                                        }
+                                        onModelsOpen={refreshSelectableModels}
+                                        onSelectionChange={(patch) =>
+                                            void updateRuntimeSelection(patch)
+                                        }
+                                        onReasoningEffortChange={(effort) =>
+                                            void updateReasoningEffort(effort)
+                                        }
+                                        onOpenSettings={openAssistantSettings}
+                                    />
+                                }
                             />
                         </div>
                     </ResizablePanel>
@@ -545,25 +476,29 @@ export function AssistantDialog() {
     );
 }
 
-type RuntimeSettingsProps = {
+type RuntimeToolbarProps = {
     selection: AssistantRuntimeSelection;
     sessionScoped: boolean;
+    health: AssistantHealth;
     reasoningEffort: string | null;
     reasoningEffortOptions: string[];
+    onModelsOpen: () => void;
     onSelectionChange: (patch: Partial<AssistantRuntimeSelection>) => void;
     onReasoningEffortChange: (effort: string) => void;
     onOpenSettings: () => void;
 };
 
-function RuntimeSettings({
+function RuntimeToolbar({
     selection,
     sessionScoped,
+    health,
     reasoningEffort,
     reasoningEffortOptions,
+    onModelsOpen,
     onSelectionChange,
     onReasoningEffortChange,
     onOpenSettings
-}: RuntimeSettingsProps) {
+}: RuntimeToolbarProps) {
     const { t } = useTranslation();
     const providerDefaultEffort = t(
         'assistant.runtime.reasoning_effort_provider_default'
@@ -571,120 +506,134 @@ function RuntimeSettings({
 
     return (
         <>
-            <div className="grid gap-1.5">
-                <Label htmlFor="assistant-runtime-model">
-                    {t('assistant.runtime.model')}
-                </Label>
-                <RuntimeModelSelect
-                    id="assistant-runtime-model"
-                    endpointId={selection.endpointId}
-                    model={selection.model}
-                    placeholder={t('assistant.runtime.model_unset')}
-                    emptyLabel={t('assistant.runtime.model_unset')}
-                    onSelect={onSelectionChange}
+            <RuntimeModelSelect
+                endpointId={selection.endpointId}
+                model={selection.model}
+                placeholder={t('assistant.runtime.search_models')}
+                emptyLabel={t('assistant.runtime.model_unset')}
+                onOpenChange={(open) => {
+                    if (open) {
+                        onModelsOpen();
+                    }
+                }}
+                onSelect={onSelectionChange}
+            >
+                <span
+                    className={cn(
+                        'size-2 shrink-0 rounded-full',
+                        HEALTH_DOT_CLASS[health]
+                    )}
+                    title={t(`assistant.connection.${health}`)}
                 />
-            </div>
+                <span className="max-w-48 truncate">
+                    {selection.model || t('assistant.runtime.model_unset')}
+                </span>
+            </RuntimeModelSelect>
             {reasoningEffort !== null ? (
-                <div className="grid gap-1.5">
-                    <Label htmlFor="assistant-runtime-reasoning-effort">
-                        {t('assistant.runtime.reasoning_effort')}
-                    </Label>
-                    <Select
-                        value={reasoningEffort}
-                        items={reasoningEffortOptions.map((effort) => ({
-                            value: effort,
-                            label: effort
-                        }))}
-                        onValueChange={(value) =>
-                            onReasoningEffortChange(value ?? '')
+                <DropdownMenu>
+                    <DropdownMenuTrigger
+                        render={
+                            <InputGroupButton
+                                size="sm"
+                                title={t('assistant.runtime.reasoning_effort')}
+                            />
                         }
                     >
-                        <SelectTrigger
-                            id="assistant-runtime-reasoning-effort"
-                            className="data-placeholder:text-foreground w-full"
-                        >
-                            <SelectValue>
-                                {reasoningEffort || providerDefaultEffort}
-                            </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectGroup>
-                                <SelectItem value="">
+                        <BrainIcon />
+                        {reasoningEffort || providerDefaultEffort}
+                        <ChevronDownIcon />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent side="top" className="w-48">
+                        <DropdownMenuGroup>
+                            <DropdownMenuLabel>
+                                {t('assistant.runtime.reasoning_effort')}
+                            </DropdownMenuLabel>
+                            <DropdownMenuRadioGroup
+                                value={reasoningEffort}
+                                onValueChange={(value) =>
+                                    onReasoningEffortChange(String(value ?? ''))
+                                }
+                            >
+                                <DropdownMenuRadioItem value="" closeOnClick>
                                     {providerDefaultEffort}
-                                </SelectItem>
+                                </DropdownMenuRadioItem>
                                 {reasoningEffortOptions.map((effort) => (
-                                    <SelectItem key={effort} value={effort}>
+                                    <DropdownMenuRadioItem
+                                        key={effort}
+                                        value={effort}
+                                        closeOnClick
+                                    >
                                         {effort}
-                                    </SelectItem>
+                                    </DropdownMenuRadioItem>
                                 ))}
-                            </SelectGroup>
-                        </SelectContent>
-                    </Select>
-                </div>
+                            </DropdownMenuRadioGroup>
+                        </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             ) : null}
-            <div className="grid gap-1.5">
-                <Label htmlFor="assistant-runtime-playbook">
-                    {t('assistant.runtime.playbook_mode')}
-                </Label>
-                <Select
-                    value={selection.playbookMode}
-                    items={PLAYBOOK_MODES.map((mode) => ({
-                        value: mode,
-                        label: t(`assistant.settings.playbook_mode_${mode}`)
-                    }))}
-                    onValueChange={(value) =>
-                        onSelectionChange({
-                            playbookMode: value ?? 'auto'
-                        })
+            <DropdownMenu>
+                <DropdownMenuTrigger
+                    render={
+                        <InputGroupButton
+                            size="icon-sm"
+                            title={t('assistant.runtime.title')}
+                            aria-label={t('assistant.runtime.title')}
+                        />
                     }
                 >
-                    <SelectTrigger
-                        id="assistant-runtime-playbook"
-                        className="w-full"
-                    >
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectGroup>
+                    <Settings2Icon />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="top" className="w-64">
+                    <DropdownMenuGroup>
+                        <DropdownMenuLabel>
+                            {t('assistant.runtime.playbook_mode')}
+                        </DropdownMenuLabel>
+                        <DropdownMenuRadioGroup
+                            value={selection.playbookMode}
+                            onValueChange={(value) =>
+                                onSelectionChange({
+                                    playbookMode:
+                                        PLAYBOOK_MODES.find(
+                                            (mode) => mode === value
+                                        ) ?? 'auto'
+                                })
+                            }
+                        >
                             {PLAYBOOK_MODES.map((mode) => (
-                                <SelectItem key={mode} value={mode}>
+                                <DropdownMenuRadioItem
+                                    key={mode}
+                                    value={mode}
+                                    closeOnClick
+                                >
                                     {t(
                                         `assistant.settings.playbook_mode_${mode}`
                                     )}
-                                </SelectItem>
+                                </DropdownMenuRadioItem>
                             ))}
-                        </SelectGroup>
-                    </SelectContent>
-                </Select>
-            </div>
-            <div className="flex items-center justify-between gap-3 pt-0.5">
-                <Label htmlFor="assistant-runtime-writes" className="text-sm">
-                    {t('assistant.runtime.allow_writes')}
-                </Label>
-                <Switch
-                    id="assistant-runtime-writes"
-                    checked={selection.allowWrites}
-                    onCheckedChange={(allowWrites) =>
-                        onSelectionChange({ allowWrites })
-                    }
-                />
-            </div>
-            <div className="flex items-center justify-between gap-2">
-                <span className="text-muted-foreground text-xs">
-                    {sessionScoped
-                        ? t('assistant.runtime.scope_session')
-                        : t('assistant.runtime.scope_default')}
-                </span>
-                <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-auto px-1.5 py-1 text-xs"
-                    onClick={onOpenSettings}
-                >
-                    {t('assistant.open_settings')}
-                </Button>
-            </div>
+                        </DropdownMenuRadioGroup>
+                    </DropdownMenuGroup>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuCheckboxItem
+                        checked={selection.allowWrites}
+                        onCheckedChange={(allowWrites) =>
+                            onSelectionChange({ allowWrites })
+                        }
+                    >
+                        {t('assistant.runtime.allow_writes')}
+                    </DropdownMenuCheckboxItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={onOpenSettings}>
+                        {t('assistant.open_settings')}
+                    </DropdownMenuItem>
+                    <DropdownMenuGroup>
+                        <DropdownMenuLabel className="font-normal">
+                            {sessionScoped
+                                ? t('assistant.runtime.scope_session')
+                                : t('assistant.runtime.scope_default')}
+                        </DropdownMenuLabel>
+                    </DropdownMenuGroup>
+                </DropdownMenuContent>
+            </DropdownMenu>
         </>
     );
 }

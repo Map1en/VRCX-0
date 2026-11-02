@@ -172,9 +172,9 @@
         },
         "runtime": {
             "title": "ランタイム",
-            "connection_unset": "エンドポイントなし",
             "model": "モデル",
             "model_unset": "利用できるモデルがありません",
+            "search_models": "モデルを検索",
             "playbook_mode": "分析モード",
             "allow_writes": "書き込み操作を許可",
             "manage_endpoints": "LLM エンドポイントを管理",

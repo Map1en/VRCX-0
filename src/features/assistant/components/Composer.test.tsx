@@ -47,6 +47,28 @@ describe('Composer', () => {
         expect(input.value).toBe('');
     });
 
+    it('sends on Enter but not while an IME composition is open', () => {
+        const onSend = vi.fn();
+        render(
+            <Composer
+                busy={false}
+                disabled={false}
+                toolbar={<button type="button">Model</button>}
+                onSend={onSend}
+                onStop={vi.fn()}
+            />
+        );
+        const input = screen.getByPlaceholderText('Write a message');
+        fireEvent.change(input, { target: { value: 'こんにちは' } });
+
+        fireEvent.keyDown(input, { key: 'Enter', isComposing: true });
+        expect(onSend).not.toHaveBeenCalled();
+
+        fireEvent.keyDown(input, { key: 'Enter' });
+        expect(onSend).toHaveBeenCalledWith('こんにちは');
+        expect(screen.getByRole('button', { name: 'Model' })).toBeTruthy();
+    });
+
     it('keeps stop available while a disabled busy turn is running', () => {
         const onStop = vi.fn();
         render(<Composer busy disabled onSend={vi.fn()} onStop={onStop} />);

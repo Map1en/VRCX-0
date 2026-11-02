@@ -172,9 +172,9 @@
         },
         "runtime": {
             "title": "运行时",
-            "connection_unset": "无端点",
             "model": "模型",
             "model_unset": "暂无可用模型",
+            "search_models": "搜索模型",
             "playbook_mode": "分析模式",
             "allow_writes": "允许写入操作",
             "manage_endpoints": "管理 LLM 端点",

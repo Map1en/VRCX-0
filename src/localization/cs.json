@@ -175,9 +175,9 @@
         },
         "runtime": {
             "title": "Běhové prostředí",
-            "connection_unset": "Žádný endpoint",
             "model": "Model",
             "model_unset": "Žádný dostupný model",
+            "search_models": "Hledat modely",
             "playbook_mode": "Režim analýzy",
             "allow_writes": "Povolit zápisové akce",
             "manage_endpoints": "Spravovat LLM endpointy",

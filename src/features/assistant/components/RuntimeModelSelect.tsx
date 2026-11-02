@@ -1,3 +1,6 @@
+import type { ReactNode } from 'react';
+
+import { cn } from '@/lib/utils';
 import { useLlmEndpointsStore } from '@/state/llmEndpointsStore';
 import {
     Combobox,
@@ -8,8 +11,10 @@ import {
     ComboboxInput,
     ComboboxItem,
     ComboboxLabel,
-    ComboboxList
+    ComboboxList,
+    ComboboxTrigger
 } from '@/ui/shadcn/combobox';
+import { InputGroupButton } from '@/ui/shadcn/input-group';
 
 const RUNTIME_SEPARATOR = '::';
 
@@ -48,6 +53,8 @@ type RuntimeModelSelectProps = {
     placeholder: string;
     emptyLabel: string;
     id?: string;
+    children?: ReactNode;
+    onOpenChange?: (open: boolean) => void;
     onSelect: (ref: RuntimeModelRef) => void;
 };
 
@@ -57,6 +64,8 @@ export function RuntimeModelSelect({
     placeholder,
     emptyLabel,
     id,
+    children,
+    onOpenChange,
     onSelect
 }: RuntimeModelSelectProps) {
     const endpoints = useLlmEndpointsStore((state) => state.endpoints);
@@ -86,14 +95,30 @@ export function RuntimeModelSelect({
             value={value}
             itemToStringLabel={runtimeModelLabel}
             onValueChange={handleValueChange}
+            onOpenChange={onOpenChange}
         >
-            <ComboboxInput
-                id={id}
-                className="w-full"
-                disabled={!values.length}
-                placeholder={placeholder}
-            />
-            <ComboboxContent>
+            {children ? (
+                <ComboboxTrigger
+                    id={id}
+                    render={<InputGroupButton size="sm" />}
+                >
+                    {children}
+                </ComboboxTrigger>
+            ) : (
+                <ComboboxInput
+                    id={id}
+                    className="w-full"
+                    disabled={!values.length}
+                    placeholder={placeholder}
+                />
+            )}
+            <ComboboxContent className={cn(children && 'w-72')}>
+                {children ? (
+                    <ComboboxInput
+                        showTrigger={false}
+                        placeholder={placeholder}
+                    />
+                ) : null}
                 <ComboboxEmpty>{emptyLabel}</ComboboxEmpty>
                 <ComboboxList>
                     {(group: RuntimeModelGroup) => (

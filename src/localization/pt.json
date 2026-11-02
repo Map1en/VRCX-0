@@ -173,9 +173,9 @@
         },
         "runtime": {
             "title": "Runtime",
-            "connection_unset": "Sem endpoint",
             "model": "Modelo",
             "model_unset": "Nenhum modelo disponível",
+            "search_models": "Pesquisar modelos",
             "playbook_mode": "Modo de análise",
             "allow_writes": "Permitir ações de escrita",
             "manage_endpoints": "Gerenciar endpoints LLM",

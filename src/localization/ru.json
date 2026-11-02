@@ -175,9 +175,9 @@
         },
         "runtime": {
             "title": "Среда выполнения",
-            "connection_unset": "Нет эндпоинта",
             "model": "Модель",
             "model_unset": "Нет доступных моделей",
+            "search_models": "Поиск моделей",
             "playbook_mode": "Режим анализа",
             "allow_writes": "Разрешить действия записи",
             "manage_endpoints": "Управление LLM-эндпоинтами",
