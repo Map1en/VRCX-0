@@ -183,8 +183,9 @@
             "manage_endpoints": "Управление LLM-эндпоинтами",
             "reasoning_effort": "Уровень рассуждений",
             "reasoning_effort_provider_default": "По умолчанию провайдера",
-            "scope_session": "Применяется только к этой беседе",
-            "scope_default": "Применяется к новым беседам"
+            "scope_session": "Эти настройки действуют только в этой беседе",
+            "scope_default": "Эти настройки действуют для новых бесед",
+            "more_settings": "Другие настройки ИИ"
         }
     },
     "user_hover_card": {

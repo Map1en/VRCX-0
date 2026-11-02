@@ -180,8 +180,9 @@
             "manage_endpoints": "LLM 엔드포인트 관리",
             "reasoning_effort": "추론 강도",
             "reasoning_effort_provider_default": "제공업체 기본값",
-            "scope_session": "이 대화에만 적용됩니다",
-            "scope_default": "새 대화에 적용됩니다"
+            "scope_session": "아래 설정은 이 대화에만 적용됩니다",
+            "scope_default": "아래 설정은 새 대화에 적용됩니다",
+            "more_settings": "AI 설정 더 보기"
         }
     },
     "user_hover_card": {

@@ -181,8 +181,9 @@
             "manage_endpoints": "LLM-Endpunkte verwalten",
             "reasoning_effort": "Reasoning-Aufwand",
             "reasoning_effort_provider_default": "Standard des Anbieters",
-            "scope_session": "Gilt nur für diese Unterhaltung",
-            "scope_default": "Gilt für neue Unterhaltungen"
+            "scope_session": "Diese Einstellungen gelten nur für diese Unterhaltung",
+            "scope_default": "Diese Einstellungen gelten für neue Unterhaltungen",
+            "more_settings": "Weitere KI-Einstellungen"
         }
     },
     "user_hover_card": {

@@ -181,8 +181,9 @@
             "manage_endpoints": "Gerenciar endpoints LLM",
             "reasoning_effort": "Esforço de raciocínio",
             "reasoning_effort_provider_default": "Padrão do provedor",
-            "scope_session": "Aplica-se apenas a esta conversa",
-            "scope_default": "Aplica-se a novas conversas"
+            "scope_session": "Estas configurações valem só para esta conversa",
+            "scope_default": "Estas configurações valem para novas conversas",
+            "more_settings": "Mais configurações de IA"
         }
     },
     "user_hover_card": {

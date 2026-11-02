@@ -180,8 +180,9 @@
             "manage_endpoints": "管理 LLM 端点",
             "reasoning_effort": "推理强度",
             "reasoning_effort_provider_default": "服务商默认",
-            "scope_session": "仅对本次对话生效",
-            "scope_default": "对新对话生效"
+            "scope_session": "以下设置仅对本次对话生效",
+            "scope_default": "以下设置对之后的新对话生效",
+            "more_settings": "更多 AI 设置"
         }
     },
     "user_hover_card": {

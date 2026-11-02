@@ -180,8 +180,9 @@
             "manage_endpoints": "LLM エンドポイントを管理",
             "reasoning_effort": "推論の深さ",
             "reasoning_effort_provider_default": "プロバイダーのデフォルト",
-            "scope_session": "このチャットにだけ反映されます",
-            "scope_default": "新しいチャットに反映されます"
+            "scope_session": "この設定はこのチャットにだけ反映されます",
+            "scope_default": "この設定は新しいチャットに反映されます",
+            "more_settings": "その他の AI 設定"
         }
     },
     "user_hover_card": {

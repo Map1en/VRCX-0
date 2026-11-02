@@ -1,4 +1,5 @@
 import {
+    ArrowUpRightIcon,
     BrainIcon,
     ChevronDownIcon,
     PanelRightIcon,
@@ -584,6 +585,12 @@ function RuntimeToolbar({
                     <Settings2Icon />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent side="top" className="w-64">
+                    <p className="text-muted-foreground px-1.5 py-1 text-xs">
+                        {sessionScoped
+                            ? t('assistant.runtime.scope_session')
+                            : t('assistant.runtime.scope_default')}
+                    </p>
+                    <DropdownMenuSeparator />
                     <DropdownMenuGroup>
                         <DropdownMenuLabel>
                             {t('assistant.runtime.playbook_mode')}
@@ -623,15 +630,9 @@ function RuntimeToolbar({
                     </DropdownMenuCheckboxItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={onOpenSettings}>
-                        {t('assistant.open_settings')}
+                        {t('assistant.runtime.more_settings')}
+                        <ArrowUpRightIcon className="text-muted-foreground ml-auto" />
                     </DropdownMenuItem>
-                    <DropdownMenuGroup>
-                        <DropdownMenuLabel className="font-normal">
-                            {sessionScoped
-                                ? t('assistant.runtime.scope_session')
-                                : t('assistant.runtime.scope_default')}
-                        </DropdownMenuLabel>
-                    </DropdownMenuGroup>
                 </DropdownMenuContent>
             </DropdownMenu>
         </>
