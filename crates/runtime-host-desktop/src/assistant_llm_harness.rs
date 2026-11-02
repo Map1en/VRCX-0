@@ -1138,6 +1138,56 @@ impl SnapshotSql {
             .filter_map(Result::ok)
             .collect()
     }
+
+    fn friend_components(&self) -> (usize, Vec<usize>) {
+        let mut statement = self
+            .connection
+            .prepare(&format!(
+                "SELECT user_id FROM {} WHERE trim(user_id) <> ''",
+                self.table("friend_log_current")
+            ))
+            .unwrap();
+        let friends: BTreeSet<String> = statement
+            .query_map([], |row| row.get(0))
+            .unwrap()
+            .filter_map(Result::ok)
+            .collect();
+        let mut statement = self
+            .connection
+            .prepare(&format!(
+                "SELECT friend_id, mutual_id FROM {}",
+                self.table("mutual_graph_links")
+            ))
+            .unwrap();
+        let links: Vec<(String, String)> = statement
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+            .unwrap()
+            .filter_map(Result::ok)
+            .collect();
+        let mut parent: HashMap<String, String> =
+            friends.iter().map(|id| (id.clone(), id.clone())).collect();
+        let root = |parent: &HashMap<String, String>, id: &str| {
+            let mut current = id.to_string();
+            while parent[&current] != current {
+                current = parent[&current].clone();
+            }
+            current
+        };
+        for (left, right) in links {
+            if left != right && parent.contains_key(&left) && parent.contains_key(&right) {
+                let left_root = root(&parent, &left);
+                let right_root = root(&parent, &right);
+                parent.insert(left_root, right_root);
+            }
+        }
+        let mut sizes: HashMap<String, usize> = HashMap::new();
+        for id in &friends {
+            *sizes.entry(root(&parent, id)).or_default() += 1;
+        }
+        let mut circles: Vec<usize> = sizes.into_values().filter(|size| *size >= 2).collect();
+        circles.sort_unstable_by(|left, right| right.cmp(left));
+        (friends.len(), circles)
+    }
 }
 
 #[derive(Default)]
@@ -1448,17 +1498,220 @@ async fn assistant_tools_agree_with_the_snapshot() {
         activity["totalMinutes"].as_i64(),
     );
 
-    for (name, arguments) in [
-        ("get_activity_streaks", json!({ "utcOffsetMinutes": 540 })),
-        ("get_activity_timeline", json!({ "utcOffsetMinutes": 540 })),
-        ("get_fading_friends", json!({})),
-        ("get_favorites", json!({})),
-        ("get_friend_circles", json!({})),
-        (
+    let streaks = probe
+        .call("get_activity_streaks", json!({ "utcOffsetMinutes": 540 }))
+        .await;
+    let all_time = probe.call("get_my_activity", json!({})).await;
+    verdicts.expect_eq(
+        "activity_streaks sessionCount matches get_my_activity",
+        streaks["sessionCount"].as_i64(),
+        all_time["sessionCount"].as_i64(),
+    );
+    let streak_minutes = streaks["totalMinutes"].as_i64().unwrap_or_default();
+    let played_minutes = all_time["totalMinutes"].as_i64().unwrap_or_default();
+    verdicts.expect(
+        "activity_streaks totalMinutes is at least the played minutes",
+        streak_minutes >= played_minutes,
+    );
+    println!(
+        "activity_streaks counts {} more minutes than get_my_activity (gaps inside merged sessions)",
+        streak_minutes - played_minutes
+    );
+    let timeline = probe
+        .call("get_activity_timeline", json!({ "utcOffsetMinutes": 540 }))
+        .await;
+    let bucket_minutes: i64 = rows(&timeline)
+        .iter()
+        .filter_map(|row| row["minutes"].as_i64())
+        .sum();
+    verdicts.expect(
+        "activity_timeline buckets add up to the streak total",
+        (streak_minutes - bucket_minutes).abs() <= rows(&timeline).len() as i64,
+    );
+
+    let pivot = (now - chrono::Duration::days(30))
+        .format("%Y-%m-%dT%H:%M:%SZ")
+        .to_string();
+    let prior_from = (now - chrono::Duration::days(60))
+        .format("%Y-%m-%dT%H:%M:%SZ")
+        .to_string();
+    let left_minutes = |user: &str, from: &str, to: &str, end: &str| {
+        sql.int(
+            &format!(
+                "SELECT SUM(time) / 60000 FROM gamelog_join_leave
+                 WHERE owner_id IN (0, ?1) AND type = 'OnPlayerLeft' AND time > 0
+                   AND user_id = ?2 AND created_at >= ?3 AND created_at {end} ?4"
+            ),
+            rusqlite::params![sql.owner_row, user, from, to],
+        )
+    };
+    let fading = probe
+        .call("get_fading_friends", json!({ "limit": 5 }))
+        .await;
+    for row in rows(&fading) {
+        let user = row["userId"].as_str().unwrap_or_default();
+        verdicts.expect_eq(
+            "fading_friends prior and recent minutes",
+            (row["priorMinutes"].as_i64(), row["recentMinutes"].as_i64()),
+            (
+                Some(left_minutes(user, &prior_from, &pivot, "<")),
+                Some(left_minutes(user, &pivot, &to, "<=")),
+            ),
+        );
+    }
+
+    let favorites = probe.call("get_favorites", json!({})).await;
+    let favorite_total = favorites["totalRows"].as_i64().unwrap_or_default();
+    verdicts.expect_eq(
+        "favorites totalRows",
+        favorite_total,
+        sql.int(
+            "SELECT (SELECT COUNT(*) FROM favorite_world) + (SELECT COUNT(*) FROM favorite_avatar)
+                  + (SELECT COUNT(*) FROM favorite_friend WHERE owner_id IN (0, ?1))",
+            [sql.owner_row],
+        ),
+    );
+    verdicts.expect_eq(
+        "favorites groups add up to totalRows",
+        favorites["groups"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|group| group["count"].as_i64())
+            .sum::<i64>(),
+        favorite_total,
+    );
+
+    let circles = probe.call("get_friend_circles", json!({})).await;
+    let (friend_count, components) = sql.friend_components();
+    verdicts.expect_eq(
+        "friend_circles friendsAnalyzed",
+        circles["friendsAnalyzed"].as_u64(),
+        Some(friend_count as u64),
+    );
+    verdicts.expect_eq(
+        "friend_circles circleCount",
+        circles["circleCount"].as_u64(),
+        Some(components.len() as u64),
+    );
+    verdicts.expect_eq(
+        "friend_circles largest circle",
+        circles["circles"][0]["memberCount"].as_u64(),
+        components.first().map(|size| *size as u64),
+    );
+    verdicts.expect_eq(
+        "friend_circles isolatedFriendCount",
+        circles["isolatedFriendCount"].as_u64(),
+        Some((friend_count - components.iter().sum::<usize>()) as u64),
+    );
+
+    let invites = probe
+        .call(
             "get_invite_history",
             json!({ "timeWindow": window, "limit": 25 }),
-        ),
-        ("get_social_graph", json!({})),
+        )
+        .await;
+    let v1 = sql.table("notifications");
+    let v2 = sql.table("notifications_v2");
+    for row in rows(&invites) {
+        let user = row["userId"].as_str().unwrap_or_default();
+        let expected = if row["direction"] == "sent" {
+            sql.int(
+                &format!(
+                    "SELECT COUNT(*) FROM {v1} WHERE type LIKE '%invite%'
+                     AND sender_user_id = ?1 AND receiver_user_id = ?2
+                     AND created_at >= ?3 AND created_at <= ?4"
+                ),
+                rusqlite::params![sql.owner, user, from, to],
+            )
+        } else {
+            sql.int(
+                &format!(
+                    "SELECT (SELECT COUNT(*) FROM {v1} WHERE type LIKE '%invite%'
+                             AND sender_user_id = ?2 AND sender_user_id <> ?1
+                             AND created_at >= ?3 AND created_at <= ?4)
+                          + (SELECT COUNT(*) FROM {v2} WHERE type LIKE '%invite%'
+                             AND sender_user_id = ?2
+                             AND created_at >= ?3 AND created_at <= ?4)"
+                ),
+                rusqlite::params![sql.owner, user, from, to],
+            )
+        };
+        verdicts.expect_eq(
+            "invite_history per-person count",
+            row["totalCount"].as_i64().unwrap_or_default(),
+            expected,
+        );
+    }
+
+    let graph = probe.call("get_social_graph", json!({})).await;
+    let links = sql.table("mutual_graph_links");
+    let graph_friends = sql.table("mutual_graph_friends");
+    verdicts.expect_eq(
+        "social_graph totalEdges",
+        graph["totalEdges"].as_i64(),
+        Some(sql.int(&format!("SELECT COUNT(*) FROM {links}"), [])),
+    );
+    verdicts.expect_eq(
+        "social_graph totalNodes",
+        graph["totalNodes"].as_i64(),
+        Some(sql.int(
+            &format!(
+                "SELECT COUNT(*) FROM (SELECT friend_id FROM {graph_friends}
+                 UNION SELECT friend_id FROM {links} UNION SELECT mutual_id FROM {links})"
+            ),
+            [],
+        )),
+    );
+    verdicts.expect_eq(
+        "social_graph highest degree",
+        graph["nodes"][0]["connectionDegree"].as_i64(),
+        Some(sql.int(
+            &format!(
+                "SELECT MAX(degree) FROM (SELECT a, COUNT(DISTINCT b) AS degree FROM (
+                     SELECT friend_id AS a, mutual_id AS b FROM {links}
+                     UNION SELECT mutual_id, friend_id FROM {links}) GROUP BY a)"
+            ),
+            [],
+        )),
+    );
+
+    let visit_start = sql.text(
+        "SELECT created_at FROM gamelog_location WHERE owner_id IN (0, ?1) AND time > 0
+         AND created_at >= ?2 ORDER BY created_at DESC, id DESC LIMIT 1",
+        rusqlite::params![sql.owner_row, from],
+    );
+    if let Some(joined_at) = visit_start {
+        let next_start = sql.text(
+            "SELECT created_at FROM gamelog_location WHERE owner_id IN (0, ?1)
+             AND created_at > ?2 ORDER BY created_at ASC, id ASC LIMIT 1",
+            rusqlite::params![sql.owner_row, joined_at],
+        );
+        let visit = probe
+            .call("get_visit_timeline", json!({ "at": joined_at }))
+            .await;
+        verdicts.expect_eq(
+            "visit_timeline picks the visit containing `at`",
+            visit["visit"]["joinedAt"].as_str(),
+            Some(joined_at.as_str()),
+        );
+        verdicts.expect_eq(
+            "visit_timeline peopleObserved",
+            visit["peopleObserved"].as_i64(),
+            Some(sql.int(
+                "SELECT COUNT(DISTINCT CASE WHEN trim(COALESCE(user_id, '')) = ''
+                     THEN 'name:' || display_name ELSE user_id END)
+                 FROM gamelog_join_leave
+                 WHERE owner_id IN (0, ?1) AND created_at >= ?2
+                   AND (?3 IS NULL OR created_at < ?3)
+                   AND type IN ('OnPlayerJoined', 'OnPlayerLeft') AND display_name <> ''
+                   AND COALESCE(user_id, '') <> ?4",
+                rusqlite::params![sql.owner_row, joined_at, next_start, sql.owner],
+            )),
+        );
+    }
+
+    for (name, arguments) in [
         ("recall_encounter", json!({ "timeWindow": "7d" })),
         ("search_friend_feed", json!({ "timeWindow": "7d" })),
     ] {
