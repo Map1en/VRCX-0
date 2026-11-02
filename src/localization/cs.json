@@ -224,6 +224,14 @@
             "search_worlds_visited": "Hledat navštívené světy",
             "set_friend_note": "Upravit poznámku k příteli",
             "summarize_social_period": "Shrnout sociální aktivitu"
+        },
+        "chart": {
+            "my_playtime": "Můj herní čas",
+            "best_times": "Kdy je online nejvíc přátel",
+            "friend_pattern": "Kdy bývá {{name}} online",
+            "top_companions": "Nejvíc společného času",
+            "top_worlds": "Nejnavštěvovanější světy",
+            "show_more": "Zobrazit další ({{count}})"
         }
     },
     "user_hover_card": {

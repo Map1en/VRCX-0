@@ -20,6 +20,18 @@ export type AssistantErrorEvent = {
     message: string;
 };
 
+export type AssistantChart = {
+    kind:
+        | 'myPlaytime'
+        | 'bestTimes'
+        | 'friendPattern'
+        | 'topCompanions'
+        | 'topWorlds';
+    axis: 'hourOfDay' | 'dayOfWeek' | 'label';
+    subject?: string | null;
+    points: { key: string; value: number }[];
+};
+
 export type Entity = {
     kind: string;
     id: string;
@@ -43,6 +55,7 @@ export type AssistantToolResultEvent = {
     ok: boolean;
     summary: string;
     entities: Entity[];
+    charts: AssistantChart[];
 };
 
 export type AssistantChoiceCandidate = {
@@ -86,6 +99,7 @@ export interface UIToolCall {
     status: ToolCallStatus;
     summary: string;
     entities: Entity[];
+    charts: AssistantChart[];
 }
 
 export type UserChoiceStatus = 'pending' | 'picked' | 'skipped';

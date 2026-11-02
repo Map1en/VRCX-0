@@ -1,6 +1,14 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import type { AssistantChart } from '@/domain/assistant/types';
+
 import { useAssistantChatStore } from './assistantChatStore';
+
+const CHART: AssistantChart = {
+    kind: 'topCompanions',
+    axis: 'label',
+    points: [{ key: 'Alice', value: 120 }]
+};
 
 describe('assistantChatStore', () => {
     beforeEach(() => {
@@ -185,7 +193,8 @@ describe('assistantChatStore', () => {
                                 id: 'usr_alice',
                                 displayName: 'Alice'
                             }
-                        ]
+                        ],
+                        charts: [CHART]
                     }
                 },
                 {
@@ -259,7 +268,8 @@ describe('assistantChatStore', () => {
                                 id: 'usr_alice',
                                 displayName: 'Alice'
                             }
-                        ]
+                        ],
+                        charts: [CHART]
                     }
                 ]
             },
@@ -282,7 +292,8 @@ describe('assistantChatStore', () => {
                         args: '{"timeWindow":"last week"}',
                         status: 'error',
                         summary: '',
-                        entities: []
+                        entities: [],
+                        charts: []
                     }
                 ]
             }

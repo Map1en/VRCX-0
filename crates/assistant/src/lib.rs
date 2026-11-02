@@ -1,4 +1,5 @@
 mod agent;
+mod charts;
 mod choices;
 mod config;
 mod endpoints;

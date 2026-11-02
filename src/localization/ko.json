@@ -221,6 +221,14 @@
             "search_worlds_visited": "방문한 월드 검색",
             "set_friend_note": "친구 메모 수정",
             "summarize_social_period": "소셜 활동 요약"
+        },
+        "chart": {
+            "my_playtime": "내 플레이 시간",
+            "best_times": "친구가 가장 많이 접속하는 시간대",
+            "friend_pattern": "{{name}} 님의 접속 시간대",
+            "top_companions": "함께한 시간 순위",
+            "top_worlds": "자주 간 월드",
+            "show_more": "{{count}}개 더 보기"
         }
     },
     "user_hover_card": {

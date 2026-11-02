@@ -141,7 +141,8 @@ function foldTranscript(messages: Message[], running: boolean): UIMessage[] {
                     args: message.toolCall.arguments,
                     status: 'pending',
                     summary: '',
-                    entities: []
+                    entities: [],
+                    charts: []
                 });
                 break;
             case 'tool_result': {
@@ -155,7 +156,8 @@ function foldTranscript(messages: Message[], running: boolean): UIMessage[] {
                               ...call,
                               status: result.ok ? 'done' : 'error',
                               summary: result.summary,
-                              entities: result.entities
+                              entities: result.entities,
+                              charts: result.charts ?? []
                           }
                         : call
                 );
@@ -410,7 +412,8 @@ export const useAssistantChatStore = create<AssistantChatState>((set) => ({
                             args: event.args,
                             status: 'pending',
                             summary: '',
-                            entities: []
+                            entities: [],
+                            charts: []
                         }
                     ];
                     return message;
@@ -428,7 +431,8 @@ export const useAssistantChatStore = create<AssistantChatState>((set) => ({
                                   ...call,
                                   status: event.ok ? 'done' : 'error',
                                   summary: event.summary,
-                                  entities: event.entities
+                                  entities: event.entities,
+                                  charts: event.charts
                               }
                             : call
                     );

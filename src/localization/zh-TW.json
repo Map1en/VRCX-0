@@ -221,6 +221,14 @@
             "search_worlds_visited": "搜尋去過的世界",
             "set_friend_note": "修改好友備註",
             "summarize_social_period": "彙整社交概況"
+        },
+        "chart": {
+            "my_playtime": "我的遊玩時長",
+            "best_times": "好友最常上線的時段",
+            "friend_pattern": "{{name}} 的上線時段",
+            "top_companions": "同房時長排行",
+            "top_worlds": "最常去的世界",
+            "show_more": "再顯示 {{count}} 張"
         }
     },
     "user_hover_card": {

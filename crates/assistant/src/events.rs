@@ -2,6 +2,7 @@ use serde::Serialize;
 use specta::Type;
 use vrcx_0_application_core::{RuntimeEventBus, RuntimeEventPayload};
 
+use crate::charts::AssistantChart;
 use crate::choices::AssistantChoiceCandidate;
 use crate::entities::Entity;
 use vrcx_0_core::OwnerId;
@@ -37,6 +38,7 @@ pub struct AssistantToolResultEvent {
     pub ok: bool,
     pub summary: String,
     pub entities: Vec<Entity>,
+    pub charts: Vec<AssistantChart>,
 }
 
 #[derive(Serialize, Type)]
@@ -160,7 +162,14 @@ impl AssistantEmitter {
         });
     }
 
-    pub fn tool_result(&self, tool_call_id: &str, ok: bool, summary: &str, entities: &[Entity]) {
+    pub fn tool_result(
+        &self,
+        tool_call_id: &str,
+        ok: bool,
+        summary: &str,
+        entities: &[Entity],
+        charts: &[AssistantChart],
+    ) {
         self.bus.emit(AssistantToolResultEvent {
             owner_user_id: self.owner_user_id.clone(),
             session_id: self.session_id.clone(),
@@ -169,6 +178,7 @@ impl AssistantEmitter {
             ok,
             summary: summary.to_string(),
             entities: entities.to_vec(),
+            charts: charts.to_vec(),
         });
     }
 

@@ -3531,6 +3531,20 @@ export type AppUpdateStatusSnapshot = {
     release: AppUpdateReleaseSnapshot | null;
     shouldNotify: boolean;
 };
+export type AssistantChart = {
+    kind: AssistantChartKind;
+    axis: AssistantChartAxis;
+    subject?: string | null;
+    points: AssistantChartPoint[];
+};
+export type AssistantChartAxis = 'hourOfDay' | 'dayOfWeek' | 'label';
+export type AssistantChartKind =
+    | 'myPlaytime'
+    | 'bestTimes'
+    | 'friendPattern'
+    | 'topCompanions'
+    | 'topWorlds';
+export type AssistantChartPoint = { key: string; value: number };
 export type AssistantChoiceCandidate = {
     userId: string;
     displayName: string;
@@ -3592,6 +3606,7 @@ export type AssistantToolResultEvent = {
     ok: boolean;
     summary: string;
     entities: Entity[];
+    charts: AssistantChart[];
 };
 export type AssistantTurnEntitiesEvent = {
     ownerUserId: OwnerId;
@@ -7082,6 +7097,7 @@ export type ToolResultRecord = {
     ok: boolean;
     summary: string;
     entities: Entity[];
+    charts?: AssistantChart[];
 };
 export type TranslationOverrides = {
     enabled: boolean | null;

@@ -4,6 +4,7 @@ import type { UIMessage } from '@/domain/assistant/types';
 import { Bubble, BubbleContent } from '@/ui/shadcn/bubble';
 import { Message, MessageContent } from '@/ui/shadcn/message';
 
+import { AssistantCharts } from './AssistantCharts';
 import { AssistantChoiceCard } from './AssistantChoiceCard';
 import { AssistantMarkdown } from './AssistantMarkdown';
 import { AssistantTrace } from './AssistantTrace';
@@ -82,6 +83,10 @@ function AssistantMessageImpl({
                             )}
                         </BubbleContent>
                     </Bubble>
+                )}
+
+                {!isUser && !message.streaming && (
+                    <AssistantCharts toolCalls={message.toolCalls} />
                 )}
 
                 {message.error && (

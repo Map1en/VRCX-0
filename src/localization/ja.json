@@ -221,6 +221,14 @@
             "search_worlds_visited": "訪れたワールドを検索",
             "set_friend_note": "フレンドのノートを編集",
             "summarize_social_period": "交流のまとめを作成"
+        },
+        "chart": {
+            "my_playtime": "自分のプレイ時間",
+            "best_times": "フレンドが多くオンラインになる時間帯",
+            "friend_pattern": "{{name}} さんがオンラインになる時間帯",
+            "top_companions": "一緒にいた時間ランキング",
+            "top_worlds": "よく行くワールド",
+            "show_more": "さらに {{count}} 件表示"
         }
     },
     "user_hover_card": {

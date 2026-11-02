@@ -222,6 +222,14 @@
             "search_worlds_visited": "Buscar mundos visitados",
             "set_friend_note": "Editar nota do amigo",
             "summarize_social_period": "Resumir atividade social"
+        },
+        "chart": {
+            "my_playtime": "Meu tempo de jogo",
+            "best_times": "Quando mais amigos ficam online",
+            "friend_pattern": "Quando {{name}} fica online",
+            "top_companions": "Mais tempo juntos",
+            "top_worlds": "Mundos mais visitados",
+            "show_more": "Mostrar mais {{count}}"
         }
     },
     "user_hover_card": {

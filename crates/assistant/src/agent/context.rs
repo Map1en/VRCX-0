@@ -480,6 +480,7 @@ mod tests {
                 ok: true,
                 summary: summary.into(),
                 entities: Vec::new(),
+                charts: Vec::new(),
             }),
             tool_content: Some(content.into()),
         }

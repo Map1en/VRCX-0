@@ -224,6 +224,14 @@
             "search_worlds_visited": "Поиск посещённых миров",
             "set_friend_note": "Изменение заметки о друге",
             "summarize_social_period": "Сводка социальной активности"
+        },
+        "chart": {
+            "my_playtime": "Моё игровое время",
+            "best_times": "Когда в сети больше всего друзей",
+            "friend_pattern": "Когда {{name}} бывает в сети",
+            "top_companions": "Больше всего времени вместе",
+            "top_worlds": "Самые посещаемые миры",
+            "show_more": "Показать ещё {{count}}"
         }
     },
     "user_hover_card": {

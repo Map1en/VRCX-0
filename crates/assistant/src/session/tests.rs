@@ -1,4 +1,5 @@
 use super::*;
+use crate::charts::{AssistantChartAxis, AssistantChartKind, AssistantChartPoint};
 use crate::test_support::TestAssistantSessionPersistence;
 
 const TEST_OWNER: &str = "usr_test";
@@ -82,6 +83,15 @@ fn reopened_session_restores_tool_rows_with_full_content_for_the_model() {
                         id: "usr_alice".into(),
                         display_name: "Alice".into(),
                     }],
+                    charts: vec![AssistantChart {
+                        kind: AssistantChartKind::TopCompanions,
+                        axis: AssistantChartAxis::Label,
+                        subject: None,
+                        points: vec![AssistantChartPoint {
+                            key: "Alice".into(),
+                            value: 120,
+                        }],
+                    }],
                 },
                 "{\"summary\":\"Alice tops the list.\",\"rows\":[{\"userId\":\"usr_alice\"}]}"
                     .into(),
@@ -109,6 +119,7 @@ fn reopened_session_restores_tool_rows_with_full_content_for_the_model() {
     assert_eq!(result.tool_call_id, "call_1");
     assert_eq!(result.summary, "Alice tops the list.");
     assert_eq!(result.entities[0].id, "usr_alice");
+    assert_eq!(result.charts[0].points[0].value, 120);
     assert_eq!(
         history[2].tool_content.as_deref(),
         Some("{\"summary\":\"Alice tops the list.\",\"rows\":[{\"userId\":\"usr_alice\"}]}")

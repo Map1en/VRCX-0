@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex, Weak};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
+use crate::charts::AssistantChart;
 use crate::config::PlaybookMode;
 use crate::endpoints::AssistantRuntimeSelection;
 use crate::entities::Entity;
@@ -40,6 +41,8 @@ pub struct ToolResultRecord {
     pub ok: bool,
     pub summary: String,
     pub entities: Vec<Entity>,
+    #[serde(default)]
+    pub charts: Vec<AssistantChart>,
 }
 
 #[derive(Serialize, Deserialize)]

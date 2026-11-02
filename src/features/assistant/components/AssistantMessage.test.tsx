@@ -79,7 +79,8 @@ describe('AssistantMessage', () => {
                             args: '{}',
                             status: 'pending',
                             summary: '',
-                            entities: []
+                            entities: [],
+                            charts: []
                         }
                     ]
                 })}
@@ -108,7 +109,8 @@ describe('AssistantMessage', () => {
                             args: '{}',
                             status: 'done',
                             summary: 'Found 3 friends.',
-                            entities: []
+                            entities: [],
+                            charts: []
                         }
                     ]
                 })}

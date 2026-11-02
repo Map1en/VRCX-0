@@ -221,6 +221,14 @@
             "search_worlds_visited": "搜索去过的世界",
             "set_friend_note": "修改好友备注",
             "summarize_social_period": "汇总社交概况"
+        },
+        "chart": {
+            "my_playtime": "我的游玩时长",
+            "best_times": "好友最常上线的时段",
+            "friend_pattern": "{{name}} 的上线时段",
+            "top_companions": "同房时长排行",
+            "top_worlds": "最常去的世界",
+            "show_more": "再显示 {{count}} 张"
         }
     },
     "user_hover_card": {

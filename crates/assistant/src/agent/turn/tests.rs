@@ -151,14 +151,17 @@ fn tool_calls_from_a_truncated_response_are_not_dispatched() {
 
 #[test]
 fn empty_final_answer_falls_back_to_last_tool_summary() {
-    let resolved = resolve_tool_outcome(Ok(ToolCallOutcome {
-        is_error: false,
-        text: String::new(),
-        structured: Some(serde_json::json!({
-            "summary": "Alice is your top companion.",
-            "rows": []
-        })),
-    }));
+    let resolved = resolve_tool_outcome(
+        "get_friend_profile",
+        Ok(ToolCallOutcome {
+            is_error: false,
+            text: String::new(),
+            structured: Some(serde_json::json!({
+                "summary": "Alice is your top companion.",
+                "rows": []
+            })),
+        }),
+    );
     let mut final_answer = String::new();
 
     assert!(apply_tool_summary_fallback(
@@ -170,14 +173,17 @@ fn empty_final_answer_falls_back_to_last_tool_summary() {
 
 #[test]
 fn duplicate_tool_call_summary_does_not_replace_real_fallback_summary() {
-    let resolved = resolve_tool_outcome(Ok(ToolCallOutcome {
-        is_error: false,
-        text: String::new(),
-        structured: Some(serde_json::json!({
-            "summary": "Alice is your top companion.",
-            "rows": []
-        })),
-    }));
+    let resolved = resolve_tool_outcome(
+        "get_friend_profile",
+        Ok(ToolCallOutcome {
+            is_error: false,
+            text: String::new(),
+            structured: Some(serde_json::json!({
+                "summary": "Alice is your top companion.",
+                "rows": []
+            })),
+        }),
+    );
     let duplicate = duplicate_tool_call_result("get_copresence_summary");
     let mut last_success_tool_summary = None;
     let mut last_error_tool_summary = None;
@@ -203,19 +209,22 @@ fn duplicate_tool_call_summary_does_not_replace_real_fallback_summary() {
 
 #[test]
 fn tool_without_top_level_summary_builds_readable_fallback_summary() {
-    let resolved = resolve_tool_outcome(Ok(ToolCallOutcome {
-        is_error: false,
-        text: String::new(),
-        structured: Some(serde_json::json!({
-            "rows": [{
-                "label": "21:00",
-                "distinctFriends": 3,
-                "onlineEvents": 9,
-                "topFriends": []
-            }],
-            "caveats": []
-        })),
-    }));
+    let resolved = resolve_tool_outcome(
+        "get_friend_profile",
+        Ok(ToolCallOutcome {
+            is_error: false,
+            text: String::new(),
+            structured: Some(serde_json::json!({
+                "rows": [{
+                    "label": "21:00",
+                    "distinctFriends": 3,
+                    "onlineEvents": 9,
+                    "topFriends": []
+                }],
+                "caveats": []
+            })),
+        }),
+    );
     let mut final_answer = String::new();
 
     assert!(apply_tool_summary_fallback(
@@ -230,22 +239,47 @@ fn tool_without_top_level_summary_builds_readable_fallback_summary() {
 
 #[test]
 fn raw_tool_fallback_is_not_accepted_as_supported_facts() {
-    let resolved = resolve_tool_outcome(Ok(ToolCallOutcome {
-        is_error: false,
-        text: String::new(),
-        structured: Some(serde_json::json!({
-            "nodes": [{ "displayName": "Alice", "connectionDegree": 37 }],
-            "edges": []
-        })),
-    }));
+    let resolved = resolve_tool_outcome(
+        "get_friend_profile",
+        Ok(ToolCallOutcome {
+            is_error: false,
+            text: String::new(),
+            structured: Some(serde_json::json!({
+                "nodes": [{ "displayName": "Alice", "connectionDegree": 37 }],
+                "edges": []
+            })),
+        }),
+    );
 
     assert!(resolved.fallback_summary.is_some());
     assert!(resolved.supported_summary.is_none());
 }
 
 #[test]
+fn charted_tool_results_tell_the_model_the_chart_is_shown() {
+    let outcome = || ToolCallOutcome {
+        is_error: false,
+        text: String::new(),
+        structured: Some(serde_json::json!({
+            "rows": [{ "displayName": "Alice", "totalMinutes": 120 }]
+        })),
+    };
+
+    let charted = resolve_tool_outcome("get_copresence_summary", Ok(outcome()));
+    assert_eq!(charted.charts.len(), 1);
+    assert!(charted.content.contains("\"chartShown\""));
+
+    let plain = resolve_tool_outcome("get_friend_profile", Ok(outcome()));
+    assert!(plain.charts.is_empty());
+    assert!(!plain.content.contains("chartShown"));
+}
+
+#[test]
 fn empty_final_answer_can_fall_back_to_tool_error_summary() {
-    let resolved = resolve_tool_outcome(Err(vrcx_0_mcp::McpError::Custom("db unavailable".into())));
+    let resolved = resolve_tool_outcome(
+        "get_friend_profile",
+        Err(vrcx_0_mcp::McpError::Custom("db unavailable".into())),
+    );
     let mut final_answer = String::new();
 
     assert!(apply_tool_summary_fallback(

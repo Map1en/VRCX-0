@@ -257,7 +257,7 @@ export function Composer({
                     </InputGroupAddon>
                 </InputGroup>
             </div>
-            <p className="text-muted-foreground/70 mt-2 text-center text-xs">
+            <p className="text-muted-foreground/70 mt-2 text-center text-[11px]">
                 {t('assistant.disclaimer')}
             </p>
         </form>
