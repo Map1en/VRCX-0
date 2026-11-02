@@ -52,7 +52,12 @@ function AssistantMessageImpl({
                 {hasVisibleText && (
                     <Bubble
                         align={alignment}
-                        variant={isUser ? 'secondary' : 'ghost'}
+                        variant={isUser ? 'muted' : 'ghost'}
+                        className={
+                            isUser
+                                ? '*:data-[slot=bubble-content]:bg-(--state-pressed-surface)'
+                                : undefined
+                        }
                     >
                         <BubbleContent>
                             {isUser ? (
