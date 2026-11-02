@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::CallToolResult;
 use rmcp::{schemars, tool, tool_router};
@@ -38,7 +40,7 @@ impl VrcxMcpServer {
     }
 
     #[tool(
-        description = "[L1·query] List VRCX-0 local favorites. Omit kind or use all to list worlds, friends, and avatars; otherwise filter by world, friend, or avatar. Use before a favorite write to check duplicates."
+        description = "[L1·query] List VRCX-0 local favorites, newest first, with per-group counts for every favorite. Omit kind or use all to list worlds, friends, and avatars; otherwise filter by world, friend, or avatar. Before a favorite write, pass entityId to check that exact entity for duplicates."
     )]
     async fn get_favorites(
         &self,
@@ -71,6 +73,11 @@ impl VrcxMcpServer {
     fn get_favorites_output(&self, input: GetFavoritesParams) -> Result<FavoritesOutput, String> {
         let requested_kind = parse_favorite_list_kind(input.kind.as_deref())?;
         let owner_user_id = require_current_user_id(&self.runtime)?;
+        let entity_id = input
+            .entity_id
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty());
         let mut rows = Vec::new();
         for kind in requested_kind.canonical_kinds() {
             let values = self
@@ -81,12 +88,35 @@ impl VrcxMcpServer {
             rows.extend(
                 values
                     .iter()
-                    .filter_map(|row| favorite_row_from_value(*kind, row)),
+                    .filter_map(|row| favorite_row_from_value(*kind, row))
+                    .filter(|row| entity_id.is_none_or(|entity_id| row.entity_id == entity_id)),
             );
         }
-        let summary = favorites_summary(requested_kind, rows.len());
+        let total_rows = rows.len();
+        let mut group_counts = BTreeMap::<(String, String), usize>::new();
+        for row in &rows {
+            *group_counts
+                .entry((row.kind.clone(), row.group.clone()))
+                .or_default() += 1;
+        }
+        rows.sort_by(|left, right| right.created_at.cmp(&left.created_at));
+        rows.truncate(input.limit.unwrap_or(50).clamp(1, 500) as usize);
+        let truncated = rows.len() < total_rows;
+        let mut summary = favorites_summary(requested_kind, total_rows);
+        if truncated {
+            summary.push_str(&format!(
+                " Showing the {} newest; groups counts every favorite.",
+                rows.len()
+            ));
+        }
         Ok(FavoritesOutput {
             rows,
+            groups: group_counts
+                .into_iter()
+                .map(|((kind, group), count)| FavoriteGroupCount { kind, group, count })
+                .collect(),
+            total_rows,
+            truncated,
             summary,
             caveats: vec![
                 "Favorites are VRCX-0 local favorite rows and may differ from remote VRChat favorites until synced."
@@ -206,6 +236,11 @@ struct GetFavoritesParams {
     #[serde(default)]
     #[schemars(with = "Option<FavoriteListKind>")]
     kind: Option<String>,
+    /// Only this world, friend, or avatar id (wrld_/usr_/avtr_), e.g. to check
+    /// for a duplicate before a write.
+    entity_id: Option<String>,
+    /// Newest favorites to list (default 50, max 500); groups always counts all.
+    limit: Option<i64>,
 }
 
 #[derive(Clone, Copy, Debug, schemars::JsonSchema)]
@@ -245,8 +280,19 @@ impl FavoriteListKind {
 #[serde(rename_all = "camelCase")]
 struct FavoritesOutput {
     rows: Vec<FavoriteRow>,
+    groups: Vec<FavoriteGroupCount>,
+    total_rows: usize,
+    truncated: bool,
     summary: String,
     caveats: Vec<String>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct FavoriteGroupCount {
+    kind: String,
+    group: String,
+    count: usize,
 }
 
 #[derive(Clone, Debug, Serialize)]

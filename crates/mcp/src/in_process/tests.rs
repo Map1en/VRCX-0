@@ -102,6 +102,60 @@ async fn in_process_bridge_returns_structured_read_only_results() {
 }
 
 #[tokio::test]
+async fn favorites_list_the_newest_rows_and_count_every_group() {
+    let (_dir, runtime, db) =
+        crate::test_support::test_runtime_with_database("in-process-favorites", "usr_owner")
+            .unwrap();
+    for (world_id, group) in [
+        ("wrld_a", "Chill"),
+        ("wrld_b", "Chill"),
+        ("wrld_c", "Games"),
+    ] {
+        vrcx_0_persistence::favorites::favorite_add(
+            db.as_ref(),
+            Some(&OwnerId::new("usr_owner")),
+            vrcx_0_core::FavoriteEntityKind::World,
+            world_id.into(),
+            group.into(),
+        )
+        .unwrap();
+    }
+    let tools = spawn_in_process_tools(runtime).await.unwrap();
+
+    let listed = tools
+        .call_tool(
+            "get_favorites",
+            Some(Map::from_iter([("limit".into(), json!(1))])),
+        )
+        .await
+        .unwrap()
+        .structured
+        .unwrap();
+    assert_eq!(listed["rows"].as_array().unwrap().len(), 1);
+    assert_eq!(listed["totalRows"], 3);
+    assert_eq!(listed["truncated"], true);
+    assert_eq!(
+        listed["groups"],
+        json!([
+            { "kind": "world", "group": "Chill", "count": 2 },
+            { "kind": "world", "group": "Games", "count": 1 },
+        ])
+    );
+
+    let duplicate = tools
+        .call_tool(
+            "get_favorites",
+            Some(Map::from_iter([("entityId".into(), json!("wrld_c"))])),
+        )
+        .await
+        .unwrap()
+        .structured
+        .unwrap();
+    assert_eq!(duplicate["totalRows"], 1);
+    assert_eq!(duplicate["rows"][0]["group"], "Games");
+}
+
+#[tokio::test]
 async fn friend_feed_search_resolves_target_pages_results_and_guards_global_history() {
     let (_dir, runtime, db) =
         crate::test_support::test_runtime_with_database("in-process-friend-feed", "usr_owner")
