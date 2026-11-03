@@ -2737,8 +2737,6 @@
                 "default_model_unset": "暂无可用模型",
                 "setup_hint": "AI 助手需要先连接一个 OpenAI 兼容的接口才能回答问题。",
                 "playbook_mode_description": "模型分析数据时的自由度。",
-                "shortcuts": "页面内的 AI 快捷入口",
-                "shortcuts_description": "在用户资料等页面里显示“问 AI”按钮。关闭后仍可从标题栏打开助手。",
                 "endpoints_description": "AI 助手和翻译共用。"
             },
             "social": {

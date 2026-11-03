@@ -1,4 +1,10 @@
-import { ImageIcon, RefreshCwIcon, UserIcon, UsersIcon } from 'lucide-react';
+import {
+    ImageIcon,
+    RefreshCwIcon,
+    SparklesIcon,
+    UserIcon,
+    UsersIcon
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { EconomyStoreListings } from '@/components/economy/EconomyStoreListings';
@@ -12,6 +18,7 @@ import { formatDateFilterOrFallback, timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { openExternalLink } from '@/services/entityMediaService';
 import { isRecord } from '@/shared/utils/record';
+import { useAssistantChatStore } from '@/state/assistantChatStore';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -22,6 +29,7 @@ import {
     EmptyTitle
 } from '@/ui/shadcn/empty';
 import { Spinner } from '@/ui/shadcn/spinner';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
     EntityDialogTabContent,
@@ -221,6 +229,34 @@ export function WorldDialogTabPanels({
             value={activeTab}
             onValueChange={onChangeTab}
             tabs={tabs}
+            actions={
+                world.id ? (
+                    <Tooltip>
+                        <TooltipTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    size="icon-xs"
+                                    variant="outline"
+                                    aria-label={t('assistant.title')}
+                                    onClick={() =>
+                                        useAssistantChatStore
+                                            .getState()
+                                            .startMentionDraft({
+                                                kind: 'world',
+                                                id: world.id,
+                                                name: world.name || world.id
+                                            })
+                                    }
+                                >
+                                    <SparklesIcon data-icon="inline-start" />
+                                </Button>
+                            }
+                        />
+                        <TooltipContent>{t('assistant.title')}</TooltipContent>
+                    </Tooltip>
+                ) : null
+            }
         >
             <EntityDialogTabContent
                 value="instances"

@@ -2760,8 +2760,6 @@
                 "default_model_unset": "Žádný dostupný model",
                 "setup_hint": "Sociální AI potřebuje připojení kompatibilní s OpenAI, jinak nedokáže odpovídat.",
                 "playbook_mode_description": "Jak velkou volnost má model při analýze dat.",
-                "shortcuts": "Zkratky k AI",
-                "shortcuts_description": "Zobrazuje tlačítka „Zeptat se AI“ v profilech a dalších zobrazeních. Asistent zůstane dostupný z titulkového pruhu.",
                 "endpoints_description": "Sdílí je Sociální AI i překlad."
             },
             "social": {

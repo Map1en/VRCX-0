@@ -2674,8 +2674,6 @@
                 "default_model_unset": "사용할 수 있는 모델 없음",
                 "setup_hint": "소셜 AI를 쓰려면 먼저 OpenAI 호환 연결이 필요합니다.",
                 "playbook_mode_description": "분석할 때 모델에 얼마나 재량을 줄지 정합니다.",
-                "shortcuts": "페이지 내 AI 바로가기",
-                "shortcuts_description": "프로필 등 화면에 ‘AI에게 묻기’ 버튼을 표시합니다. 꺼도 제목 표시줄에서 어시스턴트를 열 수 있습니다.",
                 "endpoints_description": "소셜 AI와 번역이 함께 사용합니다."
             },
             "social": {

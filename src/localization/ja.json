@@ -2733,8 +2733,6 @@
                 "default_model_unset": "利用できるモデルがありません",
                 "setup_hint": "ソーシャル AI を使うには、OpenAI 互換の接続先が必要です。",
                 "playbook_mode_description": "分析するときにモデルへどこまで任せるかを決めます。",
-                "shortcuts": "ページ内の AI ショートカット",
-                "shortcuts_description": "プロフィールなどに「AI に聞く」ボタンを表示します。オフにしてもタイトルバーからアシスタントを開けます。",
                 "endpoints_description": "ソーシャル AI と翻訳で共通です。"
             },
             "social": {

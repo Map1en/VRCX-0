@@ -2740,8 +2740,6 @@
                 "default_model_unset": "Kein Modell verfügbar",
                 "setup_hint": "Social AI braucht erst eine OpenAI-kompatible Verbindung, um antworten zu können.",
                 "playbook_mode_description": "Wie viel Spielraum das Modell bei der Analyse bekommt.",
-                "shortcuts": "KI-Schnellzugriffe",
-                "shortcuts_description": "Zeigt „KI fragen“-Schaltflächen in Profilen und anderen Ansichten. Der Assistent bleibt über die Titelleiste erreichbar.",
                 "endpoints_description": "Gemeinsam von Social AI und Übersetzung genutzt."
             },
             "social": {

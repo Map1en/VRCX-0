@@ -16,7 +16,6 @@ vi.mock('@/components/economy/useEconomyBalance', () => ({
 }));
 
 import { useAssistantChatStore } from '@/state/assistantChatStore';
-import { usePreferencesStore } from '@/state/preferencesStore';
 
 import {
     UserDialogActivitySummaryPanel,
@@ -245,8 +244,8 @@ describe('UserDialogActivitySummaryPanel', () => {
         expect(onOpenFeed).toHaveBeenCalledOnce();
     });
 
-    it('starts an assistant chat about the person unless the shortcuts are off', () => {
-        const panel = (
+    it('starts an assistant chat about the person', () => {
+        render(
             <UserDialogActivitySummaryPanel
                 friendedAt={undefined}
                 isCurrentUser={false}
@@ -258,7 +257,6 @@ describe('UserDialogActivitySummaryPanel', () => {
                 userJoinCount={0}
             />
         );
-        const { rerender } = render(panel);
 
         fireEvent.click(
             screen.getByRole('button', {
@@ -269,17 +267,6 @@ describe('UserDialogActivitySummaryPanel', () => {
             open: true,
             mentionDraft: { kind: 'user', id: 'usr_test', name: 'Mika' }
         });
-
-        act(() =>
-            usePreferencesStore.setState({ showAssistantShortcuts: false })
-        );
-        rerender(panel);
-        expect(
-            screen.queryByRole('button', {
-                name: 'assistant.title'
-            })
-        ).toBeNull();
-        usePreferencesStore.setState({ showAssistantShortcuts: true });
     });
 });
 

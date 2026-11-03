@@ -39,7 +39,6 @@ import type { UserDialogRelationshipEvent } from '@/services/userDialogSessionCa
 import { parseLocation } from '@/shared/utils/location';
 import { replaceBioSymbols } from '@/shared/utils/string';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
-import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -831,16 +830,13 @@ export function UserDialogActivitySummaryPanel({
 }: UserDialogActivitySummarySectionProps) {
     const { i18n, t } = useTranslation();
     const dateLocale = i18n.resolvedLanguage || i18n.language;
-    const showAssistantShortcuts = usePreferencesStore(
-        (state) => state.showAssistantShortcuts
-    );
 
     return (
         <InfoPanel
             title={t('dialog.user.info.activity_summary')}
             contentClassName="gap-1"
             action={
-                showAssistantShortcuts && !isCurrentUser && profile.id ? (
+                !isCurrentUser && profile.id ? (
                     <Tooltip>
                         <TooltipTrigger
                             render={

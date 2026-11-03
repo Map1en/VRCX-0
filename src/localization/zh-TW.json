@@ -2737,8 +2737,6 @@
                 "default_model_unset": "目前沒有可用的模型",
                 "setup_hint": "社交 AI 需要先設定 OpenAI 相容的連線才能回答問題。",
                 "playbook_mode_description": "模型分析資料時的自由度。",
-                "shortcuts": "頁面內的 AI 快捷入口",
-                "shortcuts_description": "在使用者資料等頁面中顯示「問 AI」按鈕。關閉後仍可從標題列開啟助理。",
                 "endpoints_description": "社交 AI 與翻譯共用。"
             },
             "social": {

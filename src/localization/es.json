@@ -2744,8 +2744,6 @@
                 "default_model_unset": "No hay modelos disponibles",
                 "setup_hint": "La IA social necesita una conexión compatible con OpenAI antes de poder responder.",
                 "playbook_mode_description": "Cuánta libertad tiene el modelo al analizar tus datos.",
-                "shortcuts": "Accesos rápidos a la IA",
-                "shortcuts_description": "Muestra botones de «Preguntar a la IA» en perfiles y otras vistas. El asistente sigue disponible desde la barra de título.",
                 "endpoints_description": "Compartidas por la IA social y la traducción."
             },
             "social": {
