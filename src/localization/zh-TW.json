@@ -234,8 +234,10 @@
             "recall_encounter": "回想遇過的人",
             "refresh_mutual_graph": "重新整理共同好友",
             "search_friend_feed": "搜尋好友動態",
+            "search_screenshots": "查找截圖",
             "search_worlds_visited": "搜尋去過的世界",
             "set_friend_note": "修改好友備註",
+            "summarize_screenshots": "統計截圖",
             "summarize_social_period": "彙整社交概況"
         },
         "chart": {
@@ -260,6 +262,18 @@
             "world_visits": "最近幾次去 {mention} 都和誰在一起",
             "world_people": "在 {mention} 常遇到哪些人",
             "world_popularity": "{mention} 熱門嗎，有多少人收藏"
+        },
+        "screenshots": {
+            "top_people": "我和誰拍的照片最多",
+            "top_worlds": "今年在哪些世界拍得最多",
+            "latest_together": "看看我最近的合照",
+            "monthly": "每個月各拍了多少張",
+            "person_latest": "我和 {mention} 最近的合照",
+            "person_first": "我和 {mention} 的第一張合照是什麼時候",
+            "person_worlds": "我和 {mention} 在哪些世界合照過",
+            "world_people": "在 {mention} 我和誰合照過",
+            "world_count": "我在 {mention} 一共拍了多少張",
+            "view_all": "在截圖頁查看全部 {count} 張"
         }
     },
     "user_hover_card": {
@@ -5743,19 +5757,11 @@
             "delete_file_confirm_title_bulk": "要刪除 {count} 張螢幕截圖嗎？",
             "delete_file_confirm_description": "檔案會移到垃圾桶。",
             "upload": "上傳",
-            "search_placeholder": "搜尋",
-            "search_type_placeholder": "搜尋類型",
-            "search_types": {
-                "player_name": "用戶名稱",
-                "player_id": "用戶 ID",
-                "world_name": "世界名稱",
-                "world_id": "世界 ID"
-            },
+            "search_placeholder": "人物、世界或檔案名稱",
             "no_results": "找不到符合的結果",
             "no_results_description": "換個關鍵字，或切換搜尋類型再試一次。",
             "layout_grid": "圖片網格",
             "layout_list": "資訊清單",
-            "clear_search": "清除搜尋",
             "invalid_file": "選擇的檔案無效，請選擇有效的 VRChat 螢幕截圖 ",
             "section_location": "位置",
             "section_players": "用戶",
@@ -5798,14 +5804,21 @@
             "thumbnail_failed": "縮圖無法使用",
             "hide_details": "隱藏圖片資訊",
             "show_details": "顯示圖片資訊",
-            "search_in": "搜尋{scope}",
             "grid_density": "縮圖尺寸",
             "sort": "排序",
             "year_group": "{year} 年",
             "sort_options": {
                 "captured_desc": "最新",
                 "captured_asc": "最早"
-            }
+            },
+            "search_label": "搜尋截圖",
+            "no_candidates": "沒有符合的人物或世界",
+            "search_text": "搜尋「{query}」",
+            "date_range": "拍攝日期",
+            "people_match_all": "同時在場",
+            "people_match_any": "任一人",
+            "without_people": "{count} 張沒有人物紀錄",
+            "without_people_hint": "這些截圖拍攝時 VRCX-0 沒有執行，沒有記錄當時有誰，所以依人物篩選時不會出現。"
         },
         "set_avatar_styles": {
             "header": "設定角色風格",

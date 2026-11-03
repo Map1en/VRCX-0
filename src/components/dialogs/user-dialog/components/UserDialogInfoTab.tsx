@@ -848,13 +848,16 @@ export function UserDialogActivitySummaryPanel({
                                     onClick={() =>
                                         useAssistantChatStore
                                             .getState()
-                                            .startMentionDraft({
-                                                kind: 'user',
-                                                id: profile.id ?? '',
-                                                name:
-                                                    profile.displayName ||
-                                                    profile.id ||
-                                                    ''
+                                            .startAssistantDraft({
+                                                topic: 'profile',
+                                                target: {
+                                                    kind: 'user',
+                                                    id: profile.id ?? '',
+                                                    name:
+                                                        profile.displayName ||
+                                                        profile.id ||
+                                                        ''
+                                                }
                                             })
                                     }
                                 >

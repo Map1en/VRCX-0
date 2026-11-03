@@ -9,6 +9,7 @@ use vrcx_0_application::social::{MutualGraphFetchStartInput, MutualGraphFetchSta
 use vrcx_0_contracts::feed::{FeedRowOutput, FeedRowsQueryInput};
 use vrcx_0_contracts::social_aggregates as social;
 use vrcx_0_contracts::FavoriteRow;
+use vrcx_0_core::screenshots::{ScreenshotFacet, ScreenshotFilter, ScreenshotQueryResult};
 use vrcx_0_core::FavoriteEntityKind;
 use vrcx_0_core::OwnerId;
 
@@ -259,6 +260,35 @@ pub trait McpWorldLookupPort: Send + Sync {
 }
 
 pub type McpWorldLookup = Arc<dyn McpWorldLookupPort>;
+
+pub trait McpScreenshotQueryPort: Send + Sync {
+    fn query(
+        &self,
+        filter: &ScreenshotFilter,
+        limit: i64,
+    ) -> vrcx_0_application_core::Result<ScreenshotQueryResult>;
+
+    fn people(
+        &self,
+        filter: &ScreenshotFilter,
+        limit: i64,
+    ) -> vrcx_0_application_core::Result<Vec<ScreenshotFacet>>;
+
+    fn worlds(
+        &self,
+        filter: &ScreenshotFilter,
+        limit: i64,
+    ) -> vrcx_0_application_core::Result<Vec<ScreenshotFacet>>;
+
+    fn months(
+        &self,
+        filter: &ScreenshotFilter,
+        utc_offset_minutes: i64,
+        limit: i64,
+    ) -> vrcx_0_application_core::Result<Vec<ScreenshotFacet>>;
+}
+
+pub type McpScreenshotQueries = Arc<dyn McpScreenshotQueryPort>;
 
 pub type McpInterruptCheck = Arc<dyn Fn() -> bool + Send + Sync>;
 

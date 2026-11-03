@@ -1,4 +1,3 @@
-use super::library::find_screenshots;
 use super::paths::{
     is_vrchat_screenshot_path, path_string, screenshot_path_with_world_id,
     sleep_before_next_screenshot_attempt, SCREENSHOT_CONTENT_FOLDERS, SCREENSHOT_READY_RETRY_COUNT,
@@ -7,7 +6,6 @@ use super::thumbnail::delete_all_thumbnail_cache_files;
 use super::{
     can_decode_image, delete_text_metadata, get_screenshot_metadata, has_vrcx_metadata,
     is_png_file, png, write_vrcx_metadata, Error, MetadataCacheDb, Path, PathBuf, Result,
-    ScreenshotSearchResult, ScreenshotSearchType,
 };
 
 pub fn extra_screenshot_data(
@@ -107,19 +105,6 @@ pub fn screenshot_metadata_json(path: &str) -> Result<String> {
         }
         None => screenshot_error_json(path, "Screenshot contains no metadata."),
     }
-}
-
-pub fn find_screenshot_search_results(
-    search_query: &str,
-    search_type: Option<i32>,
-    cache: &MetadataCacheDb,
-    photos_dir: &str,
-) -> Vec<ScreenshotSearchResult> {
-    let st = ScreenshotSearchType::from_i32(search_type.unwrap_or(0));
-    if photos_dir.is_empty() {
-        return Vec::new();
-    }
-    find_screenshots(search_query, photos_dir, st, cache)
 }
 
 pub(super) fn is_screenshot_content_asset_path(path: &Path) -> bool {

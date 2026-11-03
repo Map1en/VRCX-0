@@ -17,6 +17,7 @@ use crate::entities::{extract_entities, surfaced_entities, Entity};
 use crate::events::AssistantEmitter;
 use crate::playbook;
 use crate::ports::{AssistantLlmClient, AssistantLlmError};
+use crate::screenshots::{tool_screenshots, AssistantScreenshots};
 use crate::session::{
     random_hex, ActiveTurn, Role, SessionStore, ToolCallRecord, ToolResultRecord, TurnStatus,
 };
@@ -32,6 +33,7 @@ use super::tool_summary::{
 // rounds is forced to answer from what it has. It is not a steering device.
 const MAX_TOOL_ROUNDS: usize = 16;
 const TOOL_CALL_TIMEOUT: Duration = Duration::from_secs(30);
+const SCREENSHOTS_SHOWN_NOTE: &str = "The app shows these screenshots as thumbnails under your answer; describe what they show (when, where, who) and never list screenshot ids or file names.";
 const CHART_SHOWN_NOTE: &str =
     "The app draws these rows as a chart under your reply; mention only the 2-3 key figures, not a table.";
 
@@ -287,6 +289,7 @@ pub(crate) async fn run_turn(ctx: TurnContext) {
                 &resolved.summary,
                 &resolved.entities,
                 &resolved.charts,
+                resolved.screenshots.as_ref(),
             );
             record_tool_result(&ctx, call, &resolved);
             working.push(ChatMessage::tool(call.id.clone(), resolved.content));
@@ -594,6 +597,7 @@ fn record_tool_result(ctx: &TurnContext, call: &ToolCall, resolved: &ResolvedToo
             summary: resolved.summary.clone(),
             entities: resolved.entities.clone(),
             charts: resolved.charts.clone(),
+            screenshots: resolved.screenshots.clone(),
         },
         resolved.content.clone(),
     ) {
@@ -704,6 +708,7 @@ struct ResolvedTool {
     supported_summary: Option<String>,
     entities: Vec<Entity>,
     charts: Vec<AssistantChart>,
+    screenshots: Option<AssistantScreenshots>,
 }
 
 fn resolve_tool_outcome(
@@ -727,9 +732,19 @@ fn resolve_tool_outcome(
                 .as_ref()
                 .map(|value| tool_charts(tool, value))
                 .unwrap_or_default();
+            let screenshots = result
+                .structured
+                .as_ref()
+                .and_then(|value| tool_screenshots(tool, value));
             if let Some(Value::Object(fields)) = result.structured.as_mut() {
                 if !charts.is_empty() {
                     fields.insert("chartShown".into(), Value::String(CHART_SHOWN_NOTE.into()));
+                }
+                if screenshots.is_some() {
+                    fields.insert(
+                        "screenshotsShown".into(),
+                        Value::String(SCREENSHOTS_SHOWN_NOTE.into()),
+                    );
                 }
             }
             let content = tool_content(&result);
@@ -758,6 +773,7 @@ fn resolve_tool_outcome(
                 supported_summary,
                 entities,
                 charts,
+                screenshots,
             }
         }
         Err(error) => {
@@ -771,6 +787,7 @@ fn resolve_tool_outcome(
                 supported_summary: None,
                 entities: Vec::new(),
                 charts: Vec::new(),
+                screenshots: None,
             }
         }
     }
@@ -816,6 +833,7 @@ fn duplicate_tool_call_result(tool_name: &str) -> ResolvedTool {
         supported_summary: None,
         entities: Vec::new(),
         charts: Vec::new(),
+        screenshots: None,
     }
 }
 

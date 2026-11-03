@@ -10,8 +10,8 @@ use vrcx_0_core::{FavoriteEntityKind, OwnerId};
 use vrcx_0_mcp::{
     McpActivityQueryPort, McpConfigPort, McpFavoritesQueryPort, McpFeedQueryPort, McpFriendCurrent,
     McpFriendLocalDataPort, McpFriendMemo, McpFuture, McpInterruptCheck, McpLocalModeration,
-    McpMemoSave, McpMutualGraphMeta, McpMutualGraphPort, McpPlaySpan, McpSocialHistoryQueryPort,
-    McpWorldLookupPort,
+    McpMemoSave, McpMutualGraphMeta, McpMutualGraphPort, McpPlaySpan, McpScreenshotQueryPort,
+    McpSocialHistoryQueryPort, McpWorldLookupPort,
 };
 use vrcx_0_persistence::{
     activity_page, config::ConfigRepository, favorites, friends, local_moderation, memos,
@@ -20,6 +20,79 @@ use vrcx_0_persistence::{
 
 pub(crate) struct DesktopMcpConfigAdapter {
     config: ConfigRepository,
+}
+
+pub(crate) struct DesktopMcpScreenshotAdapter {
+    db_path: std::path::PathBuf,
+    photos_root: String,
+    cache: std::sync::OnceLock<vrcx_0_persistence::screenshot_cache::MetadataCacheDb>,
+}
+
+impl DesktopMcpScreenshotAdapter {
+    pub(crate) fn new(db_path: std::path::PathBuf, photos_root: String) -> Self {
+        Self {
+            db_path,
+            photos_root,
+            cache: std::sync::OnceLock::new(),
+        }
+    }
+
+    fn cache(
+        &self,
+    ) -> vrcx_0_application_core::Result<&vrcx_0_persistence::screenshot_cache::MetadataCacheDb>
+    {
+        if let Some(cache) = self.cache.get() {
+            return Ok(cache);
+        }
+        let cache = vrcx_0_persistence::screenshot_cache::MetadataCacheDb::new(&self.db_path)?;
+        Ok(self.cache.get_or_init(|| cache))
+    }
+}
+
+impl McpScreenshotQueryPort for DesktopMcpScreenshotAdapter {
+    fn query(
+        &self,
+        filter: &vrcx_0_core::screenshots::ScreenshotFilter,
+        limit: i64,
+    ) -> vrcx_0_application_core::Result<vrcx_0_core::screenshots::ScreenshotQueryResult> {
+        Ok(self
+            .cache()?
+            .query_screenshots_for_root(&self.photos_root, filter, Some(limit))?)
+    }
+
+    fn people(
+        &self,
+        filter: &vrcx_0_core::screenshots::ScreenshotFilter,
+        limit: i64,
+    ) -> vrcx_0_application_core::Result<Vec<vrcx_0_core::screenshots::ScreenshotFacet>> {
+        Ok(self
+            .cache()?
+            .screenshot_people_for_root(&self.photos_root, filter, limit)?)
+    }
+
+    fn worlds(
+        &self,
+        filter: &vrcx_0_core::screenshots::ScreenshotFilter,
+        limit: i64,
+    ) -> vrcx_0_application_core::Result<Vec<vrcx_0_core::screenshots::ScreenshotFacet>> {
+        Ok(self
+            .cache()?
+            .screenshot_worlds_for_root(&self.photos_root, filter, limit)?)
+    }
+
+    fn months(
+        &self,
+        filter: &vrcx_0_core::screenshots::ScreenshotFilter,
+        utc_offset_minutes: i64,
+        limit: i64,
+    ) -> vrcx_0_application_core::Result<Vec<vrcx_0_core::screenshots::ScreenshotFacet>> {
+        Ok(self.cache()?.screenshot_months_for_root(
+            &self.photos_root,
+            filter,
+            utc_offset_minutes,
+            limit,
+        )?)
+    }
 }
 
 pub(crate) struct DesktopMcpWorldLookupAdapter {

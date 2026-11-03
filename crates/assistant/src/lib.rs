@@ -9,6 +9,7 @@ mod events;
 mod playbook;
 mod ports;
 mod runtime;
+mod screenshots;
 mod session;
 #[cfg(test)]
 mod test_support;
@@ -34,5 +35,6 @@ pub use ports::{
     PersistedAssistantMessage, PersistedAssistantSession,
 };
 pub use runtime::{AssistantController, AssistantControllerDeps, SendResult};
+pub use screenshots::AssistantScreenshots;
 pub use session::{ActiveTurn, Message, Role, Session, SessionSummary, TurnStatus};
 pub use vrcx_0_contracts::llm::{LlmEndpointDetectModelsResult, LlmModelReasoning};

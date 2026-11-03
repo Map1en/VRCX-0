@@ -4,116 +4,11 @@ use super::thumbnail::delete_thumbnail_cache_for_source_paths;
 use super::{
     get_screenshot_metadata, read_png_dimensions, HashSet, MetadataCacheDb, Path, PathBuf,
     PngDimensions, Result, ScreenshotFolderTree, ScreenshotLibraryEntry, ScreenshotLibraryImage,
-    ScreenshotLibraryScanStatus, ScreenshotMetadata, ScreenshotSearchResult, ScreenshotSearchType,
-    ScreenshotTimeWindow, ScreenshotWindowImages, SCREENSHOT_LIBRARY_INDEX_VERSION,
+    ScreenshotLibraryScanStatus, ScreenshotTimeWindow, ScreenshotWindowImages,
+    SCREENSHOT_LIBRARY_INDEX_VERSION,
 };
 use vrcx_0_application::media::ScreenshotFavorites;
 use vrcx_0_application_core::{RuntimeEventBus, TaskStopToken, TaskSupervisor};
-use vrcx_0_core::text::contains_lowercase_query_case_insensitive;
-
-pub(super) fn screenshot_search_result(
-    path: &str,
-    metadata: ScreenshotMetadata,
-) -> ScreenshotSearchResult {
-    let p = Path::new(path);
-    let file_name = p
-        .file_name()
-        .map(|name| name.to_string_lossy().into_owned())
-        .unwrap_or_default();
-    let (file_size_bytes, creation_date) = match std::fs::metadata(p) {
-        Ok(file_metadata) => (
-            file_metadata.len() as i64,
-            file_metadata.created().ok().map(|created| {
-                let dt: chrono::DateTime<chrono::Utc> = created.into();
-                dt.to_rfc3339()
-            }),
-        ),
-        Err(_) => (0, None),
-    };
-    let PngDimensions { width, height } = read_png_dimensions(path);
-
-    ScreenshotSearchResult {
-        file_path: path.to_string(),
-        file_name,
-        file_size_bytes,
-        creation_date,
-        width,
-        height,
-        metadata,
-    }
-}
-
-pub fn find_screenshots(
-    query: &str,
-    directory: &str,
-    search_type: ScreenshotSearchType,
-    cache_db: &MetadataCacheDb,
-) -> Vec<ScreenshotSearchResult> {
-    let dir = Path::new(directory);
-    if !dir.exists() {
-        return Vec::new();
-    }
-
-    let mut result = Vec::new();
-    let mut to_cache: Vec<(String, Option<String>)> = Vec::new();
-    let lowercase_query = matches!(
-        search_type,
-        ScreenshotSearchType::Username | ScreenshotSearchType::WorldName
-    )
-    .then(|| query.to_lowercase());
-    let lowercase_query = lowercase_query.as_deref().unwrap_or_default();
-
-    let files: Vec<String> = walkdir::WalkDir::new(dir)
-        .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|e| {
-            e.file_type().is_file()
-                && e.path()
-                    .extension()
-                    .is_some_and(|ext| ext.eq_ignore_ascii_case("png"))
-        })
-        .map(|e| e.path().to_string_lossy().into_owned())
-        .collect();
-
-    for file in &files {
-        let metadata = if let Some(cached) = cache_db.get_metadata(file) {
-            serde_json::from_str::<ScreenshotMetadata>(&cached).ok()
-        } else if cache_db.is_cached(file) {
-            None
-        } else {
-            let m = get_screenshot_metadata(file);
-            let json = m
-                .as_ref()
-                .filter(|m| m.error.is_none())
-                .and_then(|m| serde_json::to_string(m).ok());
-            to_cache.push((file.clone(), json));
-            m.filter(|m| m.error.is_none())
-        };
-
-        if let Some(meta) = metadata {
-            let matched = match search_type {
-                ScreenshotSearchType::Username => {
-                    meta.contains_player_name_lowercase(lowercase_query)
-                }
-                ScreenshotSearchType::UserId => meta.contains_player_id(query),
-                ScreenshotSearchType::WorldName => meta.world.name.as_ref().is_some_and(|name| {
-                    contains_lowercase_query_case_insensitive(name, lowercase_query)
-                }),
-                ScreenshotSearchType::WorldId => meta.world.id == query,
-            };
-            if matched {
-                let path = meta.source_file.clone().unwrap_or_else(|| file.clone());
-                result.push(screenshot_search_result(&path, meta));
-            }
-        }
-    }
-
-    if !to_cache.is_empty() {
-        cache_db.bulk_add(&to_cache);
-    }
-
-    result
-}
 
 fn screenshot_library_entry_from_path(
     scan_root: &str,

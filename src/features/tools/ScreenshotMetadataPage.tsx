@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useEffectEvent,
+    useRef,
+    useState
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 
@@ -20,6 +26,7 @@ import vrchatMediaRepository from '@/repositories/vrchatMediaRepository';
 import { openFolderAndSelectItem } from '@/services/shellIntegrationService';
 import { toast } from '@/services/toastService';
 import { withUploadTimeout } from '@/shared/utils/imageUpload';
+import { useAssistantChatStore } from '@/state/assistantChatStore';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Badge } from '@/ui/shadcn/badge';
@@ -33,15 +40,15 @@ import {
 } from './components/ScreenshotMetadataSections';
 import { ScreenshotSearchResultsView } from './components/ScreenshotSearchResultsView';
 import {
-    buildScreenshotSearchRow,
+    hasScreenshotSearch,
+    libraryImageSearchRow,
     normalizeScreenshotMetadata,
-    normalizeScreenshotSearchResult,
+    parseScreenshotFilterParam,
     resolvePathAfterScreenshotDelete,
-    searchResultToLibraryImage,
     SCREENSHOT_FAVORITES_FOLDER,
-    SCREENSHOT_METADATA_SEARCH_TYPES,
-    sortScreenshotRowsByNewest,
-    type ScreenshotMetadataSearchType
+    screenshotFilterFromScope,
+    screenshotScopeFromFilter,
+    type ScreenshotSearchScope
 } from './screenshotMetadataValues';
 import { useScreenshotBrowseImages } from './useScreenshotBrowseImages';
 import { useScreenshotBrowseSelection } from './useScreenshotBrowseSelection';
@@ -50,6 +57,7 @@ import { useScreenshotFavorites } from './useScreenshotFavorites';
 import { useScreenshotGalleryController } from './useScreenshotGalleryController';
 import { useScreenshotMetadataNavigation } from './useScreenshotMetadataNavigation';
 import { useScreenshotMetadataSearch } from './useScreenshotMetadataSearch';
+import { useScreenshotSearchFacets } from './useScreenshotSearchFacets';
 import { useScreenshotZipExport } from './useScreenshotZipExport';
 
 const DETAILS_VISIBLE_STORAGE_KEY = 'VRCX_0_ScreenshotDetailsVisible';
@@ -90,29 +98,31 @@ export function ScreenshotMetadataPage() {
     const routePath = searchParams.get('path') || '';
     const routeFolder = searchParams.get('folder') || '';
     const isGalleryMode = !routePath;
+    const routeFilter = searchParams.get('filter') || '';
     const {
-        currentSearchType,
         removeSearchPaths,
         resetSearchResults,
+        searchDraft,
         searchLayout,
         searchNavigationPaths,
-        searchQuery,
         searchRows,
+        searchScope,
         searchSort,
-        searchType,
         searchViewMode,
         selectedPath,
         selectedPathIndex,
+        setSearchDraft,
         setSearchLayout,
-        setSearchQuery,
         setSearchResults,
-        setSearchType,
+        setSearchScope,
         setSearchViewMode,
         setSelectedPath,
         sortedSearchImages,
         sortedSearchRows,
-        toggleSearchSort
+        toggleSearchSort,
+        withoutPeopleCount
     } = useScreenshotMetadataSearch();
+    const searchKey = JSON.stringify(searchScope);
     const showSearchResults = searchViewMode === 'results';
     const [metadata, setMetadata] = useState<ReturnType<
         typeof normalizeScreenshotMetadata
@@ -162,6 +172,10 @@ export function ScreenshotMetadataPage() {
         setFavorite
     } = useScreenshotFavorites(Boolean(screenshotCacheStatus?.available));
     const lastScanAt = scanStatus?.lastScanAt;
+    const { peopleFacets, worldFacets } = useScreenshotSearchFacets(
+        Boolean(screenshotCacheStatus?.available),
+        lastScanAt
+    );
     useEffect(() => {
         if (lastScanAt) {
             void reloadFavorites();
@@ -181,7 +195,7 @@ export function ScreenshotMetadataPage() {
         visibleGalleryImagePaths
     );
     const { bulkDeleteRunning, deleteScreenshots } = useScreenshotBulkDelete({
-        scopeKey: showSearchResults ? `search:${searchQuery}` : 'browse',
+        scopeKey: showSearchResults ? `search:${searchKey}` : 'browse',
         removeDeletedImages: (paths) => {
             removeGalleryImages(paths);
             removeSearchPaths(paths);
@@ -617,17 +631,8 @@ export function ScreenshotMetadataPage() {
         }
     }
 
-    async function runSearch(
-        nextSearchType: ScreenshotMetadataSearchType['value'] = searchType,
-        nextSearchQuery: string = searchQuery
-    ) {
-        const query = nextSearchQuery.trim();
-        const selectedSearchType =
-            SCREENSHOT_METADATA_SEARCH_TYPES.find(
-                (type) => type.value === nextSearchType
-            ) ?? SCREENSHOT_METADATA_SEARCH_TYPES[0];
-
-        if (!query) {
+    async function runSearch(scope: ScreenshotSearchScope) {
+        if (!hasScreenshotSearch(scope)) {
             searchRequestRef.current += 1;
             resetSearchContext();
             if (metadata?.filePath) {
@@ -642,34 +647,20 @@ export function ScreenshotMetadataPage() {
         setSearchViewMode('results');
 
         try {
-            const results = await commands.appFindScreenshotsBySearch(
-                query,
-                selectedSearchType.index
+            const result = await commands.appQueryScreenshots(
+                screenshotFilterFromScope(scope)
             );
 
             if (searchRequestRef.current !== requestId) {
                 return;
             }
 
-            if (!Array.isArray(results) || results.length === 0) {
-                setSearchResults({ rows: [], images: [] });
-                setSelectedPath('');
-                setMetadataError('');
-                return;
-            }
-
-            const rows = results.map((result) =>
-                buildScreenshotSearchRow(
-                    normalizeScreenshotSearchResult(result),
-                    selectedSearchType,
-                    query,
-                    dateLocale
-                )
-            );
-
             setSearchResults({
-                rows: sortScreenshotRowsByNewest(rows),
-                images: results.map(searchResultToLibraryImage)
+                rows: result.images.map((image) =>
+                    libraryImageSearchRow(image, scope, dateLocale)
+                ),
+                images: result.images,
+                withoutPeople: result.withoutPeople
             });
             setMetadataError('');
             setSelectedPath('');
@@ -688,20 +679,57 @@ export function ScreenshotMetadataPage() {
         }
     }
 
-    function handleSearchTypeChange(value: string | null) {
-        const nextType = SCREENSHOT_METADATA_SEARCH_TYPES.find(
-            (type) => type.value === value
-        )?.value;
-        if (!nextType) {
+    function updateSearchScope(patch: Partial<ScreenshotSearchScope>) {
+        const next = { ...searchScope, ...patch };
+        setSearchScope(next);
+        void runSearch(next);
+    }
+
+    function askAssistant() {
+        const [personId] = searchScope.people;
+        const [worldId] = searchScope.worlds;
+        const onlyPerson =
+            searchScope.people.length === 1 && !searchScope.worlds.length;
+        const onlyWorld =
+            searchScope.worlds.length === 1 && !searchScope.people.length;
+        const facet = onlyPerson
+            ? peopleFacets.find((item) => item.id === personId)
+            : onlyWorld
+              ? worldFacets.find((item) => item.id === worldId)
+              : undefined;
+        useAssistantChatStore.getState().startAssistantDraft({
+            topic: 'screenshots',
+            target: facet
+                ? {
+                      kind: onlyPerson ? 'user' : 'world',
+                      id: facet.id,
+                      name: facet.name || facet.id
+                  }
+                : null
+        });
+    }
+
+    const applyRouteFilter = useEffectEvent((value: string) => {
+        const filter = parseScreenshotFilterParam(value);
+        setSearchParams((current) => {
+            const next = new URLSearchParams(current);
+            next.delete('filter');
+            return next;
+        });
+        if (!filter) {
             return;
         }
-        setSearchType(nextType);
-        if (searchQuery.trim()) {
-            setSearchResults({ rows: [], images: [] });
-            setSelectedPath('');
+        const scope = screenshotScopeFromFilter(filter);
+        setSearchScope(scope);
+        setSearchDraft(scope.text);
+        void runSearch(scope);
+    });
+
+    useEffect(() => {
+        if (routeFilter) {
+            applyRouteFilter(routeFilter);
         }
-        runSearch(nextType);
-    }
+    }, [routeFilter]);
 
     const fileDropActive = useFileDropTarget({
         enabled: Boolean(screenshotCacheStatus?.available),
@@ -748,22 +776,33 @@ export function ScreenshotMetadataPage() {
             />
 
             <ScreenshotSearchToolbar
-                searchQuery={searchQuery}
-                searchType={searchType}
+                scope={searchScope}
+                draft={searchDraft}
+                peopleFacets={peopleFacets}
+                worldFacets={worldFacets}
+                isSearching={isSearchLoading}
                 searchLayout={searchLayout}
                 showResultControls={showSearchResults}
                 searchRowsCount={searchRows.length}
+                withoutPeopleCount={withoutPeopleCount}
                 searchNavigationCount={searchNavigationPaths.length}
                 selectedPathIndex={selectedPathIndex}
-                onSearchQueryChange={setSearchQuery}
-                onSearchTypeChange={handleSearchTypeChange}
-                onSearch={() => {
-                    runSearch();
-                }}
+                onDraftChange={setSearchDraft}
+                onScopeChange={(people, worlds) =>
+                    updateSearchScope({ people, worlds })
+                }
+                onCommitText={() => updateSearchScope({ text: searchDraft })}
+                onDateRangeChange={(dateFrom, dateTo) =>
+                    updateSearchScope({ dateFrom, dateTo })
+                }
+                onPeopleMatchChange={(peopleMatch) =>
+                    updateSearchScope({ peopleMatch })
+                }
                 onSearchLayoutChange={setSearchLayout}
                 onClearSearch={() => {
                     resetSearchContext({ clearQuery: true });
                 }}
+                onAskAssistant={askAssistant}
             />
 
             {showSearchResults ? (
@@ -772,9 +811,11 @@ export function ScreenshotMetadataPage() {
                     layout={searchLayout}
                     images={sortedSearchImages}
                     rows={sortedSearchRows}
-                    currentSearchType={currentSearchType}
+                    showMatch={Boolean(
+                        searchScope.people.length || searchScope.text.trim()
+                    )}
                     searchSort={searchSort}
-                    searchQuery={searchQuery}
+                    searchKey={searchKey}
                     selectedPath={selectedPath}
                     isDeleteRunning={bulkDeleteRunning}
                     onToggleSearchSort={toggleSearchSort}

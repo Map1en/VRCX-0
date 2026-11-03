@@ -235,8 +235,10 @@
             "recall_encounter": "Getroffene Leute wiederfinden",
             "refresh_mutual_graph": "Gemeinsame Freunde aktualisieren",
             "search_friend_feed": "Freunde-Feed durchsuchen",
+            "search_screenshots": "Screenshots suchen",
             "search_worlds_visited": "Besuchte Welten durchsuchen",
             "set_friend_note": "Notiz zum Freund bearbeiten",
+            "summarize_screenshots": "Screenshots auswerten",
             "summarize_social_period": "Soziale Aktivität zusammenfassen"
         },
         "chart": {
@@ -261,6 +263,18 @@
             "world_visits": "Mit wem war ich die letzten Male in {mention}?",
             "world_people": "Wen treffe ich in {mention} am häufigsten?",
             "world_popularity": "Ist {mention} beliebt? Wie oft wurde sie favorisiert?"
+        },
+        "screenshots": {
+            "top_people": "Mit wem mache ich die meisten Fotos?",
+            "top_worlds": "In welchen Welten habe ich dieses Jahr am meisten fotografiert?",
+            "latest_together": "Zeig meine neuesten Gruppenfotos",
+            "monthly": "Wie viele Screenshots pro Monat?",
+            "person_latest": "Meine neuesten Fotos mit {mention}",
+            "person_first": "Wann war mein erstes Foto mit {mention}?",
+            "person_worlds": "Wo haben {mention} und ich zusammen Fotos gemacht?",
+            "world_people": "Mit wem habe ich in {mention} Fotos gemacht?",
+            "world_count": "Wie viele Screenshots habe ich in {mention} gemacht?",
+            "view_all": "Alle {count} auf der Screenshot-Seite ansehen"
         }
     },
     "user_hover_card": {
@@ -5715,19 +5729,11 @@
             "delete_file_confirm_title_bulk": "{count} Screenshot(s) löschen?",
             "delete_file_confirm_description": "Die Datei wird in den Papierkorb verschoben.",
             "upload": "In Galerie hochladen",
-            "search_placeholder": "Suchen",
-            "search_type_placeholder": "Suchtyp",
-            "search_types": {
-                "player_name": "Spielername",
-                "player_id": "Spieler-ID",
-                "world_name": "Weltname",
-                "world_id": "Welt-ID"
-            },
+            "search_placeholder": "Personen, Welten oder Dateinamen",
             "no_results": "Keine Ergebnisse gefunden",
             "no_results_description": "Versuche einen anderen Begriff oder wechsle den Suchtyp.",
             "layout_grid": "Bildraster",
             "layout_list": "Detailliste",
-            "clear_search": "Suche zurücksetzen",
             "invalid_file": "Ungültige Datei ausgewählt. Bitte wähle einen gültigen VRChat-Screenshot",
             "section_location": "Standort",
             "section_players": "Spieler",
@@ -5770,14 +5776,21 @@
             "thumbnail_failed": "Vorschaubild nicht verfügbar",
             "hide_details": "Bildinformationen ausblenden",
             "show_details": "Bildinformationen einblenden",
-            "search_in": "{scope} suchen",
             "grid_density": "Vorschaugröße",
             "sort": "Sortierung",
             "year_group": "Jahr {year}",
             "sort_options": {
                 "captured_desc": "Neueste",
                 "captured_asc": "Älteste"
-            }
+            },
+            "search_label": "Screenshots durchsuchen",
+            "no_candidates": "Keine passenden Personen oder Welten",
+            "search_text": "Nach „{query}“ suchen",
+            "date_range": "Aufnahmedatum",
+            "people_match_all": "Zusammen",
+            "people_match_any": "Eine davon",
+            "without_people": "{count} ohne Spielerliste",
+            "without_people_hint": "Diese Screenshots entstanden, während VRCX-0 nicht lief. Sie enthalten keine Spielerliste und erscheinen daher nie bei einem Personenfilter."
         },
         "set_avatar_styles": {
             "header": "Avatar-Stile festlegen",

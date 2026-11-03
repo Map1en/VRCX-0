@@ -33,6 +33,19 @@ export type AssistantChart = {
     points: { key: string; value: number }[];
 };
 
+export type AssistantScreenshots = {
+    total: number;
+    ids: string[];
+    filter: {
+        people?: string[];
+        peopleMatch?: 'all' | 'any';
+        worldIds?: string[];
+        fromMs?: number | null;
+        toMs?: number | null;
+        text?: string;
+    };
+};
+
 export type Entity = {
     kind: string;
     id: string;
@@ -43,6 +56,11 @@ export type MentionTarget = {
     kind: 'user' | 'world';
     id: string;
     name: string;
+};
+
+export type AssistantDraft = {
+    topic: 'profile' | 'screenshots';
+    target: MentionTarget | null;
 };
 
 export type AssistantToolCallEvent = {
@@ -63,6 +81,7 @@ export type AssistantToolResultEvent = {
     summary: string;
     entities: Entity[];
     charts: AssistantChart[];
+    screenshots?: AssistantScreenshots | null;
 };
 
 export type AssistantChoiceCandidate = {
@@ -108,6 +127,7 @@ export interface UIToolCall {
     summary: string;
     entities: Entity[];
     charts: AssistantChart[];
+    screenshots?: AssistantScreenshots | null;
 }
 
 export type UserChoiceStatus = 'pending' | 'picked' | 'skipped';

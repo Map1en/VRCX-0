@@ -1,4 +1,5 @@
 use super::*;
+use vrcx_0_core::screenshots::{ScreenshotFilter, ScreenshotPeopleMatch, ScreenshotQueryResult};
 
 struct TestDir {
     path: PathBuf,
@@ -565,4 +566,217 @@ fn delete_screenshot_entry_removes_index_and_metadata_cache_rows() -> Result<()>
     assert_eq!(states.len(), 1);
     assert!(states.contains_key("b.png"));
     Ok(())
+}
+
+fn shot(
+    root: &str,
+    name: &str,
+    captured_at_ms: i64,
+    world: (&str, &str),
+    players: &[(&str, &str)],
+) -> ScreenshotLibraryEntry {
+    let metadata = serde_json::json!({
+        "author": { "id": "usr_me", "displayName": "Me" },
+        "world": { "id": world.0, "name": world.1, "instanceId": "" },
+        "players": players
+            .iter()
+            .map(|(id, name)| serde_json::json!({ "id": id, "displayName": name }))
+            .collect::<Vec<_>>()
+    });
+    ScreenshotLibraryEntry {
+        world_id: Some(world.0.into()),
+        world_name: Some(world.1.into()),
+        captured_at_ms,
+        metadata_json: (!players.is_empty()).then(|| metadata.to_string()),
+        ..library_entry(root, &format!("{root}/{name}"), root, name)
+    }
+}
+
+fn filter_fixture(name: &str) -> (TestDir, MetadataCacheDb, String) {
+    let dir = TestDir::new(name);
+    let cache = open_cache(&dir);
+    let root = path_string(&dir.path.join("shots"));
+    let me = ("usr_me", "Me");
+    let alice = ("usr_alice", "Alice");
+    let bob = ("usr_bob", "Bob");
+    let pier = ("wrld_pier", "Night Pier");
+    let loft = ("wrld_loft", "Cozy Loft");
+    store_entries(
+        &cache,
+        &root,
+        &[
+            shot(&root, "a.png", 1_000, pier, &[me, alice, bob]),
+            shot(&root, "b.png", 2_000, pier, &[me, alice]),
+            shot(&root, "c.png", 3_000, loft, &[me, bob]),
+            shot(&root, "d.png", 4_000, loft, &[]),
+        ],
+    )
+    .unwrap();
+    (dir, cache, root)
+}
+
+fn names(result: &ScreenshotQueryResult) -> Vec<&str> {
+    result
+        .images
+        .iter()
+        .map(|image| image.file_name.as_str())
+        .collect()
+}
+
+#[test]
+fn filter_matches_people_together_or_any_newest_first() {
+    let (_dir, cache, root) = filter_fixture("filter-people");
+    let together = ScreenshotFilter {
+        people: vec!["usr_alice".into(), "usr_bob".into()],
+        ..ScreenshotFilter::default()
+    };
+    assert_eq!(
+        names(
+            &cache
+                .query_screenshots_for_root(&root, &together, None)
+                .unwrap()
+        ),
+        ["a.png"]
+    );
+
+    let any = ScreenshotFilter {
+        people_match: ScreenshotPeopleMatch::Any,
+        ..together.clone()
+    };
+    let result = cache.query_screenshots_for_root(&root, &any, None).unwrap();
+    assert_eq!(names(&result), ["c.png", "b.png", "a.png"]);
+    assert_eq!(result.without_people, 1);
+}
+
+#[test]
+fn filter_combines_world_time_and_text() {
+    let (_dir, cache, root) = filter_fixture("filter-combined");
+    let filter = ScreenshotFilter {
+        world_ids: vec!["wrld_pier".into()],
+        from_ms: Some(1_500),
+        ..ScreenshotFilter::default()
+    };
+    assert_eq!(
+        names(
+            &cache
+                .query_screenshots_for_root(&root, &filter, None)
+                .unwrap()
+        ),
+        ["b.png"]
+    );
+
+    let text = ScreenshotFilter {
+        text: "BOB".into(),
+        ..ScreenshotFilter::default()
+    };
+    assert_eq!(
+        names(
+            &cache
+                .query_screenshots_for_root(&root, &text, Some(1))
+                .unwrap()
+        ),
+        ["c.png"]
+    );
+}
+
+#[test]
+fn facets_rank_people_without_the_photographer_and_worlds_by_count() {
+    let (_dir, cache, root) = filter_fixture("filter-facets");
+    let people = cache
+        .screenshot_people_for_root(&root, &ScreenshotFilter::default(), 10)
+        .unwrap();
+    let ranked: Vec<_> = people
+        .iter()
+        .map(|row| (row.name.as_str(), row.count))
+        .collect();
+    assert_eq!(ranked, [("Bob", 2), ("Alice", 2)]);
+
+    let in_loft = ScreenshotFilter {
+        world_ids: vec!["wrld_loft".into()],
+        people: vec!["usr_bob".into()],
+        ..ScreenshotFilter::default()
+    };
+    let worlds = cache
+        .screenshot_worlds_for_root(&root, &in_loft, 10)
+        .unwrap();
+    let ranked: Vec<_> = worlds
+        .iter()
+        .map(|row| (row.id.as_str(), row.count))
+        .collect();
+    assert_eq!(ranked, [("wrld_loft", 1)]);
+
+    let with_alice = ScreenshotFilter {
+        people: vec!["usr_alice".into(), "usr_alice".into()],
+        ..ScreenshotFilter::default()
+    };
+    let others: Vec<_> = cache
+        .screenshot_people_for_root(&root, &with_alice, 10)
+        .unwrap()
+        .into_iter()
+        .map(|row| (row.name, row.count))
+        .collect();
+    assert_eq!(others, [("Bob".to_string(), 1)]);
+    assert_eq!(
+        cache
+            .screenshots_by_file_names_for_root(&root, &["b.png".into(), "zz.png".into()])
+            .unwrap()
+            .len(),
+        1
+    );
+}
+
+#[test]
+fn filter_text_ignores_case_beyond_ascii_and_end_is_exclusive() {
+    let dir = TestDir::new("filter-unicode");
+    let cache = open_cache(&dir);
+    let root = path_string(&dir.path.join("shots"));
+    store_entries(
+        &cache,
+        &root,
+        &[
+            shot(
+                &root,
+                "a.png",
+                1_000,
+                ("wrld_a", "Ärger"),
+                &[("usr_me", "Me"), ("usr_s", "Саша")],
+            ),
+            shot(
+                &root,
+                "b.png",
+                2_000,
+                ("wrld_b", "Other"),
+                &[("usr_me", "Me")],
+            ),
+        ],
+    )
+    .unwrap();
+
+    for text in ["ärger", "Ärger", "САША"] {
+        let filter = ScreenshotFilter {
+            text: text.into(),
+            ..ScreenshotFilter::default()
+        };
+        assert_eq!(
+            names(
+                &cache
+                    .query_screenshots_for_root(&root, &filter, None)
+                    .unwrap()
+            ),
+            ["a.png"],
+            "{text}"
+        );
+    }
+    let until = ScreenshotFilter {
+        to_ms: Some(2_000),
+        ..ScreenshotFilter::default()
+    };
+    assert_eq!(
+        names(
+            &cache
+                .query_screenshots_for_root(&root, &until, None)
+                .unwrap()
+        ),
+        ["a.png"]
+    );
 }

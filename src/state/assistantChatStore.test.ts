@@ -343,20 +343,20 @@ describe('assistantChatStore', () => {
     it('opens a blank chat about a person until another session is opened', () => {
         useAssistantChatStore.setState({ activeSessionId: 'session-1' });
 
-        useAssistantChatStore
-            .getState()
-            .startMentionDraft({ kind: 'user', id: 'usr_a', name: 'Alice' });
+        useAssistantChatStore.getState().startAssistantDraft({
+            topic: 'profile',
+            target: { kind: 'user', id: 'usr_a', name: 'Alice' }
+        });
         let state = useAssistantChatStore.getState();
         expect(state.open).toBe(true);
         expect(state.activeSessionId).toBeNull();
-        expect(state.mentionDraft).toEqual({
-            kind: 'user',
-            id: 'usr_a',
-            name: 'Alice'
+        expect(state.assistantDraft).toEqual({
+            topic: 'profile',
+            target: { kind: 'user', id: 'usr_a', name: 'Alice' }
         });
 
         state.setActiveSession('session-2');
         state = useAssistantChatStore.getState();
-        expect(state.mentionDraft).toBeNull();
+        expect(state.assistantDraft).toBeNull();
     });
 });

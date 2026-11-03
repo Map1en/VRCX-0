@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useEffectEvent,
+    useRef,
+    useState
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import type { useSearchParams } from 'react-router';
 
@@ -255,6 +261,26 @@ export function useScreenshotGalleryController({
         [applyScanStatus, loadGalleryTree, t]
     );
 
+    const onScanStatus = useEffectEvent(applyScanStatus);
+    const onInitialScanStatus = useEffectEvent(
+        (status: ScreenshotLibraryScanStatus) => {
+            applyScanStatus(status);
+            if (status.running) {
+                void loadGalleryTree();
+            } else {
+                void refreshGallery(false);
+            }
+        }
+    );
+    const onInitialScanError = useEffectEvent((error: unknown) => {
+        const message =
+            error instanceof Error
+                ? error.message
+                : t('dialog.screenshot_metadata.scan_failed');
+        setGalleryScanError(message);
+        toast.add({ type: 'error', title: message });
+    });
+
     useEffect(() => {
         if (
             !isGalleryMode ||
@@ -266,31 +292,19 @@ export function useScreenshotGalleryController({
         let active = true;
         const unsubscribe = subscribeScreenshotLibraryScanStatus((status) => {
             if (active) {
-                applyScanStatus(status);
+                onScanStatus(status);
             }
         });
         getCurrentScreenshotLibraryScanStatus()
             .then((status) => {
-                if (!active || !status) {
-                    return;
-                }
-                applyScanStatus(status);
-                if (status.running) {
-                    void loadGalleryTree();
-                } else {
-                    void refreshGallery(false);
+                if (active && status) {
+                    onInitialScanStatus(status);
                 }
             })
             .catch((error: unknown) => {
-                if (!active) {
-                    return;
+                if (active) {
+                    onInitialScanError(error);
                 }
-                const message =
-                    error instanceof Error
-                        ? error.message
-                        : t('dialog.screenshot_metadata.scan_failed');
-                setGalleryScanError(message);
-                toast.add({ type: 'error', title: message });
             });
         return () => {
             active = false;
@@ -298,13 +312,9 @@ export function useScreenshotGalleryController({
             unsubscribe();
         };
     }, [
-        applyScanStatus,
         isGalleryFolderPreferenceLoaded,
         isGalleryMode,
-        loadGalleryTree,
-        refreshGallery,
-        screenshotCacheStatus?.available,
-        t
+        screenshotCacheStatus?.available
     ]);
 
     useEffect(() => {

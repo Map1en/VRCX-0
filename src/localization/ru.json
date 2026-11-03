@@ -237,8 +237,10 @@
             "recall_encounter": "Поиск встреченных людей",
             "refresh_mutual_graph": "Обновление общих друзей",
             "search_friend_feed": "Поиск по ленте друзей",
+            "search_screenshots": "Поиск скриншотов",
             "search_worlds_visited": "Поиск посещённых миров",
             "set_friend_note": "Изменение заметки о друге",
+            "summarize_screenshots": "Сводка скриншотов",
             "summarize_social_period": "Сводка социальной активности"
         },
         "chart": {
@@ -263,6 +265,18 @@
             "world_visits": "С кем я был в последние разы в {mention}?",
             "world_people": "С кем я чаще всего встречаюсь в {mention}?",
             "world_popularity": "{mention} популярен? Сколько добавили в избранное?"
+        },
+        "screenshots": {
+            "top_people": "С кем у меня больше всего фото?",
+            "top_worlds": "В каких мирах я больше всего снимал в этом году?",
+            "latest_together": "Покажи мои последние групповые фото",
+            "monthly": "Сколько скриншотов я делал каждый месяц?",
+            "person_latest": "Мои последние фото с {mention}",
+            "person_first": "Когда было моё первое фото с {mention}?",
+            "person_worlds": "Где мы с {mention} фотографировались?",
+            "world_people": "С кем я фотографировался в {mention}?",
+            "world_count": "Сколько скриншотов я сделал в {mention}?",
+            "view_all": "Все {count} на странице скриншотов"
         }
     },
     "user_hover_card": {
@@ -5743,19 +5757,11 @@
             "delete_file_confirm_title_bulk": "Удалить скриншотов: {count}?",
             "delete_file_confirm_description": "Файл будет перемещён в корзину.",
             "upload": "Загрузить",
-            "search_placeholder": "Поиск",
-            "search_type_placeholder": "Тип поиска",
-            "search_types": {
-                "player_name": "Имя игрока",
-                "player_id": "Идентификатор игрока",
-                "world_name": "Имя мира",
-                "world_id": "ID мира"
-            },
+            "search_placeholder": "Люди, миры или имена файлов",
             "no_results": "Ничего не найдено",
             "no_results_description": "Попробуйте другое слово или смените тип поиска.",
             "layout_grid": "Сетка изображений",
             "layout_list": "Список сведений",
-            "clear_search": "Очистить поиск",
             "invalid_file": "Выбран недопустимый файл. Выберите корректный скриншот VRChat",
             "section_location": "Место проведения",
             "section_players": "Игроки",
@@ -5798,14 +5804,21 @@
             "thumbnail_failed": "Недоступный пальцем",
             "hide_details": "Скрыть информацию",
             "show_details": "Показать информацию",
-            "search_in": "Поиск: {scope}",
             "grid_density": "Размер миниатюр",
             "sort": "Сортировка",
             "year_group": "{year} год",
             "sort_options": {
                 "captured_desc": "Новые",
                 "captured_asc": "Старые"
-            }
+            },
+            "search_label": "Поиск скриншотов",
+            "no_candidates": "Нет подходящих людей или миров",
+            "search_text": "Искать «{query}»",
+            "date_range": "Дата съёмки",
+            "people_match_all": "Вместе",
+            "people_match_any": "Любой из них",
+            "without_people": "{count} без списка игроков",
+            "without_people_hint": "Эти скриншоты сделаны, когда VRCX-0 не был запущен: в них нет списка присутствующих, поэтому фильтр по людям их не находит."
         },
         "set_avatar_styles": {
             "header": "Установить стили аватара",

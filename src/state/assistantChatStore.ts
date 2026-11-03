@@ -8,8 +8,8 @@ import type {
     AssistantToolCallEvent,
     AssistantToolResultEvent,
     AssistantTurnEntitiesEvent,
+    AssistantDraft,
     Entity,
-    MentionTarget,
     SessionSummary,
     UIMessage
 } from '@/domain/assistant/types';
@@ -24,9 +24,9 @@ interface AssistantChatState {
     surfacedEntitiesBySession: Record<string, Entity[]>;
     entityPanelOpenBySession: Record<string, boolean>;
     busySessions: Record<string, boolean>;
-    mentionDraft: MentionTarget | null;
+    assistantDraft: AssistantDraft | null;
     setOpen: (open: boolean) => void;
-    startMentionDraft: (target: MentionTarget) => void;
+    startAssistantDraft: (draft: AssistantDraft) => void;
     setEntityPanelOpen: (open: boolean) => void;
     setSessions: (sessions: SessionSummary[]) => void;
     setActiveSession: (sessionId: string | null) => void;
@@ -61,7 +61,7 @@ type AssistantChatData = Pick<
     | 'surfacedEntitiesBySession'
     | 'entityPanelOpenBySession'
     | 'busySessions'
-    | 'mentionDraft'
+    | 'assistantDraft'
 >;
 
 const initialState: AssistantChatData = {
@@ -73,7 +73,7 @@ const initialState: AssistantChatData = {
     surfacedEntitiesBySession: {},
     entityPanelOpenBySession: {},
     busySessions: {},
-    mentionDraft: null
+    assistantDraft: null
 };
 
 function markSessionIdle(
@@ -162,7 +162,8 @@ function foldTranscript(messages: Message[], running: boolean): UIMessage[] {
                               status: result.ok ? 'done' : 'error',
                               summary: result.summary,
                               entities: result.entities,
-                              charts: result.charts ?? []
+                              charts: result.charts ?? [],
+                              screenshots: result.screenshots
                           }
                         : call
                 );
@@ -254,8 +255,8 @@ function withAssistantMessage(
 export const useAssistantChatStore = create<AssistantChatState>((set) => ({
     ...initialState,
 
-    startMentionDraft: (target) =>
-        set({ open: true, activeSessionId: null, mentionDraft: target }),
+    startAssistantDraft: (draft) =>
+        set({ open: true, activeSessionId: null, assistantDraft: draft }),
 
     setOpen: (open) =>
         set((state) => {
@@ -296,7 +297,7 @@ export const useAssistantChatStore = create<AssistantChatState>((set) => ({
         ),
     setSessions: (sessions) => set({ sessions }),
     setActiveSession: (activeSessionId) =>
-        set({ activeSessionId, mentionDraft: null }),
+        set({ activeSessionId, assistantDraft: null }),
     evictSessionData: (sessionId) =>
         set((state) => {
             if (getBusySessionIds(state).has(sessionId)) {
@@ -441,7 +442,8 @@ export const useAssistantChatStore = create<AssistantChatState>((set) => ({
                                   status: event.ok ? 'done' : 'error',
                                   summary: event.summary,
                                   entities: event.entities,
-                                  charts: event.charts
+                                  charts: event.charts,
+                                  screenshots: event.screenshots
                               }
                             : call
                     );

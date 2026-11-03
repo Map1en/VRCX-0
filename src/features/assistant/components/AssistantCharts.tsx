@@ -13,6 +13,8 @@ import { getResolvedThemeMode } from '@/services/themeService';
 import { useShellStore } from '@/state/shellStore';
 import { Button } from '@/ui/shadcn/button';
 
+import { useNearViewport } from '../useNearViewport';
+
 const VISIBLE_CHART_LIMIT = 2;
 const COLUMN_CHART_HEIGHT = 180;
 const RANKING_ROW_HEIGHT = 24;
@@ -131,22 +133,6 @@ function buildOption(
             }
         ]
     };
-}
-
-function useNearViewport(element: Element | null): boolean {
-    const [near, setNear] = useState(false);
-    useEffect(() => {
-        if (!element) {
-            return;
-        }
-        const observer = new IntersectionObserver(
-            ([entry]) => setNear(entry.isIntersecting),
-            { rootMargin: '300px 0px' }
-        );
-        observer.observe(element);
-        return () => observer.disconnect();
-    }, [element]);
-    return near;
 }
 
 function ChartCanvas({

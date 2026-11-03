@@ -5,21 +5,22 @@ import configRepository from '@/repositories/configRepository';
 
 import {
     DEFAULT_SCREENSHOT_SEARCH_SORT,
-    SCREENSHOT_METADATA_SEARCH_TYPES,
+    EMPTY_SCREENSHOT_SEARCH,
     SCREENSHOT_SEARCH_LAYOUT_CONFIG_KEY,
     sortScreenshotSearchRows,
     type ScreenshotSearchRow,
-    type ScreenshotSearchSort,
-    type ScreenshotMetadataSearchType
+    type ScreenshotSearchScope,
+    type ScreenshotSearchSort
 } from './screenshotMetadataValues';
 
 export type ScreenshotSearchLayout = 'grid' | 'list';
 
 export function useScreenshotMetadataSearch() {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchType, setSearchType] = useState<
-        ScreenshotMetadataSearchType['value']
-    >(SCREENSHOT_METADATA_SEARCH_TYPES[0].value);
+    const [searchDraft, setSearchDraft] = useState('');
+    const [searchScope, setSearchScope] = useState<ScreenshotSearchScope>(
+        EMPTY_SCREENSHOT_SEARCH
+    );
+    const [withoutPeopleCount, setWithoutPeopleCount] = useState(0);
     const [searchRows, setSearchRows] = useState<ScreenshotSearchRow[]>([]);
     const [searchImages, setSearchImages] = useState<ScreenshotLibraryImage[]>(
         []
@@ -48,11 +49,6 @@ export function useScreenshotMetadataSearch() {
             active = false;
         };
     }, []);
-
-    const currentSearchType =
-        SCREENSHOT_METADATA_SEARCH_TYPES.find(
-            (type) => type.value === searchType
-        ) ?? SCREENSHOT_METADATA_SEARCH_TYPES[0];
 
     const sortedSearchRows = useMemo(
         () => sortScreenshotSearchRows(searchRows, searchSort),
@@ -84,13 +80,16 @@ export function useScreenshotMetadataSearch() {
 
     function setSearchResults({
         rows,
-        images
+        images,
+        withoutPeople = 0
     }: {
         rows: ScreenshotSearchRow[];
         images: ScreenshotLibraryImage[];
+        withoutPeople?: number;
     }) {
         setSearchRows(rows);
         setSearchImages(images);
+        setWithoutPeopleCount(withoutPeople);
     }
 
     function removeSearchPaths(paths: string[]) {
@@ -106,9 +105,11 @@ export function useScreenshotMetadataSearch() {
     function resetSearchResults({ clearQuery = false } = {}) {
         setSearchRows([]);
         setSearchImages([]);
+        setWithoutPeopleCount(0);
         setSelectedPath('');
         if (clearQuery) {
-            setSearchQuery('');
+            setSearchDraft('');
+            setSearchScope(EMPTY_SCREENSHOT_SEARCH);
         }
         setSearchViewMode('detail');
     }
@@ -130,26 +131,26 @@ export function useScreenshotMetadataSearch() {
     }
 
     return {
-        currentSearchType,
         removeSearchPaths,
         resetSearchResults,
         searchLayout,
         searchNavigationPaths,
-        searchQuery,
+        searchDraft,
         searchRows,
+        searchScope,
         searchSort,
-        searchType,
         searchViewMode,
         selectedPath,
         selectedPathIndex,
         setSearchLayout,
-        setSearchQuery,
+        setSearchDraft,
         setSearchResults,
-        setSearchType,
+        setSearchScope,
         setSearchViewMode,
         setSelectedPath,
         sortedSearchImages,
         sortedSearchRows,
-        toggleSearchSort
+        toggleSearchSort,
+        withoutPeopleCount
     };
 }

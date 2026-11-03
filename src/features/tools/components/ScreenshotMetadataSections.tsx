@@ -3,16 +3,16 @@ import {
     ArrowRightIcon,
     CopyIcon,
     FolderOpenIcon,
+    InfoIcon,
     LayoutGridIcon,
-    ListFilterIcon,
     ListIcon,
     PanelRightCloseIcon,
     PanelRightOpenIcon,
+    SparklesIcon,
     StarIcon,
     Trash2Icon,
     UploadIcon,
-    UsersIcon,
-    XIcon
+    UsersIcon
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -25,17 +25,20 @@ import {
     DataTableHeaderRow,
     DataTableRow
 } from '@/components/data-table/DataTableView';
+import { DateRangeFilter } from '@/components/date-range-filter/DateRangeFilter';
 import { KeyboardShortcut } from '@/components/keyboard/KeyboardShortcut';
 import { PageToolbar, PageToolbarRow } from '@/components/layout/PageScaffold';
 import {
-    ToolbarSearch,
     ToolbarSegmented,
     ToolbarStatus,
-    ToolbarViews,
-    toolbarSearchScopeTrigger
+    ToolbarViews
 } from '@/components/layout/ToolbarControls';
 import { useProgressiveImageSource } from '@/components/media/useProgressiveImageSource';
 import { cn } from '@/lib/utils';
+import type {
+    ScreenshotFacet,
+    ScreenshotPeopleMatch
+} from '@/platform/tauri/bindings';
 import { Button } from '@/ui/shadcn/button';
 import {
     Card,
@@ -44,27 +47,31 @@ import {
     CardHeader,
     CardTitle
 } from '@/ui/shadcn/card';
-import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuTrigger
-} from '@/ui/shadcn/dropdown-menu';
 import { Table, TableBody, TableHeader } from '@/ui/shadcn/table';
-import { Tooltip } from '@/ui/shadcn/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import {
-    SCREENSHOT_METADATA_SEARCH_TYPES,
     type NormalizedScreenshotMetadata,
-    type ScreenshotMetadataSearchType,
     type ScreenshotSearchRow,
+    type ScreenshotSearchScope,
     type ScreenshotSearchSort
 } from '../screenshotMetadataValues';
 import type { ScreenshotSearchLayout } from '../useScreenshotMetadataSearch';
 import { EmptyState, SearchSortHead } from './ScreenshotMetadataParts';
+import { ScreenshotSearchBox } from './ScreenshotSearchBox';
 
 export { ScreenshotMetadataDetailsCard } from './ScreenshotMetadataDetailsCard';
+
+const PEOPLE_MATCH_OPTIONS = [
+    {
+        value: 'all',
+        labelKey: 'dialog.screenshot_metadata.people_match_all'
+    },
+    {
+        value: 'any',
+        labelKey: 'dialog.screenshot_metadata.people_match_any'
+    }
+] as const;
 
 const SEARCH_LAYOUT_OPTIONS = [
     {
@@ -187,38 +194,47 @@ export function ScreenshotDetailActions({
 }
 
 export function ScreenshotSearchToolbar({
-    searchQuery,
-    searchType,
+    scope,
+    draft,
+    peopleFacets,
+    worldFacets,
+    isSearching,
     searchLayout,
     showResultControls,
     searchRowsCount,
+    withoutPeopleCount,
     searchNavigationCount,
     selectedPathIndex,
-    onSearchQueryChange,
-    onSearchTypeChange,
-    onSearch,
+    onDraftChange,
+    onScopeChange,
+    onCommitText,
+    onDateRangeChange,
+    onPeopleMatchChange,
     onSearchLayoutChange,
-    onClearSearch
+    onClearSearch,
+    onAskAssistant
 }: {
-    searchQuery: string;
-    searchType: ScreenshotMetadataSearchType['value'];
+    scope: ScreenshotSearchScope;
+    draft: string;
+    peopleFacets: ScreenshotFacet[];
+    worldFacets: ScreenshotFacet[];
+    isSearching: boolean;
     searchLayout: ScreenshotSearchLayout;
     showResultControls: boolean;
     searchRowsCount: number;
+    withoutPeopleCount: number;
     searchNavigationCount: number;
     selectedPathIndex: number;
-    onSearchQueryChange: (value: string) => void;
-    onSearchTypeChange: (value: string | null) => void;
-    onSearch: () => void;
+    onDraftChange: (value: string) => void;
+    onScopeChange: (people: string[], worlds: string[]) => void;
+    onCommitText: () => void;
+    onDateRangeChange: (from: string, to: string) => void;
+    onPeopleMatchChange: (value: ScreenshotPeopleMatch) => void;
     onSearchLayoutChange: (layout: ScreenshotSearchLayout) => void;
     onClearSearch: () => void;
+    onAskAssistant: () => void;
 }) {
     const { t } = useTranslation();
-    const activeSearchTypeLabel = t(
-        SCREENSHOT_METADATA_SEARCH_TYPES.find(
-            (type) => type.value === searchType
-        )?.labelKey || 'dialog.screenshot_metadata.search_type_placeholder'
-    );
 
     return (
         <PageToolbar>
@@ -226,15 +242,22 @@ export function ScreenshotSearchToolbar({
                 <ToolbarViews className="min-w-0 flex-wrap">
                     {showResultControls ? (
                         <>
-                            {searchRowsCount > 0 ? (
-                                <ToolbarStatus>
-                                    {t(
-                                        'dialog.screenshot_metadata.result_count',
-                                        {
-                                            count: searchRowsCount
-                                        }
+                            <ToolbarStatus>
+                                {t('dialog.screenshot_metadata.result_count', {
+                                    count: searchRowsCount
+                                })}
+                            </ToolbarStatus>
+                            {scope.people.length > 1 ? (
+                                <ToolbarSegmented
+                                    value={scope.peopleMatch}
+                                    onValueChange={onPeopleMatchChange}
+                                    options={PEOPLE_MATCH_OPTIONS.map(
+                                        (option) => ({
+                                            value: option.value,
+                                            label: t(option.labelKey)
+                                        })
                                     )}
-                                </ToolbarStatus>
+                                />
                             ) : null}
                             <ToolbarSegmented
                                 iconOnly
@@ -248,15 +271,28 @@ export function ScreenshotSearchToolbar({
                                     })
                                 )}
                             />
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={onClearSearch}
-                            >
-                                <XIcon data-icon="inline-start" />
-                                {t('dialog.screenshot_metadata.clear_search')}
-                            </Button>
+                            {withoutPeopleCount > 0 ? (
+                                <Tooltip>
+                                    <TooltipTrigger
+                                        render={
+                                            <span className="text-muted-foreground inline-flex cursor-help items-center gap-1 text-xs">
+                                                <InfoIcon className="size-3.5" />
+                                                {t(
+                                                    'dialog.screenshot_metadata.without_people',
+                                                    {
+                                                        count: withoutPeopleCount
+                                                    }
+                                                )}
+                                            </span>
+                                        }
+                                    />
+                                    <TooltipContent className="max-w-64">
+                                        {t(
+                                            'dialog.screenshot_metadata.without_people_hint'
+                                        )}
+                                    </TooltipContent>
+                                </Tooltip>
+                            ) : null}
                         </>
                     ) : searchNavigationCount && selectedPathIndex >= 0 ? (
                         <ToolbarStatus>
@@ -265,64 +301,56 @@ export function ScreenshotSearchToolbar({
                     ) : null}
                 </ToolbarViews>
 
-                <ToolbarSearch
-                    value={searchQuery}
-                    onValueChange={onSearchQueryChange}
-                    onCommit={onSearch}
+                <ScreenshotSearchBox
+                    people={scope.people}
+                    worlds={scope.worlds}
+                    peopleFacets={peopleFacets}
+                    worldFacets={worldFacets}
+                    draft={draft}
+                    isSearching={isSearching}
+                    onDraftChange={onDraftChange}
+                    onScopeChange={onScopeChange}
+                    onCommitText={onCommitText}
                     onClear={onClearSearch}
-                    commitOnBlur={false}
-                    placeholder={t('dialog.screenshot_metadata.search_in', {
-                        scope: activeSearchTypeLabel
-                    })}
-                    trailing={
-                        <DropdownMenu>
-                            <Tooltip>
-                                <DropdownMenuTrigger
-                                    render={toolbarSearchScopeTrigger({
-                                        active: true,
-                                        icon: ListFilterIcon,
-                                        label: activeSearchTypeLabel
-                                    })}
-                                />
-                            </Tooltip>
-                            <DropdownMenuContent align="end" className="w-48">
-                                <DropdownMenuGroup>
-                                    {SCREENSHOT_METADATA_SEARCH_TYPES.map(
-                                        (type) => (
-                                            <DropdownMenuCheckboxItem
-                                                key={type.value}
-                                                checked={
-                                                    type.value === searchType
-                                                }
-                                                onCheckedChange={() =>
-                                                    onSearchTypeChange(
-                                                        type.value
-                                                    )
-                                                }
-                                            >
-                                                {t(type.labelKey)}
-                                            </DropdownMenuCheckboxItem>
-                                        )
-                                    )}
-                                </DropdownMenuGroup>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                    dateFilter={
+                        <DateRangeFilter
+                            label={t('dialog.screenshot_metadata.date_range')}
+                            dateFrom={scope.dateFrom}
+                            dateTo={scope.dateTo}
+                            onChange={onDateRangeChange}
+                        />
                     }
                 />
+                <Tooltip>
+                    <TooltipTrigger
+                        render={
+                            <Button
+                                type="button"
+                                size="icon-xs"
+                                variant="outline"
+                                aria-label={t('assistant.title')}
+                                onClick={onAskAssistant}
+                            >
+                                <SparklesIcon data-icon="inline-start" />
+                            </Button>
+                        }
+                    />
+                    <TooltipContent>{t('assistant.title')}</TooltipContent>
+                </Tooltip>
             </PageToolbarRow>
         </PageToolbar>
     );
 }
 
 export function ScreenshotMetadataResultsTable({
-    currentSearchType,
+    showMatch,
     searchSort,
     sortedSearchRows,
     selectedPath,
     onToggleSearchSort,
     onOpenResult
 }: {
-    currentSearchType: ScreenshotMetadataSearchType;
+    showMatch: boolean;
     searchSort: ScreenshotSearchSort;
     sortedSearchRows: ScreenshotSearchRow[];
     selectedPath: string;
@@ -354,7 +382,7 @@ export function ScreenshotMetadataResultsTable({
                                 onToggle={onToggleSearchSort}
                             />
                         </DataTableHead>
-                        {currentSearchType.index <= 1 ? (
+                        {showMatch ? (
                             <DataTableHead>
                                 <SearchSortHead
                                     label={t(
@@ -407,7 +435,7 @@ export function ScreenshotMetadataResultsTable({
                         >
                             <DataTableCell>{row.dateLabel}</DataTableCell>
                             <DataTableCell>{row.world}</DataTableCell>
-                            {currentSearchType.index <= 1 ? (
+                            {showMatch ? (
                                 <DataTableCell>{row.match}</DataTableCell>
                             ) : null}
                             <DataTableCell>{row.author}</DataTableCell>

@@ -116,6 +116,8 @@ mod disambiguation_tests;
 #[cfg(test)]
 mod profile_encounter_tests;
 #[cfg(test)]
+mod screenshot_tests;
+#[cfg(test)]
 mod tests;
 #[cfg(test)]
 mod visit_timeline_tests;

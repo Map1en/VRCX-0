@@ -137,6 +137,66 @@ pub(crate) struct TestMcpActivityQueryAdapter {
     db: Arc<DatabaseService>,
 }
 
+pub(crate) struct TestMcpScreenshots {
+    pub(crate) cache: vrcx_0_persistence::screenshot_cache::MetadataCacheDb,
+    pub(crate) root: String,
+}
+
+impl TestMcpScreenshots {
+    pub(crate) fn new(dir: &std::path::Path) -> Self {
+        Self {
+            cache: vrcx_0_persistence::screenshot_cache::MetadataCacheDb::new(
+                &dir.join("metadataCache.db"),
+            )
+            .expect("open screenshot cache"),
+            root: dir.join("shots").to_string_lossy().into_owned(),
+        }
+    }
+}
+
+impl crate::McpScreenshotQueryPort for TestMcpScreenshots {
+    fn query(
+        &self,
+        filter: &vrcx_0_core::screenshots::ScreenshotFilter,
+        limit: i64,
+    ) -> vrcx_0_application_core::Result<vrcx_0_core::screenshots::ScreenshotQueryResult> {
+        Ok(self
+            .cache
+            .query_screenshots_for_root(&self.root, filter, Some(limit))?)
+    }
+
+    fn people(
+        &self,
+        filter: &vrcx_0_core::screenshots::ScreenshotFilter,
+        limit: i64,
+    ) -> vrcx_0_application_core::Result<Vec<vrcx_0_core::screenshots::ScreenshotFacet>> {
+        Ok(self
+            .cache
+            .screenshot_people_for_root(&self.root, filter, limit)?)
+    }
+
+    fn worlds(
+        &self,
+        filter: &vrcx_0_core::screenshots::ScreenshotFilter,
+        limit: i64,
+    ) -> vrcx_0_application_core::Result<Vec<vrcx_0_core::screenshots::ScreenshotFacet>> {
+        Ok(self
+            .cache
+            .screenshot_worlds_for_root(&self.root, filter, limit)?)
+    }
+
+    fn months(
+        &self,
+        filter: &vrcx_0_core::screenshots::ScreenshotFilter,
+        utc_offset_minutes: i64,
+        limit: i64,
+    ) -> vrcx_0_application_core::Result<Vec<vrcx_0_core::screenshots::ScreenshotFacet>> {
+        Ok(self
+            .cache
+            .screenshot_months_for_root(&self.root, filter, utc_offset_minutes, limit)?)
+    }
+}
+
 pub(crate) struct TestMcpWorldLookup(pub(crate) Option<serde_json::Value>);
 
 impl crate::McpWorldLookupPort for TestMcpWorldLookup {
@@ -491,7 +551,7 @@ impl McpFeedQueryPort for TestMcpFeedQueryAdapter {
 }
 
 pub(crate) struct TestDir {
-    path: PathBuf,
+    pub(crate) path: PathBuf,
 }
 
 impl TestDir {
@@ -644,6 +704,7 @@ fn test_runtime_with_database_and_event_bus(
         favorites_queries: Arc::new(TestMcpFavoritesQueryAdapter::new(Arc::clone(&db))),
         feed_queries: Arc::new(TestMcpFeedQueryAdapter::new(Arc::clone(&db))),
         world_lookup: Arc::new(TestMcpWorldLookup(None)),
+        screenshots: Arc::new(TestMcpScreenshots::new(&dir.path)),
         mutual_graph: Arc::new(TestMcpMutualGraphAdapter::new(
             MutualGraphFetchRuntime::new(),
             Arc::clone(&db),

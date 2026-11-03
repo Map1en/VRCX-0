@@ -234,8 +234,10 @@
             "recall_encounter": "만난 사람 떠올리기",
             "refresh_mutual_graph": "공통 친구 새로고침",
             "search_friend_feed": "친구 피드 검색",
+            "search_screenshots": "스크린샷 찾기",
             "search_worlds_visited": "방문한 월드 검색",
             "set_friend_note": "친구 메모 수정",
+            "summarize_screenshots": "스크린샷 집계",
             "summarize_social_period": "소셜 활동 요약"
         },
         "chart": {
@@ -260,6 +262,18 @@
             "world_visits": "최근 {mention}에 갔을 때 누구와 함께였어?",
             "world_people": "{mention}에서 자주 마주치는 사람",
             "world_popularity": "{mention} 인기 있어? 즐겨찾기 수는?"
+        },
+        "screenshots": {
+            "top_people": "누구와 사진을 가장 많이 찍었어?",
+            "top_worlds": "올해 사진을 가장 많이 찍은 월드는?",
+            "latest_together": "최근 단체 사진 보여 줘",
+            "monthly": "달마다 몇 장 찍었어?",
+            "person_latest": "{mention} 님과 찍은 최근 사진",
+            "person_first": "{mention} 님과 처음 함께 찍은 사진은 언제야?",
+            "person_worlds": "{mention} 님과 어느 월드에서 함께 찍었어?",
+            "world_people": "{mention}에서 누구와 함께 찍었어?",
+            "world_count": "{mention}에서 몇 장 찍었어?",
+            "view_all": "스크린샷 화면에서 {count}장 모두 보기"
         }
     },
     "user_hover_card": {
@@ -5690,19 +5704,11 @@
             "delete_file_confirm_title_bulk": "스크린샷 {count}개를 삭제할까요?",
             "delete_file_confirm_description": "파일은 휴지통으로 이동됩니다.",
             "upload": "갤러리에 업로드",
-            "search_placeholder": "검색",
-            "search_type_placeholder": "검색 유형",
-            "search_types": {
-                "player_name": "플레이어 이름",
-                "player_id": "플레이어 ID",
-                "world_name": "월드 이름",
-                "world_id": "월드 ID"
-            },
+            "search_placeholder": "사람, 월드, 파일 이름",
             "no_results": "검색결과가 없습니다",
             "no_results_description": "다른 키워드를 쓰거나 검색 유형을 바꿔 보세요.",
             "layout_grid": "이미지 그리드",
             "layout_list": "정보 목록",
-            "clear_search": "검색 지우기",
             "invalid_file": "잘못된 파일이 선택되었습니다. 유효한 VRChat 스크린샷을 선택하세요.",
             "section_location": "위치",
             "section_players": "플레이어",
@@ -5745,14 +5751,21 @@
             "thumbnail_failed": "미리보기를 표시할 수 없습니다.",
             "hide_details": "이미지 정보 숨기기",
             "show_details": "이미지 정보 표시",
-            "search_in": "{scope} 검색",
             "grid_density": "썸네일 크기",
             "sort": "정렬",
             "year_group": "{year}년",
             "sort_options": {
                 "captured_desc": "최신순",
                 "captured_asc": "오래된순"
-            }
+            },
+            "search_label": "스크린샷 검색",
+            "no_candidates": "일치하는 사람이나 월드가 없습니다",
+            "search_text": "“{query}” 검색",
+            "date_range": "촬영 날짜",
+            "people_match_all": "모두 함께",
+            "people_match_any": "한 명이라도",
+            "without_people": "{count}장은 플레이어 기록 없음",
+            "without_people_hint": "VRCX-0이 실행 중이지 않을 때 찍은 스크린샷이라 함께 있던 사람이 기록되지 않았고, 사람 필터에는 나타나지 않습니다."
         },
         "set_avatar_styles": {
             "header": "아바타 스타일 설정",

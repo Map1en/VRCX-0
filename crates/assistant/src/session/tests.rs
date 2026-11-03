@@ -92,6 +92,11 @@ fn reopened_session_restores_tool_rows_with_full_content_for_the_model() {
                             value: 120,
                         }],
                     }],
+                    screenshots: Some(crate::screenshots::AssistantScreenshots {
+                        total: 3,
+                        ids: vec!["VRChat_a.png".into()],
+                        filter: vrcx_0_core::screenshots::ScreenshotFilter::default(),
+                    }),
                 },
                 "{\"summary\":\"Alice tops the list.\",\"rows\":[{\"userId\":\"usr_alice\"}]}"
                     .into(),
@@ -120,6 +125,7 @@ fn reopened_session_restores_tool_rows_with_full_content_for_the_model() {
     assert_eq!(result.summary, "Alice tops the list.");
     assert_eq!(result.entities[0].id, "usr_alice");
     assert_eq!(result.charts[0].points[0].value, 120);
+    assert_eq!(result.screenshots.as_ref().unwrap().ids, ["VRChat_a.png"]);
     assert_eq!(
         history[2].tool_content.as_deref(),
         Some("{\"summary\":\"Alice tops the list.\",\"rows\":[{\"userId\":\"usr_alice\"}]}")

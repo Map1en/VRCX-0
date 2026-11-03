@@ -159,31 +159,6 @@ fn parse_lfs_picture_degrades_malformed_coordinates_and_players_safely() {
 }
 
 #[test]
-fn player_helpers_match_exact_ids_and_case_insensitive_name_fragments() {
-    let metadata = ScreenshotMetadata {
-        players: vec![
-            PlayerDetail {
-                id: "usr_alice".into(),
-                display_name: "Alice Example".into(),
-                pos: None,
-            },
-            PlayerDetail {
-                id: "usr_bob".into(),
-                display_name: "Bob".into(),
-                pos: None,
-            },
-        ],
-        ..Default::default()
-    };
-
-    assert!(metadata.contains_player_id("usr_alice"));
-    assert!(!metadata.contains_player_id("USR_ALICE"));
-    assert!(metadata.contains_player_name_lowercase("lice ex"));
-    assert!(metadata.contains_player_name_lowercase("bob"));
-    assert!(!metadata.contains_player_name_lowercase("carol"));
-}
-
-#[test]
 fn zip_entry_plan_groups_by_source_folder_and_keeps_folder_names_unique() {
     let paths = vec![
         "C:/A/2026-07/a.png".to_string(),

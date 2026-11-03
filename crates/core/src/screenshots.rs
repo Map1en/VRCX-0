@@ -99,6 +99,54 @@ pub struct FavoriteScreenshots {
     pub missing_count: u32,
 }
 
+#[derive(
+    Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type,
+)]
+#[serde(rename_all = "camelCase")]
+pub enum ScreenshotPeopleMatch {
+    #[default]
+    All,
+    Any,
+}
+
+#[derive(
+    Clone, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type,
+)]
+#[serde(rename_all = "camelCase")]
+pub struct ScreenshotFilter {
+    #[serde(default)]
+    pub people: Vec<String>,
+    #[serde(default)]
+    pub people_match: ScreenshotPeopleMatch,
+    #[serde(default)]
+    pub world_ids: Vec<String>,
+    #[serde(default)]
+    pub from_ms: Option<i64>,
+    #[serde(default)]
+    pub to_ms: Option<i64>,
+    #[serde(default)]
+    pub text: String,
+}
+
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ScreenshotQueryResult {
+    pub total: i64,
+    pub without_people: i64,
+    pub images: Vec<ScreenshotLibraryImage>,
+}
+
+#[derive(
+    Clone, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type,
+)]
+#[serde(rename_all = "camelCase")]
+pub struct ScreenshotFacet {
+    pub id: String,
+    pub name: String,
+    pub count: i64,
+    pub last_captured_at_ms: i64,
+}
+
 #[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct ScreenshotTimeWindow {
@@ -144,37 +192,6 @@ pub struct PlayerDetail {
     pub pos: Option<[f32; 3]>,
 }
 
-#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct ScreenshotSearchResult {
-    pub file_path: String,
-    pub file_name: String,
-    pub file_size_bytes: i64,
-    pub creation_date: Option<String>,
-    pub width: Option<i32>,
-    pub height: Option<i32>,
-    pub metadata: ScreenshotMetadata,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ScreenshotSearchType {
-    Username = 0,
-    UserId = 1,
-    WorldName = 2,
-    WorldId = 3,
-}
-
-impl ScreenshotSearchType {
-    pub fn from_i32(value: i32) -> Self {
-        match value {
-            1 => Self::UserId,
-            2 => Self::WorldName,
-            3 => Self::WorldId,
-            _ => Self::Username,
-        }
-    }
-}
-
 impl ScreenshotMetadata {
     pub fn just_error(source_file: &str, error: &str) -> Self {
         Self {
@@ -182,16 +199,6 @@ impl ScreenshotMetadata {
             error: Some(error.into()),
             ..Default::default()
         }
-    }
-
-    pub fn contains_player_id(&self, id: &str) -> bool {
-        self.players.iter().any(|p| p.id == id)
-    }
-
-    pub fn contains_player_name_lowercase(&self, lowercase_name: &str) -> bool {
-        self.players.iter().any(|p| {
-            crate::text::contains_lowercase_query_case_insensitive(&p.display_name, lowercase_name)
-        })
     }
 }
 

@@ -234,8 +234,10 @@
             "recall_encounter": "回忆遇到过的人",
             "refresh_mutual_graph": "刷新共同好友",
             "search_friend_feed": "搜索好友动态",
+            "search_screenshots": "查找截图",
             "search_worlds_visited": "搜索去过的世界",
             "set_friend_note": "修改好友备注",
+            "summarize_screenshots": "统计截图",
             "summarize_social_period": "汇总社交概况"
         },
         "chart": {
@@ -260,6 +262,18 @@
             "world_visits": "最近几次去 {mention} 都和谁在一起",
             "world_people": "在 {mention} 常遇到哪些人",
             "world_popularity": "{mention} 热门吗，有多少人收藏"
+        },
+        "screenshots": {
+            "top_people": "我和谁拍的照最多",
+            "top_worlds": "今年在哪些世界拍得最多",
+            "latest_together": "看看我最近的合照",
+            "monthly": "每个月都拍了多少张",
+            "person_latest": "我和 {mention} 最近的合照",
+            "person_first": "我和 {mention} 的第一张合照是什么时候",
+            "person_worlds": "我和 {mention} 都在哪些世界合过影",
+            "world_people": "在 {mention} 我都和谁合过影",
+            "world_count": "我在 {mention} 一共拍了多少张",
+            "view_all": "在截图页查看全部 {count} 张"
         }
     },
     "user_hover_card": {
@@ -5752,19 +5766,11 @@
             "delete_file_confirm_title_bulk": "删除 {count} 张截图？",
             "delete_file_confirm_description": "文件会被移到系统回收站。",
             "upload": "上传到在线相册",
-            "search_placeholder": "搜索",
-            "search_type_placeholder": "搜索类型",
-            "search_types": {
-                "player_name": "玩家名称",
-                "player_id": "玩家 ID",
-                "world_name": "世界名称",
-                "world_id": "世界 ID"
-            },
+            "search_placeholder": "人物、世界或文件名",
             "no_results": "未找到结果",
             "no_results_description": "换个关键词，或者切换搜索类型试试。",
             "layout_grid": "图片网格",
             "layout_list": "信息列表",
-            "clear_search": "清除搜索",
             "invalid_file": "选择的文件无效。请选择有效的截图。",
             "section_location": "位置",
             "section_players": "玩家",
@@ -5807,14 +5813,21 @@
             "thumbnail_failed": "缩略图不可用",
             "hide_details": "隐藏图片信息",
             "show_details": "显示图片信息",
-            "search_in": "搜索{scope}",
             "grid_density": "缩略图尺寸",
             "sort": "排序",
             "year_group": "{year} 年",
             "sort_options": {
                 "captured_desc": "最新",
                 "captured_asc": "最早"
-            }
+            },
+            "search_label": "搜索截图",
+            "no_candidates": "没有匹配的人物或世界",
+            "search_text": "搜索“{query}”",
+            "date_range": "拍摄日期",
+            "people_match_all": "同时在场",
+            "people_match_any": "任意一人",
+            "without_people": "{count} 张没有人物记录",
+            "without_people_hint": "这些截图拍摄时 VRCX-0 没有运行，没有记录当时有谁，所以按人物筛选时不会出现。"
         },
         "set_avatar_styles": {
             "header": "设置模型风格",

@@ -2982,15 +2982,6 @@ const generatedCommands = {
     async appGetScreenshotMetadata(path: string): Promise<string> {
         return await TAURI_INVOKE('app__get_screenshot_metadata', { path });
     },
-    async appFindScreenshotsBySearch(
-        searchQuery: string,
-        searchType: number | null
-    ): Promise<ScreenshotSearchResult[]> {
-        return await TAURI_INVOKE('app__find_screenshots_by_search', {
-            searchQuery,
-            searchType
-        });
-    },
     async appStartScreenshotLibraryScan(
         force: boolean | null
     ): Promise<ScreenshotLibraryScanStatus> {
@@ -3046,6 +3037,36 @@ const generatedCommands = {
         return await TAURI_INVOKE('app__get_screenshots_in_windows', {
             windows,
             limitPerWindow
+        });
+    },
+    async appQueryScreenshots(
+        filter: ScreenshotFilter
+    ): Promise<ScreenshotQueryResult> {
+        return await TAURI_INVOKE('app__query_screenshots', { filter });
+    },
+    async appGetScreenshotPeople(
+        filter: ScreenshotFilter,
+        limit: number
+    ): Promise<ScreenshotFacet[]> {
+        return await TAURI_INVOKE('app__get_screenshot_people', {
+            filter,
+            limit
+        });
+    },
+    async appGetScreenshotWorlds(
+        filter: ScreenshotFilter,
+        limit: number
+    ): Promise<ScreenshotFacet[]> {
+        return await TAURI_INVOKE('app__get_screenshot_worlds', {
+            filter,
+            limit
+        });
+    },
+    async appGetScreenshotsByFileNames(
+        fileNames: string[]
+    ): Promise<ScreenshotLibraryImage[]> {
+        return await TAURI_INVOKE('app__get_screenshots_by_file_names', {
+            fileNames
         });
     },
     async appEnsureScreenshotThumbnail(path: string): Promise<string> {
@@ -3609,6 +3630,11 @@ export type AssistantRuntimeStatus = {
     hasAnyEndpoint: boolean;
     lastSelection: AssistantRuntimeSelection;
 };
+export type AssistantScreenshots = {
+    total: number;
+    ids: string[];
+    filter: ScreenshotFilter;
+};
 export type AssistantToolCallEvent = {
     ownerUserId: OwnerId;
     sessionId: string;
@@ -3626,6 +3652,7 @@ export type AssistantToolResultEvent = {
     summary: string;
     entities: Entity[];
     charts: AssistantChart[];
+    screenshots: AssistantScreenshots | null;
 };
 export type AssistantTurnEntitiesEvent = {
     ownerUserId: OwnerId;
@@ -6867,6 +6894,20 @@ export type ScreenshotExportProgress = {
     error: string | null;
     outputPath: string | null;
 };
+export type ScreenshotFacet = {
+    id: string;
+    name: string;
+    count: number;
+    lastCapturedAtMs: number;
+};
+export type ScreenshotFilter = {
+    people?: string[];
+    peopleMatch?: ScreenshotPeopleMatch;
+    worldIds?: string[];
+    fromMs?: number | null;
+    toMs?: number | null;
+    text?: string;
+};
 export type ScreenshotFolderInfo = {
     path: string;
     parentPath: string | null;
@@ -6917,15 +6958,12 @@ export type ScreenshotMetadata = {
     sourceFile?: string | null;
     error?: string | null;
 };
+export type ScreenshotPeopleMatch = 'all' | 'any';
 export type ScreenshotProcessedPayload = { path: string };
-export type ScreenshotSearchResult = {
-    filePath: string;
-    fileName: string;
-    fileSizeBytes: number;
-    creationDate: string | null;
-    width: number | null;
-    height: number | null;
-    metadata: ScreenshotMetadata;
+export type ScreenshotQueryResult = {
+    total: number;
+    withoutPeople: number;
+    images: ScreenshotLibraryImage[];
 };
 export type ScreenshotTimeWindow = { fromMs: number; toMs: number };
 export type ScreenshotWindowImages = {
@@ -7118,6 +7156,7 @@ export type ToolResultRecord = {
     summary: string;
     entities: Entity[];
     charts?: AssistantChart[];
+    screenshots?: AssistantScreenshots | null;
 };
 export type TranslationOverrides = {
     enabled: boolean | null;

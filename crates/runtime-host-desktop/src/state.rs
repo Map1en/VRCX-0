@@ -3163,6 +3163,10 @@ pub(crate) fn mcp_runtime_for(
                 Arc::clone(assembly.world_cache()),
                 assembly.auth_scope().clone(),
             )),
+            screenshots: Arc::new(crate::mcp_adapters::DesktopMcpScreenshotAdapter::new(
+                runtime.paths().app_data.join("metadataCache.db"),
+                vrcx_0_host_desktop::vrchat_paths::vrchat_photos_location(),
+            )),
             favorite_mutations: assembly.favorite_mutations().clone(),
             tasks: assembly.tasks().clone(),
         },

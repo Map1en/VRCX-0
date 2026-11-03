@@ -8,12 +8,14 @@ use vrcx_0_application_core::RuntimeEventBus;
 use vrcx_0_core::screenshots::{
     plan_screenshot_zip_entries, screenshot_export_file_name, ScreenshotZipEntry,
 };
-use vrcx_0_core::screenshots::{FavoriteScreenshots, ScreenshotExportProgress};
+use vrcx_0_core::screenshots::{
+    FavoriteScreenshots, ScreenshotExportProgress, ScreenshotFacet, ScreenshotFilter,
+    ScreenshotQueryResult,
+};
 use vrcx_0_outbound_adapters::screenshots::{
     self as screenshot, LocalScreenshotFavoriteStore, LocalScreenshotLibraryAdapter,
     ScreenshotExportOutcome, ScreenshotFolderTree, ScreenshotLibraryImage,
-    ScreenshotLibraryScanStatus, ScreenshotSearchResult, ScreenshotTimeWindow,
-    ScreenshotWindowImages,
+    ScreenshotLibraryScanStatus, ScreenshotTimeWindow, ScreenshotWindowImages,
 };
 use vrcx_0_persistence::screenshot_cache::MetadataCacheDb;
 use vrcx_0_persistence::DatabaseService;
@@ -175,19 +177,6 @@ impl DesktopScreenshotRuntime {
         screenshot::add_screenshot_metadata(path, metadata, world_id, change_filename)
     }
 
-    pub fn find(
-        &self,
-        search_query: &str,
-        search_type: Option<i32>,
-    ) -> Vec<ScreenshotSearchResult> {
-        screenshot::find_screenshot_search_results(
-            search_query,
-            search_type,
-            &self.cache,
-            &self.photos_root,
-        )
-    }
-
     pub fn scan_status(&self) -> ScreenshotLibraryScanStatus {
         self.cache.scan_status()
     }
@@ -221,6 +210,48 @@ impl DesktopScreenshotRuntime {
             world_id,
             &self.photos_root,
         )?)
+    }
+
+    pub fn query(
+        &self,
+        filter: &ScreenshotFilter,
+        limit: Option<i64>,
+    ) -> Result<ScreenshotQueryResult> {
+        Ok(self
+            .cache
+            .query_screenshots_for_root(&self.photos_root, filter, limit)?)
+    }
+
+    pub fn people(&self, filter: &ScreenshotFilter, limit: i64) -> Result<Vec<ScreenshotFacet>> {
+        Ok(self
+            .cache
+            .screenshot_people_for_root(&self.photos_root, filter, limit)?)
+    }
+
+    pub fn worlds(&self, filter: &ScreenshotFilter, limit: i64) -> Result<Vec<ScreenshotFacet>> {
+        Ok(self
+            .cache
+            .screenshot_worlds_for_root(&self.photos_root, filter, limit)?)
+    }
+
+    pub fn months(
+        &self,
+        filter: &ScreenshotFilter,
+        utc_offset_minutes: i64,
+        limit: i64,
+    ) -> Result<Vec<ScreenshotFacet>> {
+        Ok(self.cache.screenshot_months_for_root(
+            &self.photos_root,
+            filter,
+            utc_offset_minutes,
+            limit,
+        )?)
+    }
+
+    pub fn by_file_names(&self, file_names: &[String]) -> Result<Vec<ScreenshotLibraryImage>> {
+        Ok(self
+            .cache
+            .screenshots_by_file_names_for_root(&self.photos_root, file_names)?)
     }
 
     pub fn screenshots_in_windows(

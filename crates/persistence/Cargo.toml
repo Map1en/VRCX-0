@@ -15,7 +15,7 @@ chacha20poly1305 = { workspace = true }
 chrono = { workspace = true }
 dirs = { workspace = true }
 fs4 = { workspace = true }
-rusqlite = { workspace = true, features = ["bundled", "backup", "hooks"] }
+rusqlite = { workspace = true, features = ["bundled", "backup", "functions", "hooks"] }
 sea-query = { version = "1.0.1", default-features = false, features = [
     "backend-sqlite"
 ] }

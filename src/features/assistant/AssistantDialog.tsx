@@ -70,7 +70,7 @@ import {
     sendMessage,
     setEntityPanelOpen
 } from './assistantActions';
-import { useMentionPrompts } from './components/AssistantFollowUps';
+import { useDraftPrompts } from './components/AssistantFollowUps';
 import { AssistantTranscript } from './components/AssistantTranscript';
 import { Composer } from './components/Composer';
 import { EntityPanel } from './components/EntityPanel';
@@ -129,7 +129,9 @@ export function AssistantDialog() {
     const [endpointsLoaded, setEndpointsLoaded] = useState(false);
 
     const open = useAssistantChatStore((state) => state.open);
-    const mentionDraft = useAssistantChatStore((state) => state.mentionDraft);
+    const assistantDraft = useAssistantChatStore(
+        (state) => state.assistantDraft
+    );
     const setOpen = useAssistantChatStore((state) => state.setOpen);
     const activeSessionId = useAssistantChatStore(
         (state) => state.activeSessionId
@@ -313,7 +315,7 @@ export function AssistantDialog() {
             ].map((text) => ({ label: text, text })),
         [t]
     );
-    const mentionPrompts = useMentionPrompts(mentionDraft, true);
+    const draftPrompts = useDraftPrompts(assistantDraft);
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -456,12 +458,16 @@ export function AssistantDialog() {
                                 suggestions={
                                     messages?.length || notConfigured
                                         ? undefined
-                                        : mentionDraft
-                                          ? mentionPrompts
+                                        : assistantDraft
+                                          ? draftPrompts
                                           : examplePrompts
                                 }
-                                key={mentionDraft?.id}
-                                mentioned={mentionDraft}
+                                key={
+                                    assistantDraft
+                                        ? `${assistantDraft.topic}:${assistantDraft.target?.id ?? ''}`
+                                        : undefined
+                                }
+                                mentioned={assistantDraft?.target}
                                 onSend={handleSend}
                                 onStop={() => cancelActiveTurn()}
                                 toolbar={

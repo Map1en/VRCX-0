@@ -234,8 +234,10 @@
             "recall_encounter": "会った人を思い出す",
             "refresh_mutual_graph": "共通のフレンドを更新",
             "search_friend_feed": "フレンドのフィードを検索",
+            "search_screenshots": "スクリーンショットを探す",
             "search_worlds_visited": "訪れたワールドを検索",
             "set_friend_note": "フレンドのノートを編集",
+            "summarize_screenshots": "スクリーンショットを集計",
             "summarize_social_period": "交流のまとめを作成"
         },
         "chart": {
@@ -260,6 +262,18 @@
             "world_visits": "最近 {mention} に行ったとき、誰と一緒だった？",
             "world_people": "{mention} でよく一緒になる人",
             "world_popularity": "{mention} は人気？お気に入り数は？"
+        },
+        "screenshots": {
+            "top_people": "一番よく一緒に写っているのは誰？",
+            "top_worlds": "今年いちばん撮ったワールドは？",
+            "latest_together": "最近の集合写真を見せて",
+            "monthly": "月ごとの撮影枚数は？",
+            "person_latest": "{mention} さんとの最近の写真",
+            "person_first": "{mention} さんと初めて一緒に写ったのはいつ？",
+            "person_worlds": "{mention} さんと一緒に撮ったワールドは？",
+            "world_people": "{mention} で一緒に写った人は？",
+            "world_count": "{mention} で撮った枚数は？",
+            "view_all": "スクリーンショット画面で全 {count} 枚を見る"
         }
     },
     "user_hover_card": {
@@ -5748,19 +5762,11 @@
             "delete_file_confirm_title_bulk": "{count} 件のスクリーンショットを削除しますか？",
             "delete_file_confirm_description": "ファイルはごみ箱に移動されます。",
             "upload": "ギャラリーにアップロード",
-            "search_placeholder": "検索",
-            "search_type_placeholder": "検索タイプ",
-            "search_types": {
-                "player_name": "ユーザー名",
-                "player_id": "ユーザーID",
-                "world_name": "ワールド名",
-                "world_id": "ワールドID"
-            },
+            "search_placeholder": "人物、ワールド、ファイル名",
             "no_results": "結果が見つかりません",
             "no_results_description": "別のキーワードか、検索タイプを変えてみてください。",
             "layout_grid": "画像グリッド",
             "layout_list": "詳細リスト",
-            "clear_search": "検索をクリア",
             "invalid_file": "無効なファイル形式です。有効な VRChat スクリーンショットを選択してください。",
             "section_location": "場所",
             "section_players": "プレイヤー",
@@ -5803,14 +5809,21 @@
             "thumbnail_failed": "サムネイルを表示できません",
             "hide_details": "画像情報を隠す",
             "show_details": "画像情報を表示",
-            "search_in": "{scope}を検索",
             "grid_density": "サムネイルサイズ",
             "sort": "並べ替え",
             "year_group": "{year}年",
             "sort_options": {
                 "captured_desc": "新しい順",
                 "captured_asc": "古い順"
-            }
+            },
+            "search_label": "スクリーンショットを検索",
+            "no_candidates": "一致する人物やワールドはありません",
+            "search_text": "「{query}」で検索",
+            "date_range": "撮影日",
+            "people_match_all": "全員が写っている",
+            "people_match_any": "誰かが写っている",
+            "without_people": "{count} 枚はプレイヤー情報なし",
+            "without_people_hint": "VRCX-0 が起動していないときに撮影したため、その場にいた人が記録されておらず、人物での絞り込みには出てきません。"
         },
         "set_avatar_styles": {
             "header": "アバタースタイルを設定",

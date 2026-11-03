@@ -7,6 +7,7 @@ import { Message, MessageContent } from '@/ui/shadcn/message';
 import { AssistantCharts } from './AssistantCharts';
 import { AssistantChoiceCard } from './AssistantChoiceCard';
 import { AssistantMarkdown } from './AssistantMarkdown';
+import { AssistantScreenshots } from './AssistantScreenshots';
 import { AssistantTrace } from './AssistantTrace';
 import { MentionText } from './MentionText';
 
@@ -86,7 +87,10 @@ function AssistantMessageImpl({
                 )}
 
                 {!isUser && !message.streaming && (
-                    <AssistantCharts toolCalls={message.toolCalls} />
+                    <>
+                        <AssistantScreenshots toolCalls={message.toolCalls} />
+                        <AssistantCharts toolCalls={message.toolCalls} />
+                    </>
                 )}
 
                 {message.error && (

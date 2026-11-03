@@ -6,7 +6,7 @@ use std::time::Duration;
 use crate::{Error, Result};
 pub use vrcx_0_core::screenshots::{
     ScreenshotFolderTree, ScreenshotLibraryImage, ScreenshotLibraryScanStatus, ScreenshotMetadata,
-    ScreenshotSearchResult, ScreenshotSearchType, ScreenshotTimeWindow, ScreenshotWindowImages,
+    ScreenshotTimeWindow, ScreenshotWindowImages,
 };
 use vrcx_0_media::png;
 use vrcx_0_media::screenshot_metadata as media_metadata;
@@ -32,13 +32,13 @@ mod thumbnail;
 pub use export::{total_screenshot_export_bytes, write_screenshots_zip, ScreenshotExportOutcome};
 pub use favorites::{LocalScreenshotFavoriteStore, LocalScreenshotLibraryAdapter};
 pub use library::{
-    find_screenshots, forget_screenshot_file, list_screenshot_folder_images,
-    list_screenshots_in_windows, list_world_screenshots, random_screenshot_path_in_folder_tree,
-    screenshot_folder_tree, start_screenshot_library_scan,
+    forget_screenshot_file, list_screenshot_folder_images, list_screenshots_in_windows,
+    list_world_screenshots, random_screenshot_path_in_folder_tree, screenshot_folder_tree,
+    start_screenshot_library_scan,
 };
 pub use metadata::{
     add_screenshot_metadata, delete_all_screenshot_metadata, extra_screenshot_data,
-    find_screenshot_search_results, last_screenshot, screenshot_metadata_json,
+    last_screenshot, screenshot_metadata_json,
 };
 pub use thumbnail::ensure_screenshot_thumbnail;
 

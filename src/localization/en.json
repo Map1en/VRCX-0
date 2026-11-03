@@ -235,8 +235,10 @@
             "recall_encounter": "Recall people met",
             "refresh_mutual_graph": "Refresh mutual friends",
             "search_friend_feed": "Search friend feed",
+            "search_screenshots": "Search screenshots",
             "search_worlds_visited": "Search visited worlds",
             "set_friend_note": "Edit friend note",
+            "summarize_screenshots": "Rank screenshots",
             "summarize_social_period": "Summarize social activity"
         },
         "chart": {
@@ -261,6 +263,18 @@
             "world_visits": "Who was with me the last few times I went to {mention}?",
             "world_people": "Who do I usually run into at {mention}?",
             "world_popularity": "Is {mention} popular? How many people favorited it?"
+        },
+        "screenshots": {
+            "top_people": "Who do I take the most photos with?",
+            "top_worlds": "Which worlds did I photograph most this year?",
+            "latest_together": "Show my latest group photos",
+            "monthly": "How many screenshots did I take each month?",
+            "person_latest": "Show my latest photos with {mention}",
+            "person_first": "When was my first photo with {mention}?",
+            "person_worlds": "Where have {mention} and I taken photos together?",
+            "world_people": "Who have I taken photos with in {mention}?",
+            "world_count": "How many screenshots have I taken in {mention}?",
+            "view_all": "View all {count} on the Screenshots page"
         }
     },
     "user_hover_card": {
@@ -5763,19 +5777,11 @@
             "delete_file_confirm_title_bulk": "Delete {count} screenshot(s)?",
             "delete_file_confirm_description": "The file will be moved to the trash.",
             "upload": "Upload to Gallery",
-            "search_placeholder": "Search",
-            "search_type_placeholder": "Search Type",
-            "search_types": {
-                "player_name": "User Name",
-                "player_id": "User ID",
-                "world_name": "World Name",
-                "world_id": "World ID"
-            },
+            "search_placeholder": "People, worlds or file names",
             "no_results": "No results found",
             "no_results_description": "Try another keyword, or switch the search type.",
             "layout_grid": "Image grid",
             "layout_list": "Detail list",
-            "clear_search": "Clear search",
             "invalid_file": "Invalid file selected. Please select a valid VRChat screenshot",
             "section_location": "Location",
             "section_players": "Players",
@@ -5818,14 +5824,21 @@
             "thumbnail_failed": "Thumbnail unavailable",
             "hide_details": "Hide info",
             "show_details": "Show info",
-            "search_in": "Search {scope}",
             "grid_density": "Thumbnail size",
             "sort": "Sort",
             "year_group": "Year {year}",
             "sort_options": {
                 "captured_desc": "Newest",
                 "captured_asc": "Oldest"
-            }
+            },
+            "search_label": "Search screenshots",
+            "no_candidates": "No matching people or worlds",
+            "search_text": "Search for “{query}”",
+            "date_range": "Date taken",
+            "people_match_all": "Together",
+            "people_match_any": "Any of them",
+            "without_people": "{count} without a player list",
+            "without_people_hint": "These screenshots were taken while VRCX-0 wasn’t running, so they don’t record who was there and never match a people filter."
         },
         "set_avatar_styles": {
             "header": "Set Avatar Styles",

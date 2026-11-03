@@ -242,10 +242,13 @@ export function WorldDialogTabPanels({
                                     onClick={() =>
                                         useAssistantChatStore
                                             .getState()
-                                            .startMentionDraft({
-                                                kind: 'world',
-                                                id: world.id,
-                                                name: world.name || world.id
+                                            .startAssistantDraft({
+                                                topic: 'profile',
+                                                target: {
+                                                    kind: 'world',
+                                                    id: world.id,
+                                                    name: world.name || world.id
+                                                }
                                             })
                                     }
                                 >

@@ -235,8 +235,10 @@
             "recall_encounter": "Lembrar pessoas encontradas",
             "refresh_mutual_graph": "Atualizar amigos em comum",
             "search_friend_feed": "Buscar no feed de amigos",
+            "search_screenshots": "Buscar capturas",
             "search_worlds_visited": "Buscar mundos visitados",
             "set_friend_note": "Editar nota do amigo",
+            "summarize_screenshots": "Resumir capturas",
             "summarize_social_period": "Resumir atividade social"
         },
         "chart": {
@@ -261,6 +263,18 @@
             "world_visits": "Com quem eu estava nas últimas vezes que fui a {mention}?",
             "world_people": "Quem eu mais encontro em {mention}?",
             "world_popularity": "{mention} é popular? Quantas pessoas favoritaram?"
+        },
+        "screenshots": {
+            "top_people": "Com quem eu mais tiro fotos?",
+            "top_worlds": "Em quais mundos mais tirei fotos este ano?",
+            "latest_together": "Mostre minhas fotos em grupo mais recentes",
+            "monthly": "Quantas capturas tirei por mês?",
+            "person_latest": "Minhas fotos mais recentes com {mention}",
+            "person_first": "Quando foi minha primeira foto com {mention}?",
+            "person_worlds": "Onde {mention} e eu tiramos fotos juntos?",
+            "world_people": "Com quem tirei fotos em {mention}?",
+            "world_count": "Quantas capturas tirei em {mention}?",
+            "view_all": "Ver todas as {count} na página de capturas"
         }
     },
     "user_hover_card": {
@@ -5715,19 +5729,11 @@
             "delete_file_confirm_title_bulk": "Excluir {count} captura(s) de tela?",
             "delete_file_confirm_description": "O arquivo será movido para a lixeira.",
             "upload": "Enviar",
-            "search_placeholder": "Pesquisar",
-            "search_type_placeholder": "Tipo de Pesquisa",
-            "search_types": {
-                "player_name": "Nome do Usuário",
-                "player_id": "ID do Usuário",
-                "world_name": "Nome do Mundo",
-                "world_id": "ID do Mundo"
-            },
+            "search_placeholder": "Pessoas, mundos ou nomes de arquivo",
             "no_results": "Nenhum resultado encontrado",
             "no_results_description": "Tente outra palavra ou mude o tipo de busca.",
             "layout_grid": "Grade de imagens",
             "layout_list": "Lista de detalhes",
-            "clear_search": "Limpar busca",
             "invalid_file": "Arquivo inválido selecionado. Por favor, selecione uma captura de tela válida do VRChat.",
             "section_location": "Localização",
             "section_players": "Usuários",
@@ -5770,14 +5776,21 @@
             "thumbnail_failed": "Miniatura indisponível",
             "hide_details": "Ocultar informações",
             "show_details": "Mostrar informações",
-            "search_in": "Pesquisar {scope}",
             "grid_density": "Tamanho da miniatura",
             "sort": "Ordenar",
             "year_group": "Ano {year}",
             "sort_options": {
                 "captured_desc": "Mais recentes",
                 "captured_asc": "Mais antigas"
-            }
+            },
+            "search_label": "Buscar capturas",
+            "no_candidates": "Nenhuma pessoa ou mundo correspondente",
+            "search_text": "Buscar “{query}”",
+            "date_range": "Data da captura",
+            "people_match_all": "Juntos",
+            "people_match_any": "Qualquer um",
+            "without_people": "{count} sem lista de jogadores",
+            "without_people_hint": "Estas capturas foram feitas com o VRCX-0 fechado, então não registram quem estava lá e nunca aparecem no filtro por pessoas."
         },
         "set_avatar_styles": {
             "header": "Definir Estilos do Avatar",

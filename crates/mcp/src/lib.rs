@@ -29,7 +29,8 @@ pub use ports::{
     McpFavoritesQueryPort, McpFeedQueries, McpFeedQueryPort, McpFriendCurrent, McpFriendLocalData,
     McpFriendLocalDataPort, McpFriendMemo, McpFuture, McpInterruptCheck, McpLocalModeration,
     McpMemoSave, McpMutualGraph, McpMutualGraphMeta, McpMutualGraphPort, McpPlaySpan,
-    McpSocialHistoryQueries, McpSocialHistoryQueryPort, McpWorldLookup, McpWorldLookupPort,
+    McpScreenshotQueries, McpScreenshotQueryPort, McpSocialHistoryQueries,
+    McpSocialHistoryQueryPort, McpWorldLookup, McpWorldLookupPort,
 };
 pub use runtime::{McpCaller, McpRuntime, McpRuntimeDeps};
 pub use types::{ClientConfigSnippets, McpInstallClient, McpServerState, McpServerStatus};

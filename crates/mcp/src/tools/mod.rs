@@ -7,4 +7,5 @@ mod graph;
 mod invites;
 mod presence;
 mod registry;
+mod screenshots;
 mod worlds;

@@ -200,6 +200,7 @@ fn test_server_with_game_context(
             Arc::clone(&db),
         )),
         world_lookup: Arc::new(crate::test_support::TestMcpWorldLookup(None)),
+        screenshots: Arc::new(crate::test_support::TestMcpScreenshots::new(&dir.path)),
         mutual_graph: Arc::new(crate::test_support::TestMcpMutualGraphAdapter::new(
             MutualGraphFetchRuntime::new(),
             Arc::clone(&db),

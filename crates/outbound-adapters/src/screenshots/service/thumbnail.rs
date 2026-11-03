@@ -13,7 +13,7 @@ use super::{
 #[cfg(test)]
 use super::{
     add_screenshot_metadata, get_screenshot_metadata, has_vrcx_metadata, png,
-    ScreenshotLibraryEntry, ScreenshotSearchType,
+    ScreenshotLibraryEntry,
 };
 
 fn thumbnail_path(cache_dir: &Path, stored_path: &str) -> PathBuf {

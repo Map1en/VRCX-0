@@ -5,6 +5,7 @@ use vrcx_0_application_core::{RuntimeEventBus, RuntimeEventPayload};
 use crate::charts::AssistantChart;
 use crate::choices::AssistantChoiceCandidate;
 use crate::entities::Entity;
+use crate::screenshots::AssistantScreenshots;
 use vrcx_0_core::OwnerId;
 
 #[derive(Serialize, Type)]
@@ -39,6 +40,7 @@ pub struct AssistantToolResultEvent {
     pub summary: String,
     pub entities: Vec<Entity>,
     pub charts: Vec<AssistantChart>,
+    pub screenshots: Option<AssistantScreenshots>,
 }
 
 #[derive(Serialize, Type)]
@@ -169,6 +171,7 @@ impl AssistantEmitter {
         summary: &str,
         entities: &[Entity],
         charts: &[AssistantChart],
+        screenshots: Option<&AssistantScreenshots>,
     ) {
         self.bus.emit(AssistantToolResultEvent {
             owner_user_id: self.owner_user_id.clone(),
@@ -179,6 +182,7 @@ impl AssistantEmitter {
             summary: summary.to_string(),
             entities: entities.to_vec(),
             charts: charts.to_vec(),
+            screenshots: screenshots.cloned(),
         });
     }
 

@@ -1,7 +1,11 @@
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { MentionTarget, UIMessage } from '@/domain/assistant/types';
+import type {
+    AssistantDraft,
+    MentionTarget,
+    UIMessage
+} from '@/domain/assistant/types';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 
 import { mentionToken } from '../mentions';
@@ -27,6 +31,23 @@ const WORLD_PROMPTS = [
     'assistant.follow_up.world_people',
     'assistant.follow_up.world_popularity'
 ];
+const SCREENSHOT_PROMPTS = {
+    none: [
+        'assistant.screenshots.top_people',
+        'assistant.screenshots.top_worlds',
+        'assistant.screenshots.latest_together',
+        'assistant.screenshots.monthly'
+    ],
+    user: [
+        'assistant.screenshots.person_latest',
+        'assistant.screenshots.person_first',
+        'assistant.screenshots.person_worlds'
+    ],
+    world: [
+        'assistant.screenshots.world_people',
+        'assistant.screenshots.world_count'
+    ]
+} as const satisfies Record<string, readonly string[]>;
 const PROFILE_TOOLS = {
     get_friend_profile: { kind: 'user', argument: 'user' },
     get_world_profile: { kind: 'world', argument: 'world' }
@@ -71,8 +92,9 @@ function typingInto(target: EventTarget | null): boolean {
     );
 }
 
-export function useMentionPrompts(
+function usePrompts(
     target: MentionTarget | null,
+    topic: AssistantDraft['topic'],
     includeBrief: boolean
 ): Array<{ label: string; text: string }> {
     const { t } = useTranslation();
@@ -80,24 +102,44 @@ export function useMentionPrompts(
         target?.kind === 'user' ? Boolean(state.friendsById[target.id]) : false
     );
     return useMemo(() => {
-        if (!target) {
+        if (!target && topic === 'profile') {
             return [];
         }
-        const mention = mentionToken(target);
+        const mention = target ? mentionToken(target) : '';
         const keys =
-            target.kind === 'world'
-                ? WORLD_PROMPTS
-                : isFriend
-                  ? FRIEND_PROMPTS
-                  : STRANGER_PROMPTS;
+            topic === 'screenshots'
+                ? SCREENSHOT_PROMPTS[target?.kind ?? 'none']
+                : target?.kind === 'world'
+                  ? WORLD_PROMPTS
+                  : isFriend
+                    ? FRIEND_PROMPTS
+                    : STRANGER_PROMPTS;
         return keys
             .filter((key) => includeBrief || !BRIEF_PROMPTS.includes(key))
             .slice(0, PROMPT_LIMIT)
             .map((key) => ({
-                label: t(key, { mention: target.name }),
+                label: t(key, { mention: target?.name ?? '' }),
                 text: t(key, { mention })
             }));
-    }, [includeBrief, isFriend, target, t]);
+    }, [includeBrief, isFriend, target, topic, t]);
+}
+
+export function useMentionPrompts(
+    target: MentionTarget | null,
+    includeBrief: boolean
+): Array<{ label: string; text: string }> {
+    return usePrompts(target, 'profile', includeBrief);
+}
+
+export function useDraftPrompts(
+    draft: AssistantDraft | null
+): Array<{ label: string; text: string }> {
+    const prompts = usePrompts(
+        draft?.target ?? null,
+        draft?.topic ?? 'profile',
+        true
+    );
+    return draft ? prompts : [];
 }
 
 function MentionPrompts({

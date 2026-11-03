@@ -1,8 +1,7 @@
 use super::super::export::write_screenshots_zip;
 use super::super::favorites::{LocalScreenshotFavoriteStore, LocalScreenshotLibraryAdapter};
 use super::super::library::{
-    find_screenshots, forget_screenshot_file, scan_screenshot_library_in,
-    start_screenshot_library_scan,
+    forget_screenshot_file, scan_screenshot_library_in, start_screenshot_library_scan,
 };
 use super::super::paths::unix_time_millis;
 use super::super::{is_managed_screenshot_file_path, is_screenshot_library_file_path};
@@ -256,67 +255,6 @@ fn get_screenshot_metadata_merges_vrchat_world_name_with_vrcx_players() -> Resul
             .collect::<Vec<_>>(),
         vec!["Player One", "Player Two"]
     );
-    Ok(())
-}
-
-#[test]
-fn find_screenshots_returns_full_typed_results() -> Result<()> {
-    let dir = TestDir::new("screenshot-search-results");
-    let photos_dir = dir.path.join("photos");
-    std::fs::create_dir_all(&photos_dir)?;
-    let cache = MetadataCacheDb::new(&dir.path.join("metadataCache.db"))?;
-    let matching_path = photos_dir.join("VRChat_2026-05-08_00-00-07.000_3840x2160.png");
-    let other_path = photos_dir.join("VRChat_2026-05-08_00-00-08.000_3840x2160.png");
-    write_test_png_with_size(&matching_path, 4, 2)?;
-    write_test_png(&other_path)?;
-    write_text_chunk(
-        &matching_path,
-        "Description",
-        "lfs|2|author:usr_author,Ava|world:wrld_search,12345,Search World|players:usr_one,1,2,3,Player One",
-    )?;
-    write_text_chunk(
-        &other_path,
-        "Description",
-        "lfs|2|author:usr_author,Ava|world:wrld_other,12345,Other World",
-    )?;
-
-    let results = find_screenshots(
-        "search world",
-        &photos_dir.to_string_lossy(),
-        ScreenshotSearchType::WorldName,
-        &cache,
-    );
-
-    assert_eq!(results.len(), 1);
-    let result = &results[0];
-    assert_eq!(result.file_path, matching_path.to_string_lossy());
-    assert_eq!(
-        result.file_name,
-        "VRChat_2026-05-08_00-00-07.000_3840x2160.png"
-    );
-    assert_eq!(
-        result.file_size_bytes,
-        std::fs::metadata(&matching_path)?.len() as i64
-    );
-    assert_eq!(result.width, Some(4));
-    assert_eq!(result.height, Some(2));
-    if let Some(creation_date) = &result.creation_date {
-        assert!(chrono::DateTime::parse_from_rfc3339(creation_date).is_ok());
-    }
-    assert_eq!(result.metadata.world.id, "wrld_search");
-    assert_eq!(result.metadata.world.name.as_deref(), Some("Search World"));
-    assert_eq!(result.metadata.players.len(), 1);
-    assert_eq!(result.metadata.players[0].display_name, "Player One");
-
-    let cached_results = find_screenshots(
-        "usr_one",
-        &photos_dir.to_string_lossy(),
-        ScreenshotSearchType::UserId,
-        &cache,
-    );
-    assert_eq!(cached_results.len(), 1);
-    assert_eq!(cached_results[0].file_path, matching_path.to_string_lossy());
-    assert_eq!(cached_results[0].width, Some(4));
     Ok(())
 }
 

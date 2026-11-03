@@ -19,7 +19,6 @@ vi.mock('./ScreenshotMetadataSections', () => ({
 
 import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
 
-import { SCREENSHOT_METADATA_SEARCH_TYPES } from '../screenshotMetadataValues';
 import { ScreenshotSearchResultsView } from './ScreenshotSearchResultsView';
 
 const rows = [
@@ -59,9 +58,9 @@ function renderView(
             layout="grid"
             images={images}
             rows={rows}
-            currentSearchType={SCREENSHOT_METADATA_SEARCH_TYPES[0]}
+            showMatch
             searchSort={{ key: 'dateTime', asc: false }}
-            searchQuery="ava"
+            searchKey="ava"
             selectedPath=""
             isDeleteRunning={false}
             onToggleSearchSort={() => undefined}

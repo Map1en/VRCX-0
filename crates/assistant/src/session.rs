@@ -12,6 +12,7 @@ use crate::ports::{
     AssistantMessageInsert, AssistantPortResult, AssistantSessionPersistence,
     AssistantSessionRuntimeUpdate, AssistantSessionUpsert,
 };
+use crate::screenshots::AssistantScreenshots;
 use vrcx_0_core::OwnerId;
 
 const SESSION_CONTENT_CACHE_CAPACITY: usize = 8;
@@ -44,6 +45,8 @@ pub struct ToolResultRecord {
     pub entities: Vec<Entity>,
     #[serde(default)]
     pub charts: Vec<AssistantChart>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub screenshots: Option<AssistantScreenshots>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -120,7 +123,7 @@ impl Message {
 enum MessageBody {
     Text(String),
     ToolCall(ToolCallRecord),
-    ToolResult(ToolResultRecord, String),
+    ToolResult(Box<ToolResultRecord>, String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Type)]
@@ -729,7 +732,7 @@ impl SessionStore {
         self.push(
             session_id,
             Role::ToolResult,
-            MessageBody::ToolResult(record, content),
+            MessageBody::ToolResult(Box::new(record), content),
         )
     }
 
@@ -758,7 +761,7 @@ impl SessionStore {
                 }
                 MessageBody::ToolCall(record) => message.tool_call = Some(record),
                 MessageBody::ToolResult(record, content) => {
-                    message.tool_result = Some(record);
+                    message.tool_result = Some(*record);
                     message.tool_content = Some(content);
                 }
             }

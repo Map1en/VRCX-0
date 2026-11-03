@@ -75,6 +75,7 @@ impl MetadataCacheDb {
     pub fn new(db_path: &Path) -> Result<Self> {
         let mut conn = Connection::open(db_path)
             .map_err(|error| Error::sqlite_with_context("open cache db", error))?;
+        filter::register_functions(&conn)?;
         conn.execute_batch(
             "PRAGMA locking_mode=NORMAL;
              PRAGMA busy_timeout=5000;
@@ -974,6 +975,8 @@ fn now_unix_seconds() -> i64 {
         .unwrap_or_default()
         .as_secs() as i64
 }
+
+mod filter;
 
 #[cfg(test)]
 mod tests;

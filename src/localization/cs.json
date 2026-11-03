@@ -237,8 +237,10 @@
             "recall_encounter": "Vybavit si potkané lidi",
             "refresh_mutual_graph": "Obnovit společné přátele",
             "search_friend_feed": "Hledat v kanálu přátel",
+            "search_screenshots": "Hledat snímky",
             "search_worlds_visited": "Hledat navštívené světy",
             "set_friend_note": "Upravit poznámku k příteli",
+            "summarize_screenshots": "Shrnout snímky",
             "summarize_social_period": "Shrnout sociální aktivitu"
         },
         "chart": {
@@ -263,6 +265,18 @@
             "world_visits": "S kým jsem byl naposledy v {mention}?",
             "world_people": "Koho v {mention} potkávám nejčastěji?",
             "world_popularity": "Je {mention} populární? Kolik lidí ho má v oblíbených?"
+        },
+        "screenshots": {
+            "top_people": "S kým mám nejvíc fotek?",
+            "top_worlds": "Ve kterých světech jsem letos nejvíc fotil?",
+            "latest_together": "Ukaž moje nejnovější skupinové fotky",
+            "monthly": "Kolik snímků jsem pořídil každý měsíc?",
+            "person_latest": "Moje nejnovější fotky s {mention}",
+            "person_first": "Kdy byla moje první fotka s {mention}?",
+            "person_worlds": "Kde jsme se s {mention} fotili?",
+            "world_people": "S kým jsem se fotil v {mention}?",
+            "world_count": "Kolik snímků jsem pořídil v {mention}?",
+            "view_all": "Zobrazit všech {count} na stránce snímků"
         }
     },
     "user_hover_card": {
@@ -5749,19 +5763,11 @@
             "delete_file_confirm_title_bulk": "Smazat {count} snímků obrazovky?",
             "delete_file_confirm_description": "Soubor bude přesunut do koše.",
             "upload": "Upload",
-            "search_placeholder": "Hledat",
-            "search_type_placeholder": "Typ hledání",
-            "search_types": {
-                "player_name": "Jméno hráče",
-                "player_id": "ID hráče",
-                "world_name": "Název světa",
-                "world_id": "ID světa"
-            },
+            "search_placeholder": "Lidé, světy nebo názvy souborů",
             "no_results": "Nebyly nalezeny žádné výsledky",
             "no_results_description": "Zkuste jiné slovo nebo změňte typ hledání.",
             "layout_grid": "Mřížka obrázků",
             "layout_list": "Seznam detailů",
-            "clear_search": "Vymazat hledání",
             "invalid_file": "Vybraný soubor je neplatný. Vyberte prosím platný snímek obrazovky z VRChatu",
             "section_location": "Lokace",
             "section_players": "Hráči",
@@ -5804,14 +5810,21 @@
             "thumbnail_failed": "Náhled není k dispozici",
             "hide_details": "Skrýt informace",
             "show_details": "Zobrazit informace",
-            "search_in": "Hledat {scope}",
             "grid_density": "Velikost náhledu",
             "sort": "Řazení",
             "year_group": "Rok {year}",
             "sort_options": {
                 "captured_desc": "Nejnovější",
                 "captured_asc": "Nejstarší"
-            }
+            },
+            "search_label": "Hledat snímky",
+            "no_candidates": "Žádní odpovídající lidé ani světy",
+            "search_text": "Hledat „{query}“",
+            "date_range": "Datum pořízení",
+            "people_match_all": "Společně",
+            "people_match_any": "Kdokoli z nich",
+            "without_people": "{count} bez seznamu hráčů",
+            "without_people_hint": "Tyto snímky vznikly, když VRCX-0 neběželo. Neobsahují seznam přítomných, a proto se ve filtru podle lidí nikdy neobjeví."
         },
         "set_avatar_styles": {
             "header": "Nastavit styly avatara",

@@ -4,22 +4,23 @@ import { formatScreenshotDateTime } from '@/lib/dateTime';
 import { resolveScreenshotCapturedTime } from '@/shared/utils/screenshot';
 
 import {
-    buildScreenshotSearchRow,
     DEFAULT_SCREENSHOT_SEARCH_SORT,
+    EMPTY_SCREENSHOT_SEARCH,
     formatScreenshotBytes,
     getGalleryFolderPathSet,
     getFileNameFromPath,
     normalizeGalleryScrollPositions,
     normalizeGalleryScrollTop,
+    hasScreenshotSearch,
+    libraryImageSearchRow,
     normalizeScreenshotMetadata,
-    normalizeScreenshotSearchResult,
+    parseScreenshotFilterParam,
     resolveGalleryFolder,
     resolvePathAfterScreenshotDelete,
-    searchResultToLibraryImage,
     SCREENSHOT_FAVORITES_FOLDER,
-    SCREENSHOT_METADATA_SEARCH_TYPES,
+    screenshotFilterFromScope,
+    screenshotScopeFromFilter,
     serializeGalleryScrollPositions,
-    sortScreenshotRowsByNewest,
     sortScreenshotSearchRows
 } from './screenshotMetadataValues';
 
@@ -81,88 +82,6 @@ describe('screenshotMetadataValues', () => {
         expect(metadata.dateTime!.getDate()).toBe(15);
     });
 
-    it('normalizes typed search results into the same shape as metadata + extra data', () => {
-        const normalized = normalizeScreenshotSearchResult({
-            filePath: 'D:\\VRChat\\shot.png',
-            fileName: 'shot.png',
-            fileSizeBytes: 2048,
-            creationDate: '2026-04-16T01:02:03.000Z',
-            width: 1920,
-            height: 1080,
-            metadata: {
-                sourceFile: 'D:\\VRChat\\shot.png',
-                world: { id: 'wrld_1', name: 'Great World' },
-                author: { id: 'usr_author', displayName: 'Author' },
-                players: [{ id: 'usr_ava', displayName: 'Ava' }]
-            }
-        });
-
-        expect(normalized).toMatchObject({
-            filePath: 'D:\\VRChat\\shot.png',
-            fileName: 'shot.png',
-            fileSizeBytes: 2048,
-            resolution: '1920x1080',
-            world: { id: 'wrld_1', name: 'Great World' },
-            author: { id: 'usr_author', displayName: 'Author' },
-            players: [{ id: 'usr_ava', displayName: 'Ava' }]
-        });
-        expect(normalized.dateTime!.toISOString()).toBe(
-            '2026-04-16T01:02:03.000Z'
-        );
-
-        const degenerate = normalizeScreenshotSearchResult({
-            filePath: 'D:\\VRChat\\broken.png',
-            fileName: 'broken.png',
-            fileSizeBytes: 0,
-            creationDate: null,
-            width: null,
-            height: null,
-            metadata: null
-        });
-        expect(degenerate.resolution).toBe('');
-        expect(degenerate.dateTime).toBeNull();
-    });
-
-    it('builds search rows with visible match text for player name and id searches', () => {
-        const normalized = normalizeScreenshotMetadata(
-            {
-                sourceFile: 'shot.png',
-                world: { name: 'Great World' },
-                author: { displayName: 'Author' },
-                players: [
-                    { id: 'usr_ava', displayName: 'Ava Star' },
-                    { id: 'usr_ben', displayName: 'Ben' }
-                ],
-                timestamp: '2026-04-16T01:02:03.000Z'
-            },
-            { resolution: '1920x1080' }
-        );
-
-        expect(
-            buildScreenshotSearchRow(
-                normalized,
-                SCREENSHOT_METADATA_SEARCH_TYPES[0],
-                'ava'
-            )
-        ).toMatchObject({
-            filePath: 'shot.png',
-            world: 'Great World',
-            author: 'Author',
-            playerCount: 2,
-            resolution: '1920x1080',
-            match: 'Ava Star'
-        });
-        expect(
-            buildScreenshotSearchRow(
-                normalized,
-                SCREENSHOT_METADATA_SEARCH_TYPES[1],
-                'usr_ben'
-            )
-        ).toMatchObject({
-            match: 'Ben'
-        });
-    });
-
     it('sorts screenshot search rows by the selected column and keeps newest-first tie breaks', () => {
         const rows = [
             {
@@ -194,9 +113,6 @@ describe('screenshotMetadataValues', () => {
             sortScreenshotSearchRows(rows, { key: 'world', asc: true }).map(
                 (row) => row.filePath
             )
-        ).toEqual(['new', 'middle', 'old']);
-        expect(
-            sortScreenshotRowsByNewest(rows).map((row) => row.filePath)
         ).toEqual(['new', 'middle', 'old']);
     });
 
@@ -326,59 +242,7 @@ describe('resolvePathAfterScreenshotDelete', () => {
     });
 });
 
-describe('searchResultToLibraryImage', () => {
-    it('maps a search result onto the library image shape the thumbnail grid renders', () => {
-        expect(
-            searchResultToLibraryImage({
-                filePath: 'C:\\VRChat\\2026-07\\shot.png',
-                fileName: 'shot.png',
-                fileSizeBytes: 2048,
-                creationDate: '2026-04-16T01:02:03.000Z',
-                width: 1920,
-                height: 1080,
-                metadata: {
-                    author: { id: 'usr_author', displayName: 'Author' },
-                    world: {
-                        id: 'wrld_1',
-                        name: 'Great World',
-                        instanceId: 'wrld_1:12345'
-                    },
-                    players: [],
-                    timestamp: '2026-04-16T01:02:03.000Z'
-                }
-            })
-        ).toMatchObject({
-            path: 'C:\\VRChat\\2026-07\\shot.png',
-            folderPath: 'C:\\VRChat\\2026-07',
-            fileName: 'shot.png',
-            sizeBytes: 2048,
-            modifiedAt: Date.parse('2026-04-16T01:02:03.000Z'),
-            width: 1920,
-            height: 1080,
-            worldId: 'wrld_1',
-            worldName: 'Great World',
-            capturedAt: '2026-04-16T01:02:03.000Z',
-            error: null
-        });
-    });
-
-    it('falls back to the capture time encoded in the file name', () => {
-        expect(
-            resolveScreenshotCapturedTime(
-                searchResultToLibraryImage({
-                    filePath:
-                        'C:\\VRChat\\2025-01\\VRChat_2025-01-05_02-24-53.276_3840x2160.png',
-                    fileName: 'VRChat_2025-01-05_02-24-53.276_3840x2160.png',
-                    fileSizeBytes: 2048,
-                    creationDate: '2025-03-31T20:15:00.000Z',
-                    width: 3840,
-                    height: 2160,
-                    metadata: null
-                })
-            )
-        ).toBe(new Date(2025, 0, 5, 2, 24, 53, 276).getTime());
-    });
-
+describe('resolveScreenshotCapturedTime', () => {
     it('prefers the file name capture time over a rewritten file date', () => {
         expect(
             resolveScreenshotCapturedTime({
@@ -388,26 +252,98 @@ describe('searchResultToLibraryImage', () => {
             })
         ).toBe(new Date(2025, 0, 23, 2, 13, 33, 451).getTime());
     });
+});
 
-    it('keeps posix folders and degrades missing metadata and dates', () => {
+describe('screenshot search scope', () => {
+    it('turns local dates into a whole-day millisecond range and back', () => {
+        const scope = {
+            ...EMPTY_SCREENSHOT_SEARCH,
+            people: ['usr_ava'],
+            peopleMatch: 'any' as const,
+            worlds: ['wrld_pier'],
+            dateFrom: '2026-04-01',
+            dateTo: '2026-04-02',
+            text: '  pier '
+        };
+        const filter = screenshotFilterFromScope(scope);
+
+        expect(filter).toMatchObject({
+            people: ['usr_ava'],
+            peopleMatch: 'any',
+            worldIds: ['wrld_pier'],
+            fromMs: new Date(2026, 3, 1).getTime(),
+            toMs: new Date(2026, 3, 3).getTime(),
+            text: 'pier'
+        });
+        expect(screenshotScopeFromFilter(filter)).toEqual({
+            ...scope,
+            text: 'pier'
+        });
+        expect(hasScreenshotSearch(EMPTY_SCREENSHOT_SEARCH)).toBe(false);
+        expect(hasScreenshotSearch(scope)).toBe(true);
+    });
+
+    it('reads a filter from a link and ignores anything malformed', () => {
         expect(
-            searchResultToLibraryImage({
-                filePath: '/home/ava/Pictures/VRChat/shot.png',
+            parseScreenshotFilterParam(
+                JSON.stringify({
+                    people: ['usr_ava', 3],
+                    fromMs: 'x',
+                    text: 'pier'
+                })
+            )
+        ).toEqual({
+            people: ['usr_ava'],
+            peopleMatch: 'all',
+            worldIds: [],
+            fromMs: null,
+            toMs: null,
+            text: 'pier'
+        });
+        expect(parseScreenshotFilterParam('{not json')).toBeNull();
+        expect(parseScreenshotFilterParam('[]')).toBeNull();
+    });
+
+    it('builds a result row that names the matched people', () => {
+        const row = libraryImageSearchRow(
+            {
+                path: 'C:\\VRChat\\shot.png',
+                folderPath: 'C:\\VRChat',
                 fileName: 'shot.png',
-                fileSizeBytes: 0,
-                creationDate: null,
-                width: null,
-                height: null,
-                metadata: null
-            })
-        ).toMatchObject({
-            folderPath: '/home/ava/Pictures/VRChat',
-            modifiedAt: 0,
-            createdAt: null,
-            worldId: null,
-            worldName: null,
-            capturedAt: null,
-            metadata: null
+                sizeBytes: 1,
+                modifiedAt: 1,
+                createdAt: null,
+                width: 1920,
+                height: 1080,
+                worldId: 'wrld_pier',
+                worldName: 'Night Pier',
+                capturedAt: null,
+                capturedAtMs: Date.parse('2026-04-16T01:02:03.000Z'),
+                metadata: {
+                    version: 1,
+                    author: { id: 'usr_me', displayName: 'Me' },
+                    world: {
+                        id: 'wrld_pier',
+                        name: 'Night Pier',
+                        instanceId: ''
+                    },
+                    players: [
+                        { id: 'usr_ava', displayName: 'Ava Star' },
+                        { id: 'usr_ben', displayName: 'Ben' }
+                    ]
+                },
+                error: null
+            },
+            { ...EMPTY_SCREENSHOT_SEARCH, people: ['usr_ben'], text: 'ava' }
+        );
+
+        expect(row).toMatchObject({
+            filePath: 'C:\\VRChat\\shot.png',
+            world: 'Night Pier',
+            author: 'Me',
+            playerCount: 2,
+            resolution: '1920x1080',
+            match: 'Ava Star, Ben'
         });
     });
 });

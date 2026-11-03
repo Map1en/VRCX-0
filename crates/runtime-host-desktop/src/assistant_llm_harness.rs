@@ -701,6 +701,13 @@ impl Snapshot {
         let database = scratch.0.join("app-data").join("VRCX-0.sqlite3");
         std::fs::create_dir_all(database.parent().unwrap()).unwrap();
         snapshot_database(&source_dir.join("VRCX-0.sqlite3"), &database);
+        let screenshot_cache = source_dir.join("metadataCache.db");
+        if screenshot_cache.is_file() {
+            snapshot_database(
+                &screenshot_cache,
+                &database.with_file_name("metadataCache.db"),
+            );
+        }
 
         let runtime = Rig::runtime(&scratch);
         let user_id = env.get("VRCX0_HARNESS_USER_ID").unwrap_or_else(|| {
@@ -828,6 +835,12 @@ struct Truth {
     recent: Vec<String>,
     month_minutes: Option<i64>,
     world: Option<WorldTruth>,
+    screenshots: Option<ScreenshotTruth>,
+}
+
+struct ScreenshotTruth {
+    top_person_id: String,
+    top_person_name: String,
 }
 
 struct WorldTruth {
@@ -861,8 +874,57 @@ impl Truth {
             recent,
             month_minutes: month_minutes(runtime).await,
             world: sql.most_visited_world(),
+            screenshots: sql.top_screenshot_person(),
         }
     }
+}
+
+async fn play_screenshots(harness: &mut Harness, truth: &ScreenshotTruth) {
+    let ranking = harness
+        .ask("screenshot_people", None, "zh-CN", "我和谁拍的照最多？")
+        .await;
+    harness.check(
+        "screenshot_people",
+        ranking
+            .tool_calls
+            .iter()
+            .any(|name| name == "summarize_screenshots"),
+        "the ranking question did not use summarize_screenshots",
+    );
+    harness.check(
+        "screenshot_people",
+        ranking.answer.contains(&truth.top_person_name),
+        "the answer missed the person in the most screenshots",
+    );
+
+    let mention = format!(
+        "[@{}](vrcx-0://user/open?id={})",
+        truth.top_person_name, truth.top_person_id
+    );
+    let together = harness
+        .ask(
+            "screenshot_together",
+            None,
+            "zh-CN",
+            &format!("找找我和 {mention} 最近的合照"),
+        )
+        .await;
+    harness.check(
+        "screenshot_together",
+        together
+            .tool_calls
+            .iter()
+            .zip(&together.tool_arguments)
+            .any(|(name, args)| {
+                name == "search_screenshots" && args.contains(&truth.top_person_id)
+            }),
+        "the mention did not reach search_screenshots by id",
+    );
+    harness.check(
+        "screenshot_together",
+        !together.answer.contains(".png"),
+        "the answer listed screenshot file names",
+    );
 }
 
 async fn play_world_profile(harness: &mut Harness, world: &WorldTruth) {
@@ -1109,6 +1171,14 @@ impl Scenarios {
                     "the answer missed the top companion of the last 7 days",
                 ),
                 None => println!("en_recent: no co-presence in the last 7 days"),
+            }
+        }
+        if self.runs("screenshots") {
+            match &self.truth.screenshots {
+                Some(truth) => play_screenshots(harness, truth).await,
+                None => {
+                    println!("\n=== screenshots ===\nskipped: no screenshot with other players")
+                }
             }
         }
         if self.runs("world_profile") {
@@ -1687,6 +1757,31 @@ impl SnapshotSql {
                AND strftime('%s', created_at) * 1000 - COALESCE(time, 0) < strftime('%s', ?4) * 1000",
             rusqlite::params![self.owner_row, user_id, from, to],
         )
+    }
+
+    fn top_screenshot_person(&self) -> Option<ScreenshotTruth> {
+        let path = self.connection.path()?.to_string();
+        let cache = std::path::Path::new(&path).with_file_name("metadataCache.db");
+        let connection =
+            rusqlite::Connection::open_with_flags(cache, OpenFlags::SQLITE_OPEN_READ_ONLY).ok()?;
+        connection
+            .query_row(
+                "SELECT json_extract(p.value, '$.id') AS player_id,
+                        json_extract(p.value, '$.displayName')
+                 FROM screenshot_files f, json_each(f.metadata_json, '$.players') p
+                 WHERE substr(json_extract(p.value, '$.id'), 1, 4) = 'usr_'
+                   AND json_extract(p.value, '$.id')
+                       <> COALESCE(json_extract(f.metadata_json, '$.author.id'), '')
+                 GROUP BY player_id ORDER BY COUNT(*) DESC LIMIT 1",
+                [],
+                |row| {
+                    Ok(ScreenshotTruth {
+                        top_person_id: row.get(0)?,
+                        top_person_name: row.get(1)?,
+                    })
+                },
+            )
+            .ok()
     }
 
     fn most_visited_world(&self) -> Option<WorldTruth> {
