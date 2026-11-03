@@ -281,7 +281,7 @@ pub(super) fn tracked_shell_process_id(
 
 #[cfg(windows)]
 fn shell_launch_is_trackable(pid: u32, launched_at: u64) -> bool {
-    let mut sys = System::new();
+    let mut sys = System::new().expect("sysinfo supports this platform");
     sys.refresh_processes(ProcessesToUpdate::Some(&[Pid::from_u32(pid)]), true);
     let Some(process) = sys.process(Pid::from_u32(pid)) else {
         return false;
@@ -359,7 +359,7 @@ fn is_process_name_running(name: &str) -> bool {
     if expected.is_empty() {
         return false;
     }
-    let mut sys = System::new();
+    let mut sys = System::new().expect("sysinfo supports this platform");
     sys.refresh_processes(ProcessesToUpdate::All, true);
     sys.processes()
         .values()
@@ -396,7 +396,7 @@ fn refresh_run_tracking(run: &mut AppLauncherRun) {
         return;
     }
 
-    let mut sys = System::new();
+    let mut sys = System::new().expect("sysinfo supports this platform");
     sys.refresh_processes(ProcessesToUpdate::All, true);
 
     let mut pids: HashSet<u32> = run.tracked_pids.iter().copied().collect();
@@ -442,7 +442,7 @@ pub(super) fn stop_tracked_run(run: &mut AppLauncherRun) {
         return;
     }
 
-    let mut sys = System::new();
+    let mut sys = System::new().expect("sysinfo supports this platform");
     sys.refresh_processes(ProcessesToUpdate::All, true);
     let mut all_pids = Vec::new();
     for pid in pids {

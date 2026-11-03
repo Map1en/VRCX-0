@@ -23,10 +23,8 @@ pub struct ProcessStatusDetector {
 
 impl ProcessStatusDetector {
     pub fn new() -> Self {
-        #[cfg(target_os = "linux")]
-        sysinfo::set_open_files_limit(0);
         Self {
-            sys: System::new(),
+            sys: System::new().expect("sysinfo supports this platform"),
             #[cfg(windows)]
             process_handles: ProcessHandleCache::default(),
         }
@@ -182,7 +180,7 @@ pub fn detect_steamvr_running() -> bool {
 }
 
 pub fn vrchat_process_ids() -> Vec<u32> {
-    let mut sys = System::new();
+    let mut sys = System::new().expect("sysinfo supports this platform");
     sys.refresh_processes(ProcessesToUpdate::All, true);
     sys.processes()
         .values()
@@ -219,7 +217,7 @@ fn select_linux_vrchat_process_id(
 }
 
 pub fn detect_legacy_vrcx_running() -> bool {
-    let mut sys = System::new();
+    let mut sys = System::new().expect("sysinfo supports this platform");
     sys.refresh_processes(ProcessesToUpdate::All, true);
     sys.processes()
         .values()
@@ -227,7 +225,7 @@ pub fn detect_legacy_vrcx_running() -> bool {
 }
 
 pub fn is_process_running(pid: u32) -> bool {
-    let mut sys = System::new();
+    let mut sys = System::new().expect("sysinfo supports this platform");
     sys.refresh_processes(ProcessesToUpdate::All, true);
     sys.process(Pid::from_u32(pid)).is_some()
 }

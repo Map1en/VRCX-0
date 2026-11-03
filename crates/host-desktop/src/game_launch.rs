@@ -75,7 +75,7 @@ fn direct_launch_command(program: PathBuf, arguments: &str) -> DirectLaunchComma
 
 pub fn quit_game() -> i32 {
     use sysinfo::System;
-    let mut sys = System::new();
+    let mut sys = System::new().expect("sysinfo supports this platform");
     sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
 
     let processes: Vec<_> = sys
