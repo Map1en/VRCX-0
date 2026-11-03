@@ -1209,19 +1209,15 @@
     .reduce-effects [class*='backdrop-blur'],
     .reduce-effects [class*='backdrop-blur']::before,
     .reduce-effects [class*='backdrop-blur']::after,
-    .reduce-effects [data-slot='dropdown-menu-content']::before,
-    .reduce-effects [data-slot='context-menu-content']::before,
-    .reduce-effects [data-slot='select-content']::before,
     .reduce-effects [data-slot='combobox-content']::before,
-    .reduce-effects [data-slot='menubar-content']::before,
     .reduce-effects [data-slot='dialog-content'],
     .reduce-effects [data-slot='popover-content'],
     .reduce-effects [data-slot='card'],
     .reduce-effects [data-slot='dialog-overlay'],
     .reduce-effects [data-slot='alert-dialog-overlay'],
     .reduce-effects [data-slot='sheet-overlay'] {
-        backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
     }
 
     @keyframes feed-column-row-enter {
