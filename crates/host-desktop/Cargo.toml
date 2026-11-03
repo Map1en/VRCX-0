@@ -23,7 +23,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 sha2.workspace = true
 specta.workspace = true
-sysinfo = "0.39"
+sysinfo = "0.40"
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt", "sync", "time"] }
 tracing = { workspace = true }
