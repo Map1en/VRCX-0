@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { FavoriteActionMenu } from '@/components/favorites/FavoriteActionMenu';
+import { FavoriteActionSub } from '@/components/favorites/FavoriteActionMenu';
 
 import {
     EntityActionDropdown,
@@ -150,14 +150,6 @@ export function UserDialogHeaderActions({
 
     return (
         <>
-            {!isCurrentUser && isFriend ? (
-                <FavoriteActionMenu
-                    kind="friend"
-                    entityId={profile.id ?? ''}
-                    entity={profile}
-                    iconOnly
-                />
-            ) : null}
             <EntityActionDropdown
                 busy={isBusy}
                 dangerous={moderationState.block}
@@ -167,6 +159,16 @@ export function UserDialogHeaderActions({
                     accountStandingAlert
                 }
             >
+                {!isCurrentUser && isFriend ? (
+                    <>
+                        <FavoriteActionSub
+                            kind="friend"
+                            entityId={profile.id ?? ''}
+                            entity={profile}
+                        />
+                        <EntityActionSeparator />
+                    </>
+                ) : null}
                 <EntityActionItem
                     icon={RefreshCwIcon}
                     disabled={loadStatus === 'running'}

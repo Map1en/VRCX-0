@@ -480,6 +480,10 @@ fn title_shows_mentions_by_name_without_their_ids() {
         "how long with @Alice [VR] and @Bob?"
     );
     assert_eq!(
+        derive_title("when was I at [@Night Pier](vrcx-0://world/open?id=wrld_p)?"),
+        "when was I at @Night Pier?"
+    );
+    assert_eq!(
         derive_title("see [docs](vrcx-0://user/open?id=) later"),
         "see [docs](vrcx-0://user/open?id=) later"
     );

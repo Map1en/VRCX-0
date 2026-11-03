@@ -1,19 +1,21 @@
+import type { MentionTarget } from '@/domain/assistant/types';
+
 import { entityHref } from './entityLinks';
 
-const MENTION_MARKER = `](${entityHref('user', '')}`;
+const MENTION_MARKER = /\]\(vrcx-0:\/\/(user|world)\/open\?id=/g;
 const MENTION_QUERY_LIMIT = 32;
 
 export type MentionSegment =
     | { kind: 'text'; text: string }
-    | { kind: 'mention'; name: string; userId: string };
+    | { kind: 'mention'; target: MentionTarget };
 
-function mentionToken(name: string, userId: string): string {
-    return `[@${name}](${entityHref('user', userId)})`;
+export function mentionToken({ kind, id, name }: MentionTarget): string {
+    return `[@${name}](${entityHref(kind, id)})`;
 }
 
 export function encodeMentions(
     text: string,
-    mentions: Readonly<Record<string, string>>
+    mentions: Readonly<Record<string, MentionTarget>>
 ): string {
     const names = Object.keys(mentions)
         .filter(Boolean)
@@ -26,7 +28,7 @@ export function encodeMentions(
         'g'
     );
     return text.replace(pattern, (_, name: string) =>
-        mentionToken(name, mentions[name])
+        mentionToken(mentions[name])
     );
 }
 
@@ -35,15 +37,17 @@ export function splitMentions(text: string): MentionSegment[] {
     let rest = text;
     let pending = '';
     for (;;) {
-        const marker = rest.indexOf(MENTION_MARKER);
-        if (marker < 0) {
+        MENTION_MARKER.lastIndex = 0;
+        const match = MENTION_MARKER.exec(rest);
+        if (!match) {
             break;
         }
-        const after = rest.slice(marker + MENTION_MARKER.length);
+        const marker = match.index;
+        const after = rest.slice(marker + match[0].length);
         const open = rest.lastIndexOf('[@', marker);
         const close = after.indexOf(')');
         if (open < 0 || close < 0) {
-            pending += rest.slice(0, marker + MENTION_MARKER.length);
+            pending += rest.slice(0, marker + match[0].length);
             rest = after;
             continue;
         }
@@ -54,8 +58,11 @@ export function splitMentions(text: string): MentionSegment[] {
         }
         segments.push({
             kind: 'mention',
-            name: rest.slice(open + 2, marker),
-            userId: after.slice(0, close)
+            target: {
+                kind: match[1] === 'world' ? 'world' : 'user',
+                id: after.slice(0, close),
+                name: rest.slice(open + 2, marker)
+            }
         });
         rest = after.slice(close + 1);
     }

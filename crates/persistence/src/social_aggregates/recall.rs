@@ -45,6 +45,10 @@ pub fn recall_encounter(
         sql.push_str(" AND display_name LIKE @name_pattern");
         params = params.set("name_pattern", format!("%{name_query}%"));
     }
+    if let Some(target_user_id) = trimmed(&input.target_user_id) {
+        sql.push_str(" AND g.user_id = @target_user_id");
+        params = params.set("target_user_id", target_user_id);
+    }
     if let Some(world_id) = trimmed(&input.world_id) {
         sql.push_str(" AND location LIKE @world_pattern");
         params = params.set("world_pattern", format!("{world_id}%"));

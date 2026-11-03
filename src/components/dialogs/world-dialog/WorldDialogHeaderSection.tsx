@@ -16,6 +16,7 @@ import {
     PencilIcon,
     RefreshCwIcon,
     SettingsIcon,
+    SparklesIcon,
     Trash2Icon
 } from 'lucide-react';
 import { isValidElement, type ReactNode } from 'react';
@@ -27,6 +28,8 @@ import { TranslatableText } from '@/components/translation/TranslatableText';
 import type { WorldProfileRecord } from '@/domain/entities/world';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
+import { useAssistantChatStore } from '@/state/assistantChatStore';
+import { usePreferencesStore } from '@/state/preferencesStore';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Separator } from '@/ui/shadcn/separator';
@@ -230,6 +233,9 @@ function WorldOverviewActions({
         previousInstances,
         world
     } = model;
+    const showAssistantShortcuts = usePreferencesStore(
+        (state) => state.showAssistantShortcuts
+    );
     const {
         onChangeAllowedDomains,
         onEditDetails,
@@ -264,6 +270,32 @@ function WorldOverviewActions({
                     {t('dialog.world.actions.new_instance')}
                 </span>
             </Button>
+            {showAssistantShortcuts && world.id ? (
+                <Tooltip>
+                    <TooltipTrigger
+                        render={
+                            <Button
+                                type="button"
+                                size="icon-lg"
+                                variant="outline"
+                                aria-label={t('assistant.title')}
+                                onClick={() =>
+                                    useAssistantChatStore
+                                        .getState()
+                                        .startMentionDraft({
+                                            kind: 'world',
+                                            id: world.id,
+                                            name: world.name || world.id
+                                        })
+                                }
+                            >
+                                <SparklesIcon data-icon="inline-start" />
+                            </Button>
+                        }
+                    />
+                    <TooltipContent>{t('assistant.title')}</TooltipContent>
+                </Tooltip>
+            ) : null}
             <FavoriteActionMenu
                 kind="world"
                 entityId={world.id}

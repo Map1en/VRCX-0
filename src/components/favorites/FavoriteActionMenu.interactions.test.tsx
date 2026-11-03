@@ -136,7 +136,15 @@ vi.mock('@/ui/shadcn/dropdown-menu', () => {
         DropdownMenuItem: Item,
         DropdownMenuLabel: Label,
         DropdownMenuSeparator: () => <hr />,
-        DropdownMenuTrigger: ({ render }: { render?: ReactNode }) => render
+        DropdownMenuSub: Container,
+        DropdownMenuSubContent: Container,
+        DropdownMenuSubTrigger: Item,
+        DropdownMenuTrigger: ({
+            render,
+            children,
+            ...props
+        }: PropsWithChildren<{ render?: ReactNode }>) =>
+            render ?? <button {...props}>{children}</button>
     };
 });
 
@@ -144,7 +152,11 @@ vi.mock('@/ui/shadcn/spinner', () => ({
     Spinner: () => <span />
 }));
 
-import { FavoriteActionMenu } from './FavoriteActionMenu';
+import {
+    FavoriteActionMenu,
+    FavoriteActionSub,
+    FavoriteBadgeMenu
+} from './FavoriteActionMenu';
 
 type FavoriteStoreState = {
     favoriteAvatarGroups: [];
@@ -329,5 +341,56 @@ describe('FavoriteActionMenu VRChat favorite groups', () => {
             })
         );
         expect(mocks.deleteFavorite).not.toHaveBeenCalled();
+    });
+
+    it('shows the badge only once favorited and names the group on it', () => {
+        mocks.favoriteState = {
+            favoriteFriendGroups: groups,
+            remoteFavoritesByObjectId: {}
+        };
+        const { rerender } = render(
+            <FavoriteBadgeMenu kind="friend" entityId="usr_friend" />
+        );
+        expect(
+            screen.queryByRole('button', {
+                name: 'view.favorite.label.favorited'
+            })
+        ).toBeNull();
+
+        mocks.favoriteState = {
+            favoriteFriendGroups: groups,
+            remoteFavoritesByObjectId: {
+                usr_friend: {
+                    type: 'friend',
+                    tags: ['group_0'],
+                    $groupKey: 'friend:group_0'
+                }
+            }
+        };
+        rerender(<FavoriteBadgeMenu kind="friend" entityId="usr_friend" />);
+
+        expect(
+            screen
+                .getByRole('button', { name: 'view.favorite.label.favorited' })
+                .getAttribute('title')
+        ).toBe('Best Friends');
+    });
+
+    it('favorites from the more-actions submenu', async () => {
+        mocks.favoriteState = {
+            favoriteFriendGroups: groups,
+            remoteFavoritesByObjectId: {}
+        };
+        render(<FavoriteActionSub kind="friend" entityId="usr_friend" />);
+
+        fireEvent.click(groupItem('Karaoke'));
+
+        await waitFor(() =>
+            expect(mocks.addFavorite).toHaveBeenCalledWith({
+                type: 'friend',
+                favoriteId: 'usr_friend',
+                tags: 'group_1'
+            })
+        );
     });
 });

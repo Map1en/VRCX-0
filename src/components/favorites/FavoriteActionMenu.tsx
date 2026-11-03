@@ -11,6 +11,7 @@ import type {
     FavoriteStore,
     RemoteFavoriteKind
 } from '@/domain/favorites/types';
+import { cn } from '@/lib/utils';
 import type { VrchatFavoriteType } from '@/platform/tauri/bindings';
 import favoritePersistenceRepository from '@/repositories/favoritePersistenceRepository';
 import vrchatFavoriteRepository from '@/repositories/vrchatFavoriteRepository';
@@ -20,6 +21,7 @@ import { toast } from '@/services/toastService';
 import { isRecord } from '@/shared/utils/record';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useModalStore } from '@/state/modalStore';
+import { badgeVariants } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -29,6 +31,9 @@ import {
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
 import { Spinner } from '@/ui/shadcn/spinner';
@@ -164,13 +169,12 @@ function localGroupLabel(localFavorites: FavoriteGroupMap, groupName: string) {
     return `${groupName} (${count})`;
 }
 
-export function FavoriteActionMenu({
+function useFavoriteMenu({
     kind,
     entityId,
     entity = null,
-    label = '',
-    iconOnly = false
-}: FavoriteActionMenuProps) {
+    label = ''
+}: Omit<FavoriteActionMenuProps, 'iconOnly'>) {
     const { t } = useTranslation();
 
     const normalizedEntityId = entityId.trim();
@@ -413,10 +417,6 @@ export function FavoriteActionMenu({
         }
     }
 
-    if (!normalizedEntityId) {
-        return null;
-    }
-
     const favorited = Boolean(remoteFavorite) || localFavoriteActive;
     const triggerLabel = favorited
         ? t('view.favorite.label.favorited')
@@ -425,6 +425,135 @@ export function FavoriteActionMenu({
         kind === 'avatar'
             ? t('dialog.favorite.local_avatar_favorites')
             : t('dialog.favorite.local_favorites');
+    const favoriteGroupNames = [
+        ...(remoteFavoriteGroup
+            ? [
+                  String(
+                      remoteFavoriteGroup.displayName ||
+                          remoteFavoriteGroup.name
+                  )
+              ]
+            : []),
+        ...localGroups.filter((groupName) =>
+            hasLocalFavorite(localFavorites, groupName, normalizedEntityId)
+        )
+    ];
+
+    const items = (
+        <>
+            <DropdownMenuGroup>
+                <DropdownMenuLabel>
+                    {t('view.favorite.label.vrchat_favorites')}
+                </DropdownMenuLabel>
+                {remoteFavorite && !remoteFavoriteGroup ? (
+                    <DropdownMenuCheckboxItem
+                        checked
+                        onClick={(event) => event.preventDefault()}
+                        onCheckedChange={() =>
+                            void setRemoteFavoriteGroup(null)
+                        }
+                    >
+                        {remoteFavoriteGroupKey(remoteFavorite) ||
+                            remoteFavoriteTag(remoteFavorite) ||
+                            'Current group'}
+                    </DropdownMenuCheckboxItem>
+                ) : null}
+                {groups.length ? (
+                    groups.map((group) => {
+                        const isCurrent = group === remoteFavoriteGroup;
+                        const isFull =
+                            Number(group.capacity) > 0 &&
+                            (Number(group.count) || 0) >=
+                                Number(group.capacity);
+
+                        return (
+                            <DropdownMenuCheckboxItem
+                                key={String(group.key ?? '')}
+                                checked={isCurrent}
+                                disabled={isFull && !isCurrent}
+                                onClick={(event) => event.preventDefault()}
+                                onCheckedChange={() =>
+                                    void setRemoteFavoriteGroup(
+                                        isCurrent ? null : group
+                                    )
+                                }
+                            >
+                                {formatGroupLabel(group)}
+                            </DropdownMenuCheckboxItem>
+                        );
+                    })
+                ) : remoteFavorite ? null : (
+                    <DropdownMenuItem disabled>
+                        {t('view.favorite.empty.no_favorite_groups_loaded')}
+                    </DropdownMenuItem>
+                )}
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+                <DropdownMenuLabel>{localFavoritesLabel}</DropdownMenuLabel>
+                {localGroups.length ? (
+                    localGroups.map((groupName) => {
+                        const isLocalFavorite = hasLocalFavorite(
+                            localFavorites,
+                            groupName,
+                            normalizedEntityId
+                        );
+                        return (
+                            <DropdownMenuCheckboxItem
+                                key={groupName}
+                                checked={isLocalFavorite}
+                                onClick={(event) => event.preventDefault()}
+                                onCheckedChange={() => {
+                                    if (isLocalFavorite) {
+                                        removeLocalFavoriteFromGroup(groupName);
+                                    } else {
+                                        addLocalFavoriteToGroup(groupName);
+                                    }
+                                }}
+                            >
+                                {localGroupLabel(localFavorites, groupName)}
+                            </DropdownMenuCheckboxItem>
+                        );
+                    })
+                ) : (
+                    <DropdownMenuItem disabled>
+                        {t(
+                            'view.favorite.empty.no_local_favorite_groups_loaded'
+                        )}
+                    </DropdownMenuItem>
+                )}
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+                <DropdownMenuItem
+                    onClick={() => void createLocalFavoriteGroupAndAdd()}
+                >
+                    <PlusIcon data-icon="inline-start" />
+                    {t('view.favorite.worlds.new_group')}
+                </DropdownMenuItem>
+            </DropdownMenuGroup>
+        </>
+    );
+
+    return {
+        hasEntity: Boolean(normalizedEntityId),
+        busy: actionStatus !== 'idle',
+        favorited,
+        remoteFavorited: Boolean(remoteFavorite),
+        triggerLabel,
+        favoriteGroupNames,
+        items
+    };
+}
+
+export function FavoriteActionMenu({
+    iconOnly = false,
+    ...props
+}: FavoriteActionMenuProps) {
+    const menu = useFavoriteMenu(props);
+    if (!menu.hasEntity) {
+        return null;
+    }
 
     return (
         <DropdownMenu>
@@ -436,121 +565,85 @@ export function FavoriteActionMenu({
                         variant={
                             iconOnly
                                 ? 'outline'
-                                : remoteFavorite
+                                : menu.remoteFavorited
                                   ? 'default'
                                   : 'outline'
                         }
-                        disabled={actionStatus !== 'idle'}
-                        aria-label={triggerLabel}
-                        title={triggerLabel}
+                        disabled={menu.busy}
+                        aria-label={menu.triggerLabel}
+                        title={menu.triggerLabel}
                     >
-                        {actionStatus !== 'idle' ? (
+                        {menu.busy ? (
                             <Spinner data-icon="inline-start" />
                         ) : (
                             <StarIcon
                                 data-icon="inline-start"
-                                className={favorited ? 'fill-current' : ''}
+                                className={menu.favorited ? 'fill-current' : ''}
                             />
                         )}
-                        {iconOnly ? null : triggerLabel}
+                        {iconOnly ? null : menu.triggerLabel}
                     </Button>
                 }
             />
             <DropdownMenuContent align="start" className="w-64">
-                <DropdownMenuGroup>
-                    <DropdownMenuLabel>
-                        {t('view.favorite.label.vrchat_favorites')}
-                    </DropdownMenuLabel>
-                    {remoteFavorite && !remoteFavoriteGroup ? (
-                        <DropdownMenuCheckboxItem
-                            checked
-                            onClick={(event) => event.preventDefault()}
-                            onCheckedChange={() =>
-                                void setRemoteFavoriteGroup(null)
-                            }
-                        >
-                            {remoteFavoriteGroupKey(remoteFavorite) ||
-                                remoteFavoriteTag(remoteFavorite) ||
-                                'Current group'}
-                        </DropdownMenuCheckboxItem>
-                    ) : null}
-                    {groups.length ? (
-                        groups.map((group) => {
-                            const isCurrent = group === remoteFavoriteGroup;
-                            const isFull =
-                                Number(group.capacity) > 0 &&
-                                (Number(group.count) || 0) >=
-                                    Number(group.capacity);
-
-                            return (
-                                <DropdownMenuCheckboxItem
-                                    key={String(group.key ?? '')}
-                                    checked={isCurrent}
-                                    disabled={isFull && !isCurrent}
-                                    onClick={(event) => event.preventDefault()}
-                                    onCheckedChange={() =>
-                                        void setRemoteFavoriteGroup(
-                                            isCurrent ? null : group
-                                        )
-                                    }
-                                >
-                                    {formatGroupLabel(group)}
-                                </DropdownMenuCheckboxItem>
-                            );
-                        })
-                    ) : remoteFavorite ? null : (
-                        <DropdownMenuItem disabled>
-                            {t('view.favorite.empty.no_favorite_groups_loaded')}
-                        </DropdownMenuItem>
-                    )}
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                    <DropdownMenuLabel>{localFavoritesLabel}</DropdownMenuLabel>
-                    {localGroups.length ? (
-                        localGroups.map((groupName) => {
-                            const isLocalFavorite = hasLocalFavorite(
-                                localFavorites,
-                                groupName,
-                                normalizedEntityId
-                            );
-                            return (
-                                <DropdownMenuCheckboxItem
-                                    key={groupName}
-                                    checked={isLocalFavorite}
-                                    onClick={(event) => event.preventDefault()}
-                                    onCheckedChange={() => {
-                                        if (isLocalFavorite) {
-                                            removeLocalFavoriteFromGroup(
-                                                groupName
-                                            );
-                                        } else {
-                                            addLocalFavoriteToGroup(groupName);
-                                        }
-                                    }}
-                                >
-                                    {localGroupLabel(localFavorites, groupName)}
-                                </DropdownMenuCheckboxItem>
-                            );
-                        })
-                    ) : (
-                        <DropdownMenuItem disabled>
-                            {t(
-                                'view.favorite.empty.no_local_favorite_groups_loaded'
-                            )}
-                        </DropdownMenuItem>
-                    )}
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                    <DropdownMenuItem
-                        onClick={() => void createLocalFavoriteGroupAndAdd()}
-                    >
-                        <PlusIcon data-icon="inline-start" />
-                        {t('view.favorite.worlds.new_group')}
-                    </DropdownMenuItem>
-                </DropdownMenuGroup>
+                {menu.items}
             </DropdownMenuContent>
         </DropdownMenu>
+    );
+}
+
+export function FavoriteBadgeMenu(
+    props: Omit<FavoriteActionMenuProps, 'iconOnly' | 'label'>
+) {
+    const menu = useFavoriteMenu(props);
+    if (!menu.hasEntity || !menu.favorited) {
+        return null;
+    }
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger
+                disabled={menu.busy}
+                title={menu.favoriteGroupNames.join(', ')}
+                className={cn(
+                    badgeVariants({ variant: 'ghost' }),
+                    'text-muted-foreground hover:text-foreground cursor-pointer gap-2 px-0 font-normal hover:bg-transparent has-data-[icon=inline-start]:pl-0 [&>svg]:size-3.5! [&>svg]:opacity-70'
+                )}
+            >
+                {menu.busy ? (
+                    <Spinner data-icon="inline-start" />
+                ) : (
+                    <StarIcon
+                        data-icon="inline-start"
+                        className="fill-current"
+                    />
+                )}
+                {menu.triggerLabel}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-64">
+                {menu.items}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
+
+export function FavoriteActionSub(
+    props: Omit<FavoriteActionMenuProps, 'iconOnly' | 'label'>
+) {
+    const menu = useFavoriteMenu(props);
+    if (!menu.hasEntity) {
+        return null;
+    }
+
+    return (
+        <DropdownMenuSub>
+            <DropdownMenuSubTrigger disabled={menu.busy}>
+                <StarIcon className={menu.favorited ? 'fill-current' : ''} />
+                <span className="min-w-0 flex-1">{menu.triggerLabel}</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="w-64">
+                {menu.items}
+            </DropdownMenuSubContent>
+        </DropdownMenuSub>
     );
 }

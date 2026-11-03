@@ -44,12 +44,16 @@ pub use types::{
     RecallEncounterOutput, RecallEncounterRow, ResolveUserInput, ResolveUserOutput,
     ResolvedUserRow, SearchWorldsVisitedInput, SearchWorldsVisitedOutput, SocialGraphEdge,
     SocialGraphInput, SocialGraphNode, SocialGraphOutput, TimeWindow, VisitRosterRow, VisitRow,
-    VisitStint, VisitTimelineInput, VisitTimelineOutput, VisitedWorldRow,
+    VisitStint, VisitTimelineInput, VisitTimelineOutput, VisitedWorldMatch, VisitedWorldRow,
+    WorldVisitHistory,
 };
 pub use visits::get_visit_timeline;
 pub use vrcx_0_contracts::feed::{WorldFriendVisitRow, WorldFriendVisitsOutput};
 pub use world_friend_visits::get_world_friend_visits;
-pub use worlds::{favorite_local, search_worlds_visited, top_visited_worlds};
+pub use worlds::{
+    favorite_local, find_visited_worlds, search_worlds_visited, top_visited_worlds,
+    world_visit_history,
+};
 
 #[cfg(test)]
 mod activity_tests;

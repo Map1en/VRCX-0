@@ -51,6 +51,7 @@ fn copresence_summary_groups_minutes_days_instances_and_access_type() {
             audience: CopresenceAudience::Everyone,
             order_by: CopresenceOrderBy::default(),
             utc_offset_minutes: None,
+            world_id: None,
             target_user_id: None,
         },
     )
@@ -127,6 +128,7 @@ fn copresence_is_account_scoped_and_includes_shared_history() {
                 audience: CopresenceAudience::Everyone,
                 order_by: CopresenceOrderBy::default(),
                 utc_offset_minutes: None,
+                world_id: None,
                 target_user_id: None,
             },
         )
@@ -178,6 +180,7 @@ fn copresence_summary_applies_limit_after_ranking() {
             audience: CopresenceAudience::Everyone,
             order_by: CopresenceOrderBy::default(),
             utc_offset_minutes: None,
+            world_id: None,
             target_user_id: None,
         },
     )
@@ -204,6 +207,7 @@ fn copresence_summary_applies_limit_after_ranking() {
             audience: CopresenceAudience::Everyone,
             order_by: CopresenceOrderBy::default(),
             utc_offset_minutes: None,
+            world_id: None,
             target_user_id: Some("usr_alice".into()),
         },
     )
@@ -247,6 +251,7 @@ fn copresence_merges_renamed_user_into_one_row() {
             audience: CopresenceAudience::Everyone,
             order_by: CopresenceOrderBy::default(),
             utc_offset_minutes: None,
+            world_id: None,
             target_user_id: None,
         },
     )
@@ -288,6 +293,7 @@ fn copresence_keeps_distinct_name_only_strangers_separate() {
             audience: CopresenceAudience::Everyone,
             order_by: CopresenceOrderBy::default(),
             utc_offset_minutes: None,
+            world_id: None,
             target_user_id: None,
         },
     )
@@ -336,6 +342,7 @@ fn copresence_renamed_user_does_not_inflate_total_rows() {
             audience: CopresenceAudience::Everyone,
             order_by: CopresenceOrderBy::default(),
             utc_offset_minutes: None,
+            world_id: None,
             target_user_id: None,
         },
     )
@@ -386,6 +393,7 @@ fn copresence_marks_is_friend_against_current_friends() {
             audience: CopresenceAudience::Everyone,
             order_by: CopresenceOrderBy::default(),
             utc_offset_minutes: None,
+            world_id: None,
             target_user_id: None,
         },
     )
@@ -436,6 +444,7 @@ fn copresence_enriches_world_name_from_game_log_location() {
             audience: CopresenceAudience::Everyone,
             order_by: CopresenceOrderBy::default(),
             utc_offset_minutes: None,
+            world_id: None,
             target_user_id: None,
         },
     )
@@ -484,6 +493,7 @@ fn copresence_friend_world_keeps_tied_worlds_separate() {
             audience: CopresenceAudience::Everyone,
             order_by: CopresenceOrderBy::default(),
             utc_offset_minutes: None,
+            world_id: None,
             target_user_id: None,
         },
     )
@@ -544,6 +554,7 @@ fn copresence_summary_excludes_owner_self_rows() {
             audience: CopresenceAudience::Everyone,
             order_by: CopresenceOrderBy::default(),
             utc_offset_minutes: None,
+            world_id: None,
             target_user_id: None,
         },
     )
@@ -619,6 +630,7 @@ fn copresence_strangers_exclude_current_past_and_blocked_friends() {
             audience: CopresenceAudience::Strangers,
             order_by: CopresenceOrderBy::CoDays,
             utc_offset_minutes: None,
+            world_id: None,
             target_user_id: None,
         },
     )
@@ -633,4 +645,50 @@ fn copresence_strangers_exclude_current_past_and_blocked_friends() {
         rows,
         vec![("usr_stranger", 2, false), ("usr_muted", 1, false)]
     );
+}
+
+#[test]
+fn copresence_summary_keeps_only_the_requested_world() {
+    let (_dir, db) = test_db("copresence-world");
+    create_game_log_tables(&db);
+    for (user_id, location, millis) in [
+        ("usr_alice", "wrld_pier:1~friends(usr_host)", 600_000),
+        ("usr_alice", "wrld_pier_two:1", 900_000),
+        ("usr_bob", "wrld_loft:2", 1_200_000),
+        ("usr_carol", "wrld_pier", 300_000),
+    ] {
+        insert_join_leave(
+            &db,
+            "2026-06-01T20:00:00Z",
+            "OnPlayerLeft",
+            user_id,
+            user_id,
+            location,
+            millis,
+        );
+    }
+
+    let output = get_copresence_summary(
+        &db,
+        CopresenceSummaryInput {
+            time_window: TimeWindow::all(),
+            group_by: CopresenceGroupBy::Friend,
+            min_minutes: None,
+            limit: None,
+            owner_user_id: None,
+            audience: CopresenceAudience::Everyone,
+            order_by: CopresenceOrderBy::default(),
+            utc_offset_minutes: None,
+            world_id: Some("wrld_pier".into()),
+            target_user_id: None,
+        },
+    )
+    .unwrap();
+
+    let rows = output
+        .rows
+        .iter()
+        .map(|row| (row.user_id.as_str(), row.total_minutes))
+        .collect::<Vec<_>>();
+    assert_eq!(rows, [("usr_alice", 10), ("usr_carol", 5)]);
 }

@@ -9,11 +9,11 @@ export function MentionText({ text }: { text: string }) {
                     segment.text
                 ) : (
                     <EntityChip
-                        key={`${segment.userId}-${index}`}
-                        kind="user"
-                        id={segment.userId}
+                        key={`${segment.target.id}-${index}`}
+                        kind={segment.target.kind}
+                        id={segment.target.id}
                     >
-                        @{segment.name}
+                        @{segment.target.name}
                     </EntityChip>
                 )
             )}

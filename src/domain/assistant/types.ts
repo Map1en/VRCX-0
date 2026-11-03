@@ -26,7 +26,8 @@ export type AssistantChart = {
         | 'bestTimes'
         | 'friendPattern'
         | 'topCompanions'
-        | 'topWorlds';
+        | 'topWorlds'
+        | 'sharedWorlds';
     axis: 'hourOfDay' | 'dayOfWeek' | 'label';
     subject?: string | null;
     points: { key: string; value: number }[];
@@ -36,6 +37,12 @@ export type Entity = {
     kind: string;
     id: string;
     displayName: string;
+};
+
+export type MentionTarget = {
+    kind: 'user' | 'world';
+    id: string;
+    name: string;
 };
 
 export type AssistantToolCallEvent = {

@@ -79,7 +79,12 @@ describe('Composer', () => {
             <Composer
                 busy={false}
                 disabled={false}
-                suggestions={['Who did I play with most this week?']}
+                suggestions={[
+                    {
+                        label: 'Who did I play with most this week?',
+                        text: 'Who did I play with most this week?'
+                    }
+                ]}
                 onSend={onSend}
                 onStop={vi.fn()}
             />
@@ -153,6 +158,31 @@ describe('Composer', () => {
 
         expect(onSend).toHaveBeenCalledWith(
             'time with [@Alice Doe](vrcx-0://user/open?id=usr_a) this week'
+        );
+    });
+
+    it('starts with the person mentioned and sends the mention with its id', () => {
+        const onSend = vi.fn();
+        render(
+            <Composer
+                busy={false}
+                disabled={false}
+                mentioned={{ kind: 'user', id: 'usr_a', name: 'Alice' }}
+                onSend={onSend}
+                onStop={vi.fn()}
+            />
+        );
+        const input = screen.getByPlaceholderText(
+            'Write a message'
+        ) as HTMLTextAreaElement;
+
+        expect(input.value).toBe('@Alice ');
+        expect(document.activeElement).toBe(input);
+        fireEvent.change(input, { target: { value: '@Alice how are we?' } });
+        fireEvent.keyDown(input, { key: 'Enter' });
+
+        expect(onSend).toHaveBeenCalledWith(
+            '[@Alice](vrcx-0://user/open?id=usr_a) how are we?'
         );
     });
 });

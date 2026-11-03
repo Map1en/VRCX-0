@@ -970,11 +970,15 @@ fn derive_title(content: &str) -> String {
 }
 
 fn plain_mentions(text: &str) -> String {
-    const MARKER: &str = "](vrcx-0://user/open?id=";
+    const MARKERS: [&str; 2] = ["](vrcx-0://user/open?id=", "](vrcx-0://world/open?id="];
     let mut plain = String::with_capacity(text.len());
     let mut rest = text;
-    while let Some(marker) = rest.find(MARKER) {
-        let after = &rest[marker + MARKER.len()..];
+    while let Some((marker, marker_len)) = MARKERS
+        .iter()
+        .filter_map(|marker| rest.find(marker).map(|index| (index, marker.len())))
+        .min()
+    {
+        let after = &rest[marker + marker_len..];
         match (rest[..marker].rfind("[@"), after.find(')')) {
             (Some(open), Some(close)) => {
                 plain.push_str(&rest[..open]);
@@ -982,7 +986,7 @@ fn plain_mentions(text: &str) -> String {
                 rest = &after[close + 1..];
             }
             _ => {
-                plain.push_str(&rest[..marker + MARKER.len()]);
+                plain.push_str(&rest[..marker + marker_len]);
                 rest = after;
             }
         }

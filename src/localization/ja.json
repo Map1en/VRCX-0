@@ -229,6 +229,7 @@
             "get_online_friends": "オンラインのフレンドを確認",
             "get_social_graph": "交友関係図を確認",
             "get_visit_timeline": "インスタンスでの出来事を振り返る",
+            "get_world_profile": "ワールド情報を見る",
             "recall_encounter": "会った人を思い出す",
             "refresh_mutual_graph": "共通のフレンドを更新",
             "search_friend_feed": "フレンドのフィードを検索",
@@ -239,10 +240,25 @@
         "chart": {
             "my_playtime": "自分のプレイ時間",
             "best_times": "フレンドが多くオンラインになる時間帯",
-            "friend_pattern": "{{name}} さんがオンラインになる時間帯",
+            "friend_pattern": "{name} さんがオンラインになる時間帯",
             "top_companions": "一緒にいた時間ランキング",
             "top_worlds": "よく行くワールド",
-            "show_more": "さらに {{count}} 件表示"
+            "show_more": "さらに {count} 件表示",
+            "shared_worlds": "{name} さんとよく行くワールド"
+        },
+        "brief": {
+            "prompt": "{mention} さんと自分の最近の様子",
+            "world": "{mention} はどんなワールド？"
+        },
+        "follow_up": {
+            "title": "ほかに知りたいことは？",
+            "companions": "{mention} さんが最近よく一緒にいる人",
+            "mutuals": "{mention} さんとの共通のフレンド",
+            "fading": "{mention} さんと前より疎遠になっている？",
+            "last_visit": "{mention} さんと最後に同じインスタンスにいたとき、誰がいた？",
+            "world_visits": "最近 {mention} に行ったとき、誰と一緒だった？",
+            "world_people": "{mention} でよく一緒になる人",
+            "world_popularity": "{mention} は人気？お気に入り数は？"
         }
     },
     "user_hover_card": {
@@ -2716,6 +2732,8 @@
                 "default_model_unset": "利用できるモデルがありません",
                 "setup_hint": "ソーシャル AI を使うには、OpenAI 互換の接続先が必要です。",
                 "playbook_mode_description": "分析するときにモデルへどこまで任せるかを決めます。",
+                "shortcuts": "ページ内の AI ショートカット",
+                "shortcuts_description": "プロフィールなどに「AI に聞く」ボタンを表示します。オフにしてもタイトルバーからアシスタントを開けます。",
                 "endpoints_description": "ソーシャル AI と翻訳で共通です。"
             },
             "social": {

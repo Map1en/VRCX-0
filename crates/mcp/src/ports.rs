@@ -1,5 +1,9 @@
 use std::collections::HashMap;
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
+
+use serde_json::Value;
 
 use vrcx_0_application::social::{MutualGraphFetchStartInput, MutualGraphFetchStatus};
 use vrcx_0_contracts::feed::{FeedRowOutput, FeedRowsQueryInput};
@@ -48,6 +52,20 @@ pub trait McpActivityQueryPort: Send + Sync {
         owner_user_id: &OwnerId,
         input: social::TopVisitedWorldsInput,
     ) -> vrcx_0_application_core::Result<Vec<social::TopVisitedWorldRow>>;
+
+    fn world_visit_history(
+        &self,
+        owner_user_id: &OwnerId,
+        world_id: &str,
+        recent_limit: i64,
+    ) -> vrcx_0_application_core::Result<social::WorldVisitHistory>;
+
+    fn find_visited_worlds(
+        &self,
+        owner_user_id: &OwnerId,
+        name: &str,
+        limit: i64,
+    ) -> vrcx_0_application_core::Result<Vec<social::VisitedWorldMatch>>;
 
     fn fading_friends(
         &self,
@@ -230,6 +248,17 @@ pub trait McpMutualGraphPort: Send + Sync {
 }
 
 pub type McpMutualGraph = Arc<dyn McpMutualGraphPort>;
+
+pub type McpFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
+
+pub trait McpWorldLookupPort: Send + Sync {
+    fn world(
+        &self,
+        world_id: String,
+    ) -> McpFuture<'_, vrcx_0_application_core::Result<Option<Value>>>;
+}
+
+pub type McpWorldLookup = Arc<dyn McpWorldLookupPort>;
 
 pub type McpInterruptCheck = Arc<dyn Fn() -> bool + Send + Sync>;
 

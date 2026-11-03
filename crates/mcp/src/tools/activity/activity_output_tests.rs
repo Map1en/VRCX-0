@@ -199,6 +199,7 @@ fn test_server_with_game_context(
         feed_queries: Arc::new(crate::test_support::TestMcpFeedQueryAdapter::new(
             Arc::clone(&db),
         )),
+        world_lookup: Arc::new(crate::test_support::TestMcpWorldLookup(None)),
         mutual_graph: Arc::new(crate::test_support::TestMcpMutualGraphAdapter::new(
             MutualGraphFetchRuntime::new(),
             Arc::clone(&db),

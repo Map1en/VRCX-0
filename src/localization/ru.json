@@ -232,6 +232,7 @@
             "get_online_friends": "Друзья онлайн",
             "get_social_graph": "Граф связей",
             "get_visit_timeline": "Ход одного визита",
+            "get_world_profile": "Открыть профиль мира",
             "recall_encounter": "Поиск встреченных людей",
             "refresh_mutual_graph": "Обновление общих друзей",
             "search_friend_feed": "Поиск по ленте друзей",
@@ -242,10 +243,25 @@
         "chart": {
             "my_playtime": "Моё игровое время",
             "best_times": "Когда в сети больше всего друзей",
-            "friend_pattern": "Когда {{name}} бывает в сети",
+            "friend_pattern": "Когда {name} бывает в сети",
             "top_companions": "Больше всего времени вместе",
             "top_worlds": "Самые посещаемые миры",
-            "show_more": "Показать ещё {{count}}"
+            "show_more": "Показать ещё {count}",
+            "shared_worlds": "Миры, где вы чаще всего бывали с {name}"
+        },
+        "brief": {
+            "prompt": "Как у нас дела с {mention} в последнее время?",
+            "world": "Что за мир {mention}?"
+        },
+        "follow_up": {
+            "title": "Что ещё хотите узнать?",
+            "companions": "С кем {mention} проводит время в последнее время?",
+            "mutuals": "Какие у нас с {mention} общие друзья?",
+            "fading": "Мы с {mention} отдаляемся?",
+            "last_visit": "Кто был рядом, когда мы с {mention} последний раз были в одном инстансе?",
+            "world_visits": "С кем я был в последние разы в {mention}?",
+            "world_people": "С кем я чаще всего встречаюсь в {mention}?",
+            "world_popularity": "{mention} популярен? Сколько добавили в избранное?"
         }
     },
     "user_hover_card": {
@@ -2741,6 +2757,8 @@
                 "default_model_unset": "Нет доступных моделей",
                 "setup_hint": "«Социальному AI» нужно OpenAI-совместимое подключение, иначе он не сможет отвечать.",
                 "playbook_mode_description": "Насколько свободно модель действует при анализе данных.",
+                "shortcuts": "Быстрый доступ к ИИ",
+                "shortcuts_description": "Показывать кнопки «Спросить ИИ» в профилях и других разделах. Ассистент по-прежнему доступен из заголовка окна.",
                 "endpoints_description": "Используются и «Социальным AI», и переводом."
             },
             "social": {

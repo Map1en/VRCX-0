@@ -230,6 +230,7 @@
             "get_online_friends": "Check online friends",
             "get_social_graph": "View social graph",
             "get_visit_timeline": "Replay a visit",
+            "get_world_profile": "View world profile",
             "recall_encounter": "Recall people met",
             "refresh_mutual_graph": "Refresh mutual friends",
             "search_friend_feed": "Search friend feed",
@@ -240,10 +241,25 @@
         "chart": {
             "my_playtime": "My playtime",
             "best_times": "When the most friends come online",
-            "friend_pattern": "When {{name}} comes online",
+            "friend_pattern": "When {name} comes online",
             "top_companions": "Most time together",
             "top_worlds": "Most-played worlds",
-            "show_more": "Show {{count}} more"
+            "show_more": "Show {count} more",
+            "shared_worlds": "Worlds most visited with {name}"
+        },
+        "brief": {
+            "prompt": "How are {mention} and I doing lately?",
+            "world": "Tell me about {mention}"
+        },
+        "follow_up": {
+            "title": "What else do you want to know?",
+            "companions": "Who does {mention} hang out with lately?",
+            "mutuals": "Which friends do {mention} and I share?",
+            "fading": "Are {mention} and I drifting apart?",
+            "last_visit": "Who was there the last time {mention} and I shared an instance?",
+            "world_visits": "Who was with me the last few times I went to {mention}?",
+            "world_people": "Who do I usually run into at {mention}?",
+            "world_popularity": "Is {mention} popular? How many people favorited it?"
         }
     },
     "user_hover_card": {
@@ -2727,6 +2743,8 @@
                 "default_model_unset": "No model available",
                 "setup_hint": "Social AI needs an OpenAI-compatible connection before it can answer anything.",
                 "playbook_mode_description": "How much freedom the model gets when analyzing your data.",
+                "shortcuts": "Ask AI shortcuts",
+                "shortcuts_description": "Show Ask AI buttons in profiles and other views. The assistant stays available from the title bar.",
                 "endpoints_description": "Shared by Social AI and translation."
             },
             "social": {

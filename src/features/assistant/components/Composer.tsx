@@ -1,7 +1,8 @@
 import { ArrowUpIcon, AtSignIcon, SquareIcon } from 'lucide-react';
-import { useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { MentionTarget } from '@/domain/assistant/types';
 import type { FriendRecord } from '@/domain/friends/types';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { Button } from '@/ui/shadcn/button';
@@ -20,7 +21,8 @@ const MENTION_CANDIDATE_LIMIT = 8;
 interface ComposerProps {
     busy: boolean;
     disabled: boolean;
-    suggestions?: string[];
+    suggestions?: Array<{ label: string; text: string }>;
+    mentioned?: MentionTarget | null;
     toolbar?: ReactNode;
     onSend: (text: string) => void;
     onStop: () => void;
@@ -30,14 +32,19 @@ export function Composer({
     busy,
     disabled,
     suggestions,
+    mentioned,
     toolbar,
     onSend,
     onStop
 }: ComposerProps) {
     const { t } = useTranslation();
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const [value, setValue] = useState('');
-    const [mentions, setMentions] = useState<Record<string, string>>({});
+    const [value, setValue] = useState(() =>
+        mentioned ? `@${mentioned.name} ` : ''
+    );
+    const [mentions, setMentions] = useState<Record<string, MentionTarget>>(
+        () => (mentioned ? { [mentioned.name]: mentioned } : {})
+    );
     const [mention, setMention] = useState<{
         start: number;
         query: string;
@@ -67,6 +74,17 @@ export function Composer({
         return [...prefixed, ...matches].slice(0, MENTION_CANDIDATE_LIMIT);
     }, [mention, dismissedAt, orderedFriendIds, friendsById]);
     const menuOpen = candidates.length > 0;
+
+    useEffect(() => {
+        const textarea = textareaRef.current;
+        if (mentioned && textarea) {
+            textarea.focus();
+            textarea.setSelectionRange(
+                textarea.value.length,
+                textarea.value.length
+            );
+        }
+    }, [mentioned]);
 
     const syncMention = (textarea: HTMLTextAreaElement) => {
         const next = findMentionQuery(textarea.value, textarea.selectionStart);
@@ -101,7 +119,11 @@ export function Composer({
         }
         setMentions((current) => ({
             ...current,
-            [friend.displayName]: friend.id
+            [friend.displayName]: {
+                kind: 'user',
+                id: friend.id,
+                name: friend.displayName
+            }
         }));
         setMention(null);
         replaceRange(
@@ -142,14 +164,14 @@ export function Composer({
                 <div className="mb-2 flex [scrollbar-width:none] gap-2 overflow-x-auto overscroll-x-contain">
                     {suggestions.map((suggestion) => (
                         <Button
-                            key={suggestion}
+                            key={suggestion.text}
                             type="button"
                             variant="outline"
                             size="sm"
                             className="text-muted-foreground hover:text-foreground shrink-0 rounded-full font-normal"
-                            onClick={() => onSend(suggestion)}
+                            onClick={() => onSend(suggestion.text)}
                         >
-                            {suggestion}
+                            {suggestion.label}
                         </Button>
                     ))}
                 </div>

@@ -137,6 +137,18 @@ pub(crate) struct TestMcpActivityQueryAdapter {
     db: Arc<DatabaseService>,
 }
 
+pub(crate) struct TestMcpWorldLookup(pub(crate) Option<serde_json::Value>);
+
+impl crate::McpWorldLookupPort for TestMcpWorldLookup {
+    fn world(
+        &self,
+        _world_id: String,
+    ) -> crate::McpFuture<'_, vrcx_0_application_core::Result<Option<serde_json::Value>>> {
+        let world = self.0.clone();
+        Box::pin(async move { Ok(world) })
+    }
+}
+
 impl TestMcpActivityQueryAdapter {
     pub(crate) fn new(db: Arc<DatabaseService>) -> Self {
         Self { db }
@@ -173,6 +185,31 @@ impl McpActivityQueryPort for TestMcpActivityQueryAdapter {
         input: social::TopVisitedWorldsInput,
     ) -> vrcx_0_application_core::Result<Vec<social::TopVisitedWorldRow>> {
         social_aggregates::top_visited_worlds(self.db.as_ref(), owner_user_id, input)
+            .map_err(Into::into)
+    }
+
+    fn world_visit_history(
+        &self,
+        owner_user_id: &OwnerId,
+        world_id: &str,
+        recent_limit: i64,
+    ) -> vrcx_0_application_core::Result<social::WorldVisitHistory> {
+        social_aggregates::world_visit_history(
+            self.db.as_ref(),
+            owner_user_id,
+            world_id,
+            recent_limit,
+        )
+        .map_err(Into::into)
+    }
+
+    fn find_visited_worlds(
+        &self,
+        owner_user_id: &OwnerId,
+        name: &str,
+        limit: i64,
+    ) -> vrcx_0_application_core::Result<Vec<social::VisitedWorldMatch>> {
+        social_aggregates::find_visited_worlds(self.db.as_ref(), owner_user_id, name, limit)
             .map_err(Into::into)
     }
 
@@ -606,6 +643,7 @@ fn test_runtime_with_database_and_event_bus(
         friend_local_data: Arc::new(TestMcpFriendLocalDataAdapter::new(Arc::clone(&db))),
         favorites_queries: Arc::new(TestMcpFavoritesQueryAdapter::new(Arc::clone(&db))),
         feed_queries: Arc::new(TestMcpFeedQueryAdapter::new(Arc::clone(&db))),
+        world_lookup: Arc::new(TestMcpWorldLookup(None)),
         mutual_graph: Arc::new(TestMcpMutualGraphAdapter::new(
             MutualGraphFetchRuntime::new(),
             Arc::clone(&db),

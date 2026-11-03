@@ -15,6 +15,7 @@ pub enum AssistantChartKind {
     FriendPattern,
     TopCompanions,
     TopWorlds,
+    SharedWorlds,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Type)]
@@ -49,10 +50,12 @@ pub fn tool_charts(tool: &str, structured: &Value) -> Vec<AssistantChart> {
             .map(best_times_chart)
             .into_iter()
             .collect(),
-        "get_friend_activity_pattern" => parse(structured)
-            .and_then(friend_pattern_chart)
+        "get_friend_activity_pattern" => parse::<RowsOf<PatternRow>>(structured)
+            .and_then(|output| <[PatternRow; 1]>::try_from(output.rows).ok())
+            .and_then(|[row]| friend_pattern_chart(row))
             .into_iter()
             .collect(),
+        "get_friend_profile" => parse(structured).map(profile_charts).unwrap_or_default(),
         "get_copresence_summary" => parse::<RowsOf<CompanionRow>>(structured)
             .map(|output| companions_chart(&output.rows))
             .into_iter()
@@ -61,7 +64,7 @@ pub fn tool_charts(tool: &str, structured: &Value) -> Vec<AssistantChart> {
             .map(|output| {
                 vec![
                     companions_chart(&output.top_companions),
-                    worlds_chart(&output.top_worlds),
+                    worlds_chart(&output.top_worlds, AssistantChartKind::TopWorlds, None),
                 ]
             })
             .unwrap_or_default(),
@@ -122,6 +125,22 @@ struct CompanionRow {
 struct WorldRow {
     world_name: String,
     total_minutes: i64,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct NamedRow {
+    display_name: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ProfileOutput {
+    current: Option<NamedRow>,
+    encounter: Option<NamedRow>,
+    activity_pattern: Option<PatternRow>,
+    #[serde(default)]
+    shared_worlds: Vec<WorldRow>,
 }
 
 #[derive(Deserialize)]
@@ -211,8 +230,22 @@ fn best_times_chart(output: RowsOf<BestTimeRow>) -> AssistantChart {
     }
 }
 
-fn friend_pattern_chart(output: RowsOf<PatternRow>) -> Option<AssistantChart> {
-    let [row] = <[PatternRow; 1]>::try_from(output.rows).ok()?;
+fn profile_charts(output: ProfileOutput) -> Vec<AssistantChart> {
+    let name = output
+        .current
+        .or(output.encounter)
+        .map(|row| row.display_name);
+    let shared = worlds_chart(
+        &output.shared_worlds,
+        AssistantChartKind::SharedWorlds,
+        name,
+    );
+    std::iter::once(shared)
+        .chain(output.activity_pattern.and_then(friend_pattern_chart))
+        .collect()
+}
+
+fn friend_pattern_chart(row: PatternRow) -> Option<AssistantChart> {
     let hourly = row.buckets.keys().any(|key| key.len() == 2);
     let (axis, slots) = if hourly {
         (AssistantChartAxis::HourOfDay, 24)
@@ -255,11 +288,15 @@ fn companions_chart(rows: &[CompanionRow]) -> AssistantChart {
     }
 }
 
-fn worlds_chart(rows: &[WorldRow]) -> AssistantChart {
+fn worlds_chart(
+    rows: &[WorldRow],
+    kind: AssistantChartKind,
+    subject: Option<String>,
+) -> AssistantChart {
     AssistantChart {
-        kind: AssistantChartKind::TopWorlds,
+        kind,
         axis: AssistantChartAxis::Label,
-        subject: None,
+        subject,
         points: rows
             .iter()
             .take(RANKING_LIMIT)

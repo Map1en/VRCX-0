@@ -3158,6 +3158,11 @@ pub(crate) fn mcp_runtime_for(
                 assembly.auth_scope().clone(),
                 assembly.tasks().clone(),
             )),
+            world_lookup: Arc::new(crate::mcp_adapters::DesktopMcpWorldLookupAdapter::new(
+                Arc::clone(runtime.web_client()),
+                Arc::clone(assembly.world_cache()),
+                assembly.auth_scope().clone(),
+            )),
             favorite_mutations: assembly.favorite_mutations().clone(),
             tasks: assembly.tasks().clone(),
         },

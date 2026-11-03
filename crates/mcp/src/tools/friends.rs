@@ -18,6 +18,8 @@ use super::common::{
 use super::presence::presence_location_and_platform;
 use vrcx_0_core::OwnerId;
 
+const SHARED_WORLD_LIMIT: i64 = 5;
+
 #[tool_router(router = friends_tool_router, vis = "pub(crate)")]
 impl VrcxMcpServer {
     #[tool(
@@ -113,7 +115,7 @@ impl VrcxMcpServer {
         structured_result(self.set_friend_note_output(input)?)
     }
     #[tool(
-        description = "[L3·bundle] One call composing everything local about ONE friend: current realtime state, relationship/trust history, your note, read-only moderation flags, your co-presence, their activity pattern, recent changes, favorite groups. Use for \"tell me about X\". Supersedes calling get_friend_log, get_friend_note, or get_friend_changes separately for that person."
+        description = "[L3·bundle] One call composing everything local about ONE person, friend or not: current realtime state, relationship/trust history, your note, read-only moderation flags, your co-presence, when you first and last met with the worlds you shared, their activity pattern, recent changes, favorite groups. Use for \"tell me about X\" or \"how are X and I doing lately\". Supersedes calling get_friend_log, get_friend_note, or get_friend_changes separately for that person."
     )]
     async fn get_friend_profile(
         &self,
@@ -402,6 +404,7 @@ impl VrcxMcpServer {
                 audience: social_aggregates::CopresenceAudience::Everyone,
                 order_by: social_aggregates::CopresenceOrderBy::default(),
                 utc_offset_minutes: input.utc_offset_minutes,
+                world_id: None,
                 target_user_id: Some(user_id.clone()),
             })
             .map_err(map_application_query_error)?
@@ -422,6 +425,42 @@ impl VrcxMcpServer {
             .rows
             .into_iter()
             .next();
+        let encounter = self
+            .runtime
+            .activity_queries
+            .recall_encounter(social_aggregates::RecallEncounterInput {
+                owner_user_id: owner_user_id.clone(),
+                name_query: None,
+                world_id: None,
+                co_present_with_user_id: None,
+                target_user_id: Some(user_id.clone()),
+                time_window: social_aggregates::TimeWindow::all(),
+                limit: Some(1),
+            })
+            .map_err(map_application_query_error)?
+            .rows
+            .into_iter()
+            .next();
+        let shared_worlds = self
+            .runtime
+            .activity_queries
+            .copresence_summary(social_aggregates::CopresenceSummaryInput {
+                time_window: time_window.clone(),
+                group_by: social_aggregates::CopresenceGroupBy::FriendWorld,
+                min_minutes: None,
+                limit: Some(SHARED_WORLD_LIMIT),
+                owner_user_id: Some(owner_user_id.clone()),
+                audience: social_aggregates::CopresenceAudience::Everyone,
+                order_by: social_aggregates::CopresenceOrderBy::default(),
+                utc_offset_minutes: input.utc_offset_minutes,
+                world_id: None,
+                target_user_id: Some(user_id.clone()),
+            })
+            .map_err(map_application_query_error)?
+            .rows
+            .into_iter()
+            .map(FriendProfileSharedWorld::from)
+            .collect();
         let current = current
             .or_else(|| fallback_friend_profile_current(&user_id, &relationship, latest_bio));
         Ok(FriendProfileOutput {
@@ -431,6 +470,8 @@ impl VrcxMcpServer {
             note,
             moderation,
             copresence,
+            encounter,
+            shared_worlds,
             activity_pattern,
             recent_changes,
             favorite_groups: self.friend_favorite_groups(&user_id)?,
@@ -438,6 +479,7 @@ impl VrcxMcpServer {
                 "Friend profile combines local VRCX-0 observations and current realtime memory; missing fields mean unobserved or not loaded.".into(),
                 "When realtime friend memory is unavailable, current uses the latest observed local profile fields where possible.".into(),
                 "Moderation status is read-only here; MCP does not execute block or mute actions.".into(),
+                "encounter covers all history (first/last time you saw them join an instance you were in); sharedWorlds and copresence follow timeWindow.".into(),
                 format!(
                     "activityPattern hour buckets are in {}.",
                     activity_buckets::utc_offset_label(input.utc_offset_minutes.unwrap_or(0))
@@ -721,11 +763,35 @@ struct FriendProfileOutput {
     #[serde(skip_serializing_if = "Option::is_none")]
     moderation: Option<FriendModerationStatus>,
     copresence: Option<social_aggregates::CopresenceSummaryRow>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    encounter: Option<social_aggregates::RecallEncounterRow>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    shared_worlds: Vec<FriendProfileSharedWorld>,
     activity_pattern: Option<social_aggregates::FriendActivityPatternRow>,
     recent_changes: Vec<FriendProfileChangeSummary>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     favorite_groups: Vec<String>,
     caveats: Vec<String>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct FriendProfileSharedWorld {
+    world_id: String,
+    world_name: String,
+    total_minutes: i64,
+    last_seen_together: String,
+}
+
+impl From<social_aggregates::CopresenceSummaryRow> for FriendProfileSharedWorld {
+    fn from(row: social_aggregates::CopresenceSummaryRow) -> Self {
+        Self {
+            world_id: row.world_id.unwrap_or_default(),
+            world_name: row.world_name.unwrap_or_default(),
+            total_minutes: row.total_minutes,
+            last_seen_together: row.last_seen_together,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize)]

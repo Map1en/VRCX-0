@@ -9,6 +9,7 @@ import type {
     AssistantToolResultEvent,
     AssistantTurnEntitiesEvent,
     Entity,
+    MentionTarget,
     SessionSummary,
     UIMessage
 } from '@/domain/assistant/types';
@@ -23,7 +24,9 @@ interface AssistantChatState {
     surfacedEntitiesBySession: Record<string, Entity[]>;
     entityPanelOpenBySession: Record<string, boolean>;
     busySessions: Record<string, boolean>;
+    mentionDraft: MentionTarget | null;
     setOpen: (open: boolean) => void;
+    startMentionDraft: (target: MentionTarget) => void;
     setEntityPanelOpen: (open: boolean) => void;
     setSessions: (sessions: SessionSummary[]) => void;
     setActiveSession: (sessionId: string | null) => void;
@@ -58,6 +61,7 @@ type AssistantChatData = Pick<
     | 'surfacedEntitiesBySession'
     | 'entityPanelOpenBySession'
     | 'busySessions'
+    | 'mentionDraft'
 >;
 
 const initialState: AssistantChatData = {
@@ -68,7 +72,8 @@ const initialState: AssistantChatData = {
     messagesBySession: {},
     surfacedEntitiesBySession: {},
     entityPanelOpenBySession: {},
-    busySessions: {}
+    busySessions: {},
+    mentionDraft: null
 };
 
 function markSessionIdle(
@@ -249,6 +254,9 @@ function withAssistantMessage(
 export const useAssistantChatStore = create<AssistantChatState>((set) => ({
     ...initialState,
 
+    startMentionDraft: (target) =>
+        set({ open: true, activeSessionId: null, mentionDraft: target }),
+
     setOpen: (open) =>
         set((state) => {
             if (open) {
@@ -287,7 +295,8 @@ export const useAssistantChatStore = create<AssistantChatState>((set) => ({
                 : {}
         ),
     setSessions: (sessions) => set({ sessions }),
-    setActiveSession: (activeSessionId) => set({ activeSessionId }),
+    setActiveSession: (activeSessionId) =>
+        set({ activeSessionId, mentionDraft: null }),
     evictSessionData: (sessionId) =>
         set((state) => {
             if (getBusySessionIds(state).has(sessionId)) {

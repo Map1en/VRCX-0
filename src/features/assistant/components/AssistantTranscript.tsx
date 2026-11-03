@@ -11,11 +11,14 @@ import {
     MessageScrollerViewport
 } from '@/ui/shadcn/message-scroller';
 
+import { AssistantFollowUps } from './AssistantFollowUps';
 import { AssistantMessage } from './AssistantMessage';
 
 interface AssistantTranscriptProps {
     sessionId: string | null;
     messages: readonly UIMessage[] | undefined;
+    busy: boolean;
+    onSend: (text: string) => void;
     emptyState: ReactNode;
     scrollToLatestLabel: string;
     thinkingLabel: string;
@@ -24,6 +27,8 @@ interface AssistantTranscriptProps {
 export function AssistantTranscript({
     sessionId,
     messages,
+    busy,
+    onSend,
     emptyState,
     scrollToLatestLabel,
     thinkingLabel
@@ -48,6 +53,12 @@ export function AssistantTranscript({
                                         message={message}
                                         thinkingLabel={thinkingLabel}
                                     />
+                                    {!busy && message === messages.at(-1) && (
+                                        <AssistantFollowUps
+                                            message={message}
+                                            onSend={onSend}
+                                        />
+                                    )}
                                 </MessageScrollerItem>
                             ))
                         ) : (

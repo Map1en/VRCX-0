@@ -9,6 +9,7 @@ import {
 import type { ComponentType, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { FavoriteBadgeMenu } from '@/components/favorites/FavoriteActionMenu';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import type { UserBadgeRecord } from '@/domain/entities/user';
 import { cn } from '@/lib/utils';
@@ -104,8 +105,15 @@ export function UserDialogHeaderFlags({
     }
 
     return (
-        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
             <UserRelationshipBadges badges={relationshipBadges} />
+            {relationshipBadges.includes('friend') && profile.id ? (
+                <FavoriteBadgeMenu
+                    kind="friend"
+                    entityId={profile.id}
+                    entity={profile}
+                />
+            ) : null}
             {profile.$isTroll ? (
                 <Badge variant="destructive">
                     {t(

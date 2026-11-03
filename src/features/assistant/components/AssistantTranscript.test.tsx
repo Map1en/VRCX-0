@@ -78,6 +78,8 @@ describe('AssistantTranscript', () => {
             <AssistantTranscript
                 sessionId="session_1"
                 messages={messages}
+                busy={false}
+                onSend={vi.fn()}
                 emptyState={null}
                 scrollToLatestLabel="Jump to latest"
                 thinkingLabel="Thinking…"
@@ -102,6 +104,8 @@ describe('AssistantTranscript', () => {
             <AssistantTranscript
                 sessionId={null}
                 messages={[]}
+                busy={false}
+                onSend={vi.fn()}
                 emptyState={<p>Ask about your social life</p>}
                 scrollToLatestLabel="Jump to latest"
                 thinkingLabel="Thinking…"

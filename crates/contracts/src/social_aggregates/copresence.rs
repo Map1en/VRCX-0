@@ -50,6 +50,8 @@ pub struct CopresenceSummaryInput {
     pub utc_offset_minutes: Option<i64>,
     #[serde(default)]
     pub target_user_id: Option<String>,
+    #[serde(default)]
+    pub world_id: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]

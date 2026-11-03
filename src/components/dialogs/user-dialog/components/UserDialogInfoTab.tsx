@@ -1,4 +1,9 @@
-import { ChevronRightIcon, ExternalLinkIcon, PencilIcon } from 'lucide-react';
+import {
+    ChevronRightIcon,
+    ExternalLinkIcon,
+    PencilIcon,
+    SparklesIcon
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -33,6 +38,8 @@ import type { UserDialogPreviousInstance } from '@/services/userDialogSessionCac
 import type { UserDialogRelationshipEvent } from '@/services/userDialogSessionCacheService';
 import { parseLocation } from '@/shared/utils/location';
 import { replaceBioSymbols } from '@/shared/utils/string';
+import { useAssistantChatStore } from '@/state/assistantChatStore';
+import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -824,11 +831,45 @@ export function UserDialogActivitySummaryPanel({
 }: UserDialogActivitySummarySectionProps) {
     const { i18n, t } = useTranslation();
     const dateLocale = i18n.resolvedLanguage || i18n.language;
+    const showAssistantShortcuts = usePreferencesStore(
+        (state) => state.showAssistantShortcuts
+    );
 
     return (
         <InfoPanel
             title={t('dialog.user.info.activity_summary')}
             contentClassName="gap-1"
+            action={
+                showAssistantShortcuts && !isCurrentUser && profile.id ? (
+                    <Tooltip>
+                        <TooltipTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    size="icon-xs"
+                                    variant="outline"
+                                    aria-label={t('assistant.title')}
+                                    onClick={() =>
+                                        useAssistantChatStore
+                                            .getState()
+                                            .startMentionDraft({
+                                                kind: 'user',
+                                                id: profile.id ?? '',
+                                                name:
+                                                    profile.displayName ||
+                                                    profile.id ||
+                                                    ''
+                                            })
+                                    }
+                                >
+                                    <SparklesIcon data-icon="inline-start" />
+                                </Button>
+                            }
+                        />
+                        <TooltipContent>{t('assistant.title')}</TooltipContent>
+                    </Tooltip>
+                ) : null
+            }
         >
             <InfoStatGrid className="sm:grid-cols-1">
                 {!isCurrentUser ? (

@@ -19,19 +19,22 @@ const RANKING_ROW_HEIGHT = 24;
 const MINUTE_KINDS = new Set<AssistantChart['kind']>([
     'myPlaytime',
     'topCompanions',
-    'topWorlds'
+    'topWorlds',
+    'sharedWorlds'
 ]);
 const TITLE_KEYS: Record<AssistantChart['kind'], string> = {
     myPlaytime: 'assistant.chart.my_playtime',
     bestTimes: 'assistant.chart.best_times',
     friendPattern: 'assistant.chart.friend_pattern',
     topCompanions: 'assistant.chart.top_companions',
-    topWorlds: 'assistant.chart.top_worlds'
+    topWorlds: 'assistant.chart.top_worlds',
+    sharedWorlds: 'assistant.chart.shared_worlds'
 };
 const RANKING_KINDS = new Set<AssistantChart['kind']>([
     'bestTimes',
     'topCompanions',
-    'topWorlds'
+    'topWorlds',
+    'sharedWorlds'
 ]);
 
 function chartHeight(chart: AssistantChart): number {

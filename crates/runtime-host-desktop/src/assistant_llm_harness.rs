@@ -827,6 +827,14 @@ struct Truth {
     seven_days: Option<Vec<String>>,
     recent: Vec<String>,
     month_minutes: Option<i64>,
+    world: Option<WorldTruth>,
+}
+
+struct WorldTruth {
+    id: String,
+    name: String,
+    total_minutes: i64,
+    top_people: Vec<String>,
 }
 
 impl Truth {
@@ -852,8 +860,68 @@ impl Truth {
             seven_days: rolling(7),
             recent,
             month_minutes: month_minutes(runtime).await,
+            world: sql.most_visited_world(),
         }
     }
+}
+
+async fn play_world_profile(harness: &mut Harness, world: &WorldTruth) {
+    let mention = format!("[@{}](vrcx-0://world/open?id={})", world.name, world.id);
+    let visits = harness
+        .ask(
+            "world_visits",
+            None,
+            "zh-CN",
+            &format!("最近几次去 {mention} 都和谁在一起"),
+        )
+        .await;
+    harness.check(
+        "world_visits",
+        visits.tool_calls.len() <= 6,
+        "the answer drilled visit by visit instead of reading recentVisits",
+    );
+    harness.check(
+        "world_visits",
+        visits
+            .tool_calls
+            .iter()
+            .zip(&visits.tool_arguments)
+            .any(|(name, args)| name == "get_world_profile" && args.contains(&world.id)),
+        "the world mention did not reach get_world_profile by id",
+    );
+    harness.check(
+        "world_visits",
+        world.top_people.is_empty() || names_any(&visits.answer, &world.top_people),
+        "the answer missed the people met there most",
+    );
+
+    let popularity = harness
+        .ask(
+            "world_popularity",
+            Some(visits.session_id.clone()),
+            "zh-CN",
+            &format!("{mention} 热门吗，有多少人收藏"),
+        )
+        .await;
+    harness.check(
+        "world_popularity",
+        popularity.error.is_none() && !popularity.answer.trim().is_empty(),
+        "no answer about the world's popularity",
+    );
+
+    let by_name = harness
+        .ask(
+            "world_by_name",
+            None,
+            "zh-CN",
+            &format!("我在 {} 一共待了多久？", world.name),
+        )
+        .await;
+    harness.check(
+        "world_by_name",
+        mentions_duration(&by_name.answer, world.total_minutes),
+        "the answer missed the total time spent in the world",
+    );
 }
 
 fn names_any(answer: &str, names: &[String]) -> bool {
@@ -1041,6 +1109,16 @@ impl Scenarios {
                     "the answer missed the top companion of the last 7 days",
                 ),
                 None => println!("en_recent: no co-presence in the last 7 days"),
+            }
+        }
+        if self.runs("world_profile") {
+            match &self.truth.world {
+                Some(world) => play_world_profile(harness, world).await,
+                None => println!(
+                    "
+=== world_profile ===
+skipped: no world visited twice"
+                ),
             }
         }
     }
@@ -1609,6 +1687,50 @@ impl SnapshotSql {
                AND strftime('%s', created_at) * 1000 - COALESCE(time, 0) < strftime('%s', ?4) * 1000",
             rusqlite::params![self.owner_row, user_id, from, to],
         )
+    }
+
+    fn most_visited_world(&self) -> Option<WorldTruth> {
+        let (id, name, total_minutes) = self
+            .connection
+            .query_row(
+                "SELECT world_id, MAX(world_name), SUM(MAX(COALESCE(time, 0), 0)) / 60000
+                 FROM gamelog_location
+                 WHERE owner_id IN (0, ?1) AND world_id LIKE 'wrld%' AND world_name <> ''
+                 GROUP BY world_id HAVING COUNT(*) >= 2
+                 ORDER BY COUNT(*) DESC LIMIT 1",
+                [self.owner_row],
+                |row| {
+                    Ok((
+                        row.get::<_, String>(0)?,
+                        row.get::<_, String>(1)?,
+                        row.get(2)?,
+                    ))
+                },
+            )
+            .ok()?;
+        let mut statement = self
+            .connection
+            .prepare(
+                "SELECT display_name FROM gamelog_join_leave
+                 WHERE owner_id IN (0, ?1) AND type = 'OnPlayerLeft' AND user_id <> ?2
+                   AND trim(user_id) <> ''
+                   AND (location = ?3 OR substr(location, 1, length(?3) + 1) = ?3 || ':')
+                 GROUP BY user_id ORDER BY SUM(COALESCE(time, 0)) DESC LIMIT 3",
+            )
+            .unwrap();
+        let top_people = statement
+            .query_map(rusqlite::params![self.owner_row, self.owner, id], |row| {
+                row.get(0)
+            })
+            .unwrap()
+            .filter_map(Result::ok)
+            .collect();
+        Some(WorldTruth {
+            id,
+            name,
+            total_minutes,
+            top_people,
+        })
     }
 
     fn friends_by_copresence(&self) -> Vec<(String, i64)> {

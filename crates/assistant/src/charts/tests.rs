@@ -209,3 +209,31 @@ fn other_tools_and_error_payloads_have_no_charts() {
     assert!(tool_charts("get_friend_profile", &json!({ "rows": [] })).is_empty());
     assert!(tool_charts("get_copresence_summary", &json!({ "error": "x" })).is_empty());
 }
+
+#[test]
+fn friend_profile_charts_shared_worlds_then_the_hourly_pattern() {
+    let charts = tool_charts(
+        "get_friend_profile",
+        &json!({
+            "current": null,
+            "encounter": { "displayName": "Stranger" },
+            "sharedWorlds": [
+                { "worldId": "wrld_l", "worldName": "Cozy Loft", "totalMinutes": 60, "lastSeenTogether": "" },
+                { "worldId": "wrld_p", "worldName": "Night Pier", "totalMinutes": 30, "lastSeenTogether": "" }
+            ],
+            "activityPattern": { "displayName": "Stranger", "buckets": { "21": 4 } }
+        }),
+    );
+
+    assert_eq!(charts.len(), 2);
+    assert_eq!(charts[0].kind, AssistantChartKind::SharedWorlds);
+    assert_eq!(charts[0].subject.as_deref(), Some("Stranger"));
+    assert_eq!(values(&charts[0]), [("Cozy Loft", 60), ("Night Pier", 30)]);
+    assert_eq!(charts[1].kind, AssistantChartKind::FriendPattern);
+
+    assert!(tool_charts(
+        "get_friend_profile",
+        &json!({ "current": null, "encounter": null, "activityPattern": null })
+    )
+    .is_empty());
+}

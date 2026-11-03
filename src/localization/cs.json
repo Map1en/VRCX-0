@@ -232,6 +232,7 @@
             "get_online_friends": "Zobrazit přátele online",
             "get_social_graph": "Zobrazit sociální síť",
             "get_visit_timeline": "Projít jednu návštěvu",
+            "get_world_profile": "Zobrazit profil světa",
             "recall_encounter": "Vybavit si potkané lidi",
             "refresh_mutual_graph": "Obnovit společné přátele",
             "search_friend_feed": "Hledat v kanálu přátel",
@@ -242,10 +243,25 @@
         "chart": {
             "my_playtime": "Můj herní čas",
             "best_times": "Kdy je online nejvíc přátel",
-            "friend_pattern": "Kdy bývá {{name}} online",
+            "friend_pattern": "Kdy bývá {name} online",
             "top_companions": "Nejvíc společného času",
             "top_worlds": "Nejnavštěvovanější světy",
-            "show_more": "Zobrazit další ({{count}})"
+            "show_more": "Zobrazit další ({count})",
+            "shared_worlds": "Světy, kde jste nejčastěji s {name}"
+        },
+        "brief": {
+            "prompt": "Jak se v poslední době máme s {mention}?",
+            "world": "Jaký je svět {mention}?"
+        },
+        "follow_up": {
+            "title": "Co dalšího chcete vědět?",
+            "companions": "S kým se {mention} v poslední době stýká?",
+            "mutuals": "Jaké společné přátele máme s {mention}?",
+            "fading": "Vzdalujeme se s {mention}?",
+            "last_visit": "Kdo byl u toho, když jsme s {mention} byli naposledy ve stejné instanci?",
+            "world_visits": "S kým jsem byl naposledy v {mention}?",
+            "world_people": "Koho v {mention} potkávám nejčastěji?",
+            "world_popularity": "Je {mention} populární? Kolik lidí ho má v oblíbených?"
         }
     },
     "user_hover_card": {
@@ -2743,6 +2759,8 @@
                 "default_model_unset": "Žádný dostupný model",
                 "setup_hint": "Sociální AI potřebuje připojení kompatibilní s OpenAI, jinak nedokáže odpovídat.",
                 "playbook_mode_description": "Jak velkou volnost má model při analýze dat.",
+                "shortcuts": "Zkratky k AI",
+                "shortcuts_description": "Zobrazuje tlačítka „Zeptat se AI“ v profilech a dalších zobrazeních. Asistent zůstane dostupný z titulkového pruhu.",
                 "endpoints_description": "Sdílí je Sociální AI i překlad."
             },
             "social": {

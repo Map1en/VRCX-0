@@ -3561,7 +3561,8 @@ export type AssistantChartKind =
     | 'bestTimes'
     | 'friendPattern'
     | 'topCompanions'
-    | 'topWorlds';
+    | 'topWorlds'
+    | 'sharedWorlds';
 export type AssistantChartPoint = { key: string; value: number };
 export type AssistantChoiceCandidate = {
     userId: string;

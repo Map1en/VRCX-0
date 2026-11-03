@@ -286,6 +286,13 @@ export function buildInterfaceSection({
         onHideUserMemosChange: (checked: boolean) => {
             saveBoolPreference('hideUserMemos', 'hideUserMemos', !checked);
         },
+        onShowAssistantShortcutsChange: (checked: boolean) => {
+            saveBoolPreference(
+                'showAssistantShortcuts',
+                'showAssistantShortcuts',
+                checked
+            );
+        },
         onRandomUserColoursChange: (checked: boolean) => {
             saveBoolPreference(
                 'randomUserColours',

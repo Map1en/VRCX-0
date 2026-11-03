@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use crate::common::{row_i64, row_string, ParamsBuilder};
 use crate::database::DatabaseService;
 use crate::favorites;
-use crate::ownership::{owner_id_for_filter, OwnerId};
+use crate::ownership::{owner_id_for_filter, OwnerId, OwnerRowId};
 use crate::Error;
 use vrcx_0_core::location::parse_location;
 use vrcx_0_core::FavoriteEntityKind;
@@ -12,9 +12,14 @@ use super::caveats::{favorite_local_caveats, worlds_visited_caveats};
 use super::helpers::{append_time_window_filter, millis_to_minutes, world_names_for_ids};
 use super::types::{
     FavoriteAction, FavoriteLocalInput, FavoriteOutput, SearchWorldsVisitedInput,
-    SearchWorldsVisitedOutput, TopVisitedWorldRow, TopVisitedWorldsInput, VisitedWorldRow,
+    SearchWorldsVisitedOutput, TopVisitedWorldRow, TopVisitedWorldsInput, VisitedWorldMatch,
+    VisitedWorldRow, WorldVisitHistory,
 };
 use super::visits::shift_timestamp;
+
+const VISIT_PEOPLE_LIMIT: i64 = 5;
+const VISIT_LEAVE_SLACK_MILLIS: i64 = 60_000;
+const OPEN_VISIT_WINDOW_MILLIS: i64 = 24 * 60 * 60 * 1000;
 
 pub fn search_worlds_visited(
     db: &DatabaseService,
@@ -50,6 +55,7 @@ pub fn search_worlds_visited(
                     .flatten(),
                 visited_at,
                 stay_minutes: millis_to_minutes(stay_millis),
+                people: None,
             }
         })
         .filter(|row| !row.world_id.is_empty() || !row.location.is_empty())
@@ -114,6 +120,146 @@ pub fn top_visited_worlds(
         }
     }
     Ok(rows)
+}
+
+pub fn world_visit_history(
+    db: &DatabaseService,
+    owner_user_id: &OwnerId,
+    world_id: &str,
+    recent_limit: i64,
+) -> Result<WorldVisitHistory, Error> {
+    let owner_id = owner_id_for_filter(db, owner_user_id)?;
+    let world_params = || {
+        ParamsBuilder::new()
+            .set("owner_id", owner_id)
+            .set("world_id", world_id.trim())
+    };
+    let totals = db.execute(
+        "SELECT COUNT(*), COALESCE(SUM(MAX(COALESCE(time, 0), 0)), 0),
+                COALESCE(MIN(created_at), ''), COALESCE(MAX(created_at), '')
+         FROM gamelog_location
+         WHERE owner_id IN (0, @owner_id) AND world_id = @world_id",
+        &world_params().build(),
+    )?;
+    let Some(totals) = totals.first() else {
+        return Ok(WorldVisitHistory::default());
+    };
+    let mut recent_visits: Vec<VisitedWorldRow> = db
+        .execute(
+            "SELECT world_id, world_name, location, created_at, time
+             FROM gamelog_location
+             WHERE owner_id IN (0, @owner_id) AND world_id = @world_id
+             ORDER BY created_at DESC, id DESC LIMIT @limit",
+            &world_params()
+                .set("limit", recent_limit.clamp(1, 20))
+                .build(),
+        )?
+        .into_iter()
+        .map(|row| {
+            let visited_at = row_string(&row, 3);
+            let stay_millis = row_i64(&row, 4).max(0);
+            let location = row_string(&row, 2);
+            VisitedWorldRow {
+                world_id: row_string(&row, 0),
+                world_name: row_string(&row, 1),
+                access_type: parse_location(&location).access_type,
+                location,
+                left_at: (stay_millis > 0)
+                    .then(|| shift_timestamp(&visited_at, stay_millis))
+                    .flatten(),
+                visited_at,
+                stay_minutes: millis_to_minutes(stay_millis),
+                people: None,
+            }
+        })
+        .collect();
+    for visit in &mut recent_visits {
+        visit.people = Some(people_during_visit(db, owner_user_id, owner_id, visit)?);
+    }
+    Ok(WorldVisitHistory {
+        visits: row_i64(totals, 0),
+        total_minutes: millis_to_minutes(row_i64(totals, 1)),
+        first_visited_at: row_string(totals, 2),
+        last_visited_at: row_string(totals, 3),
+        recent_visits,
+    })
+}
+
+fn people_during_visit(
+    db: &DatabaseService,
+    owner_user_id: &OwnerId,
+    owner_id: OwnerRowId,
+    visit: &VisitedWorldRow,
+) -> Result<Vec<String>, Error> {
+    let stay_millis = visit.stay_minutes.max(0).saturating_mul(60_000);
+    let until = shift_timestamp(
+        &visit.visited_at,
+        if stay_millis > 0 {
+            stay_millis + VISIT_LEAVE_SLACK_MILLIS
+        } else {
+            OPEN_VISIT_WINDOW_MILLIS
+        },
+    )
+    .unwrap_or_default();
+    Ok(db
+        .execute(
+            "SELECT COALESCE(NULLIF(MAX(display_name), ''), user_id)
+             FROM gamelog_join_leave
+             WHERE owner_id IN (0, @owner_id) AND type = 'OnPlayerLeft'
+               AND location = @location
+               AND created_at > @from AND created_at <= @until
+               AND trim(COALESCE(user_id, '')) <> '' AND user_id <> @owner_user_id
+             GROUP BY user_id
+             ORDER BY SUM(COALESCE(time, 0)) DESC
+             LIMIT @limit",
+            &ParamsBuilder::new()
+                .set("owner_id", owner_id)
+                .set("owner_user_id", owner_user_id.as_str())
+                .set("location", visit.location.as_str())
+                .set("from", visit.visited_at.as_str())
+                .set("until", until)
+                .set("limit", VISIT_PEOPLE_LIMIT)
+                .build(),
+        )?
+        .into_iter()
+        .map(|row| row_string(&row, 0))
+        .collect())
+}
+
+pub fn find_visited_worlds(
+    db: &DatabaseService,
+    owner_user_id: &OwnerId,
+    name: &str,
+    limit: i64,
+) -> Result<Vec<VisitedWorldMatch>, Error> {
+    let name = name.trim().to_lowercase();
+    if name.is_empty() {
+        return Ok(Vec::new());
+    }
+    let rows = db.execute(
+        "SELECT world_id, world_name, MAX(created_at) AS last_visited_at,
+                MAX(lower(world_name) = @name) AS exact
+         FROM gamelog_location
+         WHERE owner_id IN (0, @owner_id)
+           AND COALESCE(world_id, '') <> ''
+           AND instr(lower(world_name), @name) > 0
+         GROUP BY world_id
+         ORDER BY exact DESC, last_visited_at DESC
+         LIMIT @limit",
+        &ParamsBuilder::new()
+            .set("owner_id", owner_id_for_filter(db, owner_user_id)?)
+            .set("name", name)
+            .set("limit", limit.clamp(1, 20))
+            .build(),
+    )?;
+    Ok(rows
+        .into_iter()
+        .map(|row| VisitedWorldMatch {
+            world_id: row_string(&row, 0),
+            world_name: row_string(&row, 1),
+            last_visited_at: row_string(&row, 2),
+        })
+        .collect())
 }
 
 fn worlds_visited_summary(rows: &[VisitedWorldRow]) -> String {

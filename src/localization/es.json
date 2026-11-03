@@ -230,6 +230,7 @@
             "get_online_friends": "Ver amigos en línea",
             "get_social_graph": "Ver mapa social",
             "get_visit_timeline": "Repasar una visita",
+            "get_world_profile": "Ver perfil del mundo",
             "recall_encounter": "Recordar gente que conociste",
             "refresh_mutual_graph": "Actualizar amigos en común",
             "search_friend_feed": "Buscar en el feed de amigos",
@@ -240,10 +241,25 @@
         "chart": {
             "my_playtime": "Mi tiempo de juego",
             "best_times": "Cuándo se conectan más amigos",
-            "friend_pattern": "Cuándo se conecta {{name}}",
+            "friend_pattern": "Cuándo se conecta {name}",
             "top_companions": "Más tiempo juntos",
             "top_worlds": "Mundos más visitados",
-            "show_more": "Mostrar {{count}} más"
+            "show_more": "Mostrar {count} más",
+            "shared_worlds": "Mundos más visitados con {name}"
+        },
+        "brief": {
+            "prompt": "¿Cómo vamos {mention} y yo últimamente?",
+            "world": "¿Cómo es {mention}?"
+        },
+        "follow_up": {
+            "title": "¿Qué más quieres saber?",
+            "companions": "¿Con quién pasa el tiempo {mention} últimamente?",
+            "mutuals": "¿Qué amigos tenemos en común {mention} y yo?",
+            "fading": "¿Nos estamos alejando {mention} y yo?",
+            "last_visit": "¿Quién estaba la última vez que {mention} y yo coincidimos en una instancia?",
+            "world_visits": "¿Con quién estuve las últimas veces que fui a {mention}?",
+            "world_people": "¿Con quién coincido más en {mention}?",
+            "world_popularity": "¿{mention} es popular? ¿Cuántos lo tienen en favoritos?"
         }
     },
     "user_hover_card": {
@@ -2727,6 +2743,8 @@
                 "default_model_unset": "No hay modelos disponibles",
                 "setup_hint": "La IA social necesita una conexión compatible con OpenAI antes de poder responder.",
                 "playbook_mode_description": "Cuánta libertad tiene el modelo al analizar tus datos.",
+                "shortcuts": "Accesos rápidos a la IA",
+                "shortcuts_description": "Muestra botones de «Preguntar a la IA» en perfiles y otras vistas. El asistente sigue disponible desde la barra de título.",
                 "endpoints_description": "Compartidas por la IA social y la traducción."
             },
             "social": {

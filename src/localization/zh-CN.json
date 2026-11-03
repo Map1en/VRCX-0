@@ -229,6 +229,7 @@
             "get_online_friends": "查看在线好友",
             "get_social_graph": "查看社交关系图",
             "get_visit_timeline": "回看一次房间经历",
+            "get_world_profile": "查看世界资料",
             "recall_encounter": "回忆遇到过的人",
             "refresh_mutual_graph": "刷新共同好友",
             "search_friend_feed": "搜索好友动态",
@@ -239,10 +240,25 @@
         "chart": {
             "my_playtime": "我的游玩时长",
             "best_times": "好友最常上线的时段",
-            "friend_pattern": "{{name}} 的上线时段",
+            "friend_pattern": "{name} 的上线时段",
             "top_companions": "同房时长排行",
             "top_worlds": "最常去的世界",
-            "show_more": "再显示 {{count}} 张"
+            "show_more": "再显示 {count} 张",
+            "shared_worlds": "和 {name} 一起去得最多的世界"
+        },
+        "brief": {
+            "prompt": "我和 {mention} 的近况",
+            "world": "{mention} 这个世界怎么样"
+        },
+        "follow_up": {
+            "title": "想继续了解什么？",
+            "companions": "{mention} 最近常和谁一起玩",
+            "mutuals": "我和 {mention} 有哪些共同好友",
+            "fading": "我和 {mention} 是不是比以前疏远了",
+            "last_visit": "我和 {mention} 最近一次同房时都有谁",
+            "world_visits": "最近几次去 {mention} 都和谁在一起",
+            "world_people": "在 {mention} 常遇到哪些人",
+            "world_popularity": "{mention} 热门吗，有多少人收藏"
         }
     },
     "user_hover_card": {
@@ -2720,6 +2736,8 @@
                 "default_model_unset": "暂无可用模型",
                 "setup_hint": "AI 助手需要先连接一个 OpenAI 兼容的接口才能回答问题。",
                 "playbook_mode_description": "模型分析数据时的自由度。",
+                "shortcuts": "页面内的 AI 快捷入口",
+                "shortcuts_description": "在用户资料等页面里显示“问 AI”按钮。关闭后仍可从标题栏打开助手。",
                 "endpoints_description": "AI 助手和翻译共用。"
             },
             "social": {

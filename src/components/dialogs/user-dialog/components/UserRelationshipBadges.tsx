@@ -74,7 +74,16 @@ export function UserRelationshipBadges({
     return badges.map((key) => {
         const { icon: Icon, labelKey, variant } = BADGE_META[key];
         return (
-            <Badge key={key} variant={variant} data-relationship-badge={key}>
+            <Badge
+                key={key}
+                variant={variant}
+                data-relationship-badge={key}
+                className={
+                    key === 'friend'
+                        ? 'text-muted-foreground gap-2 bg-transparent px-0 font-normal has-data-[icon=inline-start]:pl-0 [&>svg]:size-3.5! [&>svg]:opacity-70'
+                        : undefined
+                }
+            >
                 <Icon data-icon="inline-start" aria-hidden="true" />
                 {t(labelKey)}
             </Badge>

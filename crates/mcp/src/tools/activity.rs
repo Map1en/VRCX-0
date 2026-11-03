@@ -56,6 +56,7 @@ impl VrcxMcpServer {
                 },
                 order_by: social_aggregates::CopresenceOrderBy::default(),
                 utc_offset_minutes: input.utc_offset_minutes,
+                world_id: None,
                 target_user_id: None,
             })
             .map_err(map_application_query_error)?;
@@ -270,6 +271,7 @@ impl VrcxMcpServer {
                 name_query: input.name_query,
                 world_id: input.world_id,
                 co_present_with_user_id,
+                target_user_id: None,
                 time_window: input.time_window.unwrap_or_default().into(),
                 limit: input.limit.or(Some(20)),
             })
@@ -395,6 +397,7 @@ impl VrcxMcpServer {
                 audience: social_aggregates::CopresenceAudience::Friends,
                 order_by: social_aggregates::CopresenceOrderBy::default(),
                 utc_offset_minutes: input.utc_offset_minutes,
+                world_id: None,
                 target_user_id: None,
             })
             .map_err(map_application_query_error)?

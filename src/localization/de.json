@@ -230,6 +230,7 @@
             "get_online_friends": "Online-Freunde ansehen",
             "get_social_graph": "Soziales Netz ansehen",
             "get_visit_timeline": "Einen Besuch nachvollziehen",
+            "get_world_profile": "Weltprofil ansehen",
             "recall_encounter": "Getroffene Leute wiederfinden",
             "refresh_mutual_graph": "Gemeinsame Freunde aktualisieren",
             "search_friend_feed": "Freunde-Feed durchsuchen",
@@ -240,10 +241,25 @@
         "chart": {
             "my_playtime": "Meine Spielzeit",
             "best_times": "Wann die meisten Freunde online sind",
-            "friend_pattern": "Wann {{name}} online ist",
+            "friend_pattern": "Wann {name} online ist",
             "top_companions": "Meiste gemeinsame Zeit",
             "top_worlds": "Meistbesuchte Welten",
-            "show_more": "{{count}} weitere anzeigen"
+            "show_more": "{count} weitere anzeigen",
+            "shared_worlds": "Meistbesuchte Welten mit {name}"
+        },
+        "brief": {
+            "prompt": "Wie läuft es zwischen {mention} und mir in letzter Zeit?",
+            "world": "Wie ist {mention}?"
+        },
+        "follow_up": {
+            "title": "Was möchtest du noch wissen?",
+            "companions": "Mit wem ist {mention} in letzter Zeit unterwegs?",
+            "mutuals": "Welche Freunde haben {mention} und ich gemeinsam?",
+            "fading": "Leben {mention} und ich uns auseinander?",
+            "last_visit": "Wer war dabei, als {mention} und ich zuletzt in derselben Instanz waren?",
+            "world_visits": "Mit wem war ich die letzten Male in {mention}?",
+            "world_people": "Wen treffe ich in {mention} am häufigsten?",
+            "world_popularity": "Ist {mention} beliebt? Wie oft wurde sie favorisiert?"
         }
     },
     "user_hover_card": {
@@ -2723,6 +2739,8 @@
                 "default_model_unset": "Kein Modell verfügbar",
                 "setup_hint": "Social AI braucht erst eine OpenAI-kompatible Verbindung, um antworten zu können.",
                 "playbook_mode_description": "Wie viel Spielraum das Modell bei der Analyse bekommt.",
+                "shortcuts": "KI-Schnellzugriffe",
+                "shortcuts_description": "Zeigt „KI fragen“-Schaltflächen in Profilen und anderen Ansichten. Der Assistent bleibt über die Titelleiste erreichbar.",
                 "endpoints_description": "Gemeinsam von Social AI und Übersetzung genutzt."
             },
             "social": {

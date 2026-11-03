@@ -1065,6 +1065,12 @@ defineCard('ai', 'assistant', 'view.settings.ai.header', [
         key: 'playbook-mode',
         labelKey: 'assistant.runtime.playbook_mode',
         descriptionKey: 'view.settings.ai.playbook_mode_description'
+    },
+    {
+        key: 'shortcuts',
+        labelKey: 'view.settings.ai.shortcuts',
+        descriptionKey: 'view.settings.ai.shortcuts_description',
+        prefKey: 'showAssistantShortcuts'
     }
 ]);
 

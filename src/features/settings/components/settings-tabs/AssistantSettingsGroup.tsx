@@ -12,6 +12,7 @@ import {
     openLlmEndpointsManager,
     useLlmEndpointsStore
 } from '@/state/llmEndpointsStore';
+import { usePreferencesStore } from '@/state/preferencesStore';
 import { Button } from '@/ui/shadcn/button';
 import {
     Select,
@@ -23,6 +24,8 @@ import {
 } from '@/ui/shadcn/select';
 import { Switch } from '@/ui/shadcn/switch';
 
+import { SETTINGS_DEFAULT_VALUES } from '../../settingsFieldState';
+import { useSettingsPageSection } from '../../SettingsPageStateContext';
 import { SettingsCard } from '../SettingsCard';
 import { Field } from '../SettingsField';
 
@@ -47,6 +50,11 @@ export function AssistantSettingsGroup({
     active
 }: AssistantSettingsGroupProps) {
     const { t } = useTranslation();
+    const { onShowAssistantShortcutsChange } =
+        useSettingsPageSection('interface');
+    const showAssistantShortcuts = usePreferencesStore(
+        (state) => state.showAssistantShortcuts
+    );
     const endpoints = useLlmEndpointsStore((state) => state.endpoints);
     const loadEndpoints = useLlmEndpointsStore((state) => state.load);
     const [selection, setSelection] =
@@ -204,6 +212,21 @@ export function AssistantSettingsGroup({
                         </Field>
                     </>
                 )}
+                <Field
+                    settingId="ai.assistant.shortcuts"
+                    onReset={() =>
+                        onShowAssistantShortcutsChange(
+                            SETTINGS_DEFAULT_VALUES.showAssistantShortcuts
+                        )
+                    }
+                    label={t('view.settings.ai.shortcuts')}
+                    description={t('view.settings.ai.shortcuts_description')}
+                >
+                    <Switch
+                        checked={showAssistantShortcuts}
+                        onCheckedChange={onShowAssistantShortcutsChange}
+                    />
+                </Field>
             </SettingsCard>
 
             <SettingsCard
