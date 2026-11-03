@@ -38,7 +38,7 @@ vrcx-0-vrchat-client = { path = "../vrchat-client" }
 getrandom = "0.4"
 png = "0.18"
 slint ={ workspace = true, features = ["backend-winit", "software-renderer-systemfonts"] }
-tray-icon = { version = "0.25", default-features = false }
+tray-icon = { version = "0.26", default-features = false }
 windows-sys = { version = "0.61", features = ["Win32_System_Console"] }
 
 [dev-dependencies]
