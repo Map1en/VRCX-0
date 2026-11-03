@@ -13,6 +13,7 @@ import {
 
 import { AssistantFollowUps } from './AssistantFollowUps';
 import { AssistantMessage } from './AssistantMessage';
+import { AssistantTrace } from './AssistantTrace';
 
 interface AssistantTranscriptProps {
     sessionId: string | null;
@@ -22,6 +23,7 @@ interface AssistantTranscriptProps {
     emptyState: ReactNode;
     scrollToLatestLabel: string;
     thinkingLabel: string;
+    pendingLabel: string;
 }
 
 export function AssistantTranscript({
@@ -31,8 +33,10 @@ export function AssistantTranscript({
     onSend,
     emptyState,
     scrollToLatestLabel,
-    thinkingLabel
+    thinkingLabel,
+    pendingLabel
 }: AssistantTranscriptProps) {
+    const awaitingReply = busy && messages?.at(-1)?.role === 'user';
     return (
         <MessageScrollerProvider
             key={sessionId ?? 'new-session'}
@@ -64,6 +68,15 @@ export function AssistantTranscript({
                         ) : (
                             <MessageScrollerItem className="flex flex-1">
                                 {emptyState}
+                            </MessageScrollerItem>
+                        )}
+                        {awaitingReply && (
+                            <MessageScrollerItem>
+                                <AssistantTrace
+                                    toolCalls={[]}
+                                    running
+                                    thinkingLabel={pendingLabel}
+                                />
                             </MessageScrollerItem>
                         )}
                     </MessageScrollerContent>

@@ -161,6 +161,7 @@
         "untitled": "Nueva conversación",
         "close": "Cerrar",
         "thinking": "Generando respuesta",
+        "pending": "Pensando",
         "trace": {
             "working": "Revisando tus datos",
             "done": "Datos revisados"

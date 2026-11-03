@@ -83,6 +83,7 @@ describe('AssistantTranscript', () => {
                 emptyState={null}
                 scrollToLatestLabel="Jump to latest"
                 thinkingLabel="Thinking…"
+                pendingLabel="Reading your question"
             />
         );
 
@@ -109,10 +110,35 @@ describe('AssistantTranscript', () => {
                 emptyState={<p>Ask about your social life</p>}
                 scrollToLatestLabel="Jump to latest"
                 thinkingLabel="Thinking…"
+                pendingLabel="Reading your question"
             />
         );
 
         expect(html).toContain('data-slot="message-scroller-item"');
         expect(html).toContain('Ask about your social life');
+    });
+
+    it('shows a waiting row as soon as a question is sent', () => {
+        const render = (busy: boolean, list: UIMessage[]) =>
+            renderToStaticMarkup(
+                <AssistantTranscript
+                    sessionId="session_1"
+                    messages={list}
+                    busy={busy}
+                    onSend={vi.fn()}
+                    emptyState={null}
+                    scrollToLatestLabel="Jump to latest"
+                    thinkingLabel="Thinking…"
+                    pendingLabel="Reading your question"
+                />
+            );
+
+        expect(render(true, messages.slice(0, 1))).toContain(
+            'Reading your question'
+        );
+        expect(render(true, messages)).not.toContain('Reading your question');
+        expect(render(false, messages.slice(0, 1))).not.toContain(
+            'Reading your question'
+        );
     });
 });

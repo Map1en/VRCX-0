@@ -161,6 +161,7 @@
         "untitled": "새 대화",
         "close": "닫기",
         "thinking": "답변 생성 중",
+        "pending": "생각 중",
         "trace": {
             "working": "데이터를 살펴보는 중",
             "done": "데이터를 살펴봤습니다"

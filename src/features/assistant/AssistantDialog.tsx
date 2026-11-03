@@ -390,6 +390,7 @@ export function AssistantDialog() {
                                 busy={busy}
                                 onSend={handleSend}
                                 thinkingLabel={t('assistant.thinking')}
+                                pendingLabel={t('assistant.pending')}
                                 scrollToLatestLabel={t(
                                     'assistant.scroll_to_latest'
                                 )}

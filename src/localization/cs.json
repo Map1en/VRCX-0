@@ -161,6 +161,7 @@
         "untitled": "Nová konverzace",
         "close": "Zavřít",
         "thinking": "Generuji odpověď",
+        "pending": "Přemýšlím",
         "trace": {
             "working": "Procházím vaše data",
             "done": "Data prohledána"

@@ -161,6 +161,7 @@
         "untitled": "新对话",
         "close": "关闭",
         "thinking": "正在生成回答",
+        "pending": "思考中",
         "trace": {
             "working": "正在查阅数据",
             "done": "已查阅数据"

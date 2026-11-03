@@ -161,6 +161,7 @@
         "untitled": "新しい会話",
         "close": "閉じる",
         "thinking": "回答を生成中",
+        "pending": "考え中",
         "trace": {
             "working": "データを確認中",
             "done": "データを確認しました"
