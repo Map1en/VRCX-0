@@ -2705,7 +2705,127 @@
             },
             "filter_placeholder": "筛选工具",
             "filter_empty": "没有匹配的工具",
-            "sections": "分区"
+            "sections": "分区",
+            "chatbox": {
+                "title": "Chatbox",
+                "description": "在游戏内的 Chatbox 显示时间、正在播放和自定义文字，也可以直接打字或翻译后发送。",
+                "save_failed": "Chatbox 设置保存失败。",
+                "status": {
+                    "off": "已关闭",
+                    "manual": "正在显示你的消息",
+                    "afk": "AFK",
+                    "game_not_running": "已暂停 · VRChat 未运行",
+                    "isolated": "已暂停 · 隔离模式已开启",
+                    "showing": "显示状态中"
+                },
+                "composer": {
+                    "title": "手打发送",
+                    "placeholder": "输入消息",
+                    "translation": "翻译",
+                    "send": "发送",
+                    "cancel": "取消",
+                    "translating": "翻译中…",
+                    "translated": "译文",
+                    "shorten": "AI 缩短",
+                    "too_long": "超过 {max} 字上限",
+                    "hint_direct": "回车发送 · Shift+回车换行",
+                    "hint_translate": "回车翻译 · 确认译文后发送",
+                    "translation_failed": "这条消息翻译失败。",
+                    "send_failed": "消息发送失败。",
+                    "game_not_running": "启动 VRChat 后才能发送。",
+                    "isolated": "关闭隔离模式后才能发送。",
+                    "translation_settings": "翻译设置",
+                    "set_up_translation": "设置翻译",
+                    "shorten_needs_llm": "在翻译设置里改用 LLM 后才能用 AI 缩短。",
+                    "send_phrase": "发送",
+                    "remove_phrase": "删除",
+                    "save_phrase": "存为常用语",
+                    "translate_to": "翻译成"
+                },
+                "pages": {
+                    "title": "状态",
+                    "hint": "某行用到的数值暂时没有时，这一行自动隐藏。只轮播已启用的页，只启用一页时固定显示。",
+                    "page": "第 {index} 页",
+                    "seconds": "秒",
+                    "add_page": "添加页",
+                    "remove_page": "删除此页",
+                    "empty_page": "添加一行后这一页才会显示内容。",
+                    "enabled": "显示状态",
+                    "add_line": "添加行",
+                    "blank_line": "空白行",
+                    "remove_line": "删除这一行",
+                    "page_enabled": "启用这一页",
+                    "page_off": "未启用"
+                },
+                "preview": {
+                    "title": "游戏内预览",
+                    "page": "第 {current}/{total} 页",
+                    "characters": "{count} / {max}",
+                    "next_page": "{seconds} 秒后切换",
+                    "empty": "当前没有可显示的内容。"
+                },
+                "afk": {
+                    "title": "AFK",
+                    "go_afk": "我先离开",
+                    "back": "我回来了",
+                    "auto_headset": "摘下头显时自动切换为 AFK",
+                    "auto_headset_hint": "需要开启手腕叠加界面或头显通知。",
+                    "text": "AFK 文字",
+                    "text_placeholder": "AFK",
+                    "show_duration": "显示离开时长"
+                },
+                "settings": {
+                    "title": "设置",
+                    "host": "地址",
+                    "port": "端口",
+                    "typing_indicator": "打字时显示正在输入状态（…）",
+                    "notify_sound": "发送时播放提示音"
+                },
+                "in_game": {
+                    "afk": "AFK"
+                },
+                "editor": {
+                    "insert_variable": "插入数值",
+                    "insert_symbol": "符号",
+                    "presets": "样式",
+                    "template_placeholder": "输入文字并插入数值"
+                },
+                "variables": {
+                    "time": "时间",
+                    "track": "曲目（标题 - 歌手）",
+                    "title": "标题",
+                    "artist": "歌手",
+                    "progress": "进度条",
+                    "position": "当前进度",
+                    "duration": "总时长",
+                    "cpu": "CPU 占用",
+                    "memory": "内存",
+                    "session": "本次游戏时长"
+                },
+                "formats": {
+                    "hour12": "12 小时制",
+                    "show_seconds": "显示秒",
+                    "cpu_decimals": "CPU 小数位",
+                    "memory": "内存显示",
+                    "memory_percent": "百分比",
+                    "memory_used": "已用量",
+                    "memory_usedOfTotal": "已用 / 总量",
+                    "memory_total": "总量",
+                    "memory_decimals": "内存小数位",
+                    "memory_unit": "单位",
+                    "progress": "进度条"
+                },
+                "presets": {
+                    "now_playing": "正在播放：{track}",
+                    "game_session": "本次游戏 {duration}"
+                },
+                "preset_groups": {
+                    "time": "时间",
+                    "music": "音乐",
+                    "system": "系统",
+                    "session": "游戏时长"
+                }
+            }
         },
         "profile": {
             "game_info": {
@@ -7450,7 +7570,9 @@
             "settings_and_diagnostics": "设置和诊断。",
             "current_instance_player_roster_rebuilt_from_local_activity_data": "已根据本地活动数据重建当前房间玩家列表。",
             "themes": "主题",
-            "themes_description": "主题来源和自定义 CSS 管理。"
+            "themes_description": "主题来源和自定义 CSS 管理。",
+            "chatbox": "Chatbox",
+            "chatbox_description": "在游戏内的 Chatbox 显示状态、发送消息。"
         }
     },
     "linux_rendering": {

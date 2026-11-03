@@ -2728,7 +2728,127 @@
             },
             "filter_placeholder": "Filtrovat nástroje",
             "filter_empty": "Žádné nástroje neodpovídají",
-            "sections": "Sekce"
+            "sections": "Sekce",
+            "chatbox": {
+                "title": "Chatbox",
+                "description": "Zobrazuje v Chatboxu ve hře čas, právě hrající hudbu a vlastní texty. Zprávy můžeš poslat přímo nebo přeložené.",
+                "save_failed": "Nastavení Chatboxu se nepodařilo uložit.",
+                "status": {
+                    "off": "Vypnuto",
+                    "manual": "Zobrazuje tvou zprávu",
+                    "afk": "AFK",
+                    "game_not_running": "Pozastaveno · VRChat neběží",
+                    "isolated": "Pozastaveno · Oddělení od hry je zapnuté",
+                    "showing": "Zobrazuje stav"
+                },
+                "composer": {
+                    "title": "Napsat a poslat",
+                    "placeholder": "Napiš zprávu",
+                    "translation": "Překlad",
+                    "send": "Poslat",
+                    "cancel": "Zrušit",
+                    "translating": "Překládá se…",
+                    "translated": "Překlad",
+                    "shorten": "Zkrátit pomocí AI",
+                    "too_long": "Přesahuje limit {max} znaků",
+                    "hint_direct": "Enter odešle · Shift+Enter přidá řádek",
+                    "hint_translate": "Enter přeloží · zkontroluj a pošli",
+                    "translation_failed": "Tuto zprávu se nepodařilo přeložit.",
+                    "send_failed": "Zprávu se nepodařilo odeslat.",
+                    "game_not_running": "Spusť VRChat, abys mohl posílat zprávy.",
+                    "isolated": "Vypni oddělení od hry, abys mohl posílat zprávy.",
+                    "translation_settings": "Nastavení překladu",
+                    "set_up_translation": "Nastavit překlad",
+                    "shorten_needs_llm": "Ke zkrácení pomocí AI nastav v nastavení překladu LLM.",
+                    "send_phrase": "Poslat",
+                    "remove_phrase": "Odebrat",
+                    "save_phrase": "Uložit jako rychlou zprávu",
+                    "translate_to": "Přeložit do"
+                },
+                "pages": {
+                    "title": "Stav",
+                    "hint": "Řádky s hodnotami, které teď nejsou k dispozici, se skryjí. Střídají se jen zapnuté stránky; je-li zapnutá jedna, zůstává zobrazená.",
+                    "page": "Stránka {index}",
+                    "seconds": "Sekundy",
+                    "add_page": "Přidat stránku",
+                    "remove_page": "Odebrat stránku",
+                    "empty_page": "Přidej řádek, aby tato stránka něco zobrazovala.",
+                    "enabled": "Zobrazit stav",
+                    "add_line": "Přidat řádek",
+                    "blank_line": "Prázdný řádek",
+                    "remove_line": "Odebrat řádek",
+                    "page_enabled": "Používat tuto stránku",
+                    "page_off": "Vypnuto"
+                },
+                "preview": {
+                    "title": "Náhled ve hře",
+                    "page": "Stránka {current} z {total}",
+                    "characters": "{count} / {max}",
+                    "next_page": "Další stránka za {seconds} s",
+                    "empty": "Teď není co zobrazit."
+                },
+                "afk": {
+                    "title": "AFK",
+                    "go_afk": "Přepnout na AFK",
+                    "back": "Jsem zpět",
+                    "auto_headset": "Po sundání headsetu přepnout na AFK",
+                    "auto_headset_hint": "Vyžaduje zapnutý Zápěstní overlay nebo Oznámení v headsetu.",
+                    "text": "Text AFK",
+                    "text_placeholder": "AFK",
+                    "show_duration": "Zobrazit, jak dlouho jsi pryč"
+                },
+                "settings": {
+                    "title": "Nastavení",
+                    "host": "Adresa",
+                    "port": "Port",
+                    "typing_indicator": "Při psaní zobrazit indikátor psaní (…)",
+                    "notify_sound": "Při odeslání přehrát zvuk oznámení"
+                },
+                "in_game": {
+                    "afk": "AFK"
+                },
+                "editor": {
+                    "insert_variable": "Vložit hodnotu",
+                    "insert_symbol": "Symboly",
+                    "presets": "Styly",
+                    "template_placeholder": "Napiš text a vlož hodnoty"
+                },
+                "variables": {
+                    "time": "Čas",
+                    "track": "Skladba (název - interpret)",
+                    "title": "Název",
+                    "artist": "Interpret",
+                    "progress": "Ukazatel průběhu",
+                    "position": "Pozice",
+                    "duration": "Délka",
+                    "cpu": "Vytížení CPU",
+                    "memory": "RAM",
+                    "session": "Čas této hry"
+                },
+                "formats": {
+                    "hour12": "12hodinový",
+                    "show_seconds": "Sekundy",
+                    "cpu_decimals": "Desetinná místa CPU",
+                    "memory": "RAM zobrazí",
+                    "memory_percent": "Procenta",
+                    "memory_used": "Využito",
+                    "memory_usedOfTotal": "Využito / celkem",
+                    "memory_total": "Celkem",
+                    "memory_decimals": "Desetinná místa RAM",
+                    "memory_unit": "Jednotka",
+                    "progress": "Ukazatel"
+                },
+                "presets": {
+                    "now_playing": "Právě hraje: {track}",
+                    "game_session": "Ve hře {duration}"
+                },
+                "preset_groups": {
+                    "time": "Čas",
+                    "music": "Hudba",
+                    "system": "Systém",
+                    "session": "Čas hry"
+                }
+            }
         },
         "profile": {
             "game_info": {
@@ -7439,7 +7559,9 @@
             "settings_and_diagnostics": "Nastavení a diagnostika.",
             "current_instance_player_roster_rebuilt_from_local_activity_data": "Seznam hráčů aktuální instance sestavený z místních dat o aktivitě.",
             "themes": "Motivy",
-            "themes_description": "Zdroj motivu a správa vlastního CSS."
+            "themes_description": "Zdroj motivu a správa vlastního CSS.",
+            "chatbox": "Chatbox",
+            "chatbox_description": "Zobrazuje stav a posílá zprávy do Chatboxu ve hře."
         }
     },
     "linux_rendering": {

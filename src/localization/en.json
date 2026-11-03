@@ -2712,7 +2712,127 @@
             },
             "filter_placeholder": "Filter tools",
             "filter_empty": "No tools match",
-            "sections": "Sections"
+            "sections": "Sections",
+            "chatbox": {
+                "title": "Chatbox",
+                "description": "Show the time, what you are playing and your own text in the in-game chatbox, or type and translate messages.",
+                "save_failed": "Couldn't save Chatbox settings.",
+                "status": {
+                    "off": "Off",
+                    "manual": "Showing your message",
+                    "afk": "AFK",
+                    "game_not_running": "Paused · VRChat isn't running",
+                    "isolated": "Paused · Game isolation is on",
+                    "showing": "Showing status"
+                },
+                "composer": {
+                    "title": "Type and send",
+                    "placeholder": "Type a message",
+                    "translation": "Translation",
+                    "send": "Send",
+                    "cancel": "Cancel",
+                    "translating": "Translating…",
+                    "translated": "Translation",
+                    "shorten": "Shorten with AI",
+                    "too_long": "Over the {max}-character limit",
+                    "hint_direct": "Enter sends · Shift+Enter adds a line",
+                    "hint_translate": "Enter translates · check it, then send",
+                    "translation_failed": "Couldn't translate this message.",
+                    "send_failed": "Couldn't send the message.",
+                    "game_not_running": "Start VRChat to send messages.",
+                    "isolated": "Turn off game isolation to send messages.",
+                    "translation_settings": "Translation settings",
+                    "set_up_translation": "Set up translation",
+                    "shorten_needs_llm": "To shorten with AI, use an LLM in translation settings.",
+                    "send_phrase": "Send",
+                    "remove_phrase": "Remove",
+                    "save_phrase": "Save as quick phrase",
+                    "translate_to": "Translate to"
+                },
+                "pages": {
+                    "title": "Status",
+                    "hint": "Lines whose values are unavailable right now are hidden. Only pages that are on take part; with one page on, it stays put.",
+                    "page": "Page {index}",
+                    "seconds": "Seconds",
+                    "add_page": "Add page",
+                    "remove_page": "Remove page",
+                    "empty_page": "Add a line to show something on this page.",
+                    "enabled": "Show status",
+                    "add_line": "Add line",
+                    "blank_line": "Blank line",
+                    "remove_line": "Remove line",
+                    "page_enabled": "Use this page",
+                    "page_off": "Off"
+                },
+                "preview": {
+                    "title": "In-game preview",
+                    "page": "Page {current} of {total}",
+                    "characters": "{count} / {max}",
+                    "next_page": "Next page in {seconds}s",
+                    "empty": "Nothing to show right now."
+                },
+                "afk": {
+                    "title": "AFK",
+                    "go_afk": "Go AFK",
+                    "back": "I'm back",
+                    "auto_headset": "Switch to AFK when you take off your headset",
+                    "auto_headset_hint": "Needs Wrist Overlay or HMD Notifications turned on.",
+                    "text": "AFK text",
+                    "text_placeholder": "AFK",
+                    "show_duration": "Show how long you have been away"
+                },
+                "settings": {
+                    "title": "Settings",
+                    "host": "Address",
+                    "port": "Port",
+                    "typing_indicator": "Show the typing indicator (…) while you type",
+                    "notify_sound": "Play the notification sound when you send"
+                },
+                "in_game": {
+                    "afk": "AFK"
+                },
+                "editor": {
+                    "insert_variable": "Insert value",
+                    "insert_symbol": "Symbols",
+                    "presets": "Styles",
+                    "template_placeholder": "Type text and insert values"
+                },
+                "variables": {
+                    "time": "Time",
+                    "track": "Track (title - artist)",
+                    "title": "Title",
+                    "artist": "Artist",
+                    "progress": "Progress bar",
+                    "position": "Position",
+                    "duration": "Length",
+                    "cpu": "CPU usage",
+                    "memory": "RAM",
+                    "session": "Session time"
+                },
+                "formats": {
+                    "hour12": "12-hour",
+                    "show_seconds": "Seconds",
+                    "cpu_decimals": "CPU decimals",
+                    "memory": "RAM shows",
+                    "memory_percent": "Percent",
+                    "memory_used": "Used",
+                    "memory_usedOfTotal": "Used / total",
+                    "memory_total": "Total",
+                    "memory_decimals": "RAM decimals",
+                    "memory_unit": "Unit",
+                    "progress": "Bar"
+                },
+                "presets": {
+                    "now_playing": "Now playing: {track}",
+                    "game_session": "Playing for {duration}"
+                },
+                "preset_groups": {
+                    "time": "Time",
+                    "music": "Music",
+                    "system": "System",
+                    "session": "Session"
+                }
+            }
         },
         "profile": {
             "game_info": {
@@ -7461,7 +7581,9 @@
             "settings_and_diagnostics": "Settings and diagnostics.",
             "current_instance_player_roster_rebuilt_from_local_activity_data": "Current-instance player roster rebuilt from local activity data.",
             "themes": "Themes",
-            "themes_description": "Theme source and custom CSS management."
+            "themes_description": "Theme source and custom CSS management.",
+            "chatbox": "Chatbox",
+            "chatbox_description": "Show your status and send messages in the in-game chatbox."
         }
     },
     "linux_rendering": {

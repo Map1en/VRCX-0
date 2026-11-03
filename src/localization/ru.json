@@ -2726,7 +2726,127 @@
             },
             "filter_placeholder": "Фильтр инструментов",
             "filter_empty": "Ничего не найдено",
-            "sections": "Разделы"
+            "sections": "Разделы",
+            "chatbox": {
+                "title": "Chatbox",
+                "description": "Показывает в Chatbox время, текущую музыку и ваш текст, а также отправляет сообщения как есть или с переводом.",
+                "save_failed": "Не удалось сохранить настройки Chatbox.",
+                "status": {
+                    "off": "Выключено",
+                    "manual": "Показывается ваше сообщение",
+                    "afk": "AFK",
+                    "game_not_running": "Пауза · VRChat не запущен",
+                    "isolated": "Пауза · Изоляция от игры включена",
+                    "showing": "Показывается статус"
+                },
+                "composer": {
+                    "title": "Написать и отправить",
+                    "placeholder": "Введите сообщение",
+                    "translation": "Перевод",
+                    "send": "Отправить",
+                    "cancel": "Отмена",
+                    "translating": "Перевод…",
+                    "translated": "Перевод",
+                    "shorten": "Сократить с ИИ",
+                    "too_long": "Больше лимита в {max} символа",
+                    "hint_direct": "Enter — отправить · Shift+Enter — новая строка",
+                    "hint_translate": "Enter — перевести · проверьте и отправьте",
+                    "translation_failed": "Не удалось перевести сообщение.",
+                    "send_failed": "Не удалось отправить сообщение.",
+                    "game_not_running": "Запустите VRChat, чтобы отправлять сообщения.",
+                    "isolated": "Отключите изоляцию от игры, чтобы отправлять сообщения.",
+                    "translation_settings": "Настройки перевода",
+                    "set_up_translation": "Настроить перевод",
+                    "shorten_needs_llm": "Чтобы сокращать с ИИ, выберите LLM в настройках перевода.",
+                    "send_phrase": "Отправить",
+                    "remove_phrase": "Удалить",
+                    "save_phrase": "Сохранить как быструю фразу",
+                    "translate_to": "Перевести на"
+                },
+                "pages": {
+                    "title": "Статус",
+                    "hint": "Строки с недоступными сейчас значениями скрываются. Сменяются только включённые страницы; если включена одна, она показывается постоянно.",
+                    "page": "Страница {index}",
+                    "seconds": "Секунды",
+                    "add_page": "Добавить страницу",
+                    "remove_page": "Удалить страницу",
+                    "empty_page": "Добавьте строку, чтобы на странице что-то показывалось.",
+                    "enabled": "Показывать статус",
+                    "add_line": "Добавить строку",
+                    "blank_line": "Пустая строка",
+                    "remove_line": "Удалить строку",
+                    "page_enabled": "Использовать эту страницу",
+                    "page_off": "Выключена"
+                },
+                "preview": {
+                    "title": "Предпросмотр в игре",
+                    "page": "Страница {current} из {total}",
+                    "characters": "{count} / {max}",
+                    "next_page": "Следующая страница через {seconds} с",
+                    "empty": "Сейчас нечего показать."
+                },
+                "afk": {
+                    "title": "AFK",
+                    "go_afk": "Отойти (AFK)",
+                    "back": "Я вернулся",
+                    "auto_headset": "Переключать на AFK, когда снимаете шлем",
+                    "auto_headset_hint": "Нужно включить «Оверливание рейста» или «Уведомления в шлеме».",
+                    "text": "Текст AFK",
+                    "text_placeholder": "AFK",
+                    "show_duration": "Показывать, как долго вас нет"
+                },
+                "settings": {
+                    "title": "Настройки",
+                    "host": "Адрес",
+                    "port": "Порт",
+                    "typing_indicator": "Показывать индикатор набора (…), пока вы печатаете",
+                    "notify_sound": "Проигрывать звук уведомления при отправке"
+                },
+                "in_game": {
+                    "afk": "AFK"
+                },
+                "editor": {
+                    "insert_variable": "Вставить значение",
+                    "insert_symbol": "Символы",
+                    "presets": "Стили",
+                    "template_placeholder": "Введите текст и вставьте значения"
+                },
+                "variables": {
+                    "time": "Время",
+                    "track": "Трек (название - исполнитель)",
+                    "title": "Название",
+                    "artist": "Исполнитель",
+                    "progress": "Полоса прогресса",
+                    "position": "Позиция",
+                    "duration": "Длительность",
+                    "cpu": "Загрузка CPU",
+                    "memory": "ОЗУ",
+                    "session": "Время этой сессии"
+                },
+                "formats": {
+                    "hour12": "12 часов",
+                    "show_seconds": "Секунды",
+                    "cpu_decimals": "Знаки CPU после запятой",
+                    "memory": "ОЗУ показывает",
+                    "memory_percent": "Проценты",
+                    "memory_used": "Занято",
+                    "memory_usedOfTotal": "Занято / всего",
+                    "memory_total": "Всего",
+                    "memory_decimals": "Знаки ОЗУ после запятой",
+                    "memory_unit": "Единица",
+                    "progress": "Полоса"
+                },
+                "presets": {
+                    "now_playing": "Сейчас играет: {track}",
+                    "game_session": "В игре {duration}"
+                },
+                "preset_groups": {
+                    "time": "Время",
+                    "music": "Музыка",
+                    "system": "Система",
+                    "session": "Время сессии"
+                }
+            }
         },
         "profile": {
             "game_info": {
@@ -7433,7 +7553,9 @@
             "settings_and_diagnostics": "Параметры и диагностика.",
             "current_instance_player_roster_rebuilt_from_local_activity_data": "Список игроков текущего инстанса, восстановленный из локальных данных активности.",
             "themes": "Темы",
-            "themes_description": "Управление источником темы и пользовательским CSS."
+            "themes_description": "Управление источником темы и пользовательским CSS.",
+            "chatbox": "Chatbox",
+            "chatbox_description": "Показывает статус и отправляет сообщения в Chatbox в игре."
         }
     },
     "linux_rendering": {

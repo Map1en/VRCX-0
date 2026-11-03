@@ -43,6 +43,7 @@ vrcx-0-integration-api = { path = "../integration-api" }
 vrcx-0-integrations = { path = "../integrations" }
 vrcx-0-logger-protocol = { path = "../logger-protocol", features = ["specta"] }
 vrcx-0-media = { path = "../media" }
+vrcx-0-osc = { path = "../osc" }
 vrcx-0-persistence = { path = "../persistence" }
 vrcx-0-composition = { path = "../composition" }
 vrcx-0-vrchat-client = { path = "../vrchat-client" }

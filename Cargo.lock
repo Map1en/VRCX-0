@@ -9445,6 +9445,7 @@ dependencies = [
  "vrcx-0-application-core",
  "vrcx-0-contracts",
  "vrcx-0-core",
+ "vrcx-0-osc",
 ]
 
 [[package]]
@@ -9740,6 +9741,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "vrcx-0-osc"
+version = "0.1.0"
+
+[[package]]
 name = "vrcx-0-outbound-adapters"
 version = "0.1.0"
 dependencies = [
@@ -9878,6 +9883,7 @@ dependencies = [
  "vrcx-0-logger-protocol",
  "vrcx-0-mcp",
  "vrcx-0-media",
+ "vrcx-0-osc",
  "vrcx-0-outbound-adapters",
  "vrcx-0-overlay-runtime",
  "vrcx-0-persistence",

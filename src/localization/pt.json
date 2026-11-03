@@ -2708,7 +2708,127 @@
             },
             "filter_placeholder": "Filtrar ferramentas",
             "filter_empty": "Nenhuma ferramenta corresponde",
-            "sections": "Seções"
+            "sections": "Seções",
+            "chatbox": {
+                "title": "Chatbox",
+                "description": "Mostra a hora, o que está tocando e seus próprios textos no Chatbox do jogo, ou envia mensagens digitadas ou traduzidas.",
+                "save_failed": "Não foi possível salvar as configurações do Chatbox.",
+                "status": {
+                    "off": "Desligado",
+                    "manual": "Mostrando sua mensagem",
+                    "afk": "AFK",
+                    "game_not_running": "Pausado · O VRChat não está em execução",
+                    "isolated": "Pausado · O isolamento do jogo está ativado",
+                    "showing": "Mostrando status"
+                },
+                "composer": {
+                    "title": "Digitar e enviar",
+                    "placeholder": "Digite uma mensagem",
+                    "translation": "Tradução",
+                    "send": "Enviar",
+                    "cancel": "Cancelar",
+                    "translating": "Traduzindo…",
+                    "translated": "Tradução",
+                    "shorten": "Encurtar com IA",
+                    "too_long": "Passa do limite de {max} caracteres",
+                    "hint_direct": "Enter envia · Shift+Enter adiciona uma linha",
+                    "hint_translate": "Enter traduz · confira e envie",
+                    "translation_failed": "Não foi possível traduzir esta mensagem.",
+                    "send_failed": "Não foi possível enviar a mensagem.",
+                    "game_not_running": "Abra o VRChat para enviar mensagens.",
+                    "isolated": "Desative o isolamento do jogo para enviar mensagens.",
+                    "translation_settings": "Configurações de tradução",
+                    "set_up_translation": "Configurar tradução",
+                    "shorten_needs_llm": "Para encurtar com IA, use um LLM nas configurações de tradução.",
+                    "send_phrase": "Enviar",
+                    "remove_phrase": "Remover",
+                    "save_phrase": "Salvar como frase rápida",
+                    "translate_to": "Traduzir para"
+                },
+                "pages": {
+                    "title": "Status",
+                    "hint": "Linhas com valores indisponíveis no momento ficam ocultas. Só as páginas ligadas se alternam; com uma só, ela fica fixa.",
+                    "page": "Página {index}",
+                    "seconds": "Segundos",
+                    "add_page": "Adicionar página",
+                    "remove_page": "Remover página",
+                    "empty_page": "Adicione uma linha para esta página mostrar algo.",
+                    "enabled": "Mostrar status",
+                    "add_line": "Adicionar linha",
+                    "blank_line": "Linha em branco",
+                    "remove_line": "Remover linha",
+                    "page_enabled": "Usar esta página",
+                    "page_off": "Desligada"
+                },
+                "preview": {
+                    "title": "Prévia no jogo",
+                    "page": "Página {current} de {total}",
+                    "characters": "{count} / {max}",
+                    "next_page": "Próxima página em {seconds} s",
+                    "empty": "Nada para mostrar agora."
+                },
+                "afk": {
+                    "title": "AFK",
+                    "go_afk": "Ficar AFK",
+                    "back": "Voltei",
+                    "auto_headset": "Mudar para AFK ao tirar o headset",
+                    "auto_headset_hint": "Requer o Overlay de Pulso ou as Notificações do headset ativados.",
+                    "text": "Texto de AFK",
+                    "text_placeholder": "AFK",
+                    "show_duration": "Mostrar há quanto tempo você está ausente"
+                },
+                "settings": {
+                    "title": "Configurações",
+                    "host": "Endereço",
+                    "port": "Porta",
+                    "typing_indicator": "Mostrar o indicador de digitação (…) enquanto digita",
+                    "notify_sound": "Tocar o som de notificação ao enviar"
+                },
+                "in_game": {
+                    "afk": "AFK"
+                },
+                "editor": {
+                    "insert_variable": "Inserir valor",
+                    "insert_symbol": "Símbolos",
+                    "presets": "Estilos",
+                    "template_placeholder": "Digite o texto e insira valores"
+                },
+                "variables": {
+                    "time": "Hora",
+                    "track": "Faixa (título - artista)",
+                    "title": "Título",
+                    "artist": "Artista",
+                    "progress": "Barra de progresso",
+                    "position": "Posição",
+                    "duration": "Duração",
+                    "cpu": "Uso de CPU",
+                    "memory": "RAM",
+                    "session": "Tempo desta sessão"
+                },
+                "formats": {
+                    "hour12": "12 horas",
+                    "show_seconds": "Segundos",
+                    "cpu_decimals": "Casas decimais da CPU",
+                    "memory": "A RAM mostra",
+                    "memory_percent": "Porcentagem",
+                    "memory_used": "Em uso",
+                    "memory_usedOfTotal": "Em uso / total",
+                    "memory_total": "Total",
+                    "memory_decimals": "Casas decimais da RAM",
+                    "memory_unit": "Unidade",
+                    "progress": "Barra"
+                },
+                "presets": {
+                    "now_playing": "Tocando: {track}",
+                    "game_session": "Jogando há {duration}"
+                },
+                "preset_groups": {
+                    "time": "Hora",
+                    "music": "Música",
+                    "system": "Sistema",
+                    "session": "Sessão"
+                }
+            }
         },
         "profile": {
             "game_info": {
@@ -7405,7 +7525,9 @@
             "settings_and_diagnostics": "Configurações e diagnósticos.",
             "current_instance_player_roster_rebuilt_from_local_activity_data": "Lista de jogadores da instância atual reconstruída a partir dos dados de atividade local.",
             "themes": "Temas",
-            "themes_description": "Gerenciamento de fonte de temas e CSS personalizado."
+            "themes_description": "Gerenciamento de fonte de temas e CSS personalizado.",
+            "chatbox": "Chatbox",
+            "chatbox_description": "Mostre seu status e envie mensagens no Chatbox do jogo."
         }
     },
     "linux_rendering": {

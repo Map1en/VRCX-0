@@ -108,6 +108,7 @@ fn generate() -> Result<(), String> {
         ("discordPresence", "DiscordPresenceKey"),
         ("shell", "ShellKey"),
         ("desktopWidget", "DesktopWidgetKey"),
+        ("chatbox", "ChatboxKey"),
     ] {
         let domain = manifest
             .domains
@@ -210,7 +211,7 @@ fn generate() -> Result<(), String> {
         .filter(|name| {
             !matches!(
                 name.as_str(),
-                "overlay" | "discordPresence" | "shell" | "desktopWidget"
+                "overlay" | "discordPresence" | "shell" | "desktopWidget" | "chatbox"
             )
         })
         .cloned()

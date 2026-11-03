@@ -1,0 +1,8 @@
+[package]
+name = "vrcx-0-osc"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+description = "OSC 1.0 message encoding and VRChat chatbox limits"
+
+[dependencies]

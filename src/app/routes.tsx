@@ -312,6 +312,15 @@ export const protectedRoutes: AppRouteDefinition[] = [
         )
     },
     {
+        path: '/tools/chatbox',
+        titleKey: 'app.routes.chatbox',
+        descriptionKey: 'app.routes.chatbox_description',
+        element: lazyRouteElement(
+            () => import('@/features/tools/chatbox/ChatboxPage'),
+            'ChatboxPage'
+        )
+    },
+    {
         path: '/themes',
         titleKey: 'app.routes.themes',
         descriptionKey: 'app.routes.themes_description',

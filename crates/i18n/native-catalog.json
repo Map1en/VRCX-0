@@ -376,6 +376,16 @@
                 }
             ]
         },
+        "chatbox": {
+            "locales": "all",
+            "coverage": "fallback",
+            "messages": [
+                {
+                    "key": "chatbox.afk",
+                    "source": "view.tools.chatbox.in_game.afk"
+                }
+            ]
+        },
         "desktopWidget": {
             "locales": "all",
             "coverage": "fallback",

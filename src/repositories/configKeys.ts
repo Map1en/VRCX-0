@@ -160,6 +160,8 @@ export const ConfigKeys = defineConfigKeys({
     translationAPIKey: { type: 'string', default: '' },
     translationAPIType: { type: 'string', default: 'google' },
     translationEndpointId: { type: 'string', default: '' },
+    chatboxTranslateTarget: { type: 'string', default: 'en' },
+    chatboxTranslateEnabled: { type: 'bool', default: false },
     translationAPIEndpoint: {
         type: 'string',
         default: DEFAULT_TRANSLATION_ENDPOINT

@@ -1,3 +1,4 @@
+pub mod chatbox;
 mod discord;
 mod presence_automation;
 mod presence_facts;

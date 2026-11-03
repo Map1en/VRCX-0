@@ -2701,7 +2701,127 @@
             },
             "filter_placeholder": "ツールを絞り込む",
             "filter_empty": "一致するツールはありません",
-            "sections": "セクション"
+            "sections": "セクション",
+            "chatbox": {
+                "title": "Chatbox",
+                "description": "ゲーム内の Chatbox に時刻や再生中の曲、好きな文章を表示します。入力したメッセージをそのまま、または翻訳して送ることもできます。",
+                "save_failed": "Chatbox の設定を保存できませんでした。",
+                "status": {
+                    "off": "オフ",
+                    "manual": "メッセージを表示中",
+                    "afk": "AFK",
+                    "game_not_running": "一時停止中 · VRChat が起動していません",
+                    "isolated": "一時停止中 · ゲーム分離モードがオンです",
+                    "showing": "ステータス表示中"
+                },
+                "composer": {
+                    "title": "メッセージを送る",
+                    "placeholder": "メッセージを入力",
+                    "translation": "翻訳",
+                    "send": "送信",
+                    "cancel": "キャンセル",
+                    "translating": "翻訳中…",
+                    "translated": "翻訳結果",
+                    "shorten": "AI で短くする",
+                    "too_long": "{max} 文字の上限を超えています",
+                    "hint_direct": "Enter で送信 · Shift+Enter で改行",
+                    "hint_translate": "Enter で翻訳 · 内容を確認してから送信",
+                    "translation_failed": "このメッセージを翻訳できませんでした。",
+                    "send_failed": "メッセージを送信できませんでした。",
+                    "game_not_running": "VRChat を起動すると送信できます。",
+                    "isolated": "ゲーム分離モードをオフにすると送信できます。",
+                    "translation_settings": "翻訳の設定",
+                    "set_up_translation": "翻訳を設定",
+                    "shorten_needs_llm": "AI で短くするには、翻訳の設定で LLM を使うようにしてください。",
+                    "send_phrase": "送信",
+                    "remove_phrase": "削除",
+                    "save_phrase": "定型文として保存",
+                    "translate_to": "翻訳先"
+                },
+                "pages": {
+                    "title": "ステータス",
+                    "hint": "今は取得できない値を含む行は自動で隠れます。オンのページだけを順番に表示し、1 ページだけならそのまま表示します。",
+                    "page": "{index} ページ目",
+                    "seconds": "秒",
+                    "add_page": "ページを追加",
+                    "remove_page": "このページを削除",
+                    "empty_page": "行を追加すると、このページに表示されます。",
+                    "enabled": "ステータスを表示",
+                    "add_line": "行を追加",
+                    "blank_line": "空の行",
+                    "remove_line": "この行を削除",
+                    "page_enabled": "このページを使う",
+                    "page_off": "オフ"
+                },
+                "preview": {
+                    "title": "ゲーム内プレビュー",
+                    "page": "{current}/{total} ページ目",
+                    "characters": "{count} / {max}",
+                    "next_page": "{seconds} 秒後に切り替え",
+                    "empty": "今は表示する内容がありません。"
+                },
+                "afk": {
+                    "title": "AFK",
+                    "go_afk": "AFK にする",
+                    "back": "戻りました",
+                    "auto_headset": "ヘッドセットを外したら AFK に切り替える",
+                    "auto_headset_hint": "手首のオーバーレイかヘッドセット通知をオンにする必要があります。",
+                    "text": "AFK の文言",
+                    "text_placeholder": "AFK",
+                    "show_duration": "離席時間を表示"
+                },
+                "settings": {
+                    "title": "設定",
+                    "host": "アドレス",
+                    "port": "ポート",
+                    "typing_indicator": "入力中は入力中表示（…）を出す",
+                    "notify_sound": "送信時に通知音を鳴らす"
+                },
+                "in_game": {
+                    "afk": "AFK"
+                },
+                "editor": {
+                    "insert_variable": "値を挿入",
+                    "insert_symbol": "記号",
+                    "presets": "スタイル",
+                    "template_placeholder": "文章を入力して値を挿入"
+                },
+                "variables": {
+                    "time": "時刻",
+                    "track": "曲（タイトル - アーティスト）",
+                    "title": "タイトル",
+                    "artist": "アーティスト",
+                    "progress": "再生バー",
+                    "position": "再生位置",
+                    "duration": "曲の長さ",
+                    "cpu": "CPU 使用率",
+                    "memory": "メモリ",
+                    "session": "今回のプレイ時間"
+                },
+                "formats": {
+                    "hour12": "12 時間表示",
+                    "show_seconds": "秒を表示",
+                    "cpu_decimals": "CPU の小数桁",
+                    "memory": "メモリの表示",
+                    "memory_percent": "割合",
+                    "memory_used": "使用量",
+                    "memory_usedOfTotal": "使用量 / 合計",
+                    "memory_total": "合計",
+                    "memory_decimals": "メモリの小数桁",
+                    "memory_unit": "単位",
+                    "progress": "バー"
+                },
+                "presets": {
+                    "now_playing": "再生中：{track}",
+                    "game_session": "プレイ時間 {duration}"
+                },
+                "preset_groups": {
+                    "time": "時刻",
+                    "music": "音楽",
+                    "system": "システム",
+                    "session": "プレイ時間"
+                }
+            }
         },
         "profile": {
             "game_info": {
@@ -7446,7 +7566,9 @@
             "settings_and_diagnostics": "設定と診断です。",
             "current_instance_player_roster_rebuilt_from_local_activity_data": "ローカルのアクティビティデータから再構築した、現在のインスタンスのプレイヤー一覧です。",
             "themes": "テーマ",
-            "themes_description": "テーマソースとカスタム CSS の管理です。"
+            "themes_description": "テーマソースとカスタム CSS の管理です。",
+            "chatbox": "Chatbox",
+            "chatbox_description": "ゲーム内の Chatbox にステータスを表示したり、メッセージを送ったりします。"
         }
     },
     "linux_rendering": {

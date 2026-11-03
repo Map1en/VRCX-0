@@ -2708,7 +2708,127 @@
             },
             "filter_placeholder": "Werkzeuge filtern",
             "filter_empty": "Keine passenden Werkzeuge",
-            "sections": "Abschnitte"
+            "sections": "Abschnitte",
+            "chatbox": {
+                "title": "Chatbox",
+                "description": "Zeigt Uhrzeit, laufende Musik und eigene Texte in der Chatbox im Spiel an. Nachrichten kannst du direkt oder übersetzt senden.",
+                "save_failed": "Chatbox-Einstellungen konnten nicht gespeichert werden.",
+                "status": {
+                    "off": "Aus",
+                    "manual": "Zeigt deine Nachricht",
+                    "afk": "AFK",
+                    "game_not_running": "Pausiert · VRChat läuft nicht",
+                    "isolated": "Pausiert · Spielentkopplung ist an",
+                    "showing": "Zeigt Status"
+                },
+                "composer": {
+                    "title": "Nachricht senden",
+                    "placeholder": "Nachricht eingeben",
+                    "translation": "Übersetzung",
+                    "send": "Senden",
+                    "cancel": "Abbrechen",
+                    "translating": "Wird übersetzt…",
+                    "translated": "Übersetzung",
+                    "shorten": "Mit KI kürzen",
+                    "too_long": "Über dem Limit von {max} Zeichen",
+                    "hint_direct": "Enter sendet · Umschalt+Enter fügt eine Zeile ein",
+                    "hint_translate": "Enter übersetzt · prüfen, dann senden",
+                    "translation_failed": "Diese Nachricht konnte nicht übersetzt werden.",
+                    "send_failed": "Die Nachricht konnte nicht gesendet werden.",
+                    "game_not_running": "Starte VRChat, um Nachrichten zu senden.",
+                    "isolated": "Schalte die Spielentkopplung aus, um Nachrichten zu senden.",
+                    "translation_settings": "Übersetzungseinstellungen",
+                    "set_up_translation": "Übersetzung einrichten",
+                    "shorten_needs_llm": "Zum Kürzen mit KI in den Übersetzungseinstellungen ein LLM verwenden.",
+                    "send_phrase": "Senden",
+                    "remove_phrase": "Entfernen",
+                    "save_phrase": "Als Schnellnachricht speichern",
+                    "translate_to": "Übersetzen nach"
+                },
+                "pages": {
+                    "title": "Status",
+                    "hint": "Zeilen mit gerade nicht verfügbaren Werten werden ausgeblendet. Nur eingeschaltete Seiten wechseln; ist nur eine an, bleibt sie stehen.",
+                    "page": "Seite {index}",
+                    "seconds": "Sekunden",
+                    "add_page": "Seite hinzufügen",
+                    "remove_page": "Seite entfernen",
+                    "empty_page": "Füge eine Zeile hinzu, damit diese Seite etwas anzeigt.",
+                    "enabled": "Status anzeigen",
+                    "add_line": "Zeile hinzufügen",
+                    "blank_line": "Leere Zeile",
+                    "remove_line": "Zeile entfernen",
+                    "page_enabled": "Diese Seite verwenden",
+                    "page_off": "Aus"
+                },
+                "preview": {
+                    "title": "Vorschau im Spiel",
+                    "page": "Seite {current} von {total}",
+                    "characters": "{count} / {max}",
+                    "next_page": "Nächste Seite in {seconds} s",
+                    "empty": "Gerade gibt es nichts anzuzeigen."
+                },
+                "afk": {
+                    "title": "AFK",
+                    "go_afk": "Auf AFK schalten",
+                    "back": "Bin zurück",
+                    "auto_headset": "Beim Absetzen des Headsets auf AFK schalten",
+                    "auto_headset_hint": "Dafür muss das Handgelenk-Overlay oder die HMD-Benachrichtigungen aktiviert sein.",
+                    "text": "AFK-Text",
+                    "text_placeholder": "AFK",
+                    "show_duration": "Abwesenheitsdauer anzeigen"
+                },
+                "settings": {
+                    "title": "Einstellungen",
+                    "host": "Adresse",
+                    "port": "Port",
+                    "typing_indicator": "Beim Tippen die Tipp-Anzeige (…) zeigen",
+                    "notify_sound": "Beim Senden den Benachrichtigungston abspielen"
+                },
+                "in_game": {
+                    "afk": "AFK"
+                },
+                "editor": {
+                    "insert_variable": "Wert einfügen",
+                    "insert_symbol": "Symbole",
+                    "presets": "Stile",
+                    "template_placeholder": "Text eingeben und Werte einfügen"
+                },
+                "variables": {
+                    "time": "Uhrzeit",
+                    "track": "Titel (Titel - Interpret)",
+                    "title": "Titel",
+                    "artist": "Interpret",
+                    "progress": "Fortschrittsbalken",
+                    "position": "Position",
+                    "duration": "Länge",
+                    "cpu": "CPU-Auslastung",
+                    "memory": "RAM",
+                    "session": "Spielzeit dieser Sitzung"
+                },
+                "formats": {
+                    "hour12": "12 Stunden",
+                    "show_seconds": "Sekunden",
+                    "cpu_decimals": "CPU-Nachkommastellen",
+                    "memory": "RAM zeigt",
+                    "memory_percent": "Prozent",
+                    "memory_used": "Belegt",
+                    "memory_usedOfTotal": "Belegt / gesamt",
+                    "memory_total": "Gesamt",
+                    "memory_decimals": "RAM-Nachkommastellen",
+                    "memory_unit": "Einheit",
+                    "progress": "Balken"
+                },
+                "presets": {
+                    "now_playing": "Läuft gerade: {track}",
+                    "game_session": "Im Spiel seit {duration}"
+                },
+                "preset_groups": {
+                    "time": "Uhrzeit",
+                    "music": "Musik",
+                    "system": "System",
+                    "session": "Spielzeit"
+                }
+            }
         },
         "profile": {
             "game_info": {
@@ -7405,7 +7525,9 @@
             "settings_and_diagnostics": "Einstellungen und Diagnose.",
             "current_instance_player_roster_rebuilt_from_local_activity_data": "Spielerübersicht der aktuellen Instanz, erstellt aus lokalen Aktivitätsdaten.",
             "themes": "Designs",
-            "themes_description": "Verwaltung von Design-Quellen und eigenem CSS."
+            "themes_description": "Verwaltung von Design-Quellen und eigenem CSS.",
+            "chatbox": "Chatbox",
+            "chatbox_description": "Status und Nachrichten in der Chatbox im Spiel anzeigen."
         }
     },
     "linux_rendering": {

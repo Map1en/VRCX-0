@@ -21,6 +21,7 @@ url = { workspace = true }
 vrcx-0-contracts = { path = "../contracts" }
 vrcx-0-application-core = { path = "../application-core" }
 vrcx-0-core = { path = "../core" }
+vrcx-0-osc = { path = "../osc" }
 
 [dev-dependencies]
 vrcx-0-application-activity = { path = "../application-activity" }

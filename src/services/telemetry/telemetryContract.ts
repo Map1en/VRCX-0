@@ -29,6 +29,7 @@ export const TELEMETRY_TOOL_KEYS = [
     'vrcx-data',
     'vrchat-data',
     'vrchat-log',
+    'chatbox',
     'profile-backup',
     'llm-endpoints',
     'crash-dumps',

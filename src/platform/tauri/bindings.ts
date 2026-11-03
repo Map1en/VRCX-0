@@ -146,6 +146,32 @@ const generatedCommands = {
     ): Promise<GameIsolationSnapshot> {
         return await TAURI_INVOKE('app__game_isolation_set', { enabled });
     },
+    async appChatboxEditorStateGet(): Promise<ChatboxEditorState> {
+        return await TAURI_INVOKE('app__chatbox_editor_state_get');
+    },
+    async appChatboxConfigSet(config: ChatboxConfig): Promise<ChatboxConfig> {
+        return await TAURI_INVOKE('app__chatbox_config_set', { config });
+    },
+    async appChatboxStatusGet(): Promise<ChatboxStatus | null> {
+        return await TAURI_INVOKE('app__chatbox_status_get');
+    },
+    async appChatboxPreviewingSet(previewing: boolean): Promise<void> {
+        await TAURI_INVOKE('app__chatbox_previewing_set', { previewing });
+    },
+    async appChatboxSend(text: string): Promise<ChatboxSendOutcome> {
+        return await TAURI_INVOKE('app__chatbox_send', { text });
+    },
+    async appChatboxAfkSet(afk: boolean): Promise<void> {
+        await TAURI_INVOKE('app__chatbox_afk_set', { afk });
+    },
+    async appChatboxTypingSet(typing: boolean): Promise<void> {
+        await TAURI_INVOKE('app__chatbox_typing_set', { typing });
+    },
+    async appChatboxSamplesRender(
+        lines: ChatboxLinePreviewInput[]
+    ): Promise<string[]> {
+        return await TAURI_INVOKE('app__chatbox_samples_render', { lines });
+    },
     async appStartBackgroundMode(): Promise<BackendRuntimeSnapshot> {
         return await TAURI_INVOKE('app__start_background_mode');
     },
@@ -3868,6 +3894,7 @@ export type BackendRuntimeEventPayloadMap = {
     feedLoggerHealth: FeedLoggerProbe;
     notificationDoNotDisturbState: NotificationDoNotDisturbSnapshot;
     gameIsolationState: GameIsolationSnapshot;
+    chatboxState: ChatboxStatus;
     privacyLockState: PrivacyLockSnapshot;
     desktopWidgetState: DesktopWidgetSnapshot;
 };
@@ -4037,6 +4064,97 @@ export type CapabilityStatus = {
     available: boolean;
     reason?: string | null;
 };
+export type ChatboxActivity = 'off' | 'status' | 'manual' | 'afk';
+export type ChatboxAfkConfig = {
+    text: string;
+    showDuration: boolean;
+    autoWhenHeadsetRemoved: boolean;
+};
+export type ChatboxConfig = {
+    statusEnabled: boolean;
+    pages: ChatboxPage[];
+    afk: ChatboxAfkConfig;
+    messages: ChatboxMessageConfig;
+    oscHost: string;
+    oscPort: number;
+};
+export type ChatboxEditorState = {
+    config: ChatboxConfig;
+    limits: ChatboxLimits;
+    variables: ChatboxVariable[];
+    defaultFormats: ChatboxFormats;
+};
+export type ChatboxFormats = {
+    hour12: boolean;
+    showSeconds: boolean;
+    cpuDecimals: number;
+    memory: ChatboxMemoryFormat;
+    memoryDecimals: number;
+    memoryUnit: ChatboxMemoryUnit;
+    progress: ChatboxProgressStyle;
+};
+export type ChatboxLimits = {
+    maxChars: number;
+    maxPages: number;
+    maxLinesPerPage: number;
+    maxTemplateChars: number;
+    maxDecimals: number;
+    maxAfkTextChars: number;
+    maxQuickPhrases: number;
+    minPageSeconds: number;
+    maxPageSeconds: number;
+};
+export type ChatboxLinePreviewInput = {
+    template: string;
+    formats: ChatboxFormats;
+};
+export type ChatboxMemoryFormat = 'percent' | 'used' | 'usedOfTotal' | 'total';
+export type ChatboxMemoryUnit = 'gb' | 'mb';
+export type ChatboxMessageConfig = {
+    typingIndicator: boolean;
+    notifySound: boolean;
+    quickPhrases: string[];
+};
+export type ChatboxPage = {
+    id: string;
+    enabled: boolean;
+    seconds: number;
+    lines: ChatboxPageLine[];
+};
+export type ChatboxPageLine = {
+    id: string;
+    template: string;
+    formats: ChatboxFormats;
+};
+export type ChatboxPauseReason = 'gameNotRunning' | 'isolated';
+export type ChatboxProgressStyle = 'line' | 'blocks' | 'dots';
+export type ChatboxSendOutcome =
+    | { result: 'sent'; text: string }
+    | { result: 'empty' }
+    | { result: 'paused'; reason: ChatboxPauseReason };
+export type ChatboxStatus = {
+    activity: ChatboxActivity;
+    pauseReason: ChatboxPauseReason | null;
+    preview: string;
+    pageId: string | null;
+    pageNumber: number | null;
+    pageCount: number;
+    pageDurationSeconds: number | null;
+    pageElapsedSeconds: number | null;
+    manualAfk: boolean;
+    vrMode: boolean;
+};
+export type ChatboxVariable =
+    | 'time'
+    | 'track'
+    | 'title'
+    | 'artist'
+    | 'progress'
+    | 'position'
+    | 'duration'
+    | 'cpu'
+    | 'memory'
+    | 'session';
 export type CleanupWarning = {
     kind: CleanupWarningKind;
     favorites: number;

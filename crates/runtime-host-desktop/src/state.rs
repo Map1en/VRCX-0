@@ -2203,6 +2203,10 @@ impl DesktopRuntimeHostState {
         self.desktop.services.game_isolation().set_enabled(enabled)
     }
 
+    pub fn chatbox(&self) -> Arc<crate::chatbox::ChatboxRuntime> {
+        self.desktop.services.chatbox()
+    }
+
     pub fn desktop_widget(&self) -> Arc<crate::desktop_widget::DesktopWidget> {
         Arc::clone(&self.desktop.desktop_widget)
     }
@@ -2910,6 +2914,14 @@ impl DesktopRuntimeProfileExtension {
                             next_discord =
                                 now + Duration::from_secs(BACKGROUND_DISCORD_CADENCE_SECONDS);
                         }
+                    }
+                    let chatbox = desktop_services.chatbox();
+                    if let Err(error) = tokio::task::spawn_blocking(move || {
+                        chatbox.tick();
+                    })
+                    .await
+                    {
+                        tracing::warn!(error = %error, "chatbox tick task failed");
                     }
                     if wait_for_desktop_maintenance_tick(&stop_token).await {
                         break;

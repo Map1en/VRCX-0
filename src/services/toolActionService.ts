@@ -46,6 +46,7 @@ const toolRouteMap = {
     inventory: '/tools/inventory',
     'screenshot-metadata': '/tools/screenshot-metadata',
     'vrchat-log': '/tools/vrchat-log',
+    chatbox: '/tools/chatbox',
     'group-moderation': '/tools/group-moderation',
     'my-groups': '/tools/my-groups'
 } satisfies Record<ToolRouteName, string>;

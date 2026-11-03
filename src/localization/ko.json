@@ -2642,7 +2642,127 @@
             },
             "filter_placeholder": "도구 필터",
             "filter_empty": "일치하는 도구가 없습니다",
-            "sections": "섹션"
+            "sections": "섹션",
+            "chatbox": {
+                "title": "Chatbox",
+                "description": "게임 안 Chatbox에 시간, 재생 중인 곡, 직접 쓴 문구를 표시하고 메시지를 바로 또는 번역해서 보냅니다.",
+                "save_failed": "Chatbox 설정을 저장하지 못했습니다.",
+                "status": {
+                    "off": "꺼짐",
+                    "manual": "내 메시지 표시 중",
+                    "afk": "AFK",
+                    "game_not_running": "일시 중지 · VRChat이 실행 중이 아닙니다",
+                    "isolated": "일시 중지 · 게임 분리 모드가 켜져 있습니다",
+                    "showing": "상태 표시 중"
+                },
+                "composer": {
+                    "title": "메시지 보내기",
+                    "placeholder": "메시지 입력",
+                    "translation": "번역",
+                    "send": "보내기",
+                    "cancel": "취소",
+                    "translating": "번역 중…",
+                    "translated": "번역 결과",
+                    "shorten": "AI로 줄이기",
+                    "too_long": "{max}자 제한을 넘었습니다",
+                    "hint_direct": "Enter로 보내기 · Shift+Enter로 줄바꿈",
+                    "hint_translate": "Enter로 번역 · 확인 후 보내기",
+                    "translation_failed": "이 메시지를 번역하지 못했습니다.",
+                    "send_failed": "메시지를 보내지 못했습니다.",
+                    "game_not_running": "VRChat을 실행하면 보낼 수 있습니다.",
+                    "isolated": "게임 분리 모드를 끄면 보낼 수 있습니다.",
+                    "translation_settings": "번역 설정",
+                    "set_up_translation": "번역 설정하기",
+                    "shorten_needs_llm": "AI로 줄이려면 번역 설정에서 LLM을 사용하세요.",
+                    "send_phrase": "보내기",
+                    "remove_phrase": "삭제",
+                    "save_phrase": "자주 쓰는 문구로 저장",
+                    "translate_to": "번역 언어"
+                },
+                "pages": {
+                    "title": "상태",
+                    "hint": "지금 가져올 수 없는 값이 들어간 줄은 자동으로 숨겨집니다. 켜진 페이지만 순서대로 돌아가고, 하나만 켜져 있으면 고정으로 표시합니다.",
+                    "page": "{index}페이지",
+                    "seconds": "초",
+                    "add_page": "페이지 추가",
+                    "remove_page": "이 페이지 삭제",
+                    "empty_page": "줄을 추가하면 이 페이지에 표시됩니다.",
+                    "enabled": "상태 표시",
+                    "add_line": "줄 추가",
+                    "blank_line": "빈 줄",
+                    "remove_line": "이 줄 삭제",
+                    "page_enabled": "이 페이지 사용",
+                    "page_off": "꺼짐"
+                },
+                "preview": {
+                    "title": "게임 내 미리보기",
+                    "page": "{current}/{total}페이지",
+                    "characters": "{count} / {max}",
+                    "next_page": "{seconds}초 후 전환",
+                    "empty": "지금은 표시할 내용이 없습니다."
+                },
+                "afk": {
+                    "title": "AFK",
+                    "go_afk": "AFK로 전환",
+                    "back": "돌아왔어요",
+                    "auto_headset": "헤드셋을 벗으면 AFK로 전환",
+                    "auto_headset_hint": "손목 오버레이나 헤드셋 알림을 켜야 합니다.",
+                    "text": "AFK 문구",
+                    "text_placeholder": "AFK",
+                    "show_duration": "자리 비운 시간 표시"
+                },
+                "settings": {
+                    "title": "설정",
+                    "host": "주소",
+                    "port": "포트",
+                    "typing_indicator": "입력하는 동안 입력 중 표시(…) 보이기",
+                    "notify_sound": "보낼 때 알림음 재생"
+                },
+                "in_game": {
+                    "afk": "AFK"
+                },
+                "editor": {
+                    "insert_variable": "값 넣기",
+                    "insert_symbol": "기호",
+                    "presets": "스타일",
+                    "template_placeholder": "문구를 입력하고 값을 넣으세요"
+                },
+                "variables": {
+                    "time": "시간",
+                    "track": "곡 (제목 - 아티스트)",
+                    "title": "제목",
+                    "artist": "아티스트",
+                    "progress": "진행 바",
+                    "position": "재생 위치",
+                    "duration": "곡 길이",
+                    "cpu": "CPU 사용률",
+                    "memory": "메모리",
+                    "session": "이번 플레이 시간"
+                },
+                "formats": {
+                    "hour12": "12시간제",
+                    "show_seconds": "초 표시",
+                    "cpu_decimals": "CPU 소수 자릿수",
+                    "memory": "메모리 표시",
+                    "memory_percent": "백분율",
+                    "memory_used": "사용량",
+                    "memory_usedOfTotal": "사용량 / 전체",
+                    "memory_total": "전체",
+                    "memory_decimals": "메모리 소수 자릿수",
+                    "memory_unit": "단위",
+                    "progress": "바"
+                },
+                "presets": {
+                    "now_playing": "재생 중: {track}",
+                    "game_session": "플레이 {duration}"
+                },
+                "preset_groups": {
+                    "time": "시간",
+                    "music": "음악",
+                    "system": "시스템",
+                    "session": "플레이 시간"
+                }
+            }
         },
         "profile": {
             "game_info": {
@@ -7388,7 +7508,9 @@
             "settings_and_diagnostics": "설정 및 진단.",
             "current_instance_player_roster_rebuilt_from_local_activity_data": "로컬 활동 데이터로 재구성한 현재 인스턴스 플레이어 명단.",
             "themes": "테마",
-            "themes_description": "테마 소스 및 사용자 정의 CSS 관리."
+            "themes_description": "테마 소스 및 사용자 정의 CSS 관리.",
+            "chatbox": "Chatbox",
+            "chatbox_description": "게임 안 Chatbox에 상태를 표시하고 메시지를 보냅니다."
         }
     },
     "privacy_lock": {

@@ -17,6 +17,7 @@ use vrcx_0_application_core::{
     TaskSupervisor, WorldCache,
 };
 
+pub use background_capabilities::chatbox;
 pub use background_capabilities::{
     build_background_discord_presence_command, build_background_presence_facts,
     presence_automation_local_group_renamed, presence_automation_rule_enabled_set,
