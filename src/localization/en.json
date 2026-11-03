@@ -1137,7 +1137,8 @@
         "clear_selection": "Clear selection",
         "toggle_theme_safe_mode": "Temporarily disable community themes",
         "theme_safe_mode_on": "Community themes disabled for this session",
-        "theme_safe_mode_off": "Community themes restored"
+        "theme_safe_mode_off": "Community themes restored",
+        "toggle_favorite": "Add / remove favorite"
     },
     "privacy_lock": {
         "locked_title": "Locked",
@@ -2585,8 +2586,7 @@
             "label": {
                 "inventory_bundle_consumed": "Bundle opened",
                 "fps": "fps",
-                "frames": "frames",
-                "prev": "Prev"
+                "frames": "frames"
             },
             "action": {
                 "preview": "Preview",
@@ -5958,7 +5958,20 @@
             "people_match_all": "Together",
             "people_match_any": "Any of them",
             "without_people": "{count} without a player list",
-            "without_people_hint": "These screenshots were taken while VRCX-0 wasn’t running, so they don’t record who was there and never match a people filter."
+            "without_people_hint": "These screenshots were taken while VRCX-0 wasn’t running, so they don’t record who was there and never match a people filter.",
+            "fullscreen": "View fullscreen",
+            "filmstrip": "Filmstrip",
+            "timeline": "Timeline",
+            "timeline_description": "All screenshots by capture date",
+            "timeline_scrubber": "Jump to date",
+            "worlds": "Worlds",
+            "worlds_description": "Screenshots grouped by world",
+            "people": "People",
+            "people_description": "Screenshots grouped by who was there",
+            "world_album_count": "{count} worlds",
+            "people_album_count": "{count} people",
+            "empty_albums": "Nothing to group yet",
+            "empty_albums_description": "Screenshots taken while VRCX-0 is running record the world and who was there."
         },
         "set_avatar_styles": {
             "header": "Set Avatar Styles",
@@ -6901,6 +6914,8 @@
             "rotate_counterclockwise": "Rotate counterclockwise",
             "reset": "Reset",
             "close": "Close",
+            "previous": "Previous image",
+            "next": "Next image",
             "copy_failed": "Failed to copy image",
             "download_failed": "Failed to download image",
             "label": {

@@ -3,9 +3,13 @@ import {
     ChevronRightIcon,
     DicesIcon,
     FolderIcon,
+    GalleryVerticalEndIcon,
+    GlobeIcon,
     RefreshCwIcon,
     StarIcon,
-    Trash2Icon
+    Trash2Icon,
+    UsersIcon,
+    type LucideIcon
 } from 'lucide-react';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,15 +27,19 @@ import {
     type ScreenshotGridDensity,
     type ScreenshotGridSort
 } from '@/components/media/screenshotGridPreferences';
+import { formatScreenshotDay } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import {
     commands,
+    type ScreenshotFacet,
     type ScreenshotFolderInfo,
     type ScreenshotFolderTree,
     type ScreenshotLibraryImage,
     type ScreenshotLibraryScanStatus
 } from '@/platform/tauri/bindings';
 import { toast } from '@/services/toastService';
+import { resolveScreenshotCapturedTime } from '@/shared/utils/screenshot';
+import { useShellStore } from '@/state/shellStore';
 import { Button } from '@/ui/shadcn/button';
 import {
     Collapsible,
@@ -48,10 +56,17 @@ import {
 } from '@/ui/shadcn/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-import { SCREENSHOT_FAVORITES_FOLDER } from '../screenshotMetadataValues';
+import {
+    SCREENSHOT_FAVORITES_FOLDER,
+    SCREENSHOT_PEOPLE_FOLDER,
+    SCREENSHOT_TIMELINE_FOLDER,
+    SCREENSHOT_WORLDS_FOLDER
+} from '../screenshotMetadataValues';
+import { screenshotDayKey } from '../screenshotTimeline';
 import { useClearSelectionOnEscape } from '../useClearSelectionOnEscape';
 import type { useScreenshotBrowseSelection } from '../useScreenshotBrowseSelection';
 import { GallerySelectionBar } from './GallerySelectionBar';
+import { ScreenshotAlbumGrid } from './ScreenshotAlbumGrid';
 import { EmptyState } from './ScreenshotMetadataParts';
 import { ScreenshotSelectableImageGrid } from './ScreenshotSelectableImageGrid';
 
@@ -66,6 +81,72 @@ export type ScreenshotGalleryFavorites = {
     onToggle: (path: string, favorite: boolean) => void;
     onForgetMissing: () => void;
 };
+
+export type ScreenshotAlbumKind = 'world' | 'person';
+
+export type ScreenshotGalleryAlbums = {
+    worlds: readonly ScreenshotFacet[];
+    people: readonly ScreenshotFacet[];
+    onOpen: (kind: ScreenshotAlbumKind, facet: ScreenshotFacet) => void;
+};
+
+function useTimelineSectionOf(locale: string) {
+    const dateIsoFormat = useShellStore((state) => state.dateIsoFormat);
+    return useMemo(() => {
+        const labels = new Map<string, string>();
+        return (item: ScreenshotLibraryImage) => {
+            const time = resolveScreenshotCapturedTime(item);
+            const key = screenshotDayKey(time);
+            let label = labels.get(key);
+            if (label === undefined) {
+                label = !key
+                    ? '\u2014'
+                    : dateIsoFormat
+                      ? key
+                      : formatScreenshotDay(time, locale);
+                labels.set(key, label);
+            }
+            return { key, label };
+        };
+    }, [dateIsoFormat, locale]);
+}
+
+function VirtualFolderButton({
+    icon: Icon,
+    label,
+    count,
+    selected,
+    onSelect
+}: {
+    icon: LucideIcon;
+    label: string;
+    count: number;
+    selected: boolean;
+    onSelect: () => void;
+}) {
+    return (
+        <Button
+            type="button"
+            variant={selected ? 'secondary' : 'ghost'}
+            size="sm"
+            className="w-full min-w-0 justify-start transition-none"
+            aria-current={selected ? 'location' : undefined}
+            onClick={onSelect}
+        >
+            <span aria-hidden="true" className="size-3.5 shrink-0" />
+            <Icon data-icon="inline-start" />
+            <span className="truncate text-left">{label}</span>
+            {count > 0 && (
+                <span
+                    aria-hidden="true"
+                    className="text-muted-foreground ml-auto min-w-5 text-right text-xs tabular-nums"
+                >
+                    {count}
+                </span>
+            )}
+        </Button>
+    );
+}
 
 type FolderTreeNodeModel = ScreenshotFolderInfo & {
     synthetic?: boolean;
@@ -327,7 +408,8 @@ function ScreenshotGalleryGrid({
     favorites,
     onOpen,
     onToggleSelect,
-    onScrollPositionChange
+    onScrollPositionChange,
+    sectionOf
 }: {
     density: ScreenshotGridDensity;
     error: string;
@@ -343,6 +425,10 @@ function ScreenshotGalleryGrid({
     onOpen: (path: string) => void;
     onToggleSelect: (path: string, checked: boolean, shift: boolean) => void;
     onScrollPositionChange: (folder: string, scrollTop: number) => void;
+    sectionOf?: (item: ScreenshotLibraryImage) => {
+        key: string;
+        label: string;
+    };
 }) {
     const { t } = useTranslation();
     const isFavoritesFolder = selectedFolder === SCREENSHOT_FAVORITES_FOLDER;
@@ -405,6 +491,7 @@ function ScreenshotGalleryGrid({
             }}
             favoritePaths={favorites.paths}
             onToggleFavorite={favorites.onToggle}
+            sectionOf={sectionOf}
         />
     );
 }
@@ -513,6 +600,7 @@ export function ScreenshotGalleryView({
     selection,
     onExportSelection,
     favorites,
+    albums,
     sort,
     onSortChange
 }: {
@@ -535,11 +623,23 @@ export function ScreenshotGalleryView({
     selection: ScreenshotBrowseSelection;
     onExportSelection: (paths: string[], groupByFolder: boolean) => void;
     favorites: ScreenshotGalleryFavorites;
+    albums: ScreenshotGalleryAlbums;
     sort: ScreenshotGridSort;
     onSortChange: (value: ScreenshotGridSort) => void;
 }) {
-    const { t } = useTranslation();
+    const { i18n, t } = useTranslation();
     const isFavoritesFolder = selectedFolder === SCREENSHOT_FAVORITES_FOLDER;
+    const isTimelineFolder = selectedFolder === SCREENSHOT_TIMELINE_FOLDER;
+    const albumKind: ScreenshotAlbumKind | null =
+        selectedFolder === SCREENSHOT_WORLDS_FOLDER
+            ? 'world'
+            : selectedFolder === SCREENSHOT_PEOPLE_FOLDER
+              ? 'person'
+              : null;
+    const isLoadedImageList = isFavoritesFolder || isTimelineFolder;
+    const timelineSectionOf = useTimelineSectionOf(
+        i18n.resolvedLanguage || i18n.language
+    );
     const layout = useDefaultLayout({
         id: SCREENSHOT_GALLERY_LAYOUT_ID,
         panelIds: SCREENSHOT_GALLERY_PANEL_IDS
@@ -549,19 +649,46 @@ export function ScreenshotGalleryView({
     const activeFolder =
         folderTree?.folders.find((folder) => folder.path === selectedFolder) ||
         root;
-    const activeFolderPath = isFavoritesFolder
-        ? ''
-        : selectedFolder || activeFolder?.path || folderTree?.rootPath || '';
-    const activeFolderTitle = isFavoritesFolder
-        ? t('dialog.screenshot_metadata.favorites')
-        : activeFolder?.name || t('dialog.screenshot_metadata.gallery');
-    const activeFolderSubtitle = isFavoritesFolder
-        ? favorites.missingCount > 0
-            ? t('dialog.screenshot_metadata.favorites_missing', {
-                  count: favorites.missingCount
-              })
-            : '—'
-        : activeFolderPath || '—';
+    const albumFacets =
+        albumKind === 'world'
+            ? albums.worlds
+            : albumKind === 'person'
+              ? albums.people
+              : [];
+    const activeFolderPath =
+        isLoadedImageList || albumKind
+            ? ''
+            : selectedFolder ||
+              activeFolder?.path ||
+              folderTree?.rootPath ||
+              '';
+    let activeFolderTitle =
+        activeFolder?.name || t('dialog.screenshot_metadata.gallery');
+    let activeFolderSubtitle = activeFolderPath || '\u2014';
+    if (isFavoritesFolder) {
+        activeFolderTitle = t('dialog.screenshot_metadata.favorites');
+        activeFolderSubtitle =
+            favorites.missingCount > 0
+                ? t('dialog.screenshot_metadata.favorites_missing', {
+                      count: favorites.missingCount
+                  })
+                : '\u2014';
+    } else if (isTimelineFolder) {
+        activeFolderTitle = t('dialog.screenshot_metadata.timeline');
+        activeFolderSubtitle = t(
+            'dialog.screenshot_metadata.timeline_description'
+        );
+    } else if (albumKind === 'world') {
+        activeFolderTitle = t('dialog.screenshot_metadata.worlds');
+        activeFolderSubtitle = t(
+            'dialog.screenshot_metadata.worlds_description'
+        );
+    } else if (albumKind === 'person') {
+        activeFolderTitle = t('dialog.screenshot_metadata.people');
+        activeFolderSubtitle = t(
+            'dialog.screenshot_metadata.people_description'
+        );
+    }
     useClearSelectionOnEscape(selection.hasSelection, selection.clearSelection);
 
     function onDensityChange(next: ScreenshotGridDensity) {
@@ -621,37 +748,44 @@ export function ScreenshotGalleryView({
                         </div>
                     ) : root ? (
                         <div className="flex flex-col gap-1">
-                            <Button
-                                type="button"
-                                variant={
-                                    isFavoritesFolder ? 'secondary' : 'ghost'
+                            <VirtualFolderButton
+                                icon={GalleryVerticalEndIcon}
+                                label={t('dialog.screenshot_metadata.timeline')}
+                                count={root.totalImageCount}
+                                selected={isTimelineFolder}
+                                onSelect={() =>
+                                    onSelectFolder(SCREENSHOT_TIMELINE_FOLDER)
                                 }
-                                size="sm"
-                                className="w-full min-w-0 justify-start transition-none"
-                                aria-current={
-                                    isFavoritesFolder ? 'location' : undefined
-                                }
-                                onClick={() =>
+                            />
+                            <VirtualFolderButton
+                                icon={StarIcon}
+                                label={t(
+                                    'dialog.screenshot_metadata.favorites'
+                                )}
+                                count={favorites.count}
+                                selected={isFavoritesFolder}
+                                onSelect={() =>
                                     onSelectFolder(SCREENSHOT_FAVORITES_FOLDER)
                                 }
-                            >
-                                <span
-                                    aria-hidden="true"
-                                    className="size-3.5 shrink-0"
-                                />
-                                <StarIcon data-icon="inline-start" />
-                                <span className="truncate text-left">
-                                    {t('dialog.screenshot_metadata.favorites')}
-                                </span>
-                                {favorites.count > 0 && (
-                                    <span
-                                        aria-hidden="true"
-                                        className="text-muted-foreground ml-auto min-w-5 text-right text-xs tabular-nums"
-                                    >
-                                        {favorites.count}
-                                    </span>
-                                )}
-                            </Button>
+                            />
+                            <VirtualFolderButton
+                                icon={GlobeIcon}
+                                label={t('dialog.screenshot_metadata.worlds')}
+                                count={albums.worlds.length}
+                                selected={albumKind === 'world'}
+                                onSelect={() =>
+                                    onSelectFolder(SCREENSHOT_WORLDS_FOLDER)
+                                }
+                            />
+                            <VirtualFolderButton
+                                icon={UsersIcon}
+                                label={t('dialog.screenshot_metadata.people')}
+                                count={albums.people.length}
+                                selected={albumKind === 'person'}
+                                onSelect={() =>
+                                    onSelectFolder(SCREENSHOT_PEOPLE_FOLDER)
+                                }
+                            />
                             <FolderTreeNode
                                 node={root}
                                 selectedFolder={selectedFolder}
@@ -690,9 +824,16 @@ export function ScreenshotGalleryView({
                     </Tooltip>
                     <div className="flex items-center gap-2">
                         <span className="text-muted-foreground text-xs tabular-nums">
-                            {t('dialog.screenshot_metadata.image_count', {
-                                count: images.length
-                            })}
+                            {albumKind
+                                ? t(
+                                      albumKind === 'world'
+                                          ? 'dialog.screenshot_metadata.world_album_count'
+                                          : 'dialog.screenshot_metadata.people_album_count',
+                                      { count: albumFacets.length }
+                                  )
+                                : t('dialog.screenshot_metadata.image_count', {
+                                      count: images.length
+                                  })}
                         </span>
                         {isFavoritesFolder && favorites.missingCount > 0 ? (
                             <Button
@@ -707,95 +848,116 @@ export function ScreenshotGalleryView({
                                 )}
                             </Button>
                         ) : null}
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={
-                                isFavoritesFolder
-                                    ? !images.length
-                                    : !activeFolder?.totalImageCount
-                            }
-                            onClick={() => {
-                                if (isFavoritesFolder) {
-                                    const image =
-                                        images[
-                                            Math.floor(
-                                                Math.random() * images.length
-                                            )
-                                        ];
-                                    if (image) {
-                                        onOpenImage(image.path);
+                        {albumKind ? null : (
+                            <>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={
+                                        isLoadedImageList
+                                            ? !images.length
+                                            : !activeFolder?.totalImageCount
                                     }
-                                    return;
-                                }
-                                commands
-                                    .appPickRandomScreenshotInFolderTree(
-                                        activeFolderPath
-                                    )
-                                    .then((path) => {
-                                        if (path) {
-                                            onOpenImage(path);
+                                    onClick={() => {
+                                        if (isLoadedImageList) {
+                                            const image =
+                                                images[
+                                                    Math.floor(
+                                                        Math.random() *
+                                                            images.length
+                                                    )
+                                                ];
+                                            if (image) {
+                                                onOpenImage(image.path);
+                                            }
+                                            return;
                                         }
-                                    })
-                                    .catch((error: unknown) => {
-                                        toast.add({
-                                            type: 'error',
-                                            title:
-                                                error instanceof Error
-                                                    ? error.message
-                                                    : t(
-                                                          'common.errors.action_failed'
-                                                      )
-                                        });
-                                    });
-                            }}
-                        >
-                            <DicesIcon data-icon="inline-start" />
-                            {t('dialog.screenshot_metadata.feeling_lucky')}
-                        </Button>
-                        <ScreenshotGridSettingsMenu
-                            density={density}
-                            sort={sort}
-                            onDensityChange={onDensityChange}
-                            onSortChange={onSortChange}
-                        />
+                                        commands
+                                            .appPickRandomScreenshotInFolderTree(
+                                                activeFolderPath
+                                            )
+                                            .then((path) => {
+                                                if (path) {
+                                                    onOpenImage(path);
+                                                }
+                                            })
+                                            .catch((error: unknown) => {
+                                                toast.add({
+                                                    type: 'error',
+                                                    title:
+                                                        error instanceof Error
+                                                            ? error.message
+                                                            : t(
+                                                                  'common.errors.action_failed'
+                                                              )
+                                                });
+                                            });
+                                    }}
+                                >
+                                    <DicesIcon data-icon="inline-start" />
+                                    {t(
+                                        'dialog.screenshot_metadata.feeling_lucky'
+                                    )}
+                                </Button>
+                                <ScreenshotGridSettingsMenu
+                                    density={density}
+                                    sort={sort}
+                                    onDensityChange={onDensityChange}
+                                    onSortChange={onSortChange}
+                                />
+                            </>
+                        )}
                     </div>
                 </div>
-                <ScreenshotGalleryGrid
-                    density={density}
-                    error={error}
-                    initialScrollTop={restoreScrollTop}
-                    revealPath={revealPath}
-                    onRevealPathConsumed={onRevealPathConsumed}
-                    images={images}
-                    isLoading={isImagesLoading}
-                    selectedFolder={selectedFolder}
-                    hasSelection={selection.hasSelection}
-                    selectedKeysSet={selection.selectedKeysSet}
-                    favorites={favorites}
-                    onOpen={onOpenImage}
-                    onToggleSelect={(path, checked, shift) =>
-                        selection.selectItem(path, checked, { shift })
-                    }
-                    onScrollPositionChange={onScrollPositionChange}
-                />
-                <GallerySelectionBar
-                    selectedCount={selection.selectedPaths.length}
-                    deletableCount={selection.selectedPaths.length}
-                    isAllSelected={selection.isAllSelected}
-                    actionsDisabled={isDeleteRunning}
-                    onSelectAll={selection.toggleSelectAll}
-                    onClearSelection={selection.clearSelection}
-                    onDelete={() => onDeleteSelection(selection.selectedPaths)}
-                    exportAction={{
-                        onExport: (groupByFolder) =>
-                            onExportSelection(
-                                selection.selectedPaths,
-                                groupByFolder
-                            )
-                    }}
-                />
+                {albumKind ? (
+                    <ScreenshotAlbumGrid
+                        facets={albumFacets}
+                        onOpen={(facet) => albums.onOpen(albumKind, facet)}
+                    />
+                ) : (
+                    <>
+                        <ScreenshotGalleryGrid
+                            density={density}
+                            error={error}
+                            initialScrollTop={restoreScrollTop}
+                            revealPath={revealPath}
+                            onRevealPathConsumed={onRevealPathConsumed}
+                            images={images}
+                            isLoading={isImagesLoading}
+                            selectedFolder={selectedFolder}
+                            hasSelection={selection.hasSelection}
+                            selectedKeysSet={selection.selectedKeysSet}
+                            favorites={favorites}
+                            onOpen={onOpenImage}
+                            onToggleSelect={(path, checked, shift) =>
+                                selection.selectItem(path, checked, { shift })
+                            }
+                            onScrollPositionChange={onScrollPositionChange}
+                            sectionOf={
+                                isTimelineFolder ? timelineSectionOf : undefined
+                            }
+                        />
+                        <GallerySelectionBar
+                            selectedCount={selection.selectedPaths.length}
+                            deletableCount={selection.selectedPaths.length}
+                            isAllSelected={selection.isAllSelected}
+                            actionsDisabled={isDeleteRunning}
+                            onSelectAll={selection.toggleSelectAll}
+                            onClearSelection={selection.clearSelection}
+                            onDelete={() =>
+                                onDeleteSelection(selection.selectedPaths)
+                            }
+                            exportAction={{
+                                onExport: (groupByFolder) =>
+                                    onExportSelection(
+                                        selection.selectedPaths,
+                                        groupByFolder
+                                    )
+                            }}
+                        />
+                    </>
+                )}
             </ResizablePanel>
         </ResizablePanelGroup>
     );

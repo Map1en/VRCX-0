@@ -103,4 +103,43 @@ describe('FullscreenImageViewer keyboard shortcuts', () => {
         expect(ctrlRotate.defaultPrevented).toBe(true);
         expect(transform.rotateClockwise).toHaveBeenCalledOnce();
     });
+
+    it('steps through images with the arrow keys only where a neighbour exists', () => {
+        const onNavigatePrev = vi.fn();
+        const onNavigateNext = vi.fn();
+        render(
+            <FullscreenImageViewer
+                open
+                url="https://example.test/image.png"
+                navigation={{
+                    canNavigatePrev: false,
+                    canNavigateNext: true,
+                    onNavigatePrev,
+                    onNavigateNext
+                }}
+                onClose={() => {}}
+            />
+        );
+
+        const left = press({ key: 'ArrowLeft' });
+        const right = press({ key: 'ArrowRight' });
+        press({ key: 'ArrowRight', shiftKey: true });
+
+        expect(left.defaultPrevented).toBe(false);
+        expect(right.defaultPrevented).toBe(true);
+        expect(onNavigatePrev).not.toHaveBeenCalled();
+        expect(onNavigateNext).toHaveBeenCalledOnce();
+    });
+
+    it('leaves the arrow keys alone without navigation', () => {
+        render(
+            <FullscreenImageViewer
+                open
+                url="https://example.test/image.png"
+                onClose={() => {}}
+            />
+        );
+
+        expect(press({ key: 'ArrowRight' }).defaultPrevented).toBe(false);
+    });
 });

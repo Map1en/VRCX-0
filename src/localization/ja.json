@@ -1132,7 +1132,8 @@
         "clear_selection": "選択を解除",
         "toggle_theme_safe_mode": "コミュニティテーマを一時的に無効化",
         "theme_safe_mode_on": "コミュニティテーマを一時的に無効にしました",
-        "theme_safe_mode_off": "コミュニティテーマを元に戻しました"
+        "theme_safe_mode_off": "コミュニティテーマを元に戻しました",
+        "toggle_favorite": "お気に入りに追加／解除"
     },
     "privacy_lock": {
         "locked_title": "ロック中",
@@ -2574,8 +2575,7 @@
             "label": {
                 "inventory_bundle_consumed": "バンドルを開封しました",
                 "fps": "fps",
-                "frames": "フレーム",
-                "prev": "前へ"
+                "frames": "フレーム"
             },
             "action": {
                 "preview": "プレビュー",
@@ -5943,7 +5943,20 @@
             "people_match_all": "全員が写っている",
             "people_match_any": "誰かが写っている",
             "without_people": "{count} 枚はプレイヤー情報なし",
-            "without_people_hint": "VRCX-0 が起動していないときに撮影したため、その場にいた人が記録されておらず、人物での絞り込みには出てきません。"
+            "without_people_hint": "VRCX-0 が起動していないときに撮影したため、その場にいた人が記録されておらず、人物での絞り込みには出てきません。",
+            "fullscreen": "全画面で表示",
+            "filmstrip": "サムネイル一覧",
+            "timeline": "タイムライン",
+            "timeline_description": "すべてのスクリーンショットを撮影日順に表示",
+            "timeline_scrubber": "日付へ移動",
+            "worlds": "ワールド",
+            "worlds_description": "ワールドごとにまとめたスクリーンショット",
+            "people": "人物",
+            "people_description": "一緒に写った人ごとにまとめたスクリーンショット",
+            "world_album_count": "{count} ワールド",
+            "people_album_count": "{count} 人",
+            "empty_albums": "まとめられるスクリーンショットはまだありません",
+            "empty_albums_description": "VRCX-0 の起動中に撮ったスクリーンショットには、ワールドと一緒にいた人が記録されます。"
         },
         "set_avatar_styles": {
             "header": "アバタースタイルを設定",
@@ -6886,6 +6899,8 @@
             "rotate_counterclockwise": "反時計回りに回転",
             "reset": "リセット",
             "close": "閉じる",
+            "previous": "前の画像",
+            "next": "次の画像",
             "copy_failed": "画像のコピーに失敗しました",
             "download_failed": "画像をダウンロードできませんでした",
             "label": {

@@ -51,6 +51,21 @@ function degToRad(value: number): number {
     return (value * Math.PI) / 180;
 }
 
+export function resolveActualSizeScale(element: Element) {
+    if (
+        !(element instanceof HTMLImageElement) ||
+        !element.naturalWidth ||
+        !element.naturalHeight
+    ) {
+        return 0;
+    }
+    const renderedWidth = Math.min(
+        element.offsetWidth,
+        (element.offsetHeight * element.naturalWidth) / element.naturalHeight
+    );
+    return renderedWidth > 0 ? element.naturalWidth / renderedWidth : 0;
+}
+
 export function useFullscreenImageTransform({
     open,
     url
@@ -176,7 +191,13 @@ export function useFullscreenImageTransform({
                 }));
                 return;
             }
-            zoomAtPointer(event, DOUBLE_CLICK_ZOOM);
+            const actualSizeScale = resolveActualSizeScale(event.currentTarget);
+            zoomAtPointer(
+                event,
+                actualSizeScale > 1
+                    ? Math.min(actualSizeScale, MAX_SCALE)
+                    : DOUBLE_CLICK_ZOOM
+            );
         },
         [zoomAtPointer]
     );
@@ -251,6 +272,7 @@ export function useFullscreenImageTransform({
 
     return {
         viewerRef,
+        scale: transform.scale,
         transformStyle,
         handleDoubleClick,
         handlePointerDown,

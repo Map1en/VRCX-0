@@ -1137,7 +1137,8 @@
         "clear_selection": "Borrar selección",
         "toggle_theme_safe_mode": "Desactivar temporalmente los temas de la comunidad",
         "theme_safe_mode_on": "Temas de la comunidad desactivados en esta sesión",
-        "theme_safe_mode_off": "Temas de la comunidad restaurados"
+        "theme_safe_mode_off": "Temas de la comunidad restaurados",
+        "toggle_favorite": "Añadir o quitar de favoritos"
     },
     "privacy_lock": {
         "locked_title": "Bloqueado",
@@ -2585,8 +2586,7 @@
             "label": {
                 "inventory_bundle_consumed": "Paquete abierto",
                 "fps": "fps",
-                "frames": "fotogramas",
-                "prev": "Anterior"
+                "frames": "fotogramas"
             },
             "action": {
                 "preview": "Vista previa",
@@ -5958,7 +5958,20 @@
             "people_match_all": "Juntos",
             "people_match_any": "Cualquiera",
             "without_people": "{count} sin lista de jugadores",
-            "without_people_hint": "Estas capturas se tomaron con VRCX-0 cerrado, así que no registran quién estaba y nunca aparecen al filtrar por personas."
+            "without_people_hint": "Estas capturas se tomaron con VRCX-0 cerrado, así que no registran quién estaba y nunca aparecen al filtrar por personas.",
+            "fullscreen": "Ver en pantalla completa",
+            "filmstrip": "Tira de miniaturas",
+            "timeline": "Cronología",
+            "timeline_description": "Todas las capturas por fecha",
+            "timeline_scrubber": "Ir a una fecha",
+            "worlds": "Mundos",
+            "worlds_description": "Capturas agrupadas por mundo",
+            "people": "Personas",
+            "people_description": "Capturas agrupadas por quién estaba",
+            "world_album_count": "{count} mundos",
+            "people_album_count": "{count} personas",
+            "empty_albums": "Aún no hay nada que agrupar",
+            "empty_albums_description": "Las capturas tomadas con VRCX-0 abierto guardan el mundo y quién estaba contigo."
         },
         "set_avatar_styles": {
             "header": "Establecer estilos del avatar",
@@ -6901,6 +6914,8 @@
             "rotate_counterclockwise": "Girar en sentido antihorario",
             "reset": "Restablecer",
             "close": "Cerrar",
+            "previous": "Imagen anterior",
+            "next": "Imagen siguiente",
             "copy_failed": "No se pudo copiar la imagen",
             "download_failed": "No se pudo descargar la imagen",
             "label": {

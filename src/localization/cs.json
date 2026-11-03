@@ -1147,7 +1147,8 @@
         "clear_selection": "Zrušit výběr",
         "toggle_theme_safe_mode": "Dočasně vypnout komunitní motivy",
         "theme_safe_mode_on": "Komunitní motivy jsou pro tuto relaci vypnuté",
-        "theme_safe_mode_off": "Komunitní motivy obnoveny"
+        "theme_safe_mode_off": "Komunitní motivy obnoveny",
+        "toggle_favorite": "Přidat do oblíbených / odebrat"
     },
     "privacy_lock": {
         "locked_title": "Zamčeno",
@@ -2601,8 +2602,7 @@
             "label": {
                 "inventory_bundle_consumed": "Balíček inventáře byl spotřebován",
                 "fps": "fps",
-                "frames": "snímků",
-                "prev": "Zpět"
+                "frames": "snímků"
             },
             "action": {
                 "preview": "Náhled",
@@ -5944,7 +5944,20 @@
             "people_match_all": "Společně",
             "people_match_any": "Kdokoli z nich",
             "without_people": "{count} bez seznamu hráčů",
-            "without_people_hint": "Tyto snímky vznikly, když VRCX-0 neběželo. Neobsahují seznam přítomných, a proto se ve filtru podle lidí nikdy neobjeví."
+            "without_people_hint": "Tyto snímky vznikly, když VRCX-0 neběželo. Neobsahují seznam přítomných, a proto se ve filtru podle lidí nikdy neobjeví.",
+            "fullscreen": "Zobrazit na celou obrazovku",
+            "filmstrip": "Pás náhledů",
+            "timeline": "Časová osa",
+            "timeline_description": "Všechny snímky podle data pořízení",
+            "timeline_scrubber": "Přejít na datum",
+            "worlds": "Světy",
+            "worlds_description": "Snímky seskupené podle světa",
+            "people": "Lidé",
+            "people_description": "Snímky seskupené podle toho, kdo byl u toho",
+            "world_album_count": "Světů: {count}",
+            "people_album_count": "Lidí: {count}",
+            "empty_albums": "Zatím není co seskupit",
+            "empty_albums_description": "Snímky pořízené se spuštěným VRCX-0 zaznamenávají svět a lidi kolem."
         },
         "set_avatar_styles": {
             "header": "Nastavit styly avatara",
@@ -6887,6 +6900,8 @@
             "rotate_counterclockwise": "Otočit proti směru hodinových ručiček",
             "reset": "Resetovat",
             "close": "Zavřít",
+            "previous": "Předchozí obrázek",
+            "next": "Další obrázek",
             "copy_failed": "Kopírování obrázku se nezdařilo",
             "download_failed": "Stažení obrázku se nezdařilo",
             "label": {

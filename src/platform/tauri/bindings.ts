@@ -7017,6 +7017,7 @@ export type ScreenshotFacet = {
     name: string;
     count: number;
     lastCapturedAtMs: number;
+    coverPath: string;
 };
 export type ScreenshotFilter = {
     people?: string[];

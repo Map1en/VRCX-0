@@ -145,6 +145,7 @@ pub struct ScreenshotFacet {
     pub name: String,
     pub count: i64,
     pub last_captured_at_ms: i64,
+    pub cover_path: String,
 }
 
 #[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize, specta::Type)]

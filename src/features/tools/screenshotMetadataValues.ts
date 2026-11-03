@@ -283,6 +283,20 @@ export function resolvePathAfterScreenshotDelete(
 }
 
 export const SCREENSHOT_FAVORITES_FOLDER = '::favorites';
+export const SCREENSHOT_TIMELINE_FOLDER = '::timeline';
+export const SCREENSHOT_WORLDS_FOLDER = '::worlds';
+export const SCREENSHOT_PEOPLE_FOLDER = '::people';
+
+const SCREENSHOT_VIRTUAL_FOLDERS: ReadonlySet<string> = new Set([
+    SCREENSHOT_FAVORITES_FOLDER,
+    SCREENSHOT_TIMELINE_FOLDER,
+    SCREENSHOT_WORLDS_FOLDER,
+    SCREENSHOT_PEOPLE_FOLDER
+]);
+
+export function isScreenshotVirtualFolder(folder: string) {
+    return SCREENSHOT_VIRTUAL_FOLDERS.has(folder);
+}
 
 export function resolveGalleryFolder(
     folderTree: ScreenshotFolderTree | null | undefined,
@@ -294,7 +308,7 @@ export function resolveGalleryFolder(
         : [preferredFolders];
     for (const preferredFolder of preferredList) {
         if (
-            preferredFolder === SCREENSHOT_FAVORITES_FOLDER ||
+            isScreenshotVirtualFolder(preferredFolder) ||
             (preferredFolder &&
                 folders.some((folder) => folder.path === preferredFolder))
         ) {

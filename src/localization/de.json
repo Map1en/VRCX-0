@@ -1137,7 +1137,8 @@
         "clear_selection": "Auswahl aufheben",
         "toggle_theme_safe_mode": "Community-Themes vorübergehend deaktivieren",
         "theme_safe_mode_on": "Community-Themes für diese Sitzung deaktiviert",
-        "theme_safe_mode_off": "Community-Themes wiederhergestellt"
+        "theme_safe_mode_off": "Community-Themes wiederhergestellt",
+        "toggle_favorite": "Favorit setzen / entfernen"
     },
     "privacy_lock": {
         "locked_title": "Gesperrt",
@@ -2581,8 +2582,7 @@
             "label": {
                 "inventory_bundle_consumed": "Inventarbündel verbraucht",
                 "fps": "FPS",
-                "frames": "Frames",
-                "prev": "Zurück"
+                "frames": "Frames"
             },
             "action": {
                 "preview": "Vorschau",
@@ -5910,7 +5910,20 @@
             "people_match_all": "Zusammen",
             "people_match_any": "Eine davon",
             "without_people": "{count} ohne Spielerliste",
-            "without_people_hint": "Diese Screenshots entstanden, während VRCX-0 nicht lief. Sie enthalten keine Spielerliste und erscheinen daher nie bei einem Personenfilter."
+            "without_people_hint": "Diese Screenshots entstanden, während VRCX-0 nicht lief. Sie enthalten keine Spielerliste und erscheinen daher nie bei einem Personenfilter.",
+            "fullscreen": "Im Vollbild ansehen",
+            "filmstrip": "Filmstreifen",
+            "timeline": "Zeitleiste",
+            "timeline_description": "Alle Screenshots nach Aufnahmedatum",
+            "timeline_scrubber": "Zu Datum springen",
+            "worlds": "Welten",
+            "worlds_description": "Screenshots nach Welt sortiert",
+            "people": "Personen",
+            "people_description": "Screenshots danach sortiert, wer dabei war",
+            "world_album_count": "{count} Welten",
+            "people_album_count": "{count} Personen",
+            "empty_albums": "Noch nichts zum Sortieren",
+            "empty_albums_description": "Screenshots, die bei laufendem VRCX-0 entstehen, speichern die Welt und wer dabei war."
         },
         "set_avatar_styles": {
             "header": "Avatar-Stile festlegen",
@@ -6853,6 +6866,8 @@
             "rotate_counterclockwise": "Gegen den Uhrzeigersinn drehen",
             "reset": "Zurücksetzen",
             "close": "Schließen",
+            "previous": "Vorheriges Bild",
+            "next": "Nächstes Bild",
             "copy_failed": "Bild konnte nicht kopiert werden",
             "download_failed": "Bild konnte nicht heruntergeladen werden",
             "label": {

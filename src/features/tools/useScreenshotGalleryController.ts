@@ -25,15 +25,22 @@ import type { CapabilityStatus } from '@/state/runtimeStore';
 
 import {
     getGalleryFolderPathSet,
+    isScreenshotVirtualFolder,
     normalizeGalleryScrollPositions,
     normalizeGalleryScrollTop,
     resolveGalleryFolder,
-    SCREENSHOT_FAVORITES_FOLDER,
     SCREENSHOT_GALLERY_FOLDER_CONFIG_KEY,
     SCREENSHOT_GALLERY_SCROLL_CONFIG_KEY,
     SCREENSHOT_GALLERY_SCROLL_SAVE_DELAY_MS,
+    SCREENSHOT_TIMELINE_FOLDER,
     serializeGalleryScrollPositions
 } from './screenshotMetadataValues';
+
+function loadGalleryFolderImages(folder: string) {
+    return folder === SCREENSHOT_TIMELINE_FOLDER
+        ? commands.appQueryScreenshots({}).then((result) => result.images)
+        : commands.appGetScreenshotFolderImages(folder);
+}
 
 type SetSearchParams = ReturnType<typeof useSearchParams>[1];
 
@@ -183,7 +190,11 @@ export function useScreenshotGalleryController({
                 galleryScrollPositionsRef.current = new Map(
                     Array.from(
                         galleryScrollPositionsRef.current.entries()
-                    ).filter(([path]) => folderPathSet.has(path))
+                    ).filter(
+                        ([path]) =>
+                            folderPathSet.has(path) ||
+                            isScreenshotVirtualFolder(path)
+                    )
                 );
                 setSelectedGalleryFolder((current) =>
                     resolveGalleryFolder(
@@ -347,7 +358,8 @@ export function useScreenshotGalleryController({
     useEffect(() => {
         if (
             !selectedGalleryFolder ||
-            selectedGalleryFolder === SCREENSHOT_FAVORITES_FOLDER
+            (isScreenshotVirtualFolder(selectedGalleryFolder) &&
+                selectedGalleryFolder !== SCREENSHOT_TIMELINE_FOLDER)
         ) {
             galleryRequestRef.current += 1;
             galleryImagesRequestKeyRef.current = '';
@@ -367,8 +379,7 @@ export function useScreenshotGalleryController({
         const requestedFolder = selectedGalleryFolder;
         setIsGalleryImagesLoading(true);
 
-        commands
-            .appGetScreenshotFolderImages(requestedFolder)
+        loadGalleryFolderImages(requestedFolder)
             .then((images) => {
                 if (galleryRequestRef.current === requestId) {
                     setGalleryImagesError('');

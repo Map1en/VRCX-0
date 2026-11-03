@@ -48,6 +48,21 @@ export function hasCommandModifier(
     return event.altKey || event.ctrlKey || event.metaKey;
 }
 
+const MODAL_DIALOG_SELECTOR =
+    ':is([role="dialog"], [role="alertdialog"]):not([aria-modal="false"])';
+
+export function hasOpenDialogOutside(owner: Element | null) {
+    for (const dialog of document.querySelectorAll(MODAL_DIALOG_SELECTOR)) {
+        if (
+            dialog.getClientRects().length &&
+            !(owner && dialog.contains(owner))
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
+
 export function isShortcutBlocked(
     event: Event,
     owner: Element,

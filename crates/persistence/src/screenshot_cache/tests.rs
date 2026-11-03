@@ -726,6 +726,45 @@ fn facets_rank_people_without_the_photographer_and_worlds_by_count() {
 }
 
 #[test]
+fn facets_use_the_newest_screenshot_of_each_group_as_cover() {
+    let (_dir, cache, root) = filter_fixture("filter-facet-covers");
+    let file_name = |path: &str| {
+        std::path::Path::new(path)
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .into_owned()
+    };
+    let people: Vec<_> = cache
+        .screenshot_people_for_root(&root, &ScreenshotFilter::default(), 10)
+        .unwrap()
+        .into_iter()
+        .map(|row| (row.name, file_name(&row.cover_path)))
+        .collect();
+    assert_eq!(
+        people,
+        [
+            ("Bob".to_string(), "c.png".to_string()),
+            ("Alice".to_string(), "b.png".to_string())
+        ]
+    );
+
+    let worlds: Vec<_> = cache
+        .screenshot_worlds_for_root(&root, &ScreenshotFilter::default(), 10)
+        .unwrap()
+        .into_iter()
+        .map(|row| (row.id, file_name(&row.cover_path)))
+        .collect();
+    assert_eq!(
+        worlds,
+        [
+            ("wrld_loft".to_string(), "d.png".to_string()),
+            ("wrld_pier".to_string(), "b.png".to_string())
+        ]
+    );
+}
+
+#[test]
 fn filter_text_ignores_case_beyond_ascii_and_end_is_exclusive() {
     let dir = TestDir::new("filter-unicode");
     let cache = open_cache(&dir);

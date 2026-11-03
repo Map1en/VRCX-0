@@ -187,7 +187,7 @@ impl MetadataCacheDb {
         self.facets(
             &format!(
                 "SELECT {PLAYER_ID} AS player_id, json_extract(p.value, '$.displayName'),
-                        COUNT(*), MAX(f.captured_at_ms)
+                        COUNT(*), MAX(f.captured_at_ms), f.path
                  FROM screenshot_files f, json_each(f.metadata_json, '$.players') p
                  WHERE {} AND substr({PLAYER_ID}, 1, 4) = 'usr_'
                    AND {PLAYER_ID} <> COALESCE(json_extract(f.metadata_json, '$.author.id'), '')
@@ -208,7 +208,7 @@ impl MetadataCacheDb {
         let clause = filter_clause(root_path, filter, true);
         self.facets(
             &format!(
-                "SELECT f.world_id, COALESCE(f.world_name, ''), COUNT(*), MAX(f.captured_at_ms)
+                "SELECT f.world_id, COALESCE(f.world_name, ''), COUNT(*), MAX(f.captured_at_ms), f.path
                  FROM screenshot_files f
                  WHERE {} AND COALESCE(f.world_id, '') <> ''
                  GROUP BY f.world_id ORDER BY 3 DESC, 4 DESC LIMIT ?",
@@ -232,7 +232,7 @@ impl MetadataCacheDb {
         self.facets(
             &format!(
                 "SELECT strftime('%Y-%m', f.captured_at_ms / 1000, 'unixepoch', ?) AS month,
-                        '', COUNT(*), MAX(f.captured_at_ms)
+                        '', COUNT(*), MAX(f.captured_at_ms), f.path
                  FROM screenshot_files f
                  WHERE {} AND f.captured_at_ms > 0
                  GROUP BY month ORDER BY month DESC LIMIT ?",
@@ -282,7 +282,7 @@ impl MetadataCacheDb {
         mut params: Vec<Value>,
         limit: i64,
     ) -> Result<Vec<ScreenshotFacet>> {
-        params.push(Value::Integer(limit.clamp(1, 500)));
+        params.push(Value::Integer(limit.clamp(1, 5000)));
         let conn = self.inner.conn.lock().unwrap();
         let mut stmt = conn
             .prepare(sql)
@@ -294,6 +294,7 @@ impl MetadataCacheDb {
                     name: row.get::<_, Option<String>>(1)?.unwrap_or_default(),
                     count: row.get(2)?,
                     last_captured_at_ms: row.get::<_, Option<i64>>(3)?.unwrap_or_default(),
+                    cover_path: row.get::<_, Option<String>>(4)?.unwrap_or_default(),
                 })
             })
             .map_err(|error| Error::sqlite_with_context("read screenshot facets", error))?;

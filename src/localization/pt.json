@@ -1137,7 +1137,8 @@
         "clear_selection": "Limpar seleção",
         "toggle_theme_safe_mode": "Desativar temporariamente os temas da comunidade",
         "theme_safe_mode_on": "Temas da comunidade desativados nesta sessão",
-        "theme_safe_mode_off": "Temas da comunidade restaurados"
+        "theme_safe_mode_off": "Temas da comunidade restaurados",
+        "toggle_favorite": "Adicionar ou remover dos favoritos"
     },
     "privacy_lock": {
         "locked_title": "Bloqueado",
@@ -2581,8 +2582,7 @@
             "label": {
                 "inventory_bundle_consumed": "Pacote de inventário consumido",
                 "fps": "fps",
-                "frames": "quadros",
-                "prev": "Anterior"
+                "frames": "quadros"
             },
             "action": {
                 "preview": "Pré-visualizar",
@@ -5910,7 +5910,20 @@
             "people_match_all": "Juntos",
             "people_match_any": "Qualquer um",
             "without_people": "{count} sem lista de jogadores",
-            "without_people_hint": "Estas capturas foram feitas com o VRCX-0 fechado, então não registram quem estava lá e nunca aparecem no filtro por pessoas."
+            "without_people_hint": "Estas capturas foram feitas com o VRCX-0 fechado, então não registram quem estava lá e nunca aparecem no filtro por pessoas.",
+            "fullscreen": "Ver em tela cheia",
+            "filmstrip": "Faixa de miniaturas",
+            "timeline": "Linha do tempo",
+            "timeline_description": "Todas as capturas de tela por data",
+            "timeline_scrubber": "Ir para uma data",
+            "worlds": "Mundos",
+            "worlds_description": "Capturas agrupadas por mundo",
+            "people": "Pessoas",
+            "people_description": "Capturas agrupadas por quem estava junto",
+            "world_album_count": "{count} mundos",
+            "people_album_count": "{count} pessoas",
+            "empty_albums": "Ainda não há nada para agrupar",
+            "empty_albums_description": "Capturas tiradas com o VRCX-0 aberto registram o mundo e quem estava junto."
         },
         "set_avatar_styles": {
             "header": "Definir Estilos do Avatar",
@@ -6853,6 +6866,8 @@
             "rotate_counterclockwise": "Girar no sentido anti-horário",
             "reset": "Redefinir",
             "close": "Fechar",
+            "previous": "Imagem anterior",
+            "next": "Próxima imagem",
             "copy_failed": "Falha ao copiar imagem",
             "download_failed": "Falha ao baixar imagem",
             "label": {

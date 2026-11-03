@@ -59,9 +59,22 @@ describe('shortcut help derivation', () => {
             {
                 titleKey: 'shortcuts.group.screenshots',
                 items: [
-                    { labelKey: 'view.tools.label.prev', keys: ['ArrowLeft'] },
-                    { labelKey: 'table.pagination.next', keys: ['ArrowRight'] },
-                    { labelKey: 'shortcuts.toggle_details', keys: ['I'] }
+                    { labelKey: 'message.image.previous', keys: ['ArrowLeft'] },
+                    { labelKey: 'message.image.next', keys: ['ArrowRight'] },
+                    { labelKey: 'shortcuts.toggle_details', keys: ['I'] },
+                    {
+                        labelKey: 'dialog.screenshot_metadata.fullscreen',
+                        keys: ['Space']
+                    },
+                    { labelKey: 'shortcuts.toggle_favorite', keys: ['F'] },
+                    {
+                        labelKey: 'dialog.screenshot_metadata.copy_image',
+                        keys: ['Mod', 'C']
+                    },
+                    {
+                        labelKey: 'dialog.screenshot_metadata.delete_file',
+                        keys: ['Delete']
+                    }
                 ]
             },
             {

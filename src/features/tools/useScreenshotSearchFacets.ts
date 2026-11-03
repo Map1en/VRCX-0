@@ -7,7 +7,7 @@ import {
     screenshotFilterFromScope
 } from './screenshotMetadataValues';
 
-const FACET_LIMIT = 300;
+const FACET_LIMIT = 5000;
 
 export function useScreenshotSearchFacets(
     enabled: boolean,

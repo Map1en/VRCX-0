@@ -69,7 +69,6 @@ export function useScreenshotMetadataSearch() {
         () => sortedSearchRows.map((row) => row.filePath),
         [sortedSearchRows]
     );
-    const selectedPathIndex = searchNavigationPaths.indexOf(selectedPath);
 
     function setSearchLayout(layout: ScreenshotSearchLayout) {
         setSearchLayoutState(layout);
@@ -141,7 +140,6 @@ export function useScreenshotMetadataSearch() {
         searchSort,
         searchViewMode,
         selectedPath,
-        selectedPathIndex,
         setSearchLayout,
         setSearchDraft,
         setSearchResults,

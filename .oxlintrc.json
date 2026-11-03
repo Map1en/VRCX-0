@@ -149,7 +149,10 @@
             }
         },
         {
-            "files": ["src/components/media/FullscreenImageViewer.tsx"],
+            "files": [
+                "src/components/media/FullscreenImageViewer.tsx",
+                "src/features/tools/components/ScreenshotDetailViewer.tsx"
+            ],
             "rules": {
                 "jsx-a11y/no-noninteractive-element-interactions": "off"
             }

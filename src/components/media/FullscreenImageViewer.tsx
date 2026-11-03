@@ -1,4 +1,6 @@
 import {
+    ChevronLeftIcon,
+    ChevronRightIcon,
     CopyIcon,
     DownloadIcon,
     RefreshCcwIcon,
@@ -13,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 
 import {
     hasCommandModifier,
+    hasOpenDialogOutside,
     isImeComposing,
     isTextEntryTarget
 } from '@/components/keyboard/keyboardShortcutGuards';
@@ -36,19 +39,30 @@ import {
 import { useFullscreenImageTransform } from './useFullscreenImageTransform';
 import { useProgressiveImageSource } from './useProgressiveImageSource';
 
+export type FullscreenImageNavigation = {
+    canNavigatePrev: boolean;
+    canNavigateNext: boolean;
+    onNavigatePrev(): void;
+    onNavigateNext(): void;
+};
+
 export function FullscreenImageViewer({
     open,
     url,
+    placeholderUrl,
     title,
     fileName,
     sourcePath,
+    navigation,
     onClose
 }: {
     open: boolean;
     url?: string | null;
+    placeholderUrl?: string | null;
     title?: string | null;
     fileName?: string | null;
     sourcePath?: string | null;
+    navigation?: FullscreenImageNavigation;
     onClose(): void;
 }) {
     const { t } = useTranslation();
@@ -70,12 +84,14 @@ export function FullscreenImageViewer({
     } = useFullscreenImageTransform({ open, url });
 
     const fullSizeUrl = toFullSizeImageUrl(url);
-    const placeholderUrl = url && url !== fullSizeUrl ? url : '';
     const {
         isInterim,
         shownSrc,
         status: imageStatus
-    } = useProgressiveImageSource(fullSizeUrl, placeholderUrl);
+    } = useProgressiveImageSource(
+        fullSizeUrl,
+        placeholderUrl || (url && url !== fullSizeUrl ? url : '')
+    );
     const imageLoading = !shownSrc && imageStatus === 'loading';
     const imageLoadError = imageStatus === 'error';
     const resolvedTitle = title || t('message.image.preview_title');
@@ -203,12 +219,40 @@ export function FullscreenImageViewer({
             if (event.key === '0') {
                 event.preventDefault();
                 resetTransform();
+                return;
+            }
+
+            if (
+                event.shiftKey ||
+                !navigation ||
+                hasOpenDialogOutside(viewerRef.current)
+            ) {
+                return;
+            }
+
+            if (event.key === 'ArrowLeft' && navigation.canNavigatePrev) {
+                event.preventDefault();
+                navigation.onNavigatePrev();
+                return;
+            }
+
+            if (event.key === 'ArrowRight' && navigation.canNavigateNext) {
+                event.preventDefault();
+                navigation.onNavigateNext();
             }
         }
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [open, resetTransform, rotateClockwise, zoomIn, zoomOut]);
+    }, [
+        navigation,
+        open,
+        resetTransform,
+        rotateClockwise,
+        viewerRef,
+        zoomIn,
+        zoomOut
+    ]);
 
     return (
         <Dialog
@@ -220,6 +264,7 @@ export function FullscreenImageViewer({
             }}
         >
             <DialogContent
+                data-fullscreen-image-viewer=""
                 showCloseButton={false}
                 onClick={onClose}
                 initialFocus={false}
@@ -415,6 +460,23 @@ export function FullscreenImageViewer({
                         </Tooltip>
                     </div>
 
+                    {navigation ? (
+                        <>
+                            <FullscreenImageNavButton
+                                side="prev"
+                                label={t('message.image.previous')}
+                                disabled={!navigation.canNavigatePrev}
+                                onClick={navigation.onNavigatePrev}
+                            />
+                            <FullscreenImageNavButton
+                                side="next"
+                                label={t('message.image.next')}
+                                disabled={!navigation.canNavigateNext}
+                                onClick={navigation.onNavigateNext}
+                            />
+                        </>
+                    ) : null}
+
                     {fullSizeUrl ? (
                         <>
                             {imageLoading ? (
@@ -471,5 +533,39 @@ export function FullscreenImageViewer({
                 </div>
             </DialogContent>
         </Dialog>
+    );
+}
+
+function FullscreenImageNavButton({
+    side,
+    label,
+    disabled,
+    onClick
+}: {
+    side: 'prev' | 'next';
+    label: string;
+    disabled: boolean;
+    onClick(): void;
+}) {
+    const Icon = side === 'prev' ? ChevronLeftIcon : ChevronRightIcon;
+
+    return (
+        <Button
+            type="button"
+            variant="secondary"
+            size="icon-lg"
+            aria-label={label}
+            disabled={disabled}
+            className={cn(
+                'bg-background/70 absolute top-1/2 z-20 -translate-y-1/2 rounded-full shadow-sm backdrop-blur disabled:opacity-0',
+                side === 'prev' ? 'left-3' : 'right-3'
+            )}
+            onClick={(event) => {
+                event.stopPropagation();
+                onClick();
+            }}
+        >
+            <Icon />
+        </Button>
     );
 }

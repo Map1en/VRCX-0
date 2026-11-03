@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
         key: string;
         top: number;
         items: Array<{ path: string; fileName: string }>;
+        section?: { key: string; label: string; count: number };
     }>
 }));
 
@@ -29,20 +30,29 @@ vi.stubGlobal('ResizeObserver', ResizeObserverMock);
 vi.mock('react-i18next', async (importOriginal) => ({
     ...(await importOriginal<typeof import('react-i18next')>()),
     useTranslation: () => ({
+        i18n: { language: 'en' },
         t: (key: string, values?: { count?: number }) =>
             values?.count === undefined ? key : `${key}:${values.count}`
     })
 }));
 
 vi.mock('@/components/media/useScreenshotGalleryGrid', () => ({
+    GALLERY_GRID_SECTION_HEADER_HEIGHT: 40,
     useScreenshotGalleryGrid: () => ({
         gridColumnCount: 1,
         gridGap: 0,
         gridMinWidth: 0,
+        rows: mocks.visibleRows,
+        setScrollTop: () => undefined,
         totalHeight: 0,
+        viewportMetrics: { scrollTop: 0, viewportHeight: 0, width: 0 },
         viewportRef: { current: null },
         visibleRows: mocks.visibleRows
     })
+}));
+
+vi.mock('@/components/media/useScreenshotThumbnailUrl', () => ({
+    useScreenshotThumbnailUrl: () => ({ thumbnailUrl: '', loadState: 'idle' })
 }));
 
 vi.mock('@/components/media/ScreenshotThumbnailCard', () => ({
@@ -81,12 +91,21 @@ vi.mock('@/components/media/ScreenshotThumbnailCard', () => ({
     useScreenshotThumbnailTitleMap: () => new Map()
 }));
 
-import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
+import type {
+    ScreenshotFacet,
+    ScreenshotLibraryImage
+} from '@/platform/tauri/bindings';
 
-import { SCREENSHOT_FAVORITES_FOLDER } from '../screenshotMetadataValues';
+import {
+    SCREENSHOT_FAVORITES_FOLDER,
+    SCREENSHOT_PEOPLE_FOLDER,
+    SCREENSHOT_TIMELINE_FOLDER,
+    SCREENSHOT_WORLDS_FOLDER
+} from '../screenshotMetadataValues';
 import { useScreenshotBrowseSelection } from '../useScreenshotBrowseSelection';
 import {
     ScreenshotGalleryView,
+    type ScreenshotGalleryAlbums,
     type ScreenshotGalleryFavorites
 } from './ScreenshotGalleryView';
 
@@ -96,6 +115,12 @@ const noFavorites: ScreenshotGalleryFavorites = {
     missingCount: 0,
     onToggle: () => undefined,
     onForgetMissing: () => undefined
+};
+
+const noAlbums: ScreenshotGalleryAlbums = {
+    worlds: [],
+    people: [],
+    onOpen: () => undefined
 };
 
 const folderTree = {
@@ -148,7 +173,7 @@ describe('ScreenshotGalleryView folder tree', () => {
         );
 
         await waitFor(() => {
-            expect(container.querySelectorAll('nav button')).toHaveLength(4);
+            expect(container.querySelectorAll('nav button')).toHaveLength(7);
         });
         const selectedFolder = screen.getByRole('button', {
             name: '2026-07'
@@ -257,7 +282,8 @@ function GalleryHarness({
     selectedFolder,
     onDeleteSelection,
     onSelectFolder = () => undefined,
-    favorites = noFavorites
+    favorites = noFavorites,
+    albums = noAlbums
 }: {
     folderTree?: typeof folderTree;
     images: ScreenshotLibraryImage[];
@@ -265,6 +291,7 @@ function GalleryHarness({
     onDeleteSelection: (paths: string[]) => void;
     onSelectFolder?: (folder: string) => void;
     favorites?: ScreenshotGalleryFavorites;
+    albums?: ScreenshotGalleryAlbums;
 }) {
     const selection = useScreenshotBrowseSelection(
         images.map((image) => image.path)
@@ -288,6 +315,7 @@ function GalleryHarness({
             restoreScrollTop={0}
             selection={selection}
             favorites={favorites}
+            albums={albums}
             sort="captured-desc"
             onSortChange={() => undefined}
         />
@@ -558,6 +586,105 @@ describe('ScreenshotGalleryView favorites', () => {
         ).toBeTruthy();
         expect(
             screen.getByText('dialog.screenshot_metadata.favorites_missing:2')
+        ).toBeTruthy();
+    });
+});
+
+describe('ScreenshotGalleryView timeline and albums', () => {
+    beforeEach(() => {
+        HTMLElement.prototype.scrollIntoView = mocks.scrollIntoView;
+    });
+
+    afterEach(() => {
+        cleanup();
+        mocks.visibleRows = [];
+    });
+
+    it('lists timeline, worlds and people above the folder tree', () => {
+        const onSelectFolder = vi.fn();
+        render(
+            <GalleryHarness
+                images={[]}
+                selectedFolder={julyFolder}
+                onDeleteSelection={() => undefined}
+                onSelectFolder={onSelectFolder}
+            />
+        );
+
+        for (const name of ['timeline', 'worlds', 'people']) {
+            fireEvent.click(
+                screen.getByRole('button', {
+                    name: new RegExp(`dialog\\.screenshot_metadata\\.${name}`)
+                })
+            );
+        }
+
+        expect(onSelectFolder.mock.calls).toEqual([
+            [SCREENSHOT_TIMELINE_FOLDER],
+            [SCREENSHOT_WORLDS_FOLDER],
+            [SCREENSHOT_PEOPLE_FOLDER]
+        ]);
+    });
+
+    it('labels each capture day in the timeline', () => {
+        mocks.visibleRows = [
+            {
+                key: 'section-0',
+                top: 0,
+                items: [],
+                section: { key: '2026-07-04', label: 'July 4, 2026', count: 3 }
+            },
+            { key: 'row-0', top: 40, items: galleryImages }
+        ];
+        render(
+            <GalleryHarness
+                images={galleryImages}
+                selectedFolder={SCREENSHOT_TIMELINE_FOLDER}
+                onDeleteSelection={() => undefined}
+            />
+        );
+
+        expect(screen.getByText('July 4, 2026')).toBeTruthy();
+        expect(screen.getByText(galleryImages[0].path)).toBeTruthy();
+    });
+
+    it('opens the screenshots of a world album', () => {
+        const world: ScreenshotFacet = {
+            id: 'wrld_pier',
+            name: 'Night Pier',
+            count: 4,
+            lastCapturedAtMs: 1,
+            coverPath: 'C:\\VRChat\\2026-07\\a.png'
+        };
+        const onOpen = vi.fn();
+        render(
+            <GalleryHarness
+                images={[]}
+                selectedFolder={SCREENSHOT_WORLDS_FOLDER}
+                onDeleteSelection={() => undefined}
+                albums={{ ...noAlbums, worlds: [world], onOpen }}
+            />
+        );
+
+        expect(
+            screen.getByText('dialog.screenshot_metadata.world_album_count:1')
+        ).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: /Night Pier/ }));
+
+        expect(onOpen).toHaveBeenCalledWith('world', world);
+    });
+
+    it('explains an empty people view', () => {
+        render(
+            <GalleryHarness
+                images={[]}
+                selectedFolder={SCREENSHOT_PEOPLE_FOLDER}
+                onDeleteSelection={() => undefined}
+            />
+        );
+
+        expect(
+            screen.getByText('dialog.screenshot_metadata.empty_albums')
         ).toBeTruthy();
     });
 });

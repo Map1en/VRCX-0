@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 
 import {
     hasCommandModifier,
+    hasOpenDialogOutside,
     isImeComposing,
     isKeyboardControlTarget
 } from '@/components/keyboard/keyboardShortcutGuards';
@@ -204,7 +205,8 @@ export function useScreenshotMetadataNavigation({
                 isImeComposing(event) ||
                 hasCommandModifier(event) ||
                 event.shiftKey ||
-                isKeyboardControlTarget(event.target)
+                isKeyboardControlTarget(event.target) ||
+                hasOpenDialogOutside(null)
             ) {
                 return;
             }

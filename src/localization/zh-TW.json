@@ -1136,7 +1136,8 @@
         "clear_selection": "清除選取",
         "toggle_theme_safe_mode": "暫時停用社群主題",
         "theme_safe_mode_on": "已暫時停用社群主題",
-        "theme_safe_mode_off": "已恢復社群主題"
+        "theme_safe_mode_off": "已恢復社群主題",
+        "toggle_favorite": "收藏／取消收藏"
     },
     "privacy_lock": {
         "locked_title": "已鎖定",
@@ -2578,8 +2579,7 @@
             "label": {
                 "inventory_bundle_consumed": "禮包已開啟",
                 "fps": "fps",
-                "frames": "幀",
-                "prev": "上一個"
+                "frames": "幀"
             },
             "action": {
                 "preview": "預覽",
@@ -5938,7 +5938,20 @@
             "people_match_all": "同時在場",
             "people_match_any": "任一人",
             "without_people": "{count} 張沒有人物紀錄",
-            "without_people_hint": "這些截圖拍攝時 VRCX-0 沒有執行，沒有記錄當時有誰，所以依人物篩選時不會出現。"
+            "without_people_hint": "這些截圖拍攝時 VRCX-0 沒有執行，沒有記錄當時有誰，所以依人物篩選時不會出現。",
+            "fullscreen": "全螢幕檢視",
+            "filmstrip": "縮圖列",
+            "timeline": "時間軸",
+            "timeline_description": "所有截圖，依拍攝日期排列",
+            "timeline_scrubber": "跳至日期",
+            "worlds": "世界",
+            "worlds_description": "依世界分類的截圖",
+            "people": "人物",
+            "people_description": "依同框的人分類的截圖",
+            "world_album_count": "{count} 個世界",
+            "people_album_count": "{count} 人",
+            "empty_albums": "還沒有可分類的截圖",
+            "empty_albums_description": "VRCX-0 執行時拍下的截圖會記錄所在世界和同框的人。"
         },
         "set_avatar_styles": {
             "header": "設定角色風格",
@@ -6881,6 +6894,8 @@
             "rotate_counterclockwise": "逆時針旋轉",
             "reset": "重設為預設",
             "close": "關閉",
+            "previous": "上一張",
+            "next": "下一張",
             "copy_failed": "複製圖片失敗",
             "download_failed": "下載圖片失敗",
             "label": {

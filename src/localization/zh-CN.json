@@ -1136,7 +1136,8 @@
         "clear_selection": "清除选择",
         "toggle_theme_safe_mode": "临时停用社区主题",
         "theme_safe_mode_on": "已临时停用社区主题",
-        "theme_safe_mode_off": "已恢复社区主题"
+        "theme_safe_mode_off": "已恢复社区主题",
+        "toggle_favorite": "收藏／取消收藏"
     },
     "privacy_lock": {
         "locked_title": "已锁定",
@@ -2578,8 +2579,7 @@
             "label": {
                 "inventory_bundle_consumed": "已使用库存礼包",
                 "fps": "fps",
-                "frames": "帧",
-                "prev": "上一个"
+                "frames": "帧"
             },
             "action": {
                 "preview": "预览",
@@ -5947,7 +5947,20 @@
             "people_match_all": "同时在场",
             "people_match_any": "任意一人",
             "without_people": "{count} 张没有人物记录",
-            "without_people_hint": "这些截图拍摄时 VRCX-0 没有运行，没有记录当时有谁，所以按人物筛选时不会出现。"
+            "without_people_hint": "这些截图拍摄时 VRCX-0 没有运行，没有记录当时有谁，所以按人物筛选时不会出现。",
+            "fullscreen": "全屏查看",
+            "filmstrip": "缩略图条",
+            "timeline": "时间线",
+            "timeline_description": "全部截图，按拍摄日期排列",
+            "timeline_scrubber": "跳转到日期",
+            "worlds": "世界",
+            "worlds_description": "按世界归类的截图",
+            "people": "人物",
+            "people_description": "按同框的人归类的截图",
+            "world_album_count": "{count} 个世界",
+            "people_album_count": "{count} 人",
+            "empty_albums": "还没有可归类的截图",
+            "empty_albums_description": "VRCX-0 运行时拍下的截图会记下所在世界和同框的人。"
         },
         "set_avatar_styles": {
             "header": "设置模型风格",
@@ -6890,6 +6903,8 @@
             "rotate_counterclockwise": "逆时针旋转",
             "reset": "重置为默认",
             "close": "关闭并保存",
+            "previous": "上一张",
+            "next": "下一张",
             "copy_failed": "复制图片失败",
             "download_failed": "下载图片失败",
             "label": {

@@ -15,52 +15,105 @@ import {
 
 const GALLERY_GRID_HORIZONTAL_INSET = 8;
 const GALLERY_GRID_OVERSCAN_MIN = 520;
+export const GALLERY_GRID_SECTION_HEADER_HEIGHT = 40;
+
+export type ScreenshotGallerySection = {
+    key: string;
+    label: string;
+    count: number;
+};
 
 type ScreenshotGalleryGridRow = Record<string, unknown> & {
     key: string;
     height: number;
     items: ScreenshotLibraryImage[];
+    section?: ScreenshotGallerySection;
 };
 
-function buildGalleryGridRows({
+type ScreenshotGallerySectionOf = (item: ScreenshotLibraryImage) => {
+    key: string;
+    label: string;
+};
+
+function groupItemsBySection(
+    items: readonly ScreenshotLibraryImage[],
+    sectionOf: ScreenshotGallerySectionOf
+) {
+    const groups: Array<{
+        section: ScreenshotGallerySection;
+        items: ScreenshotLibraryImage[];
+    }> = [];
+    for (const item of items) {
+        const { key, label } = sectionOf(item);
+        const current = groups.at(-1);
+        if (current && current.section.key === key) {
+            current.items.push(item);
+            current.section.count += 1;
+        } else {
+            groups.push({ section: { key, label, count: 1 }, items: [item] });
+        }
+    }
+    return groups;
+}
+
+export function buildGalleryGridRows({
     cardHeight,
     gridColumnCount,
     gridGap,
-    items
+    items,
+    sectionOf
 }: {
     cardHeight: number;
     gridColumnCount: number;
     gridGap: number;
     items: readonly ScreenshotLibraryImage[];
+    sectionOf?: ScreenshotGallerySectionOf;
 }) {
     const rows: ScreenshotGalleryGridRow[] = [];
+    const groups = sectionOf
+        ? groupItemsBySection(items, sectionOf)
+        : [{ section: undefined, items: [...items] }];
 
-    for (let index = 0; index < items.length; index += gridColumnCount) {
-        const isLastRow = index + gridColumnCount >= items.length;
-        rows.push({
-            key: `screenshot-gallery-row:${index}`,
-            height: cardHeight + (isLastRow ? 0 : gridGap),
-            items: items.slice(index, index + gridColumnCount)
-        });
-    }
+    groups.forEach((group, groupIndex) => {
+        const isLastGroup = groupIndex === groups.length - 1;
+        if (group.section) {
+            rows.push({
+                key: `screenshot-gallery-section:${group.section.key}`,
+                height: GALLERY_GRID_SECTION_HEADER_HEIGHT,
+                items: [],
+                section: group.section
+            });
+        }
+        for (
+            let index = 0;
+            index < group.items.length;
+            index += gridColumnCount
+        ) {
+            const isLastRow =
+                isLastGroup && index + gridColumnCount >= group.items.length;
+            rows.push({
+                key: `screenshot-gallery-row:${group.section?.key ?? ''}:${index}`,
+                height: cardHeight + (isLastRow ? 0 : gridGap),
+                items: group.items.slice(index, index + gridColumnCount)
+            });
+        }
+    });
 
     return positionKnownSizeRows<ScreenshotGalleryGridRow>(rows);
 }
 
 export function resolveScreenshotGridRevealScrollTop({
-    index,
-    columnCount,
+    rowIndex,
     rows,
     scrollTop,
     viewportHeight
 }: {
-    index: number;
-    columnCount: number;
+    rowIndex: number;
     rows: ReadonlyArray<{ top: number; height: number }>;
     scrollTop: number;
     viewportHeight: number;
 }) {
-    const row = index < 0 ? null : rows[Math.floor(index / columnCount)];
+    const row = rowIndex < 0 ? null : rows[rowIndex];
     if (!row) {
         return null;
     }
@@ -79,7 +132,8 @@ export function useScreenshotGalleryGrid({
     items,
     onRevealPathConsumed,
     resetKey,
-    revealPath = ''
+    revealPath = '',
+    sectionOf
 }: {
     density?: ScreenshotGridDensity;
     initialScrollTop?: number;
@@ -87,6 +141,7 @@ export function useScreenshotGalleryGrid({
     onRevealPathConsumed?: () => void;
     resetKey: string;
     revealPath?: string;
+    sectionOf?: ScreenshotGallerySectionOf;
 }) {
     const {
         setScrollTop,
@@ -125,9 +180,10 @@ export function useScreenshotGalleryGrid({
                 cardHeight,
                 gridColumnCount,
                 gridGap,
-                items
+                items,
+                sectionOf
             }),
-        [cardHeight, gridColumnCount, gridGap, items]
+        [cardHeight, gridColumnCount, gridGap, items, sectionOf]
     );
 
     const visibleRows = useMemo(() => {
@@ -156,14 +212,15 @@ export function useScreenshotGalleryGrid({
         ) {
             return;
         }
-        const index = items.findIndex((item) => item.path === revealPath);
+        const rowIndex = positionedRows.rows.findIndex((row) =>
+            row.items.some((item) => item.path === revealPath)
+        );
         onRevealPathConsumed?.();
-        if (index === -1) {
+        if (rowIndex === -1) {
             return;
         }
         const nextScrollTop = resolveScreenshotGridRevealScrollTop({
-            index,
-            columnCount: gridColumnCount,
+            rowIndex,
             rows: positionedRows.rows,
             scrollTop: viewportMetrics.scrollTop,
             viewportHeight: viewportMetrics.viewportHeight
@@ -173,7 +230,6 @@ export function useScreenshotGalleryGrid({
         }
         viewportElementRef.current?.focus({ preventScroll: true });
     }, [
-        gridColumnCount,
         items,
         onRevealPathConsumed,
         positionedRows.rows,
@@ -189,6 +245,8 @@ export function useScreenshotGalleryGrid({
         gridColumnCount,
         gridGap,
         gridMinWidth,
+        rows: positionedRows.rows,
+        setScrollTop,
         totalHeight: positionedRows.totalHeight,
         viewportMetrics,
         viewportRef,

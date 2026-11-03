@@ -1,5 +1,5 @@
 import { CameraIcon, ImageIcon, StarIcon } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -7,13 +7,11 @@ import {
     type LocationMetadataEntry
 } from '@/components/location/useLocationMetadata';
 import { FadeInImage } from '@/components/media/FadeInImage';
-import { rememberScreenshotThumbnailUrl } from '@/components/media/screenshotThumbnailUrlCache';
+import { useScreenshotThumbnailUrl } from '@/components/media/useScreenshotThumbnailUrl';
 import { TileShell } from '@/components/tile/TileShell';
 import { formatScreenshotDateTime } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
-import { convertFileSrc } from '@/platform/tauri/assets';
 import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
-import { requestScreenshotThumbnail } from '@/services/screenshotThumbnailQueueService';
 import {
     TILE_FAVORITE_TOGGLE,
     TILE_SELECT_BOX,
@@ -159,39 +157,10 @@ export function ScreenshotThumbnailCard({
 }) {
     const { i18n, t } = useTranslation();
     const shiftPressedRef = useRef(false);
-    const [thumbnailUrl, setThumbnailUrl] = useState('');
-    const [loadState, setLoadState] = useState('idle');
-
-    useEffect(() => {
-        let active = true;
-        setThumbnailUrl('');
-        setLoadState('loading');
-
-        const request = requestScreenshotThumbnail(item.path);
-        request.promise
-            .then((thumbnailPath) => {
-                if (!active) {
-                    return;
-                }
-                const nextThumbnailUrl = convertFileSrc(
-                    String(thumbnailPath || ''),
-                    'vrcx-0-thumb'
-                );
-                rememberScreenshotThumbnailUrl(item.path, nextThumbnailUrl);
-                setThumbnailUrl(nextThumbnailUrl);
-                setLoadState('ready');
-            })
-            .catch(() => {
-                if (active) {
-                    setLoadState('error');
-                }
-            });
-
-        return () => {
-            active = false;
-            request.cancel();
-        };
-    }, [item.modifiedAt, item.path, item.sizeBytes]);
+    const { thumbnailUrl, loadState } = useScreenshotThumbnailUrl(
+        item.path,
+        `${item.modifiedAt}:${item.sizeBytes}`
+    );
 
     const dateLabel = formatScreenshotDateTime(
         resolveScreenshotCapturedTime(item),
