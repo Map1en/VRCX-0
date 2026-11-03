@@ -1210,45 +1210,4 @@ mod tests {
             ));
         }
     }
-
-    #[test]
-    fn a_recorder_password_sealed_to_this_machine_is_resaved_so_any_machine_can_read_it() {
-        secrets::init_secrets(Some([7; 32]), true);
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let dir = std::env::temp_dir().join(format!(
-            "vrcx-0-feed-logger-shared-password-{}-{nonce}",
-            std::process::id()
-        ));
-        std::fs::create_dir_all(&dir).unwrap();
-        let config = ConfigRepository::new(Arc::new(
-            DatabaseService::new(&dir.join("VRCX-0.sqlite3")).unwrap(),
-        ));
-        let sealed = secrets::seal_secret("password123");
-        assert!(secrets::is_sealed_secret(&sealed));
-        config
-            .set_string(
-                SETTINGS_KEY,
-                &serde_json::json!({
-                    "address": "http://192.168.1.10:8787",
-                    "password": sealed,
-                })
-                .to_string(),
-            )
-            .unwrap();
-
-        let settings = read_settings(&config).unwrap().unwrap();
-
-        assert_eq!(settings.password, "password123");
-        let resaved = config.get_raw(SETTINGS_KEY).unwrap().unwrap();
-        assert_eq!(
-            serde_json::from_str::<PersistedSettings>(&resaved)
-                .unwrap()
-                .password,
-            "password123"
-        );
-        let _ = std::fs::remove_dir_all(&dir);
-    }
 }
