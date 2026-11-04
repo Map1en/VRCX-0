@@ -10,16 +10,21 @@ use vrcx_0_core::screenshots::{
 };
 use vrcx_0_core::screenshots::{
     FavoriteScreenshots, ScreenshotExportProgress, ScreenshotFacet, ScreenshotFilter,
-    ScreenshotQueryResult,
+    ScreenshotQueryResult, ScreenshotShareFacts, ScreenshotShareMessage, ScreenshotShareProgress,
+    ScreenshotShareRecord, ScreenshotShareSendResult, ScreenshotShareTarget,
+    ScreenshotShareTargetInput,
 };
 use vrcx_0_outbound_adapters::screenshots::{
     self as screenshot, LocalScreenshotFavoriteStore, LocalScreenshotLibraryAdapter,
     ScreenshotExportOutcome, ScreenshotFolderTree, ScreenshotLibraryImage,
-    ScreenshotLibraryScanStatus, ScreenshotTimeWindow, ScreenshotWindowImages,
+    ScreenshotLibraryScanStatus, ScreenshotShareService, ScreenshotTimeWindow,
+    ScreenshotWindowImages,
 };
 use vrcx_0_persistence::screenshot_cache::MetadataCacheDb;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_platform::app_paths::AppPaths;
+
+use vrcx_0_application_core::WebClient;
 
 use crate::{HostFileAccess, Result};
 
@@ -59,6 +64,7 @@ pub struct DesktopScreenshotRuntime {
     photos_root: String,
     event_bus: RuntimeEventBus,
     export_cancelled: Arc<AtomicBool>,
+    share: ScreenshotShareService,
 }
 
 impl DesktopScreenshotRuntime {
@@ -69,7 +75,10 @@ impl DesktopScreenshotRuntime {
         paths: AppPaths,
         photos_root: String,
         event_bus: RuntimeEventBus,
+        web: Arc<WebClient>,
     ) -> Self {
+        let share =
+            ScreenshotShareService::new(Arc::clone(&db), cache.clone(), photos_root.clone(), web);
         let favorites = ScreenshotFavorites::new(
             Arc::new(LocalScreenshotFavoriteStore::new(db)),
             Arc::new(LocalScreenshotLibraryAdapter::new(
@@ -85,7 +94,50 @@ impl DesktopScreenshotRuntime {
             photos_root,
             event_bus,
             export_cancelled: Arc::new(AtomicBool::new(false)),
+            share,
         }
+    }
+
+    pub fn share_targets(&self) -> Result<Vec<ScreenshotShareTarget>> {
+        Ok(self.share.targets()?)
+    }
+
+    pub async fn save_share_target(
+        &self,
+        input: ScreenshotShareTargetInput,
+    ) -> Result<ScreenshotShareTarget> {
+        Ok(self.share.save_target(input).await?)
+    }
+
+    pub fn delete_share_target(&self, id: &str) -> Result<()> {
+        Ok(self.share.delete_target(id)?)
+    }
+
+    pub fn share_facts(&self, paths: &[String]) -> Result<Vec<ScreenshotShareFacts>> {
+        Ok(self.share.facts(paths)?)
+    }
+
+    pub async fn share(
+        &self,
+        target_id: &str,
+        messages: Vec<ScreenshotShareMessage>,
+    ) -> Result<ScreenshotShareSendResult> {
+        for path in messages.iter().flat_map(|message| &message.paths) {
+            self.ensure_read_allowed(path)?;
+        }
+        Ok(self.share.send(target_id, messages).await?)
+    }
+
+    pub fn share_progress(&self) -> ScreenshotShareProgress {
+        self.share.progress()
+    }
+
+    pub fn share_history(&self) -> Result<Vec<ScreenshotShareRecord>> {
+        Ok(self.share.history()?)
+    }
+
+    pub async fn delete_share_record(&self, id: &str) -> Result<()> {
+        Ok(self.share.delete_record(id).await?)
     }
 
     pub fn ensure_read_allowed(&self, path: &str) -> Result<()> {

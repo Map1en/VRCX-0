@@ -2664,6 +2664,90 @@
                 "unfavorited_toast": "已取消收藏 {count} 張拍立得。",
                 "favorite_skipped_toast": "有 {count} 張拍立得未能收藏，上限為 {max} 張。"
             },
+            "screenshot_share": {
+                "send": "傳送到 Discord",
+                "more": "更多傳送選項",
+                "quick_tooltip": "一鍵傳送到：{targets}",
+                "choose_target": "傳送到頻道",
+                "manage": "管理 Webhook…",
+                "progress": "正在傳送到 {target}（{done}/{total}）",
+                "sent": "已將 {count} 張螢幕截圖傳送到 {target}",
+                "undo": "收回",
+                "undone": "已從 Discord 收回",
+                "undo_failed": "收回失敗：{reason}",
+                "failed": "傳送到 {target} 失敗：{reason}",
+                "spoiler": "標記為暴雷內容",
+                "metadata": "附帶螢幕截圖中繼資料",
+                "metadata_hint": "保留 VRCX 寫入檔案的環境與玩家資訊。",
+                "embed": {
+                    "player_count": "房間人數",
+                    "people": "同行",
+                    "stay": "停留",
+                    "stay_ongoing": "已待 {duration}",
+                    "stay_total": "{duration}",
+                    "more_people": "等 {count} 人"
+                },
+                "error": {
+                    "http": "Discord 回傳了 HTTP {status}",
+                    "invalid": "Webhook 網址不正確，或已被刪除",
+                    "too_large": "圖片超過此伺服器的上傳上限，請改用「高品質」或「標準」",
+                    "rate_limited": "Discord 正在限制請求頻率，請稍後再試",
+                    "network": "無法連線到 Discord",
+                    "file": "無法讀取螢幕截圖"
+                },
+                "fields": {
+                    "title": "附帶資訊",
+                    "world": "環境",
+                    "time": "拍攝時間",
+                    "player_count": "房間人數",
+                    "people": "同房間的人",
+                    "stay": "停留時間"
+                },
+                "compression": {
+                    "title": "畫質",
+                    "high": "高品質",
+                    "standard": "標準",
+                    "original": "原圖",
+                    "high_hint": "原圖放得下就傳原圖，否則壓縮到 10MB 以內。",
+                    "standard_hint": "壓縮到 5MB 以內，載入更快。",
+                    "original_hint": "不壓縮。超過伺服器上傳上限時會傳送失敗。"
+                },
+                "targets": {
+                    "title": "Discord Webhook",
+                    "description": "螢幕截圖會傳送到這些頻道。Webhook 網址只儲存在這台電腦上。",
+                    "tab_targets": "頻道",
+                    "tab_history": "傳送紀錄",
+                    "quick": "一鍵傳送",
+                    "quick_hint": "按下「傳送到 Discord」時，直接傳到所有加星號的頻道。",
+                    "invalid": "已失效",
+                    "edit": "編輯",
+                    "add": "新增 Webhook",
+                    "add_title": "新增 Webhook",
+                    "edit_title": "編輯 Webhook",
+                    "empty": "尚未新增 Webhook。請在 Discord 的頻道設定 → 整合 → Webhook 中建立並複製網址。",
+                    "name": "名稱",
+                    "name_placeholder": "例如：我的相簿",
+                    "url": "Webhook 網址",
+                    "url_keep": "留空則保留目前的網址",
+                    "url_hint": "在 Discord 的頻道設定 → 整合 → Webhook 中複製。儲存時會驗證一次。"
+                },
+                "history": {
+                    "empty": "尚無傳送紀錄",
+                    "summary": "{date} · {count} 張",
+                    "open": "在 Discord 中開啟",
+                    "retract": "從 Discord 收回"
+                },
+                "dialog": {
+                    "title": "傳送 {count} 張螢幕截圖",
+                    "target": "傳送到",
+                    "remember": "設為此頻道的預設設定",
+                    "send": "傳送"
+                },
+                "preview": {
+                    "title": "預覽（{count} 則訊息）",
+                    "images": "{count} 張圖片"
+                }
+            },
             "prints_filter": {
                 "all": "全部",
                 "favorites": "已收藏",

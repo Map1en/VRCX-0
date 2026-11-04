@@ -629,6 +629,7 @@ impl DesktopRuntimeHostState {
             runtime.paths().clone(),
             vrcx_0_host_desktop::vrchat_paths::vrchat_photos_location(),
             runtime.desktop_assembly().event_bus().clone(),
+            Arc::clone(runtime.web_client()),
         );
         let vrchat_api =
             crate::vrchat_api::build_vrchat_api_runtime(crate::vrchat_api::VrchatApiRuntimeDeps {

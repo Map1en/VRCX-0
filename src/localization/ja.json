@@ -2660,6 +2660,90 @@
                 "unfavorited_toast": "{count} 件のプリントのお気に入りを解除しました。",
                 "favorite_skipped_toast": "{count} 件はお気に入りにできませんでした。上限は {max} 件です。"
             },
+            "screenshot_share": {
+                "send": "Discord に送信",
+                "more": "その他の送信オプション",
+                "quick_tooltip": "ワンクリックで送信：{targets}",
+                "choose_target": "チャンネルを選んで送信",
+                "manage": "Webhook を管理…",
+                "progress": "{target} に送信中（{done}/{total}）",
+                "sent": "スクリーンショット {count} 枚を {target} に送信しました",
+                "undo": "取り消す",
+                "undone": "Discord から削除しました",
+                "undo_failed": "削除できませんでした：{reason}",
+                "failed": "{target} に送信できませんでした：{reason}",
+                "spoiler": "ネタバレとして送信",
+                "metadata": "スクリーンショットのメタデータを含める",
+                "metadata_hint": "VRCX がファイルに書き込んだワールドやプレイヤーの情報を残します。",
+                "embed": {
+                    "player_count": "人数",
+                    "people": "一緒にいた人",
+                    "stay": "滞在",
+                    "stay_ongoing": "{duration} 経過",
+                    "stay_total": "{duration}",
+                    "more_people": "ほか {count} 人"
+                },
+                "error": {
+                    "http": "Discord から HTTP {status} が返されました",
+                    "invalid": "Webhook の URL が正しくないか、削除されています",
+                    "too_large": "このサーバーのアップロード上限を超えています。「高画質」か「標準」をお試しください",
+                    "rate_limited": "Discord のレート制限中です。少し待ってからお試しください",
+                    "network": "Discord に接続できませんでした",
+                    "file": "スクリーンショットを読み込めませんでした"
+                },
+                "fields": {
+                    "title": "含める情報",
+                    "world": "ワールド",
+                    "time": "撮影日時",
+                    "player_count": "インスタンスの人数",
+                    "people": "一緒にいた人",
+                    "stay": "滞在時間"
+                },
+                "compression": {
+                    "title": "画質",
+                    "high": "高画質",
+                    "standard": "標準",
+                    "original": "オリジナル",
+                    "high_hint": "収まる場合はそのまま送り、超える場合は 10MB 以内に圧縮します。",
+                    "standard_hint": "5MB 以内に圧縮して、表示を速くします。",
+                    "original_hint": "圧縮しません。サーバーのアップロード上限を超えると送信できません。"
+                },
+                "targets": {
+                    "title": "Discord Webhook",
+                    "description": "スクリーンショットはこれらのチャンネルに送られます。Webhook の URL はこの PC にだけ保存されます。",
+                    "tab_targets": "チャンネル",
+                    "tab_history": "送信履歴",
+                    "quick": "ワンクリック送信",
+                    "quick_hint": "「Discord に送信」を押すと、星を付けたすべてのチャンネルにそのまま送ります。",
+                    "invalid": "無効",
+                    "edit": "編集",
+                    "add": "Webhook を追加",
+                    "add_title": "Webhook を追加",
+                    "edit_title": "Webhook を編集",
+                    "empty": "Webhook がまだありません。Discord のチャンネル設定 → 連携サービス → ウェブフックで作成し、URL をコピーしてください。",
+                    "name": "名前",
+                    "name_placeholder": "例：マイアルバム",
+                    "url": "Webhook の URL",
+                    "url_keep": "空欄のままなら今の URL を使います",
+                    "url_hint": "Discord のチャンネル設定 → 連携サービス → ウェブフックからコピーできます。保存時に一度確認します。"
+                },
+                "history": {
+                    "empty": "送信履歴はまだありません",
+                    "summary": "{date} · {count} 枚",
+                    "open": "Discord で開く",
+                    "retract": "Discord から削除"
+                },
+                "dialog": {
+                    "title": "スクリーンショット {count} 枚を送信",
+                    "target": "送信先",
+                    "remember": "このチャンネルの既定にする",
+                    "send": "送信"
+                },
+                "preview": {
+                    "title": "プレビュー（メッセージ {count} 件）",
+                    "images": "画像 {count} 枚"
+                }
+            },
             "prints_filter": {
                 "all": "すべて",
                 "favorites": "お気に入り",

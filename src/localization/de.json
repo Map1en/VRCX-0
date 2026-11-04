@@ -2667,6 +2667,90 @@
                 "unfavorited_toast": "Favorit von {count} Print(s) entfernt.",
                 "favorite_skipped_toast": "{count} Print(s) konnten nicht favorisiert werden. Das Limit ist {max}."
             },
+            "screenshot_share": {
+                "send": "An Discord senden",
+                "more": "Weitere Sendeoptionen",
+                "quick_tooltip": "Mit einem Klick senden an: {targets}",
+                "choose_target": "An Kanal senden",
+                "manage": "Webhooks verwalten…",
+                "progress": "Wird an {target} gesendet ({done}/{total})",
+                "sent": "{count} Screenshot(s) an {target} gesendet",
+                "undo": "Rückgängig",
+                "undone": "Nachricht aus Discord gelöscht",
+                "undo_failed": "Nachricht konnte nicht gelöscht werden: {reason}",
+                "failed": "Senden an {target} fehlgeschlagen: {reason}",
+                "spoiler": "Als Spoiler markieren",
+                "metadata": "Screenshot-Metadaten mitsenden",
+                "metadata_hint": "Behält die Welt- und Spielerinfos, die VRCX in die Datei geschrieben hat.",
+                "embed": {
+                    "player_count": "Spieler",
+                    "people": "Dabei",
+                    "stay": "Aufenthalt",
+                    "stay_ongoing": "bisher {duration}",
+                    "stay_total": "{duration}",
+                    "more_people": "und {count} weitere"
+                },
+                "error": {
+                    "http": "Discord hat HTTP {status} zurückgegeben",
+                    "invalid": "Die Webhook-URL ist falsch oder der Webhook wurde gelöscht",
+                    "too_large": "Das Bild überschreitet das Upload-Limit dieses Servers. Versuche „Hohe Qualität“ oder „Standard“.",
+                    "rate_limited": "Discord begrenzt gerade die Anfragen. Versuche es gleich noch einmal.",
+                    "network": "Discord ist nicht erreichbar",
+                    "file": "Der Screenshot konnte nicht gelesen werden"
+                },
+                "fields": {
+                    "title": "Mitsenden",
+                    "world": "Welt",
+                    "time": "Aufnahmezeit",
+                    "player_count": "Spielerzahl",
+                    "people": "Wer dabei war",
+                    "stay": "Aufenthaltsdauer"
+                },
+                "compression": {
+                    "title": "Bildqualität",
+                    "high": "Hohe Qualität",
+                    "standard": "Standard",
+                    "original": "Original",
+                    "high_hint": "Sendet das Original, wenn es passt, sonst komprimiert auf unter 10 MB.",
+                    "standard_hint": "Komprimiert auf unter 5 MB, damit es schneller lädt.",
+                    "original_hint": "Keine Komprimierung. Schlägt fehl, wenn die Datei das Upload-Limit des Servers überschreitet."
+                },
+                "targets": {
+                    "title": "Discord-Webhooks",
+                    "description": "Screenshots werden an diese Kanäle gesendet. Webhook-URLs werden nur auf diesem PC gespeichert.",
+                    "tab_targets": "Kanäle",
+                    "tab_history": "Verlauf",
+                    "quick": "Mit einem Klick senden",
+                    "quick_hint": "„An Discord senden“ schickt direkt an alle Kanäle mit Stern.",
+                    "invalid": "Ungültig",
+                    "edit": "Bearbeiten",
+                    "add": "Webhook hinzufügen",
+                    "add_title": "Webhook hinzufügen",
+                    "edit_title": "Webhook bearbeiten",
+                    "empty": "Noch keine Webhooks. Erstelle einen in den Discord-Kanaleinstellungen unter Integrationen → Webhooks und kopiere die URL.",
+                    "name": "Name",
+                    "name_placeholder": "z. B. Mein Fotoalbum",
+                    "url": "Webhook-URL",
+                    "url_keep": "Leer lassen, um die aktuelle URL zu behalten",
+                    "url_hint": "Kopiere sie in Discord unter Kanaleinstellungen → Integrationen → Webhooks. Sie wird beim Speichern einmal geprüft."
+                },
+                "history": {
+                    "empty": "Noch nichts gesendet",
+                    "summary": "{date} · {count} Bild(er)",
+                    "open": "In Discord öffnen",
+                    "retract": "Aus Discord löschen"
+                },
+                "dialog": {
+                    "title": "{count} Screenshot(s) senden",
+                    "target": "Senden an",
+                    "remember": "Als Standard für diesen Kanal speichern",
+                    "send": "Senden"
+                },
+                "preview": {
+                    "title": "Vorschau ({count} Nachricht(en))",
+                    "images": "{count} Bild(er)"
+                }
+            },
             "prints_filter": {
                 "all": "Alle",
                 "favorites": "Favoriten",

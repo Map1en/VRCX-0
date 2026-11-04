@@ -2601,6 +2601,90 @@
                 "unfavorited_toast": "프린트 {count}개의 즐겨찾기를 해제했습니다.",
                 "favorite_skipped_toast": "{count}개는 즐겨찾기에 추가하지 못했습니다. 제한은 {max}개입니다."
             },
+            "screenshot_share": {
+                "send": "Discord로 보내기",
+                "more": "보내기 옵션 더 보기",
+                "quick_tooltip": "원클릭으로 보내기: {targets}",
+                "choose_target": "채널을 골라 보내기",
+                "manage": "웹후크 관리…",
+                "progress": "{target}(으)로 보내는 중 ({done}/{total})",
+                "sent": "스크린샷 {count}장을 {target}(으)로 보냈습니다",
+                "undo": "되돌리기",
+                "undone": "Discord에서 삭제했습니다",
+                "undo_failed": "삭제하지 못했습니다: {reason}",
+                "failed": "{target}(으)로 보내지 못했습니다: {reason}",
+                "spoiler": "스포일러로 표시",
+                "metadata": "스크린샷 메타데이터 포함",
+                "metadata_hint": "VRCX가 파일에 기록한 월드와 플레이어 정보를 남깁니다.",
+                "embed": {
+                    "player_count": "인원",
+                    "people": "함께한 사람",
+                    "stay": "머문 시간",
+                    "stay_ongoing": "{duration} 경과",
+                    "stay_total": "{duration}",
+                    "more_people": "외 {count}명"
+                },
+                "error": {
+                    "http": "Discord가 HTTP {status}을(를) 반환했습니다",
+                    "invalid": "웹후크 URL이 잘못되었거나 웹후크가 삭제되었습니다",
+                    "too_large": "이 서버의 업로드 한도를 넘었습니다. \"고화질\"이나 \"표준\"으로 다시 시도해 주세요",
+                    "rate_limited": "Discord 요청 제한에 걸렸습니다. 잠시 후 다시 시도해 주세요",
+                    "network": "Discord에 연결할 수 없습니다",
+                    "file": "스크린샷을 읽을 수 없습니다"
+                },
+                "fields": {
+                    "title": "포함할 정보",
+                    "world": "월드",
+                    "time": "촬영 시간",
+                    "player_count": "인스턴스 인원",
+                    "people": "함께한 사람",
+                    "stay": "머문 시간"
+                },
+                "compression": {
+                    "title": "화질",
+                    "high": "고화질",
+                    "standard": "표준",
+                    "original": "원본",
+                    "high_hint": "원본이 한도 안이면 그대로 보내고, 넘으면 10MB 이하로 압축합니다.",
+                    "standard_hint": "5MB 이하로 압축해 더 빨리 열립니다.",
+                    "original_hint": "압축하지 않습니다. 서버 업로드 한도를 넘으면 보내지 못합니다."
+                },
+                "targets": {
+                    "title": "Discord 웹후크",
+                    "description": "스크린샷을 이 채널들로 보냅니다. 웹후크 URL은 이 PC에만 저장됩니다.",
+                    "tab_targets": "채널",
+                    "tab_history": "보낸 기록",
+                    "quick": "원클릭 보내기",
+                    "quick_hint": "\"Discord로 보내기\"를 누르면 별표한 모든 채널로 바로 보냅니다.",
+                    "invalid": "사용 불가",
+                    "edit": "편집",
+                    "add": "웹후크 추가",
+                    "add_title": "웹후크 추가",
+                    "edit_title": "웹후크 편집",
+                    "empty": "아직 웹후크가 없습니다. Discord 채널 설정 → 연동 → 웹후크에서 만들고 URL을 복사하세요.",
+                    "name": "이름",
+                    "name_placeholder": "예: 내 앨범",
+                    "url": "웹후크 URL",
+                    "url_keep": "비워 두면 현재 URL을 유지합니다",
+                    "url_hint": "Discord 채널 설정 → 연동 → 웹후크에서 복사하세요. 저장할 때 한 번 확인합니다."
+                },
+                "history": {
+                    "empty": "보낸 기록이 없습니다",
+                    "summary": "{date} · {count}장",
+                    "open": "Discord에서 열기",
+                    "retract": "Discord에서 삭제"
+                },
+                "dialog": {
+                    "title": "스크린샷 {count}장 보내기",
+                    "target": "보낼 곳",
+                    "remember": "이 채널의 기본값으로 저장",
+                    "send": "보내기"
+                },
+                "preview": {
+                    "title": "미리 보기 (메시지 {count}개)",
+                    "images": "이미지 {count}장"
+                }
+            },
             "prints_filter": {
                 "all": "전체",
                 "favorites": "즐겨찾기",

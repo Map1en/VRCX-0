@@ -108,7 +108,8 @@ pub use task_supervisor::{
 };
 pub use vrcx_0_contracts::{runtime_event_payload, RuntimeEventPayload};
 pub use vrcx_0_contracts::{
-    RealtimeAuthTokenFetch, RealtimeConnectionOptions, WebExecuteRequest, WebUploadMode,
+    RealtimeAuthTokenFetch, RealtimeConnectionOptions, WebExecuteRequest, WebMultipartPart,
+    WebUploadMode,
 };
 pub use vrcx_0_core::FavoriteGroupVisibility;
 pub use web_client::{WebClient, WebClientPort};

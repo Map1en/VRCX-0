@@ -5,6 +5,7 @@ import { DEFAULT_SCREENSHOT_GRID_DENSITY } from '@/components/media/screenshotGr
 import { useTileSelectionState } from '@/lib/useTileSelectionState';
 import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
 
+import { ScreenshotShareMenu } from '../screenshot-share/ScreenshotShareMenu';
 import type {
     ScreenshotSearchRow,
     ScreenshotSearchSort
@@ -122,7 +123,12 @@ export function ScreenshotSearchResultsView({
                     onExport: (groupByFolder) =>
                         onExportSelection(selectedPaths, groupByFolder)
                 }}
-            />
+            >
+                <ScreenshotShareMenu
+                    paths={selectedPaths}
+                    disabled={isDeleteRunning}
+                />
+            </GallerySelectionBar>
         </div>
     );
 }

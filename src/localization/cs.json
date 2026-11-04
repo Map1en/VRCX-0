@@ -2687,6 +2687,90 @@
                 "unfavorited_toast": "{count} tisků odebráno z oblíbených.",
                 "favorite_skipped_toast": "{count} tisků se nepodařilo přidat do oblíbených. Limit je {max}."
             },
+            "screenshot_share": {
+                "send": "Odeslat na Discord",
+                "more": "Další možnosti odeslání",
+                "quick_tooltip": "Odeslat jedním kliknutím do: {targets}",
+                "choose_target": "Odeslat do kanálu",
+                "manage": "Spravovat webhooky…",
+                "progress": "Odesílání do {target} ({done}/{total})",
+                "sent": "Odesláno snímků do {target}: {count}",
+                "undo": "Vrátit",
+                "undone": "Zpráva smazána z Discordu",
+                "undo_failed": "Zprávu se nepodařilo smazat: {reason}",
+                "failed": "Odeslání do {target} se nezdařilo: {reason}",
+                "spoiler": "Označit jako spoiler",
+                "metadata": "Přiložit metadata snímku",
+                "metadata_hint": "Zachová informace o světě a hráčích, které VRCX zapsal do souboru.",
+                "embed": {
+                    "player_count": "Hráčů",
+                    "people": "Spolu s",
+                    "stay": "Pobyt",
+                    "stay_ongoing": "zatím {duration}",
+                    "stay_total": "{duration}",
+                    "more_people": "a další ({count})"
+                },
+                "error": {
+                    "http": "Discord vrátil HTTP {status}",
+                    "invalid": "Adresa webhooku je chybná, nebo byl webhook smazán",
+                    "too_large": "Obrázek překračuje limit nahrávání tohoto serveru. Zkuste „Vysoká kvalita“ nebo „Standardní“.",
+                    "rate_limited": "Discord omezuje počet požadavků. Zkuste to za chvíli znovu.",
+                    "network": "Nepodařilo se připojit k Discordu",
+                    "file": "Snímek se nepodařilo načíst"
+                },
+                "fields": {
+                    "title": "Přiložit",
+                    "world": "Svět",
+                    "time": "Čas pořízení",
+                    "player_count": "Počet hráčů",
+                    "people": "Kdo byl s vámi",
+                    "stay": "Doba pobytu"
+                },
+                "compression": {
+                    "title": "Kvalita obrázku",
+                    "high": "Vysoká kvalita",
+                    "standard": "Standardní",
+                    "original": "Originál",
+                    "high_hint": "Pošle originál, pokud se vejde, jinak ho zkomprimuje pod 10 MB.",
+                    "standard_hint": "Zkomprimuje pod 5 MB, aby se načítal rychleji.",
+                    "original_hint": "Bez komprese. Odeslání selže, pokud soubor překročí limit nahrávání serveru."
+                },
+                "targets": {
+                    "title": "Webhooky Discordu",
+                    "description": "Snímky se odesílají do těchto kanálů. Adresy webhooků se ukládají jen v tomto počítači.",
+                    "tab_targets": "Kanály",
+                    "tab_history": "Historie",
+                    "quick": "Odeslání jedním kliknutím",
+                    "quick_hint": "Tlačítko „Odeslat na Discord“ pošle snímky rovnou do všech kanálů s hvězdičkou.",
+                    "invalid": "Neplatný",
+                    "edit": "Upravit",
+                    "add": "Přidat webhook",
+                    "add_title": "Přidat webhook",
+                    "edit_title": "Upravit webhook",
+                    "empty": "Zatím žádné webhooky. Vytvořte ho v nastavení kanálu na Discordu v části Integrace → Webhooky a zkopírujte jeho adresu.",
+                    "name": "Název",
+                    "name_placeholder": "např. Moje fotoalbum",
+                    "url": "Adresa webhooku",
+                    "url_keep": "Ponechte prázdné, chcete-li zachovat současnou adresu",
+                    "url_hint": "Zkopírujte ji na Discordu v Nastavení kanálu → Integrace → Webhooky. Při uložení se jednou ověří."
+                },
+                "history": {
+                    "empty": "Zatím nic neodesláno",
+                    "summary": "{date} · obrázků: {count}",
+                    "open": "Otevřít v Discordu",
+                    "retract": "Smazat z Discordu"
+                },
+                "dialog": {
+                    "title": "Odeslat snímky ({count})",
+                    "target": "Odeslat do",
+                    "remember": "Uložit jako výchozí pro tento kanál",
+                    "send": "Odeslat"
+                },
+                "preview": {
+                    "title": "Náhled (zpráv: {count})",
+                    "images": "Obrázků: {count}"
+                }
+            },
             "prints_filter": {
                 "all": "Vše",
                 "favorites": "Oblíbené",

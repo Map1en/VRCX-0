@@ -6,6 +6,7 @@ import {
     StarOffIcon,
     Trash2Icon
 } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { SelectionActionBar } from '@/components/layout/SelectionActionBar';
@@ -30,6 +31,7 @@ type GallerySelectionBarProps = {
     exportAction?: {
         onExport(groupByFolder: boolean): void;
     };
+    children?: ReactNode;
     onSelectAll(): void;
     onClearSelection(): void;
     onDelete(): void;
@@ -42,6 +44,7 @@ export function GallerySelectionBar({
     actionsDisabled,
     favoriteActions,
     exportAction,
+    children,
     onSelectAll,
     onClearSelection,
     onDelete
@@ -125,6 +128,7 @@ export function GallerySelectionBar({
                     </DropdownMenuContent>
                 </DropdownMenu>
             ) : null}
+            {children}
             <Tooltip disabled={deletableCount !== 0}>
                 <TooltipTrigger
                     render={

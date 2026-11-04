@@ -13,8 +13,8 @@ use super::tables::ensure_game_log_tables;
 use super::types::{
     GameLogEventEntry, GameLogExternalEntry, GameLogJoinLeaveEntry, GameLogJoinLeaveSnapshot,
     GameLogLocationEntry, GameLogLocationSnapshot, GameLogPreviousInstanceGroupOutput,
-    GameLogPreviousInstanceWorldOutput, SessionEventRow, SessionLocationSegmentRow,
-    SessionPlayerDurationRow,
+    GameLogPreviousInstanceWorldOutput, GameLogVisitSpan, SessionEventRow,
+    SessionLocationSegmentRow, SessionPlayerDurationRow,
 };
 
 fn latest_join_leave_lookup_sql() -> String {
@@ -308,6 +308,37 @@ pub fn get_location_before_or_at(
             world_id: row_string(row, 2),
             world_name: row_string(row, 3),
             group_name: row_string(row, 4),
+        }))
+}
+
+pub fn get_visit_span_at(
+    db: &DatabaseService,
+    owner_user_id: &OwnerId,
+    at: &str,
+) -> Result<Option<GameLogVisitSpan>, Error> {
+    if !game_log_location_table_exists(db)? {
+        return Ok(None);
+    }
+    let args = owner_params(db, owner_user_id)?.set("at", at).build();
+    Ok(db
+        .execute(
+            "SELECT g.created_at, COALESCE(g.world_id, ''), COALESCE(g.time, 0),
+                    NOT EXISTS (
+                        SELECT 1 FROM gamelog_location n
+                        WHERE n.owner_id IN (0, @ownerId) AND n.created_at > g.created_at
+                    )
+             FROM gamelog_location g
+             WHERE g.owner_id IN (0, @ownerId) AND g.created_at <= @at
+             ORDER BY g.created_at DESC
+             LIMIT 1",
+            &args,
+        )?
+        .first()
+        .map(|row| GameLogVisitSpan {
+            created_at: row_string(row, 0),
+            world_id: row_string(row, 1),
+            time_ms: std::cmp::Ord::max(row_i64(row, 2), 0),
+            latest: row_i64(row, 3) != 0,
         }))
 }
 

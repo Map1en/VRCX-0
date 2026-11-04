@@ -2671,6 +2671,90 @@
                 "unfavorited_toast": "Unfavorited {count} print(s).",
                 "favorite_skipped_toast": "{count} print(s) were not favorited. The limit is {max}."
             },
+            "screenshot_share": {
+                "send": "Send to Discord",
+                "more": "More send options",
+                "quick_tooltip": "One-click send to: {targets}",
+                "choose_target": "Send to channel",
+                "manage": "Manage webhooks…",
+                "progress": "Sending to {target} ({done}/{total})",
+                "sent": "Sent {count} screenshot(s) to {target}",
+                "undo": "Undo",
+                "undone": "Message deleted from Discord",
+                "undo_failed": "Couldn't delete the message: {reason}",
+                "failed": "Couldn't send to {target}: {reason}",
+                "spoiler": "Mark as spoiler",
+                "metadata": "Include screenshot metadata",
+                "metadata_hint": "Keeps the world and player info VRCX wrote into the file.",
+                "embed": {
+                    "player_count": "Players",
+                    "people": "With",
+                    "stay": "Stayed",
+                    "stay_ongoing": "{duration} so far",
+                    "stay_total": "{duration}",
+                    "more_people": "and {count} more"
+                },
+                "error": {
+                    "http": "Discord returned HTTP {status}",
+                    "invalid": "This webhook URL is wrong or the webhook was deleted",
+                    "too_large": "The image is over this server's upload limit. Try High quality or Standard.",
+                    "rate_limited": "Discord is rate limiting. Try again in a moment.",
+                    "network": "Couldn't reach Discord",
+                    "file": "Couldn't read the screenshot"
+                },
+                "fields": {
+                    "title": "Include",
+                    "world": "World",
+                    "time": "Time taken",
+                    "player_count": "Player count",
+                    "people": "People with you",
+                    "stay": "Time spent"
+                },
+                "compression": {
+                    "title": "Image quality",
+                    "high": "High quality",
+                    "standard": "Standard",
+                    "original": "Original",
+                    "high_hint": "Sends the original if it fits, otherwise compresses to under 10 MB.",
+                    "standard_hint": "Compresses to under 5 MB so it loads faster.",
+                    "original_hint": "No compression. Fails if the file is over the server's upload limit."
+                },
+                "targets": {
+                    "title": "Discord webhooks",
+                    "description": "Screenshots are sent to these channels. Webhook URLs are stored only on this PC.",
+                    "tab_targets": "Channels",
+                    "tab_history": "History",
+                    "quick": "One-click send",
+                    "quick_hint": "Send to Discord posts straight to every starred channel.",
+                    "invalid": "Invalid",
+                    "edit": "Edit",
+                    "add": "Add webhook",
+                    "add_title": "Add webhook",
+                    "edit_title": "Edit webhook",
+                    "empty": "No webhooks yet. Create one in the Discord channel settings under Integrations → Webhooks and copy its URL.",
+                    "name": "Name",
+                    "name_placeholder": "e.g. My photo album",
+                    "url": "Webhook URL",
+                    "url_keep": "Leave empty to keep the current URL",
+                    "url_hint": "Copy it from Channel settings → Integrations → Webhooks in Discord. It is checked once when you save."
+                },
+                "history": {
+                    "empty": "Nothing sent yet",
+                    "summary": "{date} · {count} image(s)",
+                    "open": "Open in Discord",
+                    "retract": "Delete from Discord"
+                },
+                "dialog": {
+                    "title": "Send {count} screenshot(s)",
+                    "target": "Send to",
+                    "remember": "Save as the default for this channel",
+                    "send": "Send"
+                },
+                "preview": {
+                    "title": "Preview ({count} message(s))",
+                    "images": "{count} image(s)"
+                }
+            },
             "prints_filter": {
                 "all": "All",
                 "favorites": "Favorites",

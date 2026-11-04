@@ -2667,6 +2667,90 @@
                 "unfavorited_toast": "{count} print(s) removido(s) dos favoritos.",
                 "favorite_skipped_toast": "{count} print(s) não puderam ser favoritados. O limite é {max}."
             },
+            "screenshot_share": {
+                "send": "Enviar para o Discord",
+                "more": "Mais opções de envio",
+                "quick_tooltip": "Envio com um clique para: {targets}",
+                "choose_target": "Enviar para um canal",
+                "manage": "Gerenciar webhooks…",
+                "progress": "Enviando para {target} ({done}/{total})",
+                "sent": "{count} captura(s) enviada(s) para {target}",
+                "undo": "Desfazer",
+                "undone": "Mensagem apagada do Discord",
+                "undo_failed": "Não foi possível apagar a mensagem: {reason}",
+                "failed": "Não foi possível enviar para {target}: {reason}",
+                "spoiler": "Marcar como spoiler",
+                "metadata": "Incluir metadados da captura",
+                "metadata_hint": "Mantém as informações do mundo e dos jogadores que o VRCX gravou no arquivo.",
+                "embed": {
+                    "player_count": "Jogadores",
+                    "people": "Com",
+                    "stay": "Permanência",
+                    "stay_ongoing": "{duration} até agora",
+                    "stay_total": "{duration}",
+                    "more_people": "e mais {count}"
+                },
+                "error": {
+                    "http": "O Discord retornou HTTP {status}",
+                    "invalid": "A URL do webhook está errada ou o webhook foi apagado",
+                    "too_large": "A imagem passa do limite de upload deste servidor. Tente \"Alta qualidade\" ou \"Padrão\".",
+                    "rate_limited": "O Discord está limitando as requisições. Tente de novo daqui a pouco.",
+                    "network": "Não foi possível conectar ao Discord",
+                    "file": "Não foi possível ler a captura"
+                },
+                "fields": {
+                    "title": "Incluir",
+                    "world": "Mundo",
+                    "time": "Horário da captura",
+                    "player_count": "Número de jogadores",
+                    "people": "Quem estava com você",
+                    "stay": "Tempo de permanência"
+                },
+                "compression": {
+                    "title": "Qualidade da imagem",
+                    "high": "Alta qualidade",
+                    "standard": "Padrão",
+                    "original": "Original",
+                    "high_hint": "Envia o original se couber; senão, comprime para menos de 10 MB.",
+                    "standard_hint": "Comprime para menos de 5 MB para carregar mais rápido.",
+                    "original_hint": "Sem compressão. Falha se o arquivo passar do limite de upload do servidor."
+                },
+                "targets": {
+                    "title": "Webhooks do Discord",
+                    "description": "As capturas são enviadas para estes canais. As URLs dos webhooks ficam salvas só neste PC.",
+                    "tab_targets": "Canais",
+                    "tab_history": "Histórico",
+                    "quick": "Envio com um clique",
+                    "quick_hint": "\"Enviar para o Discord\" publica direto em todos os canais com estrela.",
+                    "invalid": "Inválido",
+                    "edit": "Editar",
+                    "add": "Adicionar webhook",
+                    "add_title": "Adicionar webhook",
+                    "edit_title": "Editar webhook",
+                    "empty": "Nenhum webhook ainda. Crie um nas configurações do canal no Discord, em Integrações → Webhooks, e copie a URL.",
+                    "name": "Nome",
+                    "name_placeholder": "ex.: Meu álbum de fotos",
+                    "url": "URL do webhook",
+                    "url_keep": "Deixe vazio para manter a URL atual",
+                    "url_hint": "Copie no Discord em Configurações do canal → Integrações → Webhooks. Ela é verificada uma vez ao salvar."
+                },
+                "history": {
+                    "empty": "Nada enviado ainda",
+                    "summary": "{date} · {count} imagem(ns)",
+                    "open": "Abrir no Discord",
+                    "retract": "Apagar do Discord"
+                },
+                "dialog": {
+                    "title": "Enviar {count} captura(s)",
+                    "target": "Enviar para",
+                    "remember": "Salvar como padrão para este canal",
+                    "send": "Enviar"
+                },
+                "preview": {
+                    "title": "Prévia ({count} mensagem(ns))",
+                    "images": "{count} imagem(ns)"
+                }
+            },
             "prints_filter": {
                 "all": "Todos",
                 "favorites": "Favoritos",

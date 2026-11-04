@@ -3,7 +3,8 @@ use std::path::PathBuf;
 use crate::database::DatabaseService;
 use crate::game_log::{
     game_log_instance_delete, game_log_query, get_game_log_events, get_game_log_locations,
-    previous_instance_event_rows_query, GameLogQuery, GameLogQueryOutput,
+    get_visit_span_at, previous_instance_event_rows_query, GameLogQuery, GameLogQueryOutput,
+    GameLogVisitSpan,
 };
 use crate::Error;
 use serde_json::json;
@@ -191,6 +192,53 @@ fn updates_location_duration_by_created_at() -> Result<(), Error> {
     update_location_time(db, "2026-05-14T03:00:00.000Z", 2500)?;
     let rows = db.execute("SELECT time FROM gamelog_location", &Default::default())?;
     assert_eq!(rows[0][0], serde_json::json!(2500));
+    Ok(())
+}
+
+#[test]
+fn finds_the_visit_that_contains_a_moment() -> Result<(), Error> {
+    let test_db = test_db("store-gamelog-visit-span")?;
+    let db = &test_db.db;
+    let owner = OwnerId::new("usr_test");
+    for (created_at, world_id, time) in [
+        ("2026-05-14T01:00:00.000Z", "wrld_first", 3_600_000),
+        ("2026-05-14T03:00:00.000Z", "wrld_second", 0),
+    ] {
+        insert_location(
+            db,
+            &GameLogLocationEntry {
+                created_at: created_at.into(),
+                location: format!("{world_id}:1"),
+                world_id: world_id.into(),
+                world_name: world_id.into(),
+                time,
+                group_name: "".into(),
+            },
+        )?;
+    }
+
+    assert_eq!(
+        get_visit_span_at(db, &owner, "2026-05-14T00:30:00.000Z")?,
+        None
+    );
+    assert_eq!(
+        get_visit_span_at(db, &owner, "2026-05-14T01:30:00.000Z")?,
+        Some(GameLogVisitSpan {
+            created_at: "2026-05-14T01:00:00.000Z".into(),
+            world_id: "wrld_first".into(),
+            time_ms: 3_600_000,
+            latest: false,
+        })
+    );
+    assert_eq!(
+        get_visit_span_at(db, &owner, "2026-05-14T03:30:00.000Z")?,
+        Some(GameLogVisitSpan {
+            created_at: "2026-05-14T03:00:00.000Z".into(),
+            world_id: "wrld_second".into(),
+            time_ms: 0,
+            latest: true,
+        })
+    );
     Ok(())
 }
 

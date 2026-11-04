@@ -3135,6 +3135,46 @@ const generatedCommands = {
             changeFilename
         });
     },
+    async appGetScreenshotShareTargets(): Promise<ScreenshotShareTarget[]> {
+        return await TAURI_INVOKE('app__get_screenshot_share_targets');
+    },
+    async appSaveScreenshotShareTarget(
+        input: ScreenshotShareTargetInput
+    ): Promise<ScreenshotShareTarget> {
+        return await TAURI_INVOKE('app__save_screenshot_share_target', {
+            input
+        });
+    },
+    async appDeleteScreenshotShareTarget(id: string): Promise<null> {
+        return await TAURI_INVOKE('app__delete_screenshot_share_target', {
+            id
+        });
+    },
+    async appGetScreenshotShareFacts(
+        paths: string[]
+    ): Promise<ScreenshotShareFacts[]> {
+        return await TAURI_INVOKE('app__get_screenshot_share_facts', { paths });
+    },
+    async appShareScreenshots(
+        targetId: string,
+        messages: ScreenshotShareMessage[]
+    ): Promise<ScreenshotShareSendResult> {
+        return await TAURI_INVOKE('app__share_screenshots', {
+            targetId,
+            messages
+        });
+    },
+    async appGetScreenshotShareProgress(): Promise<ScreenshotShareProgress> {
+        return await TAURI_INVOKE('app__get_screenshot_share_progress');
+    },
+    async appGetScreenshotShareHistory(): Promise<ScreenshotShareRecord[]> {
+        return await TAURI_INVOKE('app__get_screenshot_share_history');
+    },
+    async appDeleteScreenshotShareRecord(id: string): Promise<null> {
+        return await TAURI_INVOKE('app__delete_screenshot_share_record', {
+            id
+        });
+    },
     async appCropAllPrints(ugcFolderPath: string): Promise<null> {
         return await TAURI_INVOKE('app__crop_all_prints', { ugcFolderPath });
     },
@@ -7096,6 +7136,79 @@ export type ScreenshotQueryResult = {
     withoutPeople: number;
     images: ScreenshotLibraryImage[];
 };
+export type ScreenshotShareCompression = 'high' | 'standard' | 'original';
+export type ScreenshotShareEmbed = {
+    title: string | null;
+    url: string | null;
+    timestamp: string | null;
+    fields: ScreenshotShareEmbedField[];
+};
+export type ScreenshotShareEmbedField = {
+    name: string;
+    value: string;
+    inline: boolean;
+};
+export type ScreenshotShareFacts = {
+    path: string;
+    worldId: string | null;
+    worldName: string | null;
+    capturedAtMs: number;
+    people: string[];
+    playerCount: number | null;
+    stay: ScreenshotStay | null;
+};
+export type ScreenshotShareFields = {
+    world: boolean;
+    time: boolean;
+    playerCount: boolean;
+    people: boolean;
+    stay: boolean;
+    spoiler: boolean;
+    metadata: boolean;
+    compression: ScreenshotShareCompression;
+};
+export type ScreenshotShareMessage = {
+    paths: string[];
+    content: string;
+    embed: ScreenshotShareEmbed | null;
+    spoiler: boolean;
+    metadata: boolean;
+    compression: ScreenshotShareCompression;
+};
+export type ScreenshotShareProgress = {
+    running: boolean;
+    processedFiles: number;
+    totalFiles: number;
+};
+export type ScreenshotShareRecord = {
+    id: string;
+    targetId: string;
+    targetName: string;
+    messageUrl: string | null;
+    sentAt: string;
+    fileNames: string[];
+};
+export type ScreenshotShareSendResult = {
+    records: ScreenshotShareRecord[];
+    error: string | null;
+    targetInvalid: boolean;
+};
+export type ScreenshotShareTarget = {
+    id: string;
+    name: string;
+    urlHint: string;
+    fields: ScreenshotShareFields;
+    quick: boolean;
+    invalid: boolean;
+};
+export type ScreenshotShareTargetInput = {
+    id: string | null;
+    name: string;
+    url: string | null;
+    fields: ScreenshotShareFields;
+    quick: boolean;
+};
+export type ScreenshotStay = { ms: number; ongoing: boolean };
 export type ScreenshotTimeWindow = { fromMs: number; toMs: number };
 export type ScreenshotWindowImages = {
     total: number;

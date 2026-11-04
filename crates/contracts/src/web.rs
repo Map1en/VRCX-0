@@ -19,6 +19,17 @@ pub enum WebUploadMode {
         image_data: String,
         post_data: Option<String>,
     },
+    Multipart {
+        parts: Vec<WebMultipartPart>,
+    },
+}
+
+#[derive(Clone, Debug)]
+pub struct WebMultipartPart {
+    pub name: String,
+    pub file_name: Option<String>,
+    pub mime: String,
+    pub data: Vec<u8>,
 }
 
 #[derive(Clone, Debug)]

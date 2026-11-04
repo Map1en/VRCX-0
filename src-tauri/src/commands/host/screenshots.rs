@@ -10,7 +10,9 @@ use crate::state::AppState;
 use vrcx_0_core::screenshots::{
     FavoriteScreenshots, ScreenshotExportProgress, ScreenshotFacet, ScreenshotFilter,
     ScreenshotFolderTree, ScreenshotLibraryImage, ScreenshotLibraryScanStatus,
-    ScreenshotQueryResult, ScreenshotTimeWindow, ScreenshotWindowImages,
+    ScreenshotQueryResult, ScreenshotShareFacts, ScreenshotShareMessage, ScreenshotShareProgress,
+    ScreenshotShareRecord, ScreenshotShareSendResult, ScreenshotShareTarget,
+    ScreenshotShareTargetInput, ScreenshotTimeWindow, ScreenshotWindowImages,
 };
 
 use vrcx_0_host_desktop::host_capabilities::{require_host_capability, HostCapability};
@@ -433,4 +435,101 @@ pub fn app__cancel_screenshot_export(state: State<'_, AppState>) -> Result<(), A
     require_host_capability(HostCapability::ScreenshotCache)?;
     state.runtime_host().screenshots().request_export_cancel();
     Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__get_screenshot_share_targets(
+    state: State<'_, AppState>,
+) -> Result<Vec<ScreenshotShareTarget>, AppError> {
+    require_host_capability(HostCapability::ScreenshotCache)?;
+    let screenshots = state.runtime_host().screenshots().clone();
+    run_blocking("screenshot share targets", move || {
+        screenshots.share_targets()
+    })
+    .await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__save_screenshot_share_target(
+    state: State<'_, AppState>,
+    input: ScreenshotShareTargetInput,
+) -> Result<ScreenshotShareTarget, AppError> {
+    require_host_capability(HostCapability::ScreenshotCache)?;
+    let screenshots = state.runtime_host().screenshots().clone();
+    Ok(screenshots.save_share_target(input).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__delete_screenshot_share_target(
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<(), AppError> {
+    require_host_capability(HostCapability::ScreenshotCache)?;
+    let screenshots = state.runtime_host().screenshots().clone();
+    run_blocking("delete screenshot share target", move || {
+        screenshots.delete_share_target(&id)
+    })
+    .await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__get_screenshot_share_facts(
+    state: State<'_, AppState>,
+    paths: Vec<String>,
+) -> Result<Vec<ScreenshotShareFacts>, AppError> {
+    require_host_capability(HostCapability::ScreenshotCache)?;
+    let screenshots = state.runtime_host().screenshots().clone();
+    run_blocking("screenshot share facts", move || {
+        screenshots.share_facts(&paths)
+    })
+    .await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__share_screenshots(
+    state: State<'_, AppState>,
+    target_id: String,
+    messages: Vec<ScreenshotShareMessage>,
+) -> Result<ScreenshotShareSendResult, AppError> {
+    require_host_capability(HostCapability::ScreenshotCache)?;
+    let screenshots = state.runtime_host().screenshots().clone();
+    Ok(screenshots.share(&target_id, messages).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__get_screenshot_share_history(
+    state: State<'_, AppState>,
+) -> Result<Vec<ScreenshotShareRecord>, AppError> {
+    require_host_capability(HostCapability::ScreenshotCache)?;
+    let screenshots = state.runtime_host().screenshots().clone();
+    run_blocking("screenshot share history", move || {
+        screenshots.share_history()
+    })
+    .await
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__delete_screenshot_share_record(
+    state: State<'_, AppState>,
+    id: String,
+) -> Result<(), AppError> {
+    require_host_capability(HostCapability::ScreenshotCache)?;
+    let screenshots = state.runtime_host().screenshots().clone();
+    Ok(screenshots.delete_share_record(&id).await?)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__get_screenshot_share_progress(
+    state: State<'_, AppState>,
+) -> Result<ScreenshotShareProgress, AppError> {
+    require_host_capability(HostCapability::ScreenshotCache)?;
+    Ok(state.runtime_host().screenshots().share_progress())
 }

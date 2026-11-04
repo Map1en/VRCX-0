@@ -56,6 +56,7 @@ import {
 } from '@/ui/shadcn/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { ScreenshotShareMenu } from '../screenshot-share/ScreenshotShareMenu';
 import {
     SCREENSHOT_FAVORITES_FOLDER,
     SCREENSHOT_PEOPLE_FOLDER,
@@ -955,7 +956,12 @@ export function ScreenshotGalleryView({
                                         groupByFolder
                                     )
                             }}
-                        />
+                        >
+                            <ScreenshotShareMenu
+                                paths={selection.selectedPaths}
+                                disabled={isDeleteRunning}
+                            />
+                        </GallerySelectionBar>
                     </>
                 )}
             </ResizablePanel>

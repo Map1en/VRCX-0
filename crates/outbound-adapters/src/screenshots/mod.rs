@@ -1,4 +1,7 @@
 mod service;
+mod share;
+
+pub use share::ScreenshotShareService;
 
 pub use service::{
     add_screenshot_metadata, can_decode_image, ensure_screenshot_thumbnail, extra_screenshot_data,

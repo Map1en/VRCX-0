@@ -2664,6 +2664,90 @@
                 "unfavorited_toast": "已取消收藏 {count} 张拍立得。",
                 "favorite_skipped_toast": "有 {count} 张拍立得未能收藏，上限为 {max} 张。"
             },
+            "screenshot_share": {
+                "send": "发送到 Discord",
+                "more": "更多发送选项",
+                "quick_tooltip": "一键发送到：{targets}",
+                "choose_target": "发送到频道",
+                "manage": "管理 Webhook…",
+                "progress": "正在发送到 {target}（{done}/{total}）",
+                "sent": "已将 {count} 张截图发送到 {target}",
+                "undo": "撤回",
+                "undone": "已从 Discord 撤回",
+                "undo_failed": "撤回失败：{reason}",
+                "failed": "发送到 {target} 失败：{reason}",
+                "spoiler": "标记为剧透",
+                "metadata": "附带截图元数据",
+                "metadata_hint": "保留 VRCX 写入文件的世界和玩家信息。",
+                "embed": {
+                    "player_count": "房间人数",
+                    "people": "同行",
+                    "stay": "停留",
+                    "stay_ongoing": "已待 {duration}",
+                    "stay_total": "{duration}",
+                    "more_people": "等 {count} 人"
+                },
+                "error": {
+                    "http": "Discord 返回了 HTTP {status}",
+                    "invalid": "Webhook 地址不正确，或已被删除",
+                    "too_large": "图片超过了该服务器的上传上限，请改用「高质量」或「标准」",
+                    "rate_limited": "Discord 正在限流，请稍后再试",
+                    "network": "无法连接到 Discord",
+                    "file": "无法读取截图"
+                },
+                "fields": {
+                    "title": "附带信息",
+                    "world": "世界",
+                    "time": "拍摄时间",
+                    "player_count": "房间人数",
+                    "people": "同房间的人",
+                    "stay": "停留时长"
+                },
+                "compression": {
+                    "title": "画质",
+                    "high": "高质量",
+                    "standard": "标准",
+                    "original": "原图",
+                    "high_hint": "原图放得下就发原图，否则压缩到 10MB 以内。",
+                    "standard_hint": "压缩到 5MB 以内，加载更快。",
+                    "original_hint": "不压缩。超过服务器上传上限时会发送失败。"
+                },
+                "targets": {
+                    "title": "Discord Webhook",
+                    "description": "截图会发送到这些频道。Webhook 地址只保存在这台电脑上。",
+                    "tab_targets": "频道",
+                    "tab_history": "发送记录",
+                    "quick": "一键发送",
+                    "quick_hint": "点「发送到 Discord」时，直接发到所有加星的频道。",
+                    "invalid": "已失效",
+                    "edit": "编辑",
+                    "add": "添加 Webhook",
+                    "add_title": "添加 Webhook",
+                    "edit_title": "编辑 Webhook",
+                    "empty": "还没有 Webhook。在 Discord 的频道设置 → 整合 → Webhook 中新建并复制地址。",
+                    "name": "名称",
+                    "name_placeholder": "例如：我的相册",
+                    "url": "Webhook 地址",
+                    "url_keep": "留空则保持当前地址",
+                    "url_hint": "在 Discord 的频道设置 → 整合 → Webhook 中复制。保存时会验证一次。"
+                },
+                "history": {
+                    "empty": "还没有发送记录",
+                    "summary": "{date} · {count} 张",
+                    "open": "在 Discord 中打开",
+                    "retract": "从 Discord 撤回"
+                },
+                "dialog": {
+                    "title": "发送 {count} 张截图",
+                    "target": "发送到",
+                    "remember": "设为这个频道的默认设置",
+                    "send": "发送"
+                },
+                "preview": {
+                    "title": "预览（{count} 条消息）",
+                    "images": "{count} 张图片"
+                }
+            },
             "prints_filter": {
                 "all": "全部",
                 "favorites": "已收藏",

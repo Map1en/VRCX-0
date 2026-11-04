@@ -170,6 +170,14 @@ impl GameLogWriteCount {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct GameLogVisitSpan {
+    pub created_at: String,
+    pub world_id: String,
+    pub time_ms: i64,
+    pub latest: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct GameLogLocationSnapshot {
     pub created_at: String,
     pub location: String,
