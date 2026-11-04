@@ -2,7 +2,7 @@ use vrcx_0_contracts::game_log::{GameLogJoinLeaveEntry, GameLogLocationEntry, Ga
 
 use crate::game_log::runtime_state::{PlayerState, RuntimeSnapshot};
 use crate::ports::TestGameStateStore;
-use crate::GameStateStore;
+use crate::GameLogWriter;
 
 use super::*;
 

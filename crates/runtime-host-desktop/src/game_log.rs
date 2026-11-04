@@ -124,8 +124,8 @@ impl GameLogHostRuntime {
                 Arc::clone(&deps.image_cache),
             ));
         let inner = GameLogRuntime::new(GameLogRuntimeDeps::new(
-            Arc::new(crate::game_state_store::PersistenceGameStateStore::new(
-                Arc::clone(&deps.db),
+            vrcx_0_application_game::GameLogStores::shared(Arc::new(
+                crate::game_state_store::PersistenceGameStateStore::new(Arc::clone(&deps.db)),
             )),
             deps.config,
             instance_media,

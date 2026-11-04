@@ -71,7 +71,7 @@ impl GameClientWindowActions for NoopGameClientWindowActions {
 
 #[derive(Clone)]
 pub struct GameClientProcessorDeps {
-    pub(crate) store: Arc<dyn crate::GameStateStore>,
+    pub(crate) game_log_writer: Arc<dyn crate::GameLogWriter>,
     pub(crate) config: Arc<dyn ConfigStore>,
     pub event_bus: RuntimeEventBus,
     pub backend_status: BackendRuntimeStatusPublisher,
@@ -325,7 +325,7 @@ impl GameClientProcessor {
         let created_at = now_iso();
         let affected_count = self
             .deps
-            .store
+            .game_log_writer
             .write_game_log(
                 &OwnerId::new(self.deps.auth_scope.snapshot().current_user_id),
                 &GameLogWriteBatch {
@@ -478,7 +478,7 @@ mod tests {
         GameClientProcessor::new(
             GameClientProcessorDeps {
                 config: Arc::new(store.config.clone()),
-                store,
+                game_log_writer: store,
                 event_bus: event_bus.clone(),
                 backend_status: BackendRuntimeStatusPublisher::new(
                     vrcx_0_application_core::BackendRuntime::new(

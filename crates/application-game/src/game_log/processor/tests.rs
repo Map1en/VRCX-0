@@ -11,7 +11,7 @@ use crate::ports::{TestGameMediaPort, TestGameStateStore};
 use crate::Result;
 use crate::RuntimeAuthScope;
 use crate::RuntimeEventBus;
-use crate::{GameStateStore, RuntimeSyncEngine, TaskSupervisor};
+use crate::{GameLogWriter, RuntimeSyncEngine, TaskSupervisor};
 use vrcx_0_application_activity::{
     ActivityDelivery, ActivityFavoriteGroups, ActivityFilters, ActivityRouter, ActivitySink,
     ActivitySnapshot,
@@ -138,7 +138,7 @@ fn build_test_processor(store: Arc<TestGameStateStore>) -> Result<GameLogProcess
     let event_bus = RuntimeEventBus::new();
     let processor = GameLogProcessor::new(GameLogProcessorDeps {
         config: Arc::new(store.config.clone()),
-        store,
+        stores: crate::GameLogStores::shared(store),
         instance_media: Arc::new(TestGameMediaPort::default()),
         video_metadata: Arc::new(TestGameMediaPort::default()),
         event_bus: event_bus.clone(),
@@ -1902,7 +1902,7 @@ fn regression_runtime_acknowledges_failure_and_continues_after_config_recovers()
     let (_dir, store, processor) = test_processor("runtime-read-recovery")?;
     let deps = processor.deps;
     let runtime = crate::GameLogRuntime::new(crate::GameLogRuntimeDeps::new(
-        deps.store,
+        deps.stores,
         deps.config,
         deps.instance_media,
         deps.video_metadata,

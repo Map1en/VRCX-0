@@ -24,7 +24,7 @@ struct ScreenshotPlayer {
 }
 
 pub async fn handle_screenshot(
-    store: &dyn crate::GameStateStore,
+    store: &dyn crate::GameLogLocationQueries,
     config: &dyn ConfigStore,
     host_actions: std::sync::Arc<dyn GameLogHostActions>,
     side_effect_sink: &GameLogSideEffectSink,
@@ -80,7 +80,7 @@ pub async fn handle_screenshot(
 }
 
 fn screenshot_context(
-    store: &dyn crate::GameStateStore,
+    store: &dyn crate::GameLogLocationQueries,
     owner_user_id: &OwnerId,
     input: &ScreenshotInput,
 ) -> Result<Option<ScreenshotContext>> {
@@ -100,7 +100,6 @@ fn screenshot_context(
         }));
     }
 
-    store.ensure_game_log_tables()?;
     let Some(location_entry) = store.location_before_or_at(owner_user_id, &input.created_at)?
     else {
         return Ok(None);

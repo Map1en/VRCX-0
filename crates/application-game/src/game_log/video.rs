@@ -173,7 +173,7 @@ pub(crate) fn video_play_entry(input: &VideoInput) -> GameLogVideoPlayEntry {
 }
 
 pub(crate) async fn handle_video_play(
-    store: &dyn crate::GameStateStore,
+    stores: &crate::GameLogStores,
     config: &dyn ConfigStore,
     video_metadata: &dyn VideoMetadataPort,
     event_bus: &RuntimeEventBus,
@@ -203,7 +203,9 @@ pub(crate) async fn handle_video_play(
     }
 
     if input.user_id.is_empty() && !input.display_name.is_empty() {
-        input.user_id = store.user_id_from_display_name(owner_user_id, &input.display_name)?;
+        input.user_id = stores
+            .player_directory
+            .user_id_from_display_name(owner_user_id, &input.display_name)?;
     }
 
     let raw_row = vec![
@@ -217,7 +219,7 @@ pub(crate) async fn handle_video_play(
         video_plays: vec![video_play_entry(&input)],
         ..Default::default()
     };
-    let affected_count = match store.write_game_log(owner_user_id, &batch) {
+    let affected_count = match stores.writer.write_game_log(owner_user_id, &batch) {
         Ok(count) => count.affected(),
         Err(error) => {
             let message = error.to_string();

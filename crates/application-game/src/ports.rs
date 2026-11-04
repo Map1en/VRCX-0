@@ -1,4 +1,5 @@
 use serde_json::Value;
+use std::sync::Arc;
 use vrcx_0_contracts::game_log::{
     GameLogJoinLeaveSnapshot, GameLogLocationSnapshot, GameLogWriteBatch, GameLogWriteCount,
     PreviousInstanceEventRow, SessionEventRow, SessionLocationSegmentRow, SessionPlayerDurationRow,
@@ -59,41 +60,15 @@ pub struct PlayerModeration {
     pub muted: bool,
 }
 
-pub trait GameStateStore: Send + Sync {
+pub trait GameLogWriter: Send + Sync {
     fn write_game_log(
         &self,
         owner: &OwnerId,
         batch: &GameLogWriteBatch,
     ) -> Result<GameLogWriteCount>;
-    fn fill_location_group_name(
-        &self,
-        owner: &OwnerId,
-        created_at: &str,
-        location: &str,
-        group_name: &str,
-    ) -> Result<u64>;
-    fn join_leave_for_location(
-        &self,
-        owner: &OwnerId,
-        location: &str,
-        after_date: &str,
-        before_date: &str,
-    ) -> Result<Vec<GameLogJoinLeaveSnapshot>>;
-    fn previous_instance_events(
-        &self,
-        owner: &OwnerId,
-        user_id: &str,
-        date_from: &str,
-        date_to: &str,
-        limit: usize,
-    ) -> Result<Vec<PreviousInstanceEventRow>>;
-    fn user_id_from_display_name(&self, owner: &OwnerId, display_name: &str) -> Result<String>;
-    fn ensure_game_log_tables(&self) -> Result<()>;
-    fn location_before_or_at(
-        &self,
-        owner: &OwnerId,
-        created_at: &str,
-    ) -> Result<Option<GameLogLocationSnapshot>>;
+}
+
+pub trait GameLogSessionQueries: Send + Sync {
     fn session_location_segments(
         &self,
         owner: &OwnerId,
@@ -118,12 +93,87 @@ pub trait GameStateStore: Send + Sync {
         owner: &OwnerId,
         locations: &[String],
     ) -> Result<Vec<SessionPlayerDurationRow>>;
+}
+
+pub trait GameLogLocationQueries: Send + Sync {
+    fn location_before_or_at(
+        &self,
+        owner: &OwnerId,
+        created_at: &str,
+    ) -> Result<Option<GameLogLocationSnapshot>>;
+    fn join_leave_for_location(
+        &self,
+        owner: &OwnerId,
+        location: &str,
+        after_date: &str,
+        before_date: &str,
+    ) -> Result<Vec<GameLogJoinLeaveSnapshot>>;
+}
+
+pub trait InstanceHistoryQueries: Send + Sync {
+    fn previous_instance_events(
+        &self,
+        owner: &OwnerId,
+        user_id: &str,
+        date_from: &str,
+        date_to: &str,
+        limit: usize,
+    ) -> Result<Vec<PreviousInstanceEventRow>>;
+}
+
+pub trait PlayerDirectoryLookup: Send + Sync {
+    fn user_id_from_display_name(&self, owner: &OwnerId, display_name: &str) -> Result<String>;
+}
+
+pub trait LocationGroupNameFiller: Send + Sync {
+    fn fill_location_group_name(
+        &self,
+        owner: &OwnerId,
+        created_at: &str,
+        location: &str,
+        group_name: &str,
+    ) -> Result<u64>;
+}
+
+pub trait FavoriteFriendGroupLookup: Send + Sync {
     fn favorite_friend_group_names_for_users(
         &self,
         owner: &OwnerId,
         user_ids: &[String],
     ) -> Result<Vec<String>>;
+}
+
+pub trait PlayerModerationLookup: Send + Sync {
     fn player_moderation(&self, owner: &OwnerId, user_id: &str) -> Result<PlayerModeration>;
+}
+
+#[derive(Clone)]
+pub struct GameLogStores {
+    pub writer: Arc<dyn GameLogWriter>,
+    pub locations: Arc<dyn GameLogLocationQueries>,
+    pub player_directory: Arc<dyn PlayerDirectoryLookup>,
+    pub group_names: Arc<dyn LocationGroupNameFiller>,
+    pub moderation: Arc<dyn PlayerModerationLookup>,
+}
+
+impl GameLogStores {
+    pub fn shared<T>(store: Arc<T>) -> Self
+    where
+        T: GameLogWriter
+            + GameLogLocationQueries
+            + PlayerDirectoryLookup
+            + LocationGroupNameFiller
+            + PlayerModerationLookup
+            + 'static,
+    {
+        Self {
+            writer: store.clone(),
+            locations: store.clone(),
+            player_directory: store.clone(),
+            group_names: store.clone(),
+            moderation: store,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -249,27 +299,7 @@ fn location_snapshot(
 }
 
 #[cfg(test)]
-impl GameStateStore for TestGameStateStore {
-    fn fill_location_group_name(
-        &self,
-        owner: &OwnerId,
-        created_at: &str,
-        location: &str,
-        group_name: &str,
-    ) -> Result<u64> {
-        let mut state = self.state.lock().expect("test game state lock");
-        let Some(row) = state.locations.iter_mut().find(|row| {
-            owner_can_read(&row.owner, owner)
-                && row.value.created_at == created_at
-                && row.value.location == location
-                && row.value.group_name.is_empty()
-        }) else {
-            return Ok(0);
-        };
-        row.value.group_name = group_name.to_string();
-        Ok(1)
-    }
-
+impl GameLogWriter for TestGameStateStore {
     fn write_game_log(
         &self,
         owner: &OwnerId,
@@ -340,130 +370,10 @@ impl GameStateStore for TestGameStateStore {
             video_names_updated: 0,
         })
     }
+}
 
-    fn join_leave_for_location(
-        &self,
-        owner: &OwnerId,
-        location: &str,
-        after_date: &str,
-        before_date: &str,
-    ) -> Result<Vec<GameLogJoinLeaveSnapshot>> {
-        let state = self.state.lock().expect("test game state lock");
-        let mut rows = state
-            .join_leave
-            .iter()
-            .enumerate()
-            .filter(|(_, row)| {
-                owner_can_read(&row.owner, owner)
-                    && row.value.location == location
-                    && row.value.created_at.as_str() >= after_date
-                    && row.value.created_at.as_str() <= before_date
-            })
-            .map(|(index, row)| GameLogJoinLeaveSnapshot {
-                id: index as i64 + 1,
-                created_at: row.value.created_at.clone(),
-                event_type: row.value.event_type.clone(),
-                display_name: row.value.display_name.clone(),
-                user_id: row.value.user_id.clone(),
-                time: row.value.time,
-            })
-            .collect::<Vec<_>>();
-        rows.sort_by(|left, right| {
-            left.created_at
-                .cmp(&right.created_at)
-                .then_with(|| left.id.cmp(&right.id))
-        });
-        Ok(rows)
-    }
-
-    fn previous_instance_events(
-        &self,
-        owner: &OwnerId,
-        user_id: &str,
-        date_from: &str,
-        date_to: &str,
-        limit: usize,
-    ) -> Result<Vec<PreviousInstanceEventRow>> {
-        let state = self.state.lock().expect("test game state lock");
-        let mut rows = state
-            .join_leave
-            .iter()
-            .enumerate()
-            .filter(|(_, row)| {
-                owner_can_read(&row.owner, owner)
-                    && row.value.user_id == user_id
-                    && row.value.created_at.as_str() >= date_from
-                    && row.value.created_at.as_str() <= date_to
-            })
-            .filter_map(|(index, event)| {
-                let location = state.locations.iter().rev().find(|location| {
-                    owner_can_read(&location.owner, owner)
-                        && location.value.location == event.value.location
-                        && location.value.created_at <= event.value.created_at
-                })?;
-                let created_at_ts = chrono::DateTime::parse_from_rfc3339(&event.value.created_at)
-                    .map(|value| value.timestamp_millis())
-                    .unwrap_or_default();
-                Some(PreviousInstanceEventRow {
-                    created_at: event.value.created_at.clone(),
-                    created_at_ts,
-                    location: event.value.location.clone(),
-                    time: location.value.time,
-                    world_name: location.value.world_name.clone(),
-                    group_name: location.value.group_name.clone(),
-                    event_id: index as i64 + 1,
-                    event_type: event.value.event_type.clone(),
-                })
-            })
-            .collect::<Vec<_>>();
-        rows.sort_by_key(|row| std::cmp::Reverse(row.event_id));
-        rows.truncate(limit);
-        Ok(rows)
-    }
-
-    fn user_id_from_display_name(&self, owner: &OwnerId, display_name: &str) -> Result<String> {
-        Ok(self
-            .state
-            .lock()
-            .expect("test game state lock")
-            .join_leave
-            .iter()
-            .rev()
-            .find(|row| {
-                owner_can_read(&row.owner, owner)
-                    && row.value.display_name == display_name
-                    && !row.value.user_id.is_empty()
-            })
-            .map(|row| row.value.user_id.clone())
-            .unwrap_or_default())
-    }
-
-    fn ensure_game_log_tables(&self) -> Result<()> {
-        self.state
-            .lock()
-            .expect("test game state lock")
-            .tables_exist = true;
-        Ok(())
-    }
-
-    fn location_before_or_at(
-        &self,
-        owner: &OwnerId,
-        created_at: &str,
-    ) -> Result<Option<GameLogLocationSnapshot>> {
-        Ok(self
-            .state
-            .lock()
-            .expect("test game state lock")
-            .locations
-            .iter()
-            .filter(|row| {
-                owner_can_read(&row.owner, owner) && row.value.created_at.as_str() <= created_at
-            })
-            .max_by(|left, right| left.value.created_at.cmp(&right.value.created_at))
-            .map(|row| location_snapshot(&row.value)))
-    }
-
+#[cfg(test)]
+impl GameLogSessionQueries for TestGameStateStore {
     fn session_location_segments(
         &self,
         owner: &OwnerId,
@@ -612,7 +522,156 @@ impl GameStateStore for TestGameStateStore {
         rows.sort_by(|left, right| left.0.cmp(&right.0).then_with(|| left.1.cmp(&right.1)));
         Ok(rows.into_iter().map(|(_, _, row)| row).collect())
     }
+}
 
+#[cfg(test)]
+impl GameLogLocationQueries for TestGameStateStore {
+    fn location_before_or_at(
+        &self,
+        owner: &OwnerId,
+        created_at: &str,
+    ) -> Result<Option<GameLogLocationSnapshot>> {
+        let mut state = self.state.lock().expect("test game state lock");
+        state.tables_exist = true;
+        Ok(state
+            .locations
+            .iter()
+            .filter(|row| {
+                owner_can_read(&row.owner, owner) && row.value.created_at.as_str() <= created_at
+            })
+            .max_by(|left, right| left.value.created_at.cmp(&right.value.created_at))
+            .map(|row| location_snapshot(&row.value)))
+    }
+
+    fn join_leave_for_location(
+        &self,
+        owner: &OwnerId,
+        location: &str,
+        after_date: &str,
+        before_date: &str,
+    ) -> Result<Vec<GameLogJoinLeaveSnapshot>> {
+        let state = self.state.lock().expect("test game state lock");
+        let mut rows = state
+            .join_leave
+            .iter()
+            .enumerate()
+            .filter(|(_, row)| {
+                owner_can_read(&row.owner, owner)
+                    && row.value.location == location
+                    && row.value.created_at.as_str() >= after_date
+                    && row.value.created_at.as_str() <= before_date
+            })
+            .map(|(index, row)| GameLogJoinLeaveSnapshot {
+                id: index as i64 + 1,
+                created_at: row.value.created_at.clone(),
+                event_type: row.value.event_type.clone(),
+                display_name: row.value.display_name.clone(),
+                user_id: row.value.user_id.clone(),
+                time: row.value.time,
+            })
+            .collect::<Vec<_>>();
+        rows.sort_by(|left, right| {
+            left.created_at
+                .cmp(&right.created_at)
+                .then_with(|| left.id.cmp(&right.id))
+        });
+        Ok(rows)
+    }
+}
+
+#[cfg(test)]
+impl InstanceHistoryQueries for TestGameStateStore {
+    fn previous_instance_events(
+        &self,
+        owner: &OwnerId,
+        user_id: &str,
+        date_from: &str,
+        date_to: &str,
+        limit: usize,
+    ) -> Result<Vec<PreviousInstanceEventRow>> {
+        let state = self.state.lock().expect("test game state lock");
+        let mut rows = state
+            .join_leave
+            .iter()
+            .enumerate()
+            .filter(|(_, row)| {
+                owner_can_read(&row.owner, owner)
+                    && row.value.user_id == user_id
+                    && row.value.created_at.as_str() >= date_from
+                    && row.value.created_at.as_str() <= date_to
+            })
+            .filter_map(|(index, event)| {
+                let location = state.locations.iter().rev().find(|location| {
+                    owner_can_read(&location.owner, owner)
+                        && location.value.location == event.value.location
+                        && location.value.created_at <= event.value.created_at
+                })?;
+                let created_at_ts = chrono::DateTime::parse_from_rfc3339(&event.value.created_at)
+                    .map(|value| value.timestamp_millis())
+                    .unwrap_or_default();
+                Some(PreviousInstanceEventRow {
+                    created_at: event.value.created_at.clone(),
+                    created_at_ts,
+                    location: event.value.location.clone(),
+                    time: location.value.time,
+                    world_name: location.value.world_name.clone(),
+                    group_name: location.value.group_name.clone(),
+                    event_id: index as i64 + 1,
+                    event_type: event.value.event_type.clone(),
+                })
+            })
+            .collect::<Vec<_>>();
+        rows.sort_by_key(|row| std::cmp::Reverse(row.event_id));
+        rows.truncate(limit);
+        Ok(rows)
+    }
+}
+
+#[cfg(test)]
+impl PlayerDirectoryLookup for TestGameStateStore {
+    fn user_id_from_display_name(&self, owner: &OwnerId, display_name: &str) -> Result<String> {
+        Ok(self
+            .state
+            .lock()
+            .expect("test game state lock")
+            .join_leave
+            .iter()
+            .rev()
+            .find(|row| {
+                owner_can_read(&row.owner, owner)
+                    && row.value.display_name == display_name
+                    && !row.value.user_id.is_empty()
+            })
+            .map(|row| row.value.user_id.clone())
+            .unwrap_or_default())
+    }
+}
+
+#[cfg(test)]
+impl LocationGroupNameFiller for TestGameStateStore {
+    fn fill_location_group_name(
+        &self,
+        owner: &OwnerId,
+        created_at: &str,
+        location: &str,
+        group_name: &str,
+    ) -> Result<u64> {
+        let mut state = self.state.lock().expect("test game state lock");
+        let Some(row) = state.locations.iter_mut().find(|row| {
+            owner_can_read(&row.owner, owner)
+                && row.value.created_at == created_at
+                && row.value.location == location
+                && row.value.group_name.is_empty()
+        }) else {
+            return Ok(0);
+        };
+        row.value.group_name = group_name.to_string();
+        Ok(1)
+    }
+}
+
+#[cfg(test)]
+impl FavoriteFriendGroupLookup for TestGameStateStore {
     fn favorite_friend_group_names_for_users(
         &self,
         _owner: &OwnerId,
@@ -620,7 +679,10 @@ impl GameStateStore for TestGameStateStore {
     ) -> Result<Vec<String>> {
         Ok(Vec::new())
     }
+}
 
+#[cfg(test)]
+impl PlayerModerationLookup for TestGameStateStore {
     fn player_moderation(&self, _owner: &OwnerId, user_id: &str) -> Result<PlayerModeration> {
         Ok(self
             .state

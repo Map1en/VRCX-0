@@ -62,7 +62,7 @@ pub enum GameLogWorkerJob {
 
 #[derive(Clone)]
 pub struct GameLogProcessorDeps {
-    pub(crate) store: Arc<dyn crate::GameStateStore>,
+    pub(crate) stores: crate::GameLogStores,
     pub(crate) config: Arc<dyn ConfigStore>,
     pub(crate) instance_media: Arc<dyn InstanceMediaPort>,
     pub(crate) video_metadata: Arc<dyn VideoMetadataPort>,
@@ -652,7 +652,8 @@ impl GameLogProcessor {
             },
             |entry| {
                 self.deps
-                    .store
+                    .stores
+                    .moderation
                     .player_moderation(&owner, &entry.user_id)
                     .unwrap_or_default()
             },
@@ -711,7 +712,7 @@ impl GameLogProcessor {
         batch: &GameLogWriteBatch,
         attempted_row_count: usize,
     ) -> Result<u64> {
-        match write_batch_with_retry(self.deps.store.as_ref(), owner_user_id, batch) {
+        match write_batch_with_retry(self.deps.stores.writer.as_ref(), owner_user_id, batch) {
             Ok(affected_count) => {
                 self.deps.sync.record(
                     "gameLog",
@@ -860,13 +861,13 @@ fn remember_error(first_error: &mut Option<Error>, error: Error) {
 }
 
 fn write_batch_with_retry(
-    store: &dyn crate::GameStateStore,
+    writer: &dyn crate::GameLogWriter,
     owner_user_id: &OwnerId,
     batch: &GameLogWriteBatch,
 ) -> Result<u64> {
     let mut delays = GAME_LOG_WRITE_RETRY_DELAYS_MS.iter();
     loop {
-        match store.write_game_log(owner_user_id, batch) {
+        match writer.write_game_log(owner_user_id, batch) {
             Ok(count) => return Ok(count.affected()),
             Err(error) => {
                 let Some(delay_ms) = delays.next() else {

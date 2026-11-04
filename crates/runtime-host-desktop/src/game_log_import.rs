@@ -37,6 +37,7 @@ pub(crate) fn import_game_log(
         .map(|path| {
             import_game_log_file(
                 &store,
+                &store,
                 config,
                 owner,
                 Path::new(path),

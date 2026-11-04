@@ -18,7 +18,7 @@ use super::processor::{
 
 #[derive(Clone)]
 pub struct GameClientRuntimeDeps {
-    pub(crate) store: Arc<dyn crate::GameStateStore>,
+    pub(crate) game_log_writer: Arc<dyn crate::GameLogWriter>,
     pub(crate) config: Arc<dyn ConfigStore>,
     pub event_bus: RuntimeEventBus,
     pub backend_status: BackendRuntimeStatusPublisher,
@@ -37,7 +37,7 @@ pub struct GameClientRuntimeDeps {
 impl GameClientRuntimeDeps {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        store: Arc<dyn crate::GameStateStore>,
+        game_log_writer: Arc<dyn crate::GameLogWriter>,
         config: Arc<dyn ConfigStore>,
         event_bus: RuntimeEventBus,
         backend_status: BackendRuntimeStatusPublisher,
@@ -53,7 +53,7 @@ impl GameClientRuntimeDeps {
         activity: Arc<dyn ActivityIngress>,
     ) -> Self {
         Self {
-            store,
+            game_log_writer,
             config,
             event_bus,
             backend_status,
@@ -83,7 +83,7 @@ impl GameClientRuntime {
         let state = Arc::new(Mutex::new(GameClientState::default()));
         let processor = GameClientProcessor::new(
             GameClientProcessorDeps {
-                store: deps.store,
+                game_log_writer: deps.game_log_writer,
                 config: deps.config,
                 event_bus: deps.event_bus.clone(),
                 backend_status: deps.backend_status,

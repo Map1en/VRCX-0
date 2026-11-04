@@ -273,7 +273,7 @@ fn build_location_inputs(rows: &[SessionLocationSegmentRow]) -> Vec<SessionLocat
 }
 
 fn load_session_events(
-    store: &dyn crate::GameStateStore,
+    store: &dyn crate::GameLogSessionQueries,
     owner_user_id: &OwnerId,
     locations: &[SessionLocationInput],
     favorite_user_ids: &HashSet<String>,
@@ -480,7 +480,7 @@ fn filter_sessions(
 }
 
 pub fn game_log_sessions_query(
-    store: &dyn crate::GameStateStore,
+    store: &dyn crate::GameLogSessionQueries,
     owner_user_id: &OwnerId,
     input: GameLogSessionsQueryInput,
 ) -> Result<Vec<GameLogSessionDto>> {

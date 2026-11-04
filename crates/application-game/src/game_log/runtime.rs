@@ -21,7 +21,7 @@ use super::runtime_state::RuntimeSnapshotStore;
 
 #[derive(Clone)]
 pub struct GameLogRuntimeDeps {
-    pub(crate) store: Arc<dyn crate::GameStateStore>,
+    pub(crate) stores: crate::GameLogStores,
     pub(crate) config: Arc<dyn ConfigStore>,
     pub(crate) instance_media: Arc<dyn InstanceMediaPort>,
     pub(crate) video_metadata: Arc<dyn VideoMetadataPort>,
@@ -42,7 +42,7 @@ pub struct GameLogRuntimeDeps {
 impl GameLogRuntimeDeps {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        store: Arc<dyn crate::GameStateStore>,
+        stores: crate::GameLogStores,
         config: Arc<dyn ConfigStore>,
         instance_media: Arc<dyn InstanceMediaPort>,
         video_metadata: Arc<dyn VideoMetadataPort>,
@@ -60,7 +60,7 @@ impl GameLogRuntimeDeps {
         instance_roster_observer: Option<Arc<dyn InstanceRosterObserver>>,
     ) -> Self {
         Self {
-            store,
+            stores,
             config,
             instance_media,
             video_metadata,
@@ -90,7 +90,7 @@ impl GameLogRuntime {
     pub fn new(deps: GameLogRuntimeDeps) -> Self {
         let session = deps.session.clone();
         let processor = GameLogProcessor::new(GameLogProcessorDeps {
-            store: deps.store,
+            stores: deps.stores,
             config: deps.config,
             instance_media: deps.instance_media,
             video_metadata: deps.video_metadata,

@@ -6,7 +6,7 @@ use vrcx_0_core::location::{
     is_real_instance, normalize_instance_type, parse_location, ParsedLocation,
 };
 
-use crate::{GameStateStore, NowPlayingSnapshot, PlayerState, Result, RuntimeSnapshot};
+use crate::{FavoriteFriendGroupLookup, NowPlayingSnapshot, PlayerState, Result, RuntimeSnapshot};
 
 use super::shared::{non_empty, BackgroundCapabilitySession};
 use vrcx_0_application_core::CurrentUserSnapshot;
@@ -64,7 +64,7 @@ pub struct PresencePlayer {
 }
 
 pub fn build_background_presence_facts(
-    store: &dyn GameStateStore,
+    store: &dyn FavoriteFriendGroupLookup,
     input: BackgroundPresenceFactsInput<'_>,
 ) -> Result<BackgroundPresenceFacts> {
     let current_user = ensure_current_user_id(
@@ -179,7 +179,7 @@ fn normalize_runtime_players(players: &[PlayerState]) -> Vec<PresencePlayer> {
 }
 
 fn collect_present_favorite_group_keys(
-    store: &dyn GameStateStore,
+    store: &dyn FavoriteFriendGroupLookup,
     owner_user_id: &OwnerId,
     players: &[PresencePlayer],
     favorite_friend_groups_by_key: &HashMap<String, Vec<String>>,
@@ -293,6 +293,7 @@ mod tests {
 #[cfg(test)]
 mod roster_tests {
     use super::*;
+    use crate::GameLogWriter;
 
     #[test]
     fn authoritative_empty_roster_is_not_replaced_by_database_history() {

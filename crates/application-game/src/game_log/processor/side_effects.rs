@@ -26,7 +26,7 @@ use vrcx_0_core::OwnerId;
 
 #[derive(Clone)]
 pub(super) struct GameLogSideEffectDeps {
-    store: Arc<dyn crate::GameStateStore>,
+    stores: crate::GameLogStores,
     config: Arc<dyn ConfigStore>,
     instance_media: Arc<dyn InstanceMediaPort>,
     video_metadata: Arc<dyn VideoMetadataPort>,
@@ -52,7 +52,7 @@ impl GameLogSideEffectDeps {
         let auth_scope_snapshot = deps.auth_scope.snapshot();
         let auth_identity = deps.auth_scope.identity();
         Self {
-            store: Arc::clone(&deps.store),
+            stores: deps.stores.clone(),
             config: Arc::clone(&deps.config),
             instance_media: Arc::clone(&deps.instance_media),
             video_metadata: Arc::clone(&deps.video_metadata),
@@ -96,7 +96,7 @@ pub(super) fn dispatch_side_effect(
                 .clone()
                 .spawn_cancellable(move |stop_token| async move {
                     match runtime_video::handle_video_play(
-                        deps.store.as_ref(),
+                        &deps.stores,
                         deps.config.as_ref(),
                         deps.video_metadata.as_ref(),
                         &deps.event_bus,
@@ -145,7 +145,8 @@ pub(super) fn dispatch_side_effect(
                     ..Default::default()
                 };
                 if let Err(error) = deps
-                    .store
+                    .stores
+                    .writer
                     .write_game_log(&OwnerId::new(deps.auth_identity.user_id.clone()), &batch)
                 {
                     tracing::warn!("GameLog video name update failed: {error}");
@@ -201,7 +202,7 @@ pub(super) fn dispatch_side_effect(
         GameLogSideEffect::Screenshot(input) => {
             deps.tasks.clone().spawn(async move {
                 if let Err(error) = runtime_screenshot::handle_screenshot(
-                    deps.store.as_ref(),
+                    deps.stores.locations.as_ref(),
                     deps.config.as_ref(),
                     Arc::clone(&deps.host_actions),
                     &deps.side_effect_sink,
@@ -304,7 +305,7 @@ async fn fill_location_group_name(
     if group_name.is_empty() {
         return Ok(());
     }
-    deps.store.fill_location_group_name(
+    deps.stores.group_names.fill_location_group_name(
         &OwnerId::new(deps.auth_identity.user_id.clone()),
         created_at,
         location,
