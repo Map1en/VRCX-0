@@ -67,6 +67,16 @@ export const CHATBOX_PRESET_GROUPS: ChatboxPresetGroup[] = [
                 id: 'stats-brackets',
                 template: literal('[CPU {cpu}] [RAM {memory}]'),
                 formats: { cpuDecimals: 1 }
+            },
+            { id: 'stats-gpu', template: literal('GPU {gpu} · {gputemp}') },
+            {
+                id: 'stats-vram',
+                template: literal('GPU {gpu} | VRAM {vram}'),
+                formats: { vram: 'usedOfTotal', vramDecimals: 1 }
+            },
+            {
+                id: 'stats-all',
+                template: literal('CPU {cpu} · GPU {gpu} · RAM {memory}')
             }
         ]
     },

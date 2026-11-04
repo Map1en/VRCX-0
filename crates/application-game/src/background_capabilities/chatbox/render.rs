@@ -19,11 +19,20 @@ pub struct ChatboxSystemStats {
     pub memory_total_bytes: u64,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct ChatboxGpuStats {
+    pub usage_percent: Option<f32>,
+    pub vram_used_bytes: Option<u64>,
+    pub vram_total_bytes: Option<u64>,
+    pub temperature_celsius: Option<f32>,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct ChatboxFacts {
     pub local_time: NaiveTime,
     pub media: Option<ChatboxMedia>,
     pub system: Option<ChatboxSystemStats>,
+    pub gpu: Option<ChatboxGpuStats>,
     pub game_session_seconds: Option<u64>,
 }
 

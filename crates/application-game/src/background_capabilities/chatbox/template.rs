@@ -1,7 +1,10 @@
 use chrono::Timelike;
 use serde::Serialize;
 
-use super::config::{ChatboxFormats, ChatboxMemoryFormat, ChatboxMemoryUnit, ChatboxProgressStyle};
+use super::config::{
+    ChatboxFormats, ChatboxMemoryFormat, ChatboxMemoryUnit, ChatboxProgressStyle,
+    ChatboxTemperatureUnit,
+};
 use super::render::{ChatboxFacts, ChatboxMedia};
 
 const PROGRESS_SLOTS: u64 = 10;
@@ -20,11 +23,15 @@ pub enum ChatboxVariable {
     Duration,
     Cpu,
     Memory,
+    Gpu,
+    Vram,
+    #[serde(rename = "gputemp")]
+    GpuTemp,
     Session,
 }
 
 impl ChatboxVariable {
-    pub const ALL: [Self; 10] = [
+    pub const ALL: [Self; 13] = [
         Self::Time,
         Self::Track,
         Self::Title,
@@ -34,6 +41,9 @@ impl ChatboxVariable {
         Self::Duration,
         Self::Cpu,
         Self::Memory,
+        Self::Gpu,
+        Self::Vram,
+        Self::GpuTemp,
         Self::Session,
     ];
 
@@ -48,6 +58,9 @@ impl ChatboxVariable {
             Self::Duration => "duration",
             Self::Cpu => "cpu",
             Self::Memory => "memory",
+            Self::Gpu => "gpu",
+            Self::Vram => "vram",
+            Self::GpuTemp => "gputemp",
             Self::Session => "session",
         }
     }
@@ -74,8 +87,13 @@ impl ChatboxVariable {
         matches!(self, Self::Cpu | Self::Memory)
     }
 
+    pub(super) fn needs_gpu(self) -> bool {
+        matches!(self, Self::Gpu | Self::Vram | Self::GpuTemp)
+    }
+
     fn value(self, facts: &ChatboxFacts, formats: &ChatboxFormats) -> Option<String> {
         let media = || facts.media.as_ref();
+        let gpu = || facts.gpu.as_ref();
         match self {
             Self::Time => Some(clock(facts, formats)),
             Self::Track => media().map(track),
@@ -102,7 +120,37 @@ impl ChatboxVariable {
             Self::Memory => facts
                 .system
                 .filter(|stats| stats.memory_total_bytes > 0)
-                .map(|stats| memory(stats.memory_used_bytes, stats.memory_total_bytes, formats)),
+                .map(|stats| {
+                    memory(
+                        stats.memory_used_bytes,
+                        stats.memory_total_bytes,
+                        MemoryStyle {
+                            format: formats.memory,
+                            decimals: formats.memory_decimals,
+                            unit: formats.memory_unit,
+                        },
+                    )
+                }),
+            Self::Gpu => gpu()
+                .and_then(|gpu| gpu.usage_percent)
+                .map(|percent| format!("{:.*}%", usize::from(formats.gpu_decimals), percent)),
+            Self::Vram => gpu()
+                .and_then(|gpu| Some((gpu.vram_used_bytes?, gpu.vram_total_bytes?)))
+                .filter(|(_, total)| *total > 0)
+                .map(|(used, total)| {
+                    memory(
+                        used,
+                        total,
+                        MemoryStyle {
+                            format: formats.vram,
+                            decimals: formats.vram_decimals,
+                            unit: formats.vram_unit,
+                        },
+                    )
+                }),
+            Self::GpuTemp => gpu()
+                .and_then(|gpu| gpu.temperature_celsius)
+                .map(|celsius| temperature(celsius, formats.temperature_unit)),
             Self::Session => facts
                 .game_session_seconds
                 .map(|seconds| session(seconds, formats.show_seconds)),
@@ -227,15 +275,21 @@ fn session(seconds: u64, show_seconds: bool) -> String {
     }
 }
 
-fn memory(used_bytes: u64, total_bytes: u64, formats: &ChatboxFormats) -> String {
-    let decimals = usize::from(formats.memory_decimals);
-    let (divisor, unit) = match formats.memory_unit {
+struct MemoryStyle {
+    format: ChatboxMemoryFormat,
+    decimals: u8,
+    unit: ChatboxMemoryUnit,
+}
+
+fn memory(used_bytes: u64, total_bytes: u64, style: MemoryStyle) -> String {
+    let decimals = usize::from(style.decimals);
+    let (divisor, unit) = match style.unit {
         ChatboxMemoryUnit::Gb => (BYTES_PER_GIB, "GB"),
         ChatboxMemoryUnit::Mb => (BYTES_PER_MIB, "MB"),
     };
     let used = used_bytes as f64 / divisor;
     let total = total_bytes as f64 / divisor;
-    match formats.memory {
+    match style.format {
         ChatboxMemoryFormat::Percent => {
             format!(
                 "{:.*}%",
@@ -246,6 +300,13 @@ fn memory(used_bytes: u64, total_bytes: u64, formats: &ChatboxFormats) -> String
         ChatboxMemoryFormat::Used => format!("{used:.decimals$} {unit}"),
         ChatboxMemoryFormat::UsedOfTotal => format!("{used:.decimals$}/{total:.decimals$} {unit}"),
         ChatboxMemoryFormat::Total => format!("{total:.decimals$} {unit}"),
+    }
+}
+
+fn temperature(celsius: f32, unit: ChatboxTemperatureUnit) -> String {
+    match unit {
+        ChatboxTemperatureUnit::Celsius => format!("{celsius:.0}°C"),
+        ChatboxTemperatureUnit::Fahrenheit => format!("{:.0}°F", celsius * 9.0 / 5.0 + 32.0),
     }
 }
 

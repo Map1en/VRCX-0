@@ -2811,6 +2811,9 @@
                     "duration": "Length",
                     "cpu": "CPU usage",
                     "memory": "RAM",
+                    "gpu": "GPU usage",
+                    "vram": "VRAM",
+                    "gputemp": "GPU temperature",
                     "session": "Session time"
                 },
                 "formats": {
@@ -2824,6 +2827,10 @@
                     "memory_total": "Total",
                     "memory_decimals": "RAM decimals",
                     "memory_unit": "Unit",
+                    "gpu_decimals": "GPU decimals",
+                    "vram": "VRAM shows",
+                    "vram_decimals": "VRAM decimals",
+                    "temperature_unit": "Temperature unit",
                     "progress": "Bar"
                 },
                 "presets": {

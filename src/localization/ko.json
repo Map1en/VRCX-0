@@ -2741,6 +2741,9 @@
                     "duration": "곡 길이",
                     "cpu": "CPU 사용률",
                     "memory": "메모리",
+                    "gpu": "GPU 사용률",
+                    "vram": "VRAM",
+                    "gputemp": "GPU 온도",
                     "session": "이번 플레이 시간"
                 },
                 "formats": {
@@ -2754,6 +2757,10 @@
                     "memory_total": "전체",
                     "memory_decimals": "메모리 소수 자릿수",
                     "memory_unit": "단위",
+                    "gpu_decimals": "GPU 소수 자릿수",
+                    "vram": "VRAM 표시",
+                    "vram_decimals": "VRAM 소수 자릿수",
+                    "temperature_unit": "온도 단위",
                     "progress": "바"
                 },
                 "presets": {

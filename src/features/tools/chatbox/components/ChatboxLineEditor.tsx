@@ -7,7 +7,8 @@ import type {
     ChatboxMemoryFormat,
     ChatboxMemoryUnit,
     ChatboxPageLine,
-    ChatboxProgressStyle
+    ChatboxProgressStyle,
+    ChatboxTemperatureUnit
 } from '@/platform/tauri/bindings';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -46,6 +47,11 @@ const MEMORY_FORMATS: ChatboxMemoryFormat[] = [
     'total'
 ];
 const MEMORY_UNITS: ChatboxMemoryUnit[] = ['gb', 'mb'];
+const TEMPERATURE_UNITS: ChatboxTemperatureUnit[] = ['celsius', 'fahrenheit'];
+const TEMPERATURE_SYMBOLS: Record<ChatboxTemperatureUnit, string> = {
+    celsius: '°C',
+    fahrenheit: '°F'
+};
 const PROGRESS_STYLES: ChatboxProgressStyle[] = ['line', 'blocks', 'dots'];
 const PROGRESS_SAMPLES: Record<ChatboxProgressStyle, string> = {
     line: '━━━●─────',
@@ -247,37 +253,57 @@ function FormatControls({
     }
     if (used.has('memory')) {
         controls.push(
+            ...memoryControls({
+                key: 'memory',
+                label,
+                decimals,
+                format: formats.memory,
+                decimalsValue: formats.memoryDecimals,
+                unit: formats.memoryUnit,
+                onFormat: (memory) => onChange({ memory }),
+                onDecimals: (memoryDecimals) => onChange({ memoryDecimals }),
+                onUnit: (memoryUnit) => onChange({ memoryUnit })
+            })
+        );
+    }
+    if (used.has('gpu')) {
+        controls.push(
             <FormatSelect
-                key="memory"
-                label={label('memory')}
-                value={formats.memory}
-                options={MEMORY_FORMATS}
-                optionLabel={(value) => label(`memory_${value}`)}
-                onChange={(memory) => onChange({ memory })}
-            />,
-            <FormatSelect
-                key="memory-decimals"
-                label={label('memory_decimals')}
-                value={String(formats.memoryDecimals)}
+                key="gpu"
+                label={label('gpu_decimals')}
+                value={String(formats.gpuDecimals)}
                 options={decimals}
                 optionLabel={(value) => value}
-                onChange={(value) =>
-                    onChange({ memoryDecimals: Number(value) })
-                }
+                onChange={(value) => onChange({ gpuDecimals: Number(value) })}
             />
         );
-        if (formats.memory !== 'percent') {
-            controls.push(
-                <FormatSelect
-                    key="memory-unit"
-                    label={label('memory_unit')}
-                    value={formats.memoryUnit}
-                    options={MEMORY_UNITS}
-                    optionLabel={(value) => value.toUpperCase()}
-                    onChange={(memoryUnit) => onChange({ memoryUnit })}
-                />
-            );
-        }
+    }
+    if (used.has('vram')) {
+        controls.push(
+            ...memoryControls({
+                key: 'vram',
+                label,
+                decimals,
+                format: formats.vram,
+                decimalsValue: formats.vramDecimals,
+                unit: formats.vramUnit,
+                onFormat: (vram) => onChange({ vram }),
+                onDecimals: (vramDecimals) => onChange({ vramDecimals }),
+                onUnit: (vramUnit) => onChange({ vramUnit })
+            })
+        );
+    }
+    if (used.has('gputemp')) {
+        controls.push(
+            <FormatSelect
+                key="temperature-unit"
+                label={label('temperature_unit')}
+                value={formats.temperatureUnit}
+                options={TEMPERATURE_UNITS}
+                optionLabel={(value) => TEMPERATURE_SYMBOLS[value]}
+                onChange={(temperatureUnit) => onChange({ temperatureUnit })}
+            />
+        );
     }
     if (used.has('progress')) {
         controls.push(
@@ -297,6 +323,60 @@ function FormatControls({
             {controls}
         </div>
     ) : null;
+}
+
+function memoryControls({
+    key,
+    label,
+    decimals,
+    format,
+    decimalsValue,
+    unit,
+    onFormat,
+    onDecimals,
+    onUnit
+}: {
+    key: 'memory' | 'vram';
+    label(key: string): string;
+    decimals: string[];
+    format: ChatboxMemoryFormat;
+    decimalsValue: number;
+    unit: ChatboxMemoryUnit;
+    onFormat(format: ChatboxMemoryFormat): void;
+    onDecimals(decimals: number): void;
+    onUnit(unit: ChatboxMemoryUnit): void;
+}) {
+    const controls = [
+        <FormatSelect
+            key={key}
+            label={label(key)}
+            value={format}
+            options={MEMORY_FORMATS}
+            optionLabel={(value) => label(`memory_${value}`)}
+            onChange={onFormat}
+        />,
+        <FormatSelect
+            key={`${key}-decimals`}
+            label={label(`${key}_decimals`)}
+            value={String(decimalsValue)}
+            options={decimals}
+            optionLabel={(value) => value}
+            onChange={(value) => onDecimals(Number(value))}
+        />
+    ];
+    if (format !== 'percent') {
+        controls.push(
+            <FormatSelect
+                key={`${key}-unit`}
+                label={label('memory_unit')}
+                value={unit}
+                options={MEMORY_UNITS}
+                optionLabel={(value) => value.toUpperCase()}
+                onChange={onUnit}
+            />
+        );
+    }
+    return controls;
 }
 
 function FormatSwitch({

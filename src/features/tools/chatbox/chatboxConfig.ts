@@ -24,6 +24,9 @@ export const CHATBOX_VARIABLE_LABEL_KEYS: Record<ChatboxVariable, string> = {
     duration: 'view.tools.chatbox.variables.duration',
     cpu: 'view.tools.chatbox.variables.cpu',
     memory: 'view.tools.chatbox.variables.memory',
+    gpu: 'view.tools.chatbox.variables.gpu',
+    vram: 'view.tools.chatbox.variables.vram',
+    gputemp: 'view.tools.chatbox.variables.gputemp',
     session: 'view.tools.chatbox.variables.session'
 };
 

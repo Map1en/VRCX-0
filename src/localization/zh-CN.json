@@ -2804,6 +2804,9 @@
                     "duration": "总时长",
                     "cpu": "CPU 占用",
                     "memory": "内存",
+                    "gpu": "显卡占用",
+                    "vram": "显存",
+                    "gputemp": "显卡温度",
                     "session": "本次游戏时长"
                 },
                 "formats": {
@@ -2817,6 +2820,10 @@
                     "memory_total": "总量",
                     "memory_decimals": "内存小数位",
                     "memory_unit": "单位",
+                    "gpu_decimals": "显卡小数位",
+                    "vram": "显存显示",
+                    "vram_decimals": "显存小数位",
+                    "temperature_unit": "温度单位",
                     "progress": "进度条"
                 },
                 "presets": {

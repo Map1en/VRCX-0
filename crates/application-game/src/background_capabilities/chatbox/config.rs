@@ -108,6 +108,13 @@ pub enum ChatboxMemoryUnit {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
+pub enum ChatboxTemperatureUnit {
+    Celsius,
+    Fahrenheit,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub enum ChatboxProgressStyle {
     Line,
     Blocks,
@@ -123,6 +130,11 @@ pub struct ChatboxFormats {
     pub memory: ChatboxMemoryFormat,
     pub memory_decimals: u8,
     pub memory_unit: ChatboxMemoryUnit,
+    pub gpu_decimals: u8,
+    pub vram: ChatboxMemoryFormat,
+    pub vram_decimals: u8,
+    pub vram_unit: ChatboxMemoryUnit,
+    pub temperature_unit: ChatboxTemperatureUnit,
     pub progress: ChatboxProgressStyle,
 }
 
@@ -135,6 +147,11 @@ impl Default for ChatboxFormats {
             memory: ChatboxMemoryFormat::Percent,
             memory_decimals: 0,
             memory_unit: ChatboxMemoryUnit::Gb,
+            gpu_decimals: 0,
+            vram: ChatboxMemoryFormat::Percent,
+            vram_decimals: 0,
+            vram_unit: ChatboxMemoryUnit::Gb,
+            temperature_unit: ChatboxTemperatureUnit::Celsius,
             progress: ChatboxProgressStyle::Line,
         }
     }
@@ -277,6 +294,8 @@ impl ChatboxPageLine {
             formats: ChatboxFormats {
                 cpu_decimals: self.formats.cpu_decimals.min(max_decimals),
                 memory_decimals: self.formats.memory_decimals.min(max_decimals),
+                gpu_decimals: self.formats.gpu_decimals.min(max_decimals),
+                vram_decimals: self.formats.vram_decimals.min(max_decimals),
                 ..self.formats
             },
         }

@@ -7,11 +7,12 @@ use vrcx_0_application_core::{HostSessionRuntime, RuntimeEventBus};
 use vrcx_0_application_game::chatbox::{
     build_chatbox_facts, render_line_previews, sample_chatbox_facts, ChatboxConfig,
     ChatboxEditorState, ChatboxFactNeeds, ChatboxFactSources, ChatboxFacts, ChatboxFormats,
-    ChatboxGate, ChatboxHeadset, ChatboxLabels, ChatboxLinePreviewInput, ChatboxMedia,
-    ChatboxPauseReason, ChatboxScheduler, ChatboxSendOutcome, ChatboxStatus, ChatboxSystemStats,
-    ChatboxTickInput, ChatboxVariable, CHATBOX_CONFIG_KEY, CHATBOX_LIMITS,
+    ChatboxGate, ChatboxGpuStats, ChatboxHeadset, ChatboxLabels, ChatboxLinePreviewInput,
+    ChatboxMedia, ChatboxPauseReason, ChatboxScheduler, ChatboxSendOutcome, ChatboxStatus,
+    ChatboxSystemStats, ChatboxTickInput, ChatboxVariable, CHATBOX_CONFIG_KEY, CHATBOX_LIMITS,
 };
 use vrcx_0_application_game::IS_GAME_NO_VR_CONFIG_KEY;
+use vrcx_0_host_desktop::gpu_usage::GpuUsageSampler;
 use vrcx_0_host_desktop::media_session::current_media_session;
 use vrcx_0_host_desktop::osc_udp::OscUdpSender;
 use vrcx_0_host_desktop::system_usage::SystemUsageSampler;
@@ -37,6 +38,7 @@ struct ChatboxRuntimeState {
     scheduler: ChatboxScheduler,
     sender: OscUdpSender,
     system_usage: SystemUsageSampler,
+    gpu_usage: GpuUsageSampler,
     settings: Option<ChatboxSettings>,
     status: Option<ChatboxStatus>,
 }
@@ -174,11 +176,22 @@ impl ChatboxRuntime {
                 memory_used_bytes: usage.memory_used_bytes,
                 memory_total_bytes: usage.memory_total_bytes,
             });
+        let gpu = needs
+            .gpu
+            .then(|| state.gpu_usage.sample())
+            .flatten()
+            .map(|usage| ChatboxGpuStats {
+                usage_percent: usage.usage_percent,
+                vram_used_bytes: usage.vram_used_bytes,
+                vram_total_bytes: usage.vram_total_bytes,
+                temperature_celsius: usage.temperature_celsius,
+            });
         build_chatbox_facts(ChatboxFactSources {
             local_time: Local::now().time(),
             now: Utc::now(),
             media_session,
             system,
+            gpu,
             is_game_running,
             last_game_started_at,
         })

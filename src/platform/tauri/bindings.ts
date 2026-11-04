@@ -4092,6 +4092,11 @@ export type ChatboxFormats = {
     memory: ChatboxMemoryFormat;
     memoryDecimals: number;
     memoryUnit: ChatboxMemoryUnit;
+    gpuDecimals: number;
+    vram: ChatboxMemoryFormat;
+    vramDecimals: number;
+    vramUnit: ChatboxMemoryUnit;
+    temperatureUnit: ChatboxTemperatureUnit;
     progress: ChatboxProgressStyle;
 };
 export type ChatboxLimits = {
@@ -4145,6 +4150,7 @@ export type ChatboxStatus = {
     manualAfk: boolean;
     vrMode: boolean;
 };
+export type ChatboxTemperatureUnit = 'celsius' | 'fahrenheit';
 export type ChatboxVariable =
     | 'time'
     | 'track'
@@ -4155,6 +4161,9 @@ export type ChatboxVariable =
     | 'duration'
     | 'cpu'
     | 'memory'
+    | 'gpu'
+    | 'vram'
+    | 'gputemp'
     | 'session';
 export type CleanupWarning = {
     kind: CleanupWarningKind;

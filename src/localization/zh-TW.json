@@ -2804,6 +2804,9 @@
                     "duration": "總長度",
                     "cpu": "CPU 使用率",
                     "memory": "記憶體",
+                    "gpu": "顯示卡使用率",
+                    "vram": "VRAM",
+                    "gputemp": "顯示卡溫度",
                     "session": "本次遊戲時長"
                 },
                 "formats": {
@@ -2817,6 +2820,10 @@
                     "memory_total": "總量",
                     "memory_decimals": "記憶體小數位",
                     "memory_unit": "單位",
+                    "gpu_decimals": "顯示卡小數位",
+                    "vram": "VRAM 顯示",
+                    "vram_decimals": "VRAM 小數位",
+                    "temperature_unit": "溫度單位",
                     "progress": "進度條"
                 },
                 "presets": {

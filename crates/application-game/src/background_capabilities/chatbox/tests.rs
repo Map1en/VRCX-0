@@ -15,6 +15,7 @@ fn facts() -> ChatboxFacts {
         local_time: NaiveTime::from_hms_opt(21, 5, 9).unwrap(),
         media: None,
         system: None,
+        gpu: None,
         game_session_seconds: None,
     }
 }
@@ -231,6 +232,58 @@ fn cpu_and_memory_follow_decimals_mode_and_unit() {
     assert_eq!(
         rendered(ChatboxMemoryFormat::Total, 0, ChatboxMemoryUnit::Gb).as_deref(),
         Some("CPU 23.46% | RAM 32 GB")
+    );
+}
+
+#[test]
+fn gpu_variables_follow_their_formats() {
+    let facts = ChatboxFacts {
+        gpu: Some(ChatboxGpuStats {
+            usage_percent: Some(41.56),
+            vram_used_bytes: Some(6 * GIB + GIB / 4),
+            vram_total_bytes: Some(12 * GIB),
+            temperature_celsius: Some(62.4),
+        }),
+        ..facts()
+    };
+    let formats = ChatboxFormats {
+        gpu_decimals: 1,
+        vram: ChatboxMemoryFormat::UsedOfTotal,
+        vram_decimals: 1,
+        ..ChatboxFormats::default()
+    };
+
+    assert_eq!(
+        render(
+            module_with(&["GPU {gpu} {gputemp} | VRAM {vram}"], formats),
+            facts.clone()
+        )
+        .as_deref(),
+        Some("GPU 41.6% 62°C | VRAM 6.2/12.0 GB")
+    );
+    let fahrenheit = ChatboxFormats {
+        temperature_unit: ChatboxTemperatureUnit::Fahrenheit,
+        ..ChatboxFormats::default()
+    };
+    assert_eq!(
+        render(module_with(&["{gputemp} {vram}"], fahrenheit), facts).as_deref(),
+        Some("144°F 52%")
+    );
+}
+
+#[test]
+fn gpu_lines_hide_when_the_reading_is_unavailable() {
+    let facts = ChatboxFacts {
+        gpu: Some(ChatboxGpuStats {
+            usage_percent: Some(12.0),
+            ..ChatboxGpuStats::default()
+        }),
+        ..facts()
+    };
+
+    assert_eq!(
+        render(module(&["GPU {gpu}", "{gputemp}", "VRAM {vram}"]), facts).as_deref(),
+        Some("GPU 12%")
     );
 }
 
@@ -517,7 +570,7 @@ fn facts_are_only_read_for_variables_the_templates_use() {
         config.fact_needs(false),
         ChatboxFactNeeds {
             media: true,
-            system: false
+            ..ChatboxFactNeeds::default()
         }
     );
 
@@ -525,10 +578,20 @@ fn facts_are_only_read_for_variables_the_templates_use() {
     assert_eq!(
         config.fact_needs(false),
         ChatboxFactNeeds {
-            media: false,
-            system: true
+            system: true,
+            ..ChatboxFactNeeds::default()
         }
     );
+
+    config.pages[0].lines[0].template = "GPU {gpu} {gputemp}".into();
+    assert_eq!(
+        config.fact_needs(false),
+        ChatboxFactNeeds {
+            gpu: true,
+            ..ChatboxFactNeeds::default()
+        }
+    );
+    config.pages[0].lines[0].template = "RAM {memory}".into();
 
     config.pages[0].enabled = false;
     assert_eq!(config.fact_needs(true), ChatboxFactNeeds::default());
@@ -564,6 +627,7 @@ fn fact_sources() -> ChatboxFactSources<'static> {
         now: now(),
         media_session: None,
         system: None,
+        gpu: None,
         is_game_running: true,
         last_game_started_at: Some("2026-11-03T10:30:00Z"),
     }

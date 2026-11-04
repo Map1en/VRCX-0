@@ -2825,6 +2825,9 @@
                     "duration": "Длительность",
                     "cpu": "Загрузка CPU",
                     "memory": "ОЗУ",
+                    "gpu": "Загрузка GPU",
+                    "vram": "Видеопамять",
+                    "gputemp": "Температура GPU",
                     "session": "Время этой сессии"
                 },
                 "formats": {
@@ -2838,6 +2841,10 @@
                     "memory_total": "Всего",
                     "memory_decimals": "Знаки ОЗУ после запятой",
                     "memory_unit": "Единица",
+                    "gpu_decimals": "Знаки GPU после запятой",
+                    "vram": "Видеопамять показывает",
+                    "vram_decimals": "Знаки видеопамяти после запятой",
+                    "temperature_unit": "Единица температуры",
                     "progress": "Полоса"
                 },
                 "presets": {

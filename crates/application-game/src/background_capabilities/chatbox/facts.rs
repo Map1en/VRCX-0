@@ -3,13 +3,14 @@ use serde::Deserialize;
 use vrcx_0_osc::fit_chatbox_text;
 
 use super::config::{ChatboxConfig, ChatboxFormats};
-use super::render::{ChatboxFacts, ChatboxMedia, ChatboxSystemStats};
+use super::render::{ChatboxFacts, ChatboxGpuStats, ChatboxMedia, ChatboxSystemStats};
 use super::template::{render_template, template_variables};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct ChatboxFactNeeds {
     pub media: bool,
     pub system: bool,
+    pub gpu: bool,
 }
 
 impl ChatboxConfig {
@@ -22,6 +23,7 @@ impl ChatboxConfig {
             |needs, variable| ChatboxFactNeeds {
                 media: needs.media || variable.needs_media(),
                 system: needs.system || variable.needs_system(),
+                gpu: needs.gpu || variable.needs_gpu(),
             },
         )
     }
@@ -48,6 +50,7 @@ pub struct ChatboxFactSources<'a> {
     pub now: DateTime<Utc>,
     pub media_session: Option<ChatboxMedia>,
     pub system: Option<ChatboxSystemStats>,
+    pub gpu: Option<ChatboxGpuStats>,
     pub is_game_running: bool,
     pub last_game_started_at: Option<&'a str>,
 }
@@ -59,6 +62,7 @@ pub fn build_chatbox_facts(sources: ChatboxFactSources<'_>) -> ChatboxFacts {
             .media_session
             .filter(|media| !media.title.trim().is_empty()),
         system: sources.system,
+        gpu: sources.gpu,
         game_session_seconds: game_session_seconds(
             sources.is_game_running,
             sources.last_game_started_at,
@@ -81,6 +85,12 @@ pub fn sample_chatbox_facts(local_time: NaiveTime) -> ChatboxFacts {
             cpu_percent: 23.4,
             memory_used_bytes: 9 * GIB,
             memory_total_bytes: 32 * GIB,
+        }),
+        gpu: Some(ChatboxGpuStats {
+            usage_percent: Some(41.6),
+            vram_used_bytes: Some(6 * GIB + GIB / 4),
+            vram_total_bytes: Some(12 * GIB),
+            temperature_celsius: Some(62.0),
         }),
         game_session_seconds: Some(3_900),
     }

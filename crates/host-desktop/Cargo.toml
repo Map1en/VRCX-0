@@ -53,12 +53,15 @@ windows-sys = { version = "0.61", features = [
 windows = { version = "0.62", features = [
     "Foundation",
     "Media_Control",
+    "Wdk_Graphics_Direct3D",
     "Win32_Foundation",
     "Win32_Globalization",
+    "Win32_Graphics_Dxgi",
     "Win32_Graphics_Gdi",
     "Win32_Media_Speech",
     "Win32_System_Com",
     "Win32_System_LibraryLoader",
+    "Win32_System_Performance",
     "Win32_UI_HiDpi",
     "Win32_UI_Shell",
     "Win32_UI_WindowsAndMessaging"

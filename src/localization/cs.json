@@ -2827,6 +2827,9 @@
                     "duration": "Délka",
                     "cpu": "Vytížení CPU",
                     "memory": "RAM",
+                    "gpu": "Vytížení GPU",
+                    "vram": "VRAM",
+                    "gputemp": "Teplota GPU",
                     "session": "Čas této hry"
                 },
                 "formats": {
@@ -2840,6 +2843,10 @@
                     "memory_total": "Celkem",
                     "memory_decimals": "Desetinná místa RAM",
                     "memory_unit": "Jednotka",
+                    "gpu_decimals": "Desetinná místa GPU",
+                    "vram": "VRAM zobrazí",
+                    "vram_decimals": "Desetinná místa VRAM",
+                    "temperature_unit": "Jednotka teploty",
                     "progress": "Ukazatel"
                 },
                 "presets": {

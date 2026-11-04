@@ -29,6 +29,11 @@ const FORMATS: ChatboxFormats = {
     memory: 'percent',
     memoryDecimals: 0,
     memoryUnit: 'gb',
+    gpuDecimals: 0,
+    vram: 'percent',
+    vramDecimals: 0,
+    vramUnit: 'gb',
+    temperatureUnit: 'celsius',
     progress: 'line'
 };
 

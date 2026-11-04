@@ -2800,6 +2800,9 @@
                     "duration": "曲の長さ",
                     "cpu": "CPU 使用率",
                     "memory": "メモリ",
+                    "gpu": "GPU 使用率",
+                    "vram": "VRAM",
+                    "gputemp": "GPU 温度",
                     "session": "今回のプレイ時間"
                 },
                 "formats": {
@@ -2813,6 +2816,10 @@
                     "memory_total": "合計",
                     "memory_decimals": "メモリの小数桁",
                     "memory_unit": "単位",
+                    "gpu_decimals": "GPU の小数桁",
+                    "vram": "VRAM の表示",
+                    "vram_decimals": "VRAM の小数桁",
+                    "temperature_unit": "温度の単位",
                     "progress": "バー"
                 },
                 "presets": {
