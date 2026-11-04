@@ -277,6 +277,7 @@ fn split_open_turns(history: &[Message]) -> Vec<OpenTurn> {
                         name: record.name.clone(),
                         arguments: record.arguments.clone(),
                     },
+                    extra_content: None,
                 });
             }
             Role::ToolResult => {
