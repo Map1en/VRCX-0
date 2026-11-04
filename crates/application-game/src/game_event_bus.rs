@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use vrcx_0_application_core::RuntimeEventPayload;
+use vrcx_0_contracts::RuntimeEventPayload;
 
 use crate::{DebugLoggingOutcome, GameLogProjection, RuntimeEventBus};
 
@@ -346,7 +346,8 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     use serde_json::json;
-    use vrcx_0_application_core::{RuntimeEventBus, RuntimeEventPayload, RuntimeEventSink};
+    use vrcx_0_application_core::{RuntimeEventBus, RuntimeEventSink};
+    use vrcx_0_contracts::RuntimeEventPayload;
 
     use super::{
         CrashRelaunchDecisionPayload, EmptyEventPayload, GameClientEvent, GameLogSideEffectEvent,

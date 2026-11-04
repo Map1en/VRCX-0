@@ -1,5 +1,5 @@
 use serde::Serialize;
-use vrcx_0_application_core::RuntimeEventPayload;
+use vrcx_0_contracts::RuntimeEventPayload;
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::json::{RawJson, RawJsonObject};
 use vrcx_0_core::presence::PresenceEntry;

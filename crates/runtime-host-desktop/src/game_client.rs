@@ -8,12 +8,13 @@ use vrcx_0_application_core::Error as RuntimeError;
 use vrcx_0_application_core::Result as RuntimeResult;
 use vrcx_0_application_core::{
     BackendRuntimeStatusPublisher, ConfigStore, GameProcessEvent, GameProcessEventSink,
-    HostSessionRuntime, InstanceRosterObserver, RuntimeAuthScope, RuntimeEventBus, TaskSupervisor,
+    HostSessionRuntime, RuntimeAuthScope, RuntimeEventBus, TaskSupervisor,
 };
 use vrcx_0_application_game::{
     GameClientActions, GameClientCacheActions, GameClientDebugLoggingActions,
     GameClientLocationSource, GameClientRuntime, GameClientRuntimeDeps, GameClientWindowActions,
 };
+use vrcx_0_contracts::InstanceRosterObserver;
 use vrcx_0_core::game_log_parser::LogLocationSnapshot;
 use vrcx_0_host_desktop::vrchat_registry;
 use vrcx_0_host_desktop::{asset_bundle_cache, game_launch, process_status};

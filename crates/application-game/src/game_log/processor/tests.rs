@@ -1746,9 +1746,9 @@ fn live_chunks_use_current_engine_for_join_suppression() -> Result<()> {
 
 #[test]
 fn new_file_does_not_forward_previous_replayed_departures() -> Result<()> {
-    struct Capture(Arc<Mutex<Vec<vrcx_0_application_core::InstanceRosterSnapshot>>>);
-    impl vrcx_0_application_core::InstanceRosterObserver for Capture {
-        fn on_instance_roster(&self, value: vrcx_0_application_core::InstanceRosterSnapshot) {
+    struct Capture(Arc<Mutex<Vec<vrcx_0_contracts::InstanceRosterSnapshot>>>);
+    impl vrcx_0_contracts::InstanceRosterObserver for Capture {
+        fn on_instance_roster(&self, value: vrcx_0_contracts::InstanceRosterSnapshot) {
             self.0.lock().unwrap().push(value);
         }
         fn on_game_running(&self, _: bool) {}

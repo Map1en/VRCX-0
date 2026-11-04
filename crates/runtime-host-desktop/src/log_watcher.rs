@@ -1,12 +1,12 @@
 use std::path::Path;
 use std::sync::{Arc, OnceLock, Weak};
 
-use vrcx_0_application_core::{InstanceRosterObserver, InstanceRosterSnapshot};
 use vrcx_0_application_game::LogLocationSnapshotScanner;
 pub use vrcx_0_application_game::{
     GameLogEvent, GameLogEventOrigin, GameLogEventSink, LogLocationSnapshot, LogWatcher,
 };
 use vrcx_0_application_realtime::RealtimeHostRuntime;
+use vrcx_0_contracts::{InstanceRosterObserver, InstanceRosterSnapshot};
 
 #[derive(Default)]
 pub struct HostLogLocationSnapshotScanner;

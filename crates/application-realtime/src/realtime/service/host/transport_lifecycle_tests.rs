@@ -5,7 +5,7 @@ use super::test_support::*;
 use super::*;
 use crate::realtime::{RealtimeSessionContext, RealtimeTransportLifecycleEvent};
 use vrcx_0_application_core::HostSessionGameProcessStatus as GameProcessStatus;
-use vrcx_0_application_core::{InstanceRosterMember, InstanceRosterSnapshot};
+use vrcx_0_contracts::{InstanceRosterMember, InstanceRosterSnapshot};
 use vrcx_0_core::friends::{FriendBaselineEntry, FriendBaselinePresence, FriendRecord};
 use vrcx_0_core::presence::PresenceView;
 use vrcx_0_core::OwnerId;

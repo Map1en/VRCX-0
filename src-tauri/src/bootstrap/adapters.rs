@@ -16,7 +16,7 @@ use vrcx_0_application_core::RuntimeEventSink;
 use vrcx_0_application_core::{format_runtime_output_event, RuntimeOutputLevel, RuntimeOutputMode};
 use vrcx_0_application_core::{
     BackendRuntimeMode, BackendRuntimePhase, BackendRuntimeTelemetry, BackendRuntimeTelemetryKind,
-    RuntimeEventPayload, RuntimeVrchatAuthFailurePayload,
+    RuntimeVrchatAuthFailurePayload,
 };
 use vrcx_0_application_core::{
     Error as ApplicationError, Result as ApplicationResult, UpdaterCheckRequest,
@@ -24,6 +24,7 @@ use vrcx_0_application_core::{
     UpdaterPort, UpdaterProgressCallback,
 };
 use vrcx_0_application_core::{RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle};
+use vrcx_0_contracts::RuntimeEventPayload;
 use vrcx_0_core::{proxy::with_remote_dns, realtime::RealtimeWsStatusPayload};
 use vrcx_0_runtime_host_desktop::notification::{DesktopNotificationAction, DesktopNotifier};
 use vrcx_0_runtime_host_desktop::RuntimeHostActions;

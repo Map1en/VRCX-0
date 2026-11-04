@@ -10,7 +10,6 @@ mod diagnostics;
 mod error;
 mod event_bus;
 pub mod events;
-mod favorite_kind;
 mod file_cache;
 mod image_cache;
 mod interruptible_sleep;
@@ -63,15 +62,13 @@ pub use event_bus::{
     RuntimeRealtimeTransportEpoch, RuntimeVrchatAuthFailurePayload, VrcStatusSnapshot,
 };
 pub use events::{FriendProfileBulkLoadStatus, FriendProfileLoadStatusPayload};
-pub use favorite_kind::{FavoriteChangeScope, FavoriteEntityKind, VrchatFavoriteType};
 pub use file_cache::{FileCache, FileCachePort};
 pub use image_cache::{save_ugc_image_to_file, ImageCache, ImageCachePort};
 pub use interruptible_sleep::sleep_interruptibly;
 pub use ports::{
     ActivityIngress, BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity, ConfigStore,
     CurrentUserSnapshot, GameProcessEvent, GameProcessEventSink, HostSessionGameProcessStatus,
-    HostSessionProjection, HostSessionRuntime, InstanceRosterMember, InstanceRosterObserver,
-    InstanceRosterSnapshot, LocalGameContextSnapshot, LocalGameContextSource,
+    HostSessionProjection, HostSessionRuntime, LocalGameContextSnapshot, LocalGameContextSource,
     NoopPrintCleanupInputSink, NoopUpdaterPort, PrintCleanupInputSink, PrintCleanupTrigger,
     SessionHostRuntime, UnavailableLocalGameContextSource, UpdaterCheckRequest,
     UpdaterDownloadOutcome, UpdaterDownloadProgress, UpdaterInstallHandle, UpdaterMetadata,
@@ -94,16 +91,11 @@ pub use task_supervisor::{
     RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle, TaskSpawnOutcome, TaskStopReport,
     TaskStopToken, TaskSupervisor,
 };
-pub use vrcx_0_contracts::{runtime_event_payload, RuntimeEventPayload};
-pub use vrcx_0_contracts::{
-    RealtimeAuthTokenFetch, RealtimeConnectionOptions, WebExecuteRequest, WebMultipartPart,
-    WebUploadMode,
-};
-pub use vrcx_0_core::FavoriteGroupVisibility;
+pub use vrcx_0_contracts::RuntimeEventPayload;
+pub use vrcx_0_core::{FavoriteChangeScope, FavoriteEntityKind, FavoriteGroupVisibility};
 pub use web_client::{WebClient, WebClientPort};
 pub use world_cache::{WorldCache, WorldCachePort};
 
-pub use vrcx_0_contracts::UgcCategory;
 pub use vrcx_0_core::location::ParsedLocation;
 
 pub type Result<T> = std::result::Result<T, Error>;

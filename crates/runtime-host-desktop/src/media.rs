@@ -12,8 +12,9 @@ use vrcx_0_application::social::{
 };
 use vrcx_0_application_core::{
     save_ugc_image_to_file, AuthenticatedMutationContext, ImageCache, RemoteMutationGate,
-    RuntimeAuthScope, RuntimeDiagnostics, RuntimeOperationStatus, UgcCategory, WebClient,
+    RuntimeAuthScope, RuntimeDiagnostics, RuntimeOperationStatus, WebClient,
 };
+use vrcx_0_contracts::UgcCategory;
 use vrcx_0_platform::app_paths::AppPaths;
 
 use crate::{HostFileAccess, Result};

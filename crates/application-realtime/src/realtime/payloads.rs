@@ -1,5 +1,5 @@
 use serde::Serialize;
-use vrcx_0_application_core::RuntimeEventPayload;
+use vrcx_0_contracts::RuntimeEventPayload;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

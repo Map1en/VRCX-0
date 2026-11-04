@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use serde::Serialize;
-use vrcx_0_application_core::{RuntimeEventBus, RuntimeEventPayload};
+use vrcx_0_application_core::RuntimeEventBus;
 use vrcx_0_contracts::feed_live::FeedLiveEntry;
+use vrcx_0_contracts::RuntimeEventPayload;
 use vrcx_0_core::OwnerId;
 
 use super::projection_types::{FriendProjection, RealtimeEntryCorrectionFields};
@@ -71,7 +72,8 @@ mod tests {
     use std::sync::Mutex;
 
     use serde_json::Value;
-    use vrcx_0_application_core::{RuntimeEventPayload, RuntimeEventSink};
+    use vrcx_0_application_core::RuntimeEventSink;
+    use vrcx_0_contracts::RuntimeEventPayload;
 
     use super::*;
 

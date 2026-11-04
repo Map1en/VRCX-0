@@ -12,7 +12,7 @@ use vrcx_0_application_core::ActivityIngress;
 use vrcx_0_application_core::BackendRuntimeStatusPublisher;
 use vrcx_0_application_core::ConfigStore;
 use vrcx_0_application_core::GameProcessEvent;
-use vrcx_0_application_core::InstanceRosterObserver;
+use vrcx_0_contracts::InstanceRosterObserver;
 
 use super::host::GameLogHostActions;
 use super::ingest::GameLogProcessEvent;

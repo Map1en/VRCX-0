@@ -3,11 +3,12 @@ use std::time::Duration;
 use futures_util::future::BoxFuture;
 use vrcx_0_application_core::{
     FavoriteChange, FavoriteChangeScope, FavoriteGroupVisibility, FavoritesChangedPayload,
-    RuntimeEventBus, VrchatFavoriteType,
+    RuntimeEventBus,
 };
 use vrcx_0_contracts::vrchat_api::{
     classify_vrchat_response, parse_vrchat_json, VrchatResponse, VrchatResponseClass,
 };
+use vrcx_0_contracts::VrchatFavoriteType;
 use vrcx_0_core::json::RawJson;
 
 use vrcx_0_application_core::{AuthenticatedMutationContext, Result};

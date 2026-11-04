@@ -2,8 +2,9 @@ use std::{collections::HashMap, time::Duration};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use vrcx_0_application_core::{FavoriteEntityKind, VrchatFavoriteType};
+use vrcx_0_application_core::FavoriteEntityKind;
 use vrcx_0_contracts::vrchat_api::parse_vrchat_json;
+use vrcx_0_contracts::VrchatFavoriteType;
 use vrcx_0_core::json::RawJson;
 
 use vrcx_0_application_core::{AuthenticatedMutationContext, Error, Result, WorldCache};

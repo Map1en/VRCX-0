@@ -3,7 +3,8 @@ use vrcx_0_application::favorites::{
     FavoriteTransferLocation, FavoriteTransferMode, FavoriteTransferSource, FavoriteTransferStage,
     FavoriteTransferTarget,
 };
-use vrcx_0_application_core::{FavoriteEntityKind, VrchatFavoriteType};
+use vrcx_0_application_core::FavoriteEntityKind;
+use vrcx_0_contracts::VrchatFavoriteType;
 
 fn transfer_input(
     source: FavoriteTransferLocation,

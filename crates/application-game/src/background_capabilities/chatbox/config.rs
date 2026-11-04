@@ -53,7 +53,7 @@ pub struct ChatboxConfig {
     pub osc_port: u16,
 }
 
-impl vrcx_0_application_core::RuntimeEventPayload for ChatboxConfig {
+impl vrcx_0_contracts::RuntimeEventPayload for ChatboxConfig {
     const EVENT_NAME: &'static str = "chatboxConfig";
 }
 

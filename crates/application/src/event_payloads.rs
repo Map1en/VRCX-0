@@ -1,4 +1,4 @@
-use vrcx_0_application_core::RuntimeEventPayload;
+use vrcx_0_contracts::RuntimeEventPayload;
 
 use crate::auth::AuthenticatedRuntimePhaseSnapshot;
 use crate::collections::SharedCollectionImportStatus;

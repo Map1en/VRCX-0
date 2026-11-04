@@ -3,10 +3,10 @@ use std::sync::{Arc, Mutex};
 
 use tokio::sync::broadcast;
 use vrcx_0_application_core::{
-    InstanceRosterSnapshot, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus,
-    TaskSupervisor,
+    RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus, TaskSupervisor,
 };
 use vrcx_0_application_realtime::RealtimeHostRuntime;
+use vrcx_0_contracts::InstanceRosterSnapshot;
 use vrcx_0_core::OwnerId;
 use vrcx_0_integration_api::{
     IntegrationApiConfigStore, IntegrationApiController, IntegrationApiError, IntegrationApiInput,

@@ -6,8 +6,9 @@ use vrcx_0_application::profile::{
     CommunityThemeService, ProfileConfigStore,
 };
 use vrcx_0_application::telemetry::{TelemetryRuntime, TelemetryRuntimeDeps};
-use vrcx_0_application_core::{BackendRuntimeStatusPublisher, InstanceRosterObserver, UpdaterPort};
+use vrcx_0_application_core::{BackendRuntimeStatusPublisher, UpdaterPort};
 use vrcx_0_composition::{Result, RuntimeHostState, RuntimeHostStateBuilder};
+use vrcx_0_contracts::InstanceRosterObserver;
 use vrcx_0_host_desktop::discord_rpc::DiscordRpc;
 use vrcx_0_integration_api::{
     integration_api_publisher_channel, IntegrationApiConfigStore, IntegrationApiController,

@@ -3,9 +3,9 @@ use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use vrcx_0_application_core::{
-    ActivityIngress, BackendRuntimeStatusPublisher, ConfigStore, InstanceRosterMember,
-    InstanceRosterObserver, InstanceRosterSnapshot, RuntimeOperationStatus,
+    ActivityIngress, BackendRuntimeStatusPublisher, ConfigStore, RuntimeOperationStatus,
 };
+use vrcx_0_contracts::{InstanceRosterMember, InstanceRosterObserver, InstanceRosterSnapshot};
 
 use vrcx_0_contracts::activity::ActivityKind;
 use vrcx_0_contracts::game_log::{GameLogJoinLeaveEntry, GameLogWriteBatch};

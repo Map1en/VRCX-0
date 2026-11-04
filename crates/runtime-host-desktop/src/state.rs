@@ -56,8 +56,8 @@ use vrcx_0_application::telemetry::TelemetryRuntime;
 use vrcx_0_application_core::{
     BackendRuntimeMode, BackendRuntimePhase, BackendRuntimeStatusPublisher,
     BackendRuntimeTelemetryKind, FriendProfileLoadStatusPayload, GameProcessEvent,
-    GameProcessEventSink, GuiRuntimeMode, InstanceRosterObserver, RuntimeEventSink,
-    RuntimeTaskExecutor, SessionHostRuntime, TaskStopToken, VrcStatusSnapshot,
+    GameProcessEventSink, GuiRuntimeMode, RuntimeEventSink, RuntimeTaskExecutor,
+    SessionHostRuntime, TaskStopToken, VrcStatusSnapshot,
 };
 use vrcx_0_application_game::{
     PresenceAutomationRuleKind, ProcessMonitor, RegistryBackupExport,
@@ -68,6 +68,7 @@ use vrcx_0_composition::{
     BackendRuntimeCombinedSnapshot, Result, RuntimeHostDesktopAssemblyDeps, RuntimeHostOptions,
     RuntimeHostProfile, RuntimeHostProfileExtension, RuntimeHostState, RuntimeHostStateBuilder,
 };
+use vrcx_0_contracts::InstanceRosterObserver;
 use vrcx_0_core::json::RawJson;
 use vrcx_0_host_desktop::auto_launch::{
     normalize_app_launcher_entries, AppLauncherEntry, AppLauncherSnapshot, AutoAppLaunchManager,

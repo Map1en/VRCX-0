@@ -14,10 +14,10 @@ use vrcx_0_application::auth::{
 };
 use vrcx_0_application_core::{
     Result, RuntimeAuthScopeObserver, RuntimeAuthScopeSnapshot, RuntimeEventBus,
-    RuntimeEventPayload,
 };
 use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_contracts::vrchat_api::{vrchat_response, VrchatResponse, VrchatScope};
+use vrcx_0_contracts::RuntimeEventPayload;
 use vrcx_0_core::json::JsonExt;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 use vrcx_0_vrchat_client::web_client::WebClient as VrchatWebClient;

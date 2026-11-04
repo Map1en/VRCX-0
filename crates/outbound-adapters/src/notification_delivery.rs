@@ -8,9 +8,10 @@ use vrcx_0_application_activity::notification::{
     CachedNotificationUserImageResolver, NotificationRemote, NotificationRemoteFuture,
     NotificationWebhookFuture, NotificationWebhookTransport, NotificationWebhookTransportError,
 };
-use vrcx_0_application_core::{FileCache, WebClient, WebExecuteRequest, WorldCache};
+use vrcx_0_application_core::{FileCache, WebClient, WorldCache};
 use vrcx_0_application_realtime::RealtimeHostRuntime;
 use vrcx_0_contracts::vrchat_api::VrchatScope;
+use vrcx_0_contracts::WebExecuteRequest;
 use vrcx_0_core::json::JsonExt;
 
 const WEBHOOK_TIMEOUT: Duration = Duration::from_secs(10);

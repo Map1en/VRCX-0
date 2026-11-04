@@ -8,13 +8,14 @@ use vrcx_0_application_core::Error as RuntimeError;
 use vrcx_0_application_core::Result as RuntimeResult;
 use vrcx_0_application_core::{
     BackendRuntimeStatusPublisher, ConfigStore, GameProcessEvent, GameProcessEventSink,
-    HostSessionRuntime, ImageCache, InstanceRosterObserver, RuntimeAuthScope, RuntimeEventBus,
-    RuntimeSyncEngine, TaskSupervisor, WebClient, WorldCache,
+    HostSessionRuntime, ImageCache, RuntimeAuthScope, RuntimeEventBus, RuntimeSyncEngine,
+    TaskSupervisor, WebClient, WorldCache,
 };
 use vrcx_0_application_game::{
     GameLogHostActions, GameLogRuntime, GameLogRuntimeDeps, GameLogSideEffectSink,
     RuntimeSnapshotStore,
 };
+use vrcx_0_contracts::InstanceRosterObserver;
 use vrcx_0_host_desktop::{clipboard, game_launch, vrchat_paths};
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_platform::app_paths::AppPaths;

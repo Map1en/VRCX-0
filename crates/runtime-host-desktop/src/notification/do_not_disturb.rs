@@ -4,9 +4,8 @@ use std::sync::{Arc, Mutex};
 use chrono::{DateTime, Duration, SecondsFormat, Utc};
 use serde::{Deserialize, Serialize};
 use tokio::sync::Notify;
-use vrcx_0_application_core::{
-    GameProcessEventSink, RuntimeEventBus, RuntimeEventPayload, TaskSupervisor,
-};
+use vrcx_0_application_core::{GameProcessEventSink, RuntimeEventBus, TaskSupervisor};
+use vrcx_0_contracts::RuntimeEventPayload;
 use vrcx_0_core::game_process::GameProcessEvent;
 use vrcx_0_persistence::config::ConfigRepository;
 

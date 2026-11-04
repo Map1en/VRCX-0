@@ -1,9 +1,8 @@
 use std::sync::{Arc, Mutex};
 
 use serde::Serialize;
-use vrcx_0_application_core::{
-    LocalGameContextSnapshot, LocalGameContextSource, RuntimeEventBus, RuntimeEventPayload,
-};
+use vrcx_0_application_core::{LocalGameContextSnapshot, LocalGameContextSource, RuntimeEventBus};
+use vrcx_0_contracts::RuntimeEventPayload;
 use vrcx_0_core::game_log_parser::{GameLogEvent, GameLogEventKind};
 use vrcx_0_persistence::config::ConfigRepository;
 

@@ -216,7 +216,7 @@ impl FavoriteRemote for VrchatFavoriteRemote {
 #[cfg(test)]
 mod tests {
     use serde_json::json;
-    use vrcx_0_application_core::VrchatFavoriteType;
+    use vrcx_0_contracts::VrchatFavoriteType;
     use vrcx_0_vrchat_protocol::favorites::favorite_add_input;
 
     #[test]
