@@ -3167,6 +3167,14 @@ const generatedCommands = {
     async appGetScreenshotShareProgress(): Promise<ScreenshotShareProgress> {
         return await TAURI_INVOKE('app__get_screenshot_share_progress');
     },
+    async appCopyScreenshotPrint(input: ScreenshotPrintInput): Promise<null> {
+        return await TAURI_INVOKE('app__copy_screenshot_print', { input });
+    },
+    async appSaveScreenshotPrints(
+        items: ScreenshotPrintInput[]
+    ): Promise<string[]> {
+        return await TAURI_INVOKE('app__save_screenshot_prints', { items });
+    },
     async appGetScreenshotShareHistory(): Promise<ScreenshotShareRecord[]> {
         return await TAURI_INVOKE('app__get_screenshot_share_history');
     },
@@ -7130,6 +7138,7 @@ export type ScreenshotMetadata = {
     error?: string | null;
 };
 export type ScreenshotPeopleMatch = 'all' | 'any';
+export type ScreenshotPrintInput = { path: string; caption: string };
 export type ScreenshotProcessedPayload = { path: string };
 export type ScreenshotQueryResult = {
     total: number;
@@ -7152,6 +7161,8 @@ export type ScreenshotShareFacts = {
     path: string;
     worldId: string | null;
     worldName: string | null;
+    worldAuthorName: string | null;
+    authorName: string | null;
     capturedAtMs: number;
     people: string[];
     playerCount: number | null;
@@ -7166,6 +7177,7 @@ export type ScreenshotShareFields = {
     spoiler: boolean;
     metadata: boolean;
     compression: ScreenshotShareCompression;
+    print: boolean;
 };
 export type ScreenshotShareMessage = {
     paths: string[];
@@ -7174,6 +7186,7 @@ export type ScreenshotShareMessage = {
     spoiler: boolean;
     metadata: boolean;
     compression: ScreenshotShareCompression;
+    printCaptions: string[];
 };
 export type ScreenshotShareProgress = {
     running: boolean;

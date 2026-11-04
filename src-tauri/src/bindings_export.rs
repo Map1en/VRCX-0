@@ -725,6 +725,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::host::screenshots::app__get_screenshot_share_facts,
             commands::host::screenshots::app__share_screenshots,
             commands::host::screenshots::app__get_screenshot_share_progress,
+            commands::host::screenshots::app__copy_screenshot_print,
+            commands::host::screenshots::app__save_screenshot_prints,
             commands::host::screenshots::app__get_screenshot_share_history,
             commands::host::screenshots::app__delete_screenshot_share_record,
             commands::host::media::app__crop_all_prints,

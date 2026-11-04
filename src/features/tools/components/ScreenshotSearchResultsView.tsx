@@ -5,6 +5,7 @@ import { DEFAULT_SCREENSHOT_GRID_DENSITY } from '@/components/media/screenshotGr
 import { useTileSelectionState } from '@/lib/useTileSelectionState';
 import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
 
+import { ScreenshotPrintButton } from '../screenshot-share/ScreenshotPrintButton';
 import { ScreenshotShareMenu } from '../screenshot-share/ScreenshotShareMenu';
 import type {
     ScreenshotSearchRow,
@@ -124,6 +125,10 @@ export function ScreenshotSearchResultsView({
                         onExportSelection(selectedPaths, groupByFolder)
                 }}
             >
+                <ScreenshotPrintButton
+                    paths={selectedPaths}
+                    disabled={isDeleteRunning}
+                />
                 <ScreenshotShareMenu
                     paths={selectedPaths}
                     disabled={isDeleteRunning}

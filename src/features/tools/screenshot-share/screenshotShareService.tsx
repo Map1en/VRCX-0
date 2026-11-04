@@ -11,6 +11,7 @@ import { toast } from '@/services/toastService';
 import { useScreenshotShareStore } from '@/state/screenshotShareStore';
 import { Progress } from '@/ui/shadcn/progress';
 
+import { renderPrintCaptions } from './screenshotPrintService';
 import {
     buildScreenshotShareMessages,
     type ScreenshotShareText
@@ -144,14 +145,25 @@ async function sendToTargets(
     }
     const sent: ScreenshotShareRecord[] = [];
     const sentTargets: string[] = [];
+    let captions: Map<string, string> | null = null;
     for (const target of targets) {
-        const messages = buildScreenshotShareMessages(
-            facts,
-            fields ?? target.fields,
-            screenshotShareText()
-        );
+        const targetFields = fields ?? target.fields;
         const stopProgress = startProgressToast(target);
         try {
+            if (targetFields.print) {
+                captions ??= await renderPrintCaptions(facts);
+            }
+            const printCaptions = targetFields.print ? captions : null;
+            const messages = buildScreenshotShareMessages(
+                facts,
+                targetFields,
+                screenshotShareText()
+            ).map((message) => ({
+                ...message,
+                printCaptions: printCaptions
+                    ? message.paths.map((path) => printCaptions.get(path) ?? '')
+                    : []
+            }));
             const result = await commands.appShareScreenshots(
                 target.id,
                 messages

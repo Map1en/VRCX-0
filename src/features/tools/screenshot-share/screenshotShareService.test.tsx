@@ -58,7 +58,8 @@ function target(id: string, overrides: Partial<ScreenshotShareTarget> = {}) {
             stay: false,
             spoiler: id === 'b',
             metadata: false,
-            compression: 'high' as const
+            compression: 'high' as const,
+            print: false
         },
         quick: true,
         invalid: false,
@@ -85,6 +86,8 @@ describe('shareScreenshots', () => {
                 path: 'a.png',
                 worldId: 'wrld_a',
                 worldName: 'World A',
+                worldAuthorName: null,
+                authorName: null,
                 capturedAtMs: 1,
                 people: [],
                 playerCount: null,

@@ -44,12 +44,20 @@ fn url_hint_keeps_only_the_tail() {
 #[test]
 fn attachment_names_are_ascii_with_spoiler_prefix_and_suffix() {
     assert_eq!(
-        attachment_name("C:/p/VRChat_2026-01-02 日本.png", false, None, "png"),
+        attachment_name("C:/p/VRChat_2026-01-02 日本.png", false, false, None, "png"),
         "VRChat_2026-01-02___.png"
     );
     assert_eq!(
-        attachment_name("/p/a.png", true, Some(2), "jpg"),
+        attachment_name("/p/a.png", true, false, Some(2), "jpg"),
         "SPOILER_a_2.jpg"
+    );
+    assert_eq!(
+        attachment_name("/p/a.png", false, true, None, "png"),
+        "VRCX-0_print_a.png"
+    );
+    assert_eq!(
+        print_file_stem("/p/VRChat_2026-04-12_23-41-00.123_3840x2160.png"),
+        "VRCX-0_print_2026-04-12_23-41-00.123_3840x2160"
     );
 }
 

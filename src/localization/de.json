@@ -2679,6 +2679,8 @@
                 "undone": "Nachricht aus Discord gelöscht",
                 "undo_failed": "Nachricht konnte nicht gelöscht werden: {reason}",
                 "failed": "Senden an {target} fehlgeschlagen: {reason}",
+                "print": "Beim Senden einen Rahmen hinzufügen",
+                "print_hint": "Fügt einen weißen Rahmen mit den Fotoinfos hinzu.",
                 "spoiler": "Als Spoiler markieren",
                 "metadata": "Screenshot-Metadaten mitsenden",
                 "metadata_hint": "Behält die Welt- und Spielerinfos, die VRCX in die Datei geschrieben hat.",
@@ -2749,6 +2751,43 @@
                 "preview": {
                     "title": "Vorschau ({count} Nachricht(en))",
                     "images": "{count} Bild(er)"
+                }
+            },
+            "screenshot_print": {
+                "menu": "Rahmen hinzufügen",
+                "copy": "Kopieren",
+                "copied": "Screenshot mit Rahmen kopiert",
+                "save": "In Ordner speichern…",
+                "saved": "{count} Screenshot(s) mit Rahmen gespeichert",
+                "failed": "Rahmen konnte nicht erstellt werden: {reason}",
+                "dialog_title": "Screenshot einen Rahmen geben",
+                "dialog_title_many": "{count} Screenshots einen Rahmen geben",
+                "style": "Stil",
+                "style_modern": "Modern",
+                "style_classic": "Klassisch",
+                "note": "Notiz",
+                "note_placeholder": "Ein Satz zu diesem Moment",
+                "people": "Wer dabei war",
+                "people_count": "Nur Anzahl zeigen",
+                "people_names": "Namen zeigen",
+                "people_off": "Nicht zeigen",
+                "people_selected": "{count} von {total} ausgewählt",
+                "people_all": "Alle",
+                "people_none": "Keine",
+                "people_search": "Namen suchen",
+                "people_hint": "Auf den Rahmen passen bis zu 3 Namen; der Rest erscheint als Anzahl.",
+                "player_count": "Spieler in der Instanz",
+                "stay": "Aufenthaltsdauer",
+                "image": {
+                    "captured_by": "Aufgenommen von",
+                    "by_author": "von {author}",
+                    "name_separator": ", ",
+                    "with_names": "mit {names}",
+                    "with_names_more": "mit {names} +{count}",
+                    "with_count_one": "mit {count} weiteren Person",
+                    "with_count_other": "mit {count} weiteren Personen",
+                    "in_room": "{count} in der Instanz",
+                    "stayed": "{duration} geblieben"
                 }
             },
             "prints_filter": {

@@ -369,6 +369,7 @@ Source strings live in [`en.json`](en.json). Keep recurring terms consistent wit
 | Same Instance                      | 同一房间                   | 在同個房間            | 同じインスタンス                     |
 | Saved Custom Directory             | 已保存的自定义目录         | 已儲存的自訂目錄      | 保存済みのカスタムディレクトリ       |
 | Scope                              | 范围                       | 範圍                  | 範囲                                 |
+| Screenshot Frame                   | 相框                       | 相框                  | フレーム                             |
 | Self Invite                        | 自我邀请                   | 自我邀請              | 自分への招待                         |
 | Settings...                        | 设置...                    | 設定...               | 設定...                              |
 | Share Link                         | 分享链接                   | 分享連結              | 共有リンク                           |

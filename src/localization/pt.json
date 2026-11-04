@@ -2679,6 +2679,8 @@
                 "undone": "Mensagem apagada do Discord",
                 "undo_failed": "Não foi possível apagar a mensagem: {reason}",
                 "failed": "Não foi possível enviar para {target}: {reason}",
+                "print": "Adicionar moldura ao enviar",
+                "print_hint": "Adiciona uma moldura branca com os dados da foto.",
                 "spoiler": "Marcar como spoiler",
                 "metadata": "Incluir metadados da captura",
                 "metadata_hint": "Mantém as informações do mundo e dos jogadores que o VRCX gravou no arquivo.",
@@ -2749,6 +2751,43 @@
                 "preview": {
                     "title": "Prévia ({count} mensagem(ns))",
                     "images": "{count} imagem(ns)"
+                }
+            },
+            "screenshot_print": {
+                "menu": "Adicionar moldura",
+                "copy": "Copiar",
+                "copied": "Captura com moldura copiada",
+                "save": "Salvar na pasta…",
+                "saved": "{count} captura(s) com moldura salva(s)",
+                "failed": "Não foi possível criar a moldura: {reason}",
+                "dialog_title": "Adicionar moldura à captura",
+                "dialog_title_many": "Adicionar moldura a {count} capturas",
+                "style": "Estilo",
+                "style_modern": "Moderno",
+                "style_classic": "Clássico",
+                "note": "Nota",
+                "note_placeholder": "Uma frase para este momento",
+                "people": "Quem estava com você",
+                "people_count": "Só a quantidade",
+                "people_names": "Mostrar nomes",
+                "people_off": "Não mostrar",
+                "people_selected": "{count} de {total} selecionados",
+                "people_all": "Todos",
+                "people_none": "Nenhum",
+                "people_search": "Buscar nomes",
+                "people_hint": "Cabem até 3 nomes na moldura; o resto aparece como número.",
+                "player_count": "Jogadores na instância",
+                "stay": "Tempo de permanência",
+                "image": {
+                    "captured_by": "Capturado por",
+                    "by_author": "por {author}",
+                    "name_separator": ", ",
+                    "with_names": "com {names}",
+                    "with_names_more": "com {names} +{count}",
+                    "with_count_one": "com mais {count} pessoa",
+                    "with_count_other": "com mais {count} pessoas",
+                    "in_room": "{count} na instância",
+                    "stayed": "{duration} de permanência"
                 }
             },
             "prints_filter": {

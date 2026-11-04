@@ -46,7 +46,8 @@ const DEFAULT_SCREENSHOT_SHARE_FIELDS: ScreenshotShareFields = {
     stay: false,
     spoiler: false,
     metadata: false,
-    compression: 'high'
+    compression: 'high',
+    print: false
 };
 
 type TargetDraft = {

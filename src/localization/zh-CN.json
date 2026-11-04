@@ -2676,6 +2676,8 @@
                 "undone": "已从 Discord 撤回",
                 "undo_failed": "撤回失败：{reason}",
                 "failed": "发送到 {target} 失败：{reason}",
+                "print": "添加相框后发送",
+                "print_hint": "加上白边和拍摄信息。",
                 "spoiler": "标记为剧透",
                 "metadata": "附带截图元数据",
                 "metadata_hint": "保留 VRCX 写入文件的世界和玩家信息。",
@@ -2746,6 +2748,42 @@
                 "preview": {
                     "title": "预览（{count} 条消息）",
                     "images": "{count} 张图片"
+                }
+            },
+            "screenshot_print": {
+                "menu": "添加相框",
+                "copy": "复制",
+                "copied": "已复制带相框的截图",
+                "save": "保存到文件夹…",
+                "saved": "已保存 {count} 张带相框的截图",
+                "failed": "加相框失败：{reason}",
+                "dialog_title": "为截图添加相框",
+                "dialog_title_many": "为 {count} 张截图添加相框",
+                "style": "样式",
+                "style_modern": "现代",
+                "style_classic": "经典",
+                "note": "备注",
+                "note_placeholder": "为这一刻写一句话",
+                "people": "同房间的人",
+                "people_count": "只显示人数",
+                "people_names": "显示名字",
+                "people_off": "不显示",
+                "people_selected": "已选 {count}/{total}",
+                "people_all": "全选",
+                "people_none": "清空",
+                "people_search": "搜索名字",
+                "people_hint": "相框上最多显示 3 个名字，其余以人数呈现。",
+                "player_count": "房间人数",
+                "stay": "停留时长",
+                "image": {
+                    "captured_by": "摄影",
+                    "by_author": "作者 {author}",
+                    "name_separator": "、",
+                    "with_names": "与 {names}",
+                    "with_names_more": "与 {names} 等 {total} 人",
+                    "with_count_other": "与 {count} 位同伴",
+                    "in_room": "同房 {count} 人",
+                    "stayed": "停留 {duration}"
                 }
             },
             "prints_filter": {

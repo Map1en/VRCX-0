@@ -56,6 +56,7 @@ import {
 } from '@/ui/shadcn/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import { ScreenshotPrintButton } from '../screenshot-share/ScreenshotPrintButton';
 import { ScreenshotShareMenu } from '../screenshot-share/ScreenshotShareMenu';
 import {
     SCREENSHOT_FAVORITES_FOLDER,
@@ -957,6 +958,10 @@ export function ScreenshotGalleryView({
                                     )
                             }}
                         >
+                            <ScreenshotPrintButton
+                                paths={selection.selectedPaths}
+                                disabled={isDeleteRunning}
+                            />
                             <ScreenshotShareMenu
                                 paths={selection.selectedPaths}
                                 disabled={isDeleteRunning}

@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -10,15 +10,16 @@ use vrcx_0_core::screenshots::{
 };
 use vrcx_0_core::screenshots::{
     FavoriteScreenshots, ScreenshotExportProgress, ScreenshotFacet, ScreenshotFilter,
-    ScreenshotQueryResult, ScreenshotShareFacts, ScreenshotShareMessage, ScreenshotShareProgress,
-    ScreenshotShareRecord, ScreenshotShareSendResult, ScreenshotShareTarget,
-    ScreenshotShareTargetInput,
+    ScreenshotPrintInput, ScreenshotQueryResult, ScreenshotShareFacts, ScreenshotShareMessage,
+    ScreenshotShareProgress, ScreenshotShareRecord, ScreenshotShareSendResult,
+    ScreenshotShareTarget, ScreenshotShareTargetInput,
 };
+use vrcx_0_media::screenshot_print::compose_screenshot_print;
 use vrcx_0_outbound_adapters::screenshots::{
-    self as screenshot, LocalScreenshotFavoriteStore, LocalScreenshotLibraryAdapter,
-    ScreenshotExportOutcome, ScreenshotFolderTree, ScreenshotLibraryImage,
-    ScreenshotLibraryScanStatus, ScreenshotShareService, ScreenshotTimeWindow,
-    ScreenshotWindowImages,
+    self as screenshot, print_file_stem, LocalScreenshotFavoriteStore,
+    LocalScreenshotLibraryAdapter, ScreenshotExportOutcome, ScreenshotFolderTree,
+    ScreenshotLibraryImage, ScreenshotLibraryScanStatus, ScreenshotShareService,
+    ScreenshotTimeWindow, ScreenshotWindowImages,
 };
 use vrcx_0_persistence::screenshot_cache::MetadataCacheDb;
 use vrcx_0_persistence::DatabaseService;
@@ -126,6 +127,51 @@ impl DesktopScreenshotRuntime {
             self.ensure_read_allowed(path)?;
         }
         Ok(self.share.send(target_id, messages).await?)
+    }
+
+    fn render_print(&self, input: &ScreenshotPrintInput) -> Result<Vec<u8>> {
+        self.ensure_read_allowed(&input.path)?;
+        let source = std::fs::read(&input.path)?;
+        Ok(compose_screenshot_print(&source, &input.caption)?)
+    }
+
+    pub fn copy_print(&self, input: &ScreenshotPrintInput) -> Result<()> {
+        let print = self.render_print(input)?;
+        let dir = self.paths.app_data.join("ScreenshotPrints");
+        std::fs::create_dir_all(&dir)?;
+        for entry in std::fs::read_dir(&dir)?.flatten() {
+            if entry.path().extension().is_some_and(|ext| ext == "png") {
+                let _ = std::fs::remove_file(entry.path());
+            }
+        }
+        let file = dir.join(format!("{}.png", print_file_stem(&input.path)));
+        std::fs::write(&file, print)?;
+        Ok(vrcx_0_host_desktop::clipboard::copy_image_to_clipboard(
+            &file.to_string_lossy(),
+        )?)
+    }
+
+    pub fn print_file_name(&self, source: &str) -> String {
+        format!("{}.png", print_file_stem(source))
+    }
+
+    pub fn save_print(&self, item: &ScreenshotPrintInput, target: &Path) -> Result<()> {
+        std::fs::write(target, self.render_print(item)?)?;
+        Ok(())
+    }
+
+    pub fn save_prints_to_folder(
+        &self,
+        items: &[ScreenshotPrintInput],
+        dir: &Path,
+    ) -> Result<Vec<PathBuf>> {
+        let mut saved = Vec::with_capacity(items.len());
+        for item in items {
+            let target = unused_print_path(dir, &item.path);
+            self.save_print(item, &target)?;
+            saved.push(target);
+        }
+        Ok(saved)
     }
 
     pub fn share_progress(&self) -> ScreenshotShareProgress {
@@ -423,4 +469,15 @@ impl DesktopScreenshotRuntime {
     pub(crate) fn screenshot_favorites(&self) -> &ScreenshotFavorites {
         &self.favorites
     }
+}
+
+fn unused_print_path(dir: &Path, source: &str) -> PathBuf {
+    let stem = print_file_stem(source);
+    let mut candidate = dir.join(format!("{stem}.png"));
+    let mut suffix = 1;
+    while candidate.exists() {
+        suffix += 1;
+        candidate = dir.join(format!("{stem}_{suffix}.png"));
+    }
+    candidate
 }

@@ -170,6 +170,7 @@ pub struct ScreenshotShareFields {
     pub spoiler: bool,
     pub metadata: bool,
     pub compression: ScreenshotShareCompression,
+    pub print: bool,
 }
 
 impl Default for ScreenshotShareFields {
@@ -183,6 +184,7 @@ impl Default for ScreenshotShareFields {
             spoiler: false,
             metadata: false,
             compression: ScreenshotShareCompression::High,
+            print: false,
         }
     }
 }
@@ -231,6 +233,8 @@ pub struct ScreenshotShareFacts {
     pub path: String,
     pub world_id: Option<String>,
     pub world_name: Option<String>,
+    pub world_author_name: Option<String>,
+    pub author_name: Option<String>,
     pub captured_at_ms: i64,
     pub people: Vec<String>,
     pub player_count: Option<i64>,
@@ -263,6 +267,14 @@ pub struct ScreenshotShareMessage {
     pub spoiler: bool,
     pub metadata: bool,
     pub compression: ScreenshotShareCompression,
+    pub print_captions: Vec<String>,
+}
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ScreenshotPrintInput {
+    pub path: String,
+    pub caption: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize, specta::Type)]

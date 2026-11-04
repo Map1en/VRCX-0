@@ -2683,6 +2683,8 @@
                 "undone": "Message deleted from Discord",
                 "undo_failed": "Couldn't delete the message: {reason}",
                 "failed": "Couldn't send to {target}: {reason}",
+                "print": "Add a frame when sending",
+                "print_hint": "Adds a white frame with the photo details.",
                 "spoiler": "Mark as spoiler",
                 "metadata": "Include screenshot metadata",
                 "metadata_hint": "Keeps the world and player info VRCX wrote into the file.",
@@ -2753,6 +2755,43 @@
                 "preview": {
                     "title": "Preview ({count} message(s))",
                     "images": "{count} image(s)"
+                }
+            },
+            "screenshot_print": {
+                "menu": "Add frame",
+                "copy": "Copy",
+                "copied": "Framed screenshot copied",
+                "save": "Save to folder…",
+                "saved": "Saved {count} framed screenshot(s)",
+                "failed": "Couldn't make the framed screenshot: {reason}",
+                "dialog_title": "Add a frame to the screenshot",
+                "dialog_title_many": "Add a frame to {count} screenshots",
+                "style": "Style",
+                "style_modern": "Modern",
+                "style_classic": "Classic",
+                "note": "Note",
+                "note_placeholder": "A line for this moment",
+                "people": "People with you",
+                "people_count": "Show how many",
+                "people_names": "Show names",
+                "people_off": "Don't show",
+                "people_selected": "{count} of {total} selected",
+                "people_all": "All",
+                "people_none": "None",
+                "people_search": "Search names",
+                "people_hint": "Up to 3 names fit on the frame; the rest show as a count.",
+                "player_count": "Players in the instance",
+                "stay": "Time spent",
+                "image": {
+                    "captured_by": "Captured by",
+                    "by_author": "by {author}",
+                    "name_separator": ", ",
+                    "with_names": "with {names}",
+                    "with_names_more": "with {names} +{count}",
+                    "with_count_one": "with {count} other",
+                    "with_count_other": "with {count} others",
+                    "in_room": "{count} in room",
+                    "stayed": "stayed {duration}"
                 }
             },
             "prints_filter": {

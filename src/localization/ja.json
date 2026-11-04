@@ -2672,6 +2672,8 @@
                 "undone": "Discord から削除しました",
                 "undo_failed": "削除できませんでした：{reason}",
                 "failed": "{target} に送信できませんでした：{reason}",
+                "print": "フレームを付けて送信",
+                "print_hint": "白いフレームと撮影情報を付けます。",
                 "spoiler": "ネタバレとして送信",
                 "metadata": "スクリーンショットのメタデータを含める",
                 "metadata_hint": "VRCX がファイルに書き込んだワールドやプレイヤーの情報を残します。",
@@ -2742,6 +2744,42 @@
                 "preview": {
                     "title": "プレビュー（メッセージ {count} 件）",
                     "images": "画像 {count} 枚"
+                }
+            },
+            "screenshot_print": {
+                "menu": "フレームを付ける",
+                "copy": "コピー",
+                "copied": "フレーム付きのスクリーンショットをコピーしました",
+                "save": "フォルダーに保存…",
+                "saved": "フレーム付きのスクリーンショットを {count} 枚保存しました",
+                "failed": "フレームを付けられませんでした：{reason}",
+                "dialog_title": "スクリーンショットにフレームを付ける",
+                "dialog_title_many": "スクリーンショット {count} 枚にフレームを付ける",
+                "style": "スタイル",
+                "style_modern": "モダン",
+                "style_classic": "クラシック",
+                "note": "メモ",
+                "note_placeholder": "この瞬間にひとこと",
+                "people": "一緒にいた人",
+                "people_count": "人数だけ表示",
+                "people_names": "名前を表示",
+                "people_off": "表示しない",
+                "people_selected": "{total} 人中 {count} 人を選択",
+                "people_all": "すべて",
+                "people_none": "クリア",
+                "people_search": "名前で検索",
+                "people_hint": "フレームに載る名前は 3 人まで。残りは人数で表示します。",
+                "player_count": "インスタンスの人数",
+                "stay": "滞在時間",
+                "image": {
+                    "captured_by": "撮影",
+                    "by_author": "by {author}",
+                    "name_separator": "、",
+                    "with_names": "{names}と",
+                    "with_names_more": "{names}ほか {count} 人と",
+                    "with_count_other": "{count} 人の仲間と",
+                    "in_room": "インスタンス {count} 人",
+                    "stayed": "滞在 {duration}"
                 }
             },
             "prints_filter": {

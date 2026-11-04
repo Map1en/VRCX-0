@@ -27,7 +27,8 @@ const allFields: ScreenshotShareFields = {
     stay: true,
     spoiler: false,
     metadata: false,
-    compression: 'high'
+    compression: 'high',
+    print: false
 };
 
 function fact(
@@ -38,6 +39,8 @@ function fact(
         path,
         worldId: 'wrld_a',
         worldName: 'World A',
+        worldAuthorName: null,
+        authorName: null,
         capturedAtMs: 1_000_000,
         people: [],
         playerCount: null,
@@ -124,7 +127,8 @@ describe('buildScreenshotShareMessages', () => {
             embed: null,
             spoiler: true,
             metadata: false,
-            compression: 'standard'
+            compression: 'standard',
+            printCaptions: []
         });
     });
 

@@ -117,6 +117,21 @@ export function ScreenshotShareOptions({
                 </span>
             </div>
             <div className="grid gap-2.5">
+                <label className="flex items-start gap-3 text-sm">
+                    <span className="flex flex-1 flex-col gap-0.5">
+                        {t('view.tools.screenshot_share.print')}
+                        <span className="text-muted-foreground text-xs">
+                            {t('view.tools.screenshot_share.print_hint')}
+                        </span>
+                    </span>
+                    <Switch
+                        checked={value.print}
+                        disabled={disabled}
+                        onCheckedChange={(print) =>
+                            onChange({ ...value, print })
+                        }
+                    />
+                </label>
                 <label className="flex items-center gap-3 text-sm">
                     <span className="flex-1">
                         {t('view.tools.screenshot_share.spoiler')}

@@ -5,6 +5,7 @@ import {
     CopyIcon,
     EllipsisIcon,
     FolderOpenIcon,
+    ImageIcon,
     MaximizeIcon,
     PanelRightCloseIcon,
     PanelRightOpenIcon,
@@ -233,6 +234,7 @@ export function ScreenshotDetailViewer({
     onToggleDetails,
     onToggleFavorite,
     onCopyImage,
+    onOpenPrint,
     onOpenFolder,
     onOpenFullscreen,
     onUpload,
@@ -262,6 +264,7 @@ export function ScreenshotDetailViewer({
     onToggleDetails: () => void;
     onToggleFavorite: () => void;
     onCopyImage: () => void;
+    onOpenPrint: () => void;
     onOpenFolder: () => void;
     onOpenFullscreen: () => void;
     onUpload: () => void;
@@ -335,6 +338,12 @@ export function ScreenshotDetailViewer({
                     icon={CopyIcon}
                     disabled={!hasFile}
                     onClick={onCopyImage}
+                />
+                <ToolbarIconButton
+                    label={t('view.tools.screenshot_print.menu')}
+                    icon={ImageIcon}
+                    disabled={!hasFile}
+                    onClick={onOpenPrint}
                 />
                 <ToolbarIconButton
                     label={t('dialog.screenshot_metadata.open_folder')}

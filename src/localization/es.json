@@ -2683,6 +2683,8 @@
                 "undone": "Mensaje eliminado de Discord",
                 "undo_failed": "No se pudo eliminar el mensaje: {reason}",
                 "failed": "No se pudo enviar a {target}: {reason}",
+                "print": "Añadir marco al enviar",
+                "print_hint": "Añade un marco blanco con los datos de la foto.",
                 "spoiler": "Marcar como spoiler",
                 "metadata": "Incluir metadatos de la captura",
                 "metadata_hint": "Conserva la información del mundo y de los jugadores que VRCX guardó en el archivo.",
@@ -2753,6 +2755,43 @@
                 "preview": {
                     "title": "Vista previa ({count} mensaje(s))",
                     "images": "{count} imagen(es)"
+                }
+            },
+            "screenshot_print": {
+                "menu": "Añadir marco",
+                "copy": "Copiar",
+                "copied": "Captura con marco copiada",
+                "save": "Guardar en carpeta…",
+                "saved": "Se guardaron {count} captura(s) con marco",
+                "failed": "No se pudo crear el marco: {reason}",
+                "dialog_title": "Añadir marco a la captura",
+                "dialog_title_many": "Añadir marco a {count} capturas",
+                "style": "Estilo",
+                "style_modern": "Moderno",
+                "style_classic": "Clásico",
+                "note": "Nota",
+                "note_placeholder": "Una frase para este momento",
+                "people": "Quién estaba contigo",
+                "people_count": "Solo el número",
+                "people_names": "Mostrar nombres",
+                "people_off": "No mostrar",
+                "people_selected": "{count} de {total} seleccionados",
+                "people_all": "Todos",
+                "people_none": "Ninguno",
+                "people_search": "Buscar nombres",
+                "people_hint": "En el marco caben hasta 3 nombres; el resto se muestra como número.",
+                "player_count": "Jugadores en la instancia",
+                "stay": "Tiempo de estancia",
+                "image": {
+                    "captured_by": "Captura de",
+                    "by_author": "de {author}",
+                    "name_separator": ", ",
+                    "with_names": "con {names}",
+                    "with_names_more": "con {names} +{count}",
+                    "with_count_one": "con {count} persona más",
+                    "with_count_other": "con {count} personas más",
+                    "in_room": "{count} en la instancia",
+                    "stayed": "{duration} de estancia"
                 }
             },
             "prints_filter": {

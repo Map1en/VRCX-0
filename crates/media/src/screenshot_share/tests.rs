@@ -47,7 +47,8 @@ fn fitting_png_is_sent_without_metadata_in_compressed_tiers() {
         ScreenshotShareCompression::High,
         ScreenshotShareCompression::Standard,
     ] {
-        let shared = encode_screenshot_share(&file.0, compression, true).unwrap();
+        let shared =
+            encode_screenshot_share(std::fs::read(&file.0).unwrap(), compression, true).unwrap();
         assert!(!shared.jpeg);
         assert_eq!(shared.data, plain);
     }
@@ -56,11 +57,19 @@ fn fitting_png_is_sent_without_metadata_in_compressed_tiers() {
 #[test]
 fn original_keeps_metadata_only_when_asked() {
     let (file, plain) = tagged_file("keep", &noisy(64, 32));
-    let stripped =
-        encode_screenshot_share(&file.0, ScreenshotShareCompression::Original, false).unwrap();
+    let stripped = encode_screenshot_share(
+        std::fs::read(&file.0).unwrap(),
+        ScreenshotShareCompression::Original,
+        false,
+    )
+    .unwrap();
     assert_eq!(stripped.data, plain);
-    let kept =
-        encode_screenshot_share(&file.0, ScreenshotShareCompression::Original, true).unwrap();
+    let kept = encode_screenshot_share(
+        std::fs::read(&file.0).unwrap(),
+        ScreenshotShareCompression::Original,
+        true,
+    )
+    .unwrap();
     assert!(has_secret(&kept.data));
     assert_eq!(
         image::load_from_memory(&kept.data).unwrap().to_rgb8(),
@@ -76,7 +85,8 @@ fn oversized_png_becomes_jpeg_within_the_tier_without_metadata() {
         (ScreenshotShareCompression::High, HIGH_QUALITY_MAX_BYTES),
         (ScreenshotShareCompression::Standard, STANDARD_MAX_BYTES),
     ] {
-        let shared = encode_screenshot_share(&file.0, compression, true).unwrap();
+        let shared =
+            encode_screenshot_share(std::fs::read(&file.0).unwrap(), compression, true).unwrap();
         assert!(shared.jpeg);
         assert!(shared.data.len() <= limit);
         assert!(!has_secret(&shared.data));
@@ -90,8 +100,12 @@ fn oversized_png_becomes_jpeg_within_the_tier_without_metadata() {
 #[test]
 fn original_mode_never_recompresses() {
     let (file, plain) = tagged_file("original", &noisy(4000, 2000));
-    let shared =
-        encode_screenshot_share(&file.0, ScreenshotShareCompression::Original, false).unwrap();
+    let shared = encode_screenshot_share(
+        std::fs::read(&file.0).unwrap(),
+        ScreenshotShareCompression::Original,
+        false,
+    )
+    .unwrap();
     assert!(!shared.jpeg);
     assert_eq!(shared.data, plain);
 }

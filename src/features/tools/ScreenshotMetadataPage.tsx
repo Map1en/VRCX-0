@@ -40,6 +40,8 @@ import {
 } from './components/ScreenshotGalleryView';
 import { ScreenshotSearchToolbar } from './components/ScreenshotMetadataSections';
 import { ScreenshotSearchResultsView } from './components/ScreenshotSearchResultsView';
+import { ScreenshotPrintDialog } from './screenshot-share/ScreenshotPrintDialog';
+import { copyScreenshotPrint } from './screenshot-share/screenshotPrintService';
 import {
     EMPTY_SCREENSHOT_SEARCH,
     hasScreenshotSearch,
@@ -134,6 +136,7 @@ export function ScreenshotMetadataPage() {
     > | null>(null);
     const [metadataError, setMetadataError] = useState('');
     const [imageUrl, setImageUrl] = useState('');
+    const [printPaths, setPrintPaths] = useState<string[] | null>(null);
     const [isMetadataLoading, setIsMetadataLoading] = useState(false);
     const [isSearchLoading, setIsSearchLoading] = useState(false);
     const [isDeletingMetadata, setIsDeletingMetadata] = useState(false);
@@ -467,6 +470,12 @@ export function ScreenshotMetadataPage() {
         }
     }
 
+    async function copyPrint() {
+        if (metadata?.filePath) {
+            await copyScreenshotPrint(metadata.filePath);
+        }
+    }
+
     async function deleteMetadata() {
         const filePath = metadata?.filePath || '';
         if (!filePath) {
@@ -674,14 +683,13 @@ export function ScreenshotMetadataPage() {
         }
         const key = event.key.toLowerCase();
         if (hasCommandModifier(event)) {
-            if (
-                key === 'c' &&
-                !event.altKey &&
-                !event.shiftKey &&
-                !hasTextSelection()
-            ) {
+            if (key === 'c' && !event.altKey && !hasTextSelection()) {
                 event.preventDefault();
-                void copyImage();
+                if (event.shiftKey) {
+                    void copyPrint();
+                } else {
+                    void copyImage();
+                }
             }
             return;
         }
@@ -1039,6 +1047,11 @@ export function ScreenshotMetadataPage() {
                     onCopyImage={() => {
                         void copyImage();
                     }}
+                    onOpenPrint={() => {
+                        if (metadata?.filePath) {
+                            setPrintPaths([metadata.filePath]);
+                        }
+                    }}
                     onOpenFolder={() => {
                         void openFolder();
                     }}
@@ -1054,6 +1067,18 @@ export function ScreenshotMetadataPage() {
                     }}
                 />
             )}
+
+            {printPaths ? (
+                <ScreenshotPrintDialog
+                    open
+                    paths={printPaths}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setPrintPaths(null);
+                        }
+                    }}
+                />
+            ) : null}
 
             <FullscreenImageViewer
                 open={isFullscreenOpen}

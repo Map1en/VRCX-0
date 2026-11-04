@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use fast_image_resize::{FilterType, ResizeAlg, ResizeOptions, Resizer};
 use image::{DynamicImage, RgbImage};
 use jpeg_encoder::{ColorType, Encoder, SamplingFactor};
@@ -29,13 +27,12 @@ pub fn screenshot_share_upload_limit(compression: ScreenshotShareCompression) ->
 }
 
 pub fn encode_screenshot_share(
-    source_path: &Path,
+    source: Vec<u8>,
     compression: ScreenshotShareCompression,
     keep_metadata: bool,
 ) -> Result<SharedImage, Error> {
     let limit_bytes = screenshot_share_upload_limit(compression).unwrap_or(usize::MAX);
     let keep_metadata = keep_metadata && compression == ScreenshotShareCompression::Original;
-    let source = std::fs::read(source_path)?;
     let original = match split_png_metadata(&source) {
         Some((pixels, metadata)) => {
             with_metadata(&pixels, if keep_metadata { &metadata } else { &[] })

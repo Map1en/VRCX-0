@@ -111,7 +111,8 @@ function buildMessage(
         embed,
         spoiler: fields.spoiler,
         metadata: fields.metadata,
-        compression: fields.compression
+        compression: fields.compression,
+        printCaptions: []
     };
 }
 

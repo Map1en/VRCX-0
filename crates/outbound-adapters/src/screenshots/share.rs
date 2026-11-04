@@ -11,10 +11,11 @@ use vrcx_0_core::screenshots::{
     ScreenshotShareSendResult, ScreenshotShareTarget, ScreenshotShareTargetInput, ScreenshotStay,
 };
 use vrcx_0_core::OwnerId;
+use vrcx_0_media::screenshot_print::compose_screenshot_print;
 use vrcx_0_media::screenshot_share::{encode_screenshot_share, screenshot_share_upload_limit};
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::screenshot_cache::MetadataCacheDb;
-use vrcx_0_persistence::{game_log, DatabaseService};
+use vrcx_0_persistence::{game_log, worlds, DatabaseService};
 
 use crate::{Error, Result};
 
@@ -291,10 +292,21 @@ impl ScreenshotShareService {
                     .filter(|name| !name.is_empty())
                     .or_else(|| metadata.world.name.clone().filter(|name| !name.is_empty()));
                 let stay = self.stay_at(&author, world_id.as_deref(), image.captured_at_ms);
+                let world_author_name = world_id
+                    .clone()
+                    .and_then(|id| worlds::world_cache_get(self.db.as_ref(), id).ok().flatten())
+                    .map(|world| world.author_name)
+                    .filter(|name| !name.is_empty());
                 ScreenshotShareFacts {
                     path: image.path,
                     world_id,
                     world_name,
+                    world_author_name,
+                    author_name: metadata
+                        .author
+                        .display_name
+                        .clone()
+                        .filter(|name| !name.is_empty()),
                     captured_at_ms: image.captured_at_ms,
                     player_count: (!metadata.players.is_empty())
                         .then_some(metadata.players.len() as i64),
@@ -408,15 +420,20 @@ impl ScreenshotShareService {
         processed_before: usize,
         result: &mut ScreenshotShareSendResult,
     ) -> std::result::Result<(), SendFailure> {
+        if !message.print_captions.is_empty() && message.print_captions.len() != message.paths.len()
+        {
+            return Err(SendFailure::File);
+        }
         let options = EncodeOptions {
             spoiler: message.spoiler,
             metadata: message.metadata,
             compression: message.compression,
         };
         let paths = message.paths.clone();
+        let captions = message.print_captions.clone();
         let progress = Arc::clone(&self.progress);
         let files = tokio::task::spawn_blocking(move || {
-            encode_files(&paths, options, |encoded| {
+            encode_files(&paths, &captions, options, |encoded| {
                 progress.lock().unwrap().processed_files = (processed_before + encoded) as u32;
             })
         })
@@ -640,6 +657,7 @@ struct EncodedFile {
 
 fn encode_files(
     paths: &[String],
+    captions: &[String],
     options: EncodeOptions,
     mut on_encoded: impl FnMut(usize),
 ) -> std::result::Result<Vec<EncodedFile>, SendFailure> {
@@ -648,16 +666,24 @@ fn encode_files(
         .iter()
         .enumerate()
         .map(|(index, path)| {
-            let image =
-                encode_screenshot_share(Path::new(path), options.compression, options.metadata)
-                    .map_err(|_| SendFailure::File)?;
+            let source = std::fs::read(path).map_err(|_| SendFailure::File)?;
+            let caption = captions.get(index);
+            let source = match caption {
+                Some(caption) => {
+                    compose_screenshot_print(&source, caption).map_err(|_| SendFailure::File)?
+                }
+                None => source,
+            };
+            let image = encode_screenshot_share(source, options.compression, options.metadata)
+                .map_err(|_| SendFailure::File)?;
             on_encoded(index + 1);
             let extension = if image.jpeg { "jpg" } else { "png" };
-            let mut name = attachment_name(path, options.spoiler, None, extension);
+            let print = caption.is_some();
+            let mut name = attachment_name(path, options.spoiler, print, None, extension);
             let mut suffix = 1;
             while !used.insert(name.clone()) {
                 suffix += 1;
-                name = attachment_name(path, options.spoiler, Some(suffix), extension);
+                name = attachment_name(path, options.spoiler, print, Some(suffix), extension);
             }
             Ok(EncodedFile {
                 name,
@@ -692,11 +718,30 @@ fn pack_batches(files: Vec<EncodedFile>, limit_bytes: Option<usize>) -> Vec<Vec<
     batches
 }
 
-fn attachment_name(path: &str, spoiler: bool, suffix: Option<usize>, extension: &str) -> String {
+pub fn print_file_stem(path: &str) -> String {
     let stem = Path::new(path)
         .file_stem()
         .map(|stem| stem.to_string_lossy().into_owned())
         .unwrap_or_else(|| "screenshot".into());
+    let stem = stem.strip_prefix("VRChat_").unwrap_or(&stem);
+    format!("VRCX-0_print_{stem}")
+}
+
+fn attachment_name(
+    path: &str,
+    spoiler: bool,
+    print: bool,
+    suffix: Option<usize>,
+    extension: &str,
+) -> String {
+    let stem = if print {
+        print_file_stem(path)
+    } else {
+        Path::new(path)
+            .file_stem()
+            .map(|stem| stem.to_string_lossy().into_owned())
+            .unwrap_or_else(|| "screenshot".into())
+    };
     let safe: String = stem
         .chars()
         .map(|c| {
