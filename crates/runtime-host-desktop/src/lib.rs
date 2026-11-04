@@ -37,7 +37,6 @@ pub mod notification;
 mod privacy_lock;
 mod process_monitor;
 mod profile_backup;
-mod profile_bio;
 mod proxy_connectivity;
 mod registry_backup;
 mod screenshot;
@@ -48,7 +47,6 @@ mod startup_bootstrap;
 mod state;
 pub mod tray_shortcut;
 pub mod vr_overlay;
-mod vrchat_remote;
 
 pub use ancillary_snapshot::AncillaryRuntimeSnapshot;
 pub use app_launcher::AppLauncherSnapshotEvent;
@@ -91,5 +89,4 @@ pub use state::{
     CurrentUserRefreshOutcome, DesktopRuntimeBundle, DesktopRuntimeHostOptions,
     DesktopRuntimeHostState, GameRuntimeBundle, RuntimeJobRecordInput,
 };
-pub use vrchat_remote::DesktopVrchatRemoteFacade;
 pub use vrcx_0_composition::{Error, Result};

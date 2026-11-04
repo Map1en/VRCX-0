@@ -3,7 +3,7 @@ use std::sync::Arc;
 use vrcx_0_application::auth::VrchatConfigRuntime;
 use vrcx_0_application::favorites::FavoriteDetailsRuntime;
 use vrcx_0_application::game::InstanceLaunchRuntime;
-use vrcx_0_application::remote::{VrchatApiRuntime, WorldRemoteRuntime};
+use vrcx_0_application::remote::{VrchatApiRuntime, VrchatRemoteFacade, WorldRemoteRuntime};
 use vrcx_0_application::social::{
     CurrentUserMutationRuntime, GroupMembershipBatchCoordinator, GroupModerationBatchCoordinator,
     QuickSearchRuntime, QuickSearchSources,
@@ -11,9 +11,9 @@ use vrcx_0_application::social::{
 use vrcx_0_composition::RuntimeHostState;
 use vrcx_0_outbound_adapters::{
     CachedWorldNameResolver, CachedWorldResponseProjection, LocalAvatarApplicationAdapter,
-    LocalNotificationWebhookTransport, LocalQuickSearchDetailStore, VrchatApiRemote,
-    VrchatAvatarRemote, VrchatCurrentUserMutationRemote, VrchatFavoriteRemote,
-    VrchatRequestAdapter, VrchatWorldRemote,
+    LocalMediaUploadAdapter, LocalNotificationWebhookTransport, LocalPrintAdapter,
+    LocalProfileBioStore, LocalQuickSearchDetailStore, VrchatApiRemote, VrchatAvatarRemote,
+    VrchatCurrentUserMutationRemote, VrchatFavoriteRemote, VrchatRequestAdapter, VrchatWorldRemote,
 };
 
 use crate::avatar::DesktopAvatarRuntime;
@@ -21,9 +21,7 @@ use crate::external_api::ExternalApiRuntime;
 use crate::group::DesktopGroupRuntime;
 use crate::instance_launch::{build_instance_launch_runtime, InstanceLaunchRuntimeDeps};
 use crate::media::DesktopMediaRuntime;
-use crate::profile_bio::ProfileBioObserver;
 use crate::social::DesktopSocialRuntime;
-use crate::vrchat_remote::DesktopVrchatRemoteFacade;
 use crate::HostFileAccess;
 
 pub(crate) struct RemoteRuntimes {
@@ -34,7 +32,7 @@ pub(crate) struct RemoteRuntimes {
     pub(crate) groups: DesktopGroupRuntime,
     pub(crate) social: DesktopSocialRuntime,
     pub(crate) media: DesktopMediaRuntime,
-    pub(crate) vrchat_remote: DesktopVrchatRemoteFacade,
+    pub(crate) vrchat_remote: VrchatRemoteFacade,
     pub(crate) worlds: WorldRemoteRuntime,
     pub(crate) vrchat_config: VrchatConfigRuntime,
     pub(crate) favorite_details: FavoriteDetailsRuntime,
@@ -105,12 +103,20 @@ pub(crate) fn build_remote_runtimes(
         context.moderation_sync().clone(),
         runtime.authenticated_runtime().clone(),
     );
+    let media_upload_adapter = Arc::new(LocalMediaUploadAdapter::new(Arc::clone(
+        runtime.web_client(),
+    )));
+    let print_adapter = Arc::new(LocalPrintAdapter::new(
+        Arc::clone(runtime.database()),
+        Arc::clone(runtime.web_client()),
+    ));
     let media = DesktopMediaRuntime::new(
         host_file_access.clone(),
         runtime.paths().clone(),
         Arc::clone(runtime.image_cache()),
-        Arc::clone(runtime.database()),
         Arc::clone(runtime.web_client()),
+        print_adapter.clone(),
+        media_upload_adapter.clone(),
         context.auth_scope().clone(),
         Arc::clone(context.remote_mutations()),
         context.diagnostics().clone(),
@@ -136,14 +142,13 @@ pub(crate) fn build_remote_runtimes(
             context.world_cache(),
         ))),
     );
-    let vrchat_remote = DesktopVrchatRemoteFacade::new(
+    let vrchat_remote = VrchatRemoteFacade::new(
         vrchat_api.clone(),
-        media.clone(),
-        ProfileBioObserver::new(
-            Arc::clone(runtime.database()),
-            Arc::clone(runtime.realtime_runtime()),
-            context.auth_scope().clone(),
-        ),
+        media_upload_adapter,
+        print_adapter,
+        Arc::new(LocalProfileBioStore::new(Arc::clone(runtime.database()))),
+        Arc::clone(runtime.realtime_runtime()),
+        context.auth_scope().clone(),
     );
     let vrchat_config = VrchatConfigRuntime::new(
         vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT.into(),

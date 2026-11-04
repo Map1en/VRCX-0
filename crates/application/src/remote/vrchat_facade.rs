@@ -1,8 +1,12 @@
-use vrcx_0_application::remote::VrchatApiRuntime;
+use std::sync::Arc;
+
 use vrcx_0_application_core::vrchat_api::VrchatScope;
-use vrcx_0_application_core::Result;
+use vrcx_0_application_core::{Result, RuntimeAuthScope};
+use vrcx_0_application_realtime::RealtimeHostRuntime;
 use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatResponse};
+use vrcx_0_core::time::now_iso;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
+use vrcx_0_core::OwnerId;
 use vrcx_0_vrchat_protocol::auth::{
     current_user_get_input, file_analysis_get_input, visits_get_input,
 };
@@ -52,26 +56,38 @@ use vrcx_0_vrchat_protocol::users::{
     account_standing_get_input, profile_get_input, user_represented_group_get_input,
 };
 
-use crate::profile_bio::ProfileBioObserver;
-use crate::DesktopMediaRuntime;
+use super::VrchatApiRuntime;
+use crate::media::{prepare_media_upload_request, MediaUploadPreprocessor};
+use crate::social::{
+    ensure_print_deletable, observe_profile_response, PrintFavoritesStore, ProfileBioStore,
+};
 
 #[derive(Clone)]
-pub struct DesktopVrchatRemoteFacade {
+pub struct VrchatRemoteFacade {
     api: VrchatApiRuntime,
-    media: DesktopMediaRuntime,
-    profile_bio: ProfileBioObserver,
+    media_upload: Arc<dyn MediaUploadPreprocessor>,
+    prints: Arc<dyn PrintFavoritesStore>,
+    profile_bio: Arc<dyn ProfileBioStore>,
+    realtime: Arc<RealtimeHostRuntime>,
+    auth_scope: RuntimeAuthScope,
 }
 
-impl DesktopVrchatRemoteFacade {
-    pub(crate) fn new(
+impl VrchatRemoteFacade {
+    pub fn new(
         api: VrchatApiRuntime,
-        media: DesktopMediaRuntime,
-        profile_bio: ProfileBioObserver,
+        media_upload: Arc<dyn MediaUploadPreprocessor>,
+        prints: Arc<dyn PrintFavoritesStore>,
+        profile_bio: Arc<dyn ProfileBioStore>,
+        realtime: Arc<RealtimeHostRuntime>,
+        auth_scope: RuntimeAuthScope,
     ) -> Self {
         Self {
             api,
-            media,
+            media_upload,
+            prints,
             profile_bio,
+            realtime,
+            auth_scope,
         }
     }
 
@@ -127,7 +143,7 @@ impl DesktopVrchatRemoteFacade {
                 VrchatScope::Vrchat,
             )
             .await?;
-        self.profile_bio.observe(&response);
+        self.observe_profile_bio(&response);
         Ok(response)
     }
 
@@ -770,7 +786,7 @@ impl DesktopVrchatRemoteFacade {
             params,
             image_data,
         )?;
-        let request = self.media.prepare_media_upload_request(request)?;
+        let request = prepare_media_upload_request(self.media_upload.as_ref(), request)?;
         self.execute(
             "app__vrchat_request_invite_photo_send",
             format!("Sending invite request photo to {receiver_user_id}."),
@@ -976,7 +992,11 @@ impl DesktopVrchatRemoteFacade {
     }
 
     pub async fn delete_print(&self, print_id: String) -> Result<VrchatResponse> {
-        self.media.ensure_print_deletable(&print_id)?;
+        ensure_print_deletable(
+            self.prints.as_ref(),
+            &self.auth_scope.snapshot().current_user_id,
+            &print_id,
+        )?;
         let detail = format!("Deleting print {print_id}.");
         let request = print_delete_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), print_id)?;
         self.execute(
@@ -1126,7 +1146,7 @@ impl DesktopVrchatRemoteFacade {
         detail: impl Into<String>,
         request: VrchatRequest,
     ) -> Result<VrchatResponse> {
-        let request = self.media.prepare_media_upload_request(request)?;
+        let request = prepare_media_upload_request(self.media_upload.as_ref(), request)?;
         self.execute(command, detail, request, VrchatScope::VrchatMedia)
             .await
     }
@@ -1139,5 +1159,18 @@ impl DesktopVrchatRemoteFacade {
         scope: VrchatScope,
     ) -> Result<VrchatResponse> {
         self.api.execute(command, detail, request, scope).await
+    }
+
+    fn observe_profile_bio(&self, response: &VrchatResponse) {
+        let owner = OwnerId::new(self.auth_scope.snapshot().current_user_id);
+        if let Err(error) = observe_profile_response(
+            self.profile_bio.as_ref(),
+            &self.realtime,
+            &owner,
+            response,
+            &now_iso(),
+        ) {
+            tracing::warn!(error = %error, "failed to observe a profile bio");
+        }
     }
 }

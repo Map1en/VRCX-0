@@ -1,4 +1,5 @@
 mod vrchat_api;
+mod vrchat_facade;
 mod worlds;
 
 #[cfg(test)]
@@ -6,6 +7,7 @@ pub(crate) use vrchat_api::TestVrchatRequestPort;
 pub use vrchat_api::{
     VrchatApiFuture, VrchatApiPort, VrchatApiRuntime, VrchatRequestFuture, VrchatRequestPort,
 };
+pub use vrchat_facade::VrchatRemoteFacade;
 pub use vrcx_0_contracts::vrchat_requests::{
     AvatarListSort, AvatarReleaseStatus, AvatarUpdateRequest, CalendarListParams, EmojiLoopStyle,
     EmojiUploadParams, GroupCalendarEventAccessType, GroupCalendarEventMutation,

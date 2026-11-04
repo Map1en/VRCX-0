@@ -23,7 +23,6 @@ use crate::profile_backup::DesktopProfileBackupRuntime;
 use crate::screenshot::DesktopScreenshotRuntime;
 use crate::social::DesktopSocialRuntime;
 use crate::vr_overlay::{DesktopVrOverlayRuntime, VrOverlayRuntimeSnapshot};
-use crate::vrchat_remote::DesktopVrchatRemoteFacade;
 use crate::{
     DesktopDatabaseUpgradeRuntime, DesktopLegacyMigrationRuntime, DesktopRuntimeServices,
     GameClientHostRuntime, GameLogHostRuntime, HostFileAccess, HostGameProcessMonitorActions,
@@ -49,7 +48,7 @@ use vrcx_0_application::game::InstanceLaunchRuntime;
 use vrcx_0_application::profile::{
     AppUpdateBuildInfo, AppUpdateRuntime, BackgroundImageService, CommunityThemeService,
 };
-use vrcx_0_application::remote::WorldRemoteRuntime;
+use vrcx_0_application::remote::{VrchatRemoteFacade, WorldRemoteRuntime};
 use vrcx_0_application::social::{
     CurrentUserMutationRuntime, GroupBanImportStartInput, GroupBanImportStatus,
 };
@@ -198,7 +197,7 @@ pub struct DesktopRuntimeHostState {
     social: DesktopSocialRuntime,
     media: DesktopMediaRuntime,
     screenshots: DesktopScreenshotRuntime,
-    vrchat_remote: DesktopVrchatRemoteFacade,
+    vrchat_remote: VrchatRemoteFacade,
     worlds: WorldRemoteRuntime,
     vrchat_config: VrchatConfigRuntime,
     database_upgrade: DesktopDatabaseUpgradeRuntime,
@@ -568,7 +567,7 @@ impl DesktopRuntimeHostState {
         &self.worlds
     }
 
-    pub fn vrchat_remote(&self) -> &DesktopVrchatRemoteFacade {
+    pub fn vrchat_remote(&self) -> &VrchatRemoteFacade {
         &self.vrchat_remote
     }
 

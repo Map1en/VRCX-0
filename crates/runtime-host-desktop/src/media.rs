@@ -7,15 +7,13 @@ use vrcx_0_application::media::{
     LegacyMediaUploadDeps,
 };
 use vrcx_0_application::social::{
-    ensure_print_deletable, favorite_state, set_print_favorite, set_print_favorites,
-    PrintFavoriteBulkResult, PrintFavoriteState,
+    favorite_state, set_print_favorite, set_print_favorites, PrintFavoriteBulkResult,
+    PrintFavoriteState, PrintFavoritesStore,
 };
 use vrcx_0_application_core::{
     save_ugc_image_to_file, AuthenticatedMutationContext, ImageCache, RemoteMutationGate,
     RuntimeAuthScope, RuntimeDiagnostics, RuntimeOperationStatus, UgcCategory, WebClient,
 };
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
-use vrcx_0_persistence::DatabaseService;
 use vrcx_0_platform::app_paths::AppPaths;
 
 use crate::{HostFileAccess, Result};
@@ -25,8 +23,8 @@ pub struct DesktopMediaRuntime {
     file_access: HostFileAccess,
     paths: AppPaths,
     image_cache: Arc<ImageCache>,
-    print_adapter: vrcx_0_outbound_adapters::LocalPrintAdapter,
-    media_upload_adapter: vrcx_0_outbound_adapters::LocalMediaUploadAdapter,
+    print_adapter: Arc<dyn PrintFavoritesStore>,
+    media_upload_adapter: Arc<vrcx_0_outbound_adapters::LocalMediaUploadAdapter>,
     inventory_remote: vrcx_0_outbound_adapters::VrchatRequestAdapter,
     auth_scope: RuntimeAuthScope,
     remote_mutations: Arc<RemoteMutationGate>,
@@ -39,18 +37,15 @@ impl DesktopMediaRuntime {
         file_access: HostFileAccess,
         paths: AppPaths,
         image_cache: Arc<ImageCache>,
-        db: Arc<DatabaseService>,
         web: Arc<WebClient>,
+        print_adapter: Arc<dyn PrintFavoritesStore>,
+        media_upload_adapter: Arc<vrcx_0_outbound_adapters::LocalMediaUploadAdapter>,
         auth_scope: RuntimeAuthScope,
         remote_mutations: Arc<RemoteMutationGate>,
         diagnostics: RuntimeDiagnostics,
     ) -> Self {
-        let media_upload_adapter =
-            vrcx_0_outbound_adapters::LocalMediaUploadAdapter::new(Arc::clone(&web));
         let inventory_remote =
             vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(&web));
-        let print_adapter =
-            vrcx_0_outbound_adapters::LocalPrintAdapter::new(Arc::clone(&db), Arc::clone(&web));
         Self {
             file_access,
             paths,
@@ -62,13 +57,6 @@ impl DesktopMediaRuntime {
             remote_mutations,
             diagnostics,
         }
-    }
-
-    pub fn prepare_media_upload_request(
-        &self,
-        input: VrchatRequest,
-    ) -> vrcx_0_application_core::Result<VrchatRequest> {
-        application_media::prepare_media_upload_request(&self.media_upload_adapter, input)
     }
 
     pub fn decode_image_file(
@@ -145,7 +133,7 @@ impl DesktopMediaRuntime {
             format!("Uploading legacy {} image.", kind.label()),
         );
         let result = application_media::upload_legacy_entity_image(
-            LegacyMediaUploadDeps::new(&self.media_upload_adapter, mutation),
+            LegacyMediaUploadDeps::new(self.media_upload_adapter.as_ref(), mutation),
             input,
             kind,
         )
@@ -167,14 +155,14 @@ impl DesktopMediaRuntime {
 
     pub fn print_favorites(&self) -> Result<PrintFavoriteState> {
         Ok(favorite_state(
-            &self.print_adapter,
+            self.print_adapter.as_ref(),
             &self.auth_scope.snapshot().current_user_id,
         )?)
     }
 
     pub fn set_print_favorite(&self, print_id: &str, favorite: bool) -> Result<PrintFavoriteState> {
         Ok(set_print_favorite(
-            &self.print_adapter,
+            self.print_adapter.as_ref(),
             &self.auth_scope.snapshot().current_user_id,
             print_id,
             favorite,
@@ -187,19 +175,11 @@ impl DesktopMediaRuntime {
         favorite: bool,
     ) -> Result<PrintFavoriteBulkResult> {
         Ok(set_print_favorites(
-            &self.print_adapter,
+            self.print_adapter.as_ref(),
             &self.auth_scope.snapshot().current_user_id,
             print_ids,
             favorite,
         )?)
-    }
-
-    pub fn ensure_print_deletable(&self, print_id: &str) -> vrcx_0_application_core::Result<()> {
-        ensure_print_deletable(
-            &self.print_adapter,
-            &self.auth_scope.snapshot().current_user_id,
-            print_id,
-        )
     }
 
     pub async fn collect_inventory_items(
