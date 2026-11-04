@@ -86,6 +86,75 @@ fn contains_identifier(source: &str, identifier: &str) -> bool {
     })
 }
 
+fn identifier_end(text: &str) -> usize {
+    text.find(|character: char| character != '_' && !character.is_alphanumeric())
+        .unwrap_or(text.len())
+}
+
+fn persistence_leaves(source: &str) -> Vec<String> {
+    const CRATE_PATH: &str = "vrcx_0_persistence::";
+    let mut leaves = Vec::new();
+    for (index, _) in source.match_indices(CRATE_PATH) {
+        if source[..index]
+            .ends_with(|character: char| character == '_' || character.is_alphanumeric())
+        {
+            continue;
+        }
+        let mut rest = &source[index + CRATE_PATH.len()..];
+        collect_path_leaves(&mut rest, "", &mut leaves);
+    }
+    leaves
+}
+
+fn collect_path_leaves(rest: &mut &str, prefix: &str, leaves: &mut Vec<String>) {
+    *rest = rest.trim_start();
+    if let Some(group) = rest.strip_prefix('{') {
+        *rest = group;
+        loop {
+            *rest = rest.trim_start();
+            if let Some(after) = rest.strip_prefix('}') {
+                *rest = after;
+                return;
+            }
+            let before = rest.len();
+            collect_path_leaves(rest, prefix, leaves);
+            *rest = rest.trim_start();
+            if let Some(after) = rest.strip_prefix(',') {
+                *rest = after;
+            } else if rest.len() == before || !rest.starts_with('}') {
+                return;
+            }
+        }
+    }
+    let end = identifier_end(rest);
+    if end == 0 {
+        return;
+    }
+    let segment = &rest[..end];
+    *rest = &rest[end..];
+    let path = match (prefix.is_empty(), segment) {
+        (_, "self") => prefix.to_string(),
+        (true, _) => segment.to_string(),
+        (false, _) => format!("{prefix}::{segment}"),
+    };
+    if let Some(after) = rest.strip_prefix("::") {
+        *rest = after;
+        collect_path_leaves(rest, &path, leaves);
+        return;
+    }
+    if let Some(alias) = rest
+        .trim_start()
+        .strip_prefix("as")
+        .filter(|after| after.starts_with(char::is_whitespace))
+    {
+        let alias = alias.trim_start();
+        *rest = &alias[identifier_end(alias)..];
+    }
+    if !path.is_empty() {
+        leaves.push(path);
+    }
+}
+
 #[test]
 fn vrchat_commands_do_not_access_transport_implementation_directly() {
     for path in rust_sources_below("src-tauri/src/commands/vrchat") {
@@ -600,5 +669,160 @@ fn blocking_tauri_commands_are_limited_to_the_main_thread_allowlist() {
     assert_eq!(
         blocking, allowed,
         "blocking Tauri commands run on the main thread; mark the command #[tauri::command(async)], make it an async fn that offloads through commands::blocking::run_blocking, or add it to the allowlist"
+    );
+}
+
+#[test]
+fn persistence_leaves_expand_nested_use_groups() {
+    let source = "use vrcx_0_persistence::{\n    assistant,\n    config::ConfigRepository,\n    activity::{self, activity_self_caches_invalidate},\n    DatabaseService,\n};";
+    assert_eq!(
+        persistence_leaves(source),
+        [
+            "assistant",
+            "config::ConfigRepository",
+            "activity",
+            "activity::activity_self_caches_invalidate",
+            "DatabaseService",
+        ]
+    );
+}
+
+#[test]
+fn persistence_leaves_take_the_path_before_an_alias() {
+    let source = "use vrcx_0_persistence::config as config_store;\nuse vrcx_0_persistence::{game_log as log, DatabaseService};";
+    assert_eq!(
+        persistence_leaves(source),
+        ["config", "game_log", "DatabaseService"]
+    );
+}
+
+#[test]
+fn persistence_leaves_include_inline_qualified_calls() {
+    let source = "if vrcx_0_persistence::config::get_bool(&self.db, \"gameLogDisabled\", false)? {}\nlet cache: OnceLock<vrcx_0_persistence::screenshot_cache::MetadataCacheDb> = OnceLock::new();\nlet my_vrcx_0_persistence::ignored = ();";
+    assert_eq!(
+        persistence_leaves(source),
+        ["config::get_bool", "screenshot_cache::MetadataCacheDb"]
+    );
+}
+
+#[test]
+fn desktop_runtime_host_reaches_infrastructure_only_through_listed_modules() {
+    const SOURCE_ROOT: &str = "crates/runtime-host-desktop/src";
+    const PERSISTENCE_HANDLES: &[&str] = &[
+        "DatabaseService",
+        "config::ConfigRepository",
+        "screenshot_cache::MetadataCacheDb",
+    ];
+    const PERSISTENCE_QUERY_MODULES: &[&str] = &[
+        "assistant_adapters.rs",
+        "data_dir.rs",
+        "feed_logger.rs",
+        "game_log.rs",
+        "game_log_import.rs",
+        "game_state_store.rs",
+        "instance_launch.rs",
+        "integration_api.rs",
+        "legacy_migration.rs",
+        "mcp_adapters.rs",
+        "notification/dispatcher.rs",
+        "notification/indicator.rs",
+        "notification/preferences.rs",
+        "state.rs",
+    ];
+    const VRCHAT_CLIENT_MODULES: &[&str] = &[
+        "background_remote.rs",
+        "game_media.rs",
+        "instance_launch.rs",
+        "privacy_lock.rs",
+        "vrchat_remote.rs",
+    ];
+
+    let root = workspace_file(SOURCE_ROOT);
+    let mut persistence_queries = std::collections::BTreeMap::<String, BTreeSet<String>>::new();
+    let mut vrchat_client_modules = BTreeSet::new();
+    for path in rust_sources_below(SOURCE_ROOT) {
+        let relative = path
+            .strip_prefix(&root)
+            .expect("desktop runtime source lives below its root")
+            .to_string_lossy()
+            .replace('\\', "/");
+        let file_name = relative.rsplit('/').next().unwrap_or_default();
+        if relative.starts_with("state/assembly/")
+            || relative.starts_with("tests/")
+            || relative.contains("/tests/")
+            || file_name.ends_with("tests.rs")
+            || file_name.ends_with("test_support.rs")
+            || file_name == "assistant_llm_harness.rs"
+        {
+            continue;
+        }
+        let source = std::fs::read_to_string(&path).expect("read desktop runtime source");
+        let queries: BTreeSet<String> = persistence_leaves(&source)
+            .into_iter()
+            .filter(|leaf| {
+                !PERSISTENCE_HANDLES
+                    .iter()
+                    .any(|handle| leaf == handle || leaf.starts_with(&format!("{handle}::")))
+            })
+            .collect();
+        if !queries.is_empty() {
+            persistence_queries.insert(relative.clone(), queries);
+        }
+        if source.contains("vrcx_0_vrchat_client") {
+            vrchat_client_modules.insert(relative);
+        }
+    }
+
+    let unlisted_queries: Vec<String> = persistence_queries
+        .iter()
+        .filter(|(file, _)| !PERSISTENCE_QUERY_MODULES.contains(&file.as_str()))
+        .flat_map(|(file, leaves)| {
+            leaves.iter().map(move |leaf| {
+                format!(
+                    "{file}: vrcx_0_persistence::{leaf} — move this query behind an outbound adapter or add the file to PERSISTENCE_QUERY_MODULES"
+                )
+            })
+        })
+        .collect();
+    assert!(
+        unlisted_queries.is_empty(),
+        "desktop runtime host reaches persistence queries directly:\n{}",
+        unlisted_queries.join("\n")
+    );
+
+    let unlisted_vrchat_client: Vec<String> = vrchat_client_modules
+        .iter()
+        .filter(|file| !VRCHAT_CLIENT_MODULES.contains(&file.as_str()))
+        .map(|file| {
+            format!(
+                "{file}: vrcx_0_vrchat_client — move this call behind an outbound adapter or add the file to VRCHAT_CLIENT_MODULES"
+            )
+        })
+        .collect();
+    assert!(
+        unlisted_vrchat_client.is_empty(),
+        "desktop runtime host reaches the VRChat client directly:\n{}",
+        unlisted_vrchat_client.join("\n")
+    );
+
+    let stale_entries: Vec<String> = PERSISTENCE_QUERY_MODULES
+        .iter()
+        .filter(|file| !persistence_queries.contains_key(**file))
+        .map(|file| {
+            format!("{file}: no direct persistence query remains — remove it from PERSISTENCE_QUERY_MODULES")
+        })
+        .chain(
+            VRCHAT_CLIENT_MODULES
+                .iter()
+                .filter(|file| !vrchat_client_modules.contains(**file))
+                .map(|file| {
+                    format!("{file}: no vrcx_0_vrchat_client use remains — remove it from VRCHAT_CLIENT_MODULES")
+                }),
+        )
+        .collect();
+    assert!(
+        stale_entries.is_empty(),
+        "desktop runtime host infrastructure allowlists must only shrink:\n{}",
+        stale_entries.join("\n")
     );
 }
