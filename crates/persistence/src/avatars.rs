@@ -1,8 +1,8 @@
-use serde::Deserialize;
 use serde_json::Value;
 pub use vrcx_0_contracts::{
     AvatarCacheOutput, AvatarTagOutput, AvatarTimeSpentOutput, AvatarUsageRow, AvatarWearSegment,
 };
+use vrcx_0_contracts::{AvatarTagInput, AvatarTagsPatchInput};
 
 use crate::activity::{activity_iso_from_ms, parse_activity_time_ms};
 
@@ -15,24 +15,6 @@ use crate::Error;
 
 #[cfg(test)]
 mod tests;
-
-#[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct AvatarTagInput {
-    #[serde(default)]
-    pub tag: String,
-    #[serde(default)]
-    pub color: Value,
-}
-
-#[derive(Debug, Deserialize, Default, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct AvatarTagsPatchInput {
-    #[serde(default)]
-    pub previous_entries: Vec<AvatarTagInput>,
-    #[serde(default)]
-    pub next_entries: Vec<AvatarTagInput>,
-}
 
 pub fn avatar_cache_upsert(db: &DatabaseService, entry: CacheEntityInput) -> Result<i64, Error> {
     upsert_cache_entity(db, "cache_avatar", entry)

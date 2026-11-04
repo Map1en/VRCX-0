@@ -1,4 +1,4 @@
-use serde::Serialize;
+use vrcx_0_contracts::profile_bio::ProfileBioOutput;
 pub use vrcx_0_contracts::profile_bio::ProfileBioRecord;
 
 use crate::common::{normalize_text, row_string, ParamsBuilder};
@@ -7,14 +7,6 @@ use crate::database::DatabaseService;
 use crate::ownership::OwnerId;
 use crate::realtime::{ensure_realtime_tables, normalize_user_table_prefix};
 use crate::Error;
-
-#[derive(Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct ProfileBioOutput {
-    pub user_id: String,
-    pub bio: String,
-    pub bio_links: Vec<String>,
-}
 
 pub(crate) fn ensure_profile_bio_table(
     db: &DatabaseService,

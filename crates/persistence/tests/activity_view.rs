@@ -3,6 +3,9 @@ use std::sync::{Arc, Barrier};
 
 use chrono::DateTime;
 use serde_json::json;
+use vrcx_0_contracts::activity_view::{
+    ActivityOverlapViewBuildInput, ActivityViewBuildInput, ActivityViewOutput,
+};
 use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_core::OwnerId;
 use vrcx_0_persistence::activity::{
@@ -10,8 +13,7 @@ use vrcx_0_persistence::activity::{
     activity_friend_presence_last_created_at, activity_overlap_view_build,
     activity_self_sessions_warmup, activity_sessions_replace, activity_sync_state_get,
     activity_sync_state_upsert, activity_view_build, ActivityBucketCacheInput,
-    ActivityBucketCacheQueryInput, ActivityOverlapViewBuildInput, ActivitySessionInput,
-    ActivitySyncStateInput, ActivityViewBuildInput, ActivityViewKind, ActivityViewOutput,
+    ActivityBucketCacheQueryInput, ActivitySessionInput, ActivitySyncStateInput, ActivityViewKind,
 };
 use vrcx_0_persistence::game_log::{write_batch, GameLogLocationEntry, GameLogWriteBatch};
 use vrcx_0_persistence::realtime::{write_realtime_batch, RealtimePersistenceBatch};

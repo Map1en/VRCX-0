@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use serde::Serialize;
 use serde_json::Value;
+use vrcx_0_contracts::player_list::InstanceActivityRowOutput;
 
 use crate::common::{normalize_text, row_i64, row_string, ParamsBuilder};
 use crate::database::schema::ensure_global_store_tables;
@@ -11,18 +11,6 @@ use crate::ownership::{owner_id_for_filter, OwnerId};
 use crate::Error;
 
 use crate::worlds::{world_summary_from_row, WorldSummaryOutput};
-
-#[derive(Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct InstanceActivityRowOutput {
-    pub id: i64,
-    pub created_at: String,
-    pub r#type: String,
-    pub display_name: String,
-    pub location: String,
-    pub user_id: String,
-    pub time: i64,
-}
 
 pub fn instance_activity_dates_get(
     db: &DatabaseService,

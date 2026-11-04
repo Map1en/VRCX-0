@@ -2,7 +2,7 @@
 
 use tauri::State;
 
-use vrcx_0_runtime_host_desktop::local_data::{
+use vrcx_0_contracts::browse_history::{
     BrowseHistoryEntityKind, BrowseHistoryPageOutput, BrowseHistoryQueryInput,
     BrowseHistoryRecordInput,
 };

@@ -1,4 +1,6 @@
-use serde::Serialize;
+use vrcx_0_contracts::memos::{
+    AvatarMemoOutput, MemoSaveResult, UserMemoOutput, UserNoteOutput, WorldMemoOutput,
+};
 
 use crate::common::{normalize_text, now_iso, row_i64, row_string, ParamsBuilder};
 use crate::database::schema::{ensure_global_store_tables, ensure_user_store_tables};
@@ -6,47 +8,6 @@ use crate::database::DatabaseService;
 use crate::ownership::OwnerId;
 use crate::realtime::normalize_user_table_prefix;
 use crate::Error;
-
-#[derive(Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct MemoSaveResult {
-    pub entity_id: String,
-    pub edited_at: String,
-    pub memo: String,
-}
-
-#[derive(Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct UserMemoOutput {
-    pub user_id: String,
-    pub edited_at: String,
-    pub memo: String,
-}
-
-#[derive(Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct WorldMemoOutput {
-    pub world_id: String,
-    pub edited_at: String,
-    pub memo: String,
-}
-
-#[derive(Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct AvatarMemoOutput {
-    pub avatar_id: String,
-    pub edited_at: String,
-    pub memo: String,
-}
-
-#[derive(Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct UserNoteOutput {
-    pub user_id: String,
-    pub display_name: String,
-    pub note: String,
-    pub created_at: String,
-}
 
 pub fn memo_get_user(
     db: &DatabaseService,

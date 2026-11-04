@@ -530,7 +530,7 @@ impl McpFriendLocalDataPort for TestMcpFriendLocalDataAdapter {
     }
 }
 
-fn test_friend_memo(row: memos::UserMemoOutput) -> McpFriendMemo {
+fn test_friend_memo(row: vrcx_0_contracts::memos::UserMemoOutput) -> McpFriendMemo {
     McpFriendMemo {
         user_id: row.user_id,
         edited_at: row.edited_at,

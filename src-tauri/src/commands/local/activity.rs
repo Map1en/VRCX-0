@@ -5,10 +5,13 @@ use tauri::State;
 use crate::error::AppError;
 use crate::state::AppState;
 
+use vrcx_0_contracts::activity_view::{
+    ActivityOverlapViewBuildInput, ActivityOverlapViewOutput, ActivityViewBuildInput,
+    ActivityViewOutput,
+};
 use vrcx_0_runtime_host_desktop::local_data::{
     ActivityJourneyDayInput, ActivityJourneyDaysInput, ActivityJourneyVisit,
-    ActivityOverlapViewBuildInput, ActivityOverlapViewOutput, ActivityPageBuildInput,
-    ActivityPageView, ActivityViewBuildInput, ActivityViewOutput,
+    ActivityPageBuildInput, ActivityPageView,
 };
 
 #[tauri::command]

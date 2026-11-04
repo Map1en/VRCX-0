@@ -36,18 +36,26 @@ pub use vrcx_0_application_activity::activity_page::{ActivityPageBuildInput, Act
 pub use vrcx_0_contracts::activity_page::{
     ActivityJourneyDayInput, ActivityJourneyDaysInput, ActivityJourneyVisit,
 };
-pub use vrcx_0_core::OwnerId;
-pub use vrcx_0_persistence::activity::{
+pub use vrcx_0_contracts::activity_view::{
     ActivityOverlapViewBuildInput, ActivityOverlapViewOutput, ActivityViewBuildInput,
     ActivityViewOutput,
 };
-pub use vrcx_0_persistence::avatars::{
-    AvatarCacheOutput, AvatarTagInput, AvatarTagOutput, AvatarTagsPatchInput,
-    AvatarTimeSpentOutput, AvatarUsageRow, AvatarWearSegment,
-};
-pub use vrcx_0_persistence::browse_history::{
+pub use vrcx_0_contracts::browse_history::{
     BrowseHistoryEntityKind, BrowseHistoryPageOutput, BrowseHistoryQueryInput,
     BrowseHistoryRecordInput,
+};
+pub use vrcx_0_contracts::database_maintenance::{
+    MaintenanceTableSizesOutput, UserTableContextOutput,
+};
+pub use vrcx_0_contracts::memos::{
+    AvatarMemoOutput, MemoSaveResult, UserMemoOutput, UserNoteOutput, WorldMemoOutput,
+};
+pub use vrcx_0_contracts::player_list::InstanceActivityRowOutput;
+pub use vrcx_0_contracts::profile_bio::ProfileBioOutput;
+pub use vrcx_0_contracts::{AvatarTagInput, AvatarTagsPatchInput};
+pub use vrcx_0_core::OwnerId;
+pub use vrcx_0_persistence::avatars::{
+    AvatarCacheOutput, AvatarTagOutput, AvatarTimeSpentOutput, AvatarUsageRow, AvatarWearSegment,
 };
 pub use vrcx_0_persistence::config::{ConfigReadEntry, ConfigWriteEntry};
 pub use vrcx_0_persistence::feed::{
@@ -63,16 +71,10 @@ pub use vrcx_0_persistence::game_log::{
     GameLogQuery, GameLogQueryOutput, GameLogWriteKind,
 };
 pub use vrcx_0_persistence::local_moderation::LocalModerationOutput;
-pub use vrcx_0_persistence::maintenance::{MaintenanceTableSizesOutput, UserTableContextOutput};
-pub use vrcx_0_persistence::memos::{
-    AvatarMemoOutput, MemoSaveResult, UserMemoOutput, UserNoteOutput, WorldMemoOutput,
-};
 pub use vrcx_0_persistence::mutual_graph::MutualGraphSnapshotOutput;
 pub use vrcx_0_persistence::notifications::{
     NotificationListItemOutput, NotificationListQueryInput,
 };
-pub use vrcx_0_persistence::player_list::InstanceActivityRowOutput;
-pub use vrcx_0_persistence::profile_bio::ProfileBioOutput;
 pub use vrcx_0_persistence::social_aggregates::{WorldFriendVisitRow, WorldFriendVisitsOutput};
 pub use vrcx_0_persistence::worlds::WorldSummaryOutput;
 

@@ -7,9 +7,10 @@ use crate::commands::blocking::run_blocking;
 use crate::error::AppError;
 use crate::state::AppState;
 
+use vrcx_0_contracts::{AvatarTagInput, AvatarTagsPatchInput};
 use vrcx_0_runtime_host_desktop::local_data::{
-    AvatarCacheOutput, AvatarGetInput, AvatarTagInput, AvatarTagOutput, AvatarTagsPatchInput,
-    AvatarTimeSpentOutput, AvatarUsageRow, AvatarWearSegment,
+    AvatarCacheOutput, AvatarGetInput, AvatarTagOutput, AvatarTimeSpentOutput, AvatarUsageRow,
+    AvatarWearSegment,
 };
 
 #[tauri::command]

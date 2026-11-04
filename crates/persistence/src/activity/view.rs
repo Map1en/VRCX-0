@@ -1,4 +1,8 @@
 use serde_json::{json, Value};
+use vrcx_0_contracts::activity_view::{
+    ActivityOverlapViewBuildInput, ActivityOverlapViewOutput, ActivityViewBuildInput,
+    ActivityViewOutput,
+};
 use vrcx_0_core::activity_heatmap::{
     activity_normalize_config, activity_peak_indices_from_buckets, compute_activity_view,
     compute_overlap_view, overlap_best_indices_from_buckets, overlap_normalize_config,
@@ -18,9 +22,7 @@ use super::repository::{
 };
 use super::types::{
     ActivityBucketCacheInput, ActivityBucketCacheOutput, ActivityBucketCacheQueryInput,
-    ActivityFriendPresenceSliceInput, ActivityOverlapViewBuildInput, ActivityOverlapViewOutput,
-    ActivitySelfSessionsRefreshOutput, ActivityViewBuildInput, ActivityViewKind,
-    ActivityViewOutput,
+    ActivityFriendPresenceSliceInput, ActivitySelfSessionsRefreshOutput, ActivityViewKind,
 };
 use crate::ownership::OwnerId;
 

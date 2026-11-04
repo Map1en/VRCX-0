@@ -6,9 +6,10 @@ use crate::commands::blocking::run_blocking;
 use crate::error::AppError;
 use crate::state::AppState;
 
+use vrcx_0_contracts::profile_bio::ProfileBioOutput;
 use vrcx_0_runtime_host_desktop::local_data::{
     FriendLogCurrentOutput, FriendLogHistoryEntryInput, FriendLogHistoryOutput,
-    FriendLogHistoryQueryInput, OwnerId, ProfileBioOutput,
+    FriendLogHistoryQueryInput, OwnerId,
 };
 
 #[tauri::command(async)]
