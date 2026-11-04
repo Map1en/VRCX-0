@@ -48,6 +48,41 @@ describe('AssistantMarkdown', () => {
         await waitFor(() => expect(writeText).toHaveBeenCalledWith(code));
     });
 
+    it('styles unfinished Markdown while the answer is streaming', () => {
+        const { container } = render(
+            <AssistantMarkdown
+                text={'Online now:\n\n**Three friends, see [the list'}
+                streaming
+            />
+        );
+
+        expect(container.querySelector('strong')?.textContent).toBe(
+            'Three friends, see the list'
+        );
+        expect(container.querySelector('button')).toBeNull();
+        expect(container.textContent).not.toContain('*');
+        expect(container.textContent).not.toContain('[');
+    });
+
+    it('keeps blank-line separated lists and code in one element', () => {
+        const code = 'first\n\n    indented\n\nlast';
+        const { container } = render(
+            <AssistantMarkdown
+                text={`1. Alice\n\n2. Bob\n\n   joined later\n\n\`\`\`text\n${code}\n\`\`\`\n\nDone.`}
+            />
+        );
+
+        expect(container.querySelectorAll('ol')).toHaveLength(1);
+        expect(container.querySelectorAll('li')).toHaveLength(2);
+        expect(
+            Array.from(
+                container.querySelectorAll('[data-slot="code-block-line"]'),
+                (line) => line.textContent?.trimEnd()
+            )
+        ).toEqual(code.split('\n'));
+        expect(container.lastElementChild?.textContent).toBe('Done.');
+    });
+
     it('turns names the tools returned into chips that open them', () => {
         const { container } = render(
             <AssistantMarkdown

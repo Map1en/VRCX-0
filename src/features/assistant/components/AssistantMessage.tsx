@@ -64,14 +64,11 @@ function AssistantMessageImpl({
                         <BubbleContent>
                             {isUser ? (
                                 <MentionText text={message.text} />
-                            ) : message.streaming ? (
-                                <span className="whitespace-pre-wrap">
-                                    {message.text}
-                                </span>
                             ) : (
                                 <AssistantMarkdown
                                     text={message.text}
                                     entities={entities}
+                                    streaming={message.streaming}
                                 />
                             )}
                             {message.streaming && (

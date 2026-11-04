@@ -66,6 +66,19 @@ describe('AssistantMessage', () => {
         expect(html).toContain('>Three friends</strong>');
     });
 
+    it('renders a streaming assistant response as Markdown', () => {
+        const html = renderToStaticMarkup(
+            <AssistantMessage
+                thinkingLabel="Thinking…"
+                message={assistantMessage({
+                    text: '**Three friends** were onl'
+                })}
+            />
+        );
+
+        expect(html).toContain('>Three friends</strong>');
+    });
+
     it('shows a running tool trace before assistant text while a tool is pending', () => {
         const html = renderToStaticMarkup(
             <AssistantMessage
