@@ -111,8 +111,7 @@ fn initial_progress_counts_preloaded_friends_in_the_full_roster() {
 
 #[test]
 fn start_requires_active_realtime_session() -> Result<()> {
-    let dir = TestDir::new("friend-profile-bulk-load-no-session");
-    let store = Arc::new(TestRealtimeStore::new(dir.path.join("VRCX-0.sqlite3")));
+    let store = Arc::new(TestRealtimeStore::default());
     let web = Arc::new(WebClient::new(vrcx_0_application_core::NoopWebClientPort));
     let world_cache = Arc::new(vrcx_0_application_core::WorldCache::new(
         vrcx_0_application_core::NoopWorldCachePort,
@@ -120,7 +119,7 @@ fn start_requires_active_realtime_session() -> Result<()> {
     let event_bus = RuntimeEventBus::new();
     let runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps {
         config: Arc::new(store.config.clone()),
-        store: store as Arc<dyn crate::RealtimeStore>,
+        stores: crate::RealtimeStores::shared(store),
         transport: Arc::new(TestRealtimeTransport),
         remote_requests: Arc::new(TestRealtimeRemoteRequests),
         web,

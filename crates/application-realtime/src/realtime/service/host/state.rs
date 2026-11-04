@@ -215,7 +215,7 @@ impl RealtimeStopRequest {
 
 #[derive(Clone)]
 pub struct RealtimeHostRuntimeDeps {
-    pub(crate) store: Arc<dyn crate::RealtimeStore>,
+    pub(crate) stores: crate::RealtimeStores,
     pub(crate) config: Arc<dyn ConfigStore>,
     pub(crate) transport: Arc<dyn crate::realtime::RealtimeTransport>,
     pub(crate) remote_requests: Arc<dyn crate::RealtimeRemoteRequests>,
@@ -241,7 +241,7 @@ pub struct RealtimeHostRuntimeDeps {
 impl RealtimeHostRuntimeDeps {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        store: Arc<dyn crate::RealtimeStore>,
+        stores: crate::RealtimeStores,
         config: Arc<dyn ConfigStore>,
         transport: Arc<dyn crate::realtime::RealtimeTransport>,
         remote_requests: Arc<dyn crate::RealtimeRemoteRequests>,
@@ -264,7 +264,7 @@ impl RealtimeHostRuntimeDeps {
         current_user_snapshot_sink: Option<RealtimeCurrentUserSnapshotSink>,
     ) -> Self {
         Self {
-            store,
+            stores,
             config,
             transport,
             remote_requests,

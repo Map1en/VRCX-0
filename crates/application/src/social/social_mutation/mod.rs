@@ -17,5 +17,5 @@ pub use types::{
     SocialFriendMutationInput, SocialFriendMutationOutcome, SocialFriendMutationStatus,
     SocialFriendRequestAcceptInput, SocialFriendRequestCancelInput,
     SocialFriendRequestNotificationAcceptOutput, SocialFriendRequestNotificationAcceptStatus,
-    SocialMutationDeps, SocialMutationStore,
+    SocialMutationDeps,
 };

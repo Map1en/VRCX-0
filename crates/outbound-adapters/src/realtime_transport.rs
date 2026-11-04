@@ -1,4 +1,5 @@
 use std::future::Future;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -30,7 +31,7 @@ const LIVENESS_REPLY_TIMEOUT: Duration = Duration::from_secs(10);
 
 #[derive(Clone)]
 pub struct RealtimeTransportDeps {
-    store: Arc<dyn vrcx_0_application_realtime::RealtimeStore>,
+    database_path: PathBuf,
     web: Arc<WebClient>,
     pub backend_status: BackendRuntimeStatusPublisher,
     liveness_probe: Arc<watch::Sender<u64>>,
@@ -43,13 +44,13 @@ pub struct VrchatRealtimeTransport {
 
 impl VrchatRealtimeTransport {
     pub fn new(
-        store: Arc<dyn vrcx_0_application_realtime::RealtimeStore>,
+        database_path: PathBuf,
         web: Arc<WebClient>,
         backend_status: BackendRuntimeStatusPublisher,
     ) -> Self {
         Self {
             deps: RealtimeTransportDeps {
-                store,
+                database_path,
                 web,
                 backend_status,
                 liveness_probe: Arc::new(watch::channel(0).0),
@@ -232,7 +233,7 @@ async fn run_realtime_transport_inner(
         cancel_rx,
         backend_status: &backend_status,
     };
-    let trail_db_path = deps.store.database_path();
+    let trail_db_path = deps.database_path.clone();
     let diagnostics_web = Arc::clone(&deps.web);
     let cookie_diagnostics = diagnostics_web.cookie_diagnostics();
     trail(
@@ -350,7 +351,7 @@ async fn connect_once(
     message_sink: Arc<dyn RealtimeMessageSink>,
     attempt: ConnectionAttempt<'_>,
 ) -> std::result::Result<ConnectionEnd, RealtimeConnectionError> {
-    let trail_db_path = deps.store.database_path();
+    let trail_db_path = deps.database_path.clone();
     let auth_started_at = tokio::time::Instant::now();
     let Some(token) = wait_for_result_or_cancel(
         fetch_auth_token(&deps, attempt.session, &trail_db_path),
@@ -431,8 +432,7 @@ async fn connect_once(
             "websocketDomain": websocket_domain,
         }),
     );
-    let database_path = deps.store.database_path();
-    let ws_event_log_path = crate::ws_event_log::resolve_path(&database_path);
+    let ws_event_log_path = crate::ws_event_log::resolve_path(&deps.database_path);
     if let Some(path) = &ws_event_log_path {
         crate::ws_event_log::append_connect_marker(
             path,

@@ -521,7 +521,8 @@ impl RealtimeHostRuntime {
         };
         let result = self
             .deps
-            .store
+            .stores
+            .batch_writer
             .write_realtime_batch(&OwnerId::new(user_id), &batch)
             .map_err(|error| Error::Custom(format!("expire realtime notification: {error}")));
         match &result {

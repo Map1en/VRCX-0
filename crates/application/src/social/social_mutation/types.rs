@@ -1,70 +1,10 @@
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
-use vrcx_0_contracts::friend_log::{
-    FriendLogCurrentEntryInput, FriendLogDeleteOptionsInput, FriendLogHistoryEntryInput,
-    FriendLogMutationResult, FriendLogUpsertOptionsInput,
-};
 
 use crate::remote::VrchatRequestPort;
-use vrcx_0_application_core::{Result, RuntimeAuthScope};
-use vrcx_0_application_realtime::{RealtimeHostRuntime, RealtimeStore};
-
-pub trait SocialMutationStore: Send + Sync {
-    fn delete_current_friend(
-        &self,
-        owner_user_id: &str,
-        target_user_ids: Vec<String>,
-        options: FriendLogDeleteOptionsInput,
-    ) -> Result<FriendLogMutationResult>;
-    fn upsert_current_friend(
-        &self,
-        owner_user_id: &str,
-        entry: FriendLogCurrentEntryInput,
-        options: FriendLogUpsertOptionsInput,
-    ) -> Result<FriendLogMutationResult>;
-    fn add_friend_history(
-        &self,
-        owner_user_id: &str,
-        entries: Vec<FriendLogHistoryEntryInput>,
-    ) -> Result<i64>;
-    fn expire_notification(&self, owner_user_id: &str, notification_id: &str) -> Result<()>;
-}
-
-impl<T> SocialMutationStore for T
-where
-    T: RealtimeStore + ?Sized,
-{
-    fn delete_current_friend(
-        &self,
-        owner_user_id: &str,
-        target_user_ids: Vec<String>,
-        options: FriendLogDeleteOptionsInput,
-    ) -> Result<FriendLogMutationResult> {
-        self.friend_log_delete_current(owner_user_id, target_user_ids, options)
-    }
-
-    fn upsert_current_friend(
-        &self,
-        owner_user_id: &str,
-        entry: FriendLogCurrentEntryInput,
-        options: FriendLogUpsertOptionsInput,
-    ) -> Result<FriendLogMutationResult> {
-        self.friend_log_upsert_current(owner_user_id, entry, options)
-    }
-
-    fn add_friend_history(
-        &self,
-        owner_user_id: &str,
-        entries: Vec<FriendLogHistoryEntryInput>,
-    ) -> Result<i64> {
-        self.friend_log_history_add(owner_user_id, entries)
-    }
-
-    fn expire_notification(&self, owner_user_id: &str, notification_id: &str) -> Result<()> {
-        self.notification_expire(owner_user_id, notification_id)
-    }
-}
+use vrcx_0_application_core::RuntimeAuthScope;
+use vrcx_0_application_realtime::{RealtimeHostRuntime, SocialMutationStore};
 
 #[derive(Clone, Copy)]
 pub struct SocialMutationDeps<'a> {

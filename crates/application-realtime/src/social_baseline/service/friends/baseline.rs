@@ -48,7 +48,7 @@ pub(crate) async fn verify_friend_log_relationship_changes(
     friends_by_id: &HashMap<String, FriendBaselineEntry>,
 ) -> FriendStatusVerdicts {
     let candidates = friend_log_relationship_candidates(
-        deps.store.as_ref(),
+        deps.friend_log.as_ref(),
         deps.config.as_ref(),
         user_id,
         friends_by_id,
@@ -62,7 +62,7 @@ pub(crate) async fn verify_friend_log_relationship_changes(
 }
 
 pub(crate) fn friend_log_relationship_candidates(
-    store: &dyn crate::RealtimeStore,
+    friend_log: &dyn crate::FriendLogStore,
     config: &dyn ConfigStore,
     user_id: &str,
     friends_by_id: &HashMap<String, FriendBaselineEntry>,
@@ -73,7 +73,7 @@ pub(crate) fn friend_log_relationship_candidates(
     {
         return Vec::new();
     }
-    let existing = match store.friend_log_current_list(user_id) {
+    let existing = match friend_log.friend_log_current_list(user_id) {
         Ok(rows) => rows,
         Err(error) => {
             tracing::warn!("friend-log relationship candidate read failed: {error}");
@@ -301,7 +301,7 @@ pub(crate) struct FriendRosterReconcileOutcome {
 }
 
 fn init_friend_roster_records(
-    store: &dyn crate::RealtimeStore,
+    friend_log: &dyn crate::FriendLogStore,
     config: &dyn ConfigStore,
     user_id: &str,
     friends_by_id: &HashMap<String, FriendRecord>,
@@ -356,7 +356,7 @@ fn init_friend_roster_records(
         })
         .collect();
 
-    match store.friend_log_replace_current(
+    match friend_log.friend_log_replace_current(
         user_id,
         entries,
         FriendLogReplaceOptionsInput::default(),
@@ -377,8 +377,10 @@ fn init_friend_roster_records(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn reconcile_friend_roster_records(
-    store: &dyn crate::RealtimeStore,
+    friend_log: &dyn crate::FriendLogStore,
+    batch_writer: &dyn crate::RealtimeBatchWriter,
     config: &dyn ConfigStore,
     user_id: &str,
     friends_by_id: &HashMap<String, FriendRecord>,
@@ -390,10 +392,16 @@ pub(crate) fn reconcile_friend_roster_records(
         .get_bool(&format!("friendLogInit_{user_id}"), false)
         .unwrap_or(false);
     if !initialized {
-        return init_friend_roster_records(store, config, user_id, friends_by_id, roster_order);
+        return init_friend_roster_records(
+            friend_log,
+            config,
+            user_id,
+            friends_by_id,
+            roster_order,
+        );
     }
 
-    let existing = match store.friend_log_current_list(user_id) {
+    let existing = match friend_log.friend_log_current_list(user_id) {
         Ok(rows) => rows,
         Err(error) => {
             tracing::warn!("friend-log reconciliation read failed: {error}");
@@ -500,7 +508,7 @@ pub(crate) fn reconcile_friend_roster_records(
 
     if feed_persistence_disabled {
         let feed_entries = std::mem::take(&mut batch.feed_entries);
-        return match store.write_realtime_batch(&OwnerId::new(user_id), &batch) {
+        return match batch_writer.write_realtime_batch(&OwnerId::new(user_id), &batch) {
             Ok(counts) => FriendRosterReconcileOutcome {
                 changed: counts.affected_count > 0,
                 feed_entries,
@@ -514,7 +522,7 @@ pub(crate) fn reconcile_friend_roster_records(
             }
         };
     }
-    match store.write_realtime_batch(&OwnerId::new(user_id), &batch) {
+    match batch_writer.write_realtime_batch(&OwnerId::new(user_id), &batch) {
         Ok(counts) => FriendRosterReconcileOutcome {
             changed: counts.affected_count > 0,
             feed_entries: batch.feed_entries,

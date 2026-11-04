@@ -110,6 +110,7 @@ impl DesktopSocialRuntime {
     fn baseline_deps(&self) -> SocialBaselineDeps {
         SocialBaselineDeps::new(
             self.realtime_store.clone(),
+            self.realtime_store.clone(),
             Arc::clone(&self.config),
             Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests),
             Arc::clone(&self.web),

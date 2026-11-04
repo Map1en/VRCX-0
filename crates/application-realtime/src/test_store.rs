@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::convert::Infallible;
-use std::path::PathBuf;
 use std::sync::Mutex;
 
 use serde_json::{json, Value};
@@ -27,8 +26,6 @@ use vrcx_0_core::friend_log::{plan_friend_log_upsert, FriendLogCurrent, FriendLo
 use vrcx_0_core::json::text_of;
 use vrcx_0_core::{FavoriteEntityKind, OwnerId};
 
-use crate::RealtimeStore;
-
 #[derive(Default)]
 struct TestRealtimeStoreState {
     current: HashMap<String, Vec<FriendLogCurrentOutput>>,
@@ -43,21 +40,13 @@ struct TestRealtimeStoreState {
     fail_writes: bool,
 }
 
+#[derive(Default)]
 pub struct TestRealtimeStore {
     pub config: MemoryConfigStore,
-    database_path: PathBuf,
     state: Mutex<TestRealtimeStoreState>,
 }
 
 impl TestRealtimeStore {
-    pub fn new(database_path: PathBuf) -> Self {
-        Self {
-            config: MemoryConfigStore::default(),
-            database_path,
-            state: Mutex::new(TestRealtimeStoreState::default()),
-        }
-    }
-
     pub fn set_fail_writes(&self, fail: bool) {
         self.state.lock().expect("test store lock").fail_writes = fail;
     }
@@ -71,7 +60,7 @@ impl TestRealtimeStore {
     }
 
     pub fn friend_log_current_list(&self, user_id: &str) -> Result<Vec<FriendLogCurrentOutput>> {
-        <Self as RealtimeStore>::friend_log_current_list(self, user_id)
+        <Self as crate::FriendLogStore>::friend_log_current_list(self, user_id)
     }
 
     pub fn friend_log_delete_current(
@@ -80,7 +69,12 @@ impl TestRealtimeStore {
         target_user_ids: Vec<String>,
         options: FriendLogDeleteOptionsInput,
     ) -> Result<FriendLogMutationResult> {
-        <Self as RealtimeStore>::friend_log_delete_current(self, user_id, target_user_ids, options)
+        <Self as crate::SocialMutationStore>::delete_current_friend(
+            self,
+            user_id,
+            target_user_ids,
+            options,
+        )
     }
 
     pub fn feed_rows(&self, query: FeedRowsQueryInput) -> Result<Vec<FeedRowOutput>> {
@@ -173,9 +167,29 @@ impl TestRealtimeStore {
         }
         Ok(state)
     }
+
+    pub fn friend_log_history(
+        &self,
+        input: FriendLogHistoryQueryInput,
+    ) -> Result<Vec<FriendLogHistoryOutput>> {
+        let mut rows = self
+            .state
+            .lock()
+            .expect("test store lock")
+            .history
+            .get(&input.user_id)
+            .cloned()
+            .unwrap_or_default();
+        rows.retain(|row| {
+            (input.target_user_id.is_empty() || row.user_id == input.target_user_id)
+                && (input.types.is_empty() || input.types.contains(&row.r#type))
+        });
+        rows.sort_by_key(|row| row.row_id);
+        Ok(rows)
+    }
 }
 
-impl RealtimeStore for TestRealtimeStore {
+impl crate::GameLogLookup for TestRealtimeStore {
     fn game_log_join_count(
         &self,
         _owner: &OwnerId,
@@ -192,10 +206,19 @@ impl RealtimeStore for TestRealtimeStore {
             .unwrap_or(0))
     }
 
-    fn database_path(&self) -> PathBuf {
-        self.database_path.clone()
+    fn lookup_game_log_world_name(&self, world_id: &str) -> Result<String> {
+        Ok(self
+            .state
+            .lock()
+            .expect("test store lock")
+            .game_world_names
+            .get(world_id)
+            .cloned()
+            .unwrap_or_default())
     }
+}
 
+impl crate::FavoriteBaselineStore for TestRealtimeStore {
     fn favorite_list(
         &self,
         _owner: Option<&OwnerId>,
@@ -203,7 +226,9 @@ impl RealtimeStore for TestRealtimeStore {
     ) -> Result<Vec<FavoriteRow>> {
         Ok(Vec::new())
     }
+}
 
+impl crate::FriendLogStore for TestRealtimeStore {
     fn friend_log_current_list(&self, user_id: &str) -> Result<Vec<FriendLogCurrentOutput>> {
         Ok(self
             .state
@@ -253,8 +278,10 @@ impl RealtimeStore for TestRealtimeStore {
             history_count,
         })
     }
+}
 
-    fn friend_log_delete_current(
+impl crate::SocialMutationStore for TestRealtimeStore {
+    fn delete_current_friend(
         &self,
         user_id: &str,
         target_user_ids: Vec<String>,
@@ -283,7 +310,7 @@ impl RealtimeStore for TestRealtimeStore {
         })
     }
 
-    fn friend_log_upsert_current(
+    fn upsert_current_friend(
         &self,
         user_id: &str,
         entry: FriendLogCurrentEntryInput,
@@ -326,27 +353,7 @@ impl RealtimeStore for TestRealtimeStore {
         })
     }
 
-    fn friend_log_history(
-        &self,
-        input: FriendLogHistoryQueryInput,
-    ) -> Result<Vec<FriendLogHistoryOutput>> {
-        let mut rows = self
-            .state
-            .lock()
-            .expect("test store lock")
-            .history
-            .get(&input.user_id)
-            .cloned()
-            .unwrap_or_default();
-        rows.retain(|row| {
-            (input.target_user_id.is_empty() || row.user_id == input.target_user_id)
-                && (input.types.is_empty() || input.types.contains(&row.r#type))
-        });
-        rows.sort_by_key(|row| row.row_id);
-        Ok(rows)
-    }
-
-    fn friend_log_history_add(
+    fn add_friend_history(
         &self,
         user_id: &str,
         entries: Vec<FriendLogHistoryEntryInput>,
@@ -362,7 +369,7 @@ impl RealtimeStore for TestRealtimeStore {
         ))
     }
 
-    fn notification_expire(&self, user_id: &str, notification_id: &str) -> Result<()> {
+    fn expire_notification(&self, user_id: &str, notification_id: &str) -> Result<()> {
         if !is_valid_test_owner(user_id) {
             return Err(Error::Custom("invalid test owner id".into()));
         }
@@ -385,7 +392,9 @@ impl RealtimeStore for TestRealtimeStore {
         );
         Ok(())
     }
+}
 
+impl crate::RealtimeBatchWriter for TestRealtimeStore {
     fn write_realtime_batch(
         &self,
         owner: &OwnerId,
@@ -492,18 +501,9 @@ impl RealtimeStore for TestRealtimeStore {
             game_log_affected_count: 0,
         })
     }
+}
 
-    fn lookup_game_log_world_name(&self, world_id: &str) -> Result<String> {
-        Ok(self
-            .state
-            .lock()
-            .expect("test store lock")
-            .game_world_names
-            .get(world_id)
-            .cloned()
-            .unwrap_or_default())
-    }
-
+impl crate::FeedQueryStore for TestRealtimeStore {
     fn feed_latest(
         &self,
         query: FeedLatestQueryInput,

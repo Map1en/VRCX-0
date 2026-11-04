@@ -107,7 +107,7 @@ impl RealtimeHostRuntime {
             return Ok(None);
         }
         let sender_display_name = json_string_field(notification.get("senderUsername"));
-        let join_count = self.deps.store.game_log_join_count(
+        let join_count = self.deps.stores.game_log.game_log_join_count(
             &OwnerId::new(session.user_id.clone()),
             &facts.sender_user_id,
             &sender_display_name,
@@ -393,7 +393,8 @@ impl RealtimeHostRuntime {
             .unwrap_or_default();
         let output = build_favorites_baseline_from_friend_records(
             SocialBaselineDeps {
-                store: Arc::clone(&self.deps.store),
+                friend_log: Arc::clone(&self.deps.stores.friend_log),
+                favorites: Arc::clone(&self.deps.stores.favorites),
                 config: Arc::clone(&self.deps.config),
                 remote_requests: Arc::clone(&self.deps.remote_requests),
                 web: Arc::clone(&self.deps.web),

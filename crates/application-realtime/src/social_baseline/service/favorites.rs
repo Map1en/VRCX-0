@@ -525,12 +525,12 @@ async fn build_favorites_baseline_inner(
         .await?;
 
     let local_world_favorite_rows = deps
-        .store
+        .favorites
         .favorite_list(None, vrcx_0_core::FavoriteEntityKind::World)?;
     let local_avatar_favorite_rows = deps
-        .store
+        .favorites
         .favorite_list(None, vrcx_0_core::FavoriteEntityKind::Avatar)?;
-    let local_friend_favorite_rows = deps.store.favorite_list(
+    let local_friend_favorite_rows = deps.favorites.favorite_list(
         Some(&OwnerId::new(user_id.clone())),
         vrcx_0_core::FavoriteEntityKind::Friend,
     )?;

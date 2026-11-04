@@ -4,7 +4,7 @@ use vrcx_0_application_core::{RemoteMutationGate, RuntimeAuthScope};
 use vrcx_0_application_realtime::test_support::{
     runtime_with_active_session, TestDir, TestRealtimeHostRuntime,
 };
-use vrcx_0_application_realtime::RealtimeStore;
+use vrcx_0_application_realtime::SocialMutationStore;
 use vrcx_0_contracts::friend_log::{
     FriendLogCurrentEntryInput, FriendLogHistoryQueryInput, FriendLogUpsertOptionsInput,
 };
@@ -116,7 +116,7 @@ fn apply_unfriend_locally_without_baseline_falls_back_to_direct_persistence_writ
     fixture
         .runtime
         .store()
-        .friend_log_upsert_current(
+        .upsert_current_friend(
             "usr_self",
             FriendLogCurrentEntryInput {
                 user_id: "usr_target".into(),

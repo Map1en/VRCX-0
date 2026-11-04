@@ -26,7 +26,8 @@ const FRIEND_PAGE_SIZE: i32 = 50;
 
 #[derive(Clone)]
 pub struct SocialBaselineDeps {
-    pub(crate) store: Arc<dyn crate::RealtimeStore>,
+    pub(crate) friend_log: Arc<dyn crate::FriendLogStore>,
+    pub(crate) favorites: Arc<dyn crate::FavoriteBaselineStore>,
     pub(crate) config: Arc<dyn ConfigStore>,
     pub(crate) remote_requests: Arc<dyn crate::RealtimeRemoteRequests>,
     pub(crate) web: Arc<WebClient>,
@@ -35,14 +36,16 @@ pub struct SocialBaselineDeps {
 
 impl SocialBaselineDeps {
     pub fn new(
-        store: Arc<dyn crate::RealtimeStore>,
+        friend_log: Arc<dyn crate::FriendLogStore>,
+        favorites: Arc<dyn crate::FavoriteBaselineStore>,
         config: Arc<dyn ConfigStore>,
         remote_requests: Arc<dyn crate::RealtimeRemoteRequests>,
         web: Arc<WebClient>,
         auth_scope: RuntimeAuthScope,
     ) -> Self {
         Self {
-            store,
+            friend_log,
+            favorites,
             config,
             remote_requests,
             web,

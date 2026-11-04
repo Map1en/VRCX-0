@@ -1568,7 +1568,7 @@ fn pending_baseline_trust_feed_projects_once_after_start_without_rewriting() -> 
         .config
         .set_bool("friendLogInit_usr_self", true)?;
     write_realtime_batch(
-        runtime.runtime().deps.store.as_ref(),
+        runtime.runtime().deps.stores.batch_writer.as_ref(),
         &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![FriendLogUpsert {
@@ -1613,7 +1613,7 @@ fn pending_baseline_trust_feed_projects_once_after_start_without_rewriting() -> 
         .iter()
         .all(|event| { event.name != "realtimeFeedProjection" }));
     let history_count_before = friend_log_history_query(
-        runtime.runtime().deps.store.as_ref(),
+        runtime.store(),
         FriendLogHistoryQueryInput {
             user_id: "usr_self".into(),
             target_user_id: "usr_friend".into(),
@@ -1646,7 +1646,7 @@ fn pending_baseline_trust_feed_projects_once_after_start_without_rewriting() -> 
         .count();
     assert_eq!(trust_entries, 1);
     let history_count_after = friend_log_history_query(
-        runtime.runtime().deps.store.as_ref(),
+        runtime.store(),
         FriendLogHistoryQueryInput {
             user_id: "usr_self".into(),
             target_user_id: "usr_friend".into(),

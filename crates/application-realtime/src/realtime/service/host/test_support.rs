@@ -247,7 +247,7 @@ impl vrcx_0_application_core::RuntimeTaskHandle for FinishedTaskHandle {
 
 #[cfg(test)]
 pub(super) fn write_realtime_batch(
-    store: &dyn crate::RealtimeStore,
+    store: &dyn crate::RealtimeBatchWriter,
     owner: &OwnerId,
     batch: &vrcx_0_contracts::realtime::RealtimePersistenceBatch,
 ) -> Result<vrcx_0_contracts::realtime::RealtimeWriteCounts> {
@@ -264,7 +264,7 @@ pub(super) fn notification_list_query(
 
 #[cfg(test)]
 pub(super) fn friend_log_current_list(
-    store: &dyn crate::RealtimeStore,
+    store: &dyn crate::FriendLogStore,
     user_id: String,
 ) -> Result<Vec<vrcx_0_contracts::friend_log::FriendLogCurrentOutput>> {
     store.friend_log_current_list(&user_id)
@@ -272,7 +272,7 @@ pub(super) fn friend_log_current_list(
 
 #[cfg(test)]
 pub(super) fn friend_log_history_query(
-    store: &dyn crate::RealtimeStore,
+    store: &TestRealtimeStore,
     input: FriendLogHistoryQueryInput,
 ) -> Result<Vec<vrcx_0_contracts::friend_log::FriendLogHistoryOutput>> {
     store.friend_log_history(input)
@@ -675,7 +675,7 @@ fn runtime_with_active_session_game_context(
     local_game_context_available: bool,
 ) -> Result<(TestDir, TestRealtimeHostRuntime, RealtimeSessionContext)> {
     let dir = TestDir::new(name);
-    let store = Arc::new(TestRealtimeStore::new(dir.path.join("VRCX-0.sqlite3")));
+    let store = Arc::new(TestRealtimeStore::default());
     let web = Arc::new(WebClient::new(NoopWebClientPort));
     let session = HostSessionRuntime::new();
     let host_session_generation = session.set_realtime_context(RealtimeSessionContext::new(
@@ -710,7 +710,7 @@ fn runtime_with_active_session_game_context(
     auth_scope.set("usr_self", "https://api.vrchat.cloud/api/1");
     let event_bus = RuntimeEventBus::new();
     let runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps {
-        store: Arc::clone(&store) as Arc<dyn crate::RealtimeStore>,
+        stores: crate::RealtimeStores::shared(Arc::clone(&store)),
         config: Arc::new(store.config.clone()),
         transport: Arc::new(TestRealtimeTransport),
         remote_requests: Arc::new(TestRealtimeRemoteRequests),

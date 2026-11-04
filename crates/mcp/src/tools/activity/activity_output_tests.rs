@@ -145,17 +145,17 @@ fn test_server_with_game_context(
         ),
         event_bus.clone(),
     );
-    let realtime_store: Arc<dyn vrcx_0_application_realtime::RealtimeStore> = Arc::new(
+    let realtime_stores = vrcx_0_application_realtime::RealtimeStores::shared(Arc::new(
         vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(Arc::clone(&db)),
-    );
+    ));
     let realtime_transport: Arc<dyn vrcx_0_application_realtime::RealtimeTransport> =
         Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeTransport::new(
-            Arc::clone(&realtime_store),
+            db.db_path().to_path_buf(),
             Arc::clone(&web),
             backend_status.clone(),
         ));
     let realtime_runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps::new(
-        realtime_store,
+        realtime_stores,
         Arc::new(vrcx_0_outbound_adapters::LocalConfigStore::new(
             Arc::clone(&db),
             Arc::clone(&storage),

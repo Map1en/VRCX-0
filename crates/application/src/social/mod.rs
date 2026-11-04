@@ -178,9 +178,9 @@ pub use social_mutation::{
     send_friend_request, unfriend, unfriend_batch, unfriend_selection, SocialFriendMutationInput,
     SocialFriendMutationOutcome, SocialFriendMutationStatus, SocialFriendRequestAcceptInput,
     SocialFriendRequestCancelInput, SocialFriendRequestNotificationAcceptOutput,
-    SocialFriendRequestNotificationAcceptStatus, SocialMutationDeps, SocialMutationStore,
-    SocialUnfriendBatchInput, SocialUnfriendBatchItemResult, SocialUnfriendBatchItemState,
-    SocialUnfriendBatchResult, SocialUnfriendBatchTarget, SOCIAL_UNFRIEND_BATCH_MAX_ITEMS,
+    SocialFriendRequestNotificationAcceptStatus, SocialMutationDeps, SocialUnfriendBatchInput,
+    SocialUnfriendBatchItemResult, SocialUnfriendBatchItemState, SocialUnfriendBatchResult,
+    SocialUnfriendBatchTarget, SOCIAL_UNFRIEND_BATCH_MAX_ITEMS,
 };
 pub use user_dialog_tab_counts::{
     get_user_dialog_tab_counts, AvatarProviderConfig, AvatarReleaseStatus, UserDialogCountPage,

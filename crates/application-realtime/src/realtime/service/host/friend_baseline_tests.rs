@@ -615,8 +615,8 @@ fn verdict(user_id: &str, is_friend: bool) -> FriendStatusVerdicts {
     HashMap::from([(user_id.to_string(), is_friend)]).into()
 }
 
-fn seeded_friend_log(dir: &TestDir, target_user_id: &str) -> Result<TestRealtimeStore> {
-    let db = TestRealtimeStore::new(dir.path.join("VRCX-0.sqlite3"));
+fn seeded_friend_log(target_user_id: &str) -> Result<TestRealtimeStore> {
+    let db = TestRealtimeStore::default();
     db.config.set_bool("friendLogInit_usr_self", true)?;
     write_realtime_batch(
         &db,
@@ -688,8 +688,7 @@ fn baseline_entries(
 
 #[test]
 fn relationship_candidates_cover_both_diff_directions_after_init() -> Result<()> {
-    let dir = TestDir::new("relationship-candidates");
-    let db = seeded_friend_log(&dir, "usr_dropped")?;
+    let db = seeded_friend_log("usr_dropped")?;
     let mut friends_by_id = roster("usr_new");
     friends_by_id.extend(roster("usr_self"));
     friends_by_id.insert(
@@ -717,8 +716,7 @@ fn relationship_candidates_cover_both_diff_directions_after_init() -> Result<()>
 
 #[test]
 fn relationship_candidates_stay_empty_before_friend_log_init() -> Result<()> {
-    let dir = TestDir::new("relationship-candidates-uninitialized");
-    let db = TestRealtimeStore::new(dir.path.join("VRCX-0.sqlite3"));
+    let db = TestRealtimeStore::default();
 
     assert!(friend_log_relationship_candidates(
         &db,
@@ -732,10 +730,10 @@ fn relationship_candidates_stay_empty_before_friend_log_init() -> Result<()> {
 
 #[test]
 fn reconcile_keeps_roster_dropout_until_friend_status_confirms_it() -> Result<()> {
-    let dir = TestDir::new("reconcile-unconfirmed-removal");
-    let db = seeded_friend_log(&dir, "usr_friend")?;
+    let db = seeded_friend_log("usr_friend")?;
 
     let outcome = reconcile_friend_roster_records(
+        &db,
         &db,
         &db.config,
         "usr_self",
@@ -753,10 +751,10 @@ fn reconcile_keeps_roster_dropout_until_friend_status_confirms_it() -> Result<()
 
 #[test]
 fn reconcile_removes_roster_dropout_confirmed_as_unfriended() -> Result<()> {
-    let dir = TestDir::new("reconcile-confirmed-removal");
-    let db = seeded_friend_log(&dir, "usr_friend")?;
+    let db = seeded_friend_log("usr_friend")?;
 
     let outcome = reconcile_friend_roster_records(
+        &db,
         &db,
         &db.config,
         "usr_self",
@@ -774,12 +772,12 @@ fn reconcile_removes_roster_dropout_confirmed_as_unfriended() -> Result<()> {
 
 #[test]
 fn reconcile_holds_back_roster_arrival_until_friend_status_confirms_it() -> Result<()> {
-    let dir = TestDir::new("reconcile-unconfirmed-addition");
-    let db = seeded_friend_log(&dir, "usr_friend")?;
+    let db = seeded_friend_log("usr_friend")?;
     let mut friends_by_id = roster("usr_friend");
     friends_by_id.extend(roster("usr_new"));
 
     let outcome = reconcile_friend_roster_records(
+        &db,
         &db,
         &db.config,
         "usr_self",
@@ -797,12 +795,12 @@ fn reconcile_holds_back_roster_arrival_until_friend_status_confirms_it() -> Resu
 
 #[test]
 fn reconcile_adds_roster_arrival_confirmed_as_friend() -> Result<()> {
-    let dir = TestDir::new("reconcile-confirmed-addition");
-    let db = seeded_friend_log(&dir, "usr_friend")?;
+    let db = seeded_friend_log("usr_friend")?;
     let mut friends_by_id = roster("usr_friend");
     friends_by_id.extend(roster("usr_new"));
 
     let outcome = reconcile_friend_roster_records(
+        &db,
         &db,
         &db.config,
         "usr_self",
@@ -820,8 +818,7 @@ fn reconcile_adds_roster_arrival_confirmed_as_friend() -> Result<()> {
 
 #[test]
 fn reconcile_records_display_name_change_for_existing_friend() -> Result<()> {
-    let dir = TestDir::new("reconcile-display-name");
-    let db = TestRealtimeStore::new(dir.path.join("VRCX-0.sqlite3"));
+    let db = TestRealtimeStore::default();
     db.config.set_bool("friendLogInit_usr_self", true)?;
     write_realtime_batch(
         &db,
@@ -852,6 +849,7 @@ fn reconcile_records_display_name_change_for_existing_friend() -> Result<()> {
 
     let outcome = reconcile_friend_roster_records(
         &db,
+        &db,
         &db.config,
         "usr_self",
         &friends_by_id,
@@ -868,6 +866,7 @@ fn reconcile_records_display_name_change_for_existing_friend() -> Result<()> {
     assert_eq!(rename["friendNumber"], 1);
     assert!(
         !reconcile_friend_roster_records(
+            &db,
             &db,
             &db.config,
             "usr_self",
@@ -902,8 +901,7 @@ fn reconcile_records_display_name_change_for_existing_friend() -> Result<()> {
 
 #[test]
 fn reconcile_records_and_projects_trust_only_change_once() -> Result<()> {
-    let dir = TestDir::new("reconcile-trust-level");
-    let db = TestRealtimeStore::new(dir.path.join("VRCX-0.sqlite3"));
+    let db = TestRealtimeStore::default();
     db.config.set_bool("friendLogInit_usr_self", true)?;
     write_realtime_batch(
         &db,
@@ -936,6 +934,7 @@ fn reconcile_records_and_projects_trust_only_change_once() -> Result<()> {
 
     let outcome = reconcile_friend_roster_records(
         &db,
+        &db,
         &db.config,
         "usr_self",
         &friends_by_id,
@@ -957,6 +956,7 @@ fn reconcile_records_and_projects_trust_only_change_once() -> Result<()> {
     assert_eq!(outcome.feed_entries[0].to_json()["friendNumber"], 7);
     assert!(
         !reconcile_friend_roster_records(
+            &db,
             &db,
             &db.config,
             "usr_self",
@@ -987,8 +987,7 @@ fn reconcile_records_and_projects_trust_only_change_once() -> Result<()> {
 
 #[test]
 fn reconcile_skips_placeholder_records() -> Result<()> {
-    let dir = TestDir::new("reconcile-placeholder");
-    let db = TestRealtimeStore::new(dir.path.join("VRCX-0.sqlite3"));
+    let db = TestRealtimeStore::default();
     db.config.set_bool("friendLogInit_usr_self", true)?;
     write_realtime_batch(
         &db,
@@ -1024,6 +1023,7 @@ fn reconcile_skips_placeholder_records() -> Result<()> {
 
     let outcome = reconcile_friend_roster_records(
         &db,
+        &db,
         &db.config,
         "usr_self",
         &friends_by_id,
@@ -1051,8 +1051,7 @@ fn reconcile_skips_placeholder_records() -> Result<()> {
 
 #[test]
 fn init_seeds_placeholder_without_trust_and_reconcile_fills_it_silently() -> Result<()> {
-    let dir = TestDir::new("reconcile-placeholder-init");
-    let db = TestRealtimeStore::new(dir.path.join("VRCX-0.sqlite3"));
+    let db = TestRealtimeStore::default();
     let placeholder_roster: HashMap<String, FriendRecord> = [(
         "usr_friend".to_string(),
         FriendRecord {
@@ -1072,6 +1071,7 @@ fn init_seeds_placeholder_without_trust_and_reconcile_fills_it_silently() -> Res
 
     assert!(
         reconcile_friend_roster_records(
+            &db,
             &db,
             &db.config,
             "usr_self",
@@ -1101,6 +1101,7 @@ fn init_seeds_placeholder_without_trust_and_reconcile_fills_it_silently() -> Res
 
     let outcome = reconcile_friend_roster_records(
         &db,
+        &db,
         &db.config,
         "usr_self",
         &fetched_roster,
@@ -1127,8 +1128,7 @@ fn init_seeds_placeholder_without_trust_and_reconcile_fills_it_silently() -> Res
 
 #[test]
 fn reconcile_updates_legacy_equivalent_trust_without_history_or_feed() -> Result<()> {
-    let dir = TestDir::new("reconcile-equivalent-trust");
-    let db = TestRealtimeStore::new(dir.path.join("VRCX-0.sqlite3"));
+    let db = TestRealtimeStore::default();
     db.config.set_bool("friendLogInit_usr_self", true)?;
     write_realtime_batch(
         &db,
@@ -1161,6 +1161,7 @@ fn reconcile_updates_legacy_equivalent_trust_without_history_or_feed() -> Result
 
     let outcome = reconcile_friend_roster_records(
         &db,
+        &db,
         &db.config,
         "usr_self",
         &friends_by_id,
@@ -1188,8 +1189,7 @@ fn reconcile_updates_legacy_equivalent_trust_without_history_or_feed() -> Result
 
 #[test]
 fn first_time_baseline_init_fills_current_roster_without_history_or_feed() -> Result<()> {
-    let dir = TestDir::new("reconcile-first-init");
-    let db = TestRealtimeStore::new(dir.path.join("VRCX-0.sqlite3"));
+    let db = TestRealtimeStore::default();
     let friends_by_id: HashMap<String, FriendRecord> = [
         (
             "usr_a_friend".to_string(),
@@ -1218,6 +1218,7 @@ fn first_time_baseline_init_fills_current_roster_without_history_or_feed() -> Re
 
     let roster_order = ["usr_b_friend".to_string(), "usr_a_friend".to_string()];
     let outcome = reconcile_friend_roster_records(
+        &db,
         &db,
         &db.config,
         "usr_self",
@@ -1253,8 +1254,7 @@ fn first_time_baseline_init_fills_current_roster_without_history_or_feed() -> Re
 
 #[test]
 fn first_time_baseline_init_failure_leaves_flag_unset_for_retry() -> Result<()> {
-    let dir = TestDir::new("reconcile-first-init-failure");
-    let db = TestRealtimeStore::new(dir.path.join("VRCX-0.sqlite3"));
+    let db = TestRealtimeStore::default();
     let friends_by_id: HashMap<String, FriendRecord> = [(
         "usr_friend".to_string(),
         FriendRecord {
@@ -1268,6 +1268,7 @@ fn first_time_baseline_init_failure_leaves_flag_unset_for_retry() -> Result<()> 
 
     let failed_outcome = reconcile_friend_roster_records(
         &db,
+        &db,
         &db.config,
         "usr!self",
         &friends_by_id,
@@ -1279,6 +1280,7 @@ fn first_time_baseline_init_failure_leaves_flag_unset_for_retry() -> Result<()> 
     assert!(!db.config.get_bool("friendLogInit_usr!self", false)?);
 
     let retried_outcome = reconcile_friend_roster_records(
+        &db,
         &db,
         &db.config,
         "usr_self",
@@ -1296,8 +1298,7 @@ fn first_time_baseline_init_failure_leaves_flag_unset_for_retry() -> Result<()> 
 
 #[test]
 fn first_time_init_treats_friend_accepted_during_init_window_as_preexisting() -> Result<()> {
-    let dir = TestDir::new("reconcile-first-init-race");
-    let db = TestRealtimeStore::new(dir.path.join("VRCX-0.sqlite3"));
+    let db = TestRealtimeStore::default();
     let friends_by_id: HashMap<String, FriendRecord> = [
         (
             "usr_established".to_string(),
@@ -1320,6 +1321,7 @@ fn first_time_init_treats_friend_accepted_during_init_window_as_preexisting() ->
     .collect();
 
     let outcome = reconcile_friend_roster_records(
+        &db,
         &db,
         &db.config,
         "usr_self",
@@ -1355,7 +1357,7 @@ fn active_baseline_trust_change_fans_out_after_atomic_persistence() -> Result<()
         .config
         .set_bool("friendLogInit_usr_self", true)?;
     write_realtime_batch(
-        runtime.runtime().deps.store.as_ref(),
+        runtime.runtime().deps.stores.batch_writer.as_ref(),
         &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![FriendLogUpsert {
@@ -1417,7 +1419,7 @@ fn active_baseline_uses_runtime_feed_persistence_state() -> Result<()> {
         .config
         .set_bool("friendLogInit_usr_self", true)?;
     write_realtime_batch(
-        runtime.runtime().deps.store.as_ref(),
+        runtime.runtime().deps.stores.batch_writer.as_ref(),
         &OwnerId::new("usr_self"),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![FriendLogUpsert {
@@ -1776,7 +1778,7 @@ fn repeated_friend_delete_retries_after_persistence_failure_without_duplicate_fe
         .collect(),
     )?;
     write_realtime_batch(
-        runtime.runtime().deps.store.as_ref(),
+        runtime.runtime().deps.stores.batch_writer.as_ref(),
         &OwnerId::new(active_session.user_id.clone()),
         &RealtimePersistenceBatch {
             friend_log_upserts: vec![FriendLogUpsert {
@@ -1813,7 +1815,7 @@ fn repeated_friend_delete_retries_after_persistence_failure_without_duplicate_fe
 
     assert_eq!(
         friend_log_current_list(
-            runtime.runtime().deps.store.as_ref(),
+            runtime.runtime().deps.stores.friend_log.as_ref(),
             active_session.user_id.clone(),
         )?
         .len(),
@@ -1830,7 +1832,7 @@ fn repeated_friend_delete_retries_after_persistence_failure_without_duplicate_fe
     runtime.runtime().apply_friend_output(*retry);
 
     assert!(friend_log_current_list(
-        runtime.runtime().deps.store.as_ref(),
+        runtime.runtime().deps.stores.friend_log.as_ref(),
         active_session.user_id,
     )?
     .is_empty());

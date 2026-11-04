@@ -9,7 +9,8 @@ use vrcx_0_application_realtime::test_support::{
     runtime_with_active_session, TestRealtimeHostRuntime,
 };
 use vrcx_0_application_realtime::{
-    RealtimeSessionContext, RealtimeStore, RealtimeWsMessagePayload, SyntheticFriendEventOutcome,
+    RealtimeBatchWriter, RealtimeSessionContext, RealtimeWsMessagePayload,
+    SyntheticFriendEventOutcome,
 };
 use vrcx_0_contracts::friend_log::FriendLogHistoryQueryInput;
 use vrcx_0_contracts::realtime::{FriendLogUpsert, RealtimePersistenceBatch};

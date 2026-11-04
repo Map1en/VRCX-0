@@ -467,10 +467,11 @@ impl RuntimeHostStateBuilder {
                 },
             ))
         };
-        let realtime_store: Arc<dyn vrcx_0_application_realtime::RealtimeStore> =
-            Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
-                Arc::clone(&self.runtime_context.db),
-            ));
+        let realtime_stores = vrcx_0_application_realtime::RealtimeStores::shared(Arc::new(
+            vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(Arc::clone(
+                &self.runtime_context.db,
+            )),
+        ));
         let remote_requests: Arc<dyn vrcx_0_application_realtime::RealtimeRemoteRequests> =
             Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests);
         let backend_status = BackendRuntimeStatusPublisher::new(
@@ -479,12 +480,12 @@ impl RuntimeHostStateBuilder {
         );
         let realtime_transport: Arc<dyn vrcx_0_application_realtime::RealtimeTransport> =
             Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeTransport::new(
-                Arc::clone(&realtime_store),
+                self.runtime_context.db.db_path().to_path_buf(),
                 Arc::clone(&self.runtime_context.web),
                 backend_status.clone(),
             ));
         let realtime_runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps::new(
-            realtime_store,
+            realtime_stores,
             self.runtime_context.config_store(),
             realtime_transport,
             remote_requests,
@@ -534,12 +535,14 @@ impl RuntimeHostStateBuilder {
                 },
             ) as Arc<dyn AuthenticatedRuntimeFavoritesSink>)
         };
+        let baseline_store = Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
+            Arc::clone(&self.db),
+        ));
         let authenticated_runtime =
             AuthenticatedRuntimeOrchestrator::new(AuthenticatedRuntimeDeps {
                 social_baseline: vrcx_0_application_realtime::SocialBaselineDeps::new(
-                    Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
-                        Arc::clone(&self.db),
-                    )),
+                    baseline_store.clone(),
+                    baseline_store,
                     self.runtime_context.config_store(),
                     Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests),
                     Arc::clone(&self.web),
