@@ -5,6 +5,7 @@ use vrcx_0_application_core::{Error, Result};
 use vrcx_0_contracts::vrchat_api::vrchat_response;
 use vrcx_0_contracts::vrchat_api::VrchatResponse;
 use vrcx_0_core::files::extract_file_id;
+use vrcx_0_core::json::JsonExt;
 
 use super::{
     LegacyEntityImageKind, LegacyEntityImageUploadInput, LegacyMediaUploadDeps,
@@ -88,7 +89,7 @@ pub async fn upload_legacy_entity_image(
     };
     let result = deps.port.upload(request, &gate).await?;
 
-    if json_field_string(result.entity.as_value(), "imageUrl") != result.image_url {
+    if result.entity.as_value().text_field("imageUrl") != result.image_url {
         return Err(Error::Custom(format!(
             "{} image change failed.",
             target.entity_label
@@ -113,19 +114,6 @@ fn require_text(value: impl AsRef<str>, message: &str) -> Result<String> {
     } else {
         Ok(value)
     }
-}
-
-fn json_field_string(value: &Value, field: &str) -> String {
-    value
-        .as_object()
-        .and_then(|object| object.get(field))
-        .and_then(|value| {
-            value
-                .as_str()
-                .map(ToOwned::to_owned)
-                .or_else(|| (!value.is_null()).then(|| value.to_string()))
-        })
-        .unwrap_or_default()
 }
 
 #[cfg(test)]

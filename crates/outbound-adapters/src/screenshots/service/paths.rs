@@ -40,13 +40,6 @@ pub(super) fn unix_time_millis(time: std::time::SystemTime) -> i64 {
         .as_millis() as i64
 }
 
-pub(super) fn now_unix_seconds() -> i64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs() as i64
-}
-
 pub(super) fn now_rfc3339() -> String {
     let now: chrono::DateTime<chrono::Utc> = std::time::SystemTime::now().into();
     now.to_rfc3339()

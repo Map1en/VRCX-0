@@ -8,6 +8,7 @@ use vrcx_0_application::media::{
 use vrcx_0_application_core::WebClient;
 use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_contracts::vrchat_api::{VrchatJsonResponse, VrchatScope, VrchatUpload};
+use vrcx_0_core::json::JsonExt;
 use vrcx_0_vrchat_protocol::media::{
     avatar_image_set_input, file_put_input, file_upload_finish_input, file_upload_stage_path,
     file_upload_start_input, file_version_create_input, normalize_media_endpoint,
@@ -93,7 +94,7 @@ impl LocalMediaUploadAdapter {
                 &format!("{target_label} image upload failed"),
             )
             .await?;
-        let uploaded_file_id = json_field_string(&upload, "id");
+        let uploaded_file_id = upload.text_field("id");
         let file_version = latest_file_version(&upload).ok_or_else(|| {
             crate::Error::Custom(format!(
                 "{target_label} image upload did not return a file version."
@@ -122,7 +123,7 @@ impl LocalMediaUploadAdapter {
                     &format!("{target_label} image upload failed"),
                 )
                 .await?;
-            let upload_url = json_field_string(&start, "url");
+            let upload_url = start.text_field("url");
             if upload_url.is_empty() {
                 return Err(crate::Error::Custom(format!(
                     "{target_label} image upload did not return a {kind} upload URL."
@@ -235,19 +236,6 @@ fn map_media_error(error: vrcx_0_media::Error) -> crate::Error {
         vrcx_0_media::Error::Io(error) => crate::Error::Io(error),
         vrcx_0_media::Error::Custom(message) => crate::Error::Custom(message),
     }
-}
-
-fn json_field_string(value: &Value, field: &str) -> String {
-    value
-        .as_object()
-        .and_then(|object| object.get(field))
-        .and_then(|value| {
-            value
-                .as_str()
-                .map(ToOwned::to_owned)
-                .or_else(|| (!value.is_null()).then(|| value.to_string()))
-        })
-        .unwrap_or_default()
 }
 
 fn value_as_i64(value: &Value) -> Option<i64> {

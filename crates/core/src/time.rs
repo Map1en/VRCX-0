@@ -8,6 +8,13 @@ pub fn now_iso() -> String {
     iso_millis(Utc::now())
 }
 
+pub fn now_unix_seconds() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs() as i64
+}
+
 #[cfg(test)]
 mod tests {
     use super::iso_millis;
