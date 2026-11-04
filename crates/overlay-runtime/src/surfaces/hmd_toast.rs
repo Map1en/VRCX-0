@@ -13,10 +13,10 @@ use vrcx_0_core::location::{is_meaningful_world_name, parse_location, world_id_f
 use vrcx_0_i18n::OverlayMessage;
 use vrcx_0_vr_overlay::{AvatarBitmap, OverlaySurfaceId, RgbaFrame, MAIN_SURFACE_ID};
 
+use super::super::config::{HmdNotificationStyle, VrOverlayRuntimeConfig};
 use super::super::manager::VrOverlayManager;
-use super::super::runtime::{
-    render_slint_hmd_frame, HmdNotificationStyle, VrOverlayRuntime, VrOverlayRuntimeConfig,
-};
+use super::super::runtime::frame::render_slint_hmd_frame;
+use super::super::runtime::VrOverlayRuntime;
 use super::super::service::HostVrOverlayService;
 use super::super::test_preview::test_hmd_toast_views;
 use super::super::tracker_watch::TrackerDisconnect;

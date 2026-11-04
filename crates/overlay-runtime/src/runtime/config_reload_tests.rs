@@ -14,16 +14,17 @@ use vrcx_0_contracts::activity::ActivityKind;
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::DatabaseService;
 
-use super::{
-    hmd_surface_config, load_runtime_config, HmdNotificationPosition, HmdNotificationStyle,
-    StaticWristFrameProducer, VrOverlayRuntime, HMD_STACK_INSET_PX, HMD_SURFACE_SIZE,
-    HMD_SURFACE_WIDTH_METERS,
+use super::frame::StaticWristFrameProducer;
+use super::surface_layout::{
+    hmd_surface_config, HMD_STACK_INSET_PX, HMD_SURFACE_SIZE, HMD_SURFACE_WIDTH_METERS,
 };
+use super::{load_runtime_config, VrOverlayRuntime};
 use crate::config::{
-    HMD_NOTIFICATIONS_ENABLED_CONFIG_KEY, HMD_NOTIFICATION_AVATARS_CONFIG_KEY,
-    HMD_NOTIFICATION_OPACITY_CONFIG_KEY, HMD_NOTIFICATION_POSITION_CONFIG_KEY,
-    HMD_NOTIFICATION_START_MODE_CONFIG_KEY, HMD_NOTIFICATION_STYLE_CONFIG_KEY,
-    HMD_NOTIFICATION_TRACKER_DISCONNECT_CONFIG_KEY, VR_OVERLAY_HIDE_PRIVATE_WORLDS_CONFIG_KEY,
+    HmdNotificationPosition, HmdNotificationStyle, HMD_NOTIFICATIONS_ENABLED_CONFIG_KEY,
+    HMD_NOTIFICATION_AVATARS_CONFIG_KEY, HMD_NOTIFICATION_OPACITY_CONFIG_KEY,
+    HMD_NOTIFICATION_POSITION_CONFIG_KEY, HMD_NOTIFICATION_START_MODE_CONFIG_KEY,
+    HMD_NOTIFICATION_STYLE_CONFIG_KEY, HMD_NOTIFICATION_TRACKER_DISCONNECT_CONFIG_KEY,
+    VR_OVERLAY_HIDE_PRIVATE_WORLDS_CONFIG_KEY,
 };
 use crate::tracker_watch::TrackerDisconnect;
 use crate::VrOverlayRuntimeServices;

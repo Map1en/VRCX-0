@@ -1,3 +1,5 @@
+use vrcx_0_application_activity::ActivitySink;
+
 use super::*;
 
 #[test]

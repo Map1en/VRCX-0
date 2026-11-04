@@ -5,7 +5,7 @@ use vrcx_0_application_activity::{
 };
 use vrcx_0_contracts::activity::ActivityKind;
 
-use super::runtime::VrOverlayRuntimeConfig;
+use super::config::VrOverlayRuntimeConfig;
 use super::surfaces::main::HmdToastView;
 use super::{WristOverlayFrameInput, WristRuntimeFooter};
 
