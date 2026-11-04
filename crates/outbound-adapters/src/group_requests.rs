@@ -2,7 +2,7 @@ use vrcx_0_application::social::{GroupBuiltRequest, GroupRemoteRequest, GroupRem
 use vrcx_0_application_core::Result;
 use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
-use vrcx_0_vrchat_client::groups::{
+use vrcx_0_vrchat_protocol::groups::{
     current_user_group_instances_get_input, delete_input, gallery_create_input,
     gallery_delete_input, gallery_edit_input, gallery_get_input, gallery_image_add_input,
     gallery_image_delete_input, group_block_input, group_get_no_params_input,
@@ -52,11 +52,12 @@ impl GroupRemoteRequests for VrchatGroupRemoteRequests {
                 Ok(built1(group_id, request))
             }
             GroupRemoteRequest::GetMember(input) => {
-                let (group_id, user_id, request) = vrcx_0_vrchat_client::groups::member_get_input(
-                    VRCHAT_API_DEFAULT_ENDPOINT.into(),
-                    input.group_id,
-                    input.user_id,
-                )?;
+                let (group_id, user_id, request) =
+                    vrcx_0_vrchat_protocol::groups::member_get_input(
+                        VRCHAT_API_DEFAULT_ENDPOINT.into(),
+                        input.group_id,
+                        input.user_id,
+                    )?;
                 Ok(built2(group_id, user_id, request))
             }
             GroupRemoteRequest::GetMembers(input) => {

@@ -8,7 +8,7 @@ use vrcx_0_application_core::Result;
 use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_core::OwnerId;
 use vrcx_0_persistence::{local_moderation, DatabaseService};
-use vrcx_0_vrchat_client::moderation::{
+use vrcx_0_vrchat_protocol::moderation::{
     player_moderation_update_input, player_moderations_get_input,
 };
 

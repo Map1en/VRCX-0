@@ -6,8 +6,8 @@ use vrcx_0_application_core::{WebClient, WorldCache};
 use vrcx_0_application_game::BackgroundRemoteApi;
 use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
-use vrcx_0_vrchat_client::groups::profile_get_input as group_profile_get_input;
-use vrcx_0_vrchat_client::users::{current_user_update_input, CurrentUserUpdateRequest};
+use vrcx_0_vrchat_protocol::groups::profile_get_input as group_profile_get_input;
+use vrcx_0_vrchat_protocol::users::{current_user_update_input, CurrentUserUpdateRequest};
 
 pub(crate) struct DesktopBackgroundRemoteApi {
     web: Arc<WebClient>,

@@ -10,7 +10,7 @@ use vrcx_0_persistence::{
     memos::{memo_list_user_notes, memo_list_users},
     DatabaseService,
 };
-use vrcx_0_vrchat_client::{
+use vrcx_0_vrchat_protocol::{
     favorites::{favorite_avatars_get_input, favorite_worlds_get_input},
     groups::user_groups_get_input,
     query::{QueryOrder, ReleaseStatusFilter, WorldSearchSort},

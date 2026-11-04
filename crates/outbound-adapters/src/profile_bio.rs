@@ -10,7 +10,7 @@ use vrcx_0_persistence::realtime::{
     self, RealtimePersistenceBatch, SelfProfileField, SelfProfileObservation,
 };
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::users::profile_get_input;
+use vrcx_0_vrchat_protocol::users::profile_get_input;
 
 #[derive(Clone)]
 pub struct LocalProfileBioStore {

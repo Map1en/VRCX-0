@@ -27,7 +27,7 @@ impl VrchatConfigPort for VrchatConfigAdapter {
     }
 
     fn fetch(&self, endpoint: String) -> VrchatConfigFuture<'_> {
-        let request = vrcx_0_vrchat_client::auth::config_get_input(endpoint);
+        let request = vrcx_0_vrchat_protocol::auth::config_get_input(endpoint);
         Box::pin(async move {
             self.api
                 .execute(

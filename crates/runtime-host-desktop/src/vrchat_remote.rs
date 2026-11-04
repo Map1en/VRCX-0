@@ -3,25 +3,25 @@ use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::Result;
 use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatResponse};
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
-use vrcx_0_vrchat_client::auth::{
+use vrcx_0_vrchat_protocol::auth::{
     current_user_get_input, file_analysis_get_input, visits_get_input,
 };
-use vrcx_0_vrchat_client::avatars::{
+use vrcx_0_vrchat_protocol::avatars::{
     avatar_gallery_get_input, avatar_list_by_user_get_input, avatar_styles_get_input,
     AvatarListByUserGetInput,
 };
-use vrcx_0_vrchat_client::economy::{
+use vrcx_0_vrchat_protocol::economy::{
     balance_get_input, licensed_avatars_get_input, purchases_get_input, store_get_input,
     transactions_get_input,
 };
-use vrcx_0_vrchat_client::favorites::{favorite_groups_get_input, favorite_worlds_get_input};
-use vrcx_0_vrchat_client::friends::friend_status_get_input;
-use vrcx_0_vrchat_client::instances::{
+use vrcx_0_vrchat_protocol::favorites::{favorite_groups_get_input, favorite_worlds_get_input};
+use vrcx_0_vrchat_protocol::friends::friend_status_get_input;
+use vrcx_0_vrchat_protocol::instances::{
     instance_calendar_link_input, instance_close_input, instance_count_get_input,
     instance_create_input, instance_display_name_input, instance_get_input,
     instance_self_invite_input, instance_short_name_get_input, InstanceCreateRequest,
 };
-use vrcx_0_vrchat_client::media::{
+use vrcx_0_vrchat_protocol::media::{
     asset_upload_input, avatar_gallery_image_upload_input, file_delete_input, files_get_input,
     gallery_file_order_input, image_upload_input, inventory_bundle_consume_input,
     inventory_item_equip_input, inventory_item_update_input, inventory_items_get_input,
@@ -31,16 +31,16 @@ use vrcx_0_vrchat_client::media::{
     EmojiUploadParams, InventoryItemUpdateRequest, InventoryListParams, MediaAssetUploadRequest,
     MediaFileListParams, PrintUploadParams, ProfileDecorationEquipSlot,
 };
-use vrcx_0_vrchat_client::notifications::{
+use vrcx_0_vrchat_protocol::notifications::{
     boop_send_input, request_invite_photo_input, request_invite_send_input, RequestInviteRequest,
 };
-use vrcx_0_vrchat_client::query::{AvatarListSort, QueryOrder, ReleaseStatusFilter};
-use vrcx_0_vrchat_client::search::{
+use vrcx_0_vrchat_protocol::query::{AvatarListSort, QueryOrder, ReleaseStatusFilter};
+use vrcx_0_vrchat_protocol::search::{
     search_groups_get_input, search_groups_strict_get_input, search_instance_short_name_get_input,
     search_users_get_input, search_worlds_get_input, GroupSearchParams, UserSearchParams,
     WorldSearchParams,
 };
-use vrcx_0_vrchat_client::tools::{
+use vrcx_0_vrchat_protocol::tools::{
     following_calendars_get_input, group_calendar_event_get_input, group_calendar_get_input,
     group_calendar_ics_get_input, group_event_create_input, group_event_delete_input,
     group_event_follow_input, group_event_update_input, invite_message_edit_input,
@@ -48,7 +48,7 @@ use vrcx_0_vrchat_client::tools::{
     user_report_input, CalendarListParams, GroupCalendarEventMutation, InviteMessageType,
     ModerationReportType,
 };
-use vrcx_0_vrchat_client::users::{
+use vrcx_0_vrchat_protocol::users::{
     account_standing_get_input, profile_get_input, user_represented_group_get_input,
 };
 

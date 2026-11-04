@@ -25,7 +25,7 @@ impl AuthenticatedRuntimeAuthProbe for VrchatAuthenticatedRuntimeAuthProbe {
             let response = self
                 .web
                 .execute_api(
-                    vrcx_0_vrchat_client::auth::current_user_get_input(endpoint.to_string()),
+                    vrcx_0_vrchat_protocol::auth::current_user_get_input(endpoint.to_string()),
                     VrchatScope::Vrchat,
                 )
                 .await?;

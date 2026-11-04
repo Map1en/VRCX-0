@@ -23,12 +23,12 @@ impl InventoryRemoteRequests for VrchatInventoryRemoteRequests {
         endpoint: String,
         input: InventoryPageRequest,
     ) -> InventoryPageFuture<'_> {
-        let request = vrcx_0_vrchat_client::media::inventory_items_get_input(
+        let request = vrcx_0_vrchat_protocol::media::inventory_items_get_input(
             endpoint,
-            vrcx_0_vrchat_client::media::InventoryListParams {
+            vrcx_0_vrchat_protocol::media::InventoryListParams {
                 n: Some(input.page_size),
                 offset: Some(input.offset),
-                order: Some(vrcx_0_vrchat_client::media::InventoryOrder::Newest),
+                order: Some(vrcx_0_vrchat_protocol::media::InventoryOrder::Newest),
                 types: input.types,
                 not_flags: input.not_flags,
                 archived: input.archived,

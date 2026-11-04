@@ -7,13 +7,13 @@ use vrcx_0_application::favorites::{
 use vrcx_0_application_core::vrchat_api::{execute_api_command, VrchatScope};
 use vrcx_0_application_core::{RuntimeDiagnostics, RuntimeSyncEngine, WebClient, WorldCache};
 use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatResponse};
-use vrcx_0_vrchat_client::avatars::avatar_get_input;
-use vrcx_0_vrchat_client::favorites::{
+use vrcx_0_vrchat_protocol::avatars::avatar_get_input;
+use vrcx_0_vrchat_protocol::favorites::{
     favorite_add_input, favorite_avatars_get_input, favorite_delete_input,
     favorite_group_clear_input, favorite_group_save_input, favorite_limits_get_input,
     favorite_worlds_get_input, favorites_get_input,
 };
-use vrcx_0_vrchat_client::users::user_get_input;
+use vrcx_0_vrchat_protocol::users::user_get_input;
 
 pub struct VrchatFavoriteRemote {
     web: Arc<WebClient>,
@@ -217,7 +217,7 @@ impl FavoriteRemote for VrchatFavoriteRemote {
 mod tests {
     use serde_json::json;
     use vrcx_0_application_core::VrchatFavoriteType;
-    use vrcx_0_vrchat_client::favorites::favorite_add_input;
+    use vrcx_0_vrchat_protocol::favorites::favorite_add_input;
 
     #[test]
     fn vrc_plus_world_add_preserves_request_shape() {

@@ -9,8 +9,8 @@ use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_contracts::FileMetadataOutput;
 use vrcx_0_persistence::files::{file_cache_get, file_cache_upsert};
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::avatars::avatar_file_get_input;
-use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
+use vrcx_0_vrchat_protocol::avatars::avatar_file_get_input;
+use vrcx_0_vrchat_protocol::http_api::normalize_vrchat_api_endpoint;
 
 const FILE_RESOLVE_FETCH_TIMEOUT: Duration = Duration::from_secs(5);
 const FILE_RESOLVE_FAILURE_TTL: Duration = Duration::from_secs(60 * 60);

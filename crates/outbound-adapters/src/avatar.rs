@@ -9,13 +9,13 @@ use vrcx_0_application_core::{Error, RuntimeDiagnostics, RuntimeSyncEngine, WebC
 use vrcx_0_contracts::vrchat_api::VrchatResponse;
 use vrcx_0_contracts::{AvatarTagOutput, AvatarTimeSpentOutput};
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::avatars::{
+use vrcx_0_vrchat_protocol::avatars::{
     avatar_delete_input, avatar_impostor_create_input, avatar_impostor_delete_input,
     avatar_list_by_user_get_input, avatar_moderation_delete_input, avatar_moderation_send_input,
     avatar_moderations_get_input, avatar_save_input, avatar_select_fallback_input,
     avatar_select_input, AvatarListByUserGetInput,
 };
-use vrcx_0_vrchat_client::query::{AvatarListSort, QueryOrder, ReleaseStatusFilter};
+use vrcx_0_vrchat_protocol::query::{AvatarListSort, QueryOrder, ReleaseStatusFilter};
 
 #[derive(Clone)]
 pub struct LocalAvatarApplicationAdapter {

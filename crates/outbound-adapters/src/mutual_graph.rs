@@ -7,7 +7,7 @@ use vrcx_0_application::social::{
 use vrcx_0_application_core::Result;
 use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_persistence::{mutual_graph, DatabaseService};
-use vrcx_0_vrchat_client::users::user_mutual_friends_get_input;
+use vrcx_0_vrchat_protocol::users::user_mutual_friends_get_input;
 
 pub struct LocalMutualGraphStore {
     db: Arc<DatabaseService>,

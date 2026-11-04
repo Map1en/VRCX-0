@@ -7,11 +7,13 @@ pub struct VrchatRealtimeRemoteRequests;
 
 impl RealtimeRemoteRequests for VrchatRealtimeRemoteRequests {
     fn current_user(&self, endpoint: String) -> crate::Result<VrchatRequest> {
-        Ok(vrcx_0_vrchat_client::auth::current_user_get_input(endpoint))
+        Ok(vrcx_0_vrchat_protocol::auth::current_user_get_input(
+            endpoint,
+        ))
     }
 
     fn user(&self, endpoint: String, user_id: String) -> crate::Result<(String, VrchatRequest)> {
-        Ok(vrcx_0_vrchat_client::users::user_get_input(
+        Ok(vrcx_0_vrchat_protocol::users::user_get_input(
             endpoint, user_id,
         )?)
     }
@@ -21,19 +23,17 @@ impl RealtimeRemoteRequests for VrchatRealtimeRemoteRequests {
         endpoint: String,
         user_id: String,
     ) -> crate::Result<(String, VrchatRequest)> {
-        Ok(vrcx_0_vrchat_client::friends::friend_status_get_input(
+        Ok(vrcx_0_vrchat_protocol::friends::friend_status_get_input(
             endpoint, user_id,
         )?)
     }
 
     fn favorite_limits(&self, endpoint: String) -> crate::Result<VrchatRequest> {
-        Ok(vrcx_0_vrchat_client::favorites::favorite_limits_get_input(
-            endpoint,
-        ))
+        Ok(vrcx_0_vrchat_protocol::favorites::favorite_limits_get_input(endpoint))
     }
 
     fn favorites(&self, endpoint: String, n: i32, offset: i32) -> crate::Result<VrchatRequest> {
-        Ok(vrcx_0_vrchat_client::favorites::favorites_get_input(
+        Ok(vrcx_0_vrchat_protocol::favorites::favorites_get_input(
             endpoint, n, offset,
         ))
     }
@@ -44,12 +44,14 @@ impl RealtimeRemoteRequests for VrchatRealtimeRemoteRequests {
         n: i32,
         offset: i32,
     ) -> crate::Result<VrchatRequest> {
-        Ok(vrcx_0_vrchat_client::favorites::favorite_groups_get_input(
-            endpoint,
-            n,
-            offset,
-            String::new(),
-        ))
+        Ok(
+            vrcx_0_vrchat_protocol::favorites::favorite_groups_get_input(
+                endpoint,
+                n,
+                offset,
+                String::new(),
+            ),
+        )
     }
 
     fn friends(
@@ -59,19 +61,19 @@ impl RealtimeRemoteRequests for VrchatRealtimeRemoteRequests {
         n: i32,
         offset: i32,
     ) -> crate::Result<VrchatRequest> {
-        Ok(vrcx_0_vrchat_client::friends::friends_get_input(
+        Ok(vrcx_0_vrchat_protocol::friends::friends_get_input(
             endpoint, offline, n, offset,
         ))
     }
 
     fn world(&self, endpoint: String, world_id: String) -> crate::Result<(String, VrchatRequest)> {
-        Ok(vrcx_0_vrchat_client::worlds::world_get_input(
+        Ok(vrcx_0_vrchat_protocol::worlds::world_get_input(
             endpoint, world_id,
         )?)
     }
 
     fn group(&self, endpoint: String, group_id: String) -> crate::Result<VrchatRequest> {
-        Ok(vrcx_0_vrchat_client::groups::profile_get_input(endpoint, group_id, true)?.1)
+        Ok(vrcx_0_vrchat_protocol::groups::profile_get_input(endpoint, group_id, true)?.1)
     }
 
     fn invite_send(
@@ -80,7 +82,7 @@ impl RealtimeRemoteRequests for VrchatRealtimeRemoteRequests {
         receiver_user_id: String,
         body: Value,
     ) -> crate::Result<(String, VrchatRequest)> {
-        Ok(vrcx_0_vrchat_client::notifications::invite_send_input(
+        Ok(vrcx_0_vrchat_protocol::notifications::invite_send_input(
             endpoint,
             receiver_user_id,
             body,
@@ -96,7 +98,7 @@ impl RealtimeRemoteRequests for VrchatRealtimeRemoteRequests {
         sender_user_id: String,
     ) -> crate::Result<(String, VrchatRequest)> {
         Ok(
-            vrcx_0_vrchat_client::notifications::notification_hide_remote_input(
+            vrcx_0_vrchat_protocol::notifications::notification_hide_remote_input(
                 endpoint,
                 notification_id,
                 version,

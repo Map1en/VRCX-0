@@ -12,8 +12,8 @@ use vrcx_0_persistence::avatars::{
 };
 use vrcx_0_persistence::cache_entities::CacheEntityInput;
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::avatars::avatar_get_input;
-use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
+use vrcx_0_vrchat_protocol::avatars::avatar_get_input;
+use vrcx_0_vrchat_protocol::http_api::normalize_vrchat_api_endpoint;
 
 use vrcx_0_application_core::WebClient;
 

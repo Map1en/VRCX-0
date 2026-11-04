@@ -8,7 +8,7 @@ use vrcx_0_application::social::{
 use vrcx_0_application_core::{vrchat_api::VrchatScope, Error, Result, WebClient};
 use vrcx_0_contracts::VrchatJsonResponse;
 use vrcx_0_core::json::RawJson;
-use vrcx_0_vrchat_client::{
+use vrcx_0_vrchat_protocol::{
     groups::profile_get_input,
     tools::{
         calendars_get_input, featured_calendars_get_input, following_calendars_get_input,

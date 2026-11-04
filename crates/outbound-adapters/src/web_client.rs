@@ -13,10 +13,10 @@ use vrcx_0_contracts::{
 use vrcx_0_persistence::cookies;
 use vrcx_0_persistence::storage::StorageService;
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::http_api::{self, normalize_vrchat_api_endpoint};
 use vrcx_0_vrchat_client::image_fetcher::ImageFetcher;
 use vrcx_0_vrchat_client::realtime::RealtimeConnectionOptions;
 use vrcx_0_vrchat_client::web_client as transport;
+use vrcx_0_vrchat_protocol::http_api::{self, normalize_vrchat_api_endpoint};
 
 use crate::Result;
 
@@ -249,7 +249,7 @@ impl WebClient {
         &self,
         endpoint: &str,
     ) -> Result<vrcx_0_contracts::RealtimeAuthTokenFetch> {
-        let input = vrcx_0_vrchat_client::auth::session_get_input(endpoint.to_string());
+        let input = vrcx_0_vrchat_protocol::auth::session_get_input(endpoint.to_string());
         let scope = VrchatScope::Vrchat;
         let (pooled_status, pooled_data) = self
             .inner
@@ -447,7 +447,7 @@ mod tests {
     use std::collections::HashMap;
 
     use serde_json::json;
-    use vrcx_0_vrchat_client::auth::config_get_input;
+    use vrcx_0_vrchat_protocol::auth::config_get_input;
 
     use super::*;
 

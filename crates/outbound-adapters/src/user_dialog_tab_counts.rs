@@ -15,7 +15,7 @@ use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_contracts::VrchatJsonResponse;
 use vrcx_0_integrations::external_api::{self, ExternalApiScope};
 use vrcx_0_persistence::{config, DatabaseService};
-use vrcx_0_vrchat_client::{
+use vrcx_0_vrchat_protocol::{
     avatars::{avatar_list_by_user_get_input, AvatarListByUserGetInput},
     favorites::{favorite_groups_get_input, favorite_worlds_get_input},
     groups::user_groups_get_input,

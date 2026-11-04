@@ -25,7 +25,7 @@ impl BackgroundGroupRemote for VrchatBackgroundGroupRemote {
         current_user_id: &'a str,
     ) -> BackgroundGroupRemoteFuture<'a, Vec<Value>> {
         Box::pin(async move {
-            let request = vrcx_0_vrchat_client::groups::current_user_group_instances_get_input(
+            let request = vrcx_0_vrchat_protocol::groups::current_user_group_instances_get_input(
                 normalize_vrchat_api_endpoint(Some(endpoint)),
                 current_user_id.to_string(),
             )?
@@ -49,7 +49,7 @@ impl BackgroundGroupRemote for VrchatBackgroundGroupRemote {
     ) -> BackgroundGroupRemoteFuture<'a, Vec<Value>> {
         Box::pin(async move {
             let request =
-                vrcx_0_vrchat_client::groups::user_group_instances_get_input_for_endpoint(
+                vrcx_0_vrchat_protocol::groups::user_group_instances_get_input_for_endpoint(
                     normalize_vrchat_api_endpoint(Some(endpoint)),
                     group_id.to_string(),
                     current_user_id.to_string(),
@@ -73,7 +73,7 @@ impl BackgroundGroupRemote for VrchatBackgroundGroupRemote {
     ) -> BackgroundGroupProfileFuture<'a> {
         Box::pin(async move {
             let endpoint = normalize_vrchat_api_endpoint(Some(endpoint));
-            let Ok((_, request)) = vrcx_0_vrchat_client::groups::profile_get_input(
+            let Ok((_, request)) = vrcx_0_vrchat_protocol::groups::profile_get_input(
                 endpoint,
                 group_id.to_string(),
                 false,

@@ -2,7 +2,7 @@ use serde_json::json;
 use vrcx_0_application::social::InstanceInviteRemoteRequests;
 use vrcx_0_application_core::Result;
 use vrcx_0_contracts::vrchat_api::VrchatRequest;
-use vrcx_0_vrchat_client::{
+use vrcx_0_vrchat_protocol::{
     instances::instance_self_invite_input, notifications::invite_send_input,
 };
 

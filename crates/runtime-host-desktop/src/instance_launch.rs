@@ -13,7 +13,9 @@ use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatResponse};
 use vrcx_0_host_desktop::host_capabilities::{require_host_capability, HostCapability};
 use vrcx_0_persistence::config as config_store;
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::instances::{instance_self_invite_input, instance_short_name_get_input};
+use vrcx_0_vrchat_protocol::instances::{
+    instance_self_invite_input, instance_short_name_get_input,
+};
 
 const INSTANCE_JOIN_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 

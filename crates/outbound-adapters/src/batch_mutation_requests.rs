@@ -1,7 +1,7 @@
 use vrcx_0_application::social::{BatchMutationRemoteRequests, GroupVisibility};
 use vrcx_0_application_core::Result;
 use vrcx_0_contracts::vrchat_api::VrchatRequest;
-use vrcx_0_vrchat_client::{
+use vrcx_0_vrchat_protocol::{
     avatars::{avatar_get_input, avatar_save_input, AvatarUpdateRequest},
     groups::{leave_input, member_props_set_input, GroupMemberPatch, GroupMemberVisibility},
     users::user_groups_get_input,

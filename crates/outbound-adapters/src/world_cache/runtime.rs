@@ -14,8 +14,8 @@ use vrcx_0_persistence::worlds::{
     WorldSummaryOutput,
 };
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
-use vrcx_0_vrchat_client::worlds::world_get_input;
+use vrcx_0_vrchat_protocol::http_api::normalize_vrchat_api_endpoint;
+use vrcx_0_vrchat_protocol::worlds::world_get_input;
 
 use vrcx_0_application_core::WebClient;
 use vrcx_0_core::location::is_meaningful_world_name;

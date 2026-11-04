@@ -161,11 +161,11 @@ mod tests {
 
     const ENDPOINT: &str = "https://api.vrchat.cloud/api/1";
 
-    fn request(input: VrchatRequest) -> crate::web_client::WebExecuteRequest {
+    fn request(input: VrchatRequest) -> vrcx_0_contracts::WebExecuteRequest {
         build_web_execute_request(input, VrchatScope::Vrchat).unwrap()
     }
 
-    fn header<'a>(request: &'a crate::web_client::WebExecuteRequest, name: &str) -> &'a str {
+    fn header<'a>(request: &'a vrcx_0_contracts::WebExecuteRequest, name: &str) -> &'a str {
         request
             .headers
             .iter()

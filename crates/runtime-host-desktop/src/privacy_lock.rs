@@ -22,11 +22,11 @@ use vrcx_0_contracts::vrchat_device_login::interpret_device_code_response;
 use vrcx_0_contracts::vrchat_login::{interpret_login_config_response, VrchatLoginStep};
 use vrcx_0_core::json::JsonExt;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
-use vrcx_0_vrchat_client::auth::{
+use vrcx_0_vrchat_client::web_client::WebClient as VrchatWebClient;
+use vrcx_0_vrchat_protocol::auth::{
     config_get_input, current_user_get_input, device_code_input, device_status_input, logout_input,
 };
-use vrcx_0_vrchat_client::http_api::build_web_execute_request;
-use vrcx_0_vrchat_client::web_client::WebClient as VrchatWebClient;
+use vrcx_0_vrchat_protocol::http_api::build_web_execute_request;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

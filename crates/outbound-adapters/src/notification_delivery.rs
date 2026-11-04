@@ -73,7 +73,7 @@ impl NotificationRemote for VrchatNotificationRemote {
         user_id: &'a str,
     ) -> NotificationRemoteFuture<'a, Value> {
         Box::pin(async move {
-            let (_, request) = vrcx_0_vrchat_client::users::user_get_input(
+            let (_, request) = vrcx_0_vrchat_protocol::users::user_get_input(
                 endpoint.to_string(),
                 user_id.to_string(),
             )
@@ -133,7 +133,7 @@ impl NotificationRemote for VrchatNotificationRemote {
         group_id: &'a str,
     ) -> NotificationRemoteFuture<'a, String> {
         Box::pin(async move {
-            let (_, request) = vrcx_0_vrchat_client::groups::profile_get_input(
+            let (_, request) = vrcx_0_vrchat_protocol::groups::profile_get_input(
                 endpoint.to_string(),
                 group_id.to_string(),
                 false,

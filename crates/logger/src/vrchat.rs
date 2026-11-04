@@ -20,19 +20,19 @@ use vrcx_0_core::vrchat_endpoints::{
 };
 use vrcx_0_core::TwoFactorMethod;
 use vrcx_0_logger_protocol::wire::SnapshotPayload;
-use vrcx_0_vrchat_client::auth::{
-    config_get_input, current_user_get_input, device_code_input, device_status_input,
-    email_otp_verify_input, login_basic_input, logout_input, otp_verify_input, session_get_input,
-    totp_verify_input,
-};
-use vrcx_0_vrchat_client::friends::friends_get_input;
-use vrcx_0_vrchat_client::http_api::build_web_execute_request;
 use vrcx_0_vrchat_client::realtime::{
     auth_token_from_response, build_transport_url, connect_websocket, Error as RealtimeError,
     RealtimeConnectionOptions, RealtimeWebSocketStream,
 };
-use vrcx_0_vrchat_client::users::profile_get_input;
 use vrcx_0_vrchat_client::web_client::WebClient;
+use vrcx_0_vrchat_protocol::auth::{
+    config_get_input, current_user_get_input, device_code_input, device_status_input,
+    email_otp_verify_input, login_basic_input, logout_input, otp_verify_input, session_get_input,
+    totp_verify_input,
+};
+use vrcx_0_vrchat_protocol::friends::friends_get_input;
+use vrcx_0_vrchat_protocol::http_api::build_web_execute_request;
+use vrcx_0_vrchat_protocol::users::profile_get_input;
 
 use crate::app::LOGGER_VERSION;
 

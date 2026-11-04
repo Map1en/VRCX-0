@@ -9,7 +9,7 @@ use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::WebClient;
 use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_contracts::vrchat_api::{VrchatJsonResponse, VrchatUpload};
-use vrcx_0_vrchat_client::media::{
+use vrcx_0_vrchat_protocol::media::{
     avatar_image_set_input, file_put_input, file_upload_finish_input, file_upload_stage_path,
     file_upload_start_input, file_version_create_input, normalize_media_endpoint,
     world_image_set_input, FileUploadStageKind,

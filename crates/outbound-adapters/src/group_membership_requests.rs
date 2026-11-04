@@ -1,7 +1,7 @@
 use vrcx_0_application::social::GroupMembershipRemoteRequests;
 use vrcx_0_application_core::Result;
 use vrcx_0_contracts::vrchat_api::VrchatRequest;
-use vrcx_0_vrchat_client::groups::{
+use vrcx_0_vrchat_protocol::groups::{
     member_ban_input, member_get_input, member_kick_input, user_group_permissions_get_input,
     user_groups_get_input,
 };

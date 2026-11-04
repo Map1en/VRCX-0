@@ -30,21 +30,21 @@ impl NotificationSyncPort for LocalNotificationSyncAdapter {
     ) -> NotificationSyncFuture<'a> {
         let request = match source {
             NotificationSyncSource::V1 => {
-                vrcx_0_vrchat_client::notifications::notifications_v1_get_input(
+                vrcx_0_vrchat_protocol::notifications::notifications_v1_get_input(
                     endpoint.to_string(),
                     n,
                     offset,
                 )
             }
             NotificationSyncSource::V2 => {
-                vrcx_0_vrchat_client::notifications::notifications_v2_get_input(
+                vrcx_0_vrchat_protocol::notifications::notifications_v2_get_input(
                     endpoint.to_string(),
                     n,
                     offset,
                 )
             }
             NotificationSyncSource::HiddenFriendRequests => {
-                vrcx_0_vrchat_client::notifications::hidden_friend_requests_get_input(
+                vrcx_0_vrchat_protocol::notifications::hidden_friend_requests_get_input(
                     endpoint.to_string(),
                     n,
                     offset,

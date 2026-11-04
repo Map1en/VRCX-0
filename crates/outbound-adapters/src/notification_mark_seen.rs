@@ -49,7 +49,7 @@ impl NotificationMarkSeenActions for LocalNotificationMarkSeenActions<'_> {
                 .await
                 .map_err(NotificationRemoteActionError::terminal)?;
             let (_, id, request) =
-                vrcx_0_vrchat_client::notifications::notification_mark_seen_input(
+                vrcx_0_vrchat_protocol::notifications::notification_mark_seen_input(
                     self.mutation.scope().endpoint.clone(),
                     self.mutation.scope().current_user_id.clone(),
                     item.id.clone(),

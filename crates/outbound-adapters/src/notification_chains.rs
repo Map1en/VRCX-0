@@ -91,7 +91,7 @@ impl NotificationChainActions for LocalNotificationChainActions<'_> {
             let (request, scope) = match call {
                 NotificationChainRemoteCall::HideNotification(target) => {
                     let (_, request) =
-                        vrcx_0_vrchat_client::notifications::notification_hide_remote_input(
+                        vrcx_0_vrchat_protocol::notifications::notification_hide_remote_input(
                             endpoint,
                             target.id,
                             target.version,
@@ -107,7 +107,7 @@ impl NotificationChainActions for LocalNotificationChainActions<'_> {
                     response_data,
                 } => {
                     let (_, request) =
-                        vrcx_0_vrchat_client::notifications::notification_respond_input(
+                        vrcx_0_vrchat_protocol::notifications::notification_respond_input(
                             endpoint,
                             id,
                             response_type,
@@ -118,7 +118,7 @@ impl NotificationChainActions for LocalNotificationChainActions<'_> {
                 }
                 NotificationChainRemoteCall::InviteResponse { id, response_slot } => {
                     let (_, request) =
-                        vrcx_0_vrchat_client::notifications::invite_response_send_input(
+                        vrcx_0_vrchat_protocol::notifications::invite_response_send_input(
                             endpoint,
                             id,
                             response_slot,
@@ -132,7 +132,7 @@ impl NotificationChainActions for LocalNotificationChainActions<'_> {
                     image_data,
                 } => {
                     let (_, request) =
-                        vrcx_0_vrchat_client::notifications::invite_response_photo_input(
+                        vrcx_0_vrchat_protocol::notifications::invite_response_photo_input(
                             endpoint,
                             id,
                             response_slot,
@@ -148,7 +148,7 @@ impl NotificationChainActions for LocalNotificationChainActions<'_> {
                     receiver_user_id,
                     params,
                 } => {
-                    let (_, request) = vrcx_0_vrchat_client::notifications::invite_send_input(
+                    let (_, request) = vrcx_0_vrchat_protocol::notifications::invite_send_input(
                         endpoint,
                         receiver_user_id,
                         params,
@@ -161,7 +161,7 @@ impl NotificationChainActions for LocalNotificationChainActions<'_> {
                     params,
                     image_data,
                 } => {
-                    let (_, request) = vrcx_0_vrchat_client::notifications::invite_photo_input(
+                    let (_, request) = vrcx_0_vrchat_protocol::notifications::invite_photo_input(
                         endpoint,
                         receiver_user_id,
                         params,
@@ -178,7 +178,7 @@ impl NotificationChainActions for LocalNotificationChainActions<'_> {
                     emoji_id,
                     inventory_item_id,
                 } => {
-                    let (_, request) = vrcx_0_vrchat_client::notifications::boop_send_input(
+                    let (_, request) = vrcx_0_vrchat_protocol::notifications::boop_send_input(
                         endpoint,
                         user_id,
                         emoji_id,

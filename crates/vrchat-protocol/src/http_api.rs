@@ -14,7 +14,7 @@ use vrcx_0_core::vrchat_endpoints::{
     VRCHAT_FILES_S3_HOST_PREFIX,
 };
 
-use crate::web_client::{WebExecuteRequest, WebUploadMode};
+use vrcx_0_contracts::{WebExecuteRequest, WebUploadMode};
 
 #[derive(Debug, thiserror::Error)]
 pub enum HttpApiError {

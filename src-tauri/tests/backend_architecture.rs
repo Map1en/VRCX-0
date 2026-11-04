@@ -414,7 +414,12 @@ fn shared_contracts_stay_synchronous_data_and_protocol_only() {
 
 #[test]
 fn shared_application_contracts_are_infrastructure_free() {
-    for package in ["vrcx-0-core", "vrcx-0-contracts", "vrcx-0-runtime-event"] {
+    for package in [
+        "vrcx-0-core",
+        "vrcx-0-contracts",
+        "vrcx-0-runtime-event",
+        "vrcx-0-vrchat-protocol",
+    ] {
         let dependencies = normal_dependency_names(package);
         for forbidden in [
             "vrcx-0-persistence",
@@ -427,6 +432,25 @@ fn shared_application_contracts_are_infrastructure_free() {
             assert!(
                 !dependencies.contains(forbidden),
                 "shared application contract depends on infrastructure {forbidden}: {package}"
+            );
+        }
+    }
+
+    let dependencies = normal_dependency_names("vrcx-0-vrchat-protocol");
+    for forbidden in ["reqwest", "tokio", "tokio-tungstenite", "hyper-util"] {
+        assert!(
+            !dependencies.contains(forbidden),
+            "vrcx-0-vrchat-protocol gained transport dependency {forbidden}"
+        );
+    }
+    for source in rust_sources_below("crates/vrchat-protocol/src") {
+        let text = std::fs::read_to_string(&source).expect("read vrchat protocol source");
+        for forbidden in ["async fn", ".await", "tokio::", "reqwest::"] {
+            assert!(
+                !text.contains(forbidden),
+                "vrchat protocol source uses {forbidden}; request construction stays synchronous \
+                 and transport belongs to vrcx-0-vrchat-client: {}",
+                source.display()
             );
         }
     }
@@ -731,13 +755,7 @@ fn desktop_runtime_host_reaches_infrastructure_only_through_listed_modules() {
         "notification/preferences.rs",
         "state.rs",
     ];
-    const VRCHAT_CLIENT_MODULES: &[&str] = &[
-        "background_remote.rs",
-        "game_media.rs",
-        "instance_launch.rs",
-        "privacy_lock.rs",
-        "vrchat_remote.rs",
-    ];
+    const VRCHAT_CLIENT_MODULES: &[&str] = &["privacy_lock.rs"];
 
     let root = workspace_file(SOURCE_ROOT);
     let mut persistence_queries = std::collections::BTreeMap::<String, BTreeSet<String>>::new();

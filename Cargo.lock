@@ -9682,6 +9682,7 @@ dependencies = [
  "vrcx-0-core",
  "vrcx-0-logger-protocol",
  "vrcx-0-vrchat-client",
+ "vrcx-0-vrchat-protocol",
  "windows-sys 0.61.2",
 ]
 
@@ -9781,6 +9782,7 @@ dependencies = [
  "vrcx-0-persistence",
  "vrcx-0-platform",
  "vrcx-0-vrchat-client",
+ "vrcx-0-vrchat-protocol",
  "walkdir",
  "zip",
 ]
@@ -9896,6 +9898,7 @@ dependencies = [
  "vrcx-0-persistence",
  "vrcx-0-platform",
  "vrcx-0-vrchat-client",
+ "vrcx-0-vrchat-protocol",
 ]
 
 [[package]]
@@ -9921,11 +9924,25 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "specta",
  "thiserror 2.0.21",
  "tokio",
  "tokio-tungstenite 0.30.0",
  "tower-service",
+ "url",
+ "vrcx-0-contracts",
+ "vrcx-0-core",
+]
+
+[[package]]
+name = "vrcx-0-vrchat-protocol"
+version = "0.1.0"
+dependencies = [
+ "base64 0.23.1",
+ "percent-encoding",
+ "serde",
+ "serde_json",
+ "specta",
+ "thiserror 2.0.21",
  "url",
  "vrcx-0-contracts",
  "vrcx-0-core",

@@ -7,7 +7,7 @@ use vrcx_0_application::remote::{
 use vrcx_0_application_core::vrchat_api::{execute_api_command, VrchatScope};
 use vrcx_0_application_core::{RuntimeDiagnostics, RuntimeSyncEngine, WebClient, WorldCache};
 use vrcx_0_contracts::vrchat_api::VrchatResponse;
-use vrcx_0_vrchat_client::worlds::{
+use vrcx_0_vrchat_protocol::worlds::{
     world_delete_input, world_list_by_user_get_input, world_persistent_data_delete_input,
     world_persistent_data_exists_input, world_publish_input, world_save_input,
     world_unpublish_input,

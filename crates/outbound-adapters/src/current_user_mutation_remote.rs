@@ -9,7 +9,7 @@ use vrcx_0_application_core::{
     RuntimeAuthScopeSnapshot, RuntimeDiagnostics, RuntimeSyncEngine, WebClient,
 };
 use vrcx_0_application_realtime::RealtimeHostRuntime;
-use vrcx_0_vrchat_client::users::{
+use vrcx_0_vrchat_protocol::users::{
     current_user_badge_update_input, current_user_tags_add_input, current_user_tags_remove_input,
     current_user_update_input, profile_update_input,
 };
