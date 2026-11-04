@@ -18,8 +18,10 @@ export function useChatboxController() {
     const [config, setConfig] = useState<ChatboxConfig | null>(null);
     const [meta, setMeta] = useState<ChatboxEditorMeta | null>(null);
     const status = useChatboxStore((state) => state.status);
+    const savedConfig = useChatboxStore((state) => state.savedConfig);
     const latestConfig = useRef<ChatboxConfig | null>(null);
     const saveSequence = useRef(0);
+    const pendingSaves = useRef(0);
 
     useEffect(() => {
         let active = true;
@@ -44,6 +46,14 @@ export function useChatboxController() {
         };
     }, []);
 
+    useEffect(() => {
+        if (!savedConfig || !latestConfig.current || pendingSaves.current > 0) {
+            return;
+        }
+        latestConfig.current = savedConfig;
+        setConfig(savedConfig);
+    }, [savedConfig]);
+
     const updateConfig = useCallback(
         (update: ChatboxConfigUpdate) => {
             const current = latestConfig.current;
@@ -54,19 +64,25 @@ export function useChatboxController() {
             latestConfig.current = next;
             setConfig(next);
             const sequence = ++saveSequence.current;
-            commands.appChatboxConfigSet(next).then(
-                (saved) => {
-                    if (sequence === saveSequence.current) {
-                        latestConfig.current = saved;
-                        setConfig(saved);
-                    }
-                },
-                () =>
-                    toast.add({
-                        type: 'error',
-                        title: t('view.tools.chatbox.save_failed')
-                    })
-            );
+            pendingSaves.current += 1;
+            commands
+                .appChatboxConfigSet(next)
+                .then(
+                    (saved) => {
+                        if (sequence === saveSequence.current) {
+                            latestConfig.current = saved;
+                            setConfig(saved);
+                        }
+                    },
+                    () =>
+                        toast.add({
+                            type: 'error',
+                            title: t('view.tools.chatbox.save_failed')
+                        })
+                )
+                .finally(() => {
+                    pendingSaves.current -= 1;
+                });
         },
         [t]
     );

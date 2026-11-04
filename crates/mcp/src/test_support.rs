@@ -197,6 +197,39 @@ impl crate::McpScreenshotQueryPort for TestMcpScreenshots {
     }
 }
 
+#[derive(Default)]
+pub(crate) struct TestMcpChatbox(pub(crate) Option<String>);
+
+impl TestMcpChatbox {
+    fn reply(&self, call: serde_json::Value) -> vrcx_0_application_core::Result<serde_json::Value> {
+        match &self.0 {
+            Some(error) => Err(vrcx_0_application_core::Error::Custom(error.clone())),
+            None => Ok(call),
+        }
+    }
+}
+
+impl crate::McpChatboxPort for TestMcpChatbox {
+    fn state(&self) -> vrcx_0_application_core::Result<serde_json::Value> {
+        self.reply(serde_json::json!({ "state": true }))
+    }
+
+    fn update_config(
+        &self,
+        config: serde_json::Value,
+    ) -> vrcx_0_application_core::Result<serde_json::Value> {
+        self.reply(serde_json::json!({ "config": config }))
+    }
+
+    fn send(&self, text: String) -> vrcx_0_application_core::Result<serde_json::Value> {
+        self.reply(serde_json::json!({ "send": text }))
+    }
+
+    fn set_afk(&self, afk: bool) -> vrcx_0_application_core::Result<serde_json::Value> {
+        self.reply(serde_json::json!({ "afk": afk }))
+    }
+}
+
 pub(crate) struct TestMcpWorldLookup(pub(crate) Option<serde_json::Value>);
 
 impl crate::McpWorldLookupPort for TestMcpWorldLookup {
@@ -705,6 +738,7 @@ fn test_runtime_with_database_and_event_bus(
         feed_queries: Arc::new(TestMcpFeedQueryAdapter::new(Arc::clone(&db))),
         world_lookup: Arc::new(TestMcpWorldLookup(None)),
         screenshots: Arc::new(TestMcpScreenshots::new(&dir.path)),
+        chatbox: Arc::new(TestMcpChatbox::default()),
         mutual_graph: Arc::new(TestMcpMutualGraphAdapter::new(
             MutualGraphFetchRuntime::new(),
             Arc::clone(&db),

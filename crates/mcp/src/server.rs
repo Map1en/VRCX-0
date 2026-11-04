@@ -30,13 +30,14 @@ Ground rules:
 - Results with a `summary` field are ready-to-read fact bundles; narrate from the summary, then add only the caveats and details the question needs.
 - `timeWindow` accepts {from, to} RFC3339, a four-digit calendar year such as 2026, or a relative string (\"this week\", \"7d\"); omit it only when the chosen tool permits all history.
 - Writes (favorite_local, favorite_vrchat, set_friend_note) default to dry_run=true and never message other users; confirm before a real write.
+- Chatbox tools (send_chatbox_message, set_chatbox_afk, update_chatbox) act at once with no dry_run. The Chatbox is public to everyone in the user's instance, so never put other people's locations or private details in it.
 
 Tool tiers — pick the right altitude:
 - [L1·query/resolve] leaf lookups: one source, a list of rows. Building blocks.
 - [L2·analyze] server-side aggregates: ranked/bucketed facts with a summary. Prefer these for who/when/most questions; they already did the counting, so read the top rows and don't loop.
 - [L2·advanced] large/raw output for custom analysis; a higher-tier tool usually answers the common question.
 - [L3·bundle] one call composing several L2 analyses into a ready narrative; do NOT re-call the parts it already includes.
-- [write]/[action] side effects; dry_run defaults true, confirm first.
+- [write]/[action] side effects; where a tool has dry_run it defaults true, confirm first.
 Pick the highest tier that answers the question; drill to L1 only for detail the aggregate did not include.
 
 Map fuzzy requests to tools, then read each tool's own description for details (compose freely):
@@ -53,6 +54,7 @@ Map fuzzy requests to tools, then read each tool's own description for details (
 - Exact observed friend Feed history -> search_friend_feed
 - Which of my friends know each other / friend groups -> get_friend_circles
 - History, mutuals, invites, status changes -> get_friend_log, get_social_graph (refresh_mutual_graph if stale), get_invite_history, get_friend_changes
+- Show text, a status, or AFK in the VRChat in-game Chatbox -> send_chatbox_message, set_chatbox_afk, or get_chatbox then update_chatbox
 
 For vague asks, start with summarize_social_period or get_online_friends, then drill in and cross-reference.";
 

@@ -31,6 +31,34 @@ const TURN_TIMEOUT: Duration = Duration::from_secs(240);
 const JAPANESE_MIN_HIRAGANA: usize = 20;
 const WRITE_TOOLS: [&str; 3] = ["favorite_local", "favorite_vrchat", "set_friend_note"];
 
+struct HarnessChatbox;
+
+impl vrcx_0_mcp::McpChatboxPort for HarnessChatbox {
+    fn state(&self) -> vrcx_0_application_core::Result<Value> {
+        Err(harness_chatbox_unavailable())
+    }
+
+    fn update_config(&self, _config: Value) -> vrcx_0_application_core::Result<Value> {
+        Err(harness_chatbox_unavailable())
+    }
+
+    fn send(&self, _text: String) -> vrcx_0_application_core::Result<Value> {
+        Err(harness_chatbox_unavailable())
+    }
+
+    fn set_afk(&self, _afk: bool) -> vrcx_0_application_core::Result<Value> {
+        Err(harness_chatbox_unavailable())
+    }
+}
+
+fn harness_chatbox_unavailable() -> vrcx_0_application_core::Error {
+    vrcx_0_application_core::Error::Custom("Chatbox is not available in the harness".into())
+}
+
+fn harness_chatbox() -> vrcx_0_mcp::McpChatbox {
+    Arc::new(HarnessChatbox)
+}
+
 struct HarnessEnv(HashMap<String, String>);
 
 impl HarnessEnv {
@@ -534,7 +562,7 @@ impl Rig {
             .event_bus()
             .set_sink(ChannelSink(sender));
         let meter = Arc::new(LlmMeter::default());
-        let mut deps = assistant_controller_deps_for(&runtime);
+        let mut deps = assistant_controller_deps_for(&runtime, harness_chatbox());
         deps.llm_factory = Arc::new(MeteredFactory(
             llm_factory(deps.llm_factory),
             Arc::clone(&meter),
@@ -774,9 +802,13 @@ async fn find_ambiguous_fragment(
     runtime: &RuntimeHostState,
     database: &Path,
 ) -> Option<(String, Vec<String>)> {
-    let tools = vrcx_0_mcp::spawn_in_process_tools(mcp_runtime_for(runtime, McpCaller::Assistant))
-        .await
-        .expect("spawn probe tools");
+    let tools = vrcx_0_mcp::spawn_in_process_tools(mcp_runtime_for(
+        runtime,
+        harness_chatbox(),
+        McpCaller::Assistant,
+    ))
+    .await
+    .expect("spawn probe tools");
     for fragment in name_fragments(database).into_iter().take(60) {
         let arguments = Map::from_iter([("user".to_string(), json!(fragment))]);
         let Ok(outcome) = tools.call_tool("get_companions_of", Some(arguments)).await else {
@@ -798,9 +830,13 @@ async fn find_ambiguous_fragment(
 }
 
 async fn top_fading_friend(runtime: &RuntimeHostState) -> Option<String> {
-    let tools = vrcx_0_mcp::spawn_in_process_tools(mcp_runtime_for(runtime, McpCaller::Assistant))
-        .await
-        .expect("spawn probe tools");
+    let tools = vrcx_0_mcp::spawn_in_process_tools(mcp_runtime_for(
+        runtime,
+        harness_chatbox(),
+        McpCaller::Assistant,
+    ))
+    .await
+    .expect("spawn probe tools");
     let outcome = tools.call_tool("get_fading_friends", None).await.ok()?;
     outcome.structured?["rows"][0]["displayName"]
         .as_str()
@@ -815,9 +851,13 @@ async fn month_minutes(runtime: &RuntimeHostState) -> Option<i64> {
     use chrono::Datelike;
     let today = chrono::Local::now().date_naive();
     let from = utc_midnight(today.with_day(1)?)?;
-    let tools = vrcx_0_mcp::spawn_in_process_tools(mcp_runtime_for(runtime, McpCaller::Assistant))
-        .await
-        .expect("spawn probe tools");
+    let tools = vrcx_0_mcp::spawn_in_process_tools(mcp_runtime_for(
+        runtime,
+        harness_chatbox(),
+        McpCaller::Assistant,
+    ))
+    .await
+    .expect("spawn probe tools");
     let arguments = Map::from_iter([(
         "timeWindow".to_string(),
         json!({ "from": from, "to": utc_stamp(chrono::Utc::now()) }),
@@ -2012,9 +2052,13 @@ async fn assistant_tools_agree_with_the_snapshot() {
         std::fs::create_dir_all(dir).unwrap();
     }
     let mut probe = ToolProbe {
-        tools: vrcx_0_mcp::spawn_in_process_tools(mcp_runtime_for(&runtime, McpCaller::Assistant))
-            .await
-            .expect("spawn tools"),
+        tools: vrcx_0_mcp::spawn_in_process_tools(mcp_runtime_for(
+            &runtime,
+            harness_chatbox(),
+            McpCaller::Assistant,
+        ))
+        .await
+        .expect("spawn tools"),
         sizes: Vec::new(),
         dump_dir,
     };

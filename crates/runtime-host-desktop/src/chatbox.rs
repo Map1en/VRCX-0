@@ -91,6 +91,8 @@ impl ChatboxRuntime {
         {
             state.scheduler.restart_rotation();
         }
+        drop(state);
+        self.event_bus.emit(next.clone());
         Ok(next)
     }
 

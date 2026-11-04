@@ -218,6 +218,7 @@
             "get_activity_streaks": "Zobrazit série aktivity",
             "get_activity_timeline": "Zobrazit časovou osu aktivity",
             "get_best_time_to_play": "Najít vhodný čas na hraní",
+            "get_chatbox": "Zobrazit Chatbox",
             "get_companions_of": "Zobrazit, s kým hraje",
             "get_copresence_summary": "Sečíst společný čas",
             "get_fading_friends": "Najít vzdalující se přátele",
@@ -239,9 +240,12 @@
             "search_friend_feed": "Hledat v kanálu přátel",
             "search_screenshots": "Hledat snímky",
             "search_worlds_visited": "Hledat navštívené světy",
+            "send_chatbox_message": "Poslat do Chatboxu",
+            "set_chatbox_afk": "Přepnout AFK v Chatboxu",
             "set_friend_note": "Upravit poznámku k příteli",
             "summarize_screenshots": "Shrnout snímky",
-            "summarize_social_period": "Shrnout sociální aktivitu"
+            "summarize_social_period": "Shrnout sociální aktivitu",
+            "update_chatbox": "Změnit nastavení Chatboxu"
         },
         "chart": {
             "my_playtime": "Můj herní čas",

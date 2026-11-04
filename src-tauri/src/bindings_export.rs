@@ -97,6 +97,7 @@ struct BackendRuntimeEventPayloadMap {
     notification_do_not_disturb_state: NotificationDoNotDisturbSnapshot,
     game_isolation_state: vrcx_0_runtime_host_desktop::GameIsolationSnapshot,
     chatbox_state: vrcx_0_application_game::chatbox::ChatboxStatus,
+    chatbox_config: vrcx_0_application_game::chatbox::ChatboxConfig,
     privacy_lock_state: PrivacyLockSnapshot,
     desktop_widget_state: vrcx_0_runtime_host_desktop::desktop_widget::DesktopWidgetSnapshot,
 }

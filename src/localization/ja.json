@@ -215,6 +215,7 @@
             "get_activity_streaks": "連続アクティブ記録を確認",
             "get_activity_timeline": "アクティビティの流れを確認",
             "get_best_time_to_play": "遊びやすい時間帯を分析",
+            "get_chatbox": "Chatbox を確認",
             "get_companions_of": "よく一緒にいる人を確認",
             "get_copresence_summary": "一緒にいた時間を集計",
             "get_fading_friends": "疎遠になりつつあるフレンドを確認",
@@ -236,9 +237,12 @@
             "search_friend_feed": "フレンドのフィードを検索",
             "search_screenshots": "スクリーンショットを探す",
             "search_worlds_visited": "訪れたワールドを検索",
+            "send_chatbox_message": "Chatbox に送信",
+            "set_chatbox_afk": "Chatbox の AFK を切り替え",
             "set_friend_note": "フレンドのノートを編集",
             "summarize_screenshots": "スクリーンショットを集計",
-            "summarize_social_period": "交流のまとめを作成"
+            "summarize_social_period": "交流のまとめを作成",
+            "update_chatbox": "Chatbox の設定を変更"
         },
         "chart": {
             "my_playtime": "自分のプレイ時間",

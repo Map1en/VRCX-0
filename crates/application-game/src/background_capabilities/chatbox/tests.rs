@@ -440,6 +440,20 @@ fn afk_uses_custom_text_and_can_hide_the_duration() {
 }
 
 #[test]
+fn config_json_round_trips_unchanged() {
+    let mut original = config(vec![page("a", 12, vec![module(&["{cpu}", "{memory}"])])]);
+    original.afk.text = "brb".into();
+    original.messages.quick_phrases = vec!["gg".into()];
+
+    let json = serde_json::to_value(&original).unwrap();
+
+    assert_eq!(
+        serde_json::from_value::<ChatboxConfig>(json).unwrap(),
+        original
+    );
+}
+
+#[test]
 fn stored_config_is_normalized_and_bad_json_falls_back_to_defaults() {
     let stored = r#"{
         "statusEnabled": true,

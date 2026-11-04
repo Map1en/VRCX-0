@@ -216,6 +216,7 @@
             "get_activity_streaks": "Ver sequências de atividade",
             "get_activity_timeline": "Ver linha do tempo de atividade",
             "get_best_time_to_play": "Achar bons horários para jogar",
+            "get_chatbox": "Ver o Chatbox",
             "get_companions_of": "Ver com quem a pessoa joga",
             "get_copresence_summary": "Somar tempo juntos",
             "get_fading_friends": "Ver amigos se afastando",
@@ -237,9 +238,12 @@
             "search_friend_feed": "Buscar no feed de amigos",
             "search_screenshots": "Buscar capturas",
             "search_worlds_visited": "Buscar mundos visitados",
+            "send_chatbox_message": "Enviar ao Chatbox",
+            "set_chatbox_afk": "Alternar AFK do Chatbox",
             "set_friend_note": "Editar nota do amigo",
             "summarize_screenshots": "Resumir capturas",
-            "summarize_social_period": "Resumir atividade social"
+            "summarize_social_period": "Resumir atividade social",
+            "update_chatbox": "Alterar configurações do Chatbox"
         },
         "chart": {
             "my_playtime": "Meu tempo de jogo",

@@ -301,3 +301,15 @@ pub trait McpFeedQueryPort: Send + Sync {
 }
 
 pub type McpFeedQueries = Arc<dyn McpFeedQueryPort>;
+
+pub trait McpChatboxPort: Send + Sync {
+    fn state(&self) -> vrcx_0_application_core::Result<Value>;
+
+    fn update_config(&self, config: Value) -> vrcx_0_application_core::Result<Value>;
+
+    fn send(&self, text: String) -> vrcx_0_application_core::Result<Value>;
+
+    fn set_afk(&self, afk: bool) -> vrcx_0_application_core::Result<Value>;
+}
+
+pub type McpChatbox = Arc<dyn McpChatboxPort>;

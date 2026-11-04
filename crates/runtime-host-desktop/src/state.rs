@@ -1248,11 +1248,17 @@ impl DesktopRuntimeHostState {
     }
 
     pub fn mcp_runtime(&self, caller: vrcx_0_mcp::McpCaller) -> vrcx_0_mcp::McpRuntime {
-        mcp_runtime_for(&self.runtime, caller)
+        mcp_runtime_for(&self.runtime, self.mcp_chatbox(), caller)
     }
 
     pub fn assistant_controller_deps(&self) -> vrcx_0_assistant::AssistantControllerDeps {
-        assistant_controller_deps_for(&self.runtime)
+        assistant_controller_deps_for(&self.runtime, self.mcp_chatbox())
+    }
+
+    fn mcp_chatbox(&self) -> vrcx_0_mcp::McpChatbox {
+        Arc::new(crate::mcp_adapters::DesktopMcpChatboxAdapter::new(
+            self.chatbox(),
+        ))
     }
 
     pub fn require_active_scope(
@@ -3137,6 +3143,7 @@ fn emit_profile_background_output(
 
 pub(crate) fn mcp_runtime_for(
     runtime: &RuntimeHostState,
+    chatbox: vrcx_0_mcp::McpChatbox,
     caller: vrcx_0_mcp::McpCaller,
 ) -> vrcx_0_mcp::McpRuntime {
     let db = runtime.database();
@@ -3179,6 +3186,7 @@ pub(crate) fn mcp_runtime_for(
                 runtime.paths().app_data.join("metadataCache.db"),
                 vrcx_0_host_desktop::vrchat_paths::vrchat_photos_location(),
             )),
+            chatbox,
             favorite_mutations: assembly.favorite_mutations().clone(),
             tasks: assembly.tasks().clone(),
         },
@@ -3188,6 +3196,7 @@ pub(crate) fn mcp_runtime_for(
 
 pub(crate) fn assistant_controller_deps_for(
     runtime: &RuntimeHostState,
+    chatbox: vrcx_0_mcp::McpChatbox,
 ) -> vrcx_0_assistant::AssistantControllerDeps {
     let assembly = runtime.desktop_assembly();
     vrcx_0_assistant::AssistantControllerDeps {
@@ -3200,7 +3209,7 @@ pub(crate) fn assistant_controller_deps_for(
         proxy_url: runtime.web_client().proxy_url().map(str::to_string),
         bus: assembly.event_bus().clone(),
         tasks: assembly.tasks().clone(),
-        mcp_runtime: mcp_runtime_for(runtime, vrcx_0_mcp::McpCaller::Assistant),
+        mcp_runtime: mcp_runtime_for(runtime, chatbox, vrcx_0_mcp::McpCaller::Assistant),
         session_persistence: Arc::new(
             crate::assistant_adapters::DesktopAssistantSessionPersistenceAdapter::new(Arc::clone(
                 runtime.database(),

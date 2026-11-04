@@ -215,6 +215,7 @@
             "get_activity_streaks": "查看連續活躍紀錄",
             "get_activity_timeline": "查看活動時間軸",
             "get_best_time_to_play": "分析適合上線的時間",
+            "get_chatbox": "查看 Chatbox",
             "get_companions_of": "查看常一起玩的人",
             "get_copresence_summary": "統計同房時長",
             "get_fading_friends": "查看漸漸疏遠的好友",
@@ -236,9 +237,12 @@
             "search_friend_feed": "搜尋好友動態",
             "search_screenshots": "查找截圖",
             "search_worlds_visited": "搜尋去過的世界",
+            "send_chatbox_message": "傳送到 Chatbox",
+            "set_chatbox_afk": "切換 Chatbox AFK",
             "set_friend_note": "修改好友備註",
             "summarize_screenshots": "統計截圖",
-            "summarize_social_period": "彙整社交概況"
+            "summarize_social_period": "彙整社交概況",
+            "update_chatbox": "修改 Chatbox 設定"
         },
         "chart": {
             "my_playtime": "我的遊玩時長",

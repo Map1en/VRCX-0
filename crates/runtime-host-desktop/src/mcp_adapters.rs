@@ -8,10 +8,10 @@ use vrcx_0_contracts::social_aggregates as social;
 use vrcx_0_contracts::FavoriteRow;
 use vrcx_0_core::{FavoriteEntityKind, OwnerId};
 use vrcx_0_mcp::{
-    McpActivityQueryPort, McpConfigPort, McpFavoritesQueryPort, McpFeedQueryPort, McpFriendCurrent,
-    McpFriendLocalDataPort, McpFriendMemo, McpFuture, McpInterruptCheck, McpLocalModeration,
-    McpMemoSave, McpMutualGraphMeta, McpMutualGraphPort, McpPlaySpan, McpScreenshotQueryPort,
-    McpSocialHistoryQueryPort, McpWorldLookupPort,
+    McpActivityQueryPort, McpChatboxPort, McpConfigPort, McpFavoritesQueryPort, McpFeedQueryPort,
+    McpFriendCurrent, McpFriendLocalDataPort, McpFriendMemo, McpFuture, McpInterruptCheck,
+    McpLocalModeration, McpMemoSave, McpMutualGraphMeta, McpMutualGraphPort, McpPlaySpan,
+    McpScreenshotQueryPort, McpSocialHistoryQueryPort, McpWorldLookupPort,
 };
 use vrcx_0_persistence::{
     activity_page, config::ConfigRepository, favorites, friends, local_moderation, memos,
@@ -576,5 +576,52 @@ impl McpFeedQueryPort for DesktopMcpFeedQueryAdapter {
             move || should_interrupt(),
         )
         .map_err(Into::into)
+    }
+}
+
+pub(crate) struct DesktopMcpChatboxAdapter {
+    chatbox: Arc<crate::chatbox::ChatboxRuntime>,
+}
+
+impl DesktopMcpChatboxAdapter {
+    pub(crate) fn new(chatbox: Arc<crate::chatbox::ChatboxRuntime>) -> Self {
+        Self { chatbox }
+    }
+}
+
+fn chatbox_json(
+    value: impl serde::Serialize,
+) -> vrcx_0_application_core::Result<serde_json::Value> {
+    serde_json::to_value(value).map_err(vrcx_0_application_core::Error::Json)
+}
+
+impl McpChatboxPort for DesktopMcpChatboxAdapter {
+    fn state(&self) -> vrcx_0_application_core::Result<serde_json::Value> {
+        let editor = self.chatbox.editor_state();
+        Ok(serde_json::json!({
+            "status": self.chatbox.status(),
+            "config": editor.config,
+            "limits": editor.limits,
+            "variables": editor.variables,
+            "defaultFormats": editor.default_formats,
+        }))
+    }
+
+    fn update_config(
+        &self,
+        config: serde_json::Value,
+    ) -> vrcx_0_application_core::Result<serde_json::Value> {
+        let config =
+            serde_json::from_value(config).map_err(vrcx_0_application_core::Error::Json)?;
+        chatbox_json(self.chatbox.set_config(config)?)
+    }
+
+    fn send(&self, text: String) -> vrcx_0_application_core::Result<serde_json::Value> {
+        chatbox_json(self.chatbox.send_manual(&text)?)
+    }
+
+    fn set_afk(&self, afk: bool) -> vrcx_0_application_core::Result<serde_json::Value> {
+        self.chatbox.set_manual_afk(afk);
+        Ok(serde_json::json!({ "afk": afk }))
     }
 }

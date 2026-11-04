@@ -218,6 +218,7 @@
             "get_activity_streaks": "Серии активности",
             "get_activity_timeline": "Хронология активности",
             "get_best_time_to_play": "Удобное время для игры",
+            "get_chatbox": "Посмотреть Chatbox",
             "get_companions_of": "С кем играет друг",
             "get_copresence_summary": "Время, проведённое вместе",
             "get_fading_friends": "Друзья, с которыми вы отдаляетесь",
@@ -239,9 +240,12 @@
             "search_friend_feed": "Поиск по ленте друзей",
             "search_screenshots": "Поиск скриншотов",
             "search_worlds_visited": "Поиск посещённых миров",
+            "send_chatbox_message": "Отправить в Chatbox",
+            "set_chatbox_afk": "Переключить AFK в Chatbox",
             "set_friend_note": "Изменение заметки о друге",
             "summarize_screenshots": "Сводка скриншотов",
-            "summarize_social_period": "Сводка социальной активности"
+            "summarize_social_period": "Сводка социальной активности",
+            "update_chatbox": "Изменить настройки Chatbox"
         },
         "chart": {
             "my_playtime": "Моё игровое время",

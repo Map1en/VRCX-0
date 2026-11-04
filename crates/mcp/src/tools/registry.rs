@@ -13,6 +13,7 @@ impl VrcxMcpServer {
 
     fn tool_router() -> ToolRouter<Self> {
         Self::activity_tool_router()
+            + Self::chatbox_tool_router()
             + Self::favorites_tool_router()
             + Self::feed_tool_router()
             + Self::friends_tool_router()
@@ -46,6 +47,7 @@ mod router_tests {
                 "get_activity_streaks",
                 "get_activity_timeline",
                 "get_best_time_to_play",
+                "get_chatbox",
                 "get_companions_of",
                 "get_copresence_summary",
                 "get_fading_friends",
@@ -67,9 +69,12 @@ mod router_tests {
                 "search_friend_feed",
                 "search_screenshots",
                 "search_worlds_visited",
+                "send_chatbox_message",
+                "set_chatbox_afk",
                 "set_friend_note",
                 "summarize_screenshots",
                 "summarize_social_period",
+                "update_chatbox",
             ]
         );
     }

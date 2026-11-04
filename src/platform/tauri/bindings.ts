@@ -3895,6 +3895,7 @@ export type BackendRuntimeEventPayloadMap = {
     notificationDoNotDisturbState: NotificationDoNotDisturbSnapshot;
     gameIsolationState: GameIsolationSnapshot;
     chatboxState: ChatboxStatus;
+    chatboxConfig: ChatboxConfig;
     privacyLockState: PrivacyLockSnapshot;
     desktopWidgetState: DesktopWidgetSnapshot;
 };

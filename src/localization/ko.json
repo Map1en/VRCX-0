@@ -215,6 +215,7 @@
             "get_activity_streaks": "연속 활동 기록 확인",
             "get_activity_timeline": "활동 타임라인 보기",
             "get_best_time_to_play": "접속하기 좋은 시간 분석",
+            "get_chatbox": "Chatbox 확인",
             "get_companions_of": "자주 함께 노는 사람 확인",
             "get_copresence_summary": "함께한 시간 집계",
             "get_fading_friends": "멀어진 친구 확인",
@@ -236,9 +237,12 @@
             "search_friend_feed": "친구 피드 검색",
             "search_screenshots": "스크린샷 찾기",
             "search_worlds_visited": "방문한 월드 검색",
+            "send_chatbox_message": "Chatbox로 보내기",
+            "set_chatbox_afk": "Chatbox AFK 전환",
             "set_friend_note": "친구 메모 수정",
             "summarize_screenshots": "스크린샷 집계",
-            "summarize_social_period": "소셜 활동 요약"
+            "summarize_social_period": "소셜 활동 요약",
+            "update_chatbox": "Chatbox 설정 변경"
         },
         "chart": {
             "my_playtime": "내 플레이 시간",

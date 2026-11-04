@@ -5,8 +5,9 @@ use vrcx_0_application_core::{RuntimeAuthScope, TaskSupervisor};
 use vrcx_0_application_realtime::RealtimeHostRuntime;
 
 use crate::ports::{
-    McpActivityQueries, McpConfig, McpFavoritesQueries, McpFeedQueries, McpFriendLocalData,
-    McpMutualGraph, McpScreenshotQueries, McpSocialHistoryQueries, McpWorldLookup,
+    McpActivityQueries, McpChatbox, McpConfig, McpFavoritesQueries, McpFeedQueries,
+    McpFriendLocalData, McpMutualGraph, McpScreenshotQueries, McpSocialHistoryQueries,
+    McpWorldLookup,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -28,6 +29,7 @@ pub struct McpRuntime {
     pub(crate) mutual_graph: McpMutualGraph,
     pub(crate) world_lookup: McpWorldLookup,
     pub(crate) screenshots: McpScreenshotQueries,
+    pub(crate) chatbox: McpChatbox,
     pub(crate) favorite_mutations: FavoriteMutationCoordinator,
     pub(crate) tasks: TaskSupervisor,
     pub(crate) caller: McpCaller,
@@ -45,6 +47,7 @@ pub struct McpRuntimeDeps {
     pub mutual_graph: McpMutualGraph,
     pub world_lookup: McpWorldLookup,
     pub screenshots: McpScreenshotQueries,
+    pub chatbox: McpChatbox,
     pub favorite_mutations: FavoriteMutationCoordinator,
     pub tasks: TaskSupervisor,
 }
@@ -63,6 +66,7 @@ impl McpRuntime {
             mutual_graph: deps.mutual_graph,
             world_lookup: deps.world_lookup,
             screenshots: deps.screenshots,
+            chatbox: deps.chatbox,
             favorite_mutations: deps.favorite_mutations,
             tasks: deps.tasks,
             caller,

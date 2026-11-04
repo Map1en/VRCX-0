@@ -198,6 +198,11 @@ function handleRuntimeEvent(event: RuntimeEvent): void {
         return;
     }
 
+    if (event.name === 'chatboxConfig') {
+        useChatboxStore.getState().setSavedConfig(event.payload);
+        return;
+    }
+
     if (event.name === 'privacyLockState') {
         runtimeStore.setPrivacyLock(event.payload);
         return;
@@ -508,6 +513,7 @@ export async function bindRuntimeEvents(): Promise<() => void> {
         'notificationDoNotDisturbState',
         'gameIsolationState',
         'chatboxState',
+        'chatboxConfig',
         'privacyLockState',
         'desktopWidgetState',
         'gameLogProjection',

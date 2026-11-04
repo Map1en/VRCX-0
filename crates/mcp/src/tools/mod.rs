@@ -1,4 +1,5 @@
 mod activity;
+mod chatbox;
 mod common;
 mod favorites;
 mod feed;
