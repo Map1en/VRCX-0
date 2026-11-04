@@ -8,8 +8,9 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 
+import { TranslationLanguageSelect } from '@/components/translation/TranslationLanguageSelect';
 import { cn } from '@/lib/utils';
-import { getLanguageName, languageCodes } from '@/localization/index';
+import { languageCodes } from '@/localization/index';
 import {
     commands,
     type ChatboxPauseReason,
@@ -20,14 +21,6 @@ import { toast } from '@/services/toastService';
 import { getTranslationConfig } from '@/services/translationService';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/shadcn/card';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/ui/shadcn/select';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Switch } from '@/ui/shadcn/switch';
 import { Textarea } from '@/ui/shadcn/textarea';
@@ -327,37 +320,12 @@ export function ChatboxComposer({
                                 onCheckedChange={changeTranslateOn}
                             />
                         </label>
-                        <Select
+                        <TranslationLanguageSelect
                             value={target}
-                            onValueChange={(value) =>
-                                changeTarget(value ?? DEFAULT_TARGET)
-                            }
-                        >
-                            <SelectTrigger
-                                size="sm"
-                                className="w-40"
-                                aria-label={t(
-                                    'view.tools.chatbox.composer.translation'
-                                )}
-                            >
-                                <SelectValue>
-                                    {getLanguageName(target)}
-                                </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent className="min-w-48">
-                                <SelectGroup>
-                                    {languageCodes.map((code: string) => (
-                                        <SelectItem
-                                            key={code}
-                                            value={code}
-                                            className="whitespace-nowrap"
-                                        >
-                                            {getLanguageName(code)}
-                                        </SelectItem>
-                                    ))}
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
+                            label={t('view.tools.chatbox.composer.translation')}
+                            className="w-40"
+                            onChange={changeTarget}
+                        />
                     </>
                 ) : null}
                 {translationEnabled ? (

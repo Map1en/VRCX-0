@@ -5692,7 +5692,17 @@
             },
             "no_message": "不附加訊息",
             "slot_value": "編號 {value}",
-            "attach_image": "附加圖片"
+            "attach_image": "附加圖片",
+            "translate": {
+                "to": "翻譯成",
+                "translate": "翻譯",
+                "result": "譯文",
+                "use": "使用譯文",
+                "shorten": "AI 縮短",
+                "too_long": "超過 {max} 字上限。",
+                "shorten_needs_llm": "在翻譯設定裡改用 LLM 後才能用 AI 縮短。",
+                "failed": "這則訊息翻譯失敗。"
+            }
         },
         "invite_request_message": {
             "header": "傳送邀請請求的訊息"

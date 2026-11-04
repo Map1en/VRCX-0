@@ -5712,7 +5712,17 @@
             },
             "no_message": "No message",
             "slot_value": "Slot {value}",
-            "attach_image": "Attach image"
+            "attach_image": "Attach image",
+            "translate": {
+                "to": "Translate to",
+                "translate": "Translate",
+                "result": "Translation",
+                "use": "Use translation",
+                "shorten": "Shorten with AI",
+                "too_long": "Longer than the {max}-character limit.",
+                "shorten_needs_llm": "Switch translation to an LLM in Translation settings to shorten with AI.",
+                "failed": "Couldn't translate this message."
+            }
         },
         "invite_request_message": {
             "header": "Request with Message"

@@ -5701,7 +5701,17 @@
             },
             "no_message": "不附带消息",
             "slot_value": "编号 {value}",
-            "attach_image": "附加图片"
+            "attach_image": "附加图片",
+            "translate": {
+                "to": "翻译成",
+                "translate": "翻译",
+                "result": "译文",
+                "use": "使用译文",
+                "shorten": "AI 缩短",
+                "too_long": "超过 {max} 字上限。",
+                "shorten_needs_llm": "在翻译设置里改用 LLM 后才能用 AI 缩短。",
+                "failed": "这条消息翻译失败。"
+            }
         },
         "invite_request_message": {
             "header": "发送带消息的加入请求"

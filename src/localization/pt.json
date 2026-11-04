@@ -5664,7 +5664,17 @@
             },
             "no_message": "Sem mensagem",
             "slot_value": "Campo {value}",
-            "attach_image": "Anexar imagem"
+            "attach_image": "Anexar imagem",
+            "translate": {
+                "to": "Traduzir para",
+                "translate": "Traduzir",
+                "result": "Tradução",
+                "use": "Usar tradução",
+                "shorten": "Encurtar com IA",
+                "too_long": "Passa do limite de {max} caracteres.",
+                "shorten_needs_llm": "Mude a tradução para um LLM nas configurações de tradução para encurtar com IA.",
+                "failed": "Não foi possível traduzir esta mensagem."
+            }
         },
         "invite_request_message": {
             "header": "Solicitar Com Mensagem"

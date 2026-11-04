@@ -5698,7 +5698,17 @@
             },
             "no_message": "Bez zprávy",
             "slot_value": "Slot {value}",
-            "attach_image": "Připojit obrázek"
+            "attach_image": "Připojit obrázek",
+            "translate": {
+                "to": "Přeložit do",
+                "translate": "Přeložit",
+                "result": "Překlad",
+                "use": "Použít překlad",
+                "shorten": "Zkrátit pomocí AI",
+                "too_long": "Delší než limit {max} znaků.",
+                "shorten_needs_llm": "Pro zkrácení pomocí AI přepni překlad v nastavení překladu na LLM.",
+                "failed": "Tuto zprávu se nepodařilo přeložit."
+            }
         },
         "invite_request_message": {
             "header": "Požádat se zprávou"

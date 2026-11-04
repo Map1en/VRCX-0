@@ -5639,7 +5639,17 @@
             },
             "no_message": "메시지 없음",
             "slot_value": "슬롯 {value}",
-            "attach_image": "이미지 첨부"
+            "attach_image": "이미지 첨부",
+            "translate": {
+                "to": "번역할 언어",
+                "translate": "번역",
+                "result": "번역문",
+                "use": "번역문 사용",
+                "shorten": "AI로 줄이기",
+                "too_long": "{max}자 제한을 넘었습니다.",
+                "shorten_needs_llm": "AI로 줄이려면 번역 설정에서 LLM으로 바꾸세요.",
+                "failed": "이 메시지를 번역하지 못했습니다."
+            }
         },
         "invite_request_message": {
             "header": "메시지로 요청"

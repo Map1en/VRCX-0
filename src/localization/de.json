@@ -5664,7 +5664,17 @@
             },
             "no_message": "Keine Nachricht",
             "slot_value": "Slot {value}",
-            "attach_image": "Bild anhängen"
+            "attach_image": "Bild anhängen",
+            "translate": {
+                "to": "Übersetzen in",
+                "translate": "Übersetzen",
+                "result": "Übersetzung",
+                "use": "Übersetzung übernehmen",
+                "shorten": "Mit KI kürzen",
+                "too_long": "Länger als das Limit von {max} Zeichen.",
+                "shorten_needs_llm": "Stelle die Übersetzung in den Übersetzungseinstellungen auf ein LLM um, um mit KI zu kürzen.",
+                "failed": "Diese Nachricht konnte nicht übersetzt werden."
+            }
         },
         "invite_request_message": {
             "header": "Mit Nachricht anfragen"

@@ -14,6 +14,7 @@ import {
     rowUpdatedAt,
     type InviteMessageRow
 } from './inviteMessageData';
+import { InviteMessageTranslator } from './InviteMessageTranslator';
 import type { InviteMessagesState } from './useInviteMessages';
 
 const MESSAGE_MAX_LENGTH = 64;
@@ -151,6 +152,12 @@ export function InviteMessageList({
                                         {editError}
                                     </p>
                                 ) : null}
+                                <InviteMessageTranslator
+                                    source={draft}
+                                    maxLength={MESSAGE_MAX_LENGTH}
+                                    disabled={saving}
+                                    onApply={setDraft}
+                                />
                                 <div className="flex items-center justify-between gap-3">
                                     <span className="text-muted-foreground text-xs tabular-nums">
                                         {draft.length}/{MESSAGE_MAX_LENGTH}

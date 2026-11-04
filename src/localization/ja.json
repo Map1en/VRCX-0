@@ -5697,7 +5697,17 @@
             },
             "no_message": "メッセージなし",
             "slot_value": "スロット {value}",
-            "attach_image": "画像を添付"
+            "attach_image": "画像を添付",
+            "translate": {
+                "to": "翻訳先",
+                "translate": "翻訳",
+                "result": "翻訳結果",
+                "use": "翻訳を使う",
+                "shorten": "AI で短くする",
+                "too_long": "{max} 文字の上限を超えています。",
+                "shorten_needs_llm": "AI で短くするには、翻訳設定で LLM に切り替えてください。",
+                "failed": "このメッセージを翻訳できませんでした。"
+            }
         },
         "invite_request_message": {
             "header": "メッセージ付きでリクエスト"

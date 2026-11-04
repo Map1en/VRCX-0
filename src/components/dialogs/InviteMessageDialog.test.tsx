@@ -20,6 +20,14 @@ vi.mock('@/services/toastService', () => ({
     toast: { add: vi.fn() }
 }));
 
+vi.mock('@/services/translationService', () => ({
+    getTranslationConfig: vi.fn().mockResolvedValue({ enabled: false })
+}));
+
+vi.mock('@/repositories/configRepository', () => ({
+    default: { getString: vi.fn().mockResolvedValue('en') }
+}));
+
 import { InviteMessageDialog } from './InviteMessageDialog';
 
 describe('InviteMessageDialog', () => {

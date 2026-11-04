@@ -5712,7 +5712,17 @@
             },
             "no_message": "Sin mensaje",
             "slot_value": "Espacio {value}",
-            "attach_image": "Adjuntar imagen"
+            "attach_image": "Adjuntar imagen",
+            "translate": {
+                "to": "Traducir a",
+                "translate": "Traducir",
+                "result": "Traducción",
+                "use": "Usar traducción",
+                "shorten": "Acortar con IA",
+                "too_long": "Supera el límite de {max} caracteres.",
+                "shorten_needs_llm": "Cambia la traducción a un LLM en la configuración de traducción para acortar con IA.",
+                "failed": "No se pudo traducir este mensaje."
+            }
         },
         "invite_request_message": {
             "header": "Solicitar con mensaje"
