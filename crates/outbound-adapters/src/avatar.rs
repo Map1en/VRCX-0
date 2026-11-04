@@ -4,9 +4,9 @@ use vrcx_0_application::avatars::{
     AvatarCacheStore, AvatarFeedCleanupStore, AvatarRemote, AvatarRemoteFuture,
     AvatarRemoteMutation, MyAvatarsStore,
 };
-use vrcx_0_application_core::vrchat_api::{execute_api_command, VrchatScope};
+use vrcx_0_application_core::vrchat_api::execute_api_command;
 use vrcx_0_application_core::{Error, RuntimeDiagnostics, RuntimeSyncEngine, WebClient};
-use vrcx_0_contracts::vrchat_api::VrchatResponse;
+use vrcx_0_contracts::vrchat_api::{VrchatResponse, VrchatScope};
 use vrcx_0_contracts::{AvatarTagOutput, AvatarTimeSpentOutput};
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_protocol::avatars::{

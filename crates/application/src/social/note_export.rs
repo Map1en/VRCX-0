@@ -15,9 +15,9 @@ use vrcx_0_application_core::RuntimeVrchatAuthFailurePayload;
 use crate::remote::VrchatRequestPort;
 use crate::scope_gate::ScopeGate;
 use vrcx_0_application_core::{
-    vrchat_api::VrchatScope, Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot,
-    RuntimeEventBus, TaskSupervisor,
+    Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus, TaskSupervisor,
 };
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_core::OwnerId;
 
 const GATE: ScopeGate = ScopeGate::new("Note export");

@@ -5,7 +5,6 @@ use vrcx_0_core::text::normalize_text;
 use serde_json::{json, Value};
 use vrcx_0_core::time::now_iso;
 
-use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::RuntimeVrchatAuthFailurePayload;
 use vrcx_0_application_core::{Error, Result, RuntimeAuthScopeSnapshot};
 use vrcx_0_application_realtime::{
@@ -15,8 +14,8 @@ use vrcx_0_contracts::friend_log::{
     FriendLogCurrentEntryInput, FriendLogDeleteOptionsInput, FriendLogHistoryEntryInput,
     FriendLogUpsertOptionsInput,
 };
-use vrcx_0_contracts::vrchat_api::VrchatJsonResponse;
 use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_contracts::vrchat_api::{VrchatJsonResponse, VrchatScope};
 
 use super::types::{
     SocialFriendMutationInput, SocialFriendMutationOutcome, SocialFriendRequestAcceptInput,

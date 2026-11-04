@@ -9,10 +9,9 @@ use vrcx_0_core::vrchat_json::response_error_message;
 
 use crate::remote::VrchatRequestPort;
 use vrcx_0_application_core::{
-    is_remote_mutation_request, vrchat_api::VrchatScope, AuthenticatedMutationContext, Error,
-    Result,
+    is_remote_mutation_request, AuthenticatedMutationContext, Error, Result,
 };
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatScope};
 use vrcx_0_vrchat_protocol::groups::GroupMemberVisibility;
 
 pub const BATCH_MUTATION_MAX_ITEMS: usize = 1_000;

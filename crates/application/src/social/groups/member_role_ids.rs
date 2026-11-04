@@ -86,11 +86,10 @@ mod tests {
 
     use futures_util::future::join_all;
     use tokio::sync::Mutex as AsyncMutex;
-    use vrcx_0_application_core::vrchat_api::VrchatScope;
     use vrcx_0_application_core::{
         RemoteMutationGate, RuntimeAuthScope, RuntimeDiagnostics, RuntimeSyncEngine,
     };
-    use vrcx_0_contracts::vrchat_api::VrchatRequest;
+    use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatScope};
 
     use super::*;
     use crate::remote::{VrchatRequestFuture, VrchatRequestPort};

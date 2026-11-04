@@ -11,14 +11,13 @@ use super::types::{
 };
 use crate::remote::VrchatRequestPort;
 use std::{sync::Arc, time::Duration};
-use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::RuntimeOperationStatus;
 use vrcx_0_application_core::RuntimeSyncEngine;
 use vrcx_0_application_core::{
     is_remote_mutation_request, AuthenticatedMutationContext, RemoteMutationGate, Result,
 };
 use vrcx_0_application_core::{RuntimeAuthScope, RuntimeDiagnostics};
-use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatResponse};
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatResponse, VrchatScope};
 
 pub enum GroupRemoteRequest {
     GetGroup(VrchatGroupProfileInput),

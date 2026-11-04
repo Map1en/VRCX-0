@@ -5,7 +5,8 @@ use vrcx_0_application::social::{
     GroupCalendarPage, GroupCalendarPageKind, GroupCalendarProfileFuture, GroupCalendarRemote,
     GroupCalendarRemoteFuture,
 };
-use vrcx_0_application_core::{vrchat_api::VrchatScope, Error, Result, WebClient};
+use vrcx_0_application_core::{Error, Result, WebClient};
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_contracts::VrchatJsonResponse;
 use vrcx_0_core::json::RawJson;
 use vrcx_0_vrchat_protocol::{

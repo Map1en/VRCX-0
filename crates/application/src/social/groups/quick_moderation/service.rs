@@ -559,7 +559,7 @@ mod tests {
         fn send(
             &self,
             input: VrchatRequest,
-            _scope: vrcx_0_application_core::vrchat_api::VrchatScope,
+            _scope: vrcx_0_contracts::vrchat_api::VrchatScope,
         ) -> crate::remote::VrchatRequestFuture<'_> {
             self.sent.lock().unwrap().push(input);
             Box::pin(async {

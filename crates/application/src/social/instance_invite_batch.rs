@@ -10,10 +10,8 @@ use vrcx_0_core::location::parse_location;
 
 use crate::remote::VrchatRequestPort;
 use crate::scope_gate::ScopeGate;
-use vrcx_0_application_core::{
-    vrchat_api::VrchatScope, AuthenticatedMutationContext, Error, Result,
-};
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_application_core::{AuthenticatedMutationContext, Error, Result};
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatScope};
 
 const INSTANCE_INVITE_MAX_RETRIES: usize = 3;
 const INSTANCE_INVITE_RETRY_BASE_DELAY: Duration = Duration::from_secs(1);

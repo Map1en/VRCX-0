@@ -6,8 +6,8 @@ use serde_json::Value;
 use vrcx_0_application::social::{
     NotificationMarkSeenActions, NotificationMarkSeenBatchItem, NotificationRemoteActionError,
 };
-use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::{AuthenticatedMutationContext, WebClient};
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_persistence::DatabaseService;
 
 const NOTIFICATION_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);

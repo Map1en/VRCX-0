@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
-use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::{Result, RuntimeAuthScope};
 use vrcx_0_application_realtime::RealtimeHostRuntime;
-use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatResponse};
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatResponse, VrchatScope};
 use vrcx_0_core::time::now_iso;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 use vrcx_0_core::OwnerId;

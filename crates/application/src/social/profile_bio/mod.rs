@@ -1,7 +1,6 @@
 use std::sync::{Arc, Mutex};
 
 use chrono::{DateTime, Utc};
-use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::Result;
 use vrcx_0_application_realtime::RealtimeHostRuntime;
 use vrcx_0_contracts::feed_live::FeedLiveEntry;
@@ -10,7 +9,7 @@ pub use vrcx_0_contracts::profile_bio::{
     PROFILE_BIO_SCAN_PAUSE,
 };
 use vrcx_0_contracts::vrchat_api::{
-    classify_vrchat_response, VrchatJsonResponse, VrchatResponse, VrchatResponseClass,
+    classify_vrchat_response, VrchatJsonResponse, VrchatResponse, VrchatResponseClass, VrchatScope,
 };
 use vrcx_0_core::time::iso_millis;
 use vrcx_0_core::OwnerId;

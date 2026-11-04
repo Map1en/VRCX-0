@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use vrcx_0_application::remote::{VrchatApiFuture, VrchatApiPort};
-use vrcx_0_application_core::vrchat_api::{self, VrchatScope};
+use vrcx_0_application_core::vrchat_api;
 use vrcx_0_application_core::{RuntimeDiagnostics, RuntimeSyncEngine, WebClient};
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatScope};
 
 pub struct VrchatApiRemote {
     web: Arc<WebClient>,

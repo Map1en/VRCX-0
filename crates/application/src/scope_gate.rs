@@ -1,10 +1,9 @@
 use serde_json::Value;
 
 use vrcx_0_application_core::{
-    vrchat_api::VrchatScope, AuthenticatedMutationContext, Error, Result, RuntimeAuthScope,
-    RuntimeAuthScopeSnapshot,
+    AuthenticatedMutationContext, Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot,
 };
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatScope};
 
 use crate::remote::VrchatRequestPort;
 

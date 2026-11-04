@@ -4,7 +4,8 @@ use serde_json::Value;
 use vrcx_0_application::game::{
     BackgroundGroupProfileFuture, BackgroundGroupRemote, BackgroundGroupRemoteFuture,
 };
-use vrcx_0_application_core::{vrchat_api::VrchatScope, Error, WebClient};
+use vrcx_0_application_core::{Error, WebClient};
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 
 #[derive(Clone)]

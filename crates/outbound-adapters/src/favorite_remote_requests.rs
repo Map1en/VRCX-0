@@ -4,9 +4,9 @@ use vrcx_0_application::favorites::{
     FavoriteRemote, FavoriteRemoteAddInput, FavoriteRemoteCommand, FavoriteRemoteFuture,
     FavoriteRemoteGroupClearInput, FavoriteRemoteGroupSaveInput,
 };
-use vrcx_0_application_core::vrchat_api::{execute_api_command, VrchatScope};
+use vrcx_0_application_core::vrchat_api::execute_api_command;
 use vrcx_0_application_core::{RuntimeDiagnostics, RuntimeSyncEngine, WebClient, WorldCache};
-use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatResponse};
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatResponse, VrchatScope};
 use vrcx_0_vrchat_protocol::avatars::avatar_get_input;
 use vrcx_0_vrchat_protocol::favorites::{
     favorite_add_input, favorite_avatars_get_input, favorite_delete_input,

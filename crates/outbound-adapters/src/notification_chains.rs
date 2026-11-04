@@ -7,11 +7,11 @@ use vrcx_0_application::social::{
     BoopNotificationRow, NotificationChainActions, NotificationChainRemoteCall,
     NotificationChainRemoteError,
 };
-use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::{
     AuthenticatedMutationContext, RuntimeEventBus, WebClient, WorldCache,
 };
 use vrcx_0_application_realtime::RealtimeNotificationProjection;
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_core::OwnerId;
 use vrcx_0_persistence::DatabaseService;
 

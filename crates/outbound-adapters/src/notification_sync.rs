@@ -3,8 +3,8 @@ use std::sync::Arc;
 use vrcx_0_application::social::{
     NotificationSyncFuture, NotificationSyncPort, NotificationSyncSource, NotificationSyncWrite,
 };
-use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::WebClient;
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_core::OwnerId;
 use vrcx_0_persistence::DatabaseService;
 

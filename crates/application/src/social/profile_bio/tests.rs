@@ -3,14 +3,13 @@ use std::sync::Mutex;
 
 use chrono::{DateTime, Utc};
 use serde_json::json;
-use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::{CallRecorder, Result, ScriptedResults};
 use vrcx_0_application_realtime::test_support::{
     feed_lookup_input, runtime_with_active_session, seed_friend_baseline, TestDir,
     TestRealtimeHostRuntime,
 };
 use vrcx_0_contracts::feed::{FeedFilter, FeedRowOutput, FeedRowsQueryInput};
-use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatResponse};
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatResponse, VrchatScope};
 use vrcx_0_core::OwnerId;
 
 use crate::remote::{VrchatRequestFuture, VrchatRequestPort};

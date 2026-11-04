@@ -6,11 +6,11 @@ use std::time::{Duration, Instant};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use vrcx_0_application_core::{
-    vrchat_api::VrchatScope, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeDiagnostics,
-    RuntimeOperationStatus, RuntimeSyncEngine, WorldCache,
+    RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeDiagnostics, RuntimeOperationStatus,
+    RuntimeSyncEngine, WorldCache,
 };
 use vrcx_0_application_realtime::RealtimeFriendSnapshot;
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatScope};
 use vrcx_0_contracts::{VrchatJsonResponse, WorldSummaryOutput};
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::json::RawJson;

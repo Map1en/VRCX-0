@@ -10,8 +10,8 @@ use vrcx_0_application::social::{
     AvatarProviderConfig, AvatarReleaseStatus, UserDialogCountPage, UserDialogFavoriteGroupPage,
     UserDialogTabCountsFuture, UserDialogTabCountsSource, DEFAULT_AVATAR_PROVIDER,
 };
-use vrcx_0_application_core::{vrchat_api::VrchatScope, Error, Result, WebClient};
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_application_core::{Error, Result, WebClient};
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatScope};
 use vrcx_0_contracts::VrchatJsonResponse;
 use vrcx_0_integrations::external_api::{self, ExternalApiScope};
 use vrcx_0_persistence::{config, DatabaseService};

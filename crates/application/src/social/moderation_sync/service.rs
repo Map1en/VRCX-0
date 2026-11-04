@@ -3,8 +3,7 @@ use std::time::Duration;
 use vrcx_0_core::text::normalize_text;
 
 use serde_json::Value;
-use vrcx_0_application_core::vrchat_api::VrchatScope;
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatScope};
 use vrcx_0_contracts::VrchatJsonResponse;
 use vrcx_0_core::time::now_iso;
 use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;

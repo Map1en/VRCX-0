@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
 use vrcx_0_application::remote::{VrchatRequestFuture, VrchatRequestPort};
-use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::WebClient;
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatScope};
 
 #[derive(Clone)]
 pub struct VrchatRequestAdapter {

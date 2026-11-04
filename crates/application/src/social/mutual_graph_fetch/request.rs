@@ -4,8 +4,8 @@ use std::time::Duration;
 
 use serde_json::Value;
 use tokio::time::{sleep, Instant};
-use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_realtime::RealtimeHostRuntime;
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_core::json::RawJson;
 
 use super::types::{
