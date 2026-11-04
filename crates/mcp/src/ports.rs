@@ -13,18 +13,6 @@ use vrcx_0_core::screenshots::{ScreenshotFacet, ScreenshotFilter, ScreenshotQuer
 use vrcx_0_core::FavoriteEntityKind;
 use vrcx_0_core::OwnerId;
 
-pub trait McpConfigPort: Send + Sync {
-    fn get_bool(&self, key: &str, default: bool) -> vrcx_0_application_core::Result<bool>;
-
-    fn set_bool(&self, key: &str, value: bool) -> vrcx_0_application_core::Result<()>;
-
-    fn get_string(&self, key: &str, default: &str) -> vrcx_0_application_core::Result<String>;
-
-    fn set_string(&self, key: &str, value: &str) -> vrcx_0_application_core::Result<()>;
-}
-
-pub type McpConfig = Arc<dyn McpConfigPort>;
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct McpPlaySpan {
     pub start: i64,

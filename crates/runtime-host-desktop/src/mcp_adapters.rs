@@ -8,19 +8,14 @@ use vrcx_0_contracts::social_aggregates as social;
 use vrcx_0_contracts::FavoriteRow;
 use vrcx_0_core::{FavoriteEntityKind, OwnerId};
 use vrcx_0_mcp::{
-    McpActivityQueryPort, McpChatboxPort, McpConfigPort, McpFavoritesQueryPort, McpFeedQueryPort,
+    McpActivityQueryPort, McpChatboxPort, McpFavoritesQueryPort, McpFeedQueryPort,
     McpFriendCurrent, McpFriendLocalDataPort, McpFriendMemo, McpFuture, McpInterruptCheck,
     McpLocalModeration, McpMemoSave, McpMutualGraphMeta, McpMutualGraphPort, McpPlaySpan,
     McpScreenshotQueryPort, McpSocialHistoryQueryPort, McpWorldLookupPort,
 };
 use vrcx_0_persistence::{
-    activity_page, config::ConfigRepository, favorites, friends, local_moderation, memos,
-    social_aggregates, DatabaseService,
+    activity_page, favorites, friends, local_moderation, memos, social_aggregates, DatabaseService,
 };
-
-pub(crate) struct DesktopMcpConfigAdapter {
-    config: ConfigRepository,
-}
 
 pub(crate) struct DesktopMcpScreenshotAdapter {
     db_path: std::path::PathBuf,
@@ -206,30 +201,6 @@ impl McpMutualGraphPort for DesktopMcpMutualGraphAdapter {
             self.auth_scope.clone(),
             self.tasks.clone(),
         )
-    }
-}
-
-impl DesktopMcpConfigAdapter {
-    pub(crate) fn new(config: ConfigRepository) -> Self {
-        Self { config }
-    }
-}
-
-impl McpConfigPort for DesktopMcpConfigAdapter {
-    fn get_bool(&self, key: &str, default: bool) -> vrcx_0_application_core::Result<bool> {
-        self.config.get_bool(key, default).map_err(Into::into)
-    }
-
-    fn set_bool(&self, key: &str, value: bool) -> vrcx_0_application_core::Result<()> {
-        self.config.set_bool(key, value).map_err(Into::into)
-    }
-
-    fn get_string(&self, key: &str, default: &str) -> vrcx_0_application_core::Result<String> {
-        self.config.get_string(key, default).map_err(Into::into)
-    }
-
-    fn set_string(&self, key: &str, value: &str) -> vrcx_0_application_core::Result<()> {
-        self.config.set_string(key, value).map_err(Into::into)
     }
 }
 

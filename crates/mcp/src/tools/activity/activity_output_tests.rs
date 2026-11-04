@@ -17,8 +17,7 @@ use vrcx_0_persistence::game_log::{
     write_batch, GameLogJoinLeaveEntry, GameLogLocationEntry, GameLogWriteBatch,
 };
 use vrcx_0_persistence::{
-    config::ConfigRepository, game_log::ensure_game_log_tables, storage::StorageService,
-    DatabaseService,
+    game_log::ensure_game_log_tables, storage::StorageService, DatabaseService,
 };
 
 #[test]
@@ -185,9 +184,7 @@ fn test_server_with_game_context(
     let runtime = crate::runtime::McpRuntime {
         realtime_runtime,
         auth_scope: auth_scope.clone(),
-        config: Arc::new(crate::test_support::TestMcpConfigAdapter::new(
-            ConfigRepository::new(Arc::clone(&db)),
-        )),
+        config: Arc::new(vrcx_0_application_core::MemoryConfigStore::default()),
         activity_queries: Arc::new(crate::test_support::TestMcpActivityQueryAdapter::new(
             Arc::clone(&db),
         )),

@@ -15,13 +15,12 @@ use vrcx_0_application_core::{
 use vrcx_0_application_realtime::{RealtimeHostRuntime, RealtimeHostRuntimeDeps};
 use vrcx_0_contracts::feed::{FeedRowOutput, FeedRowsQueryInput};
 use vrcx_0_persistence::{
-    config::ConfigRepository, game_log::ensure_game_log_tables, storage::StorageService,
-    DatabaseService,
+    game_log::ensure_game_log_tables, storage::StorageService, DatabaseService,
 };
 
 use crate::runtime::McpRuntime;
 use crate::{
-    McpActivityQueryPort, McpConfigPort, McpFavoritesQueryPort, McpFeedQueryPort, McpFriendCurrent,
+    McpActivityQueryPort, McpFavoritesQueryPort, McpFeedQueryPort, McpFriendCurrent,
     McpFriendLocalDataPort, McpFriendMemo, McpInterruptCheck, McpLocalModeration, McpMemoSave,
     McpMutualGraphMeta, McpMutualGraphPort, McpPlaySpan, McpSocialHistoryQueryPort,
 };
@@ -31,10 +30,6 @@ use vrcx_0_core::{FavoriteEntityKind, OwnerId};
 use vrcx_0_persistence::{
     activity_page, favorites, friends, local_moderation, memos, social_aggregates,
 };
-
-pub(crate) struct TestMcpConfigAdapter {
-    config: ConfigRepository,
-}
 
 pub(crate) struct TestMcpMutualGraphAdapter {
     runtime: MutualGraphFetchRuntime,
@@ -105,30 +100,6 @@ impl McpMutualGraphPort for TestMcpMutualGraphAdapter {
             self.auth_scope.clone(),
             self.tasks.clone(),
         )
-    }
-}
-
-impl TestMcpConfigAdapter {
-    pub(crate) fn new(config: ConfigRepository) -> Self {
-        Self { config }
-    }
-}
-
-impl McpConfigPort for TestMcpConfigAdapter {
-    fn get_bool(&self, key: &str, default: bool) -> vrcx_0_application_core::Result<bool> {
-        self.config.get_bool(key, default).map_err(Into::into)
-    }
-
-    fn set_bool(&self, key: &str, value: bool) -> vrcx_0_application_core::Result<()> {
-        self.config.set_bool(key, value).map_err(Into::into)
-    }
-
-    fn get_string(&self, key: &str, default: &str) -> vrcx_0_application_core::Result<String> {
-        self.config.get_string(key, default).map_err(Into::into)
-    }
-
-    fn set_string(&self, key: &str, value: &str) -> vrcx_0_application_core::Result<()> {
-        self.config.set_string(key, value).map_err(Into::into)
     }
 }
 
@@ -731,9 +702,7 @@ fn test_runtime_with_database_and_event_bus(
     let runtime = McpRuntime {
         realtime_runtime,
         auth_scope: auth_scope.clone(),
-        config: Arc::new(TestMcpConfigAdapter::new(ConfigRepository::new(
-            Arc::clone(&db),
-        ))),
+        config: Arc::new(vrcx_0_application_core::MemoryConfigStore::default()),
         activity_queries: Arc::new(TestMcpActivityQueryAdapter::new(Arc::clone(&db))),
         social_history_queries: Arc::new(TestMcpSocialHistoryQueryAdapter::new(Arc::clone(&db))),
         friend_local_data: Arc::new(TestMcpFriendLocalDataAdapter::new(Arc::clone(&db))),

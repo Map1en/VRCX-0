@@ -2729,9 +2729,7 @@ pub(crate) fn mcp_runtime_for(
         vrcx_0_mcp::McpRuntimeDeps {
             realtime_runtime: Arc::clone(runtime.realtime_runtime()),
             auth_scope: assembly.auth_scope().clone(),
-            config: Arc::new(crate::mcp_adapters::DesktopMcpConfigAdapter::new(
-                assembly.config().clone(),
-            )),
+            config: assembly.config_store(),
             activity_queries: Arc::new(crate::mcp_adapters::DesktopMcpActivityQueryAdapter::new(
                 Arc::clone(db),
             )),
