@@ -3,14 +3,14 @@ use std::sync::Mutex;
 
 use chrono::{DateTime, Utc};
 use serde_json::json;
-use vrcx_0_application_core::vrchat_api::{VrchatApiResponse, VrchatScope};
+use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::{CallRecorder, Result, ScriptedResults};
 use vrcx_0_application_realtime::test_support::{
     feed_lookup_input, runtime_with_active_session, seed_friend_baseline, TestDir,
     TestRealtimeHostRuntime,
 };
 use vrcx_0_contracts::feed::{FeedFilter, FeedRowOutput, FeedRowsQueryInput};
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatResponse};
 use vrcx_0_core::OwnerId;
 
 use crate::remote::{VrchatRequestFuture, VrchatRequestPort};
@@ -78,7 +78,7 @@ impl ProfileBioRemoteRequests for ProfileRequests {
 }
 
 struct ScriptedRequestPort {
-    responses: ScriptedResults<VrchatApiResponse>,
+    responses: ScriptedResults<VrchatResponse>,
     requests: CallRecorder<String>,
 }
 
@@ -90,14 +90,14 @@ impl VrchatRequestPort for ScriptedRequestPort {
     }
 }
 
-fn response(status: i32, body: serde_json::Value) -> VrchatApiResponse {
-    VrchatApiResponse {
+fn response(status: i32, body: serde_json::Value) -> VrchatResponse {
+    VrchatResponse {
         status,
         data: body.to_string(),
     }
 }
 
-fn profile_response(user_id: &str, bio: &str) -> VrchatApiResponse {
+fn profile_response(user_id: &str, bio: &str) -> VrchatResponse {
     response(
         200,
         json!({ "id": user_id, "displayName": "Friend", "bio": bio }),
@@ -284,7 +284,7 @@ fn profile_responses_are_observed_only_for_current_friends() -> Result<()> {
     let (_dir, runtime, owner) = runtime_with_friend("profile-bio-response")?;
     let store = MemoryProfileBioStore::default();
     let now = "2026-09-18T00:00:00.000Z";
-    let observe = |response: &VrchatApiResponse| {
+    let observe = |response: &VrchatResponse| {
         observe_profile_response(&store, runtime.runtime(), &owner, response, now)
     };
 

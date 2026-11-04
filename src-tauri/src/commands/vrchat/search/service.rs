@@ -4,7 +4,7 @@ use tauri::State;
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use super::types::{
     VrchatSearchGroupsInput, VrchatSearchShortNameInput, VrchatSearchUsersInput,
@@ -16,7 +16,7 @@ use super::types::{
 pub async fn app__vrchat_search_worlds_get(
     state: State<'_, AppState>,
     input: VrchatSearchWorldsInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -30,7 +30,7 @@ pub async fn app__vrchat_search_worlds_get(
 pub async fn app__vrchat_search_users_get(
     state: State<'_, AppState>,
     input: VrchatSearchUsersInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -44,7 +44,7 @@ pub async fn app__vrchat_search_users_get(
 pub async fn app__vrchat_search_groups_get(
     state: State<'_, AppState>,
     input: VrchatSearchGroupsInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -58,7 +58,7 @@ pub async fn app__vrchat_search_groups_get(
 pub async fn app__vrchat_search_groups_strict_get(
     state: State<'_, AppState>,
     input: VrchatSearchGroupsInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -72,7 +72,7 @@ pub async fn app__vrchat_search_groups_strict_get(
 pub async fn app__vrchat_search_instance_short_name_get(
     state: State<'_, AppState>,
     input: VrchatSearchShortNameInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()

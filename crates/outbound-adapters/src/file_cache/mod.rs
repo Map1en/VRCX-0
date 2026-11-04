@@ -5,11 +5,12 @@ use std::time::Duration;
 use moka::policy::EvictionPolicy;
 use moka::sync::Cache;
 use vrcx_0_application_core::WebClient;
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_contracts::FileMetadataOutput;
 use vrcx_0_persistence::files::{file_cache_get, file_cache_upsert};
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::avatars::avatar_file_get_input;
-use vrcx_0_vrchat_client::http_api::{normalize_vrchat_api_endpoint, ApiScope};
+use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
 
 const FILE_RESOLVE_FETCH_TIMEOUT: Duration = Duration::from_secs(5);
 const FILE_RESOLVE_FAILURE_TTL: Duration = Duration::from_secs(60 * 60);
@@ -77,7 +78,7 @@ impl FileCache {
         let (_, request) = avatar_file_get_input(endpoint, file_id.to_string()).ok()?;
         let fetched = tokio::time::timeout(
             FILE_RESOLVE_FETCH_TIMEOUT,
-            web.execute_api(request, ApiScope::Vrchat),
+            web.execute_api(request, VrchatScope::Vrchat),
         )
         .await;
         let file = match fetched {

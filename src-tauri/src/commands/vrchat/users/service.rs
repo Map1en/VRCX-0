@@ -4,7 +4,7 @@ use tauri::State;
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use super::types::{
     VrchatCurrentUserBadgeInput, VrchatCurrentUserProfileUpdateInput, VrchatCurrentUserTagsInput,
@@ -16,7 +16,7 @@ use super::types::{
 pub async fn app__vrchat_user_profile_get(
     state: State<'_, AppState>,
     input: VrchatUserProfileInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -30,7 +30,7 @@ pub async fn app__vrchat_user_profile_get(
 pub async fn app__vrchat_current_user_profile_update(
     state: State<'_, AppState>,
     input: VrchatCurrentUserProfileUpdateInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .current_user_mutations()
@@ -44,7 +44,7 @@ pub async fn app__vrchat_current_user_profile_update(
 pub async fn app__vrchat_user_get(
     state: State<'_, AppState>,
     input: VrchatUserInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     Ok(state
         .runtime_host()
         .get_user_via_cache(input.user_id, input.force, input.dialog, input.is_friend)
@@ -55,7 +55,7 @@ pub async fn app__vrchat_user_get(
 #[specta::specta]
 pub async fn app__vrchat_current_user_account_standing_get(
     state: State<'_, AppState>,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -69,7 +69,7 @@ pub async fn app__vrchat_current_user_account_standing_get(
 pub async fn app__vrchat_user_represented_group_get(
     state: State<'_, AppState>,
     input: VrchatUserInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -83,7 +83,7 @@ pub async fn app__vrchat_user_represented_group_get(
 pub async fn app__vrchat_current_user_update(
     state: State<'_, AppState>,
     input: VrchatCurrentUserUpdateInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .current_user_mutations()
@@ -97,7 +97,7 @@ pub async fn app__vrchat_current_user_update(
 pub async fn app__vrchat_current_user_badge_update(
     state: State<'_, AppState>,
     input: VrchatCurrentUserBadgeInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .current_user_mutations()
@@ -111,7 +111,7 @@ pub async fn app__vrchat_current_user_badge_update(
 pub async fn app__vrchat_current_user_tags_add(
     state: State<'_, AppState>,
     input: VrchatCurrentUserTagsInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .current_user_mutations()
@@ -125,7 +125,7 @@ pub async fn app__vrchat_current_user_tags_add(
 pub async fn app__vrchat_current_user_tags_remove(
     state: State<'_, AppState>,
     input: VrchatCurrentUserTagsInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .current_user_mutations()

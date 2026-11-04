@@ -1,9 +1,9 @@
 use std::time::Duration;
 
 use serde_json::{json, Map, Value};
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::{Error, Result};
 use vrcx_0_contracts::vrchat_api::vrchat_response;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 use vrcx_0_core::files::extract_file_id;
 
 use super::{
@@ -52,7 +52,7 @@ pub async fn upload_legacy_entity_image(
     deps: LegacyMediaUploadDeps<'_>,
     input: LegacyEntityImageUploadInput,
     kind: LegacyEntityImageKind,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let target = legacy_entity_image_target(kind);
     let entity_id = require_text(
         input.entity_id,

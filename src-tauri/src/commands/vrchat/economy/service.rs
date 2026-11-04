@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use crate::error::AppError;
 use crate::state::AppState;
@@ -16,7 +16,7 @@ use super::types::{
 pub async fn app__vrchat_economy_licensed_avatars_get(
     state: State<'_, AppState>,
     input: VrchatEconomyPageInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -30,7 +30,7 @@ pub async fn app__vrchat_economy_licensed_avatars_get(
 pub async fn app__vrchat_economy_purchases_get(
     state: State<'_, AppState>,
     input: VrchatEconomyPurchasesInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -44,7 +44,7 @@ pub async fn app__vrchat_economy_purchases_get(
 pub async fn app__vrchat_economy_transactions_get(
     state: State<'_, AppState>,
     input: VrchatEconomyTransactionsInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -58,7 +58,7 @@ pub async fn app__vrchat_economy_transactions_get(
 pub async fn app__vrchat_economy_balance_get(
     state: State<'_, AppState>,
     input: VrchatEconomyUserInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -72,7 +72,7 @@ pub async fn app__vrchat_economy_balance_get(
 pub async fn app__vrchat_economy_store_get(
     state: State<'_, AppState>,
     input: VrchatEconomyStoreInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()

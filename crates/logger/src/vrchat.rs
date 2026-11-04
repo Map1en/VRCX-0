@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use serde_json::Value;
 use vrcx_0_contracts::vrchat_api::VrchatRequest;
-use vrcx_0_contracts::vrchat_api::{vrchat_response, VrchatResponse};
+use vrcx_0_contracts::vrchat_api::{vrchat_response, VrchatResponse, VrchatScope};
 use vrcx_0_contracts::vrchat_device_login::{
     interpret_device_code_response, interpret_device_status_response, VrchatDeviceAuthorization,
     VrchatDeviceStatus,
@@ -26,7 +26,7 @@ use vrcx_0_vrchat_client::auth::{
     totp_verify_input,
 };
 use vrcx_0_vrchat_client::friends::friends_get_input;
-use vrcx_0_vrchat_client::http_api::{build_web_execute_request, ApiScope};
+use vrcx_0_vrchat_client::http_api::build_web_execute_request;
 use vrcx_0_vrchat_client::realtime::{
     auth_token_from_response, build_transport_url, connect_websocket, Error as RealtimeError,
     RealtimeConnectionOptions, RealtimeWebSocketStream,
@@ -320,14 +320,14 @@ impl Vrchat {
     }
 
     async fn execute(&self, input: VrchatRequest) -> VrchatResponse {
-        match build_web_execute_request(input, ApiScope::Vrchat) {
+        match build_web_execute_request(input, VrchatScope::Vrchat) {
             Ok(request) => response(self.web.execute(request).await),
             Err(error) => network_failure(error),
         }
     }
 
     async fn execute_fresh(&self, input: VrchatRequest) -> VrchatResponse {
-        match build_web_execute_request(input, ApiScope::Vrchat) {
+        match build_web_execute_request(input, VrchatScope::Vrchat) {
             Ok(request) => response(self.web.execute_fresh_standard(request).await),
             Err(error) => network_failure(error),
         }

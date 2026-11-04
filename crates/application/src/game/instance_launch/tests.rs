@@ -2,7 +2,7 @@ use super::*;
 
 use serde::Deserialize;
 use vrcx_0_application_core::{CallRecorder, ScriptedResults};
-use vrcx_0_contracts::vrchat_api::vrchat_response as execute_response;
+use vrcx_0_contracts::vrchat_api::vrchat_response;
 use vrcx_0_core::presence::PresenceKind;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 
@@ -41,7 +41,7 @@ impl InstanceLaunchHttpClient for MockApi {
                 world_id.to_string(),
                 instance_id.to_string(),
             ));
-            Ok(execute_response(
+            Ok(vrchat_response(
                 self.short_name_status,
                 self.short_name_body.clone(),
             ))
@@ -62,7 +62,7 @@ impl InstanceLaunchHttpClient for MockApi {
                 instance_id.to_string(),
                 short_name.to_string(),
             ));
-            Ok(execute_response(
+            Ok(vrchat_response(
                 self.self_invite_status,
                 self.self_invite_body.clone(),
             ))

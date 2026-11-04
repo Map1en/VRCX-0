@@ -11,14 +11,14 @@ use super::types::{
 };
 use crate::remote::VrchatRequestPort;
 use std::{sync::Arc, time::Duration};
-use vrcx_0_application_core::vrchat_api::{VrchatApiResponse, VrchatScope};
+use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::RuntimeOperationStatus;
 use vrcx_0_application_core::RuntimeSyncEngine;
 use vrcx_0_application_core::{
     is_remote_mutation_request, AuthenticatedMutationContext, RemoteMutationGate, Result,
 };
 use vrcx_0_application_core::{RuntimeAuthScope, RuntimeDiagnostics};
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatResponse};
 
 pub enum GroupRemoteRequest {
     GetGroup(VrchatGroupProfileInput),
@@ -122,7 +122,7 @@ const GROUP_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 pub(super) async fn execute_group_api_raw(
     deps: &GroupApiDeps,
     mut input: VrchatRequest,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     if is_remote_mutation_request(&input) {
         let mutation = AuthenticatedMutationContext::capture(
             &deps.auth_scope,
@@ -154,7 +154,7 @@ pub(super) async fn execute_group_api(
     command: &str,
     detail: impl Into<String>,
     input: VrchatRequest,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     deps.diagnostics
         .record_command(command, RuntimeOperationStatus::Running, detail.into());
     let result = execute_group_api_raw(deps, input).await;
@@ -166,7 +166,7 @@ pub(super) async fn execute_group_api(
                 format!("status={}", response.status),
             );
             let policy_class =
-                vrcx_0_application_core::vrchat_api::classify_api_response(response.status).class;
+                vrcx_0_contracts::vrchat_api::classify_vrchat_response(response.status).class;
             deps.sync.record(
                 "api",
                 RuntimeOperationStatus::Ready,
@@ -192,7 +192,7 @@ pub(super) async fn execute_group_api(
 pub async fn get_group(
     deps: GroupApiDeps,
     input: VrchatGroupProfileInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::GetGroup(input))?;
@@ -208,7 +208,7 @@ pub async fn get_group(
 pub async fn get_user_groups(
     deps: GroupApiDeps,
     input: VrchatGroupUserGroupsInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::GetUserGroups(input))?;
@@ -224,7 +224,7 @@ pub async fn get_user_groups(
 pub async fn get_membership_list(
     deps: GroupApiDeps,
     input: VrchatGroupMembershipListInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let status = input.status;
     let built = deps
         .remote_requests
@@ -242,10 +242,7 @@ pub async fn get_membership_list(
     .await
 }
 
-pub async fn get_posts(
-    deps: GroupApiDeps,
-    input: VrchatGroupPagedInput,
-) -> Result<VrchatApiResponse> {
+pub async fn get_posts(deps: GroupApiDeps, input: VrchatGroupPagedInput) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::GetPosts(input))?;
@@ -261,7 +258,7 @@ pub async fn get_posts(
 pub async fn get_members(
     deps: GroupApiDeps,
     input: VrchatGroupMembersInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::GetMembers(input))?;
@@ -277,7 +274,7 @@ pub async fn get_members(
 pub async fn search_members(
     deps: GroupApiDeps,
     input: VrchatGroupMembersSearchInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::SearchMembers(input))?;
@@ -293,7 +290,7 @@ pub async fn search_members(
 pub async fn get_gallery(
     deps: GroupApiDeps,
     input: VrchatGroupGalleryInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::GetGallery(input))?;
@@ -313,7 +310,7 @@ pub async fn get_gallery(
 pub async fn create_gallery(
     deps: GroupApiDeps,
     input: VrchatGroupGalleryCreateInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::CreateGallery(input))?;
@@ -329,7 +326,7 @@ pub async fn create_gallery(
 pub async fn edit_gallery(
     deps: GroupApiDeps,
     input: VrchatGroupGalleryEditInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::EditGallery(input))?;
@@ -349,7 +346,7 @@ pub async fn edit_gallery(
 pub async fn delete_gallery(
     deps: GroupApiDeps,
     input: VrchatGroupGalleryDeleteInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::DeleteGallery(input))?;
@@ -369,7 +366,7 @@ pub async fn delete_gallery(
 pub async fn add_gallery_image(
     deps: GroupApiDeps,
     input: VrchatGroupGalleryImageAddInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::AddGalleryImage(input))?;
@@ -389,7 +386,7 @@ pub async fn add_gallery_image(
 pub async fn delete_gallery_image(
     deps: GroupApiDeps,
     input: VrchatGroupGalleryImageDeleteInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::DeleteGalleryImage(input))?;
@@ -407,10 +404,7 @@ pub async fn delete_gallery_image(
     .await
 }
 
-pub async fn get_bans(
-    deps: GroupApiDeps,
-    input: VrchatGroupPagedInput,
-) -> Result<VrchatApiResponse> {
+pub async fn get_bans(deps: GroupApiDeps, input: VrchatGroupPagedInput) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::GetBans(input))?;
@@ -426,7 +420,7 @@ pub async fn get_bans(
 pub async fn get_invites(
     deps: GroupApiDeps,
     input: VrchatGroupPagedInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::GetInvites(input))?;
@@ -442,7 +436,7 @@ pub async fn get_invites(
 pub async fn get_join_requests(
     deps: GroupApiDeps,
     input: VrchatGroupJoinRequestsInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::GetJoinRequests(input))?;
@@ -458,7 +452,7 @@ pub async fn get_join_requests(
 pub async fn get_audit_log_types(
     deps: GroupApiDeps,
     input: VrchatGroupIdInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::GetAuditLogTypes(input))?;
@@ -471,10 +465,7 @@ pub async fn get_audit_log_types(
     .await
 }
 
-pub async fn get_logs(
-    deps: GroupApiDeps,
-    input: VrchatGroupLogsInput,
-) -> Result<VrchatApiResponse> {
+pub async fn get_logs(deps: GroupApiDeps, input: VrchatGroupLogsInput) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::GetLogs(input))?;
@@ -490,7 +481,7 @@ pub async fn get_logs(
 pub async fn get_user_instances(
     deps: GroupApiDeps,
     input: VrchatGroupUserGroupsInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::GetUserInstances(input))?;
@@ -506,7 +497,7 @@ pub async fn get_user_instances(
 pub async fn update_group(
     deps: GroupApiDeps,
     input: VrchatGroupUpdateInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::Update(input))?;
@@ -519,10 +510,7 @@ pub async fn update_group(
     .await
 }
 
-pub async fn delete_group(
-    deps: GroupApiDeps,
-    input: VrchatGroupIdInput,
-) -> Result<VrchatApiResponse> {
+pub async fn delete_group(deps: GroupApiDeps, input: VrchatGroupIdInput) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::Delete(input))?;
@@ -538,7 +526,7 @@ pub async fn delete_group(
 pub async fn create_post(
     deps: GroupApiDeps,
     input: VrchatGroupPostCreateInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::CreatePost(input))?;
@@ -554,7 +542,7 @@ pub async fn create_post(
 pub async fn edit_post(
     deps: GroupApiDeps,
     input: VrchatGroupPostEditInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::EditPost(input))?;
@@ -574,7 +562,7 @@ pub async fn edit_post(
 pub async fn delete_post(
     deps: GroupApiDeps,
     input: VrchatGroupPostDeleteInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::DeletePost(input))?;
@@ -591,10 +579,7 @@ pub async fn delete_post(
     .await
 }
 
-pub async fn join_group(
-    deps: GroupApiDeps,
-    input: VrchatGroupIdInput,
-) -> Result<VrchatApiResponse> {
+pub async fn join_group(deps: GroupApiDeps, input: VrchatGroupIdInput) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::Join(input))?;
@@ -607,10 +592,7 @@ pub async fn join_group(
     .await
 }
 
-pub async fn leave_group(
-    deps: GroupApiDeps,
-    input: VrchatGroupIdInput,
-) -> Result<VrchatApiResponse> {
+pub async fn leave_group(deps: GroupApiDeps, input: VrchatGroupIdInput) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::Leave(input))?;
@@ -626,7 +608,7 @@ pub async fn leave_group(
 pub async fn cancel_request(
     deps: GroupApiDeps,
     input: VrchatGroupIdInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::CancelRequest(input))?;
@@ -642,7 +624,7 @@ pub async fn cancel_request(
 pub async fn send_invite(
     deps: GroupApiDeps,
     input: VrchatGroupUserInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::SendInvite(input))?;
@@ -662,7 +644,7 @@ pub async fn send_invite(
 pub async fn kick_member(
     deps: GroupApiDeps,
     input: VrchatGroupUserInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::Kick(input))?;
@@ -679,10 +661,7 @@ pub async fn kick_member(
     .await
 }
 
-pub async fn ban_member(
-    deps: GroupApiDeps,
-    input: VrchatGroupUserInput,
-) -> Result<VrchatApiResponse> {
+pub async fn ban_member(deps: GroupApiDeps, input: VrchatGroupUserInput) -> Result<VrchatResponse> {
     let built = deps.remote_requests.build(GroupRemoteRequest::Ban(input))?;
     execute_group_api(
         &deps,
@@ -700,7 +679,7 @@ pub async fn ban_member(
 pub async fn unban_member(
     deps: GroupApiDeps,
     input: VrchatGroupUserInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::Unban(input))?;
@@ -720,7 +699,7 @@ pub async fn unban_member(
 pub async fn add_member_role(
     deps: GroupApiDeps,
     input: VrchatGroupMemberRoleInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::AddRole(input))?;
@@ -741,7 +720,7 @@ pub async fn add_member_role(
 pub async fn remove_member_role(
     deps: GroupApiDeps,
     input: VrchatGroupMemberRoleInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::RemoveRole(input))?;
@@ -762,7 +741,7 @@ pub async fn remove_member_role(
 pub async fn delete_invite(
     deps: GroupApiDeps,
     input: VrchatGroupUserInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::DeleteInvite(input))?;
@@ -782,7 +761,7 @@ pub async fn delete_invite(
 pub async fn respond_join_request(
     deps: GroupApiDeps,
     input: VrchatGroupJoinRequestRespondInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::RespondJoinRequest(input))?;
@@ -802,7 +781,7 @@ pub async fn respond_join_request(
 pub async fn set_representation(
     deps: GroupApiDeps,
     input: VrchatGroupRepresentationInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::SetRepresentation(input))?;
@@ -818,7 +797,7 @@ pub async fn set_representation(
 pub async fn set_member_props(
     deps: GroupApiDeps,
     input: VrchatGroupMemberPropsInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::SetMemberProps(input))?;
@@ -835,10 +814,7 @@ pub async fn set_member_props(
     .await
 }
 
-pub async fn block_group(
-    deps: GroupApiDeps,
-    input: VrchatGroupIdInput,
-) -> Result<VrchatApiResponse> {
+pub async fn block_group(deps: GroupApiDeps, input: VrchatGroupIdInput) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::Block(input))?;
@@ -854,7 +830,7 @@ pub async fn block_group(
 pub async fn unblock_group(
     deps: GroupApiDeps,
     input: VrchatGroupUserInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::Unblock(input))?;
@@ -874,7 +850,7 @@ pub async fn unblock_group(
 pub async fn decline_invite(
     deps: GroupApiDeps,
     input: VrchatGroupUserInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::DeclineInvite(input))?;
@@ -887,7 +863,7 @@ pub async fn decline_invite(
     .await
 }
 
-pub async fn get_roles(deps: GroupApiDeps, input: VrchatGroupIdInput) -> Result<VrchatApiResponse> {
+pub async fn get_roles(deps: GroupApiDeps, input: VrchatGroupIdInput) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::GetRoles(input))?;
@@ -903,7 +879,7 @@ pub async fn get_roles(deps: GroupApiDeps, input: VrchatGroupIdInput) -> Result<
 pub async fn get_permissions(
     deps: GroupApiDeps,
     input: VrchatGroupIdInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::GetPermissions(input))?;
@@ -919,7 +895,7 @@ pub async fn get_permissions(
 pub async fn create_role(
     deps: GroupApiDeps,
     input: VrchatGroupRoleCreateInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::CreateRole(input))?;
@@ -935,7 +911,7 @@ pub async fn create_role(
 pub async fn update_role(
     deps: GroupApiDeps,
     input: VrchatGroupRoleUpdateInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::UpdateRole(input))?;
@@ -955,7 +931,7 @@ pub async fn update_role(
 pub async fn delete_role(
     deps: GroupApiDeps,
     input: VrchatGroupRoleInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let built = deps
         .remote_requests
         .build(GroupRemoteRequest::DeleteRole(input))?;

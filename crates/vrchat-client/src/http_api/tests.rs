@@ -1,4 +1,7 @@
 use super::*;
+use vrcx_0_contracts::vrchat_api::{
+    classify_vrchat_response, vrchat_response, VrchatJsonResponse, VrchatResponseClass,
+};
 
 fn input(path: &str) -> VrchatRequest {
     VrchatRequest {
@@ -9,7 +12,7 @@ fn input(path: &str) -> VrchatRequest {
 
 #[test]
 fn api_json_response_keeps_unparsable_bodies_as_text() {
-    let response = ApiJsonResponse::parse(200, "not json");
+    let response = VrchatJsonResponse::parse(200, "not json");
 
     assert_eq!(response.json, Value::String("not json".into()));
     assert!(!response.is_failure());
@@ -18,11 +21,11 @@ fn api_json_response_keeps_unparsable_bodies_as_text() {
 
 #[test]
 fn api_json_response_detects_error_envelopes() {
-    let nested = ApiJsonResponse::parse(500, r#"{"error":{"message":"Application error."}}"#);
+    let nested = VrchatJsonResponse::parse(500, r#"{"error":{"message":"Application error."}}"#);
     assert!(nested.is_failure());
     assert_eq!(nested.error_message(), Some("Application error.".into()));
 
-    let string_error = ApiJsonResponse::parse(
+    let string_error = VrchatJsonResponse::parse(
         400,
         r#"{"error":"You cannot moderate this user","status_code":400}"#,
     );
@@ -32,27 +35,27 @@ fn api_json_response_detects_error_envelopes() {
         Some("You cannot moderate this user".into())
     );
 
-    let flat = ApiJsonResponse::parse(400, r#"{"message":"\"Bad request\""}"#);
+    let flat = VrchatJsonResponse::parse(400, r#"{"message":"\"Bad request\""}"#);
     assert!(flat.is_failure());
     assert_eq!(flat.error_message(), Some("Bad request".into()));
 
-    let ok = ApiJsonResponse::parse(200, r#"{"id":"usr_1"}"#);
+    let ok = VrchatJsonResponse::parse(200, r#"{"id":"usr_1"}"#);
     assert!(!ok.is_failure());
     assert_eq!(ok.error_message(), None);
 }
 
 #[test]
 fn classifies_vrchat_auth_failures_without_broadening_credential_matches() {
-    let invalid_credentials = execute_response(
+    let invalid_credentials = vrchat_response(
         401,
         r#"{"error":{"message":"Invalid Username/Email or Password"}}"#.into(),
     );
     let missing_credentials =
-        execute_response(401, r#"{"error":{"message":"Missing Credentials"}}"#.into());
+        vrchat_response(401, r#"{"error":{"message":"Missing Credentials"}}"#.into());
     let generic_unauthorized =
-        execute_response(401, r#"{"error":{"message":"Unauthorized"}}"#.into());
-    let forbidden = execute_response(403, r#"{"error":{"message":"Forbidden"}}"#.into());
-    let conflicting_messages = execute_response(
+        vrchat_response(401, r#"{"error":{"message":"Unauthorized"}}"#.into());
+    let forbidden = vrchat_response(403, r#"{"error":{"message":"Forbidden"}}"#.into());
+    let conflicting_messages = vrchat_response(
         401,
         r#"{"message":"Missing Credentials","error":{"message":"Invalid Username/Email or Password"}}"#.into(),
     );
@@ -81,11 +84,11 @@ fn classifies_vrchat_auth_failures_without_broadening_credential_matches() {
 
 #[test]
 fn auth_error_message_preserves_scalar_field_compatibility() {
-    let padded_nested = execute_response(
+    let padded_nested = vrchat_response(
         401,
         r#"{"error":{"message":"  Missing Credentials  "}}"#.into(),
     );
-    let numeric_top_level = execute_response(401, r#"{"message":401}"#.into());
+    let numeric_top_level = vrchat_response(401, r#"{"message":401}"#.into());
 
     assert_eq!(
         vrchat_auth_error_message(&padded_nested).as_deref(),
@@ -99,7 +102,7 @@ fn auth_error_message_preserves_scalar_field_compatibility() {
 
 #[test]
 fn creates_typed_api_failure_without_encoding_status_in_message() {
-    let response = ApiJsonResponse::parse(
+    let response = VrchatJsonResponse::parse(
         404,
         r#"{"error":{"message":"The specified friend request was not found."}}"#,
     );
@@ -117,14 +120,14 @@ fn creates_typed_api_failure_without_encoding_status_in_message() {
 
 #[test]
 fn typed_api_failure_preserves_existing_redirect_classification() {
-    let response = ApiJsonResponse::parse(302, "{}");
+    let response = VrchatJsonResponse::parse(302, "{}");
 
     assert_eq!(response.failure_or("VRChat request failed"), None);
 }
 
 #[test]
 fn api_json_response_flags_error_field_even_on_success_status() {
-    let response = ApiJsonResponse::parse(200, r#"{"error":{"message":"nope"}}"#);
+    let response = VrchatJsonResponse::parse(200, r#"{"error":{"message":"nope"}}"#);
 
     assert!(response.has_error_field());
     assert!(response.is_failure());
@@ -141,7 +144,7 @@ fn builds_vrchat_url_with_query_arrays_and_skipped_values() {
     ]));
     request.skip_empty_query_string = Some(true);
 
-    let url = Url::parse(&build_request_url(&request, ApiScope::Vrchat).unwrap()).unwrap();
+    let url = Url::parse(&build_request_url(&request, VrchatScope::Vrchat).unwrap()).unwrap();
     assert_eq!(
         format!("{}{}", url.origin().unicode_serialization(), url.path()),
         "https://api.vrchat.cloud/api/1/worlds"
@@ -167,7 +170,7 @@ fn builds_vrchat_url_with_query_arrays_and_skipped_values() {
 fn rejects_non_vrchat_api_endpoint() {
     let mut request = input("worlds");
     request.endpoint = Some("https://api.example.test/api/1/".to_string());
-    assert!(build_request_url(&request, ApiScope::Vrchat).is_err());
+    assert!(build_request_url(&request, VrchatScope::Vrchat).is_err());
 }
 
 #[test]
@@ -176,24 +179,24 @@ fn rejects_absolute_urls_for_vrchat_scopes() {
         url: Some("https://example.com/".to_string()),
         ..Default::default()
     };
-    assert!(build_request_url(&request, ApiScope::Vrchat).is_err());
+    assert!(build_request_url(&request, VrchatScope::Vrchat).is_err());
 
     let request = input("https://example.com/");
-    assert!(build_request_url(&request, ApiScope::VrchatMedia).is_err());
+    assert!(build_request_url(&request, VrchatScope::VrchatMedia).is_err());
 }
 
 #[test]
 fn rejects_upload_options_outside_media_scope() {
     let mut request = input("auth/user");
-    request.body = HttpApiRequestBody::Upload(HttpApiUpload::Image {
+    request.body = VrchatRequestBody::Upload(VrchatUpload::Image {
         image_data: String::new(),
         post_data: None,
         matching_dimensions: false,
     });
-    assert!(build_request_url(&request, ApiScope::Vrchat).is_err());
+    assert!(build_request_url(&request, VrchatScope::Vrchat).is_err());
 
     request.path = Some("file/image".to_string());
-    assert!(build_request_url(&request, ApiScope::VrchatMedia).is_ok());
+    assert!(build_request_url(&request, VrchatScope::VrchatMedia).is_ok());
 }
 
 #[test]
@@ -202,46 +205,49 @@ fn allows_signed_absolute_upload_urls_for_media_scope() {
         url: Some("https://signed-upload.example.test/file".to_string()),
         ..Default::default()
     };
-    assert!(build_request_url(&request, ApiScope::VrchatMedia).is_err());
+    assert!(build_request_url(&request, VrchatScope::VrchatMedia).is_err());
 
-    request.body = HttpApiRequestBody::Upload(HttpApiUpload::FilePut {
+    request.body = VrchatRequestBody::Upload(VrchatUpload::FilePut {
         file_data: Vec::new(),
         file_mime: "application/octet-stream".into(),
         file_md5: None,
     });
-    assert!(build_request_url(&request, ApiScope::VrchatMedia).is_err());
+    assert!(build_request_url(&request, VrchatScope::VrchatMedia).is_err());
 
     request.url = Some("https://files.vrchat.cloud/file".to_string());
-    let url = build_request_url(&request, ApiScope::VrchatMedia).unwrap();
+    let url = build_request_url(&request, VrchatScope::VrchatMedia).unwrap();
     assert_eq!(url, "https://files.vrchat.cloud/file");
 
     request.url = Some("https://api.vrchat.cloud/api/1/auth/user".to_string());
-    assert!(build_request_url(&request, ApiScope::VrchatMedia).is_err());
+    assert!(build_request_url(&request, VrchatScope::VrchatMedia).is_err());
 
     request.url = Some("https://api.vrchat.cloud/api/1/file/file_1/1/file".to_string());
-    assert!(build_request_url(&request, ApiScope::VrchatMedia).is_ok());
+    assert!(build_request_url(&request, VrchatScope::VrchatMedia).is_ok());
 }
 
 #[test]
 fn classifies_success_redirect_auth_and_rate_limit_statuses_for_http_policy() {
     for status in [200, 204, 299] {
-        assert_eq!(classify_api_response(status).class, ApiResponseClass::Ok);
+        assert_eq!(
+            classify_vrchat_response(status).class,
+            VrchatResponseClass::Ok
+        );
     }
     for status in [300, 302, 399] {
         assert_eq!(
-            classify_api_response(status).class,
-            ApiResponseClass::Unknown
+            classify_vrchat_response(status).class,
+            VrchatResponseClass::Unknown
         );
     }
 
-    let auth = classify_api_response(401);
-    assert_eq!(auth.class, ApiResponseClass::Auth);
+    let auth = classify_vrchat_response(401);
+    assert_eq!(auth.class, VrchatResponseClass::Auth);
 
-    let forbidden = classify_api_response(403);
-    assert_eq!(forbidden.class, ApiResponseClass::ClientError);
+    let forbidden = classify_vrchat_response(403);
+    assert_eq!(forbidden.class, VrchatResponseClass::ClientError);
 
-    let classified = classify_api_response(429);
-    assert_eq!(classified.class, ApiResponseClass::RateLimited);
+    let classified = classify_vrchat_response(429);
+    assert_eq!(classified.class, VrchatResponseClass::RateLimited);
     assert_eq!(
         serde_json::to_value(classified).unwrap(),
         json!({ "class": "rateLimited" })
@@ -254,7 +260,7 @@ fn query_request_without_body_does_not_emit_body_option() {
     request.method = Some("DELETE".to_string());
     request.query_params = Some(HashMap::from([("objectId".to_string(), json!("fav_1"))]));
 
-    let request = build_web_execute_request(request, ApiScope::Vrchat).unwrap();
+    let request = build_web_execute_request(request, VrchatScope::Vrchat).unwrap();
     assert!(request.body.is_none());
     assert_eq!(request.method, "DELETE");
 }

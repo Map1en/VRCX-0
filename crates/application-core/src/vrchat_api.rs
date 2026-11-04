@@ -3,14 +3,8 @@ use crate::sync::RuntimeSyncEngine;
 use crate::web_client::WebClient;
 use crate::{Result, RuntimeOperationStatus};
 
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
-pub use vrcx_0_contracts::vrchat_api::{VrchatResponse as VrchatApiResponse, VrchatScope};
-
-pub use vrcx_0_contracts::vrchat_api::VrchatResponseClass as ApiResponseClass;
-
-pub fn classify_api_response(status: i32) -> vrcx_0_contracts::vrchat_api::VrchatResponsePolicy {
-    vrcx_0_contracts::vrchat_api::classify_vrchat_response(status)
-}
+pub use vrcx_0_contracts::vrchat_api::VrchatScope;
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatResponse};
 
 pub fn normalize_text(value: impl AsRef<str>) -> String {
     value.as_ref().trim().to_string()
@@ -31,7 +25,7 @@ pub async fn execute_api_command(
     command: (&str, impl Into<String>),
     input: VrchatRequest,
     scope: VrchatScope,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let (command, detail) = command;
     diagnostics.record_command(command, RuntimeOperationStatus::Running, detail);
     let result = web.execute_api(input, scope).await;

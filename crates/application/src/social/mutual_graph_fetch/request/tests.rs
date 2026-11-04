@@ -1,10 +1,10 @@
 use std::sync::Mutex;
 
 use serde_json::json;
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_realtime::test_support::runtime_with_active_session;
 use vrcx_0_application_realtime::{RealtimeWsMessagePayload, SyntheticFriendEventOutcome};
 use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use super::*;
 use crate::remote::VrchatRequestFuture;
@@ -85,7 +85,7 @@ impl<F: Fn() + Send + Sync> VrchatRequestPort for ResponsePort<F> {
     fn send(&self, _input: VrchatRequest, _scope: VrchatScope) -> VrchatRequestFuture<'_> {
         Box::pin(async {
             (self.before_response)();
-            Ok(VrchatApiResponse {
+            Ok(VrchatResponse {
                 status: self.status,
                 data: self.rows.to_string(),
             })

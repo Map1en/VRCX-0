@@ -1,7 +1,7 @@
 use vrcx_0_application::remote::VrchatApiRuntime;
-use vrcx_0_application_core::vrchat_api::{VrchatApiResponse, VrchatScope};
+use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::Result;
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatResponse};
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 use vrcx_0_vrchat_client::auth::{
     current_user_get_input, file_analysis_get_input, visits_get_input,
@@ -75,7 +75,7 @@ impl DesktopVrchatRemoteFacade {
         }
     }
 
-    pub async fn current_user(&self) -> Result<VrchatApiResponse> {
+    pub async fn current_user(&self) -> Result<VrchatResponse> {
         self.execute(
             "app__vrchat_auth_current_user_get",
             "Getting current VRChat user.",
@@ -85,7 +85,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn visits(&self) -> Result<VrchatApiResponse> {
+    pub async fn visits(&self) -> Result<VrchatResponse> {
         self.execute(
             "app__vrchat_auth_visits_get",
             "Getting online visits.",
@@ -100,7 +100,7 @@ impl DesktopVrchatRemoteFacade {
         file_id: String,
         version: i64,
         variant: String,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (file_id, request) = file_analysis_get_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
             file_id,
@@ -116,7 +116,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn user_profile(&self, user_id: String, as_self: bool) -> Result<VrchatApiResponse> {
+    pub async fn user_profile(&self, user_id: String, as_self: bool) -> Result<VrchatResponse> {
         let (user_id, request) =
             profile_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), user_id, as_self)?;
         let response = self
@@ -131,7 +131,7 @@ impl DesktopVrchatRemoteFacade {
         Ok(response)
     }
 
-    pub async fn licensed_avatars(&self, n: i32, offset: i32) -> Result<VrchatApiResponse> {
+    pub async fn licensed_avatars(&self, n: i32, offset: i32) -> Result<VrchatResponse> {
         self.execute(
             "app__vrchat_economy_licensed_avatars_get",
             "Getting licensed avatars.",
@@ -146,7 +146,7 @@ impl DesktopVrchatRemoteFacade {
         buyer_id: String,
         n: i32,
         offset: i32,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (buyer_id, request) =
             purchases_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), buyer_id, n, offset)?;
         self.execute(
@@ -158,7 +158,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn economy_transactions(&self, user_id: String, n: i32) -> Result<VrchatApiResponse> {
+    pub async fn economy_transactions(&self, user_id: String, n: i32) -> Result<VrchatResponse> {
         let (user_id, request) =
             transactions_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), user_id, n)?;
         self.execute(
@@ -170,7 +170,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn economy_balance(&self, user_id: String) -> Result<VrchatApiResponse> {
+    pub async fn economy_balance(&self, user_id: String) -> Result<VrchatResponse> {
         let (user_id, request) = balance_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), user_id)?;
         self.execute(
             "app__vrchat_economy_balance_get",
@@ -181,7 +181,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn economy_store(&self, store_id: String) -> Result<VrchatApiResponse> {
+    pub async fn economy_store(&self, store_id: String) -> Result<VrchatResponse> {
         let (store_id, request) = store_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), store_id)?;
         self.execute(
             "app__vrchat_economy_store_get",
@@ -192,7 +192,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn account_standing(&self) -> Result<VrchatApiResponse> {
+    pub async fn account_standing(&self) -> Result<VrchatResponse> {
         self.execute(
             "app__vrchat_current_user_account_standing_get",
             "Getting current user account standing.",
@@ -202,7 +202,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn user_represented_group(&self, user_id: String) -> Result<VrchatApiResponse> {
+    pub async fn user_represented_group(&self, user_id: String) -> Result<VrchatResponse> {
         let (user_id, request) =
             user_represented_group_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), user_id)?;
         self.execute(
@@ -214,7 +214,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn friend_status(&self, user_id: String) -> Result<VrchatApiResponse> {
+    pub async fn friend_status(&self, user_id: String) -> Result<VrchatResponse> {
         let (user_id, request) =
             friend_status_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), user_id)?;
         self.execute(
@@ -234,7 +234,7 @@ impl DesktopVrchatRemoteFacade {
         owner_id: String,
         user_id: String,
         tag: String,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         self.execute(
             "app__vrchat_favorite_worlds_get",
             format!("Getting favorite worlds offset {offset}."),
@@ -256,7 +256,7 @@ impl DesktopVrchatRemoteFacade {
         n: i32,
         offset: i32,
         owner_id: String,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         self.execute(
             "app__vrchat_favorite_groups_get",
             format!("Getting favorite groups offset {offset}."),
@@ -266,7 +266,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn avatar_gallery(&self, avatar_id: String) -> Result<VrchatApiResponse> {
+    pub async fn avatar_gallery(&self, avatar_id: String) -> Result<VrchatResponse> {
         let (avatar_id, request) =
             avatar_gallery_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), avatar_id)?;
         self.execute(
@@ -288,7 +288,7 @@ impl DesktopVrchatRemoteFacade {
         sort: AvatarListSort,
         order: QueryOrder,
         release_status: ReleaseStatusFilter,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (display_user, request) = avatar_list_by_user_get_input(AvatarListByUserGetInput {
             endpoint: VRCHAT_API_DEFAULT_ENDPOINT.into(),
             user_id,
@@ -308,7 +308,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn avatar_styles(&self) -> Result<VrchatApiResponse> {
+    pub async fn avatar_styles(&self) -> Result<VrchatResponse> {
         self.execute(
             "app__vrchat_avatar_styles_get",
             "Getting avatar styles.",
@@ -322,7 +322,7 @@ impl DesktopVrchatRemoteFacade {
         &self,
         world_id: String,
         instance_id: String,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (world_id, instance_id, request) =
             instance_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), world_id, instance_id)?;
         self.execute(
@@ -339,7 +339,7 @@ impl DesktopVrchatRemoteFacade {
         world_id: String,
         instance_id: String,
         short_name: String,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (world_id, instance_id, request) = instance_short_name_get_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
             world_id,
@@ -355,10 +355,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn instance_create(
-        &self,
-        params: InstanceCreateRequest,
-    ) -> Result<VrchatApiResponse> {
+    pub async fn instance_create(&self, params: InstanceCreateRequest) -> Result<VrchatResponse> {
         self.execute(
             "app__vrchat_instance_create",
             "Creating instance.",
@@ -373,7 +370,7 @@ impl DesktopVrchatRemoteFacade {
         world_id: String,
         instance_id: String,
         short_name: String,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (world_id, instance_id, request) = instance_self_invite_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
             world_id,
@@ -393,7 +390,7 @@ impl DesktopVrchatRemoteFacade {
         &self,
         location: String,
         hard_close: bool,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (location, request) =
             instance_close_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), location, hard_close)?;
         self.execute(
@@ -409,7 +406,7 @@ impl DesktopVrchatRemoteFacade {
         &self,
         location: String,
         calendar_entry_id: Option<String>,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (location, request) = instance_calendar_link_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
             location,
@@ -428,7 +425,7 @@ impl DesktopVrchatRemoteFacade {
         &self,
         location: String,
         display_name: Option<String>,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (location, request) = instance_display_name_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
             location,
@@ -443,7 +440,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn instance_count(&self) -> Result<VrchatApiResponse> {
+    pub async fn instance_count(&self) -> Result<VrchatResponse> {
         self.execute(
             "app__vrchat_instance_count_get",
             "Getting the active instance count.",
@@ -457,7 +454,7 @@ impl DesktopVrchatRemoteFacade {
         &self,
         params: WorldSearchParams,
         option: Option<String>,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         self.execute(
             "app__vrchat_search_worlds_get",
             "Searching worlds.",
@@ -467,7 +464,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn search_users(&self, params: UserSearchParams) -> Result<VrchatApiResponse> {
+    pub async fn search_users(&self, params: UserSearchParams) -> Result<VrchatResponse> {
         self.execute(
             "app__vrchat_search_users_get",
             "Searching users.",
@@ -477,7 +474,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn search_groups(&self, params: GroupSearchParams) -> Result<VrchatApiResponse> {
+    pub async fn search_groups(&self, params: GroupSearchParams) -> Result<VrchatResponse> {
         self.execute(
             "app__vrchat_search_groups_get",
             "Searching groups.",
@@ -487,10 +484,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn search_groups_strict(
-        &self,
-        params: GroupSearchParams,
-    ) -> Result<VrchatApiResponse> {
+    pub async fn search_groups_strict(&self, params: GroupSearchParams) -> Result<VrchatResponse> {
         self.execute(
             "app__vrchat_search_groups_strict_get",
             "Strict searching groups.",
@@ -500,10 +494,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn search_instance_short_name(
-        &self,
-        short_name: String,
-    ) -> Result<VrchatApiResponse> {
+    pub async fn search_instance_short_name(&self, short_name: String) -> Result<VrchatResponse> {
         let (short_name, request) =
             search_instance_short_name_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), short_name)?;
         self.execute(
@@ -515,7 +506,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn group_calendar(&self, group_id: String) -> Result<VrchatApiResponse> {
+    pub async fn group_calendar(&self, group_id: String) -> Result<VrchatResponse> {
         let (group_id, request) =
             group_calendar_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), group_id)?;
         self.execute(
@@ -527,10 +518,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn following_calendars(
-        &self,
-        params: CalendarListParams,
-    ) -> Result<VrchatApiResponse> {
+    pub async fn following_calendars(&self, params: CalendarListParams) -> Result<VrchatResponse> {
         self.execute(
             "app__vrchat_tools_following_calendars_get",
             "Getting followed group calendars.",
@@ -545,7 +533,7 @@ impl DesktopVrchatRemoteFacade {
         group_id: String,
         event_id: String,
         is_following: bool,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (event_id, request) = group_event_follow_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
             group_id,
@@ -565,7 +553,7 @@ impl DesktopVrchatRemoteFacade {
         &self,
         group_id: String,
         event: GroupCalendarEventMutation,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (group_id, request) =
             group_event_create_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), group_id, event)?;
         self.execute(
@@ -582,7 +570,7 @@ impl DesktopVrchatRemoteFacade {
         group_id: String,
         event_id: String,
         event: GroupCalendarEventMutation,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (event_id, request) = group_event_update_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
             group_id,
@@ -602,7 +590,7 @@ impl DesktopVrchatRemoteFacade {
         &self,
         group_id: String,
         event_id: String,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (event_id, request) =
             group_event_delete_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), group_id, event_id)?;
         self.execute(
@@ -618,7 +606,7 @@ impl DesktopVrchatRemoteFacade {
         &self,
         group_id: String,
         event_id: String,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (event_id, request) =
             group_calendar_event_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), group_id, event_id)?;
         self.execute(
@@ -634,7 +622,7 @@ impl DesktopVrchatRemoteFacade {
         &self,
         group_id: String,
         event_id: String,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (event_id, request) =
             group_calendar_ics_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), group_id, event_id)?;
         self.execute(
@@ -650,7 +638,7 @@ impl DesktopVrchatRemoteFacade {
         &self,
         target_user_id: String,
         note: String,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (target_user_id, request) =
             user_note_save_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), target_user_id, note)?;
         self.execute(
@@ -668,7 +656,7 @@ impl DesktopVrchatRemoteFacade {
         category: String,
         reason: String,
         description: String,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (user_id, request) = user_report_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
             user_id,
@@ -691,7 +679,7 @@ impl DesktopVrchatRemoteFacade {
         offset: i32,
         closed_only: bool,
         report_type: Option<ModerationReportType>,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (current_user_id, request) = moderation_reports_get_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
             current_user_id,
@@ -713,7 +701,7 @@ impl DesktopVrchatRemoteFacade {
         &self,
         current_user_id: String,
         message_type: InviteMessageType,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (current_user_id, request) = invite_messages_get_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
             current_user_id,
@@ -734,7 +722,7 @@ impl DesktopVrchatRemoteFacade {
         message_type: InviteMessageType,
         slot: i32,
         message: String,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (slot, request) = invite_message_edit_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
             current_user_id,
@@ -755,7 +743,7 @@ impl DesktopVrchatRemoteFacade {
         &self,
         receiver_user_id: String,
         params: RequestInviteRequest,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (receiver_user_id, request) = request_invite_send_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
             receiver_user_id,
@@ -775,7 +763,7 @@ impl DesktopVrchatRemoteFacade {
         receiver_user_id: String,
         params: RequestInviteRequest,
         image_data: String,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (receiver_user_id, request) = request_invite_photo_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
             receiver_user_id,
@@ -797,7 +785,7 @@ impl DesktopVrchatRemoteFacade {
         user_id: String,
         emoji_id: String,
         inventory_item_id: String,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (user_id, request) = boop_send_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
             user_id,
@@ -813,7 +801,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn media_files(&self, params: MediaFileListParams) -> Result<VrchatApiResponse> {
+    pub async fn media_files(&self, params: MediaFileListParams) -> Result<VrchatResponse> {
         self.execute(
             "app__vrchat_media_files_get",
             "Getting media files.",
@@ -823,7 +811,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn delete_media_file(&self, file_id: String) -> Result<VrchatApiResponse> {
+    pub async fn delete_media_file(&self, file_id: String) -> Result<VrchatResponse> {
         let detail = format!("Deleting media file {file_id}.");
         let request = file_delete_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), file_id)?;
         self.execute(
@@ -839,7 +827,7 @@ impl DesktopVrchatRemoteFacade {
         &self,
         avatar_id: String,
         file_ids: Vec<String>,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let detail = format!("Reordering avatar gallery {avatar_id}.");
         let request =
             gallery_file_order_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), avatar_id, file_ids)?;
@@ -852,7 +840,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn upload_gallery_image(&self, image_data: String) -> Result<VrchatApiResponse> {
+    pub async fn upload_gallery_image(&self, image_data: String) -> Result<VrchatResponse> {
         let request = tagged_image_upload_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
             image_data,
@@ -871,7 +859,7 @@ impl DesktopVrchatRemoteFacade {
         &self,
         image_data: String,
         avatar_id: String,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let request = avatar_gallery_image_upload_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
             image_data,
@@ -885,7 +873,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn upload_vrc_plus_icon(&self, image_data: String) -> Result<VrchatApiResponse> {
+    pub async fn upload_vrc_plus_icon(&self, image_data: String) -> Result<VrchatResponse> {
         let request = tagged_image_upload_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
             image_data,
@@ -904,7 +892,7 @@ impl DesktopVrchatRemoteFacade {
         &self,
         image_data: String,
         params: EmojiUploadParams,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let request = image_upload_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
             "file/image",
@@ -920,7 +908,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn upload_sticker(&self, image_data: String) -> Result<VrchatApiResponse> {
+    pub async fn upload_sticker(&self, image_data: String) -> Result<VrchatResponse> {
         let request = sticker_upload_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), image_data)?;
         self.execute_media_upload(
             "app__vrchat_media_sticker_upload",
@@ -935,7 +923,7 @@ impl DesktopVrchatRemoteFacade {
         image_data: String,
         crop_white_border: bool,
         params: PrintUploadParams,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let request = print_upload_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
             image_data,
@@ -953,7 +941,7 @@ impl DesktopVrchatRemoteFacade {
     pub async fn upload_media_asset(
         &self,
         input: MediaAssetUploadRequest,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let (asset_kind, request) = asset_upload_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), input)?;
         self.execute_media_upload(
             "app__vrchat_media_asset_upload",
@@ -963,7 +951,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn prints(&self, user_id: String, n: i32) -> Result<VrchatApiResponse> {
+    pub async fn prints(&self, user_id: String, n: i32) -> Result<VrchatResponse> {
         let detail = format!("Getting prints for user {user_id}.");
         let request = prints_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), user_id, n)?;
         self.execute(
@@ -975,7 +963,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn print(&self, print_id: String) -> Result<VrchatApiResponse> {
+    pub async fn print(&self, print_id: String) -> Result<VrchatResponse> {
         let detail = format!("Getting print {print_id}.");
         let request = print_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), print_id)?;
         self.execute(
@@ -987,7 +975,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn delete_print(&self, print_id: String) -> Result<VrchatApiResponse> {
+    pub async fn delete_print(&self, print_id: String) -> Result<VrchatResponse> {
         self.media.ensure_print_deletable(&print_id)?;
         let detail = format!("Deleting print {print_id}.");
         let request = print_delete_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), print_id)?;
@@ -1000,7 +988,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn inventory_items(&self, params: InventoryListParams) -> Result<VrchatApiResponse> {
+    pub async fn inventory_items(&self, params: InventoryListParams) -> Result<VrchatResponse> {
         self.execute(
             "app__vrchat_media_inventory_items_get",
             "Getting inventory items.",
@@ -1013,7 +1001,7 @@ impl DesktopVrchatRemoteFacade {
     pub async fn inventory_template(
         &self,
         inventory_template_id: String,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let detail = format!("Getting inventory template {inventory_template_id}.");
         let request = inventory_template_get_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
@@ -1032,7 +1020,7 @@ impl DesktopVrchatRemoteFacade {
         &self,
         inventory_id: String,
         equip_slot: ProfileDecorationEquipSlot,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let detail = format!("Equipping profile decoration {inventory_id}.");
         let request = inventory_item_equip_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
@@ -1051,7 +1039,7 @@ impl DesktopVrchatRemoteFacade {
     pub async fn unequip_profile_decoration(
         &self,
         equip_slot: ProfileDecorationEquipSlot,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let detail = format!(
             "Unequipping profile decoration slot {}.",
             equip_slot.as_str()
@@ -1070,7 +1058,7 @@ impl DesktopVrchatRemoteFacade {
         &self,
         user_id: String,
         inventory_id: String,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let detail = format!("Getting inventory item {inventory_id}.");
         let request = user_inventory_item_get_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
@@ -1090,7 +1078,7 @@ impl DesktopVrchatRemoteFacade {
         &self,
         inventory_id: String,
         params: InventoryItemUpdateRequest,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let detail = format!("Updating inventory item {inventory_id}.");
         let request = inventory_item_update_input(
             VRCHAT_API_DEFAULT_ENDPOINT.into(),
@@ -1108,10 +1096,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn consume_inventory_bundle(
-        &self,
-        inventory_id: String,
-    ) -> Result<VrchatApiResponse> {
+    pub async fn consume_inventory_bundle(&self, inventory_id: String) -> Result<VrchatResponse> {
         let detail = format!("Consuming inventory bundle {inventory_id}.");
         let request =
             inventory_bundle_consume_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), inventory_id)?;
@@ -1124,7 +1109,7 @@ impl DesktopVrchatRemoteFacade {
         .await
     }
 
-    pub async fn redeem_reward(&self, code: String) -> Result<VrchatApiResponse> {
+    pub async fn redeem_reward(&self, code: String) -> Result<VrchatResponse> {
         let request = reward_redeem_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), code)?;
         self.execute(
             "app__vrchat_media_reward_redeem",
@@ -1140,7 +1125,7 @@ impl DesktopVrchatRemoteFacade {
         command: &str,
         detail: impl Into<String>,
         request: VrchatRequest,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let request = self.media.prepare_media_upload_request(request)?;
         self.execute(command, detail, request, VrchatScope::VrchatMedia)
             .await
@@ -1152,7 +1137,7 @@ impl DesktopVrchatRemoteFacade {
         detail: impl Into<String>,
         request: VrchatRequest,
         scope: VrchatScope,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         self.api.execute(command, detail, request, scope).await
     }
 }

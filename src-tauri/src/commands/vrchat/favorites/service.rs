@@ -6,7 +6,7 @@ use vrcx_0_application_core::vrchat_api::require_text;
 use crate::commands::blocking::run_blocking;
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use super::types::{
     LocalFavoriteGroupInput, LocalFavoriteGroupRenameInput, LocalFavoriteGroupReorderInput,
@@ -20,7 +20,7 @@ use super::types::{
 pub async fn app__vrchat_favorite_worlds_get(
     state: State<'_, AppState>,
     input: VrchatFavoriteWorldsInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -40,7 +40,7 @@ pub async fn app__vrchat_favorite_worlds_get(
 pub async fn app__vrchat_favorite_groups_get(
     state: State<'_, AppState>,
     input: VrchatFavoriteGroupsInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -54,7 +54,7 @@ pub async fn app__vrchat_favorite_groups_get(
 pub async fn app__vrchat_favorite_add(
     state: State<'_, AppState>,
     input: VrchatFavoriteAddInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     Ok(state
         .runtime_host()
         .favorite_add_remote(vrcx_0_application::favorites::FavoriteRemoteAddInput {
@@ -70,7 +70,7 @@ pub async fn app__vrchat_favorite_add(
 pub async fn app__vrchat_favorite_delete(
     state: State<'_, AppState>,
     input: VrchatFavoriteDeleteInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     Ok(state
         .runtime_host()
         .favorite_delete_remote(vrcx_0_application::favorites::FavoriteRemoteDeleteInput {
@@ -84,7 +84,7 @@ pub async fn app__vrchat_favorite_delete(
 pub async fn app__vrchat_favorite_group_save(
     state: State<'_, AppState>,
     input: VrchatFavoriteGroupSaveInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     Ok(state
         .runtime_host()
         .favorite_group_save_remote(
@@ -103,7 +103,7 @@ pub async fn app__vrchat_favorite_group_save(
 pub async fn app__vrchat_favorite_group_clear(
     state: State<'_, AppState>,
     input: VrchatFavoriteGroupClearInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     Ok(state
         .runtime_host()
         .favorite_group_clear_remote(

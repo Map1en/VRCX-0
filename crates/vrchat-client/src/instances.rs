@@ -334,7 +334,10 @@ mod tests {
             Some("invite/myself/to/wrld_123:12345~hidden(usr_owner)")
         );
         assert_eq!(request.method.as_deref(), Some("POST"));
-        assert_eq!(request.body, crate::http_api::HttpApiRequestBody::Empty);
+        assert_eq!(
+            request.body,
+            vrcx_0_contracts::vrchat_api::VrchatRequestBody::Empty
+        );
         assert_eq!(
             request
                 .query_params

@@ -1,9 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use chrono::{DateTime, Utc};
-use vrcx_0_application_core::vrchat_api::{
-    classify_api_response, ApiResponseClass, VrchatApiResponse, VrchatScope,
-};
+use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::Result;
 use vrcx_0_application_realtime::RealtimeHostRuntime;
 use vrcx_0_contracts::feed_live::FeedLiveEntry;
@@ -11,8 +9,10 @@ pub use vrcx_0_contracts::profile_bio::{
     ProfileBioObservation, ProfileBioRecord, PROFILE_BIO_SCAN_INTERVAL, PROFILE_BIO_SCAN_MIN_AGE,
     PROFILE_BIO_SCAN_PAUSE,
 };
-use vrcx_0_contracts::vrchat_api::VrchatJsonResponse;
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_contracts::vrchat_api::{
+    classify_vrchat_response, VrchatJsonResponse, VrchatRequest, VrchatResponse,
+    VrchatResponseClass,
+};
 use vrcx_0_core::time::iso_millis;
 use vrcx_0_core::OwnerId;
 
@@ -35,8 +35,8 @@ pub trait ProfileBioRemoteRequests: Send + Sync {
     fn profile(&self, endpoint: String, user_id: String) -> Result<VrchatRequest>;
 }
 
-fn observation_from_response(response: &VrchatApiResponse) -> Option<ProfileBioObservation> {
-    if classify_api_response(response.status).class != ApiResponseClass::Ok {
+fn observation_from_response(response: &VrchatResponse) -> Option<ProfileBioObservation> {
+    if classify_vrchat_response(response.status).class != VrchatResponseClass::Ok {
         return None;
     }
     ProfileBioObservation::from_profile(&VrchatJsonResponse::from(response).json)
@@ -100,7 +100,7 @@ pub fn observe_profile_response(
     store: &dyn ProfileBioStore,
     realtime: &Arc<RealtimeHostRuntime>,
     owner: &OwnerId,
-    response: &VrchatApiResponse,
+    response: &VrchatResponse,
     now: &str,
 ) -> Result<Option<ProfileBioOutcome>> {
     let Some(observation) = observation_from_response(response) else {
@@ -181,13 +181,13 @@ pub async fn scan_next_profile_bio(
         .profile(deps.endpoint.clone(), user_id.clone())?;
     let response = deps.remote.send(request, VrchatScope::Vrchat).await?;
     let now_iso = iso_millis(now);
-    let observation = match classify_api_response(response.status).class {
-        ApiResponseClass::Ok => observation_from_response(&response),
-        ApiResponseClass::ClientError => None,
-        ApiResponseClass::Auth
-        | ApiResponseClass::RateLimited
-        | ApiResponseClass::ServerError
-        | ApiResponseClass::Unknown => {
+    let observation = match classify_vrchat_response(response.status).class {
+        VrchatResponseClass::Ok => observation_from_response(&response),
+        VrchatResponseClass::ClientError => None,
+        VrchatResponseClass::Auth
+        | VrchatResponseClass::RateLimited
+        | VrchatResponseClass::ServerError
+        | VrchatResponseClass::Unknown => {
             deps.pacer.pause(now);
             return Ok(ProfileBioScanOutcome::Throttled {
                 status: response.status,

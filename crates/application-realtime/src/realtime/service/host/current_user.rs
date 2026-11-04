@@ -3,7 +3,7 @@ use std::sync::Arc;
 use serde_json::Value;
 use tokio::sync::watch;
 use vrcx_0_application_core::{Error, Result};
-use vrcx_0_contracts::vrchat_api::VrchatScope as ApiScope;
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 
 use crate::realtime::RealtimeCurrentUserOutput;
 
@@ -187,7 +187,7 @@ impl RealtimeHostRuntime {
                 self.deps
                     .remote_requests
                     .current_user(active.session.endpoint.clone())?,
-                ApiScope::Vrchat,
+                VrchatScope::Vrchat,
             )
             .await?;
         if !(200..300).contains(&response.status) {

@@ -8,12 +8,12 @@ use std::sync::{
 use std::time::Duration;
 
 use serde_json::Value;
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 pub use vrcx_0_application_core::PrintAutoCleanupEvent;
 pub use vrcx_0_application_core::PrintCleanupTrigger;
 use vrcx_0_application_core::RuntimeAuthScope;
 use vrcx_0_application_core::{PrintCleanupInputSink, RuntimeEventBus, TaskSupervisor};
 pub use vrcx_0_application_realtime::is_print_created_content_refresh;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use super::favorites::{
     read_auto_delete_old_prints_enabled, read_auto_delete_prints_limit,
@@ -32,7 +32,7 @@ const PRINT_CLEANUP_DEBOUNCE: Duration = Duration::from_millis(2500);
 const PRINT_CLEANUP_LIST_COUNT: i32 = 100;
 const PRINT_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
-pub type PrintRemoteFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
+pub type PrintRemoteFuture<'a> = BoxFuture<'a, Result<VrchatResponse>>;
 
 pub trait PrintRemote: Send + Sync {
     fn list_prints<'a>(

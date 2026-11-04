@@ -14,7 +14,6 @@ use vrcx_0_application::social::{
 };
 use vrcx_0_application_activity::activity_page::{ActivityPageBuildInput, ActivityPageView};
 use vrcx_0_application_activity::ActivityRouter;
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::{
     AvatarCache, FavoriteEntityKind, FileCache, Result, RuntimeAuthScope, TaskSupervisor,
     WebClient, WorldCache,
@@ -57,6 +56,7 @@ use vrcx_0_contracts::mutual_graph::MutualGraphSnapshotOutput;
 use vrcx_0_contracts::notifications::{NotificationListItemOutput, NotificationListQueryInput};
 use vrcx_0_contracts::player_list::InstanceActivityRowOutput;
 use vrcx_0_contracts::profile_bio::ProfileBioOutput;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 use vrcx_0_contracts::{
     AvatarCacheOutput, AvatarTagInput, AvatarTagOutput, AvatarTagsPatchInput,
     AvatarTimeSpentOutput, AvatarUsageRow, AvatarWearSegment, ConfigReadEntry, ConfigWriteEntry,
@@ -206,7 +206,7 @@ impl LocalDataRuntime {
             .map(|avatar| avatar.map(|value| RawJson::from(value.as_ref().clone())))
     }
 
-    pub async fn world_get(&self, input: WorldGetInput) -> Result<VrchatApiResponse> {
+    pub async fn world_get(&self, input: WorldGetInput) -> Result<VrchatResponse> {
         let auth_scope = self.auth_scope.snapshot();
         let endpoint = if auth_scope.endpoint.is_empty() {
             VRCHAT_API_DEFAULT_ENDPOINT

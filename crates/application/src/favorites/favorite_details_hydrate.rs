@@ -7,10 +7,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::sync::Mutex as AsyncMutex;
 use vrcx_0_application_core::{
-    vrchat_api::{normalize_text, VrchatApiResponse},
-    AvatarCache, Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, TaskSupervisor,
-    WorldCache,
+    vrchat_api::normalize_text, AvatarCache, Error, Result, RuntimeAuthScope,
+    RuntimeAuthScopeSnapshot, TaskSupervisor, WorldCache,
 };
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 use vrcx_0_core::json::RawJson;
 use vrcx_0_core::vrchat_json::response_error_message;
 
@@ -568,7 +568,7 @@ async fn fetch_favorite_avatar_entities(
 
 async fn execute_json(
     deps: &FavoriteDetailsHydrateDeps<'_>,
-    response: super::FavoriteRemoteFuture<'_, VrchatApiResponse>,
+    response: super::FavoriteRemoteFuture<'_, VrchatResponse>,
 ) -> Result<(i32, Value)> {
     GATE.ensure_matches(deps.auth_scope, &deps.expected_scope)?;
     let response = response.await?;
@@ -580,7 +580,7 @@ async fn execute_json(
 
 async fn execute_page(
     deps: &FavoriteDetailsHydrateDeps<'_>,
-    response: super::FavoriteRemoteFuture<'_, VrchatApiResponse>,
+    response: super::FavoriteRemoteFuture<'_, VrchatResponse>,
     action: &str,
 ) -> Result<Vec<Value>> {
     let (status, payload) = execute_json(deps, response).await?;

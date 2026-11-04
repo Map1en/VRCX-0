@@ -3,8 +3,8 @@ use std::time::Duration;
 use serde_json::Value;
 use tokio::sync::Semaphore;
 
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::{Error, Result};
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use super::service::{build_member_request, execute_group_api, GroupApiDeps};
 use super::types::VrchatGroupUserInput;
@@ -55,7 +55,7 @@ pub async fn get_member_role_ids(
     }
 }
 
-fn member_role_ids(response: &VrchatApiResponse) -> Option<Vec<String>> {
+fn member_role_ids(response: &VrchatResponse) -> Option<Vec<String>> {
     if !(200..300).contains(&response.status) {
         return None;
     }
@@ -178,7 +178,7 @@ mod tests {
                 self.max_in_flight.fetch_max(in_flight, Ordering::SeqCst);
                 tokio::time::sleep(Duration::from_millis(100)).await;
                 self.in_flight.fetch_sub(1, Ordering::SeqCst);
-                response.map(|(status, data)| VrchatApiResponse { status, data })
+                response.map(|(status, data)| VrchatResponse { status, data })
             })
         }
     }

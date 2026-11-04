@@ -1,6 +1,7 @@
 use super::*;
-use crate::http_api::{build_web_execute_request, ApiScope};
+use crate::http_api::build_web_execute_request;
 use url::Url;
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 
 const ENDPOINT: &str = "https://api.vrchat.cloud/api/1";
 
@@ -41,7 +42,7 @@ fn avatar_list_by_user_prefers_user_over_user_id() {
             .unwrap();
 
     assert_eq!(display, "display_name");
-    let request = build_web_execute_request(input, ApiScope::Vrchat).unwrap();
+    let request = build_web_execute_request(input, VrchatScope::Vrchat).unwrap();
     let params = query_pairs(&request.url);
     assert_eq!(params.get("user"), Some(&"display_name".to_string()));
     assert_eq!(params.get("userId"), None);
@@ -53,7 +54,7 @@ fn avatar_list_by_user_falls_back_to_user_id_when_user_blank() {
         avatar_list_by_user_get_input(list_by_user_input(" usr_id_value ", "  ")).unwrap();
 
     assert_eq!(display, "usr_id_value");
-    let request = build_web_execute_request(input, ApiScope::Vrchat).unwrap();
+    let request = build_web_execute_request(input, VrchatScope::Vrchat).unwrap();
     let params = query_pairs(&request.url);
     assert_eq!(params.get("userId"), Some(&"usr_id_value".to_string()));
     assert_eq!(params.get("user"), None);
@@ -76,7 +77,7 @@ fn avatar_moderation_send_uses_block_type() {
         avatar_moderation_send_input(ENDPOINT.into(), " avtr_test ".into()).unwrap();
 
     assert_eq!(avatar_id, "avtr_test");
-    let request = build_web_execute_request(input, ApiScope::Vrchat).unwrap();
+    let request = build_web_execute_request(input, VrchatScope::Vrchat).unwrap();
     assert_eq!(
         request.body.as_deref(),
         Some(r#"{"avatarModerationType":"block","targetAvatarId":"avtr_test"}"#)
@@ -89,7 +90,7 @@ fn avatar_moderation_delete_uses_block_type_and_query_params() {
         avatar_moderation_delete_input(ENDPOINT.into(), " avtr_test ".into()).unwrap();
 
     assert_eq!(avatar_id, "avtr_test");
-    let request = build_web_execute_request(input, ApiScope::Vrchat).unwrap();
+    let request = build_web_execute_request(input, VrchatScope::Vrchat).unwrap();
     assert_eq!(request.method, "DELETE");
     let params = query_pairs(&request.url);
     assert_eq!(
@@ -118,7 +119,7 @@ fn avatar_save_uses_typed_params_as_body() {
     .unwrap()
     .1;
 
-    let request = build_web_execute_request(input, ApiScope::Vrchat).unwrap();
+    let request = build_web_execute_request(input, VrchatScope::Vrchat).unwrap();
     assert_eq!(
         request.body.as_deref(),
         Some(r#"{"id":"avtr_test","name":"New Name"}"#)
@@ -175,7 +176,7 @@ fn avatar_selection_sends_avatar_id_as_json() {
     ];
 
     for (path, input) in cases {
-        let request = build_web_execute_request(input, ApiScope::Vrchat).unwrap();
+        let request = build_web_execute_request(input, VrchatScope::Vrchat).unwrap();
 
         assert_eq!(request.method, "PUT");
         assert_eq!(
@@ -196,7 +197,7 @@ fn avatar_impostor_enqueue_sends_the_legacy_empty_json_body() {
         .unwrap()
         .1;
 
-    let request = build_web_execute_request(input, ApiScope::Vrchat).unwrap();
+    let request = build_web_execute_request(input, VrchatScope::Vrchat).unwrap();
 
     assert_eq!(request.method, "POST");
     assert_eq!(

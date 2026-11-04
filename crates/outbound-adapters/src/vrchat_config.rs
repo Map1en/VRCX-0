@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use vrcx_0_application::auth::{VrchatConfigFuture, VrchatConfigPort};
 use vrcx_0_application::remote::VrchatApiRuntime;
-use vrcx_0_application_core::vrchat_api::{VrchatApiResponse, VrchatScope};
+use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::WebClient;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 pub struct VrchatConfigAdapter {
     web: Arc<WebClient>,
@@ -17,7 +18,7 @@ impl VrchatConfigAdapter {
 }
 
 impl VrchatConfigPort for VrchatConfigAdapter {
-    fn cached(&self, endpoint: &str) -> Option<VrchatApiResponse> {
+    fn cached(&self, endpoint: &str) -> Option<VrchatResponse> {
         self.web.vrchat_config_snapshot(endpoint)
     }
 

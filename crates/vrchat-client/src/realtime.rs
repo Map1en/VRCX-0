@@ -64,10 +64,10 @@ impl Error {
     }
 }
 
-pub use vrcx_0_core::vrchat_endpoints::normalize_vrchat_websocket_endpoint as normalize_websocket_domain;
+use vrcx_0_core::vrchat_endpoints::normalize_vrchat_websocket_endpoint;
 
 pub fn validated_websocket_domain(value: &str) -> Result<String, Error> {
-    let domain = normalize_websocket_domain(value);
+    let domain = normalize_vrchat_websocket_endpoint(value);
     let url = Url::parse(&domain)
         .map_err(|error| Error::Other(format!("bad websocket domain: {error}")))?;
     if url.scheme() != "wss" || url.host_str() != Some(VRCHAT_WEBSOCKET_HOST) {

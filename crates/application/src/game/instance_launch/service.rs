@@ -8,8 +8,8 @@ use vrcx_0_core::{
     vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT,
 };
 
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::{Error, Result};
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use super::types::{
     InstanceActionGates, InstanceActionGatesBatchInput, InstanceActionGatesBatchOutput,
@@ -199,7 +199,7 @@ fn should_use_provided_launch_token(parsed: &ParsedLocation, short_name: &str) -
         )
 }
 
-fn require_api_success(response: VrchatApiResponse, fallback_message: &str) -> Result<Value> {
+fn require_api_success(response: VrchatResponse, fallback_message: &str) -> Result<Value> {
     let json = parse_launch_api_json(&response.data);
     if response.status >= 400 || json.get("error").is_some() {
         return Err(Error::Custom(unwrap_api_error_message(

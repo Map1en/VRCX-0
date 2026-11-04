@@ -4,7 +4,7 @@ use tauri::State;
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use super::types::{
     VrchatToolsCalendarEventInput, VrchatToolsCalendarGroupInput, VrchatToolsCalendarListInput,
@@ -19,7 +19,7 @@ use super::types::{
 pub async fn app__vrchat_tools_group_calendar_get(
     state: State<'_, AppState>,
     input: VrchatToolsCalendarGroupInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -33,7 +33,7 @@ pub async fn app__vrchat_tools_group_calendar_get(
 pub async fn app__vrchat_tools_following_calendars_get(
     state: State<'_, AppState>,
     input: VrchatToolsCalendarListInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -47,7 +47,7 @@ pub async fn app__vrchat_tools_following_calendars_get(
 pub async fn app__vrchat_tools_group_event_follow(
     state: State<'_, AppState>,
     input: VrchatToolsFollowGroupEventInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -61,7 +61,7 @@ pub async fn app__vrchat_tools_group_event_follow(
 pub async fn app__vrchat_tools_group_event_create(
     state: State<'_, AppState>,
     input: VrchatToolsGroupEventCreateInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -75,7 +75,7 @@ pub async fn app__vrchat_tools_group_event_create(
 pub async fn app__vrchat_tools_group_event_update(
     state: State<'_, AppState>,
     input: VrchatToolsGroupEventUpdateInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -89,7 +89,7 @@ pub async fn app__vrchat_tools_group_event_update(
 pub async fn app__vrchat_tools_group_event_delete(
     state: State<'_, AppState>,
     input: VrchatToolsCalendarEventInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -103,7 +103,7 @@ pub async fn app__vrchat_tools_group_event_delete(
 pub async fn app__vrchat_tools_group_calendar_event_get(
     state: State<'_, AppState>,
     input: VrchatToolsCalendarEventInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -117,7 +117,7 @@ pub async fn app__vrchat_tools_group_calendar_event_get(
 pub async fn app__vrchat_tools_group_calendar_ics_get(
     state: State<'_, AppState>,
     input: VrchatToolsCalendarEventInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -131,7 +131,7 @@ pub async fn app__vrchat_tools_group_calendar_ics_get(
 pub async fn app__vrchat_tools_user_note_save(
     state: State<'_, AppState>,
     input: VrchatToolsUserNoteSaveInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -145,7 +145,7 @@ pub async fn app__vrchat_tools_user_note_save(
 pub async fn app__vrchat_tools_user_report(
     state: State<'_, AppState>,
     input: VrchatToolsUserReportInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -164,7 +164,7 @@ pub async fn app__vrchat_tools_user_report(
 pub async fn app__vrchat_tools_moderation_reports_get(
     state: State<'_, AppState>,
     input: VrchatToolsModerationReportsInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -183,7 +183,7 @@ pub async fn app__vrchat_tools_moderation_reports_get(
 pub async fn app__vrchat_tools_invite_messages_get(
     state: State<'_, AppState>,
     input: VrchatToolsInviteMessagesInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -197,7 +197,7 @@ pub async fn app__vrchat_tools_invite_messages_get(
 pub async fn app__vrchat_tools_invite_message_edit(
     state: State<'_, AppState>,
     input: VrchatToolsInviteMessageEditInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()

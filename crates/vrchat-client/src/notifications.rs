@@ -4,9 +4,8 @@ use serde_json::{json, Value};
 
 use crate::http_api::{
     api_input, encode_path_segment, get_input, normalize_text, require_text, HttpApiError,
-    HttpApiRequestBody, HttpApiUpload,
 };
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatRequestBody, VrchatUpload};
 
 pub use vrcx_0_contracts::vrchat_requests::RequestInviteRequest;
 
@@ -182,7 +181,7 @@ pub fn invite_response_photo_input(
                 "invite/{}/response/photo",
                 encode_path_segment(&id)
             )),
-            body: HttpApiRequestBody::Upload(HttpApiUpload::LegacyImage {
+            body: VrchatRequestBody::Upload(VrchatUpload::LegacyImage {
                 post_data: Some(
                     json!({
                         "responseSlot": response_slot,
@@ -242,7 +241,7 @@ pub fn invite_photo_input(
                 "invite/{}/photo",
                 encode_path_segment(&receiver_user_id)
             )),
-            body: HttpApiRequestBody::Upload(HttpApiUpload::LegacyImage {
+            body: VrchatRequestBody::Upload(VrchatUpload::LegacyImage {
                 post_data: Some(params.to_string()),
                 image_data,
             }),
@@ -294,7 +293,7 @@ pub fn request_invite_photo_input(
                 "requestInvite/{}/photo",
                 encode_path_segment(&receiver_user_id)
             )),
-            body: HttpApiRequestBody::Upload(HttpApiUpload::LegacyImage {
+            body: VrchatRequestBody::Upload(VrchatUpload::LegacyImage {
                 post_data: Some(request_invite_params(params).to_string()),
                 image_data,
             }),

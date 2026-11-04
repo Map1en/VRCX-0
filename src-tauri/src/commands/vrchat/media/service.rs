@@ -10,7 +10,7 @@ use vrcx_0_application::media::{
 };
 use vrcx_0_application::remote::MediaAssetUploadRequest;
 use vrcx_0_application::social::{PrintFavoriteBulkResult, PrintFavoriteState};
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use super::types::{
     VrchatMediaAvatarGalleryImageUploadInput, VrchatMediaAvatarGalleryOrderInput,
@@ -28,7 +28,7 @@ async fn run_legacy_entity_image_upload(
     input: VrchatMediaLegacyImageUploadInput,
     kind: LegacyEntityImageKind,
     command: &str,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     Ok(state
         .runtime_host()
         .media()
@@ -50,7 +50,7 @@ async fn run_legacy_entity_image_upload(
 pub async fn app__vrchat_media_files_get(
     state: State<'_, AppState>,
     input: VrchatMediaFilesInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -64,7 +64,7 @@ pub async fn app__vrchat_media_files_get(
 pub async fn app__vrchat_media_file_delete(
     state: State<'_, AppState>,
     input: VrchatMediaFileIdInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -78,7 +78,7 @@ pub async fn app__vrchat_media_file_delete(
 pub async fn app__vrchat_media_gallery_image_upload(
     state: State<'_, AppState>,
     input: VrchatMediaImageUploadInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -92,7 +92,7 @@ pub async fn app__vrchat_media_gallery_image_upload(
 pub async fn app__vrchat_media_avatar_gallery_image_upload(
     state: State<'_, AppState>,
     input: VrchatMediaAvatarGalleryImageUploadInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -106,7 +106,7 @@ pub async fn app__vrchat_media_avatar_gallery_image_upload(
 pub async fn app__vrchat_media_avatar_gallery_order_set(
     state: State<'_, AppState>,
     input: VrchatMediaAvatarGalleryOrderInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -120,7 +120,7 @@ pub async fn app__vrchat_media_avatar_gallery_order_set(
 pub async fn app__vrchat_media_vrc_plus_icon_upload(
     state: State<'_, AppState>,
     input: VrchatMediaImageUploadInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -134,7 +134,7 @@ pub async fn app__vrchat_media_vrc_plus_icon_upload(
 pub async fn app__vrchat_media_emoji_upload(
     state: State<'_, AppState>,
     input: VrchatMediaEmojiUploadInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -148,7 +148,7 @@ pub async fn app__vrchat_media_emoji_upload(
 pub async fn app__vrchat_media_sticker_upload(
     state: State<'_, AppState>,
     input: VrchatMediaImageUploadInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -162,7 +162,7 @@ pub async fn app__vrchat_media_sticker_upload(
 pub async fn app__vrchat_media_print_upload(
     state: State<'_, AppState>,
     input: VrchatMediaPrintUploadInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -176,7 +176,7 @@ pub async fn app__vrchat_media_print_upload(
 pub async fn app__vrchat_media_asset_upload(
     state: State<'_, AppState>,
     input: MediaAssetUploadRequest,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -190,7 +190,7 @@ pub async fn app__vrchat_media_asset_upload(
 pub async fn app__vrchat_media_prints_get(
     state: State<'_, AppState>,
     input: VrchatMediaPrintsInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -204,7 +204,7 @@ pub async fn app__vrchat_media_prints_get(
 pub async fn app__vrchat_media_print_get(
     state: State<'_, AppState>,
     input: VrchatMediaPrintIdInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -218,7 +218,7 @@ pub async fn app__vrchat_media_print_get(
 pub async fn app__vrchat_media_print_delete(
     state: State<'_, AppState>,
     input: VrchatMediaPrintIdInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -264,7 +264,7 @@ pub async fn app__vrchat_prints_favorites_set(
 pub async fn app__vrchat_media_inventory_items_get(
     state: State<'_, AppState>,
     input: VrchatMediaInventoryItemsInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -291,7 +291,7 @@ pub async fn app__vrchat_media_inventory_items_collect(
 pub async fn app__vrchat_media_inventory_template_get(
     state: State<'_, AppState>,
     input: VrchatMediaInventoryTemplateInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -305,7 +305,7 @@ pub async fn app__vrchat_media_inventory_template_get(
 pub async fn app__vrchat_media_profile_decoration_equip(
     state: State<'_, AppState>,
     input: VrchatMediaProfileDecorationEquipInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -319,7 +319,7 @@ pub async fn app__vrchat_media_profile_decoration_equip(
 pub async fn app__vrchat_media_profile_decoration_unequip(
     state: State<'_, AppState>,
     input: VrchatMediaProfileDecorationUnequipInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -333,7 +333,7 @@ pub async fn app__vrchat_media_profile_decoration_unequip(
 pub async fn app__vrchat_media_user_inventory_item_get(
     state: State<'_, AppState>,
     input: VrchatMediaUserInventoryItemInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -347,7 +347,7 @@ pub async fn app__vrchat_media_user_inventory_item_get(
 pub async fn app__vrchat_media_inventory_item_update(
     state: State<'_, AppState>,
     input: VrchatMediaInventoryItemUpdateInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -361,7 +361,7 @@ pub async fn app__vrchat_media_inventory_item_update(
 pub async fn app__vrchat_media_inventory_bundle_consume(
     state: State<'_, AppState>,
     input: VrchatMediaInventoryItemInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -375,7 +375,7 @@ pub async fn app__vrchat_media_inventory_bundle_consume(
 pub async fn app__vrchat_media_reward_redeem(
     state: State<'_, AppState>,
     input: VrchatMediaRewardRedeemInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -389,7 +389,7 @@ pub async fn app__vrchat_media_reward_redeem(
 pub async fn app__vrchat_media_avatar_image_upload_legacy(
     state: State<'_, AppState>,
     input: VrchatMediaLegacyImageUploadInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     run_legacy_entity_image_upload(
         state,
         input,
@@ -404,7 +404,7 @@ pub async fn app__vrchat_media_avatar_image_upload_legacy(
 pub async fn app__vrchat_media_world_image_upload_legacy(
     state: State<'_, AppState>,
     input: VrchatMediaLegacyImageUploadInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     run_legacy_entity_image_upload(
         state,
         input,

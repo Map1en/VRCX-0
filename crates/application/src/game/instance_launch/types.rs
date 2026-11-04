@@ -2,11 +2,11 @@ use futures_util::future::BoxFuture;
 
 use serde::{Deserialize, Serialize};
 
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::Result;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 use vrcx_0_core::presence::PresenceKind;
 
-pub type InstanceLaunchApiFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
+pub type InstanceLaunchApiFuture<'a> = BoxFuture<'a, Result<VrchatResponse>>;
 
 pub trait InstanceLaunchHttpClient: Send + Sync {
     fn instance_short_name<'a>(

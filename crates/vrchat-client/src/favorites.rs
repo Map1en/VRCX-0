@@ -194,7 +194,7 @@ pub fn favorite_group_clear_input(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::http_api::HttpApiRequestBody;
+    use vrcx_0_contracts::vrchat_api::VrchatRequestBody;
 
     fn json_body(request: &VrchatRequest) -> &Value {
         request.body.as_json().expect("expected JSON request body")
@@ -285,7 +285,7 @@ mod tests {
             delete.path.as_deref(),
             Some("favorites/fav%2Fid%20%E9%9B%AA")
         );
-        assert_eq!(delete.body, HttpApiRequestBody::Empty);
+        assert_eq!(delete.body, VrchatRequestBody::Empty);
 
         let (group, save) = favorite_group_save_input(
             "endpoint".into(),
@@ -325,7 +325,7 @@ mod tests {
             clear.path.as_deref(),
             Some("favorite/group/world/group%20%E9%9B%AA/usr%2Fowner")
         );
-        assert_eq!(clear.body, HttpApiRequestBody::Empty);
+        assert_eq!(clear.body, VrchatRequestBody::Empty);
     }
 
     #[test]

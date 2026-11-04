@@ -160,7 +160,7 @@ fn unavailable_world_responses_never_overwrite_existing_cache() {
     )
     .unwrap();
 
-    cache.hydrate_response(&execute_response(
+    cache.hydrate_response(&vrchat_response(
         404,
         json!({ "error": { "message": "World not found", "status_code": 404 } }).to_string(),
     ));
@@ -377,7 +377,7 @@ async fn concurrent_image_resolution_fetches_world_once() {
             assert_eq!(world_id, "wrld_single_flight");
             first_calls.fetch_add(1, Ordering::SeqCst);
             tokio::time::sleep(Duration::from_millis(25)).await;
-            Ok(execute_response(200, first_body))
+            Ok(vrchat_response(200, first_body))
         },
     );
     let second_calls = Arc::clone(&calls);
@@ -386,7 +386,7 @@ async fn concurrent_image_resolution_fetches_world_once() {
         "wrld_single_flight",
         move |_, _| async move {
             second_calls.fetch_add(1, Ordering::SeqCst);
-            Ok(execute_response(200, body))
+            Ok(vrchat_response(200, body))
         },
     );
 
@@ -421,7 +421,7 @@ async fn image_resolution_respects_failure_cooldown() {
             "wrld_failure_cooldown",
             move |_, _| async move {
                 second_calls.fetch_add(1, Ordering::SeqCst);
-                Ok(execute_response(
+                Ok(vrchat_response(
                     200,
                     json!({
                         "id": "wrld_failure_cooldown",
@@ -471,7 +471,7 @@ fn successful_remote_response_refreshes_memory_and_database_summary() {
     .unwrap();
     let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
 
-    cache.hydrate_response(&execute_response(
+    cache.hydrate_response(&vrchat_response(
         200,
         json!({
             "id": "wrld_refresh",

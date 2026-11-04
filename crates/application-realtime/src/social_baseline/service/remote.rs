@@ -7,7 +7,7 @@ use serde_json::Value;
 use tokio::time::{sleep, timeout_at, Instant};
 use vrcx_0_application_core::{Error, Result};
 
-use super::{object_field, ApiJsonResponse, ApiScope, SocialBaselineDeps, VrchatRequest};
+use super::{object_field, SocialBaselineDeps, VrchatJsonResponse, VrchatRequest, VrchatScope};
 
 #[cfg(test)]
 use std::sync::Arc;
@@ -55,9 +55,9 @@ pub(crate) async fn execute_vrchat_json_request(
     deps: &SocialBaselineDeps,
     request: VrchatRequest,
 ) -> Result<Value> {
-    let response = deps.web.execute_api(request, ApiScope::Vrchat).await?;
+    let response = deps.web.execute_api(request, VrchatScope::Vrchat).await?;
 
-    let response = ApiJsonResponse::from(&response);
+    let response = VrchatJsonResponse::from(&response);
     if response.is_failure() {
         return Err(Error::VrchatApi {
             status_code: response.status,
@@ -97,9 +97,9 @@ async fn execute_vrchat_json_page_request(
     deps: &SocialBaselineDeps,
     request: VrchatRequest,
 ) -> RemoteFetchResult<Value> {
-    let response = deps.web.execute_api(request, ApiScope::Vrchat).await?;
+    let response = deps.web.execute_api(request, VrchatScope::Vrchat).await?;
 
-    let response = ApiJsonResponse::from(&response);
+    let response = VrchatJsonResponse::from(&response);
     if response.is_failure() {
         let message =
             response.error_message_with_http_status("VRChat social baseline request failed");
@@ -350,8 +350,9 @@ mod tests {
 
     #[test]
     fn social_error_message_keeps_http_status() {
-        let message = ApiJsonResponse::parse(500, r#"{"error":{"message":"Application error."}}"#)
-            .error_message_with_http_status("VRChat social baseline request failed");
+        let message =
+            VrchatJsonResponse::parse(500, r#"{"error":{"message":"Application error."}}"#)
+                .error_message_with_http_status("VRChat social baseline request failed");
 
         assert_eq!(message, "Application error. (HTTP 500)");
     }

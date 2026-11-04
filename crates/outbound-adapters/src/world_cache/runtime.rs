@@ -6,6 +6,7 @@ use std::time::Duration;
 use moka::policy::EvictionPolicy;
 use moka::sync::Cache;
 use serde_json::Value;
+use vrcx_0_contracts::vrchat_api::{vrchat_response, VrchatResponse, VrchatScope};
 use vrcx_0_core::ReleaseStatus;
 use vrcx_0_persistence::cache_entities::CacheEntityInput;
 use vrcx_0_persistence::worlds::{
@@ -13,9 +14,7 @@ use vrcx_0_persistence::worlds::{
     WorldSummaryOutput,
 };
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::http_api::{
-    execute_response, normalize_vrchat_api_endpoint, ApiScope, HttpApiExecuteResponse,
-};
+use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
 use vrcx_0_vrchat_client::worlds::world_get_input;
 
 use vrcx_0_application_core::WebClient;
@@ -287,7 +286,7 @@ impl WorldCache {
     ) -> Option<String> {
         self.resolve_image_url_with(endpoint, world_id, |endpoint, world_id| async move {
             let (_, request) = world_get_input(endpoint, world_id)?;
-            web.execute_api(request, ApiScope::Vrchat).await
+            web.execute_api(request, VrchatScope::Vrchat).await
         })
         .await
     }
@@ -300,7 +299,7 @@ impl WorldCache {
     ) -> Option<String>
     where
         F: FnOnce(String, String) -> Fut,
-        Fut: Future<Output = crate::Result<HttpApiExecuteResponse>>,
+        Fut: Future<Output = crate::Result<VrchatResponse>>,
     {
         let world_id = normalize_id(world_id);
         if world_id.is_empty() {
@@ -354,7 +353,7 @@ impl WorldCache {
         world_id: &str,
         force: bool,
         full: bool,
-    ) -> crate::Result<HttpApiExecuteResponse> {
+    ) -> crate::Result<VrchatResponse> {
         let world_id = normalize_id(world_id);
         if world_id.is_empty() {
             return Err(crate::Error::Custom("World id is required.".into()));
@@ -385,7 +384,7 @@ impl WorldCache {
         }
 
         let (_, request) = world_get_input(key.endpoint.clone(), world_id.clone())?;
-        let response = web.execute_api(request, ApiScope::Vrchat).await;
+        let response = web.execute_api(request, VrchatScope::Vrchat).await;
         match response {
             Ok(response) => {
                 if (200..=299).contains(&response.status) {
@@ -403,7 +402,7 @@ impl WorldCache {
         }
     }
 
-    pub fn hydrate_response(&self, response: &HttpApiExecuteResponse) {
+    pub fn hydrate_response(&self, response: &VrchatResponse) {
         if !(200..=299).contains(&response.status) {
             return;
         }
@@ -674,8 +673,8 @@ fn resolve_key(endpoint: &str, world_id: &str) -> WorldResolveKey {
     }
 }
 
-fn summary_response(summary: &WorldSummaryOutput) -> crate::Result<HttpApiExecuteResponse> {
-    Ok(execute_response(200, serde_json::to_string(summary)?))
+fn summary_response(summary: &WorldSummaryOutput) -> crate::Result<VrchatResponse> {
+    Ok(vrchat_response(200, serde_json::to_string(summary)?))
 }
 
 fn is_persistable_world(value: &Value, name: &str) -> bool {

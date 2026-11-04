@@ -594,7 +594,7 @@ impl DesktopRuntimeHostState {
         force: bool,
         dialog: bool,
         is_friend: Option<bool>,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiResponse> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatResponse> {
         let command = "app__vrchat_user_get";
         let diagnostics = self.runtime.desktop_assembly().diagnostics();
         diagnostics.record_command(
@@ -631,7 +631,7 @@ impl DesktopRuntimeHostState {
     pub async fn favorite_add_remote(
         &self,
         input: vrcx_0_application::favorites::FavoriteRemoteAddInput,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiResponse> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatResponse> {
         Ok(self
             .runtime
             .desktop_assembly()
@@ -643,7 +643,7 @@ impl DesktopRuntimeHostState {
     pub async fn favorite_delete_remote(
         &self,
         input: vrcx_0_application::favorites::FavoriteRemoteDeleteInput,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiResponse> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatResponse> {
         Ok(self
             .runtime
             .desktop_assembly()
@@ -655,7 +655,7 @@ impl DesktopRuntimeHostState {
     pub async fn favorite_group_save_remote(
         &self,
         input: vrcx_0_application::favorites::FavoriteRemoteGroupSaveInput,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiResponse> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatResponse> {
         Ok(self
             .runtime
             .desktop_assembly()
@@ -667,7 +667,7 @@ impl DesktopRuntimeHostState {
     pub async fn favorite_group_clear_remote(
         &self,
         input: vrcx_0_application::favorites::FavoriteRemoteGroupClearInput,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiResponse> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatResponse> {
         Ok(self
             .runtime
             .desktop_assembly()

@@ -39,7 +39,10 @@ mod tests {
         let get = player_moderations_get_input("https://api.example.test/api/1".into());
         assert_eq!(get.method.as_deref(), Some("GET"));
         assert_eq!(get.path.as_deref(), Some("auth/user/playermoderations"));
-        assert_eq!(get.body, crate::http_api::HttpApiRequestBody::Empty);
+        assert_eq!(
+            get.body,
+            vrcx_0_contracts::vrchat_api::VrchatRequestBody::Empty
+        );
 
         let post = player_moderation_update_input(
             "https://api.example.test/api/1".into(),

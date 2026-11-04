@@ -2,8 +2,8 @@ use std::collections::VecDeque;
 use std::sync::Mutex;
 
 use serde_json::{json, Value};
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse as HttpApiExecuteResponse;
 use vrcx_0_contracts::vrchat_api::vrchat_response;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use crate::auth::test_support::{MemoryAuthCredentialStore, MemoryAuthSessionCookies};
 use crate::auth::{record_login_success, AuthCredentialStore, LoginSuccessRecordInput};
@@ -16,7 +16,7 @@ struct RecordedCall {
 }
 
 pub(super) struct FakeLoginApi {
-    responses: Mutex<VecDeque<std::result::Result<HttpApiExecuteResponse, String>>>,
+    responses: Mutex<VecDeque<std::result::Result<VrchatResponse, String>>>,
     calls: Mutex<Vec<RecordedCall>>,
 }
 

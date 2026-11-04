@@ -8,8 +8,8 @@ use vrcx_0_core::json::RawJson;
 use vrcx_0_core::NotificationKind;
 
 use crate::scope_gate::ScopeGate;
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot};
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 const GATE: ScopeGate = ScopeGate::new("Notification sync");
 
@@ -33,7 +33,7 @@ pub struct NotificationSyncWrite {
     pub notification_v2_upserts: Vec<RawJson>,
 }
 
-pub type NotificationSyncFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
+pub type NotificationSyncFuture<'a> = BoxFuture<'a, Result<VrchatResponse>>;
 
 pub trait NotificationSyncPort: Send + Sync {
     fn fetch_page<'a>(

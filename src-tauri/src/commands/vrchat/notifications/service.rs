@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use super::types::{
     VrchatBoopInput, VrchatRequestInvitePhotoSendInput, VrchatRequestInviteSendInput,
@@ -14,7 +14,7 @@ use crate::state::AppState;
 pub async fn app__vrchat_request_invite_send(
     state: State<'_, AppState>,
     input: VrchatRequestInviteSendInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -28,7 +28,7 @@ pub async fn app__vrchat_request_invite_send(
 pub async fn app__vrchat_request_invite_photo_send(
     state: State<'_, AppState>,
     input: VrchatRequestInvitePhotoSendInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -42,7 +42,7 @@ pub async fn app__vrchat_request_invite_photo_send(
 pub async fn app__vrchat_boop_send(
     state: State<'_, AppState>,
     input: VrchatBoopInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()

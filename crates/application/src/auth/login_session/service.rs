@@ -1,6 +1,6 @@
 use crate::auth::AuthCredentialStore;
 use serde_json::Value;
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse as HttpApiExecuteResponse;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 use vrcx_0_contracts::vrchat_device_login::{
     interpret_device_code_response, VrchatDeviceAuthorization,
 };
@@ -26,7 +26,7 @@ use super::types::{
 async fn execute_or_fail(
     api: &dyn LoginApi,
     operation: LoginRemoteOperation,
-) -> std::result::Result<HttpApiExecuteResponse, Box<LoginSessionState>> {
+) -> std::result::Result<VrchatResponse, Box<LoginSessionState>> {
     api.execute(operation).await.map_err(|error| {
         Box::new(LoginSessionState::failed(
             error.to_string(),

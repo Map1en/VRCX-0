@@ -133,7 +133,7 @@ impl DesktopMediaRuntime {
         input: LegacyEntityImageUploadInput,
         kind: LegacyEntityImageKind,
         command: &str,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiResponse> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatResponse> {
         let mutation = AuthenticatedMutationContext::capture(
             &self.auth_scope,
             &self.remote_mutations,

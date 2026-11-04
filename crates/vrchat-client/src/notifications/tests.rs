@@ -7,7 +7,7 @@ use super::*;
 const ENDPOINT: &str = "https://api.vrchat.cloud/api/1";
 
 fn post_data(request: &VrchatRequest) -> Value {
-    let Some(HttpApiUpload::LegacyImage { post_data, .. }) = request.body.as_upload() else {
+    let Some(VrchatUpload::LegacyImage { post_data, .. }) = request.body.as_upload() else {
         panic!("expected legacy image upload");
     };
     serde_json::from_str(post_data.as_deref().unwrap()).unwrap()
@@ -117,7 +117,7 @@ fn ordinary_hide_uses_versioned_method_and_path_without_body() {
         v1.path.as_deref(),
         Some("auth/user/notifications/note%5F1%2Funsafe/hide")
     );
-    assert_eq!(v1.body, HttpApiRequestBody::Empty);
+    assert_eq!(v1.body, VrchatRequestBody::Empty);
 
     let (_, v2) = notification_hide_remote_input(
         ENDPOINT.into(),
@@ -129,7 +129,7 @@ fn ordinary_hide_uses_versioned_method_and_path_without_body() {
     .unwrap();
     assert_eq!(v2.method.as_deref(), Some("DELETE"));
     assert_eq!(v2.path.as_deref(), Some("notifications/note%5F1%2Funsafe"));
-    assert_eq!(v2.body, HttpApiRequestBody::Empty);
+    assert_eq!(v2.body, VrchatRequestBody::Empty);
 }
 
 #[test]
@@ -175,7 +175,7 @@ fn invite_response_photo_builds_legacy_upload_request() {
     );
     assert!(matches!(
         request.body.as_upload(),
-        Some(HttpApiUpload::LegacyImage { image_data, .. }) if image_data == "image-data"
+        Some(VrchatUpload::LegacyImage { image_data, .. }) if image_data == "image-data"
     ));
     assert_eq!(
         post_data(&request),
@@ -200,7 +200,7 @@ fn invite_and_request_invite_photos_build_legacy_upload_requests() {
     );
     assert!(matches!(
         invite.body.as_upload(),
-        Some(HttpApiUpload::LegacyImage { image_data, .. }) if image_data == "invite-image"
+        Some(VrchatUpload::LegacyImage { image_data, .. }) if image_data == "invite-image"
     ));
     assert_eq!(post_data(&invite), params);
 
@@ -220,7 +220,7 @@ fn invite_and_request_invite_photos_build_legacy_upload_requests() {
     );
     assert!(matches!(
         request_invite.body.as_upload(),
-        Some(HttpApiUpload::LegacyImage { image_data, .. }) if image_data == "request-image"
+        Some(VrchatUpload::LegacyImage { image_data, .. }) if image_data == "request-image"
     ));
     assert_eq!(
         post_data(&request_invite),

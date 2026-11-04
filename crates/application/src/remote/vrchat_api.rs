@@ -3,17 +3,17 @@ use futures_util::future::BoxFuture;
 use std::sync::Arc;
 use std::time::Duration;
 
-use vrcx_0_application_core::vrchat_api::{VrchatApiResponse, VrchatScope};
+use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::{
     is_remote_mutation_request, AuthenticatedMutationContext, RemoteMutationGate, Result,
     RuntimeAuthScope,
 };
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatResponse};
 
 const VRCHAT_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
-pub type VrchatApiFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
-pub type VrchatRequestFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
+pub type VrchatApiFuture<'a> = BoxFuture<'a, Result<VrchatResponse>>;
+pub type VrchatRequestFuture<'a> = BoxFuture<'a, Result<VrchatResponse>>;
 
 pub trait VrchatRequestPort: Send + Sync {
     fn send(&self, input: VrchatRequest, scope: VrchatScope) -> VrchatRequestFuture<'_>;
@@ -26,7 +26,7 @@ pub(crate) struct TestVrchatRequestPort;
 impl VrchatRequestPort for TestVrchatRequestPort {
     fn send(&self, _input: VrchatRequest, _scope: VrchatScope) -> VrchatRequestFuture<'_> {
         Box::pin(async {
-            Ok(VrchatApiResponse {
+            Ok(VrchatResponse {
                 status: 200,
                 data: "{}".into(),
             })
@@ -70,7 +70,7 @@ impl VrchatApiRuntime {
         detail: impl Into<String>,
         mut input: VrchatRequest,
         scope: VrchatScope,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let command = command.into();
         let detail = detail.into();
         if !is_remote_mutation_request(&input) {
@@ -111,7 +111,7 @@ mod tests {
         ) -> VrchatApiFuture<'_> {
             self.requests.lock().unwrap().push(input);
             Box::pin(async {
-                Ok(VrchatApiResponse {
+                Ok(VrchatResponse {
                     status: 200,
                     data: "{}".into(),
                 })

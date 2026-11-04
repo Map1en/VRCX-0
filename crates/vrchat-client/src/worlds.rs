@@ -177,7 +177,7 @@ pub fn world_persistent_data_delete_input(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::http_api::HttpApiRequestBody;
+    use vrcx_0_contracts::vrchat_api::VrchatRequestBody;
 
     fn json_body(request: &VrchatRequest) -> &Value {
         request.body.as_json().expect("expected JSON request body")
@@ -263,7 +263,7 @@ mod tests {
         let (_, delete) = world_delete_input("endpoint".into(), " wrld/1 ".into()).unwrap();
         assert_eq!(delete.method.as_deref(), Some("DELETE"));
         assert_eq!(delete.path.as_deref(), Some("worlds/wrld%2F1"));
-        assert_eq!(delete.body, HttpApiRequestBody::Empty);
+        assert_eq!(delete.body, VrchatRequestBody::Empty);
 
         let (_, publish) = world_publish_input("endpoint".into(), " wrld/1 ".into()).unwrap();
         assert_eq!(publish.method.as_deref(), Some("PUT"));
@@ -273,7 +273,7 @@ mod tests {
         let (_, unpublish) = world_unpublish_input("endpoint".into(), " wrld/1 ".into()).unwrap();
         assert_eq!(unpublish.method.as_deref(), Some("DELETE"));
         assert_eq!(unpublish.path.as_deref(), Some("worlds/wrld%2F1/publish"));
-        assert_eq!(unpublish.body, HttpApiRequestBody::Empty);
+        assert_eq!(unpublish.body, VrchatRequestBody::Empty);
 
         let (user_id, world_id, delete_data) = world_persistent_data_delete_input(
             "endpoint".into(),
@@ -287,7 +287,7 @@ mod tests {
             delete_data.path.as_deref(),
             Some("users/usr%2F1/wrld%2F%E9%9B%AA/persist")
         );
-        assert_eq!(delete_data.body, HttpApiRequestBody::Empty);
+        assert_eq!(delete_data.body, VrchatRequestBody::Empty);
     }
 
     #[test]

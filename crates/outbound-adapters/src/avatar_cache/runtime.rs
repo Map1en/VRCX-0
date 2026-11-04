@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use moka::sync::Cache;
 use serde_json::Value;
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_core::vrchat_json::AvatarJson;
 use vrcx_0_persistence::avatars::{
     avatar_cache_existing_ids, avatar_cache_find_by_file_id, avatar_cache_get, avatar_cache_upsert,
@@ -12,7 +13,7 @@ use vrcx_0_persistence::avatars::{
 use vrcx_0_persistence::cache_entities::CacheEntityInput;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::avatars::avatar_get_input;
-use vrcx_0_vrchat_client::http_api::{normalize_vrchat_api_endpoint, ApiScope};
+use vrcx_0_vrchat_client::http_api::normalize_vrchat_api_endpoint;
 
 use vrcx_0_application_core::WebClient;
 
@@ -189,7 +190,7 @@ impl AvatarCache {
         let (_, request) = avatar_get_input(key.endpoint.clone(), key.avatar_id.clone())?;
         let response = tokio::time::timeout(
             AVATAR_RESOLVE_FETCH_TIMEOUT,
-            web.execute_api(request, ApiScope::Vrchat),
+            web.execute_api(request, VrchatScope::Vrchat),
         )
         .await
         .map_err(|_| {

@@ -5,10 +5,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::http_api::{
     api_input, encode_path_segment, get_input, normalize_vrchat_api_endpoint, require_text,
-    HttpApiError, HttpApiRequestBody, HttpApiUpload,
+    HttpApiError,
 };
 use crate::query::serialize_query;
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatRequestBody, VrchatUpload};
 
 pub use vrcx_0_contracts::vrchat_requests::{
     EmojiLoopStyle, EmojiUploadParams, ImageAnimationStyle, ImageMaskTag,
@@ -92,7 +92,7 @@ fn image_upload_with_params(
     Ok(VrchatRequest {
         endpoint: Some(endpoint),
         path: Some(path.into()),
-        body: HttpApiRequestBody::Upload(HttpApiUpload::Image {
+        body: VrchatRequestBody::Upload(VrchatUpload::Image {
             image_data,
             post_data: Some(post_data),
             matching_dimensions,
@@ -199,7 +199,7 @@ pub fn print_upload_input(
     Ok(VrchatRequest {
         endpoint: Some(endpoint),
         path: Some("prints".into()),
-        body: HttpApiRequestBody::Upload(HttpApiUpload::PrintImage {
+        body: VrchatRequestBody::Upload(VrchatUpload::PrintImage {
             image_data,
             post_data: Some(post_data),
             crop_white_border,
@@ -456,7 +456,7 @@ pub fn file_put_input(
 ) -> VrchatRequest {
     VrchatRequest {
         url: Some(url),
-        body: HttpApiRequestBody::Upload(HttpApiUpload::FilePut {
+        body: VrchatRequestBody::Upload(VrchatUpload::FilePut {
             file_data,
             file_mime,
             file_md5: Some(file_md5),

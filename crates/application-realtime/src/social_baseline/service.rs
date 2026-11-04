@@ -5,9 +5,7 @@ use vrcx_0_core::text::normalize_text;
 
 use serde_json::{json, Map, Number, Value};
 use std::sync::Arc;
-use vrcx_0_contracts::vrchat_api::{
-    VrchatJsonResponse as ApiJsonResponse, VrchatRequest, VrchatScope as ApiScope,
-};
+use vrcx_0_contracts::vrchat_api::{VrchatJsonResponse, VrchatRequest, VrchatScope};
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::json::{text_of, RawJson};
 use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;

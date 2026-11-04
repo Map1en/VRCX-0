@@ -11,8 +11,8 @@ use super::friend_profile_bulk_load::{
 use super::test_support::*;
 use super::*;
 use crate::realtime::UserQueryKind;
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::RuntimeAuthScope;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 use vrcx_0_core::friends::{FriendBaselineEntry, FriendRecord};
 
 fn friend_record(extra: serde_json::Value) -> FriendRecord {
@@ -237,7 +237,7 @@ async fn unexpected_exit_and_same_account_replacement_keep_bulk_worker_active() 
         7,
         1,
     );
-    let first_response = Arc::new(VrchatApiResponse {
+    let first_response = Arc::new(VrchatResponse {
         status: 200,
         data: json!({"id": "usr_a", "displayName": "A", "date_joined": "2026-01-01"}).to_string(),
     });
@@ -307,7 +307,7 @@ async fn unexpected_exit_and_same_account_replacement_keep_bulk_worker_active() 
     assert_eq!(payload.run_id, started.run_id);
     assert_eq!(payload.status, FriendProfileBulkLoadStatus::Running);
 
-    let second_response = Arc::new(VrchatApiResponse {
+    let second_response = Arc::new(VrchatResponse {
         status: 200,
         data: json!({"id": "usr_b", "displayName": "B", "date_joined": "2026-01-01"}).to_string(),
     });
@@ -762,7 +762,7 @@ async fn cached_user_response_is_not_replayed_into_friend_state() -> Result<()> 
         "status": "active",
         "statusDescription": "stale"
     });
-    let canned = std::sync::Arc::new(VrchatApiResponse {
+    let canned = std::sync::Arc::new(VrchatResponse {
         status: 200,
         data: stale_profile.to_string(),
     });
@@ -850,7 +850,7 @@ async fn cached_user_response_does_not_revert_display_name() -> Result<()> {
         "state": "online",
         "status": "active"
     });
-    let canned = std::sync::Arc::new(VrchatApiResponse {
+    let canned = std::sync::Arc::new(VrchatResponse {
         status: 200,
         data: stale_profile.to_string(),
     });
@@ -890,7 +890,7 @@ async fn cached_user_response_does_not_revert_display_name() -> Result<()> {
 async fn cached_non_object_user_response_is_returned_verbatim() -> Result<()> {
     let (_dir, runtime, active_session) =
         runtime_with_active_session("friend-profile-cached-non-object")?;
-    let canned = std::sync::Arc::new(VrchatApiResponse {
+    let canned = std::sync::Arc::new(VrchatResponse {
         status: 200,
         data: " 42 ".into(),
     });

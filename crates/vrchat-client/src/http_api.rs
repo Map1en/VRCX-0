@@ -3,14 +3,10 @@ use std::collections::HashMap;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use serde_json::{json, Value};
 use url::Url;
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
 pub use vrcx_0_contracts::vrchat_api::{
-    classify_vrchat_auth_failure, classify_vrchat_response as classify_api_response,
-    vrchat_auth_error_message, vrchat_response as execute_response, VrchatAuthFailureKind,
-    VrchatJsonResponse as ApiJsonResponse, VrchatRequestBody as HttpApiRequestBody,
-    VrchatResponse as HttpApiExecuteResponse, VrchatResponseClass as ApiResponseClass,
-    VrchatScope as ApiScope, VrchatUpload as HttpApiUpload,
+    classify_vrchat_auth_failure, vrchat_auth_error_message, VrchatAuthFailureKind,
 };
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatRequestBody, VrchatScope, VrchatUpload};
 pub use vrcx_0_core::text::normalize_text;
 pub use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 use vrcx_0_core::vrchat_endpoints::{
@@ -72,8 +68,8 @@ pub fn api_input(
         path: Some(path.into()),
         headers: body.as_ref().map(|_| json_headers()),
         body: body
-            .map(HttpApiRequestBody::Json)
-            .unwrap_or(HttpApiRequestBody::Empty),
+            .map(VrchatRequestBody::Json)
+            .unwrap_or(VrchatRequestBody::Empty),
         ..Default::default()
     }
 }
@@ -118,7 +114,7 @@ pub fn api_input_skip_empty_query_string(
         method: Some(method.into()),
         path: Some(path.into()),
         headers: Some(json_headers()),
-        body: HttpApiRequestBody::Json(body),
+        body: VrchatRequestBody::Json(body),
         skip_empty_query_string: Some(true),
         ..Default::default()
     }
@@ -141,7 +137,7 @@ pub fn get_input_skip_empty_query_string(
 
 pub fn build_web_execute_request(
     input: VrchatRequest,
-    scope: ApiScope,
+    scope: VrchatScope,
 ) -> Result<WebExecuteRequest, HttpApiError> {
     let method = input
         .method
@@ -162,7 +158,7 @@ pub fn build_web_execute_request(
     }
 
     request.upload = match input.body {
-        HttpApiRequestBody::Upload(HttpApiUpload::FilePut {
+        VrchatRequestBody::Upload(VrchatUpload::FilePut {
             file_data,
             file_mime,
             file_md5,
@@ -171,7 +167,7 @@ pub fn build_web_execute_request(
             file_mime,
             file_md5,
         },
-        HttpApiRequestBody::Upload(HttpApiUpload::Image {
+        VrchatRequestBody::Upload(VrchatUpload::Image {
             image_data,
             post_data,
             ..
@@ -179,7 +175,7 @@ pub fn build_web_execute_request(
             image_data,
             post_data,
         },
-        HttpApiRequestBody::Upload(HttpApiUpload::PrintImage {
+        VrchatRequestBody::Upload(VrchatUpload::PrintImage {
             image_data,
             post_data,
             ..
@@ -187,7 +183,7 @@ pub fn build_web_execute_request(
             image_data,
             post_data,
         },
-        HttpApiRequestBody::Upload(HttpApiUpload::LegacyImage {
+        VrchatRequestBody::Upload(VrchatUpload::LegacyImage {
             image_data,
             post_data,
             ..
@@ -195,7 +191,7 @@ pub fn build_web_execute_request(
             image_data,
             post_data,
         },
-        HttpApiRequestBody::Empty | HttpApiRequestBody::Json(_) => WebUploadMode::None,
+        VrchatRequestBody::Empty | VrchatRequestBody::Json(_) => WebUploadMode::None,
     };
 
     Ok(request)
@@ -296,11 +292,11 @@ fn validate_vrchat_media_upload_url(url: &Url) -> Result<(), HttpApiError> {
 }
 
 fn is_upload_request(input: &VrchatRequest) -> bool {
-    matches!(input.body, HttpApiRequestBody::Upload(_))
+    matches!(input.body, VrchatRequestBody::Upload(_))
 }
 
-fn validate_upload_scope(input: &VrchatRequest, scope: ApiScope) -> Result<(), HttpApiError> {
-    if is_upload_request(input) && !matches!(scope, ApiScope::VrchatMedia) {
+fn validate_upload_scope(input: &VrchatRequest, scope: VrchatScope) -> Result<(), HttpApiError> {
+    if is_upload_request(input) && !matches!(scope, VrchatScope::VrchatMedia) {
         return Err(HttpApiError::Custom(
             "upload options are only allowed for VRChat media requests".into(),
         ));
@@ -308,7 +304,7 @@ fn validate_upload_scope(input: &VrchatRequest, scope: ApiScope) -> Result<(), H
     Ok(())
 }
 
-fn build_request_url(input: &VrchatRequest, scope: ApiScope) -> Result<String, HttpApiError> {
+fn build_request_url(input: &VrchatRequest, scope: VrchatScope) -> Result<String, HttpApiError> {
     validate_upload_scope(input, scope)?;
 
     if let Some(url) = input
@@ -319,8 +315,8 @@ fn build_request_url(input: &VrchatRequest, scope: ApiScope) -> Result<String, H
     {
         let url = parse_http_url(url)?;
         match scope {
-            ApiScope::Vrchat | ApiScope::VrchatMedia => {
-                if matches!(scope, ApiScope::VrchatMedia) && is_upload_request(input) {
+            VrchatScope::Vrchat | VrchatScope::VrchatMedia => {
+                if matches!(scope, VrchatScope::VrchatMedia) && is_upload_request(input) {
                     validate_vrchat_media_upload_url(&url)?;
                     return Ok(url.to_string());
                 }
@@ -340,8 +336,8 @@ fn build_request_url(input: &VrchatRequest, scope: ApiScope) -> Result<String, H
 
     if let Ok(url) = Url::parse(path) {
         match scope {
-            ApiScope::Vrchat | ApiScope::VrchatMedia => {
-                if matches!(scope, ApiScope::VrchatMedia) && is_upload_request(input) {
+            VrchatScope::Vrchat | VrchatScope::VrchatMedia => {
+                if matches!(scope, VrchatScope::VrchatMedia) && is_upload_request(input) {
                     validate_vrchat_media_upload_url(&url)?;
                     return Ok(url.to_string());
                 }
@@ -385,7 +381,7 @@ fn request_body_text(input: &VrchatRequest, method: &str) -> Result<Option<Strin
         return Ok(None);
     }
 
-    let HttpApiRequestBody::Json(body) = &input.body else {
+    let VrchatRequestBody::Json(body) = &input.body else {
         return Ok(None);
     };
     serde_json::to_string(&normalize_json_body(body))

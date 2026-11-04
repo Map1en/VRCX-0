@@ -4,7 +4,7 @@ use std::time::Duration;
 use serde_json::Value;
 use vrcx_0_contracts::notifications::AppNotification;
 use vrcx_0_contracts::realtime::RealtimePersistenceBatch;
-use vrcx_0_contracts::vrchat_api::VrchatScope as ApiScope;
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_core::OwnerId;
 
 use super::RealtimeHostRuntime;
@@ -78,7 +78,7 @@ impl RealtimeHostRuntime {
         };
         match tokio::time::timeout(
             GROUP_FETCH_TIMEOUT,
-            self.deps.web.execute_api(request, ApiScope::Vrchat),
+            self.deps.web.execute_api(request, VrchatScope::Vrchat),
         )
         .await
         {

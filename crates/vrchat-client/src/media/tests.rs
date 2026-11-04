@@ -8,10 +8,10 @@ const ENDPOINT: &str = "https://api.vrchat.cloud/api/1";
 
 fn post_data(request: &VrchatRequest) -> Value {
     let post_data = match request.body.as_upload().unwrap() {
-        HttpApiUpload::Image { post_data, .. }
-        | HttpApiUpload::PrintImage { post_data, .. }
-        | HttpApiUpload::LegacyImage { post_data, .. } => post_data,
-        HttpApiUpload::FilePut { .. } => panic!("expected image upload"),
+        VrchatUpload::Image { post_data, .. }
+        | VrchatUpload::PrintImage { post_data, .. }
+        | VrchatUpload::LegacyImage { post_data, .. } => post_data,
+        VrchatUpload::FilePut { .. } => panic!("expected image upload"),
     };
     serde_json::from_str(post_data.as_deref().unwrap()).unwrap()
 }
@@ -29,7 +29,7 @@ fn gallery_and_icon_assets_use_expected_tags_and_matching_modes() {
     assert_eq!(gallery.path.as_deref(), Some("file/image"));
     assert!(matches!(
         gallery.body.as_upload(),
-        Some(HttpApiUpload::Image {
+        Some(VrchatUpload::Image {
             matching_dimensions: false,
             ..
         })
@@ -46,7 +46,7 @@ fn gallery_and_icon_assets_use_expected_tags_and_matching_modes() {
     assert_eq!(icons.path.as_deref(), Some("file/image"));
     assert!(matches!(
         icons.body.as_upload(),
-        Some(HttpApiUpload::Image {
+        Some(VrchatUpload::Image {
             matching_dimensions: true,
             ..
         })
@@ -73,7 +73,7 @@ fn emoji_and_sticker_assets_use_expected_params_and_mask() {
     assert_eq!(emojis.path.as_deref(), Some("file/image"));
     assert!(matches!(
         emojis.body.as_upload(),
-        Some(HttpApiUpload::Image {
+        Some(VrchatUpload::Image {
             matching_dimensions: true,
             ..
         })
@@ -100,7 +100,7 @@ fn emoji_and_sticker_assets_use_expected_params_and_mask() {
     assert_eq!(stickers.path.as_deref(), Some("file/image"));
     assert!(matches!(
         stickers.body.as_upload(),
-        Some(HttpApiUpload::Image {
+        Some(VrchatUpload::Image {
             matching_dimensions: true,
             ..
         })
@@ -129,7 +129,7 @@ fn print_assets_use_print_route_and_crop_flag() {
     assert_eq!(request.path.as_deref(), Some("prints"));
     assert!(matches!(
         request.body.as_upload(),
-        Some(HttpApiUpload::PrintImage {
+        Some(VrchatUpload::PrintImage {
             image_data,
             crop_white_border: true,
             ..
@@ -229,7 +229,7 @@ fn inventory_slot_unequip_uses_the_encoded_slot_path_without_a_body() {
         request.path.as_deref(),
         Some("inventory/profileEffect/equip")
     );
-    assert_eq!(request.body, HttpApiRequestBody::Empty);
+    assert_eq!(request.body, VrchatRequestBody::Empty);
     assert_eq!(request.headers, None);
 }
 
@@ -278,7 +278,7 @@ fn file_put_sets_all_upload_fields() {
     );
     assert!(matches!(
         request.body.as_upload(),
-        Some(HttpApiUpload::FilePut {
+        Some(VrchatUpload::FilePut {
             file_data,
             file_mime,
             file_md5: Some(file_md5),

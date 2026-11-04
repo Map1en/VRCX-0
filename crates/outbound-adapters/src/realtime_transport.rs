@@ -8,11 +8,11 @@ use serde_json::Value;
 use tokio::sync::watch;
 use vrcx_0_vrchat_client::realtime::{
     auth_token_from_response, build_transport_url, classify_websocket_frame, connect_websocket,
-    heartbeat, normalize_websocket_domain, Error as RealtimeTransportError, RealtimeFrame,
-    HEARTBEAT_INTERVAL,
+    heartbeat, Error as RealtimeTransportError, RealtimeFrame, HEARTBEAT_INTERVAL,
 };
 
 use vrcx_0_core::realtime::{RealtimeMessageParseOutcome, RealtimeMessageParser};
+use vrcx_0_core::vrchat_endpoints::normalize_vrchat_websocket_endpoint;
 
 use vrcx_0_application_core::BackendRuntimeStatusPublisher;
 use vrcx_0_application_core::Error;
@@ -196,7 +196,7 @@ async fn run_realtime_transport_inner(
     cancel_rx: &mut watch::Receiver<u64>,
 ) -> RealtimeTransportTermination {
     let backend_status = deps.backend_status.clone();
-    let websocket_domain = normalize_websocket_domain(&session.websocket);
+    let websocket_domain = normalize_vrchat_websocket_endpoint(&session.websocket);
     if is_cancelled(cancel_rx, generation) {
         return stopped_transport(
             &backend_status,
@@ -380,7 +380,7 @@ async fn connect_once(
 
     let url = build_transport_url(&attempt.session.websocket, &token)
         .map_err(RealtimeConnectionError::from)?;
-    let websocket_domain = normalize_websocket_domain(&attempt.session.websocket);
+    let websocket_domain = normalize_vrchat_websocket_endpoint(&attempt.session.websocket);
     let handshake_started_at = tokio::time::Instant::now();
     let Some(mut stream) = wait_for_result_or_cancel(
         async {

@@ -10,9 +10,8 @@ use std::{
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use vrcx_0_application_core::{
-    vrchat_api::VrchatApiResponse, FavoriteEntityKind, TaskStopToken, VrchatFavoriteType,
-};
+use vrcx_0_application_core::{FavoriteEntityKind, TaskStopToken, VrchatFavoriteType};
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 use vrcx_0_core::json::RawJson;
 use vrcx_0_core::vrchat_ids::{is_avatar_id, is_user_id, is_world_id};
 use vrcx_0_core::vrchat_json::response_error_message;
@@ -574,7 +573,7 @@ impl FavoriteImportRuntime {
     fn parse_response(
         &self,
         scope: &RuntimeAuthScopeSnapshot,
-        response: VrchatApiResponse,
+        response: VrchatResponse,
         action: &str,
     ) -> Result<Value> {
         GATE.ensure_matches(&self.auth_scope, scope)?;

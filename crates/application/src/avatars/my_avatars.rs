@@ -181,7 +181,7 @@ fn live_swap_delta_ms(previous_avatar_swap_time: f64) -> i64 {
 mod tests {
     use std::sync::Mutex;
 
-    use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
+    use vrcx_0_contracts::vrchat_api::VrchatResponse;
     use vrcx_0_contracts::{AvatarTagOutput, AvatarTimeSpentOutput};
 
     use super::*;
@@ -196,7 +196,7 @@ mod tests {
             _endpoint: &'a str,
             _command: &'a str,
             _detail: &'a str,
-        ) -> super::super::AvatarRemoteFuture<'a, VrchatApiResponse> {
+        ) -> super::super::AvatarRemoteFuture<'a, VrchatResponse> {
             Box::pin(async { unreachable!() })
         }
 
@@ -218,7 +218,7 @@ mod tests {
             _command: &'a str,
             _detail: &'a str,
             _mutation: super::super::AvatarRemoteMutation,
-        ) -> super::super::AvatarRemoteFuture<'a, VrchatApiResponse> {
+        ) -> super::super::AvatarRemoteFuture<'a, VrchatResponse> {
             Box::pin(async { unreachable!() })
         }
     }

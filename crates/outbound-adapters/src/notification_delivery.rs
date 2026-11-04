@@ -11,9 +11,9 @@ use vrcx_0_application_activity::notification::{
 };
 use vrcx_0_application_core::{FileCache, WebClient, WebExecuteRequest, WorldCache};
 use vrcx_0_application_realtime::RealtimeHostRuntime;
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_core::json::JsonExt;
 use vrcx_0_persistence::config::ConfigRepository;
-use vrcx_0_vrchat_client::http_api::ApiScope;
 
 const WEBHOOK_TIMEOUT: Duration = Duration::from_secs(10);
 const WEBHOOK_RESPONSE_BODY_LIMIT: usize = 64 * 1024;
@@ -78,7 +78,11 @@ impl NotificationRemote for VrchatNotificationRemote {
                 user_id.to_string(),
             )
             .ok()?;
-            let response = self.web.execute_api(request, ApiScope::Vrchat).await.ok()?;
+            let response = self
+                .web
+                .execute_api(request, VrchatScope::Vrchat)
+                .await
+                .ok()?;
             if !(200..=299).contains(&response.status) {
                 return None;
             }
@@ -135,7 +139,11 @@ impl NotificationRemote for VrchatNotificationRemote {
                 false,
             )
             .ok()?;
-            let response = self.web.execute_api(request, ApiScope::Vrchat).await.ok()?;
+            let response = self
+                .web
+                .execute_api(request, VrchatScope::Vrchat)
+                .await
+                .ok()?;
             if !(200..=299).contains(&response.status) {
                 return None;
             }

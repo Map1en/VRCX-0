@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::{RemoteMutationGate, RuntimeAuthScope};
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use super::{
     WorldRemoteFuture, WorldRemoteOperation, WorldRemotePort, WorldRemoteRuntime, WorldRemoteScope,
@@ -15,11 +15,11 @@ struct RecordingPort {
 
 #[derive(Default)]
 struct RecordingProjection {
-    responses: Mutex<Vec<VrchatApiResponse>>,
+    responses: Mutex<Vec<VrchatResponse>>,
 }
 
 impl WorldResponseProjectionPort for RecordingProjection {
-    fn hydrate(&self, response: &VrchatApiResponse) {
+    fn hydrate(&self, response: &VrchatResponse) {
         self.responses.lock().unwrap().push(response.clone());
     }
 }
@@ -32,7 +32,7 @@ impl WorldRemotePort for RecordingPort {
     ) -> WorldRemoteFuture<'_> {
         self.calls.lock().unwrap().push((scope, operation));
         Box::pin(async {
-            Ok(VrchatApiResponse {
+            Ok(VrchatResponse {
                 status: 200,
                 data: r#"{"id":"wrld_test"}"#.into(),
             })

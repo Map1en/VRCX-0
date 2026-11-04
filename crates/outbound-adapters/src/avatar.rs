@@ -4,8 +4,9 @@ use vrcx_0_application::avatars::{
     AvatarCacheStore, AvatarFeedCleanupStore, AvatarRemote, AvatarRemoteFuture,
     AvatarRemoteMutation, MyAvatarsStore,
 };
-use vrcx_0_application_core::vrchat_api::{execute_api_command, VrchatApiResponse, VrchatScope};
+use vrcx_0_application_core::vrchat_api::{execute_api_command, VrchatScope};
 use vrcx_0_application_core::{Error, RuntimeDiagnostics, RuntimeSyncEngine, WebClient};
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 use vrcx_0_contracts::{AvatarTagOutput, AvatarTimeSpentOutput};
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::avatars::{
@@ -95,7 +96,7 @@ impl AvatarRemote for VrchatAvatarRemote {
         endpoint: &'a str,
         command: &'a str,
         detail: &'a str,
-    ) -> AvatarRemoteFuture<'a, VrchatApiResponse> {
+    ) -> AvatarRemoteFuture<'a, VrchatResponse> {
         Box::pin(async move {
             execute_api_command(
                 &self.web,
@@ -138,7 +139,7 @@ impl AvatarRemote for VrchatAvatarRemote {
         command: &'a str,
         detail: &'a str,
         mutation: AvatarRemoteMutation,
-    ) -> AvatarRemoteFuture<'a, VrchatApiResponse> {
+    ) -> AvatarRemoteFuture<'a, VrchatResponse> {
         Box::pin(async move {
             let request = match mutation {
                 AvatarRemoteMutation::Select {

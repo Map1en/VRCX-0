@@ -204,7 +204,7 @@ impl LocalMediaUploadAdapter {
         &self,
         gate: &dyn LegacyMediaUploadGate,
         input: VrchatRequest,
-    ) -> crate::Result<vrcx_0_application_core::vrchat_api::VrchatApiResponse> {
+    ) -> crate::Result<vrcx_0_contracts::vrchat_api::VrchatResponse> {
         gate.before_request().await?;
         let response = self
             .web

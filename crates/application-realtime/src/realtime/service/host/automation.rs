@@ -7,7 +7,7 @@ use serde_json::{json, Value};
 use vrcx_0_application_core::{
     AuthenticatedMutationContext, Error, LocalGameContextSnapshot, Result,
 };
-use vrcx_0_contracts::vrchat_api::VrchatScope as ApiScope;
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_core::json::JsonExt;
 use vrcx_0_core::json::RawJson;
 use vrcx_0_core::OwnerId;
@@ -300,7 +300,10 @@ impl RealtimeHostRuntime {
         mutation.apply_scope_to_request(&mut request);
         let response = mutation
             .run_after_wait(INVITE_AUTOMATION_REMOTE_MUTATION_INTERVAL, || async {
-                self.deps.web.execute_api(request, ApiScope::Vrchat).await
+                self.deps
+                    .web
+                    .execute_api(request, VrchatScope::Vrchat)
+                    .await
             })
             .await?;
         if !(200..=299).contains(&response.status) {
@@ -439,7 +442,10 @@ impl RealtimeHostRuntime {
         mutation.apply_scope_to_request(&mut request);
         mutation
             .run_after_wait(INVITE_AUTOMATION_REMOTE_MUTATION_INTERVAL, || async {
-                self.deps.web.execute_api(request, ApiScope::Vrchat).await
+                self.deps
+                    .web
+                    .execute_api(request, VrchatScope::Vrchat)
+                    .await
             })
             .await?;
         let projection = RealtimeNotificationProjection {

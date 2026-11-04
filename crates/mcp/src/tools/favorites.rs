@@ -6,11 +6,9 @@ use rmcp::{schemars, tool, tool_router};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use vrcx_0_application::favorites::FavoriteRemoteAddInput;
-use vrcx_0_application_core::{
-    vrchat_api::{self},
-    FavoriteEntityKind,
-};
+use vrcx_0_application_core::FavoriteEntityKind;
 use vrcx_0_contracts::social_aggregates::{self, FavoriteAction};
+use vrcx_0_contracts::vrchat_api;
 use vrcx_0_contracts::FavoriteRow as PersistenceFavoriteRow;
 
 use crate::server::VrcxMcpServer;
@@ -207,10 +205,10 @@ fn finish_remote_favorite_write(
     kind: FavoriteEntityKind,
     entity_id: String,
     tags: String,
-    response: vrchat_api::VrchatApiResponse,
+    response: vrchat_api::VrchatResponse,
 ) -> FavoriteVrchatOutput {
     let status = response.status;
-    let policy = vrchat_api::classify_api_response(status);
+    let policy = vrchat_api::classify_vrchat_response(status);
     FavoriteVrchatOutput {
         kind,
         entity_id,
@@ -563,7 +561,7 @@ mod favorite_kind_tests {
                 FavoriteEntityKind::World,
                 "wrld_test".into(),
                 "worlds1".into(),
-                vrchat_api::VrchatApiResponse {
+                vrchat_api::VrchatResponse {
                     status,
                     data: "{}".into(),
                 },

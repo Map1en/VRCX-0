@@ -4,8 +4,9 @@ use vrcx_0_application::remote::{
     WorldRemoteFuture, WorldRemoteOperation, WorldRemotePort, WorldRemoteScope,
     WorldResponseProjectionPort,
 };
-use vrcx_0_application_core::vrchat_api::{execute_api_command, VrchatApiResponse, VrchatScope};
+use vrcx_0_application_core::vrchat_api::{execute_api_command, VrchatScope};
 use vrcx_0_application_core::{RuntimeDiagnostics, RuntimeSyncEngine, WebClient, WorldCache};
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 use vrcx_0_vrchat_client::worlds::{
     world_delete_input, world_list_by_user_get_input, world_persistent_data_delete_input,
     world_persistent_data_exists_input, world_publish_input, world_save_input,
@@ -144,7 +145,7 @@ impl CachedWorldResponseProjection {
 }
 
 impl WorldResponseProjectionPort for CachedWorldResponseProjection {
-    fn hydrate(&self, response: &VrchatApiResponse) {
+    fn hydrate(&self, response: &VrchatResponse) {
         self.world_cache.hydrate_response(response);
     }
 }

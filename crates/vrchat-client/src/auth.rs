@@ -156,12 +156,13 @@ pub fn file_analysis_get_input(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::http_api::{build_web_execute_request, ApiScope};
+    use crate::http_api::build_web_execute_request;
+    use vrcx_0_contracts::vrchat_api::VrchatScope;
 
     const ENDPOINT: &str = "https://api.vrchat.cloud/api/1";
 
     fn request(input: VrchatRequest) -> crate::web_client::WebExecuteRequest {
-        build_web_execute_request(input, ApiScope::Vrchat).unwrap()
+        build_web_execute_request(input, VrchatScope::Vrchat).unwrap()
     }
 
     fn header<'a>(request: &'a crate::web_client::WebExecuteRequest, name: &str) -> &'a str {

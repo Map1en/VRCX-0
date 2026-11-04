@@ -144,7 +144,7 @@ mod tests {
         assert_eq!(without_notification.method.as_deref(), Some("DELETE"));
         assert_eq!(
             without_notification.body,
-            crate::http_api::HttpApiRequestBody::Empty
+            vrcx_0_contracts::vrchat_api::VrchatRequestBody::Empty
         );
 
         let (_, with_notification) =
