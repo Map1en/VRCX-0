@@ -6,7 +6,7 @@ use vrcx_0_application::social::{
     MutualGraphFriendRefreshInput, MutualGraphFriendRefreshOutput, UserMutualFriendsListInput,
     UserMutualFriendsListOutput,
 };
-use vrcx_0_runtime_host_desktop::local_data::MutualGraphSnapshotOutput;
+use vrcx_0_contracts::mutual_graph::MutualGraphSnapshotOutput;
 
 use crate::commands::blocking::run_blocking;
 use crate::error::AppError;

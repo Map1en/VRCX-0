@@ -4,7 +4,7 @@ use crate::error::AppError;
 use crate::state::AppState;
 use tauri::State;
 
-use vrcx_0_runtime_host_desktop::local_data::{
+use vrcx_0_contracts::feed::{
     FeedLatestQueryInput, FeedReadModelOutput, FeedRowOutput, FeedRowsQueryInput,
     FeedSearchQueryInput,
 };

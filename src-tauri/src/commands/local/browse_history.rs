@@ -10,7 +10,7 @@ use vrcx_0_contracts::browse_history::{
 use crate::commands::blocking::run_blocking;
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_runtime_host_desktop::local_data::OwnerId;
+use vrcx_0_core::OwnerId;
 
 #[tauri::command(async)]
 #[specta::specta]

@@ -5,7 +5,7 @@ use tauri::State;
 use crate::error::AppError;
 use crate::state::AppState;
 
-use vrcx_0_runtime_host_desktop::local_data::{ConfigReadEntry, ConfigWriteEntry};
+use vrcx_0_contracts::{ConfigReadEntry, ConfigWriteEntry};
 
 #[tauri::command(async)]
 #[specta::specta]

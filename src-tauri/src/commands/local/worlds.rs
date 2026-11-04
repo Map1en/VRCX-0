@@ -6,7 +6,8 @@ use crate::error::AppError;
 use crate::state::AppState;
 
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
-use vrcx_0_runtime_host_desktop::local_data::{WorldFriendVisitsOutput, WorldGetInput};
+use vrcx_0_contracts::feed::WorldFriendVisitsOutput;
+use vrcx_0_runtime_host_desktop::local_data::WorldGetInput;
 
 #[tauri::command]
 #[specta::specta]

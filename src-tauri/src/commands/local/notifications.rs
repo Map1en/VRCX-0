@@ -7,9 +7,7 @@ use crate::error::AppError;
 use crate::state::AppState;
 
 use serde_json::Value;
-use vrcx_0_runtime_host_desktop::local_data::{
-    NotificationListItemOutput, NotificationListQueryInput,
-};
+use vrcx_0_contracts::notifications::{NotificationListItemOutput, NotificationListQueryInput};
 
 #[tauri::command(async)]
 #[specta::specta]

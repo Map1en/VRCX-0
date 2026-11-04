@@ -1086,7 +1086,7 @@ impl DesktopRuntimeHostState {
 
     pub fn add_game_log_entries(
         &self,
-        kind: crate::local_data::GameLogWriteKind,
+        kind: vrcx_0_contracts::game_log::GameLogWriteKind,
         entries: Vec<Value>,
     ) -> Result<()> {
         let affected_count = self.local_data.game_log_entries_add(kind, entries)?;
@@ -1762,7 +1762,7 @@ impl DesktopRuntimeHostState {
 
     pub fn config_set_values(
         &self,
-        entries: Vec<crate::local_data::ConfigWriteEntry>,
+        entries: Vec<vrcx_0_contracts::ConfigWriteEntry>,
     ) -> Result<()> {
         let touches_desktop_widget = entries
             .iter()

@@ -12,6 +12,7 @@ use vrcx_0_application::social::{
     MutualGraphFriendRefreshInput, MutualGraphFriendRefreshOutput, MutualGraphRequestDeps,
     UserMutualFriendsListInput, UserMutualFriendsListOutput,
 };
+use vrcx_0_application_activity::activity_page::{ActivityPageBuildInput, ActivityPageView};
 use vrcx_0_application_activity::ActivityRouter;
 use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::{
@@ -23,60 +24,52 @@ use vrcx_0_application_game::{
     InstanceHistoryQueryInput,
 };
 use vrcx_0_application_realtime::RealtimeHostRuntime;
+use vrcx_0_contracts::activity_page::{
+    ActivityJourneyDayInput, ActivityJourneyDaysInput, ActivityJourneyVisit,
+};
+use vrcx_0_contracts::activity_view::{
+    ActivityOverlapViewBuildInput, ActivityOverlapViewOutput, ActivityViewBuildInput,
+    ActivityViewOutput,
+};
+use vrcx_0_contracts::browse_history::{
+    BrowseHistoryEntityKind, BrowseHistoryPageOutput, BrowseHistoryQueryInput,
+    BrowseHistoryRecordInput,
+};
+use vrcx_0_contracts::database_maintenance::{MaintenanceTableSizesOutput, UserTableContextOutput};
+use vrcx_0_contracts::feed::{
+    FeedLatestQueryInput, FeedReadModelOutput, FeedRowOutput, FeedRowsQueryInput,
+    FeedSearchQueryInput, WorldFriendVisitsOutput,
+};
+use vrcx_0_contracts::friend_log::{
+    FriendLogCurrentOutput, FriendLogHistoryEntryInput, FriendLogHistoryOutput,
+    FriendLogHistoryQueryInput,
+};
+use vrcx_0_contracts::game_log::{
+    GameLogEntryDeleteKind, GameLogPreviousInstanceGroupOutput, GameLogPreviousInstanceWorldOutput,
+    GameLogWriteKind,
+};
+use vrcx_0_contracts::game_log_query::{GameLogQuery, GameLogQueryOutput};
+use vrcx_0_contracts::local_moderation::LocalModerationOutput;
+use vrcx_0_contracts::memos::{
+    AvatarMemoOutput, MemoSaveResult, UserMemoOutput, UserNoteOutput, WorldMemoOutput,
+};
+use vrcx_0_contracts::mutual_graph::MutualGraphSnapshotOutput;
+use vrcx_0_contracts::notifications::{NotificationListItemOutput, NotificationListQueryInput};
+use vrcx_0_contracts::player_list::InstanceActivityRowOutput;
+use vrcx_0_contracts::profile_bio::ProfileBioOutput;
 use vrcx_0_contracts::{
+    AvatarCacheOutput, AvatarTagInput, AvatarTagOutput, AvatarTagsPatchInput,
+    AvatarTimeSpentOutput, AvatarUsageRow, AvatarWearSegment, ConfigReadEntry, ConfigWriteEntry,
     FileMetadataOutput, SavedGroupCollectionCreateInput, SavedGroupCollectionDeleteInput,
     SavedGroupFavoriteAddInput, SavedGroupFavoriteRemoveInput, SavedGroupFavoritesSnapshot,
+    WorldSummaryOutput,
 };
 use vrcx_0_core::files::extract_file_id;
 use vrcx_0_core::json::RawJson;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
+use vrcx_0_core::OwnerId;
+use vrcx_0_outbound_adapters::LocalDataStore;
 use vrcx_0_persistence::DatabaseService;
-
-pub use vrcx_0_application_activity::activity_page::{ActivityPageBuildInput, ActivityPageView};
-pub use vrcx_0_contracts::activity_page::{
-    ActivityJourneyDayInput, ActivityJourneyDaysInput, ActivityJourneyVisit,
-};
-pub use vrcx_0_contracts::activity_view::{
-    ActivityOverlapViewBuildInput, ActivityOverlapViewOutput, ActivityViewBuildInput,
-    ActivityViewOutput,
-};
-pub use vrcx_0_contracts::browse_history::{
-    BrowseHistoryEntityKind, BrowseHistoryPageOutput, BrowseHistoryQueryInput,
-    BrowseHistoryRecordInput,
-};
-pub use vrcx_0_contracts::database_maintenance::{
-    MaintenanceTableSizesOutput, UserTableContextOutput,
-};
-pub use vrcx_0_contracts::memos::{
-    AvatarMemoOutput, MemoSaveResult, UserMemoOutput, UserNoteOutput, WorldMemoOutput,
-};
-pub use vrcx_0_contracts::player_list::InstanceActivityRowOutput;
-pub use vrcx_0_contracts::profile_bio::ProfileBioOutput;
-pub use vrcx_0_contracts::{AvatarTagInput, AvatarTagsPatchInput};
-pub use vrcx_0_core::OwnerId;
-pub use vrcx_0_persistence::avatars::{
-    AvatarCacheOutput, AvatarTagOutput, AvatarTimeSpentOutput, AvatarUsageRow, AvatarWearSegment,
-};
-pub use vrcx_0_persistence::config::{ConfigReadEntry, ConfigWriteEntry};
-pub use vrcx_0_persistence::feed::{
-    FeedLatestQueryInput, FeedReadModelOutput, FeedRowOutput, FeedRowsQueryInput,
-    FeedSearchQueryInput,
-};
-pub use vrcx_0_persistence::friends::{
-    FriendLogCurrentOutput, FriendLogHistoryEntryInput, FriendLogHistoryOutput,
-    FriendLogHistoryQueryInput,
-};
-pub use vrcx_0_persistence::game_log::{
-    GameLogEntryDeleteKind, GameLogPreviousInstanceGroupOutput, GameLogPreviousInstanceWorldOutput,
-    GameLogQuery, GameLogQueryOutput, GameLogWriteKind,
-};
-pub use vrcx_0_persistence::local_moderation::LocalModerationOutput;
-pub use vrcx_0_persistence::mutual_graph::MutualGraphSnapshotOutput;
-pub use vrcx_0_persistence::notifications::{
-    NotificationListItemOutput, NotificationListQueryInput,
-};
-pub use vrcx_0_persistence::social_aggregates::{WorldFriendVisitRow, WorldFriendVisitsOutput};
-pub use vrcx_0_persistence::worlds::WorldSummaryOutput;
 
 #[derive(Debug, serde::Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -102,6 +95,7 @@ pub struct WorldGetInput {
 #[derive(Clone)]
 pub struct LocalDataRuntime {
     db: Arc<DatabaseService>,
+    store: LocalDataStore,
     profile_config: Arc<dyn vrcx_0_application::profile::ProfileConfigStore>,
     web: Arc<WebClient>,
     auth_scope: RuntimeAuthScope,
@@ -149,8 +143,10 @@ impl LocalDataRuntime {
             ),
             auth_scope.clone(),
         );
+        let store = LocalDataStore::new(Arc::clone(&db));
         Self {
             db,
+            store,
             profile_config,
             web,
             auth_scope,
@@ -352,17 +348,11 @@ impl LocalDataRuntime {
         &self,
         input: ActivityOverlapViewBuildInput,
     ) -> Result<ActivityOverlapViewOutput> {
-        Ok(vrcx_0_persistence::activity::activity_overlap_view_build(
-            self.db.as_ref(),
-            input,
-        )?)
+        self.store.activity_overlap_view(input)
     }
 
     pub fn activity_view(&self, input: ActivityViewBuildInput) -> Result<ActivityViewOutput> {
-        Ok(vrcx_0_persistence::activity::activity_view_build(
-            self.db.as_ref(),
-            input,
-        )?)
+        self.store.activity_view(input)
     }
 
     pub fn activity_page_view(&self, input: ActivityPageBuildInput) -> Result<ActivityPageView> {
@@ -376,27 +366,15 @@ impl LocalDataRuntime {
         &self,
         input: ActivityJourneyDayInput,
     ) -> Result<Vec<ActivityJourneyVisit>> {
-        Ok(vrcx_0_persistence::activity_page::read_journey_visits(
-            self.db.as_ref(),
-            &input.owner_user_id,
-            input.from_ms,
-            input.to_ms,
-        )?)
+        self.store.activity_journey_visits(input)
     }
 
     pub fn activity_journey_days(&self, input: ActivityJourneyDaysInput) -> Result<Vec<String>> {
-        Ok(vrcx_0_persistence::activity_page::read_journey_days(
-            self.db.as_ref(),
-            &input.owner_user_id,
-            input.utc_offset_minutes,
-        )?)
+        self.store.activity_journey_days(input)
     }
 
     pub fn avatar_history_clear(&self, user_id: String) -> Result<()> {
-        Ok(vrcx_0_persistence::avatars::avatar_history_clear(
-            self.db.as_ref(),
-            user_id,
-        )?)
+        self.store.avatar_history_clear(user_id)
     }
 
     pub fn avatar_history_list(
@@ -404,19 +382,11 @@ impl LocalDataRuntime {
         user_id: String,
         limit: i64,
     ) -> Result<Vec<AvatarCacheOutput>> {
-        Ok(vrcx_0_persistence::avatars::avatar_history_list(
-            self.db.as_ref(),
-            user_id,
-            limit,
-        )?)
+        self.store.avatar_history_list(user_id, limit)
     }
 
     pub fn avatar_usage_ranking(&self, user_id: String, limit: i64) -> Result<Vec<AvatarUsageRow>> {
-        Ok(vrcx_0_persistence::avatars::avatar_usage_ranking(
-            self.db.as_ref(),
-            user_id,
-            limit,
-        )?)
+        self.store.avatar_usage_ranking(user_id, limit)
     }
 
     pub fn avatar_wear_segments(
@@ -425,29 +395,15 @@ impl LocalDataRuntime {
         from_ms: i64,
         to_ms: i64,
     ) -> Result<Vec<AvatarWearSegment>> {
-        Ok(vrcx_0_persistence::avatars::avatar_wear_segments(
-            self.db.as_ref(),
-            user_id,
-            from_ms,
-            to_ms,
-        )?)
+        self.store.avatar_wear_segments(user_id, from_ms, to_ms)
     }
 
     pub fn avatar_tag_add(&self, avatar_id: String, tag: Value, color: Value) -> Result<i64> {
-        Ok(vrcx_0_persistence::avatars::avatar_tag_add(
-            self.db.as_ref(),
-            avatar_id,
-            tag,
-            color,
-        )?)
+        self.store.avatar_tag_add(avatar_id, tag, color)
     }
 
     pub fn avatar_tag_remove(&self, avatar_id: String, tag: Value) -> Result<i64> {
-        Ok(vrcx_0_persistence::avatars::avatar_tag_remove(
-            self.db.as_ref(),
-            avatar_id,
-            tag,
-        )?)
+        self.store.avatar_tag_remove(avatar_id, tag)
     }
 
     pub fn avatar_tag_update_color(
@@ -456,46 +412,27 @@ impl LocalDataRuntime {
         tag: Value,
         color: Value,
     ) -> Result<i64> {
-        Ok(vrcx_0_persistence::avatars::avatar_tag_update_color(
-            self.db.as_ref(),
-            avatar_id,
-            tag,
-            color,
-        )?)
+        self.store.avatar_tag_update_color(avatar_id, tag, color)
     }
 
     pub fn avatar_tags_distinct(&self) -> Result<Vec<String>> {
-        Ok(vrcx_0_persistence::avatars::avatar_tags_distinct(
-            self.db.as_ref(),
-        )?)
+        self.store.avatar_tags_distinct()
     }
 
     pub fn avatar_tags_get(&self, avatar_id: String) -> Result<Vec<AvatarTagOutput>> {
-        Ok(vrcx_0_persistence::avatars::avatar_tags_get(
-            self.db.as_ref(),
-            avatar_id,
-        )?)
+        self.store.avatar_tags_get(avatar_id)
     }
 
     pub fn avatar_tags_list(&self) -> Result<Vec<AvatarTagOutput>> {
-        Ok(vrcx_0_persistence::avatars::avatar_tags_list(
-            self.db.as_ref(),
-        )?)
+        self.store.avatar_tags_list()
     }
 
     pub fn avatar_tags_patch(&self, avatar_id: String, patch: AvatarTagsPatchInput) -> Result<()> {
-        Ok(vrcx_0_persistence::avatars::avatar_tags_patch(
-            self.db.as_ref(),
-            avatar_id,
-            patch,
-        )?)
+        self.store.avatar_tags_patch(avatar_id, patch)
     }
 
     pub fn avatar_tags_remove_all(&self, avatar_id: String) -> Result<i64> {
-        Ok(vrcx_0_persistence::avatars::avatar_tags_remove_all(
-            self.db.as_ref(),
-            avatar_id,
-        )?)
+        self.store.avatar_tags_remove_all(avatar_id)
     }
 
     pub fn avatar_tags_replace(
@@ -503,11 +440,7 @@ impl LocalDataRuntime {
         avatar_id: String,
         entries: Vec<AvatarTagInput>,
     ) -> Result<()> {
-        Ok(vrcx_0_persistence::avatars::avatar_tags_replace(
-            self.db.as_ref(),
-            avatar_id,
-            entries,
-        )?)
+        self.store.avatar_tags_replace(avatar_id, entries)
     }
 
     pub fn avatar_time_spent_get(
@@ -515,35 +448,22 @@ impl LocalDataRuntime {
         user_id: String,
         avatar_id: String,
     ) -> Result<AvatarTimeSpentOutput> {
-        Ok(vrcx_0_persistence::avatars::avatar_time_spent_get(
-            self.db.as_ref(),
-            user_id,
-            avatar_id,
-        )?)
+        self.store.avatar_time_spent_get(user_id, avatar_id)
     }
 
     pub fn avatar_time_spent_list(&self, user_id: String) -> Result<Vec<AvatarTimeSpentOutput>> {
-        Ok(vrcx_0_persistence::avatars::avatar_time_spent_list(
-            self.db.as_ref(),
-            user_id,
-        )?)
+        self.store.avatar_time_spent_list(user_id)
     }
 
     pub fn browse_history_record(&self, input: BrowseHistoryRecordInput) -> Result<()> {
-        Ok(vrcx_0_persistence::browse_history::browse_history_record(
-            self.db.as_ref(),
-            input,
-        )?)
+        self.store.browse_history_record(input)
     }
 
     pub fn browse_history_query(
         &self,
         input: BrowseHistoryQueryInput,
     ) -> Result<BrowseHistoryPageOutput> {
-        Ok(vrcx_0_persistence::browse_history::browse_history_query(
-            self.db.as_ref(),
-            input,
-        )?)
+        self.store.browse_history_query(input)
     }
 
     pub fn browse_history_delete(
@@ -552,12 +472,8 @@ impl LocalDataRuntime {
         entity_kind: BrowseHistoryEntityKind,
         entity_id: String,
     ) -> Result<i64> {
-        Ok(vrcx_0_persistence::browse_history::browse_history_delete(
-            self.db.as_ref(),
-            owner_user_id,
-            entity_kind,
-            entity_id,
-        )?)
+        self.store
+            .browse_history_delete(owner_user_id, entity_kind, entity_id)
     }
 
     pub fn browse_history_clear(
@@ -565,28 +481,15 @@ impl LocalDataRuntime {
         owner_user_id: OwnerId,
         entity_kind: Option<BrowseHistoryEntityKind>,
     ) -> Result<i64> {
-        Ok(vrcx_0_persistence::browse_history::browse_history_clear(
-            self.db.as_ref(),
-            owner_user_id,
-            entity_kind,
-        )?)
+        self.store.browse_history_clear(owner_user_id, entity_kind)
     }
 
     pub fn browse_history_retention_days_get(&self) -> Result<i64> {
-        Ok(
-            vrcx_0_persistence::browse_history::browse_history_retention_days_get(
-                self.db.as_ref(),
-            )?,
-        )
+        self.store.browse_history_retention_days_get()
     }
 
     pub fn browse_history_retention_days_set(&self, retention_days: i64) -> Result<i64> {
-        Ok(
-            vrcx_0_persistence::browse_history::browse_history_retention_days_set(
-                self.db.as_ref(),
-                retention_days,
-            )?,
-        )
+        self.store.browse_history_retention_days_set(retention_days)
     }
 
     pub fn config_list_values(&self) -> Result<Vec<ConfigReadEntry>> {
@@ -602,19 +505,11 @@ impl LocalDataRuntime {
     }
 
     pub fn maintenance_table_sizes(&self, user_id: String) -> Result<MaintenanceTableSizesOutput> {
-        Ok(
-            vrcx_0_persistence::maintenance::database_maintenance_table_sizes_get(
-                self.db.as_ref(),
-                user_id,
-            )?,
-        )
+        self.store.maintenance_table_sizes(user_id)
     }
 
     pub fn ensure_user_tables(&self, user_id: String) -> Result<UserTableContextOutput> {
-        Ok(vrcx_0_persistence::maintenance::user_tables_ensure(
-            self.db.as_ref(),
-            user_id,
-        )?)
+        self.store.ensure_user_tables(user_id)
     }
 
     pub fn favorite_list(&self, kind: FavoriteEntityKind) -> Result<Vec<FavoriteRow>> {
@@ -677,17 +572,11 @@ impl LocalDataRuntime {
     }
 
     pub fn feed_rows_query(&self, query: FeedRowsQueryInput) -> Result<Vec<FeedRowOutput>> {
-        Ok(vrcx_0_persistence::feed::feed_rows_query(
-            self.db.as_ref(),
-            query,
-        )?)
+        self.store.feed_rows_query(query)
     }
 
     pub fn friend_log_current_list(&self, user_id: String) -> Result<Vec<FriendLogCurrentOutput>> {
-        Ok(vrcx_0_persistence::friends::friend_log_current_list(
-            self.db.as_ref(),
-            user_id,
-        )?)
+        self.store.friend_log_current_list(user_id)
     }
 
     pub fn friend_log_history_delete(
@@ -695,58 +584,34 @@ impl LocalDataRuntime {
         user_id: String,
         entry: FriendLogHistoryEntryInput,
     ) -> Result<i64> {
-        Ok(vrcx_0_persistence::friends::friend_log_history_delete(
-            self.db.as_ref(),
-            user_id,
-            entry,
-        )?)
+        self.store.friend_log_history_delete(user_id, entry)
     }
 
     pub fn friend_log_history_query(
         &self,
         query: FriendLogHistoryQueryInput,
     ) -> Result<Vec<FriendLogHistoryOutput>> {
-        Ok(vrcx_0_persistence::friends::friend_log_history_query(
-            self.db.as_ref(),
-            query,
-        )?)
+        self.store.friend_log_history_query(query)
     }
 
     pub fn game_log_entries_add(&self, kind: GameLogWriteKind, entries: Vec<Value>) -> Result<u64> {
-        Ok(vrcx_0_persistence::game_log::game_log_entries_add(
-            self.db.as_ref(),
-            &self.current_owner(),
-            kind,
-            entries,
-        )?)
+        self.store
+            .game_log_entries_add(&self.current_owner(), kind, entries)
     }
 
     pub fn game_log_entry_delete(&self, kind: GameLogEntryDeleteKind, entry: Value) -> Result<i64> {
-        Ok(vrcx_0_persistence::game_log::game_log_entry_delete(
-            self.db.as_ref(),
-            &self.current_owner(),
-            kind,
-            entry,
-        )?)
+        self.store
+            .game_log_entry_delete(&self.current_owner(), kind, entry)
     }
 
     pub fn game_log_instance_delete(&self, location: String, event_ids: Vec<i64>) -> Result<i64> {
-        Ok(vrcx_0_persistence::game_log::game_log_instance_delete(
-            self.db.as_ref(),
-            &self.current_owner(),
-            location,
-            event_ids,
-        )?)
+        self.store
+            .game_log_instance_delete(&self.current_owner(), location, event_ids)
     }
 
     pub fn game_log_instance_delete_by_location(&self, location: String) -> Result<i64> {
-        Ok(
-            vrcx_0_persistence::game_log::game_log_instance_delete_by_location(
-                self.db.as_ref(),
-                &self.current_owner(),
-                location,
-            )?,
-        )
+        self.store
+            .game_log_instance_delete_by_location(&self.current_owner(), location)
     }
 
     pub fn game_log_import_inspect(
@@ -773,47 +638,28 @@ impl LocalDataRuntime {
     }
 
     pub fn game_log_query(&self, query: GameLogQuery) -> Result<GameLogQueryOutput> {
-        Ok(vrcx_0_persistence::game_log::game_log_query(
-            self.db.as_ref(),
-            &self.current_owner(),
-            query,
-        )?)
+        self.store.game_log_query(&self.current_owner(), query)
     }
 
     pub fn previous_instances_by_group_id(
         &self,
         group_id: String,
     ) -> Result<Vec<GameLogPreviousInstanceGroupOutput>> {
-        Ok(
-            vrcx_0_persistence::game_log::get_previous_instances_by_group_id(
-                self.db.as_ref(),
-                &self.current_owner(),
-                &group_id,
-            )?,
-        )
+        self.store
+            .previous_instances_by_group_id(&self.current_owner(), group_id)
     }
 
     pub fn previous_instances_by_world_id(
         &self,
         world_id: String,
     ) -> Result<Vec<GameLogPreviousInstanceWorldOutput>> {
-        Ok(
-            vrcx_0_persistence::game_log::get_previous_instances_by_world_id(
-                self.db.as_ref(),
-                &self.current_owner(),
-                &world_id,
-            )?,
-        )
+        self.store
+            .previous_instances_by_world_id(&self.current_owner(), world_id)
     }
 
     pub fn world_friend_visits(&self, world_id: String) -> Result<WorldFriendVisitsOutput> {
-        Ok(
-            vrcx_0_persistence::social_aggregates::get_world_friend_visits(
-                self.db.as_ref(),
-                &self.current_owner(),
-                &world_id,
-            )?,
-        )
+        self.store
+            .world_friend_visits(&self.current_owner(), world_id)
     }
 
     pub fn game_log_sessions_query(
@@ -843,127 +689,73 @@ impl LocalDataRuntime {
         owner_user_id: OwnerId,
         user_id: String,
     ) -> Result<Option<LocalModerationOutput>> {
-        Ok(vrcx_0_persistence::local_moderation::local_moderation_get(
-            self.db.as_ref(),
-            owner_user_id,
-            user_id,
-        )?)
+        self.store.local_moderation_get(owner_user_id, user_id)
     }
 
     pub fn mutual_graph_snapshot_get(&self, user_id: String) -> Result<MutualGraphSnapshotOutput> {
-        Ok(vrcx_0_persistence::mutual_graph::mutual_graph_snapshot_get(
-            self.db.as_ref(),
-            user_id,
-        )?)
+        self.store.mutual_graph_snapshot_get(user_id)
     }
 
     pub fn local_moderation_list(
         &self,
         owner_user_id: OwnerId,
     ) -> Result<Vec<LocalModerationOutput>> {
-        Ok(vrcx_0_persistence::local_moderation::local_moderation_list(
-            self.db.as_ref(),
-            owner_user_id,
-        )?)
+        self.store.local_moderation_list(owner_user_id)
     }
 
     pub fn memo_get_avatar(&self, avatar_id: String) -> Result<Option<AvatarMemoOutput>> {
-        Ok(vrcx_0_persistence::memos::memo_get_avatar(
-            self.db.as_ref(),
-            avatar_id,
-        )?)
+        self.store.memo_get_avatar(avatar_id)
     }
 
     pub fn memo_get_user(&self, user_id: String) -> Result<Option<UserMemoOutput>> {
-        Ok(vrcx_0_persistence::memos::memo_get_user(
-            self.db.as_ref(),
-            user_id,
-        )?)
+        self.store.memo_get_user(user_id)
     }
 
     pub fn memo_get_world(&self, world_id: String) -> Result<Option<WorldMemoOutput>> {
-        Ok(vrcx_0_persistence::memos::memo_get_world(
-            self.db.as_ref(),
-            world_id,
-        )?)
+        self.store.memo_get_world(world_id)
     }
 
     pub fn memo_list_user_notes(&self, owner_user_id: OwnerId) -> Result<Vec<UserNoteOutput>> {
-        Ok(vrcx_0_persistence::memos::memo_list_user_notes(
-            self.db.as_ref(),
-            owner_user_id,
-        )?)
+        self.store.memo_list_user_notes(owner_user_id)
     }
 
     pub fn profile_bio_list(&self, owner_user_id: OwnerId) -> Result<Vec<ProfileBioOutput>> {
-        Ok(vrcx_0_persistence::profile_bio::profile_bio_list(
-            self.db.as_ref(),
-            &owner_user_id,
-        )?)
+        self.store.profile_bio_list(owner_user_id)
     }
 
     pub fn memo_list_users(&self) -> Result<Vec<UserMemoOutput>> {
-        Ok(vrcx_0_persistence::memos::memo_list_users(
-            self.db.as_ref(),
-        )?)
+        self.store.memo_list_users()
     }
 
     pub fn memo_save_avatar(&self, avatar_id: String, memo: String) -> Result<MemoSaveResult> {
-        Ok(vrcx_0_persistence::memos::memo_save_avatar(
-            self.db.as_ref(),
-            avatar_id,
-            memo,
-        )?)
+        self.store.memo_save_avatar(avatar_id, memo)
     }
 
     pub fn memo_save_user(&self, user_id: String, memo: String) -> Result<MemoSaveResult> {
-        Ok(vrcx_0_persistence::memos::memo_save_user(
-            self.db.as_ref(),
-            user_id,
-            memo,
-        )?)
+        self.store.memo_save_user(user_id, memo)
     }
 
     pub fn memo_save_world(&self, world_id: String, memo: String) -> Result<MemoSaveResult> {
-        Ok(vrcx_0_persistence::memos::memo_save_world(
-            self.db.as_ref(),
-            world_id,
-            memo,
-        )?)
+        self.store.memo_save_world(world_id, memo)
     }
 
     pub fn notification_add_v1(&self, user_id: String, notification: Value) -> Result<()> {
-        Ok(vrcx_0_persistence::notifications::notification_add_v1(
-            self.db.as_ref(),
-            user_id,
-            notification,
-        )?)
+        self.store.notification_add_v1(user_id, notification)
     }
 
     pub fn notification_delete(&self, user_id: String, id: String) -> Result<()> {
-        Ok(vrcx_0_persistence::notifications::notification_delete(
-            self.db.as_ref(),
-            user_id,
-            id,
-        )?)
+        self.store.notification_delete(user_id, id)
     }
 
     pub fn notification_expire(&self, user_id: String, id: String) -> Result<()> {
-        Ok(vrcx_0_persistence::notifications::notification_expire(
-            self.db.as_ref(),
-            user_id,
-            id,
-        )?)
+        self.store.notification_expire(user_id, id)
     }
 
     pub fn notification_list_query(
         &self,
         query: NotificationListQueryInput,
     ) -> Result<Vec<NotificationListItemOutput>> {
-        Ok(vrcx_0_persistence::notifications::notification_list_query(
-            self.db.as_ref(),
-            query,
-        )?)
+        self.store.notification_list_query(query)
     }
 
     pub fn notification_update_expired(
@@ -972,42 +764,20 @@ impl LocalDataRuntime {
         id: String,
         expired: bool,
     ) -> Result<()> {
-        Ok(
-            vrcx_0_persistence::notifications::notification_update_expired(
-                self.db.as_ref(),
-                user_id,
-                id,
-                expired,
-            )?,
-        )
+        self.store.notification_update_expired(user_id, id, expired)
     }
 
     pub fn notification_v2_expire(&self, user_id: String, id: String) -> Result<()> {
-        Ok(vrcx_0_persistence::notifications::notification_v2_expire(
-            self.db.as_ref(),
-            user_id,
-            id,
-        )?)
+        self.store.notification_v2_expire(user_id, id)
     }
 
     pub fn notification_v2_mark_seen(&self, user_id: String, id: String) -> Result<()> {
-        Ok(
-            vrcx_0_persistence::notifications::notification_v2_mark_seen(
-                self.db.as_ref(),
-                user_id,
-                id,
-            )?,
-        )
+        self.store.notification_v2_mark_seen(user_id, id)
     }
 
     pub fn instance_activity_dates_get(&self, user_id: String) -> Result<Vec<String>> {
-        Ok(
-            vrcx_0_persistence::player_list::instance_activity_dates_get(
-                self.db.as_ref(),
-                &self.current_owner(),
-                user_id,
-            )?,
-        )
+        self.store
+            .instance_activity_dates_get(&self.current_owner(), user_id)
     }
 
     pub fn instance_activity_rows_get(
@@ -1015,22 +785,15 @@ impl LocalDataRuntime {
         start_date: String,
         end_date: String,
     ) -> Result<Vec<InstanceActivityRowOutput>> {
-        Ok(vrcx_0_persistence::player_list::instance_activity_rows_get(
-            self.db.as_ref(),
-            &self.current_owner(),
-            start_date,
-            end_date,
-        )?)
+        self.store
+            .instance_activity_rows_get(&self.current_owner(), start_date, end_date)
     }
 
     pub fn world_summaries_get(
         &self,
         world_ids: Vec<String>,
     ) -> Result<HashMap<String, WorldSummaryOutput>> {
-        Ok(vrcx_0_persistence::player_list::world_summaries_get(
-            self.db.as_ref(),
-            &self.current_owner(),
-            world_ids,
-        )?)
+        self.store
+            .world_summaries_get(&self.current_owner(), world_ids)
     }
 }
