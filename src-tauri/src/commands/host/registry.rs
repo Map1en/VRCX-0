@@ -38,7 +38,9 @@ pub async fn app__vrchat_group_order_get(
     state: State<'_, AppState>,
 ) -> Result<Vec<String>, AppError> {
     require_host_capability(HostCapability::RegistryPrefs)?;
-    let scope = state.require_active_scope("Reading the in-game group order")?;
+    let scope = state
+        .runtime_host()
+        .require_active_scope("Reading the in-game group order")?;
     run_blocking("group order read", move || {
         vrchat_registry::get_group_order(&scope.current_user_id)
     })
@@ -52,7 +54,9 @@ pub async fn app__vrchat_group_order_set(
     group_ids: Vec<String>,
 ) -> Result<bool, AppError> {
     require_host_capability(HostCapability::RegistryPrefs)?;
-    let scope = state.require_active_scope("Saving the in-game group order")?;
+    let scope = state
+        .runtime_host()
+        .require_active_scope("Saving the in-game group order")?;
     run_blocking("group order write", move || {
         vrchat_registry::set_group_order(&scope.current_user_id, &group_ids)
     })

@@ -1,9 +1,11 @@
 use std::sync::Arc;
 
 use vrcx_0_application::profile::{DatabaseUpgradeRuntime, ProfileConfigStore};
+use vrcx_0_application::social::{FriendLogNameResolutionCoordinator, UserDialogTabCountsRuntime};
 use vrcx_0_composition::RuntimeHostState;
 use vrcx_0_outbound_adapters::{
-    LocalFriendLogNameStore, LocalNotificationSyncAdapter, LocalWorldCollectionAdapter,
+    LocalFriendLogNameStore, LocalNotificationSyncAdapter, LocalTranslationAdapter,
+    LocalUserDialogTabCountsSource, LocalWorldCollectionAdapter,
 };
 
 use crate::data_dir::DesktopDataDirRuntime;
@@ -23,6 +25,10 @@ pub(crate) struct LocalRuntimes {
     pub(crate) world_collections: LocalWorldCollectionAdapter,
     pub(crate) friend_log_name_store: LocalFriendLogNameStore,
     pub(crate) notification_sync: LocalNotificationSyncAdapter,
+    pub(crate) friend_log_name_resolutions: FriendLogNameResolutionCoordinator,
+    pub(crate) user_dialog_tab_counts: UserDialogTabCountsRuntime,
+    pub(crate) user_dialog_tab_counts_source: Arc<LocalUserDialogTabCountsSource>,
+    pub(crate) translation: LocalTranslationAdapter,
 }
 
 pub(crate) fn build_local_runtimes(
@@ -94,6 +100,16 @@ pub(crate) fn build_local_runtimes(
         world_collections: LocalWorldCollectionAdapter::new(Arc::clone(runtime.database())),
         friend_log_name_store: LocalFriendLogNameStore::new(Arc::clone(runtime.database())),
         notification_sync: LocalNotificationSyncAdapter::new(
+            Arc::clone(runtime.database()),
+            Arc::clone(runtime.web_client()),
+        ),
+        friend_log_name_resolutions: FriendLogNameResolutionCoordinator::default(),
+        user_dialog_tab_counts: UserDialogTabCountsRuntime::new(),
+        user_dialog_tab_counts_source: Arc::new(LocalUserDialogTabCountsSource::new(
+            Arc::clone(runtime.database()),
+            Arc::clone(runtime.web_client()),
+        )),
+        translation: LocalTranslationAdapter::new(
             Arc::clone(runtime.database()),
             Arc::clone(runtime.web_client()),
         ),

@@ -1,10 +1,19 @@
 use std::sync::Arc;
 
 use vrcx_0_application::auth::VrchatConfigRuntime;
+use vrcx_0_application::favorites::FavoriteDetailsRuntime;
 use vrcx_0_application::game::InstanceLaunchRuntime;
 use vrcx_0_application::remote::WorldRemoteRuntime;
-use vrcx_0_application::social::CurrentUserMutationRuntime;
+use vrcx_0_application::social::{
+    CurrentUserMutationRuntime, GroupMembershipBatchCoordinator, GroupModerationBatchCoordinator,
+    QuickSearchRuntime, QuickSearchSources,
+};
 use vrcx_0_composition::RuntimeHostState;
+use vrcx_0_outbound_adapters::{
+    CachedWorldNameResolver, LocalAvatarApplicationAdapter, LocalNotificationWebhookTransport,
+    LocalQuickSearchDetailStore, VrchatAvatarRemote, VrchatFavoriteRemote,
+    VrchatQuickSearchRemoteRequests, VrchatRequestAdapter,
+};
 
 use crate::avatar::DesktopAvatarRuntime;
 use crate::current_user_mutation::{
@@ -32,6 +41,13 @@ pub(crate) struct RemoteRuntimes {
     pub(crate) vrchat_remote: DesktopVrchatRemoteFacade,
     pub(crate) worlds: WorldRemoteRuntime,
     pub(crate) vrchat_config: VrchatConfigRuntime,
+    pub(crate) favorite_details: FavoriteDetailsRuntime,
+    pub(crate) quick_search: QuickSearchRuntime,
+    pub(crate) group_membership_batches: GroupMembershipBatchCoordinator,
+    pub(crate) group_moderation_batches: GroupModerationBatchCoordinator,
+    pub(crate) vrchat_requests: VrchatRequestAdapter,
+    pub(crate) world_names: CachedWorldNameResolver,
+    pub(crate) webhook_transport: LocalNotificationWebhookTransport,
 }
 
 pub(crate) fn build_remote_runtimes(
@@ -133,6 +149,39 @@ pub(crate) fn build_remote_runtimes(
             vrchat_api,
         )),
     );
+    let favorite_details = FavoriteDetailsRuntime::new(
+        Arc::new(VrchatFavoriteRemote::new(
+            Arc::clone(runtime.web_client()),
+            context.diagnostics().clone(),
+            context.sync().clone(),
+            Arc::clone(context.world_cache()),
+        )),
+        context.auth_scope().clone(),
+        Arc::clone(context.world_cache()),
+        Arc::clone(context.avatar_cache()),
+        context.tasks().clone(),
+    );
+    let quick_search = QuickSearchRuntime::new(
+        QuickSearchSources::new(
+            Arc::new(LocalQuickSearchDetailStore::new(Arc::clone(
+                runtime.database(),
+            ))),
+            Arc::new(VrchatQuickSearchRemoteRequests),
+            Arc::new(LocalAvatarApplicationAdapter::new(Arc::clone(
+                runtime.database(),
+            ))),
+            Arc::new(VrchatAvatarRemote::new(
+                Arc::clone(runtime.web_client()),
+                context.diagnostics().clone(),
+                context.sync().clone(),
+            )),
+            Arc::clone(context.world_cache()),
+        ),
+        Arc::new(VrchatRequestAdapter::new(Arc::clone(runtime.web_client()))),
+        context.auth_scope().clone(),
+        context.diagnostics().clone(),
+        context.sync().clone(),
+    );
     RemoteRuntimes {
         current_user_mutations,
         avatars,
@@ -144,5 +193,15 @@ pub(crate) fn build_remote_runtimes(
         vrchat_remote,
         worlds,
         vrchat_config,
+        favorite_details,
+        quick_search,
+        group_membership_batches: GroupMembershipBatchCoordinator::default(),
+        group_moderation_batches: GroupModerationBatchCoordinator::default(),
+        vrchat_requests: VrchatRequestAdapter::new(Arc::clone(runtime.web_client())),
+        world_names: CachedWorldNameResolver::new(
+            Arc::clone(context.world_cache()),
+            Arc::clone(runtime.web_client()),
+        ),
+        webhook_transport: LocalNotificationWebhookTransport::new(Arc::clone(runtime.web_client())),
     }
 }

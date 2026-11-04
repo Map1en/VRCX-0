@@ -8,16 +8,6 @@ use vrcx_0_application::discovery::{
     complete_translation, OpenAiTranslationFuture, OpenAiTranslationPort, OpenAiTranslationRequest,
     TranslationCompletionError, TranslationResult, TranslationTranslateInput,
 };
-use vrcx_0_application::favorites::FavoriteDetailsRuntime;
-use vrcx_0_application::social::{
-    AvatarContentTagsBatchInput, BatchMutationResult, FriendLogNameResolutionCoordinator,
-    FriendLogNameResolutionInput, GroupMembershipBatchCoordinator, GroupMembershipBatchInput,
-    GroupMembershipBatchResult, GroupModerationBatchCoordinator, GroupModerationBatchInput,
-    GroupModerationBatchResult, InstanceInviteBatchInput, InstanceInviteBatchResult,
-    NotificationMarkSeenBatchInput, NotificationMarkSeenBatchResult, NotificationSyncOutcome,
-    QuickSearchRuntime, ResolvedFriendLogName, UserDialogTabCountsInput, UserDialogTabCountsOutput,
-    UserDialogTabCountsRuntime,
-};
 use vrcx_0_application_core::UpdaterPort;
 use vrcx_0_assistant::{AssistantController, LlmTranslateInput};
 use vrcx_0_mcp::{McpCaller, McpServerController};
@@ -32,12 +22,6 @@ pub struct AppState {
     mcp_controller: McpServerController,
     pending_deep_links: PendingDeepLinks,
     pending_desktop_notification_activations: PendingDesktopNotificationActivations,
-    favorite_details: FavoriteDetailsRuntime,
-    group_membership_batches: GroupMembershipBatchCoordinator,
-    group_moderation_batches: GroupModerationBatchCoordinator,
-    friend_log_name_resolutions: FriendLogNameResolutionCoordinator,
-    user_dialog_tab_counts: UserDialogTabCountsRuntime,
-    quick_search: QuickSearchRuntime,
     assistant: tokio::sync::OnceCell<AssistantController>,
     background_resume_route: Mutex<Option<String>>,
     pub(crate) background_delay_generation: AtomicU64,
@@ -65,13 +49,6 @@ impl Drop for MainWindowRebuildGuard<'_> {
 impl AppState {
     pub(crate) fn runtime_host(&self) -> &DesktopRuntimeHostState {
         &self.runtime
-    }
-
-    pub(crate) fn require_active_scope(
-        &self,
-        requirement: &str,
-    ) -> Result<vrcx_0_application_core::RuntimeAuthScopeSnapshot, AppError> {
-        Ok(self.runtime.require_active_scope(requirement)?)
     }
 
     pub(crate) fn mcp_controller(&self) -> &McpServerController {
@@ -107,8 +84,6 @@ impl AppState {
             database_maintenance_cache_dir,
             task_executor,
         })?;
-        let favorite_details = runtime.favorite_details_runtime();
-        let quick_search = runtime.quick_search_runtime();
         let mcp_controller =
             McpServerController::new(runtime.mcp_runtime(McpCaller::ExternalServer));
 
@@ -118,12 +93,6 @@ impl AppState {
             pending_deep_links: PendingDeepLinks::default(),
             pending_desktop_notification_activations:
                 PendingDesktopNotificationActivations::default(),
-            favorite_details,
-            group_membership_batches: GroupMembershipBatchCoordinator::default(),
-            group_moderation_batches: GroupModerationBatchCoordinator::default(),
-            friend_log_name_resolutions: FriendLogNameResolutionCoordinator::default(),
-            user_dialog_tab_counts: UserDialogTabCountsRuntime::new(),
-            quick_search,
             assistant: tokio::sync::OnceCell::new(),
             background_resume_route: Mutex::new(None),
             background_delay_generation: AtomicU64::new(0),
@@ -173,127 +142,6 @@ impl AppState {
         }
         *slot = Some(AuthFailureNotificationRecord { sent_at: now });
         true
-    }
-
-    pub async fn resolve_friend_log_names(
-        &self,
-        input: FriendLogNameResolutionInput,
-    ) -> Result<Vec<ResolvedFriendLogName>, AppError> {
-        Ok(self
-            .runtime
-            .resolve_friend_log_names(&self.friend_log_name_resolutions, input)
-            .await?)
-    }
-
-    pub fn cancel_friend_log_name_resolution(&self, request_id: &str) -> bool {
-        self.friend_log_name_resolutions.cancel(request_id)
-    }
-
-    pub async fn persist_favorite_cache_snapshot(
-        &self,
-        input: vrcx_0_application::favorites::FavoriteCacheSnapshotInput,
-    ) -> Result<bool, AppError> {
-        let entity = input.entity.clone();
-        let refreshes_world_card = matches!(
-            input.kind,
-            vrcx_0_application::favorites::FavoriteCacheKind::World
-        );
-        let written = self.runtime.persist_favorite_cache_snapshot(input)?;
-        if written && refreshes_world_card {
-            self.favorite_details
-                .refresh_world_card(entity.as_value())
-                .await;
-        }
-        Ok(written)
-    }
-
-    pub async fn refresh_local_world_favorite_details(
-        &self,
-    ) -> Result<vrcx_0_application::favorites::LocalWorldDetailsRefreshOutput, AppError> {
-        let output = self
-            .runtime
-            .local_data()
-            .favorite_local_world_details_refresh()
-            .await?;
-        self.favorite_details.invalidate_world_cards().await;
-        Ok(output)
-    }
-
-    pub async fn hydrate_favorite_details(
-        &self,
-        input: vrcx_0_application::favorites::FavoriteDetailsHydrateInput,
-    ) -> Result<vrcx_0_application::favorites::FavoriteDetailsHydrateOutput, AppError> {
-        let expected_scope = self.runtime.require_active_scope("Batch action")?;
-        Ok(self.favorite_details.hydrate(input, expected_scope).await?)
-    }
-
-    pub async fn quick_search(
-        &self,
-        input: vrcx_0_application::social::QuickSearchQueryInput,
-    ) -> Result<vrcx_0_application::social::QuickSearchQueryOutput, AppError> {
-        Ok(self
-            .quick_search
-            .query(input, self.runtime.friend_snapshot())
-            .await?)
-    }
-
-    pub fn invalidate_quick_search_working_set(&self) {
-        self.quick_search.invalidate_remote_working_set();
-    }
-
-    pub async fn run_avatar_content_tags_batch(
-        &self,
-        input: AvatarContentTagsBatchInput,
-    ) -> Result<BatchMutationResult, AppError> {
-        Ok(self.runtime.run_avatar_content_tags_batch(input).await?)
-    }
-
-    pub async fn run_group_membership_batch(
-        &self,
-        input: GroupMembershipBatchInput,
-    ) -> Result<GroupMembershipBatchResult, AppError> {
-        Ok(self
-            .runtime
-            .run_group_membership_batch(&self.group_membership_batches, input)
-            .await?)
-    }
-
-    pub async fn run_group_moderation_batch(
-        &self,
-        input: GroupModerationBatchInput,
-    ) -> Result<GroupModerationBatchResult, AppError> {
-        Ok(self
-            .runtime
-            .run_group_moderation_batch(&self.group_moderation_batches, input)
-            .await?)
-    }
-
-    pub async fn mark_notifications_seen_batch(
-        &self,
-        input: NotificationMarkSeenBatchInput,
-    ) -> Result<NotificationMarkSeenBatchResult, AppError> {
-        Ok(self.runtime.mark_notifications_seen_batch(input).await?)
-    }
-
-    pub async fn send_instance_invites_batch(
-        &self,
-        input: InstanceInviteBatchInput,
-    ) -> Result<InstanceInviteBatchResult, AppError> {
-        Ok(self.runtime.send_instance_invites_batch(input).await?)
-    }
-
-    pub async fn sync_notifications(&self) -> Result<NotificationSyncOutcome, AppError> {
-        Ok(self.runtime.sync_notifications().await?)
-    }
-
-    pub async fn user_dialog_tab_counts(
-        &self,
-        input: UserDialogTabCountsInput,
-    ) -> Result<UserDialogTabCountsOutput, AppError> {
-        Ok(self
-            .runtime
-            .user_dialog_tab_counts(&self.user_dialog_tab_counts, input)
-            .await?)
     }
 
     pub async fn translate(

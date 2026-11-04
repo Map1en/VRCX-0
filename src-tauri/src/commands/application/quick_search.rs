@@ -11,7 +11,7 @@ pub async fn app__quick_search_query(
     state: State<'_, AppState>,
     input: QuickSearchQueryInput,
 ) -> Result<QuickSearchQueryOutput, AppError> {
-    state.quick_search(input).await
+    Ok(state.runtime_host().quick_search(input).await?)
 }
 
 #[tauri::command(async)]
@@ -19,6 +19,6 @@ pub async fn app__quick_search_query(
 pub fn app__quick_search_working_set_invalidate(
     state: State<'_, AppState>,
 ) -> Result<(), AppError> {
-    state.invalidate_quick_search_working_set();
+    state.runtime_host().invalidate_quick_search_working_set();
     Ok(())
 }

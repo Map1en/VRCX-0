@@ -69,7 +69,7 @@ pub async fn app__favorite_details_hydrate(
     state: State<'_, AppState>,
     input: FavoriteDetailsHydrateInput,
 ) -> Result<FavoriteDetailsHydrateOutput, AppError> {
-    state.hydrate_favorite_details(input).await
+    Ok(state.runtime_host().hydrate_favorite_details(input).await?)
 }
 
 #[tauri::command]
@@ -78,7 +78,10 @@ pub async fn app__favorite_cache_snapshot(
     state: State<'_, AppState>,
     input: FavoriteCacheSnapshotInput,
 ) -> Result<bool, AppError> {
-    state.persist_favorite_cache_snapshot(input).await
+    Ok(state
+        .runtime_host()
+        .persist_favorite_cache_snapshot(input)
+        .await?)
 }
 
 #[tauri::command]
@@ -87,7 +90,10 @@ pub async fn app__avatar_content_tags_batch(
     state: State<'_, AppState>,
     input: AvatarContentTagsBatchInput,
 ) -> Result<BatchMutationResult, AppError> {
-    state.run_avatar_content_tags_batch(input).await
+    Ok(state
+        .runtime_host()
+        .run_avatar_content_tags_batch(input)
+        .await?)
 }
 
 #[tauri::command]
@@ -96,7 +102,10 @@ pub async fn app__group_membership_batch(
     state: State<'_, AppState>,
     input: GroupMembershipBatchInput,
 ) -> Result<GroupMembershipBatchResult, AppError> {
-    state.run_group_membership_batch(input).await
+    Ok(state
+        .runtime_host()
+        .run_group_membership_batch(input)
+        .await?)
 }
 
 #[tauri::command]
@@ -105,7 +114,10 @@ pub async fn app__group_moderation_batch(
     state: State<'_, AppState>,
     input: GroupModerationBatchInput,
 ) -> Result<GroupModerationBatchResult, AppError> {
-    state.run_group_moderation_batch(input).await
+    Ok(state
+        .runtime_host()
+        .run_group_moderation_batch(input)
+        .await?)
 }
 
 #[tauri::command]
@@ -114,7 +126,10 @@ pub async fn app__notification_mark_seen_batch(
     state: State<'_, AppState>,
     input: NotificationMarkSeenBatchInput,
 ) -> Result<NotificationMarkSeenBatchResult, AppError> {
-    state.mark_notifications_seen_batch(input).await
+    Ok(state
+        .runtime_host()
+        .mark_notifications_seen_batch(input)
+        .await?)
 }
 
 #[tauri::command]
@@ -123,7 +138,10 @@ pub async fn app__instance_invite_batch(
     state: State<'_, AppState>,
     input: InstanceInviteBatchInput,
 ) -> Result<InstanceInviteBatchResult, AppError> {
-    state.send_instance_invites_batch(input).await
+    Ok(state
+        .runtime_host()
+        .send_instance_invites_batch(input)
+        .await?)
 }
 
 #[tauri::command]
@@ -131,5 +149,5 @@ pub async fn app__instance_invite_batch(
 pub async fn app__notification_sync(
     state: State<'_, AppState>,
 ) -> Result<NotificationSyncOutcome, AppError> {
-    state.sync_notifications().await
+    Ok(state.runtime_host().sync_notifications().await?)
 }

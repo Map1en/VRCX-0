@@ -206,6 +206,17 @@ pub struct DesktopRuntimeHostState {
     world_collections: vrcx_0_outbound_adapters::LocalWorldCollectionAdapter,
     friend_log_name_store: vrcx_0_outbound_adapters::LocalFriendLogNameStore,
     notification_sync: vrcx_0_outbound_adapters::LocalNotificationSyncAdapter,
+    favorite_details: vrcx_0_application::favorites::FavoriteDetailsRuntime,
+    quick_search: vrcx_0_application::social::QuickSearchRuntime,
+    group_membership_batches: vrcx_0_application::social::GroupMembershipBatchCoordinator,
+    group_moderation_batches: vrcx_0_application::social::GroupModerationBatchCoordinator,
+    friend_log_name_resolutions: vrcx_0_application::social::FriendLogNameResolutionCoordinator,
+    user_dialog_tab_counts: vrcx_0_application::social::UserDialogTabCountsRuntime,
+    user_dialog_tab_counts_source: Arc<vrcx_0_outbound_adapters::LocalUserDialogTabCountsSource>,
+    vrchat_requests: vrcx_0_outbound_adapters::VrchatRequestAdapter,
+    world_names: vrcx_0_outbound_adapters::CachedWorldNameResolver,
+    translation: vrcx_0_outbound_adapters::LocalTranslationAdapter,
+    webhook_transport: vrcx_0_outbound_adapters::LocalNotificationWebhookTransport,
 }
 
 struct DesktopRuntimeProfileExtension {
@@ -329,6 +340,17 @@ impl DesktopRuntimeHostState {
             world_collections: local.world_collections,
             friend_log_name_store: local.friend_log_name_store,
             notification_sync: local.notification_sync,
+            favorite_details: remote.favorite_details,
+            quick_search: remote.quick_search,
+            group_membership_batches: remote.group_membership_batches,
+            group_moderation_batches: remote.group_moderation_batches,
+            friend_log_name_resolutions: local.friend_log_name_resolutions,
+            user_dialog_tab_counts: local.user_dialog_tab_counts,
+            user_dialog_tab_counts_source: local.user_dialog_tab_counts_source,
+            vrchat_requests: remote.vrchat_requests,
+            world_names: remote.world_names,
+            translation: local.translation,
+            webhook_transport: remote.webhook_transport,
         })
     }
 
@@ -765,21 +787,63 @@ impl DesktopRuntimeHostState {
         self.runtime.group_ban_import().cancel()
     }
 
-    pub fn persist_favorite_cache_snapshot(
+    pub async fn persist_favorite_cache_snapshot(
         &self,
         input: FavoriteCacheSnapshotInput,
     ) -> Result<bool> {
+        let entity = input.entity.clone();
+        let refreshes_world_card = matches!(
+            input.kind,
+            vrcx_0_application::favorites::FavoriteCacheKind::World
+        );
         let assembly = self.runtime.desktop_assembly();
         let scope = assembly.auth_scope().snapshot();
-        Ok(
-            vrcx_0_application::favorites::persist_favorite_cache_snapshot(
-                assembly.world_cache(),
-                assembly.avatar_cache(),
-                &scope.current_user_id,
-                &scope.endpoint,
-                input,
-            )?,
-        )
+        let written = vrcx_0_application::favorites::persist_favorite_cache_snapshot(
+            assembly.world_cache(),
+            assembly.avatar_cache(),
+            &scope.current_user_id,
+            &scope.endpoint,
+            input,
+        )?;
+        if written && refreshes_world_card {
+            self.favorite_details
+                .refresh_world_card(entity.as_value())
+                .await;
+        }
+        Ok(written)
+    }
+
+    pub async fn refresh_local_world_favorite_details(
+        &self,
+    ) -> Result<vrcx_0_application::favorites::LocalWorldDetailsRefreshOutput> {
+        let output = self
+            .local_data
+            .favorite_local_world_details_refresh()
+            .await?;
+        self.favorite_details.invalidate_world_cards().await;
+        Ok(output)
+    }
+
+    pub async fn hydrate_favorite_details(
+        &self,
+        input: vrcx_0_application::favorites::FavoriteDetailsHydrateInput,
+    ) -> Result<vrcx_0_application::favorites::FavoriteDetailsHydrateOutput> {
+        let expected_scope = self.require_active_scope("Batch action")?;
+        Ok(self.favorite_details.hydrate(input, expected_scope).await?)
+    }
+
+    pub async fn quick_search(
+        &self,
+        input: vrcx_0_application::social::QuickSearchQueryInput,
+    ) -> Result<vrcx_0_application::social::QuickSearchQueryOutput> {
+        Ok(self
+            .quick_search
+            .query(input, self.friend_snapshot())
+            .await?)
+    }
+
+    pub fn invalidate_quick_search_working_set(&self) {
+        self.quick_search.invalidate_remote_working_set();
     }
 
     pub fn social(&self) -> &DesktopSocialRuntime {
@@ -792,52 +856,6 @@ impl DesktopRuntimeHostState {
 
     pub fn legacy_migration(&self) -> &DesktopLegacyMigrationRuntime {
         &self.legacy_migration
-    }
-
-    pub fn favorite_details_runtime(
-        &self,
-    ) -> vrcx_0_application::favorites::FavoriteDetailsRuntime {
-        vrcx_0_application::favorites::FavoriteDetailsRuntime::new(
-            Arc::new(vrcx_0_outbound_adapters::VrchatFavoriteRemote::new(
-                Arc::clone(self.runtime.web_client()),
-                self.runtime.desktop_assembly().diagnostics().clone(),
-                self.runtime.desktop_assembly().sync().clone(),
-                Arc::clone(self.runtime.desktop_assembly().world_cache()),
-            )),
-            self.runtime.desktop_assembly().auth_scope().clone(),
-            Arc::clone(self.runtime.desktop_assembly().world_cache()),
-            Arc::clone(self.runtime.desktop_assembly().avatar_cache()),
-            self.runtime.desktop_assembly().tasks().clone(),
-        )
-    }
-
-    pub fn quick_search_runtime(&self) -> vrcx_0_application::social::QuickSearchRuntime {
-        let avatar_adapter = Arc::new(
-            vrcx_0_outbound_adapters::LocalAvatarApplicationAdapter::new(Arc::clone(
-                self.runtime.database(),
-            )),
-        );
-        vrcx_0_application::social::QuickSearchRuntime::new(
-            vrcx_0_application::social::QuickSearchSources::new(
-                Arc::new(vrcx_0_outbound_adapters::LocalQuickSearchDetailStore::new(
-                    Arc::clone(self.runtime.database()),
-                )),
-                Arc::new(vrcx_0_outbound_adapters::VrchatQuickSearchRemoteRequests),
-                avatar_adapter.clone(),
-                Arc::new(vrcx_0_outbound_adapters::VrchatAvatarRemote::new(
-                    Arc::clone(self.runtime.web_client()),
-                    self.runtime.desktop_assembly().diagnostics().clone(),
-                    self.runtime.desktop_assembly().sync().clone(),
-                )),
-                Arc::clone(self.runtime.desktop_assembly().world_cache()),
-            ),
-            Arc::new(vrcx_0_outbound_adapters::VrchatRequestAdapter::new(
-                Arc::clone(self.runtime.web_client()),
-            )),
-            self.runtime.desktop_assembly().auth_scope().clone(),
-            self.runtime.desktop_assembly().diagnostics().clone(),
-            self.runtime.desktop_assembly().sync().clone(),
-        )
     }
 
     pub fn mcp_runtime(&self, caller: vrcx_0_mcp::McpCaller) -> vrcx_0_mcp::McpRuntime {
@@ -871,11 +889,10 @@ impl DesktopRuntimeHostState {
 
     pub async fn resolve_friend_log_names(
         &self,
-        coordinator: &vrcx_0_application::social::FriendLogNameResolutionCoordinator,
         input: vrcx_0_application::social::FriendLogNameResolutionInput,
     ) -> Result<Vec<vrcx_0_application::social::ResolvedFriendLogName>> {
         Ok(vrcx_0_application::social::resolve_friend_log_names(
-            coordinator,
+            &self.friend_log_name_resolutions,
             vrcx_0_application::social::FriendLogNameResolutionDeps::new(
                 &self.friend_log_name_store,
                 self.runtime.desktop_assembly().auth_scope(),
@@ -884,6 +901,10 @@ impl DesktopRuntimeHostState {
             input,
         )
         .await?)
+    }
+
+    pub fn cancel_friend_log_name_resolution(&self, request_id: &str) -> bool {
+        self.friend_log_name_resolutions.cancel(request_id)
     }
 
     pub async fn run_avatar_content_tags_batch(
@@ -897,9 +918,7 @@ impl DesktopRuntimeHostState {
         )?;
         Ok(vrcx_0_application::social::run_avatar_content_tags_batch(
             &vrcx_0_application::social::VrchatBatchMutationActions::new(
-                &vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(
-                    self.runtime.web_client(),
-                )),
+                &self.vrchat_requests,
                 &vrcx_0_outbound_adapters::VrchatBatchMutationRemoteRequests,
                 mutation,
             ),
@@ -910,7 +929,6 @@ impl DesktopRuntimeHostState {
 
     pub async fn run_group_membership_batch(
         &self,
-        coordinator: &vrcx_0_application::social::GroupMembershipBatchCoordinator,
         input: vrcx_0_application::social::GroupMembershipBatchInput,
     ) -> Result<vrcx_0_application::social::GroupMembershipBatchResult> {
         let mutation = vrcx_0_application_core::AuthenticatedMutationContext::capture(
@@ -919,11 +937,9 @@ impl DesktopRuntimeHostState {
             "Group membership batch",
         )?;
         Ok(vrcx_0_application::social::run_group_membership_batch(
-            coordinator,
+            &self.group_membership_batches,
             &vrcx_0_application::social::VrchatGroupMembershipBatchActions::new(
-                &vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(
-                    self.runtime.web_client(),
-                )),
+                &self.vrchat_requests,
                 &vrcx_0_outbound_adapters::VrchatGroupRemoteRequests,
                 mutation,
                 self.runtime.desktop_assembly().event_bus().clone(),
@@ -935,7 +951,6 @@ impl DesktopRuntimeHostState {
 
     pub async fn run_group_moderation_batch(
         &self,
-        coordinator: &vrcx_0_application::social::GroupModerationBatchCoordinator,
         input: vrcx_0_application::social::GroupModerationBatchInput,
     ) -> Result<vrcx_0_application::social::GroupModerationBatchResult> {
         let mutation = vrcx_0_application_core::AuthenticatedMutationContext::capture(
@@ -944,11 +959,9 @@ impl DesktopRuntimeHostState {
             "Group moderation batch",
         )?;
         Ok(vrcx_0_application::social::run_group_moderation_batch(
-            coordinator,
+            &self.group_moderation_batches,
             &vrcx_0_application::social::VrchatGroupModerationBatchActions::new(
-                &vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(
-                    self.runtime.web_client(),
-                )),
+                &self.vrchat_requests,
                 &vrcx_0_outbound_adapters::VrchatGroupModerationRemoteRequests,
                 mutation,
                 self.runtime.desktop_assembly().event_bus().clone(),
@@ -991,15 +1004,10 @@ impl DesktopRuntimeHostState {
         )?;
         Ok(vrcx_0_application::social::send_instance_invites_batch(
             &vrcx_0_application::social::VrchatInstanceInviteBatchActions::new(
-                &vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(
-                    self.runtime.web_client(),
-                )),
+                &self.vrchat_requests,
                 &vrcx_0_outbound_adapters::VrchatInstanceInviteRemoteRequests,
                 mutation,
-                &vrcx_0_outbound_adapters::CachedWorldNameResolver::new(
-                    Arc::clone(self.runtime.desktop_assembly().world_cache()),
-                    Arc::clone(self.runtime.web_client()),
-                ),
+                &self.world_names,
             ),
             input,
         )
@@ -1024,18 +1032,12 @@ impl DesktopRuntimeHostState {
 
     pub async fn user_dialog_tab_counts(
         &self,
-        runtime: &vrcx_0_application::social::UserDialogTabCountsRuntime,
         input: vrcx_0_application::social::UserDialogTabCountsInput,
     ) -> Result<vrcx_0_application::social::UserDialogTabCountsOutput> {
         Ok(vrcx_0_application::social::get_user_dialog_tab_counts(
-            runtime,
+            &self.user_dialog_tab_counts,
             vrcx_0_application::social::UserDialogTabCountsDeps::new(
-                Arc::new(
-                    vrcx_0_outbound_adapters::LocalUserDialogTabCountsSource::new(
-                        Arc::clone(self.runtime.database()),
-                        Arc::clone(self.runtime.web_client()),
-                    ),
-                ),
+                self.user_dialog_tab_counts_source.clone(),
                 self.runtime.desktop_assembly().auth_scope().clone(),
             ),
             input,
@@ -1047,14 +1049,10 @@ impl DesktopRuntimeHostState {
         &self,
         input: vrcx_0_application::discovery::TranslationTranslateInput,
     ) -> Result<vrcx_0_application::discovery::TranslationDispatch> {
-        let adapter = vrcx_0_outbound_adapters::LocalTranslationAdapter::new(
-            Arc::clone(self.runtime.database()),
-            Arc::clone(self.runtime.web_client()),
-        );
         Ok(vrcx_0_application::discovery::translate_text(
             vrcx_0_application::discovery::TranslationDeps {
-                config: &adapter,
-                standard_translation: &adapter,
+                config: &self.translation,
+                standard_translation: &self.translation,
             },
             input,
         )
@@ -1062,11 +1060,11 @@ impl DesktopRuntimeHostState {
     }
 
     pub fn resolved_openai_translation_endpoint_id(&self) -> Result<String> {
-        let adapter = vrcx_0_outbound_adapters::LocalTranslationAdapter::new(
-            Arc::clone(self.runtime.database()),
-            Arc::clone(self.runtime.web_client()),
-        );
-        Ok(vrcx_0_application::discovery::resolved_openai_translation_endpoint_id(&adapter)?)
+        Ok(
+            vrcx_0_application::discovery::resolved_openai_translation_endpoint_id(
+                &self.translation,
+            )?,
+        )
     }
 
     pub async fn refresh_social_baseline(
@@ -1650,9 +1648,7 @@ impl DesktopRuntimeHostState {
             url
         };
         vrcx_0_application_activity::notification::send_json_webhook_with_retry(
-            &vrcx_0_outbound_adapters::LocalNotificationWebhookTransport::new(
-                self.runtime.web_client().clone(),
-            ),
+            &self.webhook_transport,
             &url,
             payload,
         )
