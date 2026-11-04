@@ -9516,7 +9516,6 @@ dependencies = [
  "vrcx-0-outbound-adapters",
  "vrcx-0-persistence",
  "vrcx-0-platform",
- "vrcx-0-vrchat-client",
 ]
 
 [[package]]
