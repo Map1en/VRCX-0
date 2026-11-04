@@ -2,7 +2,9 @@ use serde_json::Value;
 pub(crate) use vrcx_0_core::location::is_meaningful_world_name;
 use vrcx_0_core::location::{format_display_location, parse_location, world_id_from_location};
 
-use vrcx_0_application_core::{RealtimeEntryCorrectionStream, WorldCache};
+use vrcx_0_application_core::WorldCache;
+
+use crate::RealtimeEntryCorrectionStream;
 use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_core::text::{first_non_empty, first_non_empty_owned};
 

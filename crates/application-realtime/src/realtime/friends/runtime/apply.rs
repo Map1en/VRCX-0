@@ -1,5 +1,5 @@
+use crate::FriendProjectionPatch;
 use serde_json::{json, Value};
-use vrcx_0_application_core::FriendProjectionPatch;
 use vrcx_0_contracts::realtime::FriendLogDelete;
 use vrcx_0_core::derived_keys;
 use vrcx_0_core::files::extract_file_id;

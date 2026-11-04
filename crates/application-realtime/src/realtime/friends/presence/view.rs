@@ -1,4 +1,4 @@
-use vrcx_0_application_core::FriendPlace;
+use crate::FriendPlace;
 use vrcx_0_core::friends::{FriendBaselineEntry, FriendRecord};
 use vrcx_0_core::presence::{Place, PresenceEntry, PresencePlace, PresenceView};
 

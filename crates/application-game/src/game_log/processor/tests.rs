@@ -25,8 +25,8 @@ use vrcx_0_core::OwnerId;
 fn place_from_record(
     entry: &vrcx_0_core::friends::FriendBaselineEntry,
     observed_ms: i64,
-) -> vrcx_0_application_core::FriendPlace {
-    vrcx_0_application_core::FriendPlace::Present {
+) -> vrcx_0_application_realtime::FriendPlace {
+    vrcx_0_application_realtime::FriendPlace::Present {
         location: entry.presence.location.clone(),
         since_ms: observed_ms,
     }
@@ -327,7 +327,7 @@ fn disabled_persistence_keeps_live_state_projection_overlay_and_side_effects() -
 #[test]
 fn disabled_initial_scan_rebuilds_memory_without_replaying_side_effects() -> Result<()> {
     let (_dir, store, mut processor) = test_processor("runtime-gamelog-disabled-replay")?;
-    let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
+    let timers = Arc::new(vrcx_0_application_realtime::InstanceDwellRegistry::new());
     timers.observe_friend(
         "usr_replay",
         &place_from_record(
@@ -381,7 +381,7 @@ fn disabled_initial_scan_rebuilds_memory_without_replaying_side_effects() -> Res
     );
     assert_eq!(
         timers.snapshot()[0].source,
-        vrcx_0_application_core::FriendLocationTimeSource::GameLog
+        vrcx_0_application_realtime::FriendLocationTimeSource::GameLog
     );
     assert!(!store
         .config
@@ -394,7 +394,7 @@ fn disabled_initial_scan_rebuilds_memory_without_replaying_side_effects() -> Res
 fn entering_a_friends_instance_keeps_dwell_without_rewriting_log_join_time() -> Result<()> {
     for batched in [false, true] {
         let (_dir, _store, mut processor) = test_processor("runtime-gamelog-arrival-dwell")?;
-        let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
+        let timers = Arc::new(vrcx_0_application_realtime::InstanceDwellRegistry::new());
         let started_at = chrono::DateTime::parse_from_rfc3339("2026-09-06T10:00:00Z")
             .unwrap()
             .timestamp_millis();
@@ -440,7 +440,7 @@ fn entering_a_friends_instance_keeps_dwell_without_rewriting_log_join_time() -> 
         assert_eq!(timers.snapshot()[0].since_ms, Some(started_at));
         assert_eq!(
             timers.snapshot()[0].source,
-            vrcx_0_application_core::FriendLocationTimeSource::GameLog
+            vrcx_0_application_realtime::FriendLocationTimeSource::GameLog
         );
         assert_eq!(
             processor.deps.snapshot.snapshot().players[0].join_time_ms,
@@ -458,7 +458,7 @@ fn room_exit_cleanup_preserves_the_dwell_of_friends_staying_in_the_old_instance(
             crate::GameLogEventOrigin::InitialScan,
         ] {
             let (_dir, _store, mut processor) = test_processor("gamelog-exit-cleanup-timers")?;
-            let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
+            let timers = Arc::new(vrcx_0_application_realtime::InstanceDwellRegistry::new());
             let mut initial = vec![event(
                 "1970-01-01T00:30:00Z",
                 GameLogEventKind::Location {
@@ -541,7 +541,7 @@ fn room_exit_cleanup_preserves_the_dwell_of_friends_staying_in_the_old_instance(
                     assert_eq!(time.location, "wrld_old:1");
                     assert_eq!(
                         time.source,
-                        vrcx_0_application_core::FriendLocationTimeSource::Realtime
+                        vrcx_0_application_realtime::FriendLocationTimeSource::Realtime
                     );
                 }
             }
@@ -578,7 +578,7 @@ fn local_mode_initial_replay_does_not_restart_remote_timers() -> Result<()> {
         store
             .config
             .set_bool("gameLogDisabled", persistence_disabled)?;
-        let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
+        let timers = Arc::new(vrcx_0_application_realtime::InstanceDwellRegistry::new());
         for user_id in ["usr_remote", "usr_local"] {
             timers.observe_friend(
                 user_id,
@@ -646,7 +646,7 @@ fn local_mode_initial_replay_does_not_restart_remote_timers() -> Result<()> {
         assert_eq!(remote.since_ms, Some(500));
         assert_eq!(
             remote.source,
-            vrcx_0_application_core::FriendLocationTimeSource::Realtime
+            vrcx_0_application_realtime::FriendLocationTimeSource::Realtime
         );
         let local = snapshot
             .iter()
@@ -655,7 +655,7 @@ fn local_mode_initial_replay_does_not_restart_remote_timers() -> Result<()> {
         assert_eq!(local.since_ms, Some(500));
         assert_eq!(
             local.source,
-            vrcx_0_application_core::FriendLocationTimeSource::GameLog
+            vrcx_0_application_realtime::FriendLocationTimeSource::GameLog
         );
     }
     Ok(())
@@ -664,7 +664,7 @@ fn local_mode_initial_replay_does_not_restart_remote_timers() -> Result<()> {
 #[test]
 fn local_mode_resume_prefix_does_not_restart_timers_but_live_departures_do() -> Result<()> {
     let (_dir, _store, mut processor) = test_processor("runtime-gamelog-resume-departures")?;
-    let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
+    let timers = Arc::new(vrcx_0_application_realtime::InstanceDwellRegistry::new());
     timers.observe_friend(
         "usr_friend",
         &place_from_record(
@@ -720,7 +720,7 @@ fn local_mode_resume_prefix_does_not_restart_timers_but_live_departures_do() -> 
     assert!(timers.snapshot()[0].since_ms.unwrap() >= before_leave);
     assert_eq!(
         timers.snapshot()[0].source,
-        vrcx_0_application_core::FriendLocationTimeSource::Realtime
+        vrcx_0_application_realtime::FriendLocationTimeSource::Realtime
     );
     Ok(())
 }
@@ -728,7 +728,7 @@ fn local_mode_resume_prefix_does_not_restart_timers_but_live_departures_do() -> 
 #[test]
 fn local_mode_distinguishes_player_leave_rejoin_and_own_room_exit() -> Result<()> {
     let (_dir, _store, mut processor) = test_processor("runtime-gamelog-local-mode")?;
-    let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
+    let timers = Arc::new(vrcx_0_application_realtime::InstanceDwellRegistry::new());
     timers.observe_friend(
         "usr_friend",
         &place_from_record(
@@ -782,7 +782,7 @@ fn local_mode_distinguishes_player_leave_rejoin_and_own_room_exit() -> Result<()
     assert!(remote_start > 4_000);
     assert_eq!(
         timers.snapshot()[0].source,
-        vrcx_0_application_core::FriendLocationTimeSource::Realtime
+        vrcx_0_application_realtime::FriendLocationTimeSource::Realtime
     );
 
     processor.handle_jobs(vec![GameLogWorkerJob::Event(event(
@@ -798,7 +798,7 @@ fn local_mode_distinguishes_player_leave_rejoin_and_own_room_exit() -> Result<()
     assert_eq!(timers.snapshot()[0].since_ms, Some(remote_start));
     assert_eq!(
         timers.snapshot()[0].source,
-        vrcx_0_application_core::FriendLocationTimeSource::Realtime
+        vrcx_0_application_realtime::FriendLocationTimeSource::Realtime
     );
     Ok(())
 }
@@ -806,7 +806,7 @@ fn local_mode_distinguishes_player_leave_rejoin_and_own_room_exit() -> Result<()
 #[test]
 fn local_mode_player_leave_is_not_lost_when_own_exit_is_in_the_same_batch() -> Result<()> {
     let (_dir, _store, mut processor) = test_processor("runtime-gamelog-batched-leave")?;
-    let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
+    let timers = Arc::new(vrcx_0_application_realtime::InstanceDwellRegistry::new());
     timers.observe_friend(
         "usr_friend",
         &place_from_record(

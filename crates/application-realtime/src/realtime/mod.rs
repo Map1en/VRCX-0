@@ -10,8 +10,10 @@ pub(crate) mod instance_queue;
 pub(crate) mod invite_automation;
 pub(crate) mod notifications;
 mod output;
+mod payloads;
 mod print_content_refresh;
 mod projection;
+mod projection_types;
 pub(crate) mod replay;
 mod runtime_types;
 pub(crate) mod service;
@@ -24,11 +26,15 @@ pub use output::{
     FriendIconChange, FriendWake, RealtimeCurrentUserOutput, RealtimeFriendOutput,
     RealtimeInstanceClosedOutput, RealtimeNotificationOutput,
 };
+pub use payloads::RealtimeEconomyBalancePayload;
 pub use print_content_refresh::is_print_created_content_refresh;
 pub use projection::{
-    FriendProjection, FriendProjectionObserver, FriendProjectionPatch, FriendProjectionSink,
-    RealtimeCurrentUserProjection, RealtimeEntryCorrection, RealtimeEntryCorrectionFields,
-    RealtimeEntryCorrectionStream, RealtimeFeedPatch, RealtimeFeedProjection, RealtimeFeedUpsert,
+    FriendProjectionObserver, FriendProjectionSink, RealtimeFeedPatch, RealtimeFeedProjection,
+    RealtimeFeedUpsert,
+};
+pub use projection_types::{
+    FriendProjection, FriendProjectionPatch, RealtimeCurrentUserProjection,
+    RealtimeEntryCorrection, RealtimeEntryCorrectionFields, RealtimeEntryCorrectionStream,
     RealtimeInstanceClosedProjection, RealtimeInstanceQueueKind, RealtimeInstanceQueueProjection,
     RealtimeNotificationProjection, RealtimeNotificationUpsert, RealtimeUserProjection,
 };

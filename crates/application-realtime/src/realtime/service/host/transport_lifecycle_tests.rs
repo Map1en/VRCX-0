@@ -386,10 +386,7 @@ fn local_mode_stop_after_disconnect_clears_the_previous_session() -> Result<()> 
         json!({"id": session.user_id}),
     )?;
     let times = runtime.runtime().deps.instance_dwell.snapshot();
-    assert_eq!(
-        times[0].source,
-        vrcx_0_application_core::FriendLocationTimeSource::Realtime
-    );
+    assert_eq!(times[0].source, crate::FriendLocationTimeSource::Realtime);
     assert!(times[0].since_ms.unwrap() > 1_000);
     Ok(())
 }

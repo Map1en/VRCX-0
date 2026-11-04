@@ -12,21 +12,22 @@ use vrcx_0_application::profile::{
 };
 use vrcx_0_application::social::{
     GroupBanImportStatus, GroupMembershipBatchProgress, GroupModerationBatchProgress,
-    MutualGraphFetchStatus, NoteExportStatus,
+    MutualGraphFetchStatus, NoteExportStatus, PrintAutoCleanupEvent,
 };
 use vrcx_0_application_core::{
     BackendRuntimeTelemetry, FavoritesChangedPayload, FriendProfileLoadStatusPayload,
-    FriendProjection, HostSessionProjection, ParsedLocation, PrintAutoCleanupEvent,
-    RealtimeCurrentUserProjection, RealtimeEconomyBalancePayload, RealtimeEntryCorrection,
-    RealtimeInstanceClosedProjection, RealtimeInstanceQueueProjection,
-    RealtimeNotificationProjection, RealtimeProjectionSync, RealtimeUserProjection,
-    RuntimeVrchatAuthFailurePayload, VrcStatusSnapshot,
+    HostSessionProjection, ParsedLocation, RealtimeProjectionSync, RuntimeVrchatAuthFailurePayload,
+    VrcStatusSnapshot,
 };
 use vrcx_0_application_game::{
     GameClientEvent, GameLogPersistenceFallbackPayload, GameLogProjection, GameLogSideEffectEvent,
     RuntimeGameLogEventPayload, RuntimeWorkerErrorPayload,
 };
-use vrcx_0_application_realtime::RealtimeFeedProjection;
+use vrcx_0_application_realtime::{
+    FriendProjection, RealtimeCurrentUserProjection, RealtimeEconomyBalancePayload,
+    RealtimeEntryCorrection, RealtimeFeedProjection, RealtimeInstanceClosedProjection,
+    RealtimeInstanceQueueProjection, RealtimeNotificationProjection, RealtimeUserProjection,
+};
 use vrcx_0_assistant::{
     AssistantChoiceRequestEvent, AssistantDeltaEvent, AssistantDoneEvent, AssistantErrorEvent,
     AssistantToolCallEvent, AssistantToolResultEvent, AssistantTurnEntitiesEvent,

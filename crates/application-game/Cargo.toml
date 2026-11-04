@@ -25,4 +25,5 @@ vrcx-0-osc = { path = "../osc" }
 
 [dev-dependencies]
 vrcx-0-application-activity = { path = "../application-activity" }
+vrcx-0-application-realtime = { path = "../application-realtime" }
 vrcx-0-application-core = { path = "../application-core", features = ["test-utils"] }

@@ -695,7 +695,7 @@ fn test_runtime_with_database_and_event_bus(
         vrcx_0_application_core::FileCache::new(
             vrcx_0_application_core::MemoryFileCachePort::default(),
         ),
-        Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new()),
+        Arc::new(vrcx_0_application_realtime::InstanceDwellRegistry::new()),
         Arc::new(NoopPrintCleanupInputSink),
         None,
     )));

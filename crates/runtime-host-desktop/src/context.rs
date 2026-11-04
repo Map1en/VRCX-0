@@ -8,15 +8,17 @@ use vrcx_0_application_activity::notification::{
 };
 use vrcx_0_application_activity::{ActivityRouter, ActivitySink, ActivitySinkRegistry};
 use vrcx_0_application_core::{
-    ConfigStore, FriendProjection, HostSessionRuntime, ImageCache,
-    RealtimeNotificationProjectionObserverRegistry, RuntimeAuthScope, RuntimeEventBus,
-    TaskSupervisor, WebClient, WorldCache,
+    ConfigStore, HostSessionRuntime, ImageCache, RuntimeAuthScope, RuntimeEventBus, TaskSupervisor,
+    WebClient, WorldCache,
 };
 use vrcx_0_application_game::{
     GameLogSideEffectEvent, GameLogSideEffectObserver, NowPlayingSnapshot, NowPlayingStore,
     RuntimeSnapshot, RuntimeSnapshotStore,
 };
-use vrcx_0_application_realtime::{FriendProjectionObserver, RealtimeHostRuntime};
+use vrcx_0_application_realtime::{
+    FriendProjection, FriendProjectionObserver, RealtimeHostRuntime,
+    RealtimeNotificationProjectionObserverRegistry,
+};
 use vrcx_0_core::files::extract_file_id;
 use vrcx_0_core::friends::StateBucket;
 use vrcx_0_host_desktop::tts::{SystemTtsEngine, TtsEngine};

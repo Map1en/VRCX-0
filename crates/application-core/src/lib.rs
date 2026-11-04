@@ -13,7 +13,6 @@ pub mod events;
 mod favorite_kind;
 mod file_cache;
 mod image_cache;
-mod instance_dwell;
 mod interruptible_sleep;
 pub mod ports;
 mod proxy;
@@ -63,20 +62,10 @@ pub use event_bus::{
     FavoriteChange, FavoritesChangedPayload, RuntimeEventBus, RuntimeEventSink,
     RuntimeRealtimeTransportEpoch, RuntimeVrchatAuthFailurePayload, VrcStatusSnapshot,
 };
-pub use events::{
-    FeedLiveEntry, FriendProfileBulkLoadStatus, FriendProfileLoadStatusPayload, FriendProjection,
-    FriendProjectionPatch, PrintAutoCleanupEvent, RealtimeCurrentUserProjection,
-    RealtimeEconomyBalancePayload, RealtimeEntryCorrection, RealtimeEntryCorrectionFields,
-    RealtimeEntryCorrectionStream, RealtimeInstanceClosedProjection, RealtimeInstanceQueueKind,
-    RealtimeInstanceQueueProjection, RealtimeNotificationProjection, RealtimeNotificationUpsert,
-    RealtimeUserProjection,
-};
+pub use events::{FriendProfileBulkLoadStatus, FriendProfileLoadStatusPayload};
 pub use favorite_kind::{FavoriteChangeScope, FavoriteEntityKind, VrchatFavoriteType};
 pub use file_cache::{FileCache, FileCachePort};
 pub use image_cache::{save_ugc_image_to_file, ImageCache, ImageCachePort};
-pub use instance_dwell::{
-    FriendLocationTime, FriendLocationTimeSource, FriendPlace, InstanceDwellRegistry,
-};
 pub use interruptible_sleep::sleep_interruptibly;
 pub use ports::{
     ActivityIngress, BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity, ConfigStore,
@@ -84,7 +73,6 @@ pub use ports::{
     HostSessionProjection, HostSessionRuntime, InstanceRosterMember, InstanceRosterObserver,
     InstanceRosterSnapshot, LocalGameContextSnapshot, LocalGameContextSource,
     NoopPrintCleanupInputSink, NoopUpdaterPort, PrintCleanupInputSink, PrintCleanupTrigger,
-    RealtimeNotificationProjectionObserver, RealtimeNotificationProjectionObserverRegistry,
     SessionHostRuntime, UnavailableLocalGameContextSource, UpdaterCheckRequest,
     UpdaterDownloadOutcome, UpdaterDownloadProgress, UpdaterInstallHandle, UpdaterMetadata,
     UpdaterPort, UpdaterProgressCallback,

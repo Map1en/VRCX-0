@@ -7,11 +7,11 @@ use std::sync::{
 };
 use std::time::Duration;
 
+use serde::Serialize;
 use serde_json::Value;
-pub use vrcx_0_application_core::PrintAutoCleanupEvent;
 pub use vrcx_0_application_core::PrintCleanupTrigger;
-use vrcx_0_application_core::RuntimeAuthScope;
 use vrcx_0_application_core::{PrintCleanupInputSink, RuntimeEventBus, TaskSupervisor};
+use vrcx_0_application_core::{RuntimeAuthScope, RuntimeEventPayload};
 pub use vrcx_0_application_realtime::is_print_created_content_refresh;
 use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
@@ -42,6 +42,18 @@ pub trait PrintRemote: Send + Sync {
         count: i32,
     ) -> PrintRemoteFuture<'a>;
     fn delete_print<'a>(&'a self, endpoint: &'a str, print_id: &'a str) -> PrintRemoteFuture<'a>;
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct PrintAutoCleanupEvent {
+    pub deleted: u32,
+    pub remaining: u32,
+    pub warning: Option<String>,
+}
+
+impl RuntimeEventPayload for PrintAutoCleanupEvent {
+    const EVENT_NAME: &'static str = "printsAutoCleanup";
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

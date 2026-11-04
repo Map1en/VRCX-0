@@ -1,15 +1,11 @@
 use std::sync::Arc;
 
 use serde::Serialize;
-pub use vrcx_0_application_core::{
-    FriendProjection, FriendProjectionPatch, RealtimeCurrentUserProjection,
-    RealtimeEntryCorrection, RealtimeEntryCorrectionFields, RealtimeEntryCorrectionStream,
-    RealtimeInstanceClosedProjection, RealtimeInstanceQueueKind, RealtimeInstanceQueueProjection,
-    RealtimeNotificationProjection, RealtimeNotificationUpsert, RealtimeUserProjection,
-};
 use vrcx_0_application_core::{RuntimeEventBus, RuntimeEventPayload};
 use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_core::OwnerId;
+
+use super::projection_types::{FriendProjection, RealtimeEntryCorrectionFields};
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

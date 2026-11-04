@@ -22,12 +22,15 @@ use vrcx_0_application_activity::notification::{
 };
 use vrcx_0_application_activity::{ActivityRouter, ActivitySinkRegistry, GroupInstanceMonitor};
 use vrcx_0_application_core::{
-    AvatarCache, FileCache, HostSessionRuntime, ImageCache, InstanceDwellRegistry,
-    RealtimeNotificationProjectionObserver, RealtimeNotificationProjectionObserverRegistry,
-    RuntimeAuthScope, RuntimeBackgroundJobs, RuntimeDiagnostics, RuntimeEventBus, RuntimeLifecycle,
+    AvatarCache, FileCache, HostSessionRuntime, ImageCache, RuntimeAuthScope,
+    RuntimeBackgroundJobs, RuntimeDiagnostics, RuntimeEventBus, RuntimeLifecycle,
     RuntimeSyncEngine, TaskSupervisor, WebClient, WorldCache,
 };
 use vrcx_0_application_core::{ConfigStore, RemoteMutationGate};
+use vrcx_0_application_realtime::{
+    InstanceDwellRegistry, RealtimeNotificationProjectionObserver,
+    RealtimeNotificationProjectionObserverRegistry,
+};
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::storage::StorageService;
 use vrcx_0_persistence::DatabaseService;

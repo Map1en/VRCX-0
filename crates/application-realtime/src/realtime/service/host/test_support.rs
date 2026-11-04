@@ -20,9 +20,9 @@ pub(super) use vrcx_0_contracts::realtime::{FriendLogUpsert, NotificationV2Updat
 #[cfg(test)]
 pub(super) use crate::world_enrich::PendingEntryCorrection;
 #[cfg(test)]
-pub(super) use crate::{FriendProjection, RealtimeNotificationProjection};
+pub(super) use crate::RealtimeNotificationProjectionObserver;
 #[cfg(test)]
-pub(super) use vrcx_0_application_core::RealtimeNotificationProjectionObserver;
+pub(super) use crate::{FriendProjection, RealtimeNotificationProjection};
 #[cfg(test)]
 pub(super) use vrcx_0_application_core::{ActivityIngress, LocalGameContextSnapshot};
 pub(super) use vrcx_0_application_core::{
@@ -739,7 +739,7 @@ fn runtime_with_active_session_game_context(
         notification_projection_observer: None,
         world_cache,
         file_cache,
-        instance_dwell: Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new()),
+        instance_dwell: Arc::new(crate::InstanceDwellRegistry::new()),
         print_cleanup: Arc::new(NoopPrintCleanupInputSink),
         current_user_snapshot_sink: None,
     }));

@@ -9,9 +9,9 @@ use vrcx_0_application::social::{
 };
 use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::{
-    AuthenticatedMutationContext, RealtimeNotificationProjection, RuntimeEventBus, WebClient,
-    WorldCache,
+    AuthenticatedMutationContext, RuntimeEventBus, WebClient, WorldCache,
 };
+use vrcx_0_application_realtime::RealtimeNotificationProjection;
 use vrcx_0_core::OwnerId;
 use vrcx_0_persistence::DatabaseService;
 

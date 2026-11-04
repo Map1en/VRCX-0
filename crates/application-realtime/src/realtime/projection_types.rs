@@ -1,5 +1,5 @@
 use serde::Serialize;
-pub use vrcx_0_contracts::feed_live::FeedLiveEntry;
+use vrcx_0_application_core::RuntimeEventPayload;
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::json::{RawJson, RawJsonObject};
 use vrcx_0_core::presence::PresenceEntry;
@@ -132,4 +132,32 @@ pub struct RealtimeInstanceQueueProjection {
     pub position: i64,
     pub queue_size: i64,
     pub received_at: String,
+}
+
+impl RuntimeEventPayload for FriendProjection {
+    const EVENT_NAME: &'static str = "realtimeFriendProjection";
+}
+
+impl RuntimeEventPayload for RealtimeUserProjection {
+    const EVENT_NAME: &'static str = "realtimeUserProjection";
+}
+
+impl RuntimeEventPayload for RealtimeNotificationProjection {
+    const EVENT_NAME: &'static str = "realtimeNotificationProjection";
+}
+
+impl RuntimeEventPayload for RealtimeEntryCorrection {
+    const EVENT_NAME: &'static str = "realtimeEntryCorrection";
+}
+
+impl RuntimeEventPayload for RealtimeCurrentUserProjection {
+    const EVENT_NAME: &'static str = "realtimeCurrentUserProjection";
+}
+
+impl RuntimeEventPayload for RealtimeInstanceClosedProjection {
+    const EVENT_NAME: &'static str = "realtimeInstanceClosedProjection";
+}
+
+impl RuntimeEventPayload for RealtimeInstanceQueueProjection {
+    const EVENT_NAME: &'static str = "realtimeInstanceQueueProjection";
 }

@@ -5,12 +5,7 @@ use serde_json::Value;
 use vrcx_0_contracts::{runtime_event_payload, RuntimeEventPayload};
 
 use crate::backend_runtime::{BackendRuntimeTelemetry, RealtimeProjectionSync};
-use crate::events::{
-    FriendProfileLoadStatusPayload, FriendProjection, PrintAutoCleanupEvent,
-    RealtimeCurrentUserProjection, RealtimeEconomyBalancePayload, RealtimeEntryCorrection,
-    RealtimeInstanceClosedProjection, RealtimeInstanceQueueProjection,
-    RealtimeNotificationProjection, RealtimeUserProjection,
-};
+use crate::events::FriendProfileLoadStatusPayload;
 use crate::ports::HostSessionProjection;
 use crate::{FavoriteChangeScope, FavoriteEntityKind, RuntimeAuthScopeSnapshot};
 use vrcx_0_core::json::RawJson;
@@ -148,28 +143,7 @@ runtime_event_payload!(VrcStatusSnapshot, "vrcStatus");
 runtime_event_payload!(RuntimeVrchatAuthFailurePayload, "runtimeVrchatAuthFailure");
 runtime_event_payload!(BackendRuntimeTelemetry, "backendRuntimeTelemetry");
 runtime_event_payload!(RealtimeProjectionSync, "realtimeProjectionSync");
-runtime_event_payload!(FriendProjection, "realtimeFriendProjection");
-runtime_event_payload!(RealtimeUserProjection, "realtimeUserProjection");
-runtime_event_payload!(
-    RealtimeNotificationProjection,
-    "realtimeNotificationProjection"
-);
-runtime_event_payload!(RealtimeEntryCorrection, "realtimeEntryCorrection");
-runtime_event_payload!(
-    RealtimeCurrentUserProjection,
-    "realtimeCurrentUserProjection"
-);
-runtime_event_payload!(
-    RealtimeInstanceClosedProjection,
-    "realtimeInstanceClosedProjection"
-);
-runtime_event_payload!(
-    RealtimeInstanceQueueProjection,
-    "realtimeInstanceQueueProjection"
-);
 runtime_event_payload!(HostSessionProjection, "updateIsGameRunning");
-runtime_event_payload!(PrintAutoCleanupEvent, "printsAutoCleanup");
-runtime_event_payload!(RealtimeEconomyBalancePayload, "realtimeEconomyBalance");
 runtime_event_payload!(FriendProfileLoadStatusPayload, "friendProfileLoadStatus");
 
 #[cfg(any(test, feature = "test-utils"))]

@@ -143,7 +143,7 @@ fn start_requires_active_realtime_session() -> Result<()> {
         file_cache: vrcx_0_application_core::FileCache::new(
             vrcx_0_application_core::MemoryFileCachePort::default(),
         ),
-        instance_dwell: Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new()),
+        instance_dwell: Arc::new(crate::InstanceDwellRegistry::new()),
         print_cleanup: Arc::new(vrcx_0_application_core::NoopPrintCleanupInputSink),
         current_user_snapshot_sink: None,
     }));

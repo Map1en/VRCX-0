@@ -1,8 +1,11 @@
 use std::sync::{Arc, Mutex};
 
 use vrcx_0_application_core::{
-    RealtimeNotificationProjection, RealtimeNotificationProjectionObserver, RuntimeAuthScope,
-    RuntimeAuthScopeObserver, RuntimeAuthScopeSnapshot, TaskSpawnOutcome, TaskSupervisor,
+    RuntimeAuthScope, RuntimeAuthScopeObserver, RuntimeAuthScopeSnapshot, TaskSpawnOutcome,
+    TaskSupervisor,
+};
+use vrcx_0_application_realtime::{
+    RealtimeNotificationProjection, RealtimeNotificationProjectionObserver,
 };
 use vrcx_0_persistence::notifications::notification_has_unseen_action_required;
 use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};

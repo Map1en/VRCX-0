@@ -177,7 +177,7 @@ fn test_server_with_game_context(
         vrcx_0_application_core::FileCache::new(
             vrcx_0_application_core::MemoryFileCachePort::default(),
         ),
-        Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new()),
+        Arc::new(vrcx_0_application_realtime::InstanceDwellRegistry::new()),
         Arc::new(NoopPrintCleanupInputSink),
         None,
     )));
