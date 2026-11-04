@@ -2,12 +2,11 @@ use std::sync::Arc;
 
 use vrcx_0_application::social::{
     CurrentUserMutationFuture, CurrentUserMutationPort, CurrentUserMutationRequest,
-    CurrentUserMutationRuntime, CurrentUserQueryInvalidationFuture,
+    CurrentUserQueryInvalidationFuture,
 };
 use vrcx_0_application_core::vrchat_api::{execute_api_command, VrchatScope};
 use vrcx_0_application_core::{
-    RemoteMutationGate, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeDiagnostics,
-    RuntimeSyncEngine, WebClient,
+    RuntimeAuthScopeSnapshot, RuntimeDiagnostics, RuntimeSyncEngine, WebClient,
 };
 use vrcx_0_application_realtime::RealtimeHostRuntime;
 use vrcx_0_vrchat_client::users::{
@@ -15,38 +14,30 @@ use vrcx_0_vrchat_client::users::{
     current_user_update_input, profile_update_input,
 };
 
-pub(crate) struct CurrentUserMutationRuntimeDeps {
-    pub auth_scope: RuntimeAuthScope,
-    pub remote_mutations: Arc<RemoteMutationGate>,
-    pub web: Arc<WebClient>,
-    pub diagnostics: RuntimeDiagnostics,
-    pub sync: RuntimeSyncEngine,
-    pub realtime_runtime: Arc<RealtimeHostRuntime>,
-}
-
-pub(crate) fn build_current_user_mutation_runtime(
-    deps: CurrentUserMutationRuntimeDeps,
-) -> CurrentUserMutationRuntime {
-    CurrentUserMutationRuntime::new(
-        deps.auth_scope,
-        deps.remote_mutations,
-        Arc::new(DesktopCurrentUserMutationPort {
-            web: deps.web,
-            diagnostics: deps.diagnostics,
-            sync: deps.sync,
-            realtime_runtime: deps.realtime_runtime,
-        }),
-    )
-}
-
-struct DesktopCurrentUserMutationPort {
+pub struct VrchatCurrentUserMutationRemote {
     web: Arc<WebClient>,
     diagnostics: RuntimeDiagnostics,
     sync: RuntimeSyncEngine,
     realtime_runtime: Arc<RealtimeHostRuntime>,
 }
 
-impl CurrentUserMutationPort for DesktopCurrentUserMutationPort {
+impl VrchatCurrentUserMutationRemote {
+    pub fn new(
+        web: Arc<WebClient>,
+        diagnostics: RuntimeDiagnostics,
+        sync: RuntimeSyncEngine,
+        realtime_runtime: Arc<RealtimeHostRuntime>,
+    ) -> Self {
+        Self {
+            web,
+            diagnostics,
+            sync,
+            realtime_runtime,
+        }
+    }
+}
+
+impl CurrentUserMutationPort for VrchatCurrentUserMutationRemote {
     fn execute<'a>(
         &'a self,
         scope: RuntimeAuthScopeSnapshot,

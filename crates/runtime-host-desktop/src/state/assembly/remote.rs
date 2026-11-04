@@ -3,31 +3,27 @@ use std::sync::Arc;
 use vrcx_0_application::auth::VrchatConfigRuntime;
 use vrcx_0_application::favorites::FavoriteDetailsRuntime;
 use vrcx_0_application::game::InstanceLaunchRuntime;
-use vrcx_0_application::remote::WorldRemoteRuntime;
+use vrcx_0_application::remote::{VrchatApiRuntime, WorldRemoteRuntime};
 use vrcx_0_application::social::{
     CurrentUserMutationRuntime, GroupMembershipBatchCoordinator, GroupModerationBatchCoordinator,
     QuickSearchRuntime, QuickSearchSources,
 };
 use vrcx_0_composition::RuntimeHostState;
 use vrcx_0_outbound_adapters::{
-    CachedWorldNameResolver, LocalAvatarApplicationAdapter, LocalNotificationWebhookTransport,
-    LocalQuickSearchDetailStore, VrchatAvatarRemote, VrchatFavoriteRemote,
-    VrchatQuickSearchRemoteRequests, VrchatRequestAdapter,
+    CachedWorldNameResolver, CachedWorldResponseProjection, LocalAvatarApplicationAdapter,
+    LocalNotificationWebhookTransport, LocalQuickSearchDetailStore, VrchatApiRemote,
+    VrchatAvatarRemote, VrchatCurrentUserMutationRemote, VrchatFavoriteRemote,
+    VrchatQuickSearchRemoteRequests, VrchatRequestAdapter, VrchatWorldRemote,
 };
 
 use crate::avatar::DesktopAvatarRuntime;
-use crate::current_user_mutation::{
-    build_current_user_mutation_runtime, CurrentUserMutationRuntimeDeps,
-};
 use crate::external_api::ExternalApiRuntime;
 use crate::group::DesktopGroupRuntime;
 use crate::instance_launch::{build_instance_launch_runtime, InstanceLaunchRuntimeDeps};
 use crate::media::DesktopMediaRuntime;
 use crate::profile_bio::ProfileBioObserver;
 use crate::social::DesktopSocialRuntime;
-use crate::vrchat_api::{build_vrchat_api_runtime, VrchatApiRuntimeDeps};
 use crate::vrchat_remote::DesktopVrchatRemoteFacade;
-use crate::world_remote::{build_world_remote_runtime, WorldRemoteRuntimeDeps};
 use crate::HostFileAccess;
 
 pub(crate) struct RemoteRuntimes {
@@ -63,15 +59,16 @@ pub(crate) fn build_remote_runtimes(
         remote_mutations: Arc::clone(context.remote_mutations()),
         db: Arc::clone(context.database()),
     });
-    let current_user_mutations =
-        build_current_user_mutation_runtime(CurrentUserMutationRuntimeDeps {
-            auth_scope: context.auth_scope().clone(),
-            remote_mutations: Arc::clone(context.remote_mutations()),
-            web: Arc::clone(context.web_client()),
-            diagnostics: context.diagnostics().clone(),
-            sync: context.sync().clone(),
-            realtime_runtime: Arc::clone(runtime.realtime_runtime()),
-        });
+    let current_user_mutations = CurrentUserMutationRuntime::new(
+        context.auth_scope().clone(),
+        Arc::clone(context.remote_mutations()),
+        Arc::new(VrchatCurrentUserMutationRemote::new(
+            Arc::clone(context.web_client()),
+            context.diagnostics().clone(),
+            context.sync().clone(),
+            Arc::clone(runtime.realtime_runtime()),
+        )),
+    );
     let avatars = DesktopAvatarRuntime::new(
         Arc::clone(runtime.database()),
         Arc::clone(runtime.web_client()),
@@ -118,21 +115,27 @@ pub(crate) fn build_remote_runtimes(
         Arc::clone(context.remote_mutations()),
         context.diagnostics().clone(),
     );
-    let vrchat_api = build_vrchat_api_runtime(VrchatApiRuntimeDeps {
-        auth_scope: context.auth_scope().clone(),
-        remote_mutations: Arc::clone(context.remote_mutations()),
-        web: Arc::clone(context.web_client()),
-        diagnostics: context.diagnostics().clone(),
-        sync: context.sync().clone(),
-    });
-    let worlds = build_world_remote_runtime(WorldRemoteRuntimeDeps {
-        auth_scope: context.auth_scope().clone(),
-        remote_mutations: Arc::clone(context.remote_mutations()),
-        web: Arc::clone(context.web_client()),
-        diagnostics: context.diagnostics().clone(),
-        sync: context.sync().clone(),
-        world_cache: Arc::clone(context.world_cache()),
-    });
+    let vrchat_api = VrchatApiRuntime::new(
+        context.auth_scope().clone(),
+        Arc::clone(context.remote_mutations()),
+        Arc::new(VrchatApiRemote::new(
+            Arc::clone(context.web_client()),
+            context.diagnostics().clone(),
+            context.sync().clone(),
+        )),
+    );
+    let worlds = WorldRemoteRuntime::new(
+        context.auth_scope().clone(),
+        Arc::clone(context.remote_mutations()),
+        Arc::new(VrchatWorldRemote::new(
+            Arc::clone(context.web_client()),
+            context.diagnostics().clone(),
+            context.sync().clone(),
+        )),
+        Arc::new(CachedWorldResponseProjection::new(Arc::clone(
+            context.world_cache(),
+        ))),
+    );
     let vrchat_remote = DesktopVrchatRemoteFacade::new(
         vrchat_api.clone(),
         media.clone(),

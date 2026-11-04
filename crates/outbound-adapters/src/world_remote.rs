@@ -1,51 +1,38 @@
 use std::sync::Arc;
 
 use vrcx_0_application::remote::{
-    WorldRemoteFuture, WorldRemoteOperation, WorldRemotePort, WorldRemoteRuntime, WorldRemoteScope,
+    WorldRemoteFuture, WorldRemoteOperation, WorldRemotePort, WorldRemoteScope,
     WorldResponseProjectionPort,
 };
 use vrcx_0_application_core::vrchat_api::{execute_api_command, VrchatApiResponse, VrchatScope};
-use vrcx_0_application_core::{
-    RemoteMutationGate, RuntimeAuthScope, RuntimeDiagnostics, RuntimeSyncEngine, WebClient,
-    WorldCache,
-};
+use vrcx_0_application_core::{RuntimeDiagnostics, RuntimeSyncEngine, WebClient, WorldCache};
 use vrcx_0_vrchat_client::worlds::{
     world_delete_input, world_list_by_user_get_input, world_persistent_data_delete_input,
     world_persistent_data_exists_input, world_publish_input, world_save_input,
     world_unpublish_input,
 };
 
-pub(crate) struct WorldRemoteRuntimeDeps {
-    pub auth_scope: RuntimeAuthScope,
-    pub remote_mutations: Arc<RemoteMutationGate>,
-    pub web: Arc<WebClient>,
-    pub diagnostics: RuntimeDiagnostics,
-    pub sync: RuntimeSyncEngine,
-    pub world_cache: Arc<WorldCache>,
-}
-
-pub(crate) fn build_world_remote_runtime(deps: WorldRemoteRuntimeDeps) -> WorldRemoteRuntime {
-    WorldRemoteRuntime::new(
-        deps.auth_scope,
-        deps.remote_mutations,
-        Arc::new(DesktopWorldRemotePort {
-            web: deps.web,
-            diagnostics: deps.diagnostics,
-            sync: deps.sync,
-        }),
-        Arc::new(DesktopWorldResponseProjection {
-            world_cache: deps.world_cache,
-        }),
-    )
-}
-
-struct DesktopWorldRemotePort {
+pub struct VrchatWorldRemote {
     web: Arc<WebClient>,
     diagnostics: RuntimeDiagnostics,
     sync: RuntimeSyncEngine,
 }
 
-impl WorldRemotePort for DesktopWorldRemotePort {
+impl VrchatWorldRemote {
+    pub fn new(
+        web: Arc<WebClient>,
+        diagnostics: RuntimeDiagnostics,
+        sync: RuntimeSyncEngine,
+    ) -> Self {
+        Self {
+            web,
+            diagnostics,
+            sync,
+        }
+    }
+}
+
+impl WorldRemotePort for VrchatWorldRemote {
     fn execute(
         &self,
         scope: WorldRemoteScope,
@@ -146,11 +133,17 @@ impl WorldRemotePort for DesktopWorldRemotePort {
     }
 }
 
-struct DesktopWorldResponseProjection {
+pub struct CachedWorldResponseProjection {
     world_cache: Arc<WorldCache>,
 }
 
-impl WorldResponseProjectionPort for DesktopWorldResponseProjection {
+impl CachedWorldResponseProjection {
+    pub fn new(world_cache: Arc<WorldCache>) -> Self {
+        Self { world_cache }
+    }
+}
+
+impl WorldResponseProjectionPort for CachedWorldResponseProjection {
     fn hydrate(&self, response: &VrchatApiResponse) {
         self.world_cache.hydrate_response(response);
     }
