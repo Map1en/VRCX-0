@@ -38,7 +38,8 @@ impl RealtimeHostRuntime {
     pub fn new(deps: RealtimeHostRuntimeDeps) -> Self {
         let (cancel_tx, _) = watch::channel(0);
         let (transport_lifecycle_tx, _) = broadcast::channel(32);
-        let (friend_profile_bulk_cancel_tx, _) = watch::channel(0);
+        let friend_profile_bulk =
+            super::friend_profile_bulk_load::FriendProfileBulkLoader::new(&deps);
         let world_cache = Arc::clone(&deps.world_cache);
         let instance_dwell = Arc::clone(&deps.instance_dwell);
         let feed_persistence_disabled = deps
@@ -64,10 +65,7 @@ impl RealtimeHostRuntime {
             feed_persistence_disabled: AtomicBool::new(feed_persistence_disabled),
             reconnect_backfill_check: Mutex::new(None),
             notification_apply_lock: tokio::sync::Mutex::new(()),
-            friend_profile_bulk_load: Mutex::new(
-                super::friend_profile_bulk_load::FriendProfileBulkLoadState::default(),
-            ),
-            friend_profile_bulk_cancel_tx,
+            friend_profile_bulk,
             current_user_refresh_inflight: Mutex::new(None),
         }
     }
@@ -185,7 +183,8 @@ impl RealtimeHostRuntime {
             state.connection.generation = state.connection.generation.saturating_add(1);
             state.connection.generation
         };
-        self.cancel_friend_profile_bulk_load_for_replacement(&session);
+        self.friend_profile_bulk
+            .cancel_friend_profile_bulk_load_for_replacement(&session);
         let session_generation = self.deps.session.set_realtime_context(session.clone());
         {
             let mut state = self
@@ -389,7 +388,8 @@ impl RealtimeHostRuntime {
 
         if let Some((active, final_current_user_output)) = finished {
             if !preserve_snapshot {
-                self.cancel_friend_profile_bulk_load_for_session(&active.session);
+                self.friend_profile_bulk
+                    .cancel_friend_profile_bulk_load_for_session(&active.session);
             }
             if let Some(output) = final_current_user_output {
                 if preserve_snapshot && active.generation == output.projection.generation {
@@ -645,13 +645,15 @@ impl RealtimeHostRuntime {
             final_current_user_output,
         )) = stopped
         else {
-            self.cancel_friend_profile_bulk_load_for_stop_request(&request);
+            self.friend_profile_bulk
+                .cancel_friend_profile_bulk_load_for_stop_request(&request);
             if !request.has_scope() {
                 self.clear_session_caches();
             }
             return;
         };
-        self.cancel_friend_profile_bulk_load_for_session(&stopped_active.session);
+        self.friend_profile_bulk
+            .cancel_friend_profile_bulk_load_for_session(&stopped_active.session);
         self.clear_session_caches();
 
         if let Some(output) = final_current_user_output {

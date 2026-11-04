@@ -308,9 +308,7 @@ pub struct RealtimeHostRuntime {
     pub(super) feed_persistence_disabled: AtomicBool,
     pub(super) reconnect_backfill_check: Mutex<Option<ReconnectBackfillCheck>>,
     pub(super) notification_apply_lock: tokio::sync::Mutex<()>,
-    pub(super) friend_profile_bulk_load:
-        Mutex<super::friend_profile_bulk_load::FriendProfileBulkLoadState>,
-    pub(super) friend_profile_bulk_cancel_tx: watch::Sender<u64>,
+    pub(super) friend_profile_bulk: super::friend_profile_bulk_load::FriendProfileBulkLoader,
     pub(super) current_user_refresh_inflight:
         Mutex<Option<watch::Receiver<CurrentUserRefreshStatus>>>,
 }
