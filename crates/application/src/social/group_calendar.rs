@@ -16,7 +16,11 @@ use vrcx_0_application_core::{
 use vrcx_0_core::json::RawJson;
 use vrcx_0_core::vrchat_json::GroupJson;
 
+use crate::scope_gate::ScopeGate;
 use vrcx_0_application_core::{Error, Result};
+
+const SNAPSHOT_GATE: ScopeGate = ScopeGate::new("Group calendar snapshot");
+const GATE: ScopeGate = ScopeGate::new("Group calendar");
 
 const CALENDAR_PAGE_SIZE: i32 = 100;
 const CALENDAR_MAX_PAGES: usize = 50;
@@ -111,7 +115,7 @@ pub async fn load_group_calendar(
     input: GroupCalendarInput,
 ) -> Result<GroupCalendarSnapshot> {
     let command = "app__group_calendar_snapshot_get";
-    let scope = require_active_scope(&deps.auth_scope)?;
+    let scope = SNAPSHOT_GATE.require_active(&deps.auth_scope)?;
     let date = input.date.trim().to_string();
     if date.is_empty() {
         return Err(Error::Custom(
@@ -179,7 +183,7 @@ async fn load_group_calendar_inner(
     let group_ids = collect_group_ids(&all_rows);
     let embedded_profiles = embedded_group_profiles(&all_rows);
     let fetched_profiles = fetch_group_profiles(deps, scope, &group_ids).await;
-    ensure_scope_matches(&deps.auth_scope, scope)?;
+    GATE.ensure_matches(&deps.auth_scope, scope)?;
 
     let mut group_profiles = embedded_profiles;
     group_profiles.extend(fetched_profiles);
@@ -214,13 +218,13 @@ async fn collect_calendar_pages(
 ) -> Result<Vec<Value>> {
     let mut rows = Vec::new();
     for page_index in 0..=CALENDAR_MAX_PAGES {
-        ensure_scope_matches(&deps.auth_scope, scope)?;
+        GATE.ensure_matches(&deps.auth_scope, scope)?;
         let offset = (page_index as i32) * CALENDAR_PAGE_SIZE;
         let page = deps
             .remote
             .page(&scope.endpoint, kind, date, CALENDAR_PAGE_SIZE, offset)
             .await?;
-        ensure_scope_matches(&deps.auth_scope, scope)?;
+        GATE.ensure_matches(&deps.auth_scope, scope)?;
         let count = page.rows.len();
         if page_index == CALENDAR_MAX_PAGES {
             if count == 0 {
@@ -365,17 +369,6 @@ fn event_id(row: &Value) -> Option<String> {
         .map(str::trim)
         .filter(|event_id| !event_id.is_empty())
         .map(str::to_string)
-}
-
-fn require_active_scope(auth_scope: &RuntimeAuthScope) -> Result<RuntimeAuthScopeSnapshot> {
-    crate::scope_gate::require_active_scope(auth_scope, "Group calendar snapshot")
-}
-
-fn ensure_scope_matches(
-    auth_scope: &RuntimeAuthScope,
-    expected: &RuntimeAuthScopeSnapshot,
-) -> Result<()> {
-    crate::scope_gate::ensure_scope_matches(auth_scope, expected, "Group calendar")
 }
 
 #[cfg(test)]

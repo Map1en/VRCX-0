@@ -8,7 +8,7 @@ use vrcx_0_application_core::{AuthenticatedMutationContext, Error, Result, Runti
 use vrcx_0_core::OwnerId;
 
 use crate::remote::VrchatRequestPort;
-use crate::scope_gate::{execute_vrchat_mutation, RemoteMutationOutcome};
+use crate::scope_gate::{execute_vrchat_mutation, RemoteMutationOutcome, ScopeGate};
 
 use super::service::{GroupRemoteRequest, GroupRemoteRequests};
 use super::types::{
@@ -17,7 +17,7 @@ use super::types::{
 
 pub const GROUP_MEMBERSHIP_BATCH_MAX_TARGETS: usize = 250;
 const GROUP_MEMBERSHIP_REMOTE_INTERVAL: Duration = Duration::from_millis(250);
-const SCOPE_CHANGED_MESSAGE: &str = "Group membership batch authentication scope changed.";
+const GATE: ScopeGate = ScopeGate::new("Group membership batch");
 
 #[derive(Default)]
 pub struct GroupMembershipBatchCoordinator {
@@ -255,7 +255,7 @@ async fn run_group_membership_batch_with_actions(
 
     for (index, group_id) in prepared.group_ids.iter().enumerate() {
         if !actions.scope_matches() {
-            stop_after = Some((index, SCOPE_CHANGED_MESSAGE.to_string()));
+            stop_after = Some((index, GATE.scope_changed_message()));
             break;
         }
 
@@ -274,7 +274,7 @@ async fn run_group_membership_batch_with_actions(
             Ok(outcome) => {
                 items[index] = applied(group_id);
                 if outcome == RemoteMutationOutcome::AppliedScopeChanged {
-                    stop_after = Some((index + 1, SCOPE_CHANGED_MESSAGE.to_string()));
+                    stop_after = Some((index + 1, GATE.scope_changed_message()));
                 }
             }
             Err(error) => {

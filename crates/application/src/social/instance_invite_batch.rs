@@ -9,6 +9,7 @@ use serde_json::Value;
 use vrcx_0_core::location::parse_location;
 
 use crate::remote::VrchatRequestPort;
+use crate::scope_gate::ScopeGate;
 use vrcx_0_application_core::{
     vrchat_api::{VrchatApiRequest, VrchatScope},
     AuthenticatedMutationContext, Error, Result,
@@ -18,7 +19,7 @@ const INSTANCE_INVITE_MAX_RETRIES: usize = 3;
 const INSTANCE_INVITE_RETRY_BASE_DELAY: Duration = Duration::from_secs(1);
 const INSTANCE_INVITE_REMOTE_INTERVAL: Duration = Duration::from_millis(250);
 const INSTANCE_INVITE_BATCH_MAX_ITEMS: usize = 1_000;
-const INSTANCE_INVITE_SCOPE_CHANGED: &str = "Instance invite batch authentication scope changed.";
+const GATE: ScopeGate = ScopeGate::new("Instance invite batch");
 
 #[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -165,7 +166,7 @@ impl VrchatInstanceInviteBatchActions<'_> {
     ) -> std::result::Result<(), InstanceInviteRemoteError> {
         if !self.scope_matches() {
             return Err(InstanceInviteRemoteError::terminal(
-                INSTANCE_INVITE_SCOPE_CHANGED,
+                GATE.scope_changed_message(),
             ));
         }
         let response = self
@@ -261,7 +262,7 @@ pub async fn send_instance_invites_batch(
         }
     }
     if !actions.scope_matches() {
-        return Err(Error::Custom(INSTANCE_INVITE_SCOPE_CHANGED.into()));
+        return Err(GATE.scope_changed_error());
     }
     Ok(
         run_instance_invite_batch(actions, &context, targets, INSTANCE_INVITE_RETRY_BASE_DELAY)
@@ -330,7 +331,7 @@ async fn send_with_backoff(
             return (
                 attempt,
                 Err(InstanceInviteRemoteError::terminal(
-                    INSTANCE_INVITE_SCOPE_CHANGED,
+                    GATE.scope_changed_message(),
                 )),
             );
         }
@@ -422,7 +423,7 @@ fn append_scope_changed_results(
         receiver_user_id: target.receiver_user_id.clone(),
         state: InstanceInviteItemState::Failed,
         attempts: 0,
-        message: INSTANCE_INVITE_SCOPE_CHANGED.into(),
+        message: GATE.scope_changed_message(),
     }));
 }
 

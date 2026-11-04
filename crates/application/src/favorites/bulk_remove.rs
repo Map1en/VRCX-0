@@ -7,7 +7,9 @@ use serde_json::Value;
 use vrcx_0_application_core::{AuthenticatedMutationContext, Error, FavoriteEntityKind, Result};
 use vrcx_0_core::OwnerId;
 
-use crate::scope_gate::RemoteMutationOutcome;
+use crate::scope_gate::{RemoteMutationOutcome, ScopeGate};
+
+const GATE: ScopeGate = ScopeGate::new("Favorite bulk remove");
 
 pub const FAVORITE_BULK_REMOVE_MAX_ITEMS: usize = 250;
 const FAVORITE_BULK_REMOVE_REMOTE_INTERVAL: Duration = Duration::from_millis(250);
@@ -242,7 +244,7 @@ async fn run_favorite_bulk_remove(
 
     for (index, work) in input_items.iter().enumerate() {
         if !actions.scope_matches() {
-            let message = "Favorite bulk remove authentication scope changed.".to_string();
+            let message = GATE.scope_changed_message();
             mark_not_attempted(&mut items[index..], &message);
             last_error = Some(message);
             break;
@@ -283,7 +285,7 @@ async fn run_favorite_bulk_remove(
                     message: String::new(),
                 };
                 if scope_changed {
-                    let message = "Favorite bulk remove authentication scope changed.".to_string();
+                    let message = GATE.scope_changed_message();
                     mark_not_attempted(&mut items[index + 1..], &message);
                     last_error = Some(message);
                     break;
@@ -301,7 +303,7 @@ async fn run_favorite_bulk_remove(
                 };
                 last_error = Some(message);
                 if !actions.scope_matches() {
-                    let message = "Favorite bulk remove authentication scope changed.".to_string();
+                    let message = GATE.scope_changed_message();
                     mark_not_attempted(&mut items[index + 1..], &message);
                     last_error = Some(message);
                     break;

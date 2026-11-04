@@ -17,8 +17,11 @@ use vrcx_0_core::json::RawJson;
 
 use crate::avatars::{get_my_avatars, AvatarRemote, MyAvatarsDeps, MyAvatarsInput, MyAvatarsStore};
 use crate::remote::VrchatRequestPort;
+use crate::scope_gate::ScopeGate;
 use vrcx_0_application_core::{Error, Result};
 use vrcx_0_core::OwnerId;
+
+const GATE: ScopeGate = ScopeGate::new("Quick search");
 
 const WORLD_PAGE_SIZE: i32 = 50;
 const FAVORITE_PAGE_SIZE: i32 = 300;
@@ -238,7 +241,7 @@ impl QuickSearchRuntime {
         friend_snapshot: Option<RealtimeFriendSnapshot>,
     ) -> Result<QuickSearchQueryOutput> {
         let command = "app__quick_search_query";
-        let scope = require_active_scope(&self.inner.auth_scope)?;
+        let scope = GATE.require_active(&self.inner.auth_scope)?;
         let query = normalize_search_text(&input.query);
         if query.is_empty() {
             return Ok(QuickSearchQueryOutput::empty());
@@ -343,7 +346,7 @@ impl QuickSearchRuntime {
             output.joined_groups = search_candidates(&remote.groups, &query, &own_group_ids);
         }
 
-        ensure_scope_matches(&self.inner.auth_scope, &scope)?;
+        GATE.ensure_matches(&self.inner.auth_scope, &scope)?;
         let partial = failures > 0;
         output.status = if partial {
             QuickSearchQueryStatus::Partial
@@ -409,7 +412,7 @@ impl QuickSearchRuntime {
 
         let load_revision = self.inner.remote_revision.load(Ordering::SeqCst);
         let catalog = Arc::new(load_quick_search_remote_catalog(&self.inner, scope).await);
-        ensure_scope_matches(&self.inner.auth_scope, scope)?;
+        GATE.ensure_matches(&self.inner.auth_scope, scope)?;
         let ttl = if catalog.failures == 0 {
             REMOTE_WORKING_SET_TTL
         } else {
@@ -527,7 +530,7 @@ async fn collect_pages(
 ) -> Result<Vec<Value>> {
     let mut rows = Vec::new();
     for page in 0..=MAX_PAGES_PER_SOURCE {
-        ensure_scope_matches(&runtime.auth_scope, scope)?;
+        GATE.ensure_matches(&runtime.auth_scope, scope)?;
         let offset = (page as i32) * page_size;
         let request = runtime.remote_requests.page(
             source,
@@ -589,7 +592,7 @@ async fn execute_rows(
     request: VrchatApiRequest,
 ) -> Result<Vec<Value>> {
     let response = runtime.remote.send(request, VrchatScope::Vrchat).await?;
-    ensure_scope_matches(&runtime.auth_scope, scope)?;
+    GATE.ensure_matches(&runtime.auth_scope, scope)?;
     let response = VrchatJsonResponse {
         status: response.status,
         json: serde_json::from_str::<Value>(&response.data)?,
@@ -913,17 +916,6 @@ fn friend_snapshot_matches_scope(
     scope: &RuntimeAuthScopeSnapshot,
 ) -> bool {
     snapshot.current_user_id == scope.current_user_id && snapshot.endpoint == scope.endpoint
-}
-
-fn require_active_scope(auth_scope: &RuntimeAuthScope) -> Result<RuntimeAuthScopeSnapshot> {
-    crate::scope_gate::require_active_scope(auth_scope, "Quick search")
-}
-
-fn ensure_scope_matches(
-    auth_scope: &RuntimeAuthScope,
-    expected: &RuntimeAuthScopeSnapshot,
-) -> Result<()> {
-    crate::scope_gate::ensure_scope_matches(auth_scope, expected, "Quick search")
 }
 
 #[cfg(test)]

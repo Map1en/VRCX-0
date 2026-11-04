@@ -10,8 +10,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use vrcx_0_application_core::{RuntimeAuthScope, RuntimeAuthScopeSnapshot};
 
+use crate::scope_gate::ScopeGate;
 use vrcx_0_application_core::{Error, Result};
 use vrcx_0_core::json::RawJson;
+
+const GATE: ScopeGate = ScopeGate::new("User dialog tab counts");
 
 const MAX_PROFILE_PAGES: usize = 50;
 const TAB_COUNTS_CACHE_CAPACITY: u64 = 32;
@@ -195,7 +198,7 @@ pub async fn get_user_dialog_tab_counts(
     deps: UserDialogTabCountsDeps,
     input: UserDialogTabCountsInput,
 ) -> Result<UserDialogTabCountsOutput> {
-    let scope = require_active_scope(&deps.auth_scope)?;
+    let scope = GATE.require_active(&deps.auth_scope)?;
     let target_user_id = input.user_id.trim().to_string();
     if target_user_id.is_empty() {
         return Err(Error::Custom(
@@ -438,21 +441,10 @@ async fn execute_scoped<T, F>(
 where
     F: Future<Output = Result<T>>,
 {
-    ensure_scope_matches(&deps.auth_scope, scope)?;
+    GATE.ensure_matches(&deps.auth_scope, scope)?;
     let result = operation.await?;
-    ensure_scope_matches(&deps.auth_scope, scope)?;
+    GATE.ensure_matches(&deps.auth_scope, scope)?;
     Ok(result)
-}
-
-fn require_active_scope(auth_scope: &RuntimeAuthScope) -> Result<RuntimeAuthScopeSnapshot> {
-    crate::scope_gate::require_active_scope(auth_scope, "User dialog tab counts")
-}
-
-fn ensure_scope_matches(
-    auth_scope: &RuntimeAuthScope,
-    expected: &RuntimeAuthScopeSnapshot,
-) -> Result<()> {
-    crate::scope_gate::ensure_scope_matches(auth_scope, expected, "User dialog tab counts")
 }
 
 fn selected_avatar_provider(source: &dyn UserDialogTabCountsSource) -> Result<Option<String>> {

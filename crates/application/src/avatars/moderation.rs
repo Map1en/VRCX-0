@@ -8,7 +8,10 @@ use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::{RuntimeAuthScope, RuntimeAuthScopeSnapshot};
 use vrcx_0_core::vrchat_endpoints::{normalize_vrchat_api_endpoint, VRCHAT_API_DEFAULT_ENDPOINT};
 
+use crate::scope_gate::ScopeGate;
 use vrcx_0_application_core::{Error, Result};
+
+const GATE: ScopeGate = ScopeGate::new("Avatar moderation query");
 
 const AVATAR_MODERATION_CACHE_CAPACITY: u64 = 4;
 const AVATAR_MODERATION_CACHE_TTL: Duration = Duration::from_secs(30 * 60);
@@ -114,11 +117,7 @@ pub async fn get_avatar_moderations(
                 .await
         })
         .await?;
-    if !deps.auth_scope.snapshot().generation_matches(&scope) {
-        return Err(Error::Custom(
-            "Avatar moderation query authentication scope changed.".into(),
-        ));
-    }
+    GATE.ensure_matches(deps.auth_scope, &scope)?;
     Ok(response)
 }
 

@@ -175,8 +175,14 @@ async fn scope_change_stops_the_batch_and_marks_remaining_groups() {
         result.items[2].state,
         GroupMembershipBatchItemState::NotAttempted
     );
-    assert_eq!(result.items[2].message, SCOPE_CHANGED_MESSAGE);
-    assert_eq!(result.last_error.as_deref(), Some(SCOPE_CHANGED_MESSAGE));
+    assert_eq!(
+        result.items[2].message,
+        "Group membership batch authentication scope changed."
+    );
+    assert_eq!(
+        result.last_error.as_deref(),
+        Some("Group membership batch authentication scope changed.")
+    );
     assert_eq!(
         *actions.progress.lock().unwrap(),
         vec![(1, 3), (2, 3), (3, 3)]

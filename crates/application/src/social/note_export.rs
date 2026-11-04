@@ -13,11 +13,14 @@ use serde::{Deserialize, Serialize};
 use vrcx_0_application_core::RuntimeVrchatAuthFailurePayload;
 
 use crate::remote::VrchatRequestPort;
+use crate::scope_gate::ScopeGate;
 use vrcx_0_application_core::{
     vrchat_api::{VrchatApiRequest, VrchatScope},
     Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus, TaskSupervisor,
 };
 use vrcx_0_core::OwnerId;
+
+const GATE: ScopeGate = ScopeGate::new("Note export");
 
 pub const NOTE_EXPORT_MAX_ITEMS: usize = 1_000;
 const NOTE_EXPORT_INTERVAL: Duration = Duration::from_secs(2);
@@ -436,12 +439,7 @@ impl NoteExportRuntime {
 
     pub fn start(&self, input: NoteExportStartInput) -> Result<NoteExportStatus> {
         let items = prepare_note_export(input)?;
-        let scope = self.auth_scope.snapshot();
-        if !scope.active || scope.current_user_id.trim().is_empty() {
-            return Err(Error::Custom(
-                "Note export requires an authenticated session.".into(),
-            ));
-        }
+        let scope = GATE.require_active(&self.auth_scope)?;
 
         let cancel = Arc::new(AtomicBool::new(false));
         let status = {

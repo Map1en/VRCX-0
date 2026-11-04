@@ -9,11 +9,13 @@ use std::{
 use serde::{Deserialize, Serialize};
 
 use crate::remote::VrchatRequestPort;
-use crate::scope_gate::{execute_vrchat_mutation, RemoteMutationOutcome};
+use crate::scope_gate::{execute_vrchat_mutation, RemoteMutationOutcome, ScopeGate};
 use vrcx_0_application_core::{
     vrchat_api::VrchatApiRequest, AuthenticatedMutationContext, Error, Result, RuntimeEventBus,
 };
 use vrcx_0_core::OwnerId;
+
+const GATE: ScopeGate = ScopeGate::new("Group moderation batch");
 
 pub const GROUP_MODERATION_BATCH_MAX_TARGETS: usize = 250;
 pub const GROUP_MODERATION_BATCH_MAX_OPERATIONS: usize = 1_000;
@@ -358,10 +360,7 @@ async fn run_group_moderation_batch_with_actions(
 
     for (index, target) in prepared.targets.iter().enumerate() {
         if !actions.scope_matches() {
-            stop_after = Some((
-                index,
-                "Group moderation batch authentication scope changed.".to_string(),
-            ));
+            stop_after = Some((index, GATE.scope_changed_message()));
             break;
         }
         if should_skip_self(&prepared.action) && target.user_id == actions.current_user_id() {
@@ -387,10 +386,7 @@ async fn run_group_moderation_batch_with_actions(
             let outcome =
                 run_role_target(actions, &prepared.group_id, &prepared.action, target).await;
             if outcome.scope_changed {
-                stop_after = Some((
-                    index + 1,
-                    "Group moderation batch authentication scope changed.".to_string(),
-                ));
+                stop_after = Some((index + 1, GATE.scope_changed_message()));
             }
             items[index] = outcome.item;
         } else {
@@ -406,10 +402,7 @@ async fn run_group_moderation_batch_with_actions(
                 Ok(outcome) => {
                     items[index] = applied(&target.user_id);
                     if outcome == RemoteMutationOutcome::AppliedScopeChanged {
-                        stop_after = Some((
-                            index + 1,
-                            "Group moderation batch authentication scope changed.".to_string(),
-                        ));
+                        stop_after = Some((index + 1, GATE.scope_changed_message()));
                     }
                 }
                 Err(error) => {
@@ -557,7 +550,7 @@ async fn run_role_target(
 
     for role_id in &target.role_ids {
         if !actions.scope_matches() {
-            messages.push("Group moderation batch authentication scope changed.".to_string());
+            messages.push(GATE.scope_changed_message());
             scope_changed = true;
             break;
         }
@@ -588,8 +581,7 @@ async fn run_role_target(
             Ok(outcome) => {
                 applied_role_ids.push(role_id.clone());
                 if outcome == RemoteMutationOutcome::AppliedScopeChanged {
-                    messages
-                        .push("Group moderation batch authentication scope changed.".to_string());
+                    messages.push(GATE.scope_changed_message());
                     scope_changed = true;
                     break;
                 }

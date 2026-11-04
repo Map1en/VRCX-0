@@ -19,7 +19,10 @@ use super::favorites::{
     read_auto_delete_old_prints_enabled, read_auto_delete_prints_limit,
     retain_existing_favorite_ids, PrintFavoritesStore,
 };
+use crate::scope_gate::ScopeGate;
 use vrcx_0_application_core::{AuthenticatedMutationContext, Error, RemoteMutationGate, Result};
+
+const GATE: ScopeGate = ScopeGate::new("Print cleanup");
 
 pub const PRINT_HARD_CAP: i64 = 64;
 pub const PRINT_AUTO_DELETE_LIMIT_MIN: i64 = 30;
@@ -250,9 +253,7 @@ pub async fn run_print_auto_cleanup(
         || normalize_print_endpoint(&trigger.endpoint)
             != normalize_print_endpoint(&mutation.scope().endpoint)
     {
-        return Err(Error::Custom(
-            "Print cleanup authentication scope changed.".into(),
-        ));
+        return Err(GATE.scope_changed_error());
     }
 
     let limit = read_auto_delete_prints_limit(deps.store.as_ref())?;

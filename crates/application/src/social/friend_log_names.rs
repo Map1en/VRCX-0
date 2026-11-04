@@ -12,8 +12,11 @@ use vrcx_0_application_realtime::{
 };
 use vrcx_0_contracts::game_log_query::GameLogAllUserStatsOutput;
 
+use crate::scope_gate::ScopeGate;
 use vrcx_0_application_core::{Error, Result};
 use vrcx_0_core::OwnerId;
+
+const GATE: ScopeGate = ScopeGate::new("Friend log name resolution");
 
 pub const FRIEND_LOG_NAME_RESOLUTION_MAX_USERS: usize = 100;
 const FRIEND_LOG_REMOTE_LOOKUP_MAX_USERS: usize = 30;
@@ -135,7 +138,7 @@ pub async fn resolve_friend_log_names(
     input: FriendLogNameResolutionInput,
 ) -> Result<Vec<ResolvedFriendLogName>> {
     let request = coordinator.begin(input.request_id)?;
-    let expected_scope = require_active_scope(deps.auth_scope)?;
+    let expected_scope = GATE.require_active(deps.auth_scope)?;
     let user_ids = normalize_user_ids(input.user_ids);
     if user_ids.is_empty() {
         return Ok(Vec::new());
@@ -172,7 +175,7 @@ pub async fn resolve_friend_log_names(
         if request.is_cancelled() {
             break;
         }
-        ensure_scope_matches(deps.auth_scope, &expected_scope)?;
+        GATE.ensure_matches(deps.auth_scope, &expected_scope)?;
         let response = match deps
             .realtime
             .get_user_via_cache_with_options(
@@ -208,7 +211,7 @@ pub async fn resolve_friend_log_names(
             names.insert(user_id, display_name);
         }
     }
-    ensure_scope_matches(deps.auth_scope, &expected_scope)?;
+    GATE.ensure_matches(deps.auth_scope, &expected_scope)?;
 
     Ok(user_ids
         .into_iter()
@@ -240,17 +243,6 @@ fn merge_game_log_names(
         }
     }
     Ok(())
-}
-
-fn require_active_scope(auth_scope: &RuntimeAuthScope) -> Result<RuntimeAuthScopeSnapshot> {
-    crate::scope_gate::require_active_scope(auth_scope, "Friend log name resolution")
-}
-
-fn ensure_scope_matches(
-    auth_scope: &RuntimeAuthScope,
-    expected: &RuntimeAuthScopeSnapshot,
-) -> Result<()> {
-    crate::scope_gate::ensure_scope_matches(auth_scope, expected, "Friend log name resolution")
 }
 
 fn normalize_user_ids(user_ids: Vec<String>) -> Vec<String> {

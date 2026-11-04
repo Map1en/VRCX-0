@@ -7,7 +7,10 @@ use serde_json::Value;
 use vrcx_0_contracts::vrchat_api::{VrchatJsonResponse, VrchatResponse};
 use vrcx_0_core::json::RawJson;
 
+use crate::scope_gate::ScopeGate;
 use vrcx_0_application_core::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot};
+
+const GATE: ScopeGate = ScopeGate::new("Inventory collect");
 
 const INVENTORY_COLLECT_PAGE_SIZE: usize = 100;
 const INVENTORY_COLLECT_MAX_PAGES: usize = 100;
@@ -166,7 +169,7 @@ async fn fetch_inventory_page(
     input: &InventoryItemsCollectInput,
     page_index: usize,
 ) -> Result<Vec<Value>> {
-    ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
+    GATE.ensure_matches(deps.auth_scope, &deps.expected_scope)?;
     let response = deps
         .remote_requests
         .inventory_page(
@@ -174,7 +177,7 @@ async fn fetch_inventory_page(
             page_request_params(input, page_index),
         )
         .await?;
-    ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
+    GATE.ensure_matches(deps.auth_scope, &deps.expected_scope)?;
     parse_inventory_page(VrchatJsonResponse::parse(response.status, &response.data))
 }
 
@@ -215,13 +218,6 @@ fn parse_inventory_page(response: VrchatJsonResponse) -> Result<Vec<Value>> {
         .and_then(Value::as_array)
         .cloned()
         .unwrap_or_default())
-}
-
-fn ensure_scope_matches(
-    current: &RuntimeAuthScopeSnapshot,
-    expected: &RuntimeAuthScopeSnapshot,
-) -> Result<()> {
-    crate::scope_gate::ensure_snapshot_scope_matches(current, expected, "Inventory collect")
 }
 
 #[cfg(test)]
@@ -357,14 +353,16 @@ mod tests {
             generation: 1,
             active: true,
         };
-        assert!(ensure_scope_matches(&expected.clone(), &expected).is_ok());
+        assert!(GATE
+            .ensure_snapshot_matches(&expected.clone(), &expected)
+            .is_ok());
 
         let mut stale = expected.clone();
         stale.generation = 2;
-        assert!(ensure_scope_matches(&stale, &expected).is_err());
+        assert!(GATE.ensure_snapshot_matches(&stale, &expected).is_err());
 
         let mut inactive = expected.clone();
         inactive.active = false;
-        assert!(ensure_scope_matches(&inactive, &expected).is_err());
+        assert!(GATE.ensure_snapshot_matches(&inactive, &expected).is_err());
     }
 }

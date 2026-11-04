@@ -19,6 +19,9 @@ use super::cache_policy::{
     FavoriteCacheKind,
 };
 use super::favorite_world_cards::{FavoriteWorldCard, FavoriteWorldCardCache};
+use crate::scope_gate::ScopeGate;
+
+const GATE: ScopeGate = ScopeGate::new("Favorite detail hydrate");
 
 const FAVORITE_DETAILS_PAGE_SIZE: i32 = 300;
 const FAVORITE_WORLD_GROUP_PAGE_SIZE: i32 = 100;
@@ -140,7 +143,7 @@ impl FavoriteDetailsRuntime {
         input: FavoriteDetailsHydrateInput,
         expected_scope: RuntimeAuthScopeSnapshot,
     ) -> Result<FavoriteDetailsHydrateOutput> {
-        ensure_scope_matches(&self.inner.auth_scope.snapshot(), &expected_scope)?;
+        GATE.ensure_matches(&self.inner.auth_scope, &expected_scope)?;
         self.inner.world_cards.enter_scope(&expected_scope).await;
         self.inner.world_cards.start_housekeeping(&self.inner.tasks);
 
@@ -151,7 +154,7 @@ impl FavoriteDetailsRuntime {
         }
 
         let _guard = self.inner.world_sync_gate.lock().await;
-        ensure_scope_matches(&self.inner.auth_scope.snapshot(), &expected_scope)?;
+        GATE.ensure_matches(&self.inner.auth_scope, &expected_scope)?;
         let (cards, missing) = self.world_cards_for(&requested_ids).await;
         if missing.is_empty() {
             return Ok(project_world_cards(cards, &requested_ids, 0));
@@ -183,7 +186,7 @@ impl FavoriteDetailsRuntime {
         cached_count += self
             .resolve_local_world_cards(&deps, &local_missing)
             .await?;
-        ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
+        GATE.ensure_matches(deps.auth_scope, &deps.expected_scope)?;
 
         self.prefetch_world_groups(pending_tags, &deps.expected_scope);
         let (cards, _) = self.world_cards_for(&requested_ids).await;
@@ -472,7 +475,7 @@ async fn probe_world(deps: &FavoriteDetailsHydrateDeps<'_>, id: &str) -> Result<
     {
         Ok((status, payload)) => Ok(classify_world_probe(status, payload)),
         Err(error) => {
-            ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
+            GATE.ensure_matches(deps.auth_scope, &deps.expected_scope)?;
             tracing::warn!("world availability probe failed for {id}: {error}");
             Ok(WorldProbeOutcome::Failed)
         }
@@ -567,9 +570,9 @@ async fn execute_json(
     deps: &FavoriteDetailsHydrateDeps<'_>,
     response: super::FavoriteRemoteFuture<'_, VrchatApiResponse>,
 ) -> Result<(i32, Value)> {
-    ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
+    GATE.ensure_matches(deps.auth_scope, &deps.expected_scope)?;
     let response = response.await?;
-    ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
+    GATE.ensure_matches(deps.auth_scope, &deps.expected_scope)?;
     let payload = serde_json::from_str::<Value>(&response.data)
         .unwrap_or_else(|_| Value::String(response.data.clone()));
     Ok((response.status, payload))
@@ -689,13 +692,6 @@ fn persist_avatar_details(
             0
         }
     }
-}
-
-fn ensure_scope_matches(
-    current: &RuntimeAuthScopeSnapshot,
-    expected: &RuntimeAuthScopeSnapshot,
-) -> Result<()> {
-    crate::scope_gate::ensure_snapshot_scope_matches(current, expected, "Favorite detail hydrate")
 }
 
 #[cfg(test)]

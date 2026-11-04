@@ -22,7 +22,10 @@ use super::types::{
     SocialFriendRequestCancelInput, SocialFriendRequestNotificationAcceptOutput,
     SocialFriendRequestNotificationAcceptStatus, SocialMutationDeps,
 };
+use crate::scope_gate::ScopeGate;
 use vrcx_0_core::OwnerId;
+
+const GATE: ScopeGate = ScopeGate::new("Backend social mutation");
 
 const SOCIAL_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
@@ -32,7 +35,7 @@ pub async fn unfriend(
 ) -> Result<SocialFriendMutationOutcome> {
     let target_user_id = normalize_text(&input.target_user_id);
     require_target(&target_user_id)?;
-    let auth_scope = capture_current_auth_scope(&deps)?;
+    let auth_scope = GATE.require_active(deps.auth_scope)?;
 
     unfriend_with_expected_scope(
         &deps,
@@ -49,12 +52,12 @@ pub(super) async fn unfriend_with_expected_scope(
     target_user_id: &str,
     target_display_name: &str,
 ) -> Result<SocialFriendMutationOutcome> {
-    ensure_expected_auth_scope(deps, auth_scope)?;
+    GATE.ensure_matches(deps.auth_scope, auth_scope)?;
     let request = deps
         .remote_requests
         .unfriend(auth_scope.endpoint.clone(), target_user_id.to_string())?;
     execute_vrchat_json_request(deps, auth_scope, request).await?;
-    if let Err(error) = ensure_expected_auth_scope(deps, auth_scope) {
+    if let Err(error) = GATE.ensure_matches(deps.auth_scope, auth_scope) {
         return Ok(SocialFriendMutationOutcome::remote_ok_local_failed(
             target_user_id,
             error,
@@ -75,13 +78,13 @@ pub async fn send_friend_request(
 ) -> Result<SocialFriendMutationOutcome> {
     let target_user_id = normalize_text(&input.target_user_id);
     require_target(&target_user_id)?;
-    let auth_scope = capture_current_auth_scope(&deps)?;
+    let auth_scope = GATE.require_active(deps.auth_scope)?;
 
     let request = deps
         .remote_requests
         .send_friend_request(auth_scope.endpoint.clone(), target_user_id.clone())?;
     execute_vrchat_json_request(&deps, &auth_scope, request).await?;
-    if let Err(error) = ensure_expected_auth_scope(&deps, &auth_scope) {
+    if let Err(error) = GATE.ensure_matches(deps.auth_scope, &auth_scope) {
         return Ok(SocialFriendMutationOutcome::remote_ok_local_failed(
             &target_user_id,
             error,
@@ -103,7 +106,7 @@ pub async fn cancel_friend_request(
 ) -> Result<SocialFriendMutationOutcome> {
     let target_user_id = normalize_text(&input.target_user_id);
     require_target(&target_user_id)?;
-    let auth_scope = capture_current_auth_scope(&deps)?;
+    let auth_scope = GATE.require_active(deps.auth_scope)?;
 
     let request = deps.remote_requests.cancel_friend_request(
         auth_scope.endpoint.clone(),
@@ -111,7 +114,7 @@ pub async fn cancel_friend_request(
         normalize_text(&input.notification_id),
     )?;
     execute_vrchat_json_request(&deps, &auth_scope, request).await?;
-    if let Err(error) = ensure_expected_auth_scope(&deps, &auth_scope) {
+    if let Err(error) = GATE.ensure_matches(deps.auth_scope, &auth_scope) {
         return Ok(SocialFriendMutationOutcome::remote_ok_local_failed(
             &target_user_id,
             error,
@@ -131,7 +134,7 @@ pub async fn accept_friend_request(
     deps: SocialMutationDeps<'_>,
     input: SocialFriendRequestAcceptInput,
 ) -> Result<SocialFriendMutationOutcome> {
-    let auth_scope = capture_current_auth_scope(&deps)?;
+    let auth_scope = GATE.require_active(deps.auth_scope)?;
     accept_friend_request_with_expected_scope(&deps, &auth_scope, input).await
 }
 
@@ -148,13 +151,13 @@ async fn accept_friend_request_with_expected_scope(
             "SocialFriendRequestAccept requires notificationId.".into(),
         ));
     }
-    ensure_expected_auth_scope(deps, auth_scope)?;
+    GATE.ensure_matches(deps.auth_scope, auth_scope)?;
 
     let request = deps
         .remote_requests
         .accept_friend_request(auth_scope.endpoint.clone(), notification_id)?;
     execute_vrchat_json_request(deps, auth_scope, request).await?;
-    if let Err(error) = ensure_expected_auth_scope(deps, auth_scope) {
+    if let Err(error) = GATE.ensure_matches(deps.auth_scope, auth_scope) {
         return Ok(SocialFriendMutationOutcome::remote_ok_local_failed(
             &target_user_id,
             error,
@@ -168,7 +171,7 @@ async fn accept_friend_request_with_expected_scope(
         &input.target_display_name,
     )
     .await;
-    if let Err(error) = ensure_expected_auth_scope(deps, auth_scope) {
+    if let Err(error) = GATE.ensure_matches(deps.auth_scope, auth_scope) {
         return Ok(SocialFriendMutationOutcome::remote_ok_local_failed(
             &target_user_id,
             error,
@@ -188,14 +191,14 @@ pub async fn accept_friend_request_notification(
     deps: SocialMutationDeps<'_>,
     input: SocialFriendRequestAcceptInput,
 ) -> Result<SocialFriendRequestNotificationAcceptOutput> {
-    let auth_scope = capture_current_auth_scope(&deps)?;
+    let auth_scope = GATE.require_active(deps.auth_scope)?;
     let notification_id = normalize_text(&input.notification_id);
     let outcome = match accept_friend_request_with_expected_scope(&deps, &auth_scope, input).await {
         Ok(outcome) => Some(outcome),
         Err(error) if is_not_found_error(&error) => None,
         Err(error) => return Err(error),
     };
-    ensure_expected_auth_scope(&deps, &auth_scope)?;
+    GATE.ensure_matches(deps.auth_scope, &auth_scope)?;
     deps.store
         .expire_notification(&auth_scope.current_user_id, &notification_id)?;
     Ok(SocialFriendRequestNotificationAcceptOutput {
@@ -465,29 +468,6 @@ fn require_target(target_user_id: &str) -> Result<()> {
     Ok(())
 }
 
-fn capture_current_auth_scope(deps: &SocialMutationDeps<'_>) -> Result<RuntimeAuthScopeSnapshot> {
-    let scope = deps.auth_scope.snapshot();
-    if scope.active && !scope.current_user_id.trim().is_empty() {
-        return Ok(scope);
-    }
-    Err(Error::Custom(
-        "Backend social mutation requires an authenticated session.".into(),
-    ))
-}
-
-fn ensure_expected_auth_scope(
-    deps: &SocialMutationDeps<'_>,
-    expected: &RuntimeAuthScopeSnapshot,
-) -> Result<()> {
-    if deps.auth_scope.snapshot().generation_matches(expected) {
-        Ok(())
-    } else {
-        Err(Error::Custom(
-            "Backend social mutation authentication scope changed.".into(),
-        ))
-    }
-}
-
 async fn execute_vrchat_json_request(
     deps: &SocialMutationDeps<'_>,
     auth_scope: &RuntimeAuthScopeSnapshot,
@@ -500,11 +480,11 @@ async fn execute_vrchat_json_request(
         .unwrap_or("runtime/social-mutation")
         .trim()
         .to_string();
-    ensure_expected_auth_scope(deps, auth_scope)?;
+    GATE.ensure_matches(deps.auth_scope, auth_scope)?;
     deps.remote_mutations
         .wait(auth_scope, SOCIAL_REMOTE_MUTATION_INTERVAL)
         .await;
-    ensure_expected_auth_scope(deps, auth_scope)?;
+    GATE.ensure_matches(deps.auth_scope, auth_scope)?;
     if request.url.is_none() {
         request.endpoint = Some(auth_scope.endpoint.clone());
     }
