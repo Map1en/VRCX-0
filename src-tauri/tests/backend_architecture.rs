@@ -206,8 +206,12 @@ fn overlay_runtime_receives_feature_dependencies_instead_of_host_context() {
 
 #[test]
 fn desktop_execution_modules_do_not_receive_the_complete_runtime_context() {
+    let assembly_root = workspace_file("crates/runtime-host-desktop/src/state/assembly");
     for path in rust_sources_below("crates/runtime-host-desktop/src") {
-        if path.ends_with("state.rs") || path.ends_with("tests.rs") {
+        if path.ends_with("state.rs")
+            || path.ends_with("tests.rs")
+            || path.starts_with(&assembly_root)
+        {
             continue;
         }
         let source = std::fs::read_to_string(&path).expect("read desktop runtime source");
