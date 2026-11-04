@@ -200,7 +200,6 @@ impl McpMutualGraphPort for DesktopMcpMutualGraphAdapter {
             Arc::new(vrcx_0_outbound_adapters::LocalMutualGraphStore::new(
                 Arc::clone(&self.db),
             )),
-            Arc::new(vrcx_0_outbound_adapters::VrchatMutualGraphRemoteRequests),
             Arc::new(vrcx_0_outbound_adapters::VrchatRequestAdapter::new(
                 Arc::clone(&self.web),
             )),

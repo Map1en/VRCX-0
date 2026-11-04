@@ -9,7 +9,7 @@ use vrcx_0_contracts::friend_log::{
     FriendLogCurrentEntryInput, FriendLogHistoryQueryInput, FriendLogUpsertOptionsInput,
 };
 
-use super::super::types::{SocialFriendMutationStatus, TestSocialMutationRemoteRequests};
+use super::super::types::SocialFriendMutationStatus;
 use super::*;
 
 #[test]
@@ -28,7 +28,6 @@ struct Fixture {
     runtime: TestRealtimeHostRuntime,
     auth_scope: RuntimeAuthScope,
     remote_mutations: Arc<RemoteMutationGate>,
-    remote_requests: TestSocialMutationRemoteRequests,
     remote: crate::remote::TestVrchatRequestPort,
 }
 
@@ -42,7 +41,6 @@ fn fixture(name: &str) -> Fixture {
         runtime,
         auth_scope,
         remote_mutations,
-        remote_requests: TestSocialMutationRemoteRequests,
         remote: crate::remote::TestVrchatRequestPort,
     }
 }
@@ -51,7 +49,6 @@ impl Fixture {
     fn deps(&self) -> SocialMutationDeps<'_> {
         SocialMutationDeps {
             store: self.runtime.store(),
-            remote_requests: &self.remote_requests,
             remote: &self.remote,
             auth_scope: &self.auth_scope,
             remote_mutations: self.remote_mutations.as_ref(),

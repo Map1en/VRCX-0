@@ -110,24 +110,6 @@ trait InstanceInviteBatchActions: Send + Sync {
     fn scope_matches(&self) -> bool;
 }
 
-pub trait InstanceInviteRemoteRequests: Send + Sync {
-    fn self_invite(
-        &self,
-        endpoint: String,
-        world_id: String,
-        instance_id: String,
-        short_name: String,
-    ) -> Result<VrchatRequest>;
-    fn user_invite(
-        &self,
-        endpoint: String,
-        receiver_user_id: String,
-        location: String,
-        world_id: String,
-        world_name: String,
-    ) -> Result<VrchatRequest>;
-}
-
 pub type WorldNameFuture<'a> = BoxFuture<'a, Option<String>>;
 
 pub trait WorldNameResolver: Send + Sync {
@@ -136,7 +118,6 @@ pub trait WorldNameResolver: Send + Sync {
 
 pub struct VrchatInstanceInviteBatchActions<'a> {
     remote: &'a dyn VrchatRequestPort,
-    remote_requests: &'a dyn InstanceInviteRemoteRequests,
     mutation: AuthenticatedMutationContext<'a>,
     world_names: &'a dyn WorldNameResolver,
 }
@@ -144,13 +125,11 @@ pub struct VrchatInstanceInviteBatchActions<'a> {
 impl<'a> VrchatInstanceInviteBatchActions<'a> {
     pub fn new(
         remote: &'a dyn VrchatRequestPort,
-        remote_requests: &'a dyn InstanceInviteRemoteRequests,
         mutation: AuthenticatedMutationContext<'a>,
         world_names: &'a dyn WorldNameResolver,
     ) -> Self {
         Self {
             remote,
-            remote_requests,
             mutation,
             world_names,
         }
@@ -212,28 +191,28 @@ impl InstanceInviteBatchActions for VrchatInstanceInviteBatchActions<'_> {
             self.mutation.pace(INSTANCE_INVITE_REMOTE_INTERVAL).await;
             let (request, fallback_message, allow_success_plain_text) = match target.kind {
                 InstanceInviteTargetKind::SelfInvite => {
-                    let request = self
-                        .remote_requests
-                        .self_invite(
-                            self.mutation.scope().endpoint.clone(),
-                            context.world_id.clone(),
-                            context.instance_id.clone(),
-                            context.short_name.clone(),
-                        )
-                        .map_err(InstanceInviteRemoteError::terminal)?;
+                    let request = vrcx_0_vrchat_protocol::instances::instance_self_invite_input(
+                        self.mutation.scope().endpoint.clone(),
+                        context.world_id.clone(),
+                        context.instance_id.clone(),
+                        context.short_name.clone(),
+                    )
+                    .map_err(InstanceInviteRemoteError::terminal)?
+                    .2;
                     (request, "VRChat instance request failed", true)
                 }
                 InstanceInviteTargetKind::UserInvite => {
-                    let request = self
-                        .remote_requests
-                        .user_invite(
-                            self.mutation.scope().endpoint.clone(),
-                            target.receiver_user_id.clone(),
-                            context.location.clone(),
-                            context.world_id.clone(),
-                            context.world_name.clone(),
-                        )
-                        .map_err(InstanceInviteRemoteError::terminal)?;
+                    let request = vrcx_0_vrchat_protocol::notifications::invite_send_input(
+                        self.mutation.scope().endpoint.clone(),
+                        target.receiver_user_id.clone(),
+                        serde_json::json!({
+                            "instanceId": context.location.clone(),
+                            "worldId": context.world_id.clone(),
+                            "worldName": context.world_name.clone(),
+                        }),
+                    )
+                    .map_err(InstanceInviteRemoteError::terminal)?
+                    .1;
                     (request, "VRChat notification request failed", false)
                 }
             };

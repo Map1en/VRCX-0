@@ -919,7 +919,6 @@ impl DesktopRuntimeHostState {
         Ok(vrcx_0_application::social::run_avatar_content_tags_batch(
             &vrcx_0_application::social::VrchatBatchMutationActions::new(
                 &self.vrchat_requests,
-                &vrcx_0_outbound_adapters::VrchatBatchMutationRemoteRequests,
                 mutation,
             ),
             input,
@@ -940,7 +939,6 @@ impl DesktopRuntimeHostState {
             &self.group_membership_batches,
             &vrcx_0_application::social::VrchatGroupMembershipBatchActions::new(
                 &self.vrchat_requests,
-                &vrcx_0_outbound_adapters::VrchatGroupRemoteRequests,
                 mutation,
                 self.runtime.desktop_assembly().event_bus().clone(),
             ),
@@ -962,7 +960,6 @@ impl DesktopRuntimeHostState {
             &self.group_moderation_batches,
             &vrcx_0_application::social::VrchatGroupModerationBatchActions::new(
                 &self.vrchat_requests,
-                &vrcx_0_outbound_adapters::VrchatGroupModerationRemoteRequests,
                 mutation,
                 self.runtime.desktop_assembly().event_bus().clone(),
             ),
@@ -1005,7 +1002,6 @@ impl DesktopRuntimeHostState {
         Ok(vrcx_0_application::social::send_instance_invites_batch(
             &vrcx_0_application::social::VrchatInstanceInviteBatchActions::new(
                 &self.vrchat_requests,
-                &vrcx_0_outbound_adapters::VrchatInstanceInviteRemoteRequests,
                 mutation,
                 &self.world_names,
             ),

@@ -13,6 +13,7 @@ use vrcx_0_application_core::{
     Result,
 };
 use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_vrchat_protocol::groups::GroupMemberVisibility;
 
 pub const BATCH_MUTATION_MAX_ITEMS: usize = 1_000;
 const BATCH_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
@@ -99,42 +100,17 @@ pub trait BatchMutationActions: Send + Sync {
     fn current_user_id(&self) -> &str;
 }
 
-pub trait BatchMutationRemoteRequests: Send + Sync {
-    fn avatar(&self, endpoint: String, avatar_id: String) -> Result<VrchatRequest>;
-    fn save_avatar_tags(
-        &self,
-        endpoint: String,
-        avatar_id: String,
-        tags: Vec<String>,
-    ) -> Result<VrchatRequest>;
-    fn user_groups(&self, endpoint: String, user_id: String) -> Result<VrchatRequest>;
-    fn set_group_visibility(
-        &self,
-        endpoint: String,
-        group_id: String,
-        user_id: String,
-        visibility: GroupVisibility,
-    ) -> Result<VrchatRequest>;
-    fn leave_group(&self, endpoint: String, group_id: String) -> Result<VrchatRequest>;
-}
-
 pub struct VrchatBatchMutationActions<'a> {
     remote: &'a dyn VrchatRequestPort,
-    remote_requests: &'a dyn BatchMutationRemoteRequests,
     mutation: AuthenticatedMutationContext<'a>,
 }
 
 impl<'a> VrchatBatchMutationActions<'a> {
     pub fn new(
         remote: &'a dyn VrchatRequestPort,
-        remote_requests: &'a dyn BatchMutationRemoteRequests,
         mutation: AuthenticatedMutationContext<'a>,
     ) -> Self {
-        Self {
-            remote,
-            remote_requests,
-            mutation,
-        }
+        Self { remote, mutation }
     }
 }
 
@@ -164,10 +140,11 @@ impl VrchatBatchMutationActions<'_> {
 impl BatchMutationActions for VrchatBatchMutationActions<'_> {
     fn fetch_avatar<'a>(&'a self, avatar_id: &'a str) -> BoxFuture<'a, Result<Value>> {
         Box::pin(async move {
-            let request = self.remote_requests.avatar(
+            let request = vrcx_0_vrchat_protocol::avatars::avatar_get_input(
                 self.mutation.scope().endpoint.clone(),
                 avatar_id.to_string(),
-            )?;
+            )?
+            .1;
             self.execute_json(request, "avatar snapshot").await
         })
     }
@@ -178,11 +155,20 @@ impl BatchMutationActions for VrchatBatchMutationActions<'_> {
         tags: &'a [String],
     ) -> BoxFuture<'a, Result<Value>> {
         Box::pin(async move {
-            let request = self.remote_requests.save_avatar_tags(
+            let request = vrcx_0_vrchat_protocol::avatars::avatar_save_input(
                 self.mutation.scope().endpoint.clone(),
                 avatar_id.to_string(),
-                tags.to_vec(),
-            )?;
+                vrcx_0_vrchat_protocol::avatars::AvatarUpdateRequest {
+                    id: avatar_id.to_string(),
+                    tags: Some(tags.to_vec()),
+                    name: None,
+                    description: None,
+                    primary_style: None,
+                    secondary_style: None,
+                    release_status: None,
+                },
+            )?
+            .1;
             self.execute_json(request, "avatar content tag update")
                 .await
         })
@@ -190,10 +176,11 @@ impl BatchMutationActions for VrchatBatchMutationActions<'_> {
 
     fn fetch_current_user_groups(&self) -> BoxFuture<'_, Result<Vec<Value>>> {
         Box::pin(async move {
-            let request = self.remote_requests.user_groups(
+            let request = vrcx_0_vrchat_protocol::users::user_groups_get_input(
                 self.mutation.scope().endpoint.clone(),
                 self.mutation.scope().current_user_id.clone(),
-            )?;
+            )?
+            .1;
             let payload = self
                 .execute_json(request, "group membership snapshot")
                 .await?;
@@ -207,12 +194,21 @@ impl BatchMutationActions for VrchatBatchMutationActions<'_> {
         visibility: GroupVisibility,
     ) -> BoxFuture<'a, Result<()>> {
         Box::pin(async move {
-            let request = self.remote_requests.set_group_visibility(
+            let visibility = match visibility {
+                GroupVisibility::Visible => GroupMemberVisibility::Visible,
+                GroupVisibility::Friends => GroupMemberVisibility::Friends,
+                GroupVisibility::Hidden => GroupMemberVisibility::Hidden,
+            };
+            let request = vrcx_0_vrchat_protocol::groups::member_props_set_input(
                 self.mutation.scope().endpoint.clone(),
                 group_id.to_string(),
                 self.mutation.scope().current_user_id.clone(),
-                visibility,
-            )?;
+                vrcx_0_vrchat_protocol::groups::GroupMemberPatch {
+                    visibility: Some(visibility),
+                    ..vrcx_0_vrchat_protocol::groups::GroupMemberPatch::default()
+                },
+            )?
+            .2;
             self.execute_json(request, "group visibility update")
                 .await?;
             Ok(())
@@ -221,9 +217,11 @@ impl BatchMutationActions for VrchatBatchMutationActions<'_> {
 
     fn leave_group<'a>(&'a self, group_id: &'a str) -> BoxFuture<'a, Result<()>> {
         Box::pin(async move {
-            let request = self
-                .remote_requests
-                .leave_group(self.mutation.scope().endpoint.clone(), group_id.to_string())?;
+            let request = vrcx_0_vrchat_protocol::groups::leave_input(
+                self.mutation.scope().endpoint.clone(),
+                group_id.to_string(),
+            )?
+            .1;
             self.execute_json(request, "group leave").await?;
             Ok(())
         })

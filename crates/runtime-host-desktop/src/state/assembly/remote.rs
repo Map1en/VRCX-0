@@ -13,7 +13,7 @@ use vrcx_0_outbound_adapters::{
     CachedWorldNameResolver, CachedWorldResponseProjection, LocalAvatarApplicationAdapter,
     LocalNotificationWebhookTransport, LocalQuickSearchDetailStore, VrchatApiRemote,
     VrchatAvatarRemote, VrchatCurrentUserMutationRemote, VrchatFavoriteRemote,
-    VrchatQuickSearchRemoteRequests, VrchatRequestAdapter, VrchatWorldRemote,
+    VrchatRequestAdapter, VrchatWorldRemote,
 };
 
 use crate::avatar::DesktopAvatarRuntime;
@@ -169,7 +169,6 @@ pub(crate) fn build_remote_runtimes(
             Arc::new(LocalQuickSearchDetailStore::new(Arc::clone(
                 runtime.database(),
             ))),
-            Arc::new(VrchatQuickSearchRemoteRequests),
             Arc::new(LocalAvatarApplicationAdapter::new(Arc::clone(
                 runtime.database(),
             ))),

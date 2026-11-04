@@ -7,7 +7,6 @@ pub use vrcx_0_contracts::mutual_graph::{
     MutualGraphLinkOutput, MutualGraphMetaInput, MutualGraphMetaOutput,
     MutualGraphSnapshotEntryInput, MutualGraphSnapshotOutput,
 };
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_core::OwnerId;
 
 #[derive(Debug, Deserialize, specta::Type)]
@@ -67,7 +66,6 @@ impl MutualGraphFetchState {
 #[derive(Clone, Copy)]
 pub struct MutualGraphRequestDeps<'a> {
     pub(crate) store: &'a dyn MutualGraphStore,
-    pub(crate) remote_requests: &'a dyn MutualGraphRemoteRequests,
     pub(crate) remote: &'a dyn VrchatRequestPort,
     pub auth_scope: &'a RuntimeAuthScope,
 }
@@ -75,13 +73,11 @@ pub struct MutualGraphRequestDeps<'a> {
 impl<'a> MutualGraphRequestDeps<'a> {
     pub fn new(
         store: &'a dyn MutualGraphStore,
-        remote_requests: &'a dyn MutualGraphRemoteRequests,
         remote: &'a dyn VrchatRequestPort,
         auth_scope: &'a RuntimeAuthScope,
     ) -> Self {
         Self {
             store,
-            remote_requests,
             remote,
             auth_scope,
         }
@@ -104,16 +100,6 @@ pub trait MutualGraphStore: Send + Sync {
         entries: Vec<MutualGraphSnapshotEntryInput>,
         meta: Vec<MutualGraphMetaInput>,
     ) -> Result<()>;
-}
-
-pub trait MutualGraphRemoteRequests: Send + Sync {
-    fn mutual_friends(
-        &self,
-        endpoint: String,
-        user_id: String,
-        n: i32,
-        offset: i32,
-    ) -> Result<VrchatRequest>;
 }
 
 #[derive(Clone, Debug, Deserialize, specta::Type)]

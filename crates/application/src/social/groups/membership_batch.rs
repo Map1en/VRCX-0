@@ -10,7 +10,7 @@ use vrcx_0_core::OwnerId;
 use crate::remote::VrchatRequestPort;
 use crate::scope_gate::{execute_vrchat_mutation, RemoteMutationOutcome, ScopeGate};
 
-use super::service::{GroupRemoteRequest, GroupRemoteRequests};
+use super::service::GroupRemoteRequest;
 use super::types::{
     GroupMemberPatch, GroupMemberVisibility, VrchatGroupIdInput, VrchatGroupMemberPropsInput,
 };
@@ -136,7 +136,6 @@ trait GroupMembershipBatchActions: Send + Sync {
 
 pub struct VrchatGroupMembershipBatchActions<'a> {
     remote: &'a dyn VrchatRequestPort,
-    remote_requests: &'a dyn GroupRemoteRequests,
     mutation: AuthenticatedMutationContext<'a>,
     event_bus: RuntimeEventBus,
 }
@@ -144,13 +143,11 @@ pub struct VrchatGroupMembershipBatchActions<'a> {
 impl<'a> VrchatGroupMembershipBatchActions<'a> {
     pub fn new(
         remote: &'a dyn VrchatRequestPort,
-        remote_requests: &'a dyn GroupRemoteRequests,
         mutation: AuthenticatedMutationContext<'a>,
         event_bus: RuntimeEventBus,
     ) -> Self {
         Self {
             remote,
-            remote_requests,
             mutation,
             event_bus,
         }
@@ -165,11 +162,10 @@ impl GroupMembershipBatchActions for VrchatGroupMembershipBatchActions<'_> {
         Box::pin(async move {
             let (built, action) = match operation {
                 GroupMembershipOperation::Leave { group_id } => {
-                    let built = self.remote_requests.build(GroupRemoteRequest::Leave(
-                        VrchatGroupIdInput {
-                            group_id: group_id.to_string(),
-                        },
-                    ))?;
+                    let built = GroupRemoteRequest::Leave(VrchatGroupIdInput {
+                        group_id: group_id.to_string(),
+                    })
+                    .build()?;
                     (built, "group leave")
                 }
                 GroupMembershipOperation::SetVisibility {
@@ -177,18 +173,15 @@ impl GroupMembershipBatchActions for VrchatGroupMembershipBatchActions<'_> {
                     user_id,
                     visibility,
                 } => {
-                    let built = self
-                        .remote_requests
-                        .build(GroupRemoteRequest::SetMemberProps(
-                            VrchatGroupMemberPropsInput {
-                                group_id: group_id.to_string(),
-                                user_id: user_id.to_string(),
-                                params: GroupMemberPatch {
-                                    visibility: Some(visibility),
-                                    ..GroupMemberPatch::default()
-                                },
-                            },
-                        ))?;
+                    let built = GroupRemoteRequest::SetMemberProps(VrchatGroupMemberPropsInput {
+                        group_id: group_id.to_string(),
+                        user_id: user_id.to_string(),
+                        params: GroupMemberPatch {
+                            visibility: Some(visibility),
+                            ..GroupMemberPatch::default()
+                        },
+                    })
+                    .build()?;
                     (built, "group member visibility update")
                 }
             };

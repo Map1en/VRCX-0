@@ -6,7 +6,7 @@ use tokio::sync::Semaphore;
 use vrcx_0_application_core::{Error, Result};
 use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
-use super::service::{build_member_request, execute_group_api, GroupApiDeps};
+use super::service::{execute_group_api, GroupApiDeps, GroupRemoteRequest};
 use super::types::VrchatGroupUserInput;
 
 const MEMBER_ROLE_LOOKUP_COMMAND: &str = "app__vrchat_group_member_role_ids_get";
@@ -25,7 +25,7 @@ pub async fn get_member_role_ids(
         "Getting roles of member {} in group {}.",
         input.user_id, input.group_id
     );
-    let request = build_member_request(&deps, input)?;
+    let request = GroupRemoteRequest::GetMember(input).build()?.request;
     let mut attempt = 0;
     loop {
         let response = {
@@ -94,35 +94,13 @@ mod tests {
 
     use super::*;
     use crate::remote::{VrchatRequestFuture, VrchatRequestPort};
-    use crate::social::groups::service::{
-        GroupBuiltRequest, GroupRemoteRequest, GroupRemoteRequests,
-    };
 
     static SHARED_SLOTS_LOCK: AsyncMutex<()> = AsyncMutex::const_new(());
 
     type ScriptedResponse = Result<(i32, String)>;
 
-    struct MemberPathRequests;
-
-    impl GroupRemoteRequests for MemberPathRequests {
-        fn build(&self, request: GroupRemoteRequest) -> Result<GroupBuiltRequest> {
-            let GroupRemoteRequest::GetMember(input) = request else {
-                panic!("unexpected group request");
-            };
-            Ok(GroupBuiltRequest {
-                primary_id: input.group_id.clone(),
-                secondary_id: Some(input.user_id.clone()),
-                tertiary_id: None,
-                request: VrchatRequest {
-                    method: Some("GET".into()),
-                    path: Some(format!(
-                        "groups/{}/members/{}",
-                        input.group_id, input.user_id
-                    )),
-                    ..Default::default()
-                },
-            })
-        }
+    fn member_path(user_id: &str) -> String {
+        format!("groups/grp%5F1/members/{}", user_id.replace('_', "%5F"))
     }
 
     #[derive(Default)]
@@ -136,7 +114,7 @@ mod tests {
     impl ScriptedMemberPort {
         fn script(&self, user_id: &str, responses: &[(i32, &str)]) {
             self.responses.lock().unwrap().insert(
-                format!("groups/grp_1/members/{user_id}"),
+                member_path(user_id),
                 responses
                     .iter()
                     .map(|(status, data)| Ok((*status, data.to_string())))
@@ -146,13 +124,13 @@ mod tests {
 
         fn fail(&self, user_id: &str, message: &str) {
             self.responses.lock().unwrap().insert(
-                format!("groups/grp_1/members/{user_id}"),
+                member_path(user_id),
                 VecDeque::from([Err(Error::Custom(message.to_string()))]),
             );
         }
 
         fn calls_for(&self, user_id: &str) -> usize {
-            let path = format!("groups/grp_1/members/{user_id}");
+            let path = member_path(user_id);
             self.calls
                 .lock()
                 .unwrap()
@@ -186,7 +164,6 @@ mod tests {
     fn deps(port: Arc<ScriptedMemberPort>) -> GroupApiDeps {
         GroupApiDeps::new(
             port,
-            Arc::new(MemberPathRequests),
             RuntimeDiagnostics::new(),
             RuntimeSyncEngine::new(),
             RuntimeAuthScope::new(),

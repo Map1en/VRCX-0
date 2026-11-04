@@ -9,5 +9,5 @@ pub use service::{
 pub use types::{
     LocalModerationInput, LocalModerationOutput, ModerationSyncDeps, ModerationSyncMutationInput,
     ModerationSyncMutationOutput, ModerationSyncRefreshInput, ModerationSyncRefreshOutput,
-    ModerationSyncRemoteRequests, ModerationSyncStore, RemoteModerationInput, RemoteModerationRow,
+    ModerationSyncStore, RemoteModerationInput, RemoteModerationRow,
 };

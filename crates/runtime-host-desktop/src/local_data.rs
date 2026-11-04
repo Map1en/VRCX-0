@@ -108,7 +108,6 @@ pub struct LocalDataRuntime {
     favorite_mutations: FavoriteMutationCoordinator,
     mutual_graph_fetch: MutualGraphFetchRuntime,
     mutual_graph_store: Arc<vrcx_0_outbound_adapters::LocalMutualGraphStore>,
-    mutual_graph_remote_requests: Arc<vrcx_0_outbound_adapters::VrchatMutualGraphRemoteRequests>,
     mutual_graph_remote: Arc<vrcx_0_outbound_adapters::VrchatRequestAdapter>,
 }
 
@@ -159,9 +158,6 @@ impl LocalDataRuntime {
             favorite_mutations,
             mutual_graph_fetch,
             mutual_graph_store,
-            mutual_graph_remote_requests: Arc::new(
-                vrcx_0_outbound_adapters::VrchatMutualGraphRemoteRequests,
-            ),
             mutual_graph_remote,
         }
     }
@@ -304,7 +300,6 @@ impl LocalDataRuntime {
         self.mutual_graph_fetch.start(
             input,
             self.mutual_graph_store.clone(),
-            self.mutual_graph_remote_requests.clone(),
             self.mutual_graph_remote.clone(),
             self.auth_scope.clone(),
             self.tasks.clone(),
@@ -318,7 +313,6 @@ impl LocalDataRuntime {
         refresh_mutual_graph_friend(
             MutualGraphRequestDeps::new(
                 self.mutual_graph_store.as_ref(),
-                self.mutual_graph_remote_requests.as_ref(),
                 self.mutual_graph_remote.as_ref(),
                 &self.auth_scope,
             ),
@@ -334,7 +328,6 @@ impl LocalDataRuntime {
         get_user_mutual_friends_list(
             MutualGraphRequestDeps::new(
                 self.mutual_graph_store.as_ref(),
-                self.mutual_graph_remote_requests.as_ref(),
                 self.mutual_graph_remote.as_ref(),
                 &self.auth_scope,
             ),

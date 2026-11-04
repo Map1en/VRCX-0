@@ -135,12 +135,12 @@ pub async fn update_player_moderation(
     execute_vrchat_mutation(
         &deps,
         &mutation,
-        deps.remote_requests.update(
+        vrcx_0_vrchat_protocol::moderation::player_moderation_update_input(
             mutation.scope().endpoint.clone(),
             input.enabled,
             target_user_id.clone(),
             r#type.clone(),
-        )?,
+        ),
     )
     .await?;
     runtime.invalidate();
@@ -285,7 +285,9 @@ async fn fetch_remote_moderations(
 ) -> Result<(usize, Vec<RemoteModerationRow>)> {
     let json = execute_vrchat_json_request(
         deps,
-        deps.remote_requests.list(normalize_endpoint(endpoint))?,
+        vrcx_0_vrchat_protocol::moderation::player_moderations_get_input(normalize_endpoint(
+            endpoint,
+        )),
     )
     .await?;
     let remote_count = json.as_array().map_or(0, Vec::len);

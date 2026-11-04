@@ -66,17 +66,6 @@ impl ProfileBioStore for MemoryProfileBioStore {
     }
 }
 
-struct ProfileRequests;
-
-impl ProfileBioRemoteRequests for ProfileRequests {
-    fn profile(&self, endpoint: String, user_id: String) -> Result<VrchatRequest> {
-        Ok(VrchatRequest {
-            path: Some(format!("{endpoint} profile/{user_id}")),
-            ..VrchatRequest::default()
-        })
-    }
-}
-
 struct ScriptedRequestPort {
     responses: ScriptedResults<VrchatResponse>,
     requests: CallRecorder<String>,
@@ -84,7 +73,11 @@ struct ScriptedRequestPort {
 
 impl VrchatRequestPort for ScriptedRequestPort {
     fn send(&self, input: VrchatRequest, _scope: VrchatScope) -> VrchatRequestFuture<'_> {
-        self.requests.record(input.path.unwrap_or_default());
+        self.requests.record(format!(
+            "{} {}",
+            input.endpoint.unwrap_or_default(),
+            input.path.unwrap_or_default()
+        ));
         let response = self.responses.next();
         Box::pin(async move { Ok(response) })
     }
@@ -349,7 +342,6 @@ async fn scan_checks_the_next_stale_friend_and_pauses_when_vrchat_pushes_back() 
     let pacer = ProfileBioScanPacer::default();
     let deps = ProfileBioScanDeps {
         store: &store,
-        remote_requests: &ProfileRequests,
         remote: &remote,
         realtime: runtime.runtime(),
         pacer: &pacer,
@@ -379,7 +371,7 @@ async fn scan_checks_the_next_stale_friend_and_pauses_when_vrchat_pushes_back() 
     );
     assert_eq!(
         remote.requests.snapshot(),
-        ["https://api.vrchat.cloud/api/1 profile/usr_friend".to_string()]
+        ["https://api.vrchat.cloud/api/1 profile/usr%5Ffriend".to_string()]
     );
     assert_eq!(
         store.last_seen(&owner, "usr_friend")?,

@@ -1,16 +1,14 @@
 use std::sync::Arc;
 
-use vrcx_0_application::social::{ProfileBioRemoteRequests, ProfileBioStore};
+use vrcx_0_application::social::ProfileBioStore;
 use vrcx_0_application_core::Result;
 use vrcx_0_contracts::profile_bio::ProfileBioRecord;
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_core::OwnerId;
 use vrcx_0_persistence::profile_bio;
 use vrcx_0_persistence::realtime::{
     self, RealtimePersistenceBatch, SelfProfileField, SelfProfileObservation,
 };
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_protocol::users::profile_get_input;
 
 #[derive(Clone)]
 pub struct LocalProfileBioStore {
@@ -58,13 +56,5 @@ impl ProfileBioStore for LocalProfileBioStore {
         )
         .map(|_| ())
         .map_err(crate::Error::from)
-    }
-}
-
-pub struct VrchatProfileBioRemoteRequests;
-
-impl ProfileBioRemoteRequests for VrchatProfileBioRemoteRequests {
-    fn profile(&self, endpoint: String, user_id: String) -> Result<VrchatRequest> {
-        Ok(profile_get_input(endpoint, user_id, false)?.1)
     }
 }

@@ -18,7 +18,6 @@ use vrcx_0_application_core::{
     vrchat_api::VrchatScope, Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot,
     RuntimeEventBus, TaskSupervisor,
 };
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_core::OwnerId;
 
 const GATE: ScopeGate = ScopeGate::new("Note export");
@@ -115,13 +114,8 @@ pub trait NoteExportActions: Send + Sync {
     fn save_note<'a>(&'a self, user_id: &'a str, note: &'a str) -> NoteExportFuture<'a>;
 }
 
-pub trait NoteExportRemoteRequests: Send + Sync {
-    fn save_note(&self, endpoint: String, user_id: String, note: String) -> Result<VrchatRequest>;
-}
-
 pub struct VrchatNoteExportActions<'a> {
     remote: &'a dyn VrchatRequestPort,
-    remote_requests: &'a dyn NoteExportRemoteRequests,
     pub auth_scope: &'a RuntimeAuthScope,
     pub expected_scope: &'a RuntimeAuthScopeSnapshot,
     pub event_bus: &'a RuntimeEventBus,
@@ -130,14 +124,12 @@ pub struct VrchatNoteExportActions<'a> {
 impl<'a> VrchatNoteExportActions<'a> {
     pub fn new(
         remote: &'a dyn VrchatRequestPort,
-        remote_requests: &'a dyn NoteExportRemoteRequests,
         auth_scope: &'a RuntimeAuthScope,
         expected_scope: &'a RuntimeAuthScopeSnapshot,
         event_bus: &'a RuntimeEventBus,
     ) -> Self {
         Self {
             remote,
-            remote_requests,
             auth_scope,
             expected_scope,
             event_bus,
@@ -148,11 +140,14 @@ impl<'a> VrchatNoteExportActions<'a> {
 impl NoteExportActions for VrchatNoteExportActions<'_> {
     fn save_note<'a>(&'a self, user_id: &'a str, note: &'a str) -> NoteExportFuture<'a> {
         Box::pin(async move {
-            let request = self.remote_requests.save_note(
-                self.expected_scope.endpoint.clone(),
+            let request = vrcx_0_vrchat_protocol::tools::user_note_save_input(
+                vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint(Some(
+                    &self.expected_scope.endpoint,
+                )),
                 user_id.to_string(),
                 note.to_string(),
-            )?;
+            )?
+            .1;
             let path = request
                 .path
                 .as_deref()
@@ -390,7 +385,6 @@ async fn wait_for_note_export_interval(
 pub struct NoteExportRuntime {
     shared: Arc<NoteExportRuntimeShared>,
     remote: Arc<dyn VrchatRequestPort>,
-    remote_requests: Arc<dyn NoteExportRemoteRequests>,
     event_bus: RuntimeEventBus,
     tasks: TaskSupervisor,
     auth_scope: RuntimeAuthScope,
@@ -411,7 +405,6 @@ struct NoteExportRuntimeInner {
 impl NoteExportRuntime {
     pub fn new(
         remote: Arc<dyn VrchatRequestPort>,
-        remote_requests: Arc<dyn NoteExportRemoteRequests>,
         event_bus: RuntimeEventBus,
         tasks: TaskSupervisor,
         auth_scope: RuntimeAuthScope,
@@ -422,7 +415,6 @@ impl NoteExportRuntime {
                 generation: AtomicU64::new(0),
             }),
             remote,
-            remote_requests,
             event_bus,
             tasks,
             auth_scope,
@@ -474,7 +466,6 @@ impl NoteExportRuntime {
         self.tasks.spawn_cancellable(move |stop_token| async move {
             let actions = VrchatNoteExportActions::new(
                 runtime.remote.as_ref(),
-                runtime.remote_requests.as_ref(),
                 &runtime.auth_scope,
                 &scope,
                 &runtime.event_bus,

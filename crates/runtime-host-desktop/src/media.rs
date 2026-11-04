@@ -27,7 +27,7 @@ pub struct DesktopMediaRuntime {
     image_cache: Arc<ImageCache>,
     print_adapter: vrcx_0_outbound_adapters::LocalPrintAdapter,
     media_upload_adapter: vrcx_0_outbound_adapters::LocalMediaUploadAdapter,
-    inventory_remote_requests: vrcx_0_outbound_adapters::VrchatInventoryRemoteRequests,
+    inventory_remote: vrcx_0_outbound_adapters::VrchatRequestAdapter,
     auth_scope: RuntimeAuthScope,
     remote_mutations: Arc<RemoteMutationGate>,
     diagnostics: RuntimeDiagnostics,
@@ -47,8 +47,8 @@ impl DesktopMediaRuntime {
     ) -> Self {
         let media_upload_adapter =
             vrcx_0_outbound_adapters::LocalMediaUploadAdapter::new(Arc::clone(&web));
-        let inventory_remote_requests =
-            vrcx_0_outbound_adapters::VrchatInventoryRemoteRequests::new(Arc::clone(&web));
+        let inventory_remote =
+            vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(&web));
         let print_adapter =
             vrcx_0_outbound_adapters::LocalPrintAdapter::new(Arc::clone(&db), Arc::clone(&web));
         Self {
@@ -57,7 +57,7 @@ impl DesktopMediaRuntime {
             image_cache,
             print_adapter,
             media_upload_adapter,
-            inventory_remote_requests,
+            inventory_remote,
             auth_scope,
             remote_mutations,
             diagnostics,
@@ -215,7 +215,7 @@ impl DesktopMediaRuntime {
         }
         Ok(application_media::collect_inventory_items(
             &InventoryItemsCollectDeps::new(
-                &self.inventory_remote_requests,
+                &self.inventory_remote,
                 &self.auth_scope,
                 expected_scope,
             ),

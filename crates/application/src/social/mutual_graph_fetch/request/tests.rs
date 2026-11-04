@@ -57,32 +57,16 @@ impl MutualGraphStore for RecordingStore {
     }
 }
 
-struct MutualRequests;
-
-impl MutualGraphRemoteRequests for MutualRequests {
-    fn mutual_friends(
-        &self,
-        endpoint: String,
-        user_id: String,
-        _n: i32,
-        _offset: i32,
-    ) -> Result<VrchatRequest> {
-        Ok(VrchatRequest {
-            endpoint: Some(endpoint),
-            path: Some(format!("users/{user_id}/mutuals/friends")),
-            ..Default::default()
-        })
-    }
-}
-
 struct ResponsePort<F> {
     status: i32,
     rows: Value,
     before_response: F,
+    sent: Mutex<Vec<VrchatRequest>>,
 }
 
 impl<F: Fn() + Send + Sync> VrchatRequestPort for ResponsePort<F> {
-    fn send(&self, _input: VrchatRequest, _scope: VrchatScope) -> VrchatRequestFuture<'_> {
+    fn send(&self, input: VrchatRequest, _scope: VrchatScope) -> VrchatRequestFuture<'_> {
+        self.sent.lock().unwrap().push(input);
         Box::pin(async {
             (self.before_response)();
             Ok(VrchatResponse {
@@ -102,8 +86,9 @@ async fn non_friend_and_pending_request_lists_only_backfill_after_friend_add() -
         status: 200,
         rows: json!([{ "id": "usr_mutual", "displayName": "Mutual" }]),
         before_response: || {},
+        sent: Mutex::default(),
     };
-    let deps = MutualGraphRequestDeps::new(&store, &MutualRequests, &remote, runtime.auth_scope());
+    let deps = MutualGraphRequestDeps::new(&store, &remote, runtime.auth_scope());
 
     for pending in [false, true] {
         runtime.runtime().record_user_profile(
@@ -124,6 +109,13 @@ async fn non_friend_and_pending_request_lists_only_backfill_after_friend_add() -
         )
         .await?;
         assert_eq!(result.rows, vec![RawJson::from(remote.rows[0].clone())]);
+        let sent = remote.sent.lock().unwrap().pop().unwrap();
+        assert_eq!(sent.method.as_deref(), Some("GET"));
+        assert_eq!(
+            sent.path.as_deref(),
+            Some("users/usr%5Ftarget/mutuals/friends")
+        );
+        assert_eq!(sent.endpoint.as_deref(), Some(session.endpoint.as_str()));
         assert!(!result.persisted);
         assert!(store.commits.lock().unwrap().is_empty());
     }
@@ -170,9 +162,10 @@ async fn empty_non_friend_list_does_not_create_an_isolated_node() -> Result<()> 
         status: 200,
         rows: json!([]),
         before_response: || {},
+        sent: Mutex::default(),
     };
     let result = get_user_mutual_friends_list(
-        MutualGraphRequestDeps::new(&store, &MutualRequests, &remote, runtime.auth_scope()),
+        MutualGraphRequestDeps::new(&store, &remote, runtime.auth_scope()),
         runtime.runtime(),
         UserMutualFriendsListInput {
             user_id: "usr_target".into(),
@@ -208,9 +201,10 @@ async fn unavailable_lists_only_update_opt_out_metadata_for_current_friends() ->
                 status,
                 rows: json!({}),
                 before_response: || {},
+                sent: Mutex::default(),
             };
             let result = get_user_mutual_friends_list(
-                MutualGraphRequestDeps::new(&store, &MutualRequests, &remote, runtime.auth_scope()),
+                MutualGraphRequestDeps::new(&store, &remote, runtime.auth_scope()),
                 runtime.runtime(),
                 UserMutualFriendsListInput {
                     user_id: "usr_target".into(),
@@ -267,9 +261,10 @@ async fn friend_removed_during_list_request_is_not_backfilled() -> Result<()> {
                 SyntheticFriendEventOutcome::Applied
             );
         },
+        sent: Mutex::default(),
     };
     let result = get_user_mutual_friends_list(
-        MutualGraphRequestDeps::new(&store, &MutualRequests, &remote, runtime.auth_scope()),
+        MutualGraphRequestDeps::new(&store, &remote, runtime.auth_scope()),
         runtime.runtime(),
         UserMutualFriendsListInput {
             user_id: "usr_target".into(),

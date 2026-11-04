@@ -1,13 +1,11 @@
 use std::sync::Arc;
 
 use vrcx_0_application::social::{
-    MutualGraphMetaInput, MutualGraphRemoteRequests, MutualGraphSnapshotEntryInput,
-    MutualGraphSnapshotOutput, MutualGraphStore,
+    MutualGraphMetaInput, MutualGraphSnapshotEntryInput, MutualGraphSnapshotOutput,
+    MutualGraphStore,
 };
 use vrcx_0_application_core::Result;
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_persistence::{mutual_graph, DatabaseService};
-use vrcx_0_vrchat_protocol::users::user_mutual_friends_get_input;
 
 pub struct LocalMutualGraphStore {
     db: Arc<DatabaseService>,
@@ -51,19 +49,5 @@ impl MutualGraphStore for LocalMutualGraphStore {
     ) -> Result<()> {
         mutual_graph::mutual_graph_snapshot_commit(&self.db, owner_user_id, entries, meta)
             .map_err(crate::Error::from)
-    }
-}
-
-pub struct VrchatMutualGraphRemoteRequests;
-
-impl MutualGraphRemoteRequests for VrchatMutualGraphRemoteRequests {
-    fn mutual_friends(
-        &self,
-        endpoint: String,
-        user_id: String,
-        n: i32,
-        offset: i32,
-    ) -> Result<VrchatRequest> {
-        Ok(user_mutual_friends_get_input(endpoint, user_id, n, offset)?.1)
     }
 }

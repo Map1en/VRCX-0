@@ -4,6 +4,7 @@ mod membership_batch;
 mod moderation_batch;
 mod permissions;
 mod quick_moderation;
+mod remote_request;
 mod service;
 mod types;
 mod user_groups_overview;
@@ -23,8 +24,8 @@ pub use moderation_batch::{
     run_group_moderation_batch, GroupModerationBatchAction, GroupModerationBatchCoordinator,
     GroupModerationBatchInput, GroupModerationBatchItemResult, GroupModerationBatchItemState,
     GroupModerationBatchProgress, GroupModerationBatchResult, GroupModerationBatchTarget,
-    GroupModerationRemoteRequests, VrchatGroupModerationBatchActions,
-    GROUP_MODERATION_BATCH_MAX_OPERATIONS, GROUP_MODERATION_BATCH_MAX_TARGETS,
+    VrchatGroupModerationBatchActions, GROUP_MODERATION_BATCH_MAX_OPERATIONS,
+    GROUP_MODERATION_BATCH_MAX_TARGETS,
 };
 pub use quick_moderation::{
     get_group_quick_moderation, run_group_quick_moderation_action, GroupQuickModerationAction,
@@ -39,8 +40,7 @@ pub use service::{
     get_membership_list, get_permissions, get_posts, get_roles, get_user_groups,
     get_user_instances, join_group, kick_member, leave_group, remove_member_role,
     respond_join_request, search_members, send_invite, set_member_props, set_representation,
-    unban_member, unblock_group, update_group, update_role, GroupApiDeps, GroupBuiltRequest,
-    GroupMembershipRemoteRequests, GroupRemoteRequest, GroupRemoteRequests,
+    unban_member, unblock_group, update_group, update_role, GroupApiDeps,
 };
 pub use types::{
     GroupGalleryMutation, GroupMemberPatch, GroupMemberSort, GroupMemberVisibility,

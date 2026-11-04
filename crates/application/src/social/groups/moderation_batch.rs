@@ -11,7 +11,6 @@ use serde::{Deserialize, Serialize};
 use crate::remote::VrchatRequestPort;
 use crate::scope_gate::{execute_vrchat_mutation, RemoteMutationOutcome, ScopeGate};
 use vrcx_0_application_core::{AuthenticatedMutationContext, Error, Result, RuntimeEventBus};
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_core::OwnerId;
 
 const GATE: ScopeGate = ScopeGate::new("Group moderation batch");
@@ -179,30 +178,8 @@ trait GroupModerationBatchActions: Send + Sync {
     }
 }
 
-pub trait GroupModerationRemoteRequests: Send + Sync {
-    fn kick(&self, endpoint: String, group_id: String, user_id: String) -> Result<VrchatRequest>;
-    fn ban(&self, endpoint: String, group_id: String, user_id: String) -> Result<VrchatRequest>;
-    fn unban(&self, group_id: String, user_id: String) -> Result<VrchatRequest>;
-    fn save_note(
-        &self,
-        endpoint: String,
-        group_id: String,
-        user_id: String,
-        note: String,
-    ) -> Result<VrchatRequest>;
-    fn add_role(&self, group_id: String, user_id: String, role_id: String)
-        -> Result<VrchatRequest>;
-    fn remove_role(
-        &self,
-        group_id: String,
-        user_id: String,
-        role_id: String,
-    ) -> Result<VrchatRequest>;
-}
-
 pub struct VrchatGroupModerationBatchActions<'a> {
     remote: &'a dyn VrchatRequestPort,
-    remote_requests: &'a dyn GroupModerationRemoteRequests,
     mutation: AuthenticatedMutationContext<'a>,
     pub event_bus: RuntimeEventBus,
 }
@@ -210,13 +187,11 @@ pub struct VrchatGroupModerationBatchActions<'a> {
 impl<'a> VrchatGroupModerationBatchActions<'a> {
     pub fn new(
         remote: &'a dyn VrchatRequestPort,
-        remote_requests: &'a dyn GroupModerationRemoteRequests,
         mutation: AuthenticatedMutationContext<'a>,
         event_bus: RuntimeEventBus,
     ) -> Self {
         Self {
             remote,
-            remote_requests,
             mutation,
             event_bus,
         }
@@ -231,25 +206,29 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
         Box::pin(async move {
             let (request, action) = match operation {
                 GroupModerationOperation::Kick { group_id, user_id } => {
-                    let request = self.remote_requests.kick(
+                    let request = vrcx_0_vrchat_protocol::groups::member_kick_input(
                         self.mutation.scope().endpoint.clone(),
                         group_id.to_string(),
                         user_id.to_string(),
-                    )?;
+                    )?
+                    .2;
                     (request, "group member kick")
                 }
                 GroupModerationOperation::Ban { group_id, user_id } => {
-                    let request = self.remote_requests.ban(
+                    let request = vrcx_0_vrchat_protocol::groups::member_ban_input(
                         self.mutation.scope().endpoint.clone(),
                         group_id.to_string(),
                         user_id.to_string(),
-                    )?;
+                    )?
+                    .2;
                     (request, "group member ban")
                 }
                 GroupModerationOperation::Unban { group_id, user_id } => {
-                    let request = self
-                        .remote_requests
-                        .unban(group_id.to_string(), user_id.to_string())?;
+                    let request = vrcx_0_vrchat_protocol::groups::member_unban_input(
+                        group_id.to_string(),
+                        user_id.to_string(),
+                    )?
+                    .2;
                     (request, "group member unban")
                 }
                 GroupModerationOperation::SaveNote {
@@ -257,12 +236,16 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
                     user_id,
                     note,
                 } => {
-                    let request = self.remote_requests.save_note(
+                    let request = vrcx_0_vrchat_protocol::groups::member_props_set_input(
                         self.mutation.scope().endpoint.clone(),
                         group_id.to_string(),
                         user_id.to_string(),
-                        note.to_string(),
-                    )?;
+                        vrcx_0_vrchat_protocol::groups::GroupMemberPatch {
+                            manager_notes: Some(note.to_string()),
+                            ..vrcx_0_vrchat_protocol::groups::GroupMemberPatch::default()
+                        },
+                    )?
+                    .2;
                     (request, "group member note update")
                 }
                 GroupModerationOperation::AddRole {
@@ -270,11 +253,12 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
                     user_id,
                     role_id,
                 } => {
-                    let request = self.remote_requests.add_role(
+                    let request = vrcx_0_vrchat_protocol::groups::member_role_add_input(
                         group_id.to_string(),
                         user_id.to_string(),
                         role_id.to_string(),
-                    )?;
+                    )?
+                    .3;
                     (request, "group member role add")
                 }
                 GroupModerationOperation::RemoveRole {
@@ -282,11 +266,12 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
                     user_id,
                     role_id,
                 } => {
-                    let request = self.remote_requests.remove_role(
+                    let request = vrcx_0_vrchat_protocol::groups::member_role_remove_input(
                         group_id.to_string(),
                         user_id.to_string(),
                         role_id.to_string(),
-                    )?;
+                    )?
+                    .3;
                     (request, "group member role remove")
                 }
             };

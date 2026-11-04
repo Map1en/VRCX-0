@@ -16,9 +16,7 @@ use vrcx_0_contracts::realtime::{FriendLogUpsert, RealtimePersistenceBatch};
 use vrcx_0_core::friends::{FriendBaselineEntry, FriendBaselinePresence, FriendRecord};
 
 use crate::social::social_mutation::{apply_friend_request_accept_locally, apply_unfriend_locally};
-use crate::social::{
-    SocialFriendMutationStatus, SocialMutationDeps, TestSocialMutationRemoteRequests,
-};
+use crate::social::{SocialFriendMutationStatus, SocialMutationDeps};
 use vrcx_0_core::OwnerId;
 
 #[derive(Clone, Copy)]
@@ -44,11 +42,9 @@ impl RuntimeTaskHandle for FinishedTaskHandle {
 
 fn deps(runtime: &TestRealtimeHostRuntime) -> SocialMutationDeps<'_> {
     static REMOTE_MUTATIONS: OnceLock<RemoteMutationGate> = OnceLock::new();
-    static REMOTE_REQUESTS: TestSocialMutationRemoteRequests = TestSocialMutationRemoteRequests;
     static REMOTE: crate::remote::TestVrchatRequestPort = crate::remote::TestVrchatRequestPort;
     SocialMutationDeps {
         store: runtime.store(),
-        remote_requests: &REMOTE_REQUESTS,
         remote: &REMOTE,
         auth_scope: runtime.auth_scope(),
         remote_mutations: REMOTE_MUTATIONS.get_or_init(RemoteMutationGate::default),

@@ -28,10 +28,8 @@ use crate::Result;
 pub struct DesktopSocialRuntime {
     db: Arc<DatabaseService>,
     realtime_store: Arc<vrcx_0_outbound_adapters::PersistenceRealtimeStore>,
-    social_mutation_remote_requests: vrcx_0_outbound_adapters::VrchatSocialMutationRemoteRequests,
     media_upload_adapter: vrcx_0_outbound_adapters::LocalMediaUploadAdapter,
     moderation_sync_store: vrcx_0_outbound_adapters::LocalModerationSyncStore,
-    moderation_sync_remote_requests: vrcx_0_outbound_adapters::VrchatModerationSyncRemoteRequests,
     web: Arc<WebClient>,
     remote: vrcx_0_outbound_adapters::VrchatRequestAdapter,
     auth_scope: RuntimeAuthScope,
@@ -71,12 +69,8 @@ impl DesktopSocialRuntime {
         Self {
             db,
             realtime_store,
-            social_mutation_remote_requests:
-                vrcx_0_outbound_adapters::VrchatSocialMutationRemoteRequests,
             media_upload_adapter,
             moderation_sync_store,
-            moderation_sync_remote_requests:
-                vrcx_0_outbound_adapters::VrchatModerationSyncRemoteRequests,
             web,
             remote,
             auth_scope,
@@ -94,7 +88,6 @@ impl DesktopSocialRuntime {
     fn moderation_deps(&self) -> ModerationSyncDeps<'_> {
         ModerationSyncDeps::new(
             &self.moderation_sync_store,
-            &self.moderation_sync_remote_requests,
             &self.remote,
             &self.auth_scope,
             self.remote_mutations.as_ref(),
@@ -104,7 +97,6 @@ impl DesktopSocialRuntime {
     fn mutation_deps(&self) -> SocialMutationDeps<'_> {
         SocialMutationDeps::new(
             self.realtime_store.as_ref(),
-            &self.social_mutation_remote_requests,
             &self.remote,
             &self.auth_scope,
             &self.remote_mutations,

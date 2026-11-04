@@ -39,7 +39,6 @@ pub(in crate::state) async fn run_background_profile_bio_scan(
     let remote = vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(context.web));
     let deps = ProfileBioScanDeps {
         store: &store,
-        remote_requests: &vrcx_0_outbound_adapters::VrchatProfileBioRemoteRequests,
         remote: &remote,
         realtime: context.realtime_runtime,
         pacer,

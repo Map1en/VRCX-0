@@ -10,9 +10,9 @@ use vrcx_0_core::json::RawJson;
 
 use super::types::{
     MutualGraphFetchStartInput, MutualGraphFriendRefreshInput, MutualGraphFriendRefreshOutput,
-    MutualGraphFriendRefreshStatus, MutualGraphMetaInput, MutualGraphRemoteRequests,
-    MutualGraphRequestDeps, MutualGraphSnapshotEntryInput, MutualGraphSnapshotOutput,
-    UserMutualFriendsListInput, UserMutualFriendsListOutput,
+    MutualGraphFriendRefreshStatus, MutualGraphMetaInput, MutualGraphRequestDeps,
+    MutualGraphSnapshotEntryInput, MutualGraphSnapshotOutput, UserMutualFriendsListInput,
+    UserMutualFriendsListOutput,
 };
 use crate::remote::VrchatRequestPort;
 use crate::scope_gate::ScopeGate;
@@ -34,7 +34,6 @@ const MUTUAL_GRAPH_EMPTY_USER_ID: &str = "usr_00000000-0000-0000-0000-0000000000
 
 pub(super) struct MutualGraphFetchContext<'a> {
     pub(super) remote: &'a dyn VrchatRequestPort,
-    pub(super) remote_requests: &'a dyn MutualGraphRemoteRequests,
     pub(super) endpoint: &'a str,
     pub(super) cancel_flag: &'a AtomicBool,
     pub(super) auth_scope: &'a RuntimeAuthScope,
@@ -66,7 +65,6 @@ pub async fn refresh_mutual_graph_friend(
     let cancel_flag = AtomicBool::new(false);
     let mut context = MutualGraphFetchContext {
         remote: deps.remote,
-        remote_requests: deps.remote_requests,
         endpoint: &expected_scope.endpoint,
         cancel_flag: &cancel_flag,
         auth_scope: deps.auth_scope,
@@ -118,7 +116,6 @@ pub async fn get_user_mutual_friends_list(
     let cancel_flag = AtomicBool::new(false);
     let mut context = MutualGraphFetchContext {
         remote: deps.remote,
-        remote_requests: deps.remote_requests,
         endpoint: &expected_scope.endpoint,
         cancel_flag: &cancel_flag,
         auth_scope: deps.auth_scope,
@@ -250,13 +247,13 @@ async fn fetch_mutual_page(
             return PageFetchResult::Cancelled;
         }
 
-        let request = match context.remote_requests.mutual_friends(
+        let request = match vrcx_0_vrchat_protocol::users::user_mutual_friends_get_input(
             context.endpoint.to_string(),
             friend_id.to_string(),
             MUTUAL_GRAPH_PAGE_SIZE,
             offset,
         ) {
-            Ok(request) => request,
+            Ok((_, request)) => request,
             Err(error) => return PageFetchResult::Failed(error.to_string()),
         };
         let response = match context.remote.send(request, VrchatScope::Vrchat).await {

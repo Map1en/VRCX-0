@@ -1,4 +1,4 @@
-use vrcx_0_application::social::{GroupBuiltRequest, GroupRemoteRequest, GroupRemoteRequests};
+use super::service::{GroupBuiltRequest, GroupRemoteRequest};
 use vrcx_0_application_core::Result;
 use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
@@ -15,11 +15,9 @@ use vrcx_0_vrchat_protocol::groups::{
     role_update_input, unblock_input, user_groups_by_membership_get_input, user_groups_get_input,
 };
 
-pub struct VrchatGroupRemoteRequests;
-
-impl GroupRemoteRequests for VrchatGroupRemoteRequests {
-    fn build(&self, action: GroupRemoteRequest) -> Result<GroupBuiltRequest> {
-        match action {
+impl GroupRemoteRequest {
+    pub(super) fn build(self) -> Result<GroupBuiltRequest> {
+        match self {
             GroupRemoteRequest::GetGroup(input) => {
                 let (group_id, request) = profile_get_input(
                     VRCHAT_API_DEFAULT_ENDPOINT.into(),
@@ -339,7 +337,7 @@ mod tests {
     }
 
     fn built(action: GroupRemoteRequest) -> (String, String, Option<Value>) {
-        let request = VrchatGroupRemoteRequests.build(action).unwrap().request;
+        let request = action.build().unwrap().request;
         (
             request.method.unwrap_or_default(),
             request.path.unwrap_or_default(),
@@ -447,11 +445,11 @@ mod tests {
                 None
             )
         );
-        assert!(VrchatGroupRemoteRequests
-            .build(GroupRemoteRequest::CreateGallery(input(
-                json!({ "groupId": "grp_1", "params": { "name": "  " } }),
-            )))
-            .is_err());
+        assert!(GroupRemoteRequest::CreateGallery(input(
+            json!({ "groupId": "grp_1", "params": { "name": "  " } }),
+        ))
+        .build()
+        .is_err());
     }
 
     #[test]

@@ -9,7 +9,6 @@ use vrcx_0_contracts::friend_log::{
 use crate::remote::VrchatRequestPort;
 use vrcx_0_application_core::{Result, RuntimeAuthScope};
 use vrcx_0_application_realtime::{RealtimeHostRuntime, RealtimeStore};
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
 pub trait SocialMutationStore: Send + Sync {
     fn delete_current_friend(
@@ -30,88 +29,6 @@ pub trait SocialMutationStore: Send + Sync {
         entries: Vec<FriendLogHistoryEntryInput>,
     ) -> Result<i64>;
     fn expire_notification(&self, owner_user_id: &str, notification_id: &str) -> Result<()>;
-}
-
-pub trait SocialMutationRemoteRequests: Send + Sync {
-    fn unfriend(&self, endpoint: String, target_user_id: String) -> Result<VrchatRequest>;
-    fn send_friend_request(
-        &self,
-        endpoint: String,
-        target_user_id: String,
-    ) -> Result<VrchatRequest>;
-    fn cancel_friend_request(
-        &self,
-        endpoint: String,
-        target_user_id: String,
-        notification_id: String,
-    ) -> Result<VrchatRequest>;
-    fn accept_friend_request(
-        &self,
-        endpoint: String,
-        notification_id: String,
-    ) -> Result<VrchatRequest>;
-}
-
-#[cfg(any(test, feature = "test-utils"))]
-#[derive(Clone, Copy, Default)]
-pub struct TestSocialMutationRemoteRequests;
-
-#[cfg(any(test, feature = "test-utils"))]
-impl SocialMutationRemoteRequests for TestSocialMutationRemoteRequests {
-    fn unfriend(&self, endpoint: String, target_user_id: String) -> Result<VrchatRequest> {
-        Ok(test_remote_request(
-            endpoint,
-            "DELETE",
-            format!("auth/user/friends/{target_user_id}"),
-        ))
-    }
-
-    fn send_friend_request(
-        &self,
-        endpoint: String,
-        target_user_id: String,
-    ) -> Result<VrchatRequest> {
-        Ok(test_remote_request(
-            endpoint,
-            "POST",
-            format!("user/{target_user_id}/friendRequest"),
-        ))
-    }
-
-    fn cancel_friend_request(
-        &self,
-        endpoint: String,
-        target_user_id: String,
-        _notification_id: String,
-    ) -> Result<VrchatRequest> {
-        Ok(test_remote_request(
-            endpoint,
-            "DELETE",
-            format!("user/{target_user_id}/friendRequest"),
-        ))
-    }
-
-    fn accept_friend_request(
-        &self,
-        endpoint: String,
-        notification_id: String,
-    ) -> Result<VrchatRequest> {
-        Ok(test_remote_request(
-            endpoint,
-            "PUT",
-            format!("auth/user/notifications/{notification_id}/accept"),
-        ))
-    }
-}
-
-#[cfg(any(test, feature = "test-utils"))]
-fn test_remote_request(endpoint: String, method: &str, path: String) -> VrchatRequest {
-    VrchatRequest {
-        endpoint: Some(endpoint),
-        method: Some(method.to_string()),
-        path: Some(path),
-        ..Default::default()
-    }
 }
 
 impl<T> SocialMutationStore for T
@@ -152,7 +69,6 @@ where
 #[derive(Clone, Copy)]
 pub struct SocialMutationDeps<'a> {
     pub(crate) store: &'a dyn SocialMutationStore,
-    pub(crate) remote_requests: &'a dyn SocialMutationRemoteRequests,
     pub(crate) remote: &'a dyn VrchatRequestPort,
     pub auth_scope: &'a RuntimeAuthScope,
     pub remote_mutations: &'a vrcx_0_application_core::RemoteMutationGate,
@@ -162,7 +78,6 @@ pub struct SocialMutationDeps<'a> {
 impl<'a> SocialMutationDeps<'a> {
     pub fn new(
         store: &'a dyn SocialMutationStore,
-        remote_requests: &'a dyn SocialMutationRemoteRequests,
         remote: &'a dyn VrchatRequestPort,
         auth_scope: &'a RuntimeAuthScope,
         remote_mutations: &'a vrcx_0_application_core::RemoteMutationGate,
@@ -170,7 +85,6 @@ impl<'a> SocialMutationDeps<'a> {
     ) -> Self {
         Self {
             store,
-            remote_requests,
             remote,
             auth_scope,
             remote_mutations,

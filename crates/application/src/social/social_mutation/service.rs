@@ -54,9 +54,11 @@ pub(super) async fn unfriend_with_expected_scope(
     target_display_name: &str,
 ) -> Result<SocialFriendMutationOutcome> {
     GATE.ensure_matches(deps.auth_scope, auth_scope)?;
-    let request = deps
-        .remote_requests
-        .unfriend(auth_scope.endpoint.clone(), target_user_id.to_string())?;
+    let request = vrcx_0_vrchat_protocol::friends::friend_delete_input(
+        auth_scope.endpoint.clone(),
+        target_user_id.to_string(),
+    )?
+    .1;
     execute_vrchat_json_request(deps, auth_scope, request).await?;
     if let Err(error) = GATE.ensure_matches(deps.auth_scope, auth_scope) {
         return Ok(SocialFriendMutationOutcome::remote_ok_local_failed(
@@ -81,9 +83,11 @@ pub async fn send_friend_request(
     require_target(&target_user_id)?;
     let auth_scope = GATE.require_active(deps.auth_scope)?;
 
-    let request = deps
-        .remote_requests
-        .send_friend_request(auth_scope.endpoint.clone(), target_user_id.clone())?;
+    let request = vrcx_0_vrchat_protocol::friends::friend_request_send_input(
+        auth_scope.endpoint.clone(),
+        target_user_id.clone(),
+    )?
+    .1;
     execute_vrchat_json_request(&deps, &auth_scope, request).await?;
     if let Err(error) = GATE.ensure_matches(deps.auth_scope, &auth_scope) {
         return Ok(SocialFriendMutationOutcome::remote_ok_local_failed(
@@ -109,11 +113,12 @@ pub async fn cancel_friend_request(
     require_target(&target_user_id)?;
     let auth_scope = GATE.require_active(deps.auth_scope)?;
 
-    let request = deps.remote_requests.cancel_friend_request(
+    let request = vrcx_0_vrchat_protocol::friends::friend_request_cancel_input(
         auth_scope.endpoint.clone(),
         target_user_id.clone(),
         normalize_text(&input.notification_id),
-    )?;
+    )?
+    .1;
     execute_vrchat_json_request(&deps, &auth_scope, request).await?;
     if let Err(error) = GATE.ensure_matches(deps.auth_scope, &auth_scope) {
         return Ok(SocialFriendMutationOutcome::remote_ok_local_failed(
@@ -154,9 +159,11 @@ async fn accept_friend_request_with_expected_scope(
     }
     GATE.ensure_matches(deps.auth_scope, auth_scope)?;
 
-    let request = deps
-        .remote_requests
-        .accept_friend_request(auth_scope.endpoint.clone(), notification_id)?;
+    let request = vrcx_0_vrchat_protocol::notifications::notification_accept_friend_request_input(
+        auth_scope.endpoint.clone(),
+        notification_id,
+    )?
+    .1;
     execute_vrchat_json_request(deps, auth_scope, request).await?;
     if let Err(error) = GATE.ensure_matches(deps.auth_scope, auth_scope) {
         return Ok(SocialFriendMutationOutcome::remote_ok_local_failed(

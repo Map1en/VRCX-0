@@ -10,8 +10,7 @@ pub use vrcx_0_contracts::profile_bio::{
     PROFILE_BIO_SCAN_PAUSE,
 };
 use vrcx_0_contracts::vrchat_api::{
-    classify_vrchat_response, VrchatJsonResponse, VrchatRequest, VrchatResponse,
-    VrchatResponseClass,
+    classify_vrchat_response, VrchatJsonResponse, VrchatResponse, VrchatResponseClass,
 };
 use vrcx_0_core::time::iso_millis;
 use vrcx_0_core::OwnerId;
@@ -29,10 +28,6 @@ pub trait ProfileBioStore: Send + Sync {
     fn mark_checked(&self, owner: &OwnerId, user_id: &str, checked_at: &str) -> Result<()>;
     fn next_stale_friend(&self, owner: &OwnerId, checked_before: &str) -> Result<Option<String>>;
     fn observe_self_bio(&self, owner: &OwnerId, bio: &str, observed_at: &str) -> Result<()>;
-}
-
-pub trait ProfileBioRemoteRequests: Send + Sync {
-    fn profile(&self, endpoint: String, user_id: String) -> Result<VrchatRequest>;
 }
 
 fn observation_from_response(response: &VrchatResponse) -> Option<ProfileBioObservation> {
@@ -139,7 +134,6 @@ impl ProfileBioScanPacer {
 
 pub struct ProfileBioScanDeps<'a> {
     pub store: &'a dyn ProfileBioStore,
-    pub remote_requests: &'a dyn ProfileBioRemoteRequests,
     pub remote: &'a dyn VrchatRequestPort,
     pub realtime: &'a Arc<RealtimeHostRuntime>,
     pub pacer: &'a ProfileBioScanPacer,
@@ -176,9 +170,12 @@ pub async fn scan_next_profile_bio(
         deps.pacer.pause(now);
         return Ok(ProfileBioScanOutcome::Idle);
     };
-    let request = deps
-        .remote_requests
-        .profile(deps.endpoint.clone(), user_id.clone())?;
+    let request = vrcx_0_vrchat_protocol::users::profile_get_input(
+        deps.endpoint.clone(),
+        user_id.clone(),
+        false,
+    )?
+    .1;
     let response = deps.remote.send(request, VrchatScope::Vrchat).await?;
     let now_iso = iso_millis(now);
     let observation = match classify_vrchat_response(response.status).class {

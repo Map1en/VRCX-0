@@ -564,7 +564,6 @@ impl RuntimeHostStateBuilder {
                     Arc::new(vrcx_0_outbound_adapters::VrchatRequestAdapter::new(
                         Arc::clone(&self.web),
                     )),
-                    Arc::new(vrcx_0_outbound_adapters::VrchatGroupRemoteRequests),
                     self.runtime_context.diagnostics.clone(),
                     self.runtime_context.sync.clone(),
                     self.runtime_context.auth_scope.clone(),
@@ -592,7 +591,6 @@ impl RuntimeHostStateBuilder {
             Arc::new(vrcx_0_outbound_adapters::VrchatRequestAdapter::new(
                 Arc::clone(&self.web),
             )),
-            Arc::new(vrcx_0_outbound_adapters::VrchatNoteExportRemoteRequests),
             self.runtime_context.event_bus.clone(),
             self.runtime_context.tasks.clone(),
             self.runtime_context.auth_scope.clone(),

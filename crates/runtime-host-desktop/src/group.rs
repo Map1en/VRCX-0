@@ -53,7 +53,6 @@ impl DesktopGroupRuntime {
             Arc::new(vrcx_0_outbound_adapters::VrchatRequestAdapter::new(
                 Arc::clone(&self.web),
             )),
-            Arc::new(vrcx_0_outbound_adapters::VrchatGroupRemoteRequests),
             self.diagnostics.clone(),
             self.sync.clone(),
             self.auth_scope.clone(),
@@ -65,9 +64,6 @@ impl DesktopGroupRuntime {
         GroupQuickModerationDeps {
             groups: self.api_deps(),
             auth_scope: self.auth_scope.clone(),
-            remote_requests: Arc::new(
-                vrcx_0_outbound_adapters::VrchatGroupMembershipRemoteRequests,
-            ),
         }
     }
 
@@ -108,9 +104,6 @@ impl DesktopGroupRuntime {
             UserGroupsOverviewDeps {
                 groups: self.api_deps(),
                 auth_scope: self.auth_scope.clone(),
-                remote_requests: Arc::new(
-                    vrcx_0_outbound_adapters::VrchatGroupMembershipRemoteRequests,
-                ),
             },
             input,
         )
