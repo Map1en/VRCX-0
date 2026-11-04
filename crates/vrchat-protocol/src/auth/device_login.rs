@@ -4,7 +4,7 @@ use serde_json::Value;
 use url::Url;
 use vrcx_0_core::json::JsonExt;
 
-use crate::vrchat_api::{vrchat_auth_error_message, VrchatResponse};
+use vrcx_0_contracts::vrchat_api::{vrchat_auth_error_message, VrchatResponse};
 
 const VERIFICATION_HOST: &str = "vrchat.com";
 const VERIFICATION_PATH: &str = "/home/device";
@@ -125,7 +125,7 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::vrchat_api::vrchat_response;
+    use vrcx_0_contracts::vrchat_api::vrchat_response;
 
     fn response(status: i32, data: Value) -> VrchatResponse {
         vrchat_response(status, data.to_string())

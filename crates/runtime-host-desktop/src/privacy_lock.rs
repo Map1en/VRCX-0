@@ -18,11 +18,11 @@ use vrcx_0_application_core::{
 };
 use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_contracts::vrchat_api::{vrchat_response, VrchatResponse, VrchatScope};
-use vrcx_0_contracts::vrchat_device_login::interpret_device_code_response;
-use vrcx_0_contracts::vrchat_login::{interpret_login_config_response, VrchatLoginStep};
 use vrcx_0_core::json::JsonExt;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 use vrcx_0_vrchat_client::web_client::WebClient as VrchatWebClient;
+use vrcx_0_vrchat_protocol::auth::device_login::interpret_device_code_response;
+use vrcx_0_vrchat_protocol::auth::login::{interpret_login_config_response, VrchatLoginStep};
 use vrcx_0_vrchat_protocol::auth::{
     config_get_input, current_user_get_input, device_code_input, device_status_input, logout_input,
 };
@@ -398,7 +398,10 @@ async fn execute(
 
 async fn request_device_authorization(
     client: &VrchatWebClient,
-) -> std::result::Result<vrcx_0_contracts::vrchat_device_login::VrchatDeviceAuthorization, String> {
+) -> std::result::Result<
+    vrcx_0_vrchat_protocol::auth::device_login::VrchatDeviceAuthorization,
+    String,
+> {
     let config = execute(client, config_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into())).await?;
     if let Some(VrchatLoginStep::Failed { reason, .. }) = interpret_login_config_response(&config) {
         return Err(reason);

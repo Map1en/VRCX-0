@@ -1,10 +1,10 @@
 use crate::auth::AuthCredentialStore;
 use serde_json::Value;
 use vrcx_0_contracts::vrchat_api::VrchatResponse;
-use vrcx_0_contracts::vrchat_device_login::{
+use vrcx_0_vrchat_protocol::auth::device_login::{
     interpret_device_code_response, VrchatDeviceAuthorization,
 };
-use vrcx_0_contracts::vrchat_login::{
+use vrcx_0_vrchat_protocol::auth::login::{
     auth_response_error_message, classify_vrchat_login_failure, cookie_probe_rejection_reason,
     interpret_login_config_response, interpret_login_response,
     interpret_two_factor_current_user_response, interpret_two_factor_verify_response,

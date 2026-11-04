@@ -34,8 +34,6 @@ pub mod social_aggregates;
 pub mod telemetry;
 mod translation;
 pub mod vrchat_api;
-pub mod vrchat_device_login;
-pub mod vrchat_login;
 pub mod vrchat_requests;
 mod web;
 pub mod world_collections;

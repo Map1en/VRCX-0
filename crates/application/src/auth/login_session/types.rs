@@ -2,8 +2,8 @@ use futures_util::future::BoxFuture;
 
 use serde::Serialize;
 use vrcx_0_contracts::vrchat_api::VrchatResponse;
-use vrcx_0_contracts::vrchat_login::VrchatLoginFailureKind;
 pub use vrcx_0_core::TwoFactorMethod;
+use vrcx_0_vrchat_protocol::auth::login::VrchatLoginFailureKind;
 
 use crate::auth::{AuthenticatedRuntimeSession, SavedAuthSnapshot};
 use vrcx_0_application_core::Result;

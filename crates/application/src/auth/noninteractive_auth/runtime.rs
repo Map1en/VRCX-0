@@ -5,7 +5,7 @@ use std::sync::Arc;
 use vrcx_0_application_core::Result;
 use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
-use vrcx_0_contracts::vrchat_login::auth_response_error_message;
+use vrcx_0_vrchat_protocol::auth::login::auth_response_error_message;
 
 use super::{
     parse_current_user_response, AuthenticatedRuntimeSession, CookieSessionProbe,

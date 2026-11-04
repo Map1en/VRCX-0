@@ -1,4 +1,4 @@
-use vrcx_0_contracts::vrchat_login::{
+use vrcx_0_vrchat_protocol::auth::login::{
     interpret_cookie_probe_config_response, interpret_cookie_probe_current_user_response,
     CookieProbeResult,
 };

@@ -9,9 +9,9 @@ use serde_json::{json, Value};
 use tokio::sync::{Mutex as AsyncMutex, Notify, OwnedMutexGuard};
 use tokio::time::Instant;
 use vrcx_0_application_core::RuntimeRealtimeTransportEpoch;
-use vrcx_0_contracts::vrchat_device_login::VrchatDeviceAuthorization;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 use vrcx_0_core::TwoFactorMethod;
+use vrcx_0_vrchat_protocol::auth::device_login::VrchatDeviceAuthorization;
 
 use crate::auth::{
     delete_saved_credential, record_login_success, record_logout, saved_snapshot,

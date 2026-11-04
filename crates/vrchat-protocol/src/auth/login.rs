@@ -2,7 +2,7 @@ use serde_json::Value;
 use vrcx_0_core::json::JsonExt;
 use vrcx_0_core::TwoFactorMethod;
 
-use crate::vrchat_api::{
+use vrcx_0_contracts::vrchat_api::{
     classify_vrchat_auth_failure, vrchat_auth_error_message, VrchatAuthFailureKind, VrchatResponse,
 };
 
@@ -298,7 +298,7 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::vrchat_api::vrchat_response;
+    use vrcx_0_contracts::vrchat_api::vrchat_response;
 
     fn response(status: i32, data: Value) -> VrchatResponse {
         vrchat_response(status, data.to_string())
@@ -421,7 +421,7 @@ mod rejection_reason_tests {
     use serde_json::json;
 
     use super::*;
-    use crate::vrchat_api::vrchat_response;
+    use vrcx_0_contracts::vrchat_api::vrchat_response;
 
     #[test]
     fn a_rejected_cookie_probe_names_its_request_unless_vrchat_explains_why() {

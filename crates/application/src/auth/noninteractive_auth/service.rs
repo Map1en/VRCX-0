@@ -1,12 +1,12 @@
 use serde::Serialize;
 use serde_json::Value;
 use vrcx_0_contracts::vrchat_api::VrchatResponse;
-use vrcx_0_contracts::vrchat_login::{
-    auth_response_error_message, cookie_probe_rejection_reason, CookieProbeResult, CookieProbeStage,
-};
 use vrcx_0_core::json::{JsonExt, RawJson};
 use vrcx_0_core::vrchat_endpoints::{
     normalize_vrchat_api_endpoint, normalize_vrchat_websocket_endpoint,
+};
+use vrcx_0_vrchat_protocol::auth::login::{
+    auth_response_error_message, cookie_probe_rejection_reason, CookieProbeResult, CookieProbeStage,
 };
 
 use crate::auth::cookie_session::probe_cookie_session;

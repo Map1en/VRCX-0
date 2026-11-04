@@ -3,17 +3,6 @@ use std::time::Duration;
 use serde_json::Value;
 use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_contracts::vrchat_api::{vrchat_response, VrchatResponse, VrchatScope};
-use vrcx_0_contracts::vrchat_device_login::{
-    interpret_device_code_response, interpret_device_status_response, VrchatDeviceAuthorization,
-    VrchatDeviceStatus,
-};
-use vrcx_0_contracts::vrchat_login::{
-    interpret_cookie_probe_config_response, interpret_cookie_probe_current_user_response,
-    interpret_login_config_response, interpret_login_response,
-    interpret_two_factor_current_user_response, interpret_two_factor_verify_response,
-    unsupported_two_factor_method, CookieProbeResult, VrchatLoginFailureKind, VrchatLoginStep,
-    VrchatTwoFactorVerifyOutcome,
-};
 use vrcx_0_core::json::JsonExt;
 use vrcx_0_core::vrchat_endpoints::{
     VRCHAT_API_DEFAULT_ENDPOINT, VRCHAT_WEBSOCKET_DEFAULT_ENDPOINT,
@@ -25,6 +14,17 @@ use vrcx_0_vrchat_client::realtime::{
     RealtimeConnectionOptions, RealtimeWebSocketStream,
 };
 use vrcx_0_vrchat_client::web_client::WebClient;
+use vrcx_0_vrchat_protocol::auth::device_login::{
+    interpret_device_code_response, interpret_device_status_response, VrchatDeviceAuthorization,
+    VrchatDeviceStatus,
+};
+use vrcx_0_vrchat_protocol::auth::login::{
+    interpret_cookie_probe_config_response, interpret_cookie_probe_current_user_response,
+    interpret_login_config_response, interpret_login_response,
+    interpret_two_factor_current_user_response, interpret_two_factor_verify_response,
+    unsupported_two_factor_method, CookieProbeResult, VrchatLoginFailureKind, VrchatLoginStep,
+    VrchatTwoFactorVerifyOutcome,
+};
 use vrcx_0_vrchat_protocol::auth::{
     config_get_input, current_user_get_input, device_code_input, device_status_input,
     email_otp_verify_input, login_basic_input, logout_input, otp_verify_input, session_get_input,
@@ -402,7 +402,7 @@ fn probe_outcome(result: CookieProbeResult) -> ProbeOutcome {
 #[cfg(test)]
 mod tests {
     use serde_json::json;
-    use vrcx_0_contracts::vrchat_login::CookieProbeStage;
+    use vrcx_0_vrchat_protocol::auth::login::CookieProbeStage;
 
     use super::*;
 
