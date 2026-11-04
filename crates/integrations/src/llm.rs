@@ -10,6 +10,8 @@ pub use vrcx_0_contracts::llm::{
 };
 use vrcx_0_core::proxy::with_remote_dns;
 
+mod responses;
+
 #[derive(Debug, thiserror::Error)]
 pub enum LlmError {
     #[error("LLM transport error: {}", transport_error_detail(.0))]
@@ -239,6 +241,26 @@ impl LlmClient {
         messages: &[ChatMessage],
         options: &LlmRequestOptions,
     ) -> Result<String, LlmError> {
+        if self.uses_responses_api() {
+            let turn = tokio::time::timeout(
+                self.request_timeout,
+                self.stream_responses(messages, &[], options, |_| {}),
+            )
+            .await
+            .map_err(|_| LlmError::Api {
+                status: 200,
+                message: "responses API completion timed out".into(),
+            })??;
+            let content = turn.content.trim().to_string();
+            return if content.is_empty() {
+                Err(LlmError::Api {
+                    status: 200,
+                    message: "unexpected responses API response: missing message content".into(),
+                })
+            } else {
+                Ok(content)
+            };
+        }
         let body = ChatRequestBody {
             model: &self.model,
             messages,
@@ -273,6 +295,11 @@ impl LlmClient {
     where
         F: FnMut(&str),
     {
+        if self.uses_responses_api() {
+            return self
+                .stream_responses(messages, tools, options, on_text)
+                .await;
+        }
         let request_tools = tools
             .iter()
             .map(|tool| RequestTool {
