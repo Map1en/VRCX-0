@@ -19,6 +19,7 @@ export const CHATBOX_VARIABLE_LABEL_KEYS: Record<ChatboxVariable, string> = {
     track: 'view.tools.chatbox.variables.track',
     title: 'view.tools.chatbox.variables.title',
     artist: 'view.tools.chatbox.variables.artist',
+    album: 'view.tools.chatbox.variables.album',
     progress: 'view.tools.chatbox.variables.progress',
     position: 'view.tools.chatbox.variables.position',
     duration: 'view.tools.chatbox.variables.duration',

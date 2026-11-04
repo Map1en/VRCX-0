@@ -18,6 +18,7 @@ pub enum ChatboxVariable {
     Track,
     Title,
     Artist,
+    Album,
     Progress,
     Position,
     Duration,
@@ -31,11 +32,12 @@ pub enum ChatboxVariable {
 }
 
 impl ChatboxVariable {
-    pub const ALL: [Self; 13] = [
+    pub const ALL: [Self; 14] = [
         Self::Time,
         Self::Track,
         Self::Title,
         Self::Artist,
+        Self::Album,
         Self::Progress,
         Self::Position,
         Self::Duration,
@@ -53,6 +55,7 @@ impl ChatboxVariable {
             Self::Track => "track",
             Self::Title => "title",
             Self::Artist => "artist",
+            Self::Album => "album",
             Self::Progress => "progress",
             Self::Position => "position",
             Self::Duration => "duration",
@@ -77,6 +80,7 @@ impl ChatboxVariable {
             Self::Track
                 | Self::Title
                 | Self::Artist
+                | Self::Album
                 | Self::Progress
                 | Self::Position
                 | Self::Duration
@@ -96,11 +100,14 @@ impl ChatboxVariable {
         let gpu = || facts.gpu.as_ref();
         match self {
             Self::Time => Some(clock(facts, formats)),
-            Self::Track => media().map(track),
-            Self::Title => media().map(|media| media.title.trim().to_string()),
+            Self::Track => media().map(|media| track(media, formats.media_max_chars)),
+            Self::Title => media().map(|media| clipped(&media.title, formats.media_max_chars)),
             Self::Artist => media()
-                .map(|media| media.artist.trim().to_string())
+                .map(|media| clipped(&media.artist, formats.media_max_chars))
                 .filter(|artist| !artist.is_empty()),
+            Self::Album => media()
+                .map(|media| clipped(&media.album, formats.media_max_chars))
+                .filter(|album| !album.is_empty()),
             Self::Progress => media()
                 .and_then(timeline)
                 .map(|(position, duration)| progress_bar(position, duration, formats.progress)),
@@ -220,14 +227,24 @@ fn clock(facts: &ChatboxFacts, formats: &ChatboxFormats) -> String {
     )
 }
 
-fn track(media: &ChatboxMedia) -> String {
-    let title = media.title.trim();
-    let artist = media.artist.trim();
+fn track(media: &ChatboxMedia, max_chars: u32) -> String {
+    let title = clipped(&media.title, max_chars);
+    let artist = clipped(&media.artist, max_chars);
     if artist.is_empty() {
-        title.to_string()
+        title
     } else {
         format!("{title} - {artist}")
     }
+}
+
+fn clipped(text: &str, max_chars: u32) -> String {
+    let text = text.trim();
+    let max_chars = max_chars as usize;
+    if max_chars == 0 || text.chars().count() <= max_chars {
+        return text.to_string();
+    }
+    let kept: String = text.chars().take(max_chars.saturating_sub(1)).collect();
+    format!("{}…", kept.trim_end())
 }
 
 fn timeline(media: &ChatboxMedia) -> Option<(u64, u64)> {

@@ -29,6 +29,7 @@ const FORMATS: ChatboxFormats = {
     memory: 'percent',
     memoryDecimals: 0,
     memoryUnit: 'gb',
+    mediaMaxChars: 0,
     gpuDecimals: 0,
     vram: 'percent',
     vramDecimals: 0,

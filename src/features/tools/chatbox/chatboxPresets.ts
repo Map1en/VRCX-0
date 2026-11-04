@@ -48,6 +48,10 @@ export const CHATBOX_PRESET_GROUPS: ChatboxPresetGroup[] = [
             },
             { id: 'music-compact', template: literal('♪ {title} - {artist}') },
             {
+                id: 'music-album',
+                template: literal('♪ {track}\n「{album}」')
+            },
+            {
                 id: 'music-quotes',
                 template: literal('「{title}」\n{progress}'),
                 formats: { progress: 'blocks' }

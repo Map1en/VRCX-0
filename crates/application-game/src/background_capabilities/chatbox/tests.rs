@@ -24,6 +24,7 @@ fn media() -> ChatboxMedia {
     ChatboxMedia {
         title: "Idol".into(),
         artist: "YOASOBI".into(),
+        album: "THE BOOK 3".into(),
         position_seconds: Some(106),
         duration_seconds: Some(213),
     }
@@ -284,6 +285,46 @@ fn gpu_lines_hide_when_the_reading_is_unavailable() {
     assert_eq!(
         render(module(&["GPU {gpu}", "{gputemp}", "VRAM {vram}"]), facts).as_deref(),
         Some("GPU 12%")
+    );
+}
+
+#[test]
+fn media_text_is_split_and_clipped_to_the_line_limit() {
+    let facts = ChatboxFacts {
+        media: Some(ChatboxMedia {
+            title: "Racing into the Night".into(),
+            ..media()
+        }),
+        ..facts()
+    };
+
+    assert_eq!(
+        render(module(&["{title} / {artist} / {album}"]), facts.clone()).as_deref(),
+        Some("Racing into the Night / YOASOBI / THE BOOK 3")
+    );
+    let clipped = ChatboxFormats {
+        media_max_chars: 8,
+        ..ChatboxFormats::default()
+    };
+    assert_eq!(
+        render(module_with(&["♪ {track} [{album}]"], clipped), facts).as_deref(),
+        Some("♪ Racing… - YOASOBI [THE BOO…]")
+    );
+}
+
+#[test]
+fn album_line_hides_when_the_player_reports_no_album() {
+    let facts = ChatboxFacts {
+        media: Some(ChatboxMedia {
+            album: "  ".into(),
+            ..media()
+        }),
+        ..facts()
+    };
+
+    assert_eq!(
+        render(module(&["♪ {title}", "💿 {album}"]), facts).as_deref(),
+        Some("♪ Idol")
     );
 }
 

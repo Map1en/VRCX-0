@@ -78,6 +78,7 @@ pub fn sample_chatbox_facts(local_time: NaiveTime) -> ChatboxFacts {
         media: Some(ChatboxMedia {
             title: "Idol".into(),
             artist: "YOASOBI".into(),
+            album: "THE BOOK 3".into(),
             position_seconds: Some(106),
             duration_seconds: Some(213),
         }),

@@ -17,6 +17,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger
 } from '@/ui/shadcn/dropdown-menu';
+import { Input } from '@/ui/shadcn/input';
 import {
     Select,
     SelectContent,
@@ -52,6 +53,7 @@ const TEMPERATURE_SYMBOLS: Record<ChatboxTemperatureUnit, string> = {
     celsius: '°C',
     fahrenheit: '°F'
 };
+const MEDIA_TEXT_VARIABLES = ['track', 'title', 'artist', 'album'];
 const PROGRESS_STYLES: ChatboxProgressStyle[] = ['line', 'blocks', 'dots'];
 const PROGRESS_SAMPLES: Record<ChatboxProgressStyle, string> = {
     line: '━━━●─────',
@@ -194,6 +196,7 @@ export function ChatboxLineEditor({
                     formats={line.formats}
                     used={used}
                     maxDecimals={meta.limits.maxDecimals}
+                    maxChars={meta.limits.maxChars}
                     onChange={setFormats}
                 />
             </div>
@@ -205,11 +208,13 @@ function FormatControls({
     formats,
     used,
     maxDecimals,
+    maxChars,
     onChange
 }: {
     formats: ChatboxFormats;
     used: Set<string>;
     maxDecimals: number;
+    maxChars: number;
     onChange(update: Partial<ChatboxFormats>): void;
 }) {
     const { t } = useTranslation();
@@ -236,6 +241,18 @@ function FormatControls({
                 label={label('show_seconds')}
                 checked={formats.showSeconds}
                 onChange={(showSeconds) => onChange({ showSeconds })}
+            />
+        );
+    }
+    if (MEDIA_TEXT_VARIABLES.some((variable) => used.has(variable))) {
+        controls.push(
+            <FormatCharLimit
+                key="media-max-chars"
+                label={label('media_max_chars')}
+                placeholder={label('media_max_chars_unlimited')}
+                value={formats.mediaMaxChars}
+                max={maxChars}
+                onChange={(mediaMaxChars) => onChange({ mediaMaxChars })}
             />
         );
     }
@@ -377,6 +394,54 @@ function memoryControls({
         );
     }
     return controls;
+}
+
+function FormatCharLimit({
+    label,
+    placeholder,
+    value,
+    max,
+    onChange
+}: {
+    label: string;
+    placeholder: string;
+    value: number;
+    max: number;
+    onChange(value: number): void;
+}) {
+    const [draft, setDraft] = useSyncedDraft(value ? String(value) : '');
+
+    function commit() {
+        const parsed = Number.parseInt(draft, 10);
+        const next =
+            Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, max) : 0;
+        setDraft(next ? String(next) : '');
+        if (next !== value) {
+            onChange(next);
+        }
+    }
+
+    return (
+        <label className="text-muted-foreground flex items-center gap-1 text-xs whitespace-nowrap">
+            {label}
+            <Input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={max}
+                value={draft}
+                placeholder={placeholder}
+                className="h-7 w-16 text-xs md:text-xs"
+                onChange={(event) => setDraft(event.target.value)}
+                onBlur={commit}
+                onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                        event.currentTarget.blur();
+                    }
+                }}
+            />
+        </label>
+    );
 }
 
 function FormatSwitch({

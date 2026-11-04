@@ -8,6 +8,7 @@ use super::template::{hours_minutes, render_template};
 pub struct ChatboxMedia {
     pub title: String,
     pub artist: String,
+    pub album: String,
     pub position_seconds: Option<u64>,
     pub duration_seconds: Option<u64>,
 }

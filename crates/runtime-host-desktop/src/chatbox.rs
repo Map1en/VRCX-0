@@ -164,6 +164,7 @@ impl ChatboxRuntime {
             .map(|media| ChatboxMedia {
                 title: media.title,
                 artist: media.artist,
+                album: media.album,
                 position_seconds: media.position_seconds,
                 duration_seconds: media.duration_seconds,
             });

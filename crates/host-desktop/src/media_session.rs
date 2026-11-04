@@ -2,6 +2,7 @@
 pub struct MediaSessionInfo {
     pub title: String,
     pub artist: String,
+    pub album: String,
     pub position_seconds: Option<u64>,
     pub duration_seconds: Option<u64>,
 }
@@ -74,6 +75,10 @@ mod windows_impl {
             .Artist()
             .map(|artist| artist.to_string_lossy())
             .unwrap_or_default();
+        let album = properties
+            .AlbumTitle()
+            .map(|album| album.to_string_lossy())
+            .unwrap_or_default();
         let (position_seconds, duration_seconds) = session
             .GetTimelineProperties()
             .ok()
@@ -99,6 +104,7 @@ mod windows_impl {
         Ok(Some(MediaSessionInfo {
             title,
             artist,
+            album,
             position_seconds,
             duration_seconds,
         }))

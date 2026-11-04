@@ -11,7 +11,7 @@ use super::common::structured_result;
 #[tool_router(router = chatbox_tool_router, vis = "pub(crate)")]
 impl VrcxMcpServer {
     #[tool(
-        description = "[L1·query] Read the VRChat in-game Chatbox: current status (activity, pauseReason, and preview: the text it would show), status pages with their line templates and value formats, AFK and message settings, the template values you can use, and limits. Line templates insert values with {time} {track} {title} {artist} {progress} {position} {duration} {cpu} {memory} {gpu} {vram} {gputemp} {session}; a line whose value is unavailable right now is hidden. Status pages show only while statusEnabled is true, and only enabled pages rotate."
+        description = "[L1·query] Read the VRChat in-game Chatbox: current status (activity, pauseReason, and preview: the text it would show), status pages with their line templates and value formats, AFK and message settings, the template values you can use, and limits. Line templates insert values with {time} {track} {title} {artist} {album} {progress} {position} {duration} {cpu} {memory} {gpu} {vram} {gputemp} {session}; a line whose value is unavailable right now is hidden. Status pages show only while statusEnabled is true, and only enabled pages rotate."
     )]
     async fn get_chatbox(&self) -> Result<CallToolResult, String> {
         chatbox_result(self.runtime.chatbox.state())

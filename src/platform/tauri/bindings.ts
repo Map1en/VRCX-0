@@ -4092,6 +4092,7 @@ export type ChatboxFormats = {
     memory: ChatboxMemoryFormat;
     memoryDecimals: number;
     memoryUnit: ChatboxMemoryUnit;
+    mediaMaxChars: number;
     gpuDecimals: number;
     vram: ChatboxMemoryFormat;
     vramDecimals: number;
@@ -4156,6 +4157,7 @@ export type ChatboxVariable =
     | 'track'
     | 'title'
     | 'artist'
+    | 'album'
     | 'progress'
     | 'position'
     | 'duration'
