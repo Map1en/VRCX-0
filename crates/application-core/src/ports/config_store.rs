@@ -11,4 +11,5 @@ pub trait ConfigStore: Send + Sync {
     fn set_string(&self, key: &str, value: &str) -> Result<()>;
     fn set_json(&self, key: &str, value: &Value) -> Result<()>;
     fn remove(&self, key: &str) -> Result<()>;
+    fn write_generation(&self) -> u64;
 }

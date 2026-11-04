@@ -1,4 +1,3 @@
-use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -6,10 +5,9 @@ use vrcx_0_application_activity::{
     ActivityActorRelation, ActivityCategory, ActivityContent, ActivityDelivery, ActivityEntry,
     ActivityText,
 };
+use vrcx_0_application_core::{ConfigStore, MemoryConfigStore};
 use vrcx_0_contracts::activity::ActivityKind;
 use vrcx_0_host_desktop::desktop_widget_window::screen_work_areas;
-use vrcx_0_persistence::config::ConfigRepository;
-use vrcx_0_persistence::DatabaseService;
 use windows_sys::Win32::Foundation::RECT;
 use windows_sys::Win32::UI::HiDpi::GetDpiForWindow;
 use windows_sys::Win32::UI::WindowsAndMessaging::{
@@ -108,8 +106,7 @@ fn click(handle: isize, y: f32) {
 }
 
 struct TestWidget {
-    _dir: TestDir,
-    config: ConfigRepository,
+    config: Arc<dyn ConfigStore>,
     host: Arc<RecordingHost>,
     windows: Arc<NativeDesktopWidgetWindows>,
     runtime: Arc<DesktopWidgetRuntime>,
@@ -118,17 +115,7 @@ struct TestWidget {
 
 impl TestWidget {
     fn new() -> Self {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let dir = TestDir(std::env::temp_dir().join(format!(
-            "vrcx-0-desktop-widget-window-{}-{nonce}",
-            std::process::id()
-        )));
-        std::fs::create_dir_all(&dir.0).unwrap();
-        let db = Arc::new(DatabaseService::new(&dir.0.join("VRCX-0.sqlite3")).unwrap());
-        let config = ConfigRepository::new(db);
+        let config: Arc<dyn ConfigStore> = Arc::new(MemoryConfigStore::default());
         let (_, primary) = screen_work_areas();
         let primary = primary.expect("a primary screen");
         let bounds = DesktopWidgetBounds {
@@ -137,9 +124,9 @@ impl TestWidget {
             width: 360,
             height: 240,
         };
-        let mut settings = DesktopWidgetSettings::load(&config);
+        let mut settings = DesktopWidgetSettings::load(config.as_ref());
         settings.bounds = Some(bounds);
-        settings.save(&config).unwrap();
+        settings.save(config.as_ref()).unwrap();
         let host = Arc::new(RecordingHost::default());
         let windows = Arc::new(NativeDesktopWidgetWindows::new());
         let runtime = DesktopWidgetRuntime::new(
@@ -149,7 +136,6 @@ impl TestWidget {
             false,
         );
         Self {
-            _dir: dir,
             config,
             host,
             windows,
@@ -181,14 +167,6 @@ impl DesktopWidgetHost for RecordingHost {
     }
 
     fn state_changed(&self, _state: DesktopWidgetState) {}
-}
-
-struct TestDir(PathBuf);
-
-impl Drop for TestDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
-    }
 }
 
 fn window_rect(handle: isize) -> DesktopWidgetBounds {

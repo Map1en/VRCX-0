@@ -9802,7 +9802,6 @@ dependencies = [
  "vrcx-0-core",
  "vrcx-0-host-desktop",
  "vrcx-0-i18n",
- "vrcx-0-persistence",
  "vrcx-0-vr-overlay",
  "vrcx-0-vr-overlay-backend",
  "windows-sys 0.61.2",

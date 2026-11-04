@@ -4,7 +4,8 @@ use vrcx_0_application_activity::{
     ActivityDelivery, ActivitySink, ActivitySinkRegistry, ActivitySnapshot,
 };
 use vrcx_0_application_core::{
-    RuntimeAuthScope, RuntimeAuthScopeObserver, RuntimeAuthScopeSnapshot, RuntimeEventBus,
+    ConfigStore, RuntimeAuthScope, RuntimeAuthScopeObserver, RuntimeAuthScopeSnapshot,
+    RuntimeEventBus,
 };
 use vrcx_0_core::OwnerId;
 pub(crate) use vrcx_0_overlay_runtime::desktop_widget::is_desktop_widget_config_key;
@@ -13,7 +14,6 @@ use vrcx_0_overlay_runtime::desktop_widget::{
     DesktopWidgetTarget, DesktopWidgetWindows, NativeDesktopWidgetWindows,
 };
 use vrcx_0_overlay_runtime::VrOverlayRuntimeServices;
-use vrcx_0_persistence::config::ConfigRepository;
 
 use super::DesktopWidgetSnapshot;
 use crate::notification::DesktopNotificationAction;
@@ -25,7 +25,7 @@ pub(super) struct Widget {
 }
 
 pub(super) struct DesktopWidgetParts {
-    pub(super) config: ConfigRepository,
+    pub(super) config: Arc<dyn ConfigStore>,
     pub(super) host: RuntimeHost,
     pub(super) event_bus: RuntimeEventBus,
     pub(super) auth_scope: RuntimeAuthScope,

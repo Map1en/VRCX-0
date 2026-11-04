@@ -55,7 +55,7 @@ pub(crate) fn build_desktop_wiring(
     register_desktop_file_access_grants(
         &host_file_access,
         builder.profile_backup(),
-        context.config(),
+        context.config_store().as_ref(),
     )?;
     let services = Arc::new(DesktopRuntimeServices::new(
         build_desktop_runtime_services_deps(context),
@@ -65,7 +65,7 @@ pub(crate) fn build_desktop_wiring(
         context.event_bus().clone(),
     );
     let integration_api_config: Arc<dyn IntegrationApiConfigStore> = Arc::new(
-        DesktopIntegrationApiConfigStore::new(context.config().clone()),
+        DesktopIntegrationApiConfigStore::new(context.config_store()),
     );
     let integration_api_controller = Arc::new(
         IntegrationApiController::new(integration_api_config, app_version.to_owned())
@@ -130,6 +130,7 @@ pub(crate) fn build_desktop_runtime(
     let feed_logger = Arc::new(
         DesktopFeedLoggerRuntime::new(
             Arc::clone(builder.database()),
+            context.config_store(),
             Arc::clone(context.world_cache()),
             context.file_cache().clone(),
             Arc::clone(context.web_client()),

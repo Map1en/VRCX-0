@@ -248,12 +248,9 @@ impl GameClientHostRuntime {
             ),
             event_bus.clone(),
         );
-        let isolation = GameIsolationRuntime::new(
-            vrcx_0_persistence::config::ConfigRepository::new(Arc::clone(&db)),
-            event_bus.clone(),
-            RuntimeHost::new(),
-        )
-        .expect("test game isolation runtime");
+        let isolation =
+            GameIsolationRuntime::new(Arc::clone(&config), event_bus.clone(), RuntimeHost::new())
+                .expect("test game isolation runtime");
         Self::new_with_actions(
             GameClientRuntimeHostDeps {
                 db,

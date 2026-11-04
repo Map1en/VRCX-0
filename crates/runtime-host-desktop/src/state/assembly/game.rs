@@ -82,11 +82,11 @@ pub(crate) fn build_game_runtime(
     let screenshot_cache =
         MetadataCacheDb::new(&builder.paths().app_data.join("metadataCache.db"))?;
     let app_launcher_enabled = context
-        .config()
+        .config_store()
         .get_bool(APP_LAUNCHER_ENABLED_CONFIG_KEY, true)?;
     let app_launcher_entries = deserialize_app_launcher_entries(
         context
-            .config()
+            .config_store()
             .get_json(APP_LAUNCHER_ENTRIES_CONFIG_KEY, json!([]))?,
     );
     Ok(Arc::new(GameRuntimeBundle {

@@ -72,6 +72,10 @@ impl ConfigStore for MachineStore {
     fn remove(&self, key: &str) -> Result<()> {
         self.config.remove(key)
     }
+
+    fn write_generation(&self) -> u64 {
+        self.config.write_generation()
+    }
 }
 
 impl AuthCredentialStore for MachineStore {

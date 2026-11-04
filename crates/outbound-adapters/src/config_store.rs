@@ -49,6 +49,10 @@ impl ConfigStore for LocalConfigStore {
     fn remove(&self, key: &str) -> Result<()> {
         config::remove(&self.db, key).map_err(crate::Error::from)
     }
+
+    fn write_generation(&self) -> u64 {
+        self.db.config_generation()
+    }
 }
 
 impl ProfileConfigStore for LocalConfigStore {

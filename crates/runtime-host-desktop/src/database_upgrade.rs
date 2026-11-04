@@ -7,8 +7,8 @@ use vrcx_0_application::profile::{
     DatabaseUpgradeRunResult, DatabaseUpgradeRunStatus, DatabaseUpgradeRuntime,
 };
 use vrcx_0_application::telemetry::TelemetryRuntime;
+use vrcx_0_application_core::ConfigStore;
 use vrcx_0_contracts::{LegacyMigrationPaths, LegacyVrcxSource};
-use vrcx_0_persistence::config::ConfigRepository;
 
 use crate::{Error, Result};
 
@@ -23,7 +23,7 @@ pub trait DatabaseUpgradeLifecycle: Send + Sync {
 #[derive(Clone)]
 pub struct DesktopDatabaseUpgradeRuntime {
     runtime: DatabaseUpgradeRuntime,
-    config: ConfigRepository,
+    config: Arc<dyn ConfigStore>,
     telemetry: TelemetryRuntime,
     failure_log_path: PathBuf,
 }
@@ -31,7 +31,7 @@ pub struct DesktopDatabaseUpgradeRuntime {
 impl DesktopDatabaseUpgradeRuntime {
     pub fn new(
         runtime: DatabaseUpgradeRuntime,
-        config: ConfigRepository,
+        config: Arc<dyn ConfigStore>,
         telemetry: TelemetryRuntime,
         failure_log_path: PathBuf,
     ) -> Self {

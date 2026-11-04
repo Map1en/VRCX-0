@@ -1,5 +1,5 @@
 use std::collections::{HashMap, VecDeque};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -589,6 +589,7 @@ pub struct MemoryConfigStore {
     values: Arc<Mutex<HashMap<String, String>>>,
     fail_reads: Arc<AtomicBool>,
     fail_writes: Arc<AtomicBool>,
+    generation: Arc<AtomicU64>,
 }
 
 impl MemoryConfigStore {
@@ -624,6 +625,7 @@ impl MemoryConfigStore {
             .lock()
             .unwrap_or_else(|error| error.into_inner())
             .insert(resolve_config_key(key), value);
+        self.generation.fetch_add(1, Ordering::AcqRel);
         Ok(())
     }
 }
@@ -688,6 +690,11 @@ impl ConfigStore for MemoryConfigStore {
             .lock()
             .unwrap_or_else(|error| error.into_inner())
             .remove(&resolve_config_key(key));
+        self.generation.fetch_add(1, Ordering::AcqRel);
         Ok(())
+    }
+
+    fn write_generation(&self) -> u64 {
+        self.generation.load(Ordering::Acquire)
     }
 }

@@ -120,7 +120,7 @@ impl SocialMaintenanceActions for RuntimeHostSocialMaintenanceActions {
             session.current_user_id
         );
         let value = serde_json::json!(group_ids);
-        let config = self.runtime_context.config();
+        let config = self.runtime_context.config_store();
         if config
             .get_json(config_key.as_str(), serde_json::json!([]))
             .map_or(true, |current| current != value)

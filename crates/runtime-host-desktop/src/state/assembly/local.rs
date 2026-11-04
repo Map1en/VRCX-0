@@ -80,7 +80,7 @@ pub(crate) fn build_local_runtimes(
             context.diagnostics().clone(),
             context.background_jobs().clone(),
         ),
-        context.config().clone(),
+        context.config_store(),
         desktop.telemetry.clone(),
         runtime.paths().app_data.join("error-log.txt"),
     );

@@ -1,4 +1,3 @@
-use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, Weak};
 
@@ -6,14 +5,15 @@ use vrcx_0_application_activity::{
     ActivityActorRelation, ActivityCategory, ActivityContent, ActivityDelivery, ActivityEntry,
     ActivitySink, ActivitySinkRegistry, ActivityText,
 };
-use vrcx_0_application_core::{RuntimeAuthScope, RuntimeEventBus, RuntimeVrchatAuthFailurePayload};
+use vrcx_0_application_core::{
+    ConfigStore, MemoryConfigStore, RuntimeAuthScope, RuntimeEventBus,
+    RuntimeVrchatAuthFailurePayload,
+};
 use vrcx_0_contracts::activity::ActivityKind;
 use vrcx_0_core::OwnerId;
 use vrcx_0_overlay_runtime::desktop_widget::{
     DesktopWidgetRowPart, DesktopWidgetRuntime, DesktopWidgetWindow, DesktopWidgetWindows,
 };
-use vrcx_0_persistence::config::ConfigRepository;
-use vrcx_0_persistence::DatabaseService;
 
 use super::imp::{DesktopWidgetParts, Widget};
 use super::DesktopWidget;
@@ -122,8 +122,7 @@ fn clicking_a_name_opens_that_user_for_the_signed_in_account() {
 }
 
 struct TestWidget {
-    dir: Arc<TestDir>,
-    config: ConfigRepository,
+    config: Arc<dyn ConfigStore>,
     scope: RuntimeAuthScope,
     privacy_lock: Arc<PrivacyLockRuntime>,
     sinks: ActivitySinkRegistry,
@@ -135,35 +134,22 @@ struct TestWidget {
 
 impl TestWidget {
     fn new() -> Self {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let dir = Arc::new(TestDir(std::env::temp_dir().join(format!(
-            "vrcx-0-desktop-widget-facade-{}-{nonce}",
-            std::process::id()
-        ))));
-        std::fs::create_dir_all(&dir.0).unwrap();
-        let config = ConfigRepository::new(Arc::new(
-            DatabaseService::new(&dir.0.join("VRCX-0.sqlite3")).unwrap(),
-        ));
+        let config: Arc<dyn ConfigStore> = Arc::new(MemoryConfigStore::default());
         let (privacy_lock, scope) = runtime_with_scope();
         scope.set(OWNER, ENDPOINT);
-        Self::assemble(dir, config, scope, privacy_lock)
+        Self::assemble(config, scope, privacy_lock)
     }
 
     fn restart(&self) -> Self {
         Self::assemble(
-            Arc::clone(&self.dir),
-            self.config.clone(),
+            Arc::clone(&self.config),
             self.scope.clone(),
             Arc::clone(&self.privacy_lock),
         )
     }
 
     fn assemble(
-        dir: Arc<TestDir>,
-        config: ConfigRepository,
+        config: Arc<dyn ConfigStore>,
         scope: RuntimeAuthScope,
         privacy_lock: Arc<PrivacyLockRuntime>,
     ) -> Self {
@@ -188,7 +174,6 @@ impl TestWidget {
             ),
         };
         Self {
-            dir,
             config,
             scope,
             privacy_lock,
@@ -260,14 +245,6 @@ impl DesktopWidgetWindow for RecordingWindow {
 
     fn close(self: Box<Self>) {
         self.open.fetch_sub(1, Ordering::SeqCst);
-    }
-}
-
-struct TestDir(PathBuf);
-
-impl Drop for TestDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
     }
 }
 

@@ -735,11 +735,7 @@ fn persistence_leaves_include_inline_qualified_calls() {
 #[test]
 fn desktop_runtime_host_reaches_infrastructure_only_through_listed_modules() {
     const SOURCE_ROOT: &str = "crates/runtime-host-desktop/src";
-    const PERSISTENCE_HANDLES: &[&str] = &[
-        "DatabaseService",
-        "config::ConfigRepository",
-        "screenshot_cache::MetadataCacheDb",
-    ];
+    const PERSISTENCE_HANDLES: &[&str] = &["DatabaseService", "screenshot_cache::MetadataCacheDb"];
     const PERSISTENCE_QUERY_MODULES: &[&str] = &[
         "assistant_adapters.rs",
         "data_dir.rs",
@@ -753,7 +749,6 @@ fn desktop_runtime_host_reaches_infrastructure_only_through_listed_modules() {
         "mcp_adapters.rs",
         "notification/dispatcher.rs",
         "notification/indicator.rs",
-        "notification/preferences.rs",
         "state.rs",
     ];
     const VRCHAT_CLIENT_MODULES: &[&str] = &["privacy_lock.rs"];

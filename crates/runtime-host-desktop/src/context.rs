@@ -24,7 +24,7 @@ use vrcx_0_core::friends::StateBucket;
 use vrcx_0_host_desktop::tts::{SystemTtsEngine, TtsEngine};
 #[cfg(any(windows, target_os = "linux"))]
 use vrcx_0_overlay_runtime::VrOverlayRuntimeServices;
-use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
+use vrcx_0_persistence::DatabaseService;
 
 use crate::chatbox::ChatboxRuntime;
 use crate::game_isolation::GameIsolationRuntime;
@@ -42,8 +42,7 @@ pub(crate) struct DesktopRuntimeServicesDeps {
     pub db: Arc<DatabaseService>,
     pub web: Arc<WebClient>,
     pub image_cache: Arc<ImageCache>,
-    pub config: ConfigRepository,
-    pub config_store: Arc<dyn ConfigStore>,
+    pub config: Arc<dyn ConfigStore>,
     pub notification_resolver: Arc<NotificationResolver>,
     pub auth_credentials: Arc<dyn AuthCredentialStore>,
     pub auth_scope: RuntimeAuthScope,
@@ -59,8 +58,7 @@ pub(crate) struct DesktopRuntimeServicesDeps {
 pub struct DesktopRuntimeServices {
     web: Arc<WebClient>,
     image_cache: Arc<ImageCache>,
-    config: ConfigRepository,
-    config_store: Arc<dyn ConfigStore>,
+    config: Arc<dyn ConfigStore>,
     auth_scope: RuntimeAuthScope,
     session: HostSessionRuntime,
     world_cache: Arc<WorldCache>,
@@ -85,10 +83,10 @@ pub struct DesktopRuntimeServices {
 
 impl DesktopRuntimeServices {
     pub(crate) fn new(deps: DesktopRuntimeServicesDeps) -> vrcx_0_application_core::Result<Self> {
-        if let Err(error) = migrate_legacy_overlay_notification_keys(&deps.config) {
+        if let Err(error) = migrate_legacy_overlay_notification_keys(deps.config.as_ref()) {
             tracing::warn!(error = %error, "failed to migrate legacy overlay notification keys");
         }
-        if let Err(error) = seed_hmd_notifications_default(&deps.config) {
+        if let Err(error) = seed_hmd_notifications_default(deps.config.as_ref()) {
             tracing::warn!(error = %error, "failed to seed HMD notification preference");
         }
         let tts: Arc<dyn TtsEngine> = Arc::new(SystemTtsEngine::new());
@@ -112,7 +110,6 @@ impl DesktopRuntimeServices {
         deps.auth_scope.add_observer(privacy_lock.clone());
         let notification_policy = Arc::new(LocalNotificationPolicy::new(
             deps.config.clone(),
-            Arc::clone(&deps.config_store),
             deps.session.clone(),
             notification_do_not_disturb.clone(),
             privacy_lock.clone(),
@@ -150,7 +147,6 @@ impl DesktopRuntimeServices {
             web: deps.web,
             image_cache: deps.image_cache,
             config: deps.config,
-            config_store: deps.config_store,
             auth_scope: deps.auth_scope,
             session: deps.session,
             world_cache: deps.world_cache,
@@ -180,7 +176,7 @@ impl DesktopRuntimeServices {
         new_group_name: &str,
     ) -> vrcx_0_application_core::Result<()> {
         rename_local_favorite_group_in_activity_filters(
-            self.config_store.as_ref(),
+            self.config.as_ref(),
             group_name,
             new_group_name,
         )?;
@@ -189,7 +185,7 @@ impl DesktopRuntimeServices {
     }
 
     pub fn reload_overlay_activity_filters(&self) {
-        reload_activity_router(&self.activity_router, self.config_store.as_ref());
+        reload_activity_router(&self.activity_router, self.config.as_ref());
     }
 
     pub fn set_overlay_activity_extra_sink(&self, extra_sink: Arc<dyn ActivitySink>) {
@@ -322,7 +318,7 @@ impl FriendProjectionObserver for DesktopRuntimeServices {
 
 #[cfg(any(windows, target_os = "linux"))]
 impl VrOverlayRuntimeServices for DesktopRuntimeServices {
-    fn config(&self) -> &ConfigRepository {
+    fn config(&self) -> &Arc<dyn ConfigStore> {
         &self.config
     }
 

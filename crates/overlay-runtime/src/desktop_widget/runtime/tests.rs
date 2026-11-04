@@ -1,4 +1,3 @@
-use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, Weak};
 
@@ -6,9 +5,8 @@ use vrcx_0_application_activity::{
     ActivityActorRelation, ActivityCategory, ActivityContent, ActivityDelivery, ActivityEntry,
     ActivityText,
 };
+use vrcx_0_application_core::{ConfigStore, MemoryConfigStore};
 use vrcx_0_contracts::activity::ActivityKind;
-use vrcx_0_persistence::config::ConfigRepository;
-use vrcx_0_persistence::DatabaseService;
 
 use super::{
     DesktopWidgetHost, DesktopWidgetMenuCommand, DesktopWidgetRuntime, DesktopWidgetState,
@@ -114,7 +112,7 @@ fn quitting_the_app_closes_the_widget_but_keeps_it_on_for_the_next_start() {
     widget.runtime.set_privacy_locked(false);
 
     assert_eq!(widget.windows.open_count(), 0);
-    assert!(DesktopWidgetSettings::load(&widget.config).enabled);
+    assert!(DesktopWidgetSettings::load(widget.config.as_ref()).enabled);
 }
 
 #[test]
@@ -169,7 +167,7 @@ fn the_right_click_menu_toggles_pin_and_click_through_and_remembers_them() {
         .unwrap();
     assert!(!unpinned.pinned && !unpinned.click_through);
 
-    let saved = DesktopWidgetSettings::load(&widget.config);
+    let saved = DesktopWidgetSettings::load(widget.config.as_ref());
     assert!(!saved.pinned && !saved.click_through);
     assert_eq!(widget.host.last_state(), Some(unpinned));
 }
@@ -185,7 +183,7 @@ fn closing_from_the_menu_turns_the_widget_off() {
 
     assert!(!state.enabled);
     assert_eq!(widget.windows.open_count(), 0);
-    assert!(!DesktopWidgetSettings::load(&widget.config).enabled);
+    assert!(!DesktopWidgetSettings::load(widget.config.as_ref()).enabled);
     assert_eq!(widget.host.last_state(), Some(state));
 }
 
@@ -194,7 +192,7 @@ fn changing_background_opacity_in_settings_reaches_the_open_widget() {
     let widget = TestWidget::enabled();
     widget
         .config
-        .set_raw(DESKTOP_WIDGET_OPACITY_CONFIG_KEY, "0")
+        .set_string(DESKTOP_WIDGET_OPACITY_CONFIG_KEY, "0")
         .unwrap();
     let before = widget.windows.refresh_count();
 
@@ -235,8 +233,7 @@ fn moving_or_resizing_the_widget_is_remembered() {
 }
 
 struct TestWidget {
-    dir: Arc<TestDir>,
-    config: ConfigRepository,
+    config: Arc<dyn ConfigStore>,
     host: Arc<RecordingHost>,
     windows: Arc<RecordingWindows>,
     runtime: Arc<DesktopWidgetRuntime>,
@@ -244,16 +241,7 @@ struct TestWidget {
 
 impl TestWidget {
     fn new() -> Self {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let dir = Arc::new(TestDir(std::env::temp_dir().join(format!(
-            "vrcx-0-desktop-widget-runtime-{}-{nonce}",
-            std::process::id()
-        ))));
-        std::fs::create_dir_all(&dir.0).unwrap();
-        Self::open(dir)
+        Self::open(Arc::new(MemoryConfigStore::default()))
     }
 
     fn enabled() -> Self {
@@ -263,12 +251,10 @@ impl TestWidget {
     }
 
     fn restart(&self) -> Self {
-        Self::open(Arc::clone(&self.dir))
+        Self::open(Arc::clone(&self.config))
     }
 
-    fn open(dir: Arc<TestDir>) -> Self {
-        let db = Arc::new(DatabaseService::new(&dir.0.join("VRCX-0.sqlite3")).unwrap());
-        let config = ConfigRepository::new(db);
+    fn open(config: Arc<dyn ConfigStore>) -> Self {
         let host = Arc::new(RecordingHost::default());
         let windows = Arc::new(RecordingWindows::default());
         let runtime = DesktopWidgetRuntime::new(
@@ -278,7 +264,6 @@ impl TestWidget {
             false,
         );
         Self {
-            dir,
             config,
             host,
             windows,
@@ -362,14 +347,6 @@ impl DesktopWidgetWindow for RecordingWindow {
 
     fn close(self: Box<Self>) {
         self.open.fetch_sub(1, Ordering::SeqCst);
-    }
-}
-
-struct TestDir(PathBuf);
-
-impl Drop for TestDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
     }
 }
 

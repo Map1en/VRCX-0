@@ -4,10 +4,9 @@ use std::sync::{Arc, Mutex};
 use chrono::{DateTime, Duration, SecondsFormat, Utc};
 use serde::{Deserialize, Serialize};
 use tokio::sync::Notify;
-use vrcx_0_application_core::{GameProcessEventSink, RuntimeEventBus, TaskSupervisor};
+use vrcx_0_application_core::{ConfigStore, GameProcessEventSink, RuntimeEventBus, TaskSupervisor};
 use vrcx_0_contracts::RuntimeEventPayload;
 use vrcx_0_core::game_process::GameProcessEvent;
-use vrcx_0_persistence::config::ConfigRepository;
 
 use crate::RuntimeHost;
 
@@ -145,7 +144,7 @@ pub struct NotificationDoNotDisturbRuntime {
 struct NotificationDoNotDisturbRuntimeInner {
     state: Mutex<NotificationDoNotDisturbState>,
     seen_game_process_event: AtomicBool,
-    config: ConfigRepository,
+    config: Arc<dyn ConfigStore>,
     event_bus: RuntimeEventBus,
     host: RuntimeHost,
     expiration_changed: Notify,
@@ -153,7 +152,7 @@ struct NotificationDoNotDisturbRuntimeInner {
 
 impl NotificationDoNotDisturbRuntime {
     pub fn new(
-        config: ConfigRepository,
+        config: Arc<dyn ConfigStore>,
         event_bus: RuntimeEventBus,
         host: RuntimeHost,
         tasks: TaskSupervisor,

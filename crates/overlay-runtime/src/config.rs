@@ -5,7 +5,7 @@ use super::eligibility::WristOverlayStartMode;
 use super::localization::{OverlayLocale, OverlayLocalizer};
 use super::service::OverlayBackendPreference;
 use super::{WristOverlayRenderOptions, WristOverlaySizePreset};
-use vrcx_0_persistence::config::ConfigRepository;
+use vrcx_0_application_core::ConfigStore;
 
 pub const VR_OVERLAY_ENABLED_CONFIG_KEY: &str = "wristOverlayEnabled";
 pub const VR_OVERLAY_BACKEND_CONFIG_KEY: &str = "wristOverlayBackend";
@@ -183,13 +183,13 @@ struct WristSurfaceRuntimeConfig {
 }
 
 #[cfg(windows)]
-pub(crate) fn load_app_language(config: &ConfigRepository) -> String {
+pub(crate) fn load_app_language(config: &dyn ConfigStore) -> String {
     config
         .get_string(APP_LANGUAGE_CONFIG_KEY, "en")
         .unwrap_or_else(|_| "en".to_string())
 }
 
-fn load_locale_settings(config: &ConfigRepository) -> (OverlayLocale, bool) {
+fn load_locale_settings(config: &dyn ConfigStore) -> (OverlayLocale, bool) {
     let locale = config
         .get_string(APP_LANGUAGE_CONFIG_KEY, "en")
         .map(|value| OverlayLocale::from_config(&value))
@@ -210,7 +210,7 @@ pub(crate) fn is_localizer_config_key(key: &str) -> bool {
     .any(|localizer_key| vrcx_0_contracts::resolve_config_key(localizer_key) == key)
 }
 
-pub(crate) fn load_localizer(config: &ConfigRepository) -> OverlayLocalizer {
+pub(crate) fn load_localizer(config: &dyn ConfigStore) -> OverlayLocalizer {
     let (locale, show_instance_id) = load_locale_settings(config);
     OverlayLocalizer::with_instance_id(locale, show_instance_id)
 }
@@ -218,7 +218,7 @@ pub(crate) fn load_localizer(config: &ConfigRepository) -> OverlayLocalizer {
 pub(super) fn load_runtime_config(
     services: &dyn VrOverlayRuntimeServices,
 ) -> VrOverlayRuntimeConfig {
-    let config = services.config();
+    let config = services.config().as_ref();
     let start_mode = config
         .get_string(VR_OVERLAY_START_MODE_CONFIG_KEY, "vrchatVrMode")
         .map(|value| WristOverlayStartMode::from_config(&value))

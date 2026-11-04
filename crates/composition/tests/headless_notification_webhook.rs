@@ -63,22 +63,22 @@ async fn headless_recent_notification_sends_one_webhook_and_deduplicates() {
     .unwrap();
     state
         .desktop_assembly()
-        .config()
+        .config_store()
         .set_bool("webhookEnabled", true)
         .unwrap();
     state
         .desktop_assembly()
-        .config()
+        .config_store()
         .set_string("webhookUrl", &webhook_url)
         .unwrap();
     state
         .desktop_assembly()
-        .config()
+        .config_store()
         .set_string("webhookFormat", "generic")
         .unwrap();
     state
         .desktop_assembly()
-        .config()
+        .config_store()
         .set_json(
             "webhookActivityFilters",
             &json!({

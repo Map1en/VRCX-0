@@ -31,7 +31,6 @@ use vrcx_0_application_realtime::{
     InstanceDwellRegistry, RealtimeNotificationProjectionObserver,
     RealtimeNotificationProjectionObserverRegistry,
 };
-use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::storage::StorageService;
 use vrcx_0_persistence::DatabaseService;
 
@@ -73,7 +72,6 @@ pub(crate) struct RuntimeHostContext {
     pub(crate) world_cache: Arc<WorldCache>,
     pub(crate) file_cache: FileCache,
     pub(crate) instance_dwell: Arc<InstanceDwellRegistry>,
-    pub(crate) config: ConfigRepository,
     config_store: Arc<dyn ConfigStore>,
     profile_config: Arc<dyn ProfileConfigStore>,
     notification_resolver: Arc<NotificationResolver>,
@@ -112,10 +110,6 @@ impl RuntimeHostDesktopAssemblyDeps {
 
     pub(crate) fn from_context(context: Arc<RuntimeHostContext>) -> Self {
         Self { context }
-    }
-
-    pub fn config(&self) -> &ConfigRepository {
-        self.context.config()
     }
 
     pub fn database(&self) -> &Arc<DatabaseService> {
@@ -277,7 +271,6 @@ impl RuntimeHostContext {
         tasks: TaskSupervisor,
         local_config: Arc<vrcx_0_outbound_adapters::LocalConfigStore>,
     ) -> Self {
-        let config = ConfigRepository::new(Arc::clone(&db));
         let config_store: Arc<dyn ConfigStore> = local_config.clone();
         let profile_config: Arc<dyn ProfileConfigStore> = local_config.clone();
         let auth_credentials: Arc<dyn AuthCredentialStore> = local_config;
@@ -416,7 +409,6 @@ impl RuntimeHostContext {
             world_cache,
             file_cache,
             instance_dwell: Arc::new(InstanceDwellRegistry::new()),
-            config,
             config_store,
             profile_config,
             notification_resolver,
@@ -427,10 +419,6 @@ impl RuntimeHostContext {
             auth_webhook_queue,
             webhook_delivery_monitor,
         }
-    }
-
-    pub fn config(&self) -> &ConfigRepository {
-        &self.config
     }
 
     pub fn database(&self) -> &Arc<DatabaseService> {

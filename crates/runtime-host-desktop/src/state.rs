@@ -55,7 +55,7 @@ use vrcx_0_application::social::{
 use vrcx_0_application::telemetry::TelemetryRuntime;
 use vrcx_0_application_core::{
     BackendRuntimeMode, BackendRuntimePhase, BackendRuntimeStatusPublisher,
-    BackendRuntimeTelemetryKind, FriendProfileLoadStatusPayload, GameProcessEvent,
+    BackendRuntimeTelemetryKind, ConfigStore, FriendProfileLoadStatusPayload, GameProcessEvent,
     GameProcessEventSink, GuiRuntimeMode, RuntimeEventSink, RuntimeTaskExecutor,
     SessionHostRuntime, TaskStopToken, VrcStatusSnapshot,
 };
@@ -105,8 +105,7 @@ pub(crate) fn build_desktop_runtime_services_deps(
         db: Arc::clone(context.database()),
         web: Arc::clone(context.web_client()),
         image_cache: Arc::clone(context.image_cache()),
-        config: context.config().clone(),
-        config_store: context.config_store(),
+        config: context.config_store(),
         notification_resolver: context.notification_resolver(),
         auth_credentials: context.auth_credentials_shared(),
         auth_scope: context.auth_scope().clone(),
@@ -1546,7 +1545,7 @@ impl DesktopRuntimeHostState {
     pub fn try_config_bool(&self, key: &str, fallback: bool) -> Option<bool> {
         self.runtime
             .desktop_assembly()
-            .config()
+            .config_store()
             .get_bool(key, fallback)
             .ok()
     }
@@ -1554,7 +1553,7 @@ impl DesktopRuntimeHostState {
     pub fn config_string(&self, key: &str, fallback: &str) -> String {
         self.runtime
             .desktop_assembly()
-            .config()
+            .config_store()
             .get_string(key, fallback)
             .unwrap_or_else(|_| fallback.to_string())
     }
@@ -1673,7 +1672,11 @@ impl DesktopRuntimeHostState {
         platform: &dyn crate::AutostartPlatform,
         enabled: bool,
     ) -> Result<bool> {
-        crate::set_autostart_preference(self.runtime.desktop_assembly().config(), platform, enabled)
+        crate::set_autostart_preference(
+            self.runtime.desktop_assembly().config_store().as_ref(),
+            platform,
+            enabled,
+        )
     }
 
     pub async fn transfer_favorite_selection(
@@ -1713,7 +1716,7 @@ impl DesktopRuntimeHostState {
     pub fn config_bool(&self, key: &str, fallback: bool) -> bool {
         self.runtime
             .desktop_assembly()
-            .config()
+            .config_store()
             .get_bool(key, fallback)
             .unwrap_or(fallback)
     }
@@ -1832,7 +1835,7 @@ impl DesktopRuntimeHostState {
     pub fn set_app_launcher_enabled(&self, enabled: bool) -> Result<AppLauncherSnapshot> {
         self.runtime
             .desktop_assembly()
-            .config()
+            .config_store()
             .set_bool(APP_LAUNCHER_ENABLED_CONFIG_KEY, enabled)?;
         Ok(self.game.auto_launch.set_enabled(enabled))
     }
@@ -1842,7 +1845,7 @@ impl DesktopRuntimeHostState {
         entries: Vec<AppLauncherEntry>,
     ) -> Result<AppLauncherSnapshot> {
         let entries = normalize_app_launcher_entries(entries);
-        self.runtime.desktop_assembly().config().set_json(
+        self.runtime.desktop_assembly().config_store().set_json(
             APP_LAUNCHER_ENTRIES_CONFIG_KEY,
             &serde_json::to_value(&entries)?,
         )?;
@@ -1854,7 +1857,7 @@ impl DesktopRuntimeHostState {
         entry_id: &str,
         enabled: bool,
     ) -> Result<AppLauncherSnapshot> {
-        let config = self.runtime.desktop_assembly().config();
+        let config = self.runtime.desktop_assembly().config_store();
         Ok(self
             .game
             .auto_launch
@@ -2380,7 +2383,6 @@ impl DesktopRuntimeProfileExtension {
         let realtime_runtime = Arc::clone(state.realtime_runtime());
         let authenticated_runtime = state.authenticated_runtime().clone();
         let host_session = state.desktop_assembly().session().clone();
-        let config = state.desktop_assembly().config().clone();
         let config_store = state.desktop_assembly().config_store();
         let auth_scope = state.desktop_assembly().auth_scope().clone();
         let remote_mutations = Arc::clone(state.desktop_assembly().remote_mutations());
@@ -2439,7 +2441,7 @@ impl DesktopRuntimeProfileExtension {
                         next_discord = now;
                         overlay_activity_config_generation = None;
                     }
-                    let config_generation = config.write_generation();
+                    let config_generation = config_store.write_generation();
                     if overlay_activity_config_generation != Some(config_generation) {
                         desktop_services.reload_overlay_activity_filters();
                         overlay_activity_config_generation = Some(config_generation);
@@ -2451,7 +2453,6 @@ impl DesktopRuntimeProfileExtension {
                         session_slot: &session_slot,
                         realtime_runtime: &realtime_runtime,
                         host_session: &host_session,
-                        config: &config,
                         config_store: &config_store,
                         auth_scope: &auth_scope,
                         remote_mutations: &remote_mutations,
@@ -2484,7 +2485,7 @@ impl DesktopRuntimeProfileExtension {
                                 now + Duration::from_secs(BACKGROUND_PRESENCE_CADENCE_SECONDS);
                         }
                         if run_discord {
-                            let labels = discord_label_cache.get(&config);
+                            let labels = discord_label_cache.get(config_store.as_ref());
                             run_background_discord_tick(
                                 &tick_context,
                                 &discord_rpc,
@@ -2573,7 +2574,7 @@ fn emit_game_log_watcher_status(
 fn register_desktop_file_access_grants(
     file_access: &HostFileAccess,
     profile_backup: &vrcx_0_application::profile::ProfileBackupRuntime,
-    config: &vrcx_0_persistence::config::ConfigRepository,
+    config: &dyn ConfigStore,
 ) -> Result<()> {
     let profile_backup_target = profile_backup.settings().auto_target_dir;
     if !profile_backup_target.is_empty() {
@@ -2584,7 +2585,7 @@ fn register_desktop_file_access_grants(
 
 fn register_persisted_user_generated_content_path_grant(
     file_access: &HostFileAccess,
-    config: &vrcx_0_persistence::config::ConfigRepository,
+    config: &dyn ConfigStore,
 ) -> Result<()> {
     let ugc_path = config.get_string(USER_GENERATED_CONTENT_PATH_CONFIG_KEY, "")?;
     let ugc_path = ugc_path.trim();
@@ -2777,9 +2778,7 @@ pub(crate) fn assistant_controller_deps_for(
     let assembly = runtime.desktop_assembly();
     vrcx_0_assistant::AssistantControllerDeps {
         config: Arc::new(
-            crate::assistant_adapters::DesktopAssistantConfigAdapter::new(
-                assembly.config().clone(),
-            ),
+            crate::assistant_adapters::DesktopAssistantConfigAdapter::new(assembly.config_store()),
         ),
         llm_factory: Arc::new(crate::assistant_adapters::DesktopAssistantLlmClientFactory),
         proxy_url: runtime.web_client().proxy_url().map(str::to_string),
@@ -2931,8 +2930,7 @@ mod runtime_host_state {
         };
         use crate::{HostFileAccess, Result};
         use std::path::PathBuf;
-        use std::sync::Arc;
-        use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
+        use vrcx_0_application_core::{ConfigStore, MemoryConfigStore};
         use vrcx_0_platform::app_paths::AppPaths;
 
         struct TestDir {
@@ -2965,8 +2963,7 @@ mod runtime_host_state {
             let ugc_path = dir.path.join("custom-ugc");
             std::fs::create_dir_all(&app_data)?;
             std::fs::create_dir_all(&ugc_path)?;
-            let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
-            let config = ConfigRepository::new(db);
+            let config = MemoryConfigStore::default();
             config.set_string(
                 USER_GENERATED_CONTENT_PATH_CONFIG_KEY,
                 &ugc_path.to_string_lossy(),

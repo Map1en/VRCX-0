@@ -1,8 +1,4 @@
-use std::path::PathBuf;
-use std::sync::Arc;
-
-use vrcx_0_persistence::config::ConfigRepository;
-use vrcx_0_persistence::DatabaseService;
+use vrcx_0_application_core::{ConfigStore, MemoryConfigStore};
 
 use super::{
     is_desktop_widget_config_key, place_on_screens, DesktopWidgetBounds, DesktopWidgetSettings,
@@ -12,7 +8,7 @@ use super::{
 
 #[test]
 fn a_new_widget_is_off_pinned_clickable_half_see_through_and_lists_newest_on_top() {
-    let (_dir, config) = test_config();
+    let config = MemoryConfigStore::default();
 
     let settings = DesktopWidgetSettings::load(&config);
 
@@ -47,7 +43,7 @@ fn settings_written_from_the_settings_page_are_recognised_as_desktop_overlay_set
 
 #[test]
 fn turning_on_click_through_also_pins_the_widget() {
-    let (_dir, config) = test_config();
+    let config = MemoryConfigStore::default();
     let mut settings = DesktopWidgetSettings::load(&config);
     settings.set_pinned(false);
 
@@ -59,7 +55,7 @@ fn turning_on_click_through_also_pins_the_widget() {
 
 #[test]
 fn unpinning_also_turns_click_through_off() {
-    let (_dir, config) = test_config();
+    let config = MemoryConfigStore::default();
     let mut settings = DesktopWidgetSettings::load(&config);
     settings.set_click_through(true);
 
@@ -71,9 +67,9 @@ fn unpinning_also_turns_click_through_off() {
 
 #[test]
 fn the_widget_comes_back_the_same_after_a_restart() {
-    let (dir, config) = test_config();
+    let config = MemoryConfigStore::default();
     config
-        .set_raw(DESKTOP_WIDGET_OPACITY_CONFIG_KEY, "0")
+        .set_string(DESKTOP_WIDGET_OPACITY_CONFIG_KEY, "0")
         .unwrap();
     config
         .set_bool(DESKTOP_WIDGET_NEWEST_ON_TOP_CONFIG_KEY, false)
@@ -84,14 +80,14 @@ fn the_widget_comes_back_the_same_after_a_restart() {
     settings.bounds = Some(bounds(100, 200, 300, 400));
     settings.save(&config).unwrap();
 
-    let reopened = DesktopWidgetSettings::load(&reopen(&dir));
+    let reopened = DesktopWidgetSettings::load(&config.clone());
 
     assert_eq!(reopened, settings);
 }
 
 #[test]
 fn a_click_through_widget_is_always_pinned_even_if_saved_otherwise() {
-    let (_dir, config) = test_config();
+    let config = MemoryConfigStore::default();
     config
         .set_bool(DESKTOP_WIDGET_CLICK_THROUGH_CONFIG_KEY, true)
         .unwrap();
@@ -107,9 +103,9 @@ fn a_click_through_widget_is_always_pinned_even_if_saved_otherwise() {
 
 #[test]
 fn background_opacity_stays_within_zero_to_one_hundred() {
-    let (_dir, config) = test_config();
+    let config = MemoryConfigStore::default();
     config
-        .set_raw(DESKTOP_WIDGET_OPACITY_CONFIG_KEY, "250")
+        .set_string(DESKTOP_WIDGET_OPACITY_CONFIG_KEY, "250")
         .unwrap();
 
     assert_eq!(DesktopWidgetSettings::load(&config).background_opacity, 100);
@@ -180,31 +176,4 @@ fn bounds(x: i32, y: i32, width: i32, height: i32) -> DesktopWidgetBounds {
         width,
         height,
     }
-}
-
-struct TestDir(PathBuf);
-
-impl Drop for TestDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
-    }
-}
-
-fn test_config() -> (TestDir, ConfigRepository) {
-    let nonce = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
-    let dir = TestDir(std::env::temp_dir().join(format!(
-        "vrcx-0-desktop-widget-settings-{}-{nonce}",
-        std::process::id()
-    )));
-    std::fs::create_dir_all(&dir.0).unwrap();
-    let config = reopen(&dir);
-    (dir, config)
-}
-
-fn reopen(dir: &TestDir) -> ConfigRepository {
-    let db = Arc::new(DatabaseService::new(&dir.0.join("VRCX-0.sqlite3")).unwrap());
-    ConfigRepository::new(db)
 }
