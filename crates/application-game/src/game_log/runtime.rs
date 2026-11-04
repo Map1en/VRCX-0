@@ -10,6 +10,7 @@ use crate::{GameLogEventOrigin, HostSessionRuntime, RuntimeSyncEngine, TaskSuper
 use crate::{InstanceMediaPort, RuntimeEventBus, VideoMetadataPort};
 use vrcx_0_application_core::ActivityIngress;
 use vrcx_0_application_core::BackendRuntimeStatusPublisher;
+use vrcx_0_application_core::ConfigStore;
 use vrcx_0_application_core::GameProcessEvent;
 use vrcx_0_application_core::InstanceRosterObserver;
 
@@ -21,6 +22,7 @@ use super::runtime_state::RuntimeSnapshotStore;
 #[derive(Clone)]
 pub struct GameLogRuntimeDeps {
     pub(crate) store: Arc<dyn crate::GameStateStore>,
+    pub(crate) config: Arc<dyn ConfigStore>,
     pub(crate) instance_media: Arc<dyn InstanceMediaPort>,
     pub(crate) video_metadata: Arc<dyn VideoMetadataPort>,
     pub event_bus: RuntimeEventBus,
@@ -41,6 +43,7 @@ impl GameLogRuntimeDeps {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         store: Arc<dyn crate::GameStateStore>,
+        config: Arc<dyn ConfigStore>,
         instance_media: Arc<dyn InstanceMediaPort>,
         video_metadata: Arc<dyn VideoMetadataPort>,
         event_bus: RuntimeEventBus,
@@ -58,6 +61,7 @@ impl GameLogRuntimeDeps {
     ) -> Self {
         Self {
             store,
+            config,
             instance_media,
             video_metadata,
             event_bus,
@@ -87,6 +91,7 @@ impl GameLogRuntime {
         let session = deps.session.clone();
         let processor = GameLogProcessor::new(GameLogProcessorDeps {
             store: deps.store,
+            config: deps.config,
             instance_media: deps.instance_media,
             video_metadata: deps.video_metadata,
             event_bus: deps.event_bus.clone(),

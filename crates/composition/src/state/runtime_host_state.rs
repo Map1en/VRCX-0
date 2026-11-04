@@ -132,13 +132,20 @@ pub struct RuntimeHostState {
     pub(super) _profile_lock: ProfileLock,
 }
 
-fn prepare_secrets_at_rest(db: &Arc<DatabaseService>, profile: RuntimeHostProfile) {
+fn prepare_secrets_at_rest(
+    db: &Arc<DatabaseService>,
+    credentials: Arc<dyn vrcx_0_application::auth::AuthCredentialStore>,
+    profile: RuntimeHostProfile,
+) {
     let allow_encrypted_writes = match profile {
         RuntimeHostProfile::Desktop => true,
         RuntimeHostProfile::HeadlessData => false,
     };
-    let mut startup =
-        vrcx_0_outbound_adapters::LocalSecretStartup::new(Arc::clone(db), allow_encrypted_writes);
+    let mut startup = vrcx_0_outbound_adapters::LocalSecretStartup::new(
+        Arc::clone(db),
+        credentials,
+        allow_encrypted_writes,
+    );
     vrcx_0_application::profile::run_secret_startup(&mut startup);
 }
 
@@ -303,7 +310,11 @@ impl RuntimeHostStateBuilder {
             legacy_vrcx_source,
             legacy_vrcx_migration_status,
         } = opened;
-        prepare_secrets_at_rest(&db, profile);
+        let local_config = Arc::new(vrcx_0_outbound_adapters::LocalConfigStore::new(
+            Arc::clone(&db),
+            Arc::clone(&storage),
+        ));
+        prepare_secrets_at_rest(&db, local_config.clone(), profile);
         let web = Arc::new(WebClient::new(
             vrcx_0_outbound_adapters::LocalWebClientAdapter::new(
                 &storage,
@@ -326,6 +337,7 @@ impl RuntimeHostStateBuilder {
             Arc::clone(&web),
             Arc::clone(&image_cache),
             tasks,
+            local_config,
         ));
         let desktop_assembly =
             RuntimeHostDesktopAssemblyDeps::from_context(Arc::clone(&runtime_context));
@@ -473,6 +485,7 @@ impl RuntimeHostStateBuilder {
             ));
         let realtime_runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps::new(
             realtime_store,
+            self.runtime_context.config_store(),
             realtime_transport,
             remote_requests,
             Arc::clone(&self.runtime_context.web),
@@ -527,6 +540,7 @@ impl RuntimeHostStateBuilder {
                     Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
                         Arc::clone(&self.db),
                     )),
+                    self.runtime_context.config_store(),
                     Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests),
                     Arc::clone(&self.web),
                     self.runtime_context.auth_scope.clone(),

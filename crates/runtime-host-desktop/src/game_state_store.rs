@@ -1,13 +1,12 @@
 use std::sync::Arc;
 
-use serde_json::Value;
 use vrcx_0_application_game::{GameStateStore, PlayerModeration};
 use vrcx_0_contracts::game_log::{
     GameLogJoinLeaveSnapshot, GameLogLocationSnapshot, GameLogWriteBatch, GameLogWriteCount,
     PreviousInstanceEventRow, SessionEventRow, SessionLocationSegmentRow, SessionPlayerDurationRow,
 };
 use vrcx_0_core::OwnerId;
-use vrcx_0_persistence::{config, game_log, local_moderation, DatabaseService};
+use vrcx_0_persistence::{game_log, local_moderation, DatabaseService};
 
 pub(crate) struct PersistenceGameStateStore {
     db: Arc<DatabaseService>,
@@ -20,30 +19,6 @@ impl PersistenceGameStateStore {
 }
 
 impl GameStateStore for PersistenceGameStateStore {
-    fn get_bool(&self, key: &str, default: bool) -> vrcx_0_application_core::Result<bool> {
-        Ok(config::get_bool(self.db.as_ref(), key, default)?)
-    }
-
-    fn get_string(&self, key: &str, default: &str) -> vrcx_0_application_core::Result<String> {
-        Ok(config::get_string(self.db.as_ref(), key, default)?)
-    }
-
-    fn get_json(&self, key: &str, default: Value) -> vrcx_0_application_core::Result<Value> {
-        Ok(config::get_json(self.db.as_ref(), key, default)?)
-    }
-
-    fn set_bool(&self, key: &str, value: bool) -> vrcx_0_application_core::Result<()> {
-        Ok(config::set_bool(self.db.as_ref(), key, value)?)
-    }
-
-    fn set_string(&self, key: &str, value: &str) -> vrcx_0_application_core::Result<()> {
-        Ok(config::set_string(self.db.as_ref(), key, value)?)
-    }
-
-    fn set_json(&self, key: &str, value: &Value) -> vrcx_0_application_core::Result<()> {
-        Ok(config::set_json(self.db.as_ref(), key, value)?)
-    }
-
     fn write_game_log(
         &self,
         owner: &OwnerId,

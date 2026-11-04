@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 
 use serde_json::{json, Value};
-use vrcx_0_application_core::{Error, Result};
+use vrcx_0_application_core::{Error, MemoryConfigStore, Result};
 use vrcx_0_contracts::feed_live::FeedLiveEntry;
 
 use vrcx_0_contracts::feed::{
@@ -31,7 +31,6 @@ use crate::RealtimeStore;
 
 #[derive(Default)]
 struct TestRealtimeStoreState {
-    config: HashMap<String, Value>,
     current: HashMap<String, Vec<FriendLogCurrentOutput>>,
     history: HashMap<String, Vec<FriendLogHistoryOutput>>,
     feeds: HashMap<String, Vec<FeedLiveEntry>>,
@@ -45,6 +44,7 @@ struct TestRealtimeStoreState {
 }
 
 pub struct TestRealtimeStore {
+    pub config: MemoryConfigStore,
     database_path: PathBuf,
     state: Mutex<TestRealtimeStoreState>,
 }
@@ -52,6 +52,7 @@ pub struct TestRealtimeStore {
 impl TestRealtimeStore {
     pub fn new(database_path: PathBuf) -> Self {
         Self {
+            config: MemoryConfigStore::default(),
             database_path,
             state: Mutex::new(TestRealtimeStoreState::default()),
         }
@@ -193,46 +194,6 @@ impl RealtimeStore for TestRealtimeStore {
 
     fn database_path(&self) -> PathBuf {
         self.database_path.clone()
-    }
-
-    fn get_bool(&self, key: &str, default: bool) -> Result<bool> {
-        Ok(self
-            .state
-            .lock()
-            .expect("test store lock")
-            .config
-            .get(key)
-            .and_then(Value::as_bool)
-            .unwrap_or(default))
-    }
-
-    fn get_string(&self, key: &str, default: &str) -> Result<String> {
-        Ok(self
-            .state
-            .lock()
-            .expect("test store lock")
-            .config
-            .get(key)
-            .map(|value| text_of(Some(value)))
-            .unwrap_or_else(|| default.to_string()))
-    }
-
-    fn get_json(&self, key: &str, default: Value) -> Result<Value> {
-        Ok(self
-            .state
-            .lock()
-            .expect("test store lock")
-            .config
-            .get(key)
-            .cloned()
-            .unwrap_or(default))
-    }
-
-    fn set_bool(&self, key: &str, value: bool) -> Result<()> {
-        self.lock()?
-            .config
-            .insert(key.to_string(), Value::Bool(value));
-        Ok(())
     }
 
     fn favorite_list(

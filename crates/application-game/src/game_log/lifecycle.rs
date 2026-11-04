@@ -4,15 +4,16 @@ use crate::game_log::host::GameLogHostActions;
 use crate::game_log::runtime_state::parse_event_time_ms;
 use crate::Result;
 use crate::{GameLogSideEffectEvent, GameLogSideEffectSink, GameNoVrPayload};
+use vrcx_0_application_core::ConfigStore;
 
 pub const IS_GAME_NO_VR_CONFIG_KEY: &str = "isGameNoVR";
 
 pub fn set_game_no_vr(
-    store: &dyn crate::GameStateStore,
+    config: &dyn ConfigStore,
     side_effect_sink: &GameLogSideEffectSink,
     no_vr: bool,
 ) -> Result<()> {
-    store.set_bool(IS_GAME_NO_VR_CONFIG_KEY, no_vr)?;
+    config.set_bool(IS_GAME_NO_VR_CONFIG_KEY, no_vr)?;
     side_effect_sink.emit(GameLogSideEffectEvent::GameNoVr(GameNoVrPayload {
         is_game_no_vr: no_vr,
     }));
@@ -20,7 +21,7 @@ pub fn set_game_no_vr(
 }
 
 pub fn handle_vrc_quit(
-    store: &dyn crate::GameStateStore,
+    config: &dyn ConfigStore,
     host_actions: &dyn GameLogHostActions,
     created_at: &str,
     is_game_running: bool,
@@ -28,7 +29,7 @@ pub fn handle_vrc_quit(
     if !is_game_running {
         return;
     }
-    if !store.get_bool("vrcQuitFix", true).unwrap_or(true) {
+    if !config.get_bool("vrcQuitFix", true).unwrap_or(true) {
         return;
     }
 

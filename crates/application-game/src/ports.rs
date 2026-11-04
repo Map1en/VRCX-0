@@ -60,12 +60,6 @@ pub struct PlayerModeration {
 }
 
 pub trait GameStateStore: Send + Sync {
-    fn get_bool(&self, key: &str, default: bool) -> Result<bool>;
-    fn get_string(&self, key: &str, default: &str) -> Result<String>;
-    fn get_json(&self, key: &str, default: Value) -> Result<Value>;
-    fn set_bool(&self, key: &str, value: bool) -> Result<()>;
-    fn set_string(&self, key: &str, value: &str) -> Result<()>;
-    fn set_json(&self, key: &str, value: &Value) -> Result<()>;
     fn write_game_log(
         &self,
         owner: &OwnerId,
@@ -142,7 +136,6 @@ struct Owned<T> {
 #[cfg(test)]
 #[derive(Default)]
 struct TestGameState {
-    config: std::collections::HashMap<String, Value>,
     tables_exist: bool,
     locations: Vec<Owned<vrcx_0_contracts::game_log::GameLogLocationEntry>>,
     join_leave: Vec<Owned<vrcx_0_contracts::game_log::GameLogJoinLeaveEntry>>,
@@ -153,9 +146,9 @@ struct TestGameState {
 #[cfg(test)]
 #[derive(Default)]
 pub(crate) struct TestGameStateStore {
+    pub(crate) config: vrcx_0_application_core::MemoryConfigStore,
     state: std::sync::Mutex<TestGameState>,
     fail_writes: std::sync::atomic::AtomicBool,
-    fail_reads: std::sync::atomic::AtomicBool,
     writes_left: std::sync::Mutex<Option<usize>>,
 }
 
@@ -227,11 +220,6 @@ impl TestGameStateStore {
             .insert(user_id.to_string(), moderation);
     }
 
-    pub(crate) fn set_fail_reads(&self, fail: bool) {
-        self.fail_reads
-            .store(fail, std::sync::atomic::Ordering::Relaxed);
-    }
-
     pub(crate) fn set_fail_writes(&self, fail: bool) {
         self.fail_writes
             .store(fail, std::sync::atomic::Ordering::Relaxed);
@@ -262,67 +250,6 @@ fn location_snapshot(
 
 #[cfg(test)]
 impl GameStateStore for TestGameStateStore {
-    fn get_bool(&self, key: &str, default: bool) -> Result<bool> {
-        if self.fail_reads.load(std::sync::atomic::Ordering::Relaxed) {
-            return Err(crate::Error::Custom("temporary config read failure".into()));
-        }
-        Ok(self
-            .state
-            .lock()
-            .expect("test game state lock")
-            .config
-            .get(key)
-            .and_then(Value::as_bool)
-            .unwrap_or(default))
-    }
-
-    fn get_string(&self, key: &str, default: &str) -> Result<String> {
-        let state = self.state.lock().expect("test game state lock");
-        Ok(match state.config.get(key) {
-            Some(Value::String(value)) => value.clone(),
-            Some(value) => serde_json::to_string(value)?,
-            None => default.to_string(),
-        })
-    }
-
-    fn get_json(&self, key: &str, default: Value) -> Result<Value> {
-        Ok(self
-            .state
-            .lock()
-            .expect("test game state lock")
-            .config
-            .get(key)
-            .cloned()
-            .unwrap_or(default))
-    }
-
-    fn set_bool(&self, key: &str, value: bool) -> Result<()> {
-        self.state
-            .lock()
-            .expect("test game state lock")
-            .config
-            .insert(key.to_string(), Value::Bool(value));
-        Ok(())
-    }
-
-    fn set_string(&self, key: &str, value: &str) -> Result<()> {
-        self.state
-            .lock()
-            .expect("test game state lock")
-            .config
-            .insert(key.to_string(), Value::String(value.to_string()));
-        Ok(())
-    }
-
-    fn set_json(&self, key: &str, value: &Value) -> Result<()> {
-        self.state
-            .lock()
-            .expect("test game state lock")
-            .config
-            .insert(key.to_string(), value.clone());
-        Ok(())
-    }
-
     fn fill_location_group_name(
         &self,
         owner: &OwnerId,
@@ -365,10 +292,11 @@ impl GameStateStore for TestGameStateStore {
         let mut state = self.state.lock().expect("test game state lock");
         state.tables_exist = true;
         if let Some(checkpoint) = &batch.replay_checkpoint {
-            state.config.insert(
-                "gameLogReplayCheckpoint".into(),
-                Value::String(checkpoint.clone()),
-            );
+            vrcx_0_application_core::ConfigStore::set_string(
+                &self.config,
+                "gameLogReplayCheckpoint",
+                checkpoint,
+            )?;
         }
         let owner = owner.as_str().to_string();
         let inserted = (batch.locations.len()

@@ -8,7 +8,7 @@ use super::compat::{
     value_as_string,
 };
 use super::types::{SavedCredential, SavedCredentialSessionData, SavedCredentials};
-use vrcx_0_application_core::{Error, Result};
+use vrcx_0_application_core::{ConfigStore, Error, Result};
 
 pub(super) const SAVED_CREDENTIALS_KEY: &str = "savedCredentials";
 pub(super) const LAST_USER_LOGGED_IN_KEY: &str = "lastUserLoggedIn";
@@ -21,12 +21,7 @@ pub struct SealedAuthSecret {
     pub encrypted: bool,
 }
 
-pub trait AuthCredentialStore: Send + Sync {
-    fn get_raw(&self, key: &str) -> Result<Option<String>>;
-    fn get_string(&self, key: &str, default_value: &str) -> Result<String>;
-    fn get_bool(&self, key: &str, default_value: bool) -> Result<bool>;
-    fn set_string(&self, key: &str, value: &str) -> Result<()>;
-    fn remove(&self, key: &str) -> Result<()>;
+pub trait AuthCredentialStore: ConfigStore {
     fn is_encrypting_writes(&self) -> bool;
     fn is_secret_store_initialized(&self) -> bool;
     fn open_secret(&self, stored: &str) -> Option<String>;

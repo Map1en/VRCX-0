@@ -17,10 +17,6 @@ use vrcx_0_core::{FavoriteEntityKind, OwnerId};
 
 pub trait RealtimeStore: Send + Sync {
     fn database_path(&self) -> PathBuf;
-    fn get_bool(&self, key: &str, default: bool) -> Result<bool>;
-    fn get_string(&self, key: &str, default: &str) -> Result<String>;
-    fn get_json(&self, key: &str, default: Value) -> Result<Value>;
-    fn set_bool(&self, key: &str, value: bool) -> Result<()>;
     fn favorite_list(
         &self,
         owner: Option<&OwnerId>,

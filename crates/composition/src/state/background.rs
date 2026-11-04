@@ -226,6 +226,7 @@ impl RuntimeHostState {
             Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
                 Arc::clone(&self.db),
             )),
+            self.runtime_context.config_store(),
             Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests),
             Arc::clone(&self.web),
             self.runtime_context.auth_scope.clone(),

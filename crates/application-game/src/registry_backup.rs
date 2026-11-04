@@ -2,7 +2,8 @@ use chrono::{Duration, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-use crate::{Error, GameStateStore, Result};
+use crate::{Error, Result};
+use vrcx_0_application_core::ConfigStore;
 use vrcx_0_core::time::{iso_millis, now_iso};
 
 const CONFIG_AUTO_BACKUP: &str = "vrcRegistryAutoBackup";
@@ -71,8 +72,8 @@ struct StoredRegistryBackup {
     data: Value,
 }
 
-pub fn registry_backup_list(store: &dyn GameStateStore) -> Result<Vec<RegistryBackupSnapshot>> {
-    Ok(read_backups(store)?
+pub fn registry_backup_list(config: &dyn ConfigStore) -> Result<Vec<RegistryBackupSnapshot>> {
+    Ok(read_backups(config)?
         .into_iter()
         .enumerate()
         .map(|(index, backup)| normalize_backup(backup, index))
@@ -80,22 +81,22 @@ pub fn registry_backup_list(store: &dyn GameStateStore) -> Result<Vec<RegistryBa
 }
 
 pub fn registry_backup_create(
-    store: &dyn GameStateStore,
+    config: &dyn ConfigStore,
     host: &dyn RegistryBackupHostActions,
     name: &str,
 ) -> Result<Vec<RegistryBackupSnapshot>> {
-    match create_backup(store, host, normalized_backup_name(name), Utc::now())? {
-        CreateBackupOutcome::Created => registry_backup_list(store),
+    match create_backup(config, host, normalized_backup_name(name), Utc::now())? {
+        CreateBackupOutcome::Created => registry_backup_list(config),
         CreateBackupOutcome::NoRegistryData => Err(Error::Custom(NO_REGISTRY_DATA_MESSAGE.into())),
     }
 }
 
 pub fn registry_backup_restore(
-    store: &dyn GameStateStore,
+    config: &dyn ConfigStore,
     host: &dyn RegistryBackupHostActions,
     key: &str,
 ) -> Result<RegistryBackupSnapshot> {
-    let backups = read_backups(store)?;
+    let backups = read_backups(config)?;
     let Some((index, backup)) = backups
         .into_iter()
         .enumerate()
@@ -107,15 +108,15 @@ pub fn registry_backup_restore(
     let json = registry_backup_data_to_json(&backup.data)?;
     validate_registry_json(&json)?;
     host.set_registry_json(&json)?;
-    store.set_string(CONFIG_LAST_RESTORE_CHECK, &non_empty_or_now(&backup.date))?;
+    config.set_string(CONFIG_LAST_RESTORE_CHECK, &non_empty_or_now(&backup.date))?;
     Ok(normalize_backup(backup, index))
 }
 
 pub fn registry_backup_delete(
-    store: &dyn GameStateStore,
+    config: &dyn ConfigStore,
     key: &str,
 ) -> Result<Vec<RegistryBackupSnapshot>> {
-    let backups = read_backups(store)?;
+    let backups = read_backups(config)?;
     let mut removed = false;
     let next_backups = backups
         .into_iter()
@@ -132,15 +133,15 @@ pub fn registry_backup_delete(
     if !removed {
         return Err(Error::Custom("Registry backup not found.".into()));
     }
-    write_backups(store, &next_backups)?;
-    registry_backup_list(store)
+    write_backups(config, &next_backups)?;
+    registry_backup_list(config)
 }
 
 pub fn registry_backup_prepare_export(
-    store: &dyn GameStateStore,
+    config: &dyn ConfigStore,
     key: &str,
 ) -> Result<RegistryBackupExport> {
-    let backups = read_backups(store)?;
+    let backups = read_backups(config)?;
     let Some(backup) = backups
         .into_iter()
         .enumerate()
@@ -164,31 +165,31 @@ pub fn registry_backup_prepare_export(
 }
 
 pub fn registry_backup_import_json(
-    store: &dyn GameStateStore,
+    config: &dyn ConfigStore,
     host: &dyn RegistryBackupHostActions,
     json: &str,
 ) -> Result<()> {
     validate_registry_json(json)?;
     host.set_registry_json(json)?;
-    store.set_string(CONFIG_LAST_RESTORE_CHECK, &now_iso())?;
+    config.set_string(CONFIG_LAST_RESTORE_CHECK, &now_iso())?;
     Ok(())
 }
 
 pub fn registry_backup_restore_prompt_acknowledge(
-    store: &dyn GameStateStore,
+    config: &dyn ConfigStore,
     backup_date: &str,
 ) -> Result<String> {
-    store.set_string(CONFIG_LAST_RESTORE_CHECK, backup_date)?;
+    config.set_string(CONFIG_LAST_RESTORE_CHECK, backup_date)?;
     Ok(backup_date.to_string())
 }
 
 pub fn registry_backup_maintenance_run(
-    store: &dyn GameStateStore,
+    config: &dyn ConfigStore,
     host: &dyn RegistryBackupHostActions,
     mode: RegistryBackupMaintenanceMode,
     reason: &str,
 ) -> Result<RegistryBackupMaintenanceResult> {
-    let auto_backup_enabled = store.get_bool(CONFIG_AUTO_BACKUP, true)?;
+    let auto_backup_enabled = config.get_bool(CONFIG_AUTO_BACKUP, true)?;
     if !auto_backup_enabled {
         return maintenance_result(
             false,
@@ -199,27 +200,27 @@ pub fn registry_backup_maintenance_run(
         );
     }
 
-    let mut backups = read_backups(store)?;
+    let mut backups = read_backups(config)?;
     let now = Utc::now();
     let pruned = prune_old_auto_backups(&mut backups, now);
     if pruned {
-        write_backups(store, &backups)?;
+        write_backups(config, &backups)?;
     }
 
     let has_registry_folder = host.has_registry_folder()?;
     if !has_registry_folder {
-        return maybe_restore_prompt(store, mode);
+        return maybe_restore_prompt(config, mode);
     }
 
-    if recent_auto_backup_exists(store, now)? {
+    if recent_auto_backup_exists(config, now)? {
         let detail =
             format!("Registry backup maintenance skipped; recent backup exists ({reason}).");
         return maintenance_result(false, false, None, false, detail);
     }
 
-    match create_backup_with_backups(store, host, AUTO_BACKUP_NAME.into(), now, &mut backups) {
+    match create_backup_with_backups(config, host, AUTO_BACKUP_NAME.into(), now, &mut backups) {
         Ok(CreateBackupOutcome::Created) => {
-            store.set_string(CONFIG_LAST_BACKUP_DATE, &iso_millis(now))?;
+            config.set_string(CONFIG_LAST_BACKUP_DATE, &iso_millis(now))?;
             let detail = format!("Registry auto backup created ({reason}).");
             maintenance_result(true, false, None, false, detail)
         }
@@ -235,22 +236,22 @@ pub fn registry_backup_maintenance_run(
 }
 
 pub fn registry_backup_foreground_followup(
-    store: &dyn GameStateStore,
+    config: &dyn ConfigStore,
     host: &dyn RegistryBackupHostActions,
 ) -> Result<RegistryBackupMaintenanceResult> {
     if host.has_registry_folder()? {
         return registry_backup_maintenance_run(
-            store,
+            config,
             host,
             RegistryBackupMaintenanceMode::Foreground,
             "foreground-followup",
         );
     }
-    maybe_restore_prompt(store, RegistryBackupMaintenanceMode::Foreground)
+    maybe_restore_prompt(config, RegistryBackupMaintenanceMode::Foreground)
 }
 
-fn read_backups(store: &dyn GameStateStore) -> Result<Vec<StoredRegistryBackup>> {
-    let raw = store.get_json(CONFIG_BACKUPS, json!([]))?;
+fn read_backups(config: &dyn ConfigStore) -> Result<Vec<StoredRegistryBackup>> {
+    let raw = config.get_json(CONFIG_BACKUPS, json!([]))?;
     Ok(match raw {
         Value::Array(items) => items
             .into_iter()
@@ -263,24 +264,24 @@ fn read_backups(store: &dyn GameStateStore) -> Result<Vec<StoredRegistryBackup>>
     })
 }
 
-fn write_backups(store: &dyn GameStateStore, backups: &[StoredRegistryBackup]) -> Result<()> {
+fn write_backups(config: &dyn ConfigStore, backups: &[StoredRegistryBackup]) -> Result<()> {
     let value = serde_json::to_value(backups)?;
-    store.set_json(CONFIG_BACKUPS, &value)?;
+    config.set_json(CONFIG_BACKUPS, &value)?;
     Ok(())
 }
 
 fn create_backup(
-    store: &dyn GameStateStore,
+    config: &dyn ConfigStore,
     host: &dyn RegistryBackupHostActions,
     name: String,
     now: chrono::DateTime<Utc>,
 ) -> Result<CreateBackupOutcome> {
-    let mut backups = read_backups(store)?;
-    create_backup_with_backups(store, host, name, now, &mut backups)
+    let mut backups = read_backups(config)?;
+    create_backup_with_backups(config, host, name, now, &mut backups)
 }
 
 fn create_backup_with_backups(
-    store: &dyn GameStateStore,
+    config: &dyn ConfigStore,
     host: &dyn RegistryBackupHostActions,
     name: String,
     now: chrono::DateTime<Utc>,
@@ -296,7 +297,7 @@ fn create_backup_with_backups(
         date: iso_millis(now),
         data,
     });
-    write_backups(store, backups)?;
+    write_backups(config, backups)?;
     Ok(CreateBackupOutcome::Created)
 }
 
@@ -315,11 +316,8 @@ fn prune_old_auto_backups(
     backups.len() != before
 }
 
-fn recent_auto_backup_exists(
-    store: &dyn GameStateStore,
-    now: chrono::DateTime<Utc>,
-) -> Result<bool> {
-    let last_backup_date = store.get_string(CONFIG_LAST_BACKUP_DATE, "")?;
+fn recent_auto_backup_exists(config: &dyn ConfigStore, now: chrono::DateTime<Utc>) -> Result<bool> {
+    let last_backup_date = config.get_string(CONFIG_LAST_BACKUP_DATE, "")?;
     let Some(last_backup_date) = parse_backup_date(&last_backup_date) else {
         return Ok(false);
     };
@@ -327,7 +325,7 @@ fn recent_auto_backup_exists(
 }
 
 fn maybe_restore_prompt(
-    store: &dyn GameStateStore,
+    config: &dyn ConfigStore,
     mode: RegistryBackupMaintenanceMode,
 ) -> Result<RegistryBackupMaintenanceResult> {
     if mode != RegistryBackupMaintenanceMode::Foreground {
@@ -339,7 +337,7 @@ fn maybe_restore_prompt(
             "Registry folder is missing; silent maintenance does not prompt.",
         );
     }
-    if !store.get_bool(CONFIG_ASK_RESTORE, true)? {
+    if !config.get_bool(CONFIG_ASK_RESTORE, true)? {
         return maintenance_result(
             false,
             false,
@@ -348,8 +346,8 @@ fn maybe_restore_prompt(
             "Registry folder is missing; restore prompt is disabled.",
         );
     }
-    let last_backup_date = store.get_string(CONFIG_LAST_BACKUP_DATE, "")?;
-    let last_restore_check = store.get_string(CONFIG_LAST_RESTORE_CHECK, "")?;
+    let last_backup_date = config.get_string(CONFIG_LAST_BACKUP_DATE, "")?;
+    let last_restore_check = config.get_string(CONFIG_LAST_RESTORE_CHECK, "")?;
     if last_backup_date.trim().is_empty() || last_restore_check == last_backup_date {
         return maintenance_result(
             false,

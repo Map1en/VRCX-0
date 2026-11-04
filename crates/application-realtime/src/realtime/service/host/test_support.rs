@@ -246,19 +246,6 @@ impl vrcx_0_application_core::RuntimeTaskHandle for FinishedTaskHandle {
 }
 
 #[cfg(test)]
-pub(super) mod config_store {
-    use vrcx_0_application_core::Result;
-
-    pub fn get_bool(store: &dyn crate::RealtimeStore, key: &str, default: bool) -> Result<bool> {
-        store.get_bool(key, default)
-    }
-
-    pub fn set_bool(store: &dyn crate::RealtimeStore, key: &str, value: bool) -> Result<()> {
-        store.set_bool(key, value)
-    }
-}
-
-#[cfg(test)]
 pub(super) fn write_realtime_batch(
     store: &dyn crate::RealtimeStore,
     owner: &OwnerId,
@@ -724,6 +711,7 @@ fn runtime_with_active_session_game_context(
     let event_bus = RuntimeEventBus::new();
     let runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps {
         store: Arc::clone(&store) as Arc<dyn crate::RealtimeStore>,
+        config: Arc::new(store.config.clone()),
         transport: Arc::new(TestRealtimeTransport),
         remote_requests: Arc::new(TestRealtimeRemoteRequests),
         web,

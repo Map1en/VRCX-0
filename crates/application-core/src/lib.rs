@@ -51,9 +51,9 @@ pub use background::{
 pub use config::{config_string_array_value, normalize_config_string_array};
 #[cfg(any(test, feature = "test-utils"))]
 pub use contract_test_support::{
-    assert_json_contract, CallRecorder, MemoryCookieWebClientPort, MemoryFileCachePort,
-    MemoryWorldCachePort, NoopAvatarCachePort, NoopImageCachePort, NoopWebClientPort,
-    NoopWorldCachePort, ScriptedResults,
+    assert_json_contract, CallRecorder, MemoryConfigStore, MemoryCookieWebClientPort,
+    MemoryFileCachePort, MemoryWorldCachePort, NoopAvatarCachePort, NoopImageCachePort,
+    NoopWebClientPort, NoopWorldCachePort, ScriptedResults,
 };
 pub use diagnostics::RuntimeDiagnostics;
 pub use error::Error;
@@ -79,7 +79,7 @@ pub use instance_dwell::{
 };
 pub use interruptible_sleep::sleep_interruptibly;
 pub use ports::{
-    ActivityIngress, BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity,
+    ActivityIngress, BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity, ConfigStore,
     CurrentUserSnapshot, GameProcessEvent, GameProcessEventSink, HostSessionGameProcessStatus,
     HostSessionProjection, HostSessionRuntime, InstanceRosterMember, InstanceRosterObserver,
     InstanceRosterSnapshot, LocalGameContextSnapshot, LocalGameContextSource,

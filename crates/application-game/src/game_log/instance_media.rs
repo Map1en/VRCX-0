@@ -8,6 +8,7 @@ use serde_json::Value;
 use url::Url;
 
 use crate::{InstanceMediaPort, Result};
+use vrcx_0_application_core::ConfigStore;
 use vrcx_0_contracts::UgcCategory;
 use vrcx_0_core::text::first_owned;
 
@@ -28,7 +29,7 @@ struct InstanceMediaQueueInner {
 
 #[derive(Clone)]
 pub struct InstanceMediaDeps {
-    pub(crate) store: Arc<dyn crate::GameStateStore>,
+    pub(crate) config: Arc<dyn ConfigStore>,
     pub(crate) media: Arc<dyn InstanceMediaPort>,
     pub queue: InstanceMediaQueue,
     pub host_actions: Arc<dyn GameLogHostActions>,
@@ -81,7 +82,7 @@ impl Default for InstanceMediaQueue {
 }
 
 pub async fn handle_api_request(deps: InstanceMediaDeps, request_url: &str) -> Result<()> {
-    if deps.store.get_bool("saveInstancePrints", false)? {
+    if deps.config.get_bool("saveInstancePrints", false)? {
         if let Some(print_id) = parse_print_id(request_url) {
             let key = print_id.clone();
             let task_deps = deps.clone();
@@ -93,7 +94,7 @@ pub async fn handle_api_request(deps: InstanceMediaDeps, request_url: &str) -> R
         }
     }
 
-    if deps.store.get_bool("saveInstanceEmoji", false)? {
+    if deps.config.get_bool("saveInstanceEmoji", false)? {
         if let Some((user_id, inventory_id)) = parse_inventory(request_url) {
             let key = inventory_id.clone();
             let task_deps = deps.clone();
@@ -113,7 +114,7 @@ pub async fn handle_sticker_spawn(
     display_name: &str,
     inventory_id: &str,
 ) -> Result<()> {
-    if !deps.store.get_bool("saveInstanceStickers", false)? {
+    if !deps.config.get_bool("saveInstanceStickers", false)? {
         return Ok(());
     }
     let user_id = user_id.to_string();
@@ -160,7 +161,7 @@ async fn save_instance_print(deps: InstanceMediaDeps, print_id: &str) -> Result<
         )
         .await?;
 
-    if deps.store.get_bool("cropInstancePrints", false)? {
+    if deps.config.get_bool("cropInstancePrints", false)? {
         if let Err(error) = deps.media.crop_print_file(&file_path) {
             tracing::warn!("failed to crop instance print {file_path}: {error}");
         }
@@ -223,7 +224,7 @@ async fn save_inventory_media(
 }
 
 fn ugc_folder_path(deps: &InstanceMediaDeps) -> Result<String> {
-    let configured = deps.store.get_string("userGeneratedContentPath", "")?;
+    let configured = deps.config.get_string("userGeneratedContentPath", "")?;
     Ok(deps.host_actions.ugc_photo_location(Some(configured)))
 }
 

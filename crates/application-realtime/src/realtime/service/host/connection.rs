@@ -42,7 +42,7 @@ impl RealtimeHostRuntime {
         let world_cache = Arc::clone(&deps.world_cache);
         let instance_dwell = Arc::clone(&deps.instance_dwell);
         let feed_persistence_disabled = deps
-            .store
+            .config
             .get_bool("feedPersistenceDisabled", false)
             .unwrap_or_else(|error| {
                 tracing::warn!("Feed persistence preference read failed: {error}");

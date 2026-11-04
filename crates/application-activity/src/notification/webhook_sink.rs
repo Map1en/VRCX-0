@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use vrcx_0_application_core::ConfigStore;
 
 use crate::{ActivityDelivery, ActivitySink, ActivitySnapshot};
 use vrcx_0_application_core::{
@@ -12,8 +13,7 @@ use super::webhook::{discord_webhook_url_with_wait, wait_for_webhook_stop};
 use super::webhook_delivery::{WebhookDeliveryChannel, WebhookDeliveryMonitor};
 use super::{
     load_notification_locale, render_delivery, send_json_webhook_with_retry, unresolved_group_id,
-    NotificationConfig, NotificationResolver, NotificationWebhookFormat,
-    NotificationWebhookTransport,
+    NotificationResolver, NotificationWebhookFormat, NotificationWebhookTransport,
 };
 
 const NOTIFICATION_WEBHOOK_QUEUE_CAPACITY: usize = 64;
@@ -29,7 +29,7 @@ fn select_notification_webhook_format(
 
 pub struct NotificationWebhookSink {
     session: HostSessionRuntime,
-    config: Arc<dyn NotificationConfig>,
+    config: Arc<dyn ConfigStore>,
     diagnostics: RuntimeDiagnostics,
     monitor: WebhookDeliveryMonitor,
     queue: tokio::sync::mpsc::Sender<NotificationWebhookJob>,
@@ -52,7 +52,7 @@ struct NotificationWebhookWorkerDeps {
 
 pub struct NotificationWebhookSinkDeps {
     pub session: HostSessionRuntime,
-    pub config: Arc<dyn NotificationConfig>,
+    pub config: Arc<dyn ConfigStore>,
     pub resolver: Arc<NotificationResolver>,
     pub webhook_transport: Arc<dyn NotificationWebhookTransport>,
     pub diagnostics: RuntimeDiagnostics,

@@ -31,6 +31,7 @@ pub(in crate::state) async fn run_background_social_baseline_refresh(
         Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
             Arc::clone(context.db),
         )),
+        context.runtime_context.config_store(),
         Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests),
         Arc::clone(context.web),
         context.runtime_context.auth_scope.clone(),

@@ -1,12 +1,12 @@
-use super::NotificationConfig;
 use crate::ActivityDelivery;
+use vrcx_0_application_core::ConfigStore;
 use vrcx_0_contracts::activity::ActivityKind;
 
 use super::{OverlayLocale, OverlayLocalizer, RenderedNotification};
 
 const APP_LANGUAGE_CONFIG_KEY: &str = "appLanguage";
 
-pub fn load_notification_locale(config: &dyn NotificationConfig) -> OverlayLocale {
+pub fn load_notification_locale(config: &dyn ConfigStore) -> OverlayLocale {
     config
         .get_string(APP_LANGUAGE_CONFIG_KEY, "en")
         .map(|value| OverlayLocale::from_config(&value))

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use serde_json::Value;
 use vrcx_0_application_core::{
-    sleep_until_due_or_stopped, BackendRuntimeStatusPublisher, RuntimeAuthIdentity,
+    sleep_until_due_or_stopped, BackendRuntimeStatusPublisher, ConfigStore, RuntimeAuthIdentity,
     RuntimeAuthScope, RuntimeAuthScopeSnapshot, TaskStopToken,
 };
 
@@ -27,6 +27,7 @@ use vrcx_0_core::OwnerId;
 #[derive(Clone)]
 pub(super) struct GameLogSideEffectDeps {
     store: Arc<dyn crate::GameStateStore>,
+    config: Arc<dyn ConfigStore>,
     instance_media: Arc<dyn InstanceMediaPort>,
     video_metadata: Arc<dyn VideoMetadataPort>,
     event_bus: RuntimeEventBus,
@@ -52,6 +53,7 @@ impl GameLogSideEffectDeps {
         let auth_identity = deps.auth_scope.identity();
         Self {
             store: Arc::clone(&deps.store),
+            config: Arc::clone(&deps.config),
             instance_media: Arc::clone(&deps.instance_media),
             video_metadata: Arc::clone(&deps.video_metadata),
             event_bus: deps.event_bus.clone(),
@@ -74,7 +76,7 @@ impl GameLogSideEffectDeps {
 
     fn instance_media_deps(&self) -> InstanceMediaDeps {
         InstanceMediaDeps {
-            store: Arc::clone(&self.store),
+            config: Arc::clone(&self.config),
             media: Arc::clone(&self.instance_media),
             queue: self.media_queue.clone(),
             host_actions: Arc::clone(&self.host_actions),
@@ -95,6 +97,7 @@ pub(super) fn dispatch_side_effect(
                 .spawn_cancellable(move |stop_token| async move {
                     match runtime_video::handle_video_play(
                         deps.store.as_ref(),
+                        deps.config.as_ref(),
                         deps.video_metadata.as_ref(),
                         &deps.event_bus,
                         &deps.backend_status,
@@ -199,6 +202,7 @@ pub(super) fn dispatch_side_effect(
             deps.tasks.clone().spawn(async move {
                 if let Err(error) = runtime_screenshot::handle_screenshot(
                     deps.store.as_ref(),
+                    deps.config.as_ref(),
                     Arc::clone(&deps.host_actions),
                     &deps.side_effect_sink,
                     &deps.auth_identity,
@@ -243,7 +247,7 @@ pub(super) fn dispatch_side_effect(
             is_game_running,
         } => {
             runtime_lifecycle::handle_vrc_quit(
-                deps.store.as_ref(),
+                deps.config.as_ref(),
                 deps.host_actions.as_ref(),
                 &created_at,
                 is_game_running,
@@ -251,7 +255,7 @@ pub(super) fn dispatch_side_effect(
         }
         GameLogSideEffect::NoVr { no_vr } => {
             if let Err(error) = runtime_lifecycle::set_game_no_vr(
-                deps.store.as_ref(),
+                deps.config.as_ref(),
                 &deps.side_effect_sink,
                 no_vr,
             ) {
@@ -273,7 +277,7 @@ pub(super) fn dispatch_side_effect(
         }
         GameLogSideEffect::UdonException { data } => {
             if deps
-                .store
+                .config
                 .get_bool("udonExceptionLogging", false)
                 .unwrap_or(false)
             {

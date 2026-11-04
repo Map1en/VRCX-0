@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use serde_json::Value;
 use vrcx_0_application_realtime::RealtimeStore;
 use vrcx_0_contracts::feed::{
     FeedLatestQueryInput, FeedLiveEntryInput, FeedReadModelOutput, FeedSearchQueryInput,
@@ -49,24 +48,6 @@ impl RealtimeStore for PersistenceRealtimeStore {
             }
             _ => 0,
         })
-    }
-    fn get_bool(&self, key: &str, default: bool) -> crate::Result<bool> {
-        Ok(vrcx_0_persistence::config::get_bool(
-            &self.db, key, default,
-        )?)
-    }
-    fn get_string(&self, key: &str, default: &str) -> crate::Result<String> {
-        Ok(vrcx_0_persistence::config::get_string(
-            &self.db, key, default,
-        )?)
-    }
-    fn get_json(&self, key: &str, default: Value) -> crate::Result<Value> {
-        Ok(vrcx_0_persistence::config::get_json(
-            &self.db, key, default,
-        )?)
-    }
-    fn set_bool(&self, key: &str, value: bool) -> crate::Result<()> {
-        Ok(vrcx_0_persistence::config::set_bool(&self.db, key, value)?)
     }
     fn favorite_list(
         &self,

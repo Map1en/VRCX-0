@@ -11,9 +11,9 @@ use vrcx_0_core::json::{text_of, RawJson};
 use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 
 use crate::realtime::{FriendBaselineSyncOutcome, RealtimeHostRuntime, RealtimeSessionContext};
-use vrcx_0_application_core::Result;
 use vrcx_0_application_core::RuntimeAuthScope;
 use vrcx_0_application_core::WebClient;
+use vrcx_0_application_core::{ConfigStore, Result};
 
 use crate::social_baseline::types::{
     SocialFavoritesBaselineInput, SocialFavoritesBaselineOutput, SocialFavoritesBaselineRequest,
@@ -27,6 +27,7 @@ const FRIEND_PAGE_SIZE: i32 = 50;
 #[derive(Clone)]
 pub struct SocialBaselineDeps {
     pub(crate) store: Arc<dyn crate::RealtimeStore>,
+    pub(crate) config: Arc<dyn ConfigStore>,
     pub(crate) remote_requests: Arc<dyn crate::RealtimeRemoteRequests>,
     pub(crate) web: Arc<WebClient>,
     pub auth_scope: RuntimeAuthScope,
@@ -35,12 +36,14 @@ pub struct SocialBaselineDeps {
 impl SocialBaselineDeps {
     pub fn new(
         store: Arc<dyn crate::RealtimeStore>,
+        config: Arc<dyn ConfigStore>,
         remote_requests: Arc<dyn crate::RealtimeRemoteRequests>,
         web: Arc<WebClient>,
         auth_scope: RuntimeAuthScope,
     ) -> Self {
         Self {
             store,
+            config,
             remote_requests,
             web,
             auth_scope,
@@ -120,7 +123,7 @@ fn unique_values(values: Vec<String>) -> Vec<String> {
 }
 
 fn get_config_array(deps: &SocialBaselineDeps, key: &str) -> Result<Vec<String>> {
-    let parsed = deps.store.get_json(key, serde_json::Value::Null)?;
+    let parsed = deps.config.get_json(key, serde_json::Value::Null)?;
     Ok(vrcx_0_application_core::normalize_config_string_array(
         parsed,
     ))

@@ -5,11 +5,9 @@ use vrcx_0_application::telemetry::{
     TelemetryTransport,
 };
 use vrcx_0_integrations::telemetry::TelemetryClient;
-use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::{database_scale_estimate, DatabaseService};
 
 pub struct LocalTelemetryEnvironment {
-    config: ConfigRepository,
     database: Arc<DatabaseService>,
     app_data: PathBuf,
     system_theme_category: Arc<dyn Fn() -> String + Send + Sync>,
@@ -17,13 +15,11 @@ pub struct LocalTelemetryEnvironment {
 
 impl LocalTelemetryEnvironment {
     pub fn new(
-        config: ConfigRepository,
         database: Arc<DatabaseService>,
         app_data: PathBuf,
         system_theme_category: Arc<dyn Fn() -> String + Send + Sync>,
     ) -> Self {
         Self {
-            config,
             database,
             app_data,
             system_theme_category,
@@ -32,22 +28,6 @@ impl LocalTelemetryEnvironment {
 }
 
 impl TelemetryEnvironment for LocalTelemetryEnvironment {
-    fn get_bool(&self, key: &str, default_value: bool) -> vrcx_0_application_core::Result<bool> {
-        Ok(self.config.get_bool(key, default_value)?)
-    }
-
-    fn get_string(
-        &self,
-        key: &str,
-        default_value: &str,
-    ) -> vrcx_0_application_core::Result<String> {
-        Ok(self.config.get_string(key, default_value)?)
-    }
-
-    fn set_string(&self, key: &str, value: &str) -> vrcx_0_application_core::Result<()> {
-        Ok(self.config.set_string(key, value)?)
-    }
-
     fn drain_client_errors(
         &self,
         since: Option<&str>,

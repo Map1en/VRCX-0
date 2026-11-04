@@ -6,7 +6,7 @@ use super::invite_automation_send_body;
 use crate::realtime::{
     RealtimeNotificationOutput, RealtimeNotificationProjection, RealtimeNotificationUpsert,
 };
-use crate::RealtimeStore;
+use vrcx_0_application_core::ConfigStore;
 
 fn friend_request_projection() -> RealtimeNotificationProjection {
     RealtimeNotificationProjection {
@@ -46,6 +46,7 @@ fn auto_decline_only_picks_never_met_senders_when_enabled() {
 
     runtime
         .store()
+        .config
         .set_bool("autoDeclineFriendRequests", true)
         .unwrap();
     runtime.store().set_game_log_join_count("usr_stranger", 1);
@@ -79,6 +80,7 @@ fn an_auto_declined_friend_request_never_reaches_the_activity_router() {
 
     runtime
         .store()
+        .config
         .set_bool("autoDeclineFriendRequests", true)
         .unwrap();
     runtime.store().set_game_log_join_count("usr_stranger", 0);

@@ -12,6 +12,7 @@ use crate::game_log::video::{normalize_video_input, video_play_entry};
 use crate::game_log::{GameLogIngestEngine, GameLogIngestOptions, GameLogSideEffect};
 use crate::game_log_parser::{parse_log, GameLogEvent, GameLogParseSink, LogContext, LogReader};
 use crate::{GameStateStore, Result};
+use vrcx_0_application_core::ConfigStore;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -61,6 +62,7 @@ pub fn inspect_game_log_import_file(
 
 pub fn import_game_log_file(
     store: &dyn GameStateStore,
+    config: &dyn ConfigStore,
     owner: &OwnerId,
     path: &Path,
     consent: GameLogImportConsent,
@@ -84,7 +86,7 @@ pub fn import_game_log_file(
     let output = GameLogIngestEngine::default().ingest_events(
         &events,
         GameLogIngestOptions {
-            log_resource_load: store.get_bool("logResourceLoad", false)?,
+            log_resource_load: config.get_bool("logResourceLoad", false)?,
         },
     );
     let mut batch = output.batch;

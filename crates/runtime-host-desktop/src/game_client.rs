@@ -7,8 +7,8 @@ use vrcx_0_application_activity::ActivityRouter;
 use vrcx_0_application_core::Error as RuntimeError;
 use vrcx_0_application_core::Result as RuntimeResult;
 use vrcx_0_application_core::{
-    BackendRuntimeStatusPublisher, GameProcessEvent, GameProcessEventSink, HostSessionRuntime,
-    InstanceRosterObserver, RuntimeAuthScope, RuntimeEventBus, TaskSupervisor,
+    BackendRuntimeStatusPublisher, ConfigStore, GameProcessEvent, GameProcessEventSink,
+    HostSessionRuntime, InstanceRosterObserver, RuntimeAuthScope, RuntimeEventBus, TaskSupervisor,
 };
 use vrcx_0_application_game::{
     GameClientActions, GameClientCacheActions, GameClientDebugLoggingActions,
@@ -124,6 +124,7 @@ pub struct GameClientHostRuntime {
 
 pub struct GameClientHostRuntimeDeps {
     pub db: Arc<DatabaseService>,
+    pub config: Arc<dyn ConfigStore>,
     pub event_bus: RuntimeEventBus,
     pub tasks: TaskSupervisor,
     pub session: HostSessionRuntime,
@@ -140,6 +141,7 @@ pub struct GameClientHostRuntimeDeps {
 
 struct GameClientRuntimeHostDeps {
     db: Arc<DatabaseService>,
+    config: Arc<dyn ConfigStore>,
     event_bus: RuntimeEventBus,
     tasks: TaskSupervisor,
     session: HostSessionRuntime,
@@ -161,6 +163,7 @@ impl GameClientHostRuntime {
         Self::new_with_actions(
             GameClientRuntimeHostDeps {
                 db: deps.db,
+                config: deps.config,
                 event_bus: deps.event_bus,
                 tasks: deps.tasks,
                 session: deps.session,
@@ -184,6 +187,7 @@ impl GameClientHostRuntime {
             Arc::new(crate::game_state_store::PersistenceGameStateStore::new(
                 Arc::clone(&deps.db),
             )),
+            deps.config,
             deps.event_bus,
             deps.backend_status,
             deps.tasks,
@@ -226,8 +230,10 @@ impl GameProcessEventSink for GameClientHostRuntime {
 
 #[cfg(any(test, feature = "test-utils"))]
 impl GameClientHostRuntime {
+    #[allow(clippy::too_many_arguments)]
     pub fn test_with_actions(
         db: Arc<DatabaseService>,
+        config: Arc<dyn ConfigStore>,
         event_bus: RuntimeEventBus,
         tasks: TaskSupervisor,
         session: HostSessionRuntime,
@@ -250,6 +256,7 @@ impl GameClientHostRuntime {
         Self::new_with_actions(
             GameClientRuntimeHostDeps {
                 db,
+                config,
                 event_bus,
                 tasks,
                 session,

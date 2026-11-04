@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
-use vrcx_0_application_core::NoopWorldCachePort;
+use vrcx_0_application_core::{ConfigStore, NoopWorldCachePort};
 use vrcx_0_contracts::game_log::{GameLogLocationEntry, GameLogWriteBatch};
 use vrcx_0_core::game_log_parser::{GameLogEvent, GameLogEventKind};
 
@@ -137,6 +137,7 @@ fn build_test_processor(store: Arc<TestGameStateStore>) -> Result<GameLogProcess
     TEST_OVERLAY.with(|current| *current.borrow_mut() = overlay.clone());
     let event_bus = RuntimeEventBus::new();
     let processor = GameLogProcessor::new(GameLogProcessorDeps {
+        config: Arc::new(store.config.clone()),
         store,
         instance_media: Arc::new(TestGameMediaPort::default()),
         video_metadata: Arc::new(TestGameMediaPort::default()),
@@ -217,7 +218,9 @@ fn enabled_initial_scan_keeps_persistence_and_side_effects() -> Result<()> {
     ])?;
 
     assert_eq!(store.locations(&OwnerId::new("")).len(), 1);
-    assert!(store.get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
+    assert!(store
+        .config
+        .get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
     let events = processor.deps.event_bus.take_events_for_test();
     assert!(events.iter().any(|event| {
         event.name == "backendRuntimeTelemetry"
@@ -276,7 +279,7 @@ fn enabled_process_stop_keeps_session_closure_and_side_effect_order() -> Result<
 #[test]
 fn disabled_persistence_keeps_live_state_projection_overlay_and_side_effects() -> Result<()> {
     let (_dir, store, processor) = test_processor("runtime-gamelog-disabled")?;
-    store.set_bool("gameLogDisabled", true)?;
+    store.config.set_bool("gameLogDisabled", true)?;
 
     processor.handle_jobs(vec![
         GameLogWorkerJob::Event(event(
@@ -303,7 +306,9 @@ fn disabled_persistence_keeps_live_state_projection_overlay_and_side_effects() -
     let snapshot = processor.deps.snapshot.snapshot();
     assert_eq!(snapshot.location, "wrld_disabled:1");
     assert_eq!(snapshot.players[0].user_id, "usr_live");
-    assert!(store.get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
+    assert!(store
+        .config
+        .get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
     assert_eq!(
         test_overlay().snapshot().entries[0].actor_user_id,
         "usr_live"
@@ -343,7 +348,7 @@ fn disabled_initial_scan_rebuilds_memory_without_replaying_side_effects() -> Res
         ),
     );
     processor.deps.instance_roster_observer = Some(timers.clone());
-    store.set_bool("gameLogDisabled", true)?;
+    store.config.set_bool("gameLogDisabled", true)?;
 
     processor.handle_jobs(vec![
         GameLogWorkerJob::InitialEvent(event(
@@ -378,7 +383,9 @@ fn disabled_initial_scan_rebuilds_memory_without_replaying_side_effects() -> Res
         timers.snapshot()[0].source,
         vrcx_0_application_core::FriendLocationTimeSource::GameLog
     );
-    assert!(!store.get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
+    assert!(!store
+        .config
+        .get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
     assert!(test_overlay().snapshot().entries.is_empty());
     Ok(())
 }
@@ -568,7 +575,9 @@ fn room_exit_cleanup_preserves_the_dwell_of_friends_staying_in_the_old_instance(
 fn local_mode_initial_replay_does_not_restart_remote_timers() -> Result<()> {
     for persistence_disabled in [false, true] {
         let (_dir, store, mut processor) = test_processor("runtime-gamelog-replay-departures")?;
-        store.set_bool("gameLogDisabled", persistence_disabled)?;
+        store
+            .config
+            .set_bool("gameLogDisabled", persistence_disabled)?;
         let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
         for user_id in ["usr_remote", "usr_local"] {
             timers.observe_friend(
@@ -885,7 +894,7 @@ fn resume_cutoff_splits_queued_live_events_without_backfilling() -> Result<()> {
 #[test]
 fn disabled_process_stop_clears_memory_without_persisting_session_closure() -> Result<()> {
     let (_dir, store, processor) = test_processor("runtime-gamelog-disabled-stop")?;
-    store.set_bool("gameLogDisabled", true)?;
+    store.config.set_bool("gameLogDisabled", true)?;
     processor.handle_jobs(vec![GameLogWorkerJob::Event(event(
         "2026-05-14T05:30:00.000Z",
         GameLogEventKind::Location {
@@ -995,7 +1004,9 @@ fn enabled_write_failure_emits_fallback_and_skips_persisted_outputs() -> Result<
     processor.request_stop();
     assert!(worker.join().unwrap().is_err());
 
-    assert!(store.get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
+    assert!(store
+        .config
+        .get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
     assert!(test_overlay().snapshot().entries.is_empty());
     let events = processor.deps.event_bus.take_events_for_test();
     assert!(events
@@ -1892,6 +1903,7 @@ fn regression_runtime_acknowledges_failure_and_continues_after_config_recovers()
     let deps = processor.deps;
     let runtime = crate::GameLogRuntime::new(crate::GameLogRuntimeDeps::new(
         deps.store,
+        deps.config,
         deps.instance_media,
         deps.video_metadata,
         deps.event_bus,
@@ -1928,11 +1940,11 @@ fn regression_runtime_acknowledges_failure_and_continues_after_config_recovers()
     else {
         unreachable!()
     };
-    store.set_fail_reads(true);
+    store.config.set_fail_reads(true);
     assert!(runtime
         .ingest_game_log_scan(&events, origin, (*cursor).clone(), publish)
         .is_err());
-    store.set_fail_reads(false);
+    store.config.set_fail_reads(false);
     runtime.ingest_game_log_scan(&events, origin, *cursor, publish)?;
     assert_eq!(deps.snapshot.snapshot().location, "wrld_recovered:1");
     runtime.reset_replay()?;
@@ -1990,7 +2002,7 @@ fn unchanged_log_publishes_snapshot_after_each_restart() -> Result<()> {
             crate::parse_event_time_ms("2026-05-14T04:00:10Z")
         );
         let checkpoint: super::ReplayCheckpoint =
-            serde_json::from_str(&store.get_string("gameLogReplayCheckpoint", "")?)?;
+            serde_json::from_str(&store.config.get_string("gameLogReplayCheckpoint", "")?)?;
         assert_eq!(checkpoint.cursor.context.position, scanned_position);
         let events = restored.deps.event_bus.take_events_for_test();
         assert_eq!(
@@ -2034,8 +2046,12 @@ fn duplicate_scan_can_publish_without_replaying_rows_or_side_effects() -> Result
     );
     processor.handle_jobs(vec![scan.clone()])?;
     assert!(!processor.deps.snapshot.snapshot().ready);
-    assert!(store.get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
-    store.set_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?;
+    assert!(store
+        .config
+        .get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
+    store
+        .config
+        .set_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?;
     processor.deps.event_bus.take_events_for_test();
     if let GameLogWorkerJob::Scan { publish, .. } = &mut scan {
         *publish = true;
@@ -2044,7 +2060,9 @@ fn duplicate_scan_can_publish_without_replaying_rows_or_side_effects() -> Result
     assert!(processor.deps.snapshot.snapshot().ready);
     assert_eq!(processor.deps.snapshot.snapshot().location, "wrld_once:1");
     assert!(
-        !store.get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?,
+        !store
+            .config
+            .get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?,
         "the already handled DesktopMode event must not run again"
     );
     assert_eq!(store.locations(&OwnerId::new("")).len(), 1);
@@ -2072,7 +2090,7 @@ fn a_scan_without_events_keeps_the_persisted_checkpoint_and_the_database_idle() 
         )],
         true,
     )])?;
-    let persisted = store.get_string("gameLogReplayCheckpoint", "")?;
+    let persisted = store.config.get_string("gameLogReplayCheckpoint", "")?;
     assert!(!persisted.is_empty());
     processor.deps.event_bus.take_events_for_test();
 
@@ -2084,7 +2102,7 @@ fn a_scan_without_events_keeps_the_persisted_checkpoint_and_the_database_idle() 
     )])?;
 
     assert_eq!(
-        store.get_string("gameLogReplayCheckpoint", "")?,
+        store.config.get_string("gameLogReplayCheckpoint", "")?,
         persisted,
         "a poll over log lines that parse to nothing must not rewrite the checkpoint"
     );
@@ -2224,9 +2242,11 @@ fn video_notifications_use_enriched_activity_and_respect_replay_and_surface_filt
         (false, false, false),
     ] {
         let (_dir, store, mut processor) = test_processor("video-notification-channel")?;
-        store.set_bool("youtubeAPI", true)?;
-        store.set_string("youtubeAPIKey", "test-key")?;
-        store.set_bool("gameLogDisabled", persistence_disabled)?;
+        store.config.set_bool("youtubeAPI", true)?;
+        store.config.set_string("youtubeAPIKey", "test-key")?;
+        store
+            .config
+            .set_bool("gameLogDisabled", persistence_disabled)?;
         processor.deps.video_metadata = Arc::new(VideoMetadataFixture);
         processor.deps.auth_scope.set("usr_video_owner", "");
         processor.deps.tasks.set_executor(InlineVideoTaskExecutor);
@@ -2322,8 +2342,8 @@ impl crate::VideoMetadataPort for ScopeChangingVideoMetadata {
 fn video_notifications_discard_metadata_completed_after_auth_scope_changes() -> Result<()> {
     for next_user_id in ["", "usr_other", "usr_video_owner"] {
         let (_dir, store, mut processor) = test_processor("video-notification-auth-scope")?;
-        store.set_bool("youtubeAPI", true)?;
-        store.set_string("youtubeAPIKey", "test-key")?;
+        store.config.set_bool("youtubeAPI", true)?;
+        store.config.set_string("youtubeAPIKey", "test-key")?;
         processor.deps.auth_scope.set("usr_video_owner", "");
         processor.deps.tasks.set_executor(InlineVideoTaskExecutor);
         processor.deps.video_metadata = Arc::new(ScopeChangingVideoMetadata {

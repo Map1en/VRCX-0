@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 use serde_json::Value;
 use tokio::sync::{broadcast, watch};
 use vrcx_0_application_core::{
-    ActivityIngress, FileCache, HostSessionRuntime, InstanceDwellRegistry,
+    ActivityIngress, ConfigStore, FileCache, HostSessionRuntime, InstanceDwellRegistry,
     LocalGameContextSnapshot, LocalGameContextSource, PrintCleanupInputSink,
     RealtimeNotificationProjectionObserver, RemoteMutationGate, RuntimeAuthScope, RuntimeEventBus,
     RuntimeSyncEngine, TaskSupervisor, WebClient, WorldCache,
@@ -216,6 +216,7 @@ impl RealtimeStopRequest {
 #[derive(Clone)]
 pub struct RealtimeHostRuntimeDeps {
     pub(crate) store: Arc<dyn crate::RealtimeStore>,
+    pub(crate) config: Arc<dyn ConfigStore>,
     pub(crate) transport: Arc<dyn crate::realtime::RealtimeTransport>,
     pub(crate) remote_requests: Arc<dyn crate::RealtimeRemoteRequests>,
     pub(crate) web: Arc<WebClient>,
@@ -241,6 +242,7 @@ impl RealtimeHostRuntimeDeps {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         store: Arc<dyn crate::RealtimeStore>,
+        config: Arc<dyn ConfigStore>,
         transport: Arc<dyn crate::realtime::RealtimeTransport>,
         remote_requests: Arc<dyn crate::RealtimeRemoteRequests>,
         web: Arc<WebClient>,
@@ -263,6 +265,7 @@ impl RealtimeHostRuntimeDeps {
     ) -> Self {
         Self {
             store,
+            config,
             transport,
             remote_requests,
             web,

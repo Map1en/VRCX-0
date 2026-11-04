@@ -75,6 +75,7 @@ pub(in crate::state) struct BackgroundTickContext<'a> {
     pub(in crate::state) realtime_runtime: &'a Arc<RealtimeHostRuntime>,
     pub(in crate::state) host_session: &'a HostSessionRuntime,
     pub(in crate::state) config: &'a ConfigRepository,
+    pub(in crate::state) config_store: &'a Arc<dyn vrcx_0_application_core::ConfigStore>,
     pub(in crate::state) auth_scope: &'a RuntimeAuthScope,
     pub(in crate::state) remote_mutations: &'a Arc<RemoteMutationGate>,
     pub(in crate::state) event_bus: &'a RuntimeEventBus,

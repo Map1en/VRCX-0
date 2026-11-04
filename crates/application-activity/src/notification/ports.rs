@@ -1,14 +1,6 @@
 use std::{future::Future, pin::Pin};
 
 use serde_json::Value;
-use vrcx_0_application_core::Result;
-
-pub trait NotificationConfig: Send + Sync {
-    fn get_raw(&self, key: &str) -> Result<Option<String>>;
-    fn get_bool(&self, key: &str, default_value: bool) -> Result<bool>;
-    fn get_string(&self, key: &str, default_value: &str) -> Result<String>;
-    fn set_json(&self, key: &str, value: &Value) -> Result<()>;
-}
 
 pub type NotificationRemoteFuture<'a, T> = Pin<Box<dyn Future<Output = Option<T>> + Send + 'a>>;
 

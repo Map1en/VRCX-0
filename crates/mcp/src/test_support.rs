@@ -640,7 +640,7 @@ fn test_runtime_with_database_and_event_bus(
     let dir = TestDir::new(name);
     let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
     ensure_game_log_tables(db.as_ref())?;
-    let storage = StorageService::new(&dir.path.join("storage.json"))?;
+    let storage = Arc::new(StorageService::new(&dir.path.join("storage.json"))?);
     let web = Arc::new(WebClient::new(
         vrcx_0_outbound_adapters::LocalWebClientAdapter::new(
             &storage,
@@ -702,6 +702,10 @@ fn test_runtime_with_database_and_event_bus(
         ));
     let realtime_runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps::new(
         realtime_store,
+        Arc::new(vrcx_0_outbound_adapters::LocalConfigStore::new(
+            Arc::clone(&db),
+            Arc::clone(&storage),
+        )),
         realtime_transport,
         Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests),
         Arc::clone(&web),

@@ -24,6 +24,7 @@ pub(crate) fn build_game_log_runtime(
     let context = builder.desktop_assembly();
     let game_log_observer: Arc<dyn GameLogSideEffectObserver> = wiring.services.clone();
     Arc::new(GameLogHostRuntime::new(GameLogHostRuntimeDeps {
+        config: context.config_store(),
         db: Arc::clone(context.database()),
         web: Arc::clone(context.web_client()),
         image_cache: Arc::clone(context.image_cache()),
@@ -60,6 +61,7 @@ pub(crate) fn build_game_runtime(
     );
     let game_client_runtime = Arc::new(GameClientHostRuntime::new(GameClientHostRuntimeDeps {
         db: Arc::clone(context.database()),
+        config: context.config_store(),
         event_bus: context.event_bus().clone(),
         tasks: context.tasks().clone(),
         session: context.session().clone(),

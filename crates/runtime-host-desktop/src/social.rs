@@ -12,7 +12,7 @@ use vrcx_0_application::social::{
     SocialMutationDeps, SocialUnfriendBatchInput, SocialUnfriendBatchResult,
 };
 use vrcx_0_application_core::{
-    RemoteMutationGate, RuntimeAuthScope, RuntimeDiagnostics, RuntimeEventBus,
+    ConfigStore, RemoteMutationGate, RuntimeAuthScope, RuntimeDiagnostics, RuntimeEventBus,
     RuntimeOperationStatus, RuntimeSyncEngine, WebClient, WorldCache,
 };
 use vrcx_0_application_realtime::{
@@ -28,6 +28,7 @@ use crate::Result;
 pub struct DesktopSocialRuntime {
     db: Arc<DatabaseService>,
     realtime_store: Arc<vrcx_0_outbound_adapters::PersistenceRealtimeStore>,
+    config: Arc<dyn ConfigStore>,
     media_upload_adapter: vrcx_0_outbound_adapters::LocalMediaUploadAdapter,
     moderation_sync_store: vrcx_0_outbound_adapters::LocalModerationSyncStore,
     web: Arc<WebClient>,
@@ -47,6 +48,7 @@ impl DesktopSocialRuntime {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         db: Arc<DatabaseService>,
+        config: Arc<dyn ConfigStore>,
         web: Arc<WebClient>,
         auth_scope: RuntimeAuthScope,
         remote_mutations: Arc<RemoteMutationGate>,
@@ -67,6 +69,7 @@ impl DesktopSocialRuntime {
             vrcx_0_outbound_adapters::LocalModerationSyncStore::new(Arc::clone(&db));
         let remote = vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(&web));
         Self {
+            config,
             db,
             realtime_store,
             media_upload_adapter,
@@ -107,6 +110,7 @@ impl DesktopSocialRuntime {
     fn baseline_deps(&self) -> SocialBaselineDeps {
         SocialBaselineDeps::new(
             self.realtime_store.clone(),
+            Arc::clone(&self.config),
             Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests),
             Arc::clone(&self.web),
             self.auth_scope.clone(),

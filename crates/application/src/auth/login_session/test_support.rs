@@ -5,9 +5,10 @@ use serde_json::{json, Value};
 use vrcx_0_contracts::vrchat_api::vrchat_response;
 use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
-use crate::auth::test_support::{MemoryAuthCredentialStore, MemoryAuthSessionCookies};
+use crate::auth::test_support::MemoryAuthSessionCookies;
 use crate::auth::{record_login_success, AuthCredentialStore, LoginSuccessRecordInput};
 use vrcx_0_application_core::Error;
+use vrcx_0_application_core::MemoryConfigStore;
 
 use super::types::{LoginApi, LoginApiFuture, LoginRemoteOperation};
 
@@ -119,16 +120,9 @@ impl Drop for TestDir {
     }
 }
 
-pub(super) fn test_env(
-    name: &str,
-) -> (
-    TestDir,
-    MemoryAuthCredentialStore,
-    MemoryAuthSessionCookies,
-    (),
-) {
+pub(super) fn test_env(name: &str) -> (TestDir, MemoryConfigStore, MemoryAuthSessionCookies, ()) {
     let dir = TestDir::new(name);
-    let config = MemoryAuthCredentialStore::default();
+    let config = MemoryConfigStore::default();
     let web = MemoryAuthSessionCookies::default();
     (dir, config, web, ())
 }

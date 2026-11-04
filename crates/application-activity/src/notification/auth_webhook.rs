@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use vrcx_0_application_core::ConfigStore;
 
 use serde_json::{json, Value};
 use vrcx_0_application_core::{
@@ -9,8 +10,8 @@ use vrcx_0_application_core::{
 use super::webhook::{discord_webhook_url_with_wait, wait_for_webhook_stop};
 use super::webhook_delivery::{WebhookDeliveryChannel, WebhookDeliveryMonitor};
 use super::{
-    send_json_webhook_with_retry, webhook_local_time_string, NotificationConfig,
-    NotificationWebhookFormat, NotificationWebhookTransport,
+    send_json_webhook_with_retry, webhook_local_time_string, NotificationWebhookFormat,
+    NotificationWebhookTransport,
 };
 
 const AUTH_WEBHOOK_ENABLED_CONFIG_KEY: &str = "webhookAuthEventsEnabled";
@@ -39,14 +40,14 @@ struct AuthWebhookJob {
 }
 
 struct AuthWebhookWorkerDeps {
-    config: Arc<dyn NotificationConfig>,
+    config: Arc<dyn ConfigStore>,
     webhook_transport: Arc<dyn NotificationWebhookTransport>,
     diagnostics: RuntimeDiagnostics,
     monitor: WebhookDeliveryMonitor,
 }
 
 pub struct AuthWebhookQueueDeps {
-    pub config: Arc<dyn NotificationConfig>,
+    pub config: Arc<dyn ConfigStore>,
     pub webhook_transport: Arc<dyn NotificationWebhookTransport>,
     pub diagnostics: RuntimeDiagnostics,
     pub monitor: WebhookDeliveryMonitor,
@@ -121,7 +122,7 @@ pub fn auth_webhook_should_recover(snapshot: &BackendRuntimeSnapshot) -> bool {
         && !snapshot.auth_user_id.trim().is_empty()
 }
 
-pub fn auth_webhook_is_enabled(config: &dyn NotificationConfig) -> bool {
+pub fn auth_webhook_is_enabled(config: &dyn ConfigStore) -> bool {
     config
         .get_bool(AUTH_WEBHOOK_ENABLED_CONFIG_KEY, true)
         .unwrap_or(true)
@@ -132,10 +133,7 @@ pub fn auth_webhook_is_enabled(config: &dyn NotificationConfig) -> bool {
             .is_empty()
 }
 
-fn auth_webhook_job(
-    config: &dyn NotificationConfig,
-    event: &AuthWebhookEvent,
-) -> Option<AuthWebhookJob> {
+fn auth_webhook_job(config: &dyn ConfigStore, event: &AuthWebhookEvent) -> Option<AuthWebhookJob> {
     if !auth_webhook_is_enabled(config) {
         return None;
     }

@@ -5,7 +5,7 @@ use vrcx_0_application_core::RuntimeOperationStatus;
 
 use serde_json::{json, Value};
 use vrcx_0_application_core::{
-    AuthenticatedMutationContext, Error, LocalGameContextSnapshot, Result,
+    AuthenticatedMutationContext, ConfigStore, Error, LocalGameContextSnapshot, Result,
 };
 use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_core::json::JsonExt;
@@ -61,7 +61,7 @@ impl RealtimeHostRuntime {
     ) -> Vec<FriendRequestAutoDecline> {
         let enabled = match self
             .deps
-            .store
+            .config
             .get_bool(AUTO_DECLINE_FRIEND_REQUESTS_CONFIG_KEY, false)
         {
             Ok(enabled) => enabled,
@@ -228,7 +228,7 @@ impl RealtimeHostRuntime {
         cooldown: CooldownView,
         now_ms: i64,
     ) -> Result<bool> {
-        let config = load_invite_automation_config(self.deps.store.as_ref())?;
+        let config = load_invite_automation_config(self.deps.config.as_ref())?;
         let location = self.current_invite_location_facts(&session);
         if let Err(reason) = context_gates(&config, &location) {
             self.record_invite_automation_skip(reason);
@@ -394,6 +394,7 @@ impl RealtimeHostRuntime {
         let output = build_favorites_baseline_from_friend_records(
             SocialBaselineDeps {
                 store: Arc::clone(&self.deps.store),
+                config: Arc::clone(&self.deps.config),
                 remote_requests: Arc::clone(&self.deps.remote_requests),
                 web: Arc::clone(&self.deps.web),
                 auth_scope: self.deps.auth_scope.clone(),
@@ -497,17 +498,15 @@ pub(super) fn notification_facts(notification: &Value) -> InviteNotificationFact
     }
 }
 
-fn load_invite_automation_config(
-    store: &dyn crate::RealtimeStore,
-) -> Result<InviteAutomationConfig> {
+fn load_invite_automation_config(config: &dyn ConfigStore) -> Result<InviteAutomationConfig> {
     let mode =
-        normalize_invite_automation_mode(&store.get_string("autoAcceptInviteRequests", "Off")?);
+        normalize_invite_automation_mode(&config.get_string("autoAcceptInviteRequests", "Off")?);
     Ok(InviteAutomationConfig {
         mode,
-        selected_groups: config_string_list(store, "autoAcceptInviteGroups")?,
-        allowed_statuses: config_string_list(store, "autoAcceptInviteStatuses")?,
+        selected_groups: config_string_list(config, "autoAcceptInviteGroups")?,
+        allowed_statuses: config_string_list(config, "autoAcceptInviteStatuses")?,
         message_slot: normalize_invite_message_slot(
-            &store.get_string("autoAcceptInviteMessageSlot", "")?,
+            &config.get_string("autoAcceptInviteMessageSlot", "")?,
         ),
     })
 }
@@ -530,8 +529,8 @@ fn invite_automation_send_body(
     body
 }
 
-fn config_string_list(store: &dyn crate::RealtimeStore, key: &str) -> Result<Vec<String>> {
-    Ok(store
+fn config_string_list(config: &dyn ConfigStore, key: &str) -> Result<Vec<String>> {
+    Ok(config
         .get_json(key, json!([]))?
         .as_array()
         .into_iter()

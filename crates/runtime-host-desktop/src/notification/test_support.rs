@@ -1,6 +1,7 @@
 use std::{path::PathBuf, sync::Arc};
 
-use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
+use vrcx_0_outbound_adapters::LocalConfigStore;
+use vrcx_0_persistence::{config::ConfigRepository, storage::StorageService, DatabaseService};
 
 pub(crate) struct TestDir(PathBuf);
 
@@ -26,7 +27,16 @@ impl Drop for TestDir {
 }
 
 pub(crate) fn test_config(name: &str) -> (TestDir, ConfigRepository) {
+    let (dir, config, _) = test_config_with_store(name);
+    (dir, config)
+}
+
+pub(crate) fn test_config_with_store(
+    name: &str,
+) -> (TestDir, ConfigRepository, Arc<LocalConfigStore>) {
     let dir = TestDir::new(name);
     let db = Arc::new(DatabaseService::new(&dir.0.join("VRCX-0.sqlite3")).unwrap());
-    (dir, ConfigRepository::new(db))
+    let storage = Arc::new(StorageService::new(&dir.0.join("storage.json")).unwrap());
+    let config_store = Arc::new(LocalConfigStore::new(Arc::clone(&db), storage));
+    (dir, ConfigRepository::new(db), config_store)
 }

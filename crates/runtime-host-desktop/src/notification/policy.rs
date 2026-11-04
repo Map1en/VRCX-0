@@ -2,9 +2,8 @@ use std::sync::{Arc, Mutex, Weak};
 
 use vrcx_0_application_activity::notification::{load_notification_locale, OverlayLocale};
 use vrcx_0_application_activity::ActivityDelivery;
-use vrcx_0_application_core::HostSessionRuntime;
+use vrcx_0_application_core::{ConfigStore, HostSessionRuntime};
 use vrcx_0_application_realtime::RealtimeHostRuntime;
-use vrcx_0_outbound_adapters::LocalNotificationConfig;
 use vrcx_0_persistence::config::ConfigRepository;
 
 use crate::game_isolation::GameIsolationRuntime;
@@ -26,10 +25,10 @@ pub(crate) struct NotificationSettings {
 }
 
 impl NotificationSettings {
-    fn load(config: &ConfigRepository) -> Self {
+    fn load(config: &ConfigRepository, config_store: &dyn ConfigStore) -> Self {
         Self {
             preferences: load_preferences(config),
-            locale: load_notification_locale(&LocalNotificationConfig::new(config.clone())),
+            locale: load_notification_locale(config_store),
             busy_status_do_not_disturb: config
                 .get_bool(BUSY_STATUS_DO_NOT_DISTURB_CONFIG_KEY, true)
                 .unwrap_or(true),
@@ -42,6 +41,7 @@ impl NotificationSettings {
 
 pub(crate) struct LocalNotificationPolicy {
     config: ConfigRepository,
+    config_store: Arc<dyn ConfigStore>,
     session: HostSessionRuntime,
     do_not_disturb: NotificationDoNotDisturbRuntime,
     privacy_lock: Arc<PrivacyLockRuntime>,
@@ -53,6 +53,7 @@ pub(crate) struct LocalNotificationPolicy {
 impl LocalNotificationPolicy {
     pub(crate) fn new(
         config: ConfigRepository,
+        config_store: Arc<dyn ConfigStore>,
         session: HostSessionRuntime,
         do_not_disturb: NotificationDoNotDisturbRuntime,
         privacy_lock: Arc<PrivacyLockRuntime>,
@@ -60,6 +61,7 @@ impl LocalNotificationPolicy {
     ) -> Self {
         Self {
             config,
+            config_store,
             session,
             do_not_disturb,
             privacy_lock,
@@ -84,7 +86,10 @@ impl LocalNotificationPolicy {
                 }
             }
         }
-        let settings = Arc::new(NotificationSettings::load(&self.config));
+        let settings = Arc::new(NotificationSettings::load(
+            &self.config,
+            self.config_store.as_ref(),
+        ));
         if let Ok(mut cached) = self.settings.lock() {
             *cached = Some((generation, Arc::clone(&settings)));
         }

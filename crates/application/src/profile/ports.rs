@@ -1,12 +1,7 @@
-use serde_json::Value;
-use vrcx_0_application_core::Result;
+use vrcx_0_application_core::{ConfigStore, Result};
 use vrcx_0_contracts::{ConfigMutation, ConfigReadEntry, ConfigWriteEntry};
 
-pub trait ProfileConfigStore: Send + Sync {
-    fn get_raw(&self, key: &str) -> Result<Option<String>>;
-    fn get_bool(&self, key: &str, default_value: bool) -> Result<bool>;
-    fn get_string(&self, key: &str, default_value: &str) -> Result<String>;
-    fn get_json(&self, key: &str, default_value: Value) -> Result<Value>;
+pub trait ProfileConfigStore: ConfigStore {
     fn apply_mutations(&self, mutations: Vec<ConfigMutation>) -> Result<()>;
     fn list_values(&self) -> Result<Vec<ConfigReadEntry>>;
     fn set_values(&self, entries: Vec<ConfigWriteEntry>) -> Result<()>;

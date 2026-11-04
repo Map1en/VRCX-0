@@ -1,49 +1,9 @@
-use std::sync::Arc;
-
 use vrcx_0_application::auth::{AuthCredentialStore, SealedAuthSecret};
-use vrcx_0_application_core::Result;
-use vrcx_0_persistence::{config::ConfigRepository, secrets, DatabaseService};
+use vrcx_0_persistence::secrets;
 
-#[derive(Clone)]
-pub struct LocalAuthCredentialStore {
-    config: ConfigRepository,
-}
+use crate::LocalConfigStore;
 
-impl LocalAuthCredentialStore {
-    pub fn new(db: Arc<DatabaseService>) -> Self {
-        Self {
-            config: ConfigRepository::new(db),
-        }
-    }
-
-    pub fn from_repository(config: ConfigRepository) -> Self {
-        Self { config }
-    }
-}
-
-impl AuthCredentialStore for LocalAuthCredentialStore {
-    fn get_raw(&self, key: &str) -> Result<Option<String>> {
-        self.config.get_raw(key).map_err(Into::into)
-    }
-
-    fn get_string(&self, key: &str, default_value: &str) -> Result<String> {
-        self.config
-            .get_string(key, default_value)
-            .map_err(Into::into)
-    }
-
-    fn get_bool(&self, key: &str, default_value: bool) -> Result<bool> {
-        self.config.get_bool(key, default_value).map_err(Into::into)
-    }
-
-    fn set_string(&self, key: &str, value: &str) -> Result<()> {
-        self.config.set_string(key, value).map_err(Into::into)
-    }
-
-    fn remove(&self, key: &str) -> Result<()> {
-        self.config.remove(key).map_err(Into::into)
-    }
-
+impl AuthCredentialStore for LocalConfigStore {
     fn is_encrypting_writes(&self) -> bool {
         secrets::is_encrypting_writes()
     }

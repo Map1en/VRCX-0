@@ -10,6 +10,7 @@ mod background_group_remote;
 mod background_image_remote;
 mod collections;
 mod community_theme_remote;
+mod config_store;
 mod current_user_mutation_remote;
 mod data_dir_migration;
 mod favorite_remote_requests;
@@ -34,7 +35,6 @@ mod notification_sync;
 mod prints;
 mod profile_backup;
 mod profile_bio;
-mod profile_config;
 mod profile_database_upgrade;
 mod proxy_connectivity;
 mod quick_search;
@@ -61,7 +61,6 @@ mod ws_event_log;
 
 pub use activity_page::LocalActivityPageStore;
 pub use activity_warmup::{LocalActivityPageWarmupStore, LocalActivitySessionWarmupStore};
-pub use auth_credentials::LocalAuthCredentialStore;
 pub use authenticated_runtime::{
     LocalAuthenticatedRuntimeLifecycleTrail, VrchatAuthenticatedRuntimeAuthProbe,
 };
@@ -73,6 +72,7 @@ pub use background_group_remote::VrchatBackgroundGroupRemote;
 pub use background_image_remote::ExternalBackgroundImageRemote;
 pub use collections::{LocalSharedCollectionImportActionsFactory, LocalWorldCollectionAdapter};
 pub use community_theme_remote::ExternalCommunityThemeRemote;
+pub use config_store::LocalConfigStore;
 pub use current_user_mutation_remote::VrchatCurrentUserMutationRemote;
 pub use data_dir_migration::LocalDataDirMigrationPort;
 pub use favorite_remote_requests::VrchatFavoriteRemote;
@@ -92,15 +92,14 @@ pub use mutual_graph::LocalMutualGraphStore;
 pub use noninteractive_auth::LocalNonInteractiveAuthActions;
 pub use notification_chains::LocalNotificationChainActions;
 pub use notification_delivery::{
-    LocalNotificationConfig, LocalNotificationWebhookTransport,
-    RealtimeNotificationUserImageResolver, VrchatNotificationRemote,
+    LocalNotificationWebhookTransport, RealtimeNotificationUserImageResolver,
+    VrchatNotificationRemote,
 };
 pub use notification_mark_seen::LocalNotificationMarkSeenActions;
 pub use notification_sync::LocalNotificationSyncAdapter;
 pub use prints::LocalPrintAdapter;
 pub use profile_backup::{LocalProfileBackupDeps, LocalProfileBackupPort};
 pub use profile_bio::LocalProfileBioStore;
-pub use profile_config::LocalProfileConfigStore;
 pub use profile_database_upgrade::LocalDatabaseUpgradeStore;
 pub use proxy_connectivity::ProxyConnectivityAdapter;
 pub use quick_search::LocalQuickSearchDetailStore;

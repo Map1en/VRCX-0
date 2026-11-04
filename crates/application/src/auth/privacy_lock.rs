@@ -191,12 +191,13 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::auth::test_support::{MemoryAuthCredentialStore, MemoryAuthSessionCookies};
+    use crate::auth::test_support::MemoryAuthSessionCookies;
     use crate::auth::{record_login_success, LoginSuccessRecordInput};
+    use vrcx_0_application_core::{ConfigStore, MemoryConfigStore};
 
     #[test]
     fn lock_state_survives_reload_and_only_unlock_clears_it() -> Result<()> {
-        let config = MemoryAuthCredentialStore::default();
+        let config = MemoryConfigStore::default();
         let mut store = PrivacyLockStore::load(&config)?;
         assert!(!store.engage(&config, "usr_1")?);
 
@@ -229,7 +230,7 @@ mod tests {
 
     #[test]
     fn change_password_requires_the_current_password() -> Result<()> {
-        let config = MemoryAuthCredentialStore::default();
+        let config = MemoryConfigStore::default();
         let mut store = PrivacyLockStore::load(&config)?;
         assert_eq!(
             store.change_password(&config, "usr_1", "1234", "5678")?,
@@ -253,7 +254,7 @@ mod tests {
 
     #[test]
     fn clear_removes_the_user_entry_and_the_config_row_when_empty() -> Result<()> {
-        let config = MemoryAuthCredentialStore::default();
+        let config = MemoryConfigStore::default();
         let mut store = PrivacyLockStore::load(&config)?;
         store.set_password(&config, "usr_1", "1234")?;
         store.engage(&config, "usr_1")?;
@@ -265,7 +266,7 @@ mod tests {
 
     #[test]
     fn empty_passwords_and_user_ids_are_rejected() -> Result<()> {
-        let config = MemoryAuthCredentialStore::default();
+        let config = MemoryConfigStore::default();
         let mut store = PrivacyLockStore::load(&config)?;
         assert!(store.set_password(&config, "usr_1", "").is_err());
         assert!(store.set_password(&config, "  ", "1234").is_err());
@@ -274,7 +275,7 @@ mod tests {
 
     #[test]
     fn unreadable_state_is_ignored_instead_of_failing() -> Result<()> {
-        let config = MemoryAuthCredentialStore::default();
+        let config = MemoryConfigStore::default();
         config.set_string(PRIVACY_LOCK_KEY, "not json")?;
         let store = PrivacyLockStore::load(&config)?;
         assert_eq!(store.record("usr_1"), PrivacyLockRecord::default());
@@ -283,7 +284,7 @@ mod tests {
 
     #[test]
     fn saved_account_password_check_reports_availability() -> Result<()> {
-        let config = MemoryAuthCredentialStore::default();
+        let config = MemoryConfigStore::default();
         let cookies = MemoryAuthSessionCookies::default();
         assert_eq!(
             verify_saved_account_password(&config, "usr_1", "secret")?,

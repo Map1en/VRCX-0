@@ -1562,11 +1562,11 @@ fn pending_baseline_trust_feed_projects_once_after_start_without_rewriting() -> 
         let mut state = runtime.runtime().state.lock().unwrap();
         state.connection.active_context = None;
     }
-    config_store::set_bool(
-        runtime.runtime().deps.store.as_ref(),
-        "friendLogInit_usr_self",
-        true,
-    )?;
+    runtime
+        .runtime()
+        .deps
+        .config
+        .set_bool("friendLogInit_usr_self", true)?;
     write_realtime_batch(
         runtime.runtime().deps.store.as_ref(),
         &OwnerId::new("usr_self"),

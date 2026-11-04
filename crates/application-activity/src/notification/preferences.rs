@@ -1,5 +1,5 @@
-use super::NotificationConfig;
 use serde::{Deserialize, Serialize};
+use vrcx_0_application_core::ConfigStore;
 
 use super::generic_webhook::{default_webhook_fields, is_default_webhook_field};
 
@@ -28,9 +28,7 @@ pub(super) struct NotificationWebhookPreferences {
     pub show_instance_id_in_location: bool,
 }
 
-pub(super) fn load_webhook_preferences(
-    config: &dyn NotificationConfig,
-) -> NotificationWebhookPreferences {
+pub(super) fn load_webhook_preferences(config: &dyn ConfigStore) -> NotificationWebhookPreferences {
     NotificationWebhookPreferences {
         enabled: config_bool(config, "webhookEnabled", false),
         url: config_string(config, "webhookUrl", ""),
@@ -44,13 +42,13 @@ pub(super) fn load_webhook_preferences(
     }
 }
 
-fn config_string(config: &dyn NotificationConfig, key: &str, default_value: &str) -> String {
+fn config_string(config: &dyn ConfigStore, key: &str, default_value: &str) -> String {
     config
         .get_string(key, default_value)
         .unwrap_or_else(|_| default_value.to_string())
 }
 
-pub fn config_bool(config: &dyn NotificationConfig, key: &str, default_value: bool) -> bool {
+pub fn config_bool(config: &dyn ConfigStore, key: &str, default_value: bool) -> bool {
     config.get_bool(key, default_value).unwrap_or(default_value)
 }
 

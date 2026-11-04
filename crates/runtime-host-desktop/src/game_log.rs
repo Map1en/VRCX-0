@@ -7,9 +7,9 @@ use vrcx_0_application_activity::ActivityRouter;
 use vrcx_0_application_core::Error as RuntimeError;
 use vrcx_0_application_core::Result as RuntimeResult;
 use vrcx_0_application_core::{
-    BackendRuntimeStatusPublisher, GameProcessEvent, GameProcessEventSink, HostSessionRuntime,
-    ImageCache, InstanceRosterObserver, RuntimeAuthScope, RuntimeEventBus, RuntimeSyncEngine,
-    TaskSupervisor, WebClient, WorldCache,
+    BackendRuntimeStatusPublisher, ConfigStore, GameProcessEvent, GameProcessEventSink,
+    HostSessionRuntime, ImageCache, InstanceRosterObserver, RuntimeAuthScope, RuntimeEventBus,
+    RuntimeSyncEngine, TaskSupervisor, WebClient, WorldCache,
 };
 use vrcx_0_application_game::{
     GameLogHostActions, GameLogRuntime, GameLogRuntimeDeps, GameLogSideEffectSink,
@@ -91,6 +91,7 @@ pub struct GameLogHostRuntime {
 }
 
 pub struct GameLogHostRuntimeDeps {
+    pub config: Arc<dyn ConfigStore>,
     pub db: Arc<DatabaseService>,
     pub web: Arc<WebClient>,
     pub image_cache: Arc<ImageCache>,
@@ -126,6 +127,7 @@ impl GameLogHostRuntime {
             Arc::new(crate::game_state_store::PersistenceGameStateStore::new(
                 Arc::clone(&deps.db),
             )),
+            deps.config,
             instance_media,
             video_metadata,
             deps.event_bus,

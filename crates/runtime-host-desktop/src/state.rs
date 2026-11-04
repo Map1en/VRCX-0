@@ -105,7 +105,7 @@ pub(crate) fn build_desktop_runtime_services_deps(
         web: Arc::clone(context.web_client()),
         image_cache: Arc::clone(context.image_cache()),
         config: context.config().clone(),
-        notification_config: context.notification_config(),
+        config_store: context.config_store(),
         notification_resolver: context.notification_resolver(),
         auth_credentials: context.auth_credentials_shared(),
         auth_scope: context.auth_scope().clone(),
@@ -698,11 +698,9 @@ impl DesktopRuntimeHostState {
             .desktop_assembly()
             .favorite_mutations()
             .rename_local_group(kind, group_name.clone(), new_group_name.clone())?;
-        let store = crate::game_state_store::PersistenceGameStateStore::new(Arc::clone(
-            self.runtime.database(),
-        ));
+        let config = self.runtime.desktop_assembly().config_store();
         vrcx_0_application_game::presence_automation_local_group_renamed(
-            &store,
+            config.as_ref(),
             kind,
             &group_name,
             &new_group_name,
@@ -1044,9 +1042,10 @@ impl DesktopRuntimeHostState {
         &self,
         input: vrcx_0_application::discovery::TranslationTranslateInput,
     ) -> Result<vrcx_0_application::discovery::TranslationDispatch> {
+        let config = self.runtime.desktop_assembly().config_store();
         Ok(vrcx_0_application::discovery::translate_text(
             vrcx_0_application::discovery::TranslationDeps {
-                config: &self.translation,
+                config: config.as_ref(),
                 standard_translation: &self.translation,
             },
             input,
@@ -1057,7 +1056,7 @@ impl DesktopRuntimeHostState {
     pub fn resolved_openai_translation_endpoint_id(&self) -> Result<String> {
         Ok(
             vrcx_0_application::discovery::resolved_openai_translation_endpoint_id(
-                &self.translation,
+                self.runtime.desktop_assembly().config_store().as_ref(),
             )?,
         )
     }
@@ -1332,11 +1331,10 @@ impl DesktopRuntimeHostState {
         &self,
         kind: PresenceAutomationRuleKind,
     ) -> Result<Vec<RawJson>> {
-        let store = crate::game_state_store::PersistenceGameStateStore::new(Arc::clone(
-            self.runtime.database(),
-        ));
+        let config = self.runtime.desktop_assembly().config_store();
         Ok(vrcx_0_application_game::presence_automation_rules_get(
-            &store, kind,
+            config.as_ref(),
+            kind,
         )?)
     }
 
@@ -1345,11 +1343,11 @@ impl DesktopRuntimeHostState {
         kind: PresenceAutomationRuleKind,
         rules: Vec<RawJson>,
     ) -> Result<Vec<RawJson>> {
-        let store = crate::game_state_store::PersistenceGameStateStore::new(Arc::clone(
-            self.runtime.database(),
-        ));
+        let config = self.runtime.desktop_assembly().config_store();
         Ok(vrcx_0_application_game::presence_automation_rules_set(
-            &store, kind, rules,
+            config.as_ref(),
+            kind,
+            rules,
         )?)
     }
 
@@ -1359,12 +1357,13 @@ impl DesktopRuntimeHostState {
         rule_id: &str,
         enabled: bool,
     ) -> Result<Vec<RawJson>> {
-        let store = crate::game_state_store::PersistenceGameStateStore::new(Arc::clone(
-            self.runtime.database(),
-        ));
+        let config = self.runtime.desktop_assembly().config_store();
         Ok(
             vrcx_0_application_game::presence_automation_rule_enabled_set(
-                &store, kind, rule_id, enabled,
+                config.as_ref(),
+                kind,
+                rule_id,
+                enabled,
             )?,
         )
     }
@@ -1701,12 +1700,10 @@ impl DesktopRuntimeHostState {
     }
 
     pub fn acknowledge_registry_backup_restore_prompt(&self, backup_date: &str) -> Result<String> {
-        let store = crate::game_state_store::PersistenceGameStateStore::new(Arc::clone(
-            self.runtime.database(),
-        ));
+        let config = self.runtime.desktop_assembly().config_store();
         Ok(
             vrcx_0_application_game::registry_backup_restore_prompt_acknowledge(
-                &store,
+                config.as_ref(),
                 backup_date,
             )?,
         )
@@ -1884,7 +1881,7 @@ impl DesktopRuntimeHostState {
 
     pub fn registry_backup(&self) -> RegistryBackupRuntime {
         RegistryBackupRuntime {
-            database: Arc::clone(self.runtime.database()),
+            config: self.runtime.desktop_assembly().config_store(),
             state: Arc::clone(&self.extension.registry_backup_state),
         }
     }
@@ -1892,7 +1889,7 @@ impl DesktopRuntimeHostState {
 
 #[derive(Clone)]
 pub struct RegistryBackupRuntime {
-    database: Arc<vrcx_0_persistence::DatabaseService>,
+    config: Arc<dyn vrcx_0_application_core::ConfigStore>,
     state: Arc<Mutex<RegistryBackupMaintenanceState>>,
 }
 
@@ -1939,14 +1936,14 @@ impl RegistryBackupRuntime {
         mode: RegistryBackupMaintenanceMode,
     ) -> Result<RegistryBackupMaintenanceResult> {
         let mut state = self.acquire_lock()?;
-        let store = self.store();
+        let store = self.config.as_ref();
         Ok(run_coordinated_registry_backup_maintenance(
             &mut state,
             Instant::now(),
             mode,
             || {
                 vrcx_0_application_game::registry_backup_maintenance_run(
-                    &store,
+                    store,
                     &HostRegistryBackupActions,
                     mode,
                     reason,
@@ -1954,26 +1951,21 @@ impl RegistryBackupRuntime {
             },
             || {
                 vrcx_0_application_game::registry_backup_foreground_followup(
-                    &store,
+                    store,
                     &HostRegistryBackupActions,
                 )
             },
         )?)
     }
 
-    fn store(&self) -> crate::game_state_store::PersistenceGameStateStore {
-        crate::game_state_store::PersistenceGameStateStore::new(Arc::clone(&self.database))
-    }
-
     fn with_store<T>(
         &self,
         operation: impl FnOnce(
-            &crate::game_state_store::PersistenceGameStateStore,
+            &dyn vrcx_0_application_core::ConfigStore,
         ) -> vrcx_0_application_core::Result<T>,
     ) -> Result<T> {
-        let store = self.store();
         let _guard = self.acquire_lock()?;
-        Ok(operation(&store)?)
+        Ok(operation(self.config.as_ref())?)
     }
 
     fn acquire_lock(&self) -> Result<MutexGuard<'_, RegistryBackupMaintenanceState>> {
@@ -2240,13 +2232,12 @@ impl DesktopRuntimeProfileExtension {
             RuntimeOperationStatus::Scheduled,
             "Registry backup maintenance is scheduled for background mode.",
         );
-        let db = Arc::clone(state.database());
         let backend_runtime = state.backend_runtime().clone();
         let desktop_assembly = state.desktop_assembly().clone();
         let background_jobs = state.desktop_assembly().background_jobs().clone();
         let running = Arc::clone(&self.registry_backup_maintenance_running);
         let registry_backup_state = Arc::clone(&self.registry_backup_state);
-        let store = crate::game_state_store::PersistenceGameStateStore::new(db);
+        let store = state.desktop_assembly().config_store();
         state.desktop_assembly().tasks().spawn_cancellable_thread(
             "registry-backup-maintenance",
             move |stop_token| {
@@ -2269,7 +2260,7 @@ impl DesktopRuntimeProfileExtension {
                             RegistryBackupMaintenanceMode::Silent,
                             || {
                                 vrcx_0_application_game::registry_backup_maintenance_run(
-                                    &store,
+                                    store.as_ref(),
                                     &HostRegistryBackupActions,
                                     RegistryBackupMaintenanceMode::Silent,
                                     "background-mode",
@@ -2277,7 +2268,7 @@ impl DesktopRuntimeProfileExtension {
                             },
                             || {
                                 vrcx_0_application_game::registry_backup_foreground_followup(
-                                    &store,
+                                    store.as_ref(),
                                     &HostRegistryBackupActions,
                                 )
                             },
@@ -2389,6 +2380,7 @@ impl DesktopRuntimeProfileExtension {
         let authenticated_runtime = state.authenticated_runtime().clone();
         let host_session = state.desktop_assembly().session().clone();
         let config = state.desktop_assembly().config().clone();
+        let config_store = state.desktop_assembly().config_store();
         let auth_scope = state.desktop_assembly().auth_scope().clone();
         let remote_mutations = Arc::clone(state.desktop_assembly().remote_mutations());
         let event_bus = state.desktop_assembly().event_bus().clone();
@@ -2459,6 +2451,7 @@ impl DesktopRuntimeProfileExtension {
                         realtime_runtime: &realtime_runtime,
                         host_session: &host_session,
                         config: &config,
+                        config_store: &config_store,
                         auth_scope: &auth_scope,
                         remote_mutations: &remote_mutations,
                         event_bus: &event_bus,

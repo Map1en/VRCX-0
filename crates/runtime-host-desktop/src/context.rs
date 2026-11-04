@@ -4,11 +4,11 @@ use vrcx_0_application::auth::AuthCredentialStore;
 use vrcx_0_application_activity::notification::{
     extract_file_version, fallback_file_version, reload_activity_router,
     rename_local_favorite_group_in_activity_filters, CachedNotificationUserImageResolver,
-    NotificationConfig, NotificationRemoteFuture, NotificationResolver,
+    NotificationRemoteFuture, NotificationResolver,
 };
 use vrcx_0_application_activity::{ActivityRouter, ActivitySink, ActivitySinkRegistry};
 use vrcx_0_application_core::{
-    FriendProjection, HostSessionRuntime, ImageCache,
+    ConfigStore, FriendProjection, HostSessionRuntime, ImageCache,
     RealtimeNotificationProjectionObserverRegistry, RuntimeAuthScope, RuntimeEventBus,
     TaskSupervisor, WebClient, WorldCache,
 };
@@ -41,7 +41,7 @@ pub(crate) struct DesktopRuntimeServicesDeps {
     pub web: Arc<WebClient>,
     pub image_cache: Arc<ImageCache>,
     pub config: ConfigRepository,
-    pub notification_config: Arc<dyn NotificationConfig>,
+    pub config_store: Arc<dyn ConfigStore>,
     pub notification_resolver: Arc<NotificationResolver>,
     pub auth_credentials: Arc<dyn AuthCredentialStore>,
     pub auth_scope: RuntimeAuthScope,
@@ -58,7 +58,7 @@ pub struct DesktopRuntimeServices {
     web: Arc<WebClient>,
     image_cache: Arc<ImageCache>,
     config: ConfigRepository,
-    notification_config: Arc<dyn NotificationConfig>,
+    config_store: Arc<dyn ConfigStore>,
     auth_scope: RuntimeAuthScope,
     session: HostSessionRuntime,
     world_cache: Arc<WorldCache>,
@@ -110,6 +110,7 @@ impl DesktopRuntimeServices {
         deps.auth_scope.add_observer(privacy_lock.clone());
         let notification_policy = Arc::new(LocalNotificationPolicy::new(
             deps.config.clone(),
+            Arc::clone(&deps.config_store),
             deps.session.clone(),
             notification_do_not_disturb.clone(),
             privacy_lock.clone(),
@@ -147,7 +148,7 @@ impl DesktopRuntimeServices {
             web: deps.web,
             image_cache: deps.image_cache,
             config: deps.config,
-            notification_config: deps.notification_config,
+            config_store: deps.config_store,
             auth_scope: deps.auth_scope,
             session: deps.session,
             world_cache: deps.world_cache,
@@ -177,7 +178,7 @@ impl DesktopRuntimeServices {
         new_group_name: &str,
     ) -> vrcx_0_application_core::Result<()> {
         rename_local_favorite_group_in_activity_filters(
-            self.notification_config.as_ref(),
+            self.config_store.as_ref(),
             group_name,
             new_group_name,
         )?;
@@ -186,7 +187,7 @@ impl DesktopRuntimeServices {
     }
 
     pub fn reload_overlay_activity_filters(&self) {
-        reload_activity_router(&self.activity_router, self.notification_config.as_ref());
+        reload_activity_router(&self.activity_router, self.config_store.as_ref());
     }
 
     pub fn set_overlay_activity_extra_sink(&self, extra_sink: Arc<dyn ActivitySink>) {

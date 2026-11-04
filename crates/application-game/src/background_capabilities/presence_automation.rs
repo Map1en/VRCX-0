@@ -11,7 +11,8 @@ use vrcx_0_application_core::{
 };
 use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 
-use crate::{BackgroundRemoteApi, GameStateStore, Result};
+use crate::{BackgroundRemoteApi, Result};
+use vrcx_0_application_core::ConfigStore;
 
 use super::presence_facts::BackgroundPresenceFacts;
 use super::shared::{parse_response_json, string_field};
@@ -100,7 +101,7 @@ pub enum PresenceAutomationRuleKind {
 }
 
 pub fn presence_automation_rules_get(
-    config: &dyn GameStateStore,
+    config: &dyn ConfigStore,
     kind: PresenceAutomationRuleKind,
 ) -> Result<Vec<RawJson>> {
     Ok(
@@ -114,7 +115,7 @@ pub fn presence_automation_rules_get(
 static PRESENCE_RULES_WRITE: Mutex<()> = Mutex::new(());
 
 pub fn presence_automation_rules_set(
-    config: &dyn GameStateStore,
+    config: &dyn ConfigStore,
     kind: PresenceAutomationRuleKind,
     rules: Vec<RawJson>,
 ) -> Result<Vec<RawJson>> {
@@ -127,7 +128,7 @@ pub fn presence_automation_rules_set(
 }
 
 pub fn presence_automation_rule_enabled_set(
-    config: &dyn GameStateStore,
+    config: &dyn ConfigStore,
     kind: PresenceAutomationRuleKind,
     rule_id: &str,
     enabled: bool,
@@ -147,7 +148,7 @@ pub fn presence_automation_rule_enabled_set(
 }
 
 pub fn presence_automation_local_group_renamed(
-    config: &dyn GameStateStore,
+    config: &dyn ConfigStore,
     kind: FavoriteEntityKind,
     group_name: &str,
     new_group_name: &str,
@@ -221,7 +222,7 @@ struct MatchedPresenceRule {
     owned_fields: Vec<String>,
 }
 pub async fn run_background_presence_automation(
-    config: &dyn GameStateStore,
+    config: &dyn ConfigStore,
     remote: &dyn BackgroundRemoteApi,
     auth_scope: &RuntimeAuthScope,
     remote_mutations: &RemoteMutationGate,
@@ -360,9 +361,7 @@ pub async fn run_background_presence_automation(
     ))
 }
 
-fn load_presence_automation_config(
-    config: &dyn GameStateStore,
-) -> Result<PresenceAutomationConfig> {
+fn load_presence_automation_config(config: &dyn ConfigStore) -> Result<PresenceAutomationConfig> {
     let time_rules = load_stored_rules(config, "presenceAutomationTimeRules")?;
     let context_rules: Vec<Value> = load_stored_rules(config, "presenceAutomationContextRules")?
         .into_iter()
@@ -772,7 +771,7 @@ fn complete_time_restores(state: &mut BackgroundPresenceAutomationState, fields:
     }
 }
 
-fn load_stored_rules(config: &dyn GameStateStore, key: &str) -> Result<Vec<Value>> {
+fn load_stored_rules(config: &dyn ConfigStore, key: &str) -> Result<Vec<Value>> {
     Ok(safe_value_array(
         &config.get_string(key, "[]").unwrap_or_else(|_| "[]".into()),
     ))
@@ -892,7 +891,7 @@ fn presence_result(
     }
 }
 
-fn config_int(config: &dyn GameStateStore, key: &str, default_value: i64) -> Result<i64> {
+fn config_int(config: &dyn ConfigStore, key: &str, default_value: i64) -> Result<i64> {
     Ok(config
         .get_string(key, "")?
         .trim()
@@ -946,11 +945,11 @@ fn merge_object_patch(mut current_user: Value, patch: Value) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ports::TestGameStateStore;
+    use vrcx_0_application_core::MemoryConfigStore;
 
     #[test]
     fn presence_rule_storage_preserves_open_json_fields() {
-        let config = TestGameStateStore::default();
+        let config = MemoryConfigStore::default();
         let rule = json!({
             "id": "future-rule",
             "conditions": [{"type": "futureCondition", "extra": 42}],
@@ -972,7 +971,7 @@ mod tests {
 
     #[test]
     fn toggling_one_presence_rule_keeps_the_other_rules_and_fields() {
-        let config = TestGameStateStore::default();
+        let config = MemoryConfigStore::default();
         presence_automation_rules_set(
             &config,
             PresenceAutomationRuleKind::Time,
@@ -1009,7 +1008,7 @@ mod tests {
 
     #[test]
     fn renaming_a_local_favorite_group_rewrites_only_rules_of_that_kind() {
-        let config = TestGameStateStore::default();
+        let config = MemoryConfigStore::default();
         let rule = |groups: &[&str]| {
             json!({
                 "id": "rule",

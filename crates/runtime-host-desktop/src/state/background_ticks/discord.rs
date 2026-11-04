@@ -132,7 +132,7 @@ pub(in crate::state) async fn run_background_discord_tick(
         }
     };
     let command = match build_background_discord_presence_command(
-        &game_state_store,
+        context.config_store.as_ref(),
         &background_remote,
         &facts,
         labels,

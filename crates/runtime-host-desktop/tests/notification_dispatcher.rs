@@ -13,7 +13,7 @@ use vrcx_0_application_core::{
     BackendRuntimeProcessStatus, BackendRuntimeSnapshot,
 };
 use vrcx_0_core::OwnerId;
-use vrcx_0_outbound_adapters::LocalNotificationConfig;
+use vrcx_0_outbound_adapters::LocalConfigStore;
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_runtime_host_desktop::notification::{
@@ -186,7 +186,11 @@ fn auth_webhook_defaults_to_enabled_when_url_exists() {
     config
         .set_string("webhookUrl", "https://example.com/webhook")
         .unwrap();
-    let notification_config = LocalNotificationConfig::new(config.clone());
+    let storage = Arc::new(
+        vrcx_0_persistence::storage::StorageService::new(&test_db._dir.path.join("storage.json"))
+            .unwrap(),
+    );
+    let notification_config = LocalConfigStore::new(Arc::clone(&test_db.db), storage);
 
     assert!(auth_webhook_is_enabled(&notification_config));
 

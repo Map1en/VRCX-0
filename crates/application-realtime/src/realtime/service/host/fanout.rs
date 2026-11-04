@@ -63,7 +63,7 @@ impl RealtimeHostRuntime {
     pub fn set_feed_persistence_disabled(&self, disabled: bool) -> Result<()> {
         let _owner = self.lock_friend_owner();
         self.deps
-            .store
+            .config
             .set_bool("feedPersistenceDisabled", disabled)?;
         self.feed_persistence_disabled
             .store(disabled, Ordering::Relaxed);

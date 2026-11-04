@@ -1,4 +1,5 @@
 mod activity_ingress;
+mod config_store;
 mod instance_roster;
 mod local_game_context;
 mod notification_observer;
@@ -8,6 +9,7 @@ mod session;
 mod updater;
 
 pub use activity_ingress::ActivityIngress;
+pub use config_store::ConfigStore;
 pub use instance_roster::{InstanceRosterMember, InstanceRosterObserver, InstanceRosterSnapshot};
 pub use local_game_context::{
     LocalGameContextSnapshot, LocalGameContextSource, UnavailableLocalGameContextSource,

@@ -36,7 +36,7 @@ impl Drop for TestDir {
 fn test_services(name: &str) -> (TestDir, DesktopRuntimeServices) {
     let dir = TestDir::new(name);
     let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap());
-    let storage = StorageService::new(&dir.path.join("storage.json")).unwrap();
+    let storage = Arc::new(StorageService::new(&dir.path.join("storage.json")).unwrap());
     let web = Arc::new(WebClient::new(
         vrcx_0_outbound_adapters::LocalWebClientAdapter::new(
             &storage,
@@ -53,7 +53,7 @@ fn test_services(name: &str) -> (TestDir, DesktopRuntimeServices) {
         )
         .unwrap(),
     )));
-    let context = RuntimeHostDesktopAssemblyDeps::new(db, web, image_cache);
+    let context = RuntimeHostDesktopAssemblyDeps::new(db, storage, web, image_cache);
     let services =
         DesktopRuntimeServices::new(crate::state::build_desktop_runtime_services_deps(&context))
             .unwrap();

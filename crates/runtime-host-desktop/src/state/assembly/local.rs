@@ -109,9 +109,6 @@ pub(crate) fn build_local_runtimes(
             Arc::clone(runtime.database()),
             Arc::clone(runtime.web_client()),
         )),
-        translation: LocalTranslationAdapter::new(
-            Arc::clone(runtime.database()),
-            Arc::clone(runtime.web_client()),
-        ),
+        translation: LocalTranslationAdapter::new(Arc::clone(runtime.web_client())),
     }
 }

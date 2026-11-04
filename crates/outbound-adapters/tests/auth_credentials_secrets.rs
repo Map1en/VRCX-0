@@ -52,8 +52,10 @@ fn auth_credentials_encrypt_migrate_decrypt_and_clear_damaged_fields() {
     let db_path = dir.path.join("VRCX-0.sqlite3");
     let db = Arc::new(DatabaseService::new(&db_path).unwrap());
     let config = ConfigRepository::new(Arc::clone(&db));
-    let auth_store =
-        vrcx_0_outbound_adapters::LocalAuthCredentialStore::from_repository(config.clone());
+    let storage = Arc::new(
+        vrcx_0_persistence::storage::StorageService::new(&dir.path.join("storage.json")).unwrap(),
+    );
+    let auth_store = vrcx_0_outbound_adapters::LocalConfigStore::new(Arc::clone(&db), storage);
     init_secrets(Some([11; 32]), true);
     config
         .set_bool(

@@ -1,7 +1,7 @@
 use futures_util::future::BoxFuture;
 
 use serde::{Deserialize, Serialize};
-use vrcx_0_application_core::{Error, Result};
+use vrcx_0_application_core::{ConfigStore, Error, Result};
 
 pub use vrcx_0_contracts::TranslationProvider;
 
@@ -15,11 +15,6 @@ const KEY_PROMPT: &str = "translationAPIPrompt";
 const KEY_REASONING_EFFORT: &str = "translationAPIReasoningEffort";
 
 pub const DEFAULT_TRANSLATION_MODEL: &str = "gpt-4o-mini";
-
-pub trait TranslationConfig: Send + Sync {
-    fn get_bool(&self, key: &str, default: bool) -> Result<bool>;
-    fn get_string(&self, key: &str, default: &str) -> Result<String>;
-}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct StandardTranslationOutcome {
@@ -41,7 +36,7 @@ pub trait StandardTranslationPort: Send + Sync {
 
 #[derive(Clone, Copy)]
 pub struct TranslationDeps<'a> {
-    pub config: &'a dyn TranslationConfig,
+    pub config: &'a dyn ConfigStore,
     pub standard_translation: &'a dyn StandardTranslationPort,
 }
 
@@ -137,12 +132,12 @@ pub async fn complete_translation<E>(
     })
 }
 
-pub fn resolved_openai_translation_endpoint_id(config: &dyn TranslationConfig) -> Result<String> {
+pub fn resolved_openai_translation_endpoint_id(config: &dyn ConfigStore) -> Result<String> {
     Ok(config.get_string(KEY_ENDPOINT_ID, "")?.trim().to_string())
 }
 
 fn override_or_config(
-    config: &dyn TranslationConfig,
+    config: &dyn ConfigStore,
     value: Option<&String>,
     key: &str,
     default: &str,

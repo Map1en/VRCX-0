@@ -623,6 +623,7 @@ impl LocalDataRuntime {
     ) -> Result<Vec<vrcx_0_application_game::GameLogImportFile>> {
         crate::game_log_import::import_game_log(
             &self.db,
+            self.profile_config.as_ref(),
             &self.current_owner(),
             &paths,
             consent,

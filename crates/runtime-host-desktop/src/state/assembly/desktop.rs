@@ -82,11 +82,7 @@ pub(crate) fn build_desktop_wiring(
             Arc::clone(context.instance_dwell()) as Arc<dyn InstanceRosterObserver>,
             Arc::clone(&current_user_presence_observer) as Arc<dyn InstanceRosterObserver>,
         ]));
-    let profile_config: Arc<dyn ProfileConfigStore> =
-        Arc::new(vrcx_0_outbound_adapters::LocalProfileConfigStore::new(
-            Arc::clone(builder.database()),
-            Arc::clone(builder.storage()),
-        ));
+    let profile_config = context.profile_config();
     Ok(DesktopWiring {
         host_file_access,
         services,
@@ -113,8 +109,8 @@ pub(crate) fn build_desktop_runtime(
 ) -> Arc<DesktopRuntimeBundle> {
     let context = builder.desktop_assembly();
     let telemetry = TelemetryRuntime::new(TelemetryRuntimeDeps {
+        config: context.config_store(),
         environment: Arc::new(vrcx_0_outbound_adapters::LocalTelemetryEnvironment::new(
-            context.config().clone(),
             Arc::clone(context.database()),
             builder.paths().app_data.clone(),
             Arc::new(|| {

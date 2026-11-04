@@ -1,60 +1,13 @@
-use std::{collections::HashMap, sync::Mutex};
-
 use super::*;
 use crate::{ActivityScope, ActivitySurfaceFilters, NotificationSurface};
 use serde_json::{json, Value};
+use vrcx_0_application_core::{ConfigStore, MemoryConfigStore};
 use vrcx_0_contracts::activity::ActivityKind;
 
-#[derive(Default)]
-struct TestConfig {
-    values: Mutex<HashMap<String, String>>,
-}
-
-impl TestConfig {
-    fn set_string(&self, key: &str, value: &str) -> vrcx_0_application_core::Result<()> {
-        self.values
-            .lock()
-            .unwrap()
-            .insert(key.to_string(), value.to_string());
-        Ok(())
-    }
-
-    fn get_json(&self, key: &str, fallback: Value) -> vrcx_0_application_core::Result<Value> {
-        self.get_raw(key)?
-            .map(|raw| serde_json::from_str(&raw).map_err(Into::into))
-            .unwrap_or(Ok(fallback))
-    }
-}
-
-impl NotificationConfig for TestConfig {
-    fn get_raw(&self, key: &str) -> vrcx_0_application_core::Result<Option<String>> {
-        Ok(self.values.lock().unwrap().get(key).cloned())
-    }
-
-    fn get_bool(&self, key: &str, default_value: bool) -> vrcx_0_application_core::Result<bool> {
-        Ok(self
-            .get_raw(key)?
-            .and_then(|value| value.parse().ok())
-            .unwrap_or(default_value))
-    }
-
-    fn get_string(
-        &self,
-        key: &str,
-        default_value: &str,
-    ) -> vrcx_0_application_core::Result<String> {
-        Ok(self
-            .get_raw(key)?
-            .unwrap_or_else(|| default_value.to_string()))
-    }
-
-    fn set_json(&self, key: &str, value: &Value) -> vrcx_0_application_core::Result<()> {
-        self.set_string(key, &serde_json::to_string(value)?)
-    }
-}
-
-fn test_config(_name: &str) -> std::result::Result<((), TestConfig), Box<dyn std::error::Error>> {
-    Ok(((), TestConfig::default()))
+fn test_config(
+    _name: &str,
+) -> std::result::Result<((), MemoryConfigStore), Box<dyn std::error::Error>> {
+    Ok(((), MemoryConfigStore::default()))
 }
 
 #[test]

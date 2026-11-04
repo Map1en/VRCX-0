@@ -6,6 +6,7 @@ use crate::Result;
 use crate::{HostSessionRuntime, RuntimeAuthScope, RuntimeEventBus, TaskSupervisor};
 use vrcx_0_application_core::ActivityIngress;
 use vrcx_0_application_core::BackendRuntimeStatusPublisher;
+use vrcx_0_application_core::ConfigStore;
 use vrcx_0_application_core::GameProcessEvent;
 use vrcx_0_application_core::InstanceRosterObserver;
 
@@ -18,6 +19,7 @@ use super::processor::{
 #[derive(Clone)]
 pub struct GameClientRuntimeDeps {
     pub(crate) store: Arc<dyn crate::GameStateStore>,
+    pub(crate) config: Arc<dyn ConfigStore>,
     pub event_bus: RuntimeEventBus,
     pub backend_status: BackendRuntimeStatusPublisher,
     pub tasks: TaskSupervisor,
@@ -36,6 +38,7 @@ impl GameClientRuntimeDeps {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         store: Arc<dyn crate::GameStateStore>,
+        config: Arc<dyn ConfigStore>,
         event_bus: RuntimeEventBus,
         backend_status: BackendRuntimeStatusPublisher,
         tasks: TaskSupervisor,
@@ -51,6 +54,7 @@ impl GameClientRuntimeDeps {
     ) -> Self {
         Self {
             store,
+            config,
             event_bus,
             backend_status,
             tasks,
@@ -80,6 +84,7 @@ impl GameClientRuntime {
         let processor = GameClientProcessor::new(
             GameClientProcessorDeps {
                 store: deps.store,
+                config: deps.config,
                 event_bus: deps.event_bus.clone(),
                 backend_status: deps.backend_status,
                 tasks: deps.tasks,
