@@ -4,12 +4,13 @@ use std::path::Path;
 use std::sync::Mutex;
 
 use serde_json::{json, Value};
-use vrcx_0_vrchat_client::http_api::{ApiScope, HttpApiRequestInput};
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_vrchat_client::http_api::ApiScope;
 
 const MAX_ENTRIES: usize = 200;
 static WRITTEN: Mutex<usize> = Mutex::new(0);
 
-pub(crate) fn request_context(input: &HttpApiRequestInput, scope: ApiScope) -> Option<Value> {
+pub(crate) fn request_context(input: &VrchatRequest, scope: ApiScope) -> Option<Value> {
     if scope != ApiScope::Vrchat {
         return None;
     }
@@ -175,7 +176,7 @@ mod tests {
 
     #[test]
     fn limits_capture_to_user_routes_and_redacts_the_target_id() {
-        let mut input = HttpApiRequestInput {
+        let mut input = VrchatRequest {
             path: Some("profile/usr%5Fprivate".into()),
             query_params: Some(std::collections::HashMap::from([(
                 "asSelf".into(),

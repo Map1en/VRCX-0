@@ -4,19 +4,19 @@ use serde_json::{json, Value};
 
 use crate::http_api::{
     api_input, encode_path_segment, get_input, normalize_text, require_text, HttpApiError,
-    HttpApiRequestInput,
 };
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_core::FavoriteGroupVisibility;
 
 mod request;
 
 pub use request::VrchatFavoriteType;
 
-pub fn favorite_limits_get_input(endpoint: String) -> HttpApiRequestInput {
+pub fn favorite_limits_get_input(endpoint: String) -> VrchatRequest {
     get_input(endpoint, "auth/user/favoritelimits", HashMap::new())
 }
 
-pub fn favorites_get_input(endpoint: String, n: i32, offset: i32) -> HttpApiRequestInput {
+pub fn favorites_get_input(endpoint: String, n: i32, offset: i32) -> VrchatRequest {
     get_input(
         endpoint,
         "favorites",
@@ -34,7 +34,7 @@ pub fn favorite_worlds_get_input(
     owner_id: String,
     user_id: String,
     tag: String,
-) -> HttpApiRequestInput {
+) -> VrchatRequest {
     let owner_id = normalize_text(owner_id);
     let user_id = normalize_text(user_id);
     let tag = normalize_text(tag);
@@ -59,7 +59,7 @@ pub fn favorite_avatars_get_input(
     n: i32,
     offset: i32,
     tag: String,
-) -> HttpApiRequestInput {
+) -> VrchatRequest {
     let tag = normalize_text(tag);
     let mut params = HashMap::from([
         ("n".to_string(), json!(n)),
@@ -76,7 +76,7 @@ pub fn favorite_groups_get_input(
     n: i32,
     offset: i32,
     owner_id: String,
-) -> HttpApiRequestInput {
+) -> VrchatRequest {
     let owner_id = normalize_text(owner_id);
     let mut params = HashMap::from([
         ("n".to_string(), json!(n)),
@@ -93,7 +93,7 @@ pub fn favorite_add_input(
     favorite_type: VrchatFavoriteType,
     favorite_id: String,
     tags: String,
-) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, String, VrchatRequest), HttpApiError> {
     let favorite_id = require_text(favorite_id, "VrchatFavoriteAdd requires favoriteId.")?;
     let tags = require_text(tags, "VrchatFavoriteAdd requires tags.")?;
     let type_name = favorite_type.as_str().to_string();
@@ -116,7 +116,7 @@ pub fn favorite_add_input(
 pub fn favorite_delete_input(
     endpoint: String,
     object_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let object_id = require_text(object_id, "VrchatFavoriteDelete requires objectId.")?;
     Ok((
         object_id.clone(),
@@ -136,7 +136,7 @@ pub fn favorite_group_save_input(
     group: String,
     display_name: Option<String>,
     visibility: Option<FavoriteGroupVisibility>,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let owner_id = require_text(owner_id, "VrchatFavoriteGroupSave requires ownerId.")?;
     let group = require_text(group, "VrchatFavoriteGroupSave requires group.")?;
     let type_name = favorite_type.as_str();
@@ -171,7 +171,7 @@ pub fn favorite_group_clear_input(
     owner_id: String,
     favorite_type: VrchatFavoriteType,
     group: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let owner_id = require_text(owner_id, "VrchatFavoriteGroupClear requires ownerId.")?;
     let group = require_text(group, "VrchatFavoriteGroupClear requires group.")?;
     let type_name = favorite_type.as_str();
@@ -196,7 +196,7 @@ mod tests {
     use super::*;
     use crate::http_api::HttpApiRequestBody;
 
-    fn json_body(request: &HttpApiRequestInput) -> &Value {
+    fn json_body(request: &VrchatRequest) -> &Value {
         request.body.as_json().expect("expected JSON request body")
     }
 

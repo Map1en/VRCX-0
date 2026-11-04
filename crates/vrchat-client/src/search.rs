@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
-use crate::http_api::{
-    encode_path_segment, get_input, normalize_text, require_text, HttpApiError, HttpApiRequestInput,
-};
+use crate::http_api::{encode_path_segment, get_input, normalize_text, require_text, HttpApiError};
 use crate::query::serialize_query;
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
 pub use vrcx_0_contracts::vrchat_requests::{
     GroupSearchParams, UserSearchParams, WorldSearchParams,
@@ -13,7 +12,7 @@ pub fn search_worlds_get_input(
     endpoint: String,
     params: WorldSearchParams,
     option: Option<String>,
-) -> HttpApiRequestInput {
+) -> VrchatRequest {
     let option = option.map(normalize_text).filter(|value| !value.is_empty());
     let path = match option {
         Some(value) => format!("worlds/{}", encode_path_segment(&value)),
@@ -22,25 +21,25 @@ pub fn search_worlds_get_input(
     get_input(endpoint, path, serialize_query(&params))
 }
 
-pub fn search_users_get_input(endpoint: String, params: UserSearchParams) -> HttpApiRequestInput {
+pub fn search_users_get_input(endpoint: String, params: UserSearchParams) -> VrchatRequest {
     get_input(endpoint, "users", serialize_query(&params))
 }
 
-pub fn search_groups_get_input(endpoint: String, params: GroupSearchParams) -> HttpApiRequestInput {
+pub fn search_groups_get_input(endpoint: String, params: GroupSearchParams) -> VrchatRequest {
     get_input(endpoint, "groups", serialize_query(&params))
 }
 
 pub fn search_groups_strict_get_input(
     endpoint: String,
     params: GroupSearchParams,
-) -> HttpApiRequestInput {
+) -> VrchatRequest {
     get_input(endpoint, "groups/strictsearch", serialize_query(&params))
 }
 
 pub fn search_instance_short_name_get_input(
     endpoint: String,
     short_name: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let short_name = require_text(
         short_name,
         "VrchatSearchInstanceShortNameGet requires shortName.",

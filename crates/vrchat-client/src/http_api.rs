@@ -3,13 +3,13 @@ use std::collections::HashMap;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use serde_json::{json, Value};
 use url::Url;
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 pub use vrcx_0_contracts::vrchat_api::{
     classify_vrchat_auth_failure, classify_vrchat_response as classify_api_response,
     vrchat_auth_error_message, vrchat_response as execute_response, VrchatAuthFailureKind,
-    VrchatJsonResponse as ApiJsonResponse, VrchatRequest as HttpApiRequestInput,
-    VrchatRequestBody as HttpApiRequestBody, VrchatResponse as HttpApiExecuteResponse,
-    VrchatResponseClass as ApiResponseClass, VrchatScope as ApiScope,
-    VrchatUpload as HttpApiUpload,
+    VrchatJsonResponse as ApiJsonResponse, VrchatRequestBody as HttpApiRequestBody,
+    VrchatResponse as HttpApiExecuteResponse, VrchatResponseClass as ApiResponseClass,
+    VrchatScope as ApiScope, VrchatUpload as HttpApiUpload,
 };
 pub use vrcx_0_core::text::normalize_text;
 pub use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
@@ -65,8 +65,8 @@ pub fn api_input(
     method: &str,
     path: impl Into<String>,
     body: Option<Value>,
-) -> HttpApiRequestInput {
-    HttpApiRequestInput {
+) -> VrchatRequest {
+    VrchatRequest {
         endpoint: Some(endpoint),
         method: Some(method.into()),
         path: Some(path.into()),
@@ -82,8 +82,8 @@ pub fn get_input(
     endpoint: String,
     path: impl Into<String>,
     query_params: HashMap<String, Value>,
-) -> HttpApiRequestInput {
-    HttpApiRequestInput {
+) -> VrchatRequest {
+    VrchatRequest {
         endpoint: Some(endpoint),
         method: Some("GET".into()),
         path: Some(path.into()),
@@ -97,8 +97,8 @@ pub fn query_input(
     method: &str,
     path: impl Into<String>,
     query_params: HashMap<String, Value>,
-) -> HttpApiRequestInput {
-    HttpApiRequestInput {
+) -> VrchatRequest {
+    VrchatRequest {
         endpoint: Some(endpoint),
         method: Some(method.into()),
         path: Some(path.into()),
@@ -112,8 +112,8 @@ pub fn api_input_skip_empty_query_string(
     method: &str,
     path: impl Into<String>,
     body: Value,
-) -> HttpApiRequestInput {
-    HttpApiRequestInput {
+) -> VrchatRequest {
+    VrchatRequest {
         endpoint: Some(endpoint),
         method: Some(method.into()),
         path: Some(path.into()),
@@ -128,8 +128,8 @@ pub fn get_input_skip_empty_query_string(
     endpoint: String,
     path: impl Into<String>,
     query_params: HashMap<String, Value>,
-) -> HttpApiRequestInput {
-    HttpApiRequestInput {
+) -> VrchatRequest {
+    VrchatRequest {
         endpoint: Some(endpoint),
         method: Some("GET".into()),
         path: Some(path.into()),
@@ -140,7 +140,7 @@ pub fn get_input_skip_empty_query_string(
 }
 
 pub fn build_web_execute_request(
-    input: HttpApiRequestInput,
+    input: VrchatRequest,
     scope: ApiScope,
 ) -> Result<WebExecuteRequest, HttpApiError> {
     let method = input
@@ -295,11 +295,11 @@ fn validate_vrchat_media_upload_url(url: &Url) -> Result<(), HttpApiError> {
     ))
 }
 
-fn is_upload_request(input: &HttpApiRequestInput) -> bool {
+fn is_upload_request(input: &VrchatRequest) -> bool {
     matches!(input.body, HttpApiRequestBody::Upload(_))
 }
 
-fn validate_upload_scope(input: &HttpApiRequestInput, scope: ApiScope) -> Result<(), HttpApiError> {
+fn validate_upload_scope(input: &VrchatRequest, scope: ApiScope) -> Result<(), HttpApiError> {
     if is_upload_request(input) && !matches!(scope, ApiScope::VrchatMedia) {
         return Err(HttpApiError::Custom(
             "upload options are only allowed for VRChat media requests".into(),
@@ -308,7 +308,7 @@ fn validate_upload_scope(input: &HttpApiRequestInput, scope: ApiScope) -> Result
     Ok(())
 }
 
-fn build_request_url(input: &HttpApiRequestInput, scope: ApiScope) -> Result<String, HttpApiError> {
+fn build_request_url(input: &VrchatRequest, scope: ApiScope) -> Result<String, HttpApiError> {
     validate_upload_scope(input, scope)?;
 
     if let Some(url) = input
@@ -380,10 +380,7 @@ fn normalize_json_body(value: &Value) -> Value {
     }
 }
 
-fn request_body_text(
-    input: &HttpApiRequestInput,
-    method: &str,
-) -> Result<Option<String>, HttpApiError> {
+fn request_body_text(input: &VrchatRequest, method: &str) -> Result<Option<String>, HttpApiError> {
     if method == "GET" {
         return Ok(None);
     }

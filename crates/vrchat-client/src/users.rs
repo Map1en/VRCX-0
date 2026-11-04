@@ -2,9 +2,8 @@ use std::collections::HashMap;
 
 use serde_json::{json, Value};
 
-use crate::http_api::{
-    api_input, encode_path_segment, get_input, require_text, HttpApiError, HttpApiRequestInput,
-};
+use crate::http_api::{api_input, encode_path_segment, get_input, require_text, HttpApiError};
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
 pub use vrcx_0_contracts::vrchat_requests::{
     ContentFilter, CurrentUserProfileUpdateRequest, CurrentUserUpdateRequest,
@@ -14,7 +13,7 @@ pub use vrcx_0_contracts::vrchat_requests::{
 pub fn user_get_input(
     endpoint: String,
     user_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatUserGet requires userId.")?;
     Ok((
         user_id.clone(),
@@ -30,7 +29,7 @@ pub fn profile_get_input(
     endpoint: String,
     user_id: String,
     as_self: bool,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatProfileGet requires userId.")?;
     let params = HashMap::from([
         ("asSelf".to_string(), json!(as_self)),
@@ -50,7 +49,7 @@ pub fn profile_update_input(
     endpoint: String,
     user_id: String,
     params: CurrentUserProfileUpdateRequest,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatProfileUpdate requires userId.")?;
     Ok((
         user_id.clone(),
@@ -66,7 +65,7 @@ pub fn profile_update_input(
 pub fn user_mutual_counts_get_input(
     endpoint: String,
     user_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatUserMutualCountsGet requires userId.")?;
     Ok((
         user_id.clone(),
@@ -81,7 +80,7 @@ pub fn user_mutual_counts_get_input(
 pub fn user_groups_get_input(
     endpoint: String,
     user_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatUserGroupsGet requires userId.")?;
     Ok((
         user_id.clone(),
@@ -93,14 +92,14 @@ pub fn user_groups_get_input(
     ))
 }
 
-pub fn account_standing_get_input(endpoint: String) -> HttpApiRequestInput {
+pub fn account_standing_get_input(endpoint: String) -> VrchatRequest {
     get_input(endpoint, "auth/user/accountStanding", HashMap::new())
 }
 
 pub fn user_represented_group_get_input(
     endpoint: String,
     user_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatUserRepresentedGroupGet requires userId.")?;
     Ok((
         user_id.clone(),
@@ -117,7 +116,7 @@ pub fn user_mutual_friends_get_input(
     user_id: String,
     n: i32,
     offset: i32,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatUserMutualFriendsGet requires userId.")?;
     let params = HashMap::from([
         ("n".to_string(), json!(n)),
@@ -138,7 +137,7 @@ pub fn current_user_update_input(
     endpoint: String,
     user_id: String,
     params: CurrentUserUpdateRequest,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatCurrentUserUpdate requires userId.")?;
     Ok((
         user_id.clone(),
@@ -157,7 +156,7 @@ pub fn current_user_badge_update_input(
     badge_id: String,
     hidden: bool,
     showcased: bool,
-) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatCurrentUserBadgeUpdate requires userId.")?;
     let badge_id = require_text(badge_id, "VrchatCurrentUserBadgeUpdate requires badgeId.")?;
     Ok((
@@ -185,7 +184,7 @@ pub fn current_user_tags_add_input(
     endpoint: String,
     user_id: String,
     tags: Vec<String>,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatCurrentUserTagsAdd requires userId.")?;
     Ok((
         user_id.clone(),
@@ -202,7 +201,7 @@ pub fn current_user_tags_remove_input(
     endpoint: String,
     user_id: String,
     tags: Vec<String>,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatCurrentUserTagsRemove requires userId.")?;
     Ok((
         user_id.clone(),

@@ -3,11 +3,12 @@ use futures_util::future::BoxFuture;
 use std::sync::Arc;
 use std::time::Duration;
 
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
+use vrcx_0_application_core::vrchat_api::{VrchatApiResponse, VrchatScope};
 use vrcx_0_application_core::{
     is_remote_mutation_request, AuthenticatedMutationContext, RemoteMutationGate, Result,
     RuntimeAuthScope,
 };
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
 const VRCHAT_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
@@ -15,7 +16,7 @@ pub type VrchatApiFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
 pub type VrchatRequestFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
 
 pub trait VrchatRequestPort: Send + Sync {
-    fn send(&self, input: VrchatApiRequest, scope: VrchatScope) -> VrchatRequestFuture<'_>;
+    fn send(&self, input: VrchatRequest, scope: VrchatScope) -> VrchatRequestFuture<'_>;
 }
 
 #[cfg(test)]
@@ -23,7 +24,7 @@ pub(crate) struct TestVrchatRequestPort;
 
 #[cfg(test)]
 impl VrchatRequestPort for TestVrchatRequestPort {
-    fn send(&self, _input: VrchatApiRequest, _scope: VrchatScope) -> VrchatRequestFuture<'_> {
+    fn send(&self, _input: VrchatRequest, _scope: VrchatScope) -> VrchatRequestFuture<'_> {
         Box::pin(async {
             Ok(VrchatApiResponse {
                 status: 200,
@@ -38,7 +39,7 @@ pub trait VrchatApiPort: Send + Sync {
         &self,
         command: String,
         detail: String,
-        input: VrchatApiRequest,
+        input: VrchatRequest,
         scope: VrchatScope,
     ) -> VrchatApiFuture<'_>;
 }
@@ -67,7 +68,7 @@ impl VrchatApiRuntime {
         &self,
         command: impl Into<String>,
         detail: impl Into<String>,
-        mut input: VrchatApiRequest,
+        mut input: VrchatRequest,
         scope: VrchatScope,
     ) -> Result<VrchatApiResponse> {
         let command = command.into();
@@ -97,7 +98,7 @@ mod tests {
 
     #[derive(Default)]
     struct RecordingPort {
-        requests: Mutex<Vec<VrchatApiRequest>>,
+        requests: Mutex<Vec<VrchatRequest>>,
     }
 
     impl VrchatApiPort for RecordingPort {
@@ -105,7 +106,7 @@ mod tests {
             &self,
             _command: String,
             _detail: String,
-            input: VrchatApiRequest,
+            input: VrchatRequest,
             _scope: VrchatScope,
         ) -> VrchatApiFuture<'_> {
             self.requests.lock().unwrap().push(input);
@@ -131,7 +132,7 @@ mod tests {
             .execute(
                 "read",
                 "read",
-                VrchatApiRequest {
+                VrchatRequest {
                     method: Some("GET".into()),
                     ..Default::default()
                 },
@@ -156,7 +157,7 @@ mod tests {
             .execute(
                 "write",
                 "write",
-                VrchatApiRequest {
+                VrchatRequest {
                     method: Some("POST".into()),
                     ..Default::default()
                 },
@@ -187,7 +188,7 @@ mod tests {
             .execute(
                 "write",
                 "write",
-                VrchatApiRequest {
+                VrchatRequest {
                     endpoint: Some("https://stale.example.test/api/1".into()),
                     method: Some("POST".into()),
                     ..Default::default()

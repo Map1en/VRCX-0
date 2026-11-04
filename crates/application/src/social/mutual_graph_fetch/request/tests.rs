@@ -1,9 +1,10 @@
 use std::sync::Mutex;
 
 use serde_json::json;
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse};
+use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_realtime::test_support::runtime_with_active_session;
 use vrcx_0_application_realtime::{RealtimeWsMessagePayload, SyntheticFriendEventOutcome};
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
 use super::*;
 use crate::remote::VrchatRequestFuture;
@@ -65,8 +66,8 @@ impl MutualGraphRemoteRequests for MutualRequests {
         user_id: String,
         _n: i32,
         _offset: i32,
-    ) -> Result<VrchatApiRequest> {
-        Ok(VrchatApiRequest {
+    ) -> Result<VrchatRequest> {
+        Ok(VrchatRequest {
             endpoint: Some(endpoint),
             path: Some(format!("users/{user_id}/mutuals/friends")),
             ..Default::default()
@@ -81,7 +82,7 @@ struct ResponsePort<F> {
 }
 
 impl<F: Fn() + Send + Sync> VrchatRequestPort for ResponsePort<F> {
-    fn send(&self, _input: VrchatApiRequest, _scope: VrchatScope) -> VrchatRequestFuture<'_> {
+    fn send(&self, _input: VrchatRequest, _scope: VrchatScope) -> VrchatRequestFuture<'_> {
         Box::pin(async {
             (self.before_response)();
             Ok(VrchatApiResponse {

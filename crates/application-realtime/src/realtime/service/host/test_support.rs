@@ -553,7 +553,7 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
     fn current_user(
         &self,
         endpoint: String,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatRequest> {
         Ok(test_request(endpoint, "/auth/user"))
     }
 
@@ -561,10 +561,7 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
         &self,
         endpoint: String,
         user_id: String,
-    ) -> Result<(
-        String,
-        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
-    )> {
+    ) -> Result<(String, vrcx_0_contracts::vrchat_api::VrchatRequest)> {
         let user_id = user_id.trim().to_string();
         Ok((
             user_id.clone(),
@@ -576,10 +573,7 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
         &self,
         endpoint: String,
         user_id: String,
-    ) -> Result<(
-        String,
-        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
-    )> {
+    ) -> Result<(String, vrcx_0_contracts::vrchat_api::VrchatRequest)> {
         let user_id = user_id.trim().to_string();
         Ok((
             user_id.clone(),
@@ -590,7 +584,7 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
     fn favorite_limits(
         &self,
         endpoint: String,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatRequest> {
         Ok(test_request(endpoint, "/auth/user/favoritelimits"))
     }
 
@@ -599,7 +593,7 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
         endpoint: String,
         _n: i32,
         _offset: i32,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatRequest> {
         Ok(test_request(endpoint, "/favorites"))
     }
 
@@ -608,7 +602,7 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
         endpoint: String,
         _n: i32,
         _offset: i32,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatRequest> {
         Ok(test_request(endpoint, "/favorite/groups"))
     }
 
@@ -618,7 +612,7 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
         _offline: bool,
         _n: i32,
         _offset: i32,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatRequest> {
         Ok(test_request(endpoint, "/auth/user/friends"))
     }
 
@@ -626,10 +620,7 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
         &self,
         endpoint: String,
         world_id: String,
-    ) -> Result<(
-        String,
-        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
-    )> {
+    ) -> Result<(String, vrcx_0_contracts::vrchat_api::VrchatRequest)> {
         let world_id = world_id.trim().to_string();
         Ok((
             world_id.clone(),
@@ -641,7 +632,7 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
         &self,
         endpoint: String,
         group_id: String,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatRequest> {
         Ok(test_request(endpoint, &format!("/groups/{group_id}")))
     }
 
@@ -650,10 +641,7 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
         endpoint: String,
         receiver_user_id: String,
         body: serde_json::Value,
-    ) -> Result<(
-        String,
-        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
-    )> {
+    ) -> Result<(String, vrcx_0_contracts::vrchat_api::VrchatRequest)> {
         let mut request = test_request(endpoint, &format!("/invite/{receiver_user_id}"));
         request.body = vrcx_0_contracts::vrchat_api::VrchatRequestBody::Json(body);
         Ok((receiver_user_id, request))
@@ -666,10 +654,7 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
         _version: i64,
         _notification_type: String,
         _sender_user_id: String,
-    ) -> Result<(
-        String,
-        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
-    )> {
+    ) -> Result<(String, vrcx_0_contracts::vrchat_api::VrchatRequest)> {
         Ok((
             notification_id.clone(),
             test_request(endpoint, &format!("/notifications/{notification_id}/hide")),
@@ -677,11 +662,8 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
     }
 }
 
-fn test_request(
-    endpoint: String,
-    path: &str,
-) -> vrcx_0_application_core::vrchat_api::VrchatApiRequest {
-    vrcx_0_application_core::vrchat_api::VrchatApiRequest {
+fn test_request(endpoint: String, path: &str) -> vrcx_0_contracts::vrchat_api::VrchatRequest {
+    vrcx_0_contracts::vrchat_api::VrchatRequest {
         endpoint: Some(endpoint),
         path: Some(path.to_string()),
         ..Default::default()

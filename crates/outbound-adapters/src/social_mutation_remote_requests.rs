@@ -1,15 +1,11 @@
 use vrcx_0_application::social::SocialMutationRemoteRequests;
-use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
 #[derive(Clone, Copy, Default)]
 pub struct VrchatSocialMutationRemoteRequests;
 
 impl SocialMutationRemoteRequests for VrchatSocialMutationRemoteRequests {
-    fn unfriend(
-        &self,
-        endpoint: String,
-        target_user_id: String,
-    ) -> crate::Result<VrchatApiRequest> {
+    fn unfriend(&self, endpoint: String, target_user_id: String) -> crate::Result<VrchatRequest> {
         Ok(vrcx_0_vrchat_client::friends::friend_delete_input(endpoint, target_user_id)?.1)
     }
 
@@ -17,7 +13,7 @@ impl SocialMutationRemoteRequests for VrchatSocialMutationRemoteRequests {
         &self,
         endpoint: String,
         target_user_id: String,
-    ) -> crate::Result<VrchatApiRequest> {
+    ) -> crate::Result<VrchatRequest> {
         Ok(vrcx_0_vrchat_client::friends::friend_request_send_input(endpoint, target_user_id)?.1)
     }
 
@@ -26,7 +22,7 @@ impl SocialMutationRemoteRequests for VrchatSocialMutationRemoteRequests {
         endpoint: String,
         target_user_id: String,
         notification_id: String,
-    ) -> crate::Result<VrchatApiRequest> {
+    ) -> crate::Result<VrchatRequest> {
         Ok(vrcx_0_vrchat_client::friends::friend_request_cancel_input(
             endpoint,
             target_user_id,
@@ -39,7 +35,7 @@ impl SocialMutationRemoteRequests for VrchatSocialMutationRemoteRequests {
         &self,
         endpoint: String,
         notification_id: String,
-    ) -> crate::Result<VrchatApiRequest> {
+    ) -> crate::Result<VrchatRequest> {
         Ok(
             vrcx_0_vrchat_client::notifications::notification_accept_friend_request_input(
                 endpoint,

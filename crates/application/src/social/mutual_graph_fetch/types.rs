@@ -2,11 +2,12 @@ use serde::{Deserialize, Serialize};
 use vrcx_0_core::json::RawJson;
 
 use crate::remote::VrchatRequestPort;
-use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Result, RuntimeAuthScope};
+use vrcx_0_application_core::{Result, RuntimeAuthScope};
 pub use vrcx_0_contracts::mutual_graph::{
     MutualGraphLinkOutput, MutualGraphMetaInput, MutualGraphMetaOutput,
     MutualGraphSnapshotEntryInput, MutualGraphSnapshotOutput,
 };
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_core::OwnerId;
 
 #[derive(Debug, Deserialize, specta::Type)]
@@ -112,7 +113,7 @@ pub trait MutualGraphRemoteRequests: Send + Sync {
         user_id: String,
         n: i32,
         offset: i32,
-    ) -> Result<VrchatApiRequest>;
+    ) -> Result<VrchatRequest>;
 }
 
 #[derive(Clone, Debug, Deserialize, specta::Type)]

@@ -5,7 +5,7 @@ use vrcx_0_core::text::normalize_text;
 use serde_json::{json, Value};
 use vrcx_0_core::time::now_iso;
 
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatScope};
+use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::RuntimeVrchatAuthFailurePayload;
 use vrcx_0_application_core::{Error, Result, RuntimeAuthScopeSnapshot};
 use vrcx_0_application_realtime::{
@@ -16,6 +16,7 @@ use vrcx_0_contracts::friend_log::{
     FriendLogUpsertOptionsInput,
 };
 use vrcx_0_contracts::vrchat_api::VrchatJsonResponse;
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
 use super::types::{
     SocialFriendMutationInput, SocialFriendMutationOutcome, SocialFriendRequestAcceptInput,
@@ -471,7 +472,7 @@ fn require_target(target_user_id: &str) -> Result<()> {
 async fn execute_vrchat_json_request(
     deps: &SocialMutationDeps<'_>,
     auth_scope: &RuntimeAuthScopeSnapshot,
-    mut request: VrchatApiRequest,
+    mut request: VrchatRequest,
 ) -> Result<Value> {
     let path = request
         .path

@@ -5,6 +5,7 @@ use vrcx_0_contracts::external_api::{
     self, ExternalApiExecuteResponse, ExternalApiScope, ExternalHttpRequestInput,
     ExternalWebExecuteRequest,
 };
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_contracts::{
     RealtimeConnectionOptions as ApplicationRealtimeConnectionOptions, WebExecuteRequest,
     WebUploadMode,
@@ -13,7 +14,7 @@ use vrcx_0_persistence::cookies;
 use vrcx_0_persistence::storage::StorageService;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_vrchat_client::http_api::{
-    self, normalize_vrchat_api_endpoint, ApiScope, HttpApiExecuteResponse, HttpApiRequestInput,
+    self, normalize_vrchat_api_endpoint, ApiScope, HttpApiExecuteResponse,
 };
 use vrcx_0_vrchat_client::image_fetcher::ImageFetcher;
 use vrcx_0_vrchat_client::realtime::RealtimeConnectionOptions;
@@ -21,7 +22,7 @@ use vrcx_0_vrchat_client::web_client as transport;
 
 use crate::Result;
 
-fn vrchat_config_request_endpoint(input: &HttpApiRequestInput, scope: ApiScope) -> Option<String> {
+fn vrchat_config_request_endpoint(input: &VrchatRequest, scope: ApiScope) -> Option<String> {
     if scope != ApiScope::Vrchat
         || input.path.as_deref() != Some("config")
         || input
@@ -213,7 +214,7 @@ impl WebClient {
 
     pub async fn execute_api(
         &self,
-        input: HttpApiRequestInput,
+        input: VrchatRequest,
         scope: ApiScope,
     ) -> Result<HttpApiExecuteResponse> {
         let vrchat_config_endpoint = vrchat_config_request_endpoint(&input, scope);
@@ -310,7 +311,7 @@ impl WebClient {
 
     fn build_api_request(
         &self,
-        input: HttpApiRequestInput,
+        input: VrchatRequest,
         scope: ApiScope,
     ) -> Result<WebExecuteRequest> {
         http_api::build_web_execute_request(input, scope)
@@ -393,7 +394,7 @@ impl vrcx_0_application_core::WebClientPort for WebClient {
 
     async fn execute_api(
         &self,
-        input: HttpApiRequestInput,
+        input: VrchatRequest,
         scope: ApiScope,
     ) -> crate::Result<HttpApiExecuteResponse> {
         WebClient::execute_api(self, input, scope).await

@@ -1,9 +1,10 @@
 use serde_json::Value;
 
 use vrcx_0_application_core::{
-    vrchat_api::{VrchatApiRequest, VrchatScope},
-    AuthenticatedMutationContext, Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot,
+    vrchat_api::VrchatScope, AuthenticatedMutationContext, Error, Result, RuntimeAuthScope,
+    RuntimeAuthScopeSnapshot,
 };
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
 use crate::remote::VrchatRequestPort;
 
@@ -16,7 +17,7 @@ pub(crate) enum RemoteMutationOutcome {
 pub(crate) async fn execute_vrchat_mutation(
     remote: &dyn VrchatRequestPort,
     mutation: &AuthenticatedMutationContext<'_>,
-    mut request: VrchatApiRequest,
+    mut request: VrchatRequest,
     action: &str,
 ) -> Result<RemoteMutationOutcome> {
     mutation.ensure_current()?;

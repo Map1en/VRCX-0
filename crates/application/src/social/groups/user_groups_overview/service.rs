@@ -3,9 +3,9 @@ use vrcx_0_application_core::RuntimeOperationStatus;
 use vrcx_0_core::text::normalize_text;
 
 use serde_json::Value;
-use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
 use vrcx_0_application_core::RuntimeAuthScope;
 use vrcx_0_application_core::{Error, Result};
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_contracts::VrchatJsonResponse;
 use vrcx_0_core::json::{object_scalar_text, result_rows};
 use vrcx_0_core::GroupPermission;
@@ -165,7 +165,7 @@ fn group_overview_from_value(
 
 async fn execute_vrchat_json_request(
     deps: &UserGroupsOverviewDeps,
-    request: VrchatApiRequest,
+    request: VrchatRequest,
     fallback: &str,
 ) -> Result<Value> {
     let response = execute_vrchat_api(deps, request).await?;
@@ -177,7 +177,7 @@ async fn execute_vrchat_json_request(
 
 async fn execute_vrchat_api(
     deps: &UserGroupsOverviewDeps,
-    request: VrchatApiRequest,
+    request: VrchatRequest,
 ) -> Result<VrchatJsonResponse> {
     let response = execute_group_api_raw(&deps.groups, request).await?;
     Ok(VrchatJsonResponse::from(&response))

@@ -11,9 +11,9 @@ use vrcx_0_core::location::parse_location;
 use crate::remote::VrchatRequestPort;
 use crate::scope_gate::ScopeGate;
 use vrcx_0_application_core::{
-    vrchat_api::{VrchatApiRequest, VrchatScope},
-    AuthenticatedMutationContext, Error, Result,
+    vrchat_api::VrchatScope, AuthenticatedMutationContext, Error, Result,
 };
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
 const INSTANCE_INVITE_MAX_RETRIES: usize = 3;
 const INSTANCE_INVITE_RETRY_BASE_DELAY: Duration = Duration::from_secs(1);
@@ -117,7 +117,7 @@ pub trait InstanceInviteRemoteRequests: Send + Sync {
         world_id: String,
         instance_id: String,
         short_name: String,
-    ) -> Result<VrchatApiRequest>;
+    ) -> Result<VrchatRequest>;
     fn user_invite(
         &self,
         endpoint: String,
@@ -125,7 +125,7 @@ pub trait InstanceInviteRemoteRequests: Send + Sync {
         location: String,
         world_id: String,
         world_name: String,
-    ) -> Result<VrchatApiRequest>;
+    ) -> Result<VrchatRequest>;
 }
 
 pub type WorldNameFuture<'a> = BoxFuture<'a, Option<String>>;
@@ -160,7 +160,7 @@ impl<'a> VrchatInstanceInviteBatchActions<'a> {
 impl VrchatInstanceInviteBatchActions<'_> {
     async fn execute_request(
         &self,
-        request: VrchatApiRequest,
+        request: VrchatRequest,
         fallback_message: &str,
         allow_success_plain_text: bool,
     ) -> std::result::Result<(), InstanceInviteRemoteError> {

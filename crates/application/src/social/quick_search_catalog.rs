@@ -6,11 +6,11 @@ use std::time::{Duration, Instant};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use vrcx_0_application_core::{
-    vrchat_api::{VrchatApiRequest, VrchatScope},
-    RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeDiagnostics, RuntimeOperationStatus,
-    RuntimeSyncEngine, WorldCache,
+    vrchat_api::VrchatScope, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeDiagnostics,
+    RuntimeOperationStatus, RuntimeSyncEngine, WorldCache,
 };
 use vrcx_0_application_realtime::RealtimeFriendSnapshot;
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_contracts::{VrchatJsonResponse, WorldSummaryOutput};
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::json::RawJson;
@@ -179,8 +179,8 @@ pub trait QuickSearchRemoteRequests: Send + Sync {
         current_user_id: String,
         n: i32,
         offset: i32,
-    ) -> Result<VrchatApiRequest>;
-    fn user_groups(&self, endpoint: String, current_user_id: String) -> Result<VrchatApiRequest>;
+    ) -> Result<VrchatRequest>;
+    fn user_groups(&self, endpoint: String, current_user_id: String) -> Result<VrchatRequest>;
 }
 
 pub struct QuickSearchSources {
@@ -589,7 +589,7 @@ fn remap_group_membership_row_ids(rows: &mut [Value]) {
 async fn execute_rows(
     runtime: &QuickSearchRuntimeInner,
     scope: &RuntimeAuthScopeSnapshot,
-    request: VrchatApiRequest,
+    request: VrchatRequest,
 ) -> Result<Vec<Value>> {
     let response = runtime.remote.send(request, VrchatScope::Vrchat).await?;
     GATE.ensure_matches(&runtime.auth_scope, scope)?;

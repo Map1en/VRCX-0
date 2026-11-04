@@ -2,8 +2,8 @@ use vrcx_0_contracts::vrchat_api::{VrchatRequestBody, VrchatUpload};
 
 use super::*;
 
-fn image_request(image_data: String) -> VrchatApiRequest {
-    VrchatApiRequest {
+fn image_request(image_data: String) -> VrchatRequest {
+    VrchatRequest {
         body: VrchatRequestBody::Upload(VrchatUpload::Image {
             image_data,
             post_data: None,
@@ -15,7 +15,7 @@ fn image_request(image_data: String) -> VrchatApiRequest {
 
 #[test]
 fn require_prepared_image_data_rejects_non_image_and_blank_uploads() {
-    let missing = VrchatApiRequest::default();
+    let missing = VrchatRequest::default();
     let blank = image_request(" \t\r\n ".into());
     let valid = image_request(" prepared ".into());
 

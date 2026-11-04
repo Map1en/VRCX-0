@@ -86,10 +86,11 @@ mod tests {
 
     use futures_util::future::join_all;
     use tokio::sync::Mutex as AsyncMutex;
-    use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatScope};
+    use vrcx_0_application_core::vrchat_api::VrchatScope;
     use vrcx_0_application_core::{
         RemoteMutationGate, RuntimeAuthScope, RuntimeDiagnostics, RuntimeSyncEngine,
     };
+    use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
     use super::*;
     use crate::remote::{VrchatRequestFuture, VrchatRequestPort};
@@ -112,7 +113,7 @@ mod tests {
                 primary_id: input.group_id.clone(),
                 secondary_id: Some(input.user_id.clone()),
                 tertiary_id: None,
-                request: VrchatApiRequest {
+                request: VrchatRequest {
                     method: Some("GET".into()),
                     path: Some(format!(
                         "groups/{}/members/{}",
@@ -162,7 +163,7 @@ mod tests {
     }
 
     impl VrchatRequestPort for ScriptedMemberPort {
-        fn send(&self, input: VrchatApiRequest, _scope: VrchatScope) -> VrchatRequestFuture<'_> {
+        fn send(&self, input: VrchatRequest, _scope: VrchatScope) -> VrchatRequestFuture<'_> {
             let path = input.path.unwrap_or_default();
             self.calls.lock().unwrap().push(path.clone());
             let response = self

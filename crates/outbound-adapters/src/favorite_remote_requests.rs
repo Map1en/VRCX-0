@@ -4,10 +4,9 @@ use vrcx_0_application::favorites::{
     FavoriteRemote, FavoriteRemoteAddInput, FavoriteRemoteCommand, FavoriteRemoteFuture,
     FavoriteRemoteGroupClearInput, FavoriteRemoteGroupSaveInput,
 };
-use vrcx_0_application_core::vrchat_api::{
-    execute_api_command, VrchatApiRequest, VrchatApiResponse, VrchatScope,
-};
+use vrcx_0_application_core::vrchat_api::{execute_api_command, VrchatApiResponse, VrchatScope};
 use vrcx_0_application_core::{RuntimeDiagnostics, RuntimeSyncEngine, WebClient, WorldCache};
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_vrchat_client::avatars::avatar_get_input;
 use vrcx_0_vrchat_client::favorites::{
     favorite_add_input, favorite_avatars_get_input, favorite_delete_input,
@@ -40,7 +39,7 @@ impl VrchatFavoriteRemote {
 
     async fn execute(
         &self,
-        request: VrchatApiRequest,
+        request: VrchatRequest,
         command: Option<FavoriteRemoteCommand>,
     ) -> crate::Result<VrchatApiResponse> {
         match command {

@@ -5,8 +5,8 @@ use serde_json::json;
 
 use crate::http_api::{
     api_input, encode_path_segment, get_input, normalize_text, require_text, HttpApiError,
-    HttpApiRequestInput,
 };
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
 pub fn encode_uri_component(value: &str) -> String {
     let mut output = String::new();
@@ -30,15 +30,15 @@ pub fn encode_uri_component(value: &str) -> String {
     output
 }
 
-pub fn config_get_input(endpoint: String) -> HttpApiRequestInput {
+pub fn config_get_input(endpoint: String) -> VrchatRequest {
     get_input(endpoint, "config", HashMap::new())
 }
 
-pub fn current_user_get_input(endpoint: String) -> HttpApiRequestInput {
+pub fn current_user_get_input(endpoint: String) -> VrchatRequest {
     get_input(endpoint, "auth/user", HashMap::new())
 }
 
-pub fn session_get_input(endpoint: String) -> HttpApiRequestInput {
+pub fn session_get_input(endpoint: String) -> VrchatRequest {
     get_input(endpoint, "auth", HashMap::new())
 }
 
@@ -48,7 +48,7 @@ pub fn login_basic_input(
     password: String,
     username_message: &str,
     password_message: &str,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let username = require_text(username, username_message)?;
     let password = require_text(password, password_message)?;
     let credentials = format!(
@@ -59,7 +59,7 @@ pub fn login_basic_input(
     let authorization = format!("Basic {}", B64.encode(credentials.as_bytes()));
     Ok((
         username.clone(),
-        HttpApiRequestInput {
+        VrchatRequest {
             headers: Some(HashMap::from([(
                 "Authorization".to_string(),
                 authorization,
@@ -69,7 +69,7 @@ pub fn login_basic_input(
     ))
 }
 
-pub fn totp_verify_input(endpoint: String, code: String) -> HttpApiRequestInput {
+pub fn totp_verify_input(endpoint: String, code: String) -> VrchatRequest {
     api_input(
         endpoint,
         "POST",
@@ -78,7 +78,7 @@ pub fn totp_verify_input(endpoint: String, code: String) -> HttpApiRequestInput 
     )
 }
 
-pub fn otp_verify_input(endpoint: String, code: String) -> HttpApiRequestInput {
+pub fn otp_verify_input(endpoint: String, code: String) -> VrchatRequest {
     let normalized_code = normalize_text(code).replace(char::is_whitespace, "");
     let formatted_code = if normalized_code.contains('-') {
         normalized_code
@@ -100,7 +100,7 @@ pub fn otp_verify_input(endpoint: String, code: String) -> HttpApiRequestInput {
     )
 }
 
-pub fn email_otp_verify_input(endpoint: String, code: String) -> HttpApiRequestInput {
+pub fn email_otp_verify_input(endpoint: String, code: String) -> VrchatRequest {
     api_input(
         endpoint,
         "POST",
@@ -109,11 +109,11 @@ pub fn email_otp_verify_input(endpoint: String, code: String) -> HttpApiRequestI
     )
 }
 
-pub fn device_code_input(endpoint: String) -> HttpApiRequestInput {
+pub fn device_code_input(endpoint: String) -> VrchatRequest {
     api_input(endpoint, "POST", "auth/device/code", Some(json!({})))
 }
 
-pub fn device_status_input(endpoint: String, device_code: String) -> HttpApiRequestInput {
+pub fn device_status_input(endpoint: String, device_code: String) -> VrchatRequest {
     api_input(
         endpoint,
         "POST",
@@ -122,11 +122,11 @@ pub fn device_status_input(endpoint: String, device_code: String) -> HttpApiRequ
     )
 }
 
-pub fn logout_input(endpoint: String) -> HttpApiRequestInput {
+pub fn logout_input(endpoint: String) -> VrchatRequest {
     api_input(endpoint, "PUT", "logout", None)
 }
 
-pub fn visits_get_input(endpoint: String) -> HttpApiRequestInput {
+pub fn visits_get_input(endpoint: String) -> VrchatRequest {
     get_input(endpoint, "visits", HashMap::new())
 }
 
@@ -135,7 +135,7 @@ pub fn file_analysis_get_input(
     file_id: String,
     version: i64,
     variant: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let file_id = require_text(file_id, "VrchatAuthFileAnalysisGet requires fileId.")?;
     let variant = require_text(variant, "VrchatAuthFileAnalysisGet requires variant.")?;
     Ok((
@@ -160,7 +160,7 @@ mod tests {
 
     const ENDPOINT: &str = "https://api.vrchat.cloud/api/1";
 
-    fn request(input: HttpApiRequestInput) -> crate::web_client::WebExecuteRequest {
+    fn request(input: VrchatRequest) -> crate::web_client::WebExecuteRequest {
         build_web_execute_request(input, ApiScope::Vrchat).unwrap()
     }
 

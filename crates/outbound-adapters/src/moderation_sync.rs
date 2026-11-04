@@ -4,7 +4,8 @@ use vrcx_0_application::social::{
     LocalModerationInput, LocalModerationOutput, ModerationSyncRemoteRequests, ModerationSyncStore,
     RemoteModerationInput,
 };
-use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Result};
+use vrcx_0_application_core::Result;
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_core::OwnerId;
 use vrcx_0_persistence::{local_moderation, DatabaseService};
 use vrcx_0_vrchat_client::moderation::{
@@ -50,7 +51,7 @@ impl ModerationSyncStore for LocalModerationSyncStore {
 pub struct VrchatModerationSyncRemoteRequests;
 
 impl ModerationSyncRemoteRequests for VrchatModerationSyncRemoteRequests {
-    fn list(&self, endpoint: String) -> Result<VrchatApiRequest> {
+    fn list(&self, endpoint: String) -> Result<VrchatRequest> {
         Ok(player_moderations_get_input(endpoint))
     }
 
@@ -60,7 +61,7 @@ impl ModerationSyncRemoteRequests for VrchatModerationSyncRemoteRequests {
         enabled: bool,
         target_user_id: String,
         moderation_type: String,
-    ) -> Result<VrchatApiRequest> {
+    ) -> Result<VrchatRequest> {
         Ok(player_moderation_update_input(
             endpoint,
             enabled,

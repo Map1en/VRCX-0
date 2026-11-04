@@ -7,9 +7,9 @@ use vrcx_0_contracts::friend_log::{
 };
 
 use crate::remote::VrchatRequestPort;
-use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
 use vrcx_0_application_core::{Result, RuntimeAuthScope};
 use vrcx_0_application_realtime::{RealtimeHostRuntime, RealtimeStore};
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
 pub trait SocialMutationStore: Send + Sync {
     fn delete_current_friend(
@@ -33,23 +33,23 @@ pub trait SocialMutationStore: Send + Sync {
 }
 
 pub trait SocialMutationRemoteRequests: Send + Sync {
-    fn unfriend(&self, endpoint: String, target_user_id: String) -> Result<VrchatApiRequest>;
+    fn unfriend(&self, endpoint: String, target_user_id: String) -> Result<VrchatRequest>;
     fn send_friend_request(
         &self,
         endpoint: String,
         target_user_id: String,
-    ) -> Result<VrchatApiRequest>;
+    ) -> Result<VrchatRequest>;
     fn cancel_friend_request(
         &self,
         endpoint: String,
         target_user_id: String,
         notification_id: String,
-    ) -> Result<VrchatApiRequest>;
+    ) -> Result<VrchatRequest>;
     fn accept_friend_request(
         &self,
         endpoint: String,
         notification_id: String,
-    ) -> Result<VrchatApiRequest>;
+    ) -> Result<VrchatRequest>;
 }
 
 #[cfg(any(test, feature = "test-utils"))]
@@ -58,7 +58,7 @@ pub struct TestSocialMutationRemoteRequests;
 
 #[cfg(any(test, feature = "test-utils"))]
 impl SocialMutationRemoteRequests for TestSocialMutationRemoteRequests {
-    fn unfriend(&self, endpoint: String, target_user_id: String) -> Result<VrchatApiRequest> {
+    fn unfriend(&self, endpoint: String, target_user_id: String) -> Result<VrchatRequest> {
         Ok(test_remote_request(
             endpoint,
             "DELETE",
@@ -70,7 +70,7 @@ impl SocialMutationRemoteRequests for TestSocialMutationRemoteRequests {
         &self,
         endpoint: String,
         target_user_id: String,
-    ) -> Result<VrchatApiRequest> {
+    ) -> Result<VrchatRequest> {
         Ok(test_remote_request(
             endpoint,
             "POST",
@@ -83,7 +83,7 @@ impl SocialMutationRemoteRequests for TestSocialMutationRemoteRequests {
         endpoint: String,
         target_user_id: String,
         _notification_id: String,
-    ) -> Result<VrchatApiRequest> {
+    ) -> Result<VrchatRequest> {
         Ok(test_remote_request(
             endpoint,
             "DELETE",
@@ -95,7 +95,7 @@ impl SocialMutationRemoteRequests for TestSocialMutationRemoteRequests {
         &self,
         endpoint: String,
         notification_id: String,
-    ) -> Result<VrchatApiRequest> {
+    ) -> Result<VrchatRequest> {
         Ok(test_remote_request(
             endpoint,
             "PUT",
@@ -105,8 +105,8 @@ impl SocialMutationRemoteRequests for TestSocialMutationRemoteRequests {
 }
 
 #[cfg(any(test, feature = "test-utils"))]
-fn test_remote_request(endpoint: String, method: &str, path: String) -> VrchatApiRequest {
-    VrchatApiRequest {
+fn test_remote_request(endpoint: String, method: &str, path: String) -> VrchatRequest {
+    VrchatRequest {
         endpoint: Some(endpoint),
         method: Some(method.to_string()),
         path: Some(path),

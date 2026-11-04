@@ -4,15 +4,10 @@ use serde_json::{json, Value};
 
 use crate::http_api::{
     api_input, encode_path_segment, get_input, normalize_text, require_text, HttpApiError,
-    HttpApiRequestInput,
 };
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
-pub fn friends_get_input(
-    endpoint: String,
-    offline: bool,
-    n: i32,
-    offset: i32,
-) -> HttpApiRequestInput {
+pub fn friends_get_input(endpoint: String, offline: bool, n: i32, offset: i32) -> VrchatRequest {
     get_input(
         endpoint,
         "auth/user/friends",
@@ -27,7 +22,7 @@ pub fn friends_get_input(
 pub fn friend_status_get_input(
     endpoint: String,
     user_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatFriendStatusGet requires userId.")?;
     Ok((
         user_id.clone(),
@@ -42,7 +37,7 @@ pub fn friend_status_get_input(
 pub fn friend_delete_input(
     endpoint: String,
     user_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatFriendDelete requires userId.")?;
     Ok((
         user_id.clone(),
@@ -58,7 +53,7 @@ pub fn friend_delete_input(
 pub fn friend_request_send_input(
     endpoint: String,
     user_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatFriendRequestSend requires userId.")?;
     Ok((
         user_id.clone(),
@@ -75,7 +70,7 @@ pub fn friend_request_cancel_input(
     endpoint: String,
     user_id: String,
     notification_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatFriendRequestCancel requires userId.")?;
     let notification_id = normalize_text(notification_id);
     let body = if notification_id.is_empty() {

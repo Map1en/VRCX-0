@@ -4,16 +4,17 @@ use serde_json::{json, Value};
 
 use crate::http_api::{
     api_input, encode_path_segment, get_input, normalize_text, query_input, require_text,
-    HttpApiError, HttpApiRequestInput,
+    HttpApiError,
 };
 use crate::query::{AvatarListSort, QueryOrder, ReleaseStatusFilter};
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
 pub use vrcx_0_contracts::vrchat_requests::{AvatarReleaseStatus, AvatarUpdateRequest};
 
 pub fn avatar_get_input(
     endpoint: String,
     avatar_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let avatar_id = require_text(avatar_id, "VrchatAvatarGet requires avatarId.")?;
     Ok((
         avatar_id.clone(),
@@ -28,7 +29,7 @@ pub fn avatar_get_input(
 pub fn avatar_gallery_get_input(
     endpoint: String,
     avatar_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let avatar_id = require_text(avatar_id, "VrchatAvatarGalleryGet requires avatarId.")?;
     Ok((
         avatar_id.clone(),
@@ -58,7 +59,7 @@ pub struct AvatarListByUserGetInput {
 
 pub fn avatar_list_by_user_get_input(
     input: AvatarListByUserGetInput,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let user = normalize_text(input.user);
     let user_id = normalize_text(input.user_id);
     if user.is_empty() && user_id.is_empty() {
@@ -92,18 +93,18 @@ pub fn avatar_list_by_user_get_input(
     Ok((display, get_input(input.endpoint, "avatars", params)))
 }
 
-pub fn avatar_styles_get_input(endpoint: String) -> HttpApiRequestInput {
+pub fn avatar_styles_get_input(endpoint: String) -> VrchatRequest {
     get_input(endpoint, "avatarStyles", HashMap::new())
 }
 
-pub fn avatar_moderations_get_input(endpoint: String) -> HttpApiRequestInput {
+pub fn avatar_moderations_get_input(endpoint: String) -> VrchatRequest {
     get_input(endpoint, "auth/user/avatarmoderations", HashMap::new())
 }
 
 pub fn avatar_file_get_input(
     endpoint: String,
     file_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let file_id = require_text(file_id, "VrchatAvatarFileGet requires fileId.")?;
     Ok((
         file_id.clone(),
@@ -118,7 +119,7 @@ pub fn avatar_file_get_input(
 pub fn avatar_select_input(
     endpoint: String,
     avatar_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let avatar_id = require_text(avatar_id, "VrchatAvatarSelect requires avatarId.")?;
     Ok((
         avatar_id.clone(),
@@ -134,7 +135,7 @@ pub fn avatar_select_input(
 pub fn avatar_select_fallback_input(
     endpoint: String,
     avatar_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let avatar_id = require_text(avatar_id, "VrchatAvatarSelectFallback requires avatarId.")?;
     Ok((
         avatar_id.clone(),
@@ -151,7 +152,7 @@ pub fn avatar_save_input(
     endpoint: String,
     avatar_id: String,
     params: AvatarUpdateRequest,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let avatar_id = require_text(avatar_id, "VrchatAvatarSave requires avatarId.")?;
     if params.id != avatar_id {
         return Err(HttpApiError::Custom(
@@ -172,7 +173,7 @@ pub fn avatar_save_input(
 pub fn avatar_delete_input(
     endpoint: String,
     avatar_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let avatar_id = require_text(avatar_id, "VrchatAvatarDelete requires avatarId.")?;
     Ok((
         avatar_id.clone(),
@@ -188,7 +189,7 @@ pub fn avatar_delete_input(
 pub fn avatar_impostor_create_input(
     endpoint: String,
     avatar_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let avatar_id = require_text(avatar_id, "VrchatAvatarImpostorCreate requires avatarId.")?;
     Ok((
         avatar_id.clone(),
@@ -207,7 +208,7 @@ pub fn avatar_impostor_create_input(
 pub fn avatar_impostor_delete_input(
     endpoint: String,
     avatar_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let avatar_id = require_text(avatar_id, "VrchatAvatarImpostorDelete requires avatarId.")?;
     Ok((
         avatar_id.clone(),
@@ -223,7 +224,7 @@ pub fn avatar_impostor_delete_input(
 pub fn avatar_moderation_send_input(
     endpoint: String,
     avatar_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let avatar_id = require_text(avatar_id, "VrchatAvatarModerationSend requires avatarId.")?;
     Ok((
         avatar_id.clone(),
@@ -242,7 +243,7 @@ pub fn avatar_moderation_send_input(
 pub fn avatar_moderation_delete_input(
     endpoint: String,
     avatar_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let avatar_id = require_text(avatar_id, "VrchatAvatarModerationDelete requires avatarId.")?;
     Ok((
         avatar_id.clone(),

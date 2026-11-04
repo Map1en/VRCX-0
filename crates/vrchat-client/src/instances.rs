@@ -4,8 +4,9 @@ use serde_json::{json, Value};
 
 use crate::http_api::{
     api_input_skip_empty_query_string as api_input, get_input_skip_empty_query_string as get_input,
-    query_input, require_text, HttpApiError, HttpApiRequestInput,
+    query_input, require_text, HttpApiError,
 };
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
 mod request;
 
@@ -18,7 +19,7 @@ pub fn instance_get_input(
     endpoint: String,
     world_id: String,
     instance_id: String,
-) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, String, VrchatRequest), HttpApiError> {
     let world_id = require_text(world_id, "VrchatInstanceGet requires worldId.")?;
     let instance_id = require_text(instance_id, "VrchatInstanceGet requires instanceId.")?;
     Ok((
@@ -37,7 +38,7 @@ pub fn instance_short_name_get_input(
     world_id: String,
     instance_id: String,
     short_name: String,
-) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, String, VrchatRequest), HttpApiError> {
     let world_id = require_text(world_id, "VrchatInstanceShortNameGet requires worldId.")?;
     let instance_id = require_text(
         instance_id,
@@ -61,7 +62,7 @@ pub fn instance_short_name_get_input(
 pub fn instance_create_input(
     endpoint: String,
     params: InstanceCreateRequest,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+) -> Result<VrchatRequest, HttpApiError> {
     let params = request::validated_instance_create_request(params)?;
     Ok(api_input(endpoint, "POST", "instances", json!(params)))
 }
@@ -71,7 +72,7 @@ pub fn instance_self_invite_input(
     world_id: String,
     instance_id: String,
     short_name: String,
-) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, String, VrchatRequest), HttpApiError> {
     let world_id = require_text(world_id, "VrchatInstanceSelfInvite requires worldId.")?;
     let instance_id = require_text(instance_id, "VrchatInstanceSelfInvite requires instanceId.")?;
     let body = if short_name.is_empty() {
@@ -95,7 +96,7 @@ pub fn instance_close_input(
     endpoint: String,
     location: String,
     hard_close: bool,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let location = require_text(location, "VrchatInstanceClose requires location.")?;
     Ok((
         location.clone(),
@@ -112,7 +113,7 @@ pub fn instance_calendar_link_input(
     endpoint: String,
     location: String,
     calendar_entry_id: Option<String>,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     instance_field_put_input(
         endpoint,
         location,
@@ -126,7 +127,7 @@ pub fn instance_display_name_input(
     endpoint: String,
     location: String,
     display_name: Option<String>,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     instance_field_put_input(
         endpoint,
         location,
@@ -142,7 +143,7 @@ fn instance_field_put_input(
     location_message: &str,
     field: &str,
     value: Option<String>,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let location = require_text(location, location_message)?;
     let value = value
         .map(|value| value.trim().to_string())
@@ -158,7 +159,7 @@ fn instance_field_put_input(
     ))
 }
 
-pub fn instance_count_get_input(endpoint: String) -> HttpApiRequestInput {
+pub fn instance_count_get_input(endpoint: String) -> VrchatRequest {
     get_input(endpoint, "instances/count", HashMap::new())
 }
 

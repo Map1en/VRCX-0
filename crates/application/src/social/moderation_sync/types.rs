@@ -1,10 +1,11 @@
 use crate::remote::VrchatRequestPort;
 use serde::{Deserialize, Serialize};
 use vrcx_0_application_core::RemoteMutationGate;
-use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Result, RuntimeAuthScope};
+use vrcx_0_application_core::{Result, RuntimeAuthScope};
 pub use vrcx_0_contracts::local_moderation::{
     LocalModerationInput, LocalModerationOutput, RemoteModerationInput,
 };
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_core::text::normalize_text;
 use vrcx_0_core::OwnerId;
 
@@ -46,14 +47,14 @@ pub trait ModerationSyncStore: Send + Sync {
 }
 
 pub trait ModerationSyncRemoteRequests: Send + Sync {
-    fn list(&self, endpoint: String) -> Result<VrchatApiRequest>;
+    fn list(&self, endpoint: String) -> Result<VrchatRequest>;
     fn update(
         &self,
         endpoint: String,
         enabled: bool,
         target_user_id: String,
         moderation_type: String,
-    ) -> Result<VrchatApiRequest>;
+    ) -> Result<VrchatRequest>;
 }
 
 #[derive(Debug, Deserialize, specta::Type)]

@@ -11,13 +11,14 @@ use super::types::{
 };
 use crate::remote::VrchatRequestPort;
 use std::{sync::Arc, time::Duration};
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
+use vrcx_0_application_core::vrchat_api::{VrchatApiResponse, VrchatScope};
 use vrcx_0_application_core::RuntimeOperationStatus;
 use vrcx_0_application_core::RuntimeSyncEngine;
 use vrcx_0_application_core::{
     is_remote_mutation_request, AuthenticatedMutationContext, RemoteMutationGate, Result,
 };
 use vrcx_0_application_core::{RuntimeAuthScope, RuntimeDiagnostics};
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
 pub enum GroupRemoteRequest {
     GetGroup(VrchatGroupProfileInput),
@@ -71,7 +72,7 @@ pub struct GroupBuiltRequest {
     pub primary_id: String,
     pub secondary_id: Option<String>,
     pub tertiary_id: Option<String>,
-    pub request: VrchatApiRequest,
+    pub request: VrchatRequest,
 }
 
 pub trait GroupRemoteRequests: Send + Sync {
@@ -79,17 +80,11 @@ pub trait GroupRemoteRequests: Send + Sync {
 }
 
 pub trait GroupMembershipRemoteRequests: Send + Sync {
-    fn user_groups(&self, endpoint: String, user_id: String) -> Result<VrchatApiRequest>;
-    fn user_permissions(&self, endpoint: String, user_id: String) -> Result<VrchatApiRequest>;
-    fn member(
-        &self,
-        endpoint: String,
-        group_id: String,
-        user_id: String,
-    ) -> Result<VrchatApiRequest>;
-    fn kick(&self, endpoint: String, group_id: String, user_id: String)
-        -> Result<VrchatApiRequest>;
-    fn ban(&self, endpoint: String, group_id: String, user_id: String) -> Result<VrchatApiRequest>;
+    fn user_groups(&self, endpoint: String, user_id: String) -> Result<VrchatRequest>;
+    fn user_permissions(&self, endpoint: String, user_id: String) -> Result<VrchatRequest>;
+    fn member(&self, endpoint: String, group_id: String, user_id: String) -> Result<VrchatRequest>;
+    fn kick(&self, endpoint: String, group_id: String, user_id: String) -> Result<VrchatRequest>;
+    fn ban(&self, endpoint: String, group_id: String, user_id: String) -> Result<VrchatRequest>;
 }
 
 #[derive(Clone)]
@@ -126,7 +121,7 @@ const GROUP_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
 pub(super) async fn execute_group_api_raw(
     deps: &GroupApiDeps,
-    mut input: VrchatApiRequest,
+    mut input: VrchatRequest,
 ) -> Result<VrchatApiResponse> {
     if is_remote_mutation_request(&input) {
         let mutation = AuthenticatedMutationContext::capture(
@@ -147,7 +142,7 @@ pub(super) async fn execute_group_api_raw(
 pub(super) fn build_member_request(
     deps: &GroupApiDeps,
     input: VrchatGroupUserInput,
-) -> Result<VrchatApiRequest> {
+) -> Result<VrchatRequest> {
     Ok(deps
         .remote_requests
         .build(GroupRemoteRequest::GetMember(input))?
@@ -158,7 +153,7 @@ pub(super) async fn execute_group_api(
     deps: &GroupApiDeps,
     command: &str,
     detail: impl Into<String>,
-    input: VrchatApiRequest,
+    input: VrchatRequest,
 ) -> Result<VrchatApiResponse> {
     deps.diagnostics
         .record_command(command, RuntimeOperationStatus::Running, detail.into());

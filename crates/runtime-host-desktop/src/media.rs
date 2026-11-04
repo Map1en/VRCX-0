@@ -10,11 +10,11 @@ use vrcx_0_application::social::{
     ensure_print_deletable, favorite_state, set_print_favorite, set_print_favorites,
     PrintFavoriteBulkResult, PrintFavoriteState,
 };
-use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
 use vrcx_0_application_core::{
     save_ugc_image_to_file, AuthenticatedMutationContext, ImageCache, RemoteMutationGate,
     RuntimeAuthScope, RuntimeDiagnostics, RuntimeOperationStatus, UgcCategory, WebClient,
 };
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_platform::app_paths::AppPaths;
 
@@ -66,8 +66,8 @@ impl DesktopMediaRuntime {
 
     pub fn prepare_media_upload_request(
         &self,
-        input: VrchatApiRequest,
-    ) -> vrcx_0_application_core::Result<VrchatApiRequest> {
+        input: VrchatRequest,
+    ) -> vrcx_0_application_core::Result<VrchatRequest> {
         application_media::prepare_media_upload_request(&self.media_upload_adapter, input)
     }
 

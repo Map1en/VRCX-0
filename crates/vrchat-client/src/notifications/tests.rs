@@ -6,7 +6,7 @@ use super::*;
 
 const ENDPOINT: &str = "https://api.vrchat.cloud/api/1";
 
-fn post_data(request: &HttpApiRequestInput) -> Value {
+fn post_data(request: &VrchatRequest) -> Value {
     let Some(HttpApiUpload::LegacyImage { post_data, .. }) = request.body.as_upload() else {
         panic!("expected legacy image upload");
     };

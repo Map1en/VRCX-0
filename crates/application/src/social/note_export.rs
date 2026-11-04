@@ -15,9 +15,10 @@ use vrcx_0_application_core::RuntimeVrchatAuthFailurePayload;
 use crate::remote::VrchatRequestPort;
 use crate::scope_gate::ScopeGate;
 use vrcx_0_application_core::{
-    vrchat_api::{VrchatApiRequest, VrchatScope},
-    Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus, TaskSupervisor,
+    vrchat_api::VrchatScope, Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot,
+    RuntimeEventBus, TaskSupervisor,
 };
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_core::OwnerId;
 
 const GATE: ScopeGate = ScopeGate::new("Note export");
@@ -115,12 +116,7 @@ pub trait NoteExportActions: Send + Sync {
 }
 
 pub trait NoteExportRemoteRequests: Send + Sync {
-    fn save_note(
-        &self,
-        endpoint: String,
-        user_id: String,
-        note: String,
-    ) -> Result<VrchatApiRequest>;
+    fn save_note(&self, endpoint: String, user_id: String, note: String) -> Result<VrchatRequest>;
 }
 
 pub struct VrchatNoteExportActions<'a> {

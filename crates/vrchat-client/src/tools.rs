@@ -2,10 +2,9 @@ use std::collections::HashMap;
 
 use serde_json::{json, Value};
 
-use crate::http_api::{
-    api_input, encode_path_segment, get_input, require_text, HttpApiError, HttpApiRequestInput,
-};
+use crate::http_api::{api_input, encode_path_segment, get_input, require_text, HttpApiError};
 use crate::query::serialize_query;
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
 pub use vrcx_0_contracts::vrchat_requests::{
     CalendarListParams, GroupCalendarEventAccessType, GroupCalendarEventMutation,
@@ -13,14 +12,14 @@ pub use vrcx_0_contracts::vrchat_requests::{
     InviteMessageType, ModerationReportType,
 };
 
-pub fn calendars_get_input(endpoint: String, params: CalendarListParams) -> HttpApiRequestInput {
+pub fn calendars_get_input(endpoint: String, params: CalendarListParams) -> VrchatRequest {
     get_input(endpoint, "calendar", serialize_query(&params))
 }
 
 pub fn group_calendar_get_input(
     endpoint: String,
     group_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let group_id = require_text(group_id, "VrchatToolsGroupCalendarGet requires groupId.")?;
     Ok((
         group_id.clone(),
@@ -35,14 +34,11 @@ pub fn group_calendar_get_input(
 pub fn following_calendars_get_input(
     endpoint: String,
     params: CalendarListParams,
-) -> HttpApiRequestInput {
+) -> VrchatRequest {
     get_input(endpoint, "calendar/following", serialize_query(&params))
 }
 
-pub fn featured_calendars_get_input(
-    endpoint: String,
-    params: CalendarListParams,
-) -> HttpApiRequestInput {
+pub fn featured_calendars_get_input(endpoint: String, params: CalendarListParams) -> VrchatRequest {
     get_input(endpoint, "calendar/featured", serialize_query(&params))
 }
 
@@ -51,7 +47,7 @@ pub fn group_event_follow_input(
     group_id: String,
     event_id: String,
     is_following: bool,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let group_id = require_text(group_id, "VrchatToolsGroupEventFollow requires groupId.")?;
     let event_id = require_text(event_id, "VrchatToolsGroupEventFollow requires eventId.")?;
     Ok((
@@ -89,7 +85,7 @@ pub fn group_event_create_input(
     endpoint: String,
     group_id: String,
     event: GroupCalendarEventMutation,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let group_id = require_text(group_id, "VrchatToolsGroupEventCreate requires groupId.")?;
     let body = group_event_body(event)?;
     Ok((
@@ -108,7 +104,7 @@ pub fn group_event_update_input(
     group_id: String,
     event_id: String,
     event: GroupCalendarEventMutation,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let group_id = require_text(group_id, "VrchatToolsGroupEventUpdate requires groupId.")?;
     let event_id = require_text(event_id, "VrchatToolsGroupEventUpdate requires eventId.")?;
     let body = group_event_body(event)?;
@@ -131,7 +127,7 @@ pub fn group_event_delete_input(
     endpoint: String,
     group_id: String,
     event_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let group_id = require_text(group_id, "VrchatToolsGroupEventDelete requires groupId.")?;
     let event_id = require_text(event_id, "VrchatToolsGroupEventDelete requires eventId.")?;
     Ok((
@@ -153,7 +149,7 @@ pub fn group_calendar_event_get_input(
     endpoint: String,
     group_id: String,
     event_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let group_id = require_text(
         group_id,
         "VrchatToolsGroupCalendarEventGet requires groupId.",
@@ -180,7 +176,7 @@ pub fn group_calendar_ics_get_input(
     endpoint: String,
     group_id: String,
     event_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let group_id = require_text(group_id, "VrchatToolsGroupCalendarIcsGet requires groupId.")?;
     let event_id = require_text(event_id, "VrchatToolsGroupCalendarIcsGet requires eventId.")?;
     Ok((
@@ -201,7 +197,7 @@ pub fn user_note_save_input(
     endpoint: String,
     target_user_id: String,
     note: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let target_user_id = require_text(
         target_user_id,
         "VrchatToolsUserNoteSave requires targetUserId.",
@@ -223,7 +219,7 @@ pub fn user_report_input(
     category: String,
     reason: String,
     description: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatToolsUserReport requires userId.")?;
     let category = require_text(category, "VrchatToolsUserReport requires category.")?;
     let reason = require_text(reason, "VrchatToolsUserReport requires reason.")?;
@@ -250,7 +246,7 @@ pub fn moderation_reports_get_input(
     offset: i32,
     closed_only: bool,
     report_type: Option<ModerationReportType>,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let reporting_user_id = require_text(
         reporting_user_id,
         "VrchatToolsModerationReportsGet requires currentUserId.",
@@ -276,7 +272,7 @@ pub fn invite_messages_get_input(
     endpoint: String,
     current_user_id: String,
     message_type: InviteMessageType,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let current_user_id = require_text(
         current_user_id,
         "VrchatToolsInviteMessagesGet requires currentUserId.",
@@ -302,7 +298,7 @@ pub fn invite_message_edit_input(
     message_type: InviteMessageType,
     slot: i32,
     message: String,
-) -> Result<(i32, HttpApiRequestInput), HttpApiError> {
+) -> Result<(i32, VrchatRequest), HttpApiError> {
     let current_user_id = require_text(
         current_user_id,
         "VrchatToolsInviteMessageEdit requires currentUserId.",
@@ -328,7 +324,7 @@ pub fn invite_message_edit_input(
 mod tests {
     use super::*;
 
-    fn json_body(request: &HttpApiRequestInput) -> &Value {
+    fn json_body(request: &VrchatRequest) -> &Value {
         request.body.as_json().expect("expected JSON request body")
     }
 

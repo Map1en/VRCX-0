@@ -4,7 +4,8 @@ use vrcx_0_application::social::{
     MutualGraphMetaInput, MutualGraphRemoteRequests, MutualGraphSnapshotEntryInput,
     MutualGraphSnapshotOutput, MutualGraphStore,
 };
-use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Result};
+use vrcx_0_application_core::Result;
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_persistence::{mutual_graph, DatabaseService};
 use vrcx_0_vrchat_client::users::user_mutual_friends_get_input;
 
@@ -62,7 +63,7 @@ impl MutualGraphRemoteRequests for VrchatMutualGraphRemoteRequests {
         user_id: String,
         n: i32,
         offset: i32,
-    ) -> Result<VrchatApiRequest> {
+    ) -> Result<VrchatRequest> {
         Ok(user_mutual_friends_get_input(endpoint, user_id, n, offset)?.1)
     }
 }

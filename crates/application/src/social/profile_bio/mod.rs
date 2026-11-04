@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use chrono::{DateTime, Utc};
 use vrcx_0_application_core::vrchat_api::{
-    classify_api_response, ApiResponseClass, VrchatApiRequest, VrchatApiResponse, VrchatScope,
+    classify_api_response, ApiResponseClass, VrchatApiResponse, VrchatScope,
 };
 use vrcx_0_application_core::Result;
 use vrcx_0_application_realtime::RealtimeHostRuntime;
@@ -12,6 +12,7 @@ pub use vrcx_0_contracts::profile_bio::{
     PROFILE_BIO_SCAN_PAUSE,
 };
 use vrcx_0_contracts::vrchat_api::VrchatJsonResponse;
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_core::time::iso_millis;
 use vrcx_0_core::OwnerId;
 
@@ -31,7 +32,7 @@ pub trait ProfileBioStore: Send + Sync {
 }
 
 pub trait ProfileBioRemoteRequests: Send + Sync {
-    fn profile(&self, endpoint: String, user_id: String) -> Result<VrchatApiRequest>;
+    fn profile(&self, endpoint: String, user_id: String) -> Result<VrchatRequest>;
 }
 
 fn observation_from_response(response: &VrchatApiResponse) -> Option<ProfileBioObservation> {

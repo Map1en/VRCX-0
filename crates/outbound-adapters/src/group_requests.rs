@@ -1,5 +1,6 @@
 use vrcx_0_application::social::{GroupBuiltRequest, GroupRemoteRequest, GroupRemoteRequests};
-use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Result};
+use vrcx_0_application_core::Result;
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 use vrcx_0_vrchat_client::groups::{
     current_user_group_instances_get_input, delete_input, gallery_create_input,
@@ -293,7 +294,7 @@ impl GroupRemoteRequests for VrchatGroupRemoteRequests {
     }
 }
 
-fn built1(primary_id: String, request: VrchatApiRequest) -> GroupBuiltRequest {
+fn built1(primary_id: String, request: VrchatRequest) -> GroupBuiltRequest {
     GroupBuiltRequest {
         primary_id,
         secondary_id: None,
@@ -302,11 +303,7 @@ fn built1(primary_id: String, request: VrchatApiRequest) -> GroupBuiltRequest {
     }
 }
 
-fn built2(
-    primary_id: String,
-    secondary_id: String,
-    request: VrchatApiRequest,
-) -> GroupBuiltRequest {
+fn built2(primary_id: String, secondary_id: String, request: VrchatRequest) -> GroupBuiltRequest {
     GroupBuiltRequest {
         primary_id,
         secondary_id: Some(secondary_id),
@@ -319,7 +316,7 @@ fn built3(
     primary_id: String,
     secondary_id: String,
     tertiary_id: String,
-    request: VrchatApiRequest,
+    request: VrchatRequest,
 ) -> GroupBuiltRequest {
     GroupBuiltRequest {
         primary_id,

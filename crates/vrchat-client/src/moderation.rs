@@ -1,8 +1,9 @@
 use serde_json::json;
 
-use crate::http_api::{api_input, HttpApiRequestInput};
+use crate::http_api::api_input;
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
-pub fn player_moderations_get_input(endpoint: String) -> HttpApiRequestInput {
+pub fn player_moderations_get_input(endpoint: String) -> VrchatRequest {
     api_input(endpoint, "GET", "auth/user/playermoderations", None)
 }
 
@@ -11,7 +12,7 @@ pub fn player_moderation_update_input(
     enabled: bool,
     target_user_id: String,
     type_name: String,
-) -> HttpApiRequestInput {
+) -> VrchatRequest {
     let path = if enabled {
         "auth/user/playermoderations"
     } else {

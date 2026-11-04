@@ -6,7 +6,7 @@ use super::*;
 
 const ENDPOINT: &str = "https://api.vrchat.cloud/api/1";
 
-fn post_data(request: &HttpApiRequestInput) -> Value {
+fn post_data(request: &VrchatRequest) -> Value {
     let post_data = match request.body.as_upload().unwrap() {
         HttpApiUpload::Image { post_data, .. }
         | HttpApiUpload::PrintImage { post_data, .. }

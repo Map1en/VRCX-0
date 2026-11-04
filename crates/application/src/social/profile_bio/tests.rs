@@ -3,13 +3,14 @@ use std::sync::Mutex;
 
 use chrono::{DateTime, Utc};
 use serde_json::json;
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
+use vrcx_0_application_core::vrchat_api::{VrchatApiResponse, VrchatScope};
 use vrcx_0_application_core::{CallRecorder, Result, ScriptedResults};
 use vrcx_0_application_realtime::test_support::{
     feed_lookup_input, runtime_with_active_session, seed_friend_baseline, TestDir,
     TestRealtimeHostRuntime,
 };
 use vrcx_0_contracts::feed::{FeedFilter, FeedRowOutput, FeedRowsQueryInput};
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_core::OwnerId;
 
 use crate::remote::{VrchatRequestFuture, VrchatRequestPort};
@@ -68,10 +69,10 @@ impl ProfileBioStore for MemoryProfileBioStore {
 struct ProfileRequests;
 
 impl ProfileBioRemoteRequests for ProfileRequests {
-    fn profile(&self, endpoint: String, user_id: String) -> Result<VrchatApiRequest> {
-        Ok(VrchatApiRequest {
+    fn profile(&self, endpoint: String, user_id: String) -> Result<VrchatRequest> {
+        Ok(VrchatRequest {
             path: Some(format!("{endpoint} profile/{user_id}")),
-            ..VrchatApiRequest::default()
+            ..VrchatRequest::default()
         })
     }
 }
@@ -82,7 +83,7 @@ struct ScriptedRequestPort {
 }
 
 impl VrchatRequestPort for ScriptedRequestPort {
-    fn send(&self, input: VrchatApiRequest, _scope: VrchatScope) -> VrchatRequestFuture<'_> {
+    fn send(&self, input: VrchatRequest, _scope: VrchatScope) -> VrchatRequestFuture<'_> {
         self.requests.record(input.path.unwrap_or_default());
         let response = self.responses.next();
         Box::pin(async move { Ok(response) })

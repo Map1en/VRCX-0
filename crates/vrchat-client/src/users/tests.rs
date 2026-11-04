@@ -1,6 +1,6 @@
 use super::*;
 
-fn json_body(request: &HttpApiRequestInput) -> &Value {
+fn json_body(request: &VrchatRequest) -> &Value {
     request.body.as_json().expect("expected JSON request body")
 }
 

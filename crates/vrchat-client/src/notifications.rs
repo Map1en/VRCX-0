@@ -4,12 +4,13 @@ use serde_json::{json, Value};
 
 use crate::http_api::{
     api_input, encode_path_segment, get_input, normalize_text, require_text, HttpApiError,
-    HttpApiRequestBody, HttpApiRequestInput, HttpApiUpload,
+    HttpApiRequestBody, HttpApiUpload,
 };
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
 pub use vrcx_0_contracts::vrchat_requests::RequestInviteRequest;
 
-pub fn notifications_v1_get_input(endpoint: String, n: i32, offset: i32) -> HttpApiRequestInput {
+pub fn notifications_v1_get_input(endpoint: String, n: i32, offset: i32) -> VrchatRequest {
     get_input(
         endpoint,
         "auth/user/notifications",
@@ -20,7 +21,7 @@ pub fn notifications_v1_get_input(endpoint: String, n: i32, offset: i32) -> Http
     )
 }
 
-pub fn notifications_v2_get_input(endpoint: String, n: i32, offset: i32) -> HttpApiRequestInput {
+pub fn notifications_v2_get_input(endpoint: String, n: i32, offset: i32) -> VrchatRequest {
     get_input(
         endpoint,
         "notifications",
@@ -31,11 +32,7 @@ pub fn notifications_v2_get_input(endpoint: String, n: i32, offset: i32) -> Http
     )
 }
 
-pub fn hidden_friend_requests_get_input(
-    endpoint: String,
-    n: i32,
-    offset: i32,
-) -> HttpApiRequestInput {
+pub fn hidden_friend_requests_get_input(endpoint: String, n: i32, offset: i32) -> VrchatRequest {
     get_input(
         endpoint,
         "auth/user/notifications",
@@ -53,7 +50,7 @@ pub fn notification_mark_seen_input(
     user_id: String,
     id: String,
     version: i64,
-) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatNotificationMarkSeen requires userId.")?;
     let id = require_text(id, "VrchatNotificationMarkSeen requires id.")?;
     let path = if version >= 2 {
@@ -68,7 +65,7 @@ pub fn notification_mark_seen_input(
 pub fn notification_accept_friend_request_input(
     endpoint: String,
     id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let id = require_text(id, "VrchatNotificationAcceptFriendRequest requires id.")?;
     Ok((
         id.clone(),
@@ -90,7 +87,7 @@ pub fn notification_hide_remote_input(
     version: i64,
     type_name: String,
     sender_user_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let id = require_text(id, "VrchatNotificationHideRemote requires id.")?;
     let sender_user_id = normalize_text(sender_user_id);
     let (method, path, body) = if type_name == "ignoredFriendRequest" && !sender_user_id.is_empty()
@@ -124,7 +121,7 @@ pub fn notification_respond_input(
     id: String,
     response_type: String,
     response_data: Value,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let id = require_text(id, "VrchatNotificationRespond requires id.")?;
     let response_type = require_text(
         response_type,
@@ -149,7 +146,7 @@ pub fn invite_response_send_input(
     endpoint: String,
     id: String,
     response_slot: i32,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let id = require_text(id, "VrchatInviteResponseSend requires id.")?;
     Ok((
         id.clone(),
@@ -170,7 +167,7 @@ pub fn invite_response_photo_input(
     id: String,
     response_slot: i32,
     image_data: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let id = require_text(id, "VrchatInviteResponsePhotoSend requires id.")?;
     let image_data = require_text(
         image_data,
@@ -178,7 +175,7 @@ pub fn invite_response_photo_input(
     )?;
     Ok((
         id.clone(),
-        HttpApiRequestInput {
+        VrchatRequest {
             endpoint: Some(endpoint),
             method: Some("POST".into()),
             path: Some(format!(
@@ -204,7 +201,7 @@ pub fn invite_send_input(
     endpoint: String,
     receiver_user_id: String,
     params: Value,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let receiver_user_id = require_text(
         receiver_user_id,
         "VrchatInviteSend requires receiverUserId.",
@@ -225,7 +222,7 @@ pub fn invite_photo_input(
     receiver_user_id: String,
     params: Value,
     image_data: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let receiver_user_id = require_text(
         receiver_user_id,
         "VrchatInvitePhotoSend requires receiverUserId.",
@@ -238,7 +235,7 @@ pub fn invite_photo_input(
     };
     Ok((
         receiver_user_id.clone(),
-        HttpApiRequestInput {
+        VrchatRequest {
             endpoint: Some(endpoint),
             method: Some("POST".into()),
             path: Some(format!(
@@ -258,7 +255,7 @@ pub fn request_invite_send_input(
     endpoint: String,
     receiver_user_id: String,
     params: RequestInviteRequest,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let receiver_user_id = require_text(
         receiver_user_id,
         "VrchatRequestInviteSend requires receiverUserId.",
@@ -279,7 +276,7 @@ pub fn request_invite_photo_input(
     receiver_user_id: String,
     params: RequestInviteRequest,
     image_data: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let receiver_user_id = require_text(
         receiver_user_id,
         "VrchatRequestInvitePhotoSend requires receiverUserId.",
@@ -290,7 +287,7 @@ pub fn request_invite_photo_input(
     )?;
     Ok((
         receiver_user_id.clone(),
-        HttpApiRequestInput {
+        VrchatRequest {
             endpoint: Some(endpoint),
             method: Some("POST".into()),
             path: Some(format!(
@@ -319,7 +316,7 @@ pub fn boop_send_input(
     user_id: String,
     emoji_id: String,
     inventory_item_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatBoopSend requires userId.")?;
     let emoji_id = normalize_text(emoji_id);
     let inventory_item_id = normalize_text(inventory_item_id);

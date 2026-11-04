@@ -47,7 +47,7 @@ impl MutualGraphRemoteRequests for NoopMutualGraphRemoteRequests {
         _user_id: String,
         _n: i32,
         _offset: i32,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatRequest> {
         Ok(Default::default())
     }
 }

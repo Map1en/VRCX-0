@@ -9,10 +9,10 @@ use vrcx_0_core::vrchat_json::response_error_message;
 
 use crate::remote::VrchatRequestPort;
 use vrcx_0_application_core::{
-    is_remote_mutation_request,
-    vrchat_api::{VrchatApiRequest, VrchatScope},
-    AuthenticatedMutationContext, Error, Result,
+    is_remote_mutation_request, vrchat_api::VrchatScope, AuthenticatedMutationContext, Error,
+    Result,
 };
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
 pub const BATCH_MUTATION_MAX_ITEMS: usize = 1_000;
 const BATCH_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
@@ -100,22 +100,22 @@ pub trait BatchMutationActions: Send + Sync {
 }
 
 pub trait BatchMutationRemoteRequests: Send + Sync {
-    fn avatar(&self, endpoint: String, avatar_id: String) -> Result<VrchatApiRequest>;
+    fn avatar(&self, endpoint: String, avatar_id: String) -> Result<VrchatRequest>;
     fn save_avatar_tags(
         &self,
         endpoint: String,
         avatar_id: String,
         tags: Vec<String>,
-    ) -> Result<VrchatApiRequest>;
-    fn user_groups(&self, endpoint: String, user_id: String) -> Result<VrchatApiRequest>;
+    ) -> Result<VrchatRequest>;
+    fn user_groups(&self, endpoint: String, user_id: String) -> Result<VrchatRequest>;
     fn set_group_visibility(
         &self,
         endpoint: String,
         group_id: String,
         user_id: String,
         visibility: GroupVisibility,
-    ) -> Result<VrchatApiRequest>;
-    fn leave_group(&self, endpoint: String, group_id: String) -> Result<VrchatApiRequest>;
+    ) -> Result<VrchatRequest>;
+    fn leave_group(&self, endpoint: String, group_id: String) -> Result<VrchatRequest>;
 }
 
 pub struct VrchatBatchMutationActions<'a> {
@@ -139,7 +139,7 @@ impl<'a> VrchatBatchMutationActions<'a> {
 }
 
 impl VrchatBatchMutationActions<'_> {
-    async fn execute_json(&self, mut request: VrchatApiRequest, action: &str) -> Result<Value> {
+    async fn execute_json(&self, mut request: VrchatRequest, action: &str) -> Result<Value> {
         self.mutation.ensure_current()?;
         if is_remote_mutation_request(&request) {
             self.mutation.pace(BATCH_REMOTE_MUTATION_INTERVAL).await;

@@ -1,5 +1,6 @@
 use vrcx_0_application::social::{BatchMutationRemoteRequests, GroupVisibility};
-use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Result};
+use vrcx_0_application_core::Result;
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_vrchat_client::{
     avatars::{avatar_get_input, avatar_save_input, AvatarUpdateRequest},
     groups::{leave_input, member_props_set_input, GroupMemberPatch, GroupMemberVisibility},
@@ -9,7 +10,7 @@ use vrcx_0_vrchat_client::{
 pub struct VrchatBatchMutationRemoteRequests;
 
 impl BatchMutationRemoteRequests for VrchatBatchMutationRemoteRequests {
-    fn avatar(&self, endpoint: String, avatar_id: String) -> Result<VrchatApiRequest> {
+    fn avatar(&self, endpoint: String, avatar_id: String) -> Result<VrchatRequest> {
         Ok(avatar_get_input(endpoint, avatar_id)?.1)
     }
 
@@ -18,7 +19,7 @@ impl BatchMutationRemoteRequests for VrchatBatchMutationRemoteRequests {
         endpoint: String,
         avatar_id: String,
         tags: Vec<String>,
-    ) -> Result<VrchatApiRequest> {
+    ) -> Result<VrchatRequest> {
         Ok(avatar_save_input(
             endpoint,
             avatar_id.clone(),
@@ -35,7 +36,7 @@ impl BatchMutationRemoteRequests for VrchatBatchMutationRemoteRequests {
         .1)
     }
 
-    fn user_groups(&self, endpoint: String, user_id: String) -> Result<VrchatApiRequest> {
+    fn user_groups(&self, endpoint: String, user_id: String) -> Result<VrchatRequest> {
         Ok(user_groups_get_input(endpoint, user_id)?.1)
     }
 
@@ -45,7 +46,7 @@ impl BatchMutationRemoteRequests for VrchatBatchMutationRemoteRequests {
         group_id: String,
         user_id: String,
         visibility: GroupVisibility,
-    ) -> Result<VrchatApiRequest> {
+    ) -> Result<VrchatRequest> {
         let visibility = match visibility {
             GroupVisibility::Visible => GroupMemberVisibility::Visible,
             GroupVisibility::Friends => GroupMemberVisibility::Friends,
@@ -63,7 +64,7 @@ impl BatchMutationRemoteRequests for VrchatBatchMutationRemoteRequests {
         .2)
     }
 
-    fn leave_group(&self, endpoint: String, group_id: String) -> Result<VrchatApiRequest> {
+    fn leave_group(&self, endpoint: String, group_id: String) -> Result<VrchatRequest> {
         Ok(leave_input(endpoint, group_id)?.1)
     }
 }

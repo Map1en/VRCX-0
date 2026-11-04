@@ -7,7 +7,7 @@ use serde_json::Value;
 use tokio::time::{sleep, timeout_at, Instant};
 use vrcx_0_application_core::{Error, Result};
 
-use super::{object_field, ApiJsonResponse, ApiScope, HttpApiRequestInput, SocialBaselineDeps};
+use super::{object_field, ApiJsonResponse, ApiScope, SocialBaselineDeps, VrchatRequest};
 
 #[cfg(test)]
 use std::sync::Arc;
@@ -53,7 +53,7 @@ type RemoteFetchResult<T> = std::result::Result<T, RemoteFetchError>;
 
 pub(crate) async fn execute_vrchat_json_request(
     deps: &SocialBaselineDeps,
-    request: HttpApiRequestInput,
+    request: VrchatRequest,
 ) -> Result<Value> {
     let response = deps.web.execute_api(request, ApiScope::Vrchat).await?;
 
@@ -76,7 +76,7 @@ pub(super) async fn fetch_paged_array<F>(
     build_request: F,
 ) -> Result<Vec<Value>>
 where
-    F: Fn(i32, i32) -> Result<HttpApiRequestInput> + Clone,
+    F: Fn(i32, i32) -> Result<VrchatRequest> + Clone,
 {
     fetch_paged_array_with_page_fetcher(page_size, max_offset, |n, offset| {
         let build_request = build_request.clone();
@@ -95,7 +95,7 @@ where
 
 async fn execute_vrchat_json_page_request(
     deps: &SocialBaselineDeps,
-    request: HttpApiRequestInput,
+    request: VrchatRequest,
 ) -> RemoteFetchResult<Value> {
     let response = deps.web.execute_api(request, ApiScope::Vrchat).await?;
 
@@ -256,7 +256,7 @@ async fn fetch_per_user_concurrent<F>(
     build_request: F,
 ) -> HashMap<String, Value>
 where
-    F: Fn(&str) -> Option<HttpApiRequestInput>,
+    F: Fn(&str) -> Option<VrchatRequest>,
 {
     fetch_per_user_concurrent_with_budget(deps, user_ids, build_request, None)
         .await
@@ -270,7 +270,7 @@ async fn fetch_per_user_concurrent_with_budget<F>(
     budget: Option<Duration>,
 ) -> (HashMap<String, Value>, bool)
 where
-    F: Fn(&str) -> Option<HttpApiRequestInput>,
+    F: Fn(&str) -> Option<VrchatRequest>,
 {
     collect_per_user_results(user_ids, budget, |user_id| {
         fetch_user_with_backoff(deps, &build_request, user_id)
@@ -325,7 +325,7 @@ async fn fetch_user_with_backoff<F>(
     user_id: String,
 ) -> (String, Option<Value>)
 where
-    F: Fn(&str) -> Option<HttpApiRequestInput>,
+    F: Fn(&str) -> Option<VrchatRequest>,
 {
     let mut attempt = 0usize;
     loop {

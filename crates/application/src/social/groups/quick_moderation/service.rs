@@ -8,9 +8,9 @@ use vrcx_0_core::GroupPermission;
 
 use futures_util::stream::{FuturesUnordered, StreamExt};
 use serde_json::Value;
-use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
 use vrcx_0_application_core::RuntimeAuthScope;
 use vrcx_0_application_core::{Error, Result};
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_contracts::VrchatJsonResponse;
 use vrcx_0_core::json::{object_scalar_text, result_rows, scalar_text_array};
 
@@ -283,7 +283,7 @@ fn quick_action_request(
     group_id: &ValidatedGroupId,
     target_user_id: &ValidatedUserId,
     action: GroupQuickModerationAction,
-) -> Result<VrchatApiRequest> {
+) -> Result<VrchatRequest> {
     match action {
         GroupQuickModerationAction::Kick => remote_requests.kick(
             endpoint.to_string(),
@@ -384,7 +384,7 @@ async fn probe_group_member(
 
 async fn execute_vrchat_json_request(
     deps: &GroupQuickModerationDeps,
-    request: VrchatApiRequest,
+    request: VrchatRequest,
     fallback: &str,
 ) -> Result<Value> {
     let response = execute_vrchat_api(deps, request).await?;
@@ -396,7 +396,7 @@ async fn execute_vrchat_json_request(
 
 async fn execute_vrchat_api(
     deps: &GroupQuickModerationDeps,
-    request: VrchatApiRequest,
+    request: VrchatRequest,
 ) -> Result<VrchatJsonResponse> {
     let response = execute_group_api_raw(&deps.groups, request).await?;
     Ok(VrchatJsonResponse::from(&response))
@@ -562,16 +562,12 @@ mod tests {
     struct TestRequests;
 
     impl GroupMembershipRemoteRequests for TestRequests {
-        fn user_groups(&self, _endpoint: String, _user_id: String) -> Result<VrchatApiRequest> {
-            Ok(VrchatApiRequest::default())
+        fn user_groups(&self, _endpoint: String, _user_id: String) -> Result<VrchatRequest> {
+            Ok(VrchatRequest::default())
         }
 
-        fn user_permissions(
-            &self,
-            _endpoint: String,
-            _user_id: String,
-        ) -> Result<VrchatApiRequest> {
-            Ok(VrchatApiRequest::default())
+        fn user_permissions(&self, _endpoint: String, _user_id: String) -> Result<VrchatRequest> {
+            Ok(VrchatRequest::default())
         }
 
         fn member(
@@ -579,8 +575,8 @@ mod tests {
             _endpoint: String,
             _group_id: String,
             _user_id: String,
-        ) -> Result<VrchatApiRequest> {
-            Ok(VrchatApiRequest::default())
+        ) -> Result<VrchatRequest> {
+            Ok(VrchatRequest::default())
         }
 
         fn kick(
@@ -588,10 +584,10 @@ mod tests {
             _endpoint: String,
             _group_id: String,
             _user_id: String,
-        ) -> Result<VrchatApiRequest> {
-            Ok(VrchatApiRequest {
+        ) -> Result<VrchatRequest> {
+            Ok(VrchatRequest {
                 path: Some("kick".into()),
-                ..VrchatApiRequest::default()
+                ..VrchatRequest::default()
             })
         }
 
@@ -600,10 +596,10 @@ mod tests {
             _endpoint: String,
             _group_id: String,
             _user_id: String,
-        ) -> Result<VrchatApiRequest> {
-            Ok(VrchatApiRequest {
+        ) -> Result<VrchatRequest> {
+            Ok(VrchatRequest {
                 path: Some("ban".into()),
-                ..VrchatApiRequest::default()
+                ..VrchatRequest::default()
             })
         }
     }

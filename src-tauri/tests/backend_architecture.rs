@@ -160,7 +160,9 @@ fn vrchat_commands_do_not_access_transport_implementation_directly() {
     for path in rust_sources_below("src-tauri/src/commands/vrchat") {
         let source = std::fs::read_to_string(&path).expect("read VRChat command source");
         assert!(
-            !source.contains("VrchatApiRequest"),
+            !source
+                .split(|c: char| !c.is_alphanumeric() && c != '_')
+                .any(|word| word == "VrchatRequest"),
             "VRChat transport request type leaked into Tauri command {}",
             path.display()
         );

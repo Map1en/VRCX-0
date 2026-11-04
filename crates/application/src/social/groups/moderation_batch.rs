@@ -10,9 +10,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::remote::VrchatRequestPort;
 use crate::scope_gate::{execute_vrchat_mutation, RemoteMutationOutcome, ScopeGate};
-use vrcx_0_application_core::{
-    vrchat_api::VrchatApiRequest, AuthenticatedMutationContext, Error, Result, RuntimeEventBus,
-};
+use vrcx_0_application_core::{AuthenticatedMutationContext, Error, Result, RuntimeEventBus};
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_core::OwnerId;
 
 const GATE: ScopeGate = ScopeGate::new("Group moderation batch");
@@ -181,29 +180,24 @@ trait GroupModerationBatchActions: Send + Sync {
 }
 
 pub trait GroupModerationRemoteRequests: Send + Sync {
-    fn kick(&self, endpoint: String, group_id: String, user_id: String)
-        -> Result<VrchatApiRequest>;
-    fn ban(&self, endpoint: String, group_id: String, user_id: String) -> Result<VrchatApiRequest>;
-    fn unban(&self, group_id: String, user_id: String) -> Result<VrchatApiRequest>;
+    fn kick(&self, endpoint: String, group_id: String, user_id: String) -> Result<VrchatRequest>;
+    fn ban(&self, endpoint: String, group_id: String, user_id: String) -> Result<VrchatRequest>;
+    fn unban(&self, group_id: String, user_id: String) -> Result<VrchatRequest>;
     fn save_note(
         &self,
         endpoint: String,
         group_id: String,
         user_id: String,
         note: String,
-    ) -> Result<VrchatApiRequest>;
-    fn add_role(
-        &self,
-        group_id: String,
-        user_id: String,
-        role_id: String,
-    ) -> Result<VrchatApiRequest>;
+    ) -> Result<VrchatRequest>;
+    fn add_role(&self, group_id: String, user_id: String, role_id: String)
+        -> Result<VrchatRequest>;
     fn remove_role(
         &self,
         group_id: String,
         user_id: String,
         role_id: String,
-    ) -> Result<VrchatApiRequest>;
+    ) -> Result<VrchatRequest>;
 }
 
 pub struct VrchatGroupModerationBatchActions<'a> {

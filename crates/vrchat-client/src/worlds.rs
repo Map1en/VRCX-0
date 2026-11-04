@@ -2,17 +2,16 @@ use std::collections::HashMap;
 
 use serde_json::{json, Value};
 
-use crate::http_api::{
-    api_input, encode_path_segment, get_input, require_text, HttpApiError, HttpApiRequestInput,
-};
+use crate::http_api::{api_input, encode_path_segment, get_input, require_text, HttpApiError};
 use crate::query::{QueryOrder, ReleaseStatusFilter, WorldSearchSort};
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
 pub use vrcx_0_contracts::vrchat_requests::WorldUpdateRequest;
 
 pub fn world_get_input(
     endpoint: String,
     world_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let world_id = require_text(world_id, "VrchatWorldGet requires worldId.")?;
     Ok((
         world_id.clone(),
@@ -32,7 +31,7 @@ pub fn world_list_by_user_get_input(
     sort: WorldSearchSort,
     order: QueryOrder,
     release_status: ReleaseStatusFilter,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatWorldListByUserGet requires userId.")?;
     Ok((
         user_id.clone(),
@@ -58,7 +57,7 @@ pub fn world_persistent_data_exists_input(
     endpoint: String,
     user_id: String,
     world_id: String,
-) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatWorldPersistentDataExists requires userId.")?;
     let world_id = require_text(
         world_id,
@@ -83,7 +82,7 @@ pub fn world_save_input(
     endpoint: String,
     world_id: String,
     params: WorldUpdateRequest,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let world_id = require_text(world_id, "VrchatWorldSave requires worldId.")?;
     if params.id != world_id {
         return Err(HttpApiError::Custom(
@@ -104,7 +103,7 @@ pub fn world_save_input(
 pub fn world_delete_input(
     endpoint: String,
     world_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let world_id = require_text(world_id, "VrchatWorldDelete requires worldId.")?;
     Ok((
         world_id.clone(),
@@ -120,7 +119,7 @@ pub fn world_delete_input(
 pub fn world_publish_input(
     endpoint: String,
     world_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let world_id = require_text(world_id, "VrchatWorldPublish requires worldId.")?;
     Ok((
         world_id.clone(),
@@ -136,7 +135,7 @@ pub fn world_publish_input(
 pub fn world_unpublish_input(
     endpoint: String,
     world_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let world_id = require_text(world_id, "VrchatWorldUnpublish requires worldId.")?;
     Ok((
         world_id.clone(),
@@ -153,7 +152,7 @@ pub fn world_persistent_data_delete_input(
     endpoint: String,
     user_id: String,
     world_id: String,
-) -> Result<(String, String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatWorldPersistentDataDelete requires userId.")?;
     let world_id = require_text(
         world_id,
@@ -180,7 +179,7 @@ mod tests {
     use super::*;
     use crate::http_api::HttpApiRequestBody;
 
-    fn json_body(request: &HttpApiRequestInput) -> &Value {
+    fn json_body(request: &VrchatRequest) -> &Value {
         request.body.as_json().expect("expected JSON request body")
     }
 

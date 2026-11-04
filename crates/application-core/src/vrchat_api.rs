@@ -3,9 +3,8 @@ use crate::sync::RuntimeSyncEngine;
 use crate::web_client::WebClient;
 use crate::{Result, RuntimeOperationStatus};
 
-pub use vrcx_0_contracts::vrchat_api::{
-    VrchatRequest as VrchatApiRequest, VrchatResponse as VrchatApiResponse, VrchatScope,
-};
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
+pub use vrcx_0_contracts::vrchat_api::{VrchatResponse as VrchatApiResponse, VrchatScope};
 
 pub use vrcx_0_contracts::vrchat_api::VrchatResponseClass as ApiResponseClass;
 
@@ -30,7 +29,7 @@ pub async fn execute_api_command(
     diagnostics: &RuntimeDiagnostics,
     sync: &RuntimeSyncEngine,
     command: (&str, impl Into<String>),
-    input: VrchatApiRequest,
+    input: VrchatRequest,
     scope: VrchatScope,
 ) -> Result<VrchatApiResponse> {
     let (command, detail) = command;

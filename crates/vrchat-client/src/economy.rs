@@ -2,9 +2,8 @@ use std::collections::HashMap;
 
 use serde_json::{json, Value};
 
-use crate::http_api::{
-    encode_path_segment, get_input, require_text, HttpApiError, HttpApiRequestInput,
-};
+use crate::http_api::{encode_path_segment, get_input, require_text, HttpApiError};
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
 fn page_params(n: i32, offset: i32) -> HashMap<String, Value> {
     HashMap::from([
@@ -13,7 +12,7 @@ fn page_params(n: i32, offset: i32) -> HashMap<String, Value> {
     ])
 }
 
-pub fn licensed_avatars_get_input(endpoint: String, n: i32, offset: i32) -> HttpApiRequestInput {
+pub fn licensed_avatars_get_input(endpoint: String, n: i32, offset: i32) -> VrchatRequest {
     get_input(endpoint, "avatars/licensed", page_params(n, offset))
 }
 
@@ -22,7 +21,7 @@ pub fn purchases_get_input(
     buyer_id: String,
     n: i32,
     offset: i32,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let buyer_id = require_text(buyer_id, "VrchatEconomyPurchasesGet requires buyerId.")?;
     let mut params = page_params(n, offset);
     params.insert("buyerId".to_string(), json!(buyer_id));
@@ -35,7 +34,7 @@ pub fn transactions_get_input(
     endpoint: String,
     user_id: String,
     n: i32,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatEconomyTransactionsGet requires userId.")?;
     Ok((
         user_id.clone(),
@@ -53,7 +52,7 @@ pub fn transactions_get_input(
 pub fn balance_get_input(
     endpoint: String,
     user_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let user_id = require_text(user_id, "VrchatEconomyBalanceGet requires userId.")?;
     Ok((
         user_id.clone(),
@@ -68,7 +67,7 @@ pub fn balance_get_input(
 pub fn store_get_input(
     endpoint: String,
     store_id: String,
-) -> Result<(String, HttpApiRequestInput), HttpApiError> {
+) -> Result<(String, VrchatRequest), HttpApiError> {
     let store_id = require_text(store_id, "VrchatEconomyStoreGet requires storeId.")?;
     Ok((
         store_id.clone(),

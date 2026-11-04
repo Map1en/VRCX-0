@@ -5,9 +5,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::http_api::{
     api_input, encode_path_segment, get_input, normalize_vrchat_api_endpoint, require_text,
-    HttpApiError, HttpApiRequestBody, HttpApiRequestInput, HttpApiUpload,
+    HttpApiError, HttpApiRequestBody, HttpApiUpload,
 };
 use crate::query::serialize_query;
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
 pub use vrcx_0_contracts::vrchat_requests::{
     EmojiLoopStyle, EmojiUploadParams, ImageAnimationStyle, ImageMaskTag,
@@ -75,7 +76,7 @@ pub fn image_upload_input(
     image_data: String,
     params: EmojiUploadParams,
     matching_dimensions: bool,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+) -> Result<VrchatRequest, HttpApiError> {
     image_upload_with_params(endpoint, path, image_data, &params, matching_dimensions)
 }
 
@@ -85,10 +86,10 @@ fn image_upload_with_params(
     image_data: String,
     params: &impl Serialize,
     matching_dimensions: bool,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+) -> Result<VrchatRequest, HttpApiError> {
     let post_data = serde_json::to_string(&params)
         .map_err(|error| HttpApiError::Custom(format!("serialize media upload params: {error}")))?;
-    Ok(HttpApiRequestInput {
+    Ok(VrchatRequest {
         endpoint: Some(endpoint),
         path: Some(path.into()),
         body: HttpApiRequestBody::Upload(HttpApiUpload::Image {
@@ -100,10 +101,7 @@ fn image_upload_with_params(
     })
 }
 
-pub fn file_delete_input(
-    endpoint: String,
-    file_id: String,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+pub fn file_delete_input(endpoint: String, file_id: String) -> Result<VrchatRequest, HttpApiError> {
     let file_id = require_text(file_id, "VrchatMediaFileDelete requires fileId.")?;
     Ok(api_input(
         endpoint,
@@ -117,7 +115,7 @@ pub fn gallery_file_order_input(
     endpoint: String,
     gallery_id: String,
     file_ids: Vec<String>,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+) -> Result<VrchatRequest, HttpApiError> {
     let gallery_id = require_text(
         gallery_id,
         "VrchatMediaGalleryFileOrder requires galleryId.",
@@ -140,7 +138,7 @@ pub fn gallery_file_order_input(
     ))
 }
 
-pub fn files_get_input(endpoint: String, params: MediaFileListParams) -> HttpApiRequestInput {
+pub fn files_get_input(endpoint: String, params: MediaFileListParams) -> VrchatRequest {
     get_input(endpoint, "files", serialize_query(&params))
 }
 
@@ -149,7 +147,7 @@ pub fn tagged_image_upload_input(
     image_data: String,
     tag: &str,
     matching_dimensions: bool,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+) -> Result<VrchatRequest, HttpApiError> {
     image_upload_with_params(
         endpoint,
         "file/image",
@@ -163,7 +161,7 @@ pub fn avatar_gallery_image_upload_input(
     endpoint: String,
     image_data: String,
     avatar_id: String,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+) -> Result<VrchatRequest, HttpApiError> {
     let avatar_id = require_text(
         avatar_id,
         "VrchatMediaAvatarGalleryImageUpload requires avatarId.",
@@ -180,7 +178,7 @@ pub fn avatar_gallery_image_upload_input(
 pub fn sticker_upload_input(
     endpoint: String,
     image_data: String,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+) -> Result<VrchatRequest, HttpApiError> {
     image_upload_with_params(
         endpoint,
         "file/image",
@@ -195,10 +193,10 @@ pub fn print_upload_input(
     image_data: String,
     crop_white_border: bool,
     params: PrintUploadParams,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+) -> Result<VrchatRequest, HttpApiError> {
     let post_data = serde_json::to_string(&params)
         .map_err(|error| HttpApiError::Custom(format!("serialize print upload params: {error}")))?;
-    Ok(HttpApiRequestInput {
+    Ok(VrchatRequest {
         endpoint: Some(endpoint),
         path: Some("prints".into()),
         body: HttpApiRequestBody::Upload(HttpApiUpload::PrintImage {
@@ -213,7 +211,7 @@ pub fn print_upload_input(
 pub fn asset_upload_input(
     endpoint: String,
     input: MediaAssetUploadRequest,
-) -> Result<(MediaAssetKind, HttpApiRequestInput), HttpApiError> {
+) -> Result<(MediaAssetKind, VrchatRequest), HttpApiError> {
     let (asset_kind, request) = match input {
         MediaAssetUploadRequest::Gallery { image_data } => (
             MediaAssetKind::Gallery,
@@ -247,7 +245,7 @@ pub fn prints_get_input(
     endpoint: String,
     user_id: String,
     n: i32,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+) -> Result<VrchatRequest, HttpApiError> {
     let user_id = require_text(user_id, "VrchatMediaPrintsGet requires userId.")?;
     Ok(get_input(
         endpoint,
@@ -256,10 +254,7 @@ pub fn prints_get_input(
     ))
 }
 
-pub fn print_get_input(
-    endpoint: String,
-    print_id: String,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+pub fn print_get_input(endpoint: String, print_id: String) -> Result<VrchatRequest, HttpApiError> {
     let print_id = require_text(print_id, "VrchatMediaPrintGet requires printId.")?;
     Ok(get_input(
         endpoint,
@@ -271,7 +266,7 @@ pub fn print_get_input(
 pub fn print_delete_input(
     endpoint: String,
     print_id: String,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+) -> Result<VrchatRequest, HttpApiError> {
     let print_id = require_text(print_id, "VrchatMediaPrintDelete requires printId.")?;
     Ok(api_input(
         endpoint,
@@ -285,7 +280,7 @@ pub fn user_inventory_item_get_input(
     endpoint: String,
     user_id: String,
     inventory_id: String,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+) -> Result<VrchatRequest, HttpApiError> {
     let user_id = require_text(user_id, "VrchatMediaUserInventoryItemGet requires userId.")?;
     let inventory_id = require_text(
         inventory_id,
@@ -302,17 +297,14 @@ pub fn user_inventory_item_get_input(
     ))
 }
 
-pub fn inventory_items_get_input(
-    endpoint: String,
-    params: InventoryListParams,
-) -> HttpApiRequestInput {
+pub fn inventory_items_get_input(endpoint: String, params: InventoryListParams) -> VrchatRequest {
     get_input(endpoint, "inventory", serialize_query(&params))
 }
 
 pub fn inventory_template_get_input(
     endpoint: String,
     inventory_template_id: String,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+) -> Result<VrchatRequest, HttpApiError> {
     let inventory_template_id = require_text(
         inventory_template_id,
         "VrchatMediaInventoryTemplateGet requires inventoryTemplateId.",
@@ -331,7 +323,7 @@ pub fn inventory_item_equip_input(
     endpoint: String,
     inventory_id: String,
     equip_slot: ProfileDecorationEquipSlot,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+) -> Result<VrchatRequest, HttpApiError> {
     let inventory_id = require_text(
         inventory_id,
         "VrchatMediaProfileDecorationEquip requires inventoryId.",
@@ -347,7 +339,7 @@ pub fn inventory_item_equip_input(
 pub fn inventory_slot_unequip_input(
     endpoint: String,
     equip_slot: ProfileDecorationEquipSlot,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+) -> Result<VrchatRequest, HttpApiError> {
     Ok(api_input(
         endpoint,
         "DELETE",
@@ -363,7 +355,7 @@ pub fn inventory_item_update_input(
     endpoint: String,
     inventory_id: String,
     params: InventoryItemUpdateRequest,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+) -> Result<VrchatRequest, HttpApiError> {
     let inventory_id = require_text(
         inventory_id,
         "VrchatMediaInventoryItemUpdate requires inventoryId.",
@@ -379,7 +371,7 @@ pub fn inventory_item_update_input(
 pub fn inventory_bundle_consume_input(
     endpoint: String,
     inventory_id: String,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+) -> Result<VrchatRequest, HttpApiError> {
     let inventory_id = require_text(
         inventory_id,
         "VrchatMediaInventoryBundleConsume requires inventoryId.",
@@ -392,10 +384,7 @@ pub fn inventory_bundle_consume_input(
     ))
 }
 
-pub fn reward_redeem_input(
-    endpoint: String,
-    code: String,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+pub fn reward_redeem_input(endpoint: String, code: String) -> Result<VrchatRequest, HttpApiError> {
     let code = require_text(code, "VrchatMediaRewardRedeem requires code.")?;
     Ok(api_input(
         endpoint,
@@ -412,7 +401,7 @@ pub fn file_version_create_input(
     file_size_in_bytes: i64,
     signature_md5: String,
     signature_size_in_bytes: i64,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+) -> Result<VrchatRequest, HttpApiError> {
     let file_id = require_text(file_id, "VrchatMediaFileVersionCreate requires fileId.")?;
     Ok(api_input(
         endpoint,
@@ -441,7 +430,7 @@ pub fn file_upload_stage_path(
     ))
 }
 
-pub fn file_upload_start_input(endpoint: String, path: String) -> HttpApiRequestInput {
+pub fn file_upload_start_input(endpoint: String, path: String) -> VrchatRequest {
     api_input(
         endpoint,
         "PUT",
@@ -450,7 +439,7 @@ pub fn file_upload_start_input(endpoint: String, path: String) -> HttpApiRequest
     )
 }
 
-pub fn file_upload_finish_input(endpoint: String, path: String) -> HttpApiRequestInput {
+pub fn file_upload_finish_input(endpoint: String, path: String) -> VrchatRequest {
     api_input(
         endpoint,
         "PUT",
@@ -464,8 +453,8 @@ pub fn file_put_input(
     file_data: Vec<u8>,
     file_mime: String,
     file_md5: String,
-) -> HttpApiRequestInput {
-    HttpApiRequestInput {
+) -> VrchatRequest {
+    VrchatRequest {
         url: Some(url),
         body: HttpApiRequestBody::Upload(HttpApiUpload::FilePut {
             file_data,
@@ -482,7 +471,7 @@ pub fn entity_image_set_input(
     entity_id: String,
     image_url: String,
     message: &str,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+) -> Result<VrchatRequest, HttpApiError> {
     let entity_id = require_text(entity_id, message)?;
     Ok(api_input(
         endpoint,
@@ -496,7 +485,7 @@ pub fn avatar_image_set_input(
     endpoint: String,
     avatar_id: String,
     image_url: String,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+) -> Result<VrchatRequest, HttpApiError> {
     entity_image_set_input(
         endpoint,
         "avatars",
@@ -510,7 +499,7 @@ pub fn world_image_set_input(
     endpoint: String,
     world_id: String,
     image_url: String,
-) -> Result<HttpApiRequestInput, HttpApiError> {
+) -> Result<VrchatRequest, HttpApiError> {
     entity_image_set_input(
         endpoint,
         "worlds",

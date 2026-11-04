@@ -3,7 +3,8 @@ use std::sync::Arc;
 use vrcx_0_application::social::{
     QuickSearchDetailStore, QuickSearchRemoteRequests, QuickSearchRemoteSource,
 };
-use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Result};
+use vrcx_0_application_core::Result;
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_core::OwnerId;
 use vrcx_0_persistence::{
     memos::{memo_list_user_notes, memo_list_users},
@@ -58,7 +59,7 @@ impl QuickSearchRemoteRequests for VrchatQuickSearchRemoteRequests {
         current_user_id: String,
         n: i32,
         offset: i32,
-    ) -> Result<VrchatApiRequest> {
+    ) -> Result<VrchatRequest> {
         match source {
             QuickSearchRemoteSource::OwnWorlds => Ok(world_list_by_user_get_input(
                 endpoint,
@@ -87,7 +88,7 @@ impl QuickSearchRemoteRequests for VrchatQuickSearchRemoteRequests {
         }
     }
 
-    fn user_groups(&self, endpoint: String, current_user_id: String) -> Result<VrchatApiRequest> {
+    fn user_groups(&self, endpoint: String, current_user_id: String) -> Result<VrchatRequest> {
         Ok(user_groups_get_input(endpoint, current_user_id)?.1)
     }
 }

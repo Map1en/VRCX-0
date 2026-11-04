@@ -1,7 +1,7 @@
 use super::*;
 
-fn input(path: &str) -> HttpApiRequestInput {
-    HttpApiRequestInput {
+fn input(path: &str) -> VrchatRequest {
+    VrchatRequest {
         path: Some(path.to_string()),
         ..Default::default()
     }
@@ -172,7 +172,7 @@ fn rejects_non_vrchat_api_endpoint() {
 
 #[test]
 fn rejects_absolute_urls_for_vrchat_scopes() {
-    let request = HttpApiRequestInput {
+    let request = VrchatRequest {
         url: Some("https://example.com/".to_string()),
         ..Default::default()
     };
@@ -198,7 +198,7 @@ fn rejects_upload_options_outside_media_scope() {
 
 #[test]
 fn allows_signed_absolute_upload_urls_for_media_scope() {
-    let mut request = HttpApiRequestInput {
+    let mut request = VrchatRequest {
         url: Some("https://signed-upload.example.test/file".to_string()),
         ..Default::default()
     };

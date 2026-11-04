@@ -1,6 +1,7 @@
 use vrcx_0_application::remote::VrchatApiRuntime;
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
+use vrcx_0_application_core::vrchat_api::{VrchatApiResponse, VrchatScope};
 use vrcx_0_application_core::Result;
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 use vrcx_0_vrchat_client::auth::{
     current_user_get_input, file_analysis_get_input, visits_get_input,
@@ -1138,7 +1139,7 @@ impl DesktopVrchatRemoteFacade {
         &self,
         command: &str,
         detail: impl Into<String>,
-        request: VrchatApiRequest,
+        request: VrchatRequest,
     ) -> Result<VrchatApiResponse> {
         let request = self.media.prepare_media_upload_request(request)?;
         self.execute(command, detail, request, VrchatScope::VrchatMedia)
@@ -1149,7 +1150,7 @@ impl DesktopVrchatRemoteFacade {
         &self,
         command: &str,
         detail: impl Into<String>,
-        request: VrchatApiRequest,
+        request: VrchatRequest,
         scope: VrchatScope,
     ) -> Result<VrchatApiResponse> {
         self.api.execute(command, detail, request, scope).await

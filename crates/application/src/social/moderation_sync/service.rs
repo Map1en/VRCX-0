@@ -3,7 +3,8 @@ use std::time::Duration;
 use vrcx_0_core::text::normalize_text;
 
 use serde_json::Value;
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatScope};
+use vrcx_0_application_core::vrchat_api::VrchatScope;
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_contracts::VrchatJsonResponse;
 use vrcx_0_core::time::now_iso;
 use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
@@ -214,7 +215,7 @@ fn normalize_endpoint(endpoint: &str) -> String {
 
 async fn execute_vrchat_json_request(
     deps: &ModerationSyncDeps<'_>,
-    request: VrchatApiRequest,
+    request: VrchatRequest,
 ) -> Result<Value> {
     let response = deps.remote.send(request, VrchatScope::Vrchat).await?;
 
@@ -229,7 +230,7 @@ async fn execute_vrchat_json_request(
 async fn execute_vrchat_mutation(
     deps: &ModerationSyncDeps<'_>,
     mutation: &AuthenticatedMutationContext<'_>,
-    mut request: VrchatApiRequest,
+    mut request: VrchatRequest,
 ) -> Result<Value> {
     mutation.apply_scope_to_request(&mut request);
     let response = mutation

@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
 use serde_json::Value;
-use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
 use vrcx_0_application_core::Result;
 use vrcx_0_contracts::feed::{
     FeedLatestQueryInput, FeedLiveEntryInput, FeedReadModelOutput, FeedSearchQueryInput,
@@ -12,6 +11,7 @@ use vrcx_0_contracts::friend_log::{
     FriendLogMutationResult, FriendLogReplaceOptionsInput, FriendLogUpsertOptionsInput,
 };
 use vrcx_0_contracts::realtime::{RealtimePersistenceBatch, RealtimeWriteCounts};
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_contracts::FavoriteRow;
 use vrcx_0_core::{FavoriteEntityKind, OwnerId};
 
@@ -84,31 +84,27 @@ pub trait RealtimeStore: Send + Sync {
 }
 
 pub trait RealtimeRemoteRequests: Send + Sync {
-    fn current_user(&self, endpoint: String) -> Result<VrchatApiRequest>;
-    fn user(&self, endpoint: String, user_id: String) -> Result<(String, VrchatApiRequest)>;
-    fn friend_status(
-        &self,
-        endpoint: String,
-        user_id: String,
-    ) -> Result<(String, VrchatApiRequest)>;
-    fn favorite_limits(&self, endpoint: String) -> Result<VrchatApiRequest>;
-    fn favorites(&self, endpoint: String, n: i32, offset: i32) -> Result<VrchatApiRequest>;
-    fn favorite_groups(&self, endpoint: String, n: i32, offset: i32) -> Result<VrchatApiRequest>;
+    fn current_user(&self, endpoint: String) -> Result<VrchatRequest>;
+    fn user(&self, endpoint: String, user_id: String) -> Result<(String, VrchatRequest)>;
+    fn friend_status(&self, endpoint: String, user_id: String) -> Result<(String, VrchatRequest)>;
+    fn favorite_limits(&self, endpoint: String) -> Result<VrchatRequest>;
+    fn favorites(&self, endpoint: String, n: i32, offset: i32) -> Result<VrchatRequest>;
+    fn favorite_groups(&self, endpoint: String, n: i32, offset: i32) -> Result<VrchatRequest>;
     fn friends(
         &self,
         endpoint: String,
         offline: bool,
         n: i32,
         offset: i32,
-    ) -> Result<VrchatApiRequest>;
-    fn world(&self, endpoint: String, world_id: String) -> Result<(String, VrchatApiRequest)>;
-    fn group(&self, endpoint: String, group_id: String) -> Result<VrchatApiRequest>;
+    ) -> Result<VrchatRequest>;
+    fn world(&self, endpoint: String, world_id: String) -> Result<(String, VrchatRequest)>;
+    fn group(&self, endpoint: String, group_id: String) -> Result<VrchatRequest>;
     fn invite_send(
         &self,
         endpoint: String,
         receiver_user_id: String,
         body: Value,
-    ) -> Result<(String, VrchatApiRequest)>;
+    ) -> Result<(String, VrchatRequest)>;
     fn notification_hide(
         &self,
         endpoint: String,
@@ -116,5 +112,5 @@ pub trait RealtimeRemoteRequests: Send + Sync {
         version: i64,
         notification_type: String,
         sender_user_id: String,
-    ) -> Result<(String, VrchatApiRequest)>;
+    ) -> Result<(String, VrchatRequest)>;
 }

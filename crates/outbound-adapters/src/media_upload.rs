@@ -5,8 +5,9 @@ use vrcx_0_application::media::{
     LegacyEntityImageKind, LegacyMediaUploadFuture, LegacyMediaUploadGate, LegacyMediaUploadPort,
     LegacyMediaUploadRequest, LegacyMediaUploadResult, MediaUploadPreprocessor,
 };
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatScope};
+use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::WebClient;
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_contracts::vrchat_api::{VrchatJsonResponse, VrchatUpload};
 use vrcx_0_vrchat_client::media::{
     avatar_image_set_input, file_put_input, file_upload_finish_input, file_upload_stage_path,
@@ -24,7 +25,7 @@ impl LocalMediaUploadAdapter {
         Self { web }
     }
 
-    fn prepare_request(mut input: VrchatApiRequest) -> crate::Result<VrchatApiRequest> {
+    fn prepare_request(mut input: VrchatRequest) -> crate::Result<VrchatRequest> {
         match input.body.as_upload_mut() {
             Some(VrchatUpload::Image {
                 image_data,
@@ -170,7 +171,7 @@ impl LocalMediaUploadAdapter {
     async fn execute_json(
         &self,
         gate: &dyn LegacyMediaUploadGate,
-        input: VrchatApiRequest,
+        input: VrchatRequest,
         fallback_message: &str,
     ) -> crate::Result<Value> {
         let response = self.execute_gated(gate, input).await?;
@@ -186,7 +187,7 @@ impl LocalMediaUploadAdapter {
     async fn execute_success(
         &self,
         gate: &dyn LegacyMediaUploadGate,
-        input: VrchatApiRequest,
+        input: VrchatRequest,
         fallback_message: &str,
     ) -> crate::Result<()> {
         let response = self.execute_gated(gate, input).await?;
@@ -202,7 +203,7 @@ impl LocalMediaUploadAdapter {
     async fn execute_gated(
         &self,
         gate: &dyn LegacyMediaUploadGate,
-        input: VrchatApiRequest,
+        input: VrchatRequest,
     ) -> crate::Result<vrcx_0_application_core::vrchat_api::VrchatApiResponse> {
         gate.before_request().await?;
         let response = self
@@ -215,7 +216,7 @@ impl LocalMediaUploadAdapter {
 }
 
 impl MediaUploadPreprocessor for LocalMediaUploadAdapter {
-    fn prepare(&self, input: VrchatApiRequest) -> crate::Result<VrchatApiRequest> {
+    fn prepare(&self, input: VrchatRequest) -> crate::Result<VrchatRequest> {
         Self::prepare_request(input)
     }
 }
@@ -309,7 +310,7 @@ mod tests {
         encode_png(image)
     }
 
-    fn prepared_data(input: &VrchatApiRequest) -> &str {
+    fn prepared_data(input: &VrchatRequest) -> &str {
         match input.body.as_upload() {
             Some(
                 VrchatUpload::Image { image_data, .. }
@@ -322,7 +323,7 @@ mod tests {
 
     #[test]
     fn preprocessing_preserves_non_upload_requests() {
-        let input = VrchatApiRequest {
+        let input = VrchatRequest {
             path: Some("file/image".into()),
             ..Default::default()
         };
@@ -333,7 +334,7 @@ mod tests {
 
     #[test]
     fn regular_legacy_and_print_preprocessing_preserve_image_behavior() {
-        let regular = LocalMediaUploadAdapter::prepare_request(VrchatApiRequest {
+        let regular = LocalMediaUploadAdapter::prepare_request(VrchatRequest {
             body: VrchatRequestBody::Upload(VrchatUpload::Image {
                 image_data: solid_png(3, 2).unwrap(),
                 post_data: None,
@@ -342,7 +343,7 @@ mod tests {
             ..Default::default()
         })
         .unwrap();
-        let legacy = LocalMediaUploadAdapter::prepare_request(VrchatApiRequest {
+        let legacy = LocalMediaUploadAdapter::prepare_request(VrchatRequest {
             body: VrchatRequestBody::Upload(VrchatUpload::LegacyImage {
                 image_data: solid_png(3, 2).unwrap(),
                 post_data: None,
@@ -359,7 +360,7 @@ mod tests {
             (3, 2)
         );
 
-        let cropped = LocalMediaUploadAdapter::prepare_request(VrchatApiRequest {
+        let cropped = LocalMediaUploadAdapter::prepare_request(VrchatRequest {
             body: VrchatRequestBody::Upload(VrchatUpload::PrintImage {
                 image_data: print_canvas_png().unwrap(),
                 post_data: None,

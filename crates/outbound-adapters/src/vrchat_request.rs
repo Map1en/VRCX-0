@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use vrcx_0_application::remote::{VrchatRequestFuture, VrchatRequestPort};
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatScope};
+use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::WebClient;
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
 #[derive(Clone)]
 pub struct VrchatRequestAdapter {
@@ -16,7 +17,7 @@ impl VrchatRequestAdapter {
 }
 
 impl VrchatRequestPort for VrchatRequestAdapter {
-    fn send(&self, input: VrchatApiRequest, scope: VrchatScope) -> VrchatRequestFuture<'_> {
+    fn send(&self, input: VrchatRequest, scope: VrchatScope) -> VrchatRequestFuture<'_> {
         Box::pin(async move { self.web.execute_api(input, scope).await })
     }
 }

@@ -16,6 +16,7 @@ use vrcx_0_application_core::{
     Result, RuntimeAuthScopeObserver, RuntimeAuthScopeSnapshot, RuntimeEventBus,
     RuntimeEventPayload,
 };
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_contracts::vrchat_api::{vrchat_response, VrchatResponse};
 use vrcx_0_contracts::vrchat_device_login::interpret_device_code_response;
 use vrcx_0_contracts::vrchat_login::{interpret_login_config_response, VrchatLoginStep};
@@ -24,7 +25,7 @@ use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 use vrcx_0_vrchat_client::auth::{
     config_get_input, current_user_get_input, device_code_input, device_status_input, logout_input,
 };
-use vrcx_0_vrchat_client::http_api::{build_web_execute_request, ApiScope, HttpApiRequestInput};
+use vrcx_0_vrchat_client::http_api::{build_web_execute_request, ApiScope};
 use vrcx_0_vrchat_client::web_client::WebClient as VrchatWebClient;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]
@@ -384,7 +385,7 @@ impl PrivacyLockRuntime {
 
 async fn execute(
     client: &VrchatWebClient,
-    input: HttpApiRequestInput,
+    input: VrchatRequest,
 ) -> std::result::Result<VrchatResponse, String> {
     let request =
         build_web_execute_request(input, ApiScope::Vrchat).map_err(|error| error.to_string())?;
