@@ -2755,7 +2755,6 @@ pub(crate) fn mcp_runtime_for(
                 assembly.tasks().clone(),
             )),
             world_lookup: Arc::new(crate::mcp_adapters::DesktopMcpWorldLookupAdapter::new(
-                Arc::clone(runtime.web_client()),
                 Arc::clone(assembly.world_cache()),
                 assembly.auth_scope().clone(),
             )),

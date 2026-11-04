@@ -29,6 +29,7 @@ pub struct WorldCache {
     db: Arc<DatabaseService>,
     inflight: Mutex<HashMap<WorldResolveKey, Weak<tokio::sync::Mutex<()>>>>,
     failures: Cache<WorldResolveKey, ()>,
+    web: Arc<WebClient>,
 }
 
 #[derive(Clone, Debug)]
@@ -50,7 +51,12 @@ struct WorldResolveKey {
 }
 
 impl WorldCache {
-    pub fn new(db: Arc<DatabaseService>, capacity: u64, working_ttl: Duration) -> Self {
+    pub fn new(
+        db: Arc<DatabaseService>,
+        web: Arc<WebClient>,
+        capacity: u64,
+        working_ttl: Duration,
+    ) -> Self {
         let capacity = capacity.max(1);
         Self {
             working: Cache::builder()
@@ -64,6 +70,7 @@ impl WorldCache {
                 .time_to_live(WORLD_RESOLVE_FAILURE_TTL)
                 .eviction_policy(EvictionPolicy::lru())
                 .build(),
+            web,
         }
     }
 
@@ -229,23 +236,17 @@ impl WorldCache {
         payloads
     }
 
-    pub async fn resolve_name(
-        &self,
-        web: &WebClient,
-        endpoint: &str,
-        world_id: &str,
-    ) -> Option<String> {
+    pub async fn resolve_name(&self, endpoint: &str, world_id: &str) -> Option<String> {
         if let Some(name) = self.get_name(world_id) {
             return Some(name);
         }
-        self.resolve_summary(web, endpoint, world_id)
+        self.resolve_summary(endpoint, world_id)
             .await
             .map(|summary| summary.name)
     }
 
     pub async fn resolve_summary(
         &self,
-        web: &WebClient,
         endpoint: &str,
         world_id: &str,
     ) -> Option<WorldSummaryOutput> {
@@ -263,7 +264,7 @@ impl WorldCache {
         let key = resolve_key(endpoint, &world_id);
         match tokio::time::timeout(
             WORLD_RESOLVE_FETCH_TIMEOUT,
-            self.get(web, endpoint, &world_id, false, false),
+            self.get(endpoint, &world_id, false, false),
         )
         .await
         {
@@ -278,15 +279,10 @@ impl WorldCache {
         }
     }
 
-    pub async fn resolve_image_url(
-        &self,
-        web: &WebClient,
-        endpoint: &str,
-        world_id: &str,
-    ) -> Option<String> {
+    pub async fn resolve_image_url(&self, endpoint: &str, world_id: &str) -> Option<String> {
         self.resolve_image_url_with(endpoint, world_id, |endpoint, world_id| async move {
             let (_, request) = world_get_input(endpoint, world_id)?;
-            web.execute_api(request, VrchatScope::Vrchat).await
+            self.web.execute_api(request, VrchatScope::Vrchat).await
         })
         .await
     }
@@ -348,7 +344,6 @@ impl WorldCache {
 
     pub async fn get(
         &self,
-        web: &WebClient,
         endpoint: &str,
         world_id: &str,
         force: bool,
@@ -384,7 +379,7 @@ impl WorldCache {
         }
 
         let (_, request) = world_get_input(key.endpoint.clone(), world_id.clone())?;
-        let response = web.execute_api(request, VrchatScope::Vrchat).await;
+        let response = self.web.execute_api(request, VrchatScope::Vrchat).await;
         match response {
             Ok(response) => {
                 if (200..=299).contains(&response.status) {
@@ -516,42 +511,30 @@ impl vrcx_0_application_core::WorldCachePort for WorldCache {
         WorldCache::hydrate_favorite_payloads(self, world_values.iter())
     }
 
-    async fn resolve_name(
-        &self,
-        web: &WebClient,
-        endpoint: &str,
-        world_id: &str,
-    ) -> Option<String> {
-        WorldCache::resolve_name(self, web, endpoint, world_id).await
+    async fn resolve_name(&self, endpoint: &str, world_id: &str) -> Option<String> {
+        WorldCache::resolve_name(self, endpoint, world_id).await
     }
 
     async fn resolve_summary(
         &self,
-        web: &WebClient,
         endpoint: &str,
         world_id: &str,
     ) -> Option<vrcx_0_contracts::WorldSummaryOutput> {
-        WorldCache::resolve_summary(self, web, endpoint, world_id).await
+        WorldCache::resolve_summary(self, endpoint, world_id).await
     }
 
-    async fn resolve_image_url(
-        &self,
-        web: &WebClient,
-        endpoint: &str,
-        world_id: &str,
-    ) -> Option<String> {
-        WorldCache::resolve_image_url(self, web, endpoint, world_id).await
+    async fn resolve_image_url(&self, endpoint: &str, world_id: &str) -> Option<String> {
+        WorldCache::resolve_image_url(self, endpoint, world_id).await
     }
 
     async fn get(
         &self,
-        web: &WebClient,
         endpoint: &str,
         world_id: &str,
         force: bool,
         full: bool,
     ) -> crate::Result<vrcx_0_contracts::VrchatResponse> {
-        WorldCache::get(self, web, endpoint, world_id, force, full).await
+        WorldCache::get(self, endpoint, world_id, force, full).await
     }
 
     fn hydrate_response(&self, response: &vrcx_0_contracts::VrchatResponse) {

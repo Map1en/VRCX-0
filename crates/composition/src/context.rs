@@ -294,6 +294,7 @@ impl RuntimeHostContext {
         let avatar_cache = Arc::new(AvatarCache::new(
             vrcx_0_outbound_adapters::LocalAvatarCacheAdapter::new(
                 Arc::clone(&db),
+                Arc::clone(&web),
                 AVATAR_CACHE_WORKING_CAPACITY,
                 AVATAR_CACHE_WORKING_TTL,
             ),
@@ -301,12 +302,14 @@ impl RuntimeHostContext {
         let world_cache = Arc::new(WorldCache::new(
             vrcx_0_outbound_adapters::LocalWorldCacheAdapter::new(
                 Arc::clone(&db),
+                Arc::clone(&web),
                 WORLD_CACHE_WORKING_CAPACITY,
                 WORLD_CACHE_WORKING_TTL,
             ),
         ));
         let file_cache = FileCache::new(vrcx_0_outbound_adapters::LocalFileCacheAdapter::new(
             Arc::clone(&db),
+            Arc::clone(&web),
             FILE_CACHE_WORKING_CAPACITY,
         ));
         let activity_router = ActivityRouter::new();

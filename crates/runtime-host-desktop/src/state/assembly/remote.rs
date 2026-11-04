@@ -206,10 +206,7 @@ pub(crate) fn build_remote_runtimes(
         group_membership_batches: GroupMembershipBatchCoordinator::default(),
         group_moderation_batches: GroupModerationBatchCoordinator::default(),
         vrchat_requests: VrchatRequestAdapter::new(Arc::clone(runtime.web_client())),
-        world_names: CachedWorldNameResolver::new(
-            Arc::clone(context.world_cache()),
-            Arc::clone(runtime.web_client()),
-        ),
+        world_names: CachedWorldNameResolver::new(Arc::clone(context.world_cache())),
         webhook_transport: LocalNotificationWebhookTransport::new(Arc::clone(runtime.web_client())),
     }
 }

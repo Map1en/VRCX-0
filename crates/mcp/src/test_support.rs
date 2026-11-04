@@ -632,6 +632,7 @@ fn test_runtime_with_database_and_event_bus(
     let world_cache = Arc::new(WorldCache::new(
         vrcx_0_outbound_adapters::LocalWorldCacheAdapter::new(
             Arc::clone(&db),
+            Arc::clone(&web),
             512,
             Duration::from_secs(30 * 60),
         ),

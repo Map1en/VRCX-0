@@ -64,7 +64,7 @@ impl NotificationRemote for VrchatNotificationRemote {
     ) -> NotificationRemoteFuture<'a, String> {
         Box::pin(async move {
             self.file_cache
-                .resolve(self.web.as_ref(), endpoint, file_id)
+                .resolve(endpoint, file_id)
                 .await?
                 .avatar_name
         })
@@ -75,11 +75,7 @@ impl NotificationRemote for VrchatNotificationRemote {
         endpoint: &'a str,
         world_id: &'a str,
     ) -> NotificationRemoteFuture<'a, String> {
-        Box::pin(async move {
-            self.world_cache
-                .resolve_name(self.web.as_ref(), endpoint, world_id)
-                .await
-        })
+        Box::pin(async move { self.world_cache.resolve_name(endpoint, world_id).await })
     }
 
     fn world_image_url<'a>(
@@ -87,11 +83,7 @@ impl NotificationRemote for VrchatNotificationRemote {
         endpoint: &'a str,
         world_id: &'a str,
     ) -> NotificationRemoteFuture<'a, String> {
-        Box::pin(async move {
-            self.world_cache
-                .resolve_image_url(self.web.as_ref(), endpoint, world_id)
-                .await
-        })
+        Box::pin(async move { self.world_cache.resolve_image_url(endpoint, world_id).await })
     }
 
     fn group_name<'a>(

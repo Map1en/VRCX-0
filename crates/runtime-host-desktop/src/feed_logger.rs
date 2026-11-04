@@ -11,7 +11,7 @@ use vrcx_0_application::auth::{
 use vrcx_0_application::social::PROFILE_BIO_SCAN_CONFIG_KEY;
 use vrcx_0_application_core::{
     BackendRuntime, BackendRuntimeAuthStatus, BackendRuntimePhase, ConfigStore, FileCache,
-    RuntimeAuthScope, RuntimeEventBus, TaskSupervisor, WebClient, WorldCache,
+    RuntimeAuthScope, RuntimeEventBus, TaskSupervisor, WorldCache,
 };
 use vrcx_0_application_realtime::{replay_logger_frames, ReplayOutcome, ReplayResolvers};
 use vrcx_0_contracts::runtime_event_payload;
@@ -288,7 +288,6 @@ pub struct DesktopFeedLoggerRuntime {
     config: Arc<dyn ConfigStore>,
     world_cache: Arc<WorldCache>,
     file_cache: FileCache,
-    web: Arc<WebClient>,
     event_bus: RuntimeEventBus,
     auth_scope: RuntimeAuthScope,
     auth_credentials: Arc<dyn AuthCredentialStore>,
@@ -309,13 +308,11 @@ enum Heartbeat {
 }
 
 impl DesktopFeedLoggerRuntime {
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         db: Arc<DatabaseService>,
         config: Arc<dyn ConfigStore>,
         world_cache: Arc<WorldCache>,
         file_cache: FileCache,
-        web: Arc<WebClient>,
         event_bus: RuntimeEventBus,
         auth_scope: RuntimeAuthScope,
         auth_credentials: Arc<dyn AuthCredentialStore>,
@@ -327,7 +324,6 @@ impl DesktopFeedLoggerRuntime {
             db,
             world_cache,
             file_cache,
-            web,
             event_bus,
             auth_scope,
             auth_credentials,
@@ -650,8 +646,7 @@ impl DesktopFeedLoggerRuntime {
             .emit(FeedLoggerSyncEvent::Pulling { frames: 0 });
         let clock_offset_ms = self.client().await?.clock_offset_ms();
         let endpoint = self.auth_scope.snapshot().endpoint;
-        let mut resolvers =
-            ReplayResolvers::new(&self.world_cache, &self.file_cache, &self.web, &endpoint);
+        let mut resolvers = ReplayResolvers::new(&self.world_cache, &self.file_cache, &endpoint);
         let mut segments = SegmentBuffer::default();
         let mut totals = SyncTotals::default();
         let mut after = 0;

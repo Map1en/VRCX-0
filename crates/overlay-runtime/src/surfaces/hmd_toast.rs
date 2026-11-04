@@ -64,11 +64,7 @@ impl VrOverlayRuntime {
             if !endpoint.trim().is_empty() {
                 let world_name = async {
                     let world_id = world_id.as_deref()?;
-                    let resolve = services.world_cache().resolve_name(
-                        services.web_client().as_ref(),
-                        &endpoint,
-                        world_id,
-                    );
+                    let resolve = services.world_cache().resolve_name(&endpoint, world_id);
                     tokio::time::timeout(HMD_TOAST_LOCATION_RESOLVE_BUDGET, resolve)
                         .await
                         .ok()

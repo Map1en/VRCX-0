@@ -27,15 +27,11 @@ impl BackgroundRemoteApi for DesktopBackgroundRemoteApi {
         endpoint: &str,
         world_id: &str,
     ) -> vrcx_0_application_core::Result<vrcx_0_contracts::VrchatResponse> {
-        self.world_cache
-            .get(&self.web, endpoint, world_id, false, true)
-            .await
+        self.world_cache.get(endpoint, world_id, false, true).await
     }
 
     async fn world_image_url(&self, endpoint: &str, world_id: &str) -> Option<String> {
-        self.world_cache
-            .resolve_image_url(&self.web, endpoint, world_id)
-            .await
+        self.world_cache.resolve_image_url(endpoint, world_id).await
     }
 
     async fn get_group(

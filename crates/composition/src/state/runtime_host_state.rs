@@ -595,7 +595,6 @@ impl RuntimeHostStateBuilder {
             Arc::new(
                 vrcx_0_outbound_adapters::LocalSharedCollectionImportActionsFactory::new(
                     Arc::clone(&self.db),
-                    Arc::clone(&self.web),
                     Arc::clone(&self.runtime_context.world_cache),
                 ),
             ),

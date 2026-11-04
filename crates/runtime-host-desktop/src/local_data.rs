@@ -97,7 +97,6 @@ pub struct LocalDataRuntime {
     db: Arc<DatabaseService>,
     store: LocalDataStore,
     profile_config: Arc<dyn vrcx_0_application::profile::ProfileConfigStore>,
-    web: Arc<WebClient>,
     auth_scope: RuntimeAuthScope,
     tasks: TaskSupervisor,
     avatar_cache: Arc<AvatarCache>,
@@ -130,9 +129,8 @@ impl LocalDataRuntime {
         let mutual_graph_store = Arc::new(vrcx_0_outbound_adapters::LocalMutualGraphStore::new(
             Arc::clone(&db),
         ));
-        let mutual_graph_remote = Arc::new(vrcx_0_outbound_adapters::VrchatRequestAdapter::new(
-            Arc::clone(&web),
-        ));
+        let mutual_graph_remote =
+            Arc::new(vrcx_0_outbound_adapters::VrchatRequestAdapter::new(web));
         let saved_group_favorites = vrcx_0_application::social::SavedGroupFavoritesRuntime::new(
             Arc::new(
                 vrcx_0_outbound_adapters::LocalSavedGroupFavoritesAdapter::new(
@@ -147,7 +145,6 @@ impl LocalDataRuntime {
             db,
             store,
             profile_config,
-            web,
             auth_scope,
             tasks,
             avatar_cache,
@@ -179,7 +176,6 @@ impl LocalDataRuntime {
         };
         self.avatar_cache
             .resolve(
-                self.web.as_ref(),
                 &auth_scope.current_user_id,
                 endpoint,
                 &input.avatar_id,
@@ -210,13 +206,7 @@ impl LocalDataRuntime {
             auth_scope.endpoint.as_str()
         };
         self.world_cache
-            .get(
-                self.web.as_ref(),
-                endpoint,
-                &input.world_id,
-                input.force,
-                input.full,
-            )
+            .get(endpoint, &input.world_id, input.force, input.full)
             .await
     }
 
@@ -224,7 +214,7 @@ impl LocalDataRuntime {
         let file_id = extract_file_id(&file_url_or_id)?;
         let auth_scope = self.auth_scope.snapshot();
         self.file_cache
-            .resolve(self.web.as_ref(), &auth_scope.endpoint, &file_id)
+            .resolve(&auth_scope.endpoint, &file_id)
             .await
     }
 
@@ -538,10 +528,8 @@ impl LocalDataRuntime {
         } else {
             auth_scope.endpoint.as_str()
         };
-        let remote = vrcx_0_outbound_adapters::CachedLocalWorldDetailsRemote::new(
-            self.world_cache.as_ref(),
-            self.web.as_ref(),
-        );
+        let remote =
+            vrcx_0_outbound_adapters::CachedLocalWorldDetailsRemote::new(self.world_cache.as_ref());
         vrcx_0_application::favorites::refresh_local_world_details(
             &store,
             &OwnerId::new(auth_scope.current_user_id.clone()),

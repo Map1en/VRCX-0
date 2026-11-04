@@ -133,7 +133,6 @@ pub(crate) fn build_desktop_runtime(
             context.config_store(),
             Arc::clone(context.world_cache()),
             context.file_cache().clone(),
-            Arc::clone(context.web_client()),
             context.event_bus().clone(),
             context.auth_scope().clone(),
             context.auth_credentials_shared(),

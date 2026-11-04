@@ -275,7 +275,7 @@ impl RealtimeHostRuntime {
 
         let world_name = self
             .world_cache
-            .resolve_name(&self.deps.web, &session.endpoint, &world_id)
+            .resolve_name(&session.endpoint, &world_id)
             .await
             .filter(|name| is_meaningful_world_name(name))
             .unwrap_or_else(|| world_id.clone());

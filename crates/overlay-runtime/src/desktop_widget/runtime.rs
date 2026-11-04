@@ -326,11 +326,7 @@ impl DesktopWidgetRuntime {
         tasks.spawn(async move {
             let source_id = entry.source_id.clone();
             if let Some(world_id) = unresolved_entry_world_id(&entry) {
-                let resolve = services.world_cache().resolve_name(
-                    services.web_client().as_ref(),
-                    &endpoint,
-                    &world_id,
-                );
+                let resolve = services.world_cache().resolve_name(&endpoint, &world_id);
                 if let Ok(Some(world_name)) =
                     tokio::time::timeout(LOCATION_NAME_RESOLVE_BUDGET, resolve).await
                 {

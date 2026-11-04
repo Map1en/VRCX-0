@@ -214,7 +214,7 @@ impl NotificationChainActions for LocalNotificationChainActions<'_> {
             }
             let name = self
                 .world_cache
-                .resolve_name(self.web, &self.mutation.scope().endpoint, world_id)
+                .resolve_name(&self.mutation.scope().endpoint, world_id)
                 .await;
             self.mutation.ensure_current().ok().and(name)
         })

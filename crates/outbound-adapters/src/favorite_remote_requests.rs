@@ -122,7 +122,7 @@ impl FavoriteRemote for VrchatFavoriteRemote {
     ) -> FavoriteRemoteFuture<'a, VrchatResponse> {
         Box::pin(async move {
             self.world_cache
-                .get(self.web.as_ref(), &endpoint, &world_id, true, false)
+                .get(&endpoint, &world_id, true, false)
                 .await
         })
     }

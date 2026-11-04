@@ -23,6 +23,7 @@ pub struct AvatarCache {
     working: Cache<AvatarCacheKey, Arc<AvatarCacheEntry>>,
     db: Arc<DatabaseService>,
     inflight: Mutex<HashMap<AvatarCacheKey, Weak<tokio::sync::Mutex<()>>>>,
+    web: Arc<WebClient>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -38,7 +39,12 @@ struct AvatarCacheEntry {
 }
 
 impl AvatarCache {
-    pub fn new(db: Arc<DatabaseService>, capacity: u64, working_ttl: Duration) -> Self {
+    pub fn new(
+        db: Arc<DatabaseService>,
+        web: Arc<WebClient>,
+        capacity: u64,
+        working_ttl: Duration,
+    ) -> Self {
         let capacity = capacity.max(1);
         Self {
             working: Cache::builder()
@@ -47,6 +53,7 @@ impl AvatarCache {
                 .build(),
             db,
             inflight: Mutex::new(HashMap::new()),
+            web,
         }
     }
 
@@ -146,7 +153,6 @@ impl AvatarCache {
 
     pub async fn resolve(
         &self,
-        web: &WebClient,
         user_id: &str,
         endpoint: &str,
         avatar_id: &str,
@@ -179,18 +185,14 @@ impl AvatarCache {
                 }
             }
         }
-        self.fetch_avatar(web, &key).await.map(Some)
+        self.fetch_avatar(&key).await.map(Some)
     }
 
-    async fn fetch_avatar(
-        &self,
-        web: &WebClient,
-        key: &AvatarCacheKey,
-    ) -> crate::Result<Arc<Value>> {
+    async fn fetch_avatar(&self, key: &AvatarCacheKey) -> crate::Result<Arc<Value>> {
         let (_, request) = avatar_get_input(key.endpoint.clone(), key.avatar_id.clone())?;
         let response = tokio::time::timeout(
             AVATAR_RESOLVE_FETCH_TIMEOUT,
-            web.execute_api(request, VrchatScope::Vrchat),
+            self.web.execute_api(request, VrchatScope::Vrchat),
         )
         .await
         .map_err(|_| {
@@ -315,14 +317,13 @@ impl vrcx_0_application_core::AvatarCachePort for AvatarCache {
 
     async fn resolve(
         &self,
-        web: &WebClient,
         user_id: &str,
         endpoint: &str,
         avatar_id: &str,
         full: bool,
         fresh: bool,
     ) -> crate::Result<Option<Arc<Value>>> {
-        AvatarCache::resolve(self, web, user_id, endpoint, avatar_id, full, fresh).await
+        AvatarCache::resolve(self, user_id, endpoint, avatar_id, full, fresh).await
     }
 }
 

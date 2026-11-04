@@ -18,7 +18,7 @@ use crate::realtime::friends::RealtimeFriendsRuntime;
 use crate::realtime::{FriendIconChange, FriendWake, RealtimeFriendApplyResult};
 use crate::social_baseline::service::friend_baseline_from_raw;
 use crate::world_enrich::enrich_feed_entry;
-use vrcx_0_application_core::{FileCache, WebClient, WorldCache};
+use vrcx_0_application_core::{FileCache, WorldCache};
 
 const REMOTE_FETCH_CONCURRENCY: usize = 4;
 const WORLD_RETRY_DELAY: std::time::Duration = std::time::Duration::from_secs(2);
@@ -35,22 +35,15 @@ pub struct ReplayOutcome {
 pub struct ReplayResolvers<'a> {
     world_cache: &'a WorldCache,
     file_cache: &'a FileCache,
-    web: &'a WebClient,
     endpoint: &'a str,
     retried_worlds: BTreeSet<String>,
 }
 
 impl<'a> ReplayResolvers<'a> {
-    pub fn new(
-        world_cache: &'a WorldCache,
-        file_cache: &'a FileCache,
-        web: &'a WebClient,
-        endpoint: &'a str,
-    ) -> Self {
+    pub fn new(world_cache: &'a WorldCache, file_cache: &'a FileCache, endpoint: &'a str) -> Self {
         Self {
             world_cache,
             file_cache,
-            web,
             endpoint,
             retried_worlds: BTreeSet::new(),
         }
@@ -71,10 +64,9 @@ pub async fn replay_logger_frames(
     resolvers: &mut ReplayResolvers<'_>,
 ) -> ReplayOutcome {
     let mut outcome = replay_frames(frames, account_id, clock_offset_ms);
-    let (world_cache, file_cache, web, endpoint) = (
+    let (world_cache, file_cache, endpoint) = (
         resolvers.world_cache,
         resolvers.file_cache,
-        resolvers.web,
         resolvers.endpoint,
     );
     let unresolved = unresolved_worlds(world_cache, &mut outcome.entries);
@@ -82,7 +74,7 @@ pub async fn replay_logger_frames(
     if !endpoint.is_empty() {
         stream::iter(&unresolved)
             .for_each_concurrent(REMOTE_FETCH_CONCURRENCY, |world_id| async move {
-                world_cache.resolve_name(web, endpoint, world_id).await;
+                world_cache.resolve_name(endpoint, world_id).await;
             })
             .await;
         let retry: BTreeSet<String> = unresolved_worlds(world_cache, &mut outcome.entries)
@@ -93,7 +85,7 @@ pub async fn replay_logger_frames(
             tokio::time::sleep(WORLD_RETRY_DELAY).await;
             stream::iter(&retry)
                 .for_each_concurrent(REMOTE_FETCH_CONCURRENCY, |world_id| async move {
-                    let _ = world_cache.get(web, endpoint, world_id, true, false).await;
+                    let _ = world_cache.get(endpoint, world_id, true, false).await;
                 })
                 .await;
             unresolved_worlds(world_cache, &mut outcome.entries);
@@ -102,7 +94,7 @@ pub async fn replay_logger_frames(
             let resolved = join_all(
                 changes
                     .iter()
-                    .map(|change| resolve_avatar_feed_entry(file_cache, web, endpoint, change)),
+                    .map(|change| resolve_avatar_feed_entry(file_cache, endpoint, change)),
             )
             .await;
             outcome.entries.extend(resolved.into_iter().flatten());

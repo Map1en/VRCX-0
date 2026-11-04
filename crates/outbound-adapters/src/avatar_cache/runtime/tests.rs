@@ -40,6 +40,26 @@ fn test_db(name: &str) -> (TestDir, Arc<DatabaseService>) {
     (dir, db)
 }
 
+fn test_cache(dir: &TestDir, db: &Arc<DatabaseService>, capacity: u64) -> AvatarCache {
+    let storage =
+        vrcx_0_persistence::storage::StorageService::new(&dir.path.join("storage.json")).unwrap();
+    let web = vrcx_0_application_core::WebClient::new(
+        crate::LocalWebClientAdapter::new(
+            &storage,
+            Arc::clone(db),
+            "wss://pipeline.vrchat.cloud".to_string(),
+            env!("CARGO_PKG_VERSION"),
+        )
+        .unwrap(),
+    );
+    AvatarCache::new(
+        Arc::clone(db),
+        Arc::new(web),
+        capacity,
+        Duration::from_secs(60),
+    )
+}
+
 fn avatar_entry(id: &str, name: &str) -> CacheEntityInput {
     CacheEntityInput {
         id: json!(id),
@@ -58,9 +78,9 @@ fn avatar_entry(id: &str, name: &str) -> CacheEntityInput {
 
 #[test]
 fn summary_lookup_starts_empty_then_loads_one_db_row_into_memory() {
-    let (_dir, db) = test_db("summary-db-fallback");
+    let (dir, db) = test_db("summary-db-fallback");
     avatar_cache_upsert(db.as_ref(), avatar_entry("avtr_db", "DB Avatar")).unwrap();
-    let cache = AvatarCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+    let cache = test_cache(&dir, &db, 8);
 
     assert!(cache
         .working_value(
@@ -90,9 +110,9 @@ fn summary_lookup_starts_empty_then_loads_one_db_row_into_memory() {
 
 #[test]
 fn full_reads_do_not_treat_db_summaries_as_complete_api_payloads() {
-    let (_dir, db) = test_db("summary-is-not-full");
+    let (dir, db) = test_db("summary-is-not-full");
     avatar_cache_upsert(db.as_ref(), avatar_entry("avtr_db", "DB Avatar")).unwrap();
-    let cache = AvatarCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+    let cache = test_cache(&dir, &db, 8);
 
     cache
         .get_summary("usr_self", "https://api.example.test/api/1", "avtr_db")
@@ -112,22 +132,10 @@ fn full_reads_do_not_treat_db_summaries_as_complete_api_payloads() {
 async fn ordinary_resolution_uses_db_before_remote_api() {
     let (dir, db) = test_db("db-before-api");
     avatar_cache_upsert(db.as_ref(), avatar_entry("avtr_db", "DB Avatar")).unwrap();
-    let storage =
-        vrcx_0_persistence::storage::StorageService::new(&dir.path.join("storage.json")).unwrap();
-    let web = vrcx_0_application_core::WebClient::new(
-        crate::LocalWebClientAdapter::new(
-            &storage,
-            Arc::clone(&db),
-            "wss://pipeline.vrchat.cloud".to_string(),
-            env!("CARGO_PKG_VERSION"),
-        )
-        .unwrap(),
-    );
-    let cache = AvatarCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+    let cache = test_cache(&dir, &db, 8);
 
     let avatar = cache
         .resolve(
-            &web,
             "usr_self",
             "http://127.0.0.1:9/api/1",
             "avtr_db",
@@ -146,8 +154,8 @@ async fn ordinary_resolution_uses_db_before_remote_api() {
 
 #[test]
 fn full_api_payloads_are_scoped_to_the_authenticated_user() {
-    let (_dir, db) = test_db("auth-scoped-full-payload");
-    let cache = AvatarCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+    let (dir, db) = test_db("auth-scoped-full-payload");
+    let cache = test_cache(&dir, &db, 8);
     cache.hydrate_from_payload(
         "usr_first",
         "https://api.example.test/api/1",
@@ -179,8 +187,8 @@ fn full_api_payloads_are_scoped_to_the_authenticated_user() {
 
 #[test]
 fn api_payload_is_bounded_in_moka_and_persists_only_the_summary() {
-    let (_dir, db) = test_db("bounded-api-payload");
-    let cache = AvatarCache::new(Arc::clone(&db), 1, Duration::from_secs(60));
+    let (dir, db) = test_db("bounded-api-payload");
+    let cache = test_cache(&dir, &db, 1);
 
     for (id, name) in [("avtr_first", "First"), ("avtr_second", "Second")] {
         cache.hydrate_from_payload(

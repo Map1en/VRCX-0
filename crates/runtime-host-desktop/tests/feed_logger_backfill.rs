@@ -274,7 +274,6 @@ struct Desktop {
     db: DatabaseService,
     world_cache: WorldCache,
     file_cache: FileCache,
-    web: WebClient,
     _dir: TestDir,
 }
 
@@ -302,7 +301,6 @@ impl Desktop {
             db: DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap(),
             world_cache: WorldCache::new(worlds),
             file_cache: FileCache::new(files),
-            web: WebClient::new(NoopWebClientPort),
             _dir: dir,
         }
     }
@@ -315,11 +313,11 @@ impl Desktop {
             db: DatabaseService::new(&database).unwrap(),
             world_cache: WorldCache::new(LocalWorldCacheAdapter::new(
                 world_cache_db,
+                Arc::new(WebClient::new(api)),
                 64,
                 Duration::from_secs(600),
             )),
             file_cache: FileCache::new(MemoryFileCachePort::default()),
-            web: WebClient::new(api),
             _dir: dir,
         }
     }
@@ -333,7 +331,7 @@ impl Desktop {
             frames,
             SELF,
             clock_offset_ms,
-            &mut ReplayResolvers::new(&self.world_cache, &self.file_cache, &self.web, ENDPOINT),
+            &mut ReplayResolvers::new(&self.world_cache, &self.file_cache, ENDPOINT),
         )
         .await;
         let inserted = insert_backfilled_feed(
@@ -455,42 +453,26 @@ impl WorldCachePort for WorldsOnlyKnownToVrchat {
     fn hydrate_favorite_payloads(&self, world_values: &[Value]) -> Vec<Option<Value>> {
         self.local.hydrate_favorite_payloads(world_values)
     }
-    async fn resolve_name(
-        &self,
-        _web: &WebClient,
-        _endpoint: &str,
-        world_id: &str,
-    ) -> Option<String> {
+    async fn resolve_name(&self, _endpoint: &str, world_id: &str) -> Option<String> {
         if let Some(world) = self.vrchat.get_cached_card_payload(world_id) {
             self.local.insert(world);
         }
         self.local.get_name(world_id)
     }
-    async fn resolve_summary(
-        &self,
-        web: &WebClient,
-        endpoint: &str,
-        world_id: &str,
-    ) -> Option<WorldSummaryOutput> {
-        self.local.resolve_summary(web, endpoint, world_id).await
+    async fn resolve_summary(&self, endpoint: &str, world_id: &str) -> Option<WorldSummaryOutput> {
+        self.local.resolve_summary(endpoint, world_id).await
     }
-    async fn resolve_image_url(
-        &self,
-        web: &WebClient,
-        endpoint: &str,
-        world_id: &str,
-    ) -> Option<String> {
-        self.local.resolve_image_url(web, endpoint, world_id).await
+    async fn resolve_image_url(&self, endpoint: &str, world_id: &str) -> Option<String> {
+        self.local.resolve_image_url(endpoint, world_id).await
     }
     async fn get(
         &self,
-        web: &WebClient,
         endpoint: &str,
         world_id: &str,
         force: bool,
         full: bool,
     ) -> Result<VrchatResponse> {
-        self.local.get(web, endpoint, world_id, force, full).await
+        self.local.get(endpoint, world_id, force, full).await
     }
     fn hydrate_response(&self, response: &VrchatResponse) {
         self.local.hydrate_response(response);

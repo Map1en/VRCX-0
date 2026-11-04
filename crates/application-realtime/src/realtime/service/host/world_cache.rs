@@ -75,7 +75,7 @@ impl RealtimeHostRuntime {
             self.deps.tasks.spawn(async move {
                 let world_name = runtime
                     .world_cache
-                    .resolve_name(&runtime.deps.web, &endpoint, &world_id)
+                    .resolve_name(&endpoint, &world_id)
                     .await
                     .filter(|name| is_meaningful_world_name(name));
                 runtime.resolve_pending_world_corrections(&world_id, world_name.as_deref());

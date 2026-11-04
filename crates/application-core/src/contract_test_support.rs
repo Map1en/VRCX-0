@@ -7,7 +7,7 @@ use serde::Serialize;
 use serde_json::Value;
 use vrcx_0_contracts::resolve_config_key;
 
-use crate::{ConfigStore, Error, ImageCachePort, Result, WebClient, WebClientPort, WorldCachePort};
+use crate::{ConfigStore, Error, ImageCachePort, Result, WebClientPort, WorldCachePort};
 
 pub struct CallRecorder<T> {
     calls: Mutex<Vec<T>>,
@@ -281,7 +281,6 @@ impl MemoryFileCachePort {
 impl crate::FileCachePort for MemoryFileCachePort {
     async fn resolve(
         &self,
-        _web: &WebClient,
         _endpoint: &str,
         file_id: &str,
     ) -> Option<vrcx_0_contracts::FileMetadataOutput> {
@@ -334,33 +333,21 @@ impl WorldCachePort for NoopWorldCachePort {
     ) -> Vec<Option<serde_json::Value>> {
         vec![None; world_values.len()]
     }
-    async fn resolve_name(
-        &self,
-        _web: &WebClient,
-        _endpoint: &str,
-        _world_id: &str,
-    ) -> Option<String> {
+    async fn resolve_name(&self, _endpoint: &str, _world_id: &str) -> Option<String> {
         None
     }
     async fn resolve_summary(
         &self,
-        _web: &WebClient,
         _endpoint: &str,
         _world_id: &str,
     ) -> Option<vrcx_0_contracts::WorldSummaryOutput> {
         None
     }
-    async fn resolve_image_url(
-        &self,
-        _web: &WebClient,
-        _endpoint: &str,
-        _world_id: &str,
-    ) -> Option<String> {
+    async fn resolve_image_url(&self, _endpoint: &str, _world_id: &str) -> Option<String> {
         None
     }
     async fn get(
         &self,
-        _web: &WebClient,
         _endpoint: &str,
         _world_id: &str,
         _force: bool,
@@ -480,28 +467,17 @@ impl WorldCachePort for MemoryWorldCachePort {
             })
             .collect()
     }
-    async fn resolve_name(
-        &self,
-        _web: &WebClient,
-        _endpoint: &str,
-        world_id: &str,
-    ) -> Option<String> {
+    async fn resolve_name(&self, _endpoint: &str, world_id: &str) -> Option<String> {
         self.get_name(world_id)
     }
     async fn resolve_summary(
         &self,
-        _web: &WebClient,
         _endpoint: &str,
         world_id: &str,
     ) -> Option<vrcx_0_contracts::WorldSummaryOutput> {
         self.summary(world_id)
     }
-    async fn resolve_image_url(
-        &self,
-        _web: &WebClient,
-        _endpoint: &str,
-        world_id: &str,
-    ) -> Option<String> {
+    async fn resolve_image_url(&self, _endpoint: &str, world_id: &str) -> Option<String> {
         self.world(world_id)?
             .get("imageUrl")
             .and_then(serde_json::Value::as_str)
@@ -509,7 +485,6 @@ impl WorldCachePort for MemoryWorldCachePort {
     }
     async fn get(
         &self,
-        _web: &WebClient,
         _endpoint: &str,
         world_id: &str,
         _force: bool,
@@ -573,7 +548,6 @@ impl crate::AvatarCachePort for NoopAvatarCachePort {
     }
     async fn resolve(
         &self,
-        _web: &WebClient,
         _user_id: &str,
         _endpoint: &str,
         _avatar_id: &str,

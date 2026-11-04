@@ -34,13 +34,9 @@ impl RealtimeHostRuntime {
         active: ActiveRealtimeContext,
         change: FriendIconChange,
     ) {
-        let Some(entry) = resolve_avatar_feed_entry(
-            &self.deps.file_cache,
-            &self.deps.web,
-            &active.session.endpoint,
-            &change,
-        )
-        .await
+        let Some(entry) =
+            resolve_avatar_feed_entry(&self.deps.file_cache, &active.session.endpoint, &change)
+                .await
         else {
             return;
         };

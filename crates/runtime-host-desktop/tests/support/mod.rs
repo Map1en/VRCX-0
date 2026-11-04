@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use vrcx_0_application_core::{
     ConfigStore, FileCache, MemoryConfigStore, MemoryFileCachePort, MemoryWorldCachePort,
-    NoopWebClientPort, RuntimeAuthScope, RuntimeEventBus, WebClient, WorldCache,
+    RuntimeAuthScope, RuntimeEventBus, WorldCache,
 };
 use vrcx_0_outbound_adapters::LocalConfigStore;
 use vrcx_0_persistence::storage::StorageService;
@@ -58,7 +58,6 @@ pub fn feed_logger_desktop(settings: Option<&str>) -> FeedLoggerDesktop {
         Arc::clone(&config),
         Arc::new(WorldCache::new(MemoryWorldCachePort::default())),
         FileCache::new(MemoryFileCachePort::default()),
-        Arc::new(WebClient::new(NoopWebClientPort)),
         event_bus.clone(),
         auth_scope.clone(),
         Arc::new(MemoryConfigStore::default()),

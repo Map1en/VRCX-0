@@ -91,19 +91,16 @@ impl McpScreenshotQueryPort for DesktopMcpScreenshotAdapter {
 }
 
 pub(crate) struct DesktopMcpWorldLookupAdapter {
-    web: Arc<vrcx_0_application_core::WebClient>,
     world_cache: Arc<vrcx_0_application_core::WorldCache>,
     auth_scope: vrcx_0_application_core::RuntimeAuthScope,
 }
 
 impl DesktopMcpWorldLookupAdapter {
     pub(crate) fn new(
-        web: Arc<vrcx_0_application_core::WebClient>,
         world_cache: Arc<vrcx_0_application_core::WorldCache>,
         auth_scope: vrcx_0_application_core::RuntimeAuthScope,
     ) -> Self {
         Self {
-            web,
             world_cache,
             auth_scope,
         }
@@ -119,7 +116,7 @@ impl McpWorldLookupPort for DesktopMcpWorldLookupAdapter {
             let endpoint = self.auth_scope.snapshot().endpoint;
             let response = self
                 .world_cache
-                .get(&self.web, &endpoint, &world_id, false, true)
+                .get(&endpoint, &world_id, false, true)
                 .await?;
             if !(200..=299).contains(&response.status) {
                 return Err(vrcx_0_application_core::Error::Custom(format!(

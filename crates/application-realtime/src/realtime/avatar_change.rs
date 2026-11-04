@@ -1,4 +1,4 @@
-use vrcx_0_application_core::{FileCache, WebClient};
+use vrcx_0_application_core::FileCache;
 use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_contracts::FileMetadataOutput;
 use vrcx_0_core::files::extract_file_id;
@@ -7,13 +7,11 @@ use crate::realtime::FriendIconChange;
 
 pub(crate) async fn resolve_avatar_feed_entry(
     file_cache: &FileCache,
-    web: &WebClient,
     endpoint: &str,
     change: &FriendIconChange,
 ) -> Option<FeedLiveEntry> {
-    let next = resolve_avatar_image_file(file_cache, web, endpoint, &change.next_icon_url).await?;
-    let previous =
-        resolve_avatar_image_file(file_cache, web, endpoint, &change.previous_icon_url).await;
+    let next = resolve_avatar_image_file(file_cache, endpoint, &change.next_icon_url).await?;
+    let previous = resolve_avatar_image_file(file_cache, endpoint, &change.previous_icon_url).await;
     Some(FeedLiveEntry::Avatar {
         created_at: change.created_at.clone(),
         user_id: change.user_id.clone(),
@@ -38,13 +36,12 @@ pub(crate) async fn resolve_avatar_feed_entry(
 
 async fn resolve_avatar_image_file(
     file_cache: &FileCache,
-    web: &WebClient,
     endpoint: &str,
     icon_url: &str,
 ) -> Option<FileMetadataOutput> {
     let file_id = extract_file_id(icon_url)?;
     file_cache
-        .resolve(web, endpoint, &file_id)
+        .resolve(endpoint, &file_id)
         .await
         .filter(|file| file.avatar_name.is_some())
 }
