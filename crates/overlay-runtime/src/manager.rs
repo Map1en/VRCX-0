@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
-use vrcx_0_host_desktop::vr_overlay::{OverlaySurfaceConfig, VrDeviceSnapshot};
 use vrcx_0_vr_overlay::{OverlaySurfaceId, RgbaFrame};
+use vrcx_0_vr_overlay_backend::{OverlaySurfaceConfig, VrDeviceSnapshot};
 
 use super::{
     eligibility::VrOverlayEligibility,
@@ -187,8 +187,8 @@ fn log_overlay_start_error(error: &OverlayServiceStartError) {
 
 #[cfg(test)]
 mod tests {
-    use vrcx_0_host_desktop::vr_overlay::{OverlaySurfaceConfig, VrDeviceSnapshot};
     use vrcx_0_vr_overlay::{OverlaySurfaceId, RgbaFrame};
+    use vrcx_0_vr_overlay_backend::{OverlaySurfaceConfig, VrDeviceSnapshot};
 
     use super::{
         next_start_retry_delay, VrOverlayManager, OVERLAY_RUNTIME_UNAVAILABLE_RETRY_INTERVAL,

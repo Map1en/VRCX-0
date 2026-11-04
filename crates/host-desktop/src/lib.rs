@@ -29,8 +29,6 @@ pub mod system_usage;
 pub mod taskbar_overlay;
 pub mod tts;
 pub mod updater_policy;
-#[cfg(any(windows, target_os = "linux"))]
-pub mod vr_overlay;
 pub mod vrchat_ipc;
 pub mod vrchat_log;
 pub mod vrchat_paths;

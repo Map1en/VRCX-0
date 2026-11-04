@@ -1,0 +1,26 @@
+[package]
+name = "vrcx-0-vr-overlay-backend"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+description = "VR compositor overlay backends"
+
+[features]
+default = []
+steamvr-overlay = ["dep:openvr", "dep:openvr_sys"]
+openxr-overlay = ["dep:openxr", "dep:ash"]
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+specta.workspace = true
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[target.'cfg(any(windows, target_os = "linux"))'.dependencies]
+openvr = { version = "0.9", optional = true }
+openvr_sys = { version = "2.1.4", optional = true }
+openxr = { version = "0.22", optional = true, default-features = false, features = [
+    "loaded"
+] }
+ash = { version = "0.38", optional = true }
+vrcx-0-vr-overlay = { path = "../vr-overlay" }

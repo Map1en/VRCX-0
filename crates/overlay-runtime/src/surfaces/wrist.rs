@@ -4,12 +4,12 @@ use vrcx_0_application_activity::{
 };
 use vrcx_0_core::location::world_id_from_location;
 use vrcx_0_core::text::first_non_empty_owned;
-use vrcx_0_host_desktop::vr_overlay::{VrDeviceRole, VrDeviceSnapshot, VrDeviceStatus};
 use vrcx_0_i18n::OverlayMessage;
 use vrcx_0_vr_overlay::{
     DeviceChip, DeviceRole, DeviceStatus, FeedAccent, FeedKind, FeedLine, FeedRelation,
     FeedSeverity, OverlayFooter, OverlayNowPlaying, OverlaySize, WristSurfaceModel,
 };
+use vrcx_0_vr_overlay_backend::{VrDeviceRole, VrDeviceSnapshot, VrDeviceStatus};
 
 use super::super::localization::{OverlayLocale, OverlayLocalizer, OverlayPanelLocalizer};
 use vrcx_0_contracts::activity::ActivityKind;

@@ -10,7 +10,7 @@ use serde::Serialize;
 use vrcx_0_application_activity::notification::unresolved_group_id;
 use vrcx_0_application_activity::ActivitySnapshot;
 use vrcx_0_application_core::{GameProcessEvent, GameProcessEventSink, TaskSupervisor};
-use vrcx_0_host_desktop::vr_overlay::VrDeviceSnapshot;
+use vrcx_0_vr_overlay_backend::VrDeviceSnapshot;
 
 use crate::VrOverlayRuntimeServices;
 

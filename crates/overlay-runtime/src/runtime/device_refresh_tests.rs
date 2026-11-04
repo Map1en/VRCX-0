@@ -1,5 +1,5 @@
 use super::*;
-use vrcx_0_host_desktop::vr_overlay::{VrDeviceRole, VrDeviceStatus};
+use vrcx_0_vr_overlay_backend::{VrDeviceRole, VrDeviceStatus};
 
 fn device(label: &str, role: VrDeviceRole, serial: &str) -> VrDeviceSnapshot {
     VrDeviceSnapshot {

@@ -7,12 +7,12 @@ use std::sync::{
 use std::thread;
 use std::time::{Duration, Instant};
 
-use vrcx_0_host_desktop::vr_overlay::{
+use vrcx_0_vr_overlay::{OverlaySize, OverlaySurfaceId, RgbaFrame};
+use vrcx_0_vr_overlay_backend::{
     BackendStartError, OverlayActivationButton, OverlayActorHandle, OverlayBackend,
     OverlayCommandError, OverlayPlacement, OverlayServiceCommand, OverlayServicePhase,
     OverlaySurfaceConfig, TickOutcome, VrDeviceSnapshot,
 };
-use vrcx_0_vr_overlay::{OverlaySize, OverlaySurfaceId, RgbaFrame};
 
 #[test]
 fn overlay_actor_serializes_commands_until_stop() {

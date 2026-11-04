@@ -1,7 +1,5 @@
-use vrcx_0_host_desktop::vr_overlay::{
-    OverlayActivationButton, OverlayPlacement, OverlaySurfaceConfig,
-};
 use vrcx_0_vr_overlay::{OverlaySize, OverlaySurfaceId, MAIN_SURFACE_ID};
+use vrcx_0_vr_overlay_backend::{OverlayActivationButton, OverlayPlacement, OverlaySurfaceConfig};
 
 use crate::config::{
     HmdNotificationPosition, HmdNotificationStyle, VrOverlayRuntimeConfig, WristOverlayHand,

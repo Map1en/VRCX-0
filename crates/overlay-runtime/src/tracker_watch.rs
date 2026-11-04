@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use vrcx_0_host_desktop::vr_overlay::{VrDeviceRole, VrDeviceSnapshot};
+use vrcx_0_vr_overlay_backend::{VrDeviceRole, VrDeviceSnapshot};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct TrackerDisconnect {
@@ -76,7 +76,7 @@ impl TrackerWatch {
 
 #[cfg(test)]
 mod tests {
-    use vrcx_0_host_desktop::vr_overlay::{VrDeviceRole, VrDeviceStatus};
+    use vrcx_0_vr_overlay_backend::{VrDeviceRole, VrDeviceStatus};
 
     use super::*;
 

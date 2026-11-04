@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
-use vrcx_0_host_desktop::vr_overlay::{
+use vrcx_0_vr_overlay::{OverlaySurfaceId, RgbaFrame};
+use vrcx_0_vr_overlay_backend::{
     OverlayActorHandle, OverlayCommandError, OverlayServiceCommand, OverlayServicePhase,
     OverlaySurfaceConfig, VrDeviceSnapshot,
 };
-use vrcx_0_vr_overlay::{OverlaySurfaceId, RgbaFrame};
 
 const RUNTIME_QUIT_RESTART_COOLDOWN: Duration = Duration::from_secs(10);
 const PREVIOUS_START_IN_FLIGHT_MESSAGE: &str = "previous overlay start attempt is still in flight";
@@ -701,7 +701,7 @@ fn spawn_openxr_actor() -> Option<(OverlayActorHandle, &'static str)> {
 fn openxr_runtime_supported() -> bool {
     #[cfg(all(feature = "openxr-overlay", any(windows, target_os = "linux")))]
     {
-        match vrcx_0_host_desktop::vr_overlay::probe_openxr_runtime() {
+        match vrcx_0_vr_overlay_backend::probe_openxr_runtime() {
             Ok(()) => true,
             Err(error) => {
                 tracing::debug!(error = %error, "OpenXR overlay runtime probe failed");

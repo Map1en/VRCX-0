@@ -28,7 +28,7 @@ use crate::config::{
 };
 use crate::tracker_watch::TrackerDisconnect;
 use crate::VrOverlayRuntimeServices;
-use vrcx_0_host_desktop::vr_overlay::OverlayPlacement;
+use vrcx_0_vr_overlay_backend::OverlayPlacement;
 
 struct TestServices {
     config: ConfigRepository,

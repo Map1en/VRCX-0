@@ -2,11 +2,11 @@ use std::cell::RefCell;
 use std::sync::Arc;
 
 use vrcx_0_core::text::first_non_empty_owned;
-use vrcx_0_host_desktop::vr_overlay::VrDeviceSnapshot;
 use vrcx_0_vr_overlay::{
     MainSurfaceModel, OverlaySize, RgbaFrame, SlintHmdRenderer, SlintWristRenderer,
     WristSurfaceModel,
 };
+use vrcx_0_vr_overlay_backend::VrDeviceSnapshot;
 
 use crate::config::VrOverlayRuntimeConfig;
 use crate::surfaces::hmd_toast::refresh_cached_location_names;

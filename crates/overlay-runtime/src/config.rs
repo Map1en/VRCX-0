@@ -1,5 +1,5 @@
 use crate::VrOverlayRuntimeServices;
-use vrcx_0_host_desktop::vr_overlay::OverlayActivationButton;
+use vrcx_0_vr_overlay_backend::OverlayActivationButton;
 
 use super::eligibility::WristOverlayStartMode;
 use super::localization::{OverlayLocale, OverlayLocalizer};

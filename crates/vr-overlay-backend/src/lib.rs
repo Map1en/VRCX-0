@@ -1,3 +1,5 @@
+#![cfg(any(windows, target_os = "linux"))]
+
 mod actor;
 mod command;
 mod noop;

@@ -609,6 +609,7 @@ fn feed_logger_stays_free_of_the_desktop_stack() {
         "vrcx-0-runtime-host-desktop",
         "vrcx-0-overlay-runtime",
         "vrcx-0-vr-overlay",
+        "vrcx-0-vr-overlay-backend",
     ] {
         assert!(
             !logger.contains(forbidden),
