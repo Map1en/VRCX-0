@@ -25,8 +25,8 @@ use vrcx_0_logger_protocol::wire::{
     CAPTURE_FORMAT_VERSION, MAX_FRAMES_PAGE, PRESENCE_INTERVAL_SECS, PRESENCE_TTL_SECS,
     PROTOCOL_VERSION,
 };
+use vrcx_0_persistence::feed::BackfillWrites;
 use vrcx_0_persistence::profile_bio::profile_bio_checked_at_list;
-use vrcx_0_persistence::realtime::BackfillWrites;
 use vrcx_0_persistence::{config::ConfigRepository, secrets, DatabaseService};
 
 mod backfill_history;
@@ -745,7 +745,7 @@ impl DesktopFeedLoggerRuntime {
             return Ok(0);
         }
         let owner = OwnerId::new(account_id);
-        let inserted = vrcx_0_persistence::realtime::insert_backfilled_feed(
+        let inserted = vrcx_0_persistence::feed::insert_backfilled_feed(
             &self.db,
             &owner,
             &outcome.entries,

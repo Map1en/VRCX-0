@@ -11,5 +11,7 @@ pub use types::{
     FeedCursorInput, FeedFilter, FeedLatestQueryInput, FeedLiveEntryInput, FeedLiveQueryMatcher,
     FeedQueryMode, FeedReadModelOutput, FeedRowOutput, FeedRowsQueryInput, FeedSearchQueryInput,
 };
-pub(crate) use write::feed_avatar_delete_before_sql;
-pub use write::feed_avatar_purge;
+#[cfg(test)]
+pub(crate) use write::backfill_nearby_ids_sql;
+pub(crate) use write::{feed_avatar_delete_before_sql, insert_feed_entry};
+pub use write::{feed_avatar_purge, insert_backfilled_feed, BackfillWrites};

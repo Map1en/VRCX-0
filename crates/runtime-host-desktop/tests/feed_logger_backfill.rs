@@ -27,11 +27,9 @@ use vrcx_0_contracts::{
 use vrcx_0_core::OwnerId;
 use vrcx_0_logger_protocol::wire::{FrameKind, SnapshotPayload, WireFrame};
 use vrcx_0_outbound_adapters::LocalWorldCacheAdapter;
-use vrcx_0_persistence::feed::feed_rows_query;
+use vrcx_0_persistence::feed::{feed_rows_query, insert_backfilled_feed, BackfillWrites};
 use vrcx_0_persistence::profile_bio::{profile_bio_get, profile_bio_upsert};
-use vrcx_0_persistence::realtime::{
-    insert_backfilled_feed, write_realtime_batch, BackfillWrites, RealtimePersistenceBatch,
-};
+use vrcx_0_persistence::realtime::{write_realtime_batch, RealtimePersistenceBatch};
 use vrcx_0_persistence::DatabaseService;
 
 const SELF: &str = "usr_self";

@@ -8,15 +8,17 @@ pub use vrcx_0_contracts::friend_log::{
 };
 
 use crate::common::{
-    add_list_params, normalize_text, row_i64, row_string, value_as_i64, ParamsBuilder,
+    add_list_params, affected_count, normalize_text, row_i64, row_string, value_as_i64,
+    value_to_i64, ParamsBuilder,
 };
 use crate::database::{DatabaseService, DatabaseWriteTransaction};
 use crate::ownership::OwnerId;
-use crate::realtime::{
-    ensure_realtime_tables, normalize_user_table_prefix, write_friend_log_current,
-};
+use crate::realtime::{ensure_realtime_tables, normalize_user_table_prefix};
 use crate::Error;
-use vrcx_0_core::friend_log::FriendLogUpsertInput;
+use vrcx_0_contracts::realtime::{FriendLogDelete, FriendLogUpsert};
+use vrcx_0_core::friend_log::{
+    plan_friend_log_upsert, FriendLogCurrent, FriendLogUpsertInput, FriendLogUpsertPlan,
+};
 
 pub fn friend_log_current_list(
     db: &DatabaseService,
@@ -437,6 +439,232 @@ pub(crate) fn current_friend_trust_level(entry: &FriendLogCurrentEntryInput) -> 
         .trust_level
         .clone()
         .unwrap_or_else(|| "Visitor".to_string())
+}
+
+struct FriendLogHistoryEntry<'a> {
+    created_at: &'a str,
+    entry_type: &'a str,
+    user_id: &'a str,
+    display_name: &'a str,
+    previous_display_name: &'a str,
+    trust_level: &'a str,
+    previous_trust_level: &'a str,
+    friend_number: i64,
+}
+
+pub(crate) struct WrittenFriendLogCurrent {
+    pub(crate) plan: FriendLogUpsertPlan,
+    pub(crate) inserted: bool,
+    pub(crate) affected: u64,
+}
+
+pub(crate) fn write_friend_log_current(
+    tx: &mut DatabaseWriteTransaction<'_>,
+    user_prefix: &str,
+    entry: FriendLogUpsertInput<'_>,
+) -> Result<Option<WrittenFriendLogCurrent>, Error> {
+    let target_user_id = normalize_text(entry.target_user_id);
+    if target_user_id.is_empty() {
+        return Ok(None);
+    }
+    let existing_rows = tx.execute(
+        &format!(
+            "SELECT user_id, display_name, trust_level, friend_number FROM {user_prefix}_friend_log_current WHERE user_id = @user_id LIMIT 1"
+        ),
+        &ParamsBuilder::new().set("user_id", target_user_id).build(),
+    )?;
+    let existing = existing_rows
+        .first()
+        .map(|row| existing_friend_log_row(row));
+    let Some(plan) = plan_friend_log_upsert(
+        entry,
+        existing.as_ref().map(|existing| FriendLogCurrent {
+            display_name: &existing.display_name,
+            trust_level: &existing.trust_level,
+            friend_number: existing.friend_number,
+        }),
+        || next_friend_number(tx, user_prefix),
+    )?
+    else {
+        return Ok(None);
+    };
+    let params = ParamsBuilder::new()
+        .set("user_id", plan.user_id.clone())
+        .set("display_name", plan.display_name.clone())
+        .set("trust_level", plan.trust_level.clone())
+        .set("friend_number", plan.friend_number)
+        .build();
+    let insert_count = tx.execute_non_query(
+        &format!(
+            "INSERT OR IGNORE INTO {user_prefix}_friend_log_current (user_id, display_name, trust_level, friend_number) VALUES (@user_id, @display_name, @trust_level, @friend_number)"
+        ),
+        &params,
+    )?;
+    let inserted = insert_count > 0;
+    let mut affected = affected_count(insert_count);
+    if !inserted {
+        affected = affected.saturating_add(affected_count(tx.execute_non_query(
+            &format!(
+                "UPDATE {user_prefix}_friend_log_current SET display_name = @display_name, trust_level = @trust_level, friend_number = CASE WHEN @friend_number > 0 THEN @friend_number ELSE friend_number END WHERE user_id = @user_id"
+            ),
+            &params,
+        )?));
+    }
+    Ok(Some(WrittenFriendLogCurrent {
+        plan,
+        inserted,
+        affected,
+    }))
+}
+
+pub(crate) fn upsert_friend_log_current(
+    tx: &mut DatabaseWriteTransaction<'_>,
+    user_prefix: &str,
+    entry: &FriendLogUpsert,
+) -> Result<u64, Error> {
+    let Some(WrittenFriendLogCurrent {
+        plan, mut affected, ..
+    }) = write_friend_log_current(
+        tx,
+        user_prefix,
+        FriendLogUpsertInput {
+            target_user_id: &entry.target_user_id,
+            display_name: &entry.display_name,
+            trust_level: &entry.trust_level,
+            friend_number: entry.friend_number,
+            force_history: entry.force_history,
+        },
+    )?
+    else {
+        return Ok(0);
+    };
+    for history in &plan.history {
+        affected = affected.saturating_add(add_friend_log_history(
+            tx,
+            user_prefix,
+            &FriendLogHistoryEntry {
+                created_at: &entry.created_at,
+                entry_type: history.entry_type,
+                user_id: &plan.user_id,
+                display_name: &plan.display_name,
+                previous_display_name: &history.previous_display_name,
+                trust_level: &plan.trust_level,
+                previous_trust_level: &history.previous_trust_level,
+                friend_number: plan.friend_number,
+            },
+        )?);
+    }
+    Ok(affected)
+}
+
+pub(crate) fn delete_friend_log_current(
+    tx: &mut DatabaseWriteTransaction<'_>,
+    user_prefix: &str,
+    entry: &FriendLogDelete,
+) -> Result<u64, Error> {
+    let target_user_id = normalize_text(&entry.target_user_id);
+    if target_user_id.is_empty() {
+        return Ok(0);
+    }
+    let existing_rows = tx.execute(
+        &format!(
+            "SELECT user_id, display_name, trust_level, friend_number FROM {user_prefix}_friend_log_current WHERE user_id = @user_id LIMIT 1"
+        ),
+        &ParamsBuilder::new().set("user_id", target_user_id.clone()).build(),
+    )?;
+    let Some(existing) = existing_rows
+        .first()
+        .map(|row| existing_friend_log_row(row))
+    else {
+        return Ok(0);
+    };
+    let deleted = tx.execute_non_query(
+        &format!("DELETE FROM {user_prefix}_friend_log_current WHERE user_id = @user_id"),
+        &ParamsBuilder::new().set("user_id", target_user_id).build(),
+    )?;
+    let mut affected = affected_count(deleted);
+    if deleted > 0 {
+        affected = affected.saturating_add(add_friend_log_history(
+            tx,
+            user_prefix,
+            &FriendLogHistoryEntry {
+                created_at: &entry.created_at,
+                entry_type: "Unfriend",
+                user_id: &existing.user_id,
+                display_name: &existing.display_name,
+                previous_display_name: "",
+                trust_level: &existing.trust_level,
+                previous_trust_level: "",
+                friend_number: existing.friend_number,
+            },
+        )?);
+    }
+    Ok(affected)
+}
+
+fn add_friend_log_history(
+    tx: &mut DatabaseWriteTransaction<'_>,
+    user_prefix: &str,
+    entry: &FriendLogHistoryEntry<'_>,
+) -> Result<u64, Error> {
+    tx.execute_non_query(
+        &format!(
+            "INSERT INTO {user_prefix}_friend_log_history (created_at, type, user_id, display_name, previous_display_name, trust_level, previous_trust_level, friend_number) VALUES (@created_at, @type, @user_id, @display_name, @previous_display_name, @trust_level, @previous_trust_level, @friend_number)"
+        ),
+        &ParamsBuilder::new()
+            .set("created_at", entry.created_at)
+            .set("type", entry.entry_type)
+            .set("user_id", entry.user_id)
+            .set("display_name", entry.display_name)
+            .set("previous_display_name", entry.previous_display_name)
+            .set("trust_level", entry.trust_level)
+            .set("previous_trust_level", entry.previous_trust_level)
+            .set("friend_number", entry.friend_number)
+            .build(),
+    )
+    .map(affected_count)
+}
+
+fn next_friend_number(
+    tx: &mut DatabaseWriteTransaction<'_>,
+    user_prefix: &str,
+) -> Result<i64, Error> {
+    let rows = tx.execute(
+        &format!("SELECT MAX(friend_number), COUNT(*) FROM {user_prefix}_friend_log_current"),
+        &Default::default(),
+    )?;
+    let max_number = rows
+        .first()
+        .and_then(|row| row.first())
+        .and_then(value_to_i64)
+        .unwrap_or(0);
+    let count = rows
+        .first()
+        .and_then(|row| row.get(1))
+        .and_then(value_to_i64)
+        .unwrap_or(0);
+    Ok(if max_number > 0 {
+        max_number + 1
+    } else {
+        count + 1
+    })
+}
+
+fn existing_friend_log_row(row: &[Value]) -> FriendLogCurrentOutput {
+    FriendLogCurrentOutput {
+        user_id: row
+            .first()
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .to_string(),
+        display_name: row.get(1).and_then(Value::as_str).unwrap_or("").to_string(),
+        trust_level: row
+            .get(2)
+            .and_then(Value::as_str)
+            .unwrap_or("Visitor")
+            .to_string(),
+        friend_number: row.get(3).and_then(value_to_i64).unwrap_or(0),
+    }
 }
 
 #[cfg(test)]
