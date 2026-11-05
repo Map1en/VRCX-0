@@ -21,15 +21,13 @@ import {
     type LucideIcon
 } from 'lucide-react';
 import {
-    useEffect,
     useId,
     useRef,
     useState,
     type ComponentProps,
     type CSSProperties,
     type ReactNode,
-    type Ref,
-    type RefObject
+    type Ref
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -41,6 +39,7 @@ import {
 } from '@/components/layout/PageScaffold';
 import { ToolbarSearch } from '@/components/layout/ToolbarControls';
 import { SettingsCard } from '@/features/settings/components/SettingsCard';
+import { useActiveScrollSection } from '@/lib/useActiveScrollSection';
 import { useRouteScrollMemory } from '@/lib/useRouteScrollMemory';
 import { cn } from '@/lib/utils';
 import type { ToolDefinition } from '@/shared/constants/tools';
@@ -687,100 +686,8 @@ function ToolCatalogDropZone({
 }
 
 const QUICK_ACCESS_SECTION_ID = 'tools-section-quick-access';
-const SECTION_SCROLL_OFFSET = 8;
-
 function categorySectionId(categoryKey: string) {
     return `tools-section-${categoryKey}`;
-}
-
-type PinnedSection = {
-    id: string;
-    targetTop: number;
-    settled: boolean;
-};
-
-function sectionElement(container: HTMLElement, id: string) {
-    return container.querySelector<HTMLElement>(`[data-tools-section="${id}"]`);
-}
-
-function useActiveSection(
-    scrollRef: RefObject<HTMLDivElement | null>,
-    sectionKey: string
-) {
-    const [activeId, setActiveId] = useState<string | null>(null);
-    const pinnedRef = useRef<PinnedSection | null>(null);
-
-    useEffect(() => {
-        const sectionIds = sectionKey ? sectionKey.split('\n') : [];
-        const container = scrollRef.current;
-        if (!container) {
-            return undefined;
-        }
-        const compute = () => {
-            const atBottom =
-                container.scrollTop + container.clientHeight >=
-                container.scrollHeight - 1;
-            if (atBottom) {
-                return sectionIds[sectionIds.length - 1] ?? null;
-            }
-            const threshold = container.scrollTop + SECTION_SCROLL_OFFSET + 1;
-            let current: string | null = sectionIds[0] ?? null;
-            for (const id of sectionIds) {
-                const element = sectionElement(container, id);
-                if (element && element.offsetTop <= threshold) {
-                    current = id;
-                }
-            }
-            return current;
-        };
-        const update = () => {
-            const pinned = pinnedRef.current;
-            if (pinned) {
-                const reached =
-                    Math.abs(container.scrollTop - pinned.targetTop) <= 1;
-                if (!pinned.settled) {
-                    if (reached) {
-                        pinned.settled = true;
-                    }
-                    return;
-                }
-                if (reached) {
-                    return;
-                }
-                pinnedRef.current = null;
-            }
-            setActiveId(compute());
-        };
-        update();
-        container.addEventListener('scroll', update, { passive: true });
-        return () => {
-            container.removeEventListener('scroll', update);
-        };
-    }, [scrollRef, sectionKey]);
-
-    function scrollTo(id: string) {
-        const container = scrollRef.current;
-        const element = container ? sectionElement(container, id) : null;
-        if (!container || !element) {
-            return;
-        }
-        const targetTop = Math.max(
-            0,
-            Math.min(
-                element.offsetTop - SECTION_SCROLL_OFFSET,
-                container.scrollHeight - container.clientHeight
-            )
-        );
-        pinnedRef.current = {
-            id,
-            targetTop,
-            settled: Math.abs(container.scrollTop - targetTop) <= 1
-        };
-        setActiveId(id);
-        container.scrollTo({ top: targetTop, behavior: 'smooth' });
-    }
-
-    return { activeId, scrollTo };
 }
 
 export function ToolsPageContent({ embedded = false }: { embedded?: boolean }) {
@@ -905,9 +812,10 @@ export function ToolsPageContent({ embedded = false }: { embedded?: boolean }) {
         }))
     ];
     const { activeId: activeSectionId, scrollTo: scrollToSection } =
-        useActiveSection(
+        useActiveScrollSection(
             scrollRef,
-            railItems.map((item) => item.id).join('\n')
+            railItems.map((item) => item.id),
+            'data-tools-section'
         );
 
     return (

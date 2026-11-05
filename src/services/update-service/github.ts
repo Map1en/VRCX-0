@@ -16,11 +16,19 @@ export function getPreviewStableReleaseUpdateMode(): PreviewStableReleaseUpdateM
     };
 }
 
-export async function fetchBranchReleases(
-    channel: ReleaseChannel
-): Promise<NormalizedRelease[]> {
+const GITHUB_RELEASES_PER_PAGE = 30;
+
+type BranchReleasePage = {
+    releases: NormalizedRelease[];
+    hasMore: boolean;
+};
+
+export async function fetchBranchReleasePage(
+    channel: ReleaseChannel,
+    page: number
+): Promise<BranchReleasePage> {
     const response = await commands.appExternalApiGithubReleasesGet({
-        url: GITHUB_RELEASES_URL,
+        url: `${GITHUB_RELEASES_URL}?per_page=${GITHUB_RELEASES_PER_PAGE}&page=${page}`,
         headers: {
             Accept: 'application/vnd.github+json'
         }
@@ -37,12 +45,8 @@ export async function fetchBranchReleases(
         throw new Error(data.message);
     }
 
-    return normalizeReleaseList(channel, data);
-}
-
-export async function fetchLatestBranchRelease(
-    channel: ReleaseChannel
-): Promise<NormalizedRelease | null> {
-    const releases = await fetchBranchReleases(channel);
-    return releases[0] || null;
+    return {
+        releases: normalizeReleaseList(channel, data),
+        hasMore: Array.isArray(data) && data.length >= GITHUB_RELEASES_PER_PAGE
+    };
 }
