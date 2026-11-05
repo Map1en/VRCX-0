@@ -149,9 +149,7 @@ describe('ProfileAvatarFrame', () => {
 
     it('skips the animation when the system prefers reduced motion', () => {
         vi.stubGlobal('matchMedia', (query: string) => ({
-            matches: query === '(prefers-reduced-motion: reduce)',
-            addEventListener: () => undefined,
-            removeEventListener: () => undefined
+            matches: query === '(prefers-reduced-motion: reduce)'
         }));
         expect(renderFrame(true).animationState()).toBeNull();
     });

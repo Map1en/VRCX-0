@@ -5,7 +5,6 @@ import {
     normalizeProfileAppearanceColor,
     resolveProfileDecorationAssetUrls
 } from '@/components/dialogs/user-dialog/userDialogProfileAppearance';
-import { usePrefersReducedMotion } from '@/components/layout/navMenuCollapse';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { entityQueryPolicies } from '@/lib/entityQueryCache';
 import { cn } from '@/lib/utils';
@@ -44,8 +43,11 @@ function DecorationImage({
     const reduceEffects = usePreferencesStore(
         (state) => state.reducedMotionAndBlur
     );
-    const prefersReducedMotion = usePrefersReducedMotion();
-    const reducedMotion = reduceEffects || prefersReducedMotion;
+    const reducedMotion =
+        reduceEffects ||
+        (animated &&
+            window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ===
+                true);
     const playing = animated && !reducedMotion;
     const [fadingOut, setFadingOut] = useState(false);
     const [wasPlaying, setWasPlaying] = useState(playing);

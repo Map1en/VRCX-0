@@ -32,7 +32,7 @@ export function subscribeToReducedMotionChanges(
     return () => mediaQuery.removeEventListener('change', handleChange);
 }
 
-export function usePrefersReducedMotion(): boolean {
+function usePrefersReducedMotion(): boolean {
     const [prefersReducedMotion, setPrefersReducedMotion] = useState(() =>
         typeof window !== 'undefined' && window.matchMedia
             ? window.matchMedia(PREFERS_REDUCED_MOTION_MEDIA_QUERY).matches
