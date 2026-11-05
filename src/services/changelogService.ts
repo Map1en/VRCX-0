@@ -1,12 +1,11 @@
 import configRepository from '@/repositories/configRepository';
-import {
-    fetchBranchReleases,
-    fetchLatestBranchRelease
-} from '@/services/updateService';
+import { fetchBranchReleasePage } from '@/services/updateService';
 import type { NormalizedRelease } from '@/services/updateService';
 import { parseReleaseVersion } from '@/shared/utils/releaseVersion';
 
 const STABLE_BRANCH = 'stable';
+const CHANGELOG_RELEASE_LIMIT = 10;
+const CHANGELOG_MAX_PAGES = 3;
 const DEFAULT_CHANGELOG_LANG = 'en';
 const DEFAULT_CHANGELOG_LABEL = 'English';
 const MARKER_BLOCK_PATTERN =
@@ -154,6 +153,38 @@ export function parseReleaseChangelog(
     };
 }
 
+export type ChangelogSection = ParsedLocalizedChangelog & {
+    id: string;
+    release: NormalizedRelease;
+};
+
+function stripLeadingVersionLine(markdown: string, version: string) {
+    const [firstLine = '', ...rest] = markdown.split('\n');
+    return normalizeReleaseLookupVersion(firstLine) === version
+        ? rest.join('\n').trim()
+        : markdown;
+}
+
+export function buildChangelogSections(
+    releases: NormalizedRelease[]
+): ChangelogSection[] {
+    return releases.map((release) => {
+        const { note, entries } = parseReleaseChangelog(release);
+        return {
+            id: release.canonicalVersion,
+            release,
+            note,
+            entries: entries.map((entry) => ({
+                ...entry,
+                markdown: stripLeadingVersionLine(
+                    entry.markdown,
+                    release.canonicalVersion
+                )
+            }))
+        };
+    });
+}
+
 export function resolvePreferredChangelogLanguage(
     entries: LocalizedChangelogEntry[],
     locale: string
@@ -201,37 +232,43 @@ export function resolvePostUpdateChangelogToastState({
     };
 }
 
-function getCurrentVersion() {
+export function getCurrentVersion() {
     return typeof VERSION === 'undefined' ? '' : VERSION || '';
 }
 
-async function fetchLatestChangelogRelease() {
-    const branch =
-        parseReleaseVersion(getCurrentVersion())?.channel ?? STABLE_BRANCH;
-    return fetchLatestBranchRelease(branch);
+export async function fetchChangelogReleases(
+    version?: string
+): Promise<NormalizedRelease[]> {
+    const channel =
+        parseReleaseVersion(
+            normalizeReleaseLookupVersion(version) || getCurrentVersion()
+        )?.channel ?? STABLE_BRANCH;
+    const releases: NormalizedRelease[] = [];
+    for (let page = 1; page <= CHANGELOG_MAX_PAGES; page += 1) {
+        const result = await fetchBranchReleasePage(channel, page);
+        releases.push(...result.releases);
+        if (releases.length >= CHANGELOG_RELEASE_LIMIT || !result.hasMore) {
+            break;
+        }
+    }
+    return releases.slice(0, CHANGELOG_RELEASE_LIMIT);
 }
 
-export async function fetchChangelogRelease(version?: string) {
+export function findChangelogRelease(
+    releases: NormalizedRelease[],
+    version?: string
+) {
     const targetVersion = normalizeReleaseLookupVersion(version);
     if (!targetVersion) {
-        return fetchLatestChangelogRelease();
+        return null;
     }
-
-    const branch = parseReleaseVersion(targetVersion)?.channel ?? STABLE_BRANCH;
-    const releases = await fetchBranchReleases(branch);
     return (
-        releases.find((release) => {
-            const canonicalVersion = normalizeReleaseLookupVersion(
-                release?.canonicalVersion
-            );
-            const tagVersion = normalizeReleaseLookupVersion(release?.tagName);
-            return (
-                canonicalVersion === targetVersion ||
-                tagVersion === targetVersion
-            );
-        }) ||
-        releases[0] ||
-        null
+        releases.find(
+            (release) =>
+                normalizeReleaseLookupVersion(release.canonicalVersion) ===
+                    targetVersion ||
+                normalizeReleaseLookupVersion(release.tagName) === targetVersion
+        ) ?? null
     );
 }
 

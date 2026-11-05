@@ -3,10 +3,11 @@ use std::time::Duration;
 
 use futures_util::future::BoxFuture;
 use serde::{de::Error as _, Deserialize, Deserializer};
-use vrcx_0_application_core::vrchat_api::{require_text, VrchatApiResponse};
+use vrcx_0_application_core::vrchat_api::require_text;
 use vrcx_0_application_core::{
     AuthenticatedMutationContext, RemoteMutationGate, Result, RuntimeAuthScope,
 };
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 use vrcx_0_contracts::vrchat_requests::{
     QueryOrder, ReleaseStatusFilter, WorldSearchSort, WorldUpdateRequest,
 };
@@ -75,7 +76,7 @@ pub enum WorldRemoteScope {
     },
 }
 
-pub type WorldRemoteFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
+pub type WorldRemoteFuture<'a> = BoxFuture<'a, Result<VrchatResponse>>;
 
 pub trait WorldRemotePort: Send + Sync {
     fn execute(
@@ -86,7 +87,7 @@ pub trait WorldRemotePort: Send + Sync {
 }
 
 pub trait WorldResponseProjectionPort: Send + Sync {
-    fn hydrate(&self, response: &VrchatApiResponse);
+    fn hydrate(&self, response: &VrchatResponse);
 }
 
 #[derive(Clone)]
@@ -120,7 +121,7 @@ impl WorldRemoteRuntime {
         sort: WorldSearchSort,
         order: QueryOrder,
         release_status: ReleaseStatusFilter,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let user_id = require_text(user_id, "VrchatWorldListByUserGet requires userId.")?;
         require_nonnegative(n)?;
         require_nonnegative(offset)?;
@@ -139,7 +140,7 @@ impl WorldRemoteRuntime {
         &self,
         user_id: String,
         world_id: String,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let user_id = require_text(user_id, "VrchatWorldPersistentDataExists requires userId.")?;
         let world_id = require_text(
             world_id,
@@ -153,7 +154,7 @@ impl WorldRemoteRuntime {
         &self,
         world_id: String,
         params: WorldUpdateRequest,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let world_id = require_text(world_id, "VrchatWorldSave requires worldId.")?;
         if params.id != world_id {
             return Err(vrcx_0_application_core::Error::Custom(
@@ -164,19 +165,19 @@ impl WorldRemoteRuntime {
             .await
     }
 
-    pub async fn delete(&self, world_id: String) -> Result<VrchatApiResponse> {
+    pub async fn delete(&self, world_id: String) -> Result<VrchatResponse> {
         let world_id = require_text(world_id, "VrchatWorldDelete requires worldId.")?;
         self.execute_mutation(WorldRemoteOperation::Delete { world_id })
             .await
     }
 
-    pub async fn publish(&self, world_id: String) -> Result<VrchatApiResponse> {
+    pub async fn publish(&self, world_id: String) -> Result<VrchatResponse> {
         let world_id = require_text(world_id, "VrchatWorldPublish requires worldId.")?;
         self.execute_mutation(WorldRemoteOperation::Publish { world_id })
             .await
     }
 
-    pub async fn unpublish(&self, world_id: String) -> Result<VrchatApiResponse> {
+    pub async fn unpublish(&self, world_id: String) -> Result<VrchatResponse> {
         let world_id = require_text(world_id, "VrchatWorldUnpublish requires worldId.")?;
         self.execute_mutation(WorldRemoteOperation::Unpublish { world_id })
             .await
@@ -186,7 +187,7 @@ impl WorldRemoteRuntime {
         &self,
         user_id: String,
         world_id: String,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let user_id = require_text(user_id, "VrchatWorldPersistentDataDelete requires userId.")?;
         let world_id = require_text(
             world_id,
@@ -196,13 +197,13 @@ impl WorldRemoteRuntime {
             .await
     }
 
-    async fn execute_read(&self, operation: WorldRemoteOperation) -> Result<VrchatApiResponse> {
+    async fn execute_read(&self, operation: WorldRemoteOperation) -> Result<VrchatResponse> {
         self.remote
             .execute(WorldRemoteScope::Public, operation)
             .await
     }
 
-    async fn execute_mutation(&self, operation: WorldRemoteOperation) -> Result<VrchatApiResponse> {
+    async fn execute_mutation(&self, operation: WorldRemoteOperation) -> Result<VrchatResponse> {
         let mutation = AuthenticatedMutationContext::capture(
             &self.auth_scope,
             self.remote_mutations.as_ref(),

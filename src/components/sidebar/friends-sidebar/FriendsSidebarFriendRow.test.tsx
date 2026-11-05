@@ -42,9 +42,13 @@ vi.mock('@/components/ProfileDecorations', () => ({
         templateId: string;
         active: boolean;
     }) => <span data-avatar-frame={templateId} data-active={active} />,
-    ProfileNameplate: ({ templateId }: { templateId: string }) => (
-        <span data-nameplate={templateId} />
-    ),
+    ProfileNameplate: ({
+        templateId,
+        active
+    }: {
+        templateId: string;
+        active: boolean;
+    }) => <span data-nameplate={templateId} data-active={active} />,
     useDecorationHover: () => ({ active: false, hoverProps: {} })
 }));
 
@@ -175,23 +179,24 @@ describe('FriendsSidebarFriendRow traveling', () => {
     const friend = {
         id: 'usr_a',
         displayName: 'Friend',
-        iconFrame: 'invt_frame'
+        iconFrame: 'invt_frame',
+        nameplateEffect: 'invt_plate'
     };
 
-    it('keeps the avatar frame animated while the friend is traveling', () => {
+    it('keeps the avatar frame and nameplate animated while the friend is traveling', () => {
         const traveling = renderToStaticMarkup(
             <FriendRow
                 friend={{
                     ...friend,
                     $presence: travelingPresence('wrld_next:1')
                 }}
-                appearance={{ showAvatarFrame: true }}
+                appearance={{ showAvatarFrame: true, showNameplate: true }}
             />
         );
         const settled = renderToStaticMarkup(
             <FriendRow
                 friend={{ ...friend, $presence: onlinePresence() }}
-                appearance={{ showAvatarFrame: true }}
+                appearance={{ showAvatarFrame: true, showNameplate: true }}
             />
         );
 
@@ -200,6 +205,12 @@ describe('FriendsSidebarFriendRow traveling', () => {
         );
         expect(settled).toContain(
             'data-avatar-frame="invt_frame" data-active="false"'
+        );
+        expect(traveling).toContain(
+            'data-nameplate="invt_plate" data-active="true"'
+        );
+        expect(settled).toContain(
+            'data-nameplate="invt_plate" data-active="false"'
         );
     });
 });

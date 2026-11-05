@@ -14,7 +14,7 @@ use crate::{
     GameLogPersistenceFallbackPayload, NowPlayingPayload, RuntimeEventBus,
     RuntimeGameLogEventPayload, VideoMetadataPort,
 };
-use vrcx_0_application_core::BackendRuntimeStatusPublisher;
+use vrcx_0_application_core::{BackendRuntimeStatusPublisher, ConfigStore};
 use vrcx_0_core::location::world_id_from_location;
 use vrcx_0_core::OwnerId;
 
@@ -173,7 +173,8 @@ pub(crate) fn video_play_entry(input: &VideoInput) -> GameLogVideoPlayEntry {
 }
 
 pub(crate) async fn handle_video_play(
-    store: &dyn crate::GameStateStore,
+    stores: &crate::GameLogStores,
+    config: &dyn ConfigStore,
     video_metadata: &dyn VideoMetadataPort,
     event_bus: &RuntimeEventBus,
     backend_status: &BackendRuntimeStatusPublisher,
@@ -187,7 +188,7 @@ pub(crate) async fn handle_video_play(
     titled &= input.video_name != youtube_id;
 
     if !youtube_id.is_empty() {
-        if let Some(metadata) = lookup_youtube_video(store, video_metadata, &youtube_id).await? {
+        if let Some(metadata) = lookup_youtube_video(config, video_metadata, &youtube_id).await? {
             if !metadata.video_name.is_empty() {
                 input.video_name = metadata.video_name;
                 titled = true;
@@ -202,7 +203,9 @@ pub(crate) async fn handle_video_play(
     }
 
     if input.user_id.is_empty() && !input.display_name.is_empty() {
-        input.user_id = store.user_id_from_display_name(owner_user_id, &input.display_name)?;
+        input.user_id = stores
+            .player_directory
+            .user_id_from_display_name(owner_user_id, &input.display_name)?;
     }
 
     let raw_row = vec![
@@ -216,7 +219,7 @@ pub(crate) async fn handle_video_play(
         video_plays: vec![video_play_entry(&input)],
         ..Default::default()
     };
-    let affected_count = match store.write_game_log(owner_user_id, &batch) {
+    let affected_count = match stores.writer.write_game_log(owner_user_id, &batch) {
         Ok(count) => count.affected(),
         Err(error) => {
             let message = error.to_string();
@@ -263,12 +266,12 @@ pub(crate) async fn handle_video_play(
 }
 
 async fn lookup_youtube_video(
-    store: &dyn crate::GameStateStore,
+    config: &dyn ConfigStore,
     video_metadata: &dyn VideoMetadataPort,
     youtube_id: &str,
 ) -> Result<Option<YouTubeMetadata>> {
-    let enabled = store.get_bool("youtubeAPI", false)?;
-    let api_key = store.get_string("youtubeAPIKey", "")?;
+    let enabled = config.get_bool("youtubeAPI", false)?;
+    let api_key = config.get_string("youtubeAPIKey", "")?;
     if !enabled || api_key.trim().is_empty() {
         return Ok(None);
     }

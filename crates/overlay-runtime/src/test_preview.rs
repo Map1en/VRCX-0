@@ -5,7 +5,7 @@ use vrcx_0_application_activity::{
 };
 use vrcx_0_contracts::activity::ActivityKind;
 
-use super::runtime::VrOverlayRuntimeConfig;
+use super::config::VrOverlayRuntimeConfig;
 use super::surfaces::main::HmdToastView;
 use super::{WristOverlayFrameInput, WristRuntimeFooter};
 
@@ -33,7 +33,7 @@ pub(crate) fn test_overlay_entry() -> ActivityEntry {
 
 pub(crate) fn test_wrist_frame_input(
     config: VrOverlayRuntimeConfig,
-    devices: Vec<vrcx_0_host_desktop::vr_overlay::VrDeviceSnapshot>,
+    devices: Vec<vrcx_0_vr_overlay_backend::VrDeviceSnapshot>,
     local_time: String,
     captured_at_ms: i64,
 ) -> WristOverlayFrameInput {

@@ -1,11 +1,11 @@
 use futures_util::future::BoxFuture;
 
-use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
 use vrcx_0_application_core::Result;
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_core::json::RawJson;
 
 pub trait MediaUploadPreprocessor: Send + Sync {
-    fn prepare(&self, input: VrchatApiRequest) -> Result<VrchatApiRequest>;
+    fn prepare(&self, input: VrchatRequest) -> Result<VrchatRequest>;
 }
 
 #[derive(Clone, Debug)]

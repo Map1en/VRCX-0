@@ -1,7 +1,7 @@
 use futures_util::future::BoxFuture;
 use serde_json::Value;
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::Result;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 use vrcx_0_contracts::{AvatarTagOutput, AvatarTimeSpentOutput};
 
 pub trait AvatarFeedCleanupStore: Send + Sync {
@@ -53,7 +53,7 @@ pub trait AvatarRemote: Send + Sync {
         endpoint: &'a str,
         command: &'a str,
         detail: &'a str,
-    ) -> AvatarRemoteFuture<'a, VrchatApiResponse>;
+    ) -> AvatarRemoteFuture<'a, VrchatResponse>;
     fn my_avatar_page<'a>(
         &'a self,
         endpoint: &'a str,
@@ -66,5 +66,5 @@ pub trait AvatarRemote: Send + Sync {
         command: &'a str,
         detail: &'a str,
         mutation: AvatarRemoteMutation,
-    ) -> AvatarRemoteFuture<'a, VrchatApiResponse>;
+    ) -> AvatarRemoteFuture<'a, VrchatResponse>;
 }

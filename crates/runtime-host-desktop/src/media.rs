@@ -7,70 +7,32 @@ use vrcx_0_application::media::{
     LegacyMediaUploadDeps,
 };
 use vrcx_0_application::social::{
-    ensure_print_deletable, favorite_state, set_print_favorite, set_print_favorites,
-    PrintFavoriteBulkResult, PrintFavoriteState,
+    favorite_state, set_print_favorite, set_print_favorites, PrintFavoriteBulkResult,
+    PrintFavoriteState, PrintFavoritesStore,
 };
-use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
 use vrcx_0_application_core::{
     save_ugc_image_to_file, AuthenticatedMutationContext, ImageCache, RemoteMutationGate,
-    RuntimeAuthScope, RuntimeDiagnostics, RuntimeOperationStatus, UgcCategory, WebClient,
+    RuntimeAuthScope, RuntimeDiagnostics, RuntimeOperationStatus,
 };
-use vrcx_0_persistence::DatabaseService;
+use vrcx_0_contracts::UgcCategory;
 use vrcx_0_platform::app_paths::AppPaths;
 
 use crate::{HostFileAccess, Result};
 
 #[derive(Clone)]
 pub struct DesktopMediaRuntime {
-    file_access: HostFileAccess,
-    paths: AppPaths,
-    image_cache: Arc<ImageCache>,
-    print_adapter: vrcx_0_outbound_adapters::LocalPrintAdapter,
-    media_upload_adapter: vrcx_0_outbound_adapters::LocalMediaUploadAdapter,
-    inventory_remote_requests: vrcx_0_outbound_adapters::VrchatInventoryRemoteRequests,
-    auth_scope: RuntimeAuthScope,
-    remote_mutations: Arc<RemoteMutationGate>,
-    diagnostics: RuntimeDiagnostics,
+    pub(crate) file_access: HostFileAccess,
+    pub(crate) paths: AppPaths,
+    pub(crate) image_cache: Arc<ImageCache>,
+    pub(crate) print_adapter: Arc<dyn PrintFavoritesStore>,
+    pub(crate) media_upload_adapter: Arc<vrcx_0_outbound_adapters::LocalMediaUploadAdapter>,
+    pub(crate) inventory_remote: vrcx_0_outbound_adapters::VrchatRequestAdapter,
+    pub(crate) auth_scope: RuntimeAuthScope,
+    pub(crate) remote_mutations: Arc<RemoteMutationGate>,
+    pub(crate) diagnostics: RuntimeDiagnostics,
 }
 
 impl DesktopMediaRuntime {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        file_access: HostFileAccess,
-        paths: AppPaths,
-        image_cache: Arc<ImageCache>,
-        db: Arc<DatabaseService>,
-        web: Arc<WebClient>,
-        auth_scope: RuntimeAuthScope,
-        remote_mutations: Arc<RemoteMutationGate>,
-        diagnostics: RuntimeDiagnostics,
-    ) -> Self {
-        let media_upload_adapter =
-            vrcx_0_outbound_adapters::LocalMediaUploadAdapter::new(Arc::clone(&web));
-        let inventory_remote_requests =
-            vrcx_0_outbound_adapters::VrchatInventoryRemoteRequests::new(Arc::clone(&web));
-        let print_adapter =
-            vrcx_0_outbound_adapters::LocalPrintAdapter::new(Arc::clone(&db), Arc::clone(&web));
-        Self {
-            file_access,
-            paths,
-            image_cache,
-            print_adapter,
-            media_upload_adapter,
-            inventory_remote_requests,
-            auth_scope,
-            remote_mutations,
-            diagnostics,
-        }
-    }
-
-    pub fn prepare_media_upload_request(
-        &self,
-        input: VrchatApiRequest,
-    ) -> vrcx_0_application_core::Result<VrchatApiRequest> {
-        application_media::prepare_media_upload_request(&self.media_upload_adapter, input)
-    }
-
     pub fn decode_image_file(
         &self,
         default_name: &str,
@@ -133,7 +95,7 @@ impl DesktopMediaRuntime {
         input: LegacyEntityImageUploadInput,
         kind: LegacyEntityImageKind,
         command: &str,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiResponse> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatResponse> {
         let mutation = AuthenticatedMutationContext::capture(
             &self.auth_scope,
             &self.remote_mutations,
@@ -145,7 +107,7 @@ impl DesktopMediaRuntime {
             format!("Uploading legacy {} image.", kind.label()),
         );
         let result = application_media::upload_legacy_entity_image(
-            LegacyMediaUploadDeps::new(&self.media_upload_adapter, mutation),
+            LegacyMediaUploadDeps::new(self.media_upload_adapter.as_ref(), mutation),
             input,
             kind,
         )
@@ -167,14 +129,14 @@ impl DesktopMediaRuntime {
 
     pub fn print_favorites(&self) -> Result<PrintFavoriteState> {
         Ok(favorite_state(
-            &self.print_adapter,
+            self.print_adapter.as_ref(),
             &self.auth_scope.snapshot().current_user_id,
         )?)
     }
 
     pub fn set_print_favorite(&self, print_id: &str, favorite: bool) -> Result<PrintFavoriteState> {
         Ok(set_print_favorite(
-            &self.print_adapter,
+            self.print_adapter.as_ref(),
             &self.auth_scope.snapshot().current_user_id,
             print_id,
             favorite,
@@ -187,19 +149,11 @@ impl DesktopMediaRuntime {
         favorite: bool,
     ) -> Result<PrintFavoriteBulkResult> {
         Ok(set_print_favorites(
-            &self.print_adapter,
+            self.print_adapter.as_ref(),
             &self.auth_scope.snapshot().current_user_id,
             print_ids,
             favorite,
         )?)
-    }
-
-    pub fn ensure_print_deletable(&self, print_id: &str) -> vrcx_0_application_core::Result<()> {
-        ensure_print_deletable(
-            &self.print_adapter,
-            &self.auth_scope.snapshot().current_user_id,
-            print_id,
-        )
     }
 
     pub async fn collect_inventory_items(
@@ -215,7 +169,7 @@ impl DesktopMediaRuntime {
         }
         Ok(application_media::collect_inventory_items(
             &InventoryItemsCollectDeps::new(
-                &self.inventory_remote_requests,
+                &self.inventory_remote,
                 &self.auth_scope,
                 expected_scope,
             ),

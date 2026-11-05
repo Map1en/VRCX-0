@@ -1,5 +1,5 @@
+use vrcx_0_application_core::ConfigStore;
 use vrcx_0_contracts::resolve_config_key;
-use vrcx_0_persistence::config::ConfigRepository;
 
 pub const DESKTOP_WIDGET_ENABLED_CONFIG_KEY: &str = "desktopWidgetEnabled";
 pub const DESKTOP_WIDGET_PINNED_CONFIG_KEY: &str = "desktopWidgetPinned";
@@ -39,7 +39,7 @@ const DEFAULT_MARGIN: i32 = 24;
 const MIN_VISIBLE: i32 = 48;
 
 impl DesktopWidgetSettings {
-    pub fn load(config: &ConfigRepository) -> Self {
+    pub fn load(config: &dyn ConfigStore) -> Self {
         let click_through = config
             .get_bool(DESKTOP_WIDGET_CLICK_THROUGH_CONFIG_KEY, false)
             .unwrap_or(false);
@@ -70,7 +70,7 @@ impl DesktopWidgetSettings {
         }
     }
 
-    pub fn save(&self, config: &ConfigRepository) -> vrcx_0_persistence::Result<()> {
+    pub fn save(&self, config: &dyn ConfigStore) -> vrcx_0_application_core::Result<()> {
         config.set_bool(DESKTOP_WIDGET_ENABLED_CONFIG_KEY, self.enabled)?;
         config.set_bool(DESKTOP_WIDGET_PINNED_CONFIG_KEY, self.pinned)?;
         config.set_bool(DESKTOP_WIDGET_CLICK_THROUGH_CONFIG_KEY, self.click_through)?;

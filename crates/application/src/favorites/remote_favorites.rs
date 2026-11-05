@@ -2,11 +2,13 @@ use std::time::Duration;
 
 use futures_util::future::BoxFuture;
 use vrcx_0_application_core::{
-    vrchat_api::{self, VrchatApiResponse},
     FavoriteChange, FavoriteChangeScope, FavoriteGroupVisibility, FavoritesChangedPayload,
-    RuntimeEventBus, VrchatFavoriteType,
+    RuntimeEventBus,
 };
-use vrcx_0_contracts::vrchat_api::parse_vrchat_json;
+use vrcx_0_contracts::vrchat_api::{
+    classify_vrchat_response, parse_vrchat_json, VrchatResponse, VrchatResponseClass,
+};
+use vrcx_0_contracts::VrchatFavoriteType;
 use vrcx_0_core::json::RawJson;
 
 use vrcx_0_application_core::{AuthenticatedMutationContext, Result};
@@ -33,12 +35,12 @@ pub trait FavoriteRemote: Send + Sync {
         n: i32,
         offset: i32,
         command: Option<FavoriteRemoteCommand>,
-    ) -> FavoriteRemoteFuture<'a, VrchatApiResponse>;
+    ) -> FavoriteRemoteFuture<'a, VrchatResponse>;
     fn limits<'a>(
         &'a self,
         endpoint: String,
         command: Option<FavoriteRemoteCommand>,
-    ) -> FavoriteRemoteFuture<'a, VrchatApiResponse>;
+    ) -> FavoriteRemoteFuture<'a, VrchatResponse>;
     fn favorite_worlds<'a>(
         &'a self,
         endpoint: String,
@@ -47,55 +49,55 @@ pub trait FavoriteRemote: Send + Sync {
         owner_id: String,
         user_id: String,
         tag: String,
-    ) -> FavoriteRemoteFuture<'a, VrchatApiResponse>;
+    ) -> FavoriteRemoteFuture<'a, VrchatResponse>;
     fn favorite_avatars<'a>(
         &'a self,
         endpoint: String,
         n: i32,
         offset: i32,
         tag: String,
-    ) -> FavoriteRemoteFuture<'a, VrchatApiResponse>;
+    ) -> FavoriteRemoteFuture<'a, VrchatResponse>;
     fn world<'a>(
         &'a self,
         endpoint: String,
         world_id: String,
-    ) -> FavoriteRemoteFuture<'a, VrchatApiResponse>;
+    ) -> FavoriteRemoteFuture<'a, VrchatResponse>;
     fn avatar<'a>(
         &'a self,
         endpoint: String,
         avatar_id: String,
-    ) -> FavoriteRemoteFuture<'a, VrchatApiResponse>;
+    ) -> FavoriteRemoteFuture<'a, VrchatResponse>;
     fn user<'a>(
         &'a self,
         endpoint: String,
         user_id: String,
-    ) -> FavoriteRemoteFuture<'a, VrchatApiResponse>;
+    ) -> FavoriteRemoteFuture<'a, VrchatResponse>;
     fn add<'a>(
         &'a self,
         endpoint: String,
         input: FavoriteRemoteAddInput,
         command: Option<FavoriteRemoteCommand>,
-    ) -> FavoriteRemoteFuture<'a, (String, String, VrchatApiResponse)>;
+    ) -> FavoriteRemoteFuture<'a, (String, String, VrchatResponse)>;
     fn delete<'a>(
         &'a self,
         endpoint: String,
         object_id: String,
         command: Option<FavoriteRemoteCommand>,
-    ) -> FavoriteRemoteFuture<'a, (String, VrchatApiResponse)>;
+    ) -> FavoriteRemoteFuture<'a, (String, VrchatResponse)>;
     fn save_group<'a>(
         &'a self,
         endpoint: String,
         current_user_id: String,
         input: FavoriteRemoteGroupSaveInput,
         command: Option<FavoriteRemoteCommand>,
-    ) -> FavoriteRemoteFuture<'a, (String, VrchatApiResponse)>;
+    ) -> FavoriteRemoteFuture<'a, (String, VrchatResponse)>;
     fn clear_group<'a>(
         &'a self,
         endpoint: String,
         current_user_id: String,
         input: FavoriteRemoteGroupClearInput,
         command: Option<FavoriteRemoteCommand>,
-    ) -> FavoriteRemoteFuture<'a, (String, VrchatApiResponse)>;
+    ) -> FavoriteRemoteFuture<'a, (String, VrchatResponse)>;
 }
 
 pub struct FavoriteRemoteAddInput {
@@ -121,7 +123,7 @@ pub struct FavoriteRemoteGroupClearInput {
 }
 
 fn should_notify_favorite_change(status: i32) -> bool {
-    vrchat_api::classify_api_response(status).class == vrchat_api::ApiResponseClass::Ok
+    classify_vrchat_response(status).class == VrchatResponseClass::Ok
 }
 
 fn has_exact_remote_favorite_identity(favorite: &serde_json::Value) -> bool {
@@ -150,7 +152,7 @@ fn notify_favorite_change(
 pub(super) async fn add_remote_favorite(
     deps: &FavoriteRemoteMutationDeps<'_>,
     input: FavoriteRemoteAddInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let notification_scope = input.kind.into();
     let kind = input.kind.as_str().to_string();
     let entity_id = input.entity_id.trim().to_string();
@@ -187,7 +189,7 @@ pub(super) async fn add_remote_favorite(
 pub(super) async fn delete_remote_favorite(
     deps: &FavoriteRemoteMutationDeps<'_>,
     input: FavoriteRemoteDeleteInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let endpoint = deps.mutation.scope().endpoint.clone();
     let object_id = input.object_id.trim().to_string();
     deps.mutation
@@ -218,7 +220,7 @@ pub(super) async fn delete_remote_favorite(
 pub(super) async fn save_remote_favorite_group(
     deps: &FavoriteRemoteMutationDeps<'_>,
     input: FavoriteRemoteGroupSaveInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let notification_scope = input.kind.into();
     let group = input.group.trim().to_string();
     let endpoint = deps.mutation.scope().endpoint.clone();
@@ -248,7 +250,7 @@ pub(super) async fn save_remote_favorite_group(
 pub(super) async fn clear_remote_favorite_group(
     deps: &FavoriteRemoteMutationDeps<'_>,
     input: FavoriteRemoteGroupClearInput,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let notification_scope = input.kind.into();
     let group = input.group.trim().to_string();
     let endpoint = deps.mutation.scope().endpoint.clone();

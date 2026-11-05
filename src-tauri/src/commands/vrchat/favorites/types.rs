@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use vrcx_0_application::remote::deserialize_nonnegative_i32;
-use vrcx_0_application_core::{FavoriteEntityKind, FavoriteGroupVisibility, VrchatFavoriteType};
+use vrcx_0_application_core::{FavoriteEntityKind, FavoriteGroupVisibility};
+use vrcx_0_contracts::VrchatFavoriteType;
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -113,7 +114,7 @@ pub struct LocalFavoriteReorderInput {
 #[cfg(test)]
 mod tests {
     use serde_json::json;
-    use vrcx_0_application_core::VrchatFavoriteType;
+    use vrcx_0_contracts::VrchatFavoriteType;
 
     use super::VrchatFavoriteAddInput;
 

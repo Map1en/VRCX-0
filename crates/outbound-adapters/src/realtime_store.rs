@@ -1,14 +1,16 @@
 use std::sync::Arc;
 
-use serde_json::Value;
-use vrcx_0_application_realtime::RealtimeStore;
+use vrcx_0_application_realtime::{
+    FavoriteBaselineStore, FeedQueryStore, FriendLogStore, GameLogLookup, RealtimeBatchWriter,
+    SocialMutationStore,
+};
 use vrcx_0_contracts::feed::{
     FeedLatestQueryInput, FeedLiveEntryInput, FeedReadModelOutput, FeedSearchQueryInput,
 };
 use vrcx_0_contracts::friend_log::{
     FriendLogCurrentEntryInput, FriendLogCurrentOutput, FriendLogDeleteOptionsInput,
-    FriendLogHistoryEntryInput, FriendLogHistoryOutput, FriendLogHistoryQueryInput,
-    FriendLogMutationResult, FriendLogReplaceOptionsInput, FriendLogUpsertOptionsInput,
+    FriendLogHistoryEntryInput, FriendLogMutationResult, FriendLogReplaceOptionsInput,
+    FriendLogUpsertOptionsInput,
 };
 use vrcx_0_contracts::realtime::{RealtimePersistenceBatch, RealtimeWriteCounts};
 use vrcx_0_contracts::FavoriteRow;
@@ -25,10 +27,7 @@ impl PersistenceRealtimeStore {
     }
 }
 
-impl RealtimeStore for PersistenceRealtimeStore {
-    fn database_path(&self) -> std::path::PathBuf {
-        self.db.db_path().to_path_buf()
-    }
+impl GameLogLookup for PersistenceRealtimeStore {
     fn game_log_join_count(
         &self,
         owner: &OwnerId,
@@ -50,24 +49,14 @@ impl RealtimeStore for PersistenceRealtimeStore {
             _ => 0,
         })
     }
-    fn get_bool(&self, key: &str, default: bool) -> crate::Result<bool> {
-        Ok(vrcx_0_persistence::config::get_bool(
-            &self.db, key, default,
+    fn lookup_game_log_world_name(&self, world_id: &str) -> crate::Result<String> {
+        Ok(vrcx_0_persistence::realtime::lookup_game_log_world_name(
+            &self.db, world_id,
         )?)
     }
-    fn get_string(&self, key: &str, default: &str) -> crate::Result<String> {
-        Ok(vrcx_0_persistence::config::get_string(
-            &self.db, key, default,
-        )?)
-    }
-    fn get_json(&self, key: &str, default: Value) -> crate::Result<Value> {
-        Ok(vrcx_0_persistence::config::get_json(
-            &self.db, key, default,
-        )?)
-    }
-    fn set_bool(&self, key: &str, value: bool) -> crate::Result<()> {
-        Ok(vrcx_0_persistence::config::set_bool(&self.db, key, value)?)
-    }
+}
+
+impl FavoriteBaselineStore for PersistenceRealtimeStore {
     fn favorite_list(
         &self,
         owner: Option<&OwnerId>,
@@ -77,6 +66,9 @@ impl RealtimeStore for PersistenceRealtimeStore {
             &self.db, owner, kind,
         )?)
     }
+}
+
+impl FriendLogStore for PersistenceRealtimeStore {
     fn friend_log_current_list(&self, user_id: &str) -> crate::Result<Vec<FriendLogCurrentOutput>> {
         Ok(vrcx_0_persistence::friends::friend_log_current_list(
             &self.db,
@@ -96,7 +88,10 @@ impl RealtimeStore for PersistenceRealtimeStore {
             options,
         )?)
     }
-    fn friend_log_delete_current(
+}
+
+impl SocialMutationStore for PersistenceRealtimeStore {
+    fn delete_current_friend(
         &self,
         user_id: &str,
         target_user_ids: Vec<String>,
@@ -111,7 +106,7 @@ impl RealtimeStore for PersistenceRealtimeStore {
             )?,
         )
     }
-    fn friend_log_upsert_current(
+    fn upsert_current_friend(
         &self,
         user_id: &str,
         entry: FriendLogCurrentEntryInput,
@@ -124,15 +119,7 @@ impl RealtimeStore for PersistenceRealtimeStore {
             options,
         )?)
     }
-    fn friend_log_history(
-        &self,
-        input: FriendLogHistoryQueryInput,
-    ) -> crate::Result<Vec<FriendLogHistoryOutput>> {
-        Ok(vrcx_0_persistence::friends::friend_log_history_query(
-            &self.db, input,
-        )?)
-    }
-    fn friend_log_history_add(
+    fn add_friend_history(
         &self,
         user_id: &str,
         entries: Vec<FriendLogHistoryEntryInput>,
@@ -143,13 +130,16 @@ impl RealtimeStore for PersistenceRealtimeStore {
             entries,
         )?)
     }
-    fn notification_expire(&self, user_id: &str, notification_id: &str) -> crate::Result<()> {
+    fn expire_notification(&self, user_id: &str, notification_id: &str) -> crate::Result<()> {
         Ok(vrcx_0_persistence::notifications::notification_expire(
             &self.db,
             user_id.to_string(),
             notification_id.to_string(),
         )?)
     }
+}
+
+impl RealtimeBatchWriter for PersistenceRealtimeStore {
     fn write_realtime_batch(
         &self,
         owner: &OwnerId,
@@ -159,11 +149,9 @@ impl RealtimeStore for PersistenceRealtimeStore {
             &self.db, owner, batch,
         )?)
     }
-    fn lookup_game_log_world_name(&self, world_id: &str) -> crate::Result<String> {
-        Ok(vrcx_0_persistence::realtime::lookup_game_log_world_name(
-            &self.db, world_id,
-        )?)
-    }
+}
+
+impl FeedQueryStore for PersistenceRealtimeStore {
     fn feed_latest(
         &self,
         query: FeedLatestQueryInput,

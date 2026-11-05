@@ -63,7 +63,10 @@ pub use game_log_watcher::{
     LogLocationSnapshotScanner, LogWatcher, NoopLogLocationSnapshotScanner,
 };
 pub use ports::{
-    BackgroundRemoteApi, GameStateStore, InstanceMediaPort, PlayerModeration, VideoMetadataPort,
+    BackgroundRemoteApi, FavoriteFriendGroupLookup, GameLogLocationQueries, GameLogSessionQueries,
+    GameLogStores, GameLogWriter, InstanceHistoryQueries, InstanceMediaPort,
+    LocationGroupNameFiller, PlayerDirectoryLookup, PlayerModeration, PlayerModerationLookup,
+    VideoMetadataPort,
 };
 pub use process_monitor::{GameProcessMonitorActions, GameProcessStatus, ProcessMonitor};
 pub use registry_backup::{

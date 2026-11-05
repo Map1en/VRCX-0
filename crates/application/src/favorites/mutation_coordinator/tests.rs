@@ -301,7 +301,7 @@ async fn remote_group_clear_rejects_scope_replaced_while_request_is_in_flight() 
         .clear_remote_group(
             "Remote favorite mutation",
             FavoriteRemoteGroupClearInput {
-                kind: vrcx_0_application_core::VrchatFavoriteType::World,
+                kind: vrcx_0_contracts::VrchatFavoriteType::World,
                 group: "worlds1".into(),
             },
         )

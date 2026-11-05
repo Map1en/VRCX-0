@@ -1,20 +1,18 @@
 use std::collections::{HashMap, HashSet};
-use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 
 use serde_json::Value;
 use tokio::sync::{broadcast, watch};
 use vrcx_0_application_core::{
-    ActivityIngress, FileCache, HostSessionRuntime, InstanceDwellRegistry,
-    LocalGameContextSnapshot, LocalGameContextSource, PrintCleanupInputSink,
-    RealtimeNotificationProjectionObserver, RemoteMutationGate, RuntimeAuthScope, RuntimeEventBus,
-    RuntimeSyncEngine, TaskSupervisor, WebClient, WorldCache,
+    ActivityIngress, ConfigStore, FileCache, HostSessionRuntime, LocalGameContextSnapshot,
+    LocalGameContextSource, PrintCleanupInputSink, RemoteMutationGate, RuntimeAuthScope,
+    RuntimeEventBus, RuntimeSyncEngine, TaskSupervisor, WebClient, WorldCache,
 };
 use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_core::friends::FriendBaselineEntry;
 use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 
-use super::feed::FeedLiveCache;
+use super::feed::FeedLiveProjector;
 use crate::realtime::current_user::RealtimeCurrentUserRuntime;
 use crate::realtime::friends::{baseline_friend_view, RealtimeFriendsRuntime};
 use crate::realtime::invite_automation::runtime::InviteAutomationState;
@@ -25,6 +23,7 @@ use crate::realtime::{
     RealtimeTransportStartResult,
 };
 use crate::world_enrich::PendingEntryCorrection;
+use crate::{InstanceDwellRegistry, RealtimeNotificationProjectionObserver};
 
 pub type ReconnectBackfillCheck = Arc<dyn Fn() -> bool + Send + Sync>;
 use vrcx_0_core::OwnerId;
@@ -215,10 +214,10 @@ impl RealtimeStopRequest {
 
 #[derive(Clone)]
 pub struct RealtimeHostRuntimeDeps {
-    pub(crate) store: Arc<dyn crate::RealtimeStore>,
-    pub(crate) transport: Arc<dyn crate::realtime::RealtimeTransport>,
-    pub(crate) remote_requests: Arc<dyn crate::RealtimeRemoteRequests>,
-    pub(crate) web: Arc<WebClient>,
+    pub stores: crate::RealtimeStores,
+    pub config: Arc<dyn ConfigStore>,
+    pub transport: Arc<dyn crate::realtime::RealtimeTransport>,
+    pub remote_requests: Arc<dyn crate::RealtimeRemoteRequests>,
     pub event_bus: RuntimeEventBus,
     pub backend_status: vrcx_0_application_core::BackendRuntimeStatusPublisher,
     pub friend_projection_sink: crate::FriendProjectionSink,
@@ -237,60 +236,12 @@ pub struct RealtimeHostRuntimeDeps {
     pub current_user_snapshot_sink: Option<RealtimeCurrentUserSnapshotSink>,
 }
 
-impl RealtimeHostRuntimeDeps {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        store: Arc<dyn crate::RealtimeStore>,
-        transport: Arc<dyn crate::realtime::RealtimeTransport>,
-        remote_requests: Arc<dyn crate::RealtimeRemoteRequests>,
-        web: Arc<WebClient>,
-        event_bus: RuntimeEventBus,
-        backend_status: vrcx_0_application_core::BackendRuntimeStatusPublisher,
-        friend_projection_sink: crate::FriendProjectionSink,
-        sync: RuntimeSyncEngine,
-        tasks: TaskSupervisor,
-        session: HostSessionRuntime,
-        auth_scope: RuntimeAuthScope,
-        remote_mutations: Arc<RemoteMutationGate>,
-        local_game_context: Arc<dyn LocalGameContextSource>,
-        activity: Option<Arc<dyn ActivityIngress>>,
-        notification_projection_observer: Option<Arc<dyn RealtimeNotificationProjectionObserver>>,
-        world_cache: Arc<WorldCache>,
-        file_cache: FileCache,
-        instance_dwell: Arc<InstanceDwellRegistry>,
-        print_cleanup: Arc<dyn PrintCleanupInputSink>,
-        current_user_snapshot_sink: Option<RealtimeCurrentUserSnapshotSink>,
-    ) -> Self {
-        Self {
-            store,
-            transport,
-            remote_requests,
-            web,
-            event_bus,
-            backend_status,
-            friend_projection_sink,
-            sync,
-            tasks,
-            session,
-            auth_scope,
-            remote_mutations,
-            local_game_context,
-            activity,
-            notification_projection_observer,
-            world_cache,
-            file_cache,
-            instance_dwell,
-            print_cleanup,
-            current_user_snapshot_sink,
-        }
-    }
-}
-
 pub type RealtimeCurrentUserSnapshotSink =
     Arc<dyn Fn(&RealtimeSessionContext, u64, Value) + Send + Sync>;
 
 pub struct RealtimeHostRuntime {
     pub(super) deps: RealtimeHostRuntimeDeps,
+    pub(super) web: Arc<WebClient>,
     pub(super) state: Mutex<RealtimeHostRuntimeState>,
     pub(super) cancel_tx: watch::Sender<u64>,
     pub(super) transport_lifecycle_tx: broadcast::Sender<RealtimeTransportLifecycleEvent>,
@@ -300,14 +251,10 @@ pub struct RealtimeHostRuntime {
     pub(super) user_query_cache: UserQueryCache,
     pub(super) world_cache: Arc<WorldCache>,
     pub(super) friend_owner_lock: Mutex<()>,
-    pub(super) feed_owner_lock: Mutex<()>,
-    pub(super) feed_live_cache: Mutex<FeedLiveCache>,
-    pub(super) feed_persistence_disabled: AtomicBool,
+    pub(super) feed: FeedLiveProjector,
     pub(super) reconnect_backfill_check: Mutex<Option<ReconnectBackfillCheck>>,
-    pub(super) notification_apply_lock: tokio::sync::Mutex<()>,
-    pub(super) friend_profile_bulk_load:
-        Mutex<super::friend_profile_bulk_load::FriendProfileBulkLoadState>,
-    pub(super) friend_profile_bulk_cancel_tx: watch::Sender<u64>,
+    pub(super) notification_apply: super::notification_apply::NotificationApplyLane,
+    pub(super) friend_profile_bulk: super::friend_profile_bulk_load::FriendProfileBulkLoader,
     pub(super) current_user_refresh_inflight:
         Mutex<Option<watch::Receiver<CurrentUserRefreshStatus>>>,
 }

@@ -4,7 +4,8 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use vrcx_0_application_core::{WebClient, WebExecuteRequest, WebMultipartPart, WebUploadMode};
+use vrcx_0_application_core::WebClient;
+use vrcx_0_contracts::{WebExecuteRequest, WebMultipartPart, WebUploadMode};
 use vrcx_0_core::screenshots::{
     ScreenshotShareCompression, ScreenshotShareEmbed, ScreenshotShareFacts, ScreenshotShareFields,
     ScreenshotShareMessage, ScreenshotShareProgress, ScreenshotShareRecord,

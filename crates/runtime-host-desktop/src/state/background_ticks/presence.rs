@@ -72,7 +72,7 @@ pub(in crate::state) async fn run_background_presence_tick(
         .realtime_runtime
         .capture_current_user_refresh_expectation();
     let result = match run_background_presence_automation(
-        &game_state_store,
+        context.config_store.as_ref(),
         &background_remote,
         context.auth_scope,
         context.remote_mutations.as_ref(),

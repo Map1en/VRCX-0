@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
     AuthenticatedRuntimePhaseSnapshot,
     BackendRuntimeSnapshot,
+    FriendLocationTime,
     HostSessionProjection,
     MutualGraphFetchStatus
 } from '@/platform/tauri/bindings';
@@ -134,6 +135,7 @@ import { getCachedQueryData, queryKeys } from '@/lib/entityQueryCache';
 import { toast } from '@/services/toastService';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 import { useDataDirMigrationStore } from '@/state/dataDirMigrationStore';
+import { useFriendLocationTimeStore } from '@/state/friendLocationTimeStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useOfflineRecordStore } from '@/state/offlineRecordStore';
 import { useProfileBackupStore } from '@/state/profileBackupStore';
@@ -379,7 +381,17 @@ function createBackendRuntimeCombinedSnapshot(
             realtimeTransport: null,
             updatedAt: ''
         }),
+        friendLocationTimes: [],
         ...patch
+    };
+}
+
+function friendLocationTime(location: string): FriendLocationTime {
+    return {
+        userId: 'usr_friend',
+        location,
+        sinceMs: 1_700_000_000_000,
+        source: 'realtime'
     };
 }
 
@@ -450,6 +462,7 @@ describe('runtimeEventBridgeService', () => {
         vi.clearAllMocks();
         useRuntimeStore.getState().resetRuntimeState();
         useFriendRosterStore.getState().resetRoster();
+        useFriendLocationTimeStore.getState().reset();
         useSessionStore.getState().resetSessionState();
         useUserFactsStore.getState().resetUserFacts();
         useProfileBackupStore.getState().resetProfileBackupState();
@@ -491,6 +504,46 @@ describe('runtimeEventBridgeService', () => {
                 state: 'unauthorized'
             })
         );
+    });
+
+    it('shows how long friends have been in their instance as soon as the window opens, for example after background mode', async () => {
+        mocks.getBackendRuntimeCombinedSnapshot.mockResolvedValue(
+            createBackendRuntimeCombinedSnapshot({
+                friendLocationTimes: [friendLocationTime('wrld_1:10129')]
+            })
+        );
+
+        await bindRuntimeEvents();
+
+        expect(useFriendLocationTimeStore.getState().byUserId).toEqual({
+            usr_friend: {
+                location: 'wrld_1:10129',
+                sinceMs: 1_700_000_000_000,
+                source: 'realtime'
+            }
+        });
+    });
+
+    it('keeps a friend move received while the window was still opening', async () => {
+        mocks.getBackendRuntimeCombinedSnapshot.mockResolvedValue(
+            createBackendRuntimeCombinedSnapshot({
+                friendLocationTimes: [friendLocationTime('wrld_1:10129')]
+            })
+        );
+        mocks.applyAuthenticatedSessionProjection.mockImplementation(
+            async () => {
+                useFriendLocationTimeStore
+                    .getState()
+                    .replaceSnapshot([friendLocationTime('wrld_2:20000')]);
+                return false;
+            }
+        );
+
+        await bindRuntimeEvents();
+
+        expect(
+            useFriendLocationTimeStore.getState().byUserId.usr_friend?.location
+        ).toBe('wrld_2:20000');
     });
 
     it('hydrates the backend session before deferred appearance projections', async () => {

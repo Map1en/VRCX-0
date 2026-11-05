@@ -1,8 +1,6 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use vrcx_0_application::social::refresh_social_baseline;
-use vrcx_0_application_realtime::SocialBaselineDeps;
 
 use super::super::{
     background_capability_session, emit_background_info, emit_background_warning,
@@ -27,16 +25,7 @@ pub(in crate::state) async fn run_background_social_baseline_refresh(
         );
         return;
     };
-    let deps = SocialBaselineDeps::new(
-        Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
-            Arc::clone(context.db),
-        )),
-        Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests),
-        Arc::clone(context.web),
-        context.runtime_context.auth_scope.clone(),
-    );
     let core = match refresh_social_baseline(
-        deps,
         context.realtime_runtime,
         context.authenticated_runtime,
         &session,

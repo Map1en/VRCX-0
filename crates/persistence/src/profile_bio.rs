@@ -1,20 +1,13 @@
-use serde::Serialize;
+use vrcx_0_contracts::feed_live::FeedLiveEntry;
 pub use vrcx_0_contracts::profile_bio::ProfileBioRecord;
+use vrcx_0_contracts::profile_bio::{ProfileBioOutput, RecordedProfileBio};
 
 use crate::common::{normalize_text, row_string, ParamsBuilder};
 use crate::database::schema::add_column_if_missing;
-use crate::database::DatabaseService;
+use crate::database::{DatabaseService, DatabaseWriteTransaction};
 use crate::ownership::OwnerId;
 use crate::realtime::{ensure_realtime_tables, normalize_user_table_prefix};
 use crate::Error;
-
-#[derive(Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct ProfileBioOutput {
-    pub user_id: String,
-    pub bio: String,
-    pub bio_links: Vec<String>,
-}
 
 pub(crate) fn ensure_profile_bio_table(
     db: &DatabaseService,
@@ -188,6 +181,54 @@ fn require_user_id(user_id: &str) -> Result<String, Error> {
         return Err(Error::InvalidData("profile bio requires a user id".into()));
     }
     Ok(user_id)
+}
+
+pub(crate) fn apply_backfilled_profile_bio(
+    tx: &mut DatabaseWriteTransaction<'_>,
+    user_prefix: &str,
+    profile_bio: &RecordedProfileBio,
+) -> Result<Option<FeedLiveEntry>, Error> {
+    let observation = &profile_bio.observation;
+    let last_seen = tx
+        .execute(
+            &format!("SELECT bio, checked_at FROM {user_prefix}_profile_bio WHERE user_id = @user_id LIMIT 1"),
+            &ParamsBuilder::new()
+                .set("user_id", observation.user_id.clone())
+                .build(),
+        )?
+        .first()
+        .map(|row| (row_string(row, 0), row_string(row, 1)));
+    if last_seen
+        .as_ref()
+        .is_some_and(|(_, checked_at)| *checked_at >= profile_bio.observed_at)
+    {
+        return Ok(None);
+    }
+    tx.execute_non_query(
+        &format!(
+            "INSERT INTO {user_prefix}_profile_bio (user_id, bio, bio_links, checked_at) VALUES (@user_id, @bio, @bio_links, @checked_at) \
+             ON CONFLICT(user_id) DO UPDATE SET bio = excluded.bio, bio_links = excluded.bio_links, checked_at = excluded.checked_at"
+        ),
+        &ParamsBuilder::new()
+            .set("user_id", observation.user_id.clone())
+            .set("bio", observation.bio.clone())
+            .set(
+                "bio_links",
+                encode_bio_links(&observation.bio_links),
+            )
+            .set("checked_at", profile_bio.observed_at.clone())
+            .build(),
+    )?;
+    Ok(last_seen
+        .filter(|(previous_bio, _)| *previous_bio != observation.bio)
+        .map(|(previous_bio, _)| FeedLiveEntry::Bio {
+            created_at: profile_bio.observed_at.clone(),
+            user_id: observation.user_id.clone(),
+            display_name: observation.display_name.clone(),
+            bio: observation.bio.clone(),
+            previous_bio,
+            owner_user_id: String::new(),
+        }))
 }
 
 #[cfg(test)]

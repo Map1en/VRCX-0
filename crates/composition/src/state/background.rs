@@ -120,7 +120,7 @@ impl SocialMaintenanceActions for RuntimeHostSocialMaintenanceActions {
             session.current_user_id
         );
         let value = serde_json::json!(group_ids);
-        let config = self.runtime_context.config();
+        let config = self.runtime_context.config_store();
         if config
             .get_json(config_key.as_str(), serde_json::json!([]))
             .map_or(true, |current| current != value)
@@ -222,16 +222,7 @@ impl RuntimeHostState {
                 "Social baseline refresh requires an authenticated session.".into(),
             ));
         };
-        let deps = vrcx_0_application_realtime::SocialBaselineDeps::new(
-            Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
-                Arc::clone(&self.db),
-            )),
-            Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests),
-            Arc::clone(&self.web),
-            self.runtime_context.auth_scope.clone(),
-        );
         let core = vrcx_0_application::social::refresh_social_baseline(
-            deps,
             &self.realtime_runtime,
             &self.authenticated_runtime,
             &session,

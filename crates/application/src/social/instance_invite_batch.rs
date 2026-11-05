@@ -9,16 +9,15 @@ use serde_json::Value;
 use vrcx_0_core::location::parse_location;
 
 use crate::remote::VrchatRequestPort;
-use vrcx_0_application_core::{
-    vrchat_api::{VrchatApiRequest, VrchatScope},
-    AuthenticatedMutationContext, Error, Result,
-};
+use crate::scope_gate::ScopeGate;
+use vrcx_0_application_core::{AuthenticatedMutationContext, Error, Result};
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatScope};
 
 const INSTANCE_INVITE_MAX_RETRIES: usize = 3;
 const INSTANCE_INVITE_RETRY_BASE_DELAY: Duration = Duration::from_secs(1);
 const INSTANCE_INVITE_REMOTE_INTERVAL: Duration = Duration::from_millis(250);
 const INSTANCE_INVITE_BATCH_MAX_ITEMS: usize = 1_000;
-const INSTANCE_INVITE_SCOPE_CHANGED: &str = "Instance invite batch authentication scope changed.";
+const GATE: ScopeGate = ScopeGate::new("Instance invite batch");
 
 #[derive(Clone, Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -109,24 +108,6 @@ trait InstanceInviteBatchActions: Send + Sync {
     fn scope_matches(&self) -> bool;
 }
 
-pub trait InstanceInviteRemoteRequests: Send + Sync {
-    fn self_invite(
-        &self,
-        endpoint: String,
-        world_id: String,
-        instance_id: String,
-        short_name: String,
-    ) -> Result<VrchatApiRequest>;
-    fn user_invite(
-        &self,
-        endpoint: String,
-        receiver_user_id: String,
-        location: String,
-        world_id: String,
-        world_name: String,
-    ) -> Result<VrchatApiRequest>;
-}
-
 pub type WorldNameFuture<'a> = BoxFuture<'a, Option<String>>;
 
 pub trait WorldNameResolver: Send + Sync {
@@ -135,7 +116,6 @@ pub trait WorldNameResolver: Send + Sync {
 
 pub struct VrchatInstanceInviteBatchActions<'a> {
     remote: &'a dyn VrchatRequestPort,
-    remote_requests: &'a dyn InstanceInviteRemoteRequests,
     mutation: AuthenticatedMutationContext<'a>,
     world_names: &'a dyn WorldNameResolver,
 }
@@ -143,13 +123,11 @@ pub struct VrchatInstanceInviteBatchActions<'a> {
 impl<'a> VrchatInstanceInviteBatchActions<'a> {
     pub fn new(
         remote: &'a dyn VrchatRequestPort,
-        remote_requests: &'a dyn InstanceInviteRemoteRequests,
         mutation: AuthenticatedMutationContext<'a>,
         world_names: &'a dyn WorldNameResolver,
     ) -> Self {
         Self {
             remote,
-            remote_requests,
             mutation,
             world_names,
         }
@@ -159,13 +137,13 @@ impl<'a> VrchatInstanceInviteBatchActions<'a> {
 impl VrchatInstanceInviteBatchActions<'_> {
     async fn execute_request(
         &self,
-        request: VrchatApiRequest,
+        request: VrchatRequest,
         fallback_message: &str,
         allow_success_plain_text: bool,
     ) -> std::result::Result<(), InstanceInviteRemoteError> {
         if !self.scope_matches() {
             return Err(InstanceInviteRemoteError::terminal(
-                INSTANCE_INVITE_SCOPE_CHANGED,
+                GATE.scope_changed_message(),
             ));
         }
         let response = self
@@ -211,28 +189,28 @@ impl InstanceInviteBatchActions for VrchatInstanceInviteBatchActions<'_> {
             self.mutation.pace(INSTANCE_INVITE_REMOTE_INTERVAL).await;
             let (request, fallback_message, allow_success_plain_text) = match target.kind {
                 InstanceInviteTargetKind::SelfInvite => {
-                    let request = self
-                        .remote_requests
-                        .self_invite(
-                            self.mutation.scope().endpoint.clone(),
-                            context.world_id.clone(),
-                            context.instance_id.clone(),
-                            context.short_name.clone(),
-                        )
-                        .map_err(InstanceInviteRemoteError::terminal)?;
+                    let request = vrcx_0_vrchat_protocol::instances::instance_self_invite_input(
+                        self.mutation.scope().endpoint.clone(),
+                        context.world_id.clone(),
+                        context.instance_id.clone(),
+                        context.short_name.clone(),
+                    )
+                    .map_err(InstanceInviteRemoteError::terminal)?
+                    .2;
                     (request, "VRChat instance request failed", true)
                 }
                 InstanceInviteTargetKind::UserInvite => {
-                    let request = self
-                        .remote_requests
-                        .user_invite(
-                            self.mutation.scope().endpoint.clone(),
-                            target.receiver_user_id.clone(),
-                            context.location.clone(),
-                            context.world_id.clone(),
-                            context.world_name.clone(),
-                        )
-                        .map_err(InstanceInviteRemoteError::terminal)?;
+                    let request = vrcx_0_vrchat_protocol::notifications::invite_send_input(
+                        self.mutation.scope().endpoint.clone(),
+                        target.receiver_user_id.clone(),
+                        serde_json::json!({
+                            "instanceId": context.location.clone(),
+                            "worldId": context.world_id.clone(),
+                            "worldName": context.world_name.clone(),
+                        }),
+                    )
+                    .map_err(InstanceInviteRemoteError::terminal)?
+                    .1;
                     (request, "VRChat notification request failed", false)
                 }
             };
@@ -261,7 +239,7 @@ pub async fn send_instance_invites_batch(
         }
     }
     if !actions.scope_matches() {
-        return Err(Error::Custom(INSTANCE_INVITE_SCOPE_CHANGED.into()));
+        return Err(GATE.scope_changed_error());
     }
     Ok(
         run_instance_invite_batch(actions, &context, targets, INSTANCE_INVITE_RETRY_BASE_DELAY)
@@ -330,7 +308,7 @@ async fn send_with_backoff(
             return (
                 attempt,
                 Err(InstanceInviteRemoteError::terminal(
-                    INSTANCE_INVITE_SCOPE_CHANGED,
+                    GATE.scope_changed_message(),
                 )),
             );
         }
@@ -422,7 +400,7 @@ fn append_scope_changed_results(
         receiver_user_id: target.receiver_user_id.clone(),
         state: InstanceInviteItemState::Failed,
         attempts: 0,
-        message: INSTANCE_INVITE_SCOPE_CHANGED.into(),
+        message: GATE.scope_changed_message(),
     }));
 }
 

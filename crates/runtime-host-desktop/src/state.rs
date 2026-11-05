@@ -14,11 +14,7 @@ use crate::data_dir::DesktopDataDirRuntime;
 use crate::desktop_widget::is_desktop_widget_config_key;
 use crate::external_api::ExternalApiRuntime;
 use crate::group::DesktopGroupRuntime;
-use crate::group_order::HostGroupOrderSource;
-use crate::integration_api::{
-    start_integration_api_input_task, DesktopIntegrationApiConfigStore,
-    DesktopIntegrationApiRuntime,
-};
+use crate::integration_api::DesktopIntegrationApiRuntime;
 use crate::local_data::LocalDataRuntime;
 use crate::media::DesktopMediaRuntime;
 use crate::notification::{NotificationDoNotDisturbMode, NotificationDoNotDisturbSnapshot};
@@ -27,14 +23,12 @@ use crate::profile_backup::DesktopProfileBackupRuntime;
 use crate::screenshot::DesktopScreenshotRuntime;
 use crate::social::DesktopSocialRuntime;
 use crate::vr_overlay::{DesktopVrOverlayRuntime, VrOverlayRuntimeSnapshot};
-use crate::vrchat_remote::DesktopVrchatRemoteFacade;
 use crate::{
     DesktopDatabaseUpgradeRuntime, DesktopLegacyMigrationRuntime, DesktopRuntimeServices,
-    GameClientHostRuntime, GameClientHostRuntimeDeps, GameLogEventSink, GameLogHostRuntime,
-    GameLogHostRuntimeDeps, HostFileAccess, HostGameProcessMonitorActions,
-    HostLogLocationSnapshotScanner, HostRegistryBackupActions, LogWatcher,
+    GameClientHostRuntime, GameLogHostRuntime, HostFileAccess, HostGameProcessMonitorActions,
+    HostRegistryBackupActions, LogWatcher,
 };
-use serde_json::{json, Value};
+use serde_json::Value;
 use vrcx_0_application::auth::{
     AutoLoginOutcome, AutoLoginStartInput, LoginSessionCancelInput, LoginSessionEnd,
     LoginSessionRespondInput, LoginSessionStartInput, LoginSessionState, SavedAuthSnapshot,
@@ -52,48 +46,43 @@ use vrcx_0_application::favorites::{
 };
 use vrcx_0_application::game::InstanceLaunchRuntime;
 use vrcx_0_application::profile::{
-    AppUpdateBuildInfo, AppUpdateRuntime, AppUpdateRuntimeDeps, BackgroundImageService,
-    CommunityThemeService, DatabaseUpgradeRuntime,
+    AppUpdateBuildInfo, AppUpdateRuntime, BackgroundImageService, CommunityThemeService,
 };
-use vrcx_0_application::remote::WorldRemoteRuntime;
+use vrcx_0_application::remote::{VrchatRemoteFacade, WorldRemoteRuntime};
 use vrcx_0_application::social::{
     CurrentUserMutationRuntime, GroupBanImportStartInput, GroupBanImportStatus,
 };
-use vrcx_0_application::telemetry::{TelemetryRuntime, TelemetryRuntimeDeps};
+use vrcx_0_application::telemetry::TelemetryRuntime;
 use vrcx_0_application_core::{
     BackendRuntimeMode, BackendRuntimePhase, BackendRuntimeStatusPublisher,
-    BackendRuntimeTelemetryKind, FriendProfileLoadStatusPayload, GameProcessEvent,
-    GameProcessEventSink, GuiRuntimeMode, InstanceRosterObserver, RuntimeEventSink,
-    RuntimeTaskExecutor, SessionHostRuntime, TaskStopToken, VrcStatusSnapshot,
+    BackendRuntimeTelemetryKind, ConfigStore, FriendProfileLoadStatusPayload, GameProcessEvent,
+    GameProcessEventSink, GuiRuntimeMode, RuntimeEventSink, RuntimeTaskExecutor,
+    SessionHostRuntime, TaskStopToken, VrcStatusSnapshot,
 };
 use vrcx_0_application_game::{
-    GameLogLocalGameContextSource, GameLogSideEffectObserver, GameLogSideEffectSink,
     PresenceAutomationRuleKind, ProcessMonitor, RegistryBackupExport,
     RegistryBackupMaintenanceMode, RegistryBackupMaintenanceResult, RegistryBackupSnapshot,
 };
-use vrcx_0_application_realtime::{FriendProjectionObserver, RealtimeTransportStartResult};
+use vrcx_0_application_realtime::RealtimeTransportStartResult;
 use vrcx_0_composition::{
-    BackendRuntimeCombinedSnapshot, Result, RuntimeHostComposition, RuntimeHostDesktopAssemblyDeps,
-    RuntimeHostOptions, RuntimeHostProfile, RuntimeHostProfileExtension, RuntimeHostState,
-    RuntimeHostStateBuilder,
+    BackendRuntimeCombinedSnapshot, Result, RuntimeHostDesktopAssemblyDeps, RuntimeHostOptions,
+    RuntimeHostProfile, RuntimeHostProfileExtension, RuntimeHostState, RuntimeHostStateBuilder,
 };
+use vrcx_0_contracts::InstanceRosterObserver;
 use vrcx_0_core::json::RawJson;
 use vrcx_0_host_desktop::auto_launch::{
-    deserialize_app_launcher_entries, normalize_app_launcher_entries, AppLauncherEntry,
-    AppLauncherSnapshot, AutoAppLaunchManager, APP_LAUNCHER_ENABLED_CONFIG_KEY,
-    APP_LAUNCHER_ENTRIES_CONFIG_KEY,
+    normalize_app_launcher_entries, AppLauncherEntry, AppLauncherSnapshot, AutoAppLaunchManager,
+    APP_LAUNCHER_ENABLED_CONFIG_KEY, APP_LAUNCHER_ENTRIES_CONFIG_KEY,
 };
 use vrcx_0_host_desktop::discord_rpc::DiscordRpc;
 use vrcx_0_host_desktop::host_capabilities::{
     current_host_capabilities, is_host_capability_available, HostCapability,
 };
-use vrcx_0_integration_api::{
-    integration_api_publisher_channel, IntegrationApiConfigStore, IntegrationApiController,
-};
 use vrcx_0_persistence::legacy_migration::cleanup_legacy_updater_files;
 use vrcx_0_persistence::screenshot_cache::MetadataCacheDb;
 use vrcx_0_platform::app_paths::AppDataDirResolution;
 
+mod assembly;
 mod background_ticks;
 
 use background_ticks::{
@@ -116,8 +105,7 @@ pub(crate) fn build_desktop_runtime_services_deps(
         db: Arc::clone(context.database()),
         web: Arc::clone(context.web_client()),
         image_cache: Arc::clone(context.image_cache()),
-        config: context.config().clone(),
-        notification_config: context.notification_config(),
+        config: context.config_store(),
         notification_resolver: context.notification_resolver(),
         auth_credentials: context.auth_credentials_shared(),
         auth_scope: context.auth_scope().clone(),
@@ -209,7 +197,7 @@ pub struct DesktopRuntimeHostState {
     social: DesktopSocialRuntime,
     media: DesktopMediaRuntime,
     screenshots: DesktopScreenshotRuntime,
-    vrchat_remote: DesktopVrchatRemoteFacade,
+    vrchat_remote: VrchatRemoteFacade,
     worlds: WorldRemoteRuntime,
     vrchat_config: VrchatConfigRuntime,
     database_upgrade: DesktopDatabaseUpgradeRuntime,
@@ -217,6 +205,17 @@ pub struct DesktopRuntimeHostState {
     world_collections: vrcx_0_outbound_adapters::LocalWorldCollectionAdapter,
     friend_log_name_store: vrcx_0_outbound_adapters::LocalFriendLogNameStore,
     notification_sync: vrcx_0_outbound_adapters::LocalNotificationSyncAdapter,
+    favorite_details: vrcx_0_application::favorites::FavoriteDetailsRuntime,
+    quick_search: vrcx_0_application::social::QuickSearchRuntime,
+    group_membership_batches: vrcx_0_application::social::GroupMembershipBatchCoordinator,
+    group_moderation_batches: vrcx_0_application::social::GroupModerationBatchCoordinator,
+    friend_log_name_resolutions: vrcx_0_application::social::FriendLogNameResolutionCoordinator,
+    user_dialog_tab_counts: vrcx_0_application::social::UserDialogTabCountsRuntime,
+    user_dialog_tab_counts_source: Arc<vrcx_0_outbound_adapters::LocalUserDialogTabCountsSource>,
+    vrchat_requests: vrcx_0_outbound_adapters::VrchatRequestAdapter,
+    world_names: vrcx_0_outbound_adapters::CachedWorldNameResolver,
+    translation: vrcx_0_outbound_adapters::LocalTranslationAdapter,
+    webhook_transport: vrcx_0_outbound_adapters::LocalNotificationWebhookTransport,
 }
 
 struct DesktopRuntimeProfileExtension {
@@ -279,438 +278,41 @@ impl DesktopRuntimeHostState {
             task_executor: Some(task_executor),
         })?;
         cleanup_legacy_updater_files(&builder.paths().app_data);
-        let host_file_access = HostFileAccess::new();
-        register_desktop_file_access_grants(
-            &host_file_access,
-            builder.profile_backup(),
-            builder.desktop_assembly().config(),
-        )?;
-        let desktop_services = Arc::new(DesktopRuntimeServices::new(
-            build_desktop_runtime_services_deps(builder.desktop_assembly()),
-        )?);
-        let backend_status = BackendRuntimeStatusPublisher::new(
-            builder.backend_runtime().clone(),
-            builder.desktop_assembly().event_bus().clone(),
-        );
-        let game_log_observer: Arc<dyn GameLogSideEffectObserver> = desktop_services.clone();
-        let game_log_side_effect_sink = GameLogSideEffectSink::new(
-            builder.desktop_assembly().event_bus().clone(),
-            Some(game_log_observer),
-        );
-        let activity_router = desktop_services.activity_router();
-        let game_log_snapshot = desktop_services.game_log_snapshot_handle();
-        let discord_rpc = Arc::new(DiscordRpc::new());
-        let process_monitor = ProcessMonitor::new();
-        let integration_api_config: Arc<dyn IntegrationApiConfigStore> = Arc::new(
-            DesktopIntegrationApiConfigStore::new(builder.desktop_assembly().config().clone()),
-        );
-        let integration_api_controller = Arc::new(
-            IntegrationApiController::new(integration_api_config, app_version.clone())
-                .map_err(|error| vrcx_0_application_core::Error::Custom(error.to_string()))?,
-        );
-        let (integration_api_runtime, integration_api_enrichment_receiver) =
-            DesktopIntegrationApiRuntime::new(
-                Arc::clone(&integration_api_controller),
-                builder.desktop_assembly().auth_scope().clone(),
-            );
-        let integration_api_runtime = Arc::new(integration_api_runtime);
-        let (integration_api_publisher, integration_api_receiver) =
-            integration_api_publisher_channel();
-        let instance_roster_observer: Arc<dyn InstanceRosterObserver> =
-            Arc::new(integration_api_publisher);
-        let current_user_presence_observer =
-            Arc::new(crate::log_watcher::CurrentUserLocalPresenceObserver::default());
-        let game_roster_observer: Arc<dyn InstanceRosterObserver> =
-            Arc::new(crate::log_watcher::HostInstanceRosterFanout::new(vec![
-                Arc::clone(&instance_roster_observer),
-                Arc::clone(builder.desktop_assembly().instance_dwell())
-                    as Arc<dyn InstanceRosterObserver>,
-                Arc::clone(&current_user_presence_observer) as Arc<dyn InstanceRosterObserver>,
-            ]));
-        let telemetry = TelemetryRuntime::new(TelemetryRuntimeDeps {
-            environment: Arc::new(vrcx_0_outbound_adapters::LocalTelemetryEnvironment::new(
-                builder.desktop_assembly().config().clone(),
-                Arc::clone(builder.desktop_assembly().database()),
-                builder.paths().app_data.clone(),
-                Arc::new(|| {
-                    vrcx_0_host_desktop::system_theme::current_system_theme_category()
-                        .unwrap_or_default()
-                        .to_string()
-                }),
-            )),
-            transport: Arc::new(vrcx_0_outbound_adapters::HttpTelemetryTransport::production()),
-            tasks: builder.desktop_assembly().tasks().clone(),
-            backend_runtime: builder.backend_runtime().clone(),
-            auth_scope: builder.desktop_assembly().auth_scope().clone(),
-            session: builder.desktop_assembly().session().clone(),
-            app_version: app_version.clone(),
-        });
-        let profile_config: Arc<dyn vrcx_0_application::profile::ProfileConfigStore> =
-            Arc::new(vrcx_0_outbound_adapters::LocalProfileConfigStore::new(
-                Arc::clone(builder.database()),
-                Arc::clone(builder.storage()),
-            ));
-        let app_update = AppUpdateRuntime::new(AppUpdateRuntimeDeps::new(
-            Arc::new(vrcx_0_outbound_adapters::GitHubReleaseCatalogAdapter::new(
-                Arc::clone(builder.web_client()),
-            )),
-            Arc::clone(&profile_config),
-            builder.desktop_assembly().event_bus().clone(),
-            builder.desktop_assembly().background_jobs().clone(),
+        let wiring = assembly::desktop::build_desktop_wiring(&builder, &app_version)?;
+        let game_log_runtime = assembly::game::build_game_log_runtime(&builder, &wiring);
+        let vr_overlay_runtime =
+            Arc::new(DesktopVrOverlayRuntime::new(Arc::clone(&wiring.services))?);
+        let desktop_widget = Arc::new(crate::desktop_widget::DesktopWidget::new(&wiring.services));
+        let game = assembly::game::build_game_runtime(&builder, &wiring, game_log_runtime)?;
+        let desktop = assembly::desktop::build_desktop_runtime(
+            &builder,
+            &wiring,
+            vr_overlay_runtime,
+            desktop_widget,
             AppUpdateBuildInfo {
-                app_version: app_version.clone(),
+                app_version,
                 build_label: app_update_build_label,
                 build_badge: app_update_build_badge,
                 update_check_disabled: app_update_check_disabled,
             },
-            Arc::new(|| vrcx_0_host_desktop::updater_policy::expected_updater_target().ok()),
             updater_port,
-            builder.desktop_assembly().tasks().clone(),
-        ));
-        let game_log_runtime = Arc::new(GameLogHostRuntime::new(GameLogHostRuntimeDeps {
-            db: Arc::clone(builder.desktop_assembly().database()),
-            web: Arc::clone(builder.desktop_assembly().web_client()),
-            image_cache: Arc::clone(builder.desktop_assembly().image_cache()),
-            event_bus: builder.desktop_assembly().event_bus().clone(),
-            tasks: builder.desktop_assembly().tasks().clone(),
-            sync: builder.desktop_assembly().sync().clone(),
-            auth_scope: builder.desktop_assembly().auth_scope().clone(),
-            session: builder.desktop_assembly().session().clone(),
-            world_cache: Arc::clone(builder.desktop_assembly().world_cache()),
-            file_access: host_file_access.clone(),
-            app_paths: builder.paths().clone(),
-            snapshot: game_log_snapshot.clone(),
-            activity_router: activity_router.clone(),
-            instance_roster_observer: Some(Arc::clone(&game_roster_observer)),
-            backend_status: backend_status.clone(),
-            side_effect_sink: game_log_side_effect_sink,
-            isolation: desktop_services.game_isolation(),
-        }));
-        let vr_overlay_runtime =
-            Arc::new(DesktopVrOverlayRuntime::new(Arc::clone(&desktop_services))?);
-        let desktop_widget = Arc::new(crate::desktop_widget::DesktopWidget::new(&desktop_services));
-        let game_log_sink: Arc<dyn GameLogEventSink> = game_log_runtime.clone();
-        let log_watcher = LogWatcher::new_with_location_snapshot_scanner(
-            Some(game_log_sink),
-            Arc::new(HostLogLocationSnapshotScanner),
         );
-        let game_client_runtime = Arc::new(GameClientHostRuntime::new(GameClientHostRuntimeDeps {
-            db: Arc::clone(builder.desktop_assembly().database()),
-            event_bus: builder.desktop_assembly().event_bus().clone(),
-            tasks: builder.desktop_assembly().tasks().clone(),
-            session: builder.desktop_assembly().session().clone(),
-            auth_scope: builder.desktop_assembly().auth_scope().clone(),
-            log_watcher: log_watcher.clone(),
-            file_access: host_file_access.clone(),
-            app_paths: builder.paths().clone(),
-            host: desktop_services.host.clone(),
-            instance_roster_observer: Some(Arc::clone(&game_roster_observer)),
-            backend_status: backend_status.clone(),
-            activity_router: desktop_services.activity_router(),
-            isolation: desktop_services.game_isolation(),
-        }));
-        let session_runtime = Arc::new(SessionHostRuntime::new(
-            builder.desktop_assembly().session().clone(),
-            backend_status,
-        ));
-        let screenshot_cache =
-            MetadataCacheDb::new(&builder.paths().app_data.join("metadataCache.db"))?;
-        let app_launcher_enabled = builder
-            .desktop_assembly()
-            .config()
-            .get_bool(APP_LAUNCHER_ENABLED_CONFIG_KEY, true)?;
-        let app_launcher_entries = deserialize_app_launcher_entries(
-            builder
-                .desktop_assembly()
-                .config()
-                .get_json(APP_LAUNCHER_ENTRIES_CONFIG_KEY, json!([]))?,
+        let extension = assembly::build_profile_extension(&builder, &game, &desktop);
+        let composition =
+            assembly::build_runtime_composition(&builder, &wiring, Arc::clone(&extension));
+        let runtime = builder.finish(composition)?;
+        assembly::bind_realtime_runtime(&runtime, &wiring);
+        let remote = assembly::remote::build_remote_runtimes(&runtime, &desktop.host_file_access);
+        let local = assembly::local::build_local_runtimes(
+            &runtime,
+            &game,
+            &desktop,
+            &wiring.profile_config,
         );
-        let auto_launch = AutoAppLaunchManager::new(app_launcher_enabled, app_launcher_entries);
-        let background_image = BackgroundImageService::new(
-            Arc::clone(&profile_config),
-            Arc::new(
-                vrcx_0_outbound_adapters::ExternalBackgroundImageRemote::new(Arc::clone(
-                    builder.web_client(),
-                )),
-            ),
-            builder.desktop_assembly().event_bus().clone(),
-            Arc::new(
-                crate::background_image::HostBackgroundImageFileResolver::new(
-                    host_file_access.clone(),
-                ),
-            ),
-        );
-        let community_theme = CommunityThemeService::new(
-            Arc::clone(&profile_config),
-            Arc::new(vrcx_0_outbound_adapters::ExternalCommunityThemeRemote::new(
-                Arc::clone(builder.web_client()),
-            )),
-            builder.desktop_assembly().event_bus().clone(),
-            background_image.clone(),
-        );
-        let game = Arc::new(GameRuntimeBundle {
-            process_monitor,
-            log_watcher,
-            game_log_runtime,
-            game_client_runtime,
-            session_runtime,
-            screenshot_cache,
-            auto_launch,
-        });
-        let desktop = Arc::new(DesktopRuntimeBundle {
-            services: Arc::clone(&desktop_services),
-            host_file_access: host_file_access.clone(),
-            discord_rpc,
-            vr_overlay_runtime,
-            desktop_widget,
-            app_update,
-            telemetry,
-            feed_logger: Arc::new(
-                crate::feed_logger::DesktopFeedLoggerRuntime::new(
-                    Arc::clone(builder.database()),
-                    Arc::clone(builder.desktop_assembly().world_cache()),
-                    builder.desktop_assembly().file_cache().clone(),
-                    Arc::clone(builder.desktop_assembly().web_client()),
-                    builder.desktop_assembly().event_bus().clone(),
-                    builder.desktop_assembly().auth_scope().clone(),
-                    builder.desktop_assembly().auth_credentials_shared(),
-                )
-                .for_app_version(&app_version),
-            ),
-            background_image,
-            community_theme,
-            integration_api: Arc::clone(&integration_api_runtime),
-            integration_api_observer: Arc::clone(&instance_roster_observer),
-        });
-        let extension = Arc::new(DesktopRuntimeProfileExtension {
-            game: Arc::clone(&game),
-            desktop: Arc::clone(&desktop),
-            registry_backup_maintenance_running: Arc::new(AtomicBool::new(false)),
-            desktop_maintenance_running: Arc::new(AtomicBool::new(false)),
-            background_image_started: AtomicBool::new(false),
-            app_launcher_events_started: AtomicBool::new(false),
-            discord_reconcile_generation: Arc::new(AtomicU64::new(0)),
-            registry_backup_state: Arc::new(Mutex::new(RegistryBackupMaintenanceState::default())),
-            presence_state_path: builder
-                .paths()
-                .app_data
-                .join("presenceAutomationState.json"),
-        });
-        let local_game_context =
-            Arc::new(crate::game_isolation::IsolatedLocalGameContextSource::new(
-                Arc::new(GameLogLocalGameContextSource::new(
-                    builder.desktop_assembly().session().clone(),
-                    game_log_snapshot,
-                )),
-                desktop_services.game_isolation(),
-            ));
-        let friend_projection_observer: Arc<dyn FriendProjectionObserver> =
-            desktop_services.clone();
-        let instance_launch = crate::instance_launch::build_instance_launch_runtime(
-            crate::instance_launch::InstanceLaunchRuntimeDeps {
-                web: Arc::clone(builder.desktop_assembly().web_client()),
-                diagnostics: builder.desktop_assembly().diagnostics().clone(),
-                sync: builder.desktop_assembly().sync().clone(),
-                auth_scope: builder.desktop_assembly().auth_scope().clone(),
-                remote_mutations: Arc::clone(builder.desktop_assembly().remote_mutations()),
-                db: Arc::clone(builder.desktop_assembly().database()),
-            },
-        );
-        let runtime = builder.finish(RuntimeHostComposition {
-            local_game_context,
-            group_order_source: Arc::new(HostGroupOrderSource),
-            friend_projection_observer: Some(friend_projection_observer),
-            profile_extension: Some(extension.clone()),
-        })?;
-        current_user_presence_observer.bind(runtime.realtime_runtime());
-        let isolation_realtime = Arc::downgrade(runtime.realtime_runtime());
-        desktop_services
-            .game_isolation()
-            .add_observer(Arc::new(move |_enabled| {
-                if let Some(realtime_runtime) = isolation_realtime.upgrade() {
-                    realtime_runtime.refresh_current_user_local_presence();
-                }
-            }));
-        let realtime_runtime = Arc::downgrade(runtime.realtime_runtime());
-        runtime
-            .desktop_assembly()
-            .instance_dwell()
-            .set_roster_change_callback(Arc::new(move || {
-                if let Some(realtime_runtime) = realtime_runtime.upgrade() {
-                    realtime_runtime.emit_friend_location_time_snapshot();
-                }
-            }));
-        let current_user_mutations =
-            crate::current_user_mutation::build_current_user_mutation_runtime(
-                crate::current_user_mutation::CurrentUserMutationRuntimeDeps {
-                    auth_scope: runtime.desktop_assembly().auth_scope().clone(),
-                    remote_mutations: Arc::clone(runtime.desktop_assembly().remote_mutations()),
-                    web: Arc::clone(runtime.desktop_assembly().web_client()),
-                    diagnostics: runtime.desktop_assembly().diagnostics().clone(),
-                    sync: runtime.desktop_assembly().sync().clone(),
-                    realtime_runtime: Arc::clone(runtime.realtime_runtime()),
-                },
-            );
-        let avatars = DesktopAvatarRuntime::new(
-            Arc::clone(runtime.database()),
-            Arc::clone(runtime.web_client()),
-            runtime.desktop_assembly().diagnostics().clone(),
-            runtime.desktop_assembly().sync().clone(),
-            Arc::clone(runtime.realtime_runtime()),
-            Arc::clone(runtime.desktop_assembly().avatar_cache()),
-            runtime.desktop_assembly().avatar_moderation().clone(),
-            runtime.desktop_assembly().auth_scope().clone(),
-            Arc::clone(runtime.desktop_assembly().remote_mutations()),
-        );
-        let local_data = LocalDataRuntime::new(
-            Arc::clone(runtime.database()),
-            Arc::clone(&profile_config),
-            Arc::clone(runtime.web_client()),
-            runtime.desktop_assembly().auth_scope().clone(),
-            runtime.desktop_assembly().tasks().clone(),
-            Arc::clone(runtime.desktop_assembly().avatar_cache()),
-            Arc::clone(runtime.desktop_assembly().world_cache()),
-            runtime.desktop_assembly().file_cache().clone(),
-            Arc::clone(runtime.realtime_runtime()),
-            desktop_services.activity_router(),
-            runtime.desktop_assembly().favorite_mutations().clone(),
-            runtime.desktop_assembly().mutual_graph_fetch().clone(),
-        );
-        let data_dir = DesktopDataDirRuntime::new(
-            runtime.app_data_dir().clone(),
-            runtime.paths().clone(),
-            runtime.data_dir_migration().clone(),
-        );
-        let profile_backup = DesktopProfileBackupRuntime::new(
-            runtime.profile_backup().clone(),
-            desktop.host_file_access.clone(),
-            runtime.paths().clone(),
-            Arc::clone(&desktop.feed_logger),
-        );
-        let external_api = ExternalApiRuntime::new(
-            Arc::clone(runtime.web_client()),
-            runtime.desktop_assembly().diagnostics().clone(),
-            runtime.desktop_assembly().sync().clone(),
-        );
-        let groups = DesktopGroupRuntime::new(
-            Arc::clone(runtime.web_client()),
-            runtime.desktop_assembly().diagnostics().clone(),
-            runtime.desktop_assembly().sync().clone(),
-            runtime.desktop_assembly().auth_scope().clone(),
-            Arc::clone(runtime.desktop_assembly().remote_mutations()),
-        );
-        let social = DesktopSocialRuntime::new(
-            Arc::clone(runtime.database()),
-            Arc::clone(runtime.web_client()),
-            runtime.desktop_assembly().auth_scope().clone(),
-            Arc::clone(runtime.desktop_assembly().remote_mutations()),
-            Arc::clone(runtime.realtime_runtime()),
-            runtime.desktop_assembly().diagnostics().clone(),
-            runtime.desktop_assembly().sync().clone(),
-            runtime.desktop_assembly().event_bus().clone(),
-            Arc::clone(runtime.desktop_assembly().world_cache()),
-            runtime.desktop_assembly().moderation_sync().clone(),
-            runtime.authenticated_runtime().clone(),
-        );
-        let media = DesktopMediaRuntime::new(
-            desktop.host_file_access.clone(),
-            runtime.paths().clone(),
-            Arc::clone(runtime.image_cache()),
-            Arc::clone(runtime.database()),
-            Arc::clone(runtime.web_client()),
-            runtime.desktop_assembly().auth_scope().clone(),
-            Arc::clone(runtime.desktop_assembly().remote_mutations()),
-            runtime.desktop_assembly().diagnostics().clone(),
-        );
-        let screenshots = DesktopScreenshotRuntime::new(
-            game.screenshot_cache.clone(),
-            Arc::clone(runtime.database()),
-            desktop.host_file_access.clone(),
-            runtime.paths().clone(),
-            vrcx_0_host_desktop::vrchat_paths::vrchat_photos_location(),
-            runtime.desktop_assembly().event_bus().clone(),
-            Arc::clone(runtime.web_client()),
-        );
-        let vrchat_api =
-            crate::vrchat_api::build_vrchat_api_runtime(crate::vrchat_api::VrchatApiRuntimeDeps {
-                auth_scope: runtime.desktop_assembly().auth_scope().clone(),
-                remote_mutations: Arc::clone(runtime.desktop_assembly().remote_mutations()),
-                web: Arc::clone(runtime.desktop_assembly().web_client()),
-                diagnostics: runtime.desktop_assembly().diagnostics().clone(),
-                sync: runtime.desktop_assembly().sync().clone(),
-            });
-        let worlds = crate::world_remote::build_world_remote_runtime(
-            crate::world_remote::WorldRemoteRuntimeDeps {
-                auth_scope: runtime.desktop_assembly().auth_scope().clone(),
-                remote_mutations: Arc::clone(runtime.desktop_assembly().remote_mutations()),
-                web: Arc::clone(runtime.desktop_assembly().web_client()),
-                diagnostics: runtime.desktop_assembly().diagnostics().clone(),
-                sync: runtime.desktop_assembly().sync().clone(),
-                world_cache: Arc::clone(runtime.desktop_assembly().world_cache()),
-            },
-        );
-        let vrchat_remote = DesktopVrchatRemoteFacade::new(
-            vrchat_api.clone(),
-            media.clone(),
-            crate::profile_bio::ProfileBioObserver::new(
-                Arc::clone(runtime.database()),
-                Arc::clone(runtime.realtime_runtime()),
-                runtime.desktop_assembly().auth_scope().clone(),
-            ),
-        );
-        let vrchat_config = VrchatConfigRuntime::new(
-            vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT.into(),
-            Arc::new(vrcx_0_outbound_adapters::VrchatConfigAdapter::new(
-                Arc::clone(runtime.web_client()),
-                vrchat_api.clone(),
-            )),
-        );
-        let database_upgrade = DesktopDatabaseUpgradeRuntime::new(
-            DatabaseUpgradeRuntime::new(
-                Arc::new(vrcx_0_outbound_adapters::LocalDatabaseUpgradeStore::new(
-                    Arc::clone(runtime.database()),
-                )),
-                runtime.desktop_assembly().diagnostics().clone(),
-                runtime.desktop_assembly().background_jobs().clone(),
-            ),
-            runtime.desktop_assembly().config().clone(),
-            desktop.telemetry.clone(),
-            runtime.paths().app_data.join("error-log.txt"),
-        );
-        let legacy_migration = DesktopLegacyMigrationRuntime::new(
-            runtime.legacy_vrcx_migration_status().clone(),
-            runtime.legacy_vrcx_source().clone(),
-            vrcx_0_contracts::LegacyMigrationPaths::from_app_data(runtime.paths().app_data.clone()),
-            database_upgrade.clone(),
-        );
-        let world_collections = vrcx_0_outbound_adapters::LocalWorldCollectionAdapter::new(
-            Arc::clone(runtime.database()),
-        );
-        let friend_log_name_store =
-            vrcx_0_outbound_adapters::LocalFriendLogNameStore::new(Arc::clone(runtime.database()));
-        let notification_sync = vrcx_0_outbound_adapters::LocalNotificationSyncAdapter::new(
-            Arc::clone(runtime.database()),
-            Arc::clone(runtime.web_client()),
-        );
-        let hmd_membership_runtime = Arc::downgrade(runtime.realtime_runtime());
-        desktop
-            .vr_overlay_runtime
-            .set_hmd_friend_membership_provider(move |user_id| {
-                hmd_membership_runtime
-                    .upgrade()
-                    .is_some_and(|runtime| runtime.is_current_friend(user_id))
-            });
-        desktop
-            .services
-            .attach_realtime_runtime(runtime.realtime_runtime());
-        start_integration_api_input_task(
-            Arc::clone(runtime.desktop_assembly().database()),
-            runtime.desktop_assembly().event_bus().clone(),
-            runtime.desktop_assembly().tasks().clone(),
-            Arc::clone(runtime.realtime_runtime()),
-            integration_api_runtime,
-            integration_api_receiver,
-            integration_api_enrichment_receiver,
+        assembly::desktop::attach_desktop_realtime(
+            &runtime,
+            &desktop,
+            wiring.integration_api_input,
         );
 
         Ok(Self {
@@ -718,25 +320,36 @@ impl DesktopRuntimeHostState {
             game,
             desktop,
             extension,
-            current_user_mutations,
-            avatars,
-            instance_launch,
-            local_data,
-            data_dir,
-            profile_backup,
-            external_api,
-            groups,
-            social,
-            media,
-            screenshots,
-            vrchat_remote,
-            worlds,
-            vrchat_config,
-            database_upgrade,
-            legacy_migration,
-            world_collections,
-            friend_log_name_store,
-            notification_sync,
+            current_user_mutations: remote.current_user_mutations,
+            avatars: remote.avatars,
+            instance_launch: remote.instance_launch,
+            local_data: local.local_data,
+            data_dir: local.data_dir,
+            profile_backup: local.profile_backup,
+            external_api: remote.external_api,
+            groups: remote.groups,
+            social: remote.social,
+            media: remote.media,
+            screenshots: local.screenshots,
+            vrchat_remote: remote.vrchat_remote,
+            worlds: remote.worlds,
+            vrchat_config: remote.vrchat_config,
+            database_upgrade: local.database_upgrade,
+            legacy_migration: local.legacy_migration,
+            world_collections: local.world_collections,
+            friend_log_name_store: local.friend_log_name_store,
+            notification_sync: local.notification_sync,
+            favorite_details: remote.favorite_details,
+            quick_search: remote.quick_search,
+            group_membership_batches: remote.group_membership_batches,
+            group_moderation_batches: remote.group_moderation_batches,
+            friend_log_name_resolutions: local.friend_log_name_resolutions,
+            user_dialog_tab_counts: local.user_dialog_tab_counts,
+            user_dialog_tab_counts_source: local.user_dialog_tab_counts_source,
+            vrchat_requests: remote.vrchat_requests,
+            world_names: remote.world_names,
+            translation: local.translation,
+            webhook_transport: remote.webhook_transport,
         })
     }
 
@@ -954,7 +567,7 @@ impl DesktopRuntimeHostState {
         &self.worlds
     }
 
-    pub fn vrchat_remote(&self) -> &DesktopVrchatRemoteFacade {
+    pub fn vrchat_remote(&self) -> &VrchatRemoteFacade {
         &self.vrchat_remote
     }
 
@@ -980,7 +593,7 @@ impl DesktopRuntimeHostState {
         force: bool,
         dialog: bool,
         is_friend: Option<bool>,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiResponse> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatResponse> {
         let command = "app__vrchat_user_get";
         let diagnostics = self.runtime.desktop_assembly().diagnostics();
         diagnostics.record_command(
@@ -1017,7 +630,7 @@ impl DesktopRuntimeHostState {
     pub async fn favorite_add_remote(
         &self,
         input: vrcx_0_application::favorites::FavoriteRemoteAddInput,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiResponse> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatResponse> {
         Ok(self
             .runtime
             .desktop_assembly()
@@ -1029,7 +642,7 @@ impl DesktopRuntimeHostState {
     pub async fn favorite_delete_remote(
         &self,
         input: vrcx_0_application::favorites::FavoriteRemoteDeleteInput,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiResponse> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatResponse> {
         Ok(self
             .runtime
             .desktop_assembly()
@@ -1041,7 +654,7 @@ impl DesktopRuntimeHostState {
     pub async fn favorite_group_save_remote(
         &self,
         input: vrcx_0_application::favorites::FavoriteRemoteGroupSaveInput,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiResponse> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatResponse> {
         Ok(self
             .runtime
             .desktop_assembly()
@@ -1053,7 +666,7 @@ impl DesktopRuntimeHostState {
     pub async fn favorite_group_clear_remote(
         &self,
         input: vrcx_0_application::favorites::FavoriteRemoteGroupClearInput,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiResponse> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatResponse> {
         Ok(self
             .runtime
             .desktop_assembly()
@@ -1085,11 +698,9 @@ impl DesktopRuntimeHostState {
             .desktop_assembly()
             .favorite_mutations()
             .rename_local_group(kind, group_name.clone(), new_group_name.clone())?;
-        let store = crate::game_state_store::PersistenceGameStateStore::new(Arc::clone(
-            self.runtime.database(),
-        ));
+        let config = self.runtime.desktop_assembly().config_store();
         vrcx_0_application_game::presence_automation_local_group_renamed(
-            &store,
+            config.as_ref(),
             kind,
             &group_name,
             &new_group_name,
@@ -1173,21 +784,63 @@ impl DesktopRuntimeHostState {
         self.runtime.group_ban_import().cancel()
     }
 
-    pub fn persist_favorite_cache_snapshot(
+    pub async fn persist_favorite_cache_snapshot(
         &self,
         input: FavoriteCacheSnapshotInput,
     ) -> Result<bool> {
+        let entity = input.entity.clone();
+        let refreshes_world_card = matches!(
+            input.kind,
+            vrcx_0_application::favorites::FavoriteCacheKind::World
+        );
         let assembly = self.runtime.desktop_assembly();
         let scope = assembly.auth_scope().snapshot();
-        Ok(
-            vrcx_0_application::favorites::persist_favorite_cache_snapshot(
-                assembly.world_cache(),
-                assembly.avatar_cache(),
-                &scope.current_user_id,
-                &scope.endpoint,
-                input,
-            )?,
-        )
+        let written = vrcx_0_application::favorites::persist_favorite_cache_snapshot(
+            assembly.world_cache(),
+            assembly.avatar_cache(),
+            &scope.current_user_id,
+            &scope.endpoint,
+            input,
+        )?;
+        if written && refreshes_world_card {
+            self.favorite_details
+                .refresh_world_card(entity.as_value())
+                .await;
+        }
+        Ok(written)
+    }
+
+    pub async fn refresh_local_world_favorite_details(
+        &self,
+    ) -> Result<vrcx_0_application::favorites::LocalWorldDetailsRefreshOutput> {
+        let output = self
+            .local_data
+            .favorite_local_world_details_refresh()
+            .await?;
+        self.favorite_details.invalidate_world_cards().await;
+        Ok(output)
+    }
+
+    pub async fn hydrate_favorite_details(
+        &self,
+        input: vrcx_0_application::favorites::FavoriteDetailsHydrateInput,
+    ) -> Result<vrcx_0_application::favorites::FavoriteDetailsHydrateOutput> {
+        let expected_scope = self.require_active_scope("Batch action")?;
+        Ok(self.favorite_details.hydrate(input, expected_scope).await?)
+    }
+
+    pub async fn quick_search(
+        &self,
+        input: vrcx_0_application::social::QuickSearchQueryInput,
+    ) -> Result<vrcx_0_application::social::QuickSearchQueryOutput> {
+        Ok(self
+            .quick_search
+            .query(input, self.friend_snapshot())
+            .await?)
+    }
+
+    pub fn invalidate_quick_search_working_set(&self) {
+        self.quick_search.invalidate_remote_working_set();
     }
 
     pub fn social(&self) -> &DesktopSocialRuntime {
@@ -1200,52 +853,6 @@ impl DesktopRuntimeHostState {
 
     pub fn legacy_migration(&self) -> &DesktopLegacyMigrationRuntime {
         &self.legacy_migration
-    }
-
-    pub fn favorite_details_runtime(
-        &self,
-    ) -> vrcx_0_application::favorites::FavoriteDetailsRuntime {
-        vrcx_0_application::favorites::FavoriteDetailsRuntime::new(
-            Arc::new(vrcx_0_outbound_adapters::VrchatFavoriteRemote::new(
-                Arc::clone(self.runtime.web_client()),
-                self.runtime.desktop_assembly().diagnostics().clone(),
-                self.runtime.desktop_assembly().sync().clone(),
-                Arc::clone(self.runtime.desktop_assembly().world_cache()),
-            )),
-            self.runtime.desktop_assembly().auth_scope().clone(),
-            Arc::clone(self.runtime.desktop_assembly().world_cache()),
-            Arc::clone(self.runtime.desktop_assembly().avatar_cache()),
-            self.runtime.desktop_assembly().tasks().clone(),
-        )
-    }
-
-    pub fn quick_search_runtime(&self) -> vrcx_0_application::social::QuickSearchRuntime {
-        let avatar_adapter = Arc::new(
-            vrcx_0_outbound_adapters::LocalAvatarApplicationAdapter::new(Arc::clone(
-                self.runtime.database(),
-            )),
-        );
-        vrcx_0_application::social::QuickSearchRuntime::new(
-            vrcx_0_application::social::QuickSearchSources::new(
-                Arc::new(vrcx_0_outbound_adapters::LocalQuickSearchDetailStore::new(
-                    Arc::clone(self.runtime.database()),
-                )),
-                Arc::new(vrcx_0_outbound_adapters::VrchatQuickSearchRemoteRequests),
-                avatar_adapter.clone(),
-                Arc::new(vrcx_0_outbound_adapters::VrchatAvatarRemote::new(
-                    Arc::clone(self.runtime.web_client()),
-                    self.runtime.desktop_assembly().diagnostics().clone(),
-                    self.runtime.desktop_assembly().sync().clone(),
-                )),
-                Arc::clone(self.runtime.desktop_assembly().world_cache()),
-            ),
-            Arc::new(vrcx_0_outbound_adapters::VrchatRequestAdapter::new(
-                Arc::clone(self.runtime.web_client()),
-            )),
-            self.runtime.desktop_assembly().auth_scope().clone(),
-            self.runtime.desktop_assembly().diagnostics().clone(),
-            self.runtime.desktop_assembly().sync().clone(),
-        )
     }
 
     pub fn mcp_runtime(&self, caller: vrcx_0_mcp::McpCaller) -> vrcx_0_mcp::McpRuntime {
@@ -1279,11 +886,10 @@ impl DesktopRuntimeHostState {
 
     pub async fn resolve_friend_log_names(
         &self,
-        coordinator: &vrcx_0_application::social::FriendLogNameResolutionCoordinator,
         input: vrcx_0_application::social::FriendLogNameResolutionInput,
     ) -> Result<Vec<vrcx_0_application::social::ResolvedFriendLogName>> {
         Ok(vrcx_0_application::social::resolve_friend_log_names(
-            coordinator,
+            &self.friend_log_name_resolutions,
             vrcx_0_application::social::FriendLogNameResolutionDeps::new(
                 &self.friend_log_name_store,
                 self.runtime.desktop_assembly().auth_scope(),
@@ -1292,6 +898,10 @@ impl DesktopRuntimeHostState {
             input,
         )
         .await?)
+    }
+
+    pub fn cancel_friend_log_name_resolution(&self, request_id: &str) -> bool {
+        self.friend_log_name_resolutions.cancel(request_id)
     }
 
     pub async fn run_avatar_content_tags_batch(
@@ -1305,10 +915,7 @@ impl DesktopRuntimeHostState {
         )?;
         Ok(vrcx_0_application::social::run_avatar_content_tags_batch(
             &vrcx_0_application::social::VrchatBatchMutationActions::new(
-                &vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(
-                    self.runtime.web_client(),
-                )),
-                &vrcx_0_outbound_adapters::VrchatBatchMutationRemoteRequests,
+                &self.vrchat_requests,
                 mutation,
             ),
             input,
@@ -1318,7 +925,6 @@ impl DesktopRuntimeHostState {
 
     pub async fn run_group_membership_batch(
         &self,
-        coordinator: &vrcx_0_application::social::GroupMembershipBatchCoordinator,
         input: vrcx_0_application::social::GroupMembershipBatchInput,
     ) -> Result<vrcx_0_application::social::GroupMembershipBatchResult> {
         let mutation = vrcx_0_application_core::AuthenticatedMutationContext::capture(
@@ -1327,12 +933,9 @@ impl DesktopRuntimeHostState {
             "Group membership batch",
         )?;
         Ok(vrcx_0_application::social::run_group_membership_batch(
-            coordinator,
+            &self.group_membership_batches,
             &vrcx_0_application::social::VrchatGroupMembershipBatchActions::new(
-                &vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(
-                    self.runtime.web_client(),
-                )),
-                &vrcx_0_outbound_adapters::VrchatGroupRemoteRequests,
+                &self.vrchat_requests,
                 mutation,
                 self.runtime.desktop_assembly().event_bus().clone(),
             ),
@@ -1343,7 +946,6 @@ impl DesktopRuntimeHostState {
 
     pub async fn run_group_moderation_batch(
         &self,
-        coordinator: &vrcx_0_application::social::GroupModerationBatchCoordinator,
         input: vrcx_0_application::social::GroupModerationBatchInput,
     ) -> Result<vrcx_0_application::social::GroupModerationBatchResult> {
         let mutation = vrcx_0_application_core::AuthenticatedMutationContext::capture(
@@ -1352,12 +954,9 @@ impl DesktopRuntimeHostState {
             "Group moderation batch",
         )?;
         Ok(vrcx_0_application::social::run_group_moderation_batch(
-            coordinator,
+            &self.group_moderation_batches,
             &vrcx_0_application::social::VrchatGroupModerationBatchActions::new(
-                &vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(
-                    self.runtime.web_client(),
-                )),
-                &vrcx_0_outbound_adapters::VrchatGroupModerationRemoteRequests,
+                &self.vrchat_requests,
                 mutation,
                 self.runtime.desktop_assembly().event_bus().clone(),
             ),
@@ -1399,15 +998,9 @@ impl DesktopRuntimeHostState {
         )?;
         Ok(vrcx_0_application::social::send_instance_invites_batch(
             &vrcx_0_application::social::VrchatInstanceInviteBatchActions::new(
-                &vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(
-                    self.runtime.web_client(),
-                )),
-                &vrcx_0_outbound_adapters::VrchatInstanceInviteRemoteRequests,
+                &self.vrchat_requests,
                 mutation,
-                &vrcx_0_outbound_adapters::CachedWorldNameResolver::new(
-                    Arc::clone(self.runtime.desktop_assembly().world_cache()),
-                    Arc::clone(self.runtime.web_client()),
-                ),
+                &self.world_names,
             ),
             input,
         )
@@ -1432,18 +1025,12 @@ impl DesktopRuntimeHostState {
 
     pub async fn user_dialog_tab_counts(
         &self,
-        runtime: &vrcx_0_application::social::UserDialogTabCountsRuntime,
         input: vrcx_0_application::social::UserDialogTabCountsInput,
     ) -> Result<vrcx_0_application::social::UserDialogTabCountsOutput> {
         Ok(vrcx_0_application::social::get_user_dialog_tab_counts(
-            runtime,
+            &self.user_dialog_tab_counts,
             vrcx_0_application::social::UserDialogTabCountsDeps::new(
-                Arc::new(
-                    vrcx_0_outbound_adapters::LocalUserDialogTabCountsSource::new(
-                        Arc::clone(self.runtime.database()),
-                        Arc::clone(self.runtime.web_client()),
-                    ),
-                ),
+                self.user_dialog_tab_counts_source.clone(),
                 self.runtime.desktop_assembly().auth_scope().clone(),
             ),
             input,
@@ -1455,14 +1042,11 @@ impl DesktopRuntimeHostState {
         &self,
         input: vrcx_0_application::discovery::TranslationTranslateInput,
     ) -> Result<vrcx_0_application::discovery::TranslationDispatch> {
-        let adapter = vrcx_0_outbound_adapters::LocalTranslationAdapter::new(
-            Arc::clone(self.runtime.database()),
-            Arc::clone(self.runtime.web_client()),
-        );
+        let config = self.runtime.desktop_assembly().config_store();
         Ok(vrcx_0_application::discovery::translate_text(
             vrcx_0_application::discovery::TranslationDeps {
-                config: &adapter,
-                standard_translation: &adapter,
+                config: config.as_ref(),
+                standard_translation: &self.translation,
             },
             input,
         )
@@ -1470,11 +1054,11 @@ impl DesktopRuntimeHostState {
     }
 
     pub fn resolved_openai_translation_endpoint_id(&self) -> Result<String> {
-        let adapter = vrcx_0_outbound_adapters::LocalTranslationAdapter::new(
-            Arc::clone(self.runtime.database()),
-            Arc::clone(self.runtime.web_client()),
-        );
-        Ok(vrcx_0_application::discovery::resolved_openai_translation_endpoint_id(&adapter)?)
+        Ok(
+            vrcx_0_application::discovery::resolved_openai_translation_endpoint_id(
+                self.runtime.desktop_assembly().config_store().as_ref(),
+            )?,
+        )
     }
 
     pub async fn refresh_social_baseline(
@@ -1496,7 +1080,7 @@ impl DesktopRuntimeHostState {
 
     pub fn add_game_log_entries(
         &self,
-        kind: crate::local_data::GameLogWriteKind,
+        kind: vrcx_0_contracts::game_log::GameLogWriteKind,
         entries: Vec<Value>,
     ) -> Result<()> {
         let affected_count = self.local_data.game_log_entries_add(kind, entries)?;
@@ -1747,11 +1331,10 @@ impl DesktopRuntimeHostState {
         &self,
         kind: PresenceAutomationRuleKind,
     ) -> Result<Vec<RawJson>> {
-        let store = crate::game_state_store::PersistenceGameStateStore::new(Arc::clone(
-            self.runtime.database(),
-        ));
+        let config = self.runtime.desktop_assembly().config_store();
         Ok(vrcx_0_application_game::presence_automation_rules_get(
-            &store, kind,
+            config.as_ref(),
+            kind,
         )?)
     }
 
@@ -1760,11 +1343,11 @@ impl DesktopRuntimeHostState {
         kind: PresenceAutomationRuleKind,
         rules: Vec<RawJson>,
     ) -> Result<Vec<RawJson>> {
-        let store = crate::game_state_store::PersistenceGameStateStore::new(Arc::clone(
-            self.runtime.database(),
-        ));
+        let config = self.runtime.desktop_assembly().config_store();
         Ok(vrcx_0_application_game::presence_automation_rules_set(
-            &store, kind, rules,
+            config.as_ref(),
+            kind,
+            rules,
         )?)
     }
 
@@ -1774,12 +1357,13 @@ impl DesktopRuntimeHostState {
         rule_id: &str,
         enabled: bool,
     ) -> Result<Vec<RawJson>> {
-        let store = crate::game_state_store::PersistenceGameStateStore::new(Arc::clone(
-            self.runtime.database(),
-        ));
+        let config = self.runtime.desktop_assembly().config_store();
         Ok(
             vrcx_0_application_game::presence_automation_rule_enabled_set(
-                &store, kind, rule_id, enabled,
+                config.as_ref(),
+                kind,
+                rule_id,
+                enabled,
             )?,
         )
     }
@@ -1961,7 +1545,7 @@ impl DesktopRuntimeHostState {
     pub fn try_config_bool(&self, key: &str, fallback: bool) -> Option<bool> {
         self.runtime
             .desktop_assembly()
-            .config()
+            .config_store()
             .get_bool(key, fallback)
             .ok()
     }
@@ -1969,7 +1553,7 @@ impl DesktopRuntimeHostState {
     pub fn config_string(&self, key: &str, fallback: &str) -> String {
         self.runtime
             .desktop_assembly()
-            .config()
+            .config_store()
             .get_string(key, fallback)
             .unwrap_or_else(|_| fallback.to_string())
     }
@@ -2058,9 +1642,7 @@ impl DesktopRuntimeHostState {
             url
         };
         vrcx_0_application_activity::notification::send_json_webhook_with_retry(
-            &vrcx_0_outbound_adapters::LocalNotificationWebhookTransport::new(
-                self.runtime.web_client().clone(),
-            ),
+            &self.webhook_transport,
             &url,
             payload,
         )
@@ -2090,7 +1672,11 @@ impl DesktopRuntimeHostState {
         platform: &dyn crate::AutostartPlatform,
         enabled: bool,
     ) -> Result<bool> {
-        crate::set_autostart_preference(self.runtime.desktop_assembly().config(), platform, enabled)
+        crate::set_autostart_preference(
+            self.runtime.desktop_assembly().config_store().as_ref(),
+            platform,
+            enabled,
+        )
     }
 
     pub async fn transfer_favorite_selection(
@@ -2118,12 +1704,10 @@ impl DesktopRuntimeHostState {
     }
 
     pub fn acknowledge_registry_backup_restore_prompt(&self, backup_date: &str) -> Result<String> {
-        let store = crate::game_state_store::PersistenceGameStateStore::new(Arc::clone(
-            self.runtime.database(),
-        ));
+        let config = self.runtime.desktop_assembly().config_store();
         Ok(
             vrcx_0_application_game::registry_backup_restore_prompt_acknowledge(
-                &store,
+                config.as_ref(),
                 backup_date,
             )?,
         )
@@ -2132,7 +1716,7 @@ impl DesktopRuntimeHostState {
     pub fn config_bool(&self, key: &str, fallback: bool) -> bool {
         self.runtime
             .desktop_assembly()
-            .config()
+            .config_store()
             .get_bool(key, fallback)
             .unwrap_or(fallback)
     }
@@ -2174,7 +1758,7 @@ impl DesktopRuntimeHostState {
 
     pub fn config_set_values(
         &self,
-        entries: Vec<crate::local_data::ConfigWriteEntry>,
+        entries: Vec<vrcx_0_contracts::ConfigWriteEntry>,
     ) -> Result<()> {
         let touches_desktop_widget = entries
             .iter()
@@ -2251,7 +1835,7 @@ impl DesktopRuntimeHostState {
     pub fn set_app_launcher_enabled(&self, enabled: bool) -> Result<AppLauncherSnapshot> {
         self.runtime
             .desktop_assembly()
-            .config()
+            .config_store()
             .set_bool(APP_LAUNCHER_ENABLED_CONFIG_KEY, enabled)?;
         Ok(self.game.auto_launch.set_enabled(enabled))
     }
@@ -2261,7 +1845,7 @@ impl DesktopRuntimeHostState {
         entries: Vec<AppLauncherEntry>,
     ) -> Result<AppLauncherSnapshot> {
         let entries = normalize_app_launcher_entries(entries);
-        self.runtime.desktop_assembly().config().set_json(
+        self.runtime.desktop_assembly().config_store().set_json(
             APP_LAUNCHER_ENTRIES_CONFIG_KEY,
             &serde_json::to_value(&entries)?,
         )?;
@@ -2273,7 +1857,7 @@ impl DesktopRuntimeHostState {
         entry_id: &str,
         enabled: bool,
     ) -> Result<AppLauncherSnapshot> {
-        let config = self.runtime.desktop_assembly().config();
+        let config = self.runtime.desktop_assembly().config_store();
         Ok(self
             .game
             .auto_launch
@@ -2301,7 +1885,7 @@ impl DesktopRuntimeHostState {
 
     pub fn registry_backup(&self) -> RegistryBackupRuntime {
         RegistryBackupRuntime {
-            database: Arc::clone(self.runtime.database()),
+            config: self.runtime.desktop_assembly().config_store(),
             state: Arc::clone(&self.extension.registry_backup_state),
         }
     }
@@ -2309,7 +1893,7 @@ impl DesktopRuntimeHostState {
 
 #[derive(Clone)]
 pub struct RegistryBackupRuntime {
-    database: Arc<vrcx_0_persistence::DatabaseService>,
+    config: Arc<dyn vrcx_0_application_core::ConfigStore>,
     state: Arc<Mutex<RegistryBackupMaintenanceState>>,
 }
 
@@ -2356,14 +1940,14 @@ impl RegistryBackupRuntime {
         mode: RegistryBackupMaintenanceMode,
     ) -> Result<RegistryBackupMaintenanceResult> {
         let mut state = self.acquire_lock()?;
-        let store = self.store();
+        let store = self.config.as_ref();
         Ok(run_coordinated_registry_backup_maintenance(
             &mut state,
             Instant::now(),
             mode,
             || {
                 vrcx_0_application_game::registry_backup_maintenance_run(
-                    &store,
+                    store,
                     &HostRegistryBackupActions,
                     mode,
                     reason,
@@ -2371,26 +1955,21 @@ impl RegistryBackupRuntime {
             },
             || {
                 vrcx_0_application_game::registry_backup_foreground_followup(
-                    &store,
+                    store,
                     &HostRegistryBackupActions,
                 )
             },
         )?)
     }
 
-    fn store(&self) -> crate::game_state_store::PersistenceGameStateStore {
-        crate::game_state_store::PersistenceGameStateStore::new(Arc::clone(&self.database))
-    }
-
     fn with_store<T>(
         &self,
         operation: impl FnOnce(
-            &crate::game_state_store::PersistenceGameStateStore,
+            &dyn vrcx_0_application_core::ConfigStore,
         ) -> vrcx_0_application_core::Result<T>,
     ) -> Result<T> {
-        let store = self.store();
         let _guard = self.acquire_lock()?;
-        Ok(operation(&store)?)
+        Ok(operation(self.config.as_ref())?)
     }
 
     fn acquire_lock(&self) -> Result<MutexGuard<'_, RegistryBackupMaintenanceState>> {
@@ -2657,13 +2236,12 @@ impl DesktopRuntimeProfileExtension {
             RuntimeOperationStatus::Scheduled,
             "Registry backup maintenance is scheduled for background mode.",
         );
-        let db = Arc::clone(state.database());
         let backend_runtime = state.backend_runtime().clone();
         let desktop_assembly = state.desktop_assembly().clone();
         let background_jobs = state.desktop_assembly().background_jobs().clone();
         let running = Arc::clone(&self.registry_backup_maintenance_running);
         let registry_backup_state = Arc::clone(&self.registry_backup_state);
-        let store = crate::game_state_store::PersistenceGameStateStore::new(db);
+        let store = state.desktop_assembly().config_store();
         state.desktop_assembly().tasks().spawn_cancellable_thread(
             "registry-backup-maintenance",
             move |stop_token| {
@@ -2686,7 +2264,7 @@ impl DesktopRuntimeProfileExtension {
                             RegistryBackupMaintenanceMode::Silent,
                             || {
                                 vrcx_0_application_game::registry_backup_maintenance_run(
-                                    &store,
+                                    store.as_ref(),
                                     &HostRegistryBackupActions,
                                     RegistryBackupMaintenanceMode::Silent,
                                     "background-mode",
@@ -2694,7 +2272,7 @@ impl DesktopRuntimeProfileExtension {
                             },
                             || {
                                 vrcx_0_application_game::registry_backup_foreground_followup(
-                                    &store,
+                                    store.as_ref(),
                                     &HostRegistryBackupActions,
                                 )
                             },
@@ -2805,7 +2383,7 @@ impl DesktopRuntimeProfileExtension {
         let realtime_runtime = Arc::clone(state.realtime_runtime());
         let authenticated_runtime = state.authenticated_runtime().clone();
         let host_session = state.desktop_assembly().session().clone();
-        let config = state.desktop_assembly().config().clone();
+        let config_store = state.desktop_assembly().config_store();
         let auth_scope = state.desktop_assembly().auth_scope().clone();
         let remote_mutations = Arc::clone(state.desktop_assembly().remote_mutations());
         let event_bus = state.desktop_assembly().event_bus().clone();
@@ -2863,7 +2441,7 @@ impl DesktopRuntimeProfileExtension {
                         next_discord = now;
                         overlay_activity_config_generation = None;
                     }
-                    let config_generation = config.write_generation();
+                    let config_generation = config_store.write_generation();
                     if overlay_activity_config_generation != Some(config_generation) {
                         desktop_services.reload_overlay_activity_filters();
                         overlay_activity_config_generation = Some(config_generation);
@@ -2875,7 +2453,7 @@ impl DesktopRuntimeProfileExtension {
                         session_slot: &session_slot,
                         realtime_runtime: &realtime_runtime,
                         host_session: &host_session,
-                        config: &config,
+                        config_store: &config_store,
                         auth_scope: &auth_scope,
                         remote_mutations: &remote_mutations,
                         event_bus: &event_bus,
@@ -2907,7 +2485,7 @@ impl DesktopRuntimeProfileExtension {
                                 now + Duration::from_secs(BACKGROUND_PRESENCE_CADENCE_SECONDS);
                         }
                         if run_discord {
-                            let labels = discord_label_cache.get(&config);
+                            let labels = discord_label_cache.get(config_store.as_ref());
                             run_background_discord_tick(
                                 &tick_context,
                                 &discord_rpc,
@@ -2996,7 +2574,7 @@ fn emit_game_log_watcher_status(
 fn register_desktop_file_access_grants(
     file_access: &HostFileAccess,
     profile_backup: &vrcx_0_application::profile::ProfileBackupRuntime,
-    config: &vrcx_0_persistence::config::ConfigRepository,
+    config: &dyn ConfigStore,
 ) -> Result<()> {
     let profile_backup_target = profile_backup.settings().auto_target_dir;
     if !profile_backup_target.is_empty() {
@@ -3007,7 +2585,7 @@ fn register_desktop_file_access_grants(
 
 fn register_persisted_user_generated_content_path_grant(
     file_access: &HostFileAccess,
-    config: &vrcx_0_persistence::config::ConfigRepository,
+    config: &dyn ConfigStore,
 ) -> Result<()> {
     let ugc_path = config.get_string(USER_GENERATED_CONTENT_PATH_CONFIG_KEY, "")?;
     let ugc_path = ugc_path.trim();
@@ -3153,9 +2731,7 @@ pub(crate) fn mcp_runtime_for(
         vrcx_0_mcp::McpRuntimeDeps {
             realtime_runtime: Arc::clone(runtime.realtime_runtime()),
             auth_scope: assembly.auth_scope().clone(),
-            config: Arc::new(crate::mcp_adapters::DesktopMcpConfigAdapter::new(
-                assembly.config().clone(),
-            )),
+            config: assembly.config_store(),
             activity_queries: Arc::new(crate::mcp_adapters::DesktopMcpActivityQueryAdapter::new(
                 Arc::clone(db),
             )),
@@ -3179,7 +2755,6 @@ pub(crate) fn mcp_runtime_for(
                 assembly.tasks().clone(),
             )),
             world_lookup: Arc::new(crate::mcp_adapters::DesktopMcpWorldLookupAdapter::new(
-                Arc::clone(runtime.web_client()),
                 Arc::clone(assembly.world_cache()),
                 assembly.auth_scope().clone(),
             )),
@@ -3202,9 +2777,7 @@ pub(crate) fn assistant_controller_deps_for(
     let assembly = runtime.desktop_assembly();
     vrcx_0_assistant::AssistantControllerDeps {
         config: Arc::new(
-            crate::assistant_adapters::DesktopAssistantConfigAdapter::new(
-                assembly.config().clone(),
-            ),
+            crate::assistant_adapters::DesktopAssistantConfigAdapter::new(assembly.config_store()),
         ),
         llm_factory: Arc::new(crate::assistant_adapters::DesktopAssistantLlmClientFactory),
         proxy_url: runtime.web_client().proxy_url().map(str::to_string),
@@ -3356,8 +2929,7 @@ mod runtime_host_state {
         };
         use crate::{HostFileAccess, Result};
         use std::path::PathBuf;
-        use std::sync::Arc;
-        use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
+        use vrcx_0_application_core::{ConfigStore, MemoryConfigStore};
         use vrcx_0_platform::app_paths::AppPaths;
 
         struct TestDir {
@@ -3390,8 +2962,7 @@ mod runtime_host_state {
             let ugc_path = dir.path.join("custom-ugc");
             std::fs::create_dir_all(&app_data)?;
             std::fs::create_dir_all(&ugc_path)?;
-            let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3"))?);
-            let config = ConfigRepository::new(db);
+            let config = MemoryConfigStore::default();
             config.set_string(
                 USER_GENERATED_CONTENT_PATH_CONFIG_KEY,
                 &ugc_path.to_string_lossy(),

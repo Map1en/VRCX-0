@@ -12,5 +12,5 @@ pub async fn app__user_dialog_tab_counts_get(
     state: State<'_, AppState>,
     input: UserDialogTabCountsInput,
 ) -> Result<UserDialogTabCountsOutput, AppError> {
-    state.user_dialog_tab_counts(input).await
+    Ok(state.runtime_host().user_dialog_tab_counts(input).await?)
 }

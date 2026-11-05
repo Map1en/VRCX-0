@@ -1,5 +1,5 @@
 use chrono::{DateTime, Duration, Utc};
-use vrcx_0_application_core::RuntimeAuthIdentity;
+use vrcx_0_application_core::{ConfigStore, RuntimeAuthIdentity};
 
 use crate::game_log::host::GameLogHostActions;
 use crate::game_log::ingest::ScreenshotInput;
@@ -24,7 +24,8 @@ struct ScreenshotPlayer {
 }
 
 pub async fn handle_screenshot(
-    store: &dyn crate::GameStateStore,
+    store: &dyn crate::GameLogLocationQueries,
+    config: &dyn ConfigStore,
     host_actions: std::sync::Arc<dyn GameLogHostActions>,
     side_effect_sink: &GameLogSideEffectSink,
     author: &RuntimeAuthIdentity,
@@ -35,9 +36,9 @@ pub async fn handle_screenshot(
         return Ok(());
     }
 
-    let screenshot_helper = store.get_bool("screenshotHelper", true)?;
-    let modify_filename = store.get_bool("screenshotHelperModifyFilename", false)?;
-    let copy_to_clipboard = store.get_bool("screenshotHelperCopyToClipboard", false)?;
+    let screenshot_helper = config.get_bool("screenshotHelper", true)?;
+    let modify_filename = config.get_bool("screenshotHelperModifyFilename", false)?;
+    let copy_to_clipboard = config.get_bool("screenshotHelperCopyToClipboard", false)?;
 
     let mut next_path = screenshot_path.clone();
     if screenshot_helper {
@@ -79,7 +80,7 @@ pub async fn handle_screenshot(
 }
 
 fn screenshot_context(
-    store: &dyn crate::GameStateStore,
+    store: &dyn crate::GameLogLocationQueries,
     owner_user_id: &OwnerId,
     input: &ScreenshotInput,
 ) -> Result<Option<ScreenshotContext>> {
@@ -99,7 +100,6 @@ fn screenshot_context(
         }));
     }
 
-    store.ensure_game_log_tables()?;
     let Some(location_entry) = store.location_before_or_at(owner_user_id, &input.created_at)?
     else {
         return Ok(None);

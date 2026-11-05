@@ -1,7 +1,8 @@
 use std::collections::VecDeque;
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Mutex;
 
-use vrcx_0_application_core::{Error, Result};
+use vrcx_0_application_core::{Error, Result, RuntimeEventBus};
 use vrcx_0_contracts::feed::{
     FeedLatestQueryInput, FeedLiveEntryInput, FeedLiveQueryMatcher, FeedReadModelOutput,
     FeedRowOutput, FeedSearchQueryInput,
@@ -24,7 +25,7 @@ struct CachedFeedEntry {
 }
 
 #[derive(Default)]
-pub(super) struct FeedLiveCache {
+struct FeedLiveCache {
     owner_user_id: OwnerId,
     sequence: i64,
     entries: VecDeque<CachedFeedEntry>,
@@ -140,9 +141,34 @@ impl FeedLiveCache {
     }
 }
 
-impl RealtimeHostRuntime {
-    pub(super) fn emit_feed_entries(
+pub(super) struct FeedLiveProjector {
+    event_bus: RuntimeEventBus,
+    owner_lock: Mutex<()>,
+    cache: Mutex<FeedLiveCache>,
+    persistence_disabled: AtomicBool,
+}
+
+impl FeedLiveProjector {
+    pub(super) fn new(event_bus: RuntimeEventBus, persistence_disabled: bool) -> Self {
+        Self {
+            event_bus,
+            owner_lock: Mutex::new(()),
+            cache: Mutex::new(FeedLiveCache::default()),
+            persistence_disabled: AtomicBool::new(persistence_disabled),
+        }
+    }
+
+    pub(super) fn persistence_disabled(&self) -> bool {
+        self.persistence_disabled.load(Ordering::Relaxed)
+    }
+
+    pub(super) fn set_persistence_disabled(&self, disabled: bool) {
+        self.persistence_disabled.store(disabled, Ordering::Relaxed);
+    }
+
+    fn emit_entries(
         &self,
+        active_scope: impl FnOnce() -> Option<(u64, OwnerId)>,
         generation: u64,
         owner_user_id: &OwnerId,
         entries: Vec<FeedLiveEntry>,
@@ -151,24 +177,21 @@ impl RealtimeHostRuntime {
             return;
         }
         let _owner = self
-            .feed_owner_lock
+            .owner_lock
             .lock()
             .unwrap_or_else(|error| error.into_inner());
-        if self
-            .active_feed_scope()
-            .is_none_or(|scope| scope != (generation, owner_user_id.clone()))
-        {
+        if active_scope().is_none_or(|scope| scope != (generation, owner_user_id.clone())) {
             return;
         }
         let upserts = self
-            .feed_live_cache
+            .cache
             .lock()
             .unwrap_or_else(|error| error.into_inner())
             .push_entries(owner_user_id, entries);
         if upserts.is_empty() {
             return;
         }
-        self.deps.event_bus.emit(RealtimeFeedProjection {
+        self.event_bus.emit(RealtimeFeedProjection {
             generation,
             owner_user_id: owner_user_id.clone(),
             upserts,
@@ -176,23 +199,28 @@ impl RealtimeHostRuntime {
         });
     }
 
-    pub(super) fn emit_feed_patch(&self, id: String, fields: RealtimeEntryCorrectionFields) {
+    fn emit_patch(
+        &self,
+        active_scope: impl FnOnce() -> Option<(u64, OwnerId)>,
+        id: String,
+        fields: RealtimeEntryCorrectionFields,
+    ) {
         let _owner = self
-            .feed_owner_lock
+            .owner_lock
             .lock()
             .unwrap_or_else(|error| error.into_inner());
-        let Some((generation, owner_user_id)) = self.active_feed_scope() else {
+        let Some((generation, owner_user_id)) = active_scope() else {
             return;
         };
         let sequence = self
-            .feed_live_cache
+            .cache
             .lock()
             .unwrap_or_else(|error| error.into_inner())
             .patch_entry(&owner_user_id, &id, &fields);
         let Some(sequence) = sequence else {
             return;
         };
-        self.deps.event_bus.emit(RealtimeFeedProjection {
+        self.event_bus.emit(RealtimeFeedProjection {
             generation,
             owner_user_id,
             upserts: Vec::new(),
@@ -204,53 +232,77 @@ impl RealtimeHostRuntime {
         });
     }
 
-    pub fn query_feed_latest(&self, query: FeedLatestQueryInput) -> Result<FeedReadModelOutput> {
-        let matcher = FeedLiveQueryMatcher::for_latest(&query);
-        let (live_entries, watermark) =
-            self.feed_live_snapshot(&OwnerId::new(query.user_id.clone()), &matcher)?;
-        self.deps.store.feed_latest(
-            query,
-            live_entries,
-            watermark,
-            !self.feed_persistence_disabled.load(Ordering::Relaxed),
-        )
-    }
-
-    pub fn query_feed_search(&self, query: FeedSearchQueryInput) -> Result<Vec<FeedRowOutput>> {
-        let matcher = FeedLiveQueryMatcher::for_search(&query);
-        let (live_entries, watermark) =
-            self.feed_live_snapshot(&OwnerId::new(query.user_id.clone()), &matcher)?;
-        self.deps
-            .store
-            .feed_search(
-                query,
-                live_entries,
-                watermark,
-                !self.feed_persistence_disabled.load(Ordering::Relaxed),
-            )
-            .map(|output| output.rows)
-    }
-
-    pub(super) fn reset_feed_live_cache(&self) {
+    pub(super) fn reset(&self) {
         let _owner = self
-            .feed_owner_lock
+            .owner_lock
             .lock()
             .unwrap_or_else(|error| error.into_inner());
-        self.feed_live_cache
+        self.cache
             .lock()
             .unwrap_or_else(|error| error.into_inner())
             .reset();
     }
 
-    fn feed_live_snapshot(
+    fn snapshot(
         &self,
         owner_user_id: &OwnerId,
         matcher: &FeedLiveQueryMatcher,
     ) -> Result<(Vec<FeedLiveEntryInput>, i64)> {
-        self.feed_live_cache
+        self.cache
             .lock()
             .map(|cache| cache.snapshot_matching(owner_user_id, matcher))
             .map_err(|error| Error::Custom(format!("feed live cache lock: {error}")))
+    }
+}
+
+impl RealtimeHostRuntime {
+    pub(super) fn emit_feed_entries(
+        &self,
+        generation: u64,
+        owner_user_id: &OwnerId,
+        entries: Vec<FeedLiveEntry>,
+    ) {
+        self.feed.emit_entries(
+            || self.active_feed_scope(),
+            generation,
+            owner_user_id,
+            entries,
+        );
+    }
+
+    pub(super) fn emit_feed_patch(&self, id: String, fields: RealtimeEntryCorrectionFields) {
+        self.feed
+            .emit_patch(|| self.active_feed_scope(), id, fields);
+    }
+
+    pub fn query_feed_latest(&self, query: FeedLatestQueryInput) -> Result<FeedReadModelOutput> {
+        let matcher = FeedLiveQueryMatcher::for_latest(&query);
+        let (live_entries, watermark) = self
+            .feed
+            .snapshot(&OwnerId::new(query.user_id.clone()), &matcher)?;
+        self.deps.stores.feed.feed_latest(
+            query,
+            live_entries,
+            watermark,
+            !self.feed.persistence_disabled(),
+        )
+    }
+
+    pub fn query_feed_search(&self, query: FeedSearchQueryInput) -> Result<Vec<FeedRowOutput>> {
+        let matcher = FeedLiveQueryMatcher::for_search(&query);
+        let (live_entries, watermark) = self
+            .feed
+            .snapshot(&OwnerId::new(query.user_id.clone()), &matcher)?;
+        self.deps
+            .stores
+            .feed
+            .feed_search(
+                query,
+                live_entries,
+                watermark,
+                !self.feed.persistence_disabled(),
+            )
+            .map(|output| output.rows)
     }
 
     fn active_feed_scope(&self) -> Option<(u64, OwnerId)> {

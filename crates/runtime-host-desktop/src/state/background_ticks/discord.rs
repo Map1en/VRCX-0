@@ -4,6 +4,7 @@ use std::{
 };
 
 use serde_json::json;
+use vrcx_0_application_core::ConfigStore;
 use vrcx_0_application_game::{
     build_background_discord_presence_command, build_background_presence_facts,
     BackgroundDiscordPresenceCommand, BackgroundDiscordPresenceState, BackgroundPresenceFactsInput,
@@ -11,7 +12,6 @@ use vrcx_0_application_game::{
 };
 use vrcx_0_host_desktop::discord_rpc::DiscordRpc;
 use vrcx_0_i18n::{text, DiscordPresenceKey};
-use vrcx_0_persistence::config::ConfigRepository;
 
 use super::{
     background_capability_session, emit_background_error, emit_background_info_if_changed,
@@ -28,10 +28,7 @@ pub(in crate::state) struct DiscordPresenceLabelCache {
 }
 
 impl DiscordPresenceLabelCache {
-    pub(in crate::state) fn get(
-        &mut self,
-        config: &ConfigRepository,
-    ) -> Arc<DiscordPresenceLabels> {
+    pub(in crate::state) fn get(&mut self, config: &dyn ConfigStore) -> Arc<DiscordPresenceLabels> {
         let language = config
             .get_string(APP_LANGUAGE_CONFIG_KEY, "en")
             .unwrap_or_else(|_| "en".into());
@@ -132,7 +129,7 @@ pub(in crate::state) async fn run_background_discord_tick(
         }
     };
     let command = match build_background_discord_presence_command(
-        &game_state_store,
+        context.config_store.as_ref(),
         &background_remote,
         &facts,
         labels,

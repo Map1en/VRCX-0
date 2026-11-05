@@ -11,11 +11,13 @@ pub async fn app__friend_log_names_resolve(
     state: State<'_, AppState>,
     input: FriendLogNameResolutionInput,
 ) -> Result<Vec<ResolvedFriendLogName>, AppError> {
-    state.resolve_friend_log_names(input).await
+    Ok(state.runtime_host().resolve_friend_log_names(input).await?)
 }
 
 #[tauri::command(async)]
 #[specta::specta]
 pub fn app__friend_log_names_cancel(state: State<'_, AppState>, request_id: String) -> bool {
-    state.cancel_friend_log_name_resolution(&request_id)
+    state
+        .runtime_host()
+        .cancel_friend_log_name_resolution(&request_id)
 }

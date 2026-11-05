@@ -405,38 +405,13 @@ struct AppUpdateRuntimeInner {
 
 pub struct AppUpdateRuntimeDeps {
     pub release_catalog: Arc<dyn AppUpdateReleaseCatalogPort>,
-    pub(crate) config: Arc<dyn ProfileConfigStore>,
+    pub config: Arc<dyn ProfileConfigStore>,
     pub event_bus: RuntimeEventBus,
     pub background_jobs: RuntimeBackgroundJobs,
     pub build: AppUpdateBuildInfo,
     pub target_resolver: AppUpdateTargetResolver,
     pub port: Arc<dyn UpdaterPort>,
     pub tasks: TaskSupervisor,
-}
-
-impl AppUpdateRuntimeDeps {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        release_catalog: Arc<dyn AppUpdateReleaseCatalogPort>,
-        config: Arc<dyn ProfileConfigStore>,
-        event_bus: RuntimeEventBus,
-        background_jobs: RuntimeBackgroundJobs,
-        build: AppUpdateBuildInfo,
-        target_resolver: AppUpdateTargetResolver,
-        port: Arc<dyn UpdaterPort>,
-        tasks: TaskSupervisor,
-    ) -> Self {
-        Self {
-            release_catalog,
-            config,
-            event_bus,
-            background_jobs,
-            build,
-            target_resolver,
-            port,
-            tasks,
-        }
-    }
 }
 
 #[derive(Clone)]

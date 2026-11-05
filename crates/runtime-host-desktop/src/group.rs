@@ -15,10 +15,10 @@ use vrcx_0_application::social::{
     VrchatGroupRoleCreateInput, VrchatGroupRoleInput, VrchatGroupRoleUpdateInput,
     VrchatGroupUpdateInput, VrchatGroupUserGroupsInput, VrchatGroupUserInput,
 };
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::{
     RemoteMutationGate, RuntimeAuthScope, RuntimeDiagnostics, RuntimeSyncEngine, WebClient,
 };
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use crate::Result;
 
@@ -53,7 +53,6 @@ impl DesktopGroupRuntime {
             Arc::new(vrcx_0_outbound_adapters::VrchatRequestAdapter::new(
                 Arc::clone(&self.web),
             )),
-            Arc::new(vrcx_0_outbound_adapters::VrchatGroupRemoteRequests),
             self.diagnostics.clone(),
             self.sync.clone(),
             self.auth_scope.clone(),
@@ -65,9 +64,6 @@ impl DesktopGroupRuntime {
         GroupQuickModerationDeps {
             groups: self.api_deps(),
             auth_scope: self.auth_scope.clone(),
-            remote_requests: Arc::new(
-                vrcx_0_outbound_adapters::VrchatGroupMembershipRemoteRequests,
-            ),
         }
     }
 
@@ -108,27 +104,21 @@ impl DesktopGroupRuntime {
             UserGroupsOverviewDeps {
                 groups: self.api_deps(),
                 auth_scope: self.auth_scope.clone(),
-                remote_requests: Arc::new(
-                    vrcx_0_outbound_adapters::VrchatGroupMembershipRemoteRequests,
-                ),
             },
             input,
         )
         .await?)
     }
 
-    pub async fn get(&self, input: VrchatGroupProfileInput) -> Result<VrchatApiResponse> {
+    pub async fn get(&self, input: VrchatGroupProfileInput) -> Result<VrchatResponse> {
         Ok(application::get_group(self.api_deps(), input).await?)
     }
 
-    pub async fn user_groups(
-        &self,
-        input: VrchatGroupUserGroupsInput,
-    ) -> Result<VrchatApiResponse> {
+    pub async fn user_groups(&self, input: VrchatGroupUserGroupsInput) -> Result<VrchatResponse> {
         Ok(application::get_user_groups(self.api_deps(), input).await?)
     }
 
-    pub async fn posts(&self, input: VrchatGroupPagedInput) -> Result<VrchatApiResponse> {
+    pub async fn posts(&self, input: VrchatGroupPagedInput) -> Result<VrchatResponse> {
         Ok(application::get_posts(self.api_deps(), input).await?)
     }
 
@@ -139,221 +129,206 @@ impl DesktopGroupRuntime {
         Ok(application::get_member_role_ids(self.api_deps(), input).await?)
     }
 
-    pub async fn members(&self, input: VrchatGroupMembersInput) -> Result<VrchatApiResponse> {
+    pub async fn members(&self, input: VrchatGroupMembersInput) -> Result<VrchatResponse> {
         Ok(application::get_members(self.api_deps(), input).await?)
     }
 
     pub async fn search_members(
         &self,
         input: VrchatGroupMembersSearchInput,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         Ok(application::search_members(self.api_deps(), input).await?)
     }
 
-    pub async fn gallery(&self, input: VrchatGroupGalleryInput) -> Result<VrchatApiResponse> {
+    pub async fn gallery(&self, input: VrchatGroupGalleryInput) -> Result<VrchatResponse> {
         Ok(application::get_gallery(self.api_deps(), input).await?)
     }
 
-    pub async fn bans(&self, input: VrchatGroupPagedInput) -> Result<VrchatApiResponse> {
+    pub async fn bans(&self, input: VrchatGroupPagedInput) -> Result<VrchatResponse> {
         Ok(application::get_bans(self.api_deps(), input).await?)
     }
 
-    pub async fn invites(&self, input: VrchatGroupPagedInput) -> Result<VrchatApiResponse> {
+    pub async fn invites(&self, input: VrchatGroupPagedInput) -> Result<VrchatResponse> {
         Ok(application::get_invites(self.api_deps(), input).await?)
     }
 
     pub async fn join_requests(
         &self,
         input: VrchatGroupJoinRequestsInput,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         Ok(application::get_join_requests(self.api_deps(), input).await?)
     }
 
-    pub async fn audit_log_types(&self, input: VrchatGroupIdInput) -> Result<VrchatApiResponse> {
+    pub async fn audit_log_types(&self, input: VrchatGroupIdInput) -> Result<VrchatResponse> {
         Ok(application::get_audit_log_types(self.api_deps(), input).await?)
     }
 
-    pub async fn logs(&self, input: VrchatGroupLogsInput) -> Result<VrchatApiResponse> {
+    pub async fn logs(&self, input: VrchatGroupLogsInput) -> Result<VrchatResponse> {
         Ok(application::get_logs(self.api_deps(), input).await?)
     }
 
     pub async fn user_instances(
         &self,
         input: VrchatGroupUserGroupsInput,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         Ok(application::get_user_instances(self.api_deps(), input).await?)
     }
 
-    pub async fn update(&self, input: VrchatGroupUpdateInput) -> Result<VrchatApiResponse> {
+    pub async fn update(&self, input: VrchatGroupUpdateInput) -> Result<VrchatResponse> {
         Ok(application::update_group(self.api_deps(), input).await?)
     }
 
-    pub async fn delete(&self, input: VrchatGroupIdInput) -> Result<VrchatApiResponse> {
+    pub async fn delete(&self, input: VrchatGroupIdInput) -> Result<VrchatResponse> {
         Ok(application::delete_group(self.api_deps(), input).await?)
     }
 
     pub async fn create_gallery(
         &self,
         input: VrchatGroupGalleryCreateInput,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         Ok(application::create_gallery(self.api_deps(), input).await?)
     }
 
-    pub async fn edit_gallery(
-        &self,
-        input: VrchatGroupGalleryEditInput,
-    ) -> Result<VrchatApiResponse> {
+    pub async fn edit_gallery(&self, input: VrchatGroupGalleryEditInput) -> Result<VrchatResponse> {
         Ok(application::edit_gallery(self.api_deps(), input).await?)
     }
 
     pub async fn delete_gallery(
         &self,
         input: VrchatGroupGalleryDeleteInput,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         Ok(application::delete_gallery(self.api_deps(), input).await?)
     }
 
     pub async fn add_gallery_image(
         &self,
         input: VrchatGroupGalleryImageAddInput,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         Ok(application::add_gallery_image(self.api_deps(), input).await?)
     }
 
     pub async fn delete_gallery_image(
         &self,
         input: VrchatGroupGalleryImageDeleteInput,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         Ok(application::delete_gallery_image(self.api_deps(), input).await?)
     }
 
-    pub async fn create_post(
-        &self,
-        input: VrchatGroupPostCreateInput,
-    ) -> Result<VrchatApiResponse> {
+    pub async fn create_post(&self, input: VrchatGroupPostCreateInput) -> Result<VrchatResponse> {
         Ok(application::create_post(self.api_deps(), input).await?)
     }
 
-    pub async fn edit_post(&self, input: VrchatGroupPostEditInput) -> Result<VrchatApiResponse> {
+    pub async fn edit_post(&self, input: VrchatGroupPostEditInput) -> Result<VrchatResponse> {
         Ok(application::edit_post(self.api_deps(), input).await?)
     }
 
-    pub async fn delete_post(
-        &self,
-        input: VrchatGroupPostDeleteInput,
-    ) -> Result<VrchatApiResponse> {
+    pub async fn delete_post(&self, input: VrchatGroupPostDeleteInput) -> Result<VrchatResponse> {
         Ok(application::delete_post(self.api_deps(), input).await?)
     }
 
-    pub async fn join(&self, input: VrchatGroupIdInput) -> Result<VrchatApiResponse> {
+    pub async fn join(&self, input: VrchatGroupIdInput) -> Result<VrchatResponse> {
         Ok(application::join_group(self.api_deps(), input).await?)
     }
 
-    pub async fn leave(&self, input: VrchatGroupIdInput) -> Result<VrchatApiResponse> {
+    pub async fn leave(&self, input: VrchatGroupIdInput) -> Result<VrchatResponse> {
         Ok(application::leave_group(self.api_deps(), input).await?)
     }
 
-    pub async fn cancel_request(&self, input: VrchatGroupIdInput) -> Result<VrchatApiResponse> {
+    pub async fn cancel_request(&self, input: VrchatGroupIdInput) -> Result<VrchatResponse> {
         Ok(application::cancel_request(self.api_deps(), input).await?)
     }
 
-    pub async fn send_invite(&self, input: VrchatGroupUserInput) -> Result<VrchatApiResponse> {
+    pub async fn send_invite(&self, input: VrchatGroupUserInput) -> Result<VrchatResponse> {
         Ok(application::send_invite(self.api_deps(), input).await?)
     }
 
-    pub async fn kick_member(&self, input: VrchatGroupUserInput) -> Result<VrchatApiResponse> {
+    pub async fn kick_member(&self, input: VrchatGroupUserInput) -> Result<VrchatResponse> {
         Ok(application::kick_member(self.api_deps(), input).await?)
     }
 
-    pub async fn ban_member(&self, input: VrchatGroupUserInput) -> Result<VrchatApiResponse> {
+    pub async fn ban_member(&self, input: VrchatGroupUserInput) -> Result<VrchatResponse> {
         Ok(application::ban_member(self.api_deps(), input).await?)
     }
 
-    pub async fn unban_member(&self, input: VrchatGroupUserInput) -> Result<VrchatApiResponse> {
+    pub async fn unban_member(&self, input: VrchatGroupUserInput) -> Result<VrchatResponse> {
         Ok(application::unban_member(self.api_deps(), input).await?)
     }
 
     pub async fn add_member_role(
         &self,
         input: VrchatGroupMemberRoleInput,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         Ok(application::add_member_role(self.api_deps(), input).await?)
     }
 
     pub async fn remove_member_role(
         &self,
         input: VrchatGroupMemberRoleInput,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         Ok(application::remove_member_role(self.api_deps(), input).await?)
     }
 
-    pub async fn delete_invite(&self, input: VrchatGroupUserInput) -> Result<VrchatApiResponse> {
+    pub async fn delete_invite(&self, input: VrchatGroupUserInput) -> Result<VrchatResponse> {
         Ok(application::delete_invite(self.api_deps(), input).await?)
     }
 
     pub async fn respond_join_request(
         &self,
         input: VrchatGroupJoinRequestRespondInput,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         Ok(application::respond_join_request(self.api_deps(), input).await?)
     }
 
     pub async fn set_representation(
         &self,
         input: VrchatGroupRepresentationInput,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         Ok(application::set_representation(self.api_deps(), input).await?)
     }
 
     pub async fn set_member_props(
         &self,
         input: VrchatGroupMemberPropsInput,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         Ok(application::set_member_props(self.api_deps(), input).await?)
     }
 
-    pub async fn block(&self, input: VrchatGroupIdInput) -> Result<VrchatApiResponse> {
+    pub async fn block(&self, input: VrchatGroupIdInput) -> Result<VrchatResponse> {
         Ok(application::block_group(self.api_deps(), input).await?)
     }
 
-    pub async fn unblock(&self, input: VrchatGroupUserInput) -> Result<VrchatApiResponse> {
+    pub async fn unblock(&self, input: VrchatGroupUserInput) -> Result<VrchatResponse> {
         Ok(application::unblock_group(self.api_deps(), input).await?)
     }
 
     pub async fn membership_list(
         &self,
         input: VrchatGroupMembershipListInput,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         Ok(application::get_membership_list(self.api_deps(), input).await?)
     }
 
-    pub async fn decline_invite(&self, input: VrchatGroupUserInput) -> Result<VrchatApiResponse> {
+    pub async fn decline_invite(&self, input: VrchatGroupUserInput) -> Result<VrchatResponse> {
         Ok(application::decline_invite(self.api_deps(), input).await?)
     }
 
-    pub async fn roles(&self, input: VrchatGroupIdInput) -> Result<VrchatApiResponse> {
+    pub async fn roles(&self, input: VrchatGroupIdInput) -> Result<VrchatResponse> {
         Ok(application::get_roles(self.api_deps(), input).await?)
     }
 
-    pub async fn permissions(&self, input: VrchatGroupIdInput) -> Result<VrchatApiResponse> {
+    pub async fn permissions(&self, input: VrchatGroupIdInput) -> Result<VrchatResponse> {
         Ok(application::get_permissions(self.api_deps(), input).await?)
     }
 
-    pub async fn create_role(
-        &self,
-        input: VrchatGroupRoleCreateInput,
-    ) -> Result<VrchatApiResponse> {
+    pub async fn create_role(&self, input: VrchatGroupRoleCreateInput) -> Result<VrchatResponse> {
         Ok(application::create_role(self.api_deps(), input).await?)
     }
 
-    pub async fn update_role(
-        &self,
-        input: VrchatGroupRoleUpdateInput,
-    ) -> Result<VrchatApiResponse> {
+    pub async fn update_role(&self, input: VrchatGroupRoleUpdateInput) -> Result<VrchatResponse> {
         Ok(application::update_role(self.api_deps(), input).await?)
     }
 
-    pub async fn delete_role(&self, input: VrchatGroupRoleInput) -> Result<VrchatApiResponse> {
+    pub async fn delete_role(&self, input: VrchatGroupRoleInput) -> Result<VrchatResponse> {
         Ok(application::delete_role(self.api_deps(), input).await?)
     }
 }

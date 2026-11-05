@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use vrcx_0_application_core::RuntimeOperationStatus;
 use vrcx_0_core::derived_keys;
@@ -154,7 +153,7 @@ impl RealtimeHostRuntime {
     ) -> Result<FriendBaselineSyncOutcome> {
         let generation = watermark.generation;
         let owner = self.lock_friend_owner();
-        let feed_persistence_disabled = self.feed_persistence_disabled.load(Ordering::Relaxed);
+        let feed_persistence_disabled = self.feed.persistence_disabled();
         let friend_count = u32::try_from(friends_by_id.len()).unwrap_or(u32::MAX);
         let FriendBaselineApplyPlan { active, effects } = {
             let mut state = self
@@ -228,7 +227,8 @@ impl RealtimeHostRuntime {
                     changed: friend_log_changed,
                     feed_entries,
                 } = reconcile_friend_roster_records(
-                    self.deps.store.as_ref(),
+                    &self.deps.stores,
+                    self.deps.config.as_ref(),
                     &pending_snapshot.current_user_id,
                     &pending_snapshot.friends_by_id,
                     roster_order.as_deref(),
@@ -336,7 +336,8 @@ impl RealtimeHostRuntime {
             .map(|snapshot| {
                 let roster_order = roster_order_from_friend_records(&snapshot.friends_by_id);
                 reconcile_friend_roster_records(
-                    self.deps.store.as_ref(),
+                    &self.deps.stores,
+                    self.deps.config.as_ref(),
                     &snapshot.current_user_id,
                     &snapshot.friends_by_id,
                     roster_order.as_deref(),

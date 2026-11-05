@@ -11,11 +11,12 @@ use vrcx_0_application_game::{
     GameLogImportConsent, GameLogImportFile, GameLogSessionDto, GameLogSessionsQueryInput,
     InstanceHistoryEntryOutput, InstanceHistoryQueryInput,
 };
-use vrcx_0_host_desktop::host_capabilities::{require_host_capability_supported, HostCapability};
-use vrcx_0_runtime_host_desktop::local_data::{
+use vrcx_0_contracts::game_log::{
     GameLogEntryDeleteKind, GameLogPreviousInstanceGroupOutput, GameLogPreviousInstanceWorldOutput,
-    GameLogQuery, GameLogQueryOutput, GameLogWriteKind,
+    GameLogWriteKind,
 };
+use vrcx_0_contracts::game_log_query::{GameLogQuery, GameLogQueryOutput};
+use vrcx_0_host_desktop::host_capabilities::{require_host_capability_supported, HostCapability};
 
 #[tauri::command(async)]
 #[specta::specta]

@@ -31,6 +31,7 @@ vrcx-0-media = { path = "../media" }
 vrcx-0-persistence = { path = "../persistence" }
 vrcx-0-platform = { path = "../platform" }
 vrcx-0-vrchat-client = { path = "../vrchat-client" }
+vrcx-0-vrchat-protocol = { path = "../vrchat-protocol" }
 
 [dev-dependencies]
 base64 = { workspace = true }

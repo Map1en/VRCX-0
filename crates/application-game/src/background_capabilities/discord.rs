@@ -5,7 +5,8 @@ use vrcx_0_core::json::RawJson;
 use vrcx_0_core::location::{parse_location, ParsedLocation};
 use vrcx_0_core::vrchat_endpoints::VRCHAT_SITE_ORIGIN;
 
-use crate::{BackgroundRemoteApi, GameStateStore, Result};
+use crate::{BackgroundRemoteApi, Result};
+use vrcx_0_application_core::ConfigStore;
 
 use super::presence_facts::BackgroundPresenceFacts;
 use super::shared::{parse_response_json, string_field};
@@ -180,7 +181,7 @@ impl DiscordLocationDetails {
 }
 
 pub async fn build_background_discord_presence_command(
-    config: &dyn GameStateStore,
+    config: &dyn ConfigStore,
     remote: &dyn BackgroundRemoteApi,
     facts: &BackgroundPresenceFacts,
     labels: &DiscordPresenceLabels,
@@ -270,7 +271,7 @@ fn set_assets_or_noop(
     BackgroundDiscordPresenceCommand::SetAssets { payload }
 }
 
-fn load_discord_config(config: &dyn GameStateStore) -> Result<DiscordConfig> {
+fn load_discord_config(config: &dyn ConfigStore) -> Result<DiscordConfig> {
     Ok(DiscordConfig {
         discord_active: config.get_bool("discordActive", false)?,
         discord_instance: config.get_bool("discordInstance", true)?,

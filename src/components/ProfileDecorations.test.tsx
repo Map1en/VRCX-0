@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
     act,
     cleanup,
@@ -7,11 +8,36 @@ import {
     render,
     screen
 } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import type { ReactNode } from 'react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { useDecorationHover } from './ProfileDecorations';
+import { usePreferencesStore } from '@/state/preferencesStore';
 
-afterEach(cleanup);
+import { ProfileAvatarFrame, useDecorationHover } from './ProfileDecorations';
+
+const decorationItem = {
+    metadata: {
+        assets: [
+            { type: 'base', url: 'https://example.test/frame.png' },
+            { type: 'mainAnimation', url: 'https://example.test/frame.webp' }
+        ]
+    }
+};
+
+vi.mock('@/repositories/vrchatMediaRepository', () => ({
+    default: {
+        getInventoryTemplate: async () => ({ json: decorationItem })
+    }
+}));
+
+afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    usePreferencesStore.getState().patchPreferences({
+        reducedMotionAndBlur: false
+    });
+});
 
 function HoverProbe() {
     const { active, hoverProps } = useDecorationHover();
@@ -47,5 +73,84 @@ describe('useDecorationHover', () => {
         movePointerTo(document.body);
 
         expect(row.dataset.active).toBe('false');
+    });
+});
+
+describe('ProfileAvatarFrame', () => {
+    function renderFrame(active: boolean) {
+        const queryClient = new QueryClient();
+        queryClient.setQueryData(['profileDecoration', 'tmpl'], decorationItem);
+        const wrap = (node: ReactNode) => (
+            <QueryClientProvider client={queryClient}>
+                {node}
+            </QueryClientProvider>
+        );
+        const view = render(
+            wrap(<ProfileAvatarFrame templateId="tmpl" active={active} />)
+        );
+        return {
+            ...view,
+            setActive: (next: boolean) =>
+                view.rerender(
+                    wrap(<ProfileAvatarFrame templateId="tmpl" active={next} />)
+                ),
+            animationState: () =>
+                view.container
+                    .querySelector('[data-decoration-animation]')
+                    ?.getAttribute('data-decoration-animation') ?? null
+        };
+    }
+
+    it('fades the animation out before removing it when the frame deactivates', () => {
+        vi.useFakeTimers();
+        const frame = renderFrame(true);
+        expect(frame.animationState()).toBe('on');
+
+        frame.setActive(false);
+        expect(frame.animationState()).toBe('fading');
+
+        act(() => {
+            vi.advanceTimersByTime(499);
+        });
+        expect(frame.animationState()).toBe('fading');
+
+        act(() => {
+            vi.advanceTimersByTime(1);
+        });
+        expect(frame.animationState()).toBeNull();
+    });
+
+    it('resumes the animation when reactivated while fading out', () => {
+        vi.useFakeTimers();
+        const frame = renderFrame(true);
+        frame.setActive(false);
+        frame.setActive(true);
+
+        act(() => {
+            vi.advanceTimersByTime(500);
+        });
+        expect(frame.animationState()).toBe('on');
+    });
+
+    it('does not show the animation while inactive', () => {
+        expect(renderFrame(false).animationState()).toBeNull();
+    });
+
+    it('skips the animation and its fade-out when the app reduces effects', () => {
+        usePreferencesStore.getState().patchPreferences({
+            reducedMotionAndBlur: true
+        });
+        const frame = renderFrame(true);
+        expect(frame.animationState()).toBeNull();
+
+        frame.setActive(false);
+        expect(frame.animationState()).toBeNull();
+    });
+
+    it('skips the animation when the system prefers reduced motion', () => {
+        vi.stubGlobal('matchMedia', (query: string) => ({
+            matches: query === '(prefers-reduced-motion: reduce)'
+        }));
+        expect(renderFrame(true).animationState()).toBeNull();
     });
 });

@@ -7,8 +7,11 @@ use vrcx_0_application_realtime::{normalize_v1_notification, normalize_v2_notifi
 use vrcx_0_core::json::RawJson;
 use vrcx_0_core::NotificationKind;
 
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
+use crate::scope_gate::ScopeGate;
 use vrcx_0_application_core::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot};
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
+
+const GATE: ScopeGate = ScopeGate::new("Notification sync");
 
 const NOTIFICATION_SYNC_PAGE_SIZE: i32 = 100;
 const NOTIFICATION_SYNC_MAX_PAGES: usize = 50;
@@ -30,7 +33,7 @@ pub struct NotificationSyncWrite {
     pub notification_v2_upserts: Vec<RawJson>,
 }
 
-pub type NotificationSyncFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
+pub type NotificationSyncFuture<'a> = BoxFuture<'a, Result<VrchatResponse>>;
 
 pub trait NotificationSyncPort: Send + Sync {
     fn fetch_page<'a>(
@@ -80,12 +83,12 @@ struct NotificationPages {
 pub async fn sync_notifications(
     deps: &NotificationSyncDeps<'_>,
 ) -> Result<NotificationSyncOutcome> {
-    ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
+    GATE.ensure_matches(deps.auth_scope, &deps.expected_scope)?;
     let v1_pages = fetch_notification_pages(deps, NotificationSyncSource::V1).await?;
     let v2_pages = fetch_notification_pages(deps, NotificationSyncSource::V2).await?;
     let hidden_pages =
         fetch_notification_pages(deps, NotificationSyncSource::HiddenFriendRequests).await?;
-    ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
+    GATE.ensure_matches(deps.auth_scope, &deps.expected_scope)?;
 
     let now = Utc::now().to_rfc3339();
     let v1 = v1_pages
@@ -152,7 +155,7 @@ async fn fetch_notification_pages(
 ) -> Result<NotificationPages> {
     let mut rows = Vec::new();
     for page in 0..NOTIFICATION_SYNC_MAX_PAGES {
-        ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
+        GATE.ensure_matches(deps.auth_scope, &deps.expected_scope)?;
         let response = deps
             .port
             .fetch_page(
@@ -199,11 +202,4 @@ fn notification_type(notification: &Value) -> &str {
         .get("type")
         .and_then(Value::as_str)
         .unwrap_or_default()
-}
-
-fn ensure_scope_matches(
-    current: &RuntimeAuthScopeSnapshot,
-    expected: &RuntimeAuthScopeSnapshot,
-) -> Result<()> {
-    crate::scope_gate::ensure_snapshot_scope_matches(current, expected, "Notification sync")
 }

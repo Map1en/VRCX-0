@@ -5,11 +5,12 @@ use std::time::Duration;
 use moka::policy::EvictionPolicy;
 use moka::sync::Cache;
 use vrcx_0_application_core::WebClient;
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_contracts::FileMetadataOutput;
 use vrcx_0_persistence::files::{file_cache_get, file_cache_upsert};
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::avatars::avatar_file_get_input;
-use vrcx_0_vrchat_client::http_api::{normalize_vrchat_api_endpoint, ApiScope};
+use vrcx_0_vrchat_protocol::avatars::avatar_file_get_input;
+use vrcx_0_vrchat_protocol::http_api::normalize_vrchat_api_endpoint;
 
 const FILE_RESOLVE_FETCH_TIMEOUT: Duration = Duration::from_secs(5);
 const FILE_RESOLVE_FAILURE_TTL: Duration = Duration::from_secs(60 * 60);
@@ -20,10 +21,11 @@ pub struct FileCache {
     db: Arc<DatabaseService>,
     inflight: Mutex<HashMap<String, Weak<tokio::sync::Mutex<()>>>>,
     failures: Cache<String, ()>,
+    web: Arc<WebClient>,
 }
 
 impl FileCache {
-    pub fn new(db: Arc<DatabaseService>, capacity: u64) -> Self {
+    pub fn new(db: Arc<DatabaseService>, web: Arc<WebClient>, capacity: u64) -> Self {
         Self {
             working: Cache::builder()
                 .max_capacity(capacity.max(1))
@@ -36,6 +38,7 @@ impl FileCache {
                 .time_to_live(FILE_RESOLVE_FAILURE_TTL)
                 .eviction_policy(EvictionPolicy::lru())
                 .build(),
+            web,
         }
     }
 
@@ -52,12 +55,7 @@ impl FileCache {
         Some(file)
     }
 
-    pub async fn resolve(
-        &self,
-        web: &WebClient,
-        endpoint: &str,
-        file_id: &str,
-    ) -> Option<FileMetadataOutput> {
+    pub async fn resolve(&self, endpoint: &str, file_id: &str) -> Option<FileMetadataOutput> {
         let file_id = file_id.trim();
         if let Some(file) = self.get(file_id) {
             return Some(file);
@@ -77,7 +75,7 @@ impl FileCache {
         let (_, request) = avatar_file_get_input(endpoint, file_id.to_string()).ok()?;
         let fetched = tokio::time::timeout(
             FILE_RESOLVE_FETCH_TIMEOUT,
-            web.execute_api(request, ApiScope::Vrchat),
+            self.web.execute_api(request, VrchatScope::Vrchat),
         )
         .await;
         let file = match fetched {
@@ -117,13 +115,8 @@ impl FileCache {
 
 #[async_trait::async_trait]
 impl vrcx_0_application_core::FileCachePort for FileCache {
-    async fn resolve(
-        &self,
-        web: &WebClient,
-        endpoint: &str,
-        file_id: &str,
-    ) -> Option<FileMetadataOutput> {
-        FileCache::resolve(self, web, endpoint, file_id).await
+    async fn resolve(&self, endpoint: &str, file_id: &str) -> Option<FileMetadataOutput> {
+        FileCache::resolve(self, endpoint, file_id).await
     }
 }
 
@@ -162,7 +155,19 @@ mod tests {
     fn get_reads_through_the_persisted_cache_and_rejects_non_file_ids() {
         let dir = TestDir::new("read-through");
         let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap());
-        let cache = FileCache::new(Arc::clone(&db), 16);
+        let storage =
+            vrcx_0_persistence::storage::StorageService::new(&dir.path.join("storage.json"))
+                .unwrap();
+        let web = Arc::new(WebClient::new(
+            crate::LocalWebClientAdapter::new(
+                &storage,
+                Arc::clone(&db),
+                "wss://pipeline.vrchat.cloud".to_string(),
+                env!("CARGO_PKG_VERSION"),
+            )
+            .unwrap(),
+        ));
+        let cache = FileCache::new(Arc::clone(&db), Arc::clone(&web), 16);
         let file = FileMetadataOutput::new(
             "file_1234abcd-0000-1111-2222-abcdefabcdef".into(),
             "Avatar - Rurune - Image - 2022․3․22f1_1_standalonewindows_Release".into(),
@@ -174,7 +179,7 @@ mod tests {
         assert_eq!(cache.get(&file.id), Some(file.clone()));
         assert!(cache.get("avtr_x").is_none());
 
-        let other = FileCache::new(db, 16);
+        let other = FileCache::new(db, web, 16);
         assert_eq!(other.get(&file.id), Some(file));
     }
 }

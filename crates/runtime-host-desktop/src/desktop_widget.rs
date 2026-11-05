@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use serde::Serialize;
-use vrcx_0_application_core::RuntimeEventPayload;
+use vrcx_0_contracts::RuntimeEventPayload;
 
 use crate::DesktopRuntimeServices;
 

@@ -9,11 +9,11 @@ use std::{
 use serde::{Deserialize, Serialize};
 
 use crate::remote::VrchatRequestPort;
-use crate::scope_gate::{execute_vrchat_mutation, RemoteMutationOutcome};
-use vrcx_0_application_core::{
-    vrchat_api::VrchatApiRequest, AuthenticatedMutationContext, Error, Result, RuntimeEventBus,
-};
+use crate::scope_gate::{execute_vrchat_mutation, RemoteMutationOutcome, ScopeGate};
+use vrcx_0_application_core::{AuthenticatedMutationContext, Error, Result, RuntimeEventBus};
 use vrcx_0_core::OwnerId;
+
+const GATE: ScopeGate = ScopeGate::new("Group moderation batch");
 
 pub const GROUP_MODERATION_BATCH_MAX_TARGETS: usize = 250;
 pub const GROUP_MODERATION_BATCH_MAX_OPERATIONS: usize = 1_000;
@@ -178,35 +178,8 @@ trait GroupModerationBatchActions: Send + Sync {
     }
 }
 
-pub trait GroupModerationRemoteRequests: Send + Sync {
-    fn kick(&self, endpoint: String, group_id: String, user_id: String)
-        -> Result<VrchatApiRequest>;
-    fn ban(&self, endpoint: String, group_id: String, user_id: String) -> Result<VrchatApiRequest>;
-    fn unban(&self, group_id: String, user_id: String) -> Result<VrchatApiRequest>;
-    fn save_note(
-        &self,
-        endpoint: String,
-        group_id: String,
-        user_id: String,
-        note: String,
-    ) -> Result<VrchatApiRequest>;
-    fn add_role(
-        &self,
-        group_id: String,
-        user_id: String,
-        role_id: String,
-    ) -> Result<VrchatApiRequest>;
-    fn remove_role(
-        &self,
-        group_id: String,
-        user_id: String,
-        role_id: String,
-    ) -> Result<VrchatApiRequest>;
-}
-
 pub struct VrchatGroupModerationBatchActions<'a> {
     remote: &'a dyn VrchatRequestPort,
-    remote_requests: &'a dyn GroupModerationRemoteRequests,
     mutation: AuthenticatedMutationContext<'a>,
     pub event_bus: RuntimeEventBus,
 }
@@ -214,13 +187,11 @@ pub struct VrchatGroupModerationBatchActions<'a> {
 impl<'a> VrchatGroupModerationBatchActions<'a> {
     pub fn new(
         remote: &'a dyn VrchatRequestPort,
-        remote_requests: &'a dyn GroupModerationRemoteRequests,
         mutation: AuthenticatedMutationContext<'a>,
         event_bus: RuntimeEventBus,
     ) -> Self {
         Self {
             remote,
-            remote_requests,
             mutation,
             event_bus,
         }
@@ -235,25 +206,29 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
         Box::pin(async move {
             let (request, action) = match operation {
                 GroupModerationOperation::Kick { group_id, user_id } => {
-                    let request = self.remote_requests.kick(
+                    let request = vrcx_0_vrchat_protocol::groups::member_kick_input(
                         self.mutation.scope().endpoint.clone(),
                         group_id.to_string(),
                         user_id.to_string(),
-                    )?;
+                    )?
+                    .2;
                     (request, "group member kick")
                 }
                 GroupModerationOperation::Ban { group_id, user_id } => {
-                    let request = self.remote_requests.ban(
+                    let request = vrcx_0_vrchat_protocol::groups::member_ban_input(
                         self.mutation.scope().endpoint.clone(),
                         group_id.to_string(),
                         user_id.to_string(),
-                    )?;
+                    )?
+                    .2;
                     (request, "group member ban")
                 }
                 GroupModerationOperation::Unban { group_id, user_id } => {
-                    let request = self
-                        .remote_requests
-                        .unban(group_id.to_string(), user_id.to_string())?;
+                    let request = vrcx_0_vrchat_protocol::groups::member_unban_input(
+                        group_id.to_string(),
+                        user_id.to_string(),
+                    )?
+                    .2;
                     (request, "group member unban")
                 }
                 GroupModerationOperation::SaveNote {
@@ -261,12 +236,16 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
                     user_id,
                     note,
                 } => {
-                    let request = self.remote_requests.save_note(
+                    let request = vrcx_0_vrchat_protocol::groups::member_props_set_input(
                         self.mutation.scope().endpoint.clone(),
                         group_id.to_string(),
                         user_id.to_string(),
-                        note.to_string(),
-                    )?;
+                        vrcx_0_vrchat_protocol::groups::GroupMemberPatch {
+                            manager_notes: Some(note.to_string()),
+                            ..vrcx_0_vrchat_protocol::groups::GroupMemberPatch::default()
+                        },
+                    )?
+                    .2;
                     (request, "group member note update")
                 }
                 GroupModerationOperation::AddRole {
@@ -274,11 +253,12 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
                     user_id,
                     role_id,
                 } => {
-                    let request = self.remote_requests.add_role(
+                    let request = vrcx_0_vrchat_protocol::groups::member_role_add_input(
                         group_id.to_string(),
                         user_id.to_string(),
                         role_id.to_string(),
-                    )?;
+                    )?
+                    .3;
                     (request, "group member role add")
                 }
                 GroupModerationOperation::RemoveRole {
@@ -286,11 +266,12 @@ impl GroupModerationBatchActions for VrchatGroupModerationBatchActions<'_> {
                     user_id,
                     role_id,
                 } => {
-                    let request = self.remote_requests.remove_role(
+                    let request = vrcx_0_vrchat_protocol::groups::member_role_remove_input(
                         group_id.to_string(),
                         user_id.to_string(),
                         role_id.to_string(),
-                    )?;
+                    )?
+                    .3;
                     (request, "group member role remove")
                 }
             };
@@ -358,10 +339,7 @@ async fn run_group_moderation_batch_with_actions(
 
     for (index, target) in prepared.targets.iter().enumerate() {
         if !actions.scope_matches() {
-            stop_after = Some((
-                index,
-                "Group moderation batch authentication scope changed.".to_string(),
-            ));
+            stop_after = Some((index, GATE.scope_changed_message()));
             break;
         }
         if should_skip_self(&prepared.action) && target.user_id == actions.current_user_id() {
@@ -387,10 +365,7 @@ async fn run_group_moderation_batch_with_actions(
             let outcome =
                 run_role_target(actions, &prepared.group_id, &prepared.action, target).await;
             if outcome.scope_changed {
-                stop_after = Some((
-                    index + 1,
-                    "Group moderation batch authentication scope changed.".to_string(),
-                ));
+                stop_after = Some((index + 1, GATE.scope_changed_message()));
             }
             items[index] = outcome.item;
         } else {
@@ -406,10 +381,7 @@ async fn run_group_moderation_batch_with_actions(
                 Ok(outcome) => {
                     items[index] = applied(&target.user_id);
                     if outcome == RemoteMutationOutcome::AppliedScopeChanged {
-                        stop_after = Some((
-                            index + 1,
-                            "Group moderation batch authentication scope changed.".to_string(),
-                        ));
+                        stop_after = Some((index + 1, GATE.scope_changed_message()));
                     }
                 }
                 Err(error) => {
@@ -557,7 +529,7 @@ async fn run_role_target(
 
     for role_id in &target.role_ids {
         if !actions.scope_matches() {
-            messages.push("Group moderation batch authentication scope changed.".to_string());
+            messages.push(GATE.scope_changed_message());
             scope_changed = true;
             break;
         }
@@ -588,8 +560,7 @@ async fn run_role_target(
             Ok(outcome) => {
                 applied_role_ids.push(role_id.clone());
                 if outcome == RemoteMutationOutcome::AppliedScopeChanged {
-                    messages
-                        .push("Group moderation batch authentication scope changed.".to_string());
+                    messages.push(GATE.scope_changed_message());
                     scope_changed = true;
                     break;
                 }

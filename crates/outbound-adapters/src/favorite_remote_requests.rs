@@ -4,17 +4,16 @@ use vrcx_0_application::favorites::{
     FavoriteRemote, FavoriteRemoteAddInput, FavoriteRemoteCommand, FavoriteRemoteFuture,
     FavoriteRemoteGroupClearInput, FavoriteRemoteGroupSaveInput,
 };
-use vrcx_0_application_core::vrchat_api::{
-    execute_api_command, VrchatApiRequest, VrchatApiResponse, VrchatScope,
-};
+use vrcx_0_application_core::vrchat_api::execute_api_command;
 use vrcx_0_application_core::{RuntimeDiagnostics, RuntimeSyncEngine, WebClient, WorldCache};
-use vrcx_0_vrchat_client::avatars::avatar_get_input;
-use vrcx_0_vrchat_client::favorites::{
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatResponse, VrchatScope};
+use vrcx_0_vrchat_protocol::avatars::avatar_get_input;
+use vrcx_0_vrchat_protocol::favorites::{
     favorite_add_input, favorite_avatars_get_input, favorite_delete_input,
     favorite_group_clear_input, favorite_group_save_input, favorite_limits_get_input,
     favorite_worlds_get_input, favorites_get_input,
 };
-use vrcx_0_vrchat_client::users::user_get_input;
+use vrcx_0_vrchat_protocol::users::user_get_input;
 
 pub struct VrchatFavoriteRemote {
     web: Arc<WebClient>,
@@ -40,9 +39,9 @@ impl VrchatFavoriteRemote {
 
     async fn execute(
         &self,
-        request: VrchatApiRequest,
+        request: VrchatRequest,
         command: Option<FavoriteRemoteCommand>,
-    ) -> crate::Result<VrchatApiResponse> {
+    ) -> crate::Result<VrchatResponse> {
         match command {
             Some(command) => {
                 execute_api_command(
@@ -67,7 +66,7 @@ impl FavoriteRemote for VrchatFavoriteRemote {
         n: i32,
         offset: i32,
         command: Option<FavoriteRemoteCommand>,
-    ) -> FavoriteRemoteFuture<'a, VrchatApiResponse> {
+    ) -> FavoriteRemoteFuture<'a, VrchatResponse> {
         Box::pin(async move {
             self.execute(favorites_get_input(endpoint, n, offset), command)
                 .await
@@ -78,7 +77,7 @@ impl FavoriteRemote for VrchatFavoriteRemote {
         &'a self,
         endpoint: String,
         command: Option<FavoriteRemoteCommand>,
-    ) -> FavoriteRemoteFuture<'a, VrchatApiResponse> {
+    ) -> FavoriteRemoteFuture<'a, VrchatResponse> {
         Box::pin(async move {
             self.execute(favorite_limits_get_input(endpoint), command)
                 .await
@@ -93,7 +92,7 @@ impl FavoriteRemote for VrchatFavoriteRemote {
         owner_id: String,
         user_id: String,
         tag: String,
-    ) -> FavoriteRemoteFuture<'a, VrchatApiResponse> {
+    ) -> FavoriteRemoteFuture<'a, VrchatResponse> {
         Box::pin(async move {
             self.execute(
                 favorite_worlds_get_input(endpoint, n, offset, owner_id, user_id, tag),
@@ -109,7 +108,7 @@ impl FavoriteRemote for VrchatFavoriteRemote {
         n: i32,
         offset: i32,
         tag: String,
-    ) -> FavoriteRemoteFuture<'a, VrchatApiResponse> {
+    ) -> FavoriteRemoteFuture<'a, VrchatResponse> {
         Box::pin(async move {
             self.execute(favorite_avatars_get_input(endpoint, n, offset, tag), None)
                 .await
@@ -120,10 +119,10 @@ impl FavoriteRemote for VrchatFavoriteRemote {
         &'a self,
         endpoint: String,
         world_id: String,
-    ) -> FavoriteRemoteFuture<'a, VrchatApiResponse> {
+    ) -> FavoriteRemoteFuture<'a, VrchatResponse> {
         Box::pin(async move {
             self.world_cache
-                .get(self.web.as_ref(), &endpoint, &world_id, true, false)
+                .get(&endpoint, &world_id, true, false)
                 .await
         })
     }
@@ -132,7 +131,7 @@ impl FavoriteRemote for VrchatFavoriteRemote {
         &'a self,
         endpoint: String,
         avatar_id: String,
-    ) -> FavoriteRemoteFuture<'a, VrchatApiResponse> {
+    ) -> FavoriteRemoteFuture<'a, VrchatResponse> {
         Box::pin(async move {
             let (_, request) = avatar_get_input(endpoint, avatar_id)?;
             self.execute(request, None).await
@@ -143,7 +142,7 @@ impl FavoriteRemote for VrchatFavoriteRemote {
         &'a self,
         endpoint: String,
         user_id: String,
-    ) -> FavoriteRemoteFuture<'a, VrchatApiResponse> {
+    ) -> FavoriteRemoteFuture<'a, VrchatResponse> {
         Box::pin(async move {
             let (_, request) = user_get_input(endpoint, user_id)?;
             self.execute(request, None).await
@@ -155,7 +154,7 @@ impl FavoriteRemote for VrchatFavoriteRemote {
         endpoint: String,
         input: FavoriteRemoteAddInput,
         command: Option<FavoriteRemoteCommand>,
-    ) -> FavoriteRemoteFuture<'a, (String, String, VrchatApiResponse)> {
+    ) -> FavoriteRemoteFuture<'a, (String, String, VrchatResponse)> {
         Box::pin(async move {
             let (kind, entity_id, request) =
                 favorite_add_input(endpoint, input.kind, input.entity_id, input.tags)?;
@@ -169,7 +168,7 @@ impl FavoriteRemote for VrchatFavoriteRemote {
         endpoint: String,
         object_id: String,
         command: Option<FavoriteRemoteCommand>,
-    ) -> FavoriteRemoteFuture<'a, (String, VrchatApiResponse)> {
+    ) -> FavoriteRemoteFuture<'a, (String, VrchatResponse)> {
         Box::pin(async move {
             let (object_id, request) = favorite_delete_input(endpoint, object_id)?;
             let response = self.execute(request, command).await?;
@@ -183,7 +182,7 @@ impl FavoriteRemote for VrchatFavoriteRemote {
         current_user_id: String,
         input: FavoriteRemoteGroupSaveInput,
         command: Option<FavoriteRemoteCommand>,
-    ) -> FavoriteRemoteFuture<'a, (String, VrchatApiResponse)> {
+    ) -> FavoriteRemoteFuture<'a, (String, VrchatResponse)> {
         Box::pin(async move {
             let (group, request) = favorite_group_save_input(
                 endpoint,
@@ -204,7 +203,7 @@ impl FavoriteRemote for VrchatFavoriteRemote {
         current_user_id: String,
         input: FavoriteRemoteGroupClearInput,
         command: Option<FavoriteRemoteCommand>,
-    ) -> FavoriteRemoteFuture<'a, (String, VrchatApiResponse)> {
+    ) -> FavoriteRemoteFuture<'a, (String, VrchatResponse)> {
         Box::pin(async move {
             let (group, request) =
                 favorite_group_clear_input(endpoint, current_user_id, input.kind, input.group)?;
@@ -217,8 +216,8 @@ impl FavoriteRemote for VrchatFavoriteRemote {
 #[cfg(test)]
 mod tests {
     use serde_json::json;
-    use vrcx_0_application_core::VrchatFavoriteType;
-    use vrcx_0_vrchat_client::favorites::favorite_add_input;
+    use vrcx_0_contracts::VrchatFavoriteType;
+    use vrcx_0_vrchat_protocol::favorites::favorite_add_input;
 
     #[test]
     fn vrc_plus_world_add_preserves_request_shape() {

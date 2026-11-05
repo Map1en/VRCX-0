@@ -1,7 +1,7 @@
 use super::{
     auth_token_from_response, build_browser_websocket_request, build_transport_url,
     connect_direct_tcp, connect_http_proxy, connect_socks5_proxy, encode_uri_component,
-    extract_auth_token, normalize_websocket_domain, websocket_connect_error, Error,
+    extract_auth_token, websocket_connect_error, Error,
 };
 use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
@@ -9,6 +9,7 @@ use tokio::net::TcpListener;
 use tokio_tungstenite::tungstenite::handshake::client::Response;
 use tokio_tungstenite::tungstenite::Error as TungstenError;
 use url::Url;
+use vrcx_0_core::vrchat_endpoints::normalize_vrchat_websocket_endpoint;
 
 #[test]
 fn builds_default_transport_url() {
@@ -36,7 +37,7 @@ fn encodes_token_like_javascript_encode_uri_component() {
 #[test]
 fn trims_custom_websocket_domain() {
     assert_eq!(
-        normalize_websocket_domain("wss://example.test///"),
+        normalize_vrchat_websocket_endpoint("wss://example.test///"),
         "wss://example.test"
     );
 }

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use serde_json::Value;
+use vrcx_0_application_core::ConfigStore;
 use vrcx_0_assistant::{
     AssistantConfigPort, AssistantLlmClientFactoryPort, AssistantLlmClientInput,
     AssistantLlmClientPort, AssistantLlmError, AssistantLlmFuture, AssistantMessageInsert,
@@ -12,7 +13,7 @@ use vrcx_0_contracts::llm::{
     AssistantTurn, ChatMessage, LlmEndpointDetectModelsResult, LlmRequestOptions, ToolDefinition,
 };
 use vrcx_0_core::OwnerId;
-use vrcx_0_persistence::{assistant, config::ConfigRepository, DatabaseService};
+use vrcx_0_persistence::{assistant, DatabaseService};
 
 pub(crate) struct DesktopAssistantLlmClientFactory;
 
@@ -73,38 +74,46 @@ impl AssistantLlmClientPort for DesktopAssistantLlmClient {
 }
 
 pub(crate) struct DesktopAssistantConfigAdapter {
-    config: ConfigRepository,
+    config: Arc<dyn ConfigStore>,
 }
 
 impl DesktopAssistantConfigAdapter {
-    pub(crate) fn new(config: ConfigRepository) -> Self {
+    pub(crate) fn new(config: Arc<dyn ConfigStore>) -> Self {
         Self { config }
     }
 }
 
 impl AssistantConfigPort for DesktopAssistantConfigAdapter {
     fn get_bool(&self, key: &str, default: bool) -> AssistantPortResult<bool> {
-        self.config.get_bool(key, default).map_err(port_error)
+        self.config
+            .get_bool(key, default)
+            .map_err(config_port_error)
     }
 
     fn set_bool(&self, key: &str, value: bool) -> AssistantPortResult<()> {
-        self.config.set_bool(key, value).map_err(port_error)
+        self.config.set_bool(key, value).map_err(config_port_error)
     }
 
     fn get_string(&self, key: &str, default: &str) -> AssistantPortResult<String> {
-        self.config.get_string(key, default).map_err(port_error)
+        self.config
+            .get_string(key, default)
+            .map_err(config_port_error)
     }
 
     fn set_string(&self, key: &str, value: &str) -> AssistantPortResult<()> {
-        self.config.set_string(key, value).map_err(port_error)
+        self.config
+            .set_string(key, value)
+            .map_err(config_port_error)
     }
 
     fn get_json(&self, key: &str, default: Value) -> AssistantPortResult<Value> {
-        self.config.get_json(key, default).map_err(port_error)
+        self.config
+            .get_json(key, default)
+            .map_err(config_port_error)
     }
 
     fn set_json(&self, key: &str, value: &Value) -> AssistantPortResult<()> {
-        self.config.set_json(key, value).map_err(port_error)
+        self.config.set_json(key, value).map_err(config_port_error)
     }
 }
 
@@ -238,25 +247,45 @@ fn port_error(error: vrcx_0_persistence::Error) -> AssistantPortError {
         },
         vrcx_0_persistence::Error::Sqlite { message, category } => AssistantPortError::Database {
             message,
-            sqlite_category: category.map(|category| match category {
-                vrcx_0_persistence::SqliteErrorCategory::Malformed => {
-                    AssistantSqliteErrorCategory::Malformed
-                }
-                vrcx_0_persistence::SqliteErrorCategory::DiskFull => {
-                    AssistantSqliteErrorCategory::DiskFull
-                }
-                vrcx_0_persistence::SqliteErrorCategory::Locked => {
-                    AssistantSqliteErrorCategory::Locked
-                }
-                vrcx_0_persistence::SqliteErrorCategory::IoError => {
-                    AssistantSqliteErrorCategory::IoError
-                }
-            }),
+            sqlite_category: category.map(assistant_sqlite_category),
         },
         vrcx_0_persistence::Error::Io(error) => AssistantPortError::Io(error.to_string()),
         vrcx_0_persistence::Error::Json(error) => AssistantPortError::Json(error.to_string()),
         vrcx_0_persistence::Error::InvalidData(message) => AssistantPortError::InvalidData(message),
         vrcx_0_persistence::Error::Custom(message) => AssistantPortError::Custom(message),
+    }
+}
+
+fn config_port_error(error: vrcx_0_application_core::Error) -> AssistantPortError {
+    use vrcx_0_application_core::Error;
+
+    match error {
+        Error::Database(message) => AssistantPortError::Database {
+            message,
+            sqlite_category: None,
+        },
+        Error::Sqlite { message, category } => AssistantPortError::Database {
+            message,
+            sqlite_category: category.map(assistant_sqlite_category),
+        },
+        Error::Io(error) => AssistantPortError::Io(error.to_string()),
+        Error::Json(error) => AssistantPortError::Json(error.to_string()),
+        Error::PersistenceInvalidData(message) => AssistantPortError::InvalidData(message),
+        Error::Custom(message) => AssistantPortError::Custom(message),
+        other => AssistantPortError::Custom(other.to_string()),
+    }
+}
+
+fn assistant_sqlite_category(
+    category: vrcx_0_persistence::SqliteErrorCategory,
+) -> AssistantSqliteErrorCategory {
+    match category {
+        vrcx_0_persistence::SqliteErrorCategory::Malformed => {
+            AssistantSqliteErrorCategory::Malformed
+        }
+        vrcx_0_persistence::SqliteErrorCategory::DiskFull => AssistantSqliteErrorCategory::DiskFull,
+        vrcx_0_persistence::SqliteErrorCategory::Locked => AssistantSqliteErrorCategory::Locked,
+        vrcx_0_persistence::SqliteErrorCategory::IoError => AssistantSqliteErrorCategory::IoError,
     }
 }
 

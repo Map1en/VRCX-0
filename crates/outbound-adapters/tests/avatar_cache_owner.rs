@@ -4,7 +4,9 @@ use serde_json::{json, Value};
 use vrcx_0_application::favorites::{
     persist_favorite_cache_snapshot, FavoriteCacheKind, FavoriteCacheSnapshotInput,
 };
-use vrcx_0_application_core::{AvatarCache, MemoryWorldCachePort, WorldCache};
+use vrcx_0_application_core::{
+    AvatarCache, MemoryWorldCachePort, NoopWebClientPort, WebClient, WorldCache,
+};
 use vrcx_0_core::json::RawJson;
 use vrcx_0_outbound_adapters::LocalAvatarCacheAdapter;
 use vrcx_0_persistence::DatabaseService;
@@ -51,6 +53,7 @@ fn favorite_avatar_snapshots_refresh_the_avatar_cache_owner() {
     let db = Arc::new(DatabaseService::new(&dir.path.join("VRCX-0.sqlite3")).unwrap());
     let avatar_cache = AvatarCache::new(LocalAvatarCacheAdapter::new(
         Arc::clone(&db),
+        Arc::new(WebClient::new(NoopWebClientPort)),
         16,
         Duration::from_secs(600),
     ));

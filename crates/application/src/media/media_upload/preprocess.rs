@@ -1,17 +1,17 @@
-use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
 use vrcx_0_application_core::{Error, Result};
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_contracts::vrchat_api::VrchatUpload;
 
 use super::MediaUploadPreprocessor;
 
 pub fn prepare_media_upload_request(
     preprocessor: &dyn MediaUploadPreprocessor,
-    input: VrchatApiRequest,
-) -> Result<VrchatApiRequest> {
+    input: VrchatRequest,
+) -> Result<VrchatRequest> {
     preprocessor.prepare(input)
 }
 
-pub fn require_prepared_image_data(input: &VrchatApiRequest) -> Result<&str> {
+pub fn require_prepared_image_data(input: &VrchatRequest) -> Result<&str> {
     let image_data = match input.body.as_upload() {
         Some(
             VrchatUpload::Image { image_data, .. }

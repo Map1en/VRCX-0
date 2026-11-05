@@ -2,7 +2,7 @@ use vrcx_0_application::social::{
     ban_member, GroupApiDeps, GroupBanImportActions, GroupBanImportFuture, VrchatGroupUserInput,
 };
 use vrcx_0_application_core::Error;
-use vrcx_0_vrchat_client::http_api::ApiJsonResponse;
+use vrcx_0_contracts::vrchat_api::VrchatJsonResponse;
 
 pub struct LocalGroupBanImportActions {
     pub deps: GroupApiDeps,
@@ -19,7 +19,7 @@ impl GroupBanImportActions for LocalGroupBanImportActions {
                 },
             )
             .await?;
-            let response = ApiJsonResponse::parse(response.status, &response.data);
+            let response = VrchatJsonResponse::parse(response.status, &response.data);
             if response.is_failure() {
                 return Err(Error::Custom(
                     response.error_message_or("VRChat group request failed"),

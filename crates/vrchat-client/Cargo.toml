@@ -21,7 +21,6 @@ reqwest = { workspace = true, features = [
 ] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-specta.workspace = true
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["net", "io-util", "time"] }
 tokio-tungstenite = { version = "0.30", features = ["rustls-tls-native-roots"] }

@@ -1,7 +1,8 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
+use vrcx_0_application::remote::AvatarListByUserQuery;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use crate::error::AppError;
 use crate::state::AppState;
@@ -16,7 +17,7 @@ use super::types::{
 pub async fn app__vrchat_avatar_gallery_get(
     state: State<'_, AppState>,
     input: VrchatAvatarIdInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -30,18 +31,20 @@ pub async fn app__vrchat_avatar_gallery_get(
 pub async fn app__vrchat_avatar_list_by_user_get(
     state: State<'_, AppState>,
     input: VrchatAvatarListByUserInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
         .avatars_by_user(
             input.user_id,
             input.user,
-            input.n,
-            input.offset,
-            input.sort,
-            input.order,
-            input.release_status,
+            AvatarListByUserQuery {
+                n: input.n,
+                offset: input.offset,
+                sort: input.sort,
+                order: input.order,
+                release_status: input.release_status,
+            },
         )
         .await
         .map_err(AppError::from)
@@ -51,7 +54,7 @@ pub async fn app__vrchat_avatar_list_by_user_get(
 #[specta::specta]
 pub async fn app__vrchat_avatar_styles_get(
     state: State<'_, AppState>,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -64,7 +67,7 @@ pub async fn app__vrchat_avatar_styles_get(
 #[specta::specta]
 pub async fn app__vrchat_avatar_moderations_get(
     state: State<'_, AppState>,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     Ok(state.runtime_host().avatars().moderations().await?)
 }
 
@@ -99,7 +102,7 @@ pub async fn app__vrchat_avatar_select_fallback(
 pub async fn app__vrchat_avatar_save(
     state: State<'_, AppState>,
     input: VrchatAvatarSaveInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     Ok(state
         .runtime_host()
         .avatars()
@@ -112,7 +115,7 @@ pub async fn app__vrchat_avatar_save(
 pub async fn app__vrchat_avatar_delete(
     state: State<'_, AppState>,
     input: VrchatAvatarIdInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     Ok(state
         .runtime_host()
         .avatars()
@@ -125,7 +128,7 @@ pub async fn app__vrchat_avatar_delete(
 pub async fn app__vrchat_avatar_impostor_create(
     state: State<'_, AppState>,
     input: VrchatAvatarIdInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     Ok(state
         .runtime_host()
         .avatars()
@@ -138,7 +141,7 @@ pub async fn app__vrchat_avatar_impostor_create(
 pub async fn app__vrchat_avatar_impostor_delete(
     state: State<'_, AppState>,
     input: VrchatAvatarIdInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     Ok(state
         .runtime_host()
         .avatars()
@@ -151,7 +154,7 @@ pub async fn app__vrchat_avatar_impostor_delete(
 pub async fn app__vrchat_avatar_moderation_send(
     state: State<'_, AppState>,
     input: VrchatAvatarModerationInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     Ok(state
         .runtime_host()
         .avatars()
@@ -164,7 +167,7 @@ pub async fn app__vrchat_avatar_moderation_send(
 pub async fn app__vrchat_avatar_moderation_delete(
     state: State<'_, AppState>,
     input: VrchatAvatarModerationInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     Ok(state
         .runtime_host()
         .avatars()

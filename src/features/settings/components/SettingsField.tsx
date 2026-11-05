@@ -199,7 +199,7 @@ export function Field({
             className={cn(
                 'border-stroke-subtle relative grid gap-3 border-b py-3 last:border-b-0 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-center',
                 modified &&
-                    'before:bg-primary before:absolute before:inset-y-2 before:-left-4 before:w-0.75 before:rounded-r-full',
+                    'before:bg-primary/45 before:absolute before:top-1/2 before:-left-4 before:h-4 before:w-0.5 before:-translate-y-1/2 before:rounded-r-full',
                 highlighted &&
                     'outline-ring rounded-sm outline-2 outline-offset-2',
                 className

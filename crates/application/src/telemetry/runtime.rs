@@ -9,8 +9,8 @@ use std::time::{Duration, Instant};
 use chrono::{Datelike, Local, Timelike};
 use uuid::Uuid;
 use vrcx_0_application_core::{
-    BackendRuntime, BackendRuntimeMode, HostSessionRuntime, RuntimeAuthScope, TaskStopToken,
-    TaskSupervisor,
+    BackendRuntime, BackendRuntimeMode, ConfigStore, HostSessionRuntime, RuntimeAuthScope,
+    TaskStopToken, TaskSupervisor,
 };
 use vrcx_0_contracts::telemetry::{
     AssistantHealthPayload, ClientErrorPayload, ConfigSnapshotPayload, PageHealthPayload,
@@ -78,10 +78,6 @@ pub struct TelemetryClientErrorInput {
 }
 
 pub trait TelemetryEnvironment: Send + Sync {
-    fn get_bool(&self, key: &str, default_value: bool) -> vrcx_0_application_core::Result<bool>;
-    fn get_string(&self, key: &str, default_value: &str)
-        -> vrcx_0_application_core::Result<String>;
-    fn set_string(&self, key: &str, value: &str) -> vrcx_0_application_core::Result<()>;
     fn drain_client_errors(
         &self,
         since: Option<&str>,
@@ -102,6 +98,7 @@ pub struct TelemetryRuntime {
 }
 
 pub struct TelemetryRuntimeDeps {
+    pub config: Arc<dyn ConfigStore>,
     pub environment: Arc<dyn TelemetryEnvironment>,
     pub transport: Arc<dyn TelemetryTransport>,
     pub tasks: TaskSupervisor,
@@ -112,6 +109,7 @@ pub struct TelemetryRuntimeDeps {
 }
 
 struct TelemetryRuntimeInner {
+    config: Arc<dyn ConfigStore>,
     environment: Arc<dyn TelemetryEnvironment>,
     transport: Arc<dyn TelemetryTransport>,
     tasks: TaskSupervisor,
@@ -156,6 +154,7 @@ impl TelemetryRuntime {
     pub fn new(deps: TelemetryRuntimeDeps) -> Self {
         Self {
             inner: Arc::new(TelemetryRuntimeInner {
+                config: deps.config,
                 environment: deps.environment,
                 transport: deps.transport,
                 tasks: deps.tasks,
@@ -306,7 +305,7 @@ impl TelemetryRuntime {
         }
         let raw = self
             .inner
-            .environment
+            .config
             .get_string(TELEMETRY_INSTALL_ID_CONFIG_KEY, "")
             .unwrap_or_default();
         let trimmed = raw.trim();
@@ -314,7 +313,7 @@ impl TelemetryRuntime {
             let install_id = Uuid::new_v4().to_string();
             if let Err(error) = self
                 .inner
-                .environment
+                .config
                 .set_string(TELEMETRY_INSTALL_ID_CONFIG_KEY, &install_id)
             {
                 tracing::debug!("failed to persist telemetry install id: {error}");
@@ -364,7 +363,7 @@ impl TelemetryRuntime {
             .await
         {
             self.mark_session_start_sent();
-            if let Err(error) = self.inner.environment.set_string(
+            if let Err(error) = self.inner.config.set_string(
                 TELEMETRY_BASIC_INFO_REPORTED_VERSION_CONFIG_KEY,
                 &self.inner.app_version,
             ) {
@@ -392,7 +391,7 @@ impl TelemetryRuntime {
         }
         let reported = self
             .inner
-            .environment
+            .config
             .get_string(TELEMETRY_CONFIG_REPORTED_VERSION_CONFIG_KEY, "")
             .unwrap_or_default();
         if reported.trim() == self.inner.app_version {
@@ -439,7 +438,7 @@ impl TelemetryRuntime {
         }
         let reported = self
             .inner
-            .environment
+            .config
             .get_string(TELEMETRY_ACCOUNT_CONFIG_REPORTED_VERSION_CONFIG_KEY, "")
             .unwrap_or_default();
         if reported.trim() == self.inner.app_version {
@@ -502,7 +501,7 @@ impl TelemetryRuntime {
             .post_debug("/api/v1/telemetry/config", &payload, label)
             .await;
         if sent {
-            if let Err(error) = self.inner.environment.set_string(
+            if let Err(error) = self.inner.config.set_string(
                 TELEMETRY_OFFLINE_RECORD_REPORTED_CONFIG_KEY,
                 payload.config.offline_record.as_str(),
             ) {
@@ -513,11 +512,7 @@ impl TelemetryRuntime {
     }
 
     fn persist_reported_version(&self, key: &str) {
-        if let Err(error) = self
-            .inner
-            .environment
-            .set_string(key, &self.inner.app_version)
-        {
+        if let Err(error) = self.inner.config.set_string(key, &self.inner.app_version) {
             tracing::debug!("failed to mark telemetry {key}: {error}");
         }
     }
@@ -828,7 +823,7 @@ impl TelemetryRuntime {
             }
         }
         self.inner
-            .environment
+            .config
             .get_string(TELEMETRY_CLIENT_ERROR_CURSOR_CONFIG_KEY, "")
             .ok()
             .map(|value| value.trim().to_string())
@@ -841,7 +836,7 @@ impl TelemetryRuntime {
         };
         if let Err(error) = self
             .inner
-            .environment
+            .config
             .set_string(TELEMETRY_CLIENT_ERROR_CURSOR_CONFIG_KEY, cursor)
         {
             tracing::debug!("failed to advance telemetry client error cursor: {error}");
@@ -891,21 +886,21 @@ impl TelemetryRuntime {
 
     fn config_bool(&self, key: &str, default_value: bool) -> bool {
         self.inner
-            .environment
+            .config
             .get_bool(key, default_value)
             .unwrap_or(default_value)
     }
 
     fn config_string(&self, key: &str, default_value: &str) -> String {
         self.inner
-            .environment
+            .config
             .get_string(key, default_value)
             .unwrap_or_else(|_| default_value.to_string())
     }
 
     fn usage_enabled(&self) -> bool {
         self.inner
-            .environment
+            .config
             .get_bool(ANONYMOUS_USAGE_TELEMETRY_CONFIG_KEY, true)
             .unwrap_or(false)
     }
@@ -915,7 +910,7 @@ impl TelemetryRuntime {
             return true;
         }
         self.inner
-            .environment
+            .config
             .get_string(TELEMETRY_BASIC_INFO_REPORTED_VERSION_CONFIG_KEY, "")
             .map(|version| version.trim() != self.inner.app_version)
             .unwrap_or(true)

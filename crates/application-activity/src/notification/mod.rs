@@ -34,9 +34,8 @@ pub use localization::{
     discord_embed_kind, discord_title_key, DiscordEmbedKind, OverlayLocale, OverlayLocalizer,
 };
 pub use ports::{
-    CachedNotificationUserImageResolver, NotificationConfig, NotificationRemote,
-    NotificationRemoteFuture, NotificationWebhookFuture, NotificationWebhookTransport,
-    NotificationWebhookTransportError,
+    CachedNotificationUserImageResolver, NotificationRemote, NotificationRemoteFuture,
+    NotificationWebhookFuture, NotificationWebhookTransport, NotificationWebhookTransportError,
 };
 pub use preferences::{config_bool, parse_webhook_fields, NotificationWebhookFormat};
 pub use rendered::RenderedNotification;

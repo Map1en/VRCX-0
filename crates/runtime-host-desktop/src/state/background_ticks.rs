@@ -7,12 +7,11 @@ pub(in crate::state) use vrcx_0_application::auth::{
 };
 use vrcx_0_application_core::{
     BackendRuntime, BackendRuntimePhase, BackendRuntimeStatusPublisher,
-    BackendRuntimeTelemetryKind, HostSessionRuntime, RemoteMutationGate, RuntimeAuthScope,
-    RuntimeBackgroundJobs, RuntimeEventBus,
+    BackendRuntimeTelemetryKind, ConfigStore, HostSessionRuntime, RemoteMutationGate,
+    RuntimeAuthScope, RuntimeBackgroundJobs, RuntimeEventBus,
 };
 use vrcx_0_application_game::{NowPlayingSnapshot, RuntimeSnapshot};
 use vrcx_0_application_realtime::RealtimeHostRuntime;
-use vrcx_0_persistence::config::ConfigRepository;
 
 mod discord;
 mod presence;
@@ -53,7 +52,7 @@ impl LocalGameFacts {
             is_game_running: host_session.is_game_running,
             is_steamvr_running: host_session.is_steamvr_running,
             is_game_no_vr: context
-                .config
+                .config_store
                 .get_bool(vrcx_0_application_game::IS_GAME_NO_VR_CONFIG_KEY, false)
                 .unwrap_or(false),
             last_game_started_at: host_session.last_game_started_at,
@@ -74,7 +73,7 @@ pub(in crate::state) struct BackgroundTickContext<'a> {
     pub(in crate::state) session_slot: &'a Arc<Mutex<AuthenticatedSessionProjection>>,
     pub(in crate::state) realtime_runtime: &'a Arc<RealtimeHostRuntime>,
     pub(in crate::state) host_session: &'a HostSessionRuntime,
-    pub(in crate::state) config: &'a ConfigRepository,
+    pub(in crate::state) config_store: &'a Arc<dyn ConfigStore>,
     pub(in crate::state) auth_scope: &'a RuntimeAuthScope,
     pub(in crate::state) remote_mutations: &'a Arc<RemoteMutationGate>,
     pub(in crate::state) event_bus: &'a RuntimeEventBus,

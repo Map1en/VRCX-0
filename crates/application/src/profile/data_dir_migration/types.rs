@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
-use vrcx_0_application_core::RuntimeEventPayload;
-use vrcx_0_contracts::DataDirMigrationTargetState;
+use vrcx_0_contracts::{DataDirMigrationTargetState, RuntimeEventPayload};
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]

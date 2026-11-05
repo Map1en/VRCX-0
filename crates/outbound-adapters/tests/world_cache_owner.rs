@@ -48,6 +48,7 @@ fn services(name: &str) -> Services {
     let world_cache = Arc::new(WorldCache::new(
         vrcx_0_outbound_adapters::LocalWorldCacheAdapter::new(
             Arc::clone(&db),
+            Arc::clone(&web),
             8,
             Duration::from_secs(60),
         ),
@@ -63,7 +64,7 @@ fn services(name: &str) -> Services {
 async fn assert_world_lookup_failure_was_recorded(services: &Services, world_id: &str) {
     let error = services
         .world_cache
-        .get(&services.web, ENDPOINT, world_id, false, false)
+        .get(ENDPOINT, world_id, false, false)
         .await
         .unwrap_err();
     assert!(
@@ -95,7 +96,6 @@ async fn shared_collection_world_fetches_go_through_the_world_cache_owner() {
     let services = services("shared-collection");
     let actions = vrcx_0_outbound_adapters::LocalSharedCollectionImportActionsFactory::new(
         Arc::clone(&services.db),
-        Arc::clone(&services.web),
         Arc::clone(&services.world_cache),
     )
     .create(ENDPOINT.into());

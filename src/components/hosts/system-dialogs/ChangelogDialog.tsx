@@ -1,8 +1,9 @@
-import { HeartIcon, StarIcon } from 'lucide-react';
+import { HeartIcon, LanguagesIcon, StarIcon } from 'lucide-react';
 import {
     type ComponentPropsWithoutRef,
     useEffect,
     useMemo,
+    useRef,
     useState
 } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -10,16 +11,20 @@ import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
 import remarkGfm from 'remark-gfm';
 
+import { formatDateFilter } from '@/lib/dateTime';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
+import { useActiveScrollSection } from '@/lib/useActiveScrollSection';
 import {
-    fetchChangelogRelease,
-    parseReleaseChangelog,
+    buildChangelogSections,
+    fetchChangelogReleases,
+    findChangelogRelease,
+    getCurrentVersion,
     resolvePreferredChangelogLanguage,
-    type LocalizedChangelogEntry
+    type ChangelogSection
 } from '@/services/changelogService';
 import { openExternalLink } from '@/services/entityMediaService';
-import type { NormalizedRelease } from '@/services/updateService';
 import { links } from '@/shared/constants/link';
+import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -29,9 +34,16 @@ import {
     DialogHeader,
     DialogTitle
 } from '@/ui/shadcn/dialog';
-import { ScrollArea } from '@/ui/shadcn/scroll-area';
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from '@/ui/shadcn/select';
 import { Spinner } from '@/ui/shadcn/spinner';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 function MarkdownLink({
     href,
@@ -131,6 +143,67 @@ export function ChangelogMarkdown({ children }: { children: string }) {
     );
 }
 
+const SECTION_ATTRIBUTE = 'data-changelog-section';
+
+function ChangelogReleaseSection({
+    section,
+    language,
+    isCurrent
+}: {
+    section: ChangelogSection;
+    language: string;
+    isCurrent: boolean;
+}) {
+    const { t } = useTranslation();
+    const preferredLanguage = resolvePreferredChangelogLanguage(
+        section.entries,
+        language
+    );
+    const entry =
+        section.entries.find((item) => item.lang === preferredLanguage) ??
+        section.entries[0];
+    const publishedAt = section.release.publishedAt
+        ? formatDateFilter(section.release.publishedAt, 'date')
+        : '';
+
+    return (
+        <section
+            data-changelog-section={section.id}
+            className="border-stroke-subtle flex flex-col gap-2 border-b pb-6 last:border-b-0"
+        >
+            <div className="flex flex-wrap items-baseline gap-2">
+                <h3 className="text-base font-semibold tabular-nums">
+                    {section.release.canonicalVersion}
+                </h3>
+                {publishedAt ? (
+                    <span className="text-muted-foreground text-xs tabular-nums">
+                        {publishedAt}
+                    </span>
+                ) : null}
+                {isCurrent ? (
+                    <Badge variant="secondary">
+                        {t('dialog.change_log.current_version')}
+                    </Badge>
+                ) : null}
+            </div>
+            {section.note ? (
+                <div className="bg-muted/40 text-foreground/90 rounded-md border px-3 py-2">
+                    <ChangelogMarkdown>{section.note}</ChangelogMarkdown>
+                </div>
+            ) : null}
+            <div className="min-w-0 break-words">
+                {entry?.markdown ? (
+                    <ChangelogMarkdown>{entry.markdown}</ChangelogMarkdown>
+                ) : (
+                    <div className="text-muted-foreground">
+                        {t('dialog.change_log.empty')}
+                    </div>
+                )}
+            </div>
+        </section>
+    );
+}
+
 export function ChangelogDialog({
     open,
     onOpenChange,
@@ -141,13 +214,13 @@ export function ChangelogDialog({
     targetVersion?: string;
 }) {
     const { i18n, t } = useTranslation();
-    const [latestRelease, setLatestRelease] =
-        useState<NormalizedRelease | null>(null);
-    const [entries, setEntries] = useState<LocalizedChangelogEntry[]>([]);
-    const [note, setNote] = useState('');
+    const [sections, setSections] = useState<ChangelogSection[]>([]);
+    const [currentId, setCurrentId] = useState<string | null>(null);
+    const [targetId, setTargetId] = useState<string | null>(null);
     const [activeLanguage, setActiveLanguage] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const scrollRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         if (!open) {
@@ -157,25 +230,30 @@ export function ChangelogDialog({
         let active = true;
         setLoading(true);
         setError('');
-        setLatestRelease(null);
-        setEntries([]);
-        setNote('');
+        setSections([]);
+        setCurrentId(null);
+        setTargetId(null);
         setActiveLanguage('');
 
-        fetchChangelogRelease(targetVersion)
-            .then((release) => {
+        fetchChangelogReleases(targetVersion)
+            .then((releases) => {
                 if (!active) {
                     return;
                 }
 
-                const parsedChangelog = parseReleaseChangelog(release);
-                const nextEntries = parsedChangelog.entries;
-                setLatestRelease(release);
-                setEntries(nextEntries);
-                setNote(parsedChangelog.note);
+                const nextSections = buildChangelogSections(releases);
+                setSections(nextSections);
+                setCurrentId(
+                    findChangelogRelease(releases, getCurrentVersion())
+                        ?.canonicalVersion ?? null
+                );
+                setTargetId(
+                    findChangelogRelease(releases, targetVersion)
+                        ?.canonicalVersion ?? null
+                );
                 setActiveLanguage(
                     resolvePreferredChangelogLanguage(
-                        nextEntries,
+                        nextSections.flatMap((section) => section.entries),
                         i18n.resolvedLanguage || i18n.language
                     )
                 );
@@ -201,17 +279,33 @@ export function ChangelogDialog({
         };
     }, [i18n.language, i18n.resolvedLanguage, open, t, targetVersion]);
 
-    const selectedEntry = useMemo(
-        () =>
-            entries.find((entry) => entry.lang === activeLanguage) ||
-            entries[0] ||
-            null,
-        [activeLanguage, entries]
+    const sectionIds = useMemo(
+        () => sections.map((section) => section.id),
+        [sections]
     );
-    const releaseName =
-        latestRelease?.displayName ||
-        latestRelease?.tagName ||
-        t('dialog.change_log.latest_release');
+    const { activeId, scrollTo } = useActiveScrollSection(
+        scrollRef,
+        sectionIds,
+        SECTION_ATTRIBUTE
+    );
+
+    useEffect(() => {
+        if (targetId && targetId !== sectionIds[0]) {
+            scrollTo(targetId);
+        }
+    }, [scrollTo, sectionIds, targetId]);
+
+    const languageOptions = useMemo(() => {
+        const labels = new Map<string, string>();
+        for (const section of sections) {
+            for (const entry of section.entries) {
+                if (!labels.has(entry.lang)) {
+                    labels.set(entry.lang, entry.label);
+                }
+            }
+        }
+        return Array.from(labels, ([value, label]) => ({ value, label }));
+    }, [sections]);
 
     return (
         <Dialog
@@ -219,76 +313,105 @@ export function ChangelogDialog({
             onOpenChange={onOpenChange}
             onOpenChangeComplete={(nextOpen) => {
                 if (!nextOpen && !open) {
-                    setLatestRelease(null);
-                    setEntries([]);
-                    setNote('');
+                    setSections([]);
                 }
             }}
         >
-            <DialogContent className="sm:max-w-3xl">
-                <DialogHeader>
+            <DialogContent className="grid h-[min(85vh,820px)] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden sm:max-w-5xl">
+                <DialogHeader className="flex-row items-center justify-between gap-3 pr-8">
                     <DialogTitle>{t('dialog.change_log.header')}</DialogTitle>
-                    <div className="text-muted-foreground text-sm">
-                        {releaseName}
-                    </div>
+                    {languageOptions.length > 1 ? (
+                        <Select
+                            value={activeLanguage}
+                            items={languageOptions}
+                            onValueChange={(value) => {
+                                if (value) {
+                                    setActiveLanguage(value);
+                                }
+                            }}
+                        >
+                            <SelectTrigger
+                                size="sm"
+                                aria-label={t('dialog.change_log.language')}
+                            >
+                                <LanguagesIcon className="text-muted-foreground" />
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    {languageOptions.map((option) => (
+                                        <SelectItem
+                                            key={option.value}
+                                            value={option.value}
+                                        >
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                    ) : null}
                 </DialogHeader>
 
                 {loading ? (
-                    <div className="text-muted-foreground flex min-h-48 items-center justify-center gap-2">
+                    <div className="text-muted-foreground flex items-center justify-center gap-2">
                         <Spinner />
                         <span>{t('dialog.change_log.loading')}</span>
                     </div>
                 ) : error ? (
-                    <div className="text-muted-foreground rounded-md border p-3 text-sm">
+                    <div className="text-muted-foreground self-start rounded-md border p-3 text-sm">
                         {error}
                     </div>
-                ) : selectedEntry ? (
-                    <div className="space-y-3">
-                        {note ? (
-                            <div className="bg-muted/40 text-foreground/90 rounded-md border px-3 py-2 text-sm">
-                                <ChangelogMarkdown>{note}</ChangelogMarkdown>
-                            </div>
-                        ) : null}
+                ) : sections.length ? (
+                    <div className="grid min-h-0 grid-cols-[9rem_minmax(0,1fr)] gap-4">
                         <Tabs
-                            value={activeLanguage}
-                            onValueChange={setActiveLanguage}
+                            orientation="vertical"
+                            value={activeId}
+                            onValueChange={scrollTo}
+                            className="min-h-0 overflow-y-auto"
                         >
-                            <TabsList className="max-w-full justify-start overflow-x-auto overflow-y-hidden">
-                                {entries.map((entry) => (
+                            <TabsList
+                                aria-label={t('dialog.change_log.versions')}
+                                className="h-fit w-full gap-0.5"
+                            >
+                                {sections.map((section) => (
                                     <TabsTrigger
-                                        key={`${entry.lang}-${entry.tag}`}
-                                        value={entry.lang}
+                                        key={section.id}
+                                        value={section.id}
+                                        className="justify-start px-2.5 tabular-nums"
                                     >
-                                        {entry.label}
+                                        <span className="truncate">
+                                            {section.release.canonicalVersion}
+                                        </span>
                                     </TabsTrigger>
                                 ))}
                             </TabsList>
-                            {entries.map((entry) => (
-                                <TabsContent
-                                    key={`${entry.lang}-${entry.tag}-content`}
-                                    value={entry.lang}
-                                >
-                                    <ScrollArea className="h-[min(58vh,520px)] rounded-md border">
-                                        <div className="min-w-0 overflow-x-hidden p-3 text-sm break-words">
-                                            {entry.markdown ? (
-                                                <ChangelogMarkdown>
-                                                    {entry.markdown}
-                                                </ChangelogMarkdown>
-                                            ) : (
-                                                <div className="text-muted-foreground">
-                                                    {t(
-                                                        'dialog.change_log.empty'
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </ScrollArea>
-                                </TabsContent>
-                            ))}
                         </Tabs>
+                        <div
+                            ref={scrollRef}
+                            className="relative min-h-0 overflow-x-hidden overflow-y-auto pr-2"
+                        >
+                            <div className="flex flex-col gap-6 pt-px">
+                                {sections.map((section) => (
+                                    <ChangelogReleaseSection
+                                        key={section.id}
+                                        section={section}
+                                        language={activeLanguage}
+                                        isCurrent={section.id === currentId}
+                                    />
+                                ))}
+                                <div className="text-muted-foreground pb-2 text-center text-xs">
+                                    {t('dialog.change_log.older_releases')}
+                                    {' · '}
+                                    <MarkdownLink href={links.releases}>
+                                        {t('dialog.change_log.view_on_github')}
+                                    </MarkdownLink>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 ) : (
-                    <div className="text-muted-foreground rounded-md border p-3 text-sm">
+                    <div className="text-muted-foreground self-start rounded-md border p-3 text-sm">
                         {t('dialog.change_log.empty')}
                     </div>
                 )}

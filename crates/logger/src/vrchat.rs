@@ -1,37 +1,38 @@
 use std::time::Duration;
 
 use serde_json::Value;
-use vrcx_0_contracts::vrchat_api::{vrchat_response, VrchatResponse};
-use vrcx_0_contracts::vrchat_device_login::{
-    interpret_device_code_response, interpret_device_status_response, VrchatDeviceAuthorization,
-    VrchatDeviceStatus,
-};
-use vrcx_0_contracts::vrchat_login::{
-    interpret_cookie_probe_config_response, interpret_cookie_probe_current_user_response,
-    interpret_login_config_response, interpret_login_response,
-    interpret_two_factor_current_user_response, interpret_two_factor_verify_response,
-    unsupported_two_factor_method, CookieProbeResult, VrchatLoginFailureKind, VrchatLoginStep,
-    VrchatTwoFactorVerifyOutcome,
-};
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_contracts::vrchat_api::{vrchat_response, VrchatResponse, VrchatScope};
 use vrcx_0_core::json::JsonExt;
 use vrcx_0_core::vrchat_endpoints::{
     VRCHAT_API_DEFAULT_ENDPOINT, VRCHAT_WEBSOCKET_DEFAULT_ENDPOINT,
 };
 use vrcx_0_core::TwoFactorMethod;
 use vrcx_0_logger_protocol::wire::SnapshotPayload;
-use vrcx_0_vrchat_client::auth::{
-    config_get_input, current_user_get_input, device_code_input, device_status_input,
-    email_otp_verify_input, login_basic_input, logout_input, otp_verify_input, session_get_input,
-    totp_verify_input,
-};
-use vrcx_0_vrchat_client::friends::friends_get_input;
-use vrcx_0_vrchat_client::http_api::{build_web_execute_request, ApiScope, HttpApiRequestInput};
 use vrcx_0_vrchat_client::realtime::{
     auth_token_from_response, build_transport_url, connect_websocket, Error as RealtimeError,
     RealtimeConnectionOptions, RealtimeWebSocketStream,
 };
-use vrcx_0_vrchat_client::users::profile_get_input;
 use vrcx_0_vrchat_client::web_client::WebClient;
+use vrcx_0_vrchat_protocol::auth::device_login::{
+    interpret_device_code_response, interpret_device_status_response, VrchatDeviceAuthorization,
+    VrchatDeviceStatus,
+};
+use vrcx_0_vrchat_protocol::auth::login::{
+    interpret_cookie_probe_config_response, interpret_cookie_probe_current_user_response,
+    interpret_login_config_response, interpret_login_response,
+    interpret_two_factor_current_user_response, interpret_two_factor_verify_response,
+    unsupported_two_factor_method, CookieProbeResult, VrchatLoginFailureKind, VrchatLoginStep,
+    VrchatTwoFactorVerifyOutcome,
+};
+use vrcx_0_vrchat_protocol::auth::{
+    config_get_input, current_user_get_input, device_code_input, device_status_input,
+    email_otp_verify_input, login_basic_input, logout_input, otp_verify_input, session_get_input,
+    totp_verify_input,
+};
+use vrcx_0_vrchat_protocol::friends::friends_get_input;
+use vrcx_0_vrchat_protocol::http_api::build_web_execute_request;
+use vrcx_0_vrchat_protocol::users::profile_get_input;
 
 use crate::app::LOGGER_VERSION;
 
@@ -318,15 +319,15 @@ impl Vrchat {
         Err("friends request kept being rate limited".into())
     }
 
-    async fn execute(&self, input: HttpApiRequestInput) -> VrchatResponse {
-        match build_web_execute_request(input, ApiScope::Vrchat) {
+    async fn execute(&self, input: VrchatRequest) -> VrchatResponse {
+        match build_web_execute_request(input, VrchatScope::Vrchat) {
             Ok(request) => response(self.web.execute(request).await),
             Err(error) => network_failure(error),
         }
     }
 
-    async fn execute_fresh(&self, input: HttpApiRequestInput) -> VrchatResponse {
-        match build_web_execute_request(input, ApiScope::Vrchat) {
+    async fn execute_fresh(&self, input: VrchatRequest) -> VrchatResponse {
+        match build_web_execute_request(input, VrchatScope::Vrchat) {
             Ok(request) => response(self.web.execute_fresh_standard(request).await),
             Err(error) => network_failure(error),
         }
@@ -401,7 +402,7 @@ fn probe_outcome(result: CookieProbeResult) -> ProbeOutcome {
 #[cfg(test)]
 mod tests {
     use serde_json::json;
-    use vrcx_0_contracts::vrchat_login::CookieProbeStage;
+    use vrcx_0_vrchat_protocol::auth::login::CookieProbeStage;
 
     use super::*;
 

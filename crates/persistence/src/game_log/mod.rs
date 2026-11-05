@@ -35,3 +35,4 @@ pub use vrcx_0_contracts::game_log_query::{
     GameLogAllUserStatsOutput, GameLogQuery, GameLogQueryOutput, GameLogRowOutput,
 };
 pub use write::{fill_location_group_name, write_batch};
+pub(crate) use write::{insert_game_log_location, update_game_log_location_time};

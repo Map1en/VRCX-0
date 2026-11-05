@@ -13,11 +13,9 @@ pub use service::{
 };
 #[cfg(test)]
 pub(in crate::social) use service::{apply_friend_request_accept_locally, apply_unfriend_locally};
-#[cfg(any(test, feature = "test-utils"))]
-pub use types::TestSocialMutationRemoteRequests;
 pub use types::{
     SocialFriendMutationInput, SocialFriendMutationOutcome, SocialFriendMutationStatus,
     SocialFriendRequestAcceptInput, SocialFriendRequestCancelInput,
     SocialFriendRequestNotificationAcceptOutput, SocialFriendRequestNotificationAcceptStatus,
-    SocialMutationDeps, SocialMutationRemoteRequests, SocialMutationStore,
+    SocialMutationDeps,
 };

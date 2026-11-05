@@ -17,6 +17,7 @@ use crate::{Error, Result};
 use crate::{HostSessionRuntime, RuntimeAuthScope, TaskSupervisor};
 use vrcx_0_application_core::ActivityIngress;
 use vrcx_0_application_core::BackendRuntimeStatusPublisher;
+use vrcx_0_application_core::ConfigStore;
 use vrcx_0_core::time::now_iso;
 use vrcx_0_core::OwnerId;
 
@@ -70,7 +71,8 @@ impl GameClientWindowActions for NoopGameClientWindowActions {
 
 #[derive(Clone)]
 pub struct GameClientProcessorDeps {
-    pub(crate) store: Arc<dyn crate::GameStateStore>,
+    pub(crate) game_log_writer: Arc<dyn crate::GameLogWriter>,
+    pub(crate) config: Arc<dyn ConfigStore>,
     pub event_bus: RuntimeEventBus,
     pub backend_status: BackendRuntimeStatusPublisher,
     pub tasks: TaskSupervisor,
@@ -194,14 +196,14 @@ impl GameClientProcessor {
         let config = CrashRelaunchConfig {
             enabled: self
                 .deps
-                .store
+                .config
                 .get_bool("relaunchVRChatAfterCrash", false)?,
             is_game_no_vr: self
                 .deps
-                .store
+                .config
                 .get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?,
-            launch_arguments: self.deps.store.get_string("launchArguments", "")?,
-            launch_path_override: self.deps.store.get_string("vrcLaunchPathOverride", "")?,
+            launch_arguments: self.deps.config.get_string("launchArguments", "")?,
+            launch_path_override: self.deps.config.get_string("vrcLaunchPathOverride", "")?,
         };
         let location = self.current_location();
         let closed_gracefully = self.deps.location_source.vrc_closed_gracefully();
@@ -239,16 +241,16 @@ impl GameClientProcessor {
             return Ok(());
         }
         self.deps
-            .store
+            .config
             .set_string("lastGameSessionMs", &session_duration.to_string())?;
         self.deps
-            .store
+            .config
             .set_string("lastGameOfflineAt", &offline_at.to_string())?;
         Ok(())
     }
 
     fn sweep_vrchat_cache_if_enabled(&self) -> Result<()> {
-        if !self.deps.store.get_bool("autoSweepVRChatCache", false)? {
+        if !self.deps.config.get_bool("autoSweepVRChatCache", false)? {
             return Ok(());
         }
         let removed_count = self.deps.cache_actions.sweep_vrchat_cache().len();
@@ -323,7 +325,7 @@ impl GameClientProcessor {
         let created_at = now_iso();
         let affected_count = self
             .deps
-            .store
+            .game_log_writer
             .write_game_log(
                 &OwnerId::new(self.deps.auth_scope.snapshot().current_user_id),
                 &GameLogWriteBatch {
@@ -468,11 +470,15 @@ mod tests {
         activity_router: ActivityRouter,
     ) -> GameClientProcessor {
         let store = Arc::new(crate::ports::TestGameStateStore::default());
-        crate::GameStateStore::set_bool(store.as_ref(), "relaunchVRChatAfterCrash", true).unwrap();
+        store
+            .config
+            .set_bool("relaunchVRChatAfterCrash", true)
+            .unwrap();
         let event_bus = RuntimeEventBus::new();
         GameClientProcessor::new(
             GameClientProcessorDeps {
-                store,
+                config: Arc::new(store.config.clone()),
+                game_log_writer: store,
                 event_bus: event_bus.clone(),
                 backend_status: BackendRuntimeStatusPublisher::new(
                     vrcx_0_application_core::BackendRuntime::new(

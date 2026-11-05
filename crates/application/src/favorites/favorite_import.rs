@@ -10,9 +10,9 @@ use std::{
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use vrcx_0_application_core::{
-    vrchat_api::VrchatApiResponse, FavoriteEntityKind, TaskStopToken, VrchatFavoriteType,
-};
+use vrcx_0_application_core::{FavoriteEntityKind, TaskStopToken};
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
+use vrcx_0_contracts::VrchatFavoriteType;
 use vrcx_0_core::json::RawJson;
 use vrcx_0_core::vrchat_ids::{is_avatar_id, is_user_id, is_world_id};
 use vrcx_0_core::vrchat_json::response_error_message;
@@ -26,7 +26,10 @@ use vrcx_0_application_core::{
 
 use super::local_favorites::local_group_config_key;
 use super::FavoriteMutationCoordinator;
+use crate::scope_gate::ScopeGate;
 use vrcx_0_core::OwnerId;
+
+const GATE: ScopeGate = ScopeGate::new("Favorite import");
 
 pub const FAVORITE_IMPORT_MAX_ITEMS: usize = 1_000;
 const FAVORITE_IMPORT_INTERVAL: Duration = Duration::from_millis(500);
@@ -163,33 +166,6 @@ pub struct FavoriteImportRuntimeDeps {
     pub favorite_mutations: FavoriteMutationCoordinator,
 }
 
-impl FavoriteImportRuntimeDeps {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        store: Arc<dyn super::FavoriteStore>,
-        remote: Arc<dyn super::FavoriteRemote>,
-        world_cache: Arc<WorldCache>,
-        avatar_cache: Arc<AvatarCache>,
-        event_bus: RuntimeEventBus,
-        tasks: TaskSupervisor,
-        auth_scope: RuntimeAuthScope,
-        remote_mutations: Arc<RemoteMutationGate>,
-        favorite_mutations: FavoriteMutationCoordinator,
-    ) -> Self {
-        Self {
-            store,
-            remote,
-            world_cache,
-            avatar_cache,
-            event_bus,
-            tasks,
-            auth_scope,
-            remote_mutations,
-            favorite_mutations,
-        }
-    }
-}
-
 struct FavoriteImportRuntimeShared {
     state: Mutex<FavoriteImportRuntimeInner>,
     generation: AtomicU64,
@@ -234,8 +210,7 @@ impl FavoriteImportRuntime {
 
     pub fn start(&self, input: FavoriteImportStartInput) -> Result<FavoriteImportStatus> {
         let prepared = prepare_favorite_import(input)?;
-        let scope = self.auth_scope.snapshot();
-        require_active_scope(&scope)?;
+        let scope = GATE.require_active(&self.auth_scope)?;
         let cancel = Arc::new(AtomicBool::new(false));
         let status = {
             let mut inner = self.lock_inner();
@@ -399,7 +374,7 @@ impl FavoriteImportRuntime {
         kind: FavoriteImportKind,
         id: &str,
     ) -> Result<Option<RawJson>> {
-        ensure_scope_matches(&self.auth_scope.snapshot(), scope)?;
+        GATE.ensure_matches(&self.auth_scope, scope)?;
         let response = match kind {
             FavoriteImportKind::Avatar => {
                 self.remote
@@ -455,7 +430,7 @@ impl FavoriteImportRuntime {
         target: &FavoriteImportTarget,
         remote_ids: Option<&mut HashSet<String>>,
     ) -> Result<()> {
-        ensure_scope_matches(&self.auth_scope.snapshot(), scope)?;
+        GATE.ensure_matches(&self.auth_scope, scope)?;
         match target.location {
             FavoriteImportLocation::Local => {
                 let affected = self.store.add(
@@ -487,7 +462,7 @@ impl FavoriteImportRuntime {
                 self.remote_mutations
                     .wait(scope, FAVORITE_IMPORT_INTERVAL)
                     .await;
-                ensure_scope_matches(&self.auth_scope.snapshot(), scope)?;
+                GATE.ensure_matches(&self.auth_scope, scope)?;
                 let (_, _, response) = self
                     .remote
                     .add(
@@ -523,7 +498,7 @@ impl FavoriteImportRuntime {
             {
                 return Err(Error::Custom("Favorite import was cancelled.".into()));
             }
-            ensure_scope_matches(&self.auth_scope.snapshot(), scope)?;
+            GATE.ensure_matches(&self.auth_scope, scope)?;
             let response = self
                 .remote
                 .list(
@@ -572,10 +547,10 @@ impl FavoriteImportRuntime {
     fn parse_response(
         &self,
         scope: &RuntimeAuthScopeSnapshot,
-        response: VrchatApiResponse,
+        response: VrchatResponse,
         action: &str,
     ) -> Result<Value> {
-        ensure_scope_matches(&self.auth_scope.snapshot(), scope)?;
+        GATE.ensure_matches(&self.auth_scope, scope)?;
         let payload = serde_json::from_str::<Value>(&response.data)
             .unwrap_or_else(|_| Value::String(response.data.clone()));
         if response.status >= 400 || payload.get("error").is_some() {
@@ -596,7 +571,7 @@ impl FavoriteImportRuntime {
     ) -> bool {
         cancel.load(Ordering::Acquire)
             || stop_token.is_stop_requested()
-            || ensure_scope_matches(&self.auth_scope.snapshot(), scope).is_err()
+            || GATE.ensure_matches(&self.auth_scope, scope).is_err()
     }
 
     fn apply_item(&self, run_id: &str, item: FavoriteImportItemResult) {
@@ -731,23 +706,6 @@ fn prepare_favorite_import(input: FavoriteImportStartInput) -> Result<PreparedFa
         ids,
         target,
     })
-}
-
-fn require_active_scope(scope: &RuntimeAuthScopeSnapshot) -> Result<()> {
-    if scope.active && !scope.current_user_id.trim().is_empty() {
-        Ok(())
-    } else {
-        Err(Error::Custom(
-            "Favorite import requires an authenticated session.".into(),
-        ))
-    }
-}
-
-fn ensure_scope_matches(
-    current: &RuntimeAuthScopeSnapshot,
-    expected: &RuntimeAuthScopeSnapshot,
-) -> Result<()> {
-    crate::scope_gate::ensure_snapshot_scope_matches(current, expected, "Favorite import")
 }
 
 fn is_active_state(state: FavoriteImportState) -> bool {

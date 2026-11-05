@@ -4,8 +4,9 @@ use serde::Serialize;
 use serde_json::Value;
 use vrcx_0_application_core::{
     BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity, CurrentUserSnapshot,
-    RuntimeAuthScope, RuntimeEventPayload,
+    RuntimeAuthScope,
 };
+use vrcx_0_contracts::RuntimeEventPayload;
 use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 
 use super::AuthenticatedRuntimeSession;

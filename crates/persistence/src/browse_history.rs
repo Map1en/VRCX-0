@@ -1,6 +1,9 @@
 use chrono::{Duration, SecondsFormat, Utc};
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use vrcx_0_contracts::browse_history::{
+    BrowseHistoryCursor, BrowseHistoryEntityKind, BrowseHistoryItemOutput, BrowseHistoryPageOutput,
+    BrowseHistoryQueryInput, BrowseHistoryRecordInput,
+};
 
 use crate::common::{normalize_text, now_iso, strict_row_i64, strict_row_string, ParamsBuilder};
 use crate::config;
@@ -15,97 +18,25 @@ const ALLOWED_RETENTION_DAYS: [i64; 6] = [OFF_RETENTION_DAYS, 0, 7, 30, 90, 365]
 const DEFAULT_PAGE_LIMIT: i64 = 120;
 const MAX_PAGE_LIMIT: i64 = 200;
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
-#[serde(rename_all = "lowercase")]
-pub enum BrowseHistoryEntityKind {
-    User,
-    World,
-    Avatar,
-    Group,
-}
-
-impl BrowseHistoryEntityKind {
-    fn as_str(self) -> &'static str {
-        match self {
-            Self::User => "user",
-            Self::World => "world",
-            Self::Avatar => "avatar",
-            Self::Group => "group",
-        }
-    }
-
-    fn parse(value: &str) -> Result<Self, Error> {
-        match value {
-            "user" => Ok(Self::User),
-            "world" => Ok(Self::World),
-            "avatar" => Ok(Self::Avatar),
-            "group" => Ok(Self::Group),
-            _ => Err(Error::Database(format!(
-                "browse history contains unsupported entity kind: {value}"
-            ))),
-        }
+fn entity_kind_as_str(kind: BrowseHistoryEntityKind) -> &'static str {
+    match kind {
+        BrowseHistoryEntityKind::User => "user",
+        BrowseHistoryEntityKind::World => "world",
+        BrowseHistoryEntityKind::Avatar => "avatar",
+        BrowseHistoryEntityKind::Group => "group",
     }
 }
 
-#[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct BrowseHistoryRecordInput {
-    pub owner_user_id: OwnerId,
-    pub entity_kind: BrowseHistoryEntityKind,
-    pub entity_id: String,
-    #[serde(default)]
-    pub title: String,
-    #[serde(default)]
-    pub image_url: String,
-    #[serde(default = "default_record_visit")]
-    pub record_visit: bool,
-}
-
-fn default_record_visit() -> bool {
-    true
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct BrowseHistoryCursor {
-    pub last_viewed_at: String,
-    pub entity_kind: BrowseHistoryEntityKind,
-    pub entity_id: String,
-}
-
-#[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct BrowseHistoryQueryInput {
-    pub owner_user_id: OwnerId,
-    pub entity_kind: Option<BrowseHistoryEntityKind>,
-    #[serde(default)]
-    pub search: String,
-    pub cursor: Option<BrowseHistoryCursor>,
-    #[serde(default)]
-    pub limit: i64,
-    #[serde(default)]
-    pub date_from: String,
-    #[serde(default)]
-    pub date_to: String,
-}
-
-#[derive(Clone, Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct BrowseHistoryItemOutput {
-    pub entity_kind: BrowseHistoryEntityKind,
-    pub entity_id: String,
-    pub title: String,
-    pub image_url: String,
-    pub first_viewed_at: String,
-    pub last_viewed_at: String,
-    pub view_count: i64,
-}
-
-#[derive(Debug, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct BrowseHistoryPageOutput {
-    pub items: Vec<BrowseHistoryItemOutput>,
-    pub next_cursor: Option<BrowseHistoryCursor>,
+fn parse_entity_kind(value: &str) -> Result<BrowseHistoryEntityKind, Error> {
+    match value {
+        "user" => Ok(BrowseHistoryEntityKind::User),
+        "world" => Ok(BrowseHistoryEntityKind::World),
+        "avatar" => Ok(BrowseHistoryEntityKind::Avatar),
+        "group" => Ok(BrowseHistoryEntityKind::Group),
+        _ => Err(Error::Database(format!(
+            "browse history contains unsupported entity kind: {value}"
+        ))),
+    }
 }
 
 fn ensure_browse_history_table(db: &DatabaseService) -> Result<(), Error> {
@@ -226,7 +157,7 @@ pub fn browse_history_record(
                 view_count = browse_history.view_count + @record_visit",
             &ParamsBuilder::new()
                 .set("owner_user_id", owner_user_id.clone())
-                .set("entity_kind", input.entity_kind.as_str())
+                .set("entity_kind", entity_kind_as_str(input.entity_kind))
                 .set("entity_id", entity_id.clone())
                 .set("title", title.clone())
                 .set("image_url", image_url.clone())
@@ -240,7 +171,7 @@ pub fn browse_history_record(
 
 fn item_from_row(row: &[Value]) -> Result<BrowseHistoryItemOutput, Error> {
     Ok(BrowseHistoryItemOutput {
-        entity_kind: BrowseHistoryEntityKind::parse(&strict_row_string(row, 0)?)?,
+        entity_kind: parse_entity_kind(&strict_row_string(row, 0)?)?,
         entity_id: strict_row_string(row, 1)?,
         title: strict_row_string(row, 2)?,
         image_url: strict_row_string(row, 3)?,
@@ -281,7 +212,7 @@ pub fn browse_history_query(
     }
     if let Some(entity_kind) = input.entity_kind {
         clauses.push("entity_kind = @entity_kind");
-        params = params.set("entity_kind", entity_kind.as_str());
+        params = params.set("entity_kind", entity_kind_as_str(entity_kind));
     }
     if !search.is_empty() {
         clauses.push("(LOWER(title) LIKE @search OR LOWER(entity_id) LIKE @search)");
@@ -305,7 +236,7 @@ pub fn browse_history_query(
         );
         params = params
             .set("cursor_viewed_at", normalize_text(cursor.last_viewed_at))
-            .set("cursor_kind", cursor.entity_kind.as_str())
+            .set("cursor_kind", entity_kind_as_str(cursor.entity_kind))
             .set("cursor_id", normalize_text(cursor.entity_id));
     }
 
@@ -352,7 +283,7 @@ pub fn browse_history_delete(
          WHERE owner_user_id = @owner_user_id AND entity_kind = @entity_kind AND entity_id = @entity_id",
         &ParamsBuilder::new()
             .set("owner_user_id", normalize_text(owner_user_id.as_str()))
-            .set("entity_kind", entity_kind.as_str())
+            .set("entity_kind", entity_kind_as_str(entity_kind))
             .set("entity_id", normalize_text(entity_id))
             .build(),
     )
@@ -371,7 +302,7 @@ pub fn browse_history_clear(
              WHERE owner_user_id = @owner_user_id AND entity_kind = @entity_kind",
             &ParamsBuilder::new()
                 .set("owner_user_id", owner_user_id)
-                .set("entity_kind", entity_kind.as_str())
+                .set("entity_kind", entity_kind_as_str(entity_kind))
                 .build(),
         ),
         None => db.execute_non_query(

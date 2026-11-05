@@ -5,7 +5,7 @@ use vrcx_0_application::game::{InstanceLaunchInput, InstanceLaunchOutcome};
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use super::types::{
     VrchatInstanceCalendarLinkInput, VrchatInstanceCloseInput, VrchatInstanceCreateInput,
@@ -18,7 +18,7 @@ use super::types::{
 pub async fn app__vrchat_instance_get(
     state: State<'_, AppState>,
     input: VrchatInstanceIdentityInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -32,7 +32,7 @@ pub async fn app__vrchat_instance_get(
 pub async fn app__vrchat_instance_short_name_get(
     state: State<'_, AppState>,
     input: VrchatInstanceShortNameInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -46,7 +46,7 @@ pub async fn app__vrchat_instance_short_name_get(
 pub async fn app__vrchat_instance_create(
     state: State<'_, AppState>,
     input: VrchatInstanceCreateInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -60,7 +60,7 @@ pub async fn app__vrchat_instance_create(
 pub async fn app__vrchat_instance_self_invite(
     state: State<'_, AppState>,
     input: VrchatInstanceSelfInviteInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -88,7 +88,7 @@ pub async fn app__vrchat_instance_join(
 pub async fn app__vrchat_instance_display_name_set(
     state: State<'_, AppState>,
     input: VrchatInstanceDisplayNameInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -101,7 +101,7 @@ pub async fn app__vrchat_instance_display_name_set(
 #[specta::specta]
 pub async fn app__vrchat_instance_count_get(
     state: State<'_, AppState>,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -115,7 +115,7 @@ pub async fn app__vrchat_instance_count_get(
 pub async fn app__vrchat_instance_calendar_link_set(
     state: State<'_, AppState>,
     input: VrchatInstanceCalendarLinkInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -129,7 +129,7 @@ pub async fn app__vrchat_instance_calendar_link_set(
 pub async fn app__vrchat_instance_close(
     state: State<'_, AppState>,
     input: VrchatInstanceCloseInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()

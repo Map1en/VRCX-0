@@ -4,9 +4,8 @@ use vrcx_0_contracts::feed_live::FeedLiveEntry;
 
 use super::{
     feed_latest_query, feed_rows_query, feed_rows_query_interruptible, merge_feed_rows_with_live,
-    FeedCursorInput, FeedFilter, FeedLatestQueryInput, FeedLiveEntryInput,
-    FeedLiveRowsMergeContext, FeedQueryMode, FeedReadModelOutput, FeedRowOutput,
-    FeedRowsQueryInput,
+    FeedCursorInput, FeedFilter, FeedLatestQueryInput, FeedLiveEntryInput, FeedLiveQueryParts,
+    FeedQueryMode, FeedReadModelOutput, FeedRowOutput, FeedRowsQueryInput,
 };
 use crate::database::DatabaseService;
 use crate::feed::test_support::{seed_feed_avatar_row, seed_feed_bio_row, seed_feed_gps_rows};
@@ -122,7 +121,7 @@ struct MergeCase {
 }
 
 fn merge_case(input: MergeCase) -> FeedReadModelOutput {
-    let context = FeedLiveRowsMergeContext {
+    let context = FeedLiveQueryParts {
         current_user_id: &input.current_user_id,
         filters: &input.filters,
         search: &input.search,

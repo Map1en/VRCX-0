@@ -1,3 +1,5 @@
+mod instance_dwell;
+mod notification_observer;
 mod ports;
 mod realtime;
 mod social_baseline;
@@ -14,19 +16,28 @@ pub mod test_support {
     };
 }
 
-pub use ports::{RealtimeRemoteRequests, RealtimeStore};
+pub use instance_dwell::{
+    FriendLocationTime, FriendLocationTimeSource, FriendPlace, InstanceDwellRegistry,
+};
+pub use notification_observer::{
+    RealtimeNotificationProjectionObserver, RealtimeNotificationProjectionObserverRegistry,
+};
+pub use ports::{
+    FavoriteBaselineStore, FeedQueryStore, FriendLogStore, GameLogLookup, RealtimeBatchWriter,
+    RealtimeRemoteRequests, RealtimeStores, SocialMutationStore,
+};
 pub use realtime::replay::{replay_logger_frames, ReplayOutcome, ReplayResolvers};
 pub use realtime::PENDING_OFFLINE_DELAY_MS;
 pub use realtime::{
     is_print_created_content_refresh, FriendProfileBulkLoadStatus, FriendProfileLoadStatusPayload,
     FriendProjection, FriendProjectionObserver, FriendProjectionPatch, FriendProjectionSink,
     FriendRosterSnapshot, RealtimeCurrentUserProjection, RealtimeCurrentUserSnapshotSink,
-    RealtimeEntryCorrection, RealtimeEntryCorrectionFields, RealtimeEntryCorrectionStream,
-    RealtimeFeedProjection, RealtimeFriendRosterSnapshot, RealtimeFriendSnapshot,
-    RealtimeHostRuntime, RealtimeHostRuntimeDeps, RealtimeInstanceClosedProjection,
-    RealtimeInstanceQueueKind, RealtimeInstanceQueueProjection, RealtimeMessageSink,
-    RealtimeNotificationProjection, RealtimeNotificationUpsert, RealtimeSessionContext,
-    RealtimeStopRequest, RealtimeTransport, RealtimeTransportFuture,
+    RealtimeEconomyBalancePayload, RealtimeEntryCorrection, RealtimeEntryCorrectionFields,
+    RealtimeEntryCorrectionStream, RealtimeFeedProjection, RealtimeFriendRosterSnapshot,
+    RealtimeFriendSnapshot, RealtimeHostRuntime, RealtimeHostRuntimeDeps,
+    RealtimeInstanceClosedProjection, RealtimeInstanceQueueKind, RealtimeInstanceQueueProjection,
+    RealtimeMessageSink, RealtimeNotificationProjection, RealtimeNotificationUpsert,
+    RealtimeSessionContext, RealtimeStopRequest, RealtimeTransport, RealtimeTransportFuture,
     RealtimeTransportLifecycleEvent, RealtimeTransportStartResult, RealtimeTransportTermination,
     RealtimeUserProjection, RealtimeWsMessagePayload, RealtimeWsStatus, RealtimeWsStatusPayload,
     SyntheticFriendEventOutcome, UserQueryCachePolicy, UserQueryKind, UserQueryOptions,

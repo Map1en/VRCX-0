@@ -7,7 +7,7 @@ use vrcx_0_application::collections::{
     SharedCollectionImportActions, SharedCollectionImportActionsFactory, WorldCollectionFuture,
     WorldCollectionRemote, WorldCollectionStore, WorldMemo,
 };
-use vrcx_0_application_core::{FavoriteEntityKind, WebClient, WorldCache};
+use vrcx_0_application_core::{FavoriteEntityKind, WorldCache};
 use vrcx_0_contracts::world_collections::{
     WorldCollectionCreatePayload, WorldCollectionCreateResponse, WorldCollectionSnapshotResponse,
     WorldCollectionTokenMintResponse, WorldOpenRegisterPayload,
@@ -113,21 +113,12 @@ impl WorldCollectionRemote for LocalWorldCollectionAdapter {
 
 pub struct LocalSharedCollectionImportActionsFactory {
     db: Arc<DatabaseService>,
-    web: Arc<WebClient>,
     world_cache: Arc<WorldCache>,
 }
 
 impl LocalSharedCollectionImportActionsFactory {
-    pub fn new(
-        db: Arc<DatabaseService>,
-        web: Arc<WebClient>,
-        world_cache: Arc<WorldCache>,
-    ) -> Self {
-        Self {
-            db,
-            web,
-            world_cache,
-        }
+    pub fn new(db: Arc<DatabaseService>, world_cache: Arc<WorldCache>) -> Self {
+        Self { db, world_cache }
     }
 }
 
@@ -135,7 +126,6 @@ impl SharedCollectionImportActionsFactory for LocalSharedCollectionImportActions
     fn create(&self, endpoint: String) -> Arc<dyn SharedCollectionImportActions> {
         Arc::new(LocalSharedCollectionImportActions {
             db: Arc::clone(&self.db),
-            web: Arc::clone(&self.web),
             world_cache: Arc::clone(&self.world_cache),
             endpoint,
         })
@@ -144,7 +134,6 @@ impl SharedCollectionImportActionsFactory for LocalSharedCollectionImportActions
 
 struct LocalSharedCollectionImportActions {
     db: Arc<DatabaseService>,
-    web: Arc<WebClient>,
     world_cache: Arc<WorldCache>,
     endpoint: String,
 }
@@ -179,7 +168,7 @@ impl SharedCollectionImportActions for LocalSharedCollectionImportActions {
         Box::pin(async move {
             let response = self
                 .world_cache
-                .get(self.web.as_ref(), &self.endpoint, world_id, true, false)
+                .get(&self.endpoint, world_id, true, false)
                 .await?;
             if !(200..=299).contains(&response.status) {
                 return Err(crate::Error::Custom(format!(

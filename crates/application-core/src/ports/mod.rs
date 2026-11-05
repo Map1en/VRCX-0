@@ -1,19 +1,15 @@
 mod activity_ingress;
-mod instance_roster;
+mod config_store;
 mod local_game_context;
-mod notification_observer;
 mod print_cleanup;
 mod process_monitor;
 mod session;
 mod updater;
 
 pub use activity_ingress::ActivityIngress;
-pub use instance_roster::{InstanceRosterMember, InstanceRosterObserver, InstanceRosterSnapshot};
+pub use config_store::ConfigStore;
 pub use local_game_context::{
     LocalGameContextSnapshot, LocalGameContextSource, UnavailableLocalGameContextSource,
-};
-pub use notification_observer::{
-    RealtimeNotificationProjectionObserver, RealtimeNotificationProjectionObserverRegistry,
 };
 pub use print_cleanup::{NoopPrintCleanupInputSink, PrintCleanupInputSink, PrintCleanupTrigger};
 pub use process_monitor::{GameProcessEvent, GameProcessEventSink};

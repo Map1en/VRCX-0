@@ -40,8 +40,7 @@ pub mod maintenance {
     pub use crate::database::maintenance::{
         avatar_auto_cleanup_run, database_maintenance_run, database_maintenance_table_sizes_get,
         database_vacuum_if_fragmented, ensure_required_database_schema, user_tables_ensure,
-        vacuum_after_secret_migration, DatabaseMaintenanceTask, MaintenanceTableSizesOutput,
-        UserTableContextOutput, PRINT_FAVORITE_IDS_CONFIG_KEY,
+        vacuum_after_secret_migration, DatabaseMaintenanceTask, PRINT_FAVORITE_IDS_CONFIG_KEY,
     };
 }
 

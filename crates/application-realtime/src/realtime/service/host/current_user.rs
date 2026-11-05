@@ -3,7 +3,7 @@ use std::sync::Arc;
 use serde_json::Value;
 use tokio::sync::watch;
 use vrcx_0_application_core::{Error, Result};
-use vrcx_0_contracts::vrchat_api::VrchatScope as ApiScope;
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 
 use crate::realtime::RealtimeCurrentUserOutput;
 
@@ -40,7 +40,12 @@ impl RealtimeHostRuntime {
                 else {
                     continue;
                 };
-                if let Err(error) = runtime.deps.store.write_realtime_batch(&owner, &batch) {
+                if let Err(error) = runtime
+                    .deps
+                    .stores
+                    .batch_writer
+                    .write_realtime_batch(&owner, &batch)
+                {
                     tracing::warn!("Avatar wear checkpoint persistence failed: {error}");
                     for unsaved in &batch.avatar_time_spent_upserts {
                         runtime
@@ -181,13 +186,12 @@ impl RealtimeHostRuntime {
             return Ok(false);
         };
         let response = self
-            .deps
             .web
             .execute_api(
                 self.deps
                     .remote_requests
                     .current_user(active.session.endpoint.clone())?,
-                ApiScope::Vrchat,
+                VrchatScope::Vrchat,
             )
             .await?;
         if !(200..300).contains(&response.status) {

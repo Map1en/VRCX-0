@@ -8,7 +8,8 @@ use crate::error::AppError;
 use crate::state::AppState;
 
 use vrcx_0_application_game::PlayerListSnapshotOutput;
-use vrcx_0_runtime_host_desktop::local_data::{InstanceActivityRowOutput, WorldSummaryOutput};
+use vrcx_0_contracts::player_list::InstanceActivityRowOutput;
+use vrcx_0_contracts::WorldSummaryOutput;
 
 #[tauri::command(async)]
 #[specta::specta]

@@ -20,9 +20,9 @@ pub(super) use vrcx_0_contracts::realtime::{FriendLogUpsert, NotificationV2Updat
 #[cfg(test)]
 pub(super) use crate::world_enrich::PendingEntryCorrection;
 #[cfg(test)]
-pub(super) use crate::{FriendProjection, RealtimeNotificationProjection};
+pub(super) use crate::RealtimeNotificationProjectionObserver;
 #[cfg(test)]
-pub(super) use vrcx_0_application_core::RealtimeNotificationProjectionObserver;
+pub(super) use crate::{FriendProjection, RealtimeNotificationProjection};
 #[cfg(test)]
 pub(super) use vrcx_0_application_core::{ActivityIngress, LocalGameContextSnapshot};
 pub(super) use vrcx_0_application_core::{
@@ -95,7 +95,7 @@ impl TestRealtimeHostRuntime {
     }
 
     pub fn web_client(&self) -> &WebClient {
-        self.runtime.deps.web.as_ref()
+        self.runtime.web.as_ref()
     }
 
     pub fn cache_file_for_test(&self, file: vrcx_0_contracts::FileMetadataOutput) {
@@ -246,21 +246,8 @@ impl vrcx_0_application_core::RuntimeTaskHandle for FinishedTaskHandle {
 }
 
 #[cfg(test)]
-pub(super) mod config_store {
-    use vrcx_0_application_core::Result;
-
-    pub fn get_bool(store: &dyn crate::RealtimeStore, key: &str, default: bool) -> Result<bool> {
-        store.get_bool(key, default)
-    }
-
-    pub fn set_bool(store: &dyn crate::RealtimeStore, key: &str, value: bool) -> Result<()> {
-        store.set_bool(key, value)
-    }
-}
-
-#[cfg(test)]
 pub(super) fn write_realtime_batch(
-    store: &dyn crate::RealtimeStore,
+    store: &dyn crate::RealtimeBatchWriter,
     owner: &OwnerId,
     batch: &vrcx_0_contracts::realtime::RealtimePersistenceBatch,
 ) -> Result<vrcx_0_contracts::realtime::RealtimeWriteCounts> {
@@ -277,7 +264,7 @@ pub(super) fn notification_list_query(
 
 #[cfg(test)]
 pub(super) fn friend_log_current_list(
-    store: &dyn crate::RealtimeStore,
+    store: &dyn crate::FriendLogStore,
     user_id: String,
 ) -> Result<Vec<vrcx_0_contracts::friend_log::FriendLogCurrentOutput>> {
     store.friend_log_current_list(&user_id)
@@ -285,7 +272,7 @@ pub(super) fn friend_log_current_list(
 
 #[cfg(test)]
 pub(super) fn friend_log_history_query(
-    store: &dyn crate::RealtimeStore,
+    store: &TestRealtimeStore,
     input: FriendLogHistoryQueryInput,
 ) -> Result<Vec<vrcx_0_contracts::friend_log::FriendLogHistoryOutput>> {
     store.friend_log_history(input)
@@ -553,7 +540,7 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
     fn current_user(
         &self,
         endpoint: String,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatRequest> {
         Ok(test_request(endpoint, "/auth/user"))
     }
 
@@ -561,10 +548,7 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
         &self,
         endpoint: String,
         user_id: String,
-    ) -> Result<(
-        String,
-        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
-    )> {
+    ) -> Result<(String, vrcx_0_contracts::vrchat_api::VrchatRequest)> {
         let user_id = user_id.trim().to_string();
         Ok((
             user_id.clone(),
@@ -576,10 +560,7 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
         &self,
         endpoint: String,
         user_id: String,
-    ) -> Result<(
-        String,
-        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
-    )> {
+    ) -> Result<(String, vrcx_0_contracts::vrchat_api::VrchatRequest)> {
         let user_id = user_id.trim().to_string();
         Ok((
             user_id.clone(),
@@ -590,7 +571,7 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
     fn favorite_limits(
         &self,
         endpoint: String,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatRequest> {
         Ok(test_request(endpoint, "/auth/user/favoritelimits"))
     }
 
@@ -599,7 +580,7 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
         endpoint: String,
         _n: i32,
         _offset: i32,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatRequest> {
         Ok(test_request(endpoint, "/favorites"))
     }
 
@@ -608,7 +589,7 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
         endpoint: String,
         _n: i32,
         _offset: i32,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatRequest> {
         Ok(test_request(endpoint, "/favorite/groups"))
     }
 
@@ -618,7 +599,7 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
         _offline: bool,
         _n: i32,
         _offset: i32,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatRequest> {
         Ok(test_request(endpoint, "/auth/user/friends"))
     }
 
@@ -626,10 +607,7 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
         &self,
         endpoint: String,
         world_id: String,
-    ) -> Result<(
-        String,
-        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
-    )> {
+    ) -> Result<(String, vrcx_0_contracts::vrchat_api::VrchatRequest)> {
         let world_id = world_id.trim().to_string();
         Ok((
             world_id.clone(),
@@ -641,7 +619,7 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
         &self,
         endpoint: String,
         group_id: String,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatRequest> {
         Ok(test_request(endpoint, &format!("/groups/{group_id}")))
     }
 
@@ -650,10 +628,7 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
         endpoint: String,
         receiver_user_id: String,
         body: serde_json::Value,
-    ) -> Result<(
-        String,
-        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
-    )> {
+    ) -> Result<(String, vrcx_0_contracts::vrchat_api::VrchatRequest)> {
         let mut request = test_request(endpoint, &format!("/invite/{receiver_user_id}"));
         request.body = vrcx_0_contracts::vrchat_api::VrchatRequestBody::Json(body);
         Ok((receiver_user_id, request))
@@ -666,10 +641,7 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
         _version: i64,
         _notification_type: String,
         _sender_user_id: String,
-    ) -> Result<(
-        String,
-        vrcx_0_application_core::vrchat_api::VrchatApiRequest,
-    )> {
+    ) -> Result<(String, vrcx_0_contracts::vrchat_api::VrchatRequest)> {
         Ok((
             notification_id.clone(),
             test_request(endpoint, &format!("/notifications/{notification_id}/hide")),
@@ -677,11 +649,8 @@ impl crate::RealtimeRemoteRequests for TestRealtimeRemoteRequests {
     }
 }
 
-fn test_request(
-    endpoint: String,
-    path: &str,
-) -> vrcx_0_application_core::vrchat_api::VrchatApiRequest {
-    vrcx_0_application_core::vrchat_api::VrchatApiRequest {
+fn test_request(endpoint: String, path: &str) -> vrcx_0_contracts::vrchat_api::VrchatRequest {
+    vrcx_0_contracts::vrchat_api::VrchatRequest {
         endpoint: Some(endpoint),
         path: Some(path.to_string()),
         ..Default::default()
@@ -706,7 +675,7 @@ fn runtime_with_active_session_game_context(
     local_game_context_available: bool,
 ) -> Result<(TestDir, TestRealtimeHostRuntime, RealtimeSessionContext)> {
     let dir = TestDir::new(name);
-    let store = Arc::new(TestRealtimeStore::new(dir.path.join("VRCX-0.sqlite3")));
+    let store = Arc::new(TestRealtimeStore::default());
     let web = Arc::new(WebClient::new(NoopWebClientPort));
     let session = HostSessionRuntime::new();
     let host_session_generation = session.set_realtime_context(RealtimeSessionContext::new(
@@ -740,39 +709,42 @@ fn runtime_with_active_session_game_context(
     let auth_scope = RuntimeAuthScope::new();
     auth_scope.set("usr_self", "https://api.vrchat.cloud/api/1");
     let event_bus = RuntimeEventBus::new();
-    let runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps {
-        store: Arc::clone(&store) as Arc<dyn crate::RealtimeStore>,
-        transport: Arc::new(TestRealtimeTransport),
-        remote_requests: Arc::new(TestRealtimeRemoteRequests),
-        web,
-        event_bus: event_bus.clone(),
-        backend_status: vrcx_0_application_core::BackendRuntimeStatusPublisher::new(
-            vrcx_0_application_core::BackendRuntime::new(
-                vrcx_0_application_core::RuntimeHostProfile::Desktop,
+    let runtime = Arc::new(RealtimeHostRuntime::new(
+        RealtimeHostRuntimeDeps {
+            stores: crate::RealtimeStores::shared(Arc::clone(&store)),
+            config: Arc::new(store.config.clone()),
+            transport: Arc::new(TestRealtimeTransport),
+            remote_requests: Arc::new(TestRealtimeRemoteRequests),
+            event_bus: event_bus.clone(),
+            backend_status: vrcx_0_application_core::BackendRuntimeStatusPublisher::new(
+                vrcx_0_application_core::BackendRuntime::new(
+                    vrcx_0_application_core::RuntimeHostProfile::Desktop,
+                ),
+                event_bus.clone(),
             ),
-            event_bus.clone(),
-        ),
-        friend_projection_sink: crate::FriendProjectionSink::new(event_bus.clone(), None),
-        sync: RuntimeSyncEngine::new(),
-        tasks: TaskSupervisor::new(),
-        session: session.clone(),
-        auth_scope,
-        remote_mutations: Arc::new(vrcx_0_application_core::RemoteMutationGate::default()),
-        local_game_context,
-        #[cfg(test)]
-        activity: Some(activity_sink.clone()),
-        #[cfg(not(test))]
-        activity: None,
-        #[cfg(test)]
-        notification_projection_observer: Some(notification_projection_observer.clone()),
-        #[cfg(not(test))]
-        notification_projection_observer: None,
-        world_cache,
-        file_cache,
-        instance_dwell: Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new()),
-        print_cleanup: Arc::new(NoopPrintCleanupInputSink),
-        current_user_snapshot_sink: None,
-    }));
+            friend_projection_sink: crate::FriendProjectionSink::new(event_bus.clone(), None),
+            sync: RuntimeSyncEngine::new(),
+            tasks: TaskSupervisor::new(),
+            session: session.clone(),
+            auth_scope,
+            remote_mutations: Arc::new(vrcx_0_application_core::RemoteMutationGate::default()),
+            local_game_context,
+            #[cfg(test)]
+            activity: Some(activity_sink.clone()),
+            #[cfg(not(test))]
+            activity: None,
+            #[cfg(test)]
+            notification_projection_observer: Some(notification_projection_observer.clone()),
+            #[cfg(not(test))]
+            notification_projection_observer: None,
+            world_cache,
+            file_cache,
+            instance_dwell: Arc::new(crate::InstanceDwellRegistry::new()),
+            print_cleanup: Arc::new(NoopPrintCleanupInputSink),
+            current_user_snapshot_sink: None,
+        },
+        web,
+    ));
     let active_session = RealtimeSessionContext::new(
         "usr_self".into(),
         "https://api.vrchat.cloud/api/1".into(),

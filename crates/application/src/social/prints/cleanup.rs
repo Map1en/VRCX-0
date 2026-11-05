@@ -7,19 +7,23 @@ use std::sync::{
 };
 use std::time::Duration;
 
+use serde::Serialize;
 use serde_json::Value;
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
-pub use vrcx_0_application_core::PrintAutoCleanupEvent;
 pub use vrcx_0_application_core::PrintCleanupTrigger;
 use vrcx_0_application_core::RuntimeAuthScope;
 use vrcx_0_application_core::{PrintCleanupInputSink, RuntimeEventBus, TaskSupervisor};
 pub use vrcx_0_application_realtime::is_print_created_content_refresh;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
+use vrcx_0_contracts::RuntimeEventPayload;
 
 use super::favorites::{
     read_auto_delete_old_prints_enabled, read_auto_delete_prints_limit,
     retain_existing_favorite_ids, PrintFavoritesStore,
 };
+use crate::scope_gate::ScopeGate;
 use vrcx_0_application_core::{AuthenticatedMutationContext, Error, RemoteMutationGate, Result};
+
+const GATE: ScopeGate = ScopeGate::new("Print cleanup");
 
 pub const PRINT_HARD_CAP: i64 = 64;
 pub const PRINT_AUTO_DELETE_LIMIT_MIN: i64 = 30;
@@ -29,7 +33,7 @@ const PRINT_CLEANUP_DEBOUNCE: Duration = Duration::from_millis(2500);
 const PRINT_CLEANUP_LIST_COUNT: i32 = 100;
 const PRINT_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
-pub type PrintRemoteFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
+pub type PrintRemoteFuture<'a> = BoxFuture<'a, Result<VrchatResponse>>;
 
 pub trait PrintRemote: Send + Sync {
     fn list_prints<'a>(
@@ -39,6 +43,18 @@ pub trait PrintRemote: Send + Sync {
         count: i32,
     ) -> PrintRemoteFuture<'a>;
     fn delete_print<'a>(&'a self, endpoint: &'a str, print_id: &'a str) -> PrintRemoteFuture<'a>;
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct PrintAutoCleanupEvent {
+    pub deleted: u32,
+    pub remaining: u32,
+    pub warning: Option<String>,
+}
+
+impl RuntimeEventPayload for PrintAutoCleanupEvent {
+    const EVENT_NAME: &'static str = "printsAutoCleanup";
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -250,9 +266,7 @@ pub async fn run_print_auto_cleanup(
         || normalize_print_endpoint(&trigger.endpoint)
             != normalize_print_endpoint(&mutation.scope().endpoint)
     {
-        return Err(Error::Custom(
-            "Print cleanup authentication scope changed.".into(),
-        ));
+        return Err(GATE.scope_changed_error());
     }
 
     let limit = read_auto_delete_prints_limit(deps.store.as_ref())?;

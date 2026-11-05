@@ -194,7 +194,6 @@ export function FriendRow({
     } = appearance || {};
     const decorationHover = useDecorationHover();
     const recentlyOnline = useRecentlyOnline(friend.id || '');
-    const decorationActive = decorationHover.active || recentlyOnline;
     const iconFrameId = showAvatarFrame ? friend.iconFrame?.trim() : '';
     const nameplateId = showNameplate ? friend.nameplateEffect?.trim() : '';
     const { displaySource, imageUrl, displayName, nameStyle } =
@@ -223,6 +222,10 @@ export function FriendRow({
         isGroupByInstance,
         locationTime
     });
+    const decorationActive =
+        decorationHover.active ||
+        recentlyOnline ||
+        (showLocationSubline && isTraveling);
     const timerLocation = isTraveling
         ? displayTraveling || ''
         : instanceLocation || friendLocation;
@@ -268,10 +271,7 @@ export function FriendRow({
                     iconFrameId ? (
                         <ProfileAvatarFrame
                             templateId={iconFrameId}
-                            active={
-                                decorationActive ||
-                                (showLocationSubline && isTraveling)
-                            }
+                            active={decorationActive}
                         />
                     ) : null
                 }

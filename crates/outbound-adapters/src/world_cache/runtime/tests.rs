@@ -34,10 +34,10 @@ fn test_db(name: &str) -> (TestDir, Arc<DatabaseService>) {
     (dir, db)
 }
 
-fn test_web(dir: &TestDir, db: &Arc<DatabaseService>) -> WebClient {
+fn test_web(dir: &TestDir, db: &Arc<DatabaseService>) -> Arc<WebClient> {
     let storage =
         vrcx_0_persistence::storage::StorageService::new(&dir.path.join("storage.json")).unwrap();
-    WebClient::new(
+    Arc::new(WebClient::new(
         crate::LocalWebClientAdapter::new(
             &storage,
             Arc::clone(db),
@@ -45,6 +45,15 @@ fn test_web(dir: &TestDir, db: &Arc<DatabaseService>) -> WebClient {
             env!("CARGO_PKG_VERSION"),
         )
         .unwrap(),
+    ))
+}
+
+fn test_cache(dir: &TestDir, db: &Arc<DatabaseService>, capacity: u64) -> WorldCache {
+    WorldCache::new(
+        Arc::clone(db),
+        test_web(dir, db),
+        capacity,
+        Duration::from_secs(60),
     )
 }
 
@@ -66,8 +75,8 @@ fn world_entry(id: &str, name: &str, updated_at: &str) -> CacheEntityInput {
 
 #[test]
 fn hydrate_from_payload_caches_bounded_card_fields_and_persists_summary() {
-    let (_dir, db) = test_db("hydrate-name-only");
-    let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+    let (dir, db) = test_db("hydrate-name-only");
+    let cache = test_cache(&dir, &db, 8);
 
     let name = cache.hydrate_from_payload(&json!({
         "id": "wrld_heavy",
@@ -116,8 +125,8 @@ fn hydrate_from_payload_caches_bounded_card_fields_and_persists_summary() {
 
 #[test]
 fn favorite_hydrate_overwrites_existing_cache_with_private_summary() {
-    let (_dir, db) = test_db("favorite-private-summary");
-    let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+    let (dir, db) = test_db("favorite-private-summary");
+    let cache = test_cache(&dir, &db, 8);
     let private_world = json!({
         "id": "wrld_private",
         "name": "Private World",
@@ -152,15 +161,15 @@ fn favorite_hydrate_overwrites_existing_cache_with_private_summary() {
 
 #[test]
 fn unavailable_world_responses_never_overwrite_existing_cache() {
-    let (_dir, db) = test_db("unavailable-preserves-cache");
-    let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+    let (dir, db) = test_db("unavailable-preserves-cache");
+    let cache = test_cache(&dir, &db, 8);
     world_cache_upsert(
         db.as_ref(),
         world_entry("wrld_gone", "Existing World", "2026-01-02T00:00:00.000Z"),
     )
     .unwrap();
 
-    cache.hydrate_response(&execute_response(
+    cache.hydrate_response(&vrchat_response(
         404,
         json!({ "error": { "message": "World not found", "status_code": 404 } }).to_string(),
     ));
@@ -189,8 +198,8 @@ fn unavailable_world_responses_never_overwrite_existing_cache() {
 
 #[test]
 fn hydrate_from_vrchat_payload_preserves_snake_case_timestamps() {
-    let (_dir, db) = test_db("hydrate-vrchat-timestamps");
-    let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+    let (dir, db) = test_db("hydrate-vrchat-timestamps");
+    let cache = test_cache(&dir, &db, 8);
 
     cache.hydrate_from_payload(&json!({
         "id": "wrld_timestamps",
@@ -210,13 +219,13 @@ fn hydrate_from_vrchat_payload_preserves_snake_case_timestamps() {
 
 #[test]
 fn summary_lookup_starts_empty_then_loads_db_row_into_memory() {
-    let (_dir, db) = test_db("summary-db-fallback");
+    let (dir, db) = test_db("summary-db-fallback");
     world_cache_upsert(
         db.as_ref(),
         world_entry("wrld_db_only", "DB Only World", "2026-01-02T00:00:00.000Z"),
     )
     .unwrap();
-    let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+    let cache = test_cache(&dir, &db, 8);
 
     assert_eq!(cache.get_name("wrld_db_only"), None);
 
@@ -248,13 +257,13 @@ fn summary_lookup_starts_empty_then_loads_db_row_into_memory() {
 
 #[test]
 fn summary_lookup_ignores_invalid_db_shells() {
-    let (_dir, db) = test_db("summary-invalid-shell");
+    let (dir, db) = test_db("summary-invalid-shell");
     world_cache_upsert(
         db.as_ref(),
         world_entry("wrld_shell", "", "2026-01-02T00:00:00.000Z"),
     )
     .unwrap();
-    let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+    let cache = test_cache(&dir, &db, 8);
 
     assert!(cache.get_summary("wrld_shell").unwrap().is_none());
     assert_eq!(cache.get_name("wrld_shell"), None);
@@ -272,11 +281,10 @@ async fn summary_resolution_uses_db_before_remote_api() {
         ),
     )
     .unwrap();
-    let web = test_web(&dir, &db);
-    let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+    let cache = test_cache(&dir, &db, 8);
 
     let summary = cache
-        .resolve_summary(&web, "http://127.0.0.1:9/api/1", "wrld_db_first")
+        .resolve_summary("http://127.0.0.1:9/api/1", "wrld_db_first")
         .await
         .expect("DB row should resolve without remote API");
 
@@ -291,17 +299,10 @@ async fn ordinary_get_returns_db_summary_without_remote_api() {
         world_entry("wrld_db_get", "DB Get World", "2026-01-02T00:00:00.000Z"),
     )
     .unwrap();
-    let web = test_web(&dir, &db);
-    let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+    let cache = test_cache(&dir, &db, 8);
 
     let response = cache
-        .get(
-            &web,
-            "http://127.0.0.1:9/api/1",
-            "wrld_db_get",
-            false,
-            false,
-        )
+        .get("http://127.0.0.1:9/api/1", "wrld_db_get", false, false)
         .await
         .expect("ordinary get should use the DB summary");
     let payload = serde_json::from_str::<Value>(&response.data).unwrap();
@@ -313,8 +314,7 @@ async fn ordinary_get_returns_db_summary_without_remote_api() {
 #[tokio::test]
 async fn image_resolution_prefers_memory_thumbnail() {
     let (dir, db) = test_db("image-memory");
-    let web = test_web(&dir, &db);
-    let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+    let cache = test_cache(&dir, &db, 8);
     cache.hydrate_from_payload(&json!({
         "id": "wrld_memory_image",
         "name": "Memory World",
@@ -325,7 +325,7 @@ async fn image_resolution_prefers_memory_thumbnail() {
 
     assert_eq!(
         cache
-            .resolve_image_url(&web, "http://127.0.0.1:9/api/1", "wrld_memory_image")
+            .resolve_image_url("http://127.0.0.1:9/api/1", "wrld_memory_image")
             .await
             .as_deref(),
         Some("thumb.png")
@@ -340,12 +340,11 @@ async fn image_resolution_accepts_partial_db_row_without_world_name() {
         world_entry("wrld_partial_image", "", "2026-01-02T00:00:00.000Z"),
     )
     .unwrap();
-    let web = test_web(&dir, &db);
-    let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+    let cache = test_cache(&dir, &db, 8);
 
     assert_eq!(
         cache
-            .resolve_image_url(&web, "http://127.0.0.1:9/api/1", "wrld_partial_image")
+            .resolve_image_url("http://127.0.0.1:9/api/1", "wrld_partial_image")
             .await
             .as_deref(),
         Some("thumb.png")
@@ -355,8 +354,8 @@ async fn image_resolution_accepts_partial_db_row_without_world_name() {
 
 #[tokio::test]
 async fn concurrent_image_resolution_fetches_world_once() {
-    let (_dir, db) = test_db("image-single-flight");
-    let cache = WorldCache::new(db, 8, Duration::from_secs(60));
+    let (dir, db) = test_db("image-single-flight");
+    let cache = test_cache(&dir, &db, 8);
     let calls = Arc::new(AtomicUsize::new(0));
     let body = json!({
         "id": "wrld_single_flight",
@@ -377,7 +376,7 @@ async fn concurrent_image_resolution_fetches_world_once() {
             assert_eq!(world_id, "wrld_single_flight");
             first_calls.fetch_add(1, Ordering::SeqCst);
             tokio::time::sleep(Duration::from_millis(25)).await;
-            Ok(execute_response(200, first_body))
+            Ok(vrchat_response(200, first_body))
         },
     );
     let second_calls = Arc::clone(&calls);
@@ -386,7 +385,7 @@ async fn concurrent_image_resolution_fetches_world_once() {
         "wrld_single_flight",
         move |_, _| async move {
             second_calls.fetch_add(1, Ordering::SeqCst);
-            Ok(execute_response(200, body))
+            Ok(vrchat_response(200, body))
         },
     );
 
@@ -399,8 +398,8 @@ async fn concurrent_image_resolution_fetches_world_once() {
 
 #[tokio::test]
 async fn image_resolution_respects_failure_cooldown() {
-    let (_dir, db) = test_db("image-failure-cooldown");
-    let cache = WorldCache::new(db, 8, Duration::from_secs(60));
+    let (dir, db) = test_db("image-failure-cooldown");
+    let cache = test_cache(&dir, &db, 8);
     let calls = Arc::new(AtomicUsize::new(0));
     let first_calls = Arc::clone(&calls);
 
@@ -421,7 +420,7 @@ async fn image_resolution_respects_failure_cooldown() {
             "wrld_failure_cooldown",
             move |_, _| async move {
                 second_calls.fetch_add(1, Ordering::SeqCst);
-                Ok(execute_response(
+                Ok(vrchat_response(
                     200,
                     json!({
                         "id": "wrld_failure_cooldown",
@@ -448,11 +447,10 @@ async fn force_get_bypasses_cached_summary_and_preserves_it_on_failure() {
         world_entry("wrld_force", "Cached World", "2026-01-02T00:00:00.000Z"),
     )
     .unwrap();
-    let web = test_web(&dir, &db);
-    let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+    let cache = test_cache(&dir, &db, 8);
 
     assert!(cache
-        .get(&web, "http://127.0.0.1:9/api/1", "wrld_force", true, false,)
+        .get("http://127.0.0.1:9/api/1", "wrld_force", true, false,)
         .await
         .is_err());
     assert_eq!(
@@ -463,15 +461,15 @@ async fn force_get_bypasses_cached_summary_and_preserves_it_on_failure() {
 
 #[test]
 fn successful_remote_response_refreshes_memory_and_database_summary() {
-    let (_dir, db) = test_db("hydrate-response");
+    let (dir, db) = test_db("hydrate-response");
     world_cache_upsert(
         db.as_ref(),
         world_entry("wrld_refresh", "Old World", "2026-01-02T00:00:00.000Z"),
     )
     .unwrap();
-    let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+    let cache = test_cache(&dir, &db, 8);
 
-    cache.hydrate_response(&execute_response(
+    cache.hydrate_response(&vrchat_response(
         200,
         json!({
             "id": "wrld_refresh",
@@ -505,8 +503,8 @@ fn successful_remote_response_refreshes_memory_and_database_summary() {
 
 #[test]
 fn resolve_guards_are_scoped_by_normalized_endpoint() {
-    let (_dir, db) = test_db("endpoint-scoped-guards");
-    let cache = WorldCache::new(db, 8, Duration::from_secs(60));
+    let (dir, db) = test_db("endpoint-scoped-guards");
+    let cache = test_cache(&dir, &db, 8);
     let world_id = "wrld_shared";
 
     let first = resolve_key(" https://one.example/api/1/ ", world_id);
@@ -526,8 +524,8 @@ fn resolve_guards_are_scoped_by_normalized_endpoint() {
 
 #[test]
 fn failure_cache_is_bounded() {
-    let (_dir, db) = test_db("bounded-failures");
-    let cache = WorldCache::new(db, 8, Duration::from_secs(60));
+    let (dir, db) = test_db("bounded-failures");
+    let cache = test_cache(&dir, &db, 8);
 
     for index in 0..WORLD_RESOLVE_FAILURE_CAPACITY * 2 {
         cache.record_failure(&resolve_key(
@@ -542,8 +540,8 @@ fn failure_cache_is_bounded() {
 
 #[test]
 fn hidden_worlds_are_cached_in_memory_but_never_persisted_to_disk() {
-    let (_dir, db) = test_db("hidden-not-persisted");
-    let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+    let (dir, db) = test_db("hidden-not-persisted");
+    let cache = test_cache(&dir, &db, 8);
     let hidden_world = json!({
         "id": "wrld_hidden",
         "name": "Hidden World",
@@ -574,8 +572,8 @@ fn hidden_worlds_are_cached_in_memory_but_never_persisted_to_disk() {
 
 #[test]
 fn unrecognized_release_status_worlds_are_never_persisted() {
-    let (_dir, db) = test_db("unknown-status-not-persisted");
-    let cache = WorldCache::new(Arc::clone(&db), 8, Duration::from_secs(60));
+    let (dir, db) = test_db("unknown-status-not-persisted");
+    let cache = test_cache(&dir, &db, 8);
 
     cache.hydrate_from_payload(&json!({
         "id": "wrld_future",
@@ -591,8 +589,8 @@ fn unrecognized_release_status_worlds_are_never_persisted() {
 
 #[test]
 fn capacity_bounds_every_hydrated_world() {
-    let (_dir, db) = test_db("bounded-summaries");
-    let cache = WorldCache::new(Arc::clone(&db), 1, Duration::from_secs(60));
+    let (dir, db) = test_db("bounded-summaries");
+    let cache = test_cache(&dir, &db, 1);
     cache.hydrate_from_payload(&json!({
         "id": "wrld_first",
         "name": "First World",

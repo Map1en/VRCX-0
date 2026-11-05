@@ -13,10 +13,10 @@ use vrcx_0_core::location::{is_meaningful_world_name, parse_location, world_id_f
 use vrcx_0_i18n::OverlayMessage;
 use vrcx_0_vr_overlay::{AvatarBitmap, OverlaySurfaceId, RgbaFrame, MAIN_SURFACE_ID};
 
+use super::super::config::{HmdNotificationStyle, VrOverlayRuntimeConfig};
 use super::super::manager::VrOverlayManager;
-use super::super::runtime::{
-    render_slint_hmd_frame, HmdNotificationStyle, VrOverlayRuntime, VrOverlayRuntimeConfig,
-};
+use super::super::runtime::frame::render_slint_hmd_frame;
+use super::super::runtime::VrOverlayRuntime;
 use super::super::service::HostVrOverlayService;
 use super::super::test_preview::test_hmd_toast_views;
 use super::super::tracker_watch::TrackerDisconnect;
@@ -64,11 +64,7 @@ impl VrOverlayRuntime {
             if !endpoint.trim().is_empty() {
                 let world_name = async {
                     let world_id = world_id.as_deref()?;
-                    let resolve = services.world_cache().resolve_name(
-                        services.web_client().as_ref(),
-                        &endpoint,
-                        world_id,
-                    );
+                    let resolve = services.world_cache().resolve_name(&endpoint, world_id);
                     tokio::time::timeout(HMD_TOAST_LOCATION_RESOLVE_BUDGET, resolve)
                         .await
                         .ok()

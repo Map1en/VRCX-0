@@ -1,34 +1,26 @@
-use futures_util::future::BoxFuture;
-
 use std::future::Future;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use vrcx_0_contracts::vrchat_api::{VrchatJsonResponse, VrchatResponse};
+use vrcx_0_contracts::vrchat_api::{VrchatJsonResponse, VrchatScope};
 use vrcx_0_core::json::RawJson;
 
+use crate::remote::VrchatRequestPort;
+use crate::scope_gate::ScopeGate;
 use vrcx_0_application_core::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot};
+
+const GATE: ScopeGate = ScopeGate::new("Inventory collect");
 
 const INVENTORY_COLLECT_PAGE_SIZE: usize = 100;
 const INVENTORY_COLLECT_MAX_PAGES: usize = 100;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct InventoryPageRequest {
-    pub page_size: i32,
-    pub offset: i32,
-    pub types: Option<String>,
-    pub not_flags: Option<String>,
-    pub archived: Option<bool>,
-}
-
-pub type InventoryPageFuture<'a> = BoxFuture<'a, Result<VrchatResponse>>;
-
-pub trait InventoryRemoteRequests: Send + Sync {
-    fn inventory_page(
-        &self,
-        endpoint: String,
-        input: InventoryPageRequest,
-    ) -> InventoryPageFuture<'_>;
+struct InventoryPageRequest {
+    page_size: i32,
+    offset: i32,
+    types: Option<String>,
+    not_flags: Option<String>,
+    archived: Option<bool>,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, specta::Type)]
@@ -113,19 +105,19 @@ pub struct InventoryItemsCollectOutput {
 }
 
 pub struct InventoryItemsCollectDeps<'a> {
-    pub(crate) remote_requests: &'a dyn InventoryRemoteRequests,
+    pub(crate) remote: &'a dyn VrchatRequestPort,
     pub auth_scope: &'a RuntimeAuthScope,
     pub expected_scope: RuntimeAuthScopeSnapshot,
 }
 
 impl<'a> InventoryItemsCollectDeps<'a> {
     pub fn new(
-        remote_requests: &'a dyn InventoryRemoteRequests,
+        remote: &'a dyn VrchatRequestPort,
         auth_scope: &'a RuntimeAuthScope,
         expected_scope: RuntimeAuthScopeSnapshot,
     ) -> Self {
         Self {
-            remote_requests,
+            remote,
             auth_scope,
             expected_scope,
         }
@@ -166,15 +158,22 @@ async fn fetch_inventory_page(
     input: &InventoryItemsCollectInput,
     page_index: usize,
 ) -> Result<Vec<Value>> {
-    ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
-    let response = deps
-        .remote_requests
-        .inventory_page(
-            deps.expected_scope.endpoint.clone(),
-            page_request_params(input, page_index),
-        )
-        .await?;
-    ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
+    GATE.ensure_matches(deps.auth_scope, &deps.expected_scope)?;
+    let input = page_request_params(input, page_index);
+    let request = vrcx_0_vrchat_protocol::media::inventory_items_get_input(
+        deps.expected_scope.endpoint.clone(),
+        vrcx_0_vrchat_protocol::media::InventoryListParams {
+            n: Some(input.page_size),
+            offset: Some(input.offset),
+            order: Some(vrcx_0_vrchat_protocol::media::InventoryOrder::Newest),
+            types: input.types,
+            not_flags: input.not_flags,
+            archived: input.archived,
+            ..Default::default()
+        },
+    );
+    let response = deps.remote.send(request, VrchatScope::VrchatMedia).await?;
+    GATE.ensure_matches(deps.auth_scope, &deps.expected_scope)?;
     parse_inventory_page(VrchatJsonResponse::parse(response.status, &response.data))
 }
 
@@ -215,13 +214,6 @@ fn parse_inventory_page(response: VrchatJsonResponse) -> Result<Vec<Value>> {
         .and_then(Value::as_array)
         .cloned()
         .unwrap_or_default())
-}
-
-fn ensure_scope_matches(
-    current: &RuntimeAuthScopeSnapshot,
-    expected: &RuntimeAuthScopeSnapshot,
-) -> Result<()> {
-    crate::scope_gate::ensure_snapshot_scope_matches(current, expected, "Inventory collect")
 }
 
 #[cfg(test)]
@@ -357,14 +349,16 @@ mod tests {
             generation: 1,
             active: true,
         };
-        assert!(ensure_scope_matches(&expected.clone(), &expected).is_ok());
+        assert!(GATE
+            .ensure_snapshot_matches(&expected.clone(), &expected)
+            .is_ok());
 
         let mut stale = expected.clone();
         stale.generation = 2;
-        assert!(ensure_scope_matches(&stale, &expected).is_err());
+        assert!(GATE.ensure_snapshot_matches(&stale, &expected).is_err());
 
         let mut inactive = expected.clone();
         inactive.active = false;
-        assert!(ensure_scope_matches(&inactive, &expected).is_err());
+        assert!(GATE.ensure_snapshot_matches(&inactive, &expected).is_err());
     }
 }

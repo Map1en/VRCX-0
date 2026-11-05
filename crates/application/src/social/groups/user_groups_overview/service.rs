@@ -1,24 +1,23 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 use vrcx_0_application_core::RuntimeOperationStatus;
 use vrcx_0_core::text::normalize_text;
 
 use serde_json::Value;
-use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
 use vrcx_0_application_core::RuntimeAuthScope;
 use vrcx_0_application_core::{Error, Result};
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_contracts::VrchatJsonResponse;
 use vrcx_0_core::json::{object_scalar_text, result_rows};
 use vrcx_0_core::GroupPermission;
 
 use super::super::permissions::{parse_permission_map, permissions_for_group};
-use super::super::service::{execute_group_api_raw, GroupApiDeps, GroupMembershipRemoteRequests};
+use super::super::service::{execute_group_api_raw, GroupApiDeps};
 use super::types::{UserGroupsOverviewGroup, UserGroupsOverviewInput, UserGroupsOverviewOutput};
 
 #[derive(Clone)]
 pub struct UserGroupsOverviewDeps {
     pub groups: GroupApiDeps,
     pub auth_scope: RuntimeAuthScope,
-    pub remote_requests: Arc<dyn GroupMembershipRemoteRequests>,
 }
 
 pub async fn get_user_groups_overview(
@@ -88,8 +87,11 @@ async fn load_user_groups_overview(
     let group_rows = result_rows(
         &execute_vrchat_json_request(
             &deps,
-            deps.remote_requests
-                .user_groups(endpoint.clone(), current_user_id.clone())?,
+            vrcx_0_vrchat_protocol::groups::user_groups_get_input(
+                endpoint.clone(),
+                current_user_id.clone(),
+            )?
+            .1,
             "VRChat user groups overview groups request failed",
         )
         .await?,
@@ -97,8 +99,11 @@ async fn load_user_groups_overview(
 
     let (permission_map, permissions_degraded) = match execute_vrchat_json_request(
         &deps,
-        deps.remote_requests
-            .user_permissions(endpoint.clone(), current_user_id.clone())?,
+        vrcx_0_vrchat_protocol::groups::user_group_permissions_get_input(
+            endpoint.clone(),
+            current_user_id.clone(),
+        )?
+        .1,
         "VRChat user groups overview permissions request failed",
     )
     .await
@@ -165,7 +170,7 @@ fn group_overview_from_value(
 
 async fn execute_vrchat_json_request(
     deps: &UserGroupsOverviewDeps,
-    request: VrchatApiRequest,
+    request: VrchatRequest,
     fallback: &str,
 ) -> Result<Value> {
     let response = execute_vrchat_api(deps, request).await?;
@@ -177,7 +182,7 @@ async fn execute_vrchat_json_request(
 
 async fn execute_vrchat_api(
     deps: &UserGroupsOverviewDeps,
-    request: VrchatApiRequest,
+    request: VrchatRequest,
 ) -> Result<VrchatJsonResponse> {
     let response = execute_group_api_raw(&deps.groups, request).await?;
     Ok(VrchatJsonResponse::from(&response))

@@ -3,11 +3,11 @@ use futures_util::future::BoxFuture;
 use std::sync::Arc;
 use std::time::Duration;
 
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::{
     AuthenticatedMutationContext, RemoteMutationGate, Result, RuntimeAuthScope,
     RuntimeAuthScopeSnapshot,
 };
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use super::types::{
     VrchatCurrentUserBadgeInput, VrchatCurrentUserProfileUpdateInput, VrchatCurrentUserTagsInput,
@@ -19,7 +19,7 @@ use vrcx_0_contracts::vrchat_requests::{
 
 const CURRENT_USER_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
-pub type CurrentUserMutationFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
+pub type CurrentUserMutationFuture<'a> = BoxFuture<'a, Result<VrchatResponse>>;
 pub type CurrentUserQueryInvalidationFuture<'a> = BoxFuture<'a, ()>;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -71,7 +71,7 @@ impl CurrentUserMutationRuntime {
     pub async fn update_profile(
         &self,
         input: VrchatCurrentUserProfileUpdateInput,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         self.execute(
             "Current-user profile mutation",
             CurrentUserMutationRequest::Profile(input.params),
@@ -80,10 +80,7 @@ impl CurrentUserMutationRuntime {
         .await
     }
 
-    pub async fn update_user(
-        &self,
-        input: VrchatCurrentUserUpdateInput,
-    ) -> Result<VrchatApiResponse> {
+    pub async fn update_user(&self, input: VrchatCurrentUserUpdateInput) -> Result<VrchatResponse> {
         self.execute(
             "Current-user mutation",
             CurrentUserMutationRequest::User(input.params),
@@ -92,10 +89,7 @@ impl CurrentUserMutationRuntime {
         .await
     }
 
-    pub async fn update_badge(
-        &self,
-        input: VrchatCurrentUserBadgeInput,
-    ) -> Result<VrchatApiResponse> {
+    pub async fn update_badge(&self, input: VrchatCurrentUserBadgeInput) -> Result<VrchatResponse> {
         self.execute(
             "Current-user badge mutation",
             CurrentUserMutationRequest::Badge {
@@ -108,7 +102,7 @@ impl CurrentUserMutationRuntime {
         .await
     }
 
-    pub async fn add_tags(&self, input: VrchatCurrentUserTagsInput) -> Result<VrchatApiResponse> {
+    pub async fn add_tags(&self, input: VrchatCurrentUserTagsInput) -> Result<VrchatResponse> {
         self.execute(
             "Current-user tags mutation",
             CurrentUserMutationRequest::AddTags(input.tags),
@@ -117,10 +111,7 @@ impl CurrentUserMutationRuntime {
         .await
     }
 
-    pub async fn remove_tags(
-        &self,
-        input: VrchatCurrentUserTagsInput,
-    ) -> Result<VrchatApiResponse> {
+    pub async fn remove_tags(&self, input: VrchatCurrentUserTagsInput) -> Result<VrchatResponse> {
         self.execute(
             "Current-user tags mutation",
             CurrentUserMutationRequest::RemoveTags(input.tags),
@@ -134,7 +125,7 @@ impl CurrentUserMutationRuntime {
         label: &'static str,
         request: CurrentUserMutationRequest,
         invalidate_user_query: bool,
-    ) -> Result<VrchatApiResponse> {
+    ) -> Result<VrchatResponse> {
         let mutation = AuthenticatedMutationContext::capture(
             &self.auth_scope,
             self.remote_mutations.as_ref(),

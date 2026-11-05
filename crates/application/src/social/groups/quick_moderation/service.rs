@@ -1,21 +1,18 @@
-use std::{
-    collections::{HashMap, VecDeque},
-    sync::Arc,
-};
+use std::collections::{HashMap, VecDeque};
 use vrcx_0_application_core::RuntimeOperationStatus;
 use vrcx_0_core::text::normalize_text;
 use vrcx_0_core::GroupPermission;
 
 use futures_util::stream::{FuturesUnordered, StreamExt};
 use serde_json::Value;
-use vrcx_0_application_core::vrchat_api::VrchatApiRequest;
 use vrcx_0_application_core::RuntimeAuthScope;
 use vrcx_0_application_core::{Error, Result};
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
 use vrcx_0_contracts::VrchatJsonResponse;
 use vrcx_0_core::json::{object_scalar_text, result_rows, scalar_text_array};
 
 use super::super::permissions::{has_permission, parse_permission_map, permissions_for_group};
-use super::super::service::{execute_group_api_raw, GroupApiDeps, GroupMembershipRemoteRequests};
+use super::super::service::{execute_group_api_raw, GroupApiDeps};
 use super::types::{
     GroupQuickModerationAction, GroupQuickModerationActionInput, GroupQuickModerationActionOutput,
     GroupQuickModerationGroup, GroupQuickModerationInput, GroupQuickModerationOutput,
@@ -29,7 +26,6 @@ const MEMBERSHIP_PROBE_CONCURRENCY: usize = 5;
 pub struct GroupQuickModerationDeps {
     pub groups: GroupApiDeps,
     pub auth_scope: RuntimeAuthScope,
-    pub remote_requests: Arc<dyn GroupMembershipRemoteRequests>,
 }
 
 struct MembershipProbe {
@@ -155,16 +151,22 @@ async fn load_group_quick_moderation(
 
     let current_groups = execute_vrchat_json_request(
         &deps,
-        deps.remote_requests
-            .user_groups(endpoint.clone(), current_user_id.clone())?,
+        vrcx_0_vrchat_protocol::groups::user_groups_get_input(
+            endpoint.clone(),
+            current_user_id.clone(),
+        )?
+        .1,
         "VRChat group quick moderation current groups request failed",
     )
     .await?;
     let permission_map = parse_permission_map(
         &execute_vrchat_json_request(
             &deps,
-            deps.remote_requests
-                .user_permissions(endpoint.clone(), current_user_id.clone())?,
+            vrcx_0_vrchat_protocol::groups::user_group_permissions_get_input(
+                endpoint.clone(),
+                current_user_id.clone(),
+            )?
+            .1,
             "VRChat group quick moderation permissions request failed",
         )
         .await?,
@@ -257,13 +259,24 @@ async fn execute_group_quick_moderation_action(
     ensure_current_scope(&deps, current_user_id.as_str(), &endpoint)?;
     let action = input.action;
 
-    let request = quick_action_request(
-        deps.remote_requests.as_ref(),
-        &endpoint,
-        &group_id,
-        &target_user_id,
-        action,
-    )?;
+    let request = match action {
+        GroupQuickModerationAction::Kick => {
+            vrcx_0_vrchat_protocol::groups::member_kick_input(
+                endpoint.to_string(),
+                group_id.as_str().to_string(),
+                target_user_id.as_str().to_string(),
+            )?
+            .2
+        }
+        GroupQuickModerationAction::Ban => {
+            vrcx_0_vrchat_protocol::groups::member_ban_input(
+                endpoint.to_string(),
+                group_id.as_str().to_string(),
+                target_user_id.as_str().to_string(),
+            )?
+            .2
+        }
+    };
     let response = execute_vrchat_api(&deps, request).await?;
     if let Some(failure) = response.failure_or("VRChat group quick moderation action failed") {
         return Err(failure.into());
@@ -275,27 +288,6 @@ async fn execute_group_quick_moderation_action(
         action,
         status: response.status,
     })
-}
-
-fn quick_action_request(
-    remote_requests: &dyn GroupMembershipRemoteRequests,
-    endpoint: &str,
-    group_id: &ValidatedGroupId,
-    target_user_id: &ValidatedUserId,
-    action: GroupQuickModerationAction,
-) -> Result<VrchatApiRequest> {
-    match action {
-        GroupQuickModerationAction::Kick => remote_requests.kick(
-            endpoint.to_string(),
-            group_id.as_str().to_string(),
-            target_user_id.as_str().to_string(),
-        ),
-        GroupQuickModerationAction::Ban => remote_requests.ban(
-            endpoint.to_string(),
-            group_id.as_str().to_string(),
-            target_user_id.as_str().to_string(),
-        ),
-    }
 }
 
 async fn probe_kick_memberships(
@@ -348,20 +340,20 @@ async fn probe_group_member(
     target_user_id: String,
     group: GroupQuickModerationGroup,
 ) -> MembershipProbe {
-    let request =
-        match deps
-            .remote_requests
-            .member(endpoint, group.group_id.clone(), target_user_id)
-        {
-            Ok(request) => request,
-            Err(_) => {
-                return MembershipProbe {
-                    group,
-                    member: None,
-                    failed: true,
-                }
+    let request = match vrcx_0_vrchat_protocol::groups::member_get_input(
+        endpoint,
+        group.group_id.clone(),
+        target_user_id,
+    ) {
+        Ok((_, _, request)) => request,
+        Err(_) => {
+            return MembershipProbe {
+                group,
+                member: None,
+                failed: true,
             }
-        };
+        }
+    };
 
     match execute_vrchat_api(deps, request).await {
         Ok(response) if (200..=299).contains(&response.status) => MembershipProbe {
@@ -384,7 +376,7 @@ async fn probe_group_member(
 
 async fn execute_vrchat_json_request(
     deps: &GroupQuickModerationDeps,
-    request: VrchatApiRequest,
+    request: VrchatRequest,
     fallback: &str,
 ) -> Result<Value> {
     let response = execute_vrchat_api(deps, request).await?;
@@ -396,7 +388,7 @@ async fn execute_vrchat_json_request(
 
 async fn execute_vrchat_api(
     deps: &GroupQuickModerationDeps,
-    request: VrchatApiRequest,
+    request: VrchatRequest,
 ) -> Result<VrchatJsonResponse> {
     let response = execute_group_api_raw(&deps.groups, request).await?;
     Ok(VrchatJsonResponse::from(&response))
@@ -559,79 +551,71 @@ mod tests {
     use super::*;
     use serde_json::json;
 
-    struct TestRequests;
+    struct RecordingPort {
+        sent: std::sync::Mutex<Vec<VrchatRequest>>,
+    }
 
-    impl GroupMembershipRemoteRequests for TestRequests {
-        fn user_groups(&self, _endpoint: String, _user_id: String) -> Result<VrchatApiRequest> {
-            Ok(VrchatApiRequest::default())
-        }
-
-        fn user_permissions(
+    impl crate::remote::VrchatRequestPort for RecordingPort {
+        fn send(
             &self,
-            _endpoint: String,
-            _user_id: String,
-        ) -> Result<VrchatApiRequest> {
-            Ok(VrchatApiRequest::default())
-        }
-
-        fn member(
-            &self,
-            _endpoint: String,
-            _group_id: String,
-            _user_id: String,
-        ) -> Result<VrchatApiRequest> {
-            Ok(VrchatApiRequest::default())
-        }
-
-        fn kick(
-            &self,
-            _endpoint: String,
-            _group_id: String,
-            _user_id: String,
-        ) -> Result<VrchatApiRequest> {
-            Ok(VrchatApiRequest {
-                path: Some("kick".into()),
-                ..VrchatApiRequest::default()
-            })
-        }
-
-        fn ban(
-            &self,
-            _endpoint: String,
-            _group_id: String,
-            _user_id: String,
-        ) -> Result<VrchatApiRequest> {
-            Ok(VrchatApiRequest {
-                path: Some("ban".into()),
-                ..VrchatApiRequest::default()
+            input: VrchatRequest,
+            _scope: vrcx_0_contracts::vrchat_api::VrchatScope,
+        ) -> crate::remote::VrchatRequestFuture<'_> {
+            self.sent.lock().unwrap().push(input);
+            Box::pin(async {
+                Ok(vrcx_0_contracts::vrchat_api::VrchatResponse {
+                    status: 200,
+                    data: "{}".into(),
+                })
             })
         }
     }
 
-    #[test]
-    fn quick_action_request_dispatches_kick_and_ban_to_their_builders() {
-        let group_id = ValidatedGroupId::new("grp_1").unwrap();
-        let target_user_id = ValidatedUserId::new("usr_1").unwrap();
-        let request = |action| {
-            quick_action_request(
-                &TestRequests,
-                "https://api.vrchat.cloud/api/1",
-                &group_id,
-                &target_user_id,
-                action,
-            )
-            .unwrap()
-            .path
+    #[tokio::test(start_paused = true)]
+    async fn quick_actions_send_kick_and_ban_to_encoded_group_member_paths() {
+        let endpoint = "https://api.vrchat.cloud/api/1";
+        let port = std::sync::Arc::new(RecordingPort {
+            sent: std::sync::Mutex::default(),
+        });
+        let auth_scope = RuntimeAuthScope::new();
+        auth_scope.set("usr_self", endpoint);
+        let deps = GroupQuickModerationDeps {
+            groups: GroupApiDeps::new(
+                port.clone(),
+                vrcx_0_application_core::RuntimeDiagnostics::new(),
+                vrcx_0_application_core::RuntimeSyncEngine::new(),
+                auth_scope.clone(),
+                std::sync::Arc::new(vrcx_0_application_core::RemoteMutationGate::default()),
+            ),
+            auth_scope,
         };
+        for action in [
+            GroupQuickModerationAction::Kick,
+            GroupQuickModerationAction::Ban,
+        ] {
+            run_group_quick_moderation_action(
+                deps.clone(),
+                GroupQuickModerationActionInput {
+                    current_user_id: "usr_self".into(),
+                    target_user_id: "usr 1".into(),
+                    group_id: "grp 1".into(),
+                    endpoint: endpoint.into(),
+                    action,
+                },
+            )
+            .await
+            .unwrap();
+        }
 
+        let sent = port.sent.lock().unwrap();
+        assert_eq!(sent.len(), 2);
+        assert_eq!(sent[0].method.as_deref(), Some("DELETE"));
         assert_eq!(
-            request(GroupQuickModerationAction::Kick).as_deref(),
-            Some("kick")
+            sent[0].path.as_deref(),
+            Some("groups/grp%201/members/usr%201")
         );
-        assert_eq!(
-            request(GroupQuickModerationAction::Ban).as_deref(),
-            Some("ban")
-        );
+        assert_eq!(sent[1].method.as_deref(), Some("POST"));
+        assert_eq!(sent[1].path.as_deref(), Some("groups/grp%201/bans"));
     }
 
     #[test]

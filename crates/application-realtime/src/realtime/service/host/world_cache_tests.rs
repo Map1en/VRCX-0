@@ -1,6 +1,6 @@
 use super::test_support::*;
 use super::*;
-use vrcx_0_application_core::RealtimeEntryCorrectionStream;
+use crate::RealtimeEntryCorrectionStream;
 use vrcx_0_core::OwnerId;
 
 #[test]

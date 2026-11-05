@@ -8,19 +8,14 @@ use vrcx_0_contracts::social_aggregates as social;
 use vrcx_0_contracts::FavoriteRow;
 use vrcx_0_core::{FavoriteEntityKind, OwnerId};
 use vrcx_0_mcp::{
-    McpActivityQueryPort, McpChatboxPort, McpConfigPort, McpFavoritesQueryPort, McpFeedQueryPort,
+    McpActivityQueryPort, McpChatboxPort, McpFavoritesQueryPort, McpFeedQueryPort,
     McpFriendCurrent, McpFriendLocalDataPort, McpFriendMemo, McpFuture, McpInterruptCheck,
     McpLocalModeration, McpMemoSave, McpMutualGraphMeta, McpMutualGraphPort, McpPlaySpan,
     McpScreenshotQueryPort, McpSocialHistoryQueryPort, McpWorldLookupPort,
 };
 use vrcx_0_persistence::{
-    activity_page, config::ConfigRepository, favorites, friends, local_moderation, memos,
-    social_aggregates, DatabaseService,
+    activity_page, favorites, friends, local_moderation, memos, social_aggregates, DatabaseService,
 };
-
-pub(crate) struct DesktopMcpConfigAdapter {
-    config: ConfigRepository,
-}
 
 pub(crate) struct DesktopMcpScreenshotAdapter {
     db_path: std::path::PathBuf,
@@ -96,19 +91,16 @@ impl McpScreenshotQueryPort for DesktopMcpScreenshotAdapter {
 }
 
 pub(crate) struct DesktopMcpWorldLookupAdapter {
-    web: Arc<vrcx_0_application_core::WebClient>,
     world_cache: Arc<vrcx_0_application_core::WorldCache>,
     auth_scope: vrcx_0_application_core::RuntimeAuthScope,
 }
 
 impl DesktopMcpWorldLookupAdapter {
     pub(crate) fn new(
-        web: Arc<vrcx_0_application_core::WebClient>,
         world_cache: Arc<vrcx_0_application_core::WorldCache>,
         auth_scope: vrcx_0_application_core::RuntimeAuthScope,
     ) -> Self {
         Self {
-            web,
             world_cache,
             auth_scope,
         }
@@ -124,7 +116,7 @@ impl McpWorldLookupPort for DesktopMcpWorldLookupAdapter {
             let endpoint = self.auth_scope.snapshot().endpoint;
             let response = self
                 .world_cache
-                .get(&self.web, &endpoint, &world_id, false, true)
+                .get(&endpoint, &world_id, false, true)
                 .await?;
             if !(200..=299).contains(&response.status) {
                 return Err(vrcx_0_application_core::Error::Custom(format!(
@@ -200,37 +192,12 @@ impl McpMutualGraphPort for DesktopMcpMutualGraphAdapter {
             Arc::new(vrcx_0_outbound_adapters::LocalMutualGraphStore::new(
                 Arc::clone(&self.db),
             )),
-            Arc::new(vrcx_0_outbound_adapters::VrchatMutualGraphRemoteRequests),
             Arc::new(vrcx_0_outbound_adapters::VrchatRequestAdapter::new(
                 Arc::clone(&self.web),
             )),
             self.auth_scope.clone(),
             self.tasks.clone(),
         )
-    }
-}
-
-impl DesktopMcpConfigAdapter {
-    pub(crate) fn new(config: ConfigRepository) -> Self {
-        Self { config }
-    }
-}
-
-impl McpConfigPort for DesktopMcpConfigAdapter {
-    fn get_bool(&self, key: &str, default: bool) -> vrcx_0_application_core::Result<bool> {
-        self.config.get_bool(key, default).map_err(Into::into)
-    }
-
-    fn set_bool(&self, key: &str, value: bool) -> vrcx_0_application_core::Result<()> {
-        self.config.set_bool(key, value).map_err(Into::into)
-    }
-
-    fn get_string(&self, key: &str, default: &str) -> vrcx_0_application_core::Result<String> {
-        self.config.get_string(key, default).map_err(Into::into)
-    }
-
-    fn set_string(&self, key: &str, value: &str) -> vrcx_0_application_core::Result<()> {
-        self.config.set_string(key, value).map_err(Into::into)
     }
 }
 
@@ -526,7 +493,7 @@ impl McpFriendLocalDataPort for DesktopMcpFriendLocalDataAdapter {
     }
 }
 
-fn friend_memo(row: memos::UserMemoOutput) -> McpFriendMemo {
+fn friend_memo(row: vrcx_0_contracts::memos::UserMemoOutput) -> McpFriendMemo {
     McpFriendMemo {
         user_id: row.user_id,
         edited_at: row.edited_at,

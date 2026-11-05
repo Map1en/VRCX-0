@@ -3,9 +3,9 @@ use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use vrcx_0_application_core::{
-    ActivityIngress, BackendRuntimeStatusPublisher, InstanceRosterMember, InstanceRosterObserver,
-    InstanceRosterSnapshot, RuntimeOperationStatus,
+    ActivityIngress, BackendRuntimeStatusPublisher, ConfigStore, RuntimeOperationStatus,
 };
+use vrcx_0_contracts::{InstanceRosterMember, InstanceRosterObserver, InstanceRosterSnapshot};
 
 use vrcx_0_contracts::activity::ActivityKind;
 use vrcx_0_contracts::game_log::{GameLogJoinLeaveEntry, GameLogWriteBatch};
@@ -62,7 +62,8 @@ pub enum GameLogWorkerJob {
 
 #[derive(Clone)]
 pub struct GameLogProcessorDeps {
-    pub(crate) store: Arc<dyn crate::GameStateStore>,
+    pub(crate) stores: crate::GameLogStores,
+    pub(crate) config: Arc<dyn ConfigStore>,
     pub(crate) instance_media: Arc<dyn InstanceMediaPort>,
     pub(crate) video_metadata: Arc<dyn VideoMetadataPort>,
     pub event_bus: RuntimeEventBus,
@@ -173,7 +174,7 @@ pub struct GameLogProcessor {
 impl GameLogProcessor {
     pub fn new(deps: GameLogProcessorDeps) -> Self {
         let mut engine = GameLogIngestEngine::default();
-        let checkpoint = match deps.store.get_string("gameLogReplayCheckpoint", "") {
+        let checkpoint = match deps.config.get_string("gameLogReplayCheckpoint", "") {
             Ok(value) if value.is_empty() => None,
             Ok(value) => {
                 match serde_json::from_str::<ReplayCheckpoint>(&value) {
@@ -192,7 +193,7 @@ impl GameLogProcessor {
         let mut scan_cursor = None;
         let mut replayed_departures = Vec::new();
         if !deps
-            .store
+            .config
             .get_bool("gameLogDisabled", false)
             .unwrap_or(false)
         {
@@ -377,7 +378,7 @@ impl GameLogProcessor {
                 return Ok(());
             }
         }
-        let persistence_disabled = self.deps.store.get_bool("gameLogDisabled", false)?;
+        let persistence_disabled = self.deps.config.get_bool("gameLogDisabled", false)?;
         if let Some((cursor, _)) = &scan {
             if self.replay_cursor().as_ref().is_none_or(|previous| {
                 previous.file_name != cursor.file_name
@@ -408,7 +409,7 @@ impl GameLogProcessor {
                 )?;
             }
         }
-        let log_resource_load = self.deps.store.get_bool("logResourceLoad", false)?;
+        let log_resource_load = self.deps.config.get_bool("logResourceLoad", false)?;
         let cutoff = scan
             .as_ref()
             .and_then(|(cursor, _)| super::parse_event_time_ms(&cursor.cutoff))
@@ -523,7 +524,7 @@ impl GameLogProcessor {
         } else {
             output.projection = None;
         }
-        if self.deps.store.get_bool("gameLogDisabled", false)? || before_resume_cutoff {
+        if self.deps.config.get_bool("gameLogDisabled", false)? || before_resume_cutoff {
             return self.apply_without_core_persistence(output, GameLogEventOrigin::Live);
         }
         self.apply_ingest_output(self.side_effect_deps(), output, true, true)
@@ -651,7 +652,8 @@ impl GameLogProcessor {
             },
             |entry| {
                 self.deps
-                    .store
+                    .stores
+                    .moderation
                     .player_moderation(&owner, &entry.user_id)
                     .unwrap_or_default()
             },
@@ -710,7 +712,7 @@ impl GameLogProcessor {
         batch: &GameLogWriteBatch,
         attempted_row_count: usize,
     ) -> Result<u64> {
-        match write_batch_with_retry(self.deps.store.as_ref(), owner_user_id, batch) {
+        match write_batch_with_retry(self.deps.stores.writer.as_ref(), owner_user_id, batch) {
             Ok(affected_count) => {
                 self.deps.sync.record(
                     "gameLog",
@@ -859,13 +861,13 @@ fn remember_error(first_error: &mut Option<Error>, error: Error) {
 }
 
 fn write_batch_with_retry(
-    store: &dyn crate::GameStateStore,
+    writer: &dyn crate::GameLogWriter,
     owner_user_id: &OwnerId,
     batch: &GameLogWriteBatch,
 ) -> Result<u64> {
     let mut delays = GAME_LOG_WRITE_RETRY_DELAYS_MS.iter();
     loop {
-        match store.write_game_log(owner_user_id, batch) {
+        match writer.write_game_log(owner_user_id, batch) {
             Ok(count) => return Ok(count.affected()),
             Err(error) => {
                 let Some(delay_ms) = delays.next() else {

@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 #[derive(Clone, Debug, Serialize, specta::Type)]
@@ -35,4 +35,22 @@ pub struct AvatarWearSegment {
     pub image_url: String,
     pub started_at_ms: i64,
     pub ended_at_ms: i64,
+}
+
+#[derive(Debug, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct AvatarTagInput {
+    #[serde(default)]
+    pub tag: String,
+    #[serde(default)]
+    pub color: Value,
+}
+
+#[derive(Debug, Deserialize, Default, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct AvatarTagsPatchInput {
+    #[serde(default)]
+    pub previous_entries: Vec<AvatarTagInput>,
+    #[serde(default)]
+    pub next_entries: Vec<AvatarTagInput>,
 }

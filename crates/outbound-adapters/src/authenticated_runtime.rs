@@ -6,8 +6,8 @@ use vrcx_0_application::social::{
     AuthenticatedRuntimeProbeFuture,
 };
 use vrcx_0_application_core::WebClient;
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::http_api::ApiScope;
 
 pub struct VrchatAuthenticatedRuntimeAuthProbe {
     web: Arc<WebClient>,
@@ -25,8 +25,8 @@ impl AuthenticatedRuntimeAuthProbe for VrchatAuthenticatedRuntimeAuthProbe {
             let response = self
                 .web
                 .execute_api(
-                    vrcx_0_vrchat_client::auth::current_user_get_input(endpoint.to_string()),
-                    ApiScope::Vrchat,
+                    vrcx_0_vrchat_protocol::auth::current_user_get_input(endpoint.to_string()),
+                    VrchatScope::Vrchat,
                 )
                 .await?;
             Ok(response.status)

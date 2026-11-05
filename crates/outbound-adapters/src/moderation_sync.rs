@@ -1,15 +1,11 @@
 use std::sync::Arc;
 
 use vrcx_0_application::social::{
-    LocalModerationInput, LocalModerationOutput, ModerationSyncRemoteRequests, ModerationSyncStore,
-    RemoteModerationInput,
+    LocalModerationInput, LocalModerationOutput, ModerationSyncStore, RemoteModerationInput,
 };
-use vrcx_0_application_core::{vrchat_api::VrchatApiRequest, Result};
+use vrcx_0_application_core::Result;
 use vrcx_0_core::OwnerId;
 use vrcx_0_persistence::{local_moderation, DatabaseService};
-use vrcx_0_vrchat_client::moderation::{
-    player_moderation_update_input, player_moderations_get_input,
-};
 
 #[derive(Clone)]
 pub struct LocalModerationSyncStore {
@@ -43,29 +39,5 @@ impl ModerationSyncStore for LocalModerationSyncStore {
     fn delete(&self, owner: OwnerId, user_id: String) -> Result<()> {
         local_moderation::local_moderation_delete(&self.db, owner, user_id)
             .map_err(crate::Error::from)
-    }
-}
-
-#[derive(Clone)]
-pub struct VrchatModerationSyncRemoteRequests;
-
-impl ModerationSyncRemoteRequests for VrchatModerationSyncRemoteRequests {
-    fn list(&self, endpoint: String) -> Result<VrchatApiRequest> {
-        Ok(player_moderations_get_input(endpoint))
-    }
-
-    fn update(
-        &self,
-        endpoint: String,
-        enabled: bool,
-        target_user_id: String,
-        moderation_type: String,
-    ) -> Result<VrchatApiRequest> {
-        Ok(player_moderation_update_input(
-            endpoint,
-            enabled,
-            target_user_id,
-            moderation_type,
-        ))
     }
 }

@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
-use vrcx_0_application_core::NoopWorldCachePort;
+use vrcx_0_application_core::{ConfigStore, NoopWorldCachePort};
 use vrcx_0_contracts::game_log::{GameLogLocationEntry, GameLogWriteBatch};
 use vrcx_0_core::game_log_parser::{GameLogEvent, GameLogEventKind};
 
@@ -11,7 +11,7 @@ use crate::ports::{TestGameMediaPort, TestGameStateStore};
 use crate::Result;
 use crate::RuntimeAuthScope;
 use crate::RuntimeEventBus;
-use crate::{GameStateStore, RuntimeSyncEngine, TaskSupervisor};
+use crate::{GameLogWriter, RuntimeSyncEngine, TaskSupervisor};
 use vrcx_0_application_activity::{
     ActivityDelivery, ActivityFavoriteGroups, ActivityFilters, ActivityRouter, ActivitySink,
     ActivitySnapshot,
@@ -25,8 +25,8 @@ use vrcx_0_core::OwnerId;
 fn place_from_record(
     entry: &vrcx_0_core::friends::FriendBaselineEntry,
     observed_ms: i64,
-) -> vrcx_0_application_core::FriendPlace {
-    vrcx_0_application_core::FriendPlace::Present {
+) -> vrcx_0_application_realtime::FriendPlace {
+    vrcx_0_application_realtime::FriendPlace::Present {
         location: entry.presence.location.clone(),
         since_ms: observed_ms,
     }
@@ -137,7 +137,8 @@ fn build_test_processor(store: Arc<TestGameStateStore>) -> Result<GameLogProcess
     TEST_OVERLAY.with(|current| *current.borrow_mut() = overlay.clone());
     let event_bus = RuntimeEventBus::new();
     let processor = GameLogProcessor::new(GameLogProcessorDeps {
-        store,
+        config: Arc::new(store.config.clone()),
+        stores: crate::GameLogStores::shared(store),
         instance_media: Arc::new(TestGameMediaPort::default()),
         video_metadata: Arc::new(TestGameMediaPort::default()),
         event_bus: event_bus.clone(),
@@ -217,7 +218,9 @@ fn enabled_initial_scan_keeps_persistence_and_side_effects() -> Result<()> {
     ])?;
 
     assert_eq!(store.locations(&OwnerId::new("")).len(), 1);
-    assert!(store.get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
+    assert!(store
+        .config
+        .get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
     let events = processor.deps.event_bus.take_events_for_test();
     assert!(events.iter().any(|event| {
         event.name == "backendRuntimeTelemetry"
@@ -276,7 +279,7 @@ fn enabled_process_stop_keeps_session_closure_and_side_effect_order() -> Result<
 #[test]
 fn disabled_persistence_keeps_live_state_projection_overlay_and_side_effects() -> Result<()> {
     let (_dir, store, processor) = test_processor("runtime-gamelog-disabled")?;
-    store.set_bool("gameLogDisabled", true)?;
+    store.config.set_bool("gameLogDisabled", true)?;
 
     processor.handle_jobs(vec![
         GameLogWorkerJob::Event(event(
@@ -303,7 +306,9 @@ fn disabled_persistence_keeps_live_state_projection_overlay_and_side_effects() -
     let snapshot = processor.deps.snapshot.snapshot();
     assert_eq!(snapshot.location, "wrld_disabled:1");
     assert_eq!(snapshot.players[0].user_id, "usr_live");
-    assert!(store.get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
+    assert!(store
+        .config
+        .get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
     assert_eq!(
         test_overlay().snapshot().entries[0].actor_user_id,
         "usr_live"
@@ -322,7 +327,7 @@ fn disabled_persistence_keeps_live_state_projection_overlay_and_side_effects() -
 #[test]
 fn disabled_initial_scan_rebuilds_memory_without_replaying_side_effects() -> Result<()> {
     let (_dir, store, mut processor) = test_processor("runtime-gamelog-disabled-replay")?;
-    let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
+    let timers = Arc::new(vrcx_0_application_realtime::InstanceDwellRegistry::new());
     timers.observe_friend(
         "usr_replay",
         &place_from_record(
@@ -343,7 +348,7 @@ fn disabled_initial_scan_rebuilds_memory_without_replaying_side_effects() -> Res
         ),
     );
     processor.deps.instance_roster_observer = Some(timers.clone());
-    store.set_bool("gameLogDisabled", true)?;
+    store.config.set_bool("gameLogDisabled", true)?;
 
     processor.handle_jobs(vec![
         GameLogWorkerJob::InitialEvent(event(
@@ -376,9 +381,11 @@ fn disabled_initial_scan_rebuilds_memory_without_replaying_side_effects() -> Res
     );
     assert_eq!(
         timers.snapshot()[0].source,
-        vrcx_0_application_core::FriendLocationTimeSource::GameLog
+        vrcx_0_application_realtime::FriendLocationTimeSource::GameLog
     );
-    assert!(!store.get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
+    assert!(!store
+        .config
+        .get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
     assert!(test_overlay().snapshot().entries.is_empty());
     Ok(())
 }
@@ -387,7 +394,7 @@ fn disabled_initial_scan_rebuilds_memory_without_replaying_side_effects() -> Res
 fn entering_a_friends_instance_keeps_dwell_without_rewriting_log_join_time() -> Result<()> {
     for batched in [false, true] {
         let (_dir, _store, mut processor) = test_processor("runtime-gamelog-arrival-dwell")?;
-        let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
+        let timers = Arc::new(vrcx_0_application_realtime::InstanceDwellRegistry::new());
         let started_at = chrono::DateTime::parse_from_rfc3339("2026-09-06T10:00:00Z")
             .unwrap()
             .timestamp_millis();
@@ -433,7 +440,7 @@ fn entering_a_friends_instance_keeps_dwell_without_rewriting_log_join_time() -> 
         assert_eq!(timers.snapshot()[0].since_ms, Some(started_at));
         assert_eq!(
             timers.snapshot()[0].source,
-            vrcx_0_application_core::FriendLocationTimeSource::GameLog
+            vrcx_0_application_realtime::FriendLocationTimeSource::GameLog
         );
         assert_eq!(
             processor.deps.snapshot.snapshot().players[0].join_time_ms,
@@ -451,7 +458,7 @@ fn room_exit_cleanup_preserves_the_dwell_of_friends_staying_in_the_old_instance(
             crate::GameLogEventOrigin::InitialScan,
         ] {
             let (_dir, _store, mut processor) = test_processor("gamelog-exit-cleanup-timers")?;
-            let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
+            let timers = Arc::new(vrcx_0_application_realtime::InstanceDwellRegistry::new());
             let mut initial = vec![event(
                 "1970-01-01T00:30:00Z",
                 GameLogEventKind::Location {
@@ -534,7 +541,7 @@ fn room_exit_cleanup_preserves_the_dwell_of_friends_staying_in_the_old_instance(
                     assert_eq!(time.location, "wrld_old:1");
                     assert_eq!(
                         time.source,
-                        vrcx_0_application_core::FriendLocationTimeSource::Realtime
+                        vrcx_0_application_realtime::FriendLocationTimeSource::Realtime
                     );
                 }
             }
@@ -568,8 +575,10 @@ fn room_exit_cleanup_preserves_the_dwell_of_friends_staying_in_the_old_instance(
 fn local_mode_initial_replay_does_not_restart_remote_timers() -> Result<()> {
     for persistence_disabled in [false, true] {
         let (_dir, store, mut processor) = test_processor("runtime-gamelog-replay-departures")?;
-        store.set_bool("gameLogDisabled", persistence_disabled)?;
-        let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
+        store
+            .config
+            .set_bool("gameLogDisabled", persistence_disabled)?;
+        let timers = Arc::new(vrcx_0_application_realtime::InstanceDwellRegistry::new());
         for user_id in ["usr_remote", "usr_local"] {
             timers.observe_friend(
                 user_id,
@@ -637,7 +646,7 @@ fn local_mode_initial_replay_does_not_restart_remote_timers() -> Result<()> {
         assert_eq!(remote.since_ms, Some(500));
         assert_eq!(
             remote.source,
-            vrcx_0_application_core::FriendLocationTimeSource::Realtime
+            vrcx_0_application_realtime::FriendLocationTimeSource::Realtime
         );
         let local = snapshot
             .iter()
@@ -646,7 +655,7 @@ fn local_mode_initial_replay_does_not_restart_remote_timers() -> Result<()> {
         assert_eq!(local.since_ms, Some(500));
         assert_eq!(
             local.source,
-            vrcx_0_application_core::FriendLocationTimeSource::GameLog
+            vrcx_0_application_realtime::FriendLocationTimeSource::GameLog
         );
     }
     Ok(())
@@ -655,7 +664,7 @@ fn local_mode_initial_replay_does_not_restart_remote_timers() -> Result<()> {
 #[test]
 fn local_mode_resume_prefix_does_not_restart_timers_but_live_departures_do() -> Result<()> {
     let (_dir, _store, mut processor) = test_processor("runtime-gamelog-resume-departures")?;
-    let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
+    let timers = Arc::new(vrcx_0_application_realtime::InstanceDwellRegistry::new());
     timers.observe_friend(
         "usr_friend",
         &place_from_record(
@@ -711,7 +720,7 @@ fn local_mode_resume_prefix_does_not_restart_timers_but_live_departures_do() -> 
     assert!(timers.snapshot()[0].since_ms.unwrap() >= before_leave);
     assert_eq!(
         timers.snapshot()[0].source,
-        vrcx_0_application_core::FriendLocationTimeSource::Realtime
+        vrcx_0_application_realtime::FriendLocationTimeSource::Realtime
     );
     Ok(())
 }
@@ -719,7 +728,7 @@ fn local_mode_resume_prefix_does_not_restart_timers_but_live_departures_do() -> 
 #[test]
 fn local_mode_distinguishes_player_leave_rejoin_and_own_room_exit() -> Result<()> {
     let (_dir, _store, mut processor) = test_processor("runtime-gamelog-local-mode")?;
-    let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
+    let timers = Arc::new(vrcx_0_application_realtime::InstanceDwellRegistry::new());
     timers.observe_friend(
         "usr_friend",
         &place_from_record(
@@ -773,7 +782,7 @@ fn local_mode_distinguishes_player_leave_rejoin_and_own_room_exit() -> Result<()
     assert!(remote_start > 4_000);
     assert_eq!(
         timers.snapshot()[0].source,
-        vrcx_0_application_core::FriendLocationTimeSource::Realtime
+        vrcx_0_application_realtime::FriendLocationTimeSource::Realtime
     );
 
     processor.handle_jobs(vec![GameLogWorkerJob::Event(event(
@@ -789,7 +798,7 @@ fn local_mode_distinguishes_player_leave_rejoin_and_own_room_exit() -> Result<()
     assert_eq!(timers.snapshot()[0].since_ms, Some(remote_start));
     assert_eq!(
         timers.snapshot()[0].source,
-        vrcx_0_application_core::FriendLocationTimeSource::Realtime
+        vrcx_0_application_realtime::FriendLocationTimeSource::Realtime
     );
     Ok(())
 }
@@ -797,7 +806,7 @@ fn local_mode_distinguishes_player_leave_rejoin_and_own_room_exit() -> Result<()
 #[test]
 fn local_mode_player_leave_is_not_lost_when_own_exit_is_in_the_same_batch() -> Result<()> {
     let (_dir, _store, mut processor) = test_processor("runtime-gamelog-batched-leave")?;
-    let timers = Arc::new(vrcx_0_application_core::InstanceDwellRegistry::new());
+    let timers = Arc::new(vrcx_0_application_realtime::InstanceDwellRegistry::new());
     timers.observe_friend(
         "usr_friend",
         &place_from_record(
@@ -885,7 +894,7 @@ fn resume_cutoff_splits_queued_live_events_without_backfilling() -> Result<()> {
 #[test]
 fn disabled_process_stop_clears_memory_without_persisting_session_closure() -> Result<()> {
     let (_dir, store, processor) = test_processor("runtime-gamelog-disabled-stop")?;
-    store.set_bool("gameLogDisabled", true)?;
+    store.config.set_bool("gameLogDisabled", true)?;
     processor.handle_jobs(vec![GameLogWorkerJob::Event(event(
         "2026-05-14T05:30:00.000Z",
         GameLogEventKind::Location {
@@ -995,7 +1004,9 @@ fn enabled_write_failure_emits_fallback_and_skips_persisted_outputs() -> Result<
     processor.request_stop();
     assert!(worker.join().unwrap().is_err());
 
-    assert!(store.get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
+    assert!(store
+        .config
+        .get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
     assert!(test_overlay().snapshot().entries.is_empty());
     let events = processor.deps.event_bus.take_events_for_test();
     assert!(events
@@ -1735,9 +1746,9 @@ fn live_chunks_use_current_engine_for_join_suppression() -> Result<()> {
 
 #[test]
 fn new_file_does_not_forward_previous_replayed_departures() -> Result<()> {
-    struct Capture(Arc<Mutex<Vec<vrcx_0_application_core::InstanceRosterSnapshot>>>);
-    impl vrcx_0_application_core::InstanceRosterObserver for Capture {
-        fn on_instance_roster(&self, value: vrcx_0_application_core::InstanceRosterSnapshot) {
+    struct Capture(Arc<Mutex<Vec<vrcx_0_contracts::InstanceRosterSnapshot>>>);
+    impl vrcx_0_contracts::InstanceRosterObserver for Capture {
+        fn on_instance_roster(&self, value: vrcx_0_contracts::InstanceRosterSnapshot) {
             self.0.lock().unwrap().push(value);
         }
         fn on_game_running(&self, _: bool) {}
@@ -1890,23 +1901,24 @@ fn regression_failed_scan_returns_and_retries_once_with_process_closure() -> Res
 fn regression_runtime_acknowledges_failure_and_continues_after_config_recovers() -> Result<()> {
     let (_dir, store, processor) = test_processor("runtime-read-recovery")?;
     let deps = processor.deps;
-    let runtime = crate::GameLogRuntime::new(crate::GameLogRuntimeDeps::new(
-        deps.store,
-        deps.instance_media,
-        deps.video_metadata,
-        deps.event_bus,
-        deps.backend_status,
-        deps.side_effect_sink,
-        deps.tasks,
-        deps.sync,
-        deps.auth_scope,
-        crate::HostSessionRuntime::new(),
-        deps.snapshot.clone(),
-        deps.host_actions,
-        deps.activity,
-        deps.world_cache,
-        None,
-    ));
+    let runtime = crate::GameLogRuntime::new(crate::GameLogRuntimeDeps {
+        stores: deps.stores,
+        config: deps.config,
+        instance_media: deps.instance_media,
+        video_metadata: deps.video_metadata,
+        event_bus: deps.event_bus,
+        backend_status: deps.backend_status,
+        side_effect_sink: deps.side_effect_sink,
+        tasks: deps.tasks,
+        sync: deps.sync,
+        auth_scope: deps.auth_scope,
+        session: crate::HostSessionRuntime::new(),
+        snapshot: deps.snapshot.clone(),
+        host_actions: deps.host_actions,
+        activity: deps.activity,
+        world_cache: deps.world_cache,
+        instance_roster_observer: None,
+    });
     let GameLogWorkerJob::Scan {
         events,
         origin,
@@ -1928,11 +1940,11 @@ fn regression_runtime_acknowledges_failure_and_continues_after_config_recovers()
     else {
         unreachable!()
     };
-    store.set_fail_reads(true);
+    store.config.set_fail_reads(true);
     assert!(runtime
         .ingest_game_log_scan(&events, origin, (*cursor).clone(), publish)
         .is_err());
-    store.set_fail_reads(false);
+    store.config.set_fail_reads(false);
     runtime.ingest_game_log_scan(&events, origin, *cursor, publish)?;
     assert_eq!(deps.snapshot.snapshot().location, "wrld_recovered:1");
     runtime.reset_replay()?;
@@ -1990,7 +2002,7 @@ fn unchanged_log_publishes_snapshot_after_each_restart() -> Result<()> {
             crate::parse_event_time_ms("2026-05-14T04:00:10Z")
         );
         let checkpoint: super::ReplayCheckpoint =
-            serde_json::from_str(&store.get_string("gameLogReplayCheckpoint", "")?)?;
+            serde_json::from_str(&store.config.get_string("gameLogReplayCheckpoint", "")?)?;
         assert_eq!(checkpoint.cursor.context.position, scanned_position);
         let events = restored.deps.event_bus.take_events_for_test();
         assert_eq!(
@@ -2034,8 +2046,12 @@ fn duplicate_scan_can_publish_without_replaying_rows_or_side_effects() -> Result
     );
     processor.handle_jobs(vec![scan.clone()])?;
     assert!(!processor.deps.snapshot.snapshot().ready);
-    assert!(store.get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
-    store.set_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?;
+    assert!(store
+        .config
+        .get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?);
+    store
+        .config
+        .set_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?;
     processor.deps.event_bus.take_events_for_test();
     if let GameLogWorkerJob::Scan { publish, .. } = &mut scan {
         *publish = true;
@@ -2044,7 +2060,9 @@ fn duplicate_scan_can_publish_without_replaying_rows_or_side_effects() -> Result
     assert!(processor.deps.snapshot.snapshot().ready);
     assert_eq!(processor.deps.snapshot.snapshot().location, "wrld_once:1");
     assert!(
-        !store.get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?,
+        !store
+            .config
+            .get_bool(crate::IS_GAME_NO_VR_CONFIG_KEY, false)?,
         "the already handled DesktopMode event must not run again"
     );
     assert_eq!(store.locations(&OwnerId::new("")).len(), 1);
@@ -2072,7 +2090,7 @@ fn a_scan_without_events_keeps_the_persisted_checkpoint_and_the_database_idle() 
         )],
         true,
     )])?;
-    let persisted = store.get_string("gameLogReplayCheckpoint", "")?;
+    let persisted = store.config.get_string("gameLogReplayCheckpoint", "")?;
     assert!(!persisted.is_empty());
     processor.deps.event_bus.take_events_for_test();
 
@@ -2084,7 +2102,7 @@ fn a_scan_without_events_keeps_the_persisted_checkpoint_and_the_database_idle() 
     )])?;
 
     assert_eq!(
-        store.get_string("gameLogReplayCheckpoint", "")?,
+        store.config.get_string("gameLogReplayCheckpoint", "")?,
         persisted,
         "a poll over log lines that parse to nothing must not rewrite the checkpoint"
     );
@@ -2224,9 +2242,11 @@ fn video_notifications_use_enriched_activity_and_respect_replay_and_surface_filt
         (false, false, false),
     ] {
         let (_dir, store, mut processor) = test_processor("video-notification-channel")?;
-        store.set_bool("youtubeAPI", true)?;
-        store.set_string("youtubeAPIKey", "test-key")?;
-        store.set_bool("gameLogDisabled", persistence_disabled)?;
+        store.config.set_bool("youtubeAPI", true)?;
+        store.config.set_string("youtubeAPIKey", "test-key")?;
+        store
+            .config
+            .set_bool("gameLogDisabled", persistence_disabled)?;
         processor.deps.video_metadata = Arc::new(VideoMetadataFixture);
         processor.deps.auth_scope.set("usr_video_owner", "");
         processor.deps.tasks.set_executor(InlineVideoTaskExecutor);
@@ -2322,8 +2342,8 @@ impl crate::VideoMetadataPort for ScopeChangingVideoMetadata {
 fn video_notifications_discard_metadata_completed_after_auth_scope_changes() -> Result<()> {
     for next_user_id in ["", "usr_other", "usr_video_owner"] {
         let (_dir, store, mut processor) = test_processor("video-notification-auth-scope")?;
-        store.set_bool("youtubeAPI", true)?;
-        store.set_string("youtubeAPIKey", "test-key")?;
+        store.config.set_bool("youtubeAPI", true)?;
+        store.config.set_string("youtubeAPIKey", "test-key")?;
         processor.deps.auth_scope.set("usr_video_owner", "");
         processor.deps.tasks.set_executor(InlineVideoTaskExecutor);
         processor.deps.video_metadata = Arc::new(ScopeChangingVideoMetadata {

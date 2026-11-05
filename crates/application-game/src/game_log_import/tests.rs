@@ -124,7 +124,16 @@ fn import_writes_history_rows_without_counting_location_time_updates_as_new_rows
     let store = TestGameStateStore::default();
     let owner = OwnerId::new("usr_self");
 
-    let result = import_game_log_file(&store, &owner, &path, NO_CONSENT, false).unwrap();
+    let result = import_game_log_file(
+        &store,
+        &store,
+        &store.config,
+        &owner,
+        &path,
+        NO_CONSENT,
+        false,
+    )
+    .unwrap();
 
     assert!(result.imported);
     assert_eq!(result.status, GameLogImportFileStatus::Ready);
@@ -150,7 +159,16 @@ fn import_stores_history_rows_and_their_durations_in_one_write() {
     store.allow_only_writes(1);
     let owner = OwnerId::new("usr_self");
 
-    let result = import_game_log_file(&store, &owner, &path, NO_CONSENT, false).unwrap();
+    let result = import_game_log_file(
+        &store,
+        &store,
+        &store.config,
+        &owner,
+        &path,
+        NO_CONSENT,
+        false,
+    )
+    .unwrap();
 
     assert_eq!(result.inserted_count, 6);
     assert!(store.locations(&owner)[0].time > 0);
@@ -163,13 +181,24 @@ fn import_requires_confirmation_for_logs_without_an_account_line() {
     let store = TestGameStateStore::default();
     let owner = OwnerId::new("usr_self");
 
-    let skipped = import_game_log_file(&store, &owner, &path, NO_CONSENT, false).unwrap();
+    let skipped = import_game_log_file(
+        &store,
+        &store,
+        &store.config,
+        &owner,
+        &path,
+        NO_CONSENT,
+        false,
+    )
+    .unwrap();
     assert!(!skipped.imported);
     assert_eq!(skipped.status, GameLogImportFileStatus::AccountUnverified);
     assert!(store.locations(&owner).is_empty());
 
     let confirmed = import_game_log_file(
         &store,
+        &store,
+        &store.config,
         &owner,
         &path,
         GameLogImportConsent {
@@ -194,11 +223,29 @@ fn import_writes_another_accounts_log_only_after_its_own_consent() {
         account_mismatch: false,
     };
 
-    let skipped = import_game_log_file(&store, &owner, &path, unverified_only, false).unwrap();
+    let skipped = import_game_log_file(
+        &store,
+        &store,
+        &store.config,
+        &owner,
+        &path,
+        unverified_only,
+        false,
+    )
+    .unwrap();
     assert!(!skipped.imported);
     assert!(store.locations(&owner).is_empty());
 
-    let confirmed = import_game_log_file(&store, &owner, &path, FULL_CONSENT, false).unwrap();
+    let confirmed = import_game_log_file(
+        &store,
+        &store,
+        &store.config,
+        &owner,
+        &path,
+        FULL_CONSENT,
+        false,
+    )
+    .unwrap();
     assert!(confirmed.imported);
     assert_eq!(confirmed.status, GameLogImportFileStatus::AccountMismatch);
     assert_eq!(store.locations(&owner).len(), 1);
@@ -214,7 +261,16 @@ fn import_never_writes_the_live_log() {
     let store = TestGameStateStore::default();
     let owner = OwnerId::new("usr_self");
 
-    let live = import_game_log_file(&store, &owner, &live, FULL_CONSENT, true).unwrap();
+    let live = import_game_log_file(
+        &store,
+        &store,
+        &store.config,
+        &owner,
+        &live,
+        FULL_CONSENT,
+        true,
+    )
+    .unwrap();
 
     assert!(!live.imported);
     assert!(store.locations(&owner).is_empty());

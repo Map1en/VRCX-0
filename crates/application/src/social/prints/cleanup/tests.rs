@@ -10,11 +10,11 @@ use std::sync::{
     Arc, Mutex,
 };
 use std::time::Duration;
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::{
     RemoteMutationGate, RuntimeAuthScope, RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle,
     TaskSupervisor,
 };
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 use vrcx_0_core::realtime::RealtimeWsMessagePayload;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 
@@ -284,7 +284,7 @@ impl super::PrintRemote for TestPrintAdapter {
             .cloned()
             .unwrap_or_else(|| json!([]))
             .to_string();
-        Box::pin(async move { Ok(VrchatApiResponse { status: 200, data }) })
+        Box::pin(async move { Ok(VrchatResponse { status: 200, data }) })
     }
 
     fn delete_print<'a>(
@@ -294,7 +294,7 @@ impl super::PrintRemote for TestPrintAdapter {
     ) -> super::PrintRemoteFuture<'a> {
         self.deleted.lock().unwrap().push(print_id.to_string());
         Box::pin(async {
-            Ok(VrchatApiResponse {
+            Ok(VrchatResponse {
                 status: 200,
                 data: "{}".into(),
             })

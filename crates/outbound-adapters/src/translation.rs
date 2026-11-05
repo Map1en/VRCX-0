@@ -2,34 +2,18 @@ use std::sync::Arc;
 
 use vrcx_0_application::discovery::{
     StandardTranslationFuture, StandardTranslationOutcome, StandardTranslationPort,
-    TranslationConfig, TranslationProvider,
+    TranslationProvider,
 };
 use vrcx_0_application_core::WebClient;
 use vrcx_0_contracts::external_api::ExternalApiScope;
-use vrcx_0_persistence::DatabaseService;
 
 pub struct LocalTranslationAdapter {
-    db: Arc<DatabaseService>,
     web: Arc<WebClient>,
 }
 
 impl LocalTranslationAdapter {
-    pub fn new(db: Arc<DatabaseService>, web: Arc<WebClient>) -> Self {
-        Self { db, web }
-    }
-}
-
-impl TranslationConfig for LocalTranslationAdapter {
-    fn get_bool(&self, key: &str, default: bool) -> crate::Result<bool> {
-        Ok(vrcx_0_persistence::config::get_bool(
-            &self.db, key, default,
-        )?)
-    }
-
-    fn get_string(&self, key: &str, default: &str) -> crate::Result<String> {
-        Ok(vrcx_0_persistence::config::get_string(
-            &self.db, key, default,
-        )?)
+    pub fn new(web: Arc<WebClient>) -> Self {
+        Self { web }
     }
 }
 

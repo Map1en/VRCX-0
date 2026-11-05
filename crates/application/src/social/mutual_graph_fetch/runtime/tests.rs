@@ -38,20 +38,6 @@ impl MutualGraphStore for NoopMutualGraphStore {
     }
 }
 
-struct NoopMutualGraphRemoteRequests;
-
-impl MutualGraphRemoteRequests for NoopMutualGraphRemoteRequests {
-    fn mutual_friends(
-        &self,
-        _endpoint: String,
-        _user_id: String,
-        _n: i32,
-        _offset: i32,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiRequest> {
-        Ok(Default::default())
-    }
-}
-
 #[derive(Clone)]
 struct DropTaskExecutor;
 
@@ -194,7 +180,6 @@ fn start_emits_a_running_status_before_the_job_is_spawned() {
                 friend_ids: vec!["usr_friend".into()],
             },
             Arc::new(NoopMutualGraphStore),
-            Arc::new(NoopMutualGraphRemoteRequests),
             remote,
             auth_scope,
             tasks.clone(),

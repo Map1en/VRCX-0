@@ -1,38 +1,20 @@
-use serde::Deserialize;
 use serde_json::Value;
 pub use vrcx_0_contracts::{
     AvatarCacheOutput, AvatarTagOutput, AvatarTimeSpentOutput, AvatarUsageRow, AvatarWearSegment,
 };
+use vrcx_0_contracts::{AvatarTagInput, AvatarTagsPatchInput};
 
 use crate::activity::{activity_iso_from_ms, parse_activity_time_ms};
 
 use crate::cache_entities::{upsert_cache_entities, upsert_cache_entity, CacheEntityInput};
-use crate::common::{normalize_text, row_i64, row_string, ParamsBuilder};
+use crate::common::{affected_count, normalize_text, row_i64, row_string, ParamsBuilder};
 use crate::database::schema::{ensure_global_store_tables, ensure_user_store_tables};
-use crate::database::DatabaseService;
-use crate::realtime::normalize_user_table_prefix;
+use crate::database::{DatabaseService, DatabaseWriteTransaction};
+use crate::realtime::{normalize_user_table_prefix, AvatarHistoryUpsert, AvatarTimeSpentUpsert};
 use crate::Error;
 
 #[cfg(test)]
 mod tests;
-
-#[derive(Debug, Deserialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct AvatarTagInput {
-    #[serde(default)]
-    pub tag: String,
-    #[serde(default)]
-    pub color: Value,
-}
-
-#[derive(Debug, Deserialize, Default, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct AvatarTagsPatchInput {
-    #[serde(default)]
-    pub previous_entries: Vec<AvatarTagInput>,
-    #[serde(default)]
-    pub next_entries: Vec<AvatarTagInput>,
-}
 
 pub fn avatar_cache_upsert(db: &DatabaseService, entry: CacheEntityInput) -> Result<i64, Error> {
     upsert_cache_entity(db, "cache_avatar", entry)
@@ -555,4 +537,76 @@ pub(crate) fn nullish_color(value: &Value) -> Option<Value> {
     } else {
         Some(value.clone())
     }
+}
+
+pub(crate) fn upsert_avatar_history(
+    tx: &mut DatabaseWriteTransaction<'_>,
+    user_prefix: &str,
+    entry: &AvatarHistoryUpsert,
+) -> Result<u64, Error> {
+    let avatar_id = normalize_text(&entry.avatar_id);
+    if avatar_id.is_empty() {
+        return Ok(0);
+    }
+    tx.execute_non_query(
+        &format!(
+            "INSERT INTO {user_prefix}_avatar_history (avatar_id, created_at, time)
+             VALUES (@avatar_id, @created_at, 0)
+             ON CONFLICT(avatar_id) DO UPDATE SET created_at = @created_at"
+        ),
+        &ParamsBuilder::new()
+            .set("avatar_id", avatar_id)
+            .set("created_at", entry.created_at.clone())
+            .build(),
+    )
+    .map(affected_count)
+}
+
+pub(crate) fn upsert_avatar_time_spent(
+    tx: &mut DatabaseWriteTransaction<'_>,
+    user_prefix: &str,
+    entry: &AvatarTimeSpentUpsert,
+) -> Result<u64, Error> {
+    let avatar_id = normalize_text(&entry.avatar_id);
+    if avatar_id.is_empty() || entry.ended_at_ms <= entry.started_at_ms {
+        return Ok(0);
+    }
+    if entry.time_spent > 0 {
+        tx.execute_non_query(
+            &format!(
+                "INSERT INTO {user_prefix}_avatar_history (avatar_id, created_at, time)
+                 VALUES (@avatar_id, @created_at, @time_spent)
+                 ON CONFLICT(avatar_id) DO UPDATE SET time = time + @time_spent"
+            ),
+            &ParamsBuilder::new()
+                .set("avatar_id", avatar_id.clone())
+                .set("created_at", entry.created_at.clone())
+                .set("time_spent", entry.time_spent)
+                .build(),
+        )?;
+    }
+    let params = ParamsBuilder::new()
+        .set("avatar_id", avatar_id)
+        .set("started_at", activity_iso_from_ms(entry.started_at_ms))
+        .set("ended_at", activity_iso_from_ms(entry.ended_at_ms))
+        .set("time", entry.ended_at_ms - entry.started_at_ms)
+        .build();
+    let updated = tx.execute_non_query(
+        &format!(
+            "UPDATE {user_prefix}_avatar_wear_log SET ended_at = @ended_at, time = @time
+             WHERE avatar_id = @avatar_id AND started_at = @started_at"
+        ),
+        &params,
+    )?;
+    if updated > 0 {
+        return Ok(affected_count(updated));
+    }
+    tx.execute_non_query(
+        &format!(
+            "INSERT INTO {user_prefix}_avatar_wear_log (avatar_id, started_at, ended_at, time)
+             VALUES (@avatar_id, @started_at, @ended_at, @time)"
+        ),
+        &params,
+    )
+    .map(affected_count)
 }

@@ -5,9 +5,7 @@ use tauri::State;
 use crate::commands::blocking::run_blocking;
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_runtime_host_desktop::local_data::{
-    MaintenanceTableSizesOutput, UserTableContextOutput,
-};
+use vrcx_0_contracts::database_maintenance::{MaintenanceTableSizesOutput, UserTableContextOutput};
 
 #[tauri::command]
 #[specta::specta]

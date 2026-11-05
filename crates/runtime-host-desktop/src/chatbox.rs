@@ -1,9 +1,9 @@
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Instant;
 
 use chrono::{Local, Utc};
-use vrcx_0_application_core::{HostSessionRuntime, RuntimeEventBus};
+use vrcx_0_application_core::{ConfigStore, HostSessionRuntime, RuntimeEventBus};
 use vrcx_0_application_game::chatbox::{
     build_chatbox_facts, render_line_previews, sample_chatbox_facts, ChatboxConfig,
     ChatboxEditorState, ChatboxFactNeeds, ChatboxFactSources, ChatboxFacts, ChatboxFormats,
@@ -18,14 +18,13 @@ use vrcx_0_host_desktop::osc_udp::OscUdpSender;
 use vrcx_0_host_desktop::system_usage::SystemUsageSampler;
 use vrcx_0_i18n::{text, ChatboxKey};
 use vrcx_0_osc::{chatbox_input_message, chatbox_typing_message};
-use vrcx_0_persistence::config::ConfigRepository;
 
 use crate::game_isolation::GameIsolationRuntime;
 
 const APP_LANGUAGE_CONFIG_KEY: &str = "appLanguage";
 
 pub struct ChatboxRuntime {
-    config: ConfigRepository,
+    config: Arc<dyn ConfigStore>,
     session: HostSessionRuntime,
     game_isolation: GameIsolationRuntime,
     event_bus: RuntimeEventBus,
@@ -53,7 +52,7 @@ struct ChatboxSettings {
 
 impl ChatboxRuntime {
     pub(crate) fn new(
-        config: ConfigRepository,
+        config: Arc<dyn ConfigStore>,
         session: HostSessionRuntime,
         game_isolation: GameIsolationRuntime,
         event_bus: RuntimeEventBus,

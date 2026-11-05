@@ -168,6 +168,7 @@ fn session(settings: Option<&str>) -> Session {
         event_bus,
         auth_scope,
         runtime,
+        ..
     } = feed_logger_desktop(settings);
     auth_scope.set(SELF, "https://api.vrchat.cloud/api/1");
     let recorder = Arc::new(FakeRecorder::default());

@@ -5,6 +5,8 @@ mod background_auth_recovery;
 mod cookie_session;
 mod device_authorization;
 mod login_session;
+#[cfg(any(test, feature = "test-utils"))]
+mod memory_credentials;
 mod noninteractive_auth;
 mod privacy_lock;
 mod runtime_phase;

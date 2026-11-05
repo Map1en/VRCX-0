@@ -5,10 +5,11 @@ use vrcx_0_application::media::{
     LegacyEntityImageKind, LegacyMediaUploadFuture, LegacyMediaUploadGate, LegacyMediaUploadPort,
     LegacyMediaUploadRequest, LegacyMediaUploadResult, MediaUploadPreprocessor,
 };
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatScope};
 use vrcx_0_application_core::WebClient;
-use vrcx_0_contracts::vrchat_api::{VrchatJsonResponse, VrchatUpload};
-use vrcx_0_vrchat_client::media::{
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_contracts::vrchat_api::{VrchatJsonResponse, VrchatScope, VrchatUpload};
+use vrcx_0_core::json::JsonExt;
+use vrcx_0_vrchat_protocol::media::{
     avatar_image_set_input, file_put_input, file_upload_finish_input, file_upload_stage_path,
     file_upload_start_input, file_version_create_input, normalize_media_endpoint,
     world_image_set_input, FileUploadStageKind,
@@ -24,7 +25,7 @@ impl LocalMediaUploadAdapter {
         Self { web }
     }
 
-    fn prepare_request(mut input: VrchatApiRequest) -> crate::Result<VrchatApiRequest> {
+    fn prepare_request(mut input: VrchatRequest) -> crate::Result<VrchatRequest> {
         match input.body.as_upload_mut() {
             Some(VrchatUpload::Image {
                 image_data,
@@ -93,7 +94,7 @@ impl LocalMediaUploadAdapter {
                 &format!("{target_label} image upload failed"),
             )
             .await?;
-        let uploaded_file_id = json_field_string(&upload, "id");
+        let uploaded_file_id = upload.text_field("id");
         let file_version = latest_file_version(&upload).ok_or_else(|| {
             crate::Error::Custom(format!(
                 "{target_label} image upload did not return a file version."
@@ -122,7 +123,7 @@ impl LocalMediaUploadAdapter {
                     &format!("{target_label} image upload failed"),
                 )
                 .await?;
-            let upload_url = json_field_string(&start, "url");
+            let upload_url = start.text_field("url");
             if upload_url.is_empty() {
                 return Err(crate::Error::Custom(format!(
                     "{target_label} image upload did not return a {kind} upload URL."
@@ -170,7 +171,7 @@ impl LocalMediaUploadAdapter {
     async fn execute_json(
         &self,
         gate: &dyn LegacyMediaUploadGate,
-        input: VrchatApiRequest,
+        input: VrchatRequest,
         fallback_message: &str,
     ) -> crate::Result<Value> {
         let response = self.execute_gated(gate, input).await?;
@@ -186,7 +187,7 @@ impl LocalMediaUploadAdapter {
     async fn execute_success(
         &self,
         gate: &dyn LegacyMediaUploadGate,
-        input: VrchatApiRequest,
+        input: VrchatRequest,
         fallback_message: &str,
     ) -> crate::Result<()> {
         let response = self.execute_gated(gate, input).await?;
@@ -202,8 +203,8 @@ impl LocalMediaUploadAdapter {
     async fn execute_gated(
         &self,
         gate: &dyn LegacyMediaUploadGate,
-        input: VrchatApiRequest,
-    ) -> crate::Result<vrcx_0_application_core::vrchat_api::VrchatApiResponse> {
+        input: VrchatRequest,
+    ) -> crate::Result<vrcx_0_contracts::vrchat_api::VrchatResponse> {
         gate.before_request().await?;
         let response = self
             .web
@@ -215,7 +216,7 @@ impl LocalMediaUploadAdapter {
 }
 
 impl MediaUploadPreprocessor for LocalMediaUploadAdapter {
-    fn prepare(&self, input: VrchatApiRequest) -> crate::Result<VrchatApiRequest> {
+    fn prepare(&self, input: VrchatRequest) -> crate::Result<VrchatRequest> {
         Self::prepare_request(input)
     }
 }
@@ -235,19 +236,6 @@ fn map_media_error(error: vrcx_0_media::Error) -> crate::Error {
         vrcx_0_media::Error::Io(error) => crate::Error::Io(error),
         vrcx_0_media::Error::Custom(message) => crate::Error::Custom(message),
     }
-}
-
-fn json_field_string(value: &Value, field: &str) -> String {
-    value
-        .as_object()
-        .and_then(|object| object.get(field))
-        .and_then(|value| {
-            value
-                .as_str()
-                .map(ToOwned::to_owned)
-                .or_else(|| (!value.is_null()).then(|| value.to_string()))
-        })
-        .unwrap_or_default()
 }
 
 fn value_as_i64(value: &Value) -> Option<i64> {
@@ -309,7 +297,7 @@ mod tests {
         encode_png(image)
     }
 
-    fn prepared_data(input: &VrchatApiRequest) -> &str {
+    fn prepared_data(input: &VrchatRequest) -> &str {
         match input.body.as_upload() {
             Some(
                 VrchatUpload::Image { image_data, .. }
@@ -322,7 +310,7 @@ mod tests {
 
     #[test]
     fn preprocessing_preserves_non_upload_requests() {
-        let input = VrchatApiRequest {
+        let input = VrchatRequest {
             path: Some("file/image".into()),
             ..Default::default()
         };
@@ -333,7 +321,7 @@ mod tests {
 
     #[test]
     fn regular_legacy_and_print_preprocessing_preserve_image_behavior() {
-        let regular = LocalMediaUploadAdapter::prepare_request(VrchatApiRequest {
+        let regular = LocalMediaUploadAdapter::prepare_request(VrchatRequest {
             body: VrchatRequestBody::Upload(VrchatUpload::Image {
                 image_data: solid_png(3, 2).unwrap(),
                 post_data: None,
@@ -342,7 +330,7 @@ mod tests {
             ..Default::default()
         })
         .unwrap();
-        let legacy = LocalMediaUploadAdapter::prepare_request(VrchatApiRequest {
+        let legacy = LocalMediaUploadAdapter::prepare_request(VrchatRequest {
             body: VrchatRequestBody::Upload(VrchatUpload::LegacyImage {
                 image_data: solid_png(3, 2).unwrap(),
                 post_data: None,
@@ -359,7 +347,7 @@ mod tests {
             (3, 2)
         );
 
-        let cropped = LocalMediaUploadAdapter::prepare_request(VrchatApiRequest {
+        let cropped = LocalMediaUploadAdapter::prepare_request(VrchatRequest {
             body: VrchatRequestBody::Upload(VrchatUpload::PrintImage {
                 image_data: print_canvas_png().unwrap(),
                 post_data: None,

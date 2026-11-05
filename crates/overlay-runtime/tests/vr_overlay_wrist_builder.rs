@@ -3,7 +3,6 @@ use vrcx_0_application_activity::{
     ActivityText,
 };
 use vrcx_0_contracts::activity::ActivityKind;
-use vrcx_0_host_desktop::vr_overlay::{VrDeviceRole, VrDeviceSnapshot, VrDeviceStatus};
 use vrcx_0_overlay_runtime::{
     build_wrist_surface_model, WristOverlayFrameInput, WristOverlayRenderOptions,
     WristRuntimeFooter, WristRuntimeNowPlaying,
@@ -11,6 +10,7 @@ use vrcx_0_overlay_runtime::{
 use vrcx_0_vr_overlay::{
     DeviceStatus, FeedAccent, FeedKind, FeedRelation, FeedSeverity, OverlayNowPlaying, OverlaySize,
 };
+use vrcx_0_vr_overlay_backend::{VrDeviceRole, VrDeviceSnapshot, VrDeviceStatus};
 
 #[test]
 fn wrist_builder_keeps_renderer_model_free_of_application_entry_shape() {

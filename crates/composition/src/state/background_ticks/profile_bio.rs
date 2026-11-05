@@ -17,7 +17,7 @@ pub(in crate::state) async fn run_background_profile_bio_scan(
 ) {
     let enabled = context
         .runtime_context
-        .config()
+        .config_store()
         .get_bool(PROFILE_BIO_SCAN_CONFIG_KEY, false)
         .unwrap_or(false);
     let Some(session) =
@@ -39,7 +39,6 @@ pub(in crate::state) async fn run_background_profile_bio_scan(
     let remote = vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(context.web));
     let deps = ProfileBioScanDeps {
         store: &store,
-        remote_requests: &vrcx_0_outbound_adapters::VrchatProfileBioRemoteRequests,
         remote: &remote,
         realtime: context.realtime_runtime,
         pacer,

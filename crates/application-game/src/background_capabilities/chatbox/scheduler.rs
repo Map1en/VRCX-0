@@ -48,7 +48,7 @@ pub struct ChatboxStatus {
     pub vr_mode: bool,
 }
 
-impl vrcx_0_application_core::RuntimeEventPayload for ChatboxStatus {
+impl vrcx_0_contracts::RuntimeEventPayload for ChatboxStatus {
     const EVENT_NAME: &'static str = "chatboxState";
 }
 

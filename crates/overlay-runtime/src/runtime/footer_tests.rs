@@ -1,6 +1,6 @@
 use chrono::DateTime;
 
-use super::{elapsed_minutes_text, instance_duration_text};
+use super::text::{elapsed_minutes_text, instance_duration_text};
 
 fn ms(value: &str) -> i64 {
     DateTime::parse_from_rfc3339(value)

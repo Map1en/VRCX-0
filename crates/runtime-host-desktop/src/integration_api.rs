@@ -3,25 +3,24 @@ use std::sync::{Arc, Mutex};
 
 use tokio::sync::broadcast;
 use vrcx_0_application_core::{
-    InstanceRosterSnapshot, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus,
-    TaskSupervisor,
+    ConfigStore, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus, TaskSupervisor,
 };
 use vrcx_0_application_realtime::RealtimeHostRuntime;
+use vrcx_0_contracts::InstanceRosterSnapshot;
 use vrcx_0_core::OwnerId;
 use vrcx_0_integration_api::{
     IntegrationApiConfigStore, IntegrationApiController, IntegrationApiError, IntegrationApiInput,
     IntegrationApiInputReceiver, IntegrationApiStartFailedPayload, IntegrationApiStatus,
     RoomMemberState, RoomState, DEFAULT_INTEGRATION_API_PORT,
 };
-use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::DatabaseService;
 
 pub(crate) struct DesktopIntegrationApiConfigStore {
-    config: ConfigRepository,
+    config: Arc<dyn ConfigStore>,
 }
 
 impl DesktopIntegrationApiConfigStore {
-    pub(crate) fn new(config: ConfigRepository) -> Self {
+    pub(crate) fn new(config: Arc<dyn ConfigStore>) -> Self {
         Self { config }
     }
 }

@@ -3,13 +3,13 @@ use std::sync::Mutex;
 
 use chrono::{DateTime, Utc};
 use serde_json::json;
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatApiResponse, VrchatScope};
 use vrcx_0_application_core::{CallRecorder, Result, ScriptedResults};
 use vrcx_0_application_realtime::test_support::{
     feed_lookup_input, runtime_with_active_session, seed_friend_baseline, TestDir,
     TestRealtimeHostRuntime,
 };
 use vrcx_0_contracts::feed::{FeedFilter, FeedRowOutput, FeedRowsQueryInput};
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatResponse, VrchatScope};
 use vrcx_0_core::OwnerId;
 
 use crate::remote::{VrchatRequestFuture, VrchatRequestPort};
@@ -65,38 +65,31 @@ impl ProfileBioStore for MemoryProfileBioStore {
     }
 }
 
-struct ProfileRequests;
-
-impl ProfileBioRemoteRequests for ProfileRequests {
-    fn profile(&self, endpoint: String, user_id: String) -> Result<VrchatApiRequest> {
-        Ok(VrchatApiRequest {
-            path: Some(format!("{endpoint} profile/{user_id}")),
-            ..VrchatApiRequest::default()
-        })
-    }
-}
-
 struct ScriptedRequestPort {
-    responses: ScriptedResults<VrchatApiResponse>,
+    responses: ScriptedResults<VrchatResponse>,
     requests: CallRecorder<String>,
 }
 
 impl VrchatRequestPort for ScriptedRequestPort {
-    fn send(&self, input: VrchatApiRequest, _scope: VrchatScope) -> VrchatRequestFuture<'_> {
-        self.requests.record(input.path.unwrap_or_default());
+    fn send(&self, input: VrchatRequest, _scope: VrchatScope) -> VrchatRequestFuture<'_> {
+        self.requests.record(format!(
+            "{} {}",
+            input.endpoint.unwrap_or_default(),
+            input.path.unwrap_or_default()
+        ));
         let response = self.responses.next();
         Box::pin(async move { Ok(response) })
     }
 }
 
-fn response(status: i32, body: serde_json::Value) -> VrchatApiResponse {
-    VrchatApiResponse {
+fn response(status: i32, body: serde_json::Value) -> VrchatResponse {
+    VrchatResponse {
         status,
         data: body.to_string(),
     }
 }
 
-fn profile_response(user_id: &str, bio: &str) -> VrchatApiResponse {
+fn profile_response(user_id: &str, bio: &str) -> VrchatResponse {
     response(
         200,
         json!({ "id": user_id, "displayName": "Friend", "bio": bio }),
@@ -283,7 +276,7 @@ fn profile_responses_are_observed_only_for_current_friends() -> Result<()> {
     let (_dir, runtime, owner) = runtime_with_friend("profile-bio-response")?;
     let store = MemoryProfileBioStore::default();
     let now = "2026-09-18T00:00:00.000Z";
-    let observe = |response: &VrchatApiResponse| {
+    let observe = |response: &VrchatResponse| {
         observe_profile_response(&store, runtime.runtime(), &owner, response, now)
     };
 
@@ -348,7 +341,6 @@ async fn scan_checks_the_next_stale_friend_and_pauses_when_vrchat_pushes_back() 
     let pacer = ProfileBioScanPacer::default();
     let deps = ProfileBioScanDeps {
         store: &store,
-        remote_requests: &ProfileRequests,
         remote: &remote,
         realtime: runtime.runtime(),
         pacer: &pacer,
@@ -378,7 +370,7 @@ async fn scan_checks_the_next_stale_friend_and_pauses_when_vrchat_pushes_back() 
     );
     assert_eq!(
         remote.requests.snapshot(),
-        ["https://api.vrchat.cloud/api/1 profile/usr_friend".to_string()]
+        ["https://api.vrchat.cloud/api/1 profile/usr%5Ffriend".to_string()]
     );
     assert_eq!(
         store.last_seen(&owner, "usr_friend")?,

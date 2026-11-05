@@ -3,9 +3,9 @@ use std::sync::Arc;
 use vrcx_0_application::auth::{
     AuthSessionCookies, LoginApi, LoginApiFuture, LoginRemoteOperation,
 };
-use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::{Result, WebClient};
-use vrcx_0_vrchat_client::auth::{
+use vrcx_0_contracts::vrchat_api::VrchatScope;
+use vrcx_0_vrchat_protocol::auth::{
     config_get_input, current_user_get_input, device_code_input, device_status_input,
     email_otp_verify_input, login_basic_input, otp_verify_input, totp_verify_input,
 };

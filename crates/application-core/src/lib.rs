@@ -10,10 +10,8 @@ mod diagnostics;
 mod error;
 mod event_bus;
 pub mod events;
-mod favorite_kind;
 mod file_cache;
 mod image_cache;
-mod instance_dwell;
 mod interruptible_sleep;
 pub mod ports;
 mod proxy;
@@ -51,9 +49,9 @@ pub use background::{
 pub use config::{config_string_array_value, normalize_config_string_array};
 #[cfg(any(test, feature = "test-utils"))]
 pub use contract_test_support::{
-    assert_json_contract, CallRecorder, MemoryCookieWebClientPort, MemoryFileCachePort,
-    MemoryWorldCachePort, NoopAvatarCachePort, NoopImageCachePort, NoopWebClientPort,
-    NoopWorldCachePort, ScriptedResults,
+    assert_json_contract, CallRecorder, MemoryConfigStore, MemoryCookieWebClientPort,
+    MemoryFileCachePort, MemoryWorldCachePort, NoopAvatarCachePort, NoopImageCachePort,
+    NoopWebClientPort, NoopWorldCachePort, ScriptedResults,
 };
 pub use diagnostics::RuntimeDiagnostics;
 pub use error::Error;
@@ -63,28 +61,15 @@ pub use event_bus::{
     FavoriteChange, FavoritesChangedPayload, RuntimeEventBus, RuntimeEventSink,
     RuntimeRealtimeTransportEpoch, RuntimeVrchatAuthFailurePayload, VrcStatusSnapshot,
 };
-pub use events::{
-    FeedLiveEntry, FriendProfileBulkLoadStatus, FriendProfileLoadStatusPayload, FriendProjection,
-    FriendProjectionPatch, PrintAutoCleanupEvent, RealtimeCurrentUserProjection,
-    RealtimeEconomyBalancePayload, RealtimeEntryCorrection, RealtimeEntryCorrectionFields,
-    RealtimeEntryCorrectionStream, RealtimeInstanceClosedProjection, RealtimeInstanceQueueKind,
-    RealtimeInstanceQueueProjection, RealtimeNotificationProjection, RealtimeNotificationUpsert,
-    RealtimeUserProjection,
-};
-pub use favorite_kind::{FavoriteChangeScope, FavoriteEntityKind, VrchatFavoriteType};
+pub use events::{FriendProfileBulkLoadStatus, FriendProfileLoadStatusPayload};
 pub use file_cache::{FileCache, FileCachePort};
 pub use image_cache::{save_ugc_image_to_file, ImageCache, ImageCachePort};
-pub use instance_dwell::{
-    FriendLocationTime, FriendLocationTimeSource, FriendPlace, InstanceDwellRegistry,
-};
 pub use interruptible_sleep::sleep_interruptibly;
 pub use ports::{
-    ActivityIngress, BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity,
+    ActivityIngress, BackgroundCapabilitySession, BackgroundCapabilitySessionIdentity, ConfigStore,
     CurrentUserSnapshot, GameProcessEvent, GameProcessEventSink, HostSessionGameProcessStatus,
-    HostSessionProjection, HostSessionRuntime, InstanceRosterMember, InstanceRosterObserver,
-    InstanceRosterSnapshot, LocalGameContextSnapshot, LocalGameContextSource,
+    HostSessionProjection, HostSessionRuntime, LocalGameContextSnapshot, LocalGameContextSource,
     NoopPrintCleanupInputSink, NoopUpdaterPort, PrintCleanupInputSink, PrintCleanupTrigger,
-    RealtimeNotificationProjectionObserver, RealtimeNotificationProjectionObserverRegistry,
     SessionHostRuntime, UnavailableLocalGameContextSource, UpdaterCheckRequest,
     UpdaterDownloadOutcome, UpdaterDownloadProgress, UpdaterInstallHandle, UpdaterMetadata,
     UpdaterPort, UpdaterProgressCallback,
@@ -106,16 +91,11 @@ pub use task_supervisor::{
     RuntimeTask, RuntimeTaskExecutor, RuntimeTaskHandle, TaskSpawnOutcome, TaskStopReport,
     TaskStopToken, TaskSupervisor,
 };
-pub use vrcx_0_contracts::{runtime_event_payload, RuntimeEventPayload};
-pub use vrcx_0_contracts::{
-    RealtimeAuthTokenFetch, RealtimeConnectionOptions, WebExecuteRequest, WebMultipartPart,
-    WebUploadMode,
-};
-pub use vrcx_0_core::FavoriteGroupVisibility;
+pub use vrcx_0_contracts::RuntimeEventPayload;
+pub use vrcx_0_core::{FavoriteChangeScope, FavoriteEntityKind, FavoriteGroupVisibility};
 pub use web_client::{WebClient, WebClientPort};
 pub use world_cache::{WorldCache, WorldCachePort};
 
-pub use vrcx_0_contracts::UgcCategory;
 pub use vrcx_0_core::location::ParsedLocation;
 
 pub type Result<T> = std::result::Result<T, Error>;

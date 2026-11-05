@@ -1,6 +1,7 @@
 use serde::Serialize;
 use specta::Type;
-use vrcx_0_application_core::{RuntimeEventBus, RuntimeEventPayload};
+use vrcx_0_application_core::RuntimeEventBus;
+use vrcx_0_contracts::RuntimeEventPayload;
 
 use crate::charts::AssistantChart;
 use crate::choices::AssistantChoiceCandidate;

@@ -98,6 +98,7 @@ describe('status bar recorder indicator', () => {
         const className = indicator()?.className ?? '';
         expect(className).not.toContain(ORANGE);
         expect(className).not.toContain(RED);
+        expect(className).not.toContain('--state-selected-surface');
         expect(screen.getByRole('tooltip').textContent).toContain(
             'offline_record.health.recording'
         );
@@ -184,6 +185,9 @@ describe('status bar recorder indicator', () => {
             recorderReports(probe);
 
             expect(indicator()?.className).toContain(colour);
+            expect(indicator()?.className).not.toContain(
+                '--state-selected-surface'
+            );
             expect(screen.getByRole('tooltip').textContent).toContain(message);
         }
     );

@@ -4,13 +4,14 @@ use std::path::Path;
 use std::sync::Mutex;
 
 use serde_json::{json, Value};
-use vrcx_0_vrchat_client::http_api::{ApiScope, HttpApiRequestInput};
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 
 const MAX_ENTRIES: usize = 200;
 static WRITTEN: Mutex<usize> = Mutex::new(0);
 
-pub(crate) fn request_context(input: &HttpApiRequestInput, scope: ApiScope) -> Option<Value> {
-    if scope != ApiScope::Vrchat {
+pub(crate) fn request_context(input: &VrchatRequest, scope: VrchatScope) -> Option<Value> {
+    if scope != VrchatScope::Vrchat {
         return None;
     }
     let path = input.path.as_deref()?;
@@ -175,7 +176,7 @@ mod tests {
 
     #[test]
     fn limits_capture_to_user_routes_and_redacts_the_target_id() {
-        let mut input = HttpApiRequestInput {
+        let mut input = VrchatRequest {
             path: Some("profile/usr%5Fprivate".into()),
             query_params: Some(std::collections::HashMap::from([(
                 "asSelf".into(),
@@ -183,7 +184,7 @@ mod tests {
             )])),
             ..Default::default()
         };
-        let context = request_context(&input, ApiScope::Vrchat).unwrap();
+        let context = request_context(&input, VrchatScope::Vrchat).unwrap();
         assert_eq!(context["route"], "profile/{id}");
         assert_eq!(context["asSelf"], true);
         assert!(!context.to_string().contains("usr_private"));
@@ -193,7 +194,7 @@ mod tests {
             "auth/cookie",
         ] {
             input.path = Some(path.into());
-            assert!(request_context(&input, ApiScope::Vrchat).is_none());
+            assert!(request_context(&input, VrchatScope::Vrchat).is_none());
         }
     }
 }

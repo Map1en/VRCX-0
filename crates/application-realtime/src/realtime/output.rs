@@ -1,7 +1,7 @@
 use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_contracts::realtime::RealtimePersistenceBatch;
 
-use super::projection::{
+use super::projection_types::{
     FriendProjection, RealtimeCurrentUserProjection, RealtimeInstanceClosedProjection,
     RealtimeNotificationProjection,
 };

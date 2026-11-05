@@ -24,7 +24,7 @@ use super::{
     AppUpdateReleaseSnapshot, AppUpdateRuntime, AppUpdateRuntimeDeps, AppUpdateStatusSnapshot,
     DownloadState,
 };
-use crate::profile::test_support::MemoryProfileConfigStore;
+use vrcx_0_application_core::MemoryConfigStore;
 
 const TEST_UPDATE_VERSION: &str = "2.15.0";
 
@@ -165,7 +165,7 @@ fn app_update_test_context_with_update_check(
     install_outcomes: impl IntoIterator<Item = InstallOutcome>,
     update_check_disabled: bool,
 ) -> AppUpdateTestContext {
-    let config = Arc::new(MemoryProfileConfigStore::default());
+    let config = Arc::new(MemoryConfigStore::default());
     let event_bus = RuntimeEventBus::new();
     let port = Arc::new(MockUpdaterPort::new(install_outcomes));
     let updater_port: Arc<dyn UpdaterPort> = port.clone();

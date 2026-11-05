@@ -11,6 +11,9 @@ import { cn } from '@/lib/utils';
 import vrchatMediaRepository, {
     type InventoryItemRecord
 } from '@/repositories/vrchatMediaRepository';
+import { usePreferencesStore } from '@/state/preferencesStore';
+
+const DECORATION_FADE_OUT_MS = 500;
 
 function useProfileDecorationItem(templateId: string) {
     return useQuery({
@@ -37,13 +40,38 @@ function DecorationImage({
     imageClassName: string;
 }) {
     const [failedAnimatedUrl, setFailedAnimatedUrl] = useState('');
+    const reduceEffects = usePreferencesStore(
+        (state) => state.reducedMotionAndBlur
+    );
+    const reducedMotion =
+        reduceEffects ||
+        (animated &&
+            window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ===
+                true);
+    const playing = animated && !reducedMotion;
+    const [fadingOut, setFadingOut] = useState(false);
+    const [wasPlaying, setWasPlaying] = useState(playing);
+    if (wasPlaying !== playing) {
+        setWasPlaying(playing);
+        setFadingOut(!playing && !reducedMotion);
+    }
+    useEffect(() => {
+        if (!fadingOut) {
+            return undefined;
+        }
+        const timer = setTimeout(
+            () => setFadingOut(false),
+            DECORATION_FADE_OUT_MS
+        );
+        return () => clearTimeout(timer);
+    }, [fadingOut]);
     const { animatedUrl, staticUrl } = resolveProfileDecorationAssetUrls(item);
     const src = staticUrl || animatedUrl;
     if (!src) {
         return null;
     }
     const showAnimation =
-        animated &&
+        (playing || fadingOut) &&
         Boolean(animatedUrl) &&
         animatedUrl !== src &&
         animatedUrl !== failedAnimatedUrl;
@@ -61,14 +89,22 @@ function DecorationImage({
                 className={cn('size-full', imageClassName)}
             />
             {showAnimation ? (
-                <FadeInImage
-                    src={animatedUrl}
-                    alt=""
-                    decoding="async"
-                    fallback={null}
-                    className={cn('absolute inset-0 size-full', imageClassName)}
-                    onError={() => setFailedAnimatedUrl(animatedUrl)}
-                />
+                <span
+                    data-decoration-animation={playing ? 'on' : 'fading'}
+                    className={cn(
+                        'absolute inset-0 transition-opacity duration-500 ease-out',
+                        playing ? 'opacity-100' : 'opacity-0'
+                    )}
+                >
+                    <FadeInImage
+                        src={animatedUrl}
+                        alt=""
+                        decoding="async"
+                        fallback={null}
+                        className={cn('size-full', imageClassName)}
+                        onError={() => setFailedAnimatedUrl(animatedUrl)}
+                    />
+                </span>
             ) : null}
         </span>
     );
@@ -165,24 +201,28 @@ export function ProfileNameplate({
     return (
         <span
             aria-hidden="true"
-            style={
-                gradientStart && gradientEnd
-                    ? {
-                          backgroundImage: `linear-gradient(90deg, ${gradientStart}, ${gradientEnd})`
-                      }
-                    : undefined
-            }
-            className={cn(
-                'pointer-events-none absolute inset-y-0.5 right-0 -z-10 w-2/3 overflow-hidden rounded-[inherit] [mask-image:linear-gradient(to_left,black,rgb(0_0_0/0.7)_25%,rgb(0_0_0/0.3)_55%,rgb(0_0_0/0.08)_80%,transparent)] transition-opacity duration-200',
-                active ? 'opacity-100' : 'opacity-50'
-            )}
+            className="pointer-events-none absolute inset-y-0.5 right-0 -z-10 w-2/3 overflow-hidden rounded-[inherit] [mask-image:linear-gradient(to_left,black,rgb(0_0_0/0.7)_25%,rgb(0_0_0/0.3)_55%,rgb(0_0_0/0.08)_80%,transparent)]"
         >
-            <DecorationImage
-                item={item}
-                animated={active}
-                className="absolute inset-0"
-                imageClassName="object-cover"
-            />
+            <span
+                style={
+                    gradientStart && gradientEnd
+                        ? {
+                              backgroundImage: `linear-gradient(90deg, ${gradientStart}, ${gradientEnd})`
+                          }
+                        : undefined
+                }
+                className={cn(
+                    'absolute inset-0 transition-opacity duration-200 motion-reduce:transition-none',
+                    active ? 'opacity-100' : 'opacity-50'
+                )}
+            >
+                <DecorationImage
+                    item={item}
+                    animated={active}
+                    className="absolute inset-0"
+                    imageClassName="object-cover"
+                />
+            </span>
         </span>
     );
 }

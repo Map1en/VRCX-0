@@ -6595,8 +6595,12 @@
             "support_development": "支持開發",
             "loading": "正在載入更新紀錄",
             "failed_to_load": "更新紀錄載入失敗。",
-            "latest_release": "最新版本",
             "empty": "此版本沒有可用的更新紀錄。",
+            "current_version": "目前版本",
+            "older_releases": "更早的版本",
+            "view_on_github": "前往 GitHub 查看",
+            "language": "更新紀錄語言",
+            "versions": "版本",
             "toast_title": "已更新到 {value}",
             "toast_description": "查看此版本的更新內容。",
             "view_changes": "查看更新內容"

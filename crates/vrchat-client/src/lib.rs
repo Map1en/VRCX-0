@@ -1,24 +1,7 @@
-pub mod auth;
-pub mod avatars;
 pub mod cookies;
-pub mod economy;
-pub mod favorites;
-pub mod friends;
-pub mod groups;
-pub mod http_api;
 pub mod image_fetcher;
-pub mod instances;
-pub mod media;
-pub mod moderation;
-pub mod notifications;
-pub mod query;
 pub mod realtime;
-pub mod search;
-pub mod tools;
-pub mod users;
 pub mod web_client;
-pub mod worlds;
 
-pub use http_api::HttpApiError;
 pub use image_fetcher::ImageFetchError;
 pub use web_client::WebClientError;

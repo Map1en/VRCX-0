@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::{
     CallRecorder, RemoteMutationGate, RuntimeAuthScope, RuntimeAuthScopeSnapshot,
 };
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use super::{
     CurrentUserMutationFuture, CurrentUserMutationPort, CurrentUserMutationRequest,
@@ -42,7 +42,7 @@ impl CurrentUserMutationPort for FakePort {
             if let Some(auth_scope) = self.switch_scope_during_execute.as_ref() {
                 auth_scope.set("usr_switched", "https://api.example.test/api/1");
             }
-            Ok(VrchatApiResponse {
+            Ok(VrchatResponse {
                 status: self.response_status,
                 data: "{}".to_string(),
             })

@@ -1,5 +1,5 @@
 use super::storage::AuthCredentialStore;
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse as HttpApiExecuteResponse;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use super::compat::normalize_text;
 use super::service::sync_saved_credential_cookies;
@@ -8,14 +8,14 @@ use super::types::SavedCredentialLoginStartInput;
 use crate::auth::cookie_session::probe_cookie_session;
 use crate::auth::{AuthSessionCookies, LoginApi, LoginRemoteOperation};
 use vrcx_0_application_core::{Error, Result};
-use vrcx_0_contracts::vrchat_login::CookieProbeResult;
+use vrcx_0_vrchat_protocol::auth::login::CookieProbeResult;
 
 pub async fn saved_credential_login_start(
     config: &dyn AuthCredentialStore,
     cookies: &dyn AuthSessionCookies,
     api: &dyn LoginApi,
     input: SavedCredentialLoginStartInput,
-) -> Result<HttpApiExecuteResponse> {
+) -> Result<VrchatResponse> {
     saved_credential_login_start_with_api(config, cookies, api, input).await
 }
 
@@ -24,7 +24,7 @@ pub(crate) async fn saved_credential_login_start_with_api(
     cookies: &dyn AuthSessionCookies,
     api: &dyn LoginApi,
     input: SavedCredentialLoginStartInput,
-) -> Result<HttpApiExecuteResponse> {
+) -> Result<VrchatResponse> {
     let user_id = normalize_text(input.user_id);
     if user_id.is_empty() {
         return Err(Error::Custom(

@@ -4,11 +4,14 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use moka::future::Cache;
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::{RuntimeAuthScope, RuntimeAuthScopeSnapshot};
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 use vrcx_0_core::vrchat_endpoints::{normalize_vrchat_api_endpoint, VRCHAT_API_DEFAULT_ENDPOINT};
 
+use crate::scope_gate::ScopeGate;
 use vrcx_0_application_core::{Error, Result};
+
+const GATE: ScopeGate = ScopeGate::new("Avatar moderation query");
 
 const AVATAR_MODERATION_CACHE_CAPACITY: u64 = 4;
 const AVATAR_MODERATION_CACHE_TTL: Duration = Duration::from_secs(30 * 60);
@@ -23,7 +26,7 @@ struct AvatarModerationCacheKey {
 
 #[derive(Clone)]
 pub struct AvatarModerationRuntime {
-    cache: Cache<AvatarModerationCacheKey, Arc<VrchatApiResponse>>,
+    cache: Cache<AvatarModerationCacheKey, Arc<VrchatResponse>>,
     revision: Arc<AtomicU64>,
 }
 
@@ -63,10 +66,10 @@ impl AvatarModerationRuntime {
         &self,
         key: AvatarModerationCacheKey,
         load: F,
-    ) -> Result<VrchatApiResponse>
+    ) -> Result<VrchatResponse>
     where
         F: FnOnce() -> Fut,
-        Fut: Future<Output = Result<VrchatApiResponse>>,
+        Fut: Future<Output = Result<VrchatResponse>>,
     {
         let response = self
             .cache
@@ -96,7 +99,7 @@ pub async fn get_avatar_moderations(
     deps: AvatarModerationDeps<'_>,
     command: &str,
     detail: impl Into<String>,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let detail = detail.into();
     let scope = deps.auth_scope.snapshot();
     if !scope.active || scope.current_user_id.trim().is_empty() {
@@ -114,11 +117,7 @@ pub async fn get_avatar_moderations(
                 .await
         })
         .await?;
-    if !deps.auth_scope.snapshot().generation_matches(&scope) {
-        return Err(Error::Custom(
-            "Avatar moderation query authentication scope changed.".into(),
-        ));
-    }
+    GATE.ensure_matches(deps.auth_scope, &scope)?;
     Ok(response)
 }
 
@@ -127,7 +126,7 @@ pub async fn execute_avatar_moderation_mutation(
     command: &str,
     detail: String,
     mutation: super::AvatarRemoteMutation,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let response = super::execute_avatar_remote_mutation(deps, command, detail, mutation).await?;
     if (200..300).contains(&response.status) {
         deps.avatar_moderation.invalidate();
@@ -152,8 +151,8 @@ mod tests {
         }
     }
 
-    fn response(status: i32, data: &str) -> VrchatApiResponse {
-        VrchatApiResponse {
+    fn response(status: i32, data: &str) -> VrchatResponse {
+        VrchatResponse {
             status,
             data: data.into(),
         }

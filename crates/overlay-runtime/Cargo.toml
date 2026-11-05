@@ -7,8 +7,8 @@ description = "VR overlay runtime"
 
 [features]
 default = []
-steamvr-overlay = ["vrcx-0-host-desktop/steamvr-overlay"]
-openxr-overlay = ["vrcx-0-host-desktop/openxr-overlay"]
+steamvr-overlay = ["vrcx-0-vr-overlay-backend/steamvr-overlay"]
+openxr-overlay = ["vrcx-0-vr-overlay-backend/openxr-overlay"]
 
 [dependencies]
 chrono = { workspace = true }
@@ -26,8 +26,10 @@ vrcx-0-contracts = { path = "../contracts" }
 vrcx-0-core = { path = "../core" }
 vrcx-0-host-desktop = { path = "../host-desktop" }
 vrcx-0-i18n = { path = "../i18n" }
-vrcx-0-persistence = { path = "../persistence" }
 vrcx-0-vr-overlay = { path = "../vr-overlay", features = ["slint-ui"] }
+
+[target.'cfg(any(windows, target_os = "linux"))'.dependencies]
+vrcx-0-vr-overlay-backend = { path = "../vr-overlay-backend" }
 
 [dev-dependencies]
 vrcx-0-application-core = { path = "../application-core", features = ["test-utils"] }

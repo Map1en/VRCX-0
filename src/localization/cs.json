@@ -6604,8 +6604,12 @@
             "support_development": "Podpořit vývoj",
             "loading": "Načítání seznamu změn",
             "failed_to_load": "Nepodařilo se načíst seznam změn.",
-            "latest_release": "Poslední verze",
             "empty": "Pro tuto verzi není k dispozici žádný seznam změn.",
+            "current_version": "Aktuální verze",
+            "older_releases": "Starší verze",
+            "view_on_github": "Zobrazit na GitHubu",
+            "language": "Jazyk seznamu změn",
+            "versions": "Verze",
             "toast_title": "Aktualizováno na {value}",
             "toast_description": "Podívejte se, co se v této verzi změnilo.",
             "view_changes": "Zobrazit změny"

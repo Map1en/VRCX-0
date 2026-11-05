@@ -1,7 +1,8 @@
-use crate::auth::test_support::{MemoryAuthCredentialStore, MemoryAuthSessionCookies};
-use crate::auth::AuthCredentialStore;
+use crate::auth::test_support::MemoryAuthSessionCookies;
 use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
 use serde_json::json;
+use vrcx_0_application_core::ConfigStore;
+use vrcx_0_application_core::MemoryConfigStore;
 
 use super::super::snapshot::saved_snapshot;
 use super::super::storage::{
@@ -22,7 +23,7 @@ fn contains_secret_key(value: &serde_json::Value) -> bool {
 
 #[test]
 fn saved_snapshot_redacts_passwords_and_cookies() -> vrcx_0_application_core::Result<()> {
-    let config = MemoryAuthCredentialStore::default();
+    let config = MemoryConfigStore::default();
     config.set_string(
         SAVED_CREDENTIALS_KEY,
         &json!({
@@ -73,7 +74,7 @@ fn test_cookie_store() -> MemoryAuthSessionCookies {
 #[test]
 fn record_login_success_with_save_credentials_captures_live_cookies(
 ) -> vrcx_0_application_core::Result<()> {
-    let config = MemoryAuthCredentialStore::default();
+    let config = MemoryConfigStore::default();
     let web = test_cookie_store();
     let cookie_payload = B64.encode(
         serde_json::to_vec(&json!([
@@ -111,7 +112,7 @@ fn record_login_success_with_save_credentials_captures_live_cookies(
 #[test]
 fn record_login_success_without_save_credentials_does_not_persist_a_new_entry(
 ) -> vrcx_0_application_core::Result<()> {
-    let config = MemoryAuthCredentialStore::default();
+    let config = MemoryConfigStore::default();
     let web = test_cookie_store();
 
     record_login_success(
@@ -141,7 +142,7 @@ fn record_login_success_without_save_credentials_does_not_persist_a_new_entry(
 #[test]
 fn record_login_success_without_save_credentials_refreshes_an_existing_record_in_place(
 ) -> vrcx_0_application_core::Result<()> {
-    let config = MemoryAuthCredentialStore::default();
+    let config = MemoryConfigStore::default();
     let web = test_cookie_store();
 
     config.set_string(
@@ -194,7 +195,7 @@ fn record_login_success_without_save_credentials_refreshes_an_existing_record_in
 #[test]
 fn legacy_records_decode_to_typed_credentials_and_keep_snapshot_ordering(
 ) -> vrcx_0_application_core::Result<()> {
-    let config = MemoryAuthCredentialStore::default();
+    let config = MemoryConfigStore::default();
     config.set_string(
         SAVED_CREDENTIALS_KEY,
         &json!({
@@ -279,7 +280,7 @@ fn legacy_records_decode_to_typed_credentials_and_keep_snapshot_ordering(
     Ok(())
 }
 
-fn seed_password_record(config: &MemoryAuthCredentialStore) -> vrcx_0_application_core::Result<()> {
+fn seed_password_record(config: &MemoryConfigStore) -> vrcx_0_application_core::Result<()> {
     config.set_string(
         SAVED_CREDENTIALS_KEY,
         &json!({
@@ -299,7 +300,7 @@ fn seed_password_record(config: &MemoryAuthCredentialStore) -> vrcx_0_applicatio
 #[test]
 fn a_qr_login_keeps_the_saved_password_of_an_existing_record() -> vrcx_0_application_core::Result<()>
 {
-    let config = MemoryAuthCredentialStore::default();
+    let config = MemoryConfigStore::default();
     seed_password_record(&config)?;
 
     record_login_success(
@@ -324,7 +325,7 @@ fn a_qr_login_keeps_the_saved_password_of_an_existing_record() -> vrcx_0_applica
 #[test]
 fn clearing_the_saved_password_keeps_a_passwordless_record() -> vrcx_0_application_core::Result<()>
 {
-    let config = MemoryAuthCredentialStore::default();
+    let config = MemoryConfigStore::default();
     seed_password_record(&config)?;
 
     let snapshot = clear_saved_password(&config, "usr_1".into())?;

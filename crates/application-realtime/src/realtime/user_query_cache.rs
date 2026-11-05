@@ -7,8 +7,8 @@ use moka::Expiry;
 
 use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::Error;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 const QUERY_CAPACITY: u64 = 128;
 const NEGATIVE_ENTRY_WEIGHT: u32 = 4;
@@ -86,7 +86,7 @@ fn negative_ttl(status: i32) -> Option<Duration> {
     }
 }
 
-fn cache_entry_weight(_key: &String, value: &Arc<VrchatApiResponse>) -> u32 {
+fn cache_entry_weight(_key: &String, value: &Arc<VrchatResponse>) -> u32 {
     if negative_ttl(value.status).is_some() {
         NEGATIVE_ENTRY_WEIGHT
     } else {
@@ -100,11 +100,11 @@ pub(crate) fn is_negative_cacheable_status(status: i32) -> bool {
 
 struct UserQueryExpiry;
 
-impl Expiry<String, Arc<VrchatApiResponse>> for UserQueryExpiry {
+impl Expiry<String, Arc<VrchatResponse>> for UserQueryExpiry {
     fn expire_after_create(
         &self,
         key: &String,
-        value: &Arc<VrchatApiResponse>,
+        value: &Arc<VrchatResponse>,
         _created_at: Instant,
     ) -> Option<Duration> {
         if let Some(ttl) = negative_ttl(value.status) {
@@ -121,7 +121,7 @@ impl Expiry<String, Arc<VrchatApiResponse>> for UserQueryExpiry {
 }
 
 pub(crate) struct UserQueryCache {
-    cache: Cache<String, Arc<VrchatApiResponse>>,
+    cache: Cache<String, Arc<VrchatResponse>>,
 }
 
 impl UserQueryCache {
@@ -141,9 +141,9 @@ impl UserQueryCache {
         endpoint: &str,
         user_id: &str,
         init: F,
-    ) -> Result<Arc<VrchatApiResponse>, Arc<Error>>
+    ) -> Result<Arc<VrchatResponse>, Arc<Error>>
     where
-        F: Future<Output = Result<Arc<VrchatApiResponse>, Error>>,
+        F: Future<Output = Result<Arc<VrchatResponse>, Error>>,
     {
         self.cache
             .try_get_with(cache_key(kind, endpoint, user_id), init)
@@ -185,7 +185,7 @@ mod tests {
                         "https://api.vrchat.cloud/api/1",
                         &format!("usr_{index}"),
                     ),
-                    Arc::new(VrchatApiResponse {
+                    Arc::new(VrchatResponse {
                         status: 404,
                         data: "{}".into(),
                     }),

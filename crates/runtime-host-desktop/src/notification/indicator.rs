@@ -1,11 +1,14 @@
 use std::sync::{Arc, Mutex};
 
 use vrcx_0_application_core::{
-    RealtimeNotificationProjection, RealtimeNotificationProjectionObserver, RuntimeAuthScope,
-    RuntimeAuthScopeObserver, RuntimeAuthScopeSnapshot, TaskSpawnOutcome, TaskSupervisor,
+    ConfigStore, RuntimeAuthScope, RuntimeAuthScopeObserver, RuntimeAuthScopeSnapshot,
+    TaskSpawnOutcome, TaskSupervisor,
+};
+use vrcx_0_application_realtime::{
+    RealtimeNotificationProjection, RealtimeNotificationProjectionObserver,
 };
 use vrcx_0_persistence::notifications::notification_has_unseen_action_required;
-use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
+use vrcx_0_persistence::DatabaseService;
 
 use crate::host_actions::RuntimeHost;
 
@@ -32,7 +35,7 @@ impl IndicatorState {
 #[derive(Clone)]
 pub(crate) struct RealtimeNotificationIndicator {
     db: Arc<DatabaseService>,
-    config: ConfigRepository,
+    config: Arc<dyn ConfigStore>,
     auth_scope: RuntimeAuthScope,
     host: RuntimeHost,
     tasks: TaskSupervisor,
@@ -42,7 +45,7 @@ pub(crate) struct RealtimeNotificationIndicator {
 impl RealtimeNotificationIndicator {
     pub(crate) fn new(
         db: Arc<DatabaseService>,
-        config: ConfigRepository,
+        config: Arc<dyn ConfigStore>,
         auth_scope: RuntimeAuthScope,
         host: RuntimeHost,
         tasks: TaskSupervisor,
@@ -188,9 +191,9 @@ mod tests {
     use std::time::{Duration, Instant};
 
     use serde_json::json;
-    use vrcx_0_application_core::{RuntimeAuthScope, TaskSupervisor};
+    use vrcx_0_application_core::{MemoryConfigStore, RuntimeAuthScope, TaskSupervisor};
     use vrcx_0_persistence::notifications::notification_add_v1;
-    use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
+    use vrcx_0_persistence::DatabaseService;
 
     use super::{IndicatorState, RealtimeNotificationIndicator};
     use crate::host_actions::{RuntimeHost, RuntimeHostActions};
@@ -263,7 +266,7 @@ mod tests {
         });
         let indicator = RealtimeNotificationIndicator::new(
             Arc::clone(&db),
-            ConfigRepository::new(Arc::clone(&db)),
+            Arc::new(MemoryConfigStore::default()),
             auth_scope.clone(),
             host,
             TaskSupervisor::new(),

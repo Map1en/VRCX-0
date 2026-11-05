@@ -35,11 +35,9 @@ pub(in crate::state) async fn run_background_moderation_refresh(
         return;
     };
     let store = vrcx_0_outbound_adapters::LocalModerationSyncStore::new(Arc::clone(db));
-    let remote_requests = vrcx_0_outbound_adapters::VrchatModerationSyncRemoteRequests;
     let remote = vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(web));
     let deps = ModerationSyncDeps::new(
         &store,
-        &remote_requests,
         &remote,
         &runtime_context.auth_scope,
         runtime_context.remote_mutations.as_ref(),

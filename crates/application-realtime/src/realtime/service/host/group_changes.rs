@@ -4,11 +4,10 @@ use std::time::Duration;
 use serde_json::Value;
 use vrcx_0_contracts::notifications::AppNotification;
 use vrcx_0_contracts::realtime::RealtimePersistenceBatch;
-use vrcx_0_contracts::vrchat_api::VrchatScope as ApiScope;
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_core::OwnerId;
 
 use super::RealtimeHostRuntime;
-use crate::realtime::group_changes::{group_change_notification, GroupChangeEvent};
 use crate::realtime::{
     RealtimeNotificationOutput, RealtimeNotificationProjection, RealtimeNotificationUpsert,
     RealtimeSessionContext,
@@ -17,30 +16,6 @@ use crate::realtime::{
 const GROUP_FETCH_TIMEOUT: Duration = Duration::from_secs(10);
 
 impl RealtimeHostRuntime {
-    pub(super) fn schedule_group_change(
-        self: &Arc<Self>,
-        generation: u64,
-        session_generation: u64,
-        session: RealtimeSessionContext,
-        event: GroupChangeEvent,
-    ) {
-        let runtime = Arc::clone(self);
-        self.deps.tasks.spawn(async move {
-            let group = runtime
-                .fetch_group(&session.endpoint, &event.group_id)
-                .await;
-            let _guard = runtime.notification_apply_lock.lock().await;
-            if !runtime.is_notification_context_current(generation, session_generation, &session) {
-                return;
-            }
-            runtime.apply_app_notification(
-                generation,
-                &session,
-                group_change_notification(&event, &group),
-            );
-        });
-    }
-
     pub(super) fn apply_app_notification(
         self: &Arc<Self>,
         generation: u64,
@@ -68,7 +43,7 @@ impl RealtimeHostRuntime {
         });
     }
 
-    async fn fetch_group(&self, endpoint: &str, group_id: &str) -> Value {
+    pub(super) async fn fetch_group(&self, endpoint: &str, group_id: &str) -> Value {
         let Ok(request) = self
             .deps
             .remote_requests
@@ -78,7 +53,7 @@ impl RealtimeHostRuntime {
         };
         match tokio::time::timeout(
             GROUP_FETCH_TIMEOUT,
-            self.deps.web.execute_api(request, ApiScope::Vrchat),
+            self.web.execute_api(request, VrchatScope::Vrchat),
         )
         .await
         {
@@ -95,10 +70,10 @@ mod tests {
     use serde_json::json;
 
     use super::super::test_support::*;
-    use crate::realtime::group_changes::GroupChange;
+    use crate::realtime::group_changes::{
+        group_change_notification, GroupChange, GroupChangeEvent,
+    };
     use vrcx_0_contracts::notifications::NotificationListQueryInput;
-
-    use super::*;
 
     #[test]
     fn app_notification_lands_in_its_table_and_the_projection(

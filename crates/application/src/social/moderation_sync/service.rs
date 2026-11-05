@@ -3,7 +3,7 @@ use std::time::Duration;
 use vrcx_0_core::text::normalize_text;
 
 use serde_json::Value;
-use vrcx_0_application_core::vrchat_api::{VrchatApiRequest, VrchatScope};
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatScope};
 use vrcx_0_contracts::VrchatJsonResponse;
 use vrcx_0_core::time::now_iso;
 use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
@@ -134,12 +134,12 @@ pub async fn update_player_moderation(
     execute_vrchat_mutation(
         &deps,
         &mutation,
-        deps.remote_requests.update(
+        vrcx_0_vrchat_protocol::moderation::player_moderation_update_input(
             mutation.scope().endpoint.clone(),
             input.enabled,
             target_user_id.clone(),
             r#type.clone(),
-        )?,
+        ),
     )
     .await?;
     runtime.invalidate();
@@ -214,7 +214,7 @@ fn normalize_endpoint(endpoint: &str) -> String {
 
 async fn execute_vrchat_json_request(
     deps: &ModerationSyncDeps<'_>,
-    request: VrchatApiRequest,
+    request: VrchatRequest,
 ) -> Result<Value> {
     let response = deps.remote.send(request, VrchatScope::Vrchat).await?;
 
@@ -229,7 +229,7 @@ async fn execute_vrchat_json_request(
 async fn execute_vrchat_mutation(
     deps: &ModerationSyncDeps<'_>,
     mutation: &AuthenticatedMutationContext<'_>,
-    mut request: VrchatApiRequest,
+    mut request: VrchatRequest,
 ) -> Result<Value> {
     mutation.apply_scope_to_request(&mut request);
     let response = mutation
@@ -284,7 +284,9 @@ async fn fetch_remote_moderations(
 ) -> Result<(usize, Vec<RemoteModerationRow>)> {
     let json = execute_vrchat_json_request(
         deps,
-        deps.remote_requests.list(normalize_endpoint(endpoint))?,
+        vrcx_0_vrchat_protocol::moderation::player_moderations_get_input(normalize_endpoint(
+            endpoint,
+        )),
     )
     .await?;
     let remote_count = json.as_array().map_or(0, Vec::len);

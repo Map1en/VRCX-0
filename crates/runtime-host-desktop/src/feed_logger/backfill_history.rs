@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use vrcx_0_persistence::config::ConfigRepository;
+use vrcx_0_application_core::ConfigStore;
 
 use super::{storage, Result};
 
@@ -29,7 +29,7 @@ pub struct FeedLoggerBackfillRecord {
 }
 
 pub(super) fn record(
-    config: &ConfigRepository,
+    config: &dyn ConfigStore,
     account_id: &str,
     at: i64,
     inserted: u32,
@@ -41,11 +41,11 @@ pub(super) fn record(
     let excess = stored.recent.len().saturating_sub(RECENT_LIMIT);
     stored.recent.drain(..excess);
     let json = serde_json::to_string(&stored).map_err(storage)?;
-    config.set_string(key, &json).map_err(storage)
+    config.set_string(&key, &json).map_err(storage)
 }
 
 pub(super) fn load(
-    config: &ConfigRepository,
+    config: &dyn ConfigStore,
     account_id: &str,
 ) -> Result<FeedLoggerBackfillHistory> {
     let stored = load_stored(config, &config_key(account_id))?;
@@ -60,7 +60,7 @@ pub(super) fn load(
     })
 }
 
-fn load_stored(config: &ConfigRepository, key: &str) -> Result<StoredHistory> {
+fn load_stored(config: &dyn ConfigStore, key: &str) -> Result<StoredHistory> {
     Ok(config
         .get_raw(key)
         .map_err(storage)?
@@ -81,11 +81,11 @@ mod tests {
     #[test]
     fn backfills_are_listed_newest_first_with_a_running_total() {
         let (_dir, config) = test_config("backfill-order");
-        record(&config, "usr_self", 100, 4).unwrap();
-        record(&config, "usr_self", 200, 6).unwrap();
+        record(config.as_ref(), "usr_self", 100, 4).unwrap();
+        record(config.as_ref(), "usr_self", 200, 6).unwrap();
 
         assert_eq!(
-            load(&config, "usr_self").unwrap(),
+            load(config.as_ref(), "usr_self").unwrap(),
             FeedLoggerBackfillHistory {
                 total: 10,
                 recent: vec![
@@ -106,16 +106,16 @@ mod tests {
     fn only_the_latest_backfills_are_kept_while_the_total_keeps_counting() {
         let (_dir, config) = test_config("backfill-limit");
         for at in 0..365 {
-            record(&config, "usr_self", at, 2).unwrap();
+            record(config.as_ref(), "usr_self", at, 2).unwrap();
         }
 
-        let history = load(&config, "usr_self").unwrap();
+        let history = load(config.as_ref(), "usr_self").unwrap();
         assert_eq!(history.total, 730);
         assert_eq!(history.recent.len(), RECENT_LIMIT);
         assert_eq!(history.recent[0].at, 364);
         assert!(
             config
-                .get_raw(config_key("usr_self"))
+                .get_raw(&config_key("usr_self"))
                 .unwrap()
                 .unwrap()
                 .len()
@@ -126,10 +126,10 @@ mod tests {
     #[test]
     fn each_account_keeps_its_own_history() {
         let (_dir, config) = test_config("backfill-accounts");
-        record(&config, "usr_self", 100, 4).unwrap();
+        record(config.as_ref(), "usr_self", 100, 4).unwrap();
 
         assert_eq!(
-            load(&config, "usr_other").unwrap(),
+            load(config.as_ref(), "usr_other").unwrap(),
             FeedLoggerBackfillHistory::default()
         );
     }

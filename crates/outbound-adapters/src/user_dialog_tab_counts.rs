@@ -10,14 +10,12 @@ use vrcx_0_application::social::{
     AvatarProviderConfig, AvatarReleaseStatus, UserDialogCountPage, UserDialogFavoriteGroupPage,
     UserDialogTabCountsFuture, UserDialogTabCountsSource, DEFAULT_AVATAR_PROVIDER,
 };
-use vrcx_0_application_core::{
-    vrchat_api::{VrchatApiRequest, VrchatScope},
-    Error, Result, WebClient,
-};
+use vrcx_0_application_core::{Error, Result, WebClient};
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatScope};
 use vrcx_0_contracts::VrchatJsonResponse;
 use vrcx_0_integrations::external_api::{self, ExternalApiScope};
 use vrcx_0_persistence::{config, DatabaseService};
-use vrcx_0_vrchat_client::{
+use vrcx_0_vrchat_protocol::{
     avatars::{avatar_list_by_user_get_input, AvatarListByUserGetInput},
     favorites::{favorite_groups_get_input, favorite_worlds_get_input},
     groups::user_groups_get_input,
@@ -41,11 +39,7 @@ impl LocalUserDialogTabCountsSource {
         Self { db, web }
     }
 
-    async fn execute_vrchat_payload(
-        &self,
-        request: VrchatApiRequest,
-        source: &str,
-    ) -> Result<String> {
+    async fn execute_vrchat_payload(&self, request: VrchatRequest, source: &str) -> Result<String> {
         let response = self.web.execute_api(request, VrchatScope::Vrchat).await?;
         validate_vrchat_payload(response.status, &response.data, source)?;
         Ok(response.data)

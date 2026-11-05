@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use serde_json::Value;
 use vrcx_0_contracts::{VrchatResponse, WorldSummaryOutput};
 
-use crate::{Result, WebClient};
+use crate::Result;
 
 #[async_trait]
 pub trait WorldCachePort: Send + Sync {
@@ -17,23 +17,11 @@ pub trait WorldCachePort: Send + Sync {
     fn hydrate_summary_from_payload(&self, world_value: &Value) -> Option<WorldSummaryOutput>;
     fn store_from_payload(&self, world_value: &Value) -> Result<Option<String>>;
     fn hydrate_favorite_payloads(&self, world_values: &[Value]) -> Vec<Option<Value>>;
-    async fn resolve_name(&self, web: &WebClient, endpoint: &str, world_id: &str)
-        -> Option<String>;
-    async fn resolve_summary(
-        &self,
-        web: &WebClient,
-        endpoint: &str,
-        world_id: &str,
-    ) -> Option<WorldSummaryOutput>;
-    async fn resolve_image_url(
-        &self,
-        web: &WebClient,
-        endpoint: &str,
-        world_id: &str,
-    ) -> Option<String>;
+    async fn resolve_name(&self, endpoint: &str, world_id: &str) -> Option<String>;
+    async fn resolve_summary(&self, endpoint: &str, world_id: &str) -> Option<WorldSummaryOutput>;
+    async fn resolve_image_url(&self, endpoint: &str, world_id: &str) -> Option<String>;
     async fn get(
         &self,
-        web: &WebClient,
         endpoint: &str,
         world_id: &str,
         force: bool,
@@ -93,42 +81,30 @@ impl WorldCache {
         self.inner.hydrate_favorite_payloads(&world_values)
     }
 
-    pub async fn resolve_name(
-        &self,
-        web: &WebClient,
-        endpoint: &str,
-        world_id: &str,
-    ) -> Option<String> {
-        self.inner.resolve_name(web, endpoint, world_id).await
+    pub async fn resolve_name(&self, endpoint: &str, world_id: &str) -> Option<String> {
+        self.inner.resolve_name(endpoint, world_id).await
     }
 
     pub async fn resolve_summary(
         &self,
-        web: &WebClient,
         endpoint: &str,
         world_id: &str,
     ) -> Option<WorldSummaryOutput> {
-        self.inner.resolve_summary(web, endpoint, world_id).await
+        self.inner.resolve_summary(endpoint, world_id).await
     }
 
-    pub async fn resolve_image_url(
-        &self,
-        web: &WebClient,
-        endpoint: &str,
-        world_id: &str,
-    ) -> Option<String> {
-        self.inner.resolve_image_url(web, endpoint, world_id).await
+    pub async fn resolve_image_url(&self, endpoint: &str, world_id: &str) -> Option<String> {
+        self.inner.resolve_image_url(endpoint, world_id).await
     }
 
     pub async fn get(
         &self,
-        web: &WebClient,
         endpoint: &str,
         world_id: &str,
         force: bool,
         full: bool,
     ) -> Result<VrchatResponse> {
-        self.inner.get(web, endpoint, world_id, force, full).await
+        self.inner.get(endpoint, world_id, force, full).await
     }
 
     pub fn hydrate_response(&self, response: &VrchatResponse) {

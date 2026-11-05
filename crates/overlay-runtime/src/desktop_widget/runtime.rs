@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use vrcx_0_application_activity::notification::unresolved_group_id;
 use vrcx_0_application_activity::{ActivityDelivery, ActivityEntry};
-use vrcx_0_persistence::config::ConfigRepository;
+use vrcx_0_application_core::ConfigStore;
 use vrcx_0_vr_overlay::DesktopWidgetRow;
 
 use super::feed::{DesktopWidgetFeed, DesktopWidgetRowPart, DesktopWidgetTarget};
@@ -64,7 +64,7 @@ struct Inner {
 
 pub struct DesktopWidgetRuntime {
     self_ref: Weak<Self>,
-    config: ConfigRepository,
+    config: Arc<dyn ConfigStore>,
     host: Arc<dyn DesktopWidgetHost>,
     windows: Arc<dyn DesktopWidgetWindows>,
     services: Mutex<Option<Arc<dyn VrOverlayRuntimeServices>>>,
@@ -74,12 +74,12 @@ pub struct DesktopWidgetRuntime {
 
 impl DesktopWidgetRuntime {
     pub fn new(
-        config: ConfigRepository,
+        config: Arc<dyn ConfigStore>,
         host: Arc<dyn DesktopWidgetHost>,
         windows: Arc<dyn DesktopWidgetWindows>,
         privacy_locked: bool,
     ) -> Arc<Self> {
-        let settings = DesktopWidgetSettings::load(&config);
+        let settings = DesktopWidgetSettings::load(config.as_ref());
         let runtime = Arc::new_cyclic(|self_ref| Self {
             self_ref: self_ref.clone(),
             config,
@@ -112,14 +112,17 @@ impl DesktopWidgetRuntime {
             .unwrap_or_default()
     }
 
-    pub fn set_enabled(&self, enabled: bool) -> vrcx_0_persistence::Result<DesktopWidgetState> {
+    pub fn set_enabled(
+        &self,
+        enabled: bool,
+    ) -> vrcx_0_application_core::Result<DesktopWidgetState> {
         self.update_settings(|settings| settings.enabled = enabled)
     }
 
     pub fn menu_command(
         &self,
         command: DesktopWidgetMenuCommand,
-    ) -> vrcx_0_persistence::Result<DesktopWidgetState> {
+    ) -> vrcx_0_application_core::Result<DesktopWidgetState> {
         self.update_settings(|settings| match command {
             DesktopWidgetMenuCommand::TogglePinned => settings.set_pinned(!settings.pinned),
             DesktopWidgetMenuCommand::ToggleClickThrough => {
@@ -138,7 +141,7 @@ impl DesktopWidgetRuntime {
     }
 
     pub fn reload_settings(&self) {
-        let loaded = DesktopWidgetSettings::load(&self.config);
+        let loaded = DesktopWidgetSettings::load(self.config.as_ref());
         let changed_state = {
             let Ok(mut inner) = self.inner.lock() else {
                 return;
@@ -199,11 +202,11 @@ impl DesktopWidgetRuntime {
     }
 
     pub fn view(&self) -> DesktopWidgetView {
-        let localizer = load_localizer(&self.config);
+        let localizer = load_localizer(self.config.as_ref());
         let Ok(inner) = self.inner.lock() else {
             return DesktopWidgetView {
                 rows: Vec::new(),
-                settings: DesktopWidgetSettings::load(&self.config),
+                settings: DesktopWidgetSettings::load(self.config.as_ref()),
             };
         };
         DesktopWidgetView {
@@ -214,7 +217,7 @@ impl DesktopWidgetRuntime {
 
     #[cfg(windows)]
     pub(crate) fn app_language(&self) -> String {
-        crate::config::load_app_language(&self.config)
+        crate::config::load_app_language(self.config.as_ref())
     }
 
     pub fn activate(&self, id: u64, part: DesktopWidgetRowPart) {
@@ -239,7 +242,7 @@ impl DesktopWidgetRuntime {
             inner.settings.bounds = Some(bounds);
             inner.settings
         };
-        if let Err(error) = settings.save(&self.config) {
+        if let Err(error) = settings.save(self.config.as_ref()) {
             tracing::warn!(error = %error, "failed to save desktop widget bounds");
         }
     }
@@ -247,15 +250,15 @@ impl DesktopWidgetRuntime {
     fn update_settings(
         &self,
         update: impl FnOnce(&mut DesktopWidgetSettings),
-    ) -> vrcx_0_persistence::Result<DesktopWidgetState> {
+    ) -> vrcx_0_application_core::Result<DesktopWidgetState> {
         let state = {
             let mut inner = self
                 .inner
                 .lock()
-                .map_err(|error| vrcx_0_persistence::Error::Custom(error.to_string()))?;
+                .map_err(|error| vrcx_0_application_core::Error::Custom(error.to_string()))?;
             let mut settings = inner.settings;
             update(&mut settings);
-            settings.save(&self.config)?;
+            settings.save(self.config.as_ref())?;
             inner.settings = settings;
             state_of(&settings)
         };
@@ -323,11 +326,7 @@ impl DesktopWidgetRuntime {
         tasks.spawn(async move {
             let source_id = entry.source_id.clone();
             if let Some(world_id) = unresolved_entry_world_id(&entry) {
-                let resolve = services.world_cache().resolve_name(
-                    services.web_client().as_ref(),
-                    &endpoint,
-                    &world_id,
-                );
+                let resolve = services.world_cache().resolve_name(&endpoint, &world_id);
                 if let Ok(Some(world_name)) =
                     tokio::time::timeout(LOCATION_NAME_RESOLVE_BUDGET, resolve).await
                 {

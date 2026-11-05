@@ -6,19 +6,23 @@ use std::time::{Duration, Instant};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use vrcx_0_application_core::{
-    vrchat_api::{VrchatApiRequest, VrchatScope},
     RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeDiagnostics, RuntimeOperationStatus,
     RuntimeSyncEngine, WorldCache,
 };
 use vrcx_0_application_realtime::RealtimeFriendSnapshot;
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatScope};
 use vrcx_0_contracts::{VrchatJsonResponse, WorldSummaryOutput};
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::json::RawJson;
 
 use crate::avatars::{get_my_avatars, AvatarRemote, MyAvatarsDeps, MyAvatarsInput, MyAvatarsStore};
 use crate::remote::VrchatRequestPort;
+use crate::scope_gate::ScopeGate;
 use vrcx_0_application_core::{Error, Result};
 use vrcx_0_core::OwnerId;
+use vrcx_0_vrchat_protocol::query::{QueryOrder, ReleaseStatusFilter, WorldSearchSort};
+
+const GATE: ScopeGate = ScopeGate::new("Quick search");
 
 const WORLD_PAGE_SIZE: i32 = 50;
 const FAVORITE_PAGE_SIZE: i32 = 300;
@@ -35,7 +39,6 @@ pub struct QuickSearchRuntime {
 
 struct QuickSearchRuntimeInner {
     detail_store: Arc<dyn QuickSearchDetailStore>,
-    remote_requests: Arc<dyn QuickSearchRemoteRequests>,
     avatar_store: Arc<dyn MyAvatarsStore>,
     avatar_remote: Arc<dyn AvatarRemote>,
     remote: Arc<dyn VrchatRequestPort>,
@@ -168,21 +171,8 @@ pub trait QuickSearchDetailStore: Send + Sync {
     fn user_notes(&self, owner: OwnerId) -> Result<Vec<(String, String)>>;
 }
 
-pub trait QuickSearchRemoteRequests: Send + Sync {
-    fn page(
-        &self,
-        source: QuickSearchRemoteSource,
-        endpoint: String,
-        current_user_id: String,
-        n: i32,
-        offset: i32,
-    ) -> Result<VrchatApiRequest>;
-    fn user_groups(&self, endpoint: String, current_user_id: String) -> Result<VrchatApiRequest>;
-}
-
 pub struct QuickSearchSources {
     detail_store: Arc<dyn QuickSearchDetailStore>,
-    remote_requests: Arc<dyn QuickSearchRemoteRequests>,
     avatar_store: Arc<dyn MyAvatarsStore>,
     avatar_remote: Arc<dyn AvatarRemote>,
     world_cache: Arc<WorldCache>,
@@ -191,14 +181,12 @@ pub struct QuickSearchSources {
 impl QuickSearchSources {
     pub fn new(
         detail_store: Arc<dyn QuickSearchDetailStore>,
-        remote_requests: Arc<dyn QuickSearchRemoteRequests>,
         avatar_store: Arc<dyn MyAvatarsStore>,
         avatar_remote: Arc<dyn AvatarRemote>,
         world_cache: Arc<WorldCache>,
     ) -> Self {
         Self {
             detail_store,
-            remote_requests,
             avatar_store,
             avatar_remote,
             world_cache,
@@ -217,7 +205,6 @@ impl QuickSearchRuntime {
         Self {
             inner: Arc::new(QuickSearchRuntimeInner {
                 detail_store: sources.detail_store,
-                remote_requests: sources.remote_requests,
                 avatar_store: sources.avatar_store,
                 avatar_remote: sources.avatar_remote,
                 remote,
@@ -238,7 +225,7 @@ impl QuickSearchRuntime {
         friend_snapshot: Option<RealtimeFriendSnapshot>,
     ) -> Result<QuickSearchQueryOutput> {
         let command = "app__quick_search_query";
-        let scope = require_active_scope(&self.inner.auth_scope)?;
+        let scope = GATE.require_active(&self.inner.auth_scope)?;
         let query = normalize_search_text(&input.query);
         if query.is_empty() {
             return Ok(QuickSearchQueryOutput::empty());
@@ -343,7 +330,7 @@ impl QuickSearchRuntime {
             output.joined_groups = search_candidates(&remote.groups, &query, &own_group_ids);
         }
 
-        ensure_scope_matches(&self.inner.auth_scope, &scope)?;
+        GATE.ensure_matches(&self.inner.auth_scope, &scope)?;
         let partial = failures > 0;
         output.status = if partial {
             QuickSearchQueryStatus::Partial
@@ -409,7 +396,7 @@ impl QuickSearchRuntime {
 
         let load_revision = self.inner.remote_revision.load(Ordering::SeqCst);
         let catalog = Arc::new(load_quick_search_remote_catalog(&self.inner, scope).await);
-        ensure_scope_matches(&self.inner.auth_scope, scope)?;
+        GATE.ensure_matches(&self.inner.auth_scope, scope)?;
         let ttl = if catalog.failures == 0 {
             REMOTE_WORKING_SET_TTL
         } else {
@@ -527,15 +514,41 @@ async fn collect_pages(
 ) -> Result<Vec<Value>> {
     let mut rows = Vec::new();
     for page in 0..=MAX_PAGES_PER_SOURCE {
-        ensure_scope_matches(&runtime.auth_scope, scope)?;
+        GATE.ensure_matches(&runtime.auth_scope, scope)?;
         let offset = (page as i32) * page_size;
-        let request = runtime.remote_requests.page(
-            source,
-            scope.endpoint.clone(),
-            scope.current_user_id.clone(),
-            page_size,
-            offset,
-        )?;
+        let endpoint = scope.endpoint.clone();
+        let request = match source {
+            QuickSearchRemoteSource::OwnWorlds => {
+                vrcx_0_vrchat_protocol::worlds::world_list_by_user_get_input(
+                    endpoint,
+                    scope.current_user_id.clone(),
+                    page_size,
+                    offset,
+                    WorldSearchSort::Updated,
+                    QueryOrder::Descending,
+                    ReleaseStatusFilter::All,
+                )?
+                .1
+            }
+            QuickSearchRemoteSource::FavoriteAvatars => {
+                vrcx_0_vrchat_protocol::favorites::favorite_avatars_get_input(
+                    endpoint,
+                    page_size,
+                    offset,
+                    String::new(),
+                )
+            }
+            QuickSearchRemoteSource::FavoriteWorlds => {
+                vrcx_0_vrchat_protocol::favorites::favorite_worlds_get_input(
+                    endpoint,
+                    page_size,
+                    offset,
+                    String::new(),
+                    String::new(),
+                    String::new(),
+                )
+            }
+        };
         let page_rows = execute_rows(runtime, scope, request).await?;
         let count = page_rows.len();
         if page == MAX_PAGES_PER_SOURCE {
@@ -558,9 +571,11 @@ async fn fetch_user_groups(
     runtime: &QuickSearchRuntimeInner,
     scope: &RuntimeAuthScopeSnapshot,
 ) -> Result<Vec<Value>> {
-    let request = runtime
-        .remote_requests
-        .user_groups(scope.endpoint.clone(), scope.current_user_id.clone())?;
+    let request = vrcx_0_vrchat_protocol::groups::user_groups_get_input(
+        scope.endpoint.clone(),
+        scope.current_user_id.clone(),
+    )?
+    .1;
     let mut rows = execute_rows(runtime, scope, request).await?;
     remap_group_membership_row_ids(&mut rows);
     Ok(rows)
@@ -586,10 +601,10 @@ fn remap_group_membership_row_ids(rows: &mut [Value]) {
 async fn execute_rows(
     runtime: &QuickSearchRuntimeInner,
     scope: &RuntimeAuthScopeSnapshot,
-    request: VrchatApiRequest,
+    request: VrchatRequest,
 ) -> Result<Vec<Value>> {
     let response = runtime.remote.send(request, VrchatScope::Vrchat).await?;
-    ensure_scope_matches(&runtime.auth_scope, scope)?;
+    GATE.ensure_matches(&runtime.auth_scope, scope)?;
     let response = VrchatJsonResponse {
         status: response.status,
         json: serde_json::from_str::<Value>(&response.data)?,
@@ -913,17 +928,6 @@ fn friend_snapshot_matches_scope(
     scope: &RuntimeAuthScopeSnapshot,
 ) -> bool {
     snapshot.current_user_id == scope.current_user_id && snapshot.endpoint == scope.endpoint
-}
-
-fn require_active_scope(auth_scope: &RuntimeAuthScope) -> Result<RuntimeAuthScopeSnapshot> {
-    crate::scope_gate::require_active_scope(auth_scope, "Quick search")
-}
-
-fn ensure_scope_matches(
-    auth_scope: &RuntimeAuthScope,
-    expected: &RuntimeAuthScopeSnapshot,
-) -> Result<()> {
-    crate::scope_gate::ensure_scope_matches(auth_scope, expected, "Quick search")
 }
 
 #[cfg(test)]

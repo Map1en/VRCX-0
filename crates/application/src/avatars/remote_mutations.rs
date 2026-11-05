@@ -1,8 +1,9 @@
 use std::{sync::Arc, time::Duration};
 
 use serde::Serialize;
-use vrcx_0_application_core::{vrchat_api::VrchatApiResponse, AvatarCache};
+use vrcx_0_application_core::AvatarCache;
 use vrcx_0_application_realtime::RealtimeHostRuntime;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use vrcx_0_application_core::{AuthenticatedMutationContext, Result};
 
@@ -18,7 +19,6 @@ pub struct AvatarRemoteMutationDeps<'a> {
 }
 
 impl<'a> AvatarRemoteMutationDeps<'a> {
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         store: &'a dyn super::AvatarCacheStore,
         remote: &'a dyn super::AvatarRemote,
@@ -42,7 +42,7 @@ impl<'a> AvatarRemoteMutationDeps<'a> {
 #[serde(rename_all = "camelCase")]
 pub struct AvatarSelectionMutationOutcome {
     pub applied: bool,
-    pub response: VrchatApiResponse,
+    pub response: VrchatResponse,
 }
 
 pub async fn execute_avatar_remote_mutation(
@@ -50,7 +50,7 @@ pub async fn execute_avatar_remote_mutation(
     command: &str,
     detail: String,
     mutation: super::AvatarRemoteMutation,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let endpoint = deps.mutation.scope().endpoint.clone();
     deps.mutation
         .run_after_wait(AVATAR_REMOTE_MUTATION_INTERVAL, || async move {
@@ -101,7 +101,7 @@ pub async fn save_avatar(
     command: &str,
     detail: String,
     mutation: super::AvatarRemoteMutation,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let response = execute_avatar_remote_mutation(deps, command, detail, mutation).await?;
     if (200..300).contains(&response.status) {
         if let Ok(avatar) = serde_json::from_str::<serde_json::Value>(&response.data) {
@@ -119,7 +119,7 @@ pub async fn delete_avatar(
     command: &str,
     detail: String,
     mutation: super::AvatarRemoteMutation,
-) -> Result<VrchatApiResponse> {
+) -> Result<VrchatResponse> {
     let response = execute_avatar_remote_mutation(deps, command, detail, mutation).await?;
     if (200..300).contains(&response.status) {
         let scope = deps.mutation.scope();

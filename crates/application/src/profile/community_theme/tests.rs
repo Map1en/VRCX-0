@@ -8,7 +8,7 @@ use super::super::background_image::{
     BackgroundImageService, UnavailableBackgroundImageFileResolver,
 };
 use super::*;
-use crate::profile::test_support::MemoryProfileConfigStore;
+use vrcx_0_application_core::MemoryConfigStore;
 
 struct DelayedCommunityThemeRemote {
     manifest_started: Notify,
@@ -95,7 +95,7 @@ impl CommunityThemeRemote for DelayedCommunityThemeRemote {
 }
 
 fn test_service(remote: Arc<dyn CommunityThemeRemote>) -> CommunityThemeService {
-    let config = Arc::new(MemoryProfileConfigStore::default());
+    let config = Arc::new(MemoryConfigStore::default());
     let event_bus = RuntimeEventBus::new();
     let background_image = BackgroundImageService::new(
         config.clone(),

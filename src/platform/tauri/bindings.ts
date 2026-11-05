@@ -3890,6 +3890,7 @@ export type BackendRuntimeCombinedSnapshot = {
     backendRuntime: BackendRuntimeSnapshot;
     authenticatedRuntimePhase: AuthenticatedRuntimePhaseSnapshot;
     authenticatedSession: AuthenticatedSessionProjection;
+    friendLocationTimes: FriendLocationTime[];
 };
 export type BackendRuntimeEventPayloadMap = {
     addGameLogEvent: RuntimeGameLogEventPayload;

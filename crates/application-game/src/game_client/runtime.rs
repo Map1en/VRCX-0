@@ -6,8 +6,9 @@ use crate::Result;
 use crate::{HostSessionRuntime, RuntimeAuthScope, RuntimeEventBus, TaskSupervisor};
 use vrcx_0_application_core::ActivityIngress;
 use vrcx_0_application_core::BackendRuntimeStatusPublisher;
+use vrcx_0_application_core::ConfigStore;
 use vrcx_0_application_core::GameProcessEvent;
-use vrcx_0_application_core::InstanceRosterObserver;
+use vrcx_0_contracts::InstanceRosterObserver;
 
 use super::actions::{GameClientActions, GameClientDebugLoggingActions};
 use super::processor::{
@@ -17,7 +18,8 @@ use super::processor::{
 
 #[derive(Clone)]
 pub struct GameClientRuntimeDeps {
-    pub(crate) store: Arc<dyn crate::GameStateStore>,
+    pub game_log_writer: Arc<dyn crate::GameLogWriter>,
+    pub config: Arc<dyn ConfigStore>,
     pub event_bus: RuntimeEventBus,
     pub backend_status: BackendRuntimeStatusPublisher,
     pub tasks: TaskSupervisor,
@@ -32,41 +34,6 @@ pub struct GameClientRuntimeDeps {
     pub activity: Arc<dyn ActivityIngress>,
 }
 
-impl GameClientRuntimeDeps {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        store: Arc<dyn crate::GameStateStore>,
-        event_bus: RuntimeEventBus,
-        backend_status: BackendRuntimeStatusPublisher,
-        tasks: TaskSupervisor,
-        session: HostSessionRuntime,
-        auth_scope: RuntimeAuthScope,
-        actions: Arc<dyn GameClientActions>,
-        cache_actions: Arc<dyn GameClientCacheActions>,
-        location_source: Arc<dyn GameClientLocationSource>,
-        window_actions: Arc<dyn GameClientWindowActions>,
-        debug_logging_actions: Arc<dyn GameClientDebugLoggingActions>,
-        instance_roster_observer: Option<Arc<dyn InstanceRosterObserver>>,
-        activity: Arc<dyn ActivityIngress>,
-    ) -> Self {
-        Self {
-            store,
-            event_bus,
-            backend_status,
-            tasks,
-            session,
-            auth_scope,
-            actions,
-            cache_actions,
-            location_source,
-            window_actions,
-            debug_logging_actions,
-            instance_roster_observer,
-            activity,
-        }
-    }
-}
-
 pub struct GameClientRuntime {
     state: Arc<Mutex<GameClientState>>,
     worker: RuntimeWorker<GameClientJob>,
@@ -79,7 +46,8 @@ impl GameClientRuntime {
         let state = Arc::new(Mutex::new(GameClientState::default()));
         let processor = GameClientProcessor::new(
             GameClientProcessorDeps {
-                store: deps.store,
+                game_log_writer: deps.game_log_writer,
+                config: deps.config,
                 event_bus: deps.event_bus.clone(),
                 backend_status: deps.backend_status,
                 tasks: deps.tasks,

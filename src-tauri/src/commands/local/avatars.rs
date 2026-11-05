@@ -7,10 +7,11 @@ use crate::commands::blocking::run_blocking;
 use crate::error::AppError;
 use crate::state::AppState;
 
-use vrcx_0_runtime_host_desktop::local_data::{
-    AvatarCacheOutput, AvatarGetInput, AvatarTagInput, AvatarTagOutput, AvatarTagsPatchInput,
+use vrcx_0_contracts::{
+    AvatarCacheOutput, AvatarTagInput, AvatarTagOutput, AvatarTagsPatchInput,
     AvatarTimeSpentOutput, AvatarUsageRow, AvatarWearSegment,
 };
+use vrcx_0_runtime_host_desktop::local_data::AvatarGetInput;
 
 #[tauri::command]
 #[specta::specta]

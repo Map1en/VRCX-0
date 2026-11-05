@@ -4,20 +4,18 @@ use vrcx_0_application_activity::{
     ActivityActorRelation, ActivityCategory, ActivityContent, ActivityDelivery, ActivityEntry,
 };
 use vrcx_0_application_core::{
-    HostSessionGameProcessStatus, HostSessionRuntime, RuntimeEventBus, TaskSupervisor,
+    ConfigStore, HostSessionGameProcessStatus, HostSessionRuntime, RuntimeEventBus, TaskSupervisor,
 };
 use vrcx_0_contracts::activity::ActivityKind;
-use vrcx_0_outbound_adapters::LocalAuthCredentialStore;
-use vrcx_0_persistence::config::ConfigRepository;
 
 use super::LocalNotificationPolicy;
 use crate::game_isolation::GameIsolationRuntime;
-use crate::notification::test_support::{test_config, TestDir};
+use crate::notification::test_support::{test_local_config, TestDir};
 use crate::notification::{NotificationDoNotDisturbMode, NotificationDoNotDisturbRuntime};
 use crate::privacy_lock::PrivacyLockRuntime;
 use crate::RuntimeHost;
 
-fn policy(name: &str) -> (TestDir, ConfigRepository, LocalNotificationPolicy) {
+fn policy(name: &str) -> (TestDir, Arc<dyn ConfigStore>, LocalNotificationPolicy) {
     let (dir, config, policy, _isolation) = policy_with_isolation(name);
     (dir, config, policy)
 }
@@ -26,11 +24,12 @@ fn policy_with_isolation(
     name: &str,
 ) -> (
     TestDir,
-    ConfigRepository,
+    Arc<dyn ConfigStore>,
     LocalNotificationPolicy,
     GameIsolationRuntime,
 ) {
-    let (dir, config) = test_config(name);
+    let (dir, local_config) = test_local_config(name);
+    let config: Arc<dyn ConfigStore> = local_config.clone();
     let session = HostSessionRuntime::new();
     session.apply_game_process_status(HostSessionGameProcessStatus {
         is_game_running: true,
@@ -44,14 +43,8 @@ fn policy_with_isolation(
         TaskSupervisor::new(),
     )
     .unwrap();
-    let privacy_lock = Arc::new(
-        PrivacyLockRuntime::new(
-            Arc::new(LocalAuthCredentialStore::from_repository(config.clone())),
-            RuntimeEventBus::new(),
-            None,
-        )
-        .unwrap(),
-    );
+    let privacy_lock =
+        Arc::new(PrivacyLockRuntime::new(local_config, RuntimeEventBus::new(), None).unwrap());
     let isolation =
         GameIsolationRuntime::new(config.clone(), RuntimeEventBus::new(), RuntimeHost::new())
             .unwrap();

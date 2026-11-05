@@ -37,9 +37,11 @@ fn headless_plaintext_passwords_preserve_literal_encrypted_prefixes() {
     let dir = TestDir::new("auth-credential-headless");
     let db_path = dir.path.join("VRCX-0.sqlite3");
     let db = Arc::new(DatabaseService::new(&db_path).unwrap());
-    let config = ConfigRepository::new(db);
-    let auth_store =
-        vrcx_0_outbound_adapters::LocalAuthCredentialStore::from_repository(config.clone());
+    let config = ConfigRepository::new(Arc::clone(&db));
+    let storage = Arc::new(
+        vrcx_0_persistence::storage::StorageService::new(&dir.path.join("storage.json")).unwrap(),
+    );
+    let auth_store = vrcx_0_outbound_adapters::LocalConfigStore::new(db, storage);
     init_secrets(Some([17; 32]), false);
     config
         .set_bool(

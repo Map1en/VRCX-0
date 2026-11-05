@@ -9397,6 +9397,7 @@ dependencies = [
  "vrcx-0-contracts",
  "vrcx-0-core",
  "vrcx-0-i18n",
+ "vrcx-0-vrchat-protocol",
 ]
 
 [[package]]
@@ -9449,6 +9450,7 @@ dependencies = [
  "url",
  "vrcx-0-application-activity",
  "vrcx-0-application-core",
+ "vrcx-0-application-realtime",
  "vrcx-0-contracts",
  "vrcx-0-core",
  "vrcx-0-osc",
@@ -9515,7 +9517,6 @@ dependencies = [
  "vrcx-0-outbound-adapters",
  "vrcx-0-persistence",
  "vrcx-0-platform",
- "vrcx-0-vrchat-client",
 ]
 
 [[package]]
@@ -9565,7 +9566,6 @@ name = "vrcx-0-host-desktop"
 version = "0.1.0"
 dependencies = [
  "arboard",
- "ash",
  "base64 0.23.1",
  "chrono",
  "dirs 7.0.0",
@@ -9578,9 +9578,6 @@ dependencies = [
  "objc2-avf-audio",
  "objc2-foundation 0.3.2",
  "open",
- "openvr",
- "openvr_sys",
- "openxr",
  "serde",
  "serde_json",
  "sha2 0.11.1",
@@ -9594,7 +9591,6 @@ dependencies = [
  "url",
  "vrcx-0-core",
  "vrcx-0-platform",
- "vrcx-0-vr-overlay",
  "walkdir",
  "windows",
  "windows-sys 0.61.2",
@@ -9682,6 +9678,7 @@ dependencies = [
  "vrcx-0-core",
  "vrcx-0-logger-protocol",
  "vrcx-0-vrchat-client",
+ "vrcx-0-vrchat-protocol",
  "windows-sys 0.61.2",
 ]
 
@@ -9781,6 +9778,7 @@ dependencies = [
  "vrcx-0-persistence",
  "vrcx-0-platform",
  "vrcx-0-vrchat-client",
+ "vrcx-0-vrchat-protocol",
  "walkdir",
  "zip",
 ]
@@ -9804,8 +9802,8 @@ dependencies = [
  "vrcx-0-core",
  "vrcx-0-host-desktop",
  "vrcx-0-i18n",
- "vrcx-0-persistence",
  "vrcx-0-vr-overlay",
+ "vrcx-0-vr-overlay-backend",
  "windows-sys 0.61.2",
 ]
 
@@ -9896,6 +9894,7 @@ dependencies = [
  "vrcx-0-persistence",
  "vrcx-0-platform",
  "vrcx-0-vrchat-client",
+ "vrcx-0-vrchat-protocol",
 ]
 
 [[package]]
@@ -9906,6 +9905,21 @@ dependencies = [
  "slint",
  "slint-build",
  "specta",
+]
+
+[[package]]
+name = "vrcx-0-vr-overlay-backend"
+version = "0.1.0"
+dependencies = [
+ "ash",
+ "openvr",
+ "openvr_sys",
+ "openxr",
+ "serde",
+ "specta",
+ "thiserror 2.0.21",
+ "tracing",
+ "vrcx-0-vr-overlay",
 ]
 
 [[package]]
@@ -9921,11 +9935,25 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "specta",
  "thiserror 2.0.21",
  "tokio",
  "tokio-tungstenite 0.30.0",
  "tower-service",
+ "url",
+ "vrcx-0-contracts",
+ "vrcx-0-core",
+]
+
+[[package]]
+name = "vrcx-0-vrchat-protocol"
+version = "0.1.0"
+dependencies = [
+ "base64 0.23.1",
+ "percent-encoding",
+ "serde",
+ "serde_json",
+ "specta",
+ "thiserror 2.0.21",
  "url",
  "vrcx-0-contracts",
  "vrcx-0-core",

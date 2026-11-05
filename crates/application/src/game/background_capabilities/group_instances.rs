@@ -125,7 +125,7 @@ impl RuntimeGroupInstancesProjection {
     }
 }
 
-impl vrcx_0_application_core::RuntimeEventPayload for RuntimeGroupInstancesProjection {
+impl vrcx_0_contracts::RuntimeEventPayload for RuntimeGroupInstancesProjection {
     const EVENT_NAME: &'static str = "runtimeGroupInstancesProjection";
 }
 

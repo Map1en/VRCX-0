@@ -4,8 +4,8 @@ use serde_json::{json, Map, Value};
 use vrcx_0_application::social::{
     PrintFavoritesStore, PrintRemote, PrintRemoteFuture, DEFAULT_AUTO_DELETE_PRINTS_LIMIT,
 };
-use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_core::WebClient;
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_persistence::maintenance::PRINT_FAVORITE_IDS_CONFIG_KEY;
 use vrcx_0_persistence::DatabaseService;
 
@@ -79,7 +79,7 @@ impl PrintRemote for LocalPrintAdapter {
         user_id: &'a str,
         count: i32,
     ) -> PrintRemoteFuture<'a> {
-        let request = vrcx_0_vrchat_client::media::prints_get_input(
+        let request = vrcx_0_vrchat_protocol::media::prints_get_input(
             endpoint.to_string(),
             user_id.to_string(),
             count,
@@ -88,7 +88,7 @@ impl PrintRemote for LocalPrintAdapter {
     }
 
     fn delete_print<'a>(&'a self, endpoint: &'a str, print_id: &'a str) -> PrintRemoteFuture<'a> {
-        let request = vrcx_0_vrchat_client::media::print_delete_input(
+        let request = vrcx_0_vrchat_protocol::media::print_delete_input(
             endpoint.to_string(),
             print_id.to_string(),
         );

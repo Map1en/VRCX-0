@@ -1,12 +1,11 @@
 use std::sync::Arc;
 
-use vrcx_0_application_core::{GameProcessEvent, GameProcessEventSink};
+use vrcx_0_application_core::{ConfigStore, GameProcessEvent, GameProcessEventSink};
 use vrcx_0_composition::Result;
 use vrcx_0_overlay_runtime::{
     VrOverlayActivitySink, VrOverlayRuntime, VrOverlayRuntimeServices,
     VR_OVERLAY_ENABLED_CONFIG_KEY,
 };
-use vrcx_0_persistence::config::ConfigRepository;
 
 use super::VrOverlayRuntimeSnapshot;
 use crate::{DesktopRuntimeServices, GameIsolationRuntime};
@@ -33,7 +32,7 @@ impl From<vrcx_0_overlay_runtime::VrOverlayRuntimeSnapshot> for VrOverlayRuntime
 }
 
 pub(super) struct Overlay {
-    config: ConfigRepository,
+    config: Arc<dyn ConfigStore>,
     runtime: Arc<VrOverlayRuntime>,
     isolation: GameIsolationRuntime,
 }

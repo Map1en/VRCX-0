@@ -1,5 +1,5 @@
 use crate::ports::TestGameStateStore;
-use crate::GameStateStore;
+use crate::GameLogWriter;
 use vrcx_0_contracts::game_log::{
     GameLogJoinLeaveEntry, GameLogLocationEntry, GameLogVideoPlayEntry, GameLogWriteBatch,
 };

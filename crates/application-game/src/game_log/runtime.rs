@@ -10,8 +10,9 @@ use crate::{GameLogEventOrigin, HostSessionRuntime, RuntimeSyncEngine, TaskSuper
 use crate::{InstanceMediaPort, RuntimeEventBus, VideoMetadataPort};
 use vrcx_0_application_core::ActivityIngress;
 use vrcx_0_application_core::BackendRuntimeStatusPublisher;
+use vrcx_0_application_core::ConfigStore;
 use vrcx_0_application_core::GameProcessEvent;
-use vrcx_0_application_core::InstanceRosterObserver;
+use vrcx_0_contracts::InstanceRosterObserver;
 
 use super::host::GameLogHostActions;
 use super::ingest::GameLogProcessEvent;
@@ -20,9 +21,10 @@ use super::runtime_state::RuntimeSnapshotStore;
 
 #[derive(Clone)]
 pub struct GameLogRuntimeDeps {
-    pub(crate) store: Arc<dyn crate::GameStateStore>,
-    pub(crate) instance_media: Arc<dyn InstanceMediaPort>,
-    pub(crate) video_metadata: Arc<dyn VideoMetadataPort>,
+    pub stores: crate::GameLogStores,
+    pub config: Arc<dyn ConfigStore>,
+    pub instance_media: Arc<dyn InstanceMediaPort>,
+    pub video_metadata: Arc<dyn VideoMetadataPort>,
     pub event_bus: RuntimeEventBus,
     pub backend_status: BackendRuntimeStatusPublisher,
     pub side_effect_sink: crate::GameLogSideEffectSink,
@@ -37,45 +39,6 @@ pub struct GameLogRuntimeDeps {
     pub instance_roster_observer: Option<Arc<dyn InstanceRosterObserver>>,
 }
 
-impl GameLogRuntimeDeps {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        store: Arc<dyn crate::GameStateStore>,
-        instance_media: Arc<dyn InstanceMediaPort>,
-        video_metadata: Arc<dyn VideoMetadataPort>,
-        event_bus: RuntimeEventBus,
-        backend_status: BackendRuntimeStatusPublisher,
-        side_effect_sink: crate::GameLogSideEffectSink,
-        tasks: TaskSupervisor,
-        sync: RuntimeSyncEngine,
-        auth_scope: RuntimeAuthScope,
-        session: HostSessionRuntime,
-        snapshot: RuntimeSnapshotStore,
-        host_actions: Arc<dyn GameLogHostActions>,
-        activity: Arc<dyn ActivityIngress>,
-        world_cache: Arc<WorldCache>,
-        instance_roster_observer: Option<Arc<dyn InstanceRosterObserver>>,
-    ) -> Self {
-        Self {
-            store,
-            instance_media,
-            video_metadata,
-            event_bus,
-            backend_status,
-            side_effect_sink,
-            tasks,
-            sync,
-            auth_scope,
-            session,
-            snapshot,
-            host_actions,
-            activity,
-            world_cache,
-            instance_roster_observer,
-        }
-    }
-}
-
 pub struct GameLogRuntime {
     session: HostSessionRuntime,
     processor: GameLogProcessor,
@@ -86,7 +49,8 @@ impl GameLogRuntime {
     pub fn new(deps: GameLogRuntimeDeps) -> Self {
         let session = deps.session.clone();
         let processor = GameLogProcessor::new(GameLogProcessorDeps {
-            store: deps.store,
+            stores: deps.stores,
+            config: deps.config,
             instance_media: deps.instance_media,
             video_metadata: deps.video_metadata,
             event_bus: deps.event_bus.clone(),

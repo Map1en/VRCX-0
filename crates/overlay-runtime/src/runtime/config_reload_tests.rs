@@ -6,31 +6,30 @@ use vrcx_0_application_activity::{
     ActivityRouter,
 };
 use vrcx_0_application_core::{
-    MemoryWorldCachePort, NoopWebClientPort, RuntimeAuthScope, TaskSupervisor, WebClient,
-    WorldCache,
+    ConfigStore, MemoryConfigStore, MemoryWorldCachePort, NoopWebClientPort, RuntimeAuthScope,
+    TaskSupervisor, WebClient, WorldCache,
 };
 use vrcx_0_application_game::{NowPlayingSnapshot, RuntimeSnapshot};
 use vrcx_0_contracts::activity::ActivityKind;
-use vrcx_0_persistence::config::ConfigRepository;
-use vrcx_0_persistence::DatabaseService;
 
-use super::{
-    hmd_surface_config, load_runtime_config, HmdNotificationPosition, HmdNotificationStyle,
-    StaticWristFrameProducer, VrOverlayRuntime, HMD_STACK_INSET_PX, HMD_SURFACE_SIZE,
-    HMD_SURFACE_WIDTH_METERS,
+use super::frame::StaticWristFrameProducer;
+use super::surface_layout::{
+    hmd_surface_config, HMD_STACK_INSET_PX, HMD_SURFACE_SIZE, HMD_SURFACE_WIDTH_METERS,
 };
+use super::{load_runtime_config, VrOverlayRuntime};
 use crate::config::{
-    HMD_NOTIFICATIONS_ENABLED_CONFIG_KEY, HMD_NOTIFICATION_AVATARS_CONFIG_KEY,
-    HMD_NOTIFICATION_OPACITY_CONFIG_KEY, HMD_NOTIFICATION_POSITION_CONFIG_KEY,
-    HMD_NOTIFICATION_START_MODE_CONFIG_KEY, HMD_NOTIFICATION_STYLE_CONFIG_KEY,
-    HMD_NOTIFICATION_TRACKER_DISCONNECT_CONFIG_KEY, VR_OVERLAY_HIDE_PRIVATE_WORLDS_CONFIG_KEY,
+    HmdNotificationPosition, HmdNotificationStyle, HMD_NOTIFICATIONS_ENABLED_CONFIG_KEY,
+    HMD_NOTIFICATION_AVATARS_CONFIG_KEY, HMD_NOTIFICATION_OPACITY_CONFIG_KEY,
+    HMD_NOTIFICATION_POSITION_CONFIG_KEY, HMD_NOTIFICATION_START_MODE_CONFIG_KEY,
+    HMD_NOTIFICATION_STYLE_CONFIG_KEY, HMD_NOTIFICATION_TRACKER_DISCONNECT_CONFIG_KEY,
+    VR_OVERLAY_HIDE_PRIVATE_WORLDS_CONFIG_KEY,
 };
 use crate::tracker_watch::TrackerDisconnect;
 use crate::VrOverlayRuntimeServices;
-use vrcx_0_host_desktop::vr_overlay::OverlayPlacement;
+use vrcx_0_vr_overlay_backend::OverlayPlacement;
 
 struct TestServices {
-    config: ConfigRepository,
+    config: Arc<dyn ConfigStore>,
     web: Arc<WebClient>,
     auth_scope: RuntimeAuthScope,
     world_cache: Arc<WorldCache>,
@@ -39,7 +38,7 @@ struct TestServices {
 }
 
 impl VrOverlayRuntimeServices for TestServices {
-    fn config(&self) -> &ConfigRepository {
+    fn config(&self) -> &Arc<dyn ConfigStore> {
         &self.config
     }
 
@@ -98,40 +97,22 @@ impl VrOverlayRuntimeServices for TestServices {
     }
 }
 
-struct TestDir(std::path::PathBuf);
-
-impl Drop for TestDir {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.0);
-    }
-}
-
-fn test_runtime() -> (TestDir, ConfigRepository, VrOverlayRuntime) {
-    let nonce = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
-    let dir = TestDir(std::env::temp_dir().join(format!(
-        "vrcx-0-overlay-config-reload-{}-{nonce}",
-        std::process::id()
-    )));
-    std::fs::create_dir_all(&dir.0).unwrap();
-    let db = Arc::new(DatabaseService::new(&dir.0.join("VRCX-0.sqlite3")).unwrap());
-    let config = ConfigRepository::new(db);
+fn test_runtime() -> (MemoryConfigStore, VrOverlayRuntime) {
+    let config = MemoryConfigStore::default();
     let runtime = VrOverlayRuntime::new(Arc::new(TestServices {
-        config: config.clone(),
+        config: Arc::new(config.clone()),
         web: Arc::new(WebClient::new(NoopWebClientPort)),
         auth_scope: RuntimeAuthScope::new(),
         world_cache: Arc::new(WorldCache::new(MemoryWorldCachePort::default())),
         tasks: TaskSupervisor::new(),
         activity_router: ActivityRouter::new(),
     }));
-    (dir, config, runtime)
+    (config, runtime)
 }
 
 #[test]
 fn reconciling_reloads_config_after_any_repository_write() {
-    let (_dir, config, runtime) = test_runtime();
+    let (config, runtime) = test_runtime();
     assert!(!runtime.current_runtime_config().render.hide_private_worlds);
 
     config
@@ -149,7 +130,7 @@ fn reconciling_reloads_config_after_any_repository_write() {
 
 #[test]
 fn a_config_write_stays_pending_while_no_surface_is_active_until_reconciled() {
-    let (_dir, config, runtime) = test_runtime();
+    let (config, runtime) = test_runtime();
     runtime.reconcile_current();
     assert!(!runtime.has_pending_config_change());
 
@@ -166,7 +147,7 @@ fn a_config_write_stays_pending_while_no_surface_is_active_until_reconciled() {
 
 #[test]
 fn hmd_avatars_have_their_own_switch_that_defaults_on() {
-    let (_dir, config, runtime) = test_runtime();
+    let (config, runtime) = test_runtime();
     assert!(runtime.current_runtime_config().hmd.avatars);
 
     config.set_bool("imageNotifications", false).unwrap();
@@ -182,7 +163,7 @@ fn hmd_avatars_have_their_own_switch_that_defaults_on() {
 
 #[test]
 fn hmd_tracker_disconnect_alerts_default_on_and_can_be_turned_off() {
-    let (_dir, config, runtime) = test_runtime();
+    let (config, runtime) = test_runtime();
     assert!(runtime.current_runtime_config().hmd.tracker_disconnect);
 
     config
@@ -194,7 +175,7 @@ fn hmd_tracker_disconnect_alerts_default_on_and_can_be_turned_off() {
 
 #[test]
 fn hmd_notifications_sit_top_center_or_bottom_and_unknown_values_fall_back_to_bottom() {
-    let (_dir, config, runtime) = test_runtime();
+    let (config, runtime) = test_runtime();
     for (value, position) in [
         ("top", HmdNotificationPosition::Top),
         ("center", HmdNotificationPosition::Center),
@@ -261,7 +242,7 @@ fn the_newest_hmd_card_lands_on_the_same_angle_for_each_position() {
 
 #[test]
 fn hmd_notifications_default_to_ninety_percent_opacity() {
-    let (_dir, config, runtime) = test_runtime();
+    let (config, runtime) = test_runtime();
     runtime.reconcile_current();
     assert_eq!(runtime.current_runtime_config().hmd.opacity_percent, 90);
 
@@ -296,7 +277,7 @@ fn hmd_panel_keeps_the_original_angular_width() {
 
 #[test]
 fn hmd_toasts_follow_the_router_hmd_flag_and_the_hmd_switch() {
-    let (_dir, config, _) = test_runtime();
+    let (config, _) = test_runtime();
     config
         .set_bool(HMD_NOTIFICATIONS_ENABLED_CONFIG_KEY, true)
         .unwrap();
@@ -304,7 +285,7 @@ fn hmd_toasts_follow_the_router_hmd_flag_and_the_hmd_switch() {
         .set_string(HMD_NOTIFICATION_START_MODE_CONFIG_KEY, "steamvr")
         .unwrap();
     let services: Arc<dyn VrOverlayRuntimeServices> = Arc::new(TestServices {
-        config: config.clone(),
+        config: Arc::new(config.clone()),
         web: Arc::new(WebClient::new(NoopWebClientPort)),
         auth_scope: RuntimeAuthScope::new(),
         world_cache: Arc::new(WorldCache::new(MemoryWorldCachePort::default())),
@@ -354,7 +335,7 @@ fn hmd_toasts_follow_the_router_hmd_flag_and_the_hmd_switch() {
 
 #[test]
 fn tracker_disconnect_toasts_follow_their_own_switch_and_the_hmd_switch() {
-    let (_dir, config, _) = test_runtime();
+    let (config, _) = test_runtime();
     config
         .set_bool(HMD_NOTIFICATIONS_ENABLED_CONFIG_KEY, true)
         .unwrap();
@@ -362,7 +343,7 @@ fn tracker_disconnect_toasts_follow_their_own_switch_and_the_hmd_switch() {
         .set_string(HMD_NOTIFICATION_START_MODE_CONFIG_KEY, "steamvr")
         .unwrap();
     let services: Arc<dyn VrOverlayRuntimeServices> = Arc::new(TestServices {
-        config: config.clone(),
+        config: Arc::new(config.clone()),
         web: Arc::new(WebClient::new(NoopWebClientPort)),
         auth_scope: RuntimeAuthScope::new(),
         world_cache: Arc::new(WorldCache::new(MemoryWorldCachePort::default())),

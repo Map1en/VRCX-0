@@ -9,7 +9,7 @@ use serde_json::{json, Value};
 use vrcx_0_application_core::Result;
 use vrcx_0_contracts::activity::ActivityKind;
 
-use super::NotificationConfig;
+use vrcx_0_application_core::ConfigStore;
 
 #[derive(Clone, Debug, Deserialize, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -75,7 +75,7 @@ pub struct NotificationActivityFiltersSetInput {
 }
 
 pub fn save_notification_activity_filters(
-    config: &dyn NotificationConfig,
+    config: &dyn ConfigStore,
     input: NotificationActivityFiltersSetInput,
 ) -> Result<ActivityFilterProfile> {
     let normalized = ActivitySurfaceFilters::from_saved_types_json(
@@ -94,7 +94,7 @@ pub fn save_notification_activity_filters(
 }
 
 pub fn rename_local_favorite_group_in_activity_filters(
-    config: &dyn NotificationConfig,
+    config: &dyn ConfigStore,
     group_name: &str,
     new_group_name: &str,
 ) -> Result<()> {
@@ -130,7 +130,7 @@ fn rename_string_values(value: &mut Value, old: &str, new: &str) -> bool {
     }
 }
 
-pub fn load_overlay_activity_filters(config: &dyn NotificationConfig) -> ActivityFilters {
+pub fn load_overlay_activity_filters(config: &dyn ConfigStore) -> ActivityFilters {
     let mut alert_rules_saved = false;
     let mut filters = match config.get_raw(NotificationSurface::Wrist.config_key()) {
         Ok(Some(raw)) => match serde_json::from_str::<Value>(&raw) {
@@ -189,15 +189,12 @@ pub fn load_overlay_activity_filters(config: &dyn NotificationConfig) -> Activit
     filters
 }
 
-pub fn reload_activity_router(activity_router: &ActivityRouter, config: &dyn NotificationConfig) {
+pub fn reload_activity_router(activity_router: &ActivityRouter, config: &dyn ConfigStore) {
     activity_router.set_filters(load_overlay_activity_filters(config));
     apply_location_notification_rules(activity_router, config);
 }
 
-fn apply_location_notification_rules(
-    activity_router: &ActivityRouter,
-    config: &dyn NotificationConfig,
-) {
+fn apply_location_notification_rules(activity_router: &ActivityRouter, config: &dyn ConfigStore) {
     activity_router.set_feed_hidden_users(
         load_feed_hidden_notification_user_ids(config),
         config
@@ -216,7 +213,7 @@ fn apply_location_notification_rules(
     );
 }
 
-fn load_feed_hidden_notification_user_ids(config: &dyn NotificationConfig) -> HashSet<String> {
+fn load_feed_hidden_notification_user_ids(config: &dyn ConfigStore) -> HashSet<String> {
     if !config
         .get_bool("feedHiddenUsersHideNotifications", true)
         .unwrap_or(true)
@@ -268,7 +265,7 @@ fn tts_rules_from_alert_rules(filters: &ActivityFilters) -> ActivitySurfaceFilte
 }
 
 fn persist_surface(
-    config: &dyn NotificationConfig,
+    config: &dyn ConfigStore,
     surface: NotificationSurface,
     filters: &ActivitySurfaceFilters,
 ) {
@@ -283,7 +280,7 @@ fn persist_surface(
 }
 
 fn load_types_key_surface(
-    config: &dyn NotificationConfig,
+    config: &dyn ConfigStore,
     surface: NotificationSurface,
 ) -> Option<ActivitySurfaceFilters> {
     let raw = config.get_raw(surface.config_key()).ok().flatten()?;

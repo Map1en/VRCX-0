@@ -10,7 +10,11 @@ use super::{
     service::unfriend_with_expected_scope,
     types::{SocialFriendMutationOutcome, SocialFriendMutationStatus, SocialMutationDeps},
 };
+use crate::scope_gate::ScopeGate;
 use vrcx_0_core::OwnerId;
+
+const BACKEND_UNFRIEND_GATE: ScopeGate = ScopeGate::new("Backend social unfriend batch");
+const UNFRIEND_BATCH_GATE: ScopeGate = ScopeGate::new("Social unfriend batch");
 
 pub const SOCIAL_UNFRIEND_BATCH_MAX_ITEMS: usize = 250;
 #[derive(Clone, Debug, Deserialize, specta::Type)]
@@ -99,12 +103,7 @@ pub async fn unfriend_batch(
     deps: SocialMutationDeps<'_>,
     input: SocialUnfriendBatchInput,
 ) -> Result<SocialUnfriendBatchResult> {
-    let expected_scope = deps.auth_scope.snapshot();
-    if !expected_scope.active {
-        return Err(Error::Custom(
-            "Backend social unfriend batch requires an authenticated session.".into(),
-        ));
-    }
+    let expected_scope = BACKEND_UNFRIEND_GATE.require_active(deps.auth_scope)?;
     unfriend_batch_for_scope(deps, &expected_scope, input.targets).await
 }
 
@@ -129,12 +128,7 @@ pub async fn unfriend_selection(
     if input.targets.len() <= SOCIAL_UNFRIEND_BATCH_MAX_ITEMS {
         return unfriend_batch(deps, input).await;
     }
-    let expected_scope = deps.auth_scope.snapshot();
-    if !expected_scope.active {
-        return Err(Error::Custom(
-            "Backend social unfriend batch requires an authenticated session.".into(),
-        ));
-    }
+    let expected_scope = BACKEND_UNFRIEND_GATE.require_active(deps.auth_scope)?;
     let mut result = SocialUnfriendBatchResult {
         owner_user_id: OwnerId::new(expected_scope.current_user_id.clone()),
         total: 0,
@@ -185,7 +179,7 @@ async fn run_social_unfriend_batch(
 
     for (index, target) in targets.iter().enumerate() {
         if !actions.scope_matches() {
-            let message = "Social unfriend batch authentication scope changed.".to_string();
+            let message = UNFRIEND_BATCH_GATE.scope_changed_message();
             mark_not_attempted(&mut items[index..], &message);
             last_error = Some(message);
             scope_changed = true;
@@ -221,7 +215,7 @@ async fn run_social_unfriend_batch(
             }
         }
         if !actions.scope_matches() {
-            let message = "Social unfriend batch authentication scope changed.".to_string();
+            let message = UNFRIEND_BATCH_GATE.scope_changed_message();
             mark_not_attempted(&mut items[index + 1..], &message);
             last_error = Some(message);
             scope_changed = true;

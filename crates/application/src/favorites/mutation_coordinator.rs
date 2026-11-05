@@ -241,7 +241,7 @@ impl FavoriteMutationCoordinator {
         &self,
         label: &'static str,
         input: FavoriteRemoteAddInput,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiResponse> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatResponse> {
         let deps = self.remote_deps(label)?;
         add_remote_favorite(&deps, input).await
     }
@@ -250,7 +250,7 @@ impl FavoriteMutationCoordinator {
         &self,
         label: &'static str,
         input: FavoriteRemoteDeleteInput,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiResponse> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatResponse> {
         let deps = self.remote_deps(label)?;
         delete_remote_favorite(&deps, input).await
     }
@@ -259,7 +259,7 @@ impl FavoriteMutationCoordinator {
         &self,
         label: &'static str,
         input: FavoriteRemoteGroupSaveInput,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiResponse> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatResponse> {
         let deps = self.remote_deps(label)?;
         save_remote_favorite_group(&deps, input).await
     }
@@ -268,7 +268,7 @@ impl FavoriteMutationCoordinator {
         &self,
         label: &'static str,
         input: FavoriteRemoteGroupClearInput,
-    ) -> Result<vrcx_0_application_core::vrchat_api::VrchatApiResponse> {
+    ) -> Result<vrcx_0_contracts::vrchat_api::VrchatResponse> {
         let deps = self.remote_deps(label)?;
         clear_remote_favorite_group(&deps, input).await
     }

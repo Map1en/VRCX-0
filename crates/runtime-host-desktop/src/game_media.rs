@@ -5,10 +5,10 @@ use serde_json::Value;
 use vrcx_0_application_core::{save_ugc_image_to_file, ImageCache, WebClient};
 use vrcx_0_application_game::{InstanceMediaPort, VideoMetadataPort};
 use vrcx_0_contracts::external_api::{youtube_video_metadata_get_input, ExternalApiScope};
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_contracts::UgcCategory;
-use vrcx_0_vrchat_client::groups::profile_get_input as group_profile_get_input;
-use vrcx_0_vrchat_client::http_api::ApiScope;
-use vrcx_0_vrchat_client::media::{print_get_input, user_inventory_item_get_input};
+use vrcx_0_vrchat_protocol::groups::profile_get_input as group_profile_get_input;
+use vrcx_0_vrchat_protocol::media::{print_get_input, user_inventory_item_get_input};
 
 pub(crate) struct DesktopGameMediaAdapter {
     web: Arc<WebClient>,
@@ -24,7 +24,7 @@ impl DesktopGameMediaAdapter {
         &self,
         request: vrcx_0_contracts::VrchatRequest,
     ) -> vrcx_0_application_core::Result<Option<Value>> {
-        let response = self.web.execute_api(request, ApiScope::Vrchat).await?;
+        let response = self.web.execute_api(request, VrchatScope::Vrchat).await?;
         if !(200..300).contains(&response.status) {
             return Ok(None);
         }

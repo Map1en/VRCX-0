@@ -4,7 +4,7 @@ use std::time::Duration;
 use tokio::sync::Notify;
 use tokio::time::Instant;
 use vrcx_0_contracts::vrchat_api::VrchatResponse;
-use vrcx_0_contracts::vrchat_device_login::{
+use vrcx_0_vrchat_protocol::auth::device_login::{
     interpret_device_status_response, slowed_device_poll_interval, VrchatDeviceStatus,
 };
 

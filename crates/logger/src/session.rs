@@ -4,12 +4,12 @@ use std::time::Duration;
 use tokio::sync::{mpsc, oneshot, watch};
 use tokio::task::JoinHandle;
 use tokio::time::Instant;
-use vrcx_0_contracts::vrchat_device_login::{slowed_device_poll_interval, VrchatDeviceStatus};
-use vrcx_0_contracts::vrchat_login::VrchatLoginFailureKind;
 use vrcx_0_core::TwoFactorMethod;
 use vrcx_0_logger_protocol::wire::{
     CredentialsRequest, DeviceLoginRequest, DeviceLoginState, SessionState, TwoFactorRequest,
 };
+use vrcx_0_vrchat_protocol::auth::device_login::{slowed_device_poll_interval, VrchatDeviceStatus};
+use vrcx_0_vrchat_protocol::auth::login::VrchatLoginFailureKind;
 
 use crate::app::{now_unix, now_unix_millis};
 use crate::credentials::{CredentialVault, StoredCredentials};

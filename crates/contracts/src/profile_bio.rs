@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use serde::Serialize;
 use serde_json::Value;
 use vrcx_0_core::json::JsonExt;
 
@@ -50,4 +51,12 @@ impl ProfileBioObservation {
 pub struct RecordedProfileBio {
     pub observation: ProfileBioObservation,
     pub observed_at: String,
+}
+
+#[derive(Debug, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct ProfileBioOutput {
+    pub user_id: String,
+    pub bio: String,
+    pub bio_links: Vec<String>,
 }

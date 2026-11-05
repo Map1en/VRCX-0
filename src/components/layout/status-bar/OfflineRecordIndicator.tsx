@@ -11,18 +11,10 @@ import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
-import { STATUS_BAR_TOGGLE_ACTIVE } from './statusBarToggle';
-
 const LEVEL_CLASS: Record<OfflineRecordHealthLevel, string> = {
-    ok: STATUS_BAR_TOGGLE_ACTIVE,
-    warning: cn(
-        STATUS_BAR_TOGGLE_ACTIVE,
-        'text-[var(--status-askme)] hover:text-[var(--status-askme)]'
-    ),
-    error: cn(
-        STATUS_BAR_TOGGLE_ACTIVE,
-        'text-[var(--status-busy)] hover:text-[var(--status-busy)]'
-    )
+    ok: 'text-foreground hover:text-foreground',
+    warning: 'text-[var(--status-askme)] hover:text-[var(--status-askme)]',
+    error: 'text-[var(--status-busy)] hover:text-[var(--status-busy)]'
 };
 
 export function OfflineRecordIndicator() {

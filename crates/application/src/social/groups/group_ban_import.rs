@@ -14,9 +14,12 @@ use serde::{Deserialize, Serialize};
 use vrcx_0_application_core::TaskStopToken;
 use vrcx_0_core::vrchat_ids::is_user_id;
 
+use crate::scope_gate::ScopeGate;
 use vrcx_0_application_core::{
     Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus, TaskSupervisor,
 };
+
+const GATE: ScopeGate = ScopeGate::new("Group ban import");
 
 const GROUP_BAN_IMPORT_MAX_ITEMS: usize = 1_000;
 const GROUP_BAN_IMPORT_INTERVAL: Duration = Duration::from_secs(1);
@@ -145,8 +148,7 @@ impl GroupBanImportRuntime {
 
     pub fn start(&self, input: GroupBanImportStartInput) -> Result<GroupBanImportStatus> {
         let prepared = prepare_group_ban_import(input)?;
-        let scope = self.auth_scope.snapshot();
-        require_active_scope(&scope)?;
+        let scope = GATE.require_active(&self.auth_scope)?;
         let cancel = Arc::new(AtomicBool::new(false));
         let status = {
             let mut inner = self.lock_inner();
@@ -249,7 +251,7 @@ impl GroupBanImportRuntime {
     ) -> bool {
         cancel.load(Ordering::Acquire)
             || stop_token.is_stop_requested()
-            || ensure_scope_matches(&self.auth_scope.snapshot(), scope).is_err()
+            || GATE.ensure_matches(&self.auth_scope, scope).is_err()
     }
 
     fn apply_item(&self, run_id: &str, item: GroupBanImportItemResult) {
@@ -325,23 +327,6 @@ fn prepare_group_ban_import(input: GroupBanImportStartInput) -> Result<PreparedG
         )));
     }
     Ok(PreparedGroupBanImport { group_id, user_ids })
-}
-
-fn require_active_scope(scope: &RuntimeAuthScopeSnapshot) -> Result<()> {
-    if scope.active && !scope.current_user_id.trim().is_empty() {
-        Ok(())
-    } else {
-        Err(Error::Custom(
-            "Group ban import requires an authenticated session.".into(),
-        ))
-    }
-}
-
-fn ensure_scope_matches(
-    current: &RuntimeAuthScopeSnapshot,
-    expected: &RuntimeAuthScopeSnapshot,
-) -> Result<()> {
-    crate::scope_gate::ensure_snapshot_scope_matches(current, expected, "Group ban import")
 }
 
 fn is_active_state(state: GroupBanImportState) -> bool {

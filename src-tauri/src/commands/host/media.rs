@@ -6,7 +6,7 @@ use tauri::{AppHandle, State};
 
 use crate::error::AppError;
 use crate::state::AppState;
-use vrcx_0_application_core::UgcCategory;
+use vrcx_0_contracts::UgcCategory;
 
 #[tauri::command]
 #[specta::specta]

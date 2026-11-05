@@ -1,4 +1,4 @@
-use vrcx_0_persistence::config::ConfigRepository;
+use vrcx_0_application_core::ConfigStore;
 
 const START_AT_SYSTEM_STARTUP_CONFIG_KEY: &str = "StartAtWindowsStartup";
 
@@ -7,7 +7,7 @@ pub trait AutostartPlatform: Send + Sync {
 }
 
 pub fn set_autostart_preference(
-    config: &ConfigRepository,
+    config: &dyn ConfigStore,
     platform: &dyn AutostartPlatform,
     enabled: bool,
 ) -> crate::Result<bool> {
@@ -29,12 +29,9 @@ pub fn set_autostart_preference(
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        path::PathBuf,
-        sync::{Arc, Mutex},
-    };
+    use std::sync::Mutex;
 
-    use vrcx_0_persistence::{config::ConfigRepository, DatabaseService};
+    use vrcx_0_application_core::{ConfigStore, MemoryConfigStore};
 
     use super::{set_autostart_preference, AutostartPlatform};
 
@@ -50,34 +47,9 @@ mod tests {
         }
     }
 
-    struct TestDir(PathBuf);
-
-    impl TestDir {
-        fn new() -> Self {
-            let nonce = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos();
-            let path = std::env::temp_dir().join(format!(
-                "vrcx-0-autostart-preference-{}-{nonce}",
-                std::process::id()
-            ));
-            std::fs::create_dir_all(&path).unwrap();
-            Self(path)
-        }
-    }
-
-    impl Drop for TestDir {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.0);
-        }
-    }
-
     #[test]
     fn platform_and_persisted_preference_are_updated_together() {
-        let dir = TestDir::new();
-        let db = Arc::new(DatabaseService::new(&dir.0.join("VRCX-0.sqlite3")).unwrap());
-        let config = ConfigRepository::new(db);
+        let config = MemoryConfigStore::default();
         let platform = FakePlatform::default();
 
         assert!(set_autostart_preference(&config, &platform, true).unwrap());

@@ -1,6 +1,6 @@
+use crate::{FriendLocationTime, InstanceDwellRegistry};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex, MutexGuard};
-use vrcx_0_application_core::{FriendLocationTime, InstanceDwellRegistry};
 use vrcx_0_core::derived_keys;
 
 use chrono::{TimeZone, Utc};

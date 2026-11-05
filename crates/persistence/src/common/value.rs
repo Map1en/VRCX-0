@@ -93,3 +93,29 @@ pub(crate) fn object_field_json(value: &Value, key: &str, fallback: Value) -> St
         .unwrap_or(fallback)
         .to_string()
 }
+
+pub(crate) fn affected_count(count: i64) -> u64 {
+    count.max(0) as u64
+}
+
+pub(crate) fn value_to_i64(value: &Value) -> Option<i64> {
+    value
+        .as_i64()
+        .or_else(|| value.as_u64().and_then(|value| i64::try_from(value).ok()))
+        .or_else(|| {
+            value
+                .as_str()
+                .and_then(|value| value.trim().parse::<i64>().ok())
+        })
+}
+
+pub(crate) fn bool_field(value: Option<&Value>) -> bool {
+    value.and_then(Value::as_bool).unwrap_or(false)
+}
+
+pub(crate) fn json_string(value: Option<&Value>, default: &str) -> String {
+    value
+        .filter(|value| !value.is_null())
+        .map(ToString::to_string)
+        .unwrap_or_else(|| default.to_string())
+}

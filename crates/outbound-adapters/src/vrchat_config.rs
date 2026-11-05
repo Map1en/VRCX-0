@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use vrcx_0_application::auth::{VrchatConfigFuture, VrchatConfigPort};
 use vrcx_0_application::remote::VrchatApiRuntime;
-use vrcx_0_application_core::vrchat_api::{VrchatApiResponse, VrchatScope};
 use vrcx_0_application_core::WebClient;
+use vrcx_0_contracts::vrchat_api::{VrchatResponse, VrchatScope};
 
 pub struct VrchatConfigAdapter {
     web: Arc<WebClient>,
@@ -17,7 +17,7 @@ impl VrchatConfigAdapter {
 }
 
 impl VrchatConfigPort for VrchatConfigAdapter {
-    fn cached(&self, endpoint: &str) -> Option<VrchatApiResponse> {
+    fn cached(&self, endpoint: &str) -> Option<VrchatResponse> {
         self.web.vrchat_config_snapshot(endpoint)
     }
 
@@ -26,7 +26,7 @@ impl VrchatConfigPort for VrchatConfigAdapter {
     }
 
     fn fetch(&self, endpoint: String) -> VrchatConfigFuture<'_> {
-        let request = vrcx_0_vrchat_client::auth::config_get_input(endpoint);
+        let request = vrcx_0_vrchat_protocol::auth::config_get_input(endpoint);
         Box::pin(async move {
             self.api
                 .execute(

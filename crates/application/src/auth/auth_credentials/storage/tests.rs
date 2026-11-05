@@ -1,8 +1,5 @@
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
-
-use serde_json::json;
-use vrcx_0_application_core::Result;
+use serde_json::{json, Value};
+use vrcx_0_application_core::{ConfigStore, MemoryConfigStore, Result};
 
 use super::super::service::record_login_success;
 use super::super::types::LoginSuccessRecordInput;
@@ -16,20 +13,20 @@ const PREFIX: &str = "enc1:";
 #[derive(Clone)]
 struct MachineStore {
     machine: &'static str,
-    values: Arc<Mutex<HashMap<String, String>>>,
+    config: MemoryConfigStore,
 }
 
 impl MachineStore {
     fn pair() -> (Self, Self) {
-        let values = Arc::new(Mutex::new(HashMap::new()));
+        let config = MemoryConfigStore::default();
         (
             Self {
                 machine: "windows",
-                values: Arc::clone(&values),
+                config: config.clone(),
             },
             Self {
                 machine: "linux",
-                values,
+                config,
             },
         )
     }
@@ -43,37 +40,45 @@ impl MachineStore {
     }
 }
 
-impl AuthCredentialStore for MachineStore {
+impl ConfigStore for MachineStore {
     fn get_raw(&self, key: &str) -> Result<Option<String>> {
-        Ok(self.values.lock().unwrap().get(key).cloned())
+        self.config.get_raw(key)
     }
 
-    fn get_string(&self, key: &str, default_value: &str) -> Result<String> {
-        Ok(self
-            .get_raw(key)?
-            .unwrap_or_else(|| default_value.to_string()))
+    fn get_bool(&self, key: &str, default: bool) -> Result<bool> {
+        self.config.get_bool(key, default)
     }
 
-    fn get_bool(&self, key: &str, default_value: bool) -> Result<bool> {
-        Ok(self
-            .get_raw(key)?
-            .and_then(|value| value.parse().ok())
-            .unwrap_or(default_value))
+    fn get_string(&self, key: &str, default: &str) -> Result<String> {
+        self.config.get_string(key, default)
+    }
+
+    fn get_json(&self, key: &str, default: Value) -> Result<Value> {
+        self.config.get_json(key, default)
+    }
+
+    fn set_bool(&self, key: &str, value: bool) -> Result<()> {
+        self.config.set_bool(key, value)
     }
 
     fn set_string(&self, key: &str, value: &str) -> Result<()> {
-        self.values
-            .lock()
-            .unwrap()
-            .insert(key.to_string(), value.to_string());
-        Ok(())
+        self.config.set_string(key, value)
+    }
+
+    fn set_json(&self, key: &str, value: &Value) -> Result<()> {
+        self.config.set_json(key, value)
     }
 
     fn remove(&self, key: &str) -> Result<()> {
-        self.values.lock().unwrap().remove(key);
-        Ok(())
+        self.config.remove(key)
     }
 
+    fn write_generation(&self) -> u64 {
+        self.config.write_generation()
+    }
+}
+
+impl AuthCredentialStore for MachineStore {
     fn is_encrypting_writes(&self) -> bool {
         true
     }

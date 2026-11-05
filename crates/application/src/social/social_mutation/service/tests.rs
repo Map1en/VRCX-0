@@ -4,12 +4,12 @@ use vrcx_0_application_core::{RemoteMutationGate, RuntimeAuthScope};
 use vrcx_0_application_realtime::test_support::{
     runtime_with_active_session, TestDir, TestRealtimeHostRuntime,
 };
-use vrcx_0_application_realtime::RealtimeStore;
+use vrcx_0_application_realtime::SocialMutationStore;
 use vrcx_0_contracts::friend_log::{
     FriendLogCurrentEntryInput, FriendLogHistoryQueryInput, FriendLogUpsertOptionsInput,
 };
 
-use super::super::types::{SocialFriendMutationStatus, TestSocialMutationRemoteRequests};
+use super::super::types::SocialFriendMutationStatus;
 use super::*;
 
 #[test]
@@ -28,7 +28,6 @@ struct Fixture {
     runtime: TestRealtimeHostRuntime,
     auth_scope: RuntimeAuthScope,
     remote_mutations: Arc<RemoteMutationGate>,
-    remote_requests: TestSocialMutationRemoteRequests,
     remote: crate::remote::TestVrchatRequestPort,
 }
 
@@ -42,7 +41,6 @@ fn fixture(name: &str) -> Fixture {
         runtime,
         auth_scope,
         remote_mutations,
-        remote_requests: TestSocialMutationRemoteRequests,
         remote: crate::remote::TestVrchatRequestPort,
     }
 }
@@ -51,7 +49,6 @@ impl Fixture {
     fn deps(&self) -> SocialMutationDeps<'_> {
         SocialMutationDeps {
             store: self.runtime.store(),
-            remote_requests: &self.remote_requests,
             remote: &self.remote,
             auth_scope: &self.auth_scope,
             remote_mutations: self.remote_mutations.as_ref(),
@@ -119,7 +116,7 @@ fn apply_unfriend_locally_without_baseline_falls_back_to_direct_persistence_writ
     fixture
         .runtime
         .store()
-        .friend_log_upsert_current(
+        .upsert_current_friend(
             "usr_self",
             FriendLogCurrentEntryInput {
                 user_id: "usr_target".into(),

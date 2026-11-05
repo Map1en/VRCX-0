@@ -47,6 +47,7 @@ vrcx-0-osc = { path = "../osc" }
 vrcx-0-persistence = { path = "../persistence" }
 vrcx-0-composition = { path = "../composition" }
 vrcx-0-vrchat-client = { path = "../vrchat-client" }
+vrcx-0-vrchat-protocol = { path = "../vrchat-protocol" }
 vrcx-0-outbound-adapters = { path = "../outbound-adapters" }
 vrcx-0-mcp = { path = "../mcp" }
 vrcx-0-assistant = { path = "../assistant" }
@@ -56,4 +57,5 @@ vrcx-0-overlay-runtime = { path = "../overlay-runtime" }
 
 [dev-dependencies]
 rusqlite = { workspace = true }
+vrcx-0-application = { path = "../application", features = ["test-utils"] }
 vrcx-0-application-core = { path = "../application-core", features = ["test-utils"] }

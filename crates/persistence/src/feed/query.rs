@@ -437,7 +437,7 @@ pub fn feed_latest_query(
     let persisted_cursor = rows.last().and_then(feed_cursor_from_row);
     let persisted_has_more =
         include_persisted_rows && query.max_rows > 0 && rows.len() >= query.max_rows as usize;
-    let context = FeedLiveRowsMergeContext {
+    let context = FeedLiveQueryParts {
         current_user_id: &query.user_id,
         filters: &query.filters,
         search: "",
@@ -498,7 +498,7 @@ pub fn feed_search_query(
     } else {
         Vec::new()
     };
-    let context = FeedLiveRowsMergeContext {
+    let context = FeedLiveQueryParts {
         current_user_id: &query.user_id,
         filters: &query.filters,
         search: &query.search,
@@ -719,39 +719,13 @@ fn feed_row_content_key(row: &FeedRowOutput) -> String {
     )
 }
 
-pub(crate) struct FeedLiveRowsMergeContext<'a> {
-    pub(crate) current_user_id: &'a str,
-    pub(crate) filters: &'a [FeedFilter],
-    pub(crate) search: &'a str,
-    pub(crate) date_from: &'a str,
-    pub(crate) date_to: &'a str,
-    pub(crate) favorites_only: bool,
-    pub(crate) favorite_user_ids: &'a [String],
-    pub(crate) scoped_user_ids: &'a [String],
-    pub(crate) excluded_user_ids: &'a [String],
-    pub(crate) location_hidden_user_ids: &'a [String],
-    pub(crate) max_rows: i64,
-}
-
 fn merge_feed_rows_with_live(
     rows: Vec<FeedRowOutput>,
     live_entries: &[FeedLiveEntryInput],
     min_live_sequence: i64,
-    context: FeedLiveRowsMergeContext<'_>,
+    context: FeedLiveQueryParts<'_>,
 ) -> FeedReadModelOutput {
-    let matcher = FeedLiveQueryMatcher::from_parts(
-        context.current_user_id,
-        context.filters,
-        context.search,
-        context.date_from,
-        context.date_to,
-        context.favorites_only,
-        context.favorite_user_ids,
-        context.scoped_user_ids,
-        context.excluded_user_ids,
-        context.location_hidden_user_ids,
-        context.max_rows,
-    );
+    let matcher = FeedLiveQueryMatcher::from_parts(context);
     let mut max_sequence = min_live_sequence;
     let mut matching_entries = Vec::new();
 

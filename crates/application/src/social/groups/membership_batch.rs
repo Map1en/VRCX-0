@@ -8,16 +8,16 @@ use vrcx_0_application_core::{AuthenticatedMutationContext, Error, Result, Runti
 use vrcx_0_core::OwnerId;
 
 use crate::remote::VrchatRequestPort;
-use crate::scope_gate::{execute_vrchat_mutation, RemoteMutationOutcome};
+use crate::scope_gate::{execute_vrchat_mutation, RemoteMutationOutcome, ScopeGate};
 
-use super::service::{GroupRemoteRequest, GroupRemoteRequests};
+use super::service::GroupRemoteRequest;
 use super::types::{
     GroupMemberPatch, GroupMemberVisibility, VrchatGroupIdInput, VrchatGroupMemberPropsInput,
 };
 
 pub const GROUP_MEMBERSHIP_BATCH_MAX_TARGETS: usize = 250;
 const GROUP_MEMBERSHIP_REMOTE_INTERVAL: Duration = Duration::from_millis(250);
-const SCOPE_CHANGED_MESSAGE: &str = "Group membership batch authentication scope changed.";
+const GATE: ScopeGate = ScopeGate::new("Group membership batch");
 
 #[derive(Default)]
 pub struct GroupMembershipBatchCoordinator {
@@ -136,7 +136,6 @@ trait GroupMembershipBatchActions: Send + Sync {
 
 pub struct VrchatGroupMembershipBatchActions<'a> {
     remote: &'a dyn VrchatRequestPort,
-    remote_requests: &'a dyn GroupRemoteRequests,
     mutation: AuthenticatedMutationContext<'a>,
     event_bus: RuntimeEventBus,
 }
@@ -144,13 +143,11 @@ pub struct VrchatGroupMembershipBatchActions<'a> {
 impl<'a> VrchatGroupMembershipBatchActions<'a> {
     pub fn new(
         remote: &'a dyn VrchatRequestPort,
-        remote_requests: &'a dyn GroupRemoteRequests,
         mutation: AuthenticatedMutationContext<'a>,
         event_bus: RuntimeEventBus,
     ) -> Self {
         Self {
             remote,
-            remote_requests,
             mutation,
             event_bus,
         }
@@ -165,11 +162,10 @@ impl GroupMembershipBatchActions for VrchatGroupMembershipBatchActions<'_> {
         Box::pin(async move {
             let (built, action) = match operation {
                 GroupMembershipOperation::Leave { group_id } => {
-                    let built = self.remote_requests.build(GroupRemoteRequest::Leave(
-                        VrchatGroupIdInput {
-                            group_id: group_id.to_string(),
-                        },
-                    ))?;
+                    let built = GroupRemoteRequest::Leave(VrchatGroupIdInput {
+                        group_id: group_id.to_string(),
+                    })
+                    .build()?;
                     (built, "group leave")
                 }
                 GroupMembershipOperation::SetVisibility {
@@ -177,18 +173,15 @@ impl GroupMembershipBatchActions for VrchatGroupMembershipBatchActions<'_> {
                     user_id,
                     visibility,
                 } => {
-                    let built = self
-                        .remote_requests
-                        .build(GroupRemoteRequest::SetMemberProps(
-                            VrchatGroupMemberPropsInput {
-                                group_id: group_id.to_string(),
-                                user_id: user_id.to_string(),
-                                params: GroupMemberPatch {
-                                    visibility: Some(visibility),
-                                    ..GroupMemberPatch::default()
-                                },
-                            },
-                        ))?;
+                    let built = GroupRemoteRequest::SetMemberProps(VrchatGroupMemberPropsInput {
+                        group_id: group_id.to_string(),
+                        user_id: user_id.to_string(),
+                        params: GroupMemberPatch {
+                            visibility: Some(visibility),
+                            ..GroupMemberPatch::default()
+                        },
+                    })
+                    .build()?;
                     (built, "group member visibility update")
                 }
             };
@@ -255,7 +248,7 @@ async fn run_group_membership_batch_with_actions(
 
     for (index, group_id) in prepared.group_ids.iter().enumerate() {
         if !actions.scope_matches() {
-            stop_after = Some((index, SCOPE_CHANGED_MESSAGE.to_string()));
+            stop_after = Some((index, GATE.scope_changed_message()));
             break;
         }
 
@@ -274,7 +267,7 @@ async fn run_group_membership_batch_with_actions(
             Ok(outcome) => {
                 items[index] = applied(group_id);
                 if outcome == RemoteMutationOutcome::AppliedScopeChanged {
-                    stop_after = Some((index + 1, SCOPE_CHANGED_MESSAGE.to_string()));
+                    stop_after = Some((index + 1, GATE.scope_changed_message()));
                 }
             }
             Err(error) => {

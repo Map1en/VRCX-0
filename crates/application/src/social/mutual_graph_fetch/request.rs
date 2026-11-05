@@ -4,19 +4,24 @@ use std::time::Duration;
 
 use serde_json::Value;
 use tokio::time::{sleep, Instant};
-use vrcx_0_application_core::vrchat_api::VrchatScope;
 use vrcx_0_application_realtime::RealtimeHostRuntime;
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_core::json::RawJson;
 
 use super::types::{
     MutualGraphFetchStartInput, MutualGraphFriendRefreshInput, MutualGraphFriendRefreshOutput,
-    MutualGraphFriendRefreshStatus, MutualGraphMetaInput, MutualGraphRemoteRequests,
-    MutualGraphRequestDeps, MutualGraphSnapshotEntryInput, MutualGraphSnapshotOutput,
-    UserMutualFriendsListInput, UserMutualFriendsListOutput,
+    MutualGraphFriendRefreshStatus, MutualGraphMetaInput, MutualGraphRequestDeps,
+    MutualGraphSnapshotEntryInput, MutualGraphSnapshotOutput, UserMutualFriendsListInput,
+    UserMutualFriendsListOutput,
 };
 use crate::remote::VrchatRequestPort;
+use crate::scope_gate::ScopeGate;
 use vrcx_0_application_core::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot};
 use vrcx_0_core::OwnerId;
+
+const MUTUAL_GRAPH_GATE: ScopeGate = ScopeGate::new("Mutual graph");
+const FRIEND_REFRESH_GATE: ScopeGate = ScopeGate::new("Mutual graph friend refresh");
+const MUTUAL_FRIENDS_LIST_GATE: ScopeGate = ScopeGate::new("User mutual friends list");
 
 #[cfg(test)]
 mod tests;
@@ -29,7 +34,6 @@ const MUTUAL_GRAPH_EMPTY_USER_ID: &str = "usr_00000000-0000-0000-0000-0000000000
 
 pub(super) struct MutualGraphFetchContext<'a> {
     pub(super) remote: &'a dyn VrchatRequestPort,
-    pub(super) remote_requests: &'a dyn MutualGraphRemoteRequests,
     pub(super) endpoint: &'a str,
     pub(super) cancel_flag: &'a AtomicBool,
     pub(super) auth_scope: &'a RuntimeAuthScope,
@@ -61,7 +65,6 @@ pub async fn refresh_mutual_graph_friend(
     let cancel_flag = AtomicBool::new(false);
     let mut context = MutualGraphFetchContext {
         remote: deps.remote,
-        remote_requests: deps.remote_requests,
         endpoint: &expected_scope.endpoint,
         cancel_flag: &cancel_flag,
         auth_scope: deps.auth_scope,
@@ -83,13 +86,11 @@ pub async fn refresh_mutual_graph_friend(
                 (MutualGraphFriendRefreshStatus::OptedOut, None, None, true)
             }
             FriendFetchResult::Cancelled => {
-                return Err(Error::Custom(
-                    "Mutual graph friend refresh authentication scope changed.".into(),
-                ));
+                return Err(FRIEND_REFRESH_GATE.scope_changed_error());
             }
             FriendFetchResult::Failed(error) => return Err(Error::Custom(error)),
         };
-    ensure_mutual_scope_matches(deps.auth_scope, &expected_scope)?;
+    MUTUAL_GRAPH_GATE.ensure_matches(deps.auth_scope, &expected_scope)?;
     deps.store.friend_refresh_commit(
         expected_scope.current_user_id,
         friend_id,
@@ -105,8 +106,7 @@ pub async fn get_user_mutual_friends_list(
     realtime: &RealtimeHostRuntime,
     input: UserMutualFriendsListInput,
 ) -> Result<UserMutualFriendsListOutput> {
-    let expected_scope =
-        crate::scope_gate::require_active_scope(deps.auth_scope, "User mutual friends list")?;
+    let expected_scope = MUTUAL_FRIENDS_LIST_GATE.require_active(deps.auth_scope)?;
     let user_id = normalize_id(&input.user_id);
     if user_id.is_empty() {
         return Err(Error::Custom(
@@ -116,7 +116,6 @@ pub async fn get_user_mutual_friends_list(
     let cancel_flag = AtomicBool::new(false);
     let mut context = MutualGraphFetchContext {
         remote: deps.remote,
-        remote_requests: deps.remote_requests,
         endpoint: &expected_scope.endpoint,
         cancel_flag: &cancel_flag,
         auth_scope: deps.auth_scope,
@@ -124,7 +123,7 @@ pub async fn get_user_mutual_friends_list(
         last_request_at: None,
     };
     let result = fetch_mutual_friend_rows(&mut context, &user_id).await?;
-    ensure_mutual_scope_matches(deps.auth_scope, &expected_scope)?;
+    MUTUAL_GRAPH_GATE.ensure_matches(deps.auth_scope, &expected_scope)?;
 
     let backfills_graph =
         user_id != expected_scope.current_user_id && realtime.is_current_friend(&user_id);
@@ -248,13 +247,13 @@ async fn fetch_mutual_page(
             return PageFetchResult::Cancelled;
         }
 
-        let request = match context.remote_requests.mutual_friends(
+        let request = match vrcx_0_vrchat_protocol::users::user_mutual_friends_get_input(
             context.endpoint.to_string(),
             friend_id.to_string(),
             MUTUAL_GRAPH_PAGE_SIZE,
             offset,
         ) {
-            Ok(request) => request,
+            Ok((_, request)) => request,
             Err(error) => return PageFetchResult::Failed(error.to_string()),
         };
         let response = match context.remote.send(request, VrchatScope::Vrchat).await {
@@ -325,9 +324,7 @@ async fn fetch_mutual_friend_rows(
                 return Ok(MutualFriendRowsResult::OptedOut);
             }
             PageFetchResult::Cancelled => {
-                return Err(Error::Custom(
-                    "User mutual friends list authentication scope changed.".into(),
-                ));
+                return Err(MUTUAL_FRIENDS_LIST_GATE.scope_changed_error());
             }
             PageFetchResult::Failed(error) => return Err(Error::Custom(error)),
         }
@@ -411,7 +408,7 @@ fn require_mutual_scope(
     auth_scope: &RuntimeAuthScope,
     owner_user_id: &OwnerId,
 ) -> Result<RuntimeAuthScopeSnapshot> {
-    let expected_scope = crate::scope_gate::require_active_scope(auth_scope, "Mutual graph")?;
+    let expected_scope = MUTUAL_GRAPH_GATE.require_active(auth_scope)?;
     if expected_scope.current_user_id == normalize_id(owner_user_id.as_str()) {
         Ok(expected_scope)
     } else {
@@ -419,13 +416,6 @@ fn require_mutual_scope(
             "Mutual graph requires the active authenticated user.".into(),
         ))
     }
-}
-
-fn ensure_mutual_scope_matches(
-    auth_scope: &RuntimeAuthScope,
-    expected_scope: &RuntimeAuthScopeSnapshot,
-) -> Result<()> {
-    crate::scope_gate::ensure_scope_matches(auth_scope, expected_scope, "Mutual graph")
 }
 
 pub(super) fn fetch_should_cancel(

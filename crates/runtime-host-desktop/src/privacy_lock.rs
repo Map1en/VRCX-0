@@ -14,18 +14,19 @@ use vrcx_0_application::auth::{
 };
 use vrcx_0_application_core::{
     Result, RuntimeAuthScopeObserver, RuntimeAuthScopeSnapshot, RuntimeEventBus,
-    RuntimeEventPayload,
 };
-use vrcx_0_contracts::vrchat_api::{vrchat_response, VrchatResponse};
-use vrcx_0_contracts::vrchat_device_login::interpret_device_code_response;
-use vrcx_0_contracts::vrchat_login::{interpret_login_config_response, VrchatLoginStep};
+use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_contracts::vrchat_api::{vrchat_response, VrchatResponse, VrchatScope};
+use vrcx_0_contracts::RuntimeEventPayload;
 use vrcx_0_core::json::JsonExt;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
-use vrcx_0_vrchat_client::auth::{
+use vrcx_0_vrchat_client::web_client::WebClient as VrchatWebClient;
+use vrcx_0_vrchat_protocol::auth::device_login::interpret_device_code_response;
+use vrcx_0_vrchat_protocol::auth::login::{interpret_login_config_response, VrchatLoginStep};
+use vrcx_0_vrchat_protocol::auth::{
     config_get_input, current_user_get_input, device_code_input, device_status_input, logout_input,
 };
-use vrcx_0_vrchat_client::http_api::{build_web_execute_request, ApiScope, HttpApiRequestInput};
-use vrcx_0_vrchat_client::web_client::WebClient as VrchatWebClient;
+use vrcx_0_vrchat_protocol::http_api::build_web_execute_request;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -384,10 +385,10 @@ impl PrivacyLockRuntime {
 
 async fn execute(
     client: &VrchatWebClient,
-    input: HttpApiRequestInput,
+    input: VrchatRequest,
 ) -> std::result::Result<VrchatResponse, String> {
     let request =
-        build_web_execute_request(input, ApiScope::Vrchat).map_err(|error| error.to_string())?;
+        build_web_execute_request(input, VrchatScope::Vrchat).map_err(|error| error.to_string())?;
     let (status, data) = client
         .execute(request)
         .await
@@ -397,7 +398,10 @@ async fn execute(
 
 async fn request_device_authorization(
     client: &VrchatWebClient,
-) -> std::result::Result<vrcx_0_contracts::vrchat_device_login::VrchatDeviceAuthorization, String> {
+) -> std::result::Result<
+    vrcx_0_vrchat_protocol::auth::device_login::VrchatDeviceAuthorization,
+    String,
+> {
     let config = execute(client, config_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into())).await?;
     if let Some(VrchatLoginStep::Failed { reason, .. }) = interpret_login_config_response(&config) {
         return Err(reason);
@@ -452,70 +456,13 @@ impl RuntimeAuthScopeObserver for PrivacyLockRuntime {
 pub(crate) mod tests {
     use std::sync::{Arc, Mutex};
 
-    use vrcx_0_application::auth::{AuthCredentialStore, SealedAuthSecret};
-    use vrcx_0_application_core::{Result, RuntimeAuthScope, RuntimeEventBus};
+    use vrcx_0_application::auth::AuthCredentialStore;
+    use vrcx_0_application_core::{MemoryConfigStore, Result, RuntimeAuthScope, RuntimeEventBus};
 
     use super::*;
 
-    #[derive(Clone, Default)]
-    pub(crate) struct MemoryCredentials {
-        values: Arc<Mutex<std::collections::HashMap<String, String>>>,
-    }
-
-    impl AuthCredentialStore for MemoryCredentials {
-        fn get_raw(&self, key: &str) -> Result<Option<String>> {
-            Ok(self.values.lock().unwrap().get(key).cloned())
-        }
-        fn get_string(&self, key: &str, default_value: &str) -> Result<String> {
-            Ok(self
-                .get_raw(key)?
-                .unwrap_or_else(|| default_value.to_string()))
-        }
-        fn get_bool(&self, key: &str, default_value: bool) -> Result<bool> {
-            Ok(self
-                .get_raw(key)?
-                .and_then(|value| value.parse().ok())
-                .unwrap_or(default_value))
-        }
-        fn set_string(&self, key: &str, value: &str) -> Result<()> {
-            self.values
-                .lock()
-                .unwrap()
-                .insert(key.to_string(), value.to_string());
-            Ok(())
-        }
-        fn remove(&self, key: &str) -> Result<()> {
-            self.values.lock().unwrap().remove(key);
-            Ok(())
-        }
-        fn is_encrypting_writes(&self) -> bool {
-            false
-        }
-        fn is_secret_store_initialized(&self) -> bool {
-            false
-        }
-        fn open_secret(&self, stored: &str) -> Option<String> {
-            Some(stored.to_string())
-        }
-        fn seal_secret(&self, _previous: Option<&str>, plaintext: &str) -> SealedAuthSecret {
-            SealedAuthSecret {
-                stored: plaintext.to_string(),
-                encrypted: false,
-            }
-        }
-        fn is_sealed_secret(&self, _value: &str) -> bool {
-            false
-        }
-        fn is_other_machine_secret(&self, _value: &str) -> bool {
-            false
-        }
-        fn is_own_secret_behind_other_machines(&self, _value: &str) -> bool {
-            false
-        }
-    }
-
     pub(crate) fn runtime_with_scope() -> (Arc<PrivacyLockRuntime>, RuntimeAuthScope) {
-        let credentials: Arc<dyn AuthCredentialStore> = Arc::new(MemoryCredentials::default());
+        let credentials: Arc<dyn AuthCredentialStore> = Arc::new(MemoryConfigStore::default());
         let runtime = Arc::new(
             PrivacyLockRuntime::new(credentials, RuntimeEventBus::new(), None).expect("runtime"),
         );

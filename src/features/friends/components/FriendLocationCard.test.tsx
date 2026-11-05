@@ -27,12 +27,20 @@ vi.mock('@/components/user-hover-card/UserHoverCard', () => ({
 }));
 vi.mock('@/services/entityMediaService', () => ({ userImage: () => '' }));
 vi.mock('@/components/ProfileDecorations', () => ({
-    ProfileAvatarFrame: ({ templateId }: { templateId: string }) => (
-        <span data-avatar-frame={templateId} />
-    ),
-    ProfileNameplate: ({ templateId }: { templateId: string }) => (
-        <span data-nameplate={templateId} />
-    ),
+    ProfileAvatarFrame: ({
+        templateId,
+        active
+    }: {
+        templateId: string;
+        active: boolean;
+    }) => <span data-avatar-frame={templateId} data-active={active} />,
+    ProfileNameplate: ({
+        templateId,
+        active
+    }: {
+        templateId: string;
+        active: boolean;
+    }) => <span data-nameplate={templateId} data-active={active} />,
     useDecorationHover: () => ({ active: false, hoverProps: {} })
 }));
 vi.mock('@/components/friends/FriendInstanceTimer', () => ({
@@ -213,6 +221,44 @@ describe('FriendLocationCard presentation', () => {
                 .querySelector('[data-nameplate]')
                 ?.getAttribute('data-nameplate')
         ).toBe('invt_plate');
+    });
+
+    it('keeps the avatar frame and nameplate animated until the friend lands', () => {
+        const decorated = {
+            ...friend,
+            iconFrame: 'invt_frame',
+            nameplateEffect: 'invt_plate'
+        };
+        const presentation = { showAvatarFrame: true, showNameplate: true };
+        const activeStates = (container: HTMLElement) => [
+            container
+                .querySelector('[data-avatar-frame]')
+                ?.getAttribute('data-active'),
+            container
+                .querySelector('[data-nameplate]')
+                ?.getAttribute('data-active')
+        ];
+        const { container, rerender } = render(
+            <FriendLocationCard
+                friend={{
+                    ...decorated,
+                    $presence: travelingPresence('wrld_next:1')
+                }}
+                presentation={presentation}
+            />
+        );
+        expect(activeStates(container)).toEqual(['true', 'true']);
+
+        rerender(
+            <FriendLocationCard
+                friend={{
+                    ...decorated,
+                    $presence: onlinePresence('wrld_next:1')
+                }}
+                presentation={presentation}
+            />
+        );
+        expect(activeStates(container)).toEqual(['false', 'false']);
     });
 });
 

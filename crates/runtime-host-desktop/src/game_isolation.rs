@@ -2,10 +2,10 @@ use std::sync::{Arc, Mutex};
 
 use serde::Serialize;
 use vrcx_0_application_core::{
-    LocalGameContextSnapshot, LocalGameContextSource, RuntimeEventBus, RuntimeEventPayload,
+    ConfigStore, LocalGameContextSnapshot, LocalGameContextSource, RuntimeEventBus,
 };
+use vrcx_0_contracts::RuntimeEventPayload;
 use vrcx_0_core::game_log_parser::{GameLogEvent, GameLogEventKind};
-use vrcx_0_persistence::config::ConfigRepository;
 
 use crate::game_log::GAME_LOG_PERSISTENCE_RESUME_AFTER_CONFIG_KEY;
 use crate::RuntimeHost;
@@ -104,7 +104,7 @@ struct GameIsolationRuntimeInner {
     state: Mutex<GameIsolationSnapshot>,
     gate: Mutex<GameLogIsolationGate>,
     observers: Mutex<Vec<GameIsolationObserver>>,
-    config: ConfigRepository,
+    config: Arc<dyn ConfigStore>,
     event_bus: RuntimeEventBus,
     host: RuntimeHost,
 }
@@ -115,7 +115,7 @@ fn lock_error(error: impl std::fmt::Display) -> vrcx_0_application_core::Error {
 
 impl GameIsolationRuntime {
     pub fn new(
-        config: ConfigRepository,
+        config: Arc<dyn ConfigStore>,
         event_bus: RuntimeEventBus,
         host: RuntimeHost,
     ) -> vrcx_0_application_core::Result<Self> {
@@ -270,7 +270,7 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     use vrcx_0_application_core::{
-        LocalGameContextSnapshot, LocalGameContextSource, RuntimeEventBus,
+        ConfigStore, LocalGameContextSnapshot, LocalGameContextSource, RuntimeEventBus,
         RuntimeVrchatAuthFailurePayload,
     };
     use vrcx_0_core::game_log_parser::{GameLogEvent, GameLogEventKind};
@@ -279,12 +279,11 @@ mod tests {
         GameIsolationRuntime, GameLogIsolationGate, IsolatedLocalGameContextSource,
         LocalGameAccount,
     };
-    use vrcx_0_persistence::config::ConfigRepository;
 
     use crate::notification::test_support::test_config;
     use crate::{RuntimeHost, RuntimeHostActions};
 
-    fn isolation(config: &ConfigRepository) -> GameIsolationRuntime {
+    fn isolation(config: &Arc<dyn ConfigStore>) -> GameIsolationRuntime {
         GameIsolationRuntime::new(config.clone(), RuntimeEventBus::new(), RuntimeHost::new())
             .unwrap()
     }

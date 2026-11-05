@@ -4,10 +4,10 @@ use async_trait::async_trait;
 use serde_json::Value;
 use vrcx_0_application_core::{WebClient, WorldCache};
 use vrcx_0_application_game::BackgroundRemoteApi;
+use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
-use vrcx_0_vrchat_client::groups::profile_get_input as group_profile_get_input;
-use vrcx_0_vrchat_client::http_api::ApiScope;
-use vrcx_0_vrchat_client::users::{current_user_update_input, CurrentUserUpdateRequest};
+use vrcx_0_vrchat_protocol::groups::profile_get_input as group_profile_get_input;
+use vrcx_0_vrchat_protocol::users::{current_user_update_input, CurrentUserUpdateRequest};
 
 pub(crate) struct DesktopBackgroundRemoteApi {
     web: Arc<WebClient>,
@@ -27,15 +27,11 @@ impl BackgroundRemoteApi for DesktopBackgroundRemoteApi {
         endpoint: &str,
         world_id: &str,
     ) -> vrcx_0_application_core::Result<vrcx_0_contracts::VrchatResponse> {
-        self.world_cache
-            .get(&self.web, endpoint, world_id, false, true)
-            .await
+        self.world_cache.get(endpoint, world_id, false, true).await
     }
 
     async fn world_image_url(&self, endpoint: &str, world_id: &str) -> Option<String> {
-        self.world_cache
-            .resolve_image_url(&self.web, endpoint, world_id)
-            .await
+        self.world_cache.resolve_image_url(endpoint, world_id).await
     }
 
     async fn get_group(
@@ -48,7 +44,7 @@ impl BackgroundRemoteApi for DesktopBackgroundRemoteApi {
             group_id.to_string(),
             false,
         )?;
-        self.web.execute_api(request, ApiScope::Vrchat).await
+        self.web.execute_api(request, VrchatScope::Vrchat).await
     }
 
     fn prepare_current_user_update(
@@ -69,6 +65,6 @@ impl BackgroundRemoteApi for DesktopBackgroundRemoteApi {
         &self,
         request: vrcx_0_contracts::VrchatRequest,
     ) -> vrcx_0_application_core::Result<vrcx_0_contracts::VrchatResponse> {
-        self.web.execute_api(request, ApiScope::Vrchat).await
+        self.web.execute_api(request, VrchatScope::Vrchat).await
     }
 }

@@ -20,6 +20,9 @@ use super::{
     SharedCollectionImportProgress, SharedCollectionImportResult, SharedCollectionImportStartInput,
     SharedCollectionImportState, SharedCollectionImportStatus,
 };
+use crate::scope_gate::ScopeGate;
+
+const GATE: ScopeGate = ScopeGate::new("Shared collection import");
 
 pub trait SharedCollectionImportActionsFactory: Send + Sync {
     fn create(&self, endpoint: String) -> Arc<dyn SharedCollectionImportActions>;
@@ -107,12 +110,7 @@ impl SharedCollectionImportRuntime {
         input: SharedCollectionImportStartInput,
     ) -> Result<SharedCollectionImportStatus> {
         let prepared = prepare_shared_collection_import(input)?;
-        let scope = self.auth_scope.snapshot();
-        if !scope.active || scope.current_user_id.trim().is_empty() {
-            return Err(Error::Custom(
-                "Shared collection import requires an authenticated session.".into(),
-            ));
-        }
+        let scope = GATE.require_active(&self.auth_scope)?;
 
         let cancel = Arc::new(AtomicBool::new(false));
         let status = {

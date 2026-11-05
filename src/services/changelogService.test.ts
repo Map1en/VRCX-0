@@ -1,11 +1,105 @@
-import { describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
+
+import type { NormalizedRelease } from '@/services/updateService';
+
+const mocks = vi.hoisted(() => ({
+    fetchBranchReleasePage: vi.fn()
+}));
+
+vi.mock('@/services/updateService', () => ({
+    fetchBranchReleasePage: mocks.fetchBranchReleasePage
+}));
 
 import {
+    buildChangelogSections,
+    fetchChangelogReleases,
+    findChangelogRelease,
     parseChangelog,
     parseReleaseChangelog,
     resolvePostUpdateChangelogToastState,
     resolvePreferredChangelogLanguage
 } from './changelogService';
+
+function stableRelease(version: string, body = ''): NormalizedRelease {
+    return {
+        canonicalVersion: version,
+        channel: 'stable',
+        displayVersion: version,
+        htmlUrl: `https://example.test/v${version}`,
+        tagName: `v${version}`,
+        displayName: `VRCX-0 ${version}`,
+        publishedAt: '2026-10-26T00:00:00Z',
+        body,
+        updaterType: 'manual'
+    };
+}
+
+describe('changelog release list', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    test('keeps fetching pages until ten releases of the channel are collected', async () => {
+        const versions = Array.from(
+            { length: 12 },
+            (_, index) => `2.${40 - index}.0`
+        );
+        mocks.fetchBranchReleasePage
+            .mockResolvedValueOnce({
+                releases: versions.slice(0, 6).map((v) => stableRelease(v)),
+                hasMore: true
+            })
+            .mockResolvedValueOnce({
+                releases: versions.slice(6).map((v) => stableRelease(v)),
+                hasMore: true
+            });
+
+        const releases = await fetchChangelogReleases('2.40.0');
+
+        expect(releases.map((release) => release.canonicalVersion)).toEqual(
+            versions.slice(0, 10)
+        );
+        expect(mocks.fetchBranchReleasePage.mock.calls).toEqual([
+            ['stable', 1],
+            ['stable', 2]
+        ]);
+    });
+
+    test('stops at the last GitHub page and uses the beta channel for beta builds', async () => {
+        mocks.fetchBranchReleasePage.mockResolvedValueOnce({
+            releases: [],
+            hasMore: false
+        });
+
+        const releases = await fetchChangelogReleases('v2.34.0-beta.3');
+
+        expect(releases).toEqual([]);
+        expect(mocks.fetchBranchReleasePage.mock.calls).toEqual([['beta', 1]]);
+    });
+
+    test('finds the target release by version or tag', () => {
+        const releases = [stableRelease('2.33.0'), stableRelease('2.32.0')];
+
+        expect(findChangelogRelease(releases, 'v2.32.0')).toBe(releases[1]);
+        expect(findChangelogRelease(releases, '2.31.0')).toBeNull();
+        expect(findChangelogRelease(releases, '')).toBeNull();
+    });
+
+    test('drops the leading version line that repeats the section heading', () => {
+        const [section] = buildChangelogSections([
+            stableRelease(
+                '2.32.0',
+                `<!-- vrcx-0-changelog:start tag=vrcx-0-v2320-en -->
+v2.32.0
+**What's New:**
+<!-- vrcx-0-changelog:end -->`
+            )
+        ]);
+
+        expect(section.id).toBe('2.32.0');
+        expect(section.entries[0].markdown).toBe("**What's New:**");
+    });
+});
 
 describe('changelogService', () => {
     test('parses localized release body marker blocks and the global note', () => {

@@ -4,17 +4,18 @@ use std::time::Duration;
 use vrcx_0_application::game::{
     InstanceLaunchApiFuture, InstanceLaunchHttpClient, InstanceLaunchPipe, InstanceLaunchRuntime,
 };
-use vrcx_0_application_core::vrchat_api::{
-    execute_api_command, VrchatApiRequest, VrchatApiResponse, VrchatScope,
-};
+use vrcx_0_application_core::vrchat_api::execute_api_command;
 use vrcx_0_application_core::{
     is_remote_mutation_request, AuthenticatedMutationContext, RemoteMutationGate, RuntimeAuthScope,
     RuntimeDiagnostics, RuntimeSyncEngine, WebClient,
 };
+use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatResponse, VrchatScope};
 use vrcx_0_host_desktop::host_capabilities::{require_host_capability, HostCapability};
 use vrcx_0_persistence::config as config_store;
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::instances::{instance_self_invite_input, instance_short_name_get_input};
+use vrcx_0_vrchat_protocol::instances::{
+    instance_self_invite_input, instance_short_name_get_input,
+};
 
 const INSTANCE_JOIN_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
 
@@ -55,8 +56,8 @@ impl DesktopInstanceLaunchHttpClient {
         &self,
         command: &'static str,
         detail: &'static str,
-        mut request: VrchatApiRequest,
-    ) -> vrcx_0_application_core::Result<VrchatApiResponse> {
+        mut request: VrchatRequest,
+    ) -> vrcx_0_application_core::Result<VrchatResponse> {
         if !is_remote_mutation_request(&request) {
             return execute_api_command(
                 &self.web,

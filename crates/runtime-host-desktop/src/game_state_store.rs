@@ -1,13 +1,16 @@
 use std::sync::Arc;
 
-use serde_json::Value;
-use vrcx_0_application_game::{GameStateStore, PlayerModeration};
+use vrcx_0_application_game::{
+    FavoriteFriendGroupLookup, GameLogLocationQueries, GameLogSessionQueries, GameLogWriter,
+    InstanceHistoryQueries, LocationGroupNameFiller, PlayerDirectoryLookup, PlayerModeration,
+    PlayerModerationLookup,
+};
 use vrcx_0_contracts::game_log::{
     GameLogJoinLeaveSnapshot, GameLogLocationSnapshot, GameLogWriteBatch, GameLogWriteCount,
     PreviousInstanceEventRow, SessionEventRow, SessionLocationSegmentRow, SessionPlayerDurationRow,
 };
 use vrcx_0_core::OwnerId;
-use vrcx_0_persistence::{config, game_log, local_moderation, DatabaseService};
+use vrcx_0_persistence::{game_log, local_moderation, DatabaseService};
 
 pub(crate) struct PersistenceGameStateStore {
     db: Arc<DatabaseService>,
@@ -19,31 +22,7 @@ impl PersistenceGameStateStore {
     }
 }
 
-impl GameStateStore for PersistenceGameStateStore {
-    fn get_bool(&self, key: &str, default: bool) -> vrcx_0_application_core::Result<bool> {
-        Ok(config::get_bool(self.db.as_ref(), key, default)?)
-    }
-
-    fn get_string(&self, key: &str, default: &str) -> vrcx_0_application_core::Result<String> {
-        Ok(config::get_string(self.db.as_ref(), key, default)?)
-    }
-
-    fn get_json(&self, key: &str, default: Value) -> vrcx_0_application_core::Result<Value> {
-        Ok(config::get_json(self.db.as_ref(), key, default)?)
-    }
-
-    fn set_bool(&self, key: &str, value: bool) -> vrcx_0_application_core::Result<()> {
-        Ok(config::set_bool(self.db.as_ref(), key, value)?)
-    }
-
-    fn set_string(&self, key: &str, value: &str) -> vrcx_0_application_core::Result<()> {
-        Ok(config::set_string(self.db.as_ref(), key, value)?)
-    }
-
-    fn set_json(&self, key: &str, value: &Value) -> vrcx_0_application_core::Result<()> {
-        Ok(config::set_json(self.db.as_ref(), key, value)?)
-    }
-
+impl GameLogWriter for PersistenceGameStateStore {
     fn write_game_log(
         &self,
         owner: &OwnerId,
@@ -51,85 +30,9 @@ impl GameStateStore for PersistenceGameStateStore {
     ) -> vrcx_0_application_core::Result<GameLogWriteCount> {
         Ok(game_log::write_batch(self.db.as_ref(), owner, batch)?)
     }
+}
 
-    fn fill_location_group_name(
-        &self,
-        owner: &OwnerId,
-        created_at: &str,
-        location: &str,
-        group_name: &str,
-    ) -> vrcx_0_application_core::Result<u64> {
-        Ok(game_log::fill_location_group_name(
-            self.db.as_ref(),
-            owner,
-            created_at,
-            location,
-            group_name,
-        )?)
-    }
-
-    fn join_leave_for_location(
-        &self,
-        owner: &OwnerId,
-        location: &str,
-        after_date: &str,
-        before_date: &str,
-    ) -> vrcx_0_application_core::Result<Vec<GameLogJoinLeaveSnapshot>> {
-        Ok(game_log::get_join_leave_entries_for_location_range(
-            self.db.as_ref(),
-            owner,
-            location,
-            after_date,
-            before_date,
-        )?)
-    }
-
-    fn previous_instance_events(
-        &self,
-        owner: &OwnerId,
-        user_id: &str,
-        date_from: &str,
-        date_to: &str,
-        limit: usize,
-    ) -> vrcx_0_application_core::Result<Vec<PreviousInstanceEventRow>> {
-        Ok(game_log::previous_instance_event_rows_query(
-            self.db.as_ref(),
-            owner,
-            user_id,
-            date_from,
-            date_to,
-            limit,
-        )?)
-    }
-
-    fn user_id_from_display_name(
-        &self,
-        owner: &OwnerId,
-        display_name: &str,
-    ) -> vrcx_0_application_core::Result<String> {
-        Ok(game_log::get_user_id_from_display_name(
-            self.db.as_ref(),
-            owner,
-            display_name,
-        )?)
-    }
-
-    fn ensure_game_log_tables(&self) -> vrcx_0_application_core::Result<()> {
-        Ok(game_log::ensure_game_log_tables(self.db.as_ref())?)
-    }
-
-    fn location_before_or_at(
-        &self,
-        owner: &OwnerId,
-        created_at: &str,
-    ) -> vrcx_0_application_core::Result<Option<GameLogLocationSnapshot>> {
-        Ok(game_log::get_location_before_or_at(
-            self.db.as_ref(),
-            owner,
-            created_at,
-        )?)
-    }
-
+impl GameLogSessionQueries for PersistenceGameStateStore {
     fn session_location_segments(
         &self,
         owner: &OwnerId,
@@ -185,7 +88,92 @@ impl GameStateStore for PersistenceGameStateStore {
             locations,
         )?)
     }
+}
 
+impl GameLogLocationQueries for PersistenceGameStateStore {
+    fn location_before_or_at(
+        &self,
+        owner: &OwnerId,
+        created_at: &str,
+    ) -> vrcx_0_application_core::Result<Option<GameLogLocationSnapshot>> {
+        game_log::ensure_game_log_tables(self.db.as_ref())?;
+        Ok(game_log::get_location_before_or_at(
+            self.db.as_ref(),
+            owner,
+            created_at,
+        )?)
+    }
+
+    fn join_leave_for_location(
+        &self,
+        owner: &OwnerId,
+        location: &str,
+        after_date: &str,
+        before_date: &str,
+    ) -> vrcx_0_application_core::Result<Vec<GameLogJoinLeaveSnapshot>> {
+        Ok(game_log::get_join_leave_entries_for_location_range(
+            self.db.as_ref(),
+            owner,
+            location,
+            after_date,
+            before_date,
+        )?)
+    }
+}
+
+impl InstanceHistoryQueries for PersistenceGameStateStore {
+    fn previous_instance_events(
+        &self,
+        owner: &OwnerId,
+        user_id: &str,
+        date_from: &str,
+        date_to: &str,
+        limit: usize,
+    ) -> vrcx_0_application_core::Result<Vec<PreviousInstanceEventRow>> {
+        Ok(game_log::previous_instance_event_rows_query(
+            self.db.as_ref(),
+            owner,
+            user_id,
+            date_from,
+            date_to,
+            limit,
+        )?)
+    }
+}
+
+impl PlayerDirectoryLookup for PersistenceGameStateStore {
+    fn user_id_from_display_name(
+        &self,
+        owner: &OwnerId,
+        display_name: &str,
+    ) -> vrcx_0_application_core::Result<String> {
+        Ok(game_log::get_user_id_from_display_name(
+            self.db.as_ref(),
+            owner,
+            display_name,
+        )?)
+    }
+}
+
+impl LocationGroupNameFiller for PersistenceGameStateStore {
+    fn fill_location_group_name(
+        &self,
+        owner: &OwnerId,
+        created_at: &str,
+        location: &str,
+        group_name: &str,
+    ) -> vrcx_0_application_core::Result<u64> {
+        Ok(game_log::fill_location_group_name(
+            self.db.as_ref(),
+            owner,
+            created_at,
+            location,
+            group_name,
+        )?)
+    }
+}
+
+impl FavoriteFriendGroupLookup for PersistenceGameStateStore {
     fn favorite_friend_group_names_for_users(
         &self,
         owner: &OwnerId,
@@ -208,7 +196,9 @@ impl GameStateStore for PersistenceGameStateStore {
         })
         .collect())
     }
+}
 
+impl PlayerModerationLookup for PersistenceGameStateStore {
     fn player_moderation(
         &self,
         owner: &OwnerId,

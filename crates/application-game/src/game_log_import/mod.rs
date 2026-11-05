@@ -11,7 +11,8 @@ use vrcx_0_core::OwnerId;
 use crate::game_log::video::{normalize_video_input, video_play_entry};
 use crate::game_log::{GameLogIngestEngine, GameLogIngestOptions, GameLogSideEffect};
 use crate::game_log_parser::{parse_log, GameLogEvent, GameLogParseSink, LogContext, LogReader};
-use crate::{GameStateStore, Result};
+use crate::{GameLogWriter, PlayerDirectoryLookup, Result};
+use vrcx_0_application_core::ConfigStore;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -60,7 +61,9 @@ pub fn inspect_game_log_import_file(
 }
 
 pub fn import_game_log_file(
-    store: &dyn GameStateStore,
+    writer: &dyn GameLogWriter,
+    player_directory: &dyn PlayerDirectoryLookup,
+    config: &dyn ConfigStore,
     owner: &OwnerId,
     path: &Path,
     consent: GameLogImportConsent,
@@ -84,7 +87,7 @@ pub fn import_game_log_file(
     let output = GameLogIngestEngine::default().ingest_events(
         &events,
         GameLogIngestOptions {
-            log_resource_load: store.get_bool("logResourceLoad", false)?,
+            log_resource_load: config.get_bool("logResourceLoad", false)?,
         },
     );
     let mut batch = output.batch;
@@ -110,7 +113,8 @@ pub fn import_game_log_file(
             continue;
         }
         if input.user_id.is_empty() && !input.display_name.is_empty() {
-            input.user_id = store.user_id_from_display_name(owner, &input.display_name)?;
+            input.user_id =
+                player_directory.user_id_from_display_name(owner, &input.display_name)?;
         }
         batch.video_plays.push(video_play_entry(&input));
     }
@@ -118,7 +122,7 @@ pub fn import_game_log_file(
     let inserted_count = if batch.is_empty() {
         0
     } else {
-        store.write_game_log(owner, &batch)?.inserted
+        writer.write_game_log(owner, &batch)?.inserted
     };
 
     file.imported = true;

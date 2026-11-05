@@ -1,66 +1,24 @@
 use super::*;
 
 use chrono::Weekday;
-use std::{collections::HashMap, sync::atomic::AtomicUsize};
+use std::sync::atomic::AtomicUsize;
+use vrcx_0_application_core::{ConfigStore, MemoryConfigStore};
 
 #[derive(Default)]
 struct FakeEnvironment {
-    values: Mutex<HashMap<String, String>>,
+    config: MemoryConfigStore,
     errors: Mutex<Vec<TelemetryClientErrorInput>>,
-    unavailable: AtomicBool,
     scale: Mutex<TelemetryDatabaseScale>,
     legacy_vrcx_detected: AtomicBool,
 }
 
 impl FakeEnvironment {
     fn set(&self, key: &str, value: &str) {
-        self.values
-            .lock()
-            .unwrap()
-            .insert(key.to_string(), value.to_string());
+        self.config.set_string(key, value).unwrap();
     }
 }
 
 impl TelemetryEnvironment for FakeEnvironment {
-    fn get_bool(&self, key: &str, default_value: bool) -> vrcx_0_application_core::Result<bool> {
-        if self.unavailable.load(Ordering::Acquire) {
-            return Err(vrcx_0_application_core::Error::Database(
-                "unavailable".into(),
-            ));
-        }
-        Ok(self
-            .values
-            .lock()
-            .unwrap()
-            .get(key)
-            .and_then(|value| value.parse().ok())
-            .unwrap_or(default_value))
-    }
-
-    fn get_string(
-        &self,
-        key: &str,
-        default_value: &str,
-    ) -> vrcx_0_application_core::Result<String> {
-        if self.unavailable.load(Ordering::Acquire) {
-            return Err(vrcx_0_application_core::Error::Database(
-                "unavailable".into(),
-            ));
-        }
-        Ok(self
-            .values
-            .lock()
-            .unwrap()
-            .get(key)
-            .cloned()
-            .unwrap_or_else(|| default_value.to_string()))
-    }
-
-    fn set_string(&self, key: &str, value: &str) -> vrcx_0_application_core::Result<()> {
-        self.set(key, value);
-        Ok(())
-    }
-
     fn drain_client_errors(
         &self,
         since: Option<&str>,
@@ -161,6 +119,7 @@ fn runtime_with_auth_scope(
     auth_scope: RuntimeAuthScope,
 ) -> TelemetryRuntime {
     TelemetryRuntime::new(TelemetryRuntimeDeps {
+        config: Arc::new(environment.config.clone()),
         environment,
         transport,
         tasks: TaskSupervisor::new(),
@@ -228,6 +187,7 @@ async fn fresh_install_resends_config_once_friends_are_stored_after_sign_in() {
     assert_eq!(payloads[1]["friendCountBucket"], "lt100");
     assert_eq!(
         environment
+            .config
             .get_string(TELEMETRY_ACCOUNT_CONFIG_REPORTED_VERSION_CONFIG_KEY, "")
             .unwrap(),
         "2.31.0"
@@ -597,6 +557,7 @@ async fn client_error_flush_retries_before_advancing_versioned_log_cursor() {
     runtime.flush_collectors_locked(&session).await;
     assert_eq!(
         environment
+            .config
             .get_string(TELEMETRY_CLIENT_ERROR_CURSOR_CONFIG_KEY, "")
             .unwrap(),
         "2026-06-30T00:00:00.000Z"
@@ -607,6 +568,7 @@ async fn client_error_flush_retries_before_advancing_versioned_log_cursor() {
     assert_eq!(transport.attempts.load(Ordering::SeqCst), 4);
     assert_eq!(
         environment
+            .config
             .get_string(TELEMETRY_CLIENT_ERROR_CURSOR_CONFIG_KEY, "")
             .unwrap(),
         "2026-07-21T00:00:00.000Z"
@@ -651,6 +613,7 @@ async fn immediate_rust_error_flush_only_sends_sanitized_client_errors() {
     assert!(!encoded.contains("secret.sqlite3"));
     assert_eq!(
         environment
+            .config
             .get_string(TELEMETRY_CLIENT_ERROR_CURSOR_CONFIG_KEY, "")
             .unwrap(),
         "2026-07-01T00:00:00.000Z"
@@ -660,7 +623,7 @@ async fn immediate_rust_error_flush_only_sends_sanitized_client_errors() {
 #[tokio::test]
 async fn immediate_rust_error_flush_fails_closed_when_consent_is_unavailable() {
     let environment = Arc::new(FakeEnvironment::default());
-    environment.unavailable.store(true, Ordering::Release);
+    environment.config.set_fail_reads(true);
     let transport = Arc::new(FakeTransport::new(None));
     let runtime = runtime(environment, transport.clone());
 

@@ -2,9 +2,12 @@ use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 use vrcx_0_core::derived_keys;
 
+use crate::scope_gate::ScopeGate;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use vrcx_0_application_core::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot};
+
+const GATE: ScopeGate = ScopeGate::new("My avatars");
 
 const MY_AVATARS_PAGE_SIZE: i32 = 50;
 const MY_AVATARS_MAX_OFFSET: i32 = 5_000;
@@ -102,12 +105,12 @@ async fn fetch_my_avatar_pages(
     let mut offset = 0;
 
     while offset <= MY_AVATARS_MAX_OFFSET {
-        ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
+        GATE.ensure_matches(deps.auth_scope, &deps.expected_scope)?;
         let page = deps
             .remote
             .my_avatar_page(&deps.expected_scope.endpoint, MY_AVATARS_PAGE_SIZE, offset)
             .await?;
-        ensure_scope_matches(&deps.auth_scope.snapshot(), &deps.expected_scope)?;
+        GATE.ensure_matches(deps.auth_scope, &deps.expected_scope)?;
         let page_len = page.len();
 
         if let Some(target) = target_avatar_id {
@@ -174,18 +177,11 @@ fn live_swap_delta_ms(previous_avatar_swap_time: f64) -> i64 {
     }
 }
 
-fn ensure_scope_matches(
-    current: &RuntimeAuthScopeSnapshot,
-    expected: &RuntimeAuthScopeSnapshot,
-) -> Result<()> {
-    crate::scope_gate::ensure_snapshot_scope_matches(current, expected, "My avatars")
-}
-
 #[cfg(test)]
 mod tests {
     use std::sync::Mutex;
 
-    use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
+    use vrcx_0_contracts::vrchat_api::VrchatResponse;
     use vrcx_0_contracts::{AvatarTagOutput, AvatarTimeSpentOutput};
 
     use super::*;
@@ -200,7 +196,7 @@ mod tests {
             _endpoint: &'a str,
             _command: &'a str,
             _detail: &'a str,
-        ) -> super::super::AvatarRemoteFuture<'a, VrchatApiResponse> {
+        ) -> super::super::AvatarRemoteFuture<'a, VrchatResponse> {
             Box::pin(async { unreachable!() })
         }
 
@@ -222,7 +218,7 @@ mod tests {
             _command: &'a str,
             _detail: &'a str,
             _mutation: super::super::AvatarRemoteMutation,
-        ) -> super::super::AvatarRemoteFuture<'a, VrchatApiResponse> {
+        ) -> super::super::AvatarRemoteFuture<'a, VrchatResponse> {
             Box::pin(async { unreachable!() })
         }
     }

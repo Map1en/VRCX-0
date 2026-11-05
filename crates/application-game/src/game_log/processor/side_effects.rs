@@ -2,31 +2,33 @@ use std::sync::Arc;
 
 use serde_json::Value;
 use vrcx_0_application_core::{
-    sleep_until_due_or_stopped, BackendRuntimeStatusPublisher, RuntimeAuthIdentity,
+    sleep_until_due_or_stopped, BackendRuntimeStatusPublisher, ConfigStore, RuntimeAuthIdentity,
     RuntimeAuthScope, RuntimeAuthScopeSnapshot, TaskStopToken,
 };
 
 use crate::game_log::host::GameLogHostActions;
 use crate::game_log::ingest::GameLogSideEffect;
-use crate::game_log::instance_media::{
-    self as runtime_instance_media, InstanceMediaDeps, InstanceMediaQueue,
-};
+use crate::game_log::instance_media::{InstanceMediaDeps, InstanceMediaQueue};
 use crate::game_log::lifecycle as runtime_lifecycle;
-use crate::game_log::screenshot as runtime_screenshot;
-use crate::game_log::video::{
-    self as runtime_video, now_playing_ends_at_ms, NowPlayingClock, NowPlayingTransport,
-};
+use crate::game_log::video::{now_playing_ends_at_ms, NowPlayingClock};
 use crate::RuntimeEventBus;
 use crate::{EmptyEventPayload, GameLogSideEffectEvent, GameLogSideEffectSink};
 use crate::{InstanceMediaPort, NowPlayingPayload, TaskSupervisor, VideoMetadataPort};
 
 use super::GameLogProcessorDeps;
-use vrcx_0_contracts::game_log::{GameLogVideoPlayName, GameLogWriteBatch};
 use vrcx_0_core::OwnerId;
+
+mod handlers;
+
+use handlers::{
+    handle_api_request, handle_location_group_name, handle_now_playing_transport,
+    handle_screenshot, handle_sticker, handle_video, handle_video_details,
+};
 
 #[derive(Clone)]
 pub(super) struct GameLogSideEffectDeps {
-    store: Arc<dyn crate::GameStateStore>,
+    stores: crate::GameLogStores,
+    config: Arc<dyn ConfigStore>,
     instance_media: Arc<dyn InstanceMediaPort>,
     video_metadata: Arc<dyn VideoMetadataPort>,
     event_bus: RuntimeEventBus,
@@ -51,7 +53,8 @@ impl GameLogSideEffectDeps {
         let auth_scope_snapshot = deps.auth_scope.snapshot();
         let auth_identity = deps.auth_scope.identity();
         Self {
-            store: Arc::clone(&deps.store),
+            stores: deps.stores.clone(),
+            config: Arc::clone(&deps.config),
             instance_media: Arc::clone(&deps.instance_media),
             video_metadata: Arc::clone(&deps.video_metadata),
             event_bus: deps.event_bus.clone(),
@@ -74,7 +77,7 @@ impl GameLogSideEffectDeps {
 
     fn instance_media_deps(&self) -> InstanceMediaDeps {
         InstanceMediaDeps {
-            store: Arc::clone(&self.store),
+            config: Arc::clone(&self.config),
             media: Arc::clone(&self.instance_media),
             queue: self.media_queue.clone(),
             host_actions: Arc::clone(&self.host_actions),
@@ -88,162 +91,37 @@ pub(super) fn dispatch_side_effect(
     deliver_activity: bool,
 ) {
     match side_effect {
-        GameLogSideEffect::Video(input) => {
-            let generation = deps.now_playing.begin();
-            deps.tasks
-                .clone()
-                .spawn_cancellable(move |stop_token| async move {
-                    match runtime_video::handle_video_play(
-                        deps.store.as_ref(),
-                        deps.video_metadata.as_ref(),
-                        &deps.event_bus,
-                        &deps.backend_status,
-                        &OwnerId::new(deps.auth_identity.user_id.clone()),
-                        input,
-                    )
-                    .await
-                    {
-                        Ok(Some(mut played)) => {
-                            if deliver_activity
-                                && deps
-                                    .auth_scope
-                                    .snapshot()
-                                    .generation_matches(&deps.auth_scope_snapshot)
-                            {
-                                deps.activity.ingest_activity(vec![played.activity]);
-                            }
-                            if deps.now_playing.play(generation, &mut played.now_playing) {
-                                if let Some(ends_at_ms) =
-                                    announce_now_playing(&deps, played.now_playing)
-                                {
-                                    end_now_playing_at(&deps, generation, ends_at_ms, &stop_token)
-                                        .await;
-                                }
-                            }
-                        }
-                        Ok(None) => {}
-                        Err(error) => tracing::warn!("GameLog video side effect failed: {error}"),
-                    }
-                });
-        }
+        GameLogSideEffect::Video(input) => handle_video(deps, input, deliver_activity),
         GameLogSideEffect::VideoDetails {
             created_at,
             video_url,
             video_name,
             thumbnail_url,
-        } => {
-            if !video_name.is_empty() {
-                let batch = GameLogWriteBatch {
-                    video_play_names: vec![GameLogVideoPlayName {
-                        created_at,
-                        video_url,
-                        video_name: video_name.clone(),
-                    }],
-                    ..Default::default()
-                };
-                if let Err(error) = deps
-                    .store
-                    .write_game_log(&OwnerId::new(deps.auth_identity.user_id.clone()), &batch)
-                {
-                    tracing::warn!("GameLog video name update failed: {error}");
-                }
-            }
-            let name = (!video_name.is_empty()).then_some(video_name);
-            announce_now_playing(
-                &deps,
-                NowPlayingPayload {
-                    titled: name.as_ref().map(|_| true),
-                    name: name.clone(),
-                    video_name: name,
-                    thumbnail_url: (!thumbnail_url.is_empty()).then_some(thumbnail_url),
-                    updated_at: chrono::Utc::now().to_rfc3339(),
-                    ..Default::default()
-                },
-            );
-        }
+        } => handle_video_details(deps, created_at, video_url, video_name, thumbnail_url),
         GameLogSideEffect::NowPlayingTransport {
             created_at,
             position,
             paused,
-        } => {
-            let transport = NowPlayingTransport {
-                created_at,
-                position,
-                paused,
-            };
-            if let Some((generation, length_seconds)) =
-                deps.now_playing.transport(transport.clone())
-            {
-                let mut payload = NowPlayingPayload {
-                    length: Some(length_seconds),
-                    updated_at: chrono::Utc::now().to_rfc3339(),
-                    ..Default::default()
-                };
-                transport.apply_to(&mut payload);
-                if let Some(ends_at_ms) = announce_now_playing(&deps, payload) {
-                    deps.tasks
-                        .clone()
-                        .spawn_cancellable(move |stop_token| async move {
-                            end_now_playing_at(&deps, generation, ends_at_ms, &stop_token).await;
-                        });
-                }
-            }
-        }
+        } => handle_now_playing_transport(deps, created_at, position, paused),
         GameLogSideEffect::NowPlayingReset => {
             deps.now_playing.begin();
             deps.emit_side_effect(GameLogSideEffectEvent::NowPlayingReset(
                 EmptyEventPayload::default(),
             ));
         }
-        GameLogSideEffect::Screenshot(input) => {
-            deps.tasks.clone().spawn(async move {
-                if let Err(error) = runtime_screenshot::handle_screenshot(
-                    deps.store.as_ref(),
-                    Arc::clone(&deps.host_actions),
-                    &deps.side_effect_sink,
-                    &deps.auth_identity,
-                    input,
-                )
-                .await
-                {
-                    tracing::warn!("GameLog screenshot side effect failed: {error}");
-                }
-            });
-        }
-        GameLogSideEffect::ApiRequest { url } => {
-            deps.tasks.clone().spawn(async move {
-                if let Err(error) =
-                    runtime_instance_media::handle_api_request(deps.instance_media_deps(), &url)
-                        .await
-                {
-                    tracing::warn!("GameLog instance media side effect failed: {error}");
-                }
-            });
-        }
+        GameLogSideEffect::Screenshot(input) => handle_screenshot(deps, input),
+        GameLogSideEffect::ApiRequest { url } => handle_api_request(deps, url),
         GameLogSideEffect::Sticker {
             user_id,
             display_name,
             inventory_id,
-        } => {
-            deps.tasks.clone().spawn(async move {
-                if let Err(error) = runtime_instance_media::handle_sticker_spawn(
-                    deps.instance_media_deps(),
-                    &user_id,
-                    &display_name,
-                    &inventory_id,
-                )
-                .await
-                {
-                    tracing::warn!("GameLog sticker side effect failed: {error}");
-                }
-            });
-        }
+        } => handle_sticker(deps, user_id, display_name, inventory_id),
         GameLogSideEffect::VrcQuit {
             created_at,
             is_game_running,
         } => {
             runtime_lifecycle::handle_vrc_quit(
-                deps.store.as_ref(),
+                deps.config.as_ref(),
                 deps.host_actions.as_ref(),
                 &created_at,
                 is_game_running,
@@ -251,7 +129,7 @@ pub(super) fn dispatch_side_effect(
         }
         GameLogSideEffect::NoVr { no_vr } => {
             if let Err(error) = runtime_lifecycle::set_game_no_vr(
-                deps.store.as_ref(),
+                deps.config.as_ref(),
                 &deps.side_effect_sink,
                 no_vr,
             ) {
@@ -262,18 +140,10 @@ pub(super) fn dispatch_side_effect(
             created_at,
             location,
             group_id,
-        } => {
-            deps.tasks.clone().spawn(async move {
-                if let Err(error) =
-                    fill_location_group_name(&deps, &created_at, &location, &group_id).await
-                {
-                    tracing::warn!("GameLog group name side effect failed: {error}");
-                }
-            });
-        }
+        } => handle_location_group_name(deps, created_at, location, group_id),
         GameLogSideEffect::UdonException { data } => {
             if deps
-                .store
+                .config
                 .get_bool("udonExceptionLogging", false)
                 .unwrap_or(false)
             {
@@ -282,7 +152,6 @@ pub(super) fn dispatch_side_effect(
         }
     }
 }
-
 async fn fill_location_group_name(
     deps: &GameLogSideEffectDeps,
     created_at: &str,
@@ -300,7 +169,7 @@ async fn fill_location_group_name(
     if group_name.is_empty() {
         return Ok(());
     }
-    deps.store.fill_location_group_name(
+    deps.stores.group_names.fill_location_group_name(
         &OwnerId::new(deps.auth_identity.user_id.clone()),
         created_at,
         location,

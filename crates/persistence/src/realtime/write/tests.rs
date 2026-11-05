@@ -7,11 +7,12 @@ use crate::database::DatabaseService;
 use crate::game_log::{GameLogLocationEntry, GameLogLocationTimeUpdate};
 use crate::realtime::ensure_realtime_tables;
 
+use crate::feed::{backfill_nearby_ids_sql, insert_backfilled_feed, BackfillWrites};
+
 use super::{
-    insert_backfilled_feed, normalize_user_table_prefix, write_realtime_batch,
-    AvatarTimeSpentUpsert, BackfillWrites, FriendLogDelete, FriendLogUpsert,
-    NotificationExpiration, NotificationV2Update, RealtimePersistenceBatch, SelfProfileField,
-    SelfProfileObservation,
+    normalize_user_table_prefix, write_realtime_batch, AvatarTimeSpentUpsert, FriendLogDelete,
+    FriendLogUpsert, NotificationExpiration, NotificationV2Update, RealtimePersistenceBatch,
+    SelfProfileField, SelfProfileObservation,
 };
 use crate::ownership::OwnerId;
 use vrcx_0_contracts::feed_live::FeedLiveEntry;
@@ -1284,7 +1285,7 @@ fn backfill_duplicate_lookup_reads_a_created_at_range_through_an_index() -> Resu
         let plan = db.execute(
             &format!(
                 "EXPLAIN QUERY PLAN {}",
-                super::backfill_nearby_ids_sql("usrself", table, same_change, true)
+                backfill_nearby_ids_sql("usrself", table, same_change, true)
             ),
             &ParamsBuilder::new()
                 .set("user_id", "usr_friend")

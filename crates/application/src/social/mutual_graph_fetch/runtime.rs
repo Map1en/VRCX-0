@@ -20,8 +20,7 @@ use super::request::{
 };
 use super::types::{
     MutualGraphFetchCancelInput, MutualGraphFetchStartInput, MutualGraphFetchState,
-    MutualGraphFetchStatus, MutualGraphMetaInput, MutualGraphRemoteRequests,
-    MutualGraphSnapshotEntryInput, MutualGraphStore,
+    MutualGraphFetchStatus, MutualGraphMetaInput, MutualGraphSnapshotEntryInput, MutualGraphStore,
 };
 
 #[derive(Clone)]
@@ -46,7 +45,6 @@ struct MutualGraphFetchJob {
     endpoint: String,
     friend_ids: Vec<String>,
     store: Arc<dyn MutualGraphStore>,
-    remote_requests: Arc<dyn MutualGraphRemoteRequests>,
     remote: Arc<dyn VrchatRequestPort>,
     auth_scope: RuntimeAuthScope,
     expected_scope: RuntimeAuthScopeSnapshot,
@@ -89,7 +87,6 @@ impl MutualGraphFetchRuntime {
         &self,
         input: MutualGraphFetchStartInput,
         store: Arc<dyn MutualGraphStore>,
-        remote_requests: Arc<dyn MutualGraphRemoteRequests>,
         remote: Arc<dyn VrchatRequestPort>,
         auth_scope: RuntimeAuthScope,
         tasks: TaskSupervisor,
@@ -150,7 +147,6 @@ impl MutualGraphFetchRuntime {
                     endpoint,
                     friend_ids,
                     store,
-                    remote_requests,
                     remote,
                     auth_scope,
                     expected_scope,
@@ -202,7 +198,6 @@ impl MutualGraphFetchRuntime {
             endpoint,
             friend_ids,
             store,
-            remote_requests,
             remote,
             auth_scope,
             expected_scope,
@@ -218,7 +213,6 @@ impl MutualGraphFetchRuntime {
         let mut last_error = None;
         let mut fetch_context = MutualGraphFetchContext {
             remote: remote.as_ref(),
-            remote_requests: remote_requests.as_ref(),
             endpoint: &endpoint,
             cancel_flag: &cancel_flag,
             auth_scope: &auth_scope,

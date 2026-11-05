@@ -10,8 +10,7 @@ export type {
 export { toNormalizedReleaseFromSnapshot } from './update-service/appUpdateSnapshot';
 
 export {
-    fetchBranchReleases,
-    fetchLatestBranchRelease,
+    fetchBranchReleasePage,
     getPreviewStableReleaseUpdateMode
 } from './update-service/github';
 export type {

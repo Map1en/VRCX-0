@@ -8,7 +8,7 @@ use vrcx_0_application::auth::{
     AutoLoginOutcome, AutoLoginStartInput, LoginSessionCancelInput, LoginSessionEnd,
     LoginSessionRespondInput, LoginSessionStartInput, LoginSessionState, SavedAuthSnapshot,
 };
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use super::types::{
     VrchatAuthFileAnalysisInput, VrchatAuthSavedCredentialDeleteInput,
@@ -108,7 +108,7 @@ pub async fn app__vrchat_auth_session_end(
 #[specta::specta]
 pub async fn app__vrchat_auth_config_get(
     state: State<'_, AppState>,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     Ok(state.runtime_host().vrchat_config().get().await?)
 }
 
@@ -116,7 +116,7 @@ pub async fn app__vrchat_auth_config_get(
 #[specta::specta]
 pub async fn app__vrchat_auth_config_refresh(
     state: State<'_, AppState>,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     Ok(state.runtime_host().vrchat_config().refresh().await?)
 }
 
@@ -124,7 +124,7 @@ pub async fn app__vrchat_auth_config_refresh(
 #[specta::specta]
 pub async fn app__vrchat_auth_current_user_get(
     state: State<'_, AppState>,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -137,7 +137,7 @@ pub async fn app__vrchat_auth_current_user_get(
 #[specta::specta]
 pub async fn app__vrchat_auth_visits_get(
     state: State<'_, AppState>,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()
@@ -151,7 +151,7 @@ pub async fn app__vrchat_auth_visits_get(
 pub async fn app__vrchat_auth_file_analysis_get(
     state: State<'_, AppState>,
     input: VrchatAuthFileAnalysisInput,
-) -> Result<VrchatApiResponse, AppError> {
+) -> Result<VrchatResponse, AppError> {
     state
         .runtime_host()
         .vrchat_remote()

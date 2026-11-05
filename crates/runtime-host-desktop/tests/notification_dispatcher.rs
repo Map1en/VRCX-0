@@ -10,11 +10,10 @@ use vrcx_0_application_activity::{
 };
 use vrcx_0_application_core::{
     BackendRuntimeAuthStatus, BackendRuntimeGameLogStatus, BackendRuntimeMode, BackendRuntimePhase,
-    BackendRuntimeProcessStatus, BackendRuntimeSnapshot,
+    BackendRuntimeProcessStatus, BackendRuntimeSnapshot, ConfigStore,
 };
 use vrcx_0_core::OwnerId;
-use vrcx_0_outbound_adapters::LocalNotificationConfig;
-use vrcx_0_persistence::config::ConfigRepository;
+use vrcx_0_outbound_adapters::LocalConfigStore;
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_runtime_host_desktop::notification::{
     decide_notification_plan, DesktopNotificationAction, DesktopNotifier, DesktopNotifierSlot,
@@ -182,15 +181,20 @@ fn desktop_notifier_slot_noops_until_tauri_injects_notifier() {
 #[test]
 fn auth_webhook_defaults_to_enabled_when_url_exists() {
     let test_db = test_db("auth-webhook-defaults");
-    let config = ConfigRepository::new(Arc::clone(&test_db.db));
-    config
+    let storage = Arc::new(
+        vrcx_0_persistence::storage::StorageService::new(&test_db._dir.path.join("storage.json"))
+            .unwrap(),
+    );
+    let notification_config = LocalConfigStore::new(Arc::clone(&test_db.db), storage);
+    notification_config
         .set_string("webhookUrl", "https://example.com/webhook")
         .unwrap();
-    let notification_config = LocalNotificationConfig::new(config.clone());
 
     assert!(auth_webhook_is_enabled(&notification_config));
 
-    config.set_bool("webhookAuthEventsEnabled", false).unwrap();
+    notification_config
+        .set_bool("webhookAuthEventsEnabled", false)
+        .unwrap();
 
     assert!(!auth_webhook_is_enabled(&notification_config));
 }

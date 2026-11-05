@@ -1,10 +1,13 @@
 pub mod activity;
 pub mod activity_page;
+pub mod activity_view;
 mod avatar;
 pub mod background_image;
+pub mod browse_history;
 mod community_theme;
 pub mod community_theme_protocol;
 mod data_dir_migration;
+pub mod database_maintenance;
 mod database_upgrade;
 mod entity_cache;
 pub mod external_api;
@@ -18,9 +21,11 @@ mod legacy_migration;
 pub mod llm;
 pub mod local_moderation;
 mod media;
+pub mod memos;
 pub mod mutual_graph;
 pub mod notifications;
 mod persistence;
+pub mod player_list;
 mod profile_backup;
 pub mod profile_bio;
 mod profile_config;
@@ -29,13 +34,14 @@ pub mod social_aggregates;
 pub mod telemetry;
 mod translation;
 pub mod vrchat_api;
-pub mod vrchat_device_login;
-pub mod vrchat_login;
 pub mod vrchat_requests;
 mod web;
 pub mod world_collections;
 
-pub use avatar::{AvatarTagOutput, AvatarTimeSpentOutput, AvatarUsageRow, AvatarWearSegment};
+pub use avatar::{
+    AvatarTagInput, AvatarTagOutput, AvatarTagsPatchInput, AvatarTimeSpentOutput, AvatarUsageRow,
+    AvatarWearSegment,
+};
 pub use community_theme::{
     CommunityThemeAuthor, CommunityThemeCatalog, CommunityThemeManifest, CommunityThemeStatsById,
     CommunityThemeStatsEntry,

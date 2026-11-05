@@ -4,17 +4,18 @@ use vrcx_0_application::avatars::{
     AvatarCacheStore, AvatarFeedCleanupStore, AvatarRemote, AvatarRemoteFuture,
     AvatarRemoteMutation, MyAvatarsStore,
 };
-use vrcx_0_application_core::vrchat_api::{execute_api_command, VrchatApiResponse, VrchatScope};
+use vrcx_0_application_core::vrchat_api::execute_api_command;
 use vrcx_0_application_core::{Error, RuntimeDiagnostics, RuntimeSyncEngine, WebClient};
+use vrcx_0_contracts::vrchat_api::{VrchatResponse, VrchatScope};
 use vrcx_0_contracts::{AvatarTagOutput, AvatarTimeSpentOutput};
 use vrcx_0_persistence::DatabaseService;
-use vrcx_0_vrchat_client::avatars::{
+use vrcx_0_vrchat_protocol::avatars::{
     avatar_delete_input, avatar_impostor_create_input, avatar_impostor_delete_input,
     avatar_list_by_user_get_input, avatar_moderation_delete_input, avatar_moderation_send_input,
     avatar_moderations_get_input, avatar_save_input, avatar_select_fallback_input,
     avatar_select_input, AvatarListByUserGetInput,
 };
-use vrcx_0_vrchat_client::query::{AvatarListSort, QueryOrder, ReleaseStatusFilter};
+use vrcx_0_vrchat_protocol::query::{AvatarListSort, QueryOrder, ReleaseStatusFilter};
 
 #[derive(Clone)]
 pub struct LocalAvatarApplicationAdapter {
@@ -95,7 +96,7 @@ impl AvatarRemote for VrchatAvatarRemote {
         endpoint: &'a str,
         command: &'a str,
         detail: &'a str,
-    ) -> AvatarRemoteFuture<'a, VrchatApiResponse> {
+    ) -> AvatarRemoteFuture<'a, VrchatResponse> {
         Box::pin(async move {
             execute_api_command(
                 &self.web,
@@ -138,7 +139,7 @@ impl AvatarRemote for VrchatAvatarRemote {
         command: &'a str,
         detail: &'a str,
         mutation: AvatarRemoteMutation,
-    ) -> AvatarRemoteFuture<'a, VrchatApiResponse> {
+    ) -> AvatarRemoteFuture<'a, VrchatResponse> {
         Box::pin(async move {
             let request = match mutation {
                 AvatarRemoteMutation::Select {

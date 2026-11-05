@@ -1,24 +1,28 @@
 use std::sync::Arc;
 
-use vrcx_0_application::auth::migrate_saved_credential_secrets;
+use vrcx_0_application::auth::{migrate_saved_credential_secrets, AuthCredentialStore};
 use vrcx_0_application::profile::SecretStartupActions;
 use vrcx_0_application_core::{Error, Result};
 use vrcx_0_persistence::config::ConfigRepository;
 use vrcx_0_persistence::DatabaseService;
 
-use crate::LocalAuthCredentialStore;
-
 pub struct LocalSecretStartup {
     db: Arc<DatabaseService>,
     config: ConfigRepository,
+    credentials: Arc<dyn AuthCredentialStore>,
     allow_encrypted_writes: bool,
 }
 
 impl LocalSecretStartup {
-    pub fn new(db: Arc<DatabaseService>, allow_encrypted_writes: bool) -> Self {
+    pub fn new(
+        db: Arc<DatabaseService>,
+        credentials: Arc<dyn AuthCredentialStore>,
+        allow_encrypted_writes: bool,
+    ) -> Self {
         Self {
             config: ConfigRepository::new(Arc::clone(&db)),
             db,
+            credentials,
             allow_encrypted_writes,
         }
     }
@@ -43,8 +47,7 @@ impl SecretStartupActions for LocalSecretStartup {
     }
 
     fn migrate_saved_credentials(&mut self) -> Result<()> {
-        let credentials = LocalAuthCredentialStore::from_repository(self.config.clone());
-        migrate_saved_credential_secrets(&credentials).map(|_| ())
+        migrate_saved_credential_secrets(self.credentials.as_ref()).map(|_| ())
     }
 
     fn migrate_sensitive_config_values(&mut self) -> Result<()> {

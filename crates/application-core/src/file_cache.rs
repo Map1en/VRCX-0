@@ -3,16 +3,9 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use vrcx_0_contracts::FileMetadataOutput;
 
-use crate::WebClient;
-
 #[async_trait]
 pub trait FileCachePort: Send + Sync {
-    async fn resolve(
-        &self,
-        web: &WebClient,
-        endpoint: &str,
-        file_id: &str,
-    ) -> Option<FileMetadataOutput>;
+    async fn resolve(&self, endpoint: &str, file_id: &str) -> Option<FileMetadataOutput>;
 }
 
 #[derive(Clone)]
@@ -27,12 +20,7 @@ impl FileCache {
         }
     }
 
-    pub async fn resolve(
-        &self,
-        web: &WebClient,
-        endpoint: &str,
-        file_id: &str,
-    ) -> Option<FileMetadataOutput> {
-        self.inner.resolve(web, endpoint, file_id).await
+    pub async fn resolve(&self, endpoint: &str, file_id: &str) -> Option<FileMetadataOutput> {
+        self.inner.resolve(endpoint, file_id).await
     }
 }

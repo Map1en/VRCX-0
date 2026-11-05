@@ -1,6 +1,7 @@
 use std::time::Duration;
 
-use vrcx_0_application_core::{RuntimeEventBus, RuntimeEventPayload, TaskSupervisor};
+use vrcx_0_application_core::{RuntimeEventBus, TaskSupervisor};
+use vrcx_0_contracts::RuntimeEventPayload;
 use vrcx_0_host_desktop::auto_launch::{AppLauncherSnapshot, AutoAppLaunchManager};
 
 const APP_LAUNCHER_SNAPSHOT_INTERVAL: Duration = Duration::from_secs(2);

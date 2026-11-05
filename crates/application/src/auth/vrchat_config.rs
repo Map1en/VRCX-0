@@ -2,13 +2,13 @@ use futures_util::future::BoxFuture;
 
 use std::sync::Arc;
 
-use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
 use vrcx_0_application_core::Result;
+use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
-pub type VrchatConfigFuture<'a> = BoxFuture<'a, Result<VrchatApiResponse>>;
+pub type VrchatConfigFuture<'a> = BoxFuture<'a, Result<VrchatResponse>>;
 
 pub trait VrchatConfigPort: Send + Sync {
-    fn cached(&self, endpoint: &str) -> Option<VrchatApiResponse>;
+    fn cached(&self, endpoint: &str) -> Option<VrchatResponse>;
     fn clear(&self);
     fn fetch(&self, endpoint: String) -> VrchatConfigFuture<'_>;
 }
@@ -24,14 +24,14 @@ impl VrchatConfigRuntime {
         Self { endpoint, port }
     }
 
-    pub async fn get(&self) -> Result<VrchatApiResponse> {
+    pub async fn get(&self) -> Result<VrchatResponse> {
         if let Some(response) = self.port.cached(&self.endpoint) {
             return Ok(response);
         }
         self.refresh().await
     }
 
-    pub async fn refresh(&self) -> Result<VrchatApiResponse> {
+    pub async fn refresh(&self) -> Result<VrchatResponse> {
         self.port.clear();
         self.port.fetch(self.endpoint.clone()).await
     }
@@ -41,17 +41,17 @@ impl VrchatConfigRuntime {
 mod tests {
     use std::sync::{Arc, Mutex};
 
-    use vrcx_0_application_core::vrchat_api::VrchatApiResponse;
+    use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
     use super::{VrchatConfigFuture, VrchatConfigPort, VrchatConfigRuntime};
 
     struct RecordingPort {
-        cached: Option<VrchatApiResponse>,
+        cached: Option<VrchatResponse>,
         events: Mutex<Vec<String>>,
     }
 
     impl RecordingPort {
-        fn new(cached: Option<VrchatApiResponse>) -> Self {
+        fn new(cached: Option<VrchatResponse>) -> Self {
             Self {
                 cached,
                 events: Mutex::new(Vec::new()),
@@ -60,7 +60,7 @@ mod tests {
     }
 
     impl VrchatConfigPort for RecordingPort {
-        fn cached(&self, endpoint: &str) -> Option<VrchatApiResponse> {
+        fn cached(&self, endpoint: &str) -> Option<VrchatResponse> {
             self.events
                 .lock()
                 .unwrap()
@@ -78,7 +78,7 @@ mod tests {
                 .unwrap()
                 .push(format!("fetch:{endpoint}"));
             Box::pin(async {
-                Ok(VrchatApiResponse {
+                Ok(VrchatResponse {
                     status: 200,
                     data: "fresh".into(),
                 })
@@ -88,7 +88,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_returns_the_cached_response_without_clearing_or_fetching() {
-        let port = Arc::new(RecordingPort::new(Some(VrchatApiResponse {
+        let port = Arc::new(RecordingPort::new(Some(VrchatResponse {
             status: 200,
             data: "cached".into(),
         })));

@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::sync::Arc;
 
-use vrcx_0_application_core::{Error, Result};
+use vrcx_0_application_core::{ConfigStore, Error, Result};
 use vrcx_0_application_game::{
     import_game_log_file, inspect_game_log_import_file, GameLogImportConsent, GameLogImportFile,
 };
@@ -24,6 +24,7 @@ pub(crate) fn inspect_game_log_import(
 
 pub(crate) fn import_game_log(
     db: &Arc<DatabaseService>,
+    config: &dyn ConfigStore,
     owner: &OwnerId,
     paths: &[String],
     consent: GameLogImportConsent,
@@ -33,7 +34,17 @@ pub(crate) fn import_game_log(
     let store = PersistenceGameStateStore::new(Arc::clone(db));
     let files = paths
         .iter()
-        .map(|path| import_game_log_file(&store, owner, Path::new(path), consent, game_running))
+        .map(|path| {
+            import_game_log_file(
+                &store,
+                &store,
+                config,
+                owner,
+                Path::new(path),
+                consent,
+                game_running,
+            )
+        })
         .collect::<Result<Vec<_>>>()?;
     if files.iter().any(|file| file.inserted_count > 0) {
         vrcx_0_persistence::activity::activity_self_caches_invalidate(db, owner)?;

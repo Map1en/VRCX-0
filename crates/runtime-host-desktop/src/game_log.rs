@@ -7,14 +7,15 @@ use vrcx_0_application_activity::ActivityRouter;
 use vrcx_0_application_core::Error as RuntimeError;
 use vrcx_0_application_core::Result as RuntimeResult;
 use vrcx_0_application_core::{
-    BackendRuntimeStatusPublisher, GameProcessEvent, GameProcessEventSink, HostSessionRuntime,
-    ImageCache, InstanceRosterObserver, RuntimeAuthScope, RuntimeEventBus, RuntimeSyncEngine,
+    BackendRuntimeStatusPublisher, ConfigStore, GameProcessEvent, GameProcessEventSink,
+    HostSessionRuntime, ImageCache, RuntimeAuthScope, RuntimeEventBus, RuntimeSyncEngine,
     TaskSupervisor, WebClient, WorldCache,
 };
 use vrcx_0_application_game::{
     GameLogHostActions, GameLogRuntime, GameLogRuntimeDeps, GameLogSideEffectSink,
     RuntimeSnapshotStore,
 };
+use vrcx_0_contracts::InstanceRosterObserver;
 use vrcx_0_host_desktop::{clipboard, game_launch, vrchat_paths};
 use vrcx_0_persistence::DatabaseService;
 use vrcx_0_platform::app_paths::AppPaths;
@@ -91,6 +92,7 @@ pub struct GameLogHostRuntime {
 }
 
 pub struct GameLogHostRuntimeDeps {
+    pub config: Arc<dyn ConfigStore>,
     pub db: Arc<DatabaseService>,
     pub web: Arc<WebClient>,
     pub image_cache: Arc<ImageCache>,
@@ -122,28 +124,29 @@ impl GameLogHostRuntime {
                 Arc::clone(&deps.web),
                 Arc::clone(&deps.image_cache),
             ));
-        let inner = GameLogRuntime::new(GameLogRuntimeDeps::new(
-            Arc::new(crate::game_state_store::PersistenceGameStateStore::new(
-                Arc::clone(&deps.db),
+        let inner = GameLogRuntime::new(GameLogRuntimeDeps {
+            stores: vrcx_0_application_game::GameLogStores::shared(Arc::new(
+                crate::game_state_store::PersistenceGameStateStore::new(Arc::clone(&deps.db)),
             )),
+            config: deps.config,
             instance_media,
             video_metadata,
-            deps.event_bus,
-            deps.backend_status,
-            deps.side_effect_sink,
-            deps.tasks,
-            deps.sync,
-            deps.auth_scope,
-            deps.session.clone(),
-            deps.snapshot,
-            Arc::new(HostGameLogActions {
+            event_bus: deps.event_bus,
+            backend_status: deps.backend_status,
+            side_effect_sink: deps.side_effect_sink,
+            tasks: deps.tasks,
+            sync: deps.sync,
+            auth_scope: deps.auth_scope,
+            session: deps.session.clone(),
+            snapshot: deps.snapshot,
+            host_actions: Arc::new(HostGameLogActions {
                 file_access: deps.file_access,
                 app_paths: deps.app_paths,
             }),
-            Arc::new(deps.activity_router),
-            Arc::clone(&deps.world_cache),
-            deps.instance_roster_observer,
-        ));
+            activity: Arc::new(deps.activity_router),
+            world_cache: Arc::clone(&deps.world_cache),
+            instance_roster_observer: deps.instance_roster_observer,
+        });
 
         Self {
             db: deps.db,

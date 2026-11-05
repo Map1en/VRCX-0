@@ -31,7 +31,7 @@ pub struct InstanceHistoryEntryOutput {
 }
 
 pub fn instance_history_query(
-    store: &dyn crate::GameStateStore,
+    store: &dyn crate::InstanceHistoryQueries,
     owner_user_id: &OwnerId,
     input: InstanceHistoryQueryInput,
 ) -> Result<Vec<InstanceHistoryEntryOutput>> {

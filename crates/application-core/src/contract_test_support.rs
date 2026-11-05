@@ -1,10 +1,13 @@
 use std::collections::{HashMap, VecDeque};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::sync::Mutex;
 
 use serde::Serialize;
+use serde_json::Value;
+use vrcx_0_contracts::resolve_config_key;
 
-use crate::{Error, ImageCachePort, Result, WebClient, WebClientPort, WorldCachePort};
+use crate::{ConfigStore, Error, ImageCachePort, Result, WebClientPort, WorldCachePort};
 
 pub struct CallRecorder<T> {
     calls: Mutex<Vec<T>>,
@@ -278,7 +281,6 @@ impl MemoryFileCachePort {
 impl crate::FileCachePort for MemoryFileCachePort {
     async fn resolve(
         &self,
-        _web: &WebClient,
         _endpoint: &str,
         file_id: &str,
     ) -> Option<vrcx_0_contracts::FileMetadataOutput> {
@@ -331,33 +333,21 @@ impl WorldCachePort for NoopWorldCachePort {
     ) -> Vec<Option<serde_json::Value>> {
         vec![None; world_values.len()]
     }
-    async fn resolve_name(
-        &self,
-        _web: &WebClient,
-        _endpoint: &str,
-        _world_id: &str,
-    ) -> Option<String> {
+    async fn resolve_name(&self, _endpoint: &str, _world_id: &str) -> Option<String> {
         None
     }
     async fn resolve_summary(
         &self,
-        _web: &WebClient,
         _endpoint: &str,
         _world_id: &str,
     ) -> Option<vrcx_0_contracts::WorldSummaryOutput> {
         None
     }
-    async fn resolve_image_url(
-        &self,
-        _web: &WebClient,
-        _endpoint: &str,
-        _world_id: &str,
-    ) -> Option<String> {
+    async fn resolve_image_url(&self, _endpoint: &str, _world_id: &str) -> Option<String> {
         None
     }
     async fn get(
         &self,
-        _web: &WebClient,
         _endpoint: &str,
         _world_id: &str,
         _force: bool,
@@ -477,28 +467,17 @@ impl WorldCachePort for MemoryWorldCachePort {
             })
             .collect()
     }
-    async fn resolve_name(
-        &self,
-        _web: &WebClient,
-        _endpoint: &str,
-        world_id: &str,
-    ) -> Option<String> {
+    async fn resolve_name(&self, _endpoint: &str, world_id: &str) -> Option<String> {
         self.get_name(world_id)
     }
     async fn resolve_summary(
         &self,
-        _web: &WebClient,
         _endpoint: &str,
         world_id: &str,
     ) -> Option<vrcx_0_contracts::WorldSummaryOutput> {
         self.summary(world_id)
     }
-    async fn resolve_image_url(
-        &self,
-        _web: &WebClient,
-        _endpoint: &str,
-        world_id: &str,
-    ) -> Option<String> {
+    async fn resolve_image_url(&self, _endpoint: &str, world_id: &str) -> Option<String> {
         self.world(world_id)?
             .get("imageUrl")
             .and_then(serde_json::Value::as_str)
@@ -506,7 +485,6 @@ impl WorldCachePort for MemoryWorldCachePort {
     }
     async fn get(
         &self,
-        _web: &WebClient,
         _endpoint: &str,
         world_id: &str,
         _force: bool,
@@ -570,7 +548,6 @@ impl crate::AvatarCachePort for NoopAvatarCachePort {
     }
     async fn resolve(
         &self,
-        _web: &WebClient,
         _user_id: &str,
         _endpoint: &str,
         _avatar_id: &str,
@@ -578,5 +555,120 @@ impl crate::AvatarCachePort for NoopAvatarCachePort {
         _fresh: bool,
     ) -> Result<Option<Arc<serde_json::Value>>> {
         Ok(None)
+    }
+}
+
+#[derive(Clone, Default)]
+pub struct MemoryConfigStore {
+    values: Arc<Mutex<HashMap<String, String>>>,
+    fail_reads: Arc<AtomicBool>,
+    fail_writes: Arc<AtomicBool>,
+    generation: Arc<AtomicU64>,
+}
+
+impl MemoryConfigStore {
+    pub fn entries(&self) -> Vec<(String, String)> {
+        self.values
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .iter()
+            .map(|(key, value)| (key.clone(), value.clone()))
+            .collect()
+    }
+
+    pub fn set_fail_reads(&self, fail: bool) {
+        self.fail_reads.store(fail, Ordering::Relaxed);
+    }
+
+    pub fn set_fail_writes(&self, fail: bool) {
+        self.fail_writes.store(fail, Ordering::Relaxed);
+    }
+
+    fn check_read(&self) -> Result<()> {
+        if self.fail_reads.load(Ordering::Relaxed) {
+            return Err(Error::Custom("memory config read failure".into()));
+        }
+        Ok(())
+    }
+
+    fn write_raw(&self, key: &str, value: String) -> Result<()> {
+        if self.fail_writes.load(Ordering::Relaxed) {
+            return Err(Error::Custom("memory config write failure".into()));
+        }
+        self.values
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .insert(resolve_config_key(key), value);
+        self.generation.fetch_add(1, Ordering::AcqRel);
+        Ok(())
+    }
+}
+
+fn parse_memory_config_bool(value: &str) -> Option<bool> {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "true" | "1" => Some(true),
+        "false" | "0" => Some(false),
+        other => serde_json::from_str::<bool>(other).ok().or_else(|| {
+            serde_json::from_str::<String>(value)
+                .ok()
+                .and_then(|inner| parse_memory_config_bool(&inner))
+        }),
+    }
+}
+
+impl ConfigStore for MemoryConfigStore {
+    fn get_raw(&self, key: &str) -> Result<Option<String>> {
+        self.check_read()?;
+        Ok(self
+            .values
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .get(&resolve_config_key(key))
+            .cloned())
+    }
+
+    fn get_bool(&self, key: &str, default: bool) -> Result<bool> {
+        Ok(self.get_raw(key)?.map_or(default, |value| {
+            parse_memory_config_bool(&value).unwrap_or(default)
+        }))
+    }
+
+    fn get_string(&self, key: &str, default: &str) -> Result<String> {
+        Ok(self.get_raw(key)?.unwrap_or_else(|| default.to_string()))
+    }
+
+    fn get_json(&self, key: &str, default: Value) -> Result<Value> {
+        let Some(value) = self.get_raw(key)? else {
+            return Ok(default);
+        };
+        Ok(serde_json::from_str(&value).unwrap_or(default))
+    }
+
+    fn set_bool(&self, key: &str, value: bool) -> Result<()> {
+        self.write_raw(key, if value { "true" } else { "false" }.to_string())
+    }
+
+    fn set_string(&self, key: &str, value: &str) -> Result<()> {
+        self.write_raw(key, value.to_string())
+    }
+
+    fn set_json(&self, key: &str, value: &Value) -> Result<()> {
+        self.write_raw(key, value.to_string())
+    }
+
+    fn remove(&self, key: &str) -> Result<()> {
+        if self.fail_writes.load(Ordering::Relaxed) {
+            return Err(Error::Custom("memory config write failure".into()));
+        }
+        self.values
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .remove(&resolve_config_key(key));
+        self.generation.fetch_add(1, Ordering::AcqRel);
+        Ok(())
+    }
+
+    fn write_generation(&self) -> u64 {
+        self.generation.load(Ordering::Acquire)
     }
 }
