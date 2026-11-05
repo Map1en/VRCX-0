@@ -578,6 +578,7 @@ fn record_tool_call(ctx: &TurnContext, call: &ToolCall) {
             id: call.id.clone(),
             name: call.function.name.clone(),
             arguments: call.function.arguments.clone(),
+            extra_content: call.extra_content.clone(),
         },
     ) {
         tracing::warn!(%error, "assistant: failed to record tool call");

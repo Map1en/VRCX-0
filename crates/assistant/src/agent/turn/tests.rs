@@ -89,6 +89,7 @@ fn tool_call(name: &str, arguments: &str) -> ToolCall {
             name: name.into(),
             arguments: arguments.into(),
         },
+        extra_content: None,
     }
 }
 

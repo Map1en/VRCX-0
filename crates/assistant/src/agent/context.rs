@@ -277,6 +277,7 @@ fn split_open_turns(history: &[Message]) -> Vec<OpenTurn> {
                         name: record.name.clone(),
                         arguments: record.arguments.clone(),
                     },
+                    extra_content: record.extra_content.clone(),
                 });
             }
             Role::ToolResult => {
@@ -450,6 +451,15 @@ mod tests {
     }
 
     fn tool_call(id: &str, name: &str, arguments: &str) -> Message {
+        tool_call_with_extra(id, name, arguments, None)
+    }
+
+    fn tool_call_with_extra(
+        id: &str,
+        name: &str,
+        arguments: &str,
+        extra_content: Option<serde_json::Value>,
+    ) -> Message {
         Message {
             id: format!("m_{id}"),
             seq: 0,
@@ -460,6 +470,7 @@ mod tests {
                 id: id.into(),
                 name: name.into(),
                 arguments: arguments.into(),
+                extra_content,
             }),
             tool_result: None,
             tool_content: None,
@@ -693,6 +704,24 @@ mod tests {
             Some("{\"summary\":\"Alice tops the list.\",\"rows\":[]}")
         );
         assert_eq!(assembled[4].content.as_deref(), Some("Alice, mostly."));
+    }
+
+    #[test]
+    fn open_history_preserves_tool_call_extra_content() {
+        let signature = serde_json::json!({
+            "google": { "thought_signature": "EvcCCvQ..." }
+        });
+        let history = vec![
+            message(Role::User, "q"),
+            tool_call_with_extra("call_1", "find_user", "{}", Some(signature.clone())),
+            tool_result("call_1", "Found Alice.", "{}"),
+            message(Role::Assistant, "a"),
+            message(Role::User, "follow-up"),
+        ];
+
+        let assembled = assemble_open_history(&history);
+
+        assert_eq!(assembled[1].tool_calls[0].extra_content, Some(signature));
     }
 
     #[test]

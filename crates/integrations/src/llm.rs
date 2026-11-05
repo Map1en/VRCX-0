@@ -115,11 +115,14 @@ struct ChunkDelta {
 
 #[derive(Deserialize)]
 struct ChunkToolCall {
-    index: usize,
+    #[serde(default)]
+    index: Option<usize>,
     #[serde(default)]
     id: Option<String>,
     #[serde(default)]
     function: Option<ChunkFunction>,
+    #[serde(default)]
+    extra_content: Option<Value>,
 }
 
 #[derive(Deserialize)]
@@ -135,6 +138,7 @@ struct ToolCallAcc {
     id: String,
     name_fragments: Vec<String>,
     argument_fragments: Vec<String>,
+    extra_content: Option<Value>,
 }
 
 #[derive(Default)]
@@ -357,6 +361,7 @@ impl LlmClient {
                         name,
                         arguments: assemble_tool_arguments(&acc.argument_fragments),
                     },
+                    extra_content: acc.extra_content,
                 })
             })
             .collect();
@@ -569,13 +574,27 @@ where
         }
         if let Some(calls) = choice.delta.tool_calls {
             let tool_acc = &mut state.tool_acc;
-            for call in calls {
-                if tool_acc.len() <= call.index {
-                    tool_acc.resize_with(call.index + 1, ToolCallAcc::default);
+            for (array_index, call) in calls.into_iter().enumerate() {
+                let index = call
+                    .index
+                    .or_else(|| {
+                        call.id.as_ref().and_then(|id| {
+                            tool_acc
+                                .iter()
+                                .position(|acc| !acc.id.is_empty() && acc.id == id.as_str())
+                        })
+                    })
+                    .or_else(|| call.id.as_ref().map(|_| tool_acc.len()))
+                    .unwrap_or(array_index);
+                if tool_acc.len() <= index {
+                    tool_acc.resize_with(index + 1, ToolCallAcc::default);
                 }
-                let acc = &mut tool_acc[call.index];
+                let acc = &mut tool_acc[index];
                 if let Some(id) = call.id {
                     acc.id = id;
+                }
+                if call.extra_content.is_some() {
+                    acc.extra_content = call.extra_content;
                 }
                 if let Some(function) = call.function {
                     if let Some(name) = function.name {

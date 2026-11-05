@@ -345,6 +345,55 @@ fn streaming_reasoning_details_are_accumulated_in_response_order() {
 }
 
 #[test]
+fn streaming_tool_call_without_index_preserves_extra_content_and_stop_completion() {
+    let mut state = ChatStreamState::default();
+    let mut on_text = |_: &str| {};
+
+    apply_chat_stream_line(
+        r#"data: {"choices":[{"delta":{"tool_calls":[{"extra_content":{"google":{"thought_signature":"EvcCCvQ..."}},"function":{"arguments":"{}","name":"get_best_time"},"id":"call_116065","type":"function"}]},"index":0}]}"#,
+        &mut on_text,
+        &mut state,
+    );
+    apply_chat_stream_line(
+        r#"data: {"choices":[{"delta":{"role":"assistant"},"finish_reason":"stop","index":0}]}"#,
+        &mut on_text,
+        &mut state,
+    );
+
+    assert_eq!(state.finish_reason.as_deref(), Some("stop"));
+    assert_eq!(state.tool_acc.len(), 1);
+    assert_eq!(state.tool_acc[0].id, "call_116065");
+    assert_eq!(
+        state.tool_acc[0].extra_content,
+        Some(serde_json::json!({
+            "google": { "thought_signature": "EvcCCvQ..." }
+        }))
+    );
+}
+
+#[test]
+fn streaming_tool_calls_without_indexes_are_grouped_by_id() {
+    let mut state = ChatStreamState::default();
+    let mut on_text = |_: &str| {};
+
+    for (id, name) in [("call_1", "first"), ("call_2", "second")] {
+        apply_chat_stream_line(
+            &format!(
+                r#"data: {{"choices":[{{"delta":{{"tool_calls":[{{"function":{{"arguments":"{{}}","name":"{name}"}},"id":"{id}","type":"function"}}]}},"index":0}}]}}"#
+            ),
+            &mut on_text,
+            &mut state,
+        );
+    }
+
+    assert_eq!(state.tool_acc.len(), 2);
+    assert_eq!(state.tool_acc[0].id, "call_1");
+    assert_eq!(state.tool_acc[1].id, "call_2");
+    assert_eq!(state.tool_acc[0].name_fragments, ["first"]);
+    assert_eq!(state.tool_acc[1].name_fragments, ["second"]);
+}
+
+#[test]
 fn assistant_tool_call_message_resends_reasoning_details_unchanged() {
     let reasoning_details = vec![serde_json::json!({
         "type": "reasoning.text",
@@ -363,6 +412,9 @@ fn assistant_tool_call_message_resends_reasoning_details_unchanged() {
                 name: "get_summary".into(),
                 arguments: "{}".into(),
             },
+            extra_content: Some(serde_json::json!({
+                "google": { "thought_signature": "EvcCCvQ..." }
+            })),
         }],
         reasoning_details: reasoning_details.clone(),
         finish_reason: Some("tool_calls".into()),
@@ -372,6 +424,10 @@ fn assistant_tool_call_message_resends_reasoning_details_unchanged() {
     let json = serde_json::to_value(message).unwrap();
     assert_eq!(json["reasoning_details"], Value::Array(reasoning_details));
     assert_eq!(json["tool_calls"][0]["id"], "call-1");
+    assert_eq!(
+        json["tool_calls"][0]["extra_content"]["google"]["thought_signature"],
+        "EvcCCvQ..."
+    );
     assert!(serde_json::to_value(ChatMessage::user("hi"))
         .unwrap()
         .get("reasoning_details")
@@ -769,6 +825,13 @@ async fn forbidding_tool_calls_keeps_tools_declared_with_tool_choice_none() {
     .await;
     assert_eq!(forbidden["tool_choice"], "none");
     assert_eq!(forbidden["tools"][0]["function"]["name"], "search");
+}
+
+#[tokio::test]
+async fn streaming_without_tools_omits_tool_choice() {
+    let body = stream_and_capture_body(&[], &LlmRequestOptions::default()).await;
+    assert!(body.get("tool_choice").is_none());
+    assert!(body.get("tools").is_none());
 }
 
 #[tokio::test]
