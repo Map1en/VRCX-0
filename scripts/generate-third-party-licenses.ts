@@ -207,6 +207,13 @@ function createThirdPartyNoticeText(
 ): string {
     const lines = [title, '', `Generated: ${new Date().toISOString()}`, ''];
 
+    if (entries.some((entry) => /\bIJG\b/.test(entry.license))) {
+        lines.push(
+            'This software is based in part on the work of the Independent JPEG Group.',
+            ''
+        );
+    }
+
     if (!entries.length) {
         lines.push('No license manifest was available.', '');
         return `${lines.join('\n').trimEnd()}\n`;

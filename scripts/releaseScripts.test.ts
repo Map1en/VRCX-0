@@ -361,6 +361,27 @@ describe('generate-third-party-licenses', () => {
         expect(notice.endsWith('\n')).toBe(true);
     });
 
+    it('credits the Independent JPEG Group only when an IJG-licensed dependency is bundled', () => {
+        const ijgCredit =
+            'This software is based in part on the work of the Independent JPEG Group.';
+        const mitOnly = createThirdPartyNoticeText([
+            normalizeFrontendEntry({ name: 'Beta', license: 'MIT' }, 0)
+        ]);
+        const withIjg = createThirdPartyNoticeText([
+            normalizeFrontendEntry({ name: 'Beta', license: 'MIT' }, 0),
+            normalizeFrontendEntry(
+                {
+                    name: 'jpeg-encoder',
+                    license: '(MIT OR Apache-2.0) AND IJG'
+                },
+                1
+            )
+        ]);
+
+        expect(mitOnly).not.toContain(ijgCredit);
+        expect(withIjg.match(new RegExp(ijgCredit, 'g'))).toHaveLength(1);
+    });
+
     it('stores each license text once in the manifest and points entries at it', () => {
         const manifest = createLicenseManifest([
             normalizeFrontendEntry(
