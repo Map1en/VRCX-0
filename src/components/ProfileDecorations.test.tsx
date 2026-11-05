@@ -11,6 +11,8 @@ import {
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { usePreferencesStore } from '@/state/preferencesStore';
+
 import { ProfileAvatarFrame, useDecorationHover } from './ProfileDecorations';
 
 const decorationItem = {
@@ -31,6 +33,10 @@ vi.mock('@/repositories/vrchatMediaRepository', () => ({
 afterEach(() => {
     cleanup();
     vi.useRealTimers();
+    vi.unstubAllGlobals();
+    usePreferencesStore.getState().patchPreferences({
+        reducedMotionAndBlur: false
+    });
 });
 
 function HoverProbe() {
@@ -128,5 +134,25 @@ describe('ProfileAvatarFrame', () => {
 
     it('does not show the animation while inactive', () => {
         expect(renderFrame(false).animationState()).toBeNull();
+    });
+
+    it('skips the animation and its fade-out when the app reduces effects', () => {
+        usePreferencesStore.getState().patchPreferences({
+            reducedMotionAndBlur: true
+        });
+        const frame = renderFrame(true);
+        expect(frame.animationState()).toBeNull();
+
+        frame.setActive(false);
+        expect(frame.animationState()).toBeNull();
+    });
+
+    it('skips the animation when the system prefers reduced motion', () => {
+        vi.stubGlobal('matchMedia', (query: string) => ({
+            matches: query === '(prefers-reduced-motion: reduce)',
+            addEventListener: () => undefined,
+            removeEventListener: () => undefined
+        }));
+        expect(renderFrame(true).animationState()).toBeNull();
     });
 });

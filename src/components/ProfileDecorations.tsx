@@ -5,12 +5,14 @@ import {
     normalizeProfileAppearanceColor,
     resolveProfileDecorationAssetUrls
 } from '@/components/dialogs/user-dialog/userDialogProfileAppearance';
+import { usePrefersReducedMotion } from '@/components/layout/navMenuCollapse';
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { entityQueryPolicies } from '@/lib/entityQueryCache';
 import { cn } from '@/lib/utils';
 import vrchatMediaRepository, {
     type InventoryItemRecord
 } from '@/repositories/vrchatMediaRepository';
+import { usePreferencesStore } from '@/state/preferencesStore';
 
 const DECORATION_FADE_OUT_MS = 500;
 
@@ -39,11 +41,17 @@ function DecorationImage({
     imageClassName: string;
 }) {
     const [failedAnimatedUrl, setFailedAnimatedUrl] = useState('');
+    const reduceEffects = usePreferencesStore(
+        (state) => state.reducedMotionAndBlur
+    );
+    const prefersReducedMotion = usePrefersReducedMotion();
+    const reducedMotion = reduceEffects || prefersReducedMotion;
+    const playing = animated && !reducedMotion;
     const [fadingOut, setFadingOut] = useState(false);
-    const [wasAnimated, setWasAnimated] = useState(animated);
-    if (wasAnimated !== animated) {
-        setWasAnimated(animated);
-        setFadingOut(!animated);
+    const [wasPlaying, setWasPlaying] = useState(playing);
+    if (wasPlaying !== playing) {
+        setWasPlaying(playing);
+        setFadingOut(!playing && !reducedMotion);
     }
     useEffect(() => {
         if (!fadingOut) {
@@ -61,7 +69,7 @@ function DecorationImage({
         return null;
     }
     const showAnimation =
-        (animated || fadingOut) &&
+        (playing || fadingOut) &&
         Boolean(animatedUrl) &&
         animatedUrl !== src &&
         animatedUrl !== failedAnimatedUrl;
@@ -80,10 +88,10 @@ function DecorationImage({
             />
             {showAnimation ? (
                 <span
-                    data-decoration-animation={animated ? 'on' : 'fading'}
+                    data-decoration-animation={playing ? 'on' : 'fading'}
                     className={cn(
-                        'absolute inset-0 transition-opacity duration-500 ease-out motion-reduce:transition-none',
-                        animated ? 'opacity-100' : 'opacity-0'
+                        'absolute inset-0 transition-opacity duration-500 ease-out',
+                        playing ? 'opacity-100' : 'opacity-0'
                     )}
                 >
                     <FadeInImage
@@ -202,7 +210,7 @@ export function ProfileNameplate({
                         : undefined
                 }
                 className={cn(
-                    'absolute inset-0 transition-opacity duration-200',
+                    'absolute inset-0 transition-opacity duration-200 motion-reduce:transition-none',
                     active ? 'opacity-100' : 'opacity-50'
                 )}
             >
