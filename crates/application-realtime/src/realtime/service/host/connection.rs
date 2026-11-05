@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 use vrcx_0_application_core::{RuntimeAuthScopeSnapshot, RuntimeOperationStatus};
 
@@ -49,6 +48,8 @@ impl RealtimeHostRuntime {
                 tracing::warn!("Feed persistence preference read failed: {error}");
                 false
             });
+        let feed =
+            super::feed::FeedLiveProjector::new(deps.event_bus.clone(), feed_persistence_disabled);
         Self {
             deps,
             state: Mutex::new(RealtimeHostRuntimeState::default()),
@@ -60,11 +61,9 @@ impl RealtimeHostRuntime {
             user_query_cache: UserQueryCache::new(),
             world_cache,
             friend_owner_lock: Mutex::new(()),
-            feed_owner_lock: Mutex::new(()),
-            feed_live_cache: Mutex::new(super::feed::FeedLiveCache::default()),
-            feed_persistence_disabled: AtomicBool::new(feed_persistence_disabled),
+            feed,
             reconnect_backfill_check: Mutex::new(None),
-            notification_apply_lock: tokio::sync::Mutex::new(()),
+            notification_apply: Default::default(),
             friend_profile_bulk,
             current_user_refresh_inflight: Mutex::new(None),
         }
@@ -573,7 +572,7 @@ impl RealtimeHostRuntime {
         self.user_facts.clear();
         self.user_query_cache.clear();
         self.world_cache.clear_working();
-        self.reset_feed_live_cache();
+        self.feed.reset();
     }
 
     pub(super) fn is_session_live(&self, active: &ActiveRealtimeContext) -> bool {

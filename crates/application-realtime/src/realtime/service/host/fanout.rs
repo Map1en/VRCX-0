@@ -1,4 +1,3 @@
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use vrcx_0_application_core::{Result, RuntimeOperationStatus};
 
@@ -10,7 +9,7 @@ use vrcx_0_core::user_facts::UserFactMergeOptions;
 
 use crate::realtime::{
     FriendProjection, RealtimeCurrentUserOutput, RealtimeFriendOutput,
-    RealtimeInstanceClosedOutput, RealtimeNotificationOutput, RealtimeSessionContext,
+    RealtimeInstanceClosedOutput, RealtimeNotificationOutput,
 };
 
 use super::message_dispatch::json_string_field;
@@ -65,9 +64,8 @@ impl RealtimeHostRuntime {
         self.deps
             .config
             .set_bool("feedPersistenceDisabled", disabled)?;
-        self.feed_persistence_disabled
-            .store(disabled, Ordering::Relaxed);
-        self.reset_feed_live_cache();
+        self.feed.set_persistence_disabled(disabled);
+        self.feed.reset();
         Ok(())
     }
 
@@ -142,7 +140,7 @@ impl RealtimeHostRuntime {
         let mut joining = std::mem::take(&mut output.joining);
         self.retain_current_instance_joining_entries(&mut joining, output.owner_user_id.as_str());
         let mut live_feed = output.persistence.feed_entries.clone();
-        let feed_persistence_disabled = self.feed_persistence_disabled.load(Ordering::Relaxed);
+        let feed_persistence_disabled = self.feed.persistence_disabled();
         if feed_persistence_disabled {
             output.persistence.feed_entries.clear();
         }
@@ -314,34 +312,6 @@ impl RealtimeHostRuntime {
             self.schedule_friend_request_auto_decline(auto_declines);
         }
         self.schedule_world_name_warm(world_name_fetch_ids);
-    }
-
-    pub(super) fn schedule_notification_output(
-        self: &Arc<Self>,
-        generation: u64,
-        session_generation: u64,
-        session: RealtimeSessionContext,
-        output: RealtimeNotificationOutput,
-    ) {
-        let runtime = Arc::clone(self);
-        self.deps.tasks.spawn(async move {
-            let _guard = runtime.notification_apply_lock.lock().await;
-            if !runtime.is_notification_context_current(generation, session_generation, &session) {
-                return;
-            }
-            let mut output = output;
-            if runtime.notification_output_needs_remote_resolution(&output) {
-                runtime.resolve_notification_output_names(&mut output).await;
-                if !runtime.is_notification_context_current(
-                    generation,
-                    session_generation,
-                    &session,
-                ) {
-                    return;
-                }
-            }
-            runtime.apply_notification_output(output);
-        });
     }
 
     pub(super) fn apply_current_user_output(&self, mut output: RealtimeCurrentUserOutput) {

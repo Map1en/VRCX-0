@@ -51,6 +51,7 @@ mod friend_profile_bulk_load_tests;
 mod game_process;
 mod group_changes;
 mod message_dispatch;
+mod notification_apply;
 #[cfg(test)]
 mod notification_enrichment_tests;
 mod state;

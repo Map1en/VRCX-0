@@ -1,5 +1,4 @@
 use std::collections::{HashMap, HashSet};
-use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 
 use serde_json::Value;
@@ -13,7 +12,7 @@ use vrcx_0_contracts::feed_live::FeedLiveEntry;
 use vrcx_0_core::friends::FriendBaselineEntry;
 use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
 
-use super::feed::FeedLiveCache;
+use super::feed::FeedLiveProjector;
 use crate::realtime::current_user::RealtimeCurrentUserRuntime;
 use crate::realtime::friends::{baseline_friend_view, RealtimeFriendsRuntime};
 use crate::realtime::invite_automation::runtime::InviteAutomationState;
@@ -303,11 +302,9 @@ pub struct RealtimeHostRuntime {
     pub(super) user_query_cache: UserQueryCache,
     pub(super) world_cache: Arc<WorldCache>,
     pub(super) friend_owner_lock: Mutex<()>,
-    pub(super) feed_owner_lock: Mutex<()>,
-    pub(super) feed_live_cache: Mutex<FeedLiveCache>,
-    pub(super) feed_persistence_disabled: AtomicBool,
+    pub(super) feed: FeedLiveProjector,
     pub(super) reconnect_backfill_check: Mutex<Option<ReconnectBackfillCheck>>,
-    pub(super) notification_apply_lock: tokio::sync::Mutex<()>,
+    pub(super) notification_apply: super::notification_apply::NotificationApplyLane,
     pub(super) friend_profile_bulk: super::friend_profile_bulk_load::FriendProfileBulkLoader,
     pub(super) current_user_refresh_inflight:
         Mutex<Option<watch::Receiver<CurrentUserRefreshStatus>>>,
