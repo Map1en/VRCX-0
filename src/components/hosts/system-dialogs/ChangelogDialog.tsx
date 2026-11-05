@@ -24,7 +24,6 @@ import {
 } from '@/services/changelogService';
 import { openExternalLink } from '@/services/entityMediaService';
 import { links } from '@/shared/constants/link';
-import type { ReleaseChannel } from '@/shared/utils/releaseVersion';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -215,7 +214,6 @@ export function ChangelogDialog({
     targetVersion?: string;
 }) {
     const { i18n, t } = useTranslation();
-    const [channel, setChannel] = useState<ReleaseChannel | null>(null);
     const [sections, setSections] = useState<ChangelogSection[]>([]);
     const [currentId, setCurrentId] = useState<string | null>(null);
     const [targetId, setTargetId] = useState<string | null>(null);
@@ -232,27 +230,25 @@ export function ChangelogDialog({
         let active = true;
         setLoading(true);
         setError('');
-        setChannel(null);
         setSections([]);
         setCurrentId(null);
         setTargetId(null);
         setActiveLanguage('');
 
         fetchChangelogReleases(targetVersion)
-            .then((result) => {
+            .then((releases) => {
                 if (!active) {
                     return;
                 }
 
-                const nextSections = buildChangelogSections(result.releases);
-                setChannel(result.channel);
+                const nextSections = buildChangelogSections(releases);
                 setSections(nextSections);
                 setCurrentId(
-                    findChangelogRelease(result.releases, getCurrentVersion())
+                    findChangelogRelease(releases, getCurrentVersion())
                         ?.canonicalVersion ?? null
                 );
                 setTargetId(
-                    findChangelogRelease(result.releases, targetVersion)
+                    findChangelogRelease(releases, targetVersion)
                         ?.canonicalVersion ?? null
                 );
                 setActiveLanguage(
@@ -317,27 +313,13 @@ export function ChangelogDialog({
             onOpenChange={onOpenChange}
             onOpenChangeComplete={(nextOpen) => {
                 if (!nextOpen && !open) {
-                    setChannel(null);
                     setSections([]);
                 }
             }}
         >
             <DialogContent className="grid h-[min(85vh,820px)] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden sm:max-w-5xl">
                 <DialogHeader className="flex-row items-center justify-between gap-3 pr-8">
-                    <div className="flex min-w-0 flex-col gap-1">
-                        <DialogTitle>
-                            {t('dialog.change_log.header')}
-                        </DialogTitle>
-                        {channel && sections.length ? (
-                            <div className="text-muted-foreground text-sm">
-                                {t(`dialog.vrcx_updater.channel.${channel}`)}
-                                {' · '}
-                                {t('dialog.change_log.recent_releases', {
-                                    value: sections.length
-                                })}
-                            </div>
-                        ) : null}
-                    </div>
+                    <DialogTitle>{t('dialog.change_log.header')}</DialogTitle>
                     {languageOptions.length > 1 ? (
                         <Select
                             value={activeLanguage}
@@ -475,4 +457,3 @@ export function ChangelogDialog({
         </Dialog>
     );
 }
-

@@ -6597,7 +6597,6 @@
             "failed_to_load": "更新紀錄載入失敗。",
             "empty": "此版本沒有可用的更新紀錄。",
             "current_version": "目前版本",
-            "recent_releases": "最近 {value} 個版本",
             "older_releases": "更早的版本",
             "view_on_github": "前往 GitHub 查看",
             "language": "更新紀錄語言",

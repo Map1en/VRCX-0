@@ -54,11 +54,11 @@ describe('changelog release list', () => {
                 hasMore: true
             });
 
-        const result = await fetchChangelogReleases('2.40.0');
+        const releases = await fetchChangelogReleases('2.40.0');
 
-        expect(result.channel).toBe('stable');
-        expect(result.releases.map((release) => release.canonicalVersion))
-            .toEqual(versions.slice(0, 10));
+        expect(releases.map((release) => release.canonicalVersion)).toEqual(
+            versions.slice(0, 10)
+        );
         expect(mocks.fetchBranchReleasePage.mock.calls).toEqual([
             ['stable', 1],
             ['stable', 2]
@@ -71,12 +71,10 @@ describe('changelog release list', () => {
             hasMore: false
         });
 
-        const result = await fetchChangelogReleases('v2.34.0-beta.3');
+        const releases = await fetchChangelogReleases('v2.34.0-beta.3');
 
-        expect(result).toEqual({ channel: 'beta', releases: [] });
-        expect(mocks.fetchBranchReleasePage.mock.calls).toEqual([
-            ['beta', 1]
-        ]);
+        expect(releases).toEqual([]);
+        expect(mocks.fetchBranchReleasePage.mock.calls).toEqual([['beta', 1]]);
     });
 
     test('finds the target release by version or tag', () => {

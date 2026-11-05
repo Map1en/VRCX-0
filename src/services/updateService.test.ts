@@ -35,10 +35,7 @@ describe('updateService branch release fetching', () => {
             data: [release({ publishedAt: '2026-06-21T07:00:00Z' })]
         });
 
-        const { releases, hasMore } = await fetchBranchReleasePage(
-            'stable',
-            1
-        );
+        const { releases, hasMore } = await fetchBranchReleasePage('stable', 1);
 
         expect(releases).toHaveLength(1);
         expect(releases[0].canonicalVersion).toBe('2.7.0');

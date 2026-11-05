@@ -6570,7 +6570,6 @@
             "failed_to_load": "Falha ao carregar o changelog.",
             "empty": "Nenhum changelog disponível para esta versão.",
             "current_version": "Versão atual",
-            "recent_releases": "Últimas {value} versões",
             "older_releases": "Versões anteriores",
             "view_on_github": "Ver no GitHub",
             "language": "Idioma do changelog",

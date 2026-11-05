@@ -6618,7 +6618,6 @@
             "failed_to_load": "Failed to load changelog.",
             "empty": "No changelog is available for this release.",
             "current_version": "Current version",
-            "recent_releases": "Last {value} releases",
             "older_releases": "Older releases",
             "view_on_github": "View on GitHub",
             "language": "Changelog language",

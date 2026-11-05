@@ -6618,7 +6618,6 @@
             "failed_to_load": "No se pudo cargar el registro de cambios.",
             "empty": "No hay registro de cambios disponible para esta versión.",
             "current_version": "Versión actual",
-            "recent_releases": "Últimas {value} versiones",
             "older_releases": "Versiones anteriores",
             "view_on_github": "Ver en GitHub",
             "language": "Idioma del registro de cambios",

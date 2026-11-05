@@ -6602,7 +6602,6 @@
             "failed_to_load": "更新履歴の読み込みに失敗しました。",
             "empty": "このリリースには利用可能な更新履歴がありません。",
             "current_version": "使用中",
-            "recent_releases": "直近 {value} 件のリリース",
             "older_releases": "それ以前のリリース",
             "view_on_github": "GitHub で見る",
             "language": "更新履歴の言語",

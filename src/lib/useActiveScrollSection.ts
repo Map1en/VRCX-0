@@ -14,11 +14,7 @@ type PinnedSection = {
     settled: boolean;
 };
 
-function sectionElement(
-    container: HTMLElement,
-    attribute: string,
-    id: string
-) {
+function sectionElement(container: HTMLElement, attribute: string, id: string) {
     return container.querySelector<HTMLElement>(`[${attribute}="${id}"]`);
 }
 

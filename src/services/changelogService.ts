@@ -1,10 +1,7 @@
 import configRepository from '@/repositories/configRepository';
 import { fetchBranchReleasePage } from '@/services/updateService';
 import type { NormalizedRelease } from '@/services/updateService';
-import {
-    parseReleaseVersion,
-    type ReleaseChannel
-} from '@/shared/utils/releaseVersion';
+import { parseReleaseVersion } from '@/shared/utils/releaseVersion';
 
 const STABLE_BRANCH = 'stable';
 const CHANGELOG_RELEASE_LIMIT = 10;
@@ -239,14 +236,9 @@ export function getCurrentVersion() {
     return typeof VERSION === 'undefined' ? '' : VERSION || '';
 }
 
-type ChangelogReleaseList = {
-    channel: ReleaseChannel;
-    releases: NormalizedRelease[];
-};
-
 export async function fetchChangelogReleases(
     version?: string
-): Promise<ChangelogReleaseList> {
+): Promise<NormalizedRelease[]> {
     const channel =
         parseReleaseVersion(
             normalizeReleaseLookupVersion(version) || getCurrentVersion()
@@ -259,10 +251,7 @@ export async function fetchChangelogReleases(
             break;
         }
     }
-    return {
-        channel,
-        releases: releases.slice(0, CHANGELOG_RELEASE_LIMIT)
-    };
+    return releases.slice(0, CHANGELOG_RELEASE_LIMIT);
 }
 
 export function findChangelogRelease(

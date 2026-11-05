@@ -6606,7 +6606,6 @@
             "failed_to_load": "更新日志加载失败。",
             "empty": "这个版本没有可用的更新日志。",
             "current_version": "当前版本",
-            "recent_releases": "最近 {value} 个版本",
             "older_releases": "更早的版本",
             "view_on_github": "前往 GitHub 查看",
             "language": "更新日志语言",

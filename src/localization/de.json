@@ -6570,7 +6570,6 @@
             "failed_to_load": "Änderungsprotokoll konnte nicht geladen werden.",
             "empty": "Für diese Version ist kein Änderungsprotokoll verfügbar.",
             "current_version": "Aktuelle Version",
-            "recent_releases": "Letzte {value} Versionen",
             "older_releases": "Ältere Versionen",
             "view_on_github": "Auf GitHub ansehen",
             "language": "Sprache des Änderungsprotokolls",
