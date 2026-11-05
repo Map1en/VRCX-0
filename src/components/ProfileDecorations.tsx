@@ -165,24 +165,28 @@ export function ProfileNameplate({
     return (
         <span
             aria-hidden="true"
-            style={
-                gradientStart && gradientEnd
-                    ? {
-                          backgroundImage: `linear-gradient(90deg, ${gradientStart}, ${gradientEnd})`
-                      }
-                    : undefined
-            }
-            className={cn(
-                'pointer-events-none absolute inset-y-0.5 right-0 -z-10 w-2/3 overflow-hidden rounded-[inherit] [mask-image:linear-gradient(to_left,black,rgb(0_0_0/0.7)_25%,rgb(0_0_0/0.3)_55%,rgb(0_0_0/0.08)_80%,transparent)] transition-opacity duration-200',
-                active ? 'opacity-100' : 'opacity-50'
-            )}
+            className="pointer-events-none absolute inset-y-0.5 right-0 -z-10 w-2/3 overflow-hidden rounded-[inherit] [mask-image:linear-gradient(to_left,black,rgb(0_0_0/0.7)_25%,rgb(0_0_0/0.3)_55%,rgb(0_0_0/0.08)_80%,transparent)]"
         >
-            <DecorationImage
-                item={item}
-                animated={active}
-                className="absolute inset-0"
-                imageClassName="object-cover"
-            />
+            <span
+                style={
+                    gradientStart && gradientEnd
+                        ? {
+                              backgroundImage: `linear-gradient(90deg, ${gradientStart}, ${gradientEnd})`
+                          }
+                        : undefined
+                }
+                className={cn(
+                    'absolute inset-0 transition-opacity duration-200',
+                    active ? 'opacity-100' : 'opacity-50'
+                )}
+            >
+                <DecorationImage
+                    item={item}
+                    animated={active}
+                    className="absolute inset-0"
+                    imageClassName="object-cover"
+                />
+            </span>
         </span>
     );
 }
