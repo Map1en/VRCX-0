@@ -292,11 +292,7 @@ impl LlmClient {
             model: &self.model,
             messages,
             tools: request_tools,
-            tool_choice: Some(if options.forbid_tool_calls && !tools.is_empty() {
-                "none"
-            } else {
-                "auto"
-            }),
+            tool_choice: (options.forbid_tool_calls && !tools.is_empty()).then_some("none"),
             stream: true,
             reasoning: reasoning_request(options),
         };
@@ -569,7 +565,17 @@ where
         if let Some(calls) = choice.delta.tool_calls {
             let tool_acc = &mut state.tool_acc;
             for (array_index, call) in calls.into_iter().enumerate() {
-                let index = call.index.unwrap_or(array_index);
+                let index = call
+                    .index
+                    .or_else(|| {
+                        call.id.as_ref().and_then(|id| {
+                            tool_acc
+                                .iter()
+                                .position(|acc| !acc.id.is_empty() && acc.id == id.as_str())
+                        })
+                    })
+                    .or_else(|| call.id.as_ref().map(|_| tool_acc.len()))
+                    .unwrap_or(array_index);
                 if tool_acc.len() <= index {
                     tool_acc.resize_with(index + 1, ToolCallAcc::default);
                 }

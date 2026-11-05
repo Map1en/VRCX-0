@@ -7405,7 +7405,12 @@ export type TelemetryClientEvent =
           summary: string | null;
       }
     | { type: 'assistantTurnError'; code: string; summary: string | null };
-export type ToolCallRecord = { id: string; name: string; arguments: string };
+export type ToolCallRecord = {
+    id: string;
+    name: string;
+    arguments: string;
+    extraContent?: JsonValue;
+};
 export type ToolResultRecord = {
     toolCallId: string;
     name: string;

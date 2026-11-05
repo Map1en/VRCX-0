@@ -67,6 +67,7 @@ fn reopened_session_restores_tool_rows_with_full_content_for_the_model() {
                     id: "call_1".into(),
                     name: "get_copresence_summary".into(),
                     arguments: "{\"limit\":5}".into(),
+                    extra_content: None,
                 },
             )
             .unwrap();

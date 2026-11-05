@@ -372,6 +372,28 @@ fn streaming_tool_call_without_index_preserves_extra_content_and_stop_completion
 }
 
 #[test]
+fn streaming_tool_calls_without_indexes_are_grouped_by_id() {
+    let mut state = ChatStreamState::default();
+    let mut on_text = |_: &str| {};
+
+    for (id, name) in [("call_1", "first"), ("call_2", "second")] {
+        apply_chat_stream_line(
+            &format!(
+                r#"data: {{"choices":[{{"delta":{{"tool_calls":[{{"function":{{"arguments":"{{}}","name":"{name}"}},"id":"{id}","type":"function"}}]}},"index":0}}]}}"#
+            ),
+            &mut on_text,
+            &mut state,
+        );
+    }
+
+    assert_eq!(state.tool_acc.len(), 2);
+    assert_eq!(state.tool_acc[0].id, "call_1");
+    assert_eq!(state.tool_acc[1].id, "call_2");
+    assert_eq!(state.tool_acc[0].name_fragments, ["first"]);
+    assert_eq!(state.tool_acc[1].name_fragments, ["second"]);
+}
+
+#[test]
 fn assistant_tool_call_message_resends_reasoning_details_unchanged() {
     let reasoning_details = vec![serde_json::json!({
         "type": "reasoning.text",
@@ -791,7 +813,7 @@ async fn forbidding_tool_calls_keeps_tools_declared_with_tool_choice_none() {
     }];
 
     let allowed = stream_and_capture_body(&tools, &LlmRequestOptions::default()).await;
-    assert_eq!(allowed["tool_choice"], "auto");
+    assert!(allowed.get("tool_choice").is_none());
 
     let forbidden = stream_and_capture_body(
         &tools,
@@ -803,6 +825,13 @@ async fn forbidding_tool_calls_keeps_tools_declared_with_tool_choice_none() {
     .await;
     assert_eq!(forbidden["tool_choice"], "none");
     assert_eq!(forbidden["tools"][0]["function"]["name"], "search");
+}
+
+#[tokio::test]
+async fn streaming_without_tools_omits_tool_choice() {
+    let body = stream_and_capture_body(&[], &LlmRequestOptions::default()).await;
+    assert!(body.get("tool_choice").is_none());
+    assert!(body.get("tools").is_none());
 }
 
 #[tokio::test]
