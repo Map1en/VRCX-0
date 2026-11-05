@@ -300,10 +300,7 @@ impl RealtimeHostRuntime {
         mutation.apply_scope_to_request(&mut request);
         let response = mutation
             .run_after_wait(INVITE_AUTOMATION_REMOTE_MUTATION_INTERVAL, || async {
-                self.deps
-                    .web
-                    .execute_api(request, VrchatScope::Vrchat)
-                    .await
+                self.web.execute_api(request, VrchatScope::Vrchat).await
             })
             .await?;
         if !(200..=299).contains(&response.status) {
@@ -397,7 +394,7 @@ impl RealtimeHostRuntime {
                 favorites: Arc::clone(&self.deps.stores.favorites),
                 config: Arc::clone(&self.deps.config),
                 remote_requests: Arc::clone(&self.deps.remote_requests),
-                web: Arc::clone(&self.deps.web),
+                web: Arc::clone(&self.web),
                 auth_scope: self.deps.auth_scope.clone(),
             },
             SocialFavoritesBaselineRequest {
@@ -444,10 +441,7 @@ impl RealtimeHostRuntime {
         mutation.apply_scope_to_request(&mut request);
         mutation
             .run_after_wait(INVITE_AUTOMATION_REMOTE_MUTATION_INTERVAL, || async {
-                self.deps
-                    .web
-                    .execute_api(request, VrchatScope::Vrchat)
-                    .await
+                self.web.execute_api(request, VrchatScope::Vrchat).await
             })
             .await?;
         let projection = RealtimeNotificationProjection {

@@ -194,65 +194,67 @@ pub struct FeedLiveQueryMatcher {
     max_rows: Option<usize>,
 }
 
+#[derive(Clone, Copy)]
+pub struct FeedLiveQueryParts<'a> {
+    pub current_user_id: &'a str,
+    pub filters: &'a [FeedFilter],
+    pub search: &'a str,
+    pub date_from: &'a str,
+    pub date_to: &'a str,
+    pub favorites_only: bool,
+    pub favorite_user_ids: &'a [String],
+    pub scoped_user_ids: &'a [String],
+    pub excluded_user_ids: &'a [String],
+    pub location_hidden_user_ids: &'a [String],
+    pub max_rows: i64,
+}
+
 impl FeedLiveQueryMatcher {
     pub fn for_latest(query: &FeedLatestQueryInput) -> Self {
-        Self::from_parts(
-            &query.user_id,
-            &query.filters,
-            "",
-            "",
-            "",
-            query.favorites_only,
-            &query.favorite_user_ids,
-            &query.scoped_user_ids,
-            &query.excluded_user_ids,
-            &query.location_hidden_user_ids,
-            query.max_rows,
-        )
+        Self::from_parts(FeedLiveQueryParts {
+            current_user_id: &query.user_id,
+            filters: &query.filters,
+            search: "",
+            date_from: "",
+            date_to: "",
+            favorites_only: query.favorites_only,
+            favorite_user_ids: &query.favorite_user_ids,
+            scoped_user_ids: &query.scoped_user_ids,
+            excluded_user_ids: &query.excluded_user_ids,
+            location_hidden_user_ids: &query.location_hidden_user_ids,
+            max_rows: query.max_rows,
+        })
     }
 
     pub fn for_search(query: &FeedSearchQueryInput) -> Self {
-        Self::from_parts(
-            &query.user_id,
-            &query.filters,
-            &query.search,
-            &query.date_from,
-            &query.date_to,
-            query.favorites_only,
-            &query.favorite_user_ids,
-            &query.scoped_user_ids,
-            &query.excluded_user_ids,
-            &query.location_hidden_user_ids,
-            query.max_rows,
-        )
+        Self::from_parts(FeedLiveQueryParts {
+            current_user_id: &query.user_id,
+            filters: &query.filters,
+            search: &query.search,
+            date_from: &query.date_from,
+            date_to: &query.date_to,
+            favorites_only: query.favorites_only,
+            favorite_user_ids: &query.favorite_user_ids,
+            scoped_user_ids: &query.scoped_user_ids,
+            excluded_user_ids: &query.excluded_user_ids,
+            location_hidden_user_ids: &query.location_hidden_user_ids,
+            max_rows: query.max_rows,
+        })
     }
 
-    #[allow(clippy::too_many_arguments)]
-    pub fn from_parts(
-        current_user_id: &str,
-        filters: &[FeedFilter],
-        search: &str,
-        date_from: &str,
-        date_to: &str,
-        favorites_only: bool,
-        favorite_user_ids: &[String],
-        scoped_user_ids: &[String],
-        excluded_user_ids: &[String],
-        location_hidden_user_ids: &[String],
-        max_rows: i64,
-    ) -> Self {
+    pub fn from_parts(parts: FeedLiveQueryParts<'_>) -> Self {
         Self {
-            current_user_id: current_user_id.to_string(),
-            filters: filters.to_vec(),
-            search: search.to_string(),
-            date_from: date_from.to_string(),
-            date_to: date_to.to_string(),
-            favorites_only,
-            favorite_user_ids: normalize_user_ids(favorite_user_ids),
-            scoped_user_ids: normalize_user_ids(scoped_user_ids),
-            excluded_user_ids: normalize_user_ids(excluded_user_ids),
-            location_hidden_user_ids: normalize_user_ids(location_hidden_user_ids),
-            max_rows: (max_rows > 0).then_some(max_rows as usize),
+            current_user_id: parts.current_user_id.to_string(),
+            filters: parts.filters.to_vec(),
+            search: parts.search.to_string(),
+            date_from: parts.date_from.to_string(),
+            date_to: parts.date_to.to_string(),
+            favorites_only: parts.favorites_only,
+            favorite_user_ids: normalize_user_ids(parts.favorite_user_ids),
+            scoped_user_ids: normalize_user_ids(parts.scoped_user_ids),
+            excluded_user_ids: normalize_user_ids(parts.excluded_user_ids),
+            location_hidden_user_ids: normalize_user_ids(parts.location_hidden_user_ids),
+            max_rows: (parts.max_rows > 0).then_some(parts.max_rows as usize),
         }
     }
 

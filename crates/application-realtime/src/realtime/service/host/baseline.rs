@@ -227,8 +227,7 @@ impl RealtimeHostRuntime {
                     changed: friend_log_changed,
                     feed_entries,
                 } = reconcile_friend_roster_records(
-                    self.deps.stores.friend_log.as_ref(),
-                    self.deps.stores.batch_writer.as_ref(),
+                    &self.deps.stores,
                     self.deps.config.as_ref(),
                     &pending_snapshot.current_user_id,
                     &pending_snapshot.friends_by_id,
@@ -337,8 +336,7 @@ impl RealtimeHostRuntime {
             .map(|snapshot| {
                 let roster_order = roster_order_from_friend_records(&snapshot.friends_by_id);
                 reconcile_friend_roster_records(
-                    self.deps.stores.friend_log.as_ref(),
-                    self.deps.stores.batch_writer.as_ref(),
+                    &self.deps.stores,
                     self.deps.config.as_ref(),
                     &snapshot.current_user_id,
                     &snapshot.friends_by_id,

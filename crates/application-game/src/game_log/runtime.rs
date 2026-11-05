@@ -21,10 +21,10 @@ use super::runtime_state::RuntimeSnapshotStore;
 
 #[derive(Clone)]
 pub struct GameLogRuntimeDeps {
-    pub(crate) stores: crate::GameLogStores,
-    pub(crate) config: Arc<dyn ConfigStore>,
-    pub(crate) instance_media: Arc<dyn InstanceMediaPort>,
-    pub(crate) video_metadata: Arc<dyn VideoMetadataPort>,
+    pub stores: crate::GameLogStores,
+    pub config: Arc<dyn ConfigStore>,
+    pub instance_media: Arc<dyn InstanceMediaPort>,
+    pub video_metadata: Arc<dyn VideoMetadataPort>,
     pub event_bus: RuntimeEventBus,
     pub backend_status: BackendRuntimeStatusPublisher,
     pub side_effect_sink: crate::GameLogSideEffectSink,
@@ -37,47 +37,6 @@ pub struct GameLogRuntimeDeps {
     pub activity: Arc<dyn ActivityIngress>,
     pub world_cache: Arc<WorldCache>,
     pub instance_roster_observer: Option<Arc<dyn InstanceRosterObserver>>,
-}
-
-impl GameLogRuntimeDeps {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        stores: crate::GameLogStores,
-        config: Arc<dyn ConfigStore>,
-        instance_media: Arc<dyn InstanceMediaPort>,
-        video_metadata: Arc<dyn VideoMetadataPort>,
-        event_bus: RuntimeEventBus,
-        backend_status: BackendRuntimeStatusPublisher,
-        side_effect_sink: crate::GameLogSideEffectSink,
-        tasks: TaskSupervisor,
-        sync: RuntimeSyncEngine,
-        auth_scope: RuntimeAuthScope,
-        session: HostSessionRuntime,
-        snapshot: RuntimeSnapshotStore,
-        host_actions: Arc<dyn GameLogHostActions>,
-        activity: Arc<dyn ActivityIngress>,
-        world_cache: Arc<WorldCache>,
-        instance_roster_observer: Option<Arc<dyn InstanceRosterObserver>>,
-    ) -> Self {
-        Self {
-            stores,
-            config,
-            instance_media,
-            video_metadata,
-            event_bus,
-            backend_status,
-            side_effect_sink,
-            tasks,
-            sync,
-            auth_scope,
-            session,
-            snapshot,
-            host_actions,
-            activity,
-            world_cache,
-            instance_roster_observer,
-        }
-    }
 }
 
 pub struct GameLogRuntime {

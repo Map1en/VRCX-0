@@ -44,37 +44,12 @@ pub struct LocalProfileBackupPort {
 pub struct LocalProfileBackupDeps {
     pub app_data: PathBuf,
     pub control_dir: PathBuf,
-    pub(crate) db: Arc<DatabaseService>,
-    pub(crate) storage: Arc<StorageService>,
+    pub db: Arc<DatabaseService>,
+    pub storage: Arc<StorageService>,
     pub event_bus: RuntimeEventBus,
     pub tasks: TaskSupervisor,
     pub background_jobs: RuntimeBackgroundJobs,
     pub app_version: String,
-}
-
-impl LocalProfileBackupDeps {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        app_data: PathBuf,
-        control_dir: PathBuf,
-        db: Arc<DatabaseService>,
-        storage: Arc<StorageService>,
-        event_bus: RuntimeEventBus,
-        tasks: TaskSupervisor,
-        background_jobs: RuntimeBackgroundJobs,
-        app_version: String,
-    ) -> Self {
-        Self {
-            app_data,
-            control_dir,
-            db,
-            storage,
-            event_bus,
-            tasks,
-            background_jobs,
-            app_version,
-        }
-    }
 }
 
 struct LocalProfileBackupInner {

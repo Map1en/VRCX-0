@@ -26,65 +26,24 @@ use crate::Result;
 
 #[derive(Clone)]
 pub struct DesktopSocialRuntime {
-    db: Arc<DatabaseService>,
-    realtime_store: Arc<vrcx_0_outbound_adapters::PersistenceRealtimeStore>,
-    media_upload_adapter: vrcx_0_outbound_adapters::LocalMediaUploadAdapter,
-    moderation_sync_store: vrcx_0_outbound_adapters::LocalModerationSyncStore,
-    web: Arc<WebClient>,
-    remote: vrcx_0_outbound_adapters::VrchatRequestAdapter,
-    auth_scope: RuntimeAuthScope,
-    remote_mutations: Arc<RemoteMutationGate>,
-    realtime: Arc<RealtimeHostRuntime>,
-    diagnostics: RuntimeDiagnostics,
-    sync: RuntimeSyncEngine,
-    event_bus: RuntimeEventBus,
-    world_cache: Arc<WorldCache>,
-    moderation_sync: ModerationSyncRuntime,
-    authenticated: AuthenticatedRuntimeOrchestrator,
+    pub(crate) db: Arc<DatabaseService>,
+    pub(crate) realtime_store: Arc<vrcx_0_outbound_adapters::PersistenceRealtimeStore>,
+    pub(crate) media_upload_adapter: vrcx_0_outbound_adapters::LocalMediaUploadAdapter,
+    pub(crate) moderation_sync_store: vrcx_0_outbound_adapters::LocalModerationSyncStore,
+    pub(crate) web: Arc<WebClient>,
+    pub(crate) remote: vrcx_0_outbound_adapters::VrchatRequestAdapter,
+    pub(crate) auth_scope: RuntimeAuthScope,
+    pub(crate) remote_mutations: Arc<RemoteMutationGate>,
+    pub(crate) realtime: Arc<RealtimeHostRuntime>,
+    pub(crate) diagnostics: RuntimeDiagnostics,
+    pub(crate) sync: RuntimeSyncEngine,
+    pub(crate) event_bus: RuntimeEventBus,
+    pub(crate) world_cache: Arc<WorldCache>,
+    pub(crate) moderation_sync: ModerationSyncRuntime,
+    pub(crate) authenticated: AuthenticatedRuntimeOrchestrator,
 }
 
 impl DesktopSocialRuntime {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        db: Arc<DatabaseService>,
-        web: Arc<WebClient>,
-        auth_scope: RuntimeAuthScope,
-        remote_mutations: Arc<RemoteMutationGate>,
-        realtime: Arc<RealtimeHostRuntime>,
-        diagnostics: RuntimeDiagnostics,
-        sync: RuntimeSyncEngine,
-        event_bus: RuntimeEventBus,
-        world_cache: Arc<WorldCache>,
-        moderation_sync: ModerationSyncRuntime,
-        authenticated: AuthenticatedRuntimeOrchestrator,
-    ) -> Self {
-        let realtime_store = Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
-            Arc::clone(&db),
-        ));
-        let media_upload_adapter =
-            vrcx_0_outbound_adapters::LocalMediaUploadAdapter::new(Arc::clone(&web));
-        let moderation_sync_store =
-            vrcx_0_outbound_adapters::LocalModerationSyncStore::new(Arc::clone(&db));
-        let remote = vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(&web));
-        Self {
-            db,
-            realtime_store,
-            media_upload_adapter,
-            moderation_sync_store,
-            web,
-            remote,
-            auth_scope,
-            remote_mutations,
-            realtime,
-            diagnostics,
-            sync,
-            event_bus,
-            world_cache,
-            moderation_sync,
-            authenticated,
-        }
-    }
-
     fn moderation_deps(&self) -> ModerationSyncDeps<'_> {
         ModerationSyncDeps::new(
             &self.moderation_sync_store,

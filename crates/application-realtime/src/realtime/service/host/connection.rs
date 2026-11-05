@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use vrcx_0_application_core::{RuntimeAuthScopeSnapshot, RuntimeOperationStatus};
+use vrcx_0_application_core::{RuntimeAuthScopeSnapshot, RuntimeOperationStatus, WebClient};
 
 use tokio::sync::{broadcast, watch};
 use vrcx_0_application_core::{Error, Result};
@@ -34,7 +34,7 @@ enum RealtimeFriendBaselineStart {
 }
 
 impl RealtimeHostRuntime {
-    pub fn new(deps: RealtimeHostRuntimeDeps) -> Self {
+    pub fn new(deps: RealtimeHostRuntimeDeps, web: Arc<WebClient>) -> Self {
         let (cancel_tx, _) = watch::channel(0);
         let (transport_lifecycle_tx, _) = broadcast::channel(32);
         let friend_profile_bulk =
@@ -52,6 +52,7 @@ impl RealtimeHostRuntime {
             super::feed::FeedLiveProjector::new(deps.event_bus.clone(), feed_persistence_disabled);
         Self {
             deps,
+            web,
             state: Mutex::new(RealtimeHostRuntimeState::default()),
             cancel_tx,
             transport_lifecycle_tx,

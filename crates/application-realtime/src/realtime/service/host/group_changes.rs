@@ -53,7 +53,7 @@ impl RealtimeHostRuntime {
         };
         match tokio::time::timeout(
             GROUP_FETCH_TIMEOUT,
-            self.deps.web.execute_api(request, VrchatScope::Vrchat),
+            self.web.execute_api(request, VrchatScope::Vrchat),
         )
         .await
         {

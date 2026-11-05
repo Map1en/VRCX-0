@@ -214,11 +214,10 @@ impl RealtimeStopRequest {
 
 #[derive(Clone)]
 pub struct RealtimeHostRuntimeDeps {
-    pub(crate) stores: crate::RealtimeStores,
-    pub(crate) config: Arc<dyn ConfigStore>,
-    pub(crate) transport: Arc<dyn crate::realtime::RealtimeTransport>,
-    pub(crate) remote_requests: Arc<dyn crate::RealtimeRemoteRequests>,
-    pub(crate) web: Arc<WebClient>,
+    pub stores: crate::RealtimeStores,
+    pub config: Arc<dyn ConfigStore>,
+    pub transport: Arc<dyn crate::realtime::RealtimeTransport>,
+    pub remote_requests: Arc<dyn crate::RealtimeRemoteRequests>,
     pub event_bus: RuntimeEventBus,
     pub backend_status: vrcx_0_application_core::BackendRuntimeStatusPublisher,
     pub friend_projection_sink: crate::FriendProjectionSink,
@@ -237,62 +236,12 @@ pub struct RealtimeHostRuntimeDeps {
     pub current_user_snapshot_sink: Option<RealtimeCurrentUserSnapshotSink>,
 }
 
-impl RealtimeHostRuntimeDeps {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        stores: crate::RealtimeStores,
-        config: Arc<dyn ConfigStore>,
-        transport: Arc<dyn crate::realtime::RealtimeTransport>,
-        remote_requests: Arc<dyn crate::RealtimeRemoteRequests>,
-        web: Arc<WebClient>,
-        event_bus: RuntimeEventBus,
-        backend_status: vrcx_0_application_core::BackendRuntimeStatusPublisher,
-        friend_projection_sink: crate::FriendProjectionSink,
-        sync: RuntimeSyncEngine,
-        tasks: TaskSupervisor,
-        session: HostSessionRuntime,
-        auth_scope: RuntimeAuthScope,
-        remote_mutations: Arc<RemoteMutationGate>,
-        local_game_context: Arc<dyn LocalGameContextSource>,
-        activity: Option<Arc<dyn ActivityIngress>>,
-        notification_projection_observer: Option<Arc<dyn RealtimeNotificationProjectionObserver>>,
-        world_cache: Arc<WorldCache>,
-        file_cache: FileCache,
-        instance_dwell: Arc<InstanceDwellRegistry>,
-        print_cleanup: Arc<dyn PrintCleanupInputSink>,
-        current_user_snapshot_sink: Option<RealtimeCurrentUserSnapshotSink>,
-    ) -> Self {
-        Self {
-            stores,
-            config,
-            transport,
-            remote_requests,
-            web,
-            event_bus,
-            backend_status,
-            friend_projection_sink,
-            sync,
-            tasks,
-            session,
-            auth_scope,
-            remote_mutations,
-            local_game_context,
-            activity,
-            notification_projection_observer,
-            world_cache,
-            file_cache,
-            instance_dwell,
-            print_cleanup,
-            current_user_snapshot_sink,
-        }
-    }
-}
-
 pub type RealtimeCurrentUserSnapshotSink =
     Arc<dyn Fn(&RealtimeSessionContext, u64, Value) + Send + Sync>;
 
 pub struct RealtimeHostRuntime {
     pub(super) deps: RealtimeHostRuntimeDeps,
+    pub(super) web: Arc<WebClient>,
     pub(super) state: Mutex<RealtimeHostRuntimeState>,
     pub(super) cancel_tx: watch::Sender<u64>,
     pub(super) transport_lifecycle_tx: broadcast::Sender<RealtimeTransportLifecycleEvent>,

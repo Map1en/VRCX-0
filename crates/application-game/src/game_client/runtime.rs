@@ -18,8 +18,8 @@ use super::processor::{
 
 #[derive(Clone)]
 pub struct GameClientRuntimeDeps {
-    pub(crate) game_log_writer: Arc<dyn crate::GameLogWriter>,
-    pub(crate) config: Arc<dyn ConfigStore>,
+    pub game_log_writer: Arc<dyn crate::GameLogWriter>,
+    pub config: Arc<dyn ConfigStore>,
     pub event_bus: RuntimeEventBus,
     pub backend_status: BackendRuntimeStatusPublisher,
     pub tasks: TaskSupervisor,
@@ -32,43 +32,6 @@ pub struct GameClientRuntimeDeps {
     pub debug_logging_actions: Arc<dyn GameClientDebugLoggingActions>,
     pub instance_roster_observer: Option<Arc<dyn InstanceRosterObserver>>,
     pub activity: Arc<dyn ActivityIngress>,
-}
-
-impl GameClientRuntimeDeps {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        game_log_writer: Arc<dyn crate::GameLogWriter>,
-        config: Arc<dyn ConfigStore>,
-        event_bus: RuntimeEventBus,
-        backend_status: BackendRuntimeStatusPublisher,
-        tasks: TaskSupervisor,
-        session: HostSessionRuntime,
-        auth_scope: RuntimeAuthScope,
-        actions: Arc<dyn GameClientActions>,
-        cache_actions: Arc<dyn GameClientCacheActions>,
-        location_source: Arc<dyn GameClientLocationSource>,
-        window_actions: Arc<dyn GameClientWindowActions>,
-        debug_logging_actions: Arc<dyn GameClientDebugLoggingActions>,
-        instance_roster_observer: Option<Arc<dyn InstanceRosterObserver>>,
-        activity: Arc<dyn ActivityIngress>,
-    ) -> Self {
-        Self {
-            game_log_writer,
-            config,
-            event_bus,
-            backend_status,
-            tasks,
-            session,
-            auth_scope,
-            actions,
-            cache_actions,
-            location_source,
-            window_actions,
-            debug_logging_actions,
-            instance_roster_observer,
-            activity,
-        }
-    }
 }
 
 pub struct GameClientRuntime {

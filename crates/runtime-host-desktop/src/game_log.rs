@@ -124,29 +124,29 @@ impl GameLogHostRuntime {
                 Arc::clone(&deps.web),
                 Arc::clone(&deps.image_cache),
             ));
-        let inner = GameLogRuntime::new(GameLogRuntimeDeps::new(
-            vrcx_0_application_game::GameLogStores::shared(Arc::new(
+        let inner = GameLogRuntime::new(GameLogRuntimeDeps {
+            stores: vrcx_0_application_game::GameLogStores::shared(Arc::new(
                 crate::game_state_store::PersistenceGameStateStore::new(Arc::clone(&deps.db)),
             )),
-            deps.config,
+            config: deps.config,
             instance_media,
             video_metadata,
-            deps.event_bus,
-            deps.backend_status,
-            deps.side_effect_sink,
-            deps.tasks,
-            deps.sync,
-            deps.auth_scope,
-            deps.session.clone(),
-            deps.snapshot,
-            Arc::new(HostGameLogActions {
+            event_bus: deps.event_bus,
+            backend_status: deps.backend_status,
+            side_effect_sink: deps.side_effect_sink,
+            tasks: deps.tasks,
+            sync: deps.sync,
+            auth_scope: deps.auth_scope,
+            session: deps.session.clone(),
+            snapshot: deps.snapshot,
+            host_actions: Arc::new(HostGameLogActions {
                 file_access: deps.file_access,
                 app_paths: deps.app_paths,
             }),
-            Arc::new(deps.activity_router),
-            Arc::clone(&deps.world_cache),
-            deps.instance_roster_observer,
-        ));
+            activity: Arc::new(deps.activity_router),
+            world_cache: Arc::clone(&deps.world_cache),
+            instance_roster_observer: deps.instance_roster_observer,
+        });
 
         Self {
             db: deps.db,

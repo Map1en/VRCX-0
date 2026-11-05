@@ -1,11 +1,14 @@
 use std::sync::Arc;
 
 use vrcx_0_application::profile::{DatabaseUpgradeRuntime, ProfileConfigStore};
-use vrcx_0_application::social::{FriendLogNameResolutionCoordinator, UserDialogTabCountsRuntime};
+use vrcx_0_application::social::{
+    FriendLogNameResolutionCoordinator, SavedGroupFavoritesRuntime, UserDialogTabCountsRuntime,
+};
 use vrcx_0_composition::RuntimeHostState;
 use vrcx_0_outbound_adapters::{
-    LocalFriendLogNameStore, LocalNotificationSyncAdapter, LocalTranslationAdapter,
-    LocalUserDialogTabCountsSource, LocalWorldCollectionAdapter,
+    LocalDataStore, LocalFriendLogNameStore, LocalMutualGraphStore, LocalNotificationSyncAdapter,
+    LocalSavedGroupFavoritesAdapter, LocalTranslationAdapter, LocalUserDialogTabCountsSource,
+    LocalWorldCollectionAdapter, VrchatRequestAdapter,
 };
 
 use crate::data_dir::DesktopDataDirRuntime;
@@ -38,20 +41,28 @@ pub(crate) fn build_local_runtimes(
     profile_config: &Arc<dyn ProfileConfigStore>,
 ) -> LocalRuntimes {
     let context = runtime.desktop_assembly();
-    let local_data = LocalDataRuntime::new(
-        Arc::clone(runtime.database()),
-        Arc::clone(profile_config),
-        Arc::clone(runtime.web_client()),
-        context.auth_scope().clone(),
-        context.tasks().clone(),
-        Arc::clone(context.avatar_cache()),
-        Arc::clone(context.world_cache()),
-        context.file_cache().clone(),
-        Arc::clone(runtime.realtime_runtime()),
-        desktop.services.activity_router(),
-        context.favorite_mutations().clone(),
-        context.mutual_graph_fetch().clone(),
-    );
+    let local_data = LocalDataRuntime {
+        db: Arc::clone(runtime.database()),
+        store: LocalDataStore::new(Arc::clone(runtime.database())),
+        profile_config: Arc::clone(profile_config),
+        auth_scope: context.auth_scope().clone(),
+        tasks: context.tasks().clone(),
+        avatar_cache: Arc::clone(context.avatar_cache()),
+        world_cache: Arc::clone(context.world_cache()),
+        file_cache: context.file_cache().clone(),
+        realtime: Arc::clone(runtime.realtime_runtime()),
+        saved_group_favorites: SavedGroupFavoritesRuntime::new(
+            Arc::new(LocalSavedGroupFavoritesAdapter::new(
+                Arc::clone(runtime.database()),
+                desktop.services.activity_router(),
+            )),
+            context.auth_scope().clone(),
+        ),
+        favorite_mutations: context.favorite_mutations().clone(),
+        mutual_graph_fetch: context.mutual_graph_fetch().clone(),
+        mutual_graph_store: Arc::new(LocalMutualGraphStore::new(Arc::clone(runtime.database()))),
+        mutual_graph_remote: Arc::new(VrchatRequestAdapter::new(Arc::clone(runtime.web_client()))),
+    };
     let data_dir = DesktopDataDirRuntime::new(
         runtime.app_data_dir().clone(),
         runtime.paths().clone(),

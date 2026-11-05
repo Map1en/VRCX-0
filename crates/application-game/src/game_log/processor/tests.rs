@@ -1901,24 +1901,24 @@ fn regression_failed_scan_returns_and_retries_once_with_process_closure() -> Res
 fn regression_runtime_acknowledges_failure_and_continues_after_config_recovers() -> Result<()> {
     let (_dir, store, processor) = test_processor("runtime-read-recovery")?;
     let deps = processor.deps;
-    let runtime = crate::GameLogRuntime::new(crate::GameLogRuntimeDeps::new(
-        deps.stores,
-        deps.config,
-        deps.instance_media,
-        deps.video_metadata,
-        deps.event_bus,
-        deps.backend_status,
-        deps.side_effect_sink,
-        deps.tasks,
-        deps.sync,
-        deps.auth_scope,
-        crate::HostSessionRuntime::new(),
-        deps.snapshot.clone(),
-        deps.host_actions,
-        deps.activity,
-        deps.world_cache,
-        None,
-    ));
+    let runtime = crate::GameLogRuntime::new(crate::GameLogRuntimeDeps {
+        stores: deps.stores,
+        config: deps.config,
+        instance_media: deps.instance_media,
+        video_metadata: deps.video_metadata,
+        event_bus: deps.event_bus,
+        backend_status: deps.backend_status,
+        side_effect_sink: deps.side_effect_sink,
+        tasks: deps.tasks,
+        sync: deps.sync,
+        auth_scope: deps.auth_scope,
+        session: crate::HostSessionRuntime::new(),
+        snapshot: deps.snapshot.clone(),
+        host_actions: deps.host_actions,
+        activity: deps.activity,
+        world_cache: deps.world_cache,
+        instance_roster_observer: None,
+    });
     let GameLogWorkerJob::Scan {
         events,
         origin,

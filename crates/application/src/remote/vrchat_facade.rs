@@ -61,6 +61,14 @@ use crate::social::{
     ensure_print_deletable, observe_profile_response, PrintFavoritesStore, ProfileBioStore,
 };
 
+pub struct AvatarListByUserQuery {
+    pub n: i32,
+    pub offset: i32,
+    pub sort: AvatarListSort,
+    pub order: QueryOrder,
+    pub release_status: ReleaseStatusFilter,
+}
+
 #[derive(Clone)]
 pub struct VrchatRemoteFacade {
     api: VrchatApiRuntime,
@@ -241,7 +249,6 @@ impl VrchatRemoteFacade {
         .await
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub async fn favorite_worlds(
         &self,
         n: i32,
@@ -293,26 +300,21 @@ impl VrchatRemoteFacade {
         .await
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub async fn avatars_by_user(
         &self,
         user_id: String,
         user: String,
-        n: i32,
-        offset: i32,
-        sort: AvatarListSort,
-        order: QueryOrder,
-        release_status: ReleaseStatusFilter,
+        query: AvatarListByUserQuery,
     ) -> Result<VrchatResponse> {
         let (display_user, request) = avatar_list_by_user_get_input(AvatarListByUserGetInput {
             endpoint: VRCHAT_API_DEFAULT_ENDPOINT.into(),
             user_id,
             user,
-            n,
-            offset,
-            sort,
-            order,
-            release_status,
+            n: query.n,
+            offset: query.offset,
+            sort: query.sort,
+            order: query.order,
+            release_status: query.release_status,
         })?;
         self.execute(
             "app__vrchat_avatar_list_by_user_get",

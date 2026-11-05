@@ -186,7 +186,6 @@ impl RealtimeHostRuntime {
             return Ok(false);
         };
         let response = self
-            .deps
             .web
             .execute_api(
                 self.deps

@@ -7,8 +7,8 @@ use vrcx_0_application_core::{Error, MemoryConfigStore, Result};
 use vrcx_0_contracts::feed_live::FeedLiveEntry;
 
 use vrcx_0_contracts::feed::{
-    FeedLatestQueryInput, FeedLiveEntryInput, FeedLiveQueryMatcher, FeedQueryMode,
-    FeedReadModelOutput, FeedRowOutput, FeedRowsQueryInput, FeedSearchQueryInput,
+    FeedLatestQueryInput, FeedLiveEntryInput, FeedLiveQueryMatcher, FeedLiveQueryParts,
+    FeedQueryMode, FeedReadModelOutput, FeedRowOutput, FeedRowsQueryInput, FeedSearchQueryInput,
 };
 use vrcx_0_contracts::friend_log::{
     FriendLogCurrentEntryInput, FriendLogCurrentOutput, FriendLogDeleteOptionsInput,
@@ -80,19 +80,19 @@ impl TestRealtimeStore {
     pub fn feed_rows(&self, query: FeedRowsQueryInput) -> Result<Vec<FeedRowOutput>> {
         let state = self.state.lock().expect("test store lock");
         let filters = query.filters.clone();
-        let matcher = FeedLiveQueryMatcher::from_parts(
-            &query.user_id,
-            &filters,
-            &query.search,
-            &query.date_from,
-            &query.date_to,
-            false,
-            &query.vip_list,
-            &query.scoped_user_ids,
-            &query.excluded_user_ids,
-            &query.location_hidden_user_ids,
-            query.max_entries,
-        );
+        let matcher = FeedLiveQueryMatcher::from_parts(FeedLiveQueryParts {
+            current_user_id: &query.user_id,
+            filters: &filters,
+            search: &query.search,
+            date_from: &query.date_from,
+            date_to: &query.date_to,
+            favorites_only: false,
+            favorite_user_ids: &query.vip_list,
+            scoped_user_ids: &query.scoped_user_ids,
+            excluded_user_ids: &query.excluded_user_ids,
+            location_hidden_user_ids: &query.location_hidden_user_ids,
+            max_rows: query.max_entries,
+        });
         let mut rows = state
             .feeds
             .get(&query.user_id)
@@ -632,14 +632,17 @@ fn apply_friend_upsert(
         push_history(
             state,
             owner,
-            &entry.created_at,
-            history.entry_type,
-            &plan.user_id,
-            &plan.display_name,
-            &history.previous_display_name,
-            &plan.trust_level,
-            &history.previous_trust_level,
-            plan.friend_number,
+            FriendLogHistoryOutput {
+                row_id: 0,
+                created_at: entry.created_at.clone(),
+                r#type: history.entry_type.to_string(),
+                user_id: plan.user_id.clone(),
+                display_name: plan.display_name.clone(),
+                previous_display_name: history.previous_display_name.clone(),
+                trust_level: plan.trust_level.clone(),
+                previous_trust_level: history.previous_trust_level.clone(),
+                friend_number: plan.friend_number,
+            },
         );
     }
     1 + plan.history.len() as u64
@@ -661,14 +664,17 @@ fn apply_friend_delete(
     push_history(
         state,
         owner,
-        &entry.created_at,
-        "Unfriend",
-        &existing.user_id,
-        &existing.display_name,
-        "",
-        &existing.trust_level,
-        "",
-        existing.friend_number,
+        FriendLogHistoryOutput {
+            row_id: 0,
+            created_at: entry.created_at.clone(),
+            r#type: "Unfriend".to_string(),
+            user_id: existing.user_id,
+            display_name: existing.display_name,
+            previous_display_name: String::new(),
+            trust_level: existing.trust_level,
+            previous_trust_level: String::new(),
+            friend_number: existing.friend_number,
+        },
     );
     2
 }
@@ -683,50 +689,31 @@ fn append_input_history(
         push_history(
             state,
             owner,
-            &entry.created_at,
-            &entry.r#type,
-            &entry.user_id,
-            &entry.display_name,
-            &entry.previous_display_name,
-            &entry.trust_level,
-            &entry.previous_trust_level,
-            value_i64(&entry.friend_number),
+            FriendLogHistoryOutput {
+                row_id: 0,
+                created_at: entry.created_at,
+                r#type: entry.r#type,
+                user_id: entry.user_id,
+                display_name: entry.display_name,
+                previous_display_name: entry.previous_display_name,
+                trust_level: entry.trust_level,
+                previous_trust_level: entry.previous_trust_level,
+                friend_number: value_i64(&entry.friend_number),
+            },
         );
         count += 1;
     }
     count
 }
 
-#[allow(clippy::too_many_arguments)]
-fn push_history(
-    state: &mut TestRealtimeStoreState,
-    owner: &str,
-    created_at: &str,
-    entry_type: &str,
-    user_id: &str,
-    display_name: &str,
-    previous_display_name: &str,
-    trust_level: &str,
-    previous_trust_level: &str,
-    friend_number: i64,
-) {
+fn push_history(state: &mut TestRealtimeStoreState, owner: &str, mut row: FriendLogHistoryOutput) {
     state.next_history_id += 1;
-    let row_id = state.next_history_id;
+    row.row_id = state.next_history_id;
     state
         .history
         .entry(owner.to_string())
         .or_default()
-        .push(FriendLogHistoryOutput {
-            row_id,
-            created_at: created_at.to_string(),
-            r#type: entry_type.to_string(),
-            user_id: user_id.to_string(),
-            display_name: display_name.to_string(),
-            previous_display_name: previous_display_name.to_string(),
-            trust_level: trust_level.to_string(),
-            previous_trust_level: previous_trust_level.to_string(),
-            friend_number,
-        });
+        .push(row);
 }
 
 fn upsert_json_row(rows: &mut Vec<Value>, row: Value) {

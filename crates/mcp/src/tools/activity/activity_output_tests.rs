@@ -154,34 +154,39 @@ fn test_server_with_game_context(
             Arc::clone(&web),
             backend_status.clone(),
         ));
-    let realtime_runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps::new(
-        realtime_stores,
-        Arc::new(vrcx_0_outbound_adapters::LocalConfigStore::new(
-            Arc::clone(&db),
-            Arc::clone(&storage),
-        )),
-        realtime_transport,
-        Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests),
+    let realtime_runtime = Arc::new(RealtimeHostRuntime::new(
+        RealtimeHostRuntimeDeps {
+            stores: realtime_stores,
+            config: Arc::new(vrcx_0_outbound_adapters::LocalConfigStore::new(
+                Arc::clone(&db),
+                Arc::clone(&storage),
+            )),
+            transport: realtime_transport,
+            remote_requests: Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests),
+            event_bus: event_bus.clone(),
+            backend_status,
+            friend_projection_sink: vrcx_0_application_realtime::FriendProjectionSink::new(
+                event_bus.clone(),
+                None,
+            ),
+            sync,
+            tasks: tasks.clone(),
+            session,
+            auth_scope: auth_scope.clone(),
+            remote_mutations,
+            local_game_context,
+            activity: None,
+            notification_projection_observer: None,
+            world_cache,
+            file_cache: vrcx_0_application_core::FileCache::new(
+                vrcx_0_application_core::MemoryFileCachePort::default(),
+            ),
+            instance_dwell: Arc::new(vrcx_0_application_realtime::InstanceDwellRegistry::new()),
+            print_cleanup: Arc::new(NoopPrintCleanupInputSink),
+            current_user_snapshot_sink: None,
+        },
         Arc::clone(&web),
-        event_bus.clone(),
-        backend_status,
-        vrcx_0_application_realtime::FriendProjectionSink::new(event_bus.clone(), None),
-        sync,
-        tasks.clone(),
-        session,
-        auth_scope.clone(),
-        remote_mutations,
-        local_game_context,
-        None,
-        None,
-        world_cache,
-        vrcx_0_application_core::FileCache::new(
-            vrcx_0_application_core::MemoryFileCachePort::default(),
-        ),
-        Arc::new(vrcx_0_application_realtime::InstanceDwellRegistry::new()),
-        Arc::new(NoopPrintCleanupInputSink),
-        None,
-    )));
+    ));
     let runtime = crate::runtime::McpRuntime {
         realtime_runtime,
         auth_scope: auth_scope.clone(),

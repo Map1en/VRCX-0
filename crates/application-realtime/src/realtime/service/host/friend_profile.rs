@@ -295,7 +295,6 @@ impl RealtimeHostRuntime {
             .user_query_cache
             .get_or_fetch(options.kind, &endpoint, &user_id, async move {
                 let resp = runtime
-                    .deps
                     .web
                     .execute_api(request, VrchatScope::Vrchat)
                     .await?;
@@ -498,12 +497,7 @@ impl RealtimeHostRuntime {
                 return;
             }
         };
-        let response = match self
-            .deps
-            .web
-            .execute_api(request, VrchatScope::Vrchat)
-            .await
-        {
+        let response = match self.web.execute_api(request, VrchatScope::Vrchat).await {
             Ok(response) => response,
             Err(error) => {
                 tracing::warn!(user_id = %user_id, "Realtime friend profile refetch failed: {error}");

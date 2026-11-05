@@ -166,33 +166,6 @@ pub struct FavoriteImportRuntimeDeps {
     pub favorite_mutations: FavoriteMutationCoordinator,
 }
 
-impl FavoriteImportRuntimeDeps {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        store: Arc<dyn super::FavoriteStore>,
-        remote: Arc<dyn super::FavoriteRemote>,
-        world_cache: Arc<WorldCache>,
-        avatar_cache: Arc<AvatarCache>,
-        event_bus: RuntimeEventBus,
-        tasks: TaskSupervisor,
-        auth_scope: RuntimeAuthScope,
-        remote_mutations: Arc<RemoteMutationGate>,
-        favorite_mutations: FavoriteMutationCoordinator,
-    ) -> Self {
-        Self {
-            store,
-            remote,
-            world_cache,
-            avatar_cache,
-            event_bus,
-            tasks,
-            auth_scope,
-            remote_mutations,
-            favorite_mutations,
-        }
-    }
-}
-
 struct FavoriteImportRuntimeShared {
     state: Mutex<FavoriteImportRuntimeInner>,
     generation: AtomicU64,

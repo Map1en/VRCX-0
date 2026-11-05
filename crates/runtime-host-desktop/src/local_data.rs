@@ -13,10 +13,9 @@ use vrcx_0_application::social::{
     UserMutualFriendsListInput, UserMutualFriendsListOutput,
 };
 use vrcx_0_application_activity::activity_page::{ActivityPageBuildInput, ActivityPageView};
-use vrcx_0_application_activity::ActivityRouter;
 use vrcx_0_application_core::{
     AvatarCache, FavoriteEntityKind, FileCache, Result, RuntimeAuthScope, TaskSupervisor,
-    WebClient, WorldCache,
+    WorldCache,
 };
 use vrcx_0_application_game::{
     GameLogSessionDto, GameLogSessionsQueryInput, InstanceHistoryEntryOutput,
@@ -94,71 +93,23 @@ pub struct WorldGetInput {
 
 #[derive(Clone)]
 pub struct LocalDataRuntime {
-    db: Arc<DatabaseService>,
-    store: LocalDataStore,
-    profile_config: Arc<dyn vrcx_0_application::profile::ProfileConfigStore>,
-    auth_scope: RuntimeAuthScope,
-    tasks: TaskSupervisor,
-    avatar_cache: Arc<AvatarCache>,
-    world_cache: Arc<WorldCache>,
-    file_cache: FileCache,
-    realtime: Arc<RealtimeHostRuntime>,
-    saved_group_favorites: vrcx_0_application::social::SavedGroupFavoritesRuntime,
-    favorite_mutations: FavoriteMutationCoordinator,
-    mutual_graph_fetch: MutualGraphFetchRuntime,
-    mutual_graph_store: Arc<vrcx_0_outbound_adapters::LocalMutualGraphStore>,
-    mutual_graph_remote: Arc<vrcx_0_outbound_adapters::VrchatRequestAdapter>,
+    pub(crate) db: Arc<DatabaseService>,
+    pub(crate) store: LocalDataStore,
+    pub(crate) profile_config: Arc<dyn vrcx_0_application::profile::ProfileConfigStore>,
+    pub(crate) auth_scope: RuntimeAuthScope,
+    pub(crate) tasks: TaskSupervisor,
+    pub(crate) avatar_cache: Arc<AvatarCache>,
+    pub(crate) world_cache: Arc<WorldCache>,
+    pub(crate) file_cache: FileCache,
+    pub(crate) realtime: Arc<RealtimeHostRuntime>,
+    pub(crate) saved_group_favorites: vrcx_0_application::social::SavedGroupFavoritesRuntime,
+    pub(crate) favorite_mutations: FavoriteMutationCoordinator,
+    pub(crate) mutual_graph_fetch: MutualGraphFetchRuntime,
+    pub(crate) mutual_graph_store: Arc<vrcx_0_outbound_adapters::LocalMutualGraphStore>,
+    pub(crate) mutual_graph_remote: Arc<vrcx_0_outbound_adapters::VrchatRequestAdapter>,
 }
 
 impl LocalDataRuntime {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        db: Arc<DatabaseService>,
-        profile_config: Arc<dyn vrcx_0_application::profile::ProfileConfigStore>,
-        web: Arc<WebClient>,
-        auth_scope: RuntimeAuthScope,
-        tasks: TaskSupervisor,
-        avatar_cache: Arc<AvatarCache>,
-        world_cache: Arc<WorldCache>,
-        file_cache: FileCache,
-        realtime: Arc<RealtimeHostRuntime>,
-        activity_router: ActivityRouter,
-        favorite_mutations: FavoriteMutationCoordinator,
-        mutual_graph_fetch: MutualGraphFetchRuntime,
-    ) -> Self {
-        let mutual_graph_store = Arc::new(vrcx_0_outbound_adapters::LocalMutualGraphStore::new(
-            Arc::clone(&db),
-        ));
-        let mutual_graph_remote =
-            Arc::new(vrcx_0_outbound_adapters::VrchatRequestAdapter::new(web));
-        let saved_group_favorites = vrcx_0_application::social::SavedGroupFavoritesRuntime::new(
-            Arc::new(
-                vrcx_0_outbound_adapters::LocalSavedGroupFavoritesAdapter::new(
-                    Arc::clone(&db),
-                    activity_router,
-                ),
-            ),
-            auth_scope.clone(),
-        );
-        let store = LocalDataStore::new(Arc::clone(&db));
-        Self {
-            db,
-            store,
-            profile_config,
-            auth_scope,
-            tasks,
-            avatar_cache,
-            world_cache,
-            file_cache,
-            realtime,
-            saved_group_favorites,
-            favorite_mutations,
-            mutual_graph_fetch,
-            mutual_graph_store,
-            mutual_graph_remote,
-        }
-    }
-
     fn current_owner(&self) -> OwnerId {
         OwnerId::new(self.auth_scope.snapshot().current_user_id)
     }

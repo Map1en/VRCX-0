@@ -12,7 +12,7 @@ use vrcx_0_application::social::{
 };
 use vrcx_0_application_core::{
     save_ugc_image_to_file, AuthenticatedMutationContext, ImageCache, RemoteMutationGate,
-    RuntimeAuthScope, RuntimeDiagnostics, RuntimeOperationStatus, WebClient,
+    RuntimeAuthScope, RuntimeDiagnostics, RuntimeOperationStatus,
 };
 use vrcx_0_contracts::UgcCategory;
 use vrcx_0_platform::app_paths::AppPaths;
@@ -21,45 +21,18 @@ use crate::{HostFileAccess, Result};
 
 #[derive(Clone)]
 pub struct DesktopMediaRuntime {
-    file_access: HostFileAccess,
-    paths: AppPaths,
-    image_cache: Arc<ImageCache>,
-    print_adapter: Arc<dyn PrintFavoritesStore>,
-    media_upload_adapter: Arc<vrcx_0_outbound_adapters::LocalMediaUploadAdapter>,
-    inventory_remote: vrcx_0_outbound_adapters::VrchatRequestAdapter,
-    auth_scope: RuntimeAuthScope,
-    remote_mutations: Arc<RemoteMutationGate>,
-    diagnostics: RuntimeDiagnostics,
+    pub(crate) file_access: HostFileAccess,
+    pub(crate) paths: AppPaths,
+    pub(crate) image_cache: Arc<ImageCache>,
+    pub(crate) print_adapter: Arc<dyn PrintFavoritesStore>,
+    pub(crate) media_upload_adapter: Arc<vrcx_0_outbound_adapters::LocalMediaUploadAdapter>,
+    pub(crate) inventory_remote: vrcx_0_outbound_adapters::VrchatRequestAdapter,
+    pub(crate) auth_scope: RuntimeAuthScope,
+    pub(crate) remote_mutations: Arc<RemoteMutationGate>,
+    pub(crate) diagnostics: RuntimeDiagnostics,
 }
 
 impl DesktopMediaRuntime {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        file_access: HostFileAccess,
-        paths: AppPaths,
-        image_cache: Arc<ImageCache>,
-        web: Arc<WebClient>,
-        print_adapter: Arc<dyn PrintFavoritesStore>,
-        media_upload_adapter: Arc<vrcx_0_outbound_adapters::LocalMediaUploadAdapter>,
-        auth_scope: RuntimeAuthScope,
-        remote_mutations: Arc<RemoteMutationGate>,
-        diagnostics: RuntimeDiagnostics,
-    ) -> Self {
-        let inventory_remote =
-            vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(&web));
-        Self {
-            file_access,
-            paths,
-            image_cache,
-            print_adapter,
-            media_upload_adapter,
-            inventory_remote,
-            auth_scope,
-            remote_mutations,
-            diagnostics,
-        }
-    }
-
     pub fn decode_image_file(
         &self,
         default_name: &str,

@@ -342,16 +342,16 @@ impl RuntimeHostStateBuilder {
         let desktop_assembly =
             RuntimeHostDesktopAssemblyDeps::from_context(Arc::clone(&runtime_context));
         let profile_backup_port = Arc::new(vrcx_0_outbound_adapters::LocalProfileBackupPort::new(
-            vrcx_0_outbound_adapters::LocalProfileBackupDeps::new(
-                paths.app_data.clone(),
-                app_data_dir.default_dir.clone(),
-                Arc::clone(&db),
-                Arc::clone(&storage),
-                runtime_context.event_bus.clone(),
-                runtime_context.tasks.clone(),
-                runtime_context.background_jobs.clone(),
-                app_version.clone(),
-            ),
+            vrcx_0_outbound_adapters::LocalProfileBackupDeps {
+                app_data: paths.app_data.clone(),
+                control_dir: app_data_dir.default_dir.clone(),
+                db: Arc::clone(&db),
+                storage: Arc::clone(&storage),
+                event_bus: runtime_context.event_bus.clone(),
+                tasks: runtime_context.tasks.clone(),
+                background_jobs: runtime_context.background_jobs.clone(),
+                app_version: app_version.clone(),
+            },
         ));
         let profile_backup = ProfileBackupRuntime::new(profile_backup_port);
         let pointer_control_dir = app_data_dir.default_dir.clone();
@@ -484,45 +484,47 @@ impl RuntimeHostStateBuilder {
                 Arc::clone(&self.runtime_context.web),
                 backend_status.clone(),
             ));
-        let realtime_runtime = Arc::new(RealtimeHostRuntime::new(RealtimeHostRuntimeDeps::new(
-            realtime_stores,
-            self.runtime_context.config_store(),
-            realtime_transport,
-            Arc::clone(&remote_requests),
-            Arc::clone(&self.runtime_context.web),
-            self.runtime_context.event_bus.clone(),
-            backend_status,
-            FriendProjectionSink::new(
-                self.runtime_context.event_bus.clone(),
-                friend_projection_observer,
-            ),
-            self.runtime_context.sync.clone(),
-            self.runtime_context.tasks.clone(),
-            self.runtime_context.session.clone(),
-            self.runtime_context.auth_scope.clone(),
-            Arc::clone(&self.runtime_context.remote_mutations),
-            local_game_context,
-            Some(Arc::new(self.runtime_context.activity_router())),
-            Some(Arc::new(
-                self.runtime_context
-                    .realtime_notification_projection_observer_registry(),
-            )),
-            Arc::clone(&self.runtime_context.world_cache),
-            self.runtime_context.file_cache.clone(),
-            Arc::clone(&self.runtime_context.instance_dwell),
-            Arc::new(PrintCleanupQueueSink::new(
-                self.runtime_context.print_cleanup.clone(),
-                self.runtime_context.tasks.clone(),
-                PrintCleanupDeps::new(
-                    self.runtime_context.print_adapter.clone(),
-                    self.runtime_context.print_adapter.clone(),
+        let realtime_runtime = Arc::new(RealtimeHostRuntime::new(
+            RealtimeHostRuntimeDeps {
+                stores: realtime_stores,
+                config: self.runtime_context.config_store(),
+                transport: realtime_transport,
+                remote_requests: Arc::clone(&remote_requests),
+                event_bus: self.runtime_context.event_bus.clone(),
+                backend_status,
+                friend_projection_sink: FriendProjectionSink::new(
                     self.runtime_context.event_bus.clone(),
-                    self.runtime_context.auth_scope.clone(),
-                    Arc::clone(&self.runtime_context.remote_mutations),
+                    friend_projection_observer,
                 ),
-            )),
-            current_user_snapshot_sink,
-        )));
+                sync: self.runtime_context.sync.clone(),
+                tasks: self.runtime_context.tasks.clone(),
+                session: self.runtime_context.session.clone(),
+                auth_scope: self.runtime_context.auth_scope.clone(),
+                remote_mutations: Arc::clone(&self.runtime_context.remote_mutations),
+                local_game_context,
+                activity: Some(Arc::new(self.runtime_context.activity_router())),
+                notification_projection_observer: Some(Arc::new(
+                    self.runtime_context
+                        .realtime_notification_projection_observer_registry(),
+                )),
+                world_cache: Arc::clone(&self.runtime_context.world_cache),
+                file_cache: self.runtime_context.file_cache.clone(),
+                instance_dwell: Arc::clone(&self.runtime_context.instance_dwell),
+                print_cleanup: Arc::new(PrintCleanupQueueSink::new(
+                    self.runtime_context.print_cleanup.clone(),
+                    self.runtime_context.tasks.clone(),
+                    PrintCleanupDeps::new(
+                        self.runtime_context.print_adapter.clone(),
+                        self.runtime_context.print_adapter.clone(),
+                        self.runtime_context.event_bus.clone(),
+                        self.runtime_context.auth_scope.clone(),
+                        Arc::clone(&self.runtime_context.remote_mutations),
+                    ),
+                )),
+                current_user_snapshot_sink,
+            },
+            Arc::clone(&self.runtime_context.web),
+        ));
         let favorites_sink = {
             let activity_router = self.runtime_context.activity_router();
             Some(Arc::new(
@@ -561,17 +563,17 @@ impl RuntimeHostStateBuilder {
                 realtime_runtime: Arc::clone(&realtime_runtime),
                 favorites_sink,
             });
-        let favorite_import = FavoriteImportRuntime::new(FavoriteImportRuntimeDeps::new(
-            Arc::clone(&self.runtime_context.favorite_store),
-            Arc::clone(&self.runtime_context.favorite_remote),
-            Arc::clone(&self.runtime_context.world_cache),
-            Arc::clone(&self.runtime_context.avatar_cache),
-            self.runtime_context.event_bus.clone(),
-            self.runtime_context.tasks.clone(),
-            self.runtime_context.auth_scope.clone(),
-            Arc::clone(&self.runtime_context.remote_mutations),
-            self.runtime_context.favorite_mutations.clone(),
-        ));
+        let favorite_import = FavoriteImportRuntime::new(FavoriteImportRuntimeDeps {
+            store: Arc::clone(&self.runtime_context.favorite_store),
+            remote: Arc::clone(&self.runtime_context.favorite_remote),
+            world_cache: Arc::clone(&self.runtime_context.world_cache),
+            avatar_cache: Arc::clone(&self.runtime_context.avatar_cache),
+            event_bus: self.runtime_context.event_bus.clone(),
+            tasks: self.runtime_context.tasks.clone(),
+            auth_scope: self.runtime_context.auth_scope.clone(),
+            remote_mutations: Arc::clone(&self.runtime_context.remote_mutations),
+            favorite_mutations: self.runtime_context.favorite_mutations.clone(),
+        });
         let group_ban_import = GroupBanImportRuntime::new(
             Arc::new(vrcx_0_outbound_adapters::LocalGroupBanImportActions {
                 deps: GroupApiDeps::new(

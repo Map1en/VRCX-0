@@ -19,7 +19,6 @@ pub struct AvatarRemoteMutationDeps<'a> {
 }
 
 impl<'a> AvatarRemoteMutationDeps<'a> {
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         store: &'a dyn super::AvatarCacheStore,
         remote: &'a dyn super::AvatarRemote,

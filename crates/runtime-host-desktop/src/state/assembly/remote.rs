@@ -11,9 +11,10 @@ use vrcx_0_application::social::{
 use vrcx_0_composition::RuntimeHostState;
 use vrcx_0_outbound_adapters::{
     CachedWorldNameResolver, CachedWorldResponseProjection, LocalAvatarApplicationAdapter,
-    LocalMediaUploadAdapter, LocalNotificationWebhookTransport, LocalPrintAdapter,
-    LocalProfileBioStore, LocalQuickSearchDetailStore, VrchatApiRemote, VrchatAvatarRemote,
-    VrchatCurrentUserMutationRemote, VrchatFavoriteRemote, VrchatRequestAdapter, VrchatWorldRemote,
+    LocalMediaUploadAdapter, LocalModerationSyncStore, LocalNotificationWebhookTransport,
+    LocalPrintAdapter, LocalProfileBioStore, LocalQuickSearchDetailStore, PersistenceRealtimeStore,
+    VrchatApiRemote, VrchatAvatarRemote, VrchatCurrentUserMutationRemote, VrchatFavoriteRemote,
+    VrchatRequestAdapter, VrchatWorldRemote,
 };
 
 use crate::avatar::DesktopAvatarRuntime;
@@ -67,17 +68,19 @@ pub(crate) fn build_remote_runtimes(
             Arc::clone(runtime.realtime_runtime()),
         )),
     );
-    let avatars = DesktopAvatarRuntime::new(
-        Arc::clone(runtime.database()),
-        Arc::clone(runtime.web_client()),
-        context.diagnostics().clone(),
-        context.sync().clone(),
-        Arc::clone(runtime.realtime_runtime()),
-        Arc::clone(context.avatar_cache()),
-        context.avatar_moderation().clone(),
-        context.auth_scope().clone(),
-        Arc::clone(context.remote_mutations()),
-    );
+    let avatars = DesktopAvatarRuntime {
+        application_adapter: LocalAvatarApplicationAdapter::new(Arc::clone(runtime.database())),
+        remote: Arc::new(VrchatAvatarRemote::new(
+            Arc::clone(runtime.web_client()),
+            context.diagnostics().clone(),
+            context.sync().clone(),
+        )),
+        realtime: Arc::clone(runtime.realtime_runtime()),
+        avatar_cache: Arc::clone(context.avatar_cache()),
+        avatar_moderation: context.avatar_moderation().clone(),
+        auth_scope: context.auth_scope().clone(),
+        remote_mutations: Arc::clone(context.remote_mutations()),
+    };
     let external_api = ExternalApiRuntime::new(
         Arc::clone(runtime.web_client()),
         context.diagnostics().clone(),
@@ -90,19 +93,25 @@ pub(crate) fn build_remote_runtimes(
         context.auth_scope().clone(),
         Arc::clone(context.remote_mutations()),
     );
-    let social = DesktopSocialRuntime::new(
-        Arc::clone(runtime.database()),
-        Arc::clone(runtime.web_client()),
-        context.auth_scope().clone(),
-        Arc::clone(context.remote_mutations()),
-        Arc::clone(runtime.realtime_runtime()),
-        context.diagnostics().clone(),
-        context.sync().clone(),
-        context.event_bus().clone(),
-        Arc::clone(context.world_cache()),
-        context.moderation_sync().clone(),
-        runtime.authenticated_runtime().clone(),
-    );
+    let social = DesktopSocialRuntime {
+        db: Arc::clone(runtime.database()),
+        realtime_store: Arc::new(PersistenceRealtimeStore::new(Arc::clone(
+            runtime.database(),
+        ))),
+        media_upload_adapter: LocalMediaUploadAdapter::new(Arc::clone(runtime.web_client())),
+        moderation_sync_store: LocalModerationSyncStore::new(Arc::clone(runtime.database())),
+        web: Arc::clone(runtime.web_client()),
+        remote: VrchatRequestAdapter::new(Arc::clone(runtime.web_client())),
+        auth_scope: context.auth_scope().clone(),
+        remote_mutations: Arc::clone(context.remote_mutations()),
+        realtime: Arc::clone(runtime.realtime_runtime()),
+        diagnostics: context.diagnostics().clone(),
+        sync: context.sync().clone(),
+        event_bus: context.event_bus().clone(),
+        world_cache: Arc::clone(context.world_cache()),
+        moderation_sync: context.moderation_sync().clone(),
+        authenticated: runtime.authenticated_runtime().clone(),
+    };
     let media_upload_adapter = Arc::new(LocalMediaUploadAdapter::new(Arc::clone(
         runtime.web_client(),
     )));
@@ -110,17 +119,17 @@ pub(crate) fn build_remote_runtimes(
         Arc::clone(runtime.database()),
         Arc::clone(runtime.web_client()),
     ));
-    let media = DesktopMediaRuntime::new(
-        host_file_access.clone(),
-        runtime.paths().clone(),
-        Arc::clone(runtime.image_cache()),
-        Arc::clone(runtime.web_client()),
-        print_adapter.clone(),
-        media_upload_adapter.clone(),
-        context.auth_scope().clone(),
-        Arc::clone(context.remote_mutations()),
-        context.diagnostics().clone(),
-    );
+    let media = DesktopMediaRuntime {
+        file_access: host_file_access.clone(),
+        paths: runtime.paths().clone(),
+        image_cache: Arc::clone(runtime.image_cache()),
+        print_adapter: print_adapter.clone(),
+        media_upload_adapter: media_upload_adapter.clone(),
+        inventory_remote: VrchatRequestAdapter::new(Arc::clone(runtime.web_client())),
+        auth_scope: context.auth_scope().clone(),
+        remote_mutations: Arc::clone(context.remote_mutations()),
+        diagnostics: context.diagnostics().clone(),
+    };
     let vrchat_api = VrchatApiRuntime::new(
         context.auth_scope().clone(),
         Arc::clone(context.remote_mutations()),

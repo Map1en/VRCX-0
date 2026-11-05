@@ -139,18 +139,20 @@ pub(crate) fn build_desktop_runtime(
         )
         .for_app_version(&build.app_version),
     );
-    let app_update = AppUpdateRuntime::new(AppUpdateRuntimeDeps::new(
-        Arc::new(vrcx_0_outbound_adapters::GitHubReleaseCatalogAdapter::new(
+    let app_update = AppUpdateRuntime::new(AppUpdateRuntimeDeps {
+        release_catalog: Arc::new(vrcx_0_outbound_adapters::GitHubReleaseCatalogAdapter::new(
             Arc::clone(builder.web_client()),
         )),
-        Arc::clone(&wiring.profile_config),
-        context.event_bus().clone(),
-        context.background_jobs().clone(),
+        config: Arc::clone(&wiring.profile_config),
+        event_bus: context.event_bus().clone(),
+        background_jobs: context.background_jobs().clone(),
         build,
-        Arc::new(|| vrcx_0_host_desktop::updater_policy::expected_updater_target().ok()),
-        updater_port,
-        context.tasks().clone(),
-    ));
+        target_resolver: Arc::new(|| {
+            vrcx_0_host_desktop::updater_policy::expected_updater_target().ok()
+        }),
+        port: updater_port,
+        tasks: context.tasks().clone(),
+    });
     let background_image = BackgroundImageService::new(
         Arc::clone(&wiring.profile_config),
         Arc::new(

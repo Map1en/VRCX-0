@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 
 use tauri::State;
+use vrcx_0_application::remote::AvatarListByUserQuery;
 use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use crate::error::AppError;
@@ -37,11 +38,13 @@ pub async fn app__vrchat_avatar_list_by_user_get(
         .avatars_by_user(
             input.user_id,
             input.user,
-            input.n,
-            input.offset,
-            input.sort,
-            input.order,
-            input.release_status,
+            AvatarListByUserQuery {
+                n: input.n,
+                offset: input.offset,
+                sort: input.sort,
+                order: input.order,
+                release_status: input.release_status,
+            },
         )
         .await
         .map_err(AppError::from)
