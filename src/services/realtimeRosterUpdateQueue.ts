@@ -151,6 +151,16 @@ export function flushRealtimeRosterUpdates(): void {
     applyRosterUpdates(patches, users, friendLogChanged, locationTimeSnapshot);
 }
 
+export function hydrateFriendLocationTimes(
+    snapshot: FriendLocationTime[]
+): void {
+    const store = useFriendLocationTimeStore.getState();
+    if (Object.keys(store.byUserId).length) {
+        return;
+    }
+    store.replaceSnapshot(snapshot);
+}
+
 export function resetRealtimeRosterUpdates(): void {
     clearFlushTimer();
     clearPendingRosterUpdates();

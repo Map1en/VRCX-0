@@ -50,6 +50,7 @@ import {
     handleFeedLoggerSyncEvent
 } from './offlineRecordService';
 import { handleRealtimeEntryCorrection } from './realtimePresenceService';
+import { hydrateFriendLocationTimes } from './realtimeRosterUpdateQueue';
 import { runForegroundUpdateRegistryBackupMaintenance } from './registryBackupMaintenanceService';
 import {
     handleFavoritesChangedEvent,
@@ -636,6 +637,7 @@ export async function bindRuntimeEvents(): Promise<() => void> {
         applyAuthenticatedRuntimePhaseSnapshot(
             combinedSnapshot.authenticatedRuntimePhase
         );
+        hydrateFriendLocationTimes(combinedSnapshot.friendLocationTimes);
     } catch (error) {
         console.warn('Failed to hydrate authenticated runtime phase:', error);
     }
