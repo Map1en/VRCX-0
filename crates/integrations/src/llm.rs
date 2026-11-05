@@ -10,6 +10,8 @@ pub use vrcx_0_contracts::llm::{
 };
 use vrcx_0_core::proxy::with_remote_dns;
 
+mod responses;
+
 #[derive(Debug, thiserror::Error)]
 pub enum LlmError {
     #[error("LLM transport error: {}", transport_error_detail(.0))]
@@ -239,6 +241,9 @@ impl LlmClient {
         messages: &[ChatMessage],
         options: &LlmRequestOptions,
     ) -> Result<String, LlmError> {
+        if self.uses_responses_api() {
+            return self.complete_responses(messages, options).await;
+        }
         let body = ChatRequestBody {
             model: &self.model,
             messages,
@@ -273,6 +278,11 @@ impl LlmClient {
     where
         F: FnMut(&str),
     {
+        if self.uses_responses_api() {
+            return self
+                .stream_responses(messages, tools, options, on_text)
+                .await;
+        }
         let request_tools = tools
             .iter()
             .map(|tool| RequestTool {
@@ -658,24 +668,23 @@ fn parse_chat_completion_content(body: &str) -> Result<String, LlmError> {
             status: 200,
             message: format!("unexpected chat completion response: {error}"),
         })?;
-    let Some(content) = payload
-        .choices
-        .into_iter()
-        .find_map(|choice| choice.message.content)
-    else {
-        return Err(LlmError::Api {
+    non_empty_content(
+        payload
+            .choices
+            .into_iter()
+            .find_map(|choice| choice.message.content),
+        "chat completion",
+    )
+}
+
+fn non_empty_content(content: Option<String>, source: &str) -> Result<String, LlmError> {
+    content
+        .map(|content| content.trim().to_string())
+        .filter(|content| !content.is_empty())
+        .ok_or_else(|| LlmError::Api {
             status: 200,
-            message: "unexpected chat completion response: missing message content".into(),
-        });
-    };
-    let content = content.trim().to_string();
-    if content.is_empty() {
-        return Err(LlmError::Api {
-            status: 200,
-            message: "unexpected chat completion response: missing message content".into(),
-        });
-    }
-    Ok(content)
+            message: format!("unexpected {source} response: missing message content"),
+        })
 }
 
 fn drain_complete_lines(buffer: &mut Vec<u8>, mut handle_line: impl FnMut(&str)) {
