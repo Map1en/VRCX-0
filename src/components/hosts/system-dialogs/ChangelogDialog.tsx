@@ -1,4 +1,4 @@
-import { HeartIcon, StarIcon } from 'lucide-react';
+import { HeartIcon, LanguagesIcon, StarIcon } from 'lucide-react';
 import {
     type ComponentPropsWithoutRef,
     useEffect,
@@ -334,6 +334,7 @@ export function ChangelogDialog({
                                 size="sm"
                                 aria-label={t('dialog.change_log.language')}
                             >
+                                <LanguagesIcon className="text-muted-foreground" />
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
