@@ -177,7 +177,6 @@ export function FriendLocationCard({
 
     const decorationHover = useDecorationHover();
     const recentlyOnline = useRecentlyOnline(normalizeString(friend.id));
-    const decorationActive = decorationHover.active || recentlyOnline;
     const iconFrameId = showAvatarFrame ? friend.iconFrame?.trim() : '';
     const nameplateId = showNameplate ? friend.nameplateEffect?.trim() : '';
     const avatarUrl = userImage(friend);
@@ -199,6 +198,8 @@ export function FriendLocationCard({
         : presenceTravelingTag(presence) || undefined;
     const isTraveling =
         travelingValue !== undefined && locationValue === 'traveling';
+    const decorationActive =
+        decorationHover.active || recentlyOnline || isTraveling;
     const resolvedDensityConfig = densityConfig || DEFAULT_CARD_DENSITY_CONFIG;
     const isDense = resolvedDensityConfig.layout === 'item';
     const resolvedWorldActionLabel =
@@ -253,7 +254,7 @@ export function FriendLocationCard({
                 {iconFrameId ? (
                     <ProfileAvatarFrame
                         templateId={iconFrameId}
-                        active={decorationActive || isTraveling}
+                        active={decorationActive}
                     />
                 ) : null}
                 <UserStatusDot

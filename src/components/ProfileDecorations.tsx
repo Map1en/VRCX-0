@@ -12,6 +12,8 @@ import vrchatMediaRepository, {
     type InventoryItemRecord
 } from '@/repositories/vrchatMediaRepository';
 
+const DECORATION_FADE_OUT_MS = 500;
+
 function useProfileDecorationItem(templateId: string) {
     return useQuery({
         queryKey: ['profileDecoration', templateId],
@@ -37,13 +39,29 @@ function DecorationImage({
     imageClassName: string;
 }) {
     const [failedAnimatedUrl, setFailedAnimatedUrl] = useState('');
+    const [fadingOut, setFadingOut] = useState(false);
+    const [wasAnimated, setWasAnimated] = useState(animated);
+    if (wasAnimated !== animated) {
+        setWasAnimated(animated);
+        setFadingOut(!animated);
+    }
+    useEffect(() => {
+        if (!fadingOut) {
+            return undefined;
+        }
+        const timer = setTimeout(
+            () => setFadingOut(false),
+            DECORATION_FADE_OUT_MS
+        );
+        return () => clearTimeout(timer);
+    }, [fadingOut]);
     const { animatedUrl, staticUrl } = resolveProfileDecorationAssetUrls(item);
     const src = staticUrl || animatedUrl;
     if (!src) {
         return null;
     }
     const showAnimation =
-        animated &&
+        (animated || fadingOut) &&
         Boolean(animatedUrl) &&
         animatedUrl !== src &&
         animatedUrl !== failedAnimatedUrl;
@@ -61,14 +79,22 @@ function DecorationImage({
                 className={cn('size-full', imageClassName)}
             />
             {showAnimation ? (
-                <FadeInImage
-                    src={animatedUrl}
-                    alt=""
-                    decoding="async"
-                    fallback={null}
-                    className={cn('absolute inset-0 size-full', imageClassName)}
-                    onError={() => setFailedAnimatedUrl(animatedUrl)}
-                />
+                <span
+                    data-decoration-animation={animated ? 'on' : 'fading'}
+                    className={cn(
+                        'absolute inset-0 transition-opacity duration-500 ease-out motion-reduce:transition-none',
+                        animated ? 'opacity-100' : 'opacity-0'
+                    )}
+                >
+                    <FadeInImage
+                        src={animatedUrl}
+                        alt=""
+                        decoding="async"
+                        fallback={null}
+                        className={cn('size-full', imageClassName)}
+                        onError={() => setFailedAnimatedUrl(animatedUrl)}
+                    />
+                </span>
             ) : null}
         </span>
     );
