@@ -394,6 +394,24 @@ fn streaming_tool_calls_without_indexes_are_grouped_by_id() {
 }
 
 #[test]
+fn streaming_tool_call_fragments_without_index_or_id_continue_the_latest_call() {
+    let mut state = ChatStreamState::default();
+    let mut on_text = |_: &str| {};
+
+    for line in [
+        r#"data: {"choices":[{"delta":{"tool_calls":[{"id":"call_1","function":{"name":"first","arguments":"{}"}}]}}]}"#,
+        r#"data: {"choices":[{"delta":{"tool_calls":[{"id":"call_2","function":{"name":"second","arguments":"{\"limit\":"}}]}}]}"#,
+        r#"data: {"choices":[{"delta":{"tool_calls":[{"function":{"arguments":"5}"}}]}}]}"#,
+    ] {
+        apply_chat_stream_line(line, &mut on_text, &mut state);
+    }
+
+    assert_eq!(state.tool_acc.len(), 2);
+    assert_eq!(state.tool_acc[0].argument_fragments, ["{}"]);
+    assert_eq!(state.tool_acc[1].argument_fragments, ["{\"limit\":", "5}"]);
+}
+
+#[test]
 fn assistant_tool_call_message_resends_reasoning_details_unchanged() {
     let reasoning_details = vec![serde_json::json!({
         "type": "reasoning.text",

@@ -211,6 +211,7 @@ fn response_turn(response: Value, streamed_text: String) -> Result<AssistantTurn
                 name: name.into(),
                 arguments: arguments.into(),
             },
+            extra_content: None,
         });
     }
     let content = if streamed_text.is_empty() {
