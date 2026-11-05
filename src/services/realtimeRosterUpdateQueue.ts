@@ -155,10 +155,9 @@ export function hydrateFriendLocationTimes(
     snapshot: FriendLocationTime[]
 ): void {
     const store = useFriendLocationTimeStore.getState();
-    if (Object.keys(store.byUserId).length) {
-        return;
+    if (!Object.keys(store.byUserId).length) {
+        store.replaceSnapshot(snapshot);
     }
-    store.replaceSnapshot(snapshot);
 }
 
 export function resetRealtimeRosterUpdates(): void {

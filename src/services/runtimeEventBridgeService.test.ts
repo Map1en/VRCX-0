@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
     AuthenticatedRuntimePhaseSnapshot,
     BackendRuntimeSnapshot,
+    FriendLocationTime,
     HostSessionProjection,
     MutualGraphFetchStatus
 } from '@/platform/tauri/bindings';
@@ -385,6 +386,15 @@ function createBackendRuntimeCombinedSnapshot(
     };
 }
 
+function friendLocationTime(location: string): FriendLocationTime {
+    return {
+        userId: 'usr_friend',
+        location,
+        sinceMs: 1_700_000_000_000,
+        source: 'realtime'
+    };
+}
+
 async function bindCapturedRuntimeEvents(): Promise<{
     handlers: Map<string, (payload: unknown) => void>;
     cleanup: () => void;
@@ -499,14 +509,7 @@ describe('runtimeEventBridgeService', () => {
     it('shows how long friends have been in their instance as soon as the window opens, for example after background mode', async () => {
         mocks.getBackendRuntimeCombinedSnapshot.mockResolvedValue(
             createBackendRuntimeCombinedSnapshot({
-                friendLocationTimes: [
-                    {
-                        userId: 'usr_friend',
-                        location: 'wrld_1:10129~region(jp)',
-                        sinceMs: 1_700_000_000_000,
-                        source: 'realtime'
-                    }
-                ]
+                friendLocationTimes: [friendLocationTime('wrld_1:10129')]
             })
         );
 
@@ -514,7 +517,7 @@ describe('runtimeEventBridgeService', () => {
 
         expect(useFriendLocationTimeStore.getState().byUserId).toEqual({
             usr_friend: {
-                location: 'wrld_1:10129~region(jp)',
+                location: 'wrld_1:10129',
                 sinceMs: 1_700_000_000_000,
                 source: 'realtime'
             }
@@ -524,26 +527,14 @@ describe('runtimeEventBridgeService', () => {
     it('keeps a friend move received while the window was still opening', async () => {
         mocks.getBackendRuntimeCombinedSnapshot.mockResolvedValue(
             createBackendRuntimeCombinedSnapshot({
-                friendLocationTimes: [
-                    {
-                        userId: 'usr_friend',
-                        location: 'wrld_1:10129~region(jp)',
-                        sinceMs: 1_700_000_000_000,
-                        source: 'realtime'
-                    }
-                ]
+                friendLocationTimes: [friendLocationTime('wrld_1:10129')]
             })
         );
         mocks.applyAuthenticatedSessionProjection.mockImplementation(
             async () => {
-                useFriendLocationTimeStore.getState().replaceSnapshot([
-                    {
-                        userId: 'usr_friend',
-                        location: 'wrld_2:20000~region(jp)',
-                        sinceMs: 1_700_000_060_000,
-                        source: 'realtime'
-                    }
-                ]);
+                useFriendLocationTimeStore
+                    .getState()
+                    .replaceSnapshot([friendLocationTime('wrld_2:20000')]);
                 return false;
             }
         );
@@ -552,7 +543,7 @@ describe('runtimeEventBridgeService', () => {
 
         expect(
             useFriendLocationTimeStore.getState().byUserId.usr_friend?.location
-        ).toBe('wrld_2:20000~region(jp)');
+        ).toBe('wrld_2:20000');
     });
 
     it('hydrates the backend session before deferred appearance projections', async () => {
