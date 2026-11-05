@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { FriendRecord } from '@/domain/friends/types';
 import { usePreferencesStore } from '@/state/preferencesStore';
-import { onlinePresence } from '@/test/presenceFixtures';
+import { onlinePresence, travelingPresence } from '@/test/presenceFixtures';
 
 import { FriendsLocationsFriendChips } from './FriendsLocationsWorldSection';
 
@@ -15,12 +15,20 @@ vi.mock('@/components/user-hover-card/UserHoverCard', () => ({
 }));
 vi.mock('@/services/entityMediaService', () => ({ userImage: () => '' }));
 vi.mock('@/components/ProfileDecorations', () => ({
-    ProfileAvatarFrame: ({ templateId }: { templateId: string }) => (
-        <span data-avatar-frame={templateId} />
-    ),
-    ProfileNameplate: ({ templateId }: { templateId: string }) => (
-        <span data-nameplate={templateId} />
-    ),
+    ProfileAvatarFrame: ({
+        templateId,
+        active
+    }: {
+        templateId: string;
+        active: boolean;
+    }) => <span data-avatar-frame={templateId} data-active={active} />,
+    ProfileNameplate: ({
+        templateId,
+        active
+    }: {
+        templateId: string;
+        active: boolean;
+    }) => <span data-nameplate={templateId} data-active={active} />,
     useDecorationHover: () => ({ active: false, hoverProps: {} })
 }));
 
@@ -41,10 +49,10 @@ const friend: FriendRecord = {
     $platform: ''
 };
 
-function renderChips() {
+function renderChips(chipFriend: FriendRecord = friend) {
     return render(
         <FriendsLocationsFriendChips
-            friends={[friend]}
+            friends={[chipFriend]}
             favoriteIds={new Set()}
             twoLine={false}
             onOpenUser={vi.fn()}
@@ -83,5 +91,36 @@ describe('FriendsLocationsFriendChips profile decorations', () => {
         const nameplateOnly = renderChips();
         expect(nameplateOnly).not.toContain('data-avatar-frame');
         expect(nameplateOnly).toContain('data-nameplate="invt_plate"');
+    });
+});
+
+describe('FriendsLocationsFriendChips traveling', () => {
+    afterEach(cleanup);
+
+    it('shows the spinner and lights the avatar frame and nameplate until the friend lands', () => {
+        const traveling = renderChips({
+            ...friend,
+            $presence: travelingPresence('wrld_next:1')
+        });
+        cleanup();
+        const landed = renderChips({
+            ...friend,
+            $presence: onlinePresence('wrld_next:1')
+        });
+
+        expect(traveling).toContain('data-slot="spinner"');
+        expect(traveling).toContain(
+            'data-avatar-frame="invt_frame" data-active="true"'
+        );
+        expect(traveling).toContain(
+            'data-nameplate="invt_plate" data-active="true"'
+        );
+        expect(landed).not.toContain('data-slot="spinner"');
+        expect(landed).toContain(
+            'data-avatar-frame="invt_frame" data-active="false"'
+        );
+        expect(landed).toContain(
+            'data-nameplate="invt_plate" data-active="false"'
+        );
     });
 });

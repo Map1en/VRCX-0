@@ -18,6 +18,7 @@ import {
 import { resolveSidebarStatusDotClassName } from '@/components/sidebar/friends-sidebar/friendsSidebarModel';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserStatusDot } from '@/components/UserStatusDot';
+import { presenceTravelingTag } from '@/domain/friends/presence';
 import type { FriendRecord } from '@/domain/friends/types';
 import { cn } from '@/lib/utils';
 import { userImage } from '@/services/entityMediaService';
@@ -31,7 +32,6 @@ import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import type { getFriendsLocationsDensityConfig } from '../friendsLocationsDensity';
-import { friendLocationTarget } from '../friendsLocationsRows';
 import type {
     FriendsLocationsWorldGroup,
     FriendsLocationsWorldInstance
@@ -68,11 +68,12 @@ function FriendChip({
     const { t } = useTranslation();
     const decorationHover = useDecorationHover();
     const recentlyOnline = useRecentlyOnline(normalizeString(friend.id));
-    const decorationActive = decorationHover.active || recentlyOnline;
     const iconFrameId = showAvatarFrame ? friend.iconFrame?.trim() : '';
     const nameplateId = showNameplate ? friend.nameplateEffect?.trim() : '';
     const avatarUrl = userImage(friend);
-    const isTraveling = friendLocationTarget(friend).isTraveling;
+    const isTraveling = Boolean(presenceTravelingTag(friend.$presence));
+    const decorationActive =
+        decorationHover.active || recentlyOnline || isTraveling;
     const isPendingOffline = friend.$presence?.kind === 'pendingOffline';
     const chipRef = usePendingOfflineBlink<HTMLButtonElement>(isPendingOffline);
     const statusDescription = !twoLine
@@ -113,7 +114,7 @@ function FriendChip({
                     {iconFrameId ? (
                         <ProfileAvatarFrame
                             templateId={iconFrameId}
-                            active={decorationActive || isTraveling}
+                            active={decorationActive}
                         />
                     ) : null}
                     <UserStatusDot
