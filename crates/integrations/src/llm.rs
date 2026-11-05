@@ -242,24 +242,7 @@ impl LlmClient {
         options: &LlmRequestOptions,
     ) -> Result<String, LlmError> {
         if self.uses_responses_api() {
-            let turn = tokio::time::timeout(
-                self.request_timeout,
-                self.stream_responses(messages, &[], options, |_| {}),
-            )
-            .await
-            .map_err(|_| LlmError::Api {
-                status: 200,
-                message: "responses API completion timed out".into(),
-            })??;
-            let content = turn.content.trim().to_string();
-            return if content.is_empty() {
-                Err(LlmError::Api {
-                    status: 200,
-                    message: "unexpected responses API response: missing message content".into(),
-                })
-            } else {
-                Ok(content)
-            };
+            return self.complete_responses(messages, options).await;
         }
         let body = ChatRequestBody {
             model: &self.model,
@@ -685,24 +668,23 @@ fn parse_chat_completion_content(body: &str) -> Result<String, LlmError> {
             status: 200,
             message: format!("unexpected chat completion response: {error}"),
         })?;
-    let Some(content) = payload
-        .choices
-        .into_iter()
-        .find_map(|choice| choice.message.content)
-    else {
-        return Err(LlmError::Api {
+    non_empty_content(
+        payload
+            .choices
+            .into_iter()
+            .find_map(|choice| choice.message.content),
+        "chat completion",
+    )
+}
+
+fn non_empty_content(content: Option<String>, source: &str) -> Result<String, LlmError> {
+    content
+        .map(|content| content.trim().to_string())
+        .filter(|content| !content.is_empty())
+        .ok_or_else(|| LlmError::Api {
             status: 200,
-            message: "unexpected chat completion response: missing message content".into(),
-        });
-    };
-    let content = content.trim().to_string();
-    if content.is_empty() {
-        return Err(LlmError::Api {
-            status: 200,
-            message: "unexpected chat completion response: missing message content".into(),
-        });
-    }
-    Ok(content)
+            message: format!("unexpected {source} response: missing message content"),
+        })
 }
 
 fn drain_complete_lines(buffer: &mut Vec<u8>, mut handle_line: impl FnMut(&str)) {

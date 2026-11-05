@@ -13,7 +13,7 @@ fn routing_is_limited_to_the_official_endpoint_and_is_model_independent() {
 }
 
 #[tokio::test]
-async fn streamed_tool_call_replays_reasoning_and_tool_output_on_next_request() {
+async fn streamed_tool_call_replays_call_and_output_without_stateless_reasoning_items() {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let base_url = format!("http://{}/v1", listener.local_addr().unwrap());
     let server = tokio::spawn(async move {
@@ -79,10 +79,23 @@ async fn streamed_tool_call_replays_reasoning_and_tool_output_on_next_request() 
     assert_eq!(requests[0]["store"], false);
     assert_eq!(requests[0]["tools"][0]["name"], "lookup");
     assert_eq!(requests[0]["tools"][0]["strict"], false);
-    assert_eq!(requests[1]["input"][1]["encrypted_content"], "opaque");
-    assert_eq!(requests[1]["input"][2]["call_id"], "call_1");
-    assert_eq!(requests[1]["input"][3]["type"], "function_call_output");
-    assert_eq!(requests[1]["input"][3]["call_id"], "call_1");
+    let input = requests[1]["input"].as_array().unwrap();
+    assert_eq!(input.len(), 3);
+    assert_eq!(input[1]["type"], "function_call");
+    assert_eq!(input[1]["call_id"], "call_1");
+    assert_eq!(input[2]["type"], "function_call_output");
+    assert_eq!(input[2]["call_id"], "call_1");
+}
+
+#[test]
+fn function_call_without_arguments_is_still_dispatched() {
+    let turn = response_turn(
+        json!({"status":"completed","output":[{"type":"function_call","call_id":"call_1","name":"lookup","arguments":""}]}),
+        String::new(),
+    )
+    .unwrap();
+    assert_eq!(turn.tool_calls[0].function.arguments, "");
+    assert_eq!(turn.finish_reason.as_deref(), Some("tool_calls"));
 }
 
 #[test]

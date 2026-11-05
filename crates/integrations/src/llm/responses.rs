@@ -1,14 +1,86 @@
 use futures_util::StreamExt;
+use serde::Serialize;
 use serde_json::{json, Value};
 
 use super::{
-    drain_complete_lines, reasoning_request, stream_error, take_remaining_line, AssistantTurn,
+    drain_complete_lines, non_empty_content, stream_error, take_remaining_line, AssistantTurn,
     ChatMessage, FunctionCall, LlmClient, LlmError, LlmRequestOptions, ToolCall, ToolDefinition,
 };
+
+#[derive(Serialize)]
+struct ResponsesTool<'a> {
+    #[serde(rename = "type")]
+    kind: &'static str,
+    name: &'a str,
+    description: &'a str,
+    parameters: &'a Value,
+    strict: bool,
+}
+
+#[derive(Serialize)]
+struct ResponsesRequestBody<'a> {
+    model: &'a str,
+    input: Vec<Value>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    tools: Vec<ResponsesTool<'a>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tool_choice: Option<&'static str>,
+    stream: bool,
+    store: bool,
+}
 
 impl LlmClient {
     pub(super) fn uses_responses_api(&self) -> bool {
         self.base_url == "https://api.openai.com/v1"
+    }
+
+    fn responses_body<'a>(
+        &'a self,
+        messages: &[ChatMessage],
+        tools: &'a [ToolDefinition],
+        options: &LlmRequestOptions,
+        stream: bool,
+    ) -> ResponsesRequestBody<'a> {
+        ResponsesRequestBody {
+            model: &self.model,
+            input: responses_input(messages),
+            tools: tools
+                .iter()
+                .map(|tool| ResponsesTool {
+                    kind: "function",
+                    name: &tool.name,
+                    description: &tool.description,
+                    parameters: &tool.parameters,
+                    strict: false,
+                })
+                .collect(),
+            tool_choice: (options.forbid_tool_calls && !tools.is_empty()).then_some("none"),
+            stream,
+            store: false,
+        }
+    }
+
+    pub(super) async fn complete_responses(
+        &self,
+        messages: &[ChatMessage],
+        options: &LlmRequestOptions,
+    ) -> Result<String, LlmError> {
+        let body = self.responses_body(messages, &[], options, false);
+        let url = format!("{}/responses", self.base_url);
+        let response = self
+            .send_with_retry(|| {
+                self.authorized(self.http.post(&url))
+                    .json(&body)
+                    .timeout(self.request_timeout)
+            })
+            .await?;
+        let body = response.text().await?;
+        let response = serde_json::from_str(&body).map_err(|error| LlmError::Api {
+            status: 200,
+            message: format!("unexpected responses API response: {error}"),
+        })?;
+        let turn = response_turn(response, String::new())?;
+        non_empty_content(Some(turn.content), "responses API")
     }
 
     pub(super) async fn stream_responses<F>(
@@ -21,35 +93,7 @@ impl LlmClient {
     where
         F: FnMut(&str),
     {
-        let input = responses_input(messages);
-        let definitions: Vec<Value> = tools
-            .iter()
-            .map(|tool| {
-                json!({
-                    "type": "function",
-                    "name": tool.name,
-                    "description": tool.description,
-                    "parameters": tool.parameters,
-                    "strict": false,
-                })
-            })
-            .collect();
-        let mut body = json!({
-            "model": self.model,
-            "input": input,
-            "stream": true,
-            "store": false,
-        });
-        if !definitions.is_empty() {
-            body["tools"] = json!(definitions);
-            if options.forbid_tool_calls {
-                body["tool_choice"] = json!("none");
-            }
-        }
-        if let Some(reasoning) = reasoning_request(options) {
-            body["reasoning"] = json!({ "effort": reasoning.effort });
-        }
-
+        let body = self.responses_body(messages, tools, options, true);
         let url = format!("{}/responses", self.base_url);
         let response = self
             .send_with_retry(|| self.authorized(self.http.post(&url)).json(&body))
@@ -80,10 +124,6 @@ impl LlmClient {
 fn responses_input(messages: &[ChatMessage]) -> Vec<Value> {
     let mut input = Vec::new();
     for message in messages {
-        if message.role == "assistant" && !message.reasoning_details.is_empty() {
-            input.extend(message.reasoning_details.iter().cloned());
-            continue;
-        }
         if message.role == "tool" {
             input.push(json!({
                 "type": "function_call_output",
@@ -97,8 +137,10 @@ fn responses_input(messages: &[ChatMessage]) -> Vec<Value> {
         }
         for call in &message.tool_calls {
             input.push(json!({
-                "type": "function_call", "call_id": call.id,
-                "name": call.function.name, "arguments": call.function.arguments,
+                "type": "function_call",
+                "call_id": call.id,
+                "name": call.function.name,
+                "arguments": call.function.arguments,
             }));
         }
     }
@@ -151,14 +193,12 @@ fn response_turn(response: Value, streamed_text: String) -> Result<AssistantTurn
         if item.get("type").and_then(Value::as_str) != Some("function_call") {
             continue;
         }
-        let field = |name| {
-            item.get(name)
-                .and_then(Value::as_str)
-                .filter(|v| !v.is_empty())
-        };
-        let (Some(id), Some(name), Some(arguments)) =
-            (field("call_id"), field("name"), field("arguments"))
-        else {
+        let field = |name| item.get(name).and_then(Value::as_str);
+        let (Some(id), Some(name), Some(arguments)) = (
+            field("call_id").filter(|id| !id.is_empty()),
+            field("name").filter(|name| !name.is_empty()),
+            field("arguments"),
+        ) else {
             return Err(LlmError::Api {
                 status: 200,
                 message: "unexpected responses API response: incomplete function call".into(),
@@ -209,7 +249,7 @@ fn response_turn(response: Value, streamed_text: String) -> Result<AssistantTurn
     Ok(AssistantTurn {
         content,
         tool_calls: calls,
-        reasoning_details: output.clone(),
+        reasoning_details: Vec::new(),
         finish_reason: Some(finish_reason.into()),
     })
 }
