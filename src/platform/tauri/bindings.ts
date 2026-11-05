@@ -7409,7 +7409,7 @@ export type ToolCallRecord = {
     id: string;
     name: string;
     arguments: string;
-    extraContent?: JsonValue;
+    extraContent?: JsonValue | null;
 };
 export type ToolResultRecord = {
     toolCallId: string;
