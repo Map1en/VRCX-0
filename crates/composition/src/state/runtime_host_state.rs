@@ -467,11 +467,11 @@ impl RuntimeHostStateBuilder {
                 },
             ))
         };
-        let realtime_stores = vrcx_0_application_realtime::RealtimeStores::shared(Arc::new(
-            vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(Arc::clone(
-                &self.runtime_context.db,
-            )),
+        let realtime_store = Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
+            Arc::clone(&self.runtime_context.db),
         ));
+        let realtime_stores =
+            vrcx_0_application_realtime::RealtimeStores::shared(Arc::clone(&realtime_store));
         let remote_requests: Arc<dyn vrcx_0_application_realtime::RealtimeRemoteRequests> =
             Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests);
         let backend_status = BackendRuntimeStatusPublisher::new(
@@ -488,7 +488,7 @@ impl RuntimeHostStateBuilder {
             realtime_stores,
             self.runtime_context.config_store(),
             realtime_transport,
-            remote_requests,
+            Arc::clone(&remote_requests),
             Arc::clone(&self.runtime_context.web),
             self.runtime_context.event_bus.clone(),
             backend_status,
@@ -535,16 +535,13 @@ impl RuntimeHostStateBuilder {
                 },
             ) as Arc<dyn AuthenticatedRuntimeFavoritesSink>)
         };
-        let baseline_store = Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
-            Arc::clone(&self.db),
-        ));
         let authenticated_runtime =
             AuthenticatedRuntimeOrchestrator::new(AuthenticatedRuntimeDeps {
                 social_baseline: vrcx_0_application_realtime::SocialBaselineDeps::new(
-                    baseline_store.clone(),
-                    baseline_store,
+                    realtime_store.clone(),
+                    realtime_store,
                     self.runtime_context.config_store(),
-                    Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests),
+                    remote_requests,
                     Arc::clone(&self.web),
                     self.runtime_context.auth_scope.clone(),
                 ),

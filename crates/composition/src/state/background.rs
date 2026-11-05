@@ -222,19 +222,7 @@ impl RuntimeHostState {
                 "Social baseline refresh requires an authenticated session.".into(),
             ));
         };
-        let realtime_store = Arc::new(vrcx_0_outbound_adapters::PersistenceRealtimeStore::new(
-            Arc::clone(&self.db),
-        ));
-        let deps = vrcx_0_application_realtime::SocialBaselineDeps::new(
-            realtime_store.clone(),
-            realtime_store,
-            self.runtime_context.config_store(),
-            Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests),
-            Arc::clone(&self.web),
-            self.runtime_context.auth_scope.clone(),
-        );
         let core = vrcx_0_application::social::refresh_social_baseline(
-            deps,
             &self.realtime_runtime,
             &self.authenticated_runtime,
             &session,

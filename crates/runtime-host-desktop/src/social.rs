@@ -12,13 +12,13 @@ use vrcx_0_application::social::{
     SocialMutationDeps, SocialUnfriendBatchInput, SocialUnfriendBatchResult,
 };
 use vrcx_0_application_core::{
-    ConfigStore, RemoteMutationGate, RuntimeAuthScope, RuntimeDiagnostics, RuntimeEventBus,
+    RemoteMutationGate, RuntimeAuthScope, RuntimeDiagnostics, RuntimeEventBus,
     RuntimeOperationStatus, RuntimeSyncEngine, WebClient, WorldCache,
 };
 use vrcx_0_application_realtime::{
     build_favorites_baseline, build_synced_friend_roster_baseline, RealtimeHostRuntime,
-    SocialBaselineDeps, SocialFavoritesBaselineInput, SocialFavoritesBaselineOutput,
-    SocialFriendRosterBaselineInput, SocialFriendRosterBaselineOutput,
+    SocialFavoritesBaselineInput, SocialFavoritesBaselineOutput, SocialFriendRosterBaselineInput,
+    SocialFriendRosterBaselineOutput,
 };
 use vrcx_0_persistence::DatabaseService;
 
@@ -28,7 +28,6 @@ use crate::Result;
 pub struct DesktopSocialRuntime {
     db: Arc<DatabaseService>,
     realtime_store: Arc<vrcx_0_outbound_adapters::PersistenceRealtimeStore>,
-    config: Arc<dyn ConfigStore>,
     media_upload_adapter: vrcx_0_outbound_adapters::LocalMediaUploadAdapter,
     moderation_sync_store: vrcx_0_outbound_adapters::LocalModerationSyncStore,
     web: Arc<WebClient>,
@@ -48,7 +47,6 @@ impl DesktopSocialRuntime {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         db: Arc<DatabaseService>,
-        config: Arc<dyn ConfigStore>,
         web: Arc<WebClient>,
         auth_scope: RuntimeAuthScope,
         remote_mutations: Arc<RemoteMutationGate>,
@@ -69,7 +67,6 @@ impl DesktopSocialRuntime {
             vrcx_0_outbound_adapters::LocalModerationSyncStore::new(Arc::clone(&db));
         let remote = vrcx_0_outbound_adapters::VrchatRequestAdapter::new(Arc::clone(&web));
         Self {
-            config,
             db,
             realtime_store,
             media_upload_adapter,
@@ -104,17 +101,6 @@ impl DesktopSocialRuntime {
             &self.auth_scope,
             &self.remote_mutations,
             &self.realtime,
-        )
-    }
-
-    fn baseline_deps(&self) -> SocialBaselineDeps {
-        SocialBaselineDeps::new(
-            self.realtime_store.clone(),
-            self.realtime_store.clone(),
-            Arc::clone(&self.config),
-            Arc::new(vrcx_0_outbound_adapters::VrchatRealtimeRemoteRequests),
-            Arc::clone(&self.web),
-            self.auth_scope.clone(),
         )
     }
 
@@ -194,7 +180,8 @@ impl DesktopSocialRuntime {
             RuntimeOperationStatus::Running,
             "Favorites baseline started.",
         );
-        let result = build_favorites_baseline(self.baseline_deps(), input).await;
+        let result =
+            build_favorites_baseline(self.authenticated.social_baseline_deps(), input).await;
         match &result {
             Ok(output) => {
                 self.authenticated.update_favorites_baseline(output.clone());
@@ -252,10 +239,13 @@ impl DesktopSocialRuntime {
             RuntimeOperationStatus::Running,
             "Friend roster baseline started.",
         );
-        let result =
-            build_synced_friend_roster_baseline(self.baseline_deps(), &self.realtime, input)
-                .await
-                .map(|baseline| baseline.output);
+        let result = build_synced_friend_roster_baseline(
+            self.authenticated.social_baseline_deps(),
+            &self.realtime,
+            input,
+        )
+        .await
+        .map(|baseline| baseline.output);
         match &result {
             Ok(output) => {
                 let status = if output.stale {

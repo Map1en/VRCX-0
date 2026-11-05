@@ -92,7 +92,6 @@ pub(crate) fn build_remote_runtimes(
     );
     let social = DesktopSocialRuntime::new(
         Arc::clone(runtime.database()),
-        context.config_store(),
         Arc::clone(runtime.web_client()),
         context.auth_scope().clone(),
         Arc::clone(context.remote_mutations()),

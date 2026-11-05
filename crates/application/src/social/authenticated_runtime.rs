@@ -315,7 +315,7 @@ impl AuthenticatedRuntimeOrchestrator {
         self.lifecycle_trail.record(kind, fields);
     }
 
-    fn social_baseline_deps(&self) -> SocialBaselineDeps {
+    pub fn social_baseline_deps(&self) -> SocialBaselineDeps {
         self.social_baseline.clone()
     }
 

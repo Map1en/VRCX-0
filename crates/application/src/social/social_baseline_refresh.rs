@@ -4,8 +4,8 @@ use std::sync::Arc;
 use vrcx_0_application_core::BackgroundCapabilitySession;
 use vrcx_0_application_realtime::{
     build_favorites_baseline_from_friend_ids, build_synced_friend_roster_baseline,
-    FavoriteBaselineSnapshot, RealtimeHostRuntime, SocialBaselineDeps,
-    SocialFavoritesBaselineRequest, SocialFriendRosterBaselineInput,
+    FavoriteBaselineSnapshot, RealtimeHostRuntime, SocialFavoritesBaselineRequest,
+    SocialFriendRosterBaselineInput,
 };
 use vrcx_0_core::json::RawJson;
 
@@ -36,11 +36,11 @@ pub struct SocialBaselineRefreshCore {
 }
 
 pub async fn refresh_social_baseline(
-    deps: SocialBaselineDeps,
     realtime_runtime: &Arc<RealtimeHostRuntime>,
     authenticated_runtime: &AuthenticatedRuntimeOrchestrator,
     session: &BackgroundCapabilitySession,
 ) -> vrcx_0_application_core::Result<SocialBaselineRefreshCore> {
+    let deps = authenticated_runtime.social_baseline_deps();
     let baseline = build_synced_friend_roster_baseline(
         deps.clone(),
         realtime_runtime,
