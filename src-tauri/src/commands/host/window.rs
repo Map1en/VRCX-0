@@ -10,7 +10,67 @@ use crate::error::AppError;
 use crate::state::AppState;
 use vrcx_0_runtime_host_desktop::AutostartPlatform;
 
+#[cfg(not(windows))]
 const TRAY_ICON_DEFAULT: &[u8] = include_bytes!("../../../icons/icon.png");
+#[cfg(not(windows))]
+const TRAY_ICON_NOTIFY: &[u8] = include_bytes!("../../../icons/icon_notify.png");
+
+#[cfg(windows)]
+type SizedTrayIcon = (i32, &'static [u8], &'static [u8]);
+
+#[cfg(windows)]
+const TRAY_ICONS_BY_SIZE: [SizedTrayIcon; 4] = [
+    (
+        16,
+        include_bytes!("../../../icons/tray/tray-16.png"),
+        include_bytes!("../../../icons/tray/tray-notify-16.png"),
+    ),
+    (
+        20,
+        include_bytes!("../../../icons/tray/tray-20.png"),
+        include_bytes!("../../../icons/tray/tray-notify-20.png"),
+    ),
+    (
+        24,
+        include_bytes!("../../../icons/tray/tray-24.png"),
+        include_bytes!("../../../icons/tray/tray-notify-24.png"),
+    ),
+    (
+        28,
+        include_bytes!("../../../icons/tray/tray-28.png"),
+        include_bytes!("../../../icons/tray/tray-notify-28.png"),
+    ),
+];
+
+#[cfg(windows)]
+fn tray_icon_for_size(target: i32) -> &'static SizedTrayIcon {
+    TRAY_ICONS_BY_SIZE
+        .iter()
+        .find(|(size, ..)| *size >= target)
+        .unwrap_or(&TRAY_ICONS_BY_SIZE[TRAY_ICONS_BY_SIZE.len() - 1])
+}
+
+#[cfg(windows)]
+fn tray_icon_bytes(notify: bool) -> &'static [u8] {
+    use windows_sys::Win32::UI::WindowsAndMessaging::{GetSystemMetrics, SM_CXSMICON};
+    // SAFETY: GetSystemMetrics has no preconditions and only reads a system-wide metric.
+    let target = unsafe { GetSystemMetrics(SM_CXSMICON) };
+    let (_, default, notify_icon) = tray_icon_for_size(target);
+    if notify {
+        notify_icon
+    } else {
+        default
+    }
+}
+
+#[cfg(not(windows))]
+fn tray_icon_bytes(notify: bool) -> &'static [u8] {
+    if notify {
+        TRAY_ICON_NOTIFY
+    } else {
+        TRAY_ICON_DEFAULT
+    }
+}
 
 #[tauri::command]
 #[specta::specta]
@@ -46,19 +106,18 @@ pub async fn app__suspend_sidebar_auto_hide(
 ) -> Result<(), AppError> {
     crate::bootstrap::sidebar_auto_hide::set_suspended(app_handle, suspended).await
 }
-const TRAY_ICON_NOTIFY: &[u8] = include_bytes!("../../../icons/icon_notify.png");
 static APPLICATION_EXIT_STARTED: AtomicBool = AtomicBool::new(false);
 static TRAY_ICON_DEFAULT_IMAGE: OnceLock<Option<tauri::image::Image<'static>>> = OnceLock::new();
 static TRAY_ICON_NOTIFY_IMAGE: OnceLock<Option<tauri::image::Image<'static>>> = OnceLock::new();
 
 pub(crate) fn tray_icon_image(notify: bool) -> Option<&'static tauri::image::Image<'static>> {
-    let (cache, bytes) = if notify {
-        (&TRAY_ICON_NOTIFY_IMAGE, TRAY_ICON_NOTIFY)
+    let cache = if notify {
+        &TRAY_ICON_NOTIFY_IMAGE
     } else {
-        (&TRAY_ICON_DEFAULT_IMAGE, TRAY_ICON_DEFAULT)
+        &TRAY_ICON_DEFAULT_IMAGE
     };
     cache
-        .get_or_init(|| tauri::image::Image::from_bytes(bytes).ok())
+        .get_or_init(|| tauri::image::Image::from_bytes(tray_icon_bytes(notify)).ok())
         .as_ref()
 }
 
@@ -422,6 +481,37 @@ mod tests {
     use std::sync::atomic::AtomicBool;
 
     use super::{request_application_exit_with, tray_icon_image};
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_tray_icon_picks_the_smallest_size_that_covers_the_target() {
+        use super::tray_icon_for_size;
+
+        for (target, expected) in [
+            (8, 16),
+            (16, 16),
+            (18, 20),
+            (20, 20),
+            (24, 24),
+            (28, 28),
+            (32, 28),
+        ] {
+            assert_eq!(tray_icon_for_size(target).0, expected);
+        }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_sized_tray_icons_match_their_declared_sizes() {
+        use super::TRAY_ICONS_BY_SIZE;
+
+        for (size, default, notify) in TRAY_ICONS_BY_SIZE {
+            for bytes in [default, notify] {
+                let image = tauri::image::Image::from_bytes(bytes).unwrap();
+                assert_eq!((image.width(), image.height()), (size as u32, size as u32));
+            }
+        }
+    }
 
     #[test]
     fn tray_icon_images_are_decoded_once_and_reused() {
