@@ -55,8 +55,6 @@ pub struct AvatarUpdateRequest {
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
 pub enum UserSearchCustomField {
-    #[serde(rename = "bio")]
-    Bio,
     #[serde(rename = "displayName")]
     DisplayName,
 }

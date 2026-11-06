@@ -1789,7 +1789,6 @@
             "clear_results_tooltip": "Vymazat výsledky vyhledávání",
             "user": {
                 "header": "Uživatel",
-                "search_by_bio": "Hledat podle bia",
                 "sort_by_last_logged_in": "Seřadit dle posledního přihlášení"
             },
             "world": {

@@ -1770,7 +1770,6 @@
             "clear_results_tooltip": "清除搜索结果",
             "user": {
                 "header": "玩家",
-                "search_by_bio": "同时搜索简介信息",
                 "sort_by_last_logged_in": "按最后登录时间排序"
             },
             "world": {

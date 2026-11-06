@@ -1789,7 +1789,6 @@
             "clear_results_tooltip": "Очистить результаты поиска",
             "user": {
                 "header": "Пользователь",
-                "search_by_bio": "Искать по био",
                 "sort_by_last_logged_in": "Сортировать по последнему входу в систему"
             },
             "world": {

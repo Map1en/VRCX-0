@@ -1773,7 +1773,6 @@
             "clear_results_tooltip": "Suchergebnisse löschen",
             "user": {
                 "header": "Nutzer",
-                "search_by_bio": "Nach Biografie suchen",
                 "sort_by_last_logged_in": "Nach letzter Anmeldung sortieren"
             },
             "world": {

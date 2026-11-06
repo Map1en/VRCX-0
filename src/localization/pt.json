@@ -1773,7 +1773,6 @@
             "clear_results_tooltip": "Limpar Resultados da Pesquisa",
             "user": {
                 "header": "Usuário",
-                "search_by_bio": "Pesquisar por bio",
                 "sort_by_last_logged_in": "Ordenar por último login"
             },
             "world": {

@@ -23,8 +23,6 @@ export function useSearchFilters() {
                 : 'user';
     }
     const [searchText, setSearchText] = useSearchPageField('searchText');
-    const [searchUserByBio, setSearchUserByBio] =
-        useSearchPageField('searchUserByBio');
     const [searchUserSortByLastLoggedIn, setSearchUserSortByLastLoggedIn] =
         useSearchPageField('searchUserSortByLastLoggedIn');
     const [selectedWorldCategory, setSelectedWorldCategory] =
@@ -67,14 +65,12 @@ export function useSearchFilters() {
         includeCommunityLabs,
         pageSizes,
         searchText,
-        searchUserByBio,
         searchUserSortByLastLoggedIn,
         selectedWorldCategory,
         setActiveTab,
         setIncludeCommunityLabs,
         setPageSize,
         setSearchText,
-        setSearchUserByBio,
         setSearchUserSortByLastLoggedIn,
         setSelectedWorldCategory
     };

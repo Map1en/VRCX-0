@@ -125,7 +125,6 @@ export function buildAvatarSearchRequest(
 
 export function buildUserSearchRequest(
     searchText: string,
-    searchByBio = false,
     sortByLastLoggedIn = false,
     pageSize = DEFAULT_SEARCH_PAGE_SIZE,
     offset = 0
@@ -134,7 +133,7 @@ export function buildUserSearchRequest(
         n: pageSize,
         offset: Math.max(0, offset),
         search: searchText,
-        customFields: searchByBio ? 'bio' : 'displayName',
+        customFields: 'displayName',
         sort: sortByLastLoggedIn ? 'last_login' : 'relevance'
     };
     return {

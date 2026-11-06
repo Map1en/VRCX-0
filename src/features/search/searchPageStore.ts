@@ -19,7 +19,6 @@ import type {
 interface SearchPageState {
     activeTab: SearchActiveTab;
     searchText: string;
-    searchUserByBio: boolean;
     searchUserSortByLastLoggedIn: boolean;
     selectedWorldCategory: string;
     includeCommunityLabs: boolean;
@@ -42,7 +41,6 @@ function createSearchPageState(): SearchPageState {
     return {
         activeTab: 'user',
         searchText: '',
-        searchUserByBio: false,
         searchUserSortByLastLoggedIn: false,
         selectedWorldCategory: '',
         includeCommunityLabs: false,

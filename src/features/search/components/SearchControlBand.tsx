@@ -33,10 +33,8 @@ type SearchViewOptions = {
     onAvatarProviderChange: (value: string | null) => void;
     onIncludeCommunityLabsChange: (value: boolean) => void;
     onOpenAvatarProviderSettings: () => void;
-    onSearchUserByBioChange: (value: boolean) => void;
     onSearchUserSortByLastLoggedInChange: (value: boolean) => void;
     onWorldCategoryChange: (value: string | null) => void;
-    searchUserByBio: boolean;
     searchUserSortByLastLoggedIn: boolean;
     selectedAvatarProvider: string;
     selectedWorldCategory: string;
@@ -57,10 +55,8 @@ function SearchViewOptionsMenu({
         onAvatarProviderChange,
         onIncludeCommunityLabsChange,
         onOpenAvatarProviderSettings,
-        onSearchUserByBioChange,
         onSearchUserSortByLastLoggedInChange,
         onWorldCategoryChange,
-        searchUserByBio,
         searchUserSortByLastLoggedIn,
         selectedAvatarProvider,
         selectedWorldCategory,
@@ -76,34 +72,20 @@ function SearchViewOptionsMenu({
         <ToolbarViewMenu contentClassName="p-3">
             <FieldGroup onClick={(event) => event.stopPropagation()}>
                 {activeTab === 'user' ? (
-                    <>
-                        <Field orientation="horizontal" className="w-auto">
-                            <Checkbox
-                                id="search-user-by-bio"
-                                checked={searchUserByBio}
-                                onCheckedChange={(checked) =>
-                                    onSearchUserByBioChange(checked === true)
-                                }
-                            />
-                            <FieldLabel htmlFor="search-user-by-bio">
-                                {t('view.search.user.search_by_bio')}
-                            </FieldLabel>
-                        </Field>
-                        <Field orientation="horizontal" className="w-auto">
-                            <Checkbox
-                                id="search-user-sort-by-last-logged-in"
-                                checked={searchUserSortByLastLoggedIn}
-                                onCheckedChange={(checked) =>
-                                    onSearchUserSortByLastLoggedInChange(
-                                        checked === true
-                                    )
-                                }
-                            />
-                            <FieldLabel htmlFor="search-user-sort-by-last-logged-in">
-                                {t('view.search.user.sort_by_last_logged_in')}
-                            </FieldLabel>
-                        </Field>
-                    </>
+                    <Field orientation="horizontal" className="w-auto">
+                        <Checkbox
+                            id="search-user-sort-by-last-logged-in"
+                            checked={searchUserSortByLastLoggedIn}
+                            onCheckedChange={(checked) =>
+                                onSearchUserSortByLastLoggedInChange(
+                                    checked === true
+                                )
+                            }
+                        />
+                        <FieldLabel htmlFor="search-user-sort-by-last-logged-in">
+                            {t('view.search.user.sort_by_last_logged_in')}
+                        </FieldLabel>
+                    </Field>
                 ) : null}
 
                 {activeTab === 'world' ? (

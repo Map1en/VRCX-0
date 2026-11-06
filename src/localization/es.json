@@ -1775,7 +1775,6 @@
             "clear_results_tooltip": "Borrar resultados de búsqueda",
             "user": {
                 "header": "Usuario",
-                "search_by_bio": "Buscar por biografía",
                 "sort_by_last_logged_in": "Ordenar por último inicio de sesión"
             },
             "world": {

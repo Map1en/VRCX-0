@@ -1770,7 +1770,6 @@
             "clear_results_tooltip": "清除搜尋結果",
             "user": {
                 "header": "用戶",
-                "search_by_bio": "依自介搜尋",
                 "sort_by_last_logged_in": "依最近上線時間排序"
             },
             "world": {

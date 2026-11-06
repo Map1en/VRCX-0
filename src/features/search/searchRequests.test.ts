@@ -10,7 +10,7 @@ import {
 
 describe('search request helpers', () => {
     it('builds a display-name user search by default', () => {
-        expect(buildUserSearchRequest('maple', false, false, 10, -20)).toEqual({
+        expect(buildUserSearchRequest('maple', false, 10, -20)).toEqual({
             params: {
                 n: DEFAULT_SEARCH_PAGE_SIZE,
                 offset: 0,
@@ -21,15 +21,13 @@ describe('search request helpers', () => {
         });
     });
 
-    it('builds a bio user search sorted by last login', () => {
-        expect(
-            buildUserSearchRequest('avatar maker', true, true, 40, 30)
-        ).toEqual({
+    it('builds a user search sorted by last login', () => {
+        expect(buildUserSearchRequest('avatar maker', true, 40, 30)).toEqual({
             params: {
                 n: 40,
                 offset: 30,
                 search: 'avatar maker',
-                customFields: 'bio',
+                customFields: 'displayName',
                 sort: 'last_login'
             }
         });

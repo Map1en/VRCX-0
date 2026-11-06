@@ -29,7 +29,6 @@ const options = {
     includeCommunityLabs: false,
     pageSizes: { user: 10, world: 10, avatar: 10, group: 20 },
     searchText: 'ocean',
-    searchUserByBio: false,
     searchUserSortByLastLoggedIn: false,
     selectedAvatarProvider: '',
     selectedWorldCategory: '',

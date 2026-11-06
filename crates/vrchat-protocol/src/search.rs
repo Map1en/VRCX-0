@@ -125,7 +125,7 @@ mod tests {
     fn typed_search_params_keep_supported_extensions_and_reject_unknown_fields() {
         let params: UserSearchParams = serde_json::from_value(json!({
             "search": "profile text",
-            "customFields": "bio",
+            "customFields": "displayName",
             "sort": "last_login",
             "order": "descending"
         }))
@@ -134,7 +134,7 @@ mod tests {
             serialize_query(&params),
             HashMap::from([
                 ("search".into(), json!("profile text")),
-                ("customFields".into(), json!("bio")),
+                ("customFields".into(), json!("displayName")),
                 ("sort".into(), json!("last_login")),
                 ("order".into(), json!("descending")),
             ])

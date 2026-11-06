@@ -1571,7 +1571,6 @@
             "clear_results_tooltip": "Vider les résultats de la recherche",
             "user": {
                 "header": "Utilisateur",
-                "search_by_bio": "Rechercher dans la bio",
                 "sort_by_last_logged_in": "Trier par dernière connexion"
             },
             "world": {

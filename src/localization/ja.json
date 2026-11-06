@@ -1766,7 +1766,6 @@
             "clear_results_tooltip": "検索結果を消去",
             "user": {
                 "header": "ユーザー",
-                "search_by_bio": "自己紹介から検索",
                 "sort_by_last_logged_in": "最後にログインした順で並べ替え"
             },
             "world": {

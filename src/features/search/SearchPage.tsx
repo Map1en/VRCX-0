@@ -55,12 +55,10 @@ export function SearchPage({ embedded = false }: { embedded?: boolean } = {}) {
                                 filters.setIncludeCommunityLabs,
                             onOpenAvatarProviderSettings: () =>
                                 config.setIsAvatarProviderDialogOpen(true),
-                            onSearchUserByBioChange: filters.setSearchUserByBio,
                             onSearchUserSortByLastLoggedInChange:
                                 filters.setSearchUserSortByLastLoggedIn,
                             onWorldCategoryChange:
                                 results.handleWorldCategoryChange,
-                            searchUserByBio: filters.searchUserByBio,
                             searchUserSortByLastLoggedIn:
                                 filters.searchUserSortByLastLoggedIn,
                             selectedAvatarProvider:

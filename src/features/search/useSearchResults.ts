@@ -34,7 +34,6 @@ export function useSearchResults({
     includeCommunityLabs,
     pageSizes,
     searchText,
-    searchUserByBio,
     searchUserSortByLastLoggedIn,
     selectedAvatarProvider,
     selectedWorldCategory,
@@ -48,7 +47,6 @@ export function useSearchResults({
     includeCommunityLabs: boolean;
     pageSizes: SearchPageSizes;
     searchText: string;
-    searchUserByBio: boolean;
     searchUserSortByLastLoggedIn: boolean;
     selectedAvatarProvider: string;
     selectedWorldCategory: string;
@@ -237,7 +235,6 @@ export function useSearchResults({
             runUserSearch(
                 buildUserSearchRequest(
                     searchText,
-                    searchUserByBio,
                     searchUserSortByLastLoggedIn,
                     pageSizes.user
                 )
@@ -297,7 +294,6 @@ export function useSearchResults({
         runUserSearch,
         runWorldSearch,
         searchText,
-        searchUserByBio,
         searchUserSortByLastLoggedIn,
         selectedAvatarProvider,
         selectedWorldCategory,

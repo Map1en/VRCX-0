@@ -1707,7 +1707,6 @@
             "clear_results_tooltip": "검색 결과 지우기",
             "user": {
                 "header": "사용자",
-                "search_by_bio": "자기소개로 검색",
                 "sort_by_last_logged_in": "마지막 로그인순으로 정렬"
             },
             "world": {

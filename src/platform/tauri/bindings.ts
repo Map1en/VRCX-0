@@ -7697,7 +7697,7 @@ export type UserNoteOutput = {
     createdAt: string;
 };
 
-export type UserSearchCustomField = 'bio' | 'displayName';
+export type UserSearchCustomField = 'displayName';
 
 export type UserSearchParams = {
     search?: string | null;
