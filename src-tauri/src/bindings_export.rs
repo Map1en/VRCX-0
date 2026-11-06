@@ -1,4 +1,4 @@
-use specta_typescript::{BigIntExportBehavior, Typescript};
+use specta_typescript::Typescript;
 use tauri_specta::{collect_commands, Builder, ErrorHandlingMode};
 use vrcx_0_application::auth::AuthenticatedRuntimePhaseSnapshot;
 use vrcx_0_application::auth::AuthenticatedSessionProjection;
@@ -106,6 +106,8 @@ struct BackendRuntimeEventPayloadMap {
 pub fn builder() -> Builder<tauri::Wry> {
     Builder::<tauri::Wry>::new()
         .error_handling(ErrorHandlingMode::Throw)
+        .disable_serde_phases()
+        .dangerously_cast_bigints_to_number()
         .typ::<AssistantDeltaEvent>()
         .typ::<AssistantToolCallEvent>()
         .typ::<AssistantToolResultEvent>()
@@ -744,10 +746,14 @@ pub fn export_bindings() -> Result<(), String> {
     std::thread::Builder::new()
         .stack_size(256 * 1024 * 1024)
         .spawn(|| {
-            let language = Typescript::default().bigint(BigIntExportBehavior::Number);
-            let raw = builder()
-                .export_str(language)
+            let raw_path =
+                std::env::temp_dir().join(format!("vrcx-0-bindings-{}.raw.ts", std::process::id()));
+            builder()
+                .export(Typescript::default(), &raw_path)
                 .map_err(|error| format!("export typescript bindings: {error}"))?;
+            let raw = std::fs::read_to_string(&raw_path);
+            let _ = std::fs::remove_file(&raw_path);
+            let raw = raw.map_err(|error| format!("read raw bindings: {error}"))?;
             let path = concat!(
                 env!("CARGO_MANIFEST_DIR"),
                 "/../src/platform/tauri/bindings.ts"
@@ -761,119 +767,28 @@ pub fn export_bindings() -> Result<(), String> {
 }
 
 // Post-process the tauri-specta output to fit this app's frontend bridge:
-// - route the generated invoke through the repo error-logging wrapper,
-// - preserve the generated command return type while exposing typed rejections,
-// - drop the placeholder `TAURI_CHANNEL` type and an unused Channel import,
-// - remove `any` from the generated event helper;
+// - route the generated invoke through the repo error-logging wrapper, which
+//   also types every command as `CommandPromise<T>`,
+// - keep `serde_json::Value` an opaque `JsonValue = unknown` boundary;
 // - fail before writing when the generated shape no longer satisfies these invariants.
+const GENERATED_INVOKE_IMPORT: &str =
+    r#"import { invoke as __TAURI_INVOKE } from "@tauri-apps/api/core";"#;
+const ROUTED_INVOKE_IMPORT: &str =
+    r#"import { invoke as __TAURI_INVOKE } from "./generatedInvoke";"#;
+const JSON_VALUE_BOUNDARY: &str = "export type JsonValue = unknown;";
+
 fn patch_bindings(raw: &str) -> Result<String, String> {
     let mut out: Vec<String> = Vec::new();
-    let mut routed_invoke = false;
     for line in raw.lines() {
-        let trimmed = line.trim();
-        if trimmed == "export const commands = {" {
-            out.push("const generatedCommands = {".to_string());
+        if line == GENERATED_INVOKE_IMPORT {
+            out.push(ROUTED_INVOKE_IMPORT.to_string());
             continue;
         }
-        if trimmed == "/** user-defined events **/" {
-            out.extend([
-                "type TypedCommands<TCommands> = {".to_string(),
-                "    [TName in keyof TCommands]: TCommands[TName] extends (".to_string(),
-                "        ...args: infer TArgs".to_string(),
-                "    ) => Promise<infer TResult>".to_string(),
-                "        ? (...args: TArgs) => CommandPromise<TResult>".to_string(),
-                "        : TCommands[TName];".to_string(),
-                "};".to_string(),
-                "".to_string(),
-                "export const commands: TypedCommands<typeof generatedCommands> =".to_string(),
-                "    generatedCommands;".to_string(),
-                "".to_string(),
-            ]);
-        }
-        if trimmed.starts_with("export type JsonValue =") {
-            out.push("export type JsonValue = unknown;".to_string());
+        if line.starts_with("export type Value =") {
+            out.push(JSON_VALUE_BOUNDARY.to_string());
             continue;
         }
-        if trimmed == "function __makeEvents__<T extends Record<string, any>>(" {
-            out.push("function __makeEvents__<T extends Record<string, unknown>>(".to_string());
-            continue;
-        }
-        if line.contains("return new Proxy((() => {}) as any, {") {
-            out.push(line.replace(
-                "return new Proxy((() => {}) as any, {",
-                "return new Proxy((() => {}) as (...args: unknown[]) => unknown, {",
-            ));
-            continue;
-        }
-        if line.contains("get: (_, command: keyof __EventObj__<any>) => {") {
-            out.push(line.replace(
-                "get: (_, command: keyof __EventObj__<any>) => {",
-                "get: (_, command: keyof __EventObj__<unknown>) => {",
-            ));
-            continue;
-        }
-        if line.contains("listen: (arg: any) => window.listen(name, arg),") {
-            out.push(line.replace(
-                "listen: (arg: any) => window.listen(name, arg),",
-                "listen: (arg: TAURI_API_EVENT.EventCallback<unknown>) => window.listen<unknown>(name, arg),",
-            ));
-            continue;
-        }
-        if line.contains("once: (arg: any) => window.once(name, arg),") {
-            out.push(line.replace(
-                "once: (arg: any) => window.once(name, arg),",
-                "once: (arg: TAURI_API_EVENT.EventCallback<unknown>) => window.once<unknown>(name, arg),",
-            ));
-            continue;
-        }
-        if line.contains("emit: (arg: any) => window.emit(name, arg),") {
-            out.push(line.replace(
-                "emit: (arg: any) => window.emit(name, arg),",
-                "emit: (arg: unknown) => window.emit(name, arg),",
-            ));
-            continue;
-        }
-        if line.contains("return (arg: any) => TAURI_API_EVENT.listen(name, arg);") {
-            out.push(line.replace(
-                "return (arg: any) => TAURI_API_EVENT.listen(name, arg);",
-                "return (arg: TAURI_API_EVENT.EventCallback<unknown>) => TAURI_API_EVENT.listen<unknown>(name, arg);",
-            ));
-            continue;
-        }
-        if line.contains("return (arg: any) => TAURI_API_EVENT.once(name, arg);") {
-            out.push(line.replace(
-                "return (arg: any) => TAURI_API_EVENT.once(name, arg);",
-                "return (arg: TAURI_API_EVENT.EventCallback<unknown>) => TAURI_API_EVENT.once<unknown>(name, arg);",
-            ));
-            continue;
-        }
-        if line.contains("return (arg: any) => TAURI_API_EVENT.emit(name, arg);") {
-            out.push(line.replace(
-                "return (arg: any) => TAURI_API_EVENT.emit(name, arg);",
-                "return (arg: unknown) => TAURI_API_EVENT.emit(name, arg);",
-            ));
-            continue;
-        }
-        if trimmed.starts_with("export type TAURI_CHANNEL<TSend> = null") {
-            continue;
-        }
-        if trimmed == "invoke as TAURI_INVOKE," {
-            continue;
-        }
-        out.push(line.to_string());
-        if !routed_invoke && trimmed == r#"} from "@tauri-apps/api/core";"# {
-            out.push(
-                r#"import { type CommandPromise, invoke as TAURI_INVOKE } from "./generatedInvoke";"#
-                    .to_string(),
-            );
-            routed_invoke = true;
-        }
-    }
-    let channel_used = out
-        .iter()
-        .any(|line| !line.contains("Channel as TAURI_CHANNEL") && line.contains("TAURI_CHANNEL"));
-    if !channel_used {
-        out.retain(|line| !line.contains("Channel as TAURI_CHANNEL"));
+        out.push(rename_json_value_refs(line));
     }
     let mut result = out.join("\n");
     result.push('\n');
@@ -881,58 +796,29 @@ fn patch_bindings(raw: &str) -> Result<String, String> {
     Ok(result)
 }
 
+fn rename_json_value_refs(line: &str) -> String {
+    const NAME: &str = "Value";
+    let is_ident = |c: char| c.is_ascii_alphanumeric() || c == '_' || c == '$';
+    let mut out = String::with_capacity(line.len());
+    let mut rest = line;
+    while let Some(index) = rest.find(NAME) {
+        let before = rest[..index].chars().next_back();
+        let after = rest[index + NAME.len()..].chars().next();
+        let standalone = !before.is_some_and(|c| is_ident(c) || matches!(c, '.' | '"' | '\''))
+            && !after.is_some_and(|c| is_ident(c) || matches!(c, '"' | '\'' | ':' | '?'));
+        out.push_str(&rest[..index]);
+        out.push_str(if standalone { "JsonValue" } else { NAME });
+        rest = &rest[index + NAME.len()..];
+    }
+    out.push_str(rest);
+    out
+}
+
 fn validate_patched_bindings(result: &str) -> Result<(), String> {
     let required_fragments = [
-        ("JsonValue unknown boundary", "export type JsonValue = unknown;"),
-        (
-            "generated invoke import",
-            r#"import { type CommandPromise, invoke as TAURI_INVOKE } from "./generatedInvoke";"#,
-        ),
-        ("generated commands owner", "const generatedCommands = {"),
-        (
-            "typed commands mapping",
-            "type TypedCommands<TCommands> = {",
-        ),
-        (
-            "typed commands export",
-            "export const commands: TypedCommands<typeof generatedCommands> =",
-        ),
-        (
-            "event record unknown boundary",
-            "function __makeEvents__<T extends Record<string, unknown>>(",
-        ),
-        (
-            "event proxy unknown boundary",
-            "return new Proxy((() => {}) as (...args: unknown[]) => unknown, {",
-        ),
-        (
-            "event object unknown boundary",
-            "get: (_, command: keyof __EventObj__<unknown>) => {",
-        ),
-        (
-            "window listen callback boundary",
-            "listen: (arg: TAURI_API_EVENT.EventCallback<unknown>) => window.listen<unknown>(name, arg),",
-        ),
-        (
-            "window once callback boundary",
-            "once: (arg: TAURI_API_EVENT.EventCallback<unknown>) => window.once<unknown>(name, arg),",
-        ),
-        (
-            "window emit boundary",
-            "emit: (arg: unknown) => window.emit(name, arg),",
-        ),
-        (
-            "event listen callback boundary",
-            "return (arg: TAURI_API_EVENT.EventCallback<unknown>) => TAURI_API_EVENT.listen<unknown>(name, arg);",
-        ),
-        (
-            "event once callback boundary",
-            "return (arg: TAURI_API_EVENT.EventCallback<unknown>) => TAURI_API_EVENT.once<unknown>(name, arg);",
-        ),
-        (
-            "event emit boundary",
-            "return (arg: unknown) => TAURI_API_EVENT.emit(name, arg);",
-        ),
+        ("routed invoke import", ROUTED_INVOKE_IMPORT),
+        ("JsonValue unknown boundary", JSON_VALUE_BOUNDARY),
+        ("generated commands owner", "export const commands = {"),
     ];
     for (label, fragment) in required_fragments {
         let count = result.matches(fragment).count();
@@ -944,12 +830,10 @@ fn validate_patched_bindings(result: &str) -> Result<(), String> {
     }
 
     let forbidden_fragments = [
-        "invoke as TAURI_INVOKE,",
-        "Channel as TAURI_CHANNEL",
-        "export type TAURI_CHANNEL<TSend> = null",
-        "Record<string, any>",
-        "__EventObj__<any>",
-        "(arg: any)",
+        "@tauri-apps/api/core",
+        "export type Value =",
+        ": any",
+        "<any>",
         "as any",
     ];
     for fragment in forbidden_fragments {

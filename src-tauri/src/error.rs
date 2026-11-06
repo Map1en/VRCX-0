@@ -120,18 +120,8 @@ impl Serialize for AppError {
 }
 
 impl specta::Type for AppError {
-    fn inline(
-        type_map: &mut specta::TypeCollection,
-        generics: specta::Generics,
-    ) -> specta::DataType {
-        AppErrorPayload::inline(type_map, generics)
-    }
-
-    fn reference(
-        type_map: &mut specta::TypeCollection,
-        generics: &[specta::DataType],
-    ) -> specta::datatype::reference::Reference {
-        AppErrorPayload::reference(type_map, generics)
+    fn definition(types: &mut specta::Types) -> specta::datatype::DataType {
+        AppErrorPayload::definition(types)
     }
 }
 

@@ -86,6 +86,7 @@ pub struct WorldSearchParams {
     pub user: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub user_id: Option<String>,
+    #[specta(type = Option<i32>)]
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
@@ -94,6 +95,7 @@ pub struct WorldSearchParams {
     pub n: Option<i32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub order: Option<QueryOrder>,
+    #[specta(type = Option<i32>)]
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
@@ -129,12 +131,14 @@ pub struct UserSearchParams {
     pub search: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub developer_type: Option<String>,
+    #[specta(type = Option<i32>)]
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         deserialize_with = "deserialize_optional_nonnegative_i32"
     )]
     pub n: Option<i32>,
+    #[specta(type = Option<i32>)]
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
@@ -156,12 +160,14 @@ pub struct UserSearchParams {
 pub struct GroupSearchParams {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub query: Option<String>,
+    #[specta(type = Option<i32>)]
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         deserialize_with = "deserialize_optional_nonnegative_i32"
     )]
     pub offset: Option<i32>,
+    #[specta(type = Option<i32>)]
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
@@ -258,12 +264,14 @@ pub enum MediaFileTag {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct MediaFileListParams {
+    #[specta(type = Option<i32>)]
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         deserialize_with = "deserialize_optional_nonnegative_i32"
     )]
     pub n: Option<i32>,
+    #[specta(type = Option<i32>)]
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
@@ -330,8 +338,10 @@ pub enum EmojiUploadParams {
     EmojiAnimated {
         animation_style: ImageAnimationStyle,
         mask_tag: ImageMaskTag,
+        #[specta(type = i32)]
         #[serde(deserialize_with = "deserialize_emoji_frame_count")]
         frames: i32,
+        #[specta(type = i32)]
         #[serde(deserialize_with = "deserialize_emoji_frames_per_second")]
         frames_over_time: i32,
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -389,12 +399,14 @@ pub enum InventoryOrder {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct InventoryListParams {
+    #[specta(type = Option<i32>)]
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         deserialize_with = "deserialize_optional_nonnegative_i32"
     )]
     pub n: Option<i32>,
+    #[specta(type = Option<i32>)]
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
@@ -631,12 +643,14 @@ pub struct GroupCalendarEventMutation {
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct CalendarListParams {
+    #[specta(type = Option<i32>)]
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         deserialize_with = "deserialize_optional_nonnegative_i32"
     )]
     pub n: Option<i32>,
+    #[specta(type = Option<i32>)]
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
@@ -822,12 +836,14 @@ pub struct WorldUpdateRequest {
     pub name: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    #[specta(type = Option<i32>)]
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         deserialize_with = "deserialize_optional_nonnegative_i32"
     )]
     pub capacity: Option<i32>,
+    #[specta(type = Option<i32>)]
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",

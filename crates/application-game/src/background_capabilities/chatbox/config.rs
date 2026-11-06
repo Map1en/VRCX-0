@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use vrcx_0_osc::{fit_chatbox_text, CHATBOX_MAX_CHARS};
 
 use super::template::ChatboxVariable;
@@ -122,7 +123,7 @@ pub enum ChatboxProgressStyle {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
-#[serde(default, rename_all = "camelCase")]
+#[serde(rename_all = "camelCase")]
 pub struct ChatboxFormats {
     pub hour12: bool,
     pub show_seconds: bool,
@@ -201,9 +202,15 @@ impl ChatboxConfig {
         if raw.trim().is_empty() {
             return Self::default();
         }
-        serde_json::from_str::<Self>(raw)
+        serde_json::from_str::<Value>(raw)
+            .and_then(Self::from_partial_json)
             .map(Self::normalized)
             .unwrap_or_default()
+    }
+
+    pub fn from_partial_json(mut value: Value) -> serde_json::Result<Self> {
+        fill_missing_line_formats(&mut value)?;
+        serde_json::from_value(value)
     }
 
     pub fn normalized(self) -> Self {
@@ -303,6 +310,28 @@ impl ChatboxPageLine {
             },
         }
     }
+}
+
+fn fill_missing_line_formats(config: &mut Value) -> serde_json::Result<()> {
+    let Value::Object(defaults) = serde_json::to_value(ChatboxFormats::default())? else {
+        return Ok(());
+    };
+    let Some(pages) = config.get_mut("pages").and_then(Value::as_array_mut) else {
+        return Ok(());
+    };
+    let line_formats = pages
+        .iter_mut()
+        .filter_map(|page| page.get_mut("lines").and_then(Value::as_array_mut))
+        .flatten()
+        .filter_map(|line| line.get_mut("formats").and_then(Value::as_object_mut));
+    for formats in line_formats {
+        for (key, default) in &defaults {
+            formats
+                .entry(key.clone())
+                .or_insert_with(|| default.clone());
+        }
+    }
+    Ok(())
 }
 
 fn capped(text: &str, max_chars: u32) -> String {

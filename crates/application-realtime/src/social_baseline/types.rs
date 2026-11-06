@@ -35,7 +35,7 @@ pub struct FavoriteBaselineSnapshot {
     pub favorite_friend_groups: Vec<FavoriteGroupOutput>,
     pub favorite_world_groups: Vec<FavoriteGroupOutput>,
     pub favorite_avatar_groups: Vec<FavoriteGroupOutput>,
-    #[serde(skip_serializing)]
+    #[serde(skip)]
     pub local_world_favorites: BTreeMap<String, Vec<String>>,
     pub local_avatar_favorites: BTreeMap<String, Vec<String>>,
     pub local_friend_favorites: BTreeMap<String, Vec<String>>,

@@ -61,9 +61,9 @@ vrcx-0-integration-api = { path = "../crates/integration-api" }
 vrcx-0-assistant = { path = "../crates/assistant" }
 vrcx-0-composition = { path = "../crates/composition" }
 vrcx-0-runtime-host-desktop = { path = "../crates/runtime-host-desktop" }
-specta-typescript = "0.0.9"
+specta-typescript = "0.0.13"
 specta = { workspace = true }
-tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
+tauri-specta = { version = "=2.0.0-rc.26", features = ["derive", "typescript"] }
 
 [target.'cfg(windows)'.dependencies]
 tauri-plugin-global-shortcut = "2"

@@ -48,11 +48,11 @@ type UserActivityViewService = {
     >;
 };
 
-function normalizeNumber(value: number): number {
-    return Number.isFinite(value) ? value : 0;
+function normalizeNumber(value: number | null): number {
+    return value !== null && Number.isFinite(value) ? value : 0;
 }
 
-function normalizeNumberArray(value: readonly number[]): number[] {
+function normalizeNumberArray(value: readonly (number | null)[]): number[] {
     return value.map(normalizeNumber);
 }
 

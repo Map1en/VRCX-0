@@ -9,19 +9,21 @@ use vrcx_0_core::vrchat_ids::{is_avatar_id, is_world_id};
     rename_all_fields = "camelCase"
 )]
 pub enum DeepLinkAction {
-    #[specta(rename_all = "camelCase")]
-    OpenWorld { world_id: String },
-    #[specta(rename_all = "camelCase")]
+    OpenWorld {
+        world_id: String,
+    },
     OpenInstance {
         world_id: String,
         instance_id: String,
         short_name: String,
         launch_token: String,
     },
-    #[specta(rename_all = "camelCase")]
-    OpenAvatar { avatar_id: String },
-    #[specta(rename_all = "camelCase")]
-    ImportCollection { collection_id: String },
+    OpenAvatar {
+        avatar_id: String,
+    },
+    ImportCollection {
+        collection_id: String,
+    },
 }
 
 #[derive(Default)]

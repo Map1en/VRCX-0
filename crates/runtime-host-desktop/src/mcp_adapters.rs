@@ -578,8 +578,8 @@ impl McpChatboxPort for DesktopMcpChatboxAdapter {
         &self,
         config: serde_json::Value,
     ) -> vrcx_0_application_core::Result<serde_json::Value> {
-        let config =
-            serde_json::from_value(config).map_err(vrcx_0_application_core::Error::Json)?;
+        let config = vrcx_0_application_game::chatbox::ChatboxConfig::from_partial_json(config)
+            .map_err(vrcx_0_application_core::Error::Json)?;
         chatbox_json(self.chatbox.set_config(config)?)
     }
 

@@ -62,8 +62,10 @@ pub struct VrchatGroupMembershipListInput {
 pub struct VrchatGroupPagedInput {
     #[serde(default)]
     pub group_id: String,
+    #[specta(type = i32)]
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub n: i32,
+    #[specta(type = i32)]
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub offset: i32,
 }
@@ -73,8 +75,10 @@ pub struct VrchatGroupPagedInput {
 pub struct VrchatGroupMembersInput {
     #[serde(default)]
     pub group_id: String,
+    #[specta(type = i32)]
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub n: i32,
+    #[specta(type = i32)]
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub offset: i32,
     #[serde(default)]
@@ -88,8 +92,10 @@ pub struct VrchatGroupMembersInput {
 pub struct VrchatGroupMembersSearchInput {
     #[serde(default)]
     pub group_id: String,
+    #[specta(type = i32)]
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub n: i32,
+    #[specta(type = i32)]
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub offset: i32,
     #[serde(default)]
@@ -103,8 +109,10 @@ pub struct VrchatGroupGalleryInput {
     pub group_id: String,
     #[serde(default)]
     pub gallery_id: String,
+    #[specta(type = i32)]
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub n: i32,
+    #[specta(type = i32)]
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub offset: i32,
 }
@@ -114,8 +122,10 @@ pub struct VrchatGroupGalleryInput {
 pub struct VrchatGroupJoinRequestsInput {
     #[serde(default)]
     pub group_id: String,
+    #[specta(type = i32)]
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub n: i32,
+    #[specta(type = i32)]
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub offset: i32,
     #[serde(default)]
@@ -127,8 +137,10 @@ pub struct VrchatGroupJoinRequestsInput {
 pub struct VrchatGroupLogsInput {
     #[serde(default)]
     pub group_id: String,
+    #[specta(type = i32)]
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub n: i32,
+    #[specta(type = i32)]
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub offset: i32,
     #[serde(default)]

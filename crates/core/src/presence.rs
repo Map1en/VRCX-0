@@ -110,17 +110,14 @@ pub enum PresenceView {
     Online {
         place: PresencePlace,
         platform: String,
-        #[specta(type = Option<f64>)]
         online_since_ms: Option<i64>,
     },
     #[serde(rename_all = "camelCase")]
     PendingOffline {
         place: PresencePlace,
         platform: String,
-        #[specta(type = Option<f64>)]
         online_since_ms: Option<i64>,
         target: LeaveTarget,
-        #[specta(type = f64)]
         deadline_ms: i64,
     },
     Active {
@@ -178,7 +175,6 @@ impl PresenceView {
 #[derive(Clone, Debug, PartialEq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct PresenceEntry {
-    #[specta(type = f64)]
     pub rev: u64,
     pub view: PresenceView,
 }

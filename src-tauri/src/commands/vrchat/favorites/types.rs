@@ -6,8 +6,10 @@ use vrcx_0_contracts::VrchatFavoriteType;
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatFavoriteWorldsInput {
+    #[specta(type = i32)]
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(crate) n: i32,
+    #[specta(type = i32)]
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(crate) offset: i32,
     #[serde(default)]
@@ -21,8 +23,10 @@ pub struct VrchatFavoriteWorldsInput {
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatFavoriteGroupsInput {
+    #[specta(type = i32)]
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(crate) n: i32,
+    #[specta(type = i32)]
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(crate) offset: i32,
     #[serde(default)]

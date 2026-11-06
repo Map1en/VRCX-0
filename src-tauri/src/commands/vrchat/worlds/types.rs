@@ -16,8 +16,10 @@ pub struct VrchatWorldIdInput {
 pub struct VrchatWorldListByUserInput {
     #[serde(default)]
     pub(crate) user_id: String,
+    #[specta(type = i32)]
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(crate) n: i32,
+    #[specta(type = i32)]
     #[serde(default, deserialize_with = "deserialize_nonnegative_i32")]
     pub(crate) offset: i32,
     pub(crate) sort: WorldSearchSort,

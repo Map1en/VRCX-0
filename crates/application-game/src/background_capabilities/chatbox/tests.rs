@@ -548,6 +548,31 @@ fn config_json_round_trips_unchanged() {
 }
 
 #[test]
+fn partial_line_formats_fill_defaults_only_on_the_lenient_path() {
+    let json = serde_json::json!({
+        "statusEnabled": true,
+        "pages": [{"id": "a", "enabled": true, "seconds": 8, "lines": [
+            {"id": "m1", "template": "{cpu}", "formats": {"cpuDecimals": 1}}
+        ]}],
+        "afk": {"text": "", "showDuration": true, "autoWhenHeadsetRemoved": true},
+        "messages": {"typingIndicator": true, "notifySound": false, "quickPhrases": []},
+        "oscHost": "127.0.0.1",
+        "oscPort": 9000
+    });
+
+    let config = ChatboxConfig::from_partial_json(json.clone()).unwrap();
+
+    assert_eq!(
+        config.pages[0].lines[0].formats,
+        ChatboxFormats {
+            cpu_decimals: 1,
+            ..ChatboxFormats::default()
+        }
+    );
+    assert!(serde_json::from_value::<ChatboxConfig>(json).is_err());
+}
+
+#[test]
 fn stored_config_is_normalized_and_bad_json_falls_back_to_defaults() {
     let stored = r#"{
         "statusEnabled": true,

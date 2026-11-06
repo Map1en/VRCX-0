@@ -102,11 +102,8 @@ enum FavoriteGroupKeysShape {
 }
 
 impl specta::Type for ActivityFavoriteGroupKeys {
-    fn inline(
-        type_map: &mut specta::TypeCollection,
-        generics: specta::Generics,
-    ) -> specta::DataType {
-        FavoriteGroupKeysShape::inline(type_map, generics)
+    fn definition(types: &mut specta::Types) -> specta::datatype::DataType {
+        FavoriteGroupKeysShape::definition(types)
     }
 }
 
@@ -119,7 +116,7 @@ pub struct ActivityRule {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
-#[specta(rename = "NotificationActivityFilterSurface")]
+#[serde(rename = "NotificationActivityFilterSurface")]
 pub enum NotificationSurface {
     Wrist,
     #[serde(rename = "vr")]
