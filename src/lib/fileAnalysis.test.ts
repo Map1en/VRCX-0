@@ -69,6 +69,44 @@ describe('getFileAnalysisForUnityPackages', () => {
         });
     });
 
+    it('analyzes the newest compatible package per platform', async () => {
+        getFileAnalysis.mockResolvedValue({
+            json: { success: true, fileSize: 1024 }
+        });
+
+        await getFileAnalysisForUnityPackages({
+            unityPackages: [
+                {
+                    ...unityPackage,
+                    assetUrl:
+                        'https://api.vrchat.cloud/api/1/file/file_example/1/file',
+                    unitySortNumber: '20190431000'
+                },
+                {
+                    ...unityPackage,
+                    assetUrl:
+                        'https://api.vrchat.cloud/api/1/file/file_example/3/file',
+                    unitySortNumber: '20220322000'
+                },
+                {
+                    ...unityPackage,
+                    assetUrl:
+                        'https://api.vrchat.cloud/api/1/file/file_example/4/file',
+                    unitySortNumber: '60000067000'
+                }
+            ],
+            sdkUnityVersion: '2022.3.22f1',
+            endpoint: 'https://api.vrchat.cloud/api/1'
+        });
+
+        expect(getFileAnalysis).toHaveBeenCalledTimes(1);
+        expect(getFileAnalysis).toHaveBeenCalledWith({
+            fileId: 'file_example',
+            version: 3,
+            variant: 'security'
+        });
+    });
+
     it('identifies analysis responses that are not ready yet', () => {
         const pendingError = Object.assign(
             new Error('Analysis not yet available'),

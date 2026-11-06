@@ -153,7 +153,7 @@ function collectFileAnalysisRequests({
     const requests = new Map<string, FileAnalysisRequest>();
     const packages = Array.isArray(unityPackages) ? unityPackages : [];
 
-    for (const unityPackage of packages) {
+    for (const unityPackage of [...packages].reverse()) {
         if (!isAnalyzablePackage(unityPackage, sdkUnityVersion)) {
             continue;
         }
