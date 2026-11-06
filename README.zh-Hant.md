@@ -1,6 +1,6 @@
 <div align="center">
 
-# <img src="images/VRCX-0.png" alt="VRCX-0 Logo" width="25"> VRCX-0
+# <img src="images/brand/VRCX-0.png" alt="VRCX-0 Logo" width="25"> VRCX-0
 
 ### 更快、更好用，支援 AI。
 
@@ -19,7 +19,7 @@
 
 Windows · macOS · Linux
 
-![VRCX-0](images/screenshot-user-dialog.webp)
+![VRCX-0](images/screenshots/user-dialog.webp)
 
 </div>
 
