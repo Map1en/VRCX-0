@@ -28,7 +28,6 @@ jobs:
         outputs:
             frontend: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.frontend }}
             rust: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.rust }}
-            tauri_bindings: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.tauri_bindings }}
         steps:
             - uses: actions/checkout@v7
             - uses: dorny/paths-filter@v4
@@ -63,19 +62,7 @@ jobs:
                         - 'deny.toml'
                         - 'package.json'
                         - 'src-tauri/**'
-                      tauri_bindings:
-                        - '.cargo/**'
-                        - '.github/actions/setup-linux-tauri/**'
-                        - '.github/actions/setup-node/**'
-                        - '.github/actions/setup-rust/**'
-                        - '.github/workflows/ci.yml'
-                        - 'Cargo.lock'
-                        - 'Cargo.toml'
-                        - 'crates/**'
-                        - 'package.json'
-                        - 'package-lock.json'
-                        - 'src/platform/tauri/**'
-                        - 'src-tauri/**'
+                        - 'src/platform/tauri/bindings.ts'
 
     frontend-checks:
         name: Frontend Checks
@@ -211,6 +198,14 @@ jobs:
             - name: Test backend architecture
               if: runner.os == 'Linux'
               run: cargo test --manifest-path src-tauri/Cargo.toml --locked --test backend_architecture
+            - uses: ./.github/actions/setup-node
+              if: runner.os == 'Linux'
+            - name: Regenerate Tauri bindings
+              if: runner.os == 'Linux'
+              run: npm run generate:tauri-bindings
+            - name: Verify bindings.ts is regenerated
+              if: runner.os == 'Linux'
+              run: git diff --exit-code src/platform/tauri/bindings.ts
 
     rust-coverage:
         name: Rust Coverage
@@ -280,26 +275,6 @@ jobs:
             - env:
                   RUST_TEST_ARGS: ${{ matrix.rust_test_args }}
               run: npm run rust:test:ci -- $RUST_TEST_ARGS
-
-    tauri-bindings:
-        name: Tauri Bindings Up-to-date
-        runs-on: ubuntu-24.04
-        timeout-minutes: 45
-        needs: changes
-        if: needs.changes.outputs.tauri_bindings == 'true'
-        steps:
-            - uses: actions/checkout@v7
-            - uses: ./.github/actions/setup-linux-tauri
-              with:
-                  mode: ci
-            - uses: ./.github/actions/setup-node
-            - uses: ./.github/actions/setup-rust
-              with:
-                  cache-key: ci-linux-bindings
-                  save-cache: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
-            - run: npm run generate:tauri-bindings
-            - name: Verify bindings.ts is regenerated
-              run: git diff --exit-code src/platform/tauri/bindings.ts
 
     combined-coverage:
         name: Publish Coverage Badge
@@ -382,7 +357,6 @@ jobs:
             - logger-musl
             - tauri-build
             - rust-tests
-            - tauri-bindings
         steps:
             - name: Verify no required job failed
               env:
