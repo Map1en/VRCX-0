@@ -189,3 +189,13 @@ fn summary_lists_friend_count_and_names() {
 
     assert_eq!(output.summary, "2 friends online now: Alice, Bob.");
 }
+
+#[test]
+fn online_friends_params_accept_string_booleans_from_models() {
+    let params: OnlineFriendsParams =
+        serde_json::from_value(json!({ "includeLocation": "true" })).unwrap();
+    assert_eq!(params.include_location, Some(true));
+
+    let params: OnlineFriendsParams = serde_json::from_value(json!({})).unwrap();
+    assert_eq!(params.include_location, None);
+}

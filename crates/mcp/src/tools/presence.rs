@@ -13,7 +13,7 @@ use vrcx_0_core::trust::compute_user_platform;
 
 use crate::server::VrcxMcpServer;
 
-use super::common::structured_result;
+use super::common::{deserialize_optional_bool, structured_result};
 
 #[tool_router(router = presence_tool_router, vis = "pub(crate)")]
 impl VrcxMcpServer {
@@ -130,6 +130,7 @@ fn normalize_access_bucket(access_type: &str) -> String {
 #[serde(rename_all = "camelCase")]
 struct OnlineFriendsParams {
     states: Option<Vec<String>>,
+    #[serde(default, deserialize_with = "deserialize_optional_bool")]
     include_location: Option<bool>,
 }
 
