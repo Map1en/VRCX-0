@@ -313,9 +313,7 @@ fn linux_capability_status(capability: HostCapability) -> CapabilityStatus {
         HostCapability::VrchatPathDiscovery => {
             crate::vrchat_paths::discover_linux_vrchat_paths().map(drop)
         }
-        HostCapability::RegistryPrefs => {
-            crate::linux_registry::discover_linux_registry_context().map(drop)
-        }
+        HostCapability::RegistryPrefs => crate::linux_registry::discover_linux_user_reg().map(drop),
         HostCapability::GameLaunch => crate::vrchat_paths::discover_linux_game_launch(),
         HostCapability::VrchatLaunchPipe => crate::vrchat_paths::discover_linux_instance_launch()
             .map_err(|reason| format!("VRChat launch pipe bridge unavailable: {reason}")),

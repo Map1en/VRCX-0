@@ -8,43 +8,22 @@ use vrcx_0_core::vrchat_registry_policy::{
     strip_hash_from_key_name,
 };
 
-use crate::vrchat_paths::quoted_tokens;
-
-const VRCHAT_APP_ID: &str = "438100";
 const REGISTRY_SECTION: &str = "[Software\\\\VRChat\\\\VRChat]";
 
-#[derive(Clone, Debug)]
-pub struct LinuxRegistryContext {
-    pub wine_path: PathBuf,
-    pub wine_prefix: PathBuf,
-    pub user_reg: PathBuf,
-}
-
-pub fn discover_linux_registry_context() -> Result<LinuxRegistryContext, String> {
-    let vrchat_paths = crate::vrchat_paths::discover_linux_vrchat_paths()?;
-    let user_reg = vrchat_paths.proton_prefix.join("user.reg");
+pub fn discover_linux_user_reg() -> Result<PathBuf, String> {
+    let user_reg = crate::vrchat_paths::discover_linux_vrchat_paths()?
+        .proton_prefix
+        .join("user.reg");
     if !user_reg.is_file() {
         return Err("VRChat Proton user.reg not found".into());
     }
-
-    let steam_roots = crate::vrchat_paths::discover_linux_steam_roots()?;
-    let compat_tool = discover_vrchat_compat_tool(&steam_roots)
-        .ok_or_else(|| "VRChat Proton compatibility tool not found".to_string())?;
-    let wine_path = discover_wine_path(&steam_roots, &compat_tool)
-        .ok_or_else(|| "VRChat Proton Wine binary not found".to_string())?;
-
-    Ok(LinuxRegistryContext {
-        wine_path,
-        wine_prefix: vrchat_paths.proton_prefix,
-        user_reg,
-    })
+    Ok(user_reg)
 }
 
 pub fn get_registry_key(key: &str) -> Result<Value, String> {
-    let context = discover_linux_registry_context()?;
-    validate_registry_context(&context)?;
+    let user_reg = discover_linux_user_reg()?;
     let hashed_key = add_hash_to_key_name(key);
-    let entries = read_registry_entries(&context.user_reg)?;
+    let entries = read_registry_entries(&user_reg)?;
     Ok(entries
         .get(&hashed_key)
         .and_then(|raw| parse_registry_value(raw).map(|(_, data)| data))
@@ -52,37 +31,33 @@ pub fn get_registry_key(key: &str) -> Result<Value, String> {
 }
 
 pub fn has_registry_folder() -> Result<bool, String> {
-    let context = discover_linux_registry_context()?;
-    validate_registry_context(&context)?;
-    let content = fs::read_to_string(&context.user_reg)
+    let user_reg = discover_linux_user_reg()?;
+    let content = fs::read_to_string(&user_reg)
         .map_err(|e| format!("Failed to read Proton registry: {e}"))?;
     Ok(find_section_range(&content.lines().map(str::to_string).collect::<Vec<_>>()).is_some())
 }
 
 pub fn delete_registry_folder() -> Result<(), String> {
-    let context = discover_linux_registry_context()?;
-    validate_registry_context(&context)?;
-    let mut lines = read_registry_lines(&context.user_reg)?;
+    let user_reg = discover_linux_user_reg()?;
+    let mut lines = read_registry_lines(&user_reg)?;
     let Some((start, end)) = find_section_range(&lines) else {
         return Ok(());
     };
     lines.drain(start..end);
-    write_registry_lines(&context.user_reg, &lines)
+    write_registry_lines(&user_reg, &lines)
 }
 
 pub fn set_registry_key(key: &str, value: &Value, type_int: i32) -> Result<bool, String> {
-    let context = discover_linux_registry_context()?;
-    validate_registry_context(&context)?;
+    let user_reg = discover_linux_user_reg()?;
     let hashed_key = add_hash_to_key_name(key);
     let raw_value = format_registry_value(value, type_int)?;
-    upsert_registry_value(&context.user_reg, &hashed_key, &raw_value)?;
+    upsert_registry_value(&user_reg, &hashed_key, &raw_value)?;
     Ok(true)
 }
 
 pub fn get_registry() -> Result<HashMap<String, HashMap<String, Value>>, String> {
-    let context = discover_linux_registry_context()?;
-    validate_registry_context(&context)?;
-    let entries = read_registry_entries(&context.user_reg)?;
+    let user_reg = discover_linux_user_reg()?;
+    let entries = read_registry_entries(&user_reg)?;
     let mut registry = HashMap::new();
 
     for (key, raw) in entries {
@@ -118,132 +93,6 @@ pub fn set_registry(json: &str) -> Result<(), String> {
     }
 
     Ok(())
-}
-
-fn discover_vrchat_compat_tool(steam_roots: &[PathBuf]) -> Option<String> {
-    for root in steam_roots {
-        let config_vdf = root.join("config").join("config.vdf");
-        let Ok(content) = fs::read_to_string(config_vdf) else {
-            continue;
-        };
-        if let Some(tool) = parse_compat_tool_mapping(&content, VRCHAT_APP_ID) {
-            return Some(tool);
-        }
-    }
-    None
-}
-
-fn parse_compat_tool_mapping(content: &str, app_id: &str) -> Option<String> {
-    let mut in_mapping = false;
-    let mut current_app: Option<String> = None;
-
-    for line in content.lines() {
-        let tokens = quoted_tokens(line);
-        if tokens
-            .first()
-            .is_some_and(|token| token == "CompatToolMapping")
-        {
-            in_mapping = true;
-            current_app = None;
-            continue;
-        }
-        if !in_mapping {
-            continue;
-        }
-        if tokens.len() == 1 && tokens[0].bytes().all(|byte| byte.is_ascii_digit()) {
-            current_app = Some(tokens[0].clone());
-            continue;
-        }
-        if current_app.as_deref() == Some(app_id) && tokens.len() >= 2 && tokens[0] == "name" {
-            let tool = tokens[1].trim();
-            if !tool.is_empty() {
-                return Some(tool.to_string());
-            }
-        }
-    }
-
-    None
-}
-
-fn validate_registry_context(context: &LinuxRegistryContext) -> Result<(), String> {
-    if !context.wine_prefix.is_dir() {
-        return Err("VRChat Proton prefix not found".into());
-    }
-    if !context.user_reg.is_file() {
-        return Err("VRChat Proton user.reg not found".into());
-    }
-    if !context.wine_path.is_file() {
-        return Err("VRChat Proton Wine binary not found".into());
-    }
-    Ok(())
-}
-
-fn discover_wine_path(steam_roots: &[PathBuf], compat_tool: &str) -> Option<PathBuf> {
-    for root in steam_roots {
-        let candidates = [
-            root.join("steamapps")
-                .join("common")
-                .join(compat_tool)
-                .join("files")
-                .join("bin")
-                .join("wine"),
-            root.join("steamapps")
-                .join("common")
-                .join(compat_tool)
-                .join("dist")
-                .join("bin")
-                .join("wine"),
-        ];
-        for candidate in candidates {
-            if candidate.is_file() {
-                return Some(candidate);
-            }
-        }
-    }
-
-    for root in compatibility_tool_roots(steam_roots) {
-        let candidates = [root.clone(), root.join(compat_tool)];
-        for candidate in candidates {
-            let wine = candidate.join("files").join("bin").join("wine");
-            if wine.is_file() {
-                return Some(wine);
-            }
-        }
-
-        let Ok(entries) = fs::read_dir(&root) else {
-            continue;
-        };
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if !path.is_dir() || !path.to_string_lossy().contains(compat_tool) {
-                continue;
-            }
-            let wine = path.join("files").join("bin").join("wine");
-            if wine.is_file() {
-                return Some(wine);
-            }
-        }
-    }
-
-    None
-}
-
-fn compatibility_tool_roots(steam_roots: &[PathBuf]) -> Vec<PathBuf> {
-    let mut roots = vec![
-        PathBuf::from("/usr/share/steam/compatibilitytools.d"),
-        PathBuf::from("/usr/local/share/steam/compatibilitytools.d"),
-    ];
-
-    if let Some(extra_paths) = std::env::var_os("STEAM_EXTRA_COMPAT_TOOLS_PATHS") {
-        roots.extend(std::env::split_paths(&extra_paths));
-    }
-
-    roots.extend(
-        steam_roots
-            .iter()
-            .map(|root| root.join("compatibilitytools.d")),
-    );
-    roots
 }
 
 fn read_registry_entries(path: &Path) -> Result<HashMap<String, String>, String> {
@@ -438,32 +287,10 @@ fn format_hex_bytes(bytes: &[u8]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
-    use std::sync::Mutex;
-
     use super::{
-        discover_wine_path, find_section_range, format_registry_value, is_vrchat_registry_section,
-        parse_compat_tool_mapping, parse_registry_backup_value, parse_registry_value,
+        find_section_range, format_registry_value, is_vrchat_registry_section,
+        parse_registry_backup_value, parse_registry_value,
     };
-
-    static ENV_LOCK: Mutex<()> = Mutex::new(());
-
-    #[test]
-    fn parses_vrchat_compat_tool_mapping() {
-        let content = r#"
-            "CompatToolMapping"
-            {
-                "438100"
-                {
-                    "name" "GE-Proton9-27"
-                }
-            }
-        "#;
-        assert_eq!(
-            parse_compat_tool_mapping(content, "438100").as_deref(),
-            Some("GE-Proton9-27")
-        );
-    }
 
     #[test]
     fn parses_registry_value_shapes() {
@@ -515,95 +342,5 @@ mod tests {
             "[Software\\\\Other] 1715753422".to_string(),
         ];
         assert_eq!(find_section_range(&lines), Some((1, 4)));
-    }
-
-    #[test]
-    fn discovers_modern_proton_wine_layout() {
-        let root = std::env::temp_dir().join(format!(
-            "vrcx-linux-registry-test-{}-modern-proton",
-            std::process::id()
-        ));
-        let wine = root
-            .join("steamapps")
-            .join("common")
-            .join("Proton Hotfix")
-            .join("files")
-            .join("bin")
-            .join("wine");
-        fs::create_dir_all(wine.parent().unwrap()).unwrap();
-        fs::write(&wine, b"").unwrap();
-
-        assert_eq!(
-            discover_wine_path(std::slice::from_ref(&root), "Proton Hotfix"),
-            Some(wine)
-        );
-
-        fs::remove_dir_all(root).unwrap();
-    }
-
-    #[test]
-    fn discovers_extra_compat_tool_parent_path() {
-        let _guard = ENV_LOCK.lock().unwrap();
-        let previous = std::env::var_os("STEAM_EXTRA_COMPAT_TOOLS_PATHS");
-        let steam_root = std::env::temp_dir().join(format!(
-            "vrcx-linux-registry-test-{}-steam-root",
-            std::process::id()
-        ));
-        let extra_root = std::env::temp_dir().join(format!(
-            "vrcx-linux-registry-test-{}-extra-parent",
-            std::process::id()
-        ));
-        let wine = extra_root
-            .join("GE-Proton9-27")
-            .join("files")
-            .join("bin")
-            .join("wine");
-        fs::create_dir_all(wine.parent().unwrap()).unwrap();
-        fs::write(&wine, b"").unwrap();
-        std::env::set_var("STEAM_EXTRA_COMPAT_TOOLS_PATHS", &extra_root);
-
-        assert_eq!(
-            discover_wine_path(std::slice::from_ref(&steam_root), "GE-Proton9-27"),
-            Some(wine)
-        );
-
-        restore_extra_compat_tools_paths(previous);
-        let _ = fs::remove_dir_all(steam_root);
-        fs::remove_dir_all(extra_root).unwrap();
-    }
-
-    #[test]
-    fn discovers_extra_compat_tool_direct_path() {
-        let _guard = ENV_LOCK.lock().unwrap();
-        let previous = std::env::var_os("STEAM_EXTRA_COMPAT_TOOLS_PATHS");
-        let steam_root = std::env::temp_dir().join(format!(
-            "vrcx-linux-registry-test-{}-steam-root-direct",
-            std::process::id()
-        ));
-        let tool_root = std::env::temp_dir().join(format!(
-            "vrcx-linux-registry-test-{}-extra-direct",
-            std::process::id()
-        ));
-        let wine = tool_root.join("files").join("bin").join("wine");
-        fs::create_dir_all(wine.parent().unwrap()).unwrap();
-        fs::write(&wine, b"").unwrap();
-        std::env::set_var("STEAM_EXTRA_COMPAT_TOOLS_PATHS", &tool_root);
-
-        assert_eq!(
-            discover_wine_path(std::slice::from_ref(&steam_root), "GE-Proton9-27"),
-            Some(wine)
-        );
-
-        restore_extra_compat_tools_paths(previous);
-        let _ = fs::remove_dir_all(steam_root);
-        fs::remove_dir_all(tool_root).unwrap();
-    }
-
-    fn restore_extra_compat_tools_paths(previous: Option<std::ffi::OsString>) {
-        if let Some(value) = previous {
-            std::env::set_var("STEAM_EXTRA_COMPAT_TOOLS_PATHS", value);
-        } else {
-            std::env::remove_var("STEAM_EXTRA_COMPAT_TOOLS_PATHS");
-        }
     }
 }
