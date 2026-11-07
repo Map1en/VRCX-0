@@ -92,7 +92,10 @@ function DetailCell({ row, table }: AppCellContext<FeedRow>) {
     );
 }
 
-export function useFeedColumns(meta: FeedTableMeta): FeedColumns {
+export function useFeedColumns(
+    meta: FeedTableMeta,
+    searchMode: boolean
+): FeedColumns {
     const { t } = useTranslation();
 
     return useMemo<FeedColumns>(
@@ -114,6 +117,7 @@ export function useFeedColumns(meta: FeedTableMeta): FeedColumns {
             },
             {
                 id: 'created_at',
+                size: searchMode ? 150 : 96,
                 enableHiding: false,
                 accessorFn: (row: FeedRow) =>
                     getFeedTableSortValue(row, 'created_at', meta),
@@ -185,6 +189,6 @@ export function useFeedColumns(meta: FeedTableMeta): FeedColumns {
                 cell: DetailCell
             }
         ],
-        [meta, t]
+        [meta, searchMode, t]
     );
 }

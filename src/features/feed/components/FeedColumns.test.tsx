@@ -49,7 +49,7 @@ function createMeta(): FeedTableMeta {
 
 describe('useFeedColumns', () => {
     it('keeps the fixed time, user, type, detail order without hide controls', () => {
-        const { result } = renderHook(() => useFeedColumns(createMeta()));
+        const { result } = renderHook(() => useFeedColumns(createMeta(), true));
 
         expect(result.current.map((column) => column.id)).toEqual([
             'expander',
@@ -63,9 +63,22 @@ describe('useFeedColumns', () => {
         ).toBe(true);
     });
 
+    it('defaults the time column narrower for the clock-only live stream', () => {
+        const meta = createMeta();
+        const timeSize = (searchMode: boolean) =>
+            renderHook(() =>
+                useFeedColumns(meta, searchMode)
+            ).result.current.find((column) => column.id === 'created_at')
+                ?.size ?? 0;
+
+        expect(timeSize(false)).toBeLessThan(timeSize(true));
+    });
+
     it('keeps the columns array reference stable when meta contents change', () => {
         const meta = createMeta();
-        const { result, rerender } = renderHook(() => useFeedColumns(meta));
+        const { result, rerender } = renderHook(() =>
+            useFeedColumns(meta, true)
+        );
         const initialColumns = result.current;
 
         meta.friendLogNamesById = { usr_1: 'Alice' };
@@ -78,7 +91,7 @@ describe('useFeedColumns', () => {
 
     it('reads mutated meta through the displayName accessor', () => {
         const meta = createMeta();
-        const { result } = renderHook(() => useFeedColumns(meta));
+        const { result } = renderHook(() => useFeedColumns(meta, true));
         const displayName = result.current.find(
             (column) => column.id === 'displayName'
         );

@@ -112,7 +112,7 @@ export function useFeedPageController({
             previousInstancesDialog.openPreviousInstancesForLocation,
         rows: feedRows.rows
     });
-    const columns = useFeedColumns(feedTableMeta);
+    const columns = useFeedColumns(feedTableMeta, feedRows.searchMode);
     const { pagination, setPagination, sorting } = tableModel;
     const activeSorting = feedRows.searchMode ? sorting : EMPTY_SORTING;
     const { knownUsersById, friendLogNamesById } = activeSorting.some(
