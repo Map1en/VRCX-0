@@ -246,7 +246,7 @@ export function GameLogToolbar({
     return (
         <PageToolbar className="@container/game-log-toolbar">
             <PageToolbarRow>
-                <ToolbarViews className="min-w-0 flex-initial flex-wrap @min-4xl/game-log-toolbar:flex-1">
+                <ToolbarViews className="min-w-0 flex-wrap">
                     <ToolbarSegmented
                         iconOnly
                         value={viewMode}

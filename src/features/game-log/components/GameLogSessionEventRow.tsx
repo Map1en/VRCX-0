@@ -5,8 +5,7 @@ import {
     ExternalLinkIcon,
     LogInIcon,
     LogOutIcon,
-    UsersIcon,
-    VideoIcon
+    UsersIcon
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -56,7 +55,7 @@ import type {
 
 const VIDEO_SOURCE_WITHOUT_LINK = new Set(['LSMedia', 'PopcornPalace']);
 const PLAYER_EVENT_GRID_CLASS =
-    'grid-cols-[4.75rem_1rem_1rem_minmax(0,1fr)_5.5rem_5rem]';
+    'grid-cols-[4.75rem_1rem_1rem_minmax(0,16rem)_5.5rem_5rem]';
 
 type SessionPlayerInput = Pick<
     GameLogSessionEvent,
@@ -211,7 +210,7 @@ function PlayerActivityRow({
                 type: eventType,
                 typeLabel: getGameLogFilterTypeLabel(eventType, t)
             })}
-            className="grid min-h-7 grid-cols-[4.75rem_1rem_minmax(0,1fr)_5rem] items-center gap-2 rounded-md px-2 py-0.5 text-sm hover:bg-(--state-hover-surface)"
+            className="grid min-h-7 grid-cols-[4.75rem_1rem_minmax(0,16rem)_5rem] items-center gap-2 rounded-md px-2 py-0.5 text-sm hover:bg-(--state-hover-surface)"
         >
             <EventTime value={item.created_at} />
             <AffinityBadge
@@ -354,7 +353,7 @@ function GroupActivityRow({
                             )
                         })}
                         className={cn(
-                            'grid min-h-8 w-full items-center gap-2 rounded-md px-2 py-1 text-left text-sm hover:bg-(--state-hover-surface)',
+                            'grid min-h-8 w-full items-center justify-start gap-2 rounded-md px-2 py-1 text-left text-sm hover:bg-(--state-hover-surface)',
                             PLAYER_EVENT_GRID_CLASS
                         )}
                     >
@@ -415,26 +414,25 @@ function VideoActivityRow({ event }: { event: GameLogSessionEvent }) {
         <ContextMenu>
             <ContextMenuTrigger
                 render={
-                    <div className="grid min-h-8 grid-cols-[4.75rem_1rem_minmax(0,1fr)_auto] items-center gap-2 rounded-md px-2 py-1 text-sm hover:bg-(--state-hover-surface)">
+                    <div className="grid min-h-8 grid-cols-[4rem_minmax(0,1fr)_auto] items-baseline gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-(--state-hover-surface)">
                         <EventTime value={event.created_at} />
-                        <VideoIcon className="text-muted-foreground size-3.5 shrink-0" />
-                        <div className="flex min-w-0 items-center gap-1.5">
+                        <div className="flex min-w-0 items-baseline gap-1.5">
                             {showVideoLink ? (
                                 <Button
                                     type="button"
                                     variant="link"
-                                    className="text-foreground h-auto min-w-0 shrink justify-start p-0 text-left font-normal"
+                                    className="text-foreground h-auto min-w-0 shrink justify-start p-0 text-left font-normal whitespace-normal"
                                     onClick={(eventObject) => {
                                         eventObject.stopPropagation();
                                         openExternalLink(videoUrl);
                                     }}
                                 >
-                                    <span className="truncate">
+                                    <span className="line-clamp-2 break-words">
                                         {videoLabel}
                                     </span>
                                 </Button>
                             ) : (
-                                <span className="min-w-0 truncate">
+                                <span className="line-clamp-2 min-w-0 break-words">
                                     {videoLabel}
                                 </span>
                             )}
@@ -451,7 +449,7 @@ function VideoActivityRow({ event }: { event: GameLogSessionEvent }) {
                             ) : null}
                         </div>
                         {event?.displayName ? (
-                            <span className="text-muted-foreground min-w-0 truncate text-xs">
+                            <span className="text-muted-foreground max-w-40 min-w-0 truncate text-xs">
                                 {t('view.game_log.sessions.played_by', {
                                     name: event.displayName
                                 })}
@@ -504,6 +502,60 @@ function VideoActivityRow({ event }: { event: GameLogSessionEvent }) {
     );
 }
 
+function SessionVideoLane({
+    events
+}: {
+    events: readonly GameLogSessionEvent[];
+}) {
+    const { t } = useTranslation();
+    const [isOpen, setIsOpen] = useState(true);
+    const label = t('view.game_log.sessions.videos');
+
+    return (
+        <section
+            aria-label={label}
+            className="border-border mt-2 flex min-w-0 flex-col border-t pt-2 @min-[56rem]/session-body:mt-0 @min-[56rem]/session-body:min-h-30 @min-[56rem]/session-body:border-t-0 @min-[56rem]/session-body:border-l @min-[56rem]/session-body:pt-0 @min-[56rem]/session-body:pl-3"
+        >
+            <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-expanded={isOpen}
+                className="text-muted-foreground h-7 justify-start gap-1.5 px-2 text-xs font-medium @min-[56rem]/session-body:hidden"
+                onClick={() => setIsOpen((current) => !current)}
+            >
+                <ChevronRightIcon
+                    data-icon="inline-start"
+                    className={cn(
+                        'transition-transform duration-150',
+                        isOpen && 'rotate-90'
+                    )}
+                />
+                {`${label} · ${events.length}`}
+            </Button>
+            <div className="text-muted-foreground hidden px-2 pb-1 text-xs font-medium @min-[56rem]/session-body:block">
+                {label}
+            </div>
+            <div className="relative min-h-0 flex-1">
+                <div
+                    data-video-lane-list=""
+                    className={cn(
+                        'max-h-48 content-start gap-0.5 overflow-y-auto @min-[56rem]/session-body:absolute @min-[56rem]/session-body:inset-0 @min-[56rem]/session-body:grid @min-[56rem]/session-body:max-h-none',
+                        isOpen ? 'grid' : 'hidden'
+                    )}
+                >
+                    {events.map((event, index) => (
+                        <VideoActivityRow
+                            key={`${event.type}:${event.created_at}:${event.videoUrl || index}`}
+                            event={event}
+                        />
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+}
+
 function SessionEventRow({
     durationByKey,
     event
@@ -544,7 +596,6 @@ export function SessionEventGroups({
     durationByKey?: Map<string, number>;
     events?: readonly GameLogSessionEvent[];
 }) {
-    const { t } = useTranslation();
     const visibleEvents = events.filter((event) =>
         ['JoinGroup', 'LeftGroup', 'OnPlayerJoined', 'OnPlayerLeft'].includes(
             event?.type || ''
@@ -557,29 +608,21 @@ export function SessionEventGroups({
     }
 
     return (
-        <div className="flex flex-col gap-0.5 px-2 py-1.5">
-            {visibleEvents.map((event, index) => (
-                <SessionEventRow
-                    key={`${event.type}:${event.created_at}:${event.userId || index}`}
-                    durationByKey={durationByKey}
-                    event={event}
-                />
-            ))}
-            {videoEvents.length ? (
-                <div className="border-border mt-2 border-t pt-2">
-                    <div className="text-muted-foreground px-2 pb-1 text-xs font-medium">
-                        {t('view.game_log.sessions.videos')}
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                        {videoEvents.map((event, index) => (
-                            <VideoActivityRow
-                                key={`${event.type}:${event.created_at}:${event.videoUrl || index}`}
-                                event={event}
-                            />
-                        ))}
-                    </div>
+        <div className="@container/session-body px-2 py-1.5">
+            <div className="grid grid-cols-1 gap-x-3 @min-[56rem]/session-body:grid-cols-[36rem_minmax(0,1fr)]">
+                <div className="flex min-w-0 flex-col gap-0.5">
+                    {visibleEvents.map((event, index) => (
+                        <SessionEventRow
+                            key={`${event.type}:${event.created_at}:${event.userId || index}`}
+                            durationByKey={durationByKey}
+                            event={event}
+                        />
+                    ))}
                 </div>
-            ) : null}
+                {videoEvents.length ? (
+                    <SessionVideoLane events={videoEvents} />
+                ) : null}
+            </div>
         </div>
     );
 }

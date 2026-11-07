@@ -714,7 +714,7 @@ export function GameLogSessionsView({
                     type="button"
                     variant="secondary"
                     size="sm"
-                    className="bg-popover/95 absolute top-9 left-1/2 z-20 h-7 -translate-x-1/2 rounded-full border px-3 text-xs shadow-md backdrop-blur"
+                    className="bg-popover/95 absolute top-18 left-1/2 z-20 h-7 -translate-x-1/2 rounded-full border px-3 text-xs shadow-md backdrop-blur"
                     onClick={scrollToLatest}
                 >
                     <ArrowUpToLineIcon data-icon="inline-start" />
