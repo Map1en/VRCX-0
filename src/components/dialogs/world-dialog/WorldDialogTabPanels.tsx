@@ -377,16 +377,6 @@ export function WorldDialogTabPanels({
                                                         )
                                                 }}
                                             />
-                                            {isClosed ? (
-                                                <Badge
-                                                    variant="outline"
-                                                    className="shrink-0"
-                                                >
-                                                    {t(
-                                                        'dialog.world.instances.closed'
-                                                    )}
-                                                </Badge>
-                                            ) : null}
                                             {instance.isCurrentInstance ? (
                                                 <CurrentInstanceBadge className="shrink-0" />
                                             ) : (
