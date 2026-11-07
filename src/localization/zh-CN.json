@@ -1253,7 +1253,7 @@
         "visited_hours_ago_other": "{count} 小时前来过",
         "visited_at": "上次进入：{time}",
         "online": "在线",
-        "active": "活跃中（仅登录网页端）",
+        "active": "活跃中",
         "offline": "离线",
         "pending_offline": "可能离线",
         "status_menu": {
@@ -1553,7 +1553,7 @@
             "favorite_friends": "好友收藏",
             "favorite": "好友收藏",
             "same_instance": "同一房间",
-            "active": "活跃中（仅登录网页端）",
+            "active": "活跃中",
             "offline": "离线",
             "search_placeholder": "搜索好友",
             "density": "密度",

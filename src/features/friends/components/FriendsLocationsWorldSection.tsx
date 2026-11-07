@@ -89,7 +89,7 @@ function FriendChip({
                 type="button"
                 data-pending-offline={isPendingOffline || undefined}
                 className={cn(
-                    'focus-visible:ring-ring/50 relative isolate flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-md pr-3 pl-1 text-sm outline-none hover:bg-(--state-hover-surface) focus-visible:ring-3',
+                    'focus-visible:ring-ring/50 bg-foreground/4 relative isolate flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-md pr-3 pl-1 text-sm outline-none hover:bg-(--state-hover-surface) focus-visible:ring-3',
                     twoLine ? 'h-10' : 'h-8'
                 )}
                 onClick={onOpen}
