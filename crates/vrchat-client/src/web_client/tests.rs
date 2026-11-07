@@ -166,8 +166,7 @@ fn builds_user_agent_without_version_when_empty() {
     assert_eq!(build_vrcx_user_agent("   "), "VRCX-0");
 }
 
-#[tokio::test]
-async fn transport_sends_owned_user_agent_and_ignores_request_override() -> Result<()> {
+async fn capture_request_head() -> (std::net::SocketAddr, tokio::task::JoinHandle<String>) {
     use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
     use tokio::net::TcpListener;
 
@@ -192,7 +191,12 @@ async fn transport_sends_owned_user_agent_and_ignores_request_override() -> Resu
             .unwrap();
         request
     });
+    (address, server)
+}
 
+#[tokio::test]
+async fn transport_sends_owned_user_agent_and_ignores_request_override() -> Result<()> {
+    let (address, server) = capture_request_head().await;
     let web = WebClient::new(None, None, "2.9.2")?;
     let mut request = WebExecuteRequest::new(format!("http://{address}/config"), "GET".into());
     request
@@ -207,6 +211,29 @@ async fn transport_sends_owned_user_agent_and_ignores_request_override() -> Resu
         .lines()
         .any(|line| line.eq_ignore_ascii_case("user-agent: VRCX-0/2.9.2")));
     assert!(!captured.contains("caller-override"));
+    Ok(())
+}
+
+#[tokio::test]
+async fn external_transport_sends_app_name_without_version() -> Result<()> {
+    for follow_redirects in [true, false] {
+        let (address, server) = capture_request_head().await;
+        let web = WebClient::new(None, None, "2.9.2")?;
+        let mut request = WebExecuteRequest::new(format!("http://{address}/search"), "GET".into());
+        request
+            .headers
+            .push(("User-Agent".into(), "caller-override".into()));
+
+        let response = web.execute_external(request, follow_redirects).await?;
+        let captured = server.await.unwrap();
+
+        assert_eq!(response, (200, "ok".into()));
+        assert!(captured
+            .lines()
+            .any(|line| line.eq_ignore_ascii_case("user-agent: VRCX-0")));
+        assert!(!captured.contains("2.9.2"));
+        assert!(!captured.contains("caller-override"));
+    }
     Ok(())
 }
 
@@ -253,7 +280,7 @@ async fn no_redirect_transport_does_not_follow_a_loopback_location() -> Result<(
 
     let web = WebClient::new(None, None, env!("CARGO_PKG_VERSION"))?;
     let request = WebExecuteRequest::new(format!("http://{redirect_address}/theme"), "GET".into());
-    let (status, _) = web.execute_without_redirects(request).await?;
+    let (status, _) = web.execute_external(request, false).await?;
 
     redirect_server.await.unwrap();
     target_server.await.unwrap();

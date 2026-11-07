@@ -196,18 +196,10 @@ impl WebClient {
         request: ExternalWebExecuteRequest,
     ) -> Result<(i32, String)> {
         let follow_redirects = request.follow_redirects;
-        let request = external_request_to_transport(request);
-        if follow_redirects {
-            self.inner
-                .execute(request)
-                .await
-                .map_err(crate::Error::from)
-        } else {
-            self.inner
-                .execute_without_redirects(request)
-                .await
-                .map_err(crate::Error::from)
-        }
+        self.inner
+            .execute_external(external_request_to_transport(request), follow_redirects)
+            .await
+            .map_err(crate::Error::from)
     }
 
     pub async fn execute_api(

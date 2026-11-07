@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use base64::{engine::general_purpose::STANDARD as B64, Engine};
 use cookie_store::{CookieStore, RawCookie};
-use reqwest::header::{HeaderName, HeaderValue, CONTENT_TYPE, REFERER};
+use reqwest::header::{HeaderName, HeaderValue, CONTENT_TYPE, REFERER, USER_AGENT};
 use reqwest::multipart::{Form, Part};
 use reqwest::redirect::Policy;
 use reqwest::{Client, Method, Proxy};
@@ -450,15 +450,44 @@ impl WebClient {
         normalize_execute_result(result)
     }
 
-    pub async fn execute_without_redirects(
+    pub async fn execute_external(
         &self,
         request: WebExecuteRequest,
+        follow_redirects: bool,
     ) -> Result<(i32, String)> {
-        let result = self
-            .do_execute_fresh_standard_with_redirects(request, false)
-            .await;
+        let result = self.do_execute_external(request, follow_redirects).await;
 
         normalize_execute_result(result)
+    }
+
+    async fn do_execute_external(
+        &self,
+        mut request: WebExecuteRequest,
+        follow_redirects: bool,
+    ) -> Result<(i32, String)> {
+        if !matches!(&request.upload, WebUploadMode::None) {
+            return Err(Error::Custom(
+                "external HTTP execution does not support uploads".into(),
+            ));
+        }
+        let fresh_client;
+        let client = if follow_redirects {
+            &self.client
+        } else {
+            fresh_client = build_http_client_with_redirects(
+                Arc::clone(&self.jar),
+                self.proxy_url.as_deref(),
+                &self.user_agent,
+                false,
+            )?;
+            &fresh_client
+        };
+        let response_body_limit = request.response_body_limit;
+        let mut http_request = self.build_standard_request_with(client, &mut request)?;
+        http_request
+            .headers_mut()
+            .insert(USER_AGENT, HeaderValue::from_static(BASE_USER_AGENT));
+        execute_request(client, http_request, response_body_limit).await
     }
 
     pub async fn execute_fresh_standard(
@@ -470,26 +499,19 @@ impl WebClient {
         normalize_execute_result(result)
     }
 
-    async fn do_execute_fresh_standard(&self, request: WebExecuteRequest) -> Result<(i32, String)> {
-        self.do_execute_fresh_standard_with_redirects(request, true)
-            .await
-    }
-
-    async fn do_execute_fresh_standard_with_redirects(
+    async fn do_execute_fresh_standard(
         &self,
         mut request: WebExecuteRequest,
-        follow_redirects: bool,
     ) -> Result<(i32, String)> {
         if !matches!(&request.upload, WebUploadMode::None) {
             return Err(Error::Custom(
                 "fresh HTTP client execution does not support uploads".into(),
             ));
         }
-        let client = build_http_client_with_redirects(
+        let client = build_http_client(
             Arc::clone(&self.jar),
             self.proxy_url.as_deref(),
             &self.user_agent,
-            follow_redirects,
         )?;
         let response_body_limit = request.response_body_limit;
         let request = self.build_standard_request_with(&client, &mut request)?;
