@@ -4,9 +4,10 @@ use std::time::Duration;
 
 use futures_util::future::join_all;
 use tokio::sync::watch;
-use tokio::time::Instant;
 
-use vrcx_0_application_core::{BackendRuntimeStatusPublisher, Error, Result, RuntimeAuthScope};
+use vrcx_0_application_core::{
+    BackendRuntimeStatusPublisher, Error, RateLimitBackoff, RequestPacer, Result, RuntimeAuthScope,
+};
 pub use vrcx_0_application_core::{FriendProfileBulkLoadStatus, FriendProfileLoadStatusPayload};
 use vrcx_0_core::friends::FriendRecord;
 use vrcx_0_core::vrchat_endpoints::normalize_vrchat_api_endpoint;
@@ -18,41 +19,12 @@ use crate::realtime::{
 use super::state::ActiveRealtimeContext;
 use super::{RealtimeHostRuntime, RealtimeHostRuntimeDeps, RealtimeStopRequest};
 
-const FRIEND_PROFILE_BULK_LOAD_MAX_RETRIES: u32 = 4;
-const FRIEND_PROFILE_BULK_LOAD_BASE_DELAY: Duration = Duration::from_millis(500);
+const FRIEND_PROFILE_BULK_LOAD_BACKOFF: RateLimitBackoff =
+    RateLimitBackoff::new(Duration::from_millis(500), 4);
 #[cfg(test)]
 pub(super) const FRIEND_PROFILE_BULK_LOAD_REQUEST_INTERVAL: Duration = Duration::from_secs(1);
 pub(super) const FRIEND_PROFILE_BULK_LOAD_CONCURRENCY: usize = 3;
 pub(super) const FRIEND_PROFILE_BULK_LOAD_REQUEST_SPACING: Duration = Duration::from_millis(333);
-
-pub(super) struct FriendProfileBulkLoadPacer {
-    next_slot: tokio::sync::Mutex<Option<Instant>>,
-}
-
-impl FriendProfileBulkLoadPacer {
-    pub(super) fn new() -> Self {
-        Self {
-            next_slot: tokio::sync::Mutex::new(None),
-        }
-    }
-
-    pub(super) async fn acquire_slot(&self) {
-        let slot = {
-            let mut next_slot = self.next_slot.lock().await;
-            let now = Instant::now();
-            let slot = next_slot.map(|at| at.max(now)).unwrap_or(now);
-            *next_slot = Some(slot + FRIEND_PROFILE_BULK_LOAD_REQUEST_SPACING);
-            slot
-        };
-        tokio::time::sleep_until(slot).await;
-    }
-
-    pub(super) async fn delay_next_slots(&self, delay: Duration) {
-        let mut next_slot = self.next_slot.lock().await;
-        let resume_at = Instant::now() + delay;
-        *next_slot = Some(next_slot.map(|at| at.max(resume_at)).unwrap_or(resume_at));
-    }
-}
 
 pub(super) struct FriendProfileBulkLoadInitialProgress {
     pub(super) total: u32,
@@ -168,10 +140,6 @@ fn friend_missing_date_joined(friend: &FriendRecord) -> bool {
         .date_joined
         .as_str()
         .is_none_or(|value| value.trim().is_empty())
-}
-
-pub(super) fn friend_profile_bulk_load_backoff_delay(attempt: u32) -> Duration {
-    FRIEND_PROFILE_BULK_LOAD_BASE_DELAY.saturating_mul(1u32 << attempt.min(16))
 }
 
 pub(super) struct FriendProfileBulkLoader {
@@ -481,7 +449,7 @@ impl FriendProfileBulkLoader {
         run_id: u64,
         owner: &FriendProfileBulkLoadOwner,
         user_id: &str,
-        pacer: &FriendProfileBulkLoadPacer,
+        pacer: &RequestPacer,
         cancel_rx: &mut tokio::sync::watch::Receiver<u64>,
         transport_rx: &mut tokio::sync::watch::Receiver<u64>,
     ) -> Option<FriendProfileBulkLoadItemOutcome> {
@@ -530,9 +498,10 @@ impl FriendProfileBulkLoader {
                     return Some(FriendProfileBulkLoadItemOutcome::Loaded);
                 }
                 Ok(response)
-                    if response.status == 429 && attempt < FRIEND_PROFILE_BULK_LOAD_MAX_RETRIES =>
+                    if response.status == 429
+                        && attempt < FRIEND_PROFILE_BULK_LOAD_BACKOFF.max_retries() =>
                 {
-                    let delay = friend_profile_bulk_load_backoff_delay(attempt);
+                    let delay = FRIEND_PROFILE_BULK_LOAD_BACKOFF.delay(attempt);
                     attempt += 1;
                     pacer.delay_next_slots(delay).await;
                     tokio::select! {
@@ -588,7 +557,7 @@ impl FriendProfileBulkLoader {
         targets: Vec<String>,
     ) {
         let queue = Mutex::new(VecDeque::from(targets));
-        let pacer = FriendProfileBulkLoadPacer::new();
+        let pacer = RequestPacer::new(FRIEND_PROFILE_BULK_LOAD_REQUEST_SPACING);
         let workers = (0..FRIEND_PROFILE_BULK_LOAD_CONCURRENCY).map(|_| {
             self.run_friend_profile_bulk_load_worker(host, run_id, &owner, &queue, &pacer)
         });
@@ -603,7 +572,7 @@ impl FriendProfileBulkLoader {
         run_id: u64,
         owner: &FriendProfileBulkLoadOwner,
         queue: &Mutex<VecDeque<String>>,
-        pacer: &FriendProfileBulkLoadPacer,
+        pacer: &RequestPacer,
     ) {
         let mut cancel_rx = self.cancel_tx.subscribe();
         let mut transport_rx = host.cancel_tx.subscribe();

@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use serde_json::Value;
-use tokio::time::{sleep, Instant};
+use tokio::time::sleep;
 use vrcx_0_application_realtime::RealtimeHostRuntime;
 use vrcx_0_contracts::vrchat_api::VrchatScope;
 use vrcx_0_core::json::RawJson;
@@ -16,7 +16,9 @@ use super::types::{
 };
 use crate::remote::VrchatRequestPort;
 use crate::scope_gate::ScopeGate;
-use vrcx_0_application_core::{Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot};
+use vrcx_0_application_core::{
+    Error, RateLimitBackoff, RequestPacer, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot,
+};
 use vrcx_0_core::OwnerId;
 
 const MUTUAL_GRAPH_GATE: ScopeGate = ScopeGate::new("Mutual graph");
@@ -27,8 +29,8 @@ const MUTUAL_FRIENDS_LIST_GATE: ScopeGate = ScopeGate::new("User mutual friends 
 mod tests;
 
 const MUTUAL_GRAPH_PAGE_SIZE: i32 = 100;
-const MUTUAL_GRAPH_REQUEST_INTERVAL: Duration = Duration::from_millis(200);
-const MUTUAL_GRAPH_MAX_RETRIES: usize = 4;
+pub(super) const MUTUAL_GRAPH_REQUEST_INTERVAL: Duration = Duration::from_millis(200);
+const MUTUAL_GRAPH_BACKOFF: RateLimitBackoff = RateLimitBackoff::new(Duration::from_millis(500), 4);
 const MUTUAL_GRAPH_MAX_PAGES: usize = 50;
 const MUTUAL_GRAPH_EMPTY_USER_ID: &str = "usr_00000000-0000-0000-0000-000000000000";
 
@@ -38,7 +40,7 @@ pub(super) struct MutualGraphFetchContext<'a> {
     pub(super) cancel_flag: &'a AtomicBool,
     pub(super) auth_scope: &'a RuntimeAuthScope,
     pub(super) expected_scope: &'a RuntimeAuthScopeSnapshot,
-    pub(super) last_request_at: Option<Instant>,
+    pub(super) pacer: RequestPacer,
 }
 
 pub(super) enum FriendFetchResult {
@@ -69,7 +71,7 @@ pub async fn refresh_mutual_graph_friend(
         cancel_flag: &cancel_flag,
         auth_scope: deps.auth_scope,
         expected_scope: &expected_scope,
-        last_request_at: None,
+        pacer: RequestPacer::new(MUTUAL_GRAPH_REQUEST_INTERVAL),
     };
     let (status, mutual_ids, total_count, opted_out) =
         match fetch_friend_mutuals(&mut context, &friend_id).await {
@@ -120,7 +122,7 @@ pub async fn get_user_mutual_friends_list(
         cancel_flag: &cancel_flag,
         auth_scope: deps.auth_scope,
         expected_scope: &expected_scope,
-        last_request_at: None,
+        pacer: RequestPacer::new(MUTUAL_GRAPH_REQUEST_INTERVAL),
     };
     let result = fetch_mutual_friend_rows(&mut context, &user_id).await?;
     MUTUAL_GRAPH_GATE.ensure_matches(deps.auth_scope, &expected_scope)?;
@@ -228,7 +230,7 @@ async fn fetch_mutual_page(
     friend_id: &str,
     offset: i32,
 ) -> PageFetchResult {
-    let mut attempt = 0usize;
+    let mut attempt = 0u32;
     loop {
         if fetch_should_cancel(
             context.cancel_flag,
@@ -238,7 +240,7 @@ async fn fetch_mutual_page(
             return PageFetchResult::Cancelled;
         }
 
-        wait_for_rate_limit(&mut context.last_request_at).await;
+        context.pacer.acquire_slot().await;
         if fetch_should_cancel(
             context.cancel_flag,
             context.auth_scope,
@@ -259,8 +261,8 @@ async fn fetch_mutual_page(
         let response = match context.remote.send(request, VrchatScope::Vrchat).await {
             Ok(response) => response,
             Err(error) => {
-                if attempt < MUTUAL_GRAPH_MAX_RETRIES {
-                    sleep(backoff_delay(attempt)).await;
+                if attempt < MUTUAL_GRAPH_BACKOFF.max_retries() {
+                    sleep(MUTUAL_GRAPH_BACKOFF.delay(attempt)).await;
                     attempt += 1;
                     continue;
                 }
@@ -284,8 +286,8 @@ async fn fetch_mutual_page(
             return PageFetchResult::Rows(rows);
         }
 
-        if is_retryable_status(response.status) && attempt < MUTUAL_GRAPH_MAX_RETRIES {
-            sleep(backoff_delay(attempt)).await;
+        if is_retryable_status(response.status) && attempt < MUTUAL_GRAPH_BACKOFF.max_retries() {
+            sleep(MUTUAL_GRAPH_BACKOFF.delay(attempt)).await;
             attempt += 1;
             continue;
         }
@@ -333,21 +335,6 @@ async fn fetch_mutual_friend_rows(
         rows,
         complete: false,
     })
-}
-
-async fn wait_for_rate_limit(last_request_at: &mut Option<Instant>) {
-    if let Some(last_request_at) = last_request_at {
-        let interval = MUTUAL_GRAPH_REQUEST_INTERVAL;
-        let elapsed = last_request_at.elapsed();
-        if elapsed < interval {
-            sleep(interval - elapsed).await;
-        }
-    }
-    *last_request_at = Some(Instant::now());
-}
-
-fn backoff_delay(attempt: usize) -> Duration {
-    Duration::from_millis(500 * 2u64.saturating_pow(attempt as u32))
 }
 
 fn is_retryable_status(status: i32) -> bool {

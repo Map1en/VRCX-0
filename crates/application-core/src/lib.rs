@@ -15,6 +15,7 @@ mod image_cache;
 mod interruptible_sleep;
 pub mod ports;
 mod proxy;
+mod rate_limit;
 mod remote_mutation_gate;
 mod runtime_lifecycle;
 mod runtime_output;
@@ -78,6 +79,7 @@ pub use proxy::{
     load_proxy_url, test_proxy_connectivity, ProxyConnectivityPort, ProxySettingsTestResult,
     PROXY_ENABLED_STORAGE_KEY, PROXY_STORAGE_KEY,
 };
+pub use rate_limit::{RateLimitBackoff, RequestPacer};
 pub use remote_mutation_gate::{
     is_remote_mutation_request, AuthenticatedMutationContext, RemoteMutationGate,
 };

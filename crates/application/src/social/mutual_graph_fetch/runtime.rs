@@ -11,12 +11,14 @@ use vrcx_0_core::time::now_iso;
 
 use crate::remote::VrchatRequestPort;
 use vrcx_0_application_core::{
-    Error, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus, TaskSupervisor,
+    Error, RequestPacer, Result, RuntimeAuthScope, RuntimeAuthScopeSnapshot, RuntimeEventBus,
+    TaskSupervisor,
 };
 
 use super::request::{
     fetch_friend_mutuals, fetch_should_cancel, normalize_friend_ids, normalize_id,
     preserve_failed_friend_cache, resolve_fetch_scope, FriendFetchResult, MutualGraphFetchContext,
+    MUTUAL_GRAPH_REQUEST_INTERVAL,
 };
 use super::types::{
     MutualGraphFetchCancelInput, MutualGraphFetchStartInput, MutualGraphFetchState,
@@ -217,7 +219,7 @@ impl MutualGraphFetchRuntime {
             cancel_flag: &cancel_flag,
             auth_scope: &auth_scope,
             expected_scope: &expected_scope,
-            last_request_at: None,
+            pacer: RequestPacer::new(MUTUAL_GRAPH_REQUEST_INTERVAL),
         };
 
         for friend_id in friend_ids {

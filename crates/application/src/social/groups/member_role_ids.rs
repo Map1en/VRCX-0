@@ -3,7 +3,7 @@ use std::time::Duration;
 use serde_json::Value;
 use tokio::sync::Semaphore;
 
-use vrcx_0_application_core::{Error, Result};
+use vrcx_0_application_core::{Error, RateLimitBackoff, Result};
 use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use super::service::{execute_group_api, GroupApiDeps, GroupRemoteRequest};
@@ -11,8 +11,8 @@ use super::types::VrchatGroupUserInput;
 
 const MEMBER_ROLE_LOOKUP_COMMAND: &str = "app__vrchat_group_member_role_ids_get";
 const MEMBER_ROLE_LOOKUP_CONCURRENCY: usize = 3;
-const MEMBER_ROLE_LOOKUP_RETRIES: u32 = 3;
-const MEMBER_ROLE_LOOKUP_RETRY_DELAY: Duration = Duration::from_secs(1);
+const MEMBER_ROLE_LOOKUP_BACKOFF: RateLimitBackoff =
+    RateLimitBackoff::new(Duration::from_secs(1), 3);
 const RATE_LIMITED_STATUS: i32 = 429;
 
 static MEMBER_ROLE_LOOKUP_SLOTS: Semaphore = Semaphore::const_new(MEMBER_ROLE_LOOKUP_CONCURRENCY);
@@ -26,33 +26,32 @@ pub async fn get_member_role_ids(
         input.user_id, input.group_id
     );
     let request = GroupRemoteRequest::GetMember(input).build()?.request;
-    let mut attempt = 0;
-    loop {
-        let response = {
-            let _slot = MEMBER_ROLE_LOOKUP_SLOTS
-                .acquire()
+    let (deps, detail, request) = (&deps, &detail, &request);
+    let response = MEMBER_ROLE_LOOKUP_BACKOFF
+        .retry(
+            || async move {
+                let _slot = MEMBER_ROLE_LOOKUP_SLOTS
+                    .acquire()
+                    .await
+                    .map_err(|error| Error::Custom(error.to_string()))?;
+                execute_group_api(
+                    deps,
+                    MEMBER_ROLE_LOOKUP_COMMAND,
+                    detail.clone(),
+                    request.clone(),
+                )
                 .await
-                .map_err(|error| Error::Custom(error.to_string()))?;
-            execute_group_api(
-                &deps,
-                MEMBER_ROLE_LOOKUP_COMMAND,
-                detail.clone(),
-                request.clone(),
-            )
-            .await?
-        };
-        if response.status != RATE_LIMITED_STATUS {
-            return Ok(member_role_ids(&response));
-        }
-        if attempt == MEMBER_ROLE_LOOKUP_RETRIES {
-            return Err(Error::VrchatApi {
-                status_code: RATE_LIMITED_STATUS,
-                message: "Group member lookup is rate limited.".into(),
-            });
-        }
-        tokio::time::sleep(MEMBER_ROLE_LOOKUP_RETRY_DELAY * 2u32.pow(attempt)).await;
-        attempt += 1;
+            },
+            |result| matches!(result, Ok(response) if response.status == RATE_LIMITED_STATUS),
+        )
+        .await?;
+    if response.status == RATE_LIMITED_STATUS {
+        return Err(Error::VrchatApi {
+            status_code: RATE_LIMITED_STATUS,
+            message: "Group member lookup is rate limited.".into(),
+        });
     }
+    Ok(member_role_ids(&response))
 }
 
 fn member_role_ids(response: &VrchatResponse) -> Option<Vec<String>> {
