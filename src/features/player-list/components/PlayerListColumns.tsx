@@ -35,6 +35,7 @@ import { UserStatusDot } from '@/components/UserStatusDot';
 import { timeToText } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
 import { getNameColour, openExternalLink } from '@/services/entityMediaService';
+import { TRUST_COLOR_ENTRIES } from '@/shared/constants/trustColors';
 import type { UserNameColourStyle } from '@/shared/utils/entityMedia';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { Button } from '@/ui/shadcn/button';
@@ -50,23 +51,33 @@ import { playerGroupRoleOrder } from '../playerListGroupRoles';
 import type { PlayerListLanguageRow, PlayerListRow } from '../playerListTypes';
 import { SortButton } from './PlayerListViewParts';
 
+const PLAYER_AVATAR_CLASS_NAME =
+    'size-[calc(var(--vrcx-0-table-row-height)-1rem)] rounded-full object-cover';
+
+function PlayerAvatarFallback() {
+    return (
+        <span
+            className={cn(
+                PLAYER_AVATAR_CLASS_NAME,
+                'bg-muted flex items-center justify-center'
+            )}
+        >
+            <UserIcon className="text-muted-foreground size-3.5" />
+        </span>
+    );
+}
+
 function AvatarCell({ row }: { row: AppRow<PlayerListRow> }) {
     return row.original.avatarUrl ? (
         <FadeInImage
             src={row.original.avatarUrl}
             alt={row.original.displayName || 'Player avatar'}
             loading="lazy"
-            className="size-4 rounded-sm object-cover"
-            fallback={
-                <span className="bg-muted flex size-4 items-center justify-center rounded-sm">
-                    <UserIcon className="text-muted-foreground size-3" />
-                </span>
-            }
+            className={PLAYER_AVATAR_CLASS_NAME}
+            fallback={<PlayerAvatarFallback />}
         />
     ) : (
-        <span className="bg-muted flex size-4 items-center justify-center rounded-sm">
-            <UserIcon className="text-muted-foreground size-3" />
-        </span>
+        <PlayerAvatarFallback />
     );
 }
 
@@ -513,13 +524,23 @@ export function usePlayerListColumns(): AppColumnDef<PlayerListRow>[] {
                         label={t('table.playerList.rank')}
                     />
                 ),
-                cell: ({ row }) => (
-                    <span
-                        className={cn('text-sm', row.original.trustClass || '')}
-                    >
-                        {row.original.trustLevel || ''}
-                    </span>
-                )
+                cell: ({ row }) => {
+                    const trustEntry = TRUST_COLOR_ENTRIES.find(
+                        (entry) => entry.className === row.original.trustClass
+                    );
+                    return (
+                        <span
+                            className={cn(
+                                'text-sm',
+                                row.original.trustClass || ''
+                            )}
+                        >
+                            {trustEntry
+                                ? t(trustEntry.labelKey)
+                                : row.original.trustLevel || ''}
+                        </span>
+                    );
+                }
             },
             {
                 id: 'mutualFriends',
@@ -606,7 +627,7 @@ export function usePlayerListColumns(): AppColumnDef<PlayerListRow>[] {
             },
             {
                 id: 'language',
-                size: 120,
+                size: 176,
                 meta: { label: t('table.playerList.language') },
                 accessorFn: (row) =>
                     row.languages
