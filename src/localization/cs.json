@@ -6544,6 +6544,14 @@
             "list_view": "Zobrazení seznamu",
             "calendar_view": "Zobrazení kalendáře",
             "timeline_view": "Zobrazení časové osy",
+            "discover_view": "Objevovat",
+            "discover": {
+                "live": "Právě probíhá",
+                "upcoming": "Nadcházející",
+                "sort_start_time": "Nejdříve začínající",
+                "sort_follows": "Nejsledovanější",
+                "linked_instance_only": "Jen s otevřenou instancí"
+            },
             "no_events": "Nebyly nalezeny žádné události",
             "search_placeholder": "Hledat skupiny nebo události",
             "search_no_matching": "Nebyly nalezeny žádné odpovídající události",

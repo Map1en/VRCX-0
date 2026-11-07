@@ -8,6 +8,7 @@ import {
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { entityQueryPolicies } from '@/lib/entityQueryCache';
 import { cn } from '@/lib/utils';
+import type { ProfileDecorationEquipSlot } from '@/platform/tauri/bindings';
 import vrchatMediaRepository, {
     type InventoryItemRecord
 } from '@/repositories/vrchatMediaRepository';
@@ -15,11 +16,17 @@ import { usePreferencesStore } from '@/state/preferencesStore';
 
 const DECORATION_FADE_OUT_MS = 500;
 
-function useProfileDecorationItem(templateId: string) {
+function useProfileDecorationItem(
+    itemType: ProfileDecorationEquipSlot,
+    templateId: string
+) {
     return useQuery({
-        queryKey: ['profileDecoration', templateId],
-        queryFn: async () =>
-            (await vrchatMediaRepository.getInventoryTemplate(templateId)).json,
+        queryKey: ['profileDecoration', itemType, templateId],
+        queryFn: () =>
+            vrchatMediaRepository.getProfileDecorationTemplate(
+                itemType,
+                templateId
+            ),
         enabled: Boolean(templateId),
         staleTime: entityQueryPolicies.inventoryTemplate.staleTime,
         gcTime: entityQueryPolicies.inventoryTemplate.gcTime,
@@ -152,7 +159,7 @@ export function ProfileAvatarFrame({
     templateId: string;
     active: boolean;
 }) {
-    const item = useProfileDecorationItem(templateId);
+    const item = useProfileDecorationItem('iconFrame', templateId);
     return (
         <DecorationImage
             item={item}
@@ -170,7 +177,7 @@ export function ProfileEffect({
     templateId: string;
     active: boolean;
 }) {
-    const item = useProfileDecorationItem(templateId);
+    const item = useProfileDecorationItem('profileEffect', templateId);
     return (
         <DecorationImage
             item={item}
@@ -188,7 +195,7 @@ export function ProfileNameplate({
     templateId: string;
     active: boolean;
 }) {
-    const item = useProfileDecorationItem(templateId);
+    const item = useProfileDecorationItem('nameplateEffect', templateId);
     if (!item) {
         return null;
     }

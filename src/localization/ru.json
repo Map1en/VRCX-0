@@ -6538,6 +6538,14 @@
             "list_view": "Просмотр списком",
             "calendar_view": "Просмотр календаря",
             "timeline_view": "Просмотр хронологии",
+            "discover_view": "Обзор",
+            "discover": {
+                "live": "Идут сейчас",
+                "upcoming": "Скоро",
+                "sort_start_time": "Ближайшие",
+                "sort_follows": "Больше всего подписок",
+                "linked_instance_only": "Только с открытой инстанцией"
+            },
             "no_events": "Событий не найдено",
             "search_placeholder": "Поиск групп или событий",
             "search_no_matching": "Соответствующих событий не найдено",

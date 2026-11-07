@@ -6,6 +6,7 @@ import vrchatMediaRepository, {
 
 import {
     PROFILE_DECORATION_SLOTS,
+    type ProfileDecorationSlot,
     type UserDialogProfileAppearance,
     type UserDialogProfileAppearanceVisibility
 } from './userDialogProfileAppearance';
@@ -63,24 +64,31 @@ export function useUserDialogProfileAppearance({
             resource.userId === userId
                 ? resource.itemsByTemplateId
                 : EMPTY_TEMPLATE_ITEMS;
-        const templateIds = [
-            ...new Set(Object.values(templateIdsBySlot).filter(Boolean))
-        ].filter((templateId) => !itemsByTemplateId.has(templateId));
-        if (!userId || templateIds.length === 0) {
+        const pendingTemplates = new Map<string, ProfileDecorationSlot>();
+        for (const slot of PROFILE_DECORATION_SLOTS) {
+            const templateId = templateIdsBySlot[slot];
+            if (
+                templateId &&
+                !itemsByTemplateId.has(templateId) &&
+                !pendingTemplates.has(templateId)
+            ) {
+                pendingTemplates.set(templateId, slot);
+            }
+        }
+        if (!userId || pendingTemplates.size === 0) {
             return;
         }
 
         let active = true;
         Promise.all(
-            templateIds.map(async (inventoryTemplateId) => {
+            [...pendingTemplates].map(async ([inventoryTemplateId, slot]) => {
                 try {
-                    const response =
-                        await vrchatMediaRepository.getInventoryTemplate(
-                            inventoryTemplateId
-                        );
                     return {
                         inventoryTemplateId,
-                        item: response.json
+                        item: await vrchatMediaRepository.getProfileDecorationTemplate(
+                            slot,
+                            inventoryTemplateId
+                        )
                     };
                 } catch {
                     return {

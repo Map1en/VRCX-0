@@ -4,7 +4,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-    getInventoryTemplate: vi.fn()
+    getProfileDecorationTemplate: vi.fn()
 }));
 
 vi.mock('@/repositories/vrchatMediaRepository', async (importOriginal) => {
@@ -16,7 +16,7 @@ vi.mock('@/repositories/vrchatMediaRepository', async (importOriginal) => {
         ...actual,
         default: {
             ...actual.default,
-            getInventoryTemplate: mocks.getInventoryTemplate
+            getProfileDecorationTemplate: mocks.getProfileDecorationTemplate
         }
     };
 });
@@ -31,19 +31,17 @@ const VISIBLE_PROFILE_DECORATIONS = {
 
 describe('useUserDialogProfileAppearance', () => {
     beforeEach(() => {
-        mocks.getInventoryTemplate.mockReset();
-        mocks.getInventoryTemplate.mockImplementation(
-            async (inventoryTemplateId: string) => ({
-                json: {
-                    id: inventoryTemplateId,
-                    metadata: {
-                        assets: [
-                            {
-                                type: 'mainAnimation',
-                                url: `https://example.test/${inventoryTemplateId}.webp`
-                            }
-                        ]
-                    }
+        mocks.getProfileDecorationTemplate.mockReset();
+        mocks.getProfileDecorationTemplate.mockImplementation(
+            async (_slot: string, inventoryTemplateId: string) => ({
+                id: inventoryTemplateId,
+                metadata: {
+                    assets: [
+                        {
+                            type: 'mainAnimation',
+                            url: `https://example.test/${inventoryTemplateId}.webp`
+                        }
+                    ]
                 }
             })
         );
@@ -67,24 +65,20 @@ describe('useUserDialogProfileAppearance', () => {
             expect(result.current.profileEffect?.id).toBe('invt_profile');
             expect(result.current.nameplateEffect?.id).toBe('invt_nameplate');
         });
-        expect(mocks.getInventoryTemplate).toHaveBeenCalledTimes(3);
+        expect(mocks.getProfileDecorationTemplate).toHaveBeenCalledTimes(3);
     });
 
     it('keeps unchanged slots while requesting only the changed template', async () => {
-        let resolveNextFrame:
-            | ((value: { json: { id: string } }) => void)
-            | undefined;
-        mocks.getInventoryTemplate.mockImplementation(
-            (inventoryTemplateId: string) => {
+        let resolveNextFrame: ((value: { id: string }) => void) | undefined;
+        mocks.getProfileDecorationTemplate.mockImplementation(
+            (_slot: string, inventoryTemplateId: string) => {
                 if (inventoryTemplateId === 'invt_frame_next') {
-                    return new Promise<{ json: { id: string } }>((resolve) => {
+                    return new Promise<{ id: string }>((resolve) => {
                         resolveNextFrame = resolve;
                     });
                 }
                 return Promise.resolve({
-                    json: {
-                        id: inventoryTemplateId
-                    }
+                    id: inventoryTemplateId
                 });
             }
         );
@@ -114,7 +108,7 @@ describe('useUserDialogProfileAppearance', () => {
         });
         const profileEffect = result.current.profileEffect;
         const nameplateEffect = result.current.nameplateEffect;
-        mocks.getInventoryTemplate.mockClear();
+        mocks.getProfileDecorationTemplate.mockClear();
 
         rerender({ iconFrame: 'invt_frame_next' });
 
@@ -122,35 +116,32 @@ describe('useUserDialogProfileAppearance', () => {
         expect(result.current.profileEffect).toBe(profileEffect);
         expect(result.current.nameplateEffect).toBe(nameplateEffect);
         await waitFor(() => {
-            expect(mocks.getInventoryTemplate).toHaveBeenCalledOnce();
+            expect(mocks.getProfileDecorationTemplate).toHaveBeenCalledOnce();
         });
-        expect(mocks.getInventoryTemplate).toHaveBeenCalledWith(
+        expect(mocks.getProfileDecorationTemplate).toHaveBeenCalledWith(
+            'iconFrame',
             'invt_frame_next'
         );
 
         resolveNextFrame?.({
-            json: {
-                id: 'invt_frame_next'
-            }
+            id: 'invt_frame_next'
         });
         await waitFor(() => {
             expect(result.current.iconFrame?.id).toBe('invt_frame_next');
         });
         expect(result.current.profileEffect).toBe(profileEffect);
         expect(result.current.nameplateEffect).toBe(nameplateEffect);
-        expect(mocks.getInventoryTemplate).toHaveBeenCalledOnce();
+        expect(mocks.getProfileDecorationTemplate).toHaveBeenCalledOnce();
     });
 
     it('deduplicates template requests and tolerates one failed decoration', async () => {
-        mocks.getInventoryTemplate.mockImplementation(
-            async (inventoryTemplateId: string) => {
+        mocks.getProfileDecorationTemplate.mockImplementation(
+            async (_slot: string, inventoryTemplateId: string) => {
                 if (inventoryTemplateId === 'invt_failed') {
                     throw new Error('not available');
                 }
                 return {
-                    json: {
-                        id: inventoryTemplateId
-                    }
+                    id: inventoryTemplateId
                 };
             }
         );
@@ -172,24 +163,20 @@ describe('useUserDialogProfileAppearance', () => {
             expect(result.current.nameplateEffect?.id).toBe('invt_shared');
         });
         expect(result.current.profileEffect).toBeUndefined();
-        expect(mocks.getInventoryTemplate).toHaveBeenCalledTimes(2);
+        expect(mocks.getProfileDecorationTemplate).toHaveBeenCalledTimes(2);
     });
 
     it('does not expose a previous target while the next target is loading', async () => {
-        let resolveNext:
-            | ((value: { json: { id: string } }) => void)
-            | undefined;
-        mocks.getInventoryTemplate.mockImplementation(
-            (inventoryTemplateId: string) => {
+        let resolveNext: ((value: { id: string }) => void) | undefined;
+        mocks.getProfileDecorationTemplate.mockImplementation(
+            (_slot: string, inventoryTemplateId: string) => {
                 if (inventoryTemplateId === 'invt_next') {
-                    return new Promise<{ json: { id: string } }>((resolve) => {
+                    return new Promise<{ id: string }>((resolve) => {
                         resolveNext = resolve;
                     });
                 }
                 return Promise.resolve({
-                    json: {
-                        id: inventoryTemplateId
-                    }
+                    id: inventoryTemplateId
                 });
             }
         );
@@ -222,9 +209,7 @@ describe('useUserDialogProfileAppearance', () => {
 
         expect(result.current.iconFrame).toBeUndefined();
         resolveNext?.({
-            json: {
-                id: 'invt_next'
-            }
+            id: 'invt_next'
         });
         await waitFor(() => {
             expect(result.current.iconFrame?.id).toBe('invt_next');
@@ -245,7 +230,7 @@ describe('useUserDialogProfileAppearance', () => {
         );
 
         expect(result.current).toEqual({});
-        expect(mocks.getInventoryTemplate).not.toHaveBeenCalled();
+        expect(mocks.getProfileDecorationTemplate).not.toHaveBeenCalled();
     });
 
     it('requests and exposes only the visible profile decoration slots', async () => {
@@ -282,7 +267,7 @@ describe('useUserDialogProfileAppearance', () => {
         );
 
         expect(result.current).toEqual({});
-        expect(mocks.getInventoryTemplate).not.toHaveBeenCalled();
+        expect(mocks.getProfileDecorationTemplate).not.toHaveBeenCalled();
 
         rerender({
             avatarFrame: true,
@@ -295,7 +280,7 @@ describe('useUserDialogProfileAppearance', () => {
         });
         expect(result.current.profileEffect).toBeUndefined();
         expect(result.current.nameplateEffect).toBeUndefined();
-        expect(mocks.getInventoryTemplate).toHaveBeenCalledOnce();
+        expect(mocks.getProfileDecorationTemplate).toHaveBeenCalledOnce();
 
         rerender({
             avatarFrame: false,
@@ -308,7 +293,7 @@ describe('useUserDialogProfileAppearance', () => {
             expect(result.current.profileEffect?.id).toBe('invt_profile');
         });
         expect(result.current.nameplateEffect).toBeUndefined();
-        expect(mocks.getInventoryTemplate).toHaveBeenCalledTimes(2);
+        expect(mocks.getProfileDecorationTemplate).toHaveBeenCalledTimes(2);
 
         rerender({
             avatarFrame: false,
@@ -320,7 +305,7 @@ describe('useUserDialogProfileAppearance', () => {
         await waitFor(() => {
             expect(result.current.nameplateEffect?.id).toBe('invt_nameplate');
         });
-        expect(mocks.getInventoryTemplate).toHaveBeenCalledTimes(3);
+        expect(mocks.getProfileDecorationTemplate).toHaveBeenCalledTimes(3);
 
         rerender({
             avatarFrame: false,

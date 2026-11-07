@@ -7,9 +7,10 @@ use crate::query::serialize_query;
 use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
 pub use vrcx_0_contracts::vrchat_requests::{
-    CalendarListParams, GroupCalendarEventAccessType, GroupCalendarEventMutation,
-    GroupCalendarRecurrence, GroupCalendarRecurrenceEnd, GroupCalendarRecurrenceFrequency,
-    InviteMessageType, ModerationReportType,
+    CalendarDiscoverParams, CalendarDiscoverScope, CalendarDiscoverSort, CalendarListParams,
+    GroupCalendarEventAccessType, GroupCalendarEventMutation, GroupCalendarRecurrence,
+    GroupCalendarRecurrenceEnd, GroupCalendarRecurrenceFrequency, InviteMessageType,
+    ModerationReportType,
 };
 
 pub fn calendars_get_input(endpoint: String, params: CalendarListParams) -> VrchatRequest {
@@ -40,6 +41,13 @@ pub fn following_calendars_get_input(
 
 pub fn featured_calendars_get_input(endpoint: String, params: CalendarListParams) -> VrchatRequest {
     get_input(endpoint, "calendar/featured", serialize_query(&params))
+}
+
+pub fn discover_calendars_get_input(
+    endpoint: String,
+    params: CalendarDiscoverParams,
+) -> VrchatRequest {
+    get_input(endpoint, "calendar/discover", serialize_query(&params))
 }
 
 pub fn group_event_follow_input(
@@ -326,6 +334,33 @@ mod tests {
 
     fn json_body(request: &VrchatRequest) -> &Value {
         request.body.as_json().expect("expected JSON request body")
+    }
+
+    #[test]
+    fn calendar_discover_sends_the_vrchat_query_names() {
+        let request = discover_calendars_get_input(
+            "endpoint".into(),
+            CalendarDiscoverParams {
+                scope: Some(CalendarDiscoverScope::Upcoming),
+                upcoming_sort: Some(CalendarDiscoverSort::FollowsDescending),
+                require_linked_instance: Some(true),
+                n: Some(30),
+                next_cursor: Some("cursor_1".into()),
+            },
+        );
+
+        assert_eq!(request.method.as_deref(), Some("GET"));
+        assert_eq!(request.path.as_deref(), Some("calendar/discover"));
+        assert_eq!(
+            request.query_params,
+            Some(HashMap::from([
+                ("scope".into(), json!("upcoming")),
+                ("upcomingSort".into(), json!("follows_descending")),
+                ("requireLinkedInstance".into(), json!(true)),
+                ("n".into(), json!(30)),
+                ("nextCursor".into(), json!("cursor_1")),
+            ]))
+        );
     }
 
     #[test]

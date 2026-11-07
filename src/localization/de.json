@@ -6508,6 +6508,14 @@
             "list_view": "Listenansicht",
             "calendar_view": "Kalenderansicht",
             "timeline_view": "Zeitleistenansicht",
+            "discover_view": "Entdecken",
+            "discover": {
+                "live": "Läuft gerade",
+                "upcoming": "Demnächst",
+                "sort_start_time": "Frühester Beginn",
+                "sort_follows": "Meistgefolgt",
+                "linked_instance_only": "Nur mit offener Instanz"
+            },
             "no_events": "Keine Events gefunden",
             "search_placeholder": "Gruppen oder Events suchen",
             "search_no_matching": "Keine passenden Events gefunden",

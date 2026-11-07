@@ -6544,6 +6544,14 @@
             "list_view": "列表视图",
             "calendar_view": "日历视图",
             "timeline_view": "时间线视图",
+            "discover_view": "发现",
+            "discover": {
+                "live": "进行中",
+                "upcoming": "即将开始",
+                "sort_start_time": "最早开始",
+                "sort_follows": "关注最多",
+                "linked_instance_only": "只看已开房间的活动"
+            },
             "no_events": "目前没有任何活动",
             "search_placeholder": "搜索群组或活动",
             "search_no_matching": "没有找到任何符合条件的活动",

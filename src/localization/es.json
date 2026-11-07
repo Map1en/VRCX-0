@@ -6556,6 +6556,14 @@
             "list_view": "Vista de lista",
             "calendar_view": "Vista de calendario",
             "timeline_view": "Vista de cronología",
+            "discover_view": "Descubrir",
+            "discover": {
+                "live": "En curso",
+                "upcoming": "Próximos",
+                "sort_start_time": "Empiezan antes",
+                "sort_follows": "Más seguidos",
+                "linked_instance_only": "Solo con instancia abierta"
+            },
             "no_events": "No se encontraron eventos",
             "search_placeholder": "Buscar grupos o eventos",
             "search_no_matching": "No se encontraron eventos coincidentes",

@@ -25,11 +25,11 @@ use vrcx_0_vrchat_protocol::instances::{
     instance_self_invite_input, instance_short_name_get_input, InstanceCreateRequest,
 };
 use vrcx_0_vrchat_protocol::media::{
-    asset_upload_input, avatar_gallery_image_upload_input, file_delete_input, files_get_input,
-    gallery_file_order_input, image_upload_input, inventory_bundle_consume_input,
-    inventory_item_equip_input, inventory_item_update_input, inventory_items_get_input,
-    inventory_slot_unequip_input, inventory_template_get_input, print_delete_input,
-    print_get_input, print_upload_input, prints_get_input, reward_redeem_input,
+    asset_upload_input, avatar_gallery_image_upload_input, cosmetics_index_get_input,
+    file_delete_input, files_get_input, gallery_file_order_input, image_upload_input,
+    inventory_bundle_consume_input, inventory_item_equip_input, inventory_item_update_input,
+    inventory_items_get_input, inventory_slot_unequip_input, inventory_template_get_input,
+    print_delete_input, print_get_input, print_upload_input, prints_get_input, reward_redeem_input,
     sticker_upload_input, tagged_image_upload_input, user_inventory_item_get_input,
     EmojiUploadParams, InventoryItemUpdateRequest, InventoryListParams, MediaAssetUploadRequest,
     MediaFileListParams, PrintUploadParams, ProfileDecorationEquipSlot,
@@ -44,12 +44,12 @@ use vrcx_0_vrchat_protocol::search::{
     WorldSearchParams,
 };
 use vrcx_0_vrchat_protocol::tools::{
-    following_calendars_get_input, group_calendar_event_get_input, group_calendar_get_input,
-    group_calendar_ics_get_input, group_event_create_input, group_event_delete_input,
-    group_event_follow_input, group_event_update_input, invite_message_edit_input,
-    invite_messages_get_input, moderation_reports_get_input, user_note_save_input,
-    user_report_input, CalendarListParams, GroupCalendarEventMutation, InviteMessageType,
-    ModerationReportType,
+    discover_calendars_get_input, following_calendars_get_input, group_calendar_event_get_input,
+    group_calendar_get_input, group_calendar_ics_get_input, group_event_create_input,
+    group_event_delete_input, group_event_follow_input, group_event_update_input,
+    invite_message_edit_input, invite_messages_get_input, moderation_reports_get_input,
+    user_note_save_input, user_report_input, CalendarDiscoverParams, CalendarListParams,
+    GroupCalendarEventMutation, InviteMessageType, ModerationReportType,
 };
 use vrcx_0_vrchat_protocol::users::{
     account_standing_get_input, profile_get_input, user_represented_group_get_input,
@@ -545,6 +545,19 @@ impl VrchatRemoteFacade {
         .await
     }
 
+    pub async fn discover_calendars(
+        &self,
+        params: CalendarDiscoverParams,
+    ) -> Result<VrchatResponse> {
+        self.execute(
+            "app__vrchat_tools_calendar_discover_get",
+            "Discovering calendar events.",
+            discover_calendars_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), params),
+            VrchatScope::Vrchat,
+        )
+        .await
+    }
+
     pub async fn follow_group_event(
         &self,
         group_id: String,
@@ -1032,6 +1045,19 @@ impl VrchatRemoteFacade {
             "app__vrchat_media_inventory_template_get",
             detail,
             request,
+            VrchatScope::VrchatMedia,
+        )
+        .await
+    }
+
+    pub async fn cosmetics_index(
+        &self,
+        item_type: ProfileDecorationEquipSlot,
+    ) -> Result<VrchatResponse> {
+        self.execute(
+            "app__vrchat_media_cosmetics_index_get",
+            format!("Getting {} cosmetics.", item_type.as_str()),
+            cosmetics_index_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into(), item_type),
             VrchatScope::VrchatMedia,
         )
         .await

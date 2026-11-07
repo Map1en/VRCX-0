@@ -26,7 +26,7 @@ const decorationItem = {
 
 vi.mock('@/repositories/vrchatMediaRepository', () => ({
     default: {
-        getInventoryTemplate: async () => ({ json: decorationItem })
+        getProfileDecorationTemplate: async () => decorationItem
     }
 }));
 
@@ -79,7 +79,10 @@ describe('useDecorationHover', () => {
 describe('ProfileAvatarFrame', () => {
     function renderFrame(active: boolean) {
         const queryClient = new QueryClient();
-        queryClient.setQueryData(['profileDecoration', 'tmpl'], decorationItem);
+        queryClient.setQueryData(
+            ['profileDecoration', 'iconFrame', 'tmpl'],
+            decorationItem
+        );
         const wrap = (node: ReactNode) => (
             <QueryClientProvider client={queryClient}>
                 {node}

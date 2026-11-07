@@ -17,6 +17,7 @@ import type {
     PrintFavoriteState,
     ProfileDecorationEquipSlot
 } from '@/platform/tauri/bindings';
+import { isRecord } from '@/shared/utils/record';
 import { DEFAULT_VRCHAT_API_ENDPOINT } from '@/shared/vrchatEndpoint';
 
 import { normalizePlatformError } from '../platform/tauri/errors';
@@ -607,6 +608,51 @@ async function getInventoryTemplate(
     });
 }
 
+function isInventoryItemRecord(value: unknown): value is InventoryItemRecord {
+    return isRecord(value) && typeof value.id === 'string';
+}
+
+async function getCosmeticsIndex(
+    itemType: ProfileDecorationEquipSlot
+): Promise<InventoryItemRecord[]> {
+    return fetchCachedData({
+        queryKey: queryKeys.cosmeticsIndex(
+            itemType,
+            DEFAULT_VRCHAT_API_ENDPOINT
+        ),
+        policy: entityQueryPolicies.cosmeticsIndex,
+        queryFn: async () => {
+            try {
+                const response = await executeMediaCommand<unknown>(
+                    () =>
+                        commands.appVrchatMediaCosmeticsIndexGet({ itemType }),
+                    { extra: { itemType } }
+                );
+                return Array.isArray(response.json)
+                    ? response.json.filter(isInventoryItemRecord)
+                    : [];
+            } catch {
+                return [];
+            }
+        }
+    });
+}
+
+async function getProfileDecorationTemplate(
+    itemType: ProfileDecorationEquipSlot,
+    templateId: string
+): Promise<InventoryItemRecord> {
+    const normalizedTemplateId = templateId.trim();
+    const cosmetics = await getCosmeticsIndex(itemType);
+    const item = cosmetics.find(
+        (cosmetic) => cosmetic.id === normalizedTemplateId
+    );
+    if (item) {
+        return item;
+    }
+    return (await getInventoryTemplate(normalizedTemplateId)).json;
+}
+
 async function equipProfileDecoration({
     expectedUserId,
     inventoryId,
@@ -851,6 +897,7 @@ const vrchatMediaRepository = Object.freeze({
     getInventoryItems,
     collectInventoryItems,
     getInventoryTemplate,
+    getProfileDecorationTemplate,
     equipProfileDecoration,
     unequipProfileDecoration,
     getUserInventoryItem,

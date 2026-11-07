@@ -134,6 +134,12 @@ pub struct VrchatMediaInventoryTemplateInput {
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct VrchatMediaCosmeticsIndexInput {
+    pub(crate) item_type: ProfileDecorationEquipSlot,
+}
+
+#[derive(Debug, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct VrchatMediaProfileDecorationEquipInput {
     #[serde(default)]
     pub(crate) inventory_id: String,

@@ -67,6 +67,7 @@ import {
     ToggleGroupSeparator
 } from '@/ui/shadcn/toggle-group';
 
+import { GroupCalendarDiscoverView } from './GroupCalendarDiscoverView';
 import {
     buildEventSeries,
     buildEventsByDate,
@@ -207,9 +208,9 @@ export function GroupCalendarDialog({
         monthDateFromKey(selectedDateKey(new Date()))
     );
     const [showFeaturedEvents, setShowFeaturedEvents] = useState(false);
-    const [viewMode, setViewMode] = useState<'calendar' | 'timeline' | 'list'>(
-        'calendar'
-    );
+    const [viewMode, setViewMode] = useState<
+        'calendar' | 'timeline' | 'list' | 'discover'
+    >('calendar');
     const [search, setSearch] = useState('');
     const [events, setEvents] = useState<GroupCalendarEvent[]>([]);
     const [followingIds, setFollowingIds] = useState<string[]>([]);
@@ -510,7 +511,8 @@ export function GroupCalendarDialog({
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-wrap items-center gap-3">
-                    {viewMode === 'timeline' ? null : (
+                    {viewMode === 'timeline' ||
+                    viewMode === 'discover' ? null : (
                         <div className="flex items-center gap-1">
                             <Button
                                 type="button"
@@ -560,29 +562,33 @@ export function GroupCalendarDialog({
                             </Button>
                         </div>
                     )}
-                    <Field orientation="horizontal" className="w-auto">
-                        <Switch
-                            id="group-calendar-featured-events"
-                            checked={showFeaturedEvents}
-                            onCheckedChange={(checked) => {
-                                toggleFeatured(checked);
-                            }}
-                        />
-                        <FieldLabel htmlFor="group-calendar-featured-events">
-                            {t('dialog.group_calendar.featured_events')}
-                        </FieldLabel>
-                    </Field>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        disabled={loading}
-                        onClick={() => {
-                            loadCalendar(true);
-                        }}
-                    >
-                        <RefreshCwIcon data-icon="inline-start" />
-                        {t('common.actions.refresh')}
-                    </Button>
+                    {viewMode === 'discover' ? null : (
+                        <>
+                            <Field orientation="horizontal" className="w-auto">
+                                <Switch
+                                    id="group-calendar-featured-events"
+                                    checked={showFeaturedEvents}
+                                    onCheckedChange={(checked) => {
+                                        toggleFeatured(checked);
+                                    }}
+                                />
+                                <FieldLabel htmlFor="group-calendar-featured-events">
+                                    {t('dialog.group_calendar.featured_events')}
+                                </FieldLabel>
+                            </Field>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                disabled={loading}
+                                onClick={() => {
+                                    loadCalendar(true);
+                                }}
+                            >
+                                <RefreshCwIcon data-icon="inline-start" />
+                                {t('common.actions.refresh')}
+                            </Button>
+                        </>
+                    )}
                     <ToggleGroup
                         className="ml-auto"
                         variant="outline"
@@ -593,7 +599,8 @@ export function GroupCalendarDialog({
                                 if (
                                     nextValue[0] === 'calendar' ||
                                     nextValue[0] === 'timeline' ||
-                                    nextValue[0] === 'list'
+                                    nextValue[0] === 'list' ||
+                                    nextValue[0] === 'discover'
                                 ) {
                                     setViewMode(nextValue[0]);
                                 }
@@ -611,9 +618,29 @@ export function GroupCalendarDialog({
                         <ToggleGroupItem value="list">
                             {t('dialog.group_calendar.list_view')}
                         </ToggleGroupItem>
+                        <ToggleGroupSeparator />
+                        <ToggleGroupItem value="discover">
+                            {t('dialog.group_calendar.discover_view')}
+                        </ToggleGroupItem>
                     </ToggleGroup>
                 </div>
-                {viewMode === 'timeline' ? (
+                {viewMode === 'discover' ? (
+                    <GroupCalendarDiscoverView
+                        followingIds={followingSet}
+                        groupNames={groupNames}
+                        groupProfiles={groupProfiles}
+                        onFollowedEvents={(eventIds) =>
+                            setFollowingIds((current) =>
+                                eventIds.reduce(
+                                    (next, eventId) =>
+                                        updateArrayValue(next, eventId, true),
+                                    current
+                                )
+                            )
+                        }
+                        onToggleFollow={toggleFollow}
+                    />
+                ) : viewMode === 'timeline' ? (
                     <div className="min-w-0">
                         <GroupCalendarTimeline
                             events={events}

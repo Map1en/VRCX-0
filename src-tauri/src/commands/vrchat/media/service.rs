@@ -14,8 +14,8 @@ use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use super::types::{
     VrchatMediaAvatarGalleryImageUploadInput, VrchatMediaAvatarGalleryOrderInput,
-    VrchatMediaEmojiUploadInput, VrchatMediaFileIdInput, VrchatMediaFilesInput,
-    VrchatMediaImageUploadInput, VrchatMediaInventoryItemInput,
+    VrchatMediaCosmeticsIndexInput, VrchatMediaEmojiUploadInput, VrchatMediaFileIdInput,
+    VrchatMediaFilesInput, VrchatMediaImageUploadInput, VrchatMediaInventoryItemInput,
     VrchatMediaInventoryItemUpdateInput, VrchatMediaInventoryItemsInput,
     VrchatMediaInventoryTemplateInput, VrchatMediaLegacyImageUploadInput, VrchatMediaPrintIdInput,
     VrchatMediaPrintUploadInput, VrchatMediaPrintsInput, VrchatMediaProfileDecorationEquipInput,
@@ -296,6 +296,20 @@ pub async fn app__vrchat_media_inventory_template_get(
         .runtime_host()
         .vrchat_remote()
         .inventory_template(input.inventory_template_id)
+        .await
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__vrchat_media_cosmetics_index_get(
+    state: State<'_, AppState>,
+    input: VrchatMediaCosmeticsIndexInput,
+) -> Result<VrchatResponse, AppError> {
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .cosmetics_index(input.item_type)
         .await
         .map_err(AppError::from)
 }

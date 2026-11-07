@@ -7,11 +7,11 @@ use crate::state::AppState;
 use vrcx_0_contracts::vrchat_api::VrchatResponse;
 
 use super::types::{
-    VrchatToolsCalendarEventInput, VrchatToolsCalendarGroupInput, VrchatToolsCalendarListInput,
-    VrchatToolsFollowGroupEventInput, VrchatToolsGroupEventCreateInput,
-    VrchatToolsGroupEventUpdateInput, VrchatToolsInviteMessageEditInput,
-    VrchatToolsInviteMessagesInput, VrchatToolsModerationReportsInput,
-    VrchatToolsUserNoteSaveInput, VrchatToolsUserReportInput,
+    VrchatToolsCalendarDiscoverInput, VrchatToolsCalendarEventInput, VrchatToolsCalendarGroupInput,
+    VrchatToolsCalendarListInput, VrchatToolsFollowGroupEventInput,
+    VrchatToolsGroupEventCreateInput, VrchatToolsGroupEventUpdateInput,
+    VrchatToolsInviteMessageEditInput, VrchatToolsInviteMessagesInput,
+    VrchatToolsModerationReportsInput, VrchatToolsUserNoteSaveInput, VrchatToolsUserReportInput,
 };
 
 #[tauri::command]
@@ -38,6 +38,20 @@ pub async fn app__vrchat_tools_following_calendars_get(
         .runtime_host()
         .vrchat_remote()
         .following_calendars(input.params)
+        .await
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__vrchat_tools_calendar_discover_get(
+    state: State<'_, AppState>,
+    input: VrchatToolsCalendarDiscoverInput,
+) -> Result<VrchatResponse, AppError> {
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .discover_calendars(input.params)
         .await
         .map_err(AppError::from)
 }

@@ -6535,6 +6535,14 @@
             "list_view": "清單檢視",
             "calendar_view": "行事曆檢視",
             "timeline_view": "時間軸檢視",
+            "discover_view": "探索",
+            "discover": {
+                "live": "進行中",
+                "upcoming": "即將開始",
+                "sort_start_time": "最早開始",
+                "sort_follows": "追蹤最多",
+                "linked_instance_only": "只看已開房間的活動"
+            },
             "no_events": "找不到任何活動",
             "search_placeholder": "搜尋群組或活動",
             "search_no_matching": "沒有符合的活動",

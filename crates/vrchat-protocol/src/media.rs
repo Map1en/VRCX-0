@@ -319,6 +319,17 @@ pub fn inventory_template_get_input(
     ))
 }
 
+pub fn cosmetics_index_get_input(
+    endpoint: String,
+    item_type: ProfileDecorationEquipSlot,
+) -> VrchatRequest {
+    get_input(
+        endpoint,
+        format!("cosmetics/index/{}", item_type.as_str()),
+        HashMap::new(),
+    )
+}
+
 pub fn inventory_item_equip_input(
     endpoint: String,
     inventory_id: String,

@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
+import type * as EntityQueryCache from '@/lib/entityQueryCache';
+
 const commandMocks = vi.hoisted(() => ({
+    appVrchatMediaCosmeticsIndexGet: vi.fn(),
     appVrchatMediaFilesGet: vi.fn(),
     appVrchatMediaFileDelete: vi.fn(),
     appVrchatMediaInventoryItemsCollect: vi.fn(),
@@ -16,8 +19,9 @@ const commandMocks = vi.hoisted(() => ({
 
 const cacheMocks = vi.hoisted(() => ({
     fetchCachedData: vi.fn(
-        async (options: { queryFn: () => Promise<unknown> }) =>
-            options.queryFn()
+        async (
+            options: Parameters<typeof EntityQueryCache.fetchCachedData>[0]
+        ) => options.queryFn()
     )
 }));
 
@@ -46,9 +50,8 @@ describe('vrchatMediaRepository', () => {
         for (const command of Object.values(commandMocks)) {
             command.mockResolvedValue(success());
         }
-        cacheMocks.fetchCachedData.mockImplementation(
-            async (options: { queryFn: () => Promise<unknown> }) =>
-                options.queryFn()
+        cacheMocks.fetchCachedData.mockImplementation(async (options) =>
+            options.queryFn()
         );
     });
 
@@ -192,6 +195,101 @@ describe('vrchatMediaRepository', () => {
         ).toHaveBeenCalledWith({
             inventoryTemplateId: 'invt_frame'
         });
+    });
+
+    it('resolves profile decorations from the cosmetics index of their type', async () => {
+        commandMocks.appVrchatMediaCosmeticsIndexGet.mockResolvedValueOnce(
+            success([
+                { id: 'invt_other', name: 'Other' },
+                { id: 'invt_frame', name: 'Frame' }
+            ])
+        );
+
+        await expect(
+            vrchatMediaRepository.getProfileDecorationTemplate(
+                'iconFrame',
+                ' invt_frame '
+            )
+        ).resolves.toEqual({ id: 'invt_frame', name: 'Frame' });
+
+        expect(cacheMocks.fetchCachedData).toHaveBeenCalledWith(
+            expect.objectContaining({
+                queryKey: [
+                    'cosmetics',
+                    'index',
+                    'iconFrame',
+                    { endpoint: 'https://api.vrchat.cloud/api/1' }
+                ]
+            })
+        );
+        expect(
+            commandMocks.appVrchatMediaCosmeticsIndexGet
+        ).toHaveBeenCalledWith({ itemType: 'iconFrame' });
+        expect(
+            commandMocks.appVrchatMediaInventoryTemplateGet
+        ).not.toHaveBeenCalled();
+    });
+
+    it('falls back to the template request when the cosmetics index misses or fails', async () => {
+        commandMocks.appVrchatMediaCosmeticsIndexGet
+            .mockResolvedValueOnce(success([{ id: 'invt_other' }]))
+            .mockResolvedValueOnce({ status: 500, data: '{}' });
+        commandMocks.appVrchatMediaInventoryTemplateGet
+            .mockResolvedValueOnce(success({ id: 'invt_retired' }))
+            .mockResolvedValueOnce(success({ id: 'invt_effect' }));
+
+        await expect(
+            vrchatMediaRepository.getProfileDecorationTemplate(
+                'nameplateEffect',
+                'invt_retired'
+            )
+        ).resolves.toEqual({ id: 'invt_retired' });
+        await expect(
+            vrchatMediaRepository.getProfileDecorationTemplate(
+                'profileEffect',
+                'invt_effect'
+            )
+        ).resolves.toEqual({ id: 'invt_effect' });
+
+        expect(
+            commandMocks.appVrchatMediaInventoryTemplateGet
+        ).toHaveBeenNthCalledWith(1, { inventoryTemplateId: 'invt_retired' });
+        expect(
+            commandMocks.appVrchatMediaInventoryTemplateGet
+        ).toHaveBeenNthCalledWith(2, { inventoryTemplateId: 'invt_effect' });
+    });
+
+    it('caches a failed cosmetics index so later decorations go straight to their template', async () => {
+        const cache = await vi.importActual<
+            typeof import('@/lib/entityQueryCache')
+        >('@/lib/entityQueryCache');
+        await cache.clearEntityQueryCache();
+        cacheMocks.fetchCachedData.mockImplementation(cache.fetchCachedData);
+        commandMocks.appVrchatMediaCosmeticsIndexGet.mockResolvedValue({
+            status: 403,
+            data: '{}'
+        });
+        commandMocks.appVrchatMediaInventoryTemplateGet
+            .mockResolvedValueOnce(success({ id: 'invt_a' }))
+            .mockResolvedValueOnce(success({ id: 'invt_b' }));
+
+        await expect(
+            vrchatMediaRepository.getProfileDecorationTemplate(
+                'iconFrame',
+                'invt_a'
+            )
+        ).resolves.toEqual({ id: 'invt_a' });
+        await expect(
+            vrchatMediaRepository.getProfileDecorationTemplate(
+                'iconFrame',
+                'invt_b'
+            )
+        ).resolves.toEqual({ id: 'invt_b' });
+
+        expect(
+            commandMocks.appVrchatMediaCosmeticsIndexGet
+        ).toHaveBeenCalledOnce();
+        await cache.clearEntityQueryCache();
     });
 
     it('preserves typed profile decoration inventory fields', async () => {

@@ -661,6 +661,41 @@ pub struct CalendarListParams {
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
 #[serde(rename_all = "camelCase")]
+pub enum CalendarDiscoverScope {
+    Live,
+    Upcoming,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+pub enum CalendarDiscoverSort {
+    #[serde(rename = "follows_descending")]
+    FollowsDescending,
+    #[serde(rename = "startTime_ascending")]
+    StartTimeAscending,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct CalendarDiscoverParams {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scope: Option<CalendarDiscoverScope>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub upcoming_sort: Option<CalendarDiscoverSort>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub require_linked_instance: Option<bool>,
+    #[specta(type = Option<i32>)]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "deserialize_optional_nonnegative_i32"
+    )]
+    pub n: Option<i32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub next_cursor: Option<String>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub enum InviteMessageType {
     Message,
     Request,

@@ -6540,6 +6540,14 @@
             "list_view": "リスト表示",
             "calendar_view": "カレンダー表示",
             "timeline_view": "タイムライン表示",
+            "discover_view": "見つける",
+            "discover": {
+                "live": "開催中",
+                "upcoming": "開催予定",
+                "sort_start_time": "開始が早い順",
+                "sort_follows": "フォローが多い順",
+                "linked_instance_only": "インスタンスがあるイベントのみ"
+            },
             "no_events": "イベントが見つかりません",
             "search_placeholder": "グループまたはイベントを検索",
             "search_no_matching": "一致するイベントが見つかりません",

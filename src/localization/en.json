@@ -6556,6 +6556,14 @@
             "list_view": "List View",
             "calendar_view": "Calendar View",
             "timeline_view": "Timeline View",
+            "discover_view": "Discover",
+            "discover": {
+                "live": "Happening now",
+                "upcoming": "Upcoming",
+                "sort_start_time": "Starting soonest",
+                "sort_follows": "Most followed",
+                "linked_instance_only": "Only with an open instance"
+            },
             "no_events": "No events found",
             "search_placeholder": "Search groups or events",
             "search_no_matching": "No matching events found",

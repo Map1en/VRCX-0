@@ -199,6 +199,19 @@ fn inventory_template_get_trims_and_encodes_the_template_id() {
 }
 
 #[test]
+fn cosmetics_index_get_uses_the_item_type_path() {
+    let request =
+        cosmetics_index_get_input(ENDPOINT.into(), ProfileDecorationEquipSlot::NameplateEffect);
+
+    assert_eq!(request.method.as_deref(), Some("GET"));
+    assert_eq!(
+        request.path.as_deref(),
+        Some("cosmetics/index/nameplateEffect")
+    );
+    assert_eq!(request.query_params, Some(HashMap::new()));
+}
+
+#[test]
 fn inventory_item_equip_uses_owned_item_path_and_only_the_slot_body() {
     let request = inventory_item_equip_input(
         ENDPOINT.into(),

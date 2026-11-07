@@ -1562,6 +1562,11 @@ export const commands = {
             'app__vrchat_media_asset_upload',
             { input }
         ),
+    appVrchatMediaCosmeticsIndexGet: (input: VrchatMediaCosmeticsIndexInput) =>
+        __TAURI_INVOKE<HttpApiExecuteResponse>(
+            'app__vrchat_media_cosmetics_index_get',
+            { input }
+        ),
     appVrchatMediaEmojiUpload: (input: VrchatMediaEmojiUploadInput) =>
         __TAURI_INVOKE<HttpApiExecuteResponse>(
             'app__vrchat_media_emoji_upload',
@@ -1796,6 +1801,13 @@ export const commands = {
     appSocialUnfriendSelection: (input: SocialUnfriendBatchInput) =>
         __TAURI_INVOKE<SocialUnfriendBatchResult>(
             'app__social_unfriend_selection',
+            { input }
+        ),
+    appVrchatToolsCalendarDiscoverGet: (
+        input: VrchatToolsCalendarDiscoverInput
+    ) =>
+        __TAURI_INVOKE<HttpApiExecuteResponse>(
+            'app__vrchat_tools_calendar_discover_get',
             { input }
         ),
     appVrchatToolsFollowingCalendarsGet: (
@@ -3490,6 +3502,18 @@ export type CacheCheckResult = {
     Item2: boolean;
     Item3: string;
 };
+
+export type CalendarDiscoverParams = {
+    scope?: CalendarDiscoverScope | null;
+    upcomingSort?: CalendarDiscoverSort | null;
+    requireLinkedInstance?: boolean | null;
+    n?: number | null;
+    nextCursor?: string | null;
+};
+
+export type CalendarDiscoverScope = 'live' | 'upcoming';
+
+export type CalendarDiscoverSort = 'follows_descending' | 'startTime_ascending';
 
 export type CalendarListParams = {
     n?: number | null;
@@ -8139,6 +8163,10 @@ export type VrchatMediaAvatarGalleryOrderInput = {
     fileIds: string[];
 };
 
+export type VrchatMediaCosmeticsIndexInput = {
+    itemType: ProfileDecorationEquipSlot;
+};
+
 export type VrchatMediaEmojiUploadInput = {
     imageData?: string;
     params: EmojiUploadParams;
@@ -8253,6 +8281,10 @@ export type VrchatSearchUsersInput = {
 export type VrchatSearchWorldsInput = {
     params?: WorldSearchParams;
     option: string | null;
+};
+
+export type VrchatToolsCalendarDiscoverInput = {
+    params?: CalendarDiscoverParams;
 };
 
 export type VrchatToolsCalendarEventInput = {
