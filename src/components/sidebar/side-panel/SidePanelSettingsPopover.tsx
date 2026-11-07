@@ -170,7 +170,7 @@ export function SidePanelSettingsPopover({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="ml-auto"
+                        className="text-muted-foreground ml-auto"
                         aria-label={t('side_panel.settings.display')}
                     >
                         {isRefreshing ? (
