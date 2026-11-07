@@ -15,6 +15,7 @@ pub(super) struct KindDefinition {
     allowed_scopes: &'static [ActivityScope],
     wrist_default_scope: ActivityScope,
     alert_default_scope: ActivityScope,
+    desktop_default_scope: ActivityScope,
     tts_default_scope: ActivityScope,
     widget_default_scope: ActivityScope,
     aliases: &'static [&'static str],
@@ -56,13 +57,24 @@ pub(super) fn definition(kind: ActivityKind) -> KindDefinition {
         allowed_scopes,
         wrist_default_scope,
         alert_default_scope,
+        desktop_default_scope,
         tts_default_scope,
         widget_default_scope,
     ) = match kind {
-        K::Invite | K::RequestInvite | K::InviteResponse | K::RequestInviteResponse | K::Boop => (
+        K::Invite | K::RequestInvite | K::InviteResponse | K::RequestInviteResponse => (
             C::ActionRequired,
             DIRECT_ACTOR_SCOPES,
             S::Friends,
+            S::Friends,
+            S::Friends,
+            S::Friends,
+            S::Friends,
+        ),
+        K::Boop => (
+            C::ActionRequired,
+            DIRECT_ACTOR_SCOPES,
+            S::Off,
+            S::Off,
             S::Friends,
             S::Friends,
             S::Friends,
@@ -74,10 +86,12 @@ pub(super) fn definition(kind: ActivityKind) -> KindDefinition {
             S::On,
             S::On,
             S::On,
+            S::On,
         ),
         K::OnPlayerJoining => (
             C::CurrentInstance,
             INSTANCE_ACTOR_SCOPES,
+            S::Friends,
             S::Friends,
             S::Friends,
             S::AllFavorites,
@@ -87,6 +101,7 @@ pub(super) fn definition(kind: ActivityKind) -> KindDefinition {
             C::CurrentInstance,
             INSTANCE_ACTOR_SCOPES,
             S::EveryoneInInstance,
+            S::AllFavorites,
             S::AllFavorites,
             S::Off,
             S::Friends,
@@ -98,11 +113,13 @@ pub(super) fn definition(kind: ActivityKind) -> KindDefinition {
             S::Off,
             S::Off,
             S::Off,
+            S::Off,
         ),
         K::Online | K::Offline => (
             C::FavoriteMovement,
             FRIEND_ACTOR_SCOPES,
             S::Friends,
+            S::AllFavorites,
             S::AllFavorites,
             S::Off,
             S::AllFavorites,
@@ -113,11 +130,13 @@ pub(super) fn definition(kind: ActivityKind) -> KindDefinition {
             S::Friends,
             S::Off,
             S::Off,
+            S::Off,
             S::AllFavorites,
         ),
         K::Friend | K::Unfriend => (
             C::ProfileChange,
             BOOLEAN_SCOPES,
+            S::On,
             S::On,
             S::On,
             S::Off,
@@ -128,12 +147,14 @@ pub(super) fn definition(kind: ActivityKind) -> KindDefinition {
             FRIEND_ACTOR_SCOPES,
             S::Friends,
             S::AllFavorites,
+            S::AllFavorites,
             S::Off,
             S::AllFavorites,
         ),
         K::AvatarChange | K::Bio => (
             C::ProfileChange,
             FRIEND_ACTOR_SCOPES,
+            S::Off,
             S::Off,
             S::Off,
             S::Off,
@@ -146,14 +167,31 @@ pub(super) fn definition(kind: ActivityKind) -> KindDefinition {
             S::Off,
             S::Off,
             S::Off,
+            S::Off,
         ),
         K::GroupAnnouncement
         | K::GroupEventCreated
         | K::GroupEventStarting
         | K::GroupInformative
         | K::GroupInvite
-        | K::GroupTransfer => (C::GroupSocial, BOOLEAN_SCOPES, S::On, S::On, S::Off, S::On),
-        K::GroupJoinRequest => (C::GroupSocial, BOOLEAN_SCOPES, S::On, S::Off, S::Off, S::On),
+        | K::GroupTransfer => (
+            C::GroupSocial,
+            BOOLEAN_SCOPES,
+            S::On,
+            S::On,
+            S::On,
+            S::Off,
+            S::On,
+        ),
+        K::GroupJoinRequest => (
+            C::GroupSocial,
+            BOOLEAN_SCOPES,
+            S::On,
+            S::Off,
+            S::Off,
+            S::Off,
+            S::On,
+        ),
         K::GroupInstanceOpened => (
             C::GroupSocial,
             GROUP_FAVORITE_SCOPES,
@@ -161,11 +199,21 @@ pub(super) fn definition(kind: ActivityKind) -> KindDefinition {
             S::Off,
             S::Off,
             S::Off,
+            S::Off,
         ),
-        K::Event | K::External => (C::SystemSafety, BOOLEAN_SCOPES, S::On, S::On, S::Off, S::On),
+        K::Event | K::External => (
+            C::SystemSafety,
+            BOOLEAN_SCOPES,
+            S::On,
+            S::On,
+            S::On,
+            S::Off,
+            S::On,
+        ),
         K::BlockedOnPlayerJoined | K::MutedOnPlayerJoined => (
             C::SystemSafety,
             INSTANCE_ACTOR_SCOPES,
+            S::Off,
             S::Off,
             S::Off,
             S::Off,
@@ -178,8 +226,17 @@ pub(super) fn definition(kind: ActivityKind) -> KindDefinition {
             S::Off,
             S::Off,
             S::Off,
+            S::Off,
         ),
-        K::VideoPlay => (C::Media, BOOLEAN_SCOPES, S::On, S::Off, S::Off, S::Off),
+        K::VideoPlay => (
+            C::Media,
+            BOOLEAN_SCOPES,
+            S::On,
+            S::Off,
+            S::Off,
+            S::Off,
+            S::Off,
+        ),
     };
     KindDefinition {
         kind,
@@ -187,6 +244,7 @@ pub(super) fn definition(kind: ActivityKind) -> KindDefinition {
         allowed_scopes,
         wrist_default_scope,
         alert_default_scope,
+        desktop_default_scope,
         tts_default_scope,
         widget_default_scope,
         aliases: match kind {
@@ -208,6 +266,7 @@ pub(super) fn activity_type_definitions() -> Vec<ActivityTypeDefinition> {
             allowed_scopes: definition.allowed_scopes.to_vec(),
             wrist_default_scope: definition.wrist_default_scope,
             alert_default_scope: definition.alert_default_scope,
+            desktop_default_scope: definition.desktop_default_scope,
             tts_default_scope: definition.tts_default_scope,
             widget_default_scope: definition.widget_default_scope,
             aliases: definition
@@ -222,9 +281,10 @@ pub(super) fn activity_type_definitions() -> Vec<ActivityTypeDefinition> {
 fn default_scope(definition: &KindDefinition, surface: NotificationSurface) -> ActivityScope {
     match surface {
         NotificationSurface::Wrist => definition.wrist_default_scope,
-        NotificationSurface::Desktop
-        | NotificationSurface::ExternalOverlay
-        | NotificationSurface::Hmd => definition.alert_default_scope,
+        NotificationSurface::ExternalOverlay | NotificationSurface::Hmd => {
+            definition.alert_default_scope
+        }
+        NotificationSurface::Desktop => definition.desktop_default_scope,
         NotificationSurface::Tts => definition.tts_default_scope,
         NotificationSurface::Webhook => ActivityScope::Off,
         NotificationSurface::DesktopWidget => definition.widget_default_scope,

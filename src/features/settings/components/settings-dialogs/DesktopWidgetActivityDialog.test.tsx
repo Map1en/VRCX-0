@@ -90,6 +90,7 @@ function definition(
         ActivityTypeDefinition,
         | 'wristDefaultScope'
         | 'alertDefaultScope'
+        | 'desktopDefaultScope'
         | 'ttsDefaultScope'
         | 'widgetDefaultScope'
     >
@@ -107,12 +108,14 @@ const definitions: ActivityTypeDefinition[] = [
     definition('Online', {
         wristDefaultScope: 'off',
         alertDefaultScope: 'off',
+        desktopDefaultScope: 'off',
         ttsDefaultScope: 'off',
         widgetDefaultScope: 'allFavorites'
     }),
     definition('GPS', {
         wristDefaultScope: 'friends',
         alertDefaultScope: 'friends',
+        desktopDefaultScope: 'friends',
         ttsDefaultScope: 'friends',
         widgetDefaultScope: 'off'
     })

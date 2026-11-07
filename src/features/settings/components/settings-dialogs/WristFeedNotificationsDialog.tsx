@@ -126,7 +126,7 @@ export function DesktopNotificationsDialog(
             {...props}
             titleKey="dialog.desktop_notifications.title"
             descriptionKey="dialog.desktop_notifications.description"
-            defaultScope={alertDefaultScope}
+            defaultScope={(definition) => definition.desktopDefaultScope}
         />
     );
 }

@@ -43,6 +43,7 @@ pub struct ActivityTypeDefinition {
     pub allowed_scopes: Vec<ActivityScope>,
     pub wrist_default_scope: ActivityScope,
     pub alert_default_scope: ActivityScope,
+    pub desktop_default_scope: ActivityScope,
     pub tts_default_scope: ActivityScope,
     pub widget_default_scope: ActivityScope,
     pub aliases: Vec<String>,
@@ -146,7 +147,7 @@ impl NotificationSurface {
 pub struct ActivityFilters {
     pub version: u32,
     pub wrist: ActivitySurfaceFilters,
-    #[serde(default = "ActivitySurfaceFilters::alert_defaults")]
+    #[serde(default = "ActivitySurfaceFilters::desktop_defaults")]
     pub desktop: ActivitySurfaceFilters,
     #[serde(default = "ActivitySurfaceFilters::alert_defaults")]
     pub vr: ActivitySurfaceFilters,
@@ -173,8 +174,12 @@ impl ActivitySurfaceFilters {
         }
     }
 
-    fn alert_defaults() -> Self {
+    fn desktop_defaults() -> Self {
         Self::defaults(NotificationSurface::Desktop)
+    }
+
+    fn alert_defaults() -> Self {
+        Self::defaults(NotificationSurface::Hmd)
     }
 
     fn webhook_defaults() -> Self {

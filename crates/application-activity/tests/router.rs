@@ -97,6 +97,28 @@ fn default_filters_give_alert_surfaces_one_profile_and_keep_webhook_off() {
 }
 
 #[test]
+fn boop_defaults_stay_off_on_vr_overlays_but_reach_desktop_surfaces() {
+    let filters = ActivityFilters::default();
+    let scope = |surface| filters.rule_for(surface, ActivityKind::Boop).scope;
+
+    for surface in [
+        NotificationSurface::Wrist,
+        NotificationSurface::ExternalOverlay,
+        NotificationSurface::Hmd,
+        NotificationSurface::Webhook,
+    ] {
+        assert_eq!(scope(surface), ActivityScope::Off, "{surface:?}");
+    }
+    for surface in [
+        NotificationSurface::Desktop,
+        NotificationSurface::Tts,
+        NotificationSurface::DesktopWidget,
+    ] {
+        assert_eq!(scope(surface), ActivityScope::Friends, "{surface:?}");
+    }
+}
+
+#[test]
 fn desktop_widget_defaults_keep_friend_movement_to_favorites_and_show_instance_safety() {
     let definitions = activity_type_definitions();
     let scope = |kind: ActivityKind| {

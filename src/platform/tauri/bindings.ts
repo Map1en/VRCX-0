@@ -2724,6 +2724,7 @@ export type ActivityTypeDefinition = {
     allowedScopes: ActivityScope[];
     wristDefaultScope: ActivityScope;
     alertDefaultScope: ActivityScope;
+    desktopDefaultScope: ActivityScope;
     ttsDefaultScope: ActivityScope;
     widgetDefaultScope: ActivityScope;
     aliases: string[];
