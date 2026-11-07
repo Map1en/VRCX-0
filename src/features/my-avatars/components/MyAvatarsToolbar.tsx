@@ -1,4 +1,4 @@
-import { LayoutGridIcon, ListIcon } from 'lucide-react';
+import { ArrowUpDownIcon, LayoutGridIcon, ListIcon } from 'lucide-react';
 import type { Dispatch, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -15,6 +15,14 @@ import {
     type ToolbarSegmentOption
 } from '@/components/layout/ToolbarControls';
 import { useRuntimeStore } from '@/state/runtimeStore';
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from '@/ui/shadcn/select';
 
 import type {
     MyAvatarsGridDensity,
@@ -50,6 +58,65 @@ type MyAvatarsToolbarProps = {
     onGridDensityChange: (value: MyAvatarsGridDensity) => void;
     onRefresh: () => void;
 };
+
+const GRID_SORT_COLUMNS = [
+    { id: 'name', labelKey: 'dialog.avatar.info.name', desc: false },
+    { id: 'timeSpent', labelKey: 'dialog.avatar.info.time_spent', desc: true },
+    {
+        id: 'updated_at',
+        labelKey: 'dialog.avatar.info.last_updated',
+        desc: true
+    },
+    { id: 'created_at', labelKey: 'dialog.avatar.info.created_at', desc: true }
+] as const;
+
+function MyAvatarsGridSortSelect({ table }: { table: AppTable<MyAvatarRow> }) {
+    const { t } = useTranslation();
+    const currentId = table.state.sorting?.[0]?.id ?? '';
+    const items = GRID_SORT_COLUMNS.map((column) => ({
+        value: column.id,
+        label: t(column.labelKey)
+    }));
+    const value = items.some((item) => item.value === currentId)
+        ? currentId
+        : null;
+
+    return (
+        <Select
+            value={value}
+            items={items}
+            onValueChange={(next) => {
+                const column = GRID_SORT_COLUMNS.find(
+                    (entry) => entry.id === next
+                );
+                if (column) {
+                    table.setSorting([{ id: column.id, desc: column.desc }]);
+                }
+            }}
+        >
+            <SelectTrigger
+                className="max-w-48 min-w-36 shrink-0"
+                aria-label={t('view.my_avatars.label.sort_by')}
+            >
+                <span className="flex min-w-0 items-center gap-2">
+                    <ArrowUpDownIcon className="text-muted-foreground size-4 shrink-0" />
+                    <SelectValue
+                        placeholder={t('view.my_avatars.label.sort_by')}
+                    />
+                </span>
+            </SelectTrigger>
+            <SelectContent>
+                <SelectGroup>
+                    {items.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                        </SelectItem>
+                    ))}
+                </SelectGroup>
+            </SelectContent>
+        </Select>
+    );
+}
 
 export function MyAvatarsToolbar({
     source,
@@ -122,8 +189,12 @@ export function MyAvatarsToolbar({
                         onTagFiltersChange={onTagFiltersChange}
                         onClearFilters={onClearFilters}
                     />
+                    {viewMode === 'grid' ? (
+                        <MyAvatarsGridSortSelect table={table} />
+                    ) : null}
                 </ToolbarViews>
 
+                <LocalTestAvatarsButton />
                 <ToolbarSearch
                     value={searchQuery}
                     onValueChange={onSearchChange}
@@ -138,7 +209,6 @@ export function MyAvatarsToolbar({
                             'view.my_avatars.action.refresh_avatar_inventory'
                         )}
                     />
-                    <LocalTestAvatarsButton />
                     {viewMode === 'grid' ? (
                         <GridSettingsMenu
                             gridDensity={gridDensity}

@@ -184,15 +184,15 @@ export function AvatarActionMenuItems({
 }
 
 function resolveMyAvatarGridTagBadgeStyle(entry: MyAvatarTag) {
-    const style = resolveMyAvatarTagBadgeStyle(entry);
-    const backgroundColor =
-        typeof style.backgroundColor === 'string'
-            ? style.backgroundColor.replace(/\/\s*[\d.]+\)$/, '/ 0.45)')
-            : style.backgroundColor;
+    const { backgroundColor, ...style } = resolveMyAvatarTagBadgeStyle(entry);
+    const tint =
+        typeof backgroundColor === 'string'
+            ? backgroundColor.replace(/\/\s*[\d.]+\)$/, '/ 0.45)')
+            : 'transparent';
 
     return {
         ...style,
-        backgroundColor
+        background: `linear-gradient(${tint}, ${tint}), color-mix(in oklch, var(--background) 82%, transparent)`
     };
 }
 

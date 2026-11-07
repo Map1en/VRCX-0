@@ -1720,7 +1720,8 @@
                 "avatar_made_private": "El avatar ahora es privado",
                 "untitled_avatar": "Avatar sin título",
                 "local_test_avatars": "Avatares de prueba locales",
-                "local_test_avatars_description": "Avatares creados con Build & Test en el SDK de VRChat. En el juego solo los ves tú."
+                "local_test_avatars_description": "Avatares creados con Build & Test en el SDK de VRChat. En el juego solo los ves tú.",
+                "sort_by": "Ordenar por"
             },
             "source": {
                 "own": "Subidos",

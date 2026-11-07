@@ -1711,7 +1711,8 @@
                 "avatar_made_private": "アバターを非公開にしました",
                 "untitled_avatar": "無題のアバター",
                 "local_test_avatars": "ローカルテストアバター",
-                "local_test_avatars_description": "VRChat SDK の Build & Test でビルドしたアバターです。ゲーム内では自分にしか見えません。"
+                "local_test_avatars_description": "VRChat SDK の Build & Test でビルドしたアバターです。ゲーム内では自分にしか見えません。",
+                "sort_by": "並べ替え"
             },
             "source": {
                 "own": "アップロード",

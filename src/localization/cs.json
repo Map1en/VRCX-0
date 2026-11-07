@@ -1734,7 +1734,8 @@
                 "avatar_made_private": "Avatar zneviditelněn",
                 "untitled_avatar": "Avatar bez názvu",
                 "local_test_avatars": "Místní testovací avatary",
-                "local_test_avatars_description": "Avatary sestavené pomocí Build & Test ve VRChat SDK. Ve hře je vidíte jen vy."
+                "local_test_avatars_description": "Avatary sestavené pomocí Build & Test ve VRChat SDK. Ve hře je vidíte jen vy.",
+                "sort_by": "Seřadit podle"
             },
             "source": {
                 "own": "Nahrané",

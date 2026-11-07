@@ -69,6 +69,7 @@ import {
 import type {
     MyAvatarActionHandler,
     MyAvatarRow,
+    MyAvatarTag,
     MyAvatarsGridDensity,
     MyAvatarsPlatformFilter,
     MyAvatarsReleaseStatusFilter
@@ -196,6 +197,21 @@ export function MyAvatarNameCell({
 
     return (
         <div className="flex min-w-0 items-center gap-1.5">
+            <span className="bg-muted mr-1 flex aspect-[4/3] h-[calc(var(--vrcx-0-table-row-height)-1rem)] shrink-0 items-center justify-center overflow-hidden rounded-sm">
+                {thumbnailUrl ? (
+                    <FadeInImage
+                        src={thumbnailUrl}
+                        alt=""
+                        className="size-full object-cover"
+                        loading="lazy"
+                    />
+                ) : (
+                    <PersonStandingIcon
+                        aria-hidden="true"
+                        className="text-muted-foreground size-3.5"
+                    />
+                )}
+            </span>
             <HoverCard>
                 <HoverCardTrigger
                     delay={400}
@@ -239,6 +255,56 @@ export function MyAvatarNameCell({
                     aria-label={publicLabel}
                     className="size-3.5 shrink-0 text-emerald-500"
                 />
+            ) : null}
+        </div>
+    );
+}
+
+export function MyAvatarTagList({
+    tags = []
+}: {
+    tags?: readonly MyAvatarTag[];
+}) {
+    if (!tags.length) {
+        return null;
+    }
+    const visibleTags = tags.slice(0, 2);
+    const hiddenTags = tags.slice(visibleTags.length);
+
+    return (
+        <div className="flex min-w-0 items-center gap-1 overflow-hidden">
+            {visibleTags.map((entry) => (
+                <Badge
+                    key={entry.tag}
+                    variant="secondary"
+                    className={cn(
+                        MY_AVATAR_TAG_BADGE_CLASS_NAME,
+                        'max-w-24 min-w-0 shrink truncate'
+                    )}
+                    style={resolveMyAvatarTagBadgeStyle(entry)}
+                >
+                    {entry.tag}
+                </Badge>
+            ))}
+            {hiddenTags.length ? (
+                <Tooltip>
+                    <TooltipTrigger
+                        render={
+                            <Badge
+                                variant="outline"
+                                className={cn(
+                                    MY_AVATAR_TAG_BADGE_CLASS_NAME,
+                                    'shrink-0 tabular-nums'
+                                )}
+                            >
+                                +{hiddenTags.length}
+                            </Badge>
+                        }
+                    />
+                    <TooltipContent>
+                        {hiddenTags.map((entry) => entry.tag).join(', ')}
+                    </TooltipContent>
+                </Tooltip>
             ) : null}
         </div>
     );

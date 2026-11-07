@@ -169,6 +169,14 @@ describe('myAvatarsState', () => {
             )
         ]);
 
+        const savedBeforeTags = MY_AVATARS_COLUMN_IDS.filter(
+            (columnId) => columnId !== 'customTags'
+        ).reverse();
+        const restoredOrder = sanitizeMyAvatarsColumnOrder(savedBeforeTags);
+        expect(restoredOrder.indexOf('customTags')).toBe(
+            restoredOrder.indexOf('name') + 1
+        );
+
         const resolvedColumnOrder = resolveMyAvatarsColumnOrder([
             'actions',
             'visibility',

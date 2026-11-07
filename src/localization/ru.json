@@ -1734,7 +1734,8 @@
                 "avatar_made_private": "Аватар стал частным",
                 "untitled_avatar": "Безымянный аватар",
                 "local_test_avatars": "Локальные тестовые аватары",
-                "local_test_avatars_description": "Аватары, собранные через Build & Test в VRChat SDK. В игре их видите только вы."
+                "local_test_avatars_description": "Аватары, собранные через Build & Test в VRChat SDK. В игре их видите только вы.",
+                "sort_by": "Сортировка по"
             },
             "source": {
                 "own": "Загруженные",

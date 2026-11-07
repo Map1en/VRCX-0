@@ -16,7 +16,7 @@ vi.mock('@/services/dialogService', () => ({
 import { getMyAvatarsGridDensityConfig } from '../myAvatarsGrid';
 import type { MyAvatarActionHandler, MyAvatarRow } from '../myAvatarsTypes';
 import { AvatarActionMenuItems, MyAvatarGridCard } from './MyAvatarGridCard';
-import { PlatformBadges } from './MyAvatarsViewParts';
+import { MyAvatarTagList, PlatformBadges } from './MyAvatarsViewParts';
 
 describe('My Avatars view parts', () => {
     afterEach(cleanup);
@@ -35,6 +35,24 @@ describe('My Avatars view parts', () => {
         expect(screen.getByLabelText('PC')).toBeTruthy();
         expect(screen.getByLabelText('Android')).toBeTruthy();
         expect(screen.getByLabelText('iOS')).toBeTruthy();
+    });
+
+    it('shows the first two tags and folds the rest into a count', () => {
+        render(
+            <MyAvatarTagList
+                tags={[
+                    { tag: 'cute', color: null },
+                    { tag: 'quest', color: null },
+                    { tag: 'wip', color: null },
+                    { tag: 'old', color: null }
+                ]}
+            />
+        );
+
+        expect(screen.getByText('cute')).toBeTruthy();
+        expect(screen.getByText('quest')).toBeTruthy();
+        expect(screen.queryByText('wip')).toBeNull();
+        expect(screen.getByText('+2')).toBeTruthy();
     });
 
     it('identifies the target avatar without changing menu actions', () => {

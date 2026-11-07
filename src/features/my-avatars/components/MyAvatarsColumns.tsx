@@ -25,6 +25,7 @@ import {
     AvatarActionsDropdown,
     AvatarVisibilityIndicator,
     MyAvatarNameCell,
+    MyAvatarTagList,
     PlatformBadges,
     SortButton
 } from './MyAvatarsViewParts';
@@ -73,6 +74,21 @@ export function useMyAvatarsColumns({
                         publicLabel={t('dialog.avatar.tags.public')}
                     />
                 )
+            },
+            {
+                id: 'customTags',
+                size: 180,
+                minSize: 120,
+                accessorFn: (row) =>
+                    (row.$tags || []).map((entry) => entry.tag).join(', '),
+                meta: { label: t('dialog.avatar.info.tags') },
+                header: ({ column }) => (
+                    <SortButton
+                        column={column}
+                        label={t('dialog.avatar.info.tags')}
+                    />
+                ),
+                cell: ({ row }) => <MyAvatarTagList tags={row.original.$tags} />
             },
             {
                 id: 'platforms',

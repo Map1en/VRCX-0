@@ -69,6 +69,7 @@ export function isMyAvatarsPlatformFilter(
 }
 export const MY_AVATARS_COLUMN_IDS = [
     'name',
+    'customTags',
     'platforms',
     'visibility',
     'timeSpent',
@@ -107,6 +108,7 @@ const LEGACY_GRID_DENSITY_ALIASES: Readonly<
 });
 const SORT_COLUMN_IDS = [
     'name',
+    'customTags',
     'visibility',
     'timeSpent',
     'version',
@@ -294,11 +296,16 @@ export function sanitizeMyAvatarsColumnOrder(value: unknown): string[] {
         }
     }
 
-    for (const columnId of MY_AVATARS_COLUMN_IDS) {
+    MY_AVATARS_COLUMN_IDS.forEach((columnId, index) => {
         if (!ordered.includes(columnId)) {
-            ordered.push(columnId);
+            const previousColumnId = MY_AVATARS_COLUMN_IDS[index - 1];
+            ordered.splice(
+                previousColumnId ? ordered.indexOf(previousColumnId) + 1 : 0,
+                0,
+                columnId
+            );
         }
-    }
+    });
 
     return ordered;
 }

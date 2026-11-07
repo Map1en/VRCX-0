@@ -1715,7 +1715,8 @@
                 "avatar_made_private": "模型已设为私密",
                 "untitled_avatar": "未命名模型",
                 "local_test_avatars": "本地测试模型",
-                "local_test_avatars_description": "在 VRChat SDK 中通过 Build & Test 构建的模型，游戏内只有你自己能看到。"
+                "local_test_avatars_description": "在 VRChat SDK 中通过 Build & Test 构建的模型，游戏内只有你自己能看到。",
+                "sort_by": "排序方式"
             },
             "source": {
                 "own": "我上传的",

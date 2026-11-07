@@ -1652,7 +1652,8 @@
                 "avatar_made_private": "아바타가 비공개로 설정됨",
                 "untitled_avatar": "제목 없는 아바타",
                 "local_test_avatars": "로컬 테스트 아바타",
-                "local_test_avatars_description": "VRChat SDK의 Build & Test로 빌드한 아바타입니다. 게임에서는 본인에게만 보입니다."
+                "local_test_avatars_description": "VRChat SDK의 Build & Test로 빌드한 아바타입니다. 게임에서는 본인에게만 보입니다.",
+                "sort_by": "정렬 기준"
             },
             "source": {
                 "own": "업로드",

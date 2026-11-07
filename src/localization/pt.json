@@ -1718,7 +1718,8 @@
                 "avatar_made_private": "Avatar tornado privado",
                 "untitled_avatar": "Avatar sem título",
                 "local_test_avatars": "Avatares de teste locais",
-                "local_test_avatars_description": "Avatares criados com Build & Test no SDK do VRChat. No jogo, só você consegue vê-los."
+                "local_test_avatars_description": "Avatares criados com Build & Test no SDK do VRChat. No jogo, só você consegue vê-los.",
+                "sort_by": "Ordenar por"
             },
             "source": {
                 "own": "Enviados",

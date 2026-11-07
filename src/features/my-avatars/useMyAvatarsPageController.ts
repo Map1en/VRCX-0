@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+
 import { useAppTable } from '@/components/data-table/appTable';
 
 import { useMyAvatarsColumns } from './components/MyAvatarsColumns';
@@ -75,9 +77,14 @@ export function useMyAvatarsPageController() {
             setColumnOrderLocked: tableState.setColumnOrderLocked
         }
     });
+    const sortedRowModel = table.getSortedRowModel();
+    const sortedAvatars = useMemo(
+        () => sortedRowModel.rows.map((row) => row.original),
+        [sortedRowModel]
+    );
     const grid = useMyAvatarsGridVirtualization({
         deferredSearchQuery: filters.deferredSearchQuery,
-        filteredAvatars: viewData.filteredAvatars,
+        filteredAvatars: sortedAvatars,
         gridDensity: filters.gridDensity,
         platformFilter: filters.platformFilter,
         releaseStatusFilter: filters.releaseStatusFilter,
