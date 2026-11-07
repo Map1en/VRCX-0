@@ -36,7 +36,7 @@ function rowTimestamp(row: InstanceHistoryEntryRow): unknown {
 }
 
 function dayLabel(row: InstanceHistoryEntryRow): string {
-    return formatDateFilter(rowTimestamp(row), 'date');
+    return formatDateFilter(rowTimestamp(row), 'weekdayDate');
 }
 
 function monthLabel(row: InstanceHistoryEntryRow): string {
@@ -110,7 +110,7 @@ export function InstanceHistoryRow({
             )}
         >
             {selected ? (
-                <span className="bg-primary absolute inset-y-1.5 left-0 w-0.5 rounded-full" />
+                <span className="bg-foreground/60 absolute inset-y-1.5 left-0 w-0.5 rounded-full" />
             ) : null}
             <button
                 type="button"

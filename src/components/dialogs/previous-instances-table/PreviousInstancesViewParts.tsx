@@ -39,6 +39,7 @@ import { ToolbarSegmented } from '@/components/layout/ToolbarControls';
 import { Location } from '@/components/Location';
 import { normalizeLocationText } from '@/components/location/locationModel';
 import { LocationWorld } from '@/components/LocationWorld';
+import { FadeInImage } from '@/components/media/FadeInImage';
 import type { LoadStatus } from '@/domain/shared/types';
 import {
     formatClock,
@@ -49,6 +50,7 @@ import {
 import { entityQueryPolicies, queryKeys } from '@/lib/entityQueryCache';
 import { groupProfileQueryOptions } from '@/lib/groupProfileQuery';
 import { useKnownUserFact, useKnownUserFacts } from '@/lib/useKnownUser';
+import { useWorldSummaries } from '@/lib/useWorldSummaries';
 import { cn } from '@/lib/utils';
 import gameLogRepository from '@/repositories/gameLogRepository';
 import userProfileRepository from '@/repositories/userProfileRepository';
@@ -719,23 +721,31 @@ function InstanceSummaryHeading({
     const { t } = useTranslation();
     const location = rowLocation(row);
 
+    const copyButton = (
+        <CopyInstanceWorldNameButton worldName={row?.worldName || ''} />
+    );
+
     if (!location) {
         return (
-            <PageDescription className="break-words">
-                {instanceDetailsSummary(row, t)}
-            </PageDescription>
+            <div className="flex min-w-0 items-center gap-1">
+                <PageDescription className="break-words">
+                    {instanceDetailsSummary(row, t)}
+                </PageDescription>
+                {copyButton}
+            </div>
         );
     }
 
     return (
-        <div className="text-muted-foreground min-w-0 text-sm">
+        <div className="text-muted-foreground flex min-w-0 items-center gap-1 text-sm">
             <Location
                 location={location}
                 hint={row?.worldName || ''}
                 endpoint={endpoint}
                 showInstanceIdInLocation
-                className="max-w-full"
+                className="min-w-0"
             />
+            {copyButton}
         </div>
     );
 }
@@ -928,6 +938,11 @@ export function PreviousInstanceDetailsPanel({
         ).catch(() => {});
     }, [currentEndpoint, missingPlayerProfileIds]);
 
+    const worldId = row ? parseLocation(rowLocation(row)).worldId : '';
+    const worldIds = useMemo(() => (worldId ? [worldId] : []), [worldId]);
+    const worldThumbnailUrl =
+        useWorldSummaries(worldIds).get(worldId)?.thumbnailUrl ?? '';
+
     if (!row) {
         return (
             <DialogEmptyState
@@ -964,9 +979,11 @@ export function PreviousInstanceDetailsPanel({
                         </PageHeader>
                     ) : null}
                     <div className="ml-auto flex shrink-0 items-center gap-1">
-                        <CopyInstanceWorldNameButton
-                            worldName={row?.worldName || ''}
-                        />
+                        {showTitle ? null : (
+                            <CopyInstanceWorldNameButton
+                                worldName={row?.worldName || ''}
+                            />
+                        )}
                         <InstanceActionBar
                             target={{
                                 location: rowLocation(row),
@@ -979,49 +996,63 @@ export function PreviousInstanceDetailsPanel({
                 </PageToolbarRow>
             </PageToolbar>
             <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
-                <dl className="flex shrink-0 flex-wrap gap-x-10 gap-y-3 text-sm">
-                    <div className="min-w-0">
-                        <dt className="text-muted-foreground text-xs">
-                            {t('table.previous_instances.date')}
-                        </dt>
-                        <dd className="mt-1 truncate font-medium tabular-nums">
-                            {formatDateFilterOrFallback(
-                                row?.created_at || row?.createdAt,
-                                'long',
-                                { empty: '—', invalid: '—' }
-                            )}
-                        </dd>
-                    </div>
-                    <div className="min-w-0">
-                        <dt className="text-muted-foreground text-xs">
-                            {t('table.previous_instances.time')}
-                        </dt>
-                        <dd className="mt-1 font-medium tabular-nums">
-                            {rowDuration(row)}
-                        </dd>
-                    </div>
-                    <div className="min-w-0">
-                        <dt className="text-muted-foreground text-xs">
-                            {t('table.previous_instances.instance_creator')}
-                        </dt>
-                        <dd className="mt-1 min-w-0 font-medium">
-                            {rowOwnerUserId(row) || rowOwnerGroupId(row) ? (
-                                <InstanceCreatorCell
-                                    row={row}
-                                    endpoint={currentEndpoint}
+                <div className="flex shrink-0 items-start gap-4">
+                    {worldId ? (
+                        <div className="bg-muted h-24 w-32 shrink-0 overflow-hidden rounded-lg border">
+                            {worldThumbnailUrl ? (
+                                <FadeInImage
+                                    src={worldThumbnailUrl}
+                                    alt=""
+                                    className="size-full object-cover"
+                                    loading="lazy"
                                 />
-                            ) : (
-                                <span className="text-muted-foreground">
-                                    {'—'}
-                                </span>
-                            )}
-                        </dd>
-                    </div>
-                    <InstanceAvatarWearSummary
-                        segments={avatarSegments}
-                        label={t('table.previous_instances.avatars')}
-                    />
-                </dl>
+                            ) : null}
+                        </div>
+                    ) : null}
+                    <dl className="flex min-w-0 flex-1 flex-wrap gap-x-10 gap-y-3 text-sm">
+                        <div className="min-w-0">
+                            <dt className="text-muted-foreground text-xs">
+                                {t('table.previous_instances.date')}
+                            </dt>
+                            <dd className="mt-1 truncate font-medium tabular-nums">
+                                {formatDateFilterOrFallback(
+                                    row?.created_at || row?.createdAt,
+                                    'long',
+                                    { empty: '—', invalid: '—' }
+                                )}
+                            </dd>
+                        </div>
+                        <div className="min-w-0">
+                            <dt className="text-muted-foreground text-xs">
+                                {t('table.previous_instances.time')}
+                            </dt>
+                            <dd className="mt-1 font-medium tabular-nums">
+                                {rowDuration(row)}
+                            </dd>
+                        </div>
+                        <div className="min-w-0">
+                            <dt className="text-muted-foreground text-xs">
+                                {t('table.previous_instances.instance_creator')}
+                            </dt>
+                            <dd className="mt-1 min-w-0 font-medium">
+                                {rowOwnerUserId(row) || rowOwnerGroupId(row) ? (
+                                    <InstanceCreatorCell
+                                        row={row}
+                                        endpoint={currentEndpoint}
+                                    />
+                                ) : (
+                                    <span className="text-muted-foreground">
+                                        {'—'}
+                                    </span>
+                                )}
+                            </dd>
+                        </div>
+                        <InstanceAvatarWearSummary
+                            segments={avatarSegments}
+                            label={t('table.previous_instances.avatars')}
+                        />
+                    </dl>
+                </div>
                 <div className="flex min-h-0 flex-1 flex-col gap-0">
                     <div className="flex shrink-0 items-center justify-between gap-3">
                         <ToolbarSegmented
