@@ -358,7 +358,7 @@ export function FeedVirtualListShell({
                             <FeedListDayHeading
                                 label={formatDateFilter(
                                     entry.createdAt,
-                                    'date'
+                                    'weekdayDate'
                                 )}
                                 layout={layout}
                             />

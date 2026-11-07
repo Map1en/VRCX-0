@@ -259,7 +259,7 @@ function sessionDayKey(session: GameLogSession) {
 
 function SessionDayDivider({ session }: { session: GameLogSession }) {
     const value = sessionStartValue(session);
-    const label = formatDateFilter(value, 'date');
+    const label = formatDateFilter(value, 'weekdayDate');
 
     return (
         <div className="bg-muted sticky top-0 z-[6] flex h-7 items-center gap-3 px-3">

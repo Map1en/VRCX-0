@@ -121,10 +121,10 @@ describe('FeedVirtualListShell', () => {
             />
         );
 
-        const todayLabel = formatDateFilter(now.toISOString(), 'date');
+        const todayLabel = formatDateFilter(now.toISOString(), 'weekdayDate');
         const yesterdayLabel = formatDateFilter(
             yesterday.toISOString(),
-            'date'
+            'weekdayDate'
         );
         expect(screen.queryByText(todayLabel)).toBeNull();
         const text = view.container.textContent ?? '';
