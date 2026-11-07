@@ -2966,7 +2966,7 @@
             "game_info": {
                 "online_users": "線上用戶",
                 "user_online": "{count} 位用戶在線上",
-                "instances_active": "{count} 個活躍實例"
+                "instances_active": "{count} 個活躍房間"
             },
             "config_json": "JSON 資料"
         },
@@ -3293,7 +3293,7 @@
                     "zoom": "介面縮放",
                     "show_instance_id": "顯示房間 ID",
                     "age_gated_instances": "年齡限制房間",
-                    "age_gated_instances_description": "顯示受年齡限制的實例。停用時，這些實例會隱藏並顯示為受限制。",
+                    "age_gated_instances_description": "顯示受年齡限制的房間。停用時，這些房間會隱藏並顯示為受限制。",
                     "nicknames": "本機備註暱稱",
                     "nicknames_description": "在用戶名稱後顯示你的本機備註名稱。",
                     "table_page_sizes": "表格每頁筆數",
@@ -6476,7 +6476,7 @@
             "roles_help": "全部不勾選則對所有成員開放。",
             "host_early_join": "主持人提前進入（分鐘）",
             "guest_early_join": "參加者提前進入（分鐘）",
-            "close_after_end": "結束後關閉實例（分鐘）",
+            "close_after_end": "結束後關閉房間（分鐘）",
             "send_notification": "建立後通知群組成員",
             "delete": "刪除活動",
             "save": "儲存變更",
@@ -7422,16 +7422,16 @@
                 "no_events": "前後 6 小時內沒有可關聯的群組活動。",
                 "assign": "關聯",
                 "remove": "解除關聯",
-                "linked": "已為此實例關聯群組活動",
-                "unlinked": "已解除此實例的群組活動關聯",
-                "failed": "更新實例的群組活動失敗"
+                "linked": "已為此房間關聯群組活動",
+                "unlinked": "已解除此房間的群組活動關聯",
+                "failed": "更新房間的群組活動失敗"
             },
             "calendar_event": "已關聯群組活動",
             "rename": {
-                "header": "重新命名實例",
+                "header": "重新命名房間",
                 "description": "留空則清除名稱。",
-                "renamed": "已重新命名實例",
-                "failed": "重新命名實例失敗"
+                "renamed": "已重新命名房間",
+                "failed": "重新命名房間失敗"
             },
             "modal": {
                 "close_instance": "關閉房間？"

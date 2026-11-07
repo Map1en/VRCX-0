@@ -2966,7 +2966,7 @@
             "game_info": {
                 "online_users": "总在线玩家",
                 "user_online": "现有 {count} 位玩家在线",
-                "instances_active": "现有 {count} 个活跃实例"
+                "instances_active": "现有 {count} 个活跃房间"
             },
             "config_json": "API 端点返回的配置信息"
         },
@@ -6485,7 +6485,7 @@
             "roles_help": "全部不勾选则对所有成员可见。",
             "host_early_join": "主持人提前进入（分钟）",
             "guest_early_join": "参与者提前进入（分钟）",
-            "close_after_end": "结束后关闭实例（分钟）",
+            "close_after_end": "结束后关闭房间（分钟）",
             "send_notification": "创建后通知群组成员",
             "delete": "删除活动",
             "save": "保存修改",
@@ -7431,16 +7431,16 @@
                 "no_events": "前后 6 小时内没有可关联的群组活动。",
                 "assign": "关联",
                 "remove": "解除关联",
-                "linked": "已为此实例关联群组活动",
-                "unlinked": "已解除此实例的群组活动关联",
-                "failed": "更新实例的群组活动失败"
+                "linked": "已为此房间关联群组活动",
+                "unlinked": "已解除此房间的群组活动关联",
+                "failed": "更新房间的群组活动失败"
             },
             "calendar_event": "已关联群组活动",
             "rename": {
-                "header": "重命名实例",
+                "header": "重命名房间",
                 "description": "留空则清除名称。",
-                "renamed": "已重命名实例",
-                "failed": "重命名实例失败"
+                "renamed": "已重命名房间",
+                "failed": "重命名房间失败"
             },
             "modal": {
                 "close_instance": "关闭房间？"
