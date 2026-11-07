@@ -1791,6 +1791,14 @@
             "group": {
                 "header": "群组"
             },
+            "hot": {
+                "header": "探索",
+                "active": "热门",
+                "discover": "发现",
+                "shuffle": "换一批",
+                "rooms": "{count} 个房间",
+                "empty": "暂时没有可显示的世界"
+            },
             "label": {
                 "avatar_provider": "模型来源"
             },
@@ -1801,7 +1809,8 @@
                 "failed_to_search_worlds": "搜索世界失败",
                 "failed_to_search_groups": "搜索群组失败",
                 "failed_to_search_avatars": "搜索模型失败",
-                "failed_to_save_avatar_provider": "保存模型提供方失败"
+                "failed_to_save_avatar_provider": "保存模型提供方失败",
+                "failed_to_load_hot_worlds": "加载热门世界失败"
             }
         },
         "favorite": {

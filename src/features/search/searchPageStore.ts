@@ -10,6 +10,7 @@ import type {
     SearchActiveTab,
     SearchAvatarResult,
     SearchGroupResult,
+    SearchPageTab,
     SearchUserResult,
     SearchWorldResult,
     UserSearchRequest,
@@ -17,7 +18,7 @@ import type {
 } from './searchTypes';
 
 interface SearchPageState {
-    activeTab: SearchActiveTab;
+    activeTab: SearchPageTab;
     searchText: string;
     searchUserSortByLastLoggedIn: boolean;
     selectedWorldCategory: string;
@@ -39,7 +40,7 @@ interface SearchPageState {
 
 function createSearchPageState(): SearchPageState {
     return {
-        activeTab: 'user',
+        activeTab: 'hot',
         searchText: '',
         searchUserSortByLastLoggedIn: false,
         selectedWorldCategory: '',

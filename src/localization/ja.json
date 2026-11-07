@@ -1787,6 +1787,14 @@
             "group": {
                 "header": "グループ"
             },
+            "hot": {
+                "header": "探索",
+                "active": "人気",
+                "discover": "発見",
+                "shuffle": "シャッフル",
+                "rooms": "{count} インスタンス",
+                "empty": "表示できるワールドがありません"
+            },
             "label": {
                 "avatar_provider": "アバター検索プロバイダー"
             },
@@ -1797,7 +1805,8 @@
                 "failed_to_search_worlds": "ワールド検索に失敗しました",
                 "failed_to_search_groups": "グループ検索に失敗しました",
                 "failed_to_search_avatars": "アバター検索に失敗しました",
-                "failed_to_save_avatar_provider": "アバタープロバイダーの保存に失敗しました"
+                "failed_to_save_avatar_provider": "アバタープロバイダーの保存に失敗しました",
+                "failed_to_load_hot_worlds": "人気ワールドを読み込めませんでした"
             }
         },
         "favorite": {

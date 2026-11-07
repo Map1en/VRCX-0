@@ -7,20 +7,25 @@ import {
     type SearchPageSizes
 } from './searchPageSizes';
 import { useSearchPageField } from './searchPageStore';
-import type { SearchActiveTab } from './searchTypes';
+import type { SearchActiveTab, SearchPageTab } from './searchTypes';
+
+function isSearchPageTab(value: string | null): value is SearchPageTab {
+    return (
+        value === 'avatar' ||
+        value === 'group' ||
+        value === 'hot' ||
+        value === 'user' ||
+        value === 'world'
+    );
+}
 
 export function useSearchFilters() {
     const [searchParams, setSearchParams] = useSearchParams();
     const [rememberedTab, setRememberedTab] = useSearchPageField('activeTab');
     const requestedTab = searchParams.get('tab');
-    let activeTab: SearchActiveTab = rememberedTab;
+    let activeTab: SearchPageTab = rememberedTab;
     if (requestedTab !== null) {
-        activeTab =
-            requestedTab === 'avatar' ||
-            requestedTab === 'group' ||
-            requestedTab === 'world'
-                ? requestedTab
-                : 'user';
+        activeTab = isSearchPageTab(requestedTab) ? requestedTab : 'hot';
     }
     const [searchText, setSearchText] = useSearchPageField('searchText');
     const [searchUserSortByLastLoggedIn, setSearchUserSortByLastLoggedIn] =
@@ -41,18 +46,13 @@ export function useSearchFilters() {
         setRememberedTab(activeTab);
     }, [activeTab, setRememberedTab]);
     const setActiveTab = (value: string) => {
-        if (
-            value !== 'avatar' &&
-            value !== 'group' &&
-            value !== 'user' &&
-            value !== 'world'
-        ) {
+        if (!isSearchPageTab(value)) {
             return;
         }
 
         setRememberedTab(value);
         const nextSearchParams = new URLSearchParams(searchParams);
-        if (value === 'user') {
+        if (value === 'hot') {
             nextSearchParams.delete('tab');
         } else {
             nextSearchParams.set('tab', value);

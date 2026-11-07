@@ -34,6 +34,10 @@ describe('useSearchFilters', () => {
 
         act(() => result.current.filters.setActiveTab('user'));
         expect(result.current.filters.activeTab).toBe('user');
+        expect(result.current.location.search).toBe('?tab=user');
+
+        act(() => result.current.filters.setActiveTab('hot'));
+        expect(result.current.filters.activeTab).toBe('hot');
         expect(result.current.location.search).toBe('');
         unmount();
     });

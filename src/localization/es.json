@@ -1796,6 +1796,14 @@
             "group": {
                 "header": "Grupo"
             },
+            "hot": {
+                "header": "Explorar",
+                "active": "Popular",
+                "discover": "Descubrir",
+                "shuffle": "Mezclar",
+                "rooms": "{count} instancias",
+                "empty": "No hay mundos para mostrar"
+            },
             "label": {
                 "avatar_provider": "Proveedor de avatares"
             },
@@ -1806,7 +1814,8 @@
                 "failed_to_search_worlds": "No se pudo buscar mundos",
                 "failed_to_search_groups": "No se pudo buscar grupos",
                 "failed_to_search_avatars": "No se pudo buscar avatares",
-                "failed_to_save_avatar_provider": "No se pudo guardar el proveedor de avatares"
+                "failed_to_save_avatar_provider": "No se pudo guardar el proveedor de avatares",
+                "failed_to_load_hot_worlds": "No se pudieron cargar los mundos populares"
             }
         },
         "favorite": {

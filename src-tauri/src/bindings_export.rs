@@ -519,6 +519,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::vrchat::instances::service::app__vrchat_instance_calendar_link_set,
             commands::vrchat::instances::service::app__vrchat_instance_display_name_set,
             commands::vrchat::instances::service::app__vrchat_instance_count_get,
+            commands::vrchat::instances::service::app__vrchat_instances_active_get,
+            commands::vrchat::instances::service::app__vrchat_instances_discover_get,
             commands::vrchat::instances::service::app__vrchat_instance_create,
             commands::vrchat::instances::service::app__vrchat_instance_get,
             commands::vrchat::instances::service::app__vrchat_instance_join,

@@ -1,8 +1,10 @@
 use std::sync::Arc;
 
-use vrcx_0_application_core::{Result, RuntimeAuthScope};
+use serde_json::Value;
+use vrcx_0_application_core::{RequestPacer, Result, RuntimeAuthScope};
 use vrcx_0_application_realtime::RealtimeHostRuntime;
 use vrcx_0_contracts::vrchat_api::{VrchatRequest, VrchatResponse, VrchatScope};
+use vrcx_0_core::json::RawJson;
 use vrcx_0_core::time::now_iso;
 use vrcx_0_core::vrchat_endpoints::VRCHAT_API_DEFAULT_ENDPOINT;
 use vrcx_0_core::OwnerId;
@@ -20,9 +22,10 @@ use vrcx_0_vrchat_protocol::economy::{
 use vrcx_0_vrchat_protocol::favorites::{favorite_groups_get_input, favorite_worlds_get_input};
 use vrcx_0_vrchat_protocol::friends::friend_status_get_input;
 use vrcx_0_vrchat_protocol::instances::{
-    instance_calendar_link_input, instance_close_input, instance_count_get_input,
-    instance_create_input, instance_display_name_input, instance_get_input,
-    instance_self_invite_input, instance_short_name_get_input, InstanceCreateRequest,
+    active_instances_get_input, discover_instances_get_input, instance_calendar_link_input,
+    instance_close_input, instance_count_get_input, instance_create_input,
+    instance_display_name_input, instance_get_input, instance_self_invite_input,
+    instance_short_name_get_input, InstanceCreateRequest,
 };
 use vrcx_0_vrchat_protocol::media::{
     asset_upload_input, avatar_gallery_image_upload_input, cosmetics_index_get_input,
@@ -55,6 +58,10 @@ use vrcx_0_vrchat_protocol::users::{
     account_standing_get_input, profile_get_input, user_represented_group_get_input,
 };
 
+use super::instance_lists::{
+    load_paced_pages, send_paced, ACTIVE_INSTANCE_MAX_PAGES, INSTANCE_LIST_PAGE_SIZE,
+    INSTANCE_LIST_REQUEST_SPACING,
+};
 use super::VrchatApiRuntime;
 use crate::media::{prepare_media_upload_request, MediaUploadPreprocessor};
 use crate::social::{
@@ -465,6 +472,48 @@ impl VrchatRemoteFacade {
             VrchatScope::Vrchat,
         )
         .await
+    }
+
+    pub async fn active_instances(&self) -> Result<Vec<RawJson>> {
+        let pacer = RequestPacer::new(INSTANCE_LIST_REQUEST_SPACING);
+        let rows = load_paced_pages(&pacer, ACTIVE_INSTANCE_MAX_PAGES, |offset| {
+            self.execute(
+                "app__vrchat_instances_active_get",
+                format!("Getting active instances from offset {offset}."),
+                active_instances_get_input(
+                    VRCHAT_API_DEFAULT_ENDPOINT.into(),
+                    INSTANCE_LIST_PAGE_SIZE,
+                    offset,
+                ),
+                VrchatScope::Vrchat,
+            )
+        })
+        .await?;
+        Ok(rows.into_iter().map(RawJson::from).collect())
+    }
+
+    pub async fn discover_instances(&self) -> Result<Vec<RawJson>> {
+        let pacer = RequestPacer::new(INSTANCE_LIST_REQUEST_SPACING);
+        let payload = send_paced(&pacer, || {
+            self.execute(
+                "app__vrchat_instances_discover_get",
+                "Discovering instances.",
+                discover_instances_get_input(
+                    VRCHAT_API_DEFAULT_ENDPOINT.into(),
+                    INSTANCE_LIST_PAGE_SIZE,
+                ),
+                VrchatScope::Vrchat,
+            )
+        })
+        .await?;
+        let rows = match payload {
+            Value::Object(mut payload) => match payload.remove("instances") {
+                Some(Value::Array(rows)) => rows,
+                _ => Vec::new(),
+            },
+            _ => Vec::new(),
+        };
+        Ok(rows.into_iter().map(RawJson::from).collect())
     }
 
     pub async fn search_worlds(

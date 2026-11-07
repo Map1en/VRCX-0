@@ -1728,6 +1728,14 @@
             "group": {
                 "header": "그룹"
             },
+            "hot": {
+                "header": "탐색",
+                "active": "인기",
+                "discover": "발견",
+                "shuffle": "새로 고르기",
+                "rooms": "인스턴스 {count}개",
+                "empty": "표시할 월드가 없습니다"
+            },
             "label": {
                 "avatar_provider": "아바타 제공자"
             },
@@ -1738,7 +1746,8 @@
                 "failed_to_search_worlds": "월드 검색에 실패했습니다.",
                 "failed_to_search_groups": "그룹을 검색하지 못했습니다.",
                 "failed_to_search_avatars": "아바타 검색에 실패했습니다.",
-                "failed_to_save_avatar_provider": "아바타 제공자를 저장하지 못했습니다."
+                "failed_to_save_avatar_provider": "아바타 제공자를 저장하지 못했습니다.",
+                "failed_to_load_hot_worlds": "인기 월드를 불러오지 못했습니다"
             }
         },
         "favorite": {

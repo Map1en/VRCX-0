@@ -63,7 +63,8 @@ describe('SearchResultParts WorldCard', () => {
     it('uses occupants from the requested world result', () => {
         render(<WorldCard world={world} />);
 
-        expect(screen.getByText('Author (4)')).toBeTruthy();
+        expect(screen.getByText('Author')).toBeTruthy();
+        expect(screen.getByText('4')).toBeTruthy();
     });
 });
 

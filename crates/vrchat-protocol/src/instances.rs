@@ -163,6 +163,25 @@ pub fn instance_count_get_input(endpoint: String) -> VrchatRequest {
     get_input(endpoint, "instances/count", HashMap::new())
 }
 
+pub fn active_instances_get_input(endpoint: String, n: i32, offset: i32) -> VrchatRequest {
+    get_input(
+        endpoint,
+        "instances/active",
+        HashMap::from([
+            ("n".to_string(), json!(n)),
+            ("offset".to_string(), json!(offset)),
+        ]),
+    )
+}
+
+pub fn discover_instances_get_input(endpoint: String, n: i32) -> VrchatRequest {
+    get_input(
+        endpoint,
+        "instances/discover",
+        HashMap::from([("n".to_string(), json!(n))]),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -190,6 +209,27 @@ mod tests {
         let count = instance_count_get_input("endpoint".into());
         assert_eq!(count.method.as_deref(), Some("GET"));
         assert_eq!(count.path.as_deref(), Some("instances/count"));
+    }
+
+    #[test]
+    fn instance_lists_send_their_page_params() {
+        let active = active_instances_get_input("endpoint".into(), 100, 200);
+        assert_eq!(active.method.as_deref(), Some("GET"));
+        assert_eq!(active.path.as_deref(), Some("instances/active"));
+        assert_eq!(
+            active.query_params,
+            Some(HashMap::from([
+                ("n".into(), json!(100)),
+                ("offset".into(), json!(200)),
+            ]))
+        );
+
+        let discover = discover_instances_get_input("endpoint".into(), 60);
+        assert_eq!(discover.path.as_deref(), Some("instances/discover"));
+        assert_eq!(
+            discover.query_params,
+            Some(HashMap::from([("n".into(), json!(60))]))
+        );
     }
 
     #[test]

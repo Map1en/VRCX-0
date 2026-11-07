@@ -1796,6 +1796,14 @@
             "group": {
                 "header": "Group"
             },
+            "hot": {
+                "header": "Explore",
+                "active": "Popular",
+                "discover": "Discover",
+                "shuffle": "Shuffle",
+                "rooms": "{count} instances",
+                "empty": "No worlds to show"
+            },
             "label": {
                 "avatar_provider": "Avatar provider"
             },
@@ -1806,7 +1814,8 @@
                 "failed_to_search_worlds": "Failed to search worlds",
                 "failed_to_search_groups": "Failed to search groups",
                 "failed_to_search_avatars": "Failed to search avatars",
-                "failed_to_save_avatar_provider": "Failed to save avatar provider"
+                "failed_to_save_avatar_provider": "Failed to save avatar provider",
+                "failed_to_load_hot_worlds": "Failed to load hot worlds"
             }
         },
         "favorite": {

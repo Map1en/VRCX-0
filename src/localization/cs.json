@@ -1810,6 +1810,14 @@
             "group": {
                 "header": "Skupina"
             },
+            "hot": {
+                "header": "Prozkoumat",
+                "active": "Populární",
+                "discover": "Objevit",
+                "shuffle": "Zamíchat",
+                "rooms": "Instance: {count}",
+                "empty": "Žádné světy k zobrazení"
+            },
             "label": {
                 "avatar_provider": "Poskytovatel avatarů"
             },
@@ -1820,7 +1828,8 @@
                 "failed_to_search_worlds": "Nepodařilo se vyhledat světy",
                 "failed_to_search_groups": "Nepodařilo se vyhledat skupiny",
                 "failed_to_search_avatars": "Nepodařilo se vyhledat avatary",
-                "failed_to_save_avatar_provider": "Nepodařilo se uložit poskytovatele avatarů"
+                "failed_to_save_avatar_provider": "Nepodařilo se uložit poskytovatele avatarů",
+                "failed_to_load_hot_worlds": "Nepodařilo se načíst populární světy"
             }
         },
         "favorite": {

@@ -1794,6 +1794,14 @@
             "group": {
                 "header": "Gruppe"
             },
+            "hot": {
+                "header": "Erkunden",
+                "active": "Beliebt",
+                "discover": "Entdecken",
+                "shuffle": "Neu mischen",
+                "rooms": "{count} Instanzen",
+                "empty": "Keine Welten anzuzeigen"
+            },
             "label": {
                 "avatar_provider": "Avatar-Anbieter"
             },
@@ -1804,7 +1812,8 @@
                 "failed_to_search_worlds": "Welten konnten nicht durchsucht werden",
                 "failed_to_search_groups": "Gruppen konnten nicht durchsucht werden",
                 "failed_to_search_avatars": "Avatare konnten nicht durchsucht werden",
-                "failed_to_save_avatar_provider": "Avatar-Anbieter konnte nicht gespeichert werden"
+                "failed_to_save_avatar_provider": "Avatar-Anbieter konnte nicht gespeichert werden",
+                "failed_to_load_hot_worlds": "Beliebte Welten konnten nicht geladen werden"
             }
         },
         "favorite": {

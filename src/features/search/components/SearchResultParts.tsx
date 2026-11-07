@@ -36,6 +36,7 @@ import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
+import type { SearchHotWorld } from '../searchHotWorlds';
 import type { SearchActiveTab } from '../searchTypes';
 
 const SEARCH_EMPTY_ICONS: Record<SearchActiveTab, LucideIcon> = {
@@ -100,15 +101,12 @@ export function SearchLoadingState() {
     return <LoadingState variant="panel" label={t('common.loading')} />;
 }
 
-const searchMediaTextStyle: CSSProperties = {
-    textShadow: '0 1px 2px rgb(0 0 0 / 0.9), 0 0 10px rgb(0 0 0 / 0.65)'
-};
-
 function SearchMediaCard({
     imageUrl,
     imageAlt,
     title,
     subtitle,
+    userCount,
     FallbackIcon,
     onClick
 }: {
@@ -116,48 +114,50 @@ function SearchMediaCard({
     imageAlt: string;
     title?: ReactNode;
     subtitle?: ReactNode;
+    userCount?: number;
     FallbackIcon: LucideIcon;
     onClick: () => void;
 }) {
+    const { i18n } = useTranslation();
+    const fallback = (
+        <div className="text-muted-foreground grid h-full w-full place-items-center [&>svg]:size-8">
+            <FallbackIcon />
+        </div>
+    );
+
     return (
         <Button
             type="button"
             variant="outline"
-            className="group/search-media h-auto w-full min-w-0 flex-col items-stretch justify-start overflow-hidden p-0 text-left font-normal whitespace-normal"
+            className="group/search-media h-auto w-full min-w-0 flex-col items-stretch justify-start gap-0 overflow-hidden p-0 text-left font-normal whitespace-normal"
             onClick={onClick}
         >
-            <div className="bg-muted relative aspect-[16/10] w-full overflow-hidden">
+            <div className="bg-muted relative aspect-[4/3] w-full overflow-hidden">
                 {imageUrl ? (
                     <FadeInImage
                         src={imageUrl}
                         alt={imageAlt}
                         loading="lazy"
-                        className="h-full w-full object-cover"
-                        fallback={
-                            <div className="text-muted-foreground grid h-full w-full place-items-center [&>svg]:size-8">
-                                <FallbackIcon />
-                            </div>
-                        }
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover/search-media:scale-[1.03]"
+                        fallback={fallback}
                     />
                 ) : (
-                    <div className="text-muted-foreground grid h-full w-full place-items-center [&>svg]:size-8">
-                        <FallbackIcon />
-                    </div>
+                    fallback
                 )}
-                <div className="absolute right-0 bottom-0 left-0 flex min-w-0 flex-col gap-1 bg-gradient-to-t from-black/85 via-black/35 to-transparent px-3 pt-10 pb-3">
-                    <span
-                        className="block truncate text-sm font-semibold text-white"
-                        style={searchMediaTextStyle}
-                    >
-                        {title || ''}
+                {userCount ? (
+                    <span className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-black/80 px-2 py-1 text-sm leading-none font-semibold text-white tabular-nums">
+                        <span className="size-2 rounded-full bg-[var(--status-online)]" />
+                        {userCount.toLocaleString(i18n.language)}
                     </span>
-                    <span
-                        className="block min-h-4 truncate text-xs font-medium text-white/75"
-                        style={searchMediaTextStyle}
-                    >
-                        {subtitle || ''}
-                    </span>
-                </div>
+                ) : null}
+            </div>
+            <div className="flex min-w-0 flex-col gap-0.5 px-3 py-2.5">
+                <span className="truncate text-sm font-semibold">
+                    {title || ''}
+                </span>
+                <span className="text-muted-foreground min-h-4 truncate text-xs">
+                    {subtitle || ''}
+                </span>
             </div>
         </Button>
     );
@@ -317,18 +317,22 @@ export function AvatarCard({ avatar }: { avatar: AvatarProfileRecord }) {
     );
 }
 
-export function WorldCard({ world }: { world: WorldProfileRecord }) {
-    const occupants = Number(world.occupants) || 0;
-    const subtitle = occupants
-        ? `${world.authorName || ''} (${occupants})`
-        : world.authorName || '';
-
+export function WorldCard({
+    world,
+    userCount = Number(world.occupants) || 0,
+    subtitle = world.authorName || ''
+}: {
+    world: WorldProfileRecord;
+    userCount?: number;
+    subtitle?: string;
+}) {
     return (
         <SearchMediaCard
             imageUrl={world.thumbnailImageUrl}
             imageAlt={world.name || 'World'}
             title={world.name || ''}
             subtitle={subtitle}
+            userCount={userCount}
             FallbackIcon={GlobeIcon}
             onClick={() =>
                 openWorldDialog({
@@ -337,6 +341,25 @@ export function WorldCard({ world }: { world: WorldProfileRecord }) {
                     seedData: world
                 })
             }
+        />
+    );
+}
+
+export function HotWorldCard({ entry }: { entry: SearchHotWorld }) {
+    const { t } = useTranslation();
+    const { world } = entry;
+    const subtitle = [
+        world.authorName,
+        t('view.search.hot.rooms', { count: entry.instanceCount })
+    ]
+        .filter(Boolean)
+        .join(' · ');
+
+    return (
+        <WorldCard
+            world={world}
+            userCount={entry.userCount}
+            subtitle={subtitle}
         />
     );
 }

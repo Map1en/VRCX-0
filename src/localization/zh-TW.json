@@ -1791,6 +1791,14 @@
             "group": {
                 "header": "群組"
             },
+            "hot": {
+                "header": "探索",
+                "active": "熱門",
+                "discover": "發現",
+                "shuffle": "換一批",
+                "rooms": "{count} 個房間",
+                "empty": "暫時沒有可顯示的世界"
+            },
             "label": {
                 "avatar_provider": "角色搜尋提供方"
             },
@@ -1801,7 +1809,8 @@
                 "failed_to_search_worlds": "搜尋世界失敗",
                 "failed_to_search_groups": "搜尋群組失敗",
                 "failed_to_search_avatars": "搜尋角色失敗",
-                "failed_to_save_avatar_provider": "儲存角色資料庫提供方失敗"
+                "failed_to_save_avatar_provider": "儲存角色資料庫提供方失敗",
+                "failed_to_load_hot_worlds": "載入熱門世界失敗"
             }
         },
         "favorite": {

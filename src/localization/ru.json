@@ -1810,6 +1810,14 @@
             "group": {
                 "header": "Группа"
             },
+            "hot": {
+                "header": "Обзор",
+                "active": "Популярное",
+                "discover": "Открытия",
+                "shuffle": "Перемешать",
+                "rooms": "Инстансов: {count}",
+                "empty": "Нет миров для показа"
+            },
             "label": {
                 "avatar_provider": "Провайдер аватаров"
             },
@@ -1820,7 +1828,8 @@
                 "failed_to_search_worlds": "Не удалось найти миры",
                 "failed_to_search_groups": "Не удалось создать поисковые группы",
                 "failed_to_search_avatars": "Не удалось найти аватары",
-                "failed_to_save_avatar_provider": "Не удалось сохранить провайдера аватаров"
+                "failed_to_save_avatar_provider": "Не удалось сохранить провайдера аватаров",
+                "failed_to_load_hot_worlds": "Не удалось загрузить популярные миры"
             }
         },
         "favorite": {

@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Tabs } from '@/ui/shadcn/tabs';
 
 import { SearchControlBand } from './components/SearchControlBand';
+import { SearchHotTabPanel } from './components/SearchHotTabPanel';
 import { SearchEmptyState } from './components/SearchResultParts';
 import {
     SearchAvatarTabPanel,
@@ -21,7 +22,8 @@ export function SearchPage({ embedded = false }: { embedded?: boolean } = {}) {
         avatar: results.hasAvatarSearched,
         group: results.hasGroupSearched
     };
-    const isLanding = !searchedByTab[filters.activeTab];
+    const isLanding =
+        filters.activeTab !== 'hot' && !searchedByTab[filters.activeTab];
     const avatarProviderConfigured =
         config.avatarProviderEnabled && Boolean(config.selectedAvatarProvider);
     const needsAvatarProvider =
@@ -117,6 +119,9 @@ export function SearchPage({ embedded = false }: { embedded?: boolean } = {}) {
                                 pagination={results.pagination}
                                 searched={results.hasGroupSearched}
                                 onClear={results.handleClearSearch}
+                            />
+                            <SearchHotTabPanel
+                                active={filters.activeTab === 'hot'}
                             />
                         </div>
                     )}

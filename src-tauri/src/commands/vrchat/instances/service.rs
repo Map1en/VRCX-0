@@ -6,6 +6,7 @@ use vrcx_0_application::game::{InstanceLaunchInput, InstanceLaunchOutcome};
 use crate::error::AppError;
 use crate::state::AppState;
 use vrcx_0_contracts::vrchat_api::VrchatResponse;
+use vrcx_0_core::json::RawJson;
 
 use super::types::{
     VrchatInstanceCalendarLinkInput, VrchatInstanceCloseInput, VrchatInstanceCreateInput,
@@ -106,6 +107,32 @@ pub async fn app__vrchat_instance_count_get(
         .runtime_host()
         .vrchat_remote()
         .instance_count()
+        .await
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__vrchat_instances_active_get(
+    state: State<'_, AppState>,
+) -> Result<Vec<RawJson>, AppError> {
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .active_instances()
+        .await
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__vrchat_instances_discover_get(
+    state: State<'_, AppState>,
+) -> Result<Vec<RawJson>, AppError> {
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .discover_instances()
         .await
         .map_err(AppError::from)
 }

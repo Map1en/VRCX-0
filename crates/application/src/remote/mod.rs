@@ -1,3 +1,4 @@
+mod instance_lists;
 mod vrchat_api;
 mod vrchat_facade;
 mod worlds;

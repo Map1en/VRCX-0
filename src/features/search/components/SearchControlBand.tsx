@@ -25,7 +25,7 @@ import {
     SelectValue
 } from '@/ui/shadcn/select';
 
-import type { SearchActiveTab, SearchWorldCategory } from '../searchTypes';
+import type { SearchPageTab, SearchWorldCategory } from '../searchTypes';
 
 type SearchViewOptions = {
     avatarProviderList: string[];
@@ -45,7 +45,7 @@ function SearchViewOptionsMenu({
     activeTab,
     options
 }: {
-    activeTab: SearchActiveTab;
+    activeTab: SearchPageTab;
     options: SearchViewOptions;
 }) {
     const { t } = useTranslation();
@@ -64,7 +64,7 @@ function SearchViewOptionsMenu({
     } = options;
     const availableProviders = avatarProviderList.filter(Boolean);
 
-    if (activeTab === 'group') {
+    if (activeTab === 'group' || activeTab === 'hot') {
         return null;
     }
 
@@ -208,7 +208,7 @@ export function SearchControlBand({
     onClearSearch,
     viewOptions
 }: {
-    activeTab: SearchActiveTab;
+    activeTab: SearchPageTab;
     searchText: string;
     onSearchTextChange: (value: string) => void;
     onSearch: () => void;
@@ -220,7 +220,8 @@ export function SearchControlBand({
         activeTab === 'avatar'
             ? t('view.search.avatar.search_placeholder_avatar')
             : t('view.search.search_placeholder');
-    const tabOptions: ToolbarSegmentOption<SearchActiveTab>[] = [
+    const tabOptions: ToolbarSegmentOption<SearchPageTab>[] = [
+        { value: 'hot', label: t('view.search.hot.header') },
         { value: 'user', label: t('view.search.user.header') },
         { value: 'world', label: t('view.search.world.header') },
         { value: 'avatar', label: t('view.search.avatar.header') },
@@ -229,31 +230,35 @@ export function SearchControlBand({
 
     return (
         <div className="mx-auto flex w-full max-w-2xl shrink-0 flex-col gap-2 px-1 pb-3">
-            <ToolbarSearch
-                value={searchText}
-                onValueChange={onSearchTextChange}
-                onCommit={onSearch}
-                commitOnBlur={false}
-                autoFocus={!searchText}
-                placeholder={searchPlaceholder}
-                className="h-10 w-full sm:w-full"
-            />
+            {activeTab === 'hot' ? null : (
+                <ToolbarSearch
+                    value={searchText}
+                    onValueChange={onSearchTextChange}
+                    onCommit={onSearch}
+                    commitOnBlur={false}
+                    autoFocus={!searchText}
+                    placeholder={searchPlaceholder}
+                    className="h-10 w-full sm:w-full"
+                />
+            )}
             <div className="flex min-w-0 items-center gap-2">
                 <ToolbarTabs options={tabOptions} />
-                <ToolbarActions className="ms-auto">
-                    <SearchViewOptionsMenu
-                        activeTab={activeTab}
-                        options={viewOptions}
-                    />
-                    <ToolbarOverflowMenu>
-                        <DropdownMenuGroup>
-                            <DropdownMenuItem onClick={onClearSearch}>
-                                <Trash2Icon data-icon="inline-start" />
-                                {t('view.search.clear_results_tooltip')}
-                            </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                    </ToolbarOverflowMenu>
-                </ToolbarActions>
+                {activeTab === 'hot' ? null : (
+                    <ToolbarActions className="ms-auto">
+                        <SearchViewOptionsMenu
+                            activeTab={activeTab}
+                            options={viewOptions}
+                        />
+                        <ToolbarOverflowMenu>
+                            <DropdownMenuGroup>
+                                <DropdownMenuItem onClick={onClearSearch}>
+                                    <Trash2Icon data-icon="inline-start" />
+                                    {t('view.search.clear_results_tooltip')}
+                                </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                        </ToolbarOverflowMenu>
+                    </ToolbarActions>
+                )}
             </div>
         </div>
     );

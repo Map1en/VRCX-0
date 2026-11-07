@@ -1514,6 +1514,10 @@ export const commands = {
         __TAURI_INVOKE<HttpApiExecuteResponse>(
             'app__vrchat_instance_count_get'
         ),
+    appVrchatInstancesActiveGet: () =>
+        __TAURI_INVOKE<RawJson[]>('app__vrchat_instances_active_get'),
+    appVrchatInstancesDiscoverGet: () =>
+        __TAURI_INVOKE<RawJson[]>('app__vrchat_instances_discover_get'),
     appVrchatInstanceCreate: (input: VrchatInstanceCreateInput) =>
         __TAURI_INVOKE<HttpApiExecuteResponse>('app__vrchat_instance_create', {
             input
