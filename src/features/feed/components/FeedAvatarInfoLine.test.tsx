@@ -133,3 +133,25 @@ describe('Feed bio display', () => {
         expect(container.textContent).not.toContain('˸');
     });
 });
+
+describe('Feed status display', () => {
+    afterEach(cleanup);
+
+    it('names both statuses when only the status changed', () => {
+        render(
+            <FeedDetailCell
+                row={{
+                    type: 'Status',
+                    userId: 'usr_feed',
+                    previousStatus: 'active',
+                    status: 'busy',
+                    previousStatusDescription: 'same',
+                    statusDescription: 'same'
+                }}
+            />
+        );
+
+        expect(screen.getByText('dialog.user.status.online')).toBeTruthy();
+        expect(screen.getByText('dialog.user.status.busy')).toBeTruthy();
+    });
+});

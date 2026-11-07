@@ -33,7 +33,10 @@ function ExpanderCell({ row }: { row: AppRow<FeedRow> }) {
             type="button"
             variant="ghost"
             size="icon-sm"
-            className="text-muted-foreground hover:text-foreground"
+            className={cn(
+                'text-muted-foreground hover:text-foreground group-hover/feed-row:opacity-100 focus-visible:opacity-100',
+                !row.getIsExpanded() && 'opacity-0'
+            )}
             onClick={() => row.toggleExpanded()}
         >
             <ChevronRightIcon
@@ -132,6 +135,7 @@ export function useFeedColumns(
             },
             {
                 id: 'displayName',
+                size: 180,
                 enableHiding: false,
                 accessorFn: (row: FeedRow) =>
                     getFeedTableSortValue(row, 'displayName', meta),

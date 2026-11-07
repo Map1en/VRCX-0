@@ -197,6 +197,19 @@ describe('FeedVirtualListShell', () => {
         expect(screen.queryByText('expanded detail')).toBeNull();
     });
 
+    it('expands an expandable row when its blank area is clicked', () => {
+        const view = render(<FeedVirtualListShell {...props} />);
+        const summary = view.container.querySelector(
+            '[data-feed-list-summary]'
+        );
+        if (!summary) {
+            throw new Error('missing summary row');
+        }
+
+        fireEvent.click(summary);
+        expect(screen.getByText('expanded detail')).not.toBeNull();
+    });
+
     it('reloads the latest window after newer rows were discarded', () => {
         const onReloadLatest = vi.fn();
         render(

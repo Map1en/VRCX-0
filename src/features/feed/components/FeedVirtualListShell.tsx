@@ -40,6 +40,7 @@ import { Spinner } from '@/ui/shadcn/spinner';
 
 import { buildFeedListEntries, feedLocalDayKey } from '../feedListEntries';
 import { getFeedRowFilterTarget } from '../feedRowFilterTarget';
+import { shouldSkipFeedRowToggle } from '../feedRowInteraction';
 import { useFeedNewTopRowKeys } from '../useFeedNewTopRowKeys';
 import { FeedEmptyState, type FeedEmptyFilterModel } from './FeedEmptyState';
 import { FeedExpandedRow, FeedUserLink } from './FeedTableParts';
@@ -201,6 +202,7 @@ function FeedVirtualListRow({
             }
         >
             <div
+                role="presentation"
                 data-feed-list-summary=""
                 {...getLogFilterRowAttributes(
                     getFeedRowFilterTarget(
@@ -209,16 +211,29 @@ function FeedVirtualListRow({
                         cachedDisplayName || row.displayName || ''
                     )
                 )}
-                className="grid h-[var(--vrcx-0-table-row-height)] items-center border-b border-[var(--vrcx-0-table-divider)] text-sm hover:bg-[var(--vrcx-0-table-row-hover-surface)] [&>*]:px-[var(--vrcx-0-table-cell-padding-inline)]"
+                className={cn(
+                    'grid h-[var(--vrcx-0-table-row-height)] items-center border-b border-[var(--vrcx-0-table-divider)] text-sm hover:bg-[var(--vrcx-0-table-row-hover-surface)] [&>*]:px-[var(--vrcx-0-table-cell-padding-inline)]',
+                    canExpand && 'group/feed-row cursor-pointer'
+                )}
                 style={layout}
+                onClick={
+                    canExpand
+                        ? (event) => {
+                              if (!shouldSkipFeedRowToggle(event)) {
+                                  onToggle();
+                              }
+                          }
+                        : undefined
+                }
             >
                 <Button
                     type="button"
                     variant="ghost"
                     size="icon-sm"
                     className={cn(
-                        'text-muted-foreground hover:text-foreground justify-self-center !px-0',
-                        !canExpand && 'invisible'
+                        'text-muted-foreground hover:text-foreground justify-self-center !px-0 group-hover/feed-row:opacity-100 focus-visible:opacity-100',
+                        !canExpand && 'invisible',
+                        !expanded && 'opacity-0'
                     )}
                     aria-label={
                         expanded

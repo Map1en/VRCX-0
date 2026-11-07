@@ -25,7 +25,9 @@ function FeedStatusBadge({
                     )}
                 />
             ) : null}
-            {label ? <span className="truncate">{label}</span> : null}
+            {label ? (
+                <span className="text-muted-foreground truncate">{label}</span>
+            ) : null}
         </span>
     );
 }

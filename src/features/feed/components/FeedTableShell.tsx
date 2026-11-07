@@ -107,7 +107,7 @@ export function FeedTableShell({
                                                 )}
                                                 className={
                                                     row.getCanExpand()
-                                                        ? 'cursor-pointer'
+                                                        ? 'group/feed-row cursor-pointer'
                                                         : ''
                                                 }
                                                 onClick={
