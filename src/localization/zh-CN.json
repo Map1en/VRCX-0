@@ -1493,7 +1493,10 @@
                 "online_for": "本次在线 {duration}",
                 "rows": "条",
                 "favorites_are_still_hydrating": "收藏仍在加载",
-                "favorites_only": "仅显示收藏（分组）"
+                "favorites_only": "仅显示收藏（分组）",
+                "previous_location": "上一个位置",
+                "current_location": "当前位置",
+                "stayed": "停留 {duration}"
             },
             "success": {
                 "vrchat_launch_request_sent": "已在 VRChat 中打开",

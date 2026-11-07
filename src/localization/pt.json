@@ -1496,7 +1496,10 @@
                 "online_for": "Online por {duration}",
                 "rows": "linhas",
                 "favorites_are_still_hydrating": "Os favoritos ainda estão carregando",
-                "favorites_only": "Apenas favoritos"
+                "favorites_only": "Apenas favoritos",
+                "previous_location": "Local anterior",
+                "current_location": "Local atual",
+                "stayed": "{duration} de permanência"
             },
             "success": {
                 "vrchat_launch_request_sent": "Aberto no VRChat",

@@ -1496,7 +1496,10 @@
                 "online_for": "{duration} online",
                 "rows": "Zeilen",
                 "favorites_are_still_hydrating": "Favoriten werden noch geladen",
-                "favorites_only": "Nur Favoriten"
+                "favorites_only": "Nur Favoriten",
+                "previous_location": "Vorheriger Ort",
+                "current_location": "Aktueller Ort",
+                "stayed": "Aufenthalt {duration}"
             },
             "success": {
                 "vrchat_launch_request_sent": "In VRChat geöffnet",

@@ -1430,7 +1430,10 @@
                 "online_for": "온라인 시간 {duration}",
                 "rows": "항목",
                 "favorites_are_still_hydrating": "즐겨찾기를 아직 불러오는 중입니다.",
-                "favorites_only": "즐겨찾기만"
+                "favorites_only": "즐겨찾기만",
+                "previous_location": "이전 위치",
+                "current_location": "현재 위치",
+                "stayed": "체류 {duration}"
             },
             "success": {
                 "vrchat_launch_request_sent": "VRChat에서 열었습니다.",

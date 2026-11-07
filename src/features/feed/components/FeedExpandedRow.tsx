@@ -1,5 +1,5 @@
 import { ArrowRightIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { AvatarInfoLine } from '@/components/feed/FeedAvatarInfoLine';
@@ -10,11 +10,16 @@ import type {
     FeedLocationActionPayload,
     FeedRow
 } from '@/components/feed/feedTypes';
+import { useResolvedLocation } from '@/components/location/useResolvedLocation';
 import { FadeInImage } from '@/components/media/FadeInImage';
+import { useFriendsLocationsWorldSummaries } from '@/features/friends/useFriendsLocationsWorldSummaries';
 import { timeToText } from '@/lib/dateTime';
+import { parseLocation } from '@/shared/utils/location';
 import { replaceBioSymbols } from '@/shared/utils/string';
 import { useModalStore } from '@/state/modalStore';
+import { useRuntimeStore } from '@/state/runtimeStore';
 import { Button } from '@/ui/shadcn/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { formatDifferenceHtml } from './FeedDifferenceHtml';
 
@@ -27,7 +32,7 @@ type FeedExpandedRowProps = {
 
 function ExpandedRowShell({ children }: { children: ReactNode }) {
     return (
-        <div className="animate-in fade-in border-border ml-3 border-l-2 py-3 pl-4 text-sm duration-150">
+        <div className="animate-in fade-in border-border ml-2.5 border-l-2 py-3 pl-7 text-sm duration-150">
             {children}
         </div>
     );
@@ -82,6 +87,119 @@ function AvatarColumn({
     );
 }
 
+type LocationColumnProps = Omit<FeedExpandedRowProps, 'row'> & {
+    caption: string;
+    groupName?: string | null;
+    location: string | null | undefined;
+    thumbnailUrl: string;
+    worldName?: string | null;
+};
+
+function LocationColumn({
+    caption,
+    groupName,
+    loadingHistoryKey,
+    location,
+    onNewInstance,
+    onOpenPreviousInstances,
+    thumbnailUrl,
+    worldName
+}: LocationColumnProps) {
+    const endpoint = useRuntimeStore((state) => state.auth.currentUserEndpoint);
+    const resolved = useResolvedLocation({
+        location,
+        hint: worldName,
+        grouphint: groupName,
+        endpoint
+    });
+    const instance = resolved.instanceName
+        ? ` · #${resolved.instanceName}`
+        : '';
+    const group = resolved.groupName ? ` (${resolved.groupName})` : '';
+    const fullText = resolved.text ? `${resolved.text}${instance}${group}` : '';
+    const body = (
+        <div className="flex min-w-0 flex-col gap-1">
+            {thumbnailUrl ? (
+                <FadeInImage
+                    src={thumbnailUrl}
+                    alt=""
+                    className="h-42 w-56 rounded-lg border object-cover"
+                    loading="lazy"
+                />
+            ) : (
+                <div className="bg-muted h-42 w-56 rounded-lg border" />
+            )}
+            <FeedLocationLink
+                disableTooltip
+                groupName={groupName}
+                loadingHistoryKey={loadingHistoryKey}
+                location={location}
+                onNewInstance={onNewInstance}
+                onOpenPreviousInstances={onOpenPreviousInstances}
+                worldName={worldName}
+                wrapperClassName="min-w-0"
+            />
+        </div>
+    );
+
+    return (
+        <div className="flex w-56 min-w-0 flex-col gap-1">
+            <span className="text-muted-foreground truncate text-xs">
+                {caption}
+            </span>
+            {fullText ? (
+                <Tooltip>
+                    <TooltipTrigger render={body} />
+                    <TooltipContent className="max-w-sm">
+                        {fullText}
+                    </TooltipContent>
+                </Tooltip>
+            ) : (
+                body
+            )}
+        </div>
+    );
+}
+
+function GpsExpandedContent({ row, ...actions }: FeedExpandedRowProps) {
+    const { t } = useTranslation();
+    const displayLocation = resolveFeedLocationForDisplay(row);
+    const previousWorldId = parseLocation(row.previousLocation).worldId;
+    const currentWorldId = parseLocation(displayLocation).worldId;
+    const worldIds = useMemo(
+        () => [previousWorldId, currentWorldId].filter(Boolean),
+        [currentWorldId, previousWorldId]
+    );
+    const worlds = useFriendsLocationsWorldSummaries(worldIds);
+    const previousLabel = t('view.feed.label.previous_location');
+
+    return (
+        <div className="flex items-center gap-3">
+            <LocationColumn
+                {...actions}
+                caption={
+                    row.time
+                        ? `${previousLabel} · ${t('view.feed.label.stayed', {
+                              duration: timeToText(row.time)
+                          })}`
+                        : previousLabel
+                }
+                location={row.previousLocation}
+                thumbnailUrl={worlds.get(previousWorldId)?.thumbnailUrl ?? ''}
+            />
+            <ArrowRightIcon className="text-muted-foreground size-4 shrink-0" />
+            <LocationColumn
+                {...actions}
+                caption={t('view.feed.label.current_location')}
+                groupName={row.groupName}
+                location={displayLocation}
+                thumbnailUrl={worlds.get(currentWorldId)?.thumbnailUrl ?? ''}
+                worldName={row.worldName}
+            />
+        </div>
+    );
+}
+
 function FeedExpandedRow({
     loadingHistoryKey,
     onNewInstance,
@@ -92,38 +210,14 @@ function FeedExpandedRow({
     const openImagePreview = useModalStore((state) => state.openImagePreview);
 
     if (row?.type === 'GPS') {
-        const displayLocation = resolveFeedLocationForDisplay(row);
-
         return (
             <ExpandedRowShell>
-                <div className="flex items-center gap-3">
-                    <FeedLocationLink
-                        disableTooltip
-                        loadingHistoryKey={loadingHistoryKey}
-                        location={row.previousLocation}
-                        onNewInstance={onNewInstance}
-                        onOpenPreviousInstances={onOpenPreviousInstances}
-                        wrapperClassName="min-w-0"
-                    />
-                    <span className="flex shrink-0 flex-col items-center gap-1">
-                        {row.time ? (
-                            <span className="text-muted-foreground text-xs">
-                                {timeToText(row.time)}
-                            </span>
-                        ) : null}
-                        <ArrowRightIcon className="text-muted-foreground size-4" />
-                    </span>
-                    <FeedLocationLink
-                        disableTooltip
-                        groupName={row.groupName}
-                        loadingHistoryKey={loadingHistoryKey}
-                        location={displayLocation}
-                        onNewInstance={onNewInstance}
-                        onOpenPreviousInstances={onOpenPreviousInstances}
-                        worldName={row.worldName}
-                        wrapperClassName="min-w-0"
-                    />
-                </div>
+                <GpsExpandedContent
+                    loadingHistoryKey={loadingHistoryKey}
+                    onNewInstance={onNewInstance}
+                    onOpenPreviousInstances={onOpenPreviousInstances}
+                    row={row}
+                />
             </ExpandedRowShell>
         );
     }

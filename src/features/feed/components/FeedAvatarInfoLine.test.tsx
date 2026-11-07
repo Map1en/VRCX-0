@@ -1,13 +1,20 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import {
+    cleanup,
+    fireEvent,
+    render,
+    screen,
+    waitFor
+} from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { FeedRow } from '@/components/feed/feedTypes';
 
 const mocks = vi.hoisted(() => ({
     appFileMetadataGet: vi.fn(),
-    openImagePreview: vi.fn()
+    openImagePreview: vi.fn(),
+    worldSummaries: vi.fn(() => new Map())
 }));
 
 vi.mock('@/services/toastService', () => ({
@@ -50,6 +57,21 @@ vi.mock('@/state/runtimeStore', () => ({
                 currentUserSnapshot: null
             }
         })
+}));
+
+vi.mock('@/components/location/useResolvedLocation', () => ({
+    useResolvedLocation: ({ location }: { location: string }) =>
+        location === 'private'
+            ? { text: 'Private', instanceName: '', groupName: '' }
+            : {
+                  text: 'Long World Name · Friends+',
+                  instanceName: '12345',
+                  groupName: 'Club'
+              }
+}));
+
+vi.mock('@/features/friends/useFriendsLocationsWorldSummaries', () => ({
+    useFriendsLocationsWorldSummaries: mocks.worldSummaries
 }));
 
 vi.mock('@/components/feed/FeedLocationLink', () => ({
@@ -153,5 +175,66 @@ describe('Feed status display', () => {
 
         expect(screen.getByText('dialog.user.status.online')).toBeTruthy();
         expect(screen.getByText('dialog.user.status.busy')).toBeTruthy();
+    });
+});
+
+describe('Feed location change expansion', () => {
+    afterEach(cleanup);
+
+    it('labels both locations and how long the previous one lasted', () => {
+        render(
+            <FeedExpandedRow
+                loadingHistoryKey=""
+                onNewInstance={vi.fn()}
+                onOpenPreviousInstances={vi.fn()}
+                row={{
+                    type: 'GPS',
+                    userId: 'usr_feed',
+                    previousLocation: 'private',
+                    location: 'wrld_next:12345~friends(usr_owner)',
+                    time: 40_000
+                }}
+            />
+        );
+
+        expect(
+            screen.getByText(/^view\.feed\.label\.previous_location · /)
+        ).toBeTruthy();
+        expect(
+            screen.getByText('view.feed.label.current_location')
+        ).toBeTruthy();
+        expect(mocks.worldSummaries).toHaveBeenLastCalledWith(['wrld_next']);
+    });
+
+    it('shows the full location when hovering a location card', async () => {
+        render(
+            <FeedExpandedRow
+                loadingHistoryKey=""
+                onNewInstance={vi.fn()}
+                onOpenPreviousInstances={vi.fn()}
+                row={{
+                    type: 'GPS',
+                    userId: 'usr_feed',
+                    previousLocation: 'private',
+                    location: 'wrld_next:12345~friends(usr_owner)'
+                }}
+            />
+        );
+        const currentCard = screen.getByText(
+            'view.feed.label.current_location'
+        ).nextElementSibling;
+        if (!currentCard) {
+            throw new Error('missing current location card');
+        }
+
+        fireEvent.pointerEnter(currentCard);
+        fireEvent.mouseEnter(currentCard);
+        fireEvent.focus(currentCard);
+
+        expect(
+            await screen.findByText(
+                'Long World Name · Friends+ · #12345 (Club)'
+            )
+        ).toBeTruthy();
     });
 });

@@ -1510,7 +1510,10 @@
                 "online_for": "Online po dobu {duration}",
                 "rows": "řádků",
                 "favorites_are_still_hydrating": "Oblíbené se ještě načítají",
-                "favorites_only": "Pouze oblíbení"
+                "favorites_only": "Pouze oblíbení",
+                "previous_location": "Předchozí místo",
+                "current_location": "Aktuální místo",
+                "stayed": "Pobyt {duration}"
             },
             "success": {
                 "vrchat_launch_request_sent": "Otevřeno ve VRChatu",

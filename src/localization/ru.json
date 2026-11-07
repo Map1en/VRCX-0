@@ -1510,7 +1510,10 @@
                 "online_for": "В сети {duration}",
                 "rows": "ряды",
                 "favorites_are_still_hydrating": "Избранное всё ещё загружается",
-                "favorites_only": "Только избранное"
+                "favorites_only": "Только избранное",
+                "previous_location": "Предыдущее место",
+                "current_location": "Текущее место",
+                "stayed": "Пребывание: {duration}"
             },
             "success": {
                 "vrchat_launch_request_sent": "Открыто VRChat",
