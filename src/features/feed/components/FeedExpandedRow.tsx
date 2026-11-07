@@ -12,8 +12,8 @@ import type {
 } from '@/components/feed/feedTypes';
 import { useResolvedLocation } from '@/components/location/useResolvedLocation';
 import { FadeInImage } from '@/components/media/FadeInImage';
-import { useFriendsLocationsWorldSummaries } from '@/features/friends/useFriendsLocationsWorldSummaries';
 import { timeToText } from '@/lib/dateTime';
+import { useWorldSummaries } from '@/lib/useWorldSummaries';
 import { parseLocation } from '@/shared/utils/location';
 import { replaceBioSymbols } from '@/shared/utils/string';
 import { useModalStore } from '@/state/modalStore';
@@ -170,7 +170,7 @@ function GpsExpandedContent({ row, ...actions }: FeedExpandedRowProps) {
         () => [previousWorldId, currentWorldId].filter(Boolean),
         [currentWorldId, previousWorldId]
     );
-    const worlds = useFriendsLocationsWorldSummaries(worldIds);
+    const worlds = useWorldSummaries(worldIds);
     const previousLabel = t('view.feed.label.previous_location');
 
     return (

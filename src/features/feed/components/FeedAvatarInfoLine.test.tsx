@@ -70,8 +70,8 @@ vi.mock('@/components/location/useResolvedLocation', () => ({
               }
 }));
 
-vi.mock('@/features/friends/useFriendsLocationsWorldSummaries', () => ({
-    useFriendsLocationsWorldSummaries: mocks.worldSummaries
+vi.mock('@/lib/useWorldSummaries', () => ({
+    useWorldSummaries: mocks.worldSummaries
 }));
 
 vi.mock('@/components/feed/FeedLocationLink', () => ({

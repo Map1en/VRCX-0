@@ -20,6 +20,7 @@ import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserStatusDot } from '@/components/UserStatusDot';
 import { presenceTravelingTag } from '@/domain/friends/presence';
 import type { FriendRecord } from '@/domain/friends/types';
+import type { WorldSummary } from '@/lib/useWorldSummaries';
 import { cn } from '@/lib/utils';
 import { userImage } from '@/services/entityMediaService';
 import { accessTypeLocaleKeyMap } from '@/shared/constants/accessType';
@@ -36,11 +37,10 @@ import type {
     FriendsLocationsWorldGroup,
     FriendsLocationsWorldInstance
 } from '../friendsLocationsWorlds';
-import type { FriendsLocationsWorldSummary } from '../useFriendsLocationsWorldSummaries';
 
 type FriendsLocationsWorldSectionProps = {
     group: FriendsLocationsWorldGroup;
-    summary?: FriendsLocationsWorldSummary;
+    summary?: WorldSummary;
     densityConfig: ReturnType<typeof getFriendsLocationsDensityConfig>;
     favoriteIds: ReadonlySet<string>;
     onOpenWorld: (group: FriendsLocationsWorldGroup, name: string) => void;

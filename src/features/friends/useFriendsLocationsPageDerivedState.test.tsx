@@ -15,8 +15,8 @@ import {
 import * as friendSections from './friendsLocationsSections';
 import { useFriendsLocationsPageDerivedState } from './useFriendsLocationsPageDerivedState';
 
-vi.mock('./useFriendsLocationsWorldSummaries', () => ({
-    useFriendsLocationsWorldSummaries: () => new Map()
+vi.mock('@/lib/useWorldSummaries', () => ({
+    useWorldSummaries: () => new Map()
 }));
 
 type Section = 'online' | 'active' | 'offline';

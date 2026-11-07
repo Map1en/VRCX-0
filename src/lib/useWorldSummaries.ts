@@ -2,17 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 
-export type FriendsLocationsWorldSummary = {
+export type WorldSummary = {
     name: string;
     thumbnailUrl: string;
 };
 
-export function useFriendsLocationsWorldSummaries(
+export function useWorldSummaries(
     worldIds: readonly string[]
-): ReadonlyMap<string, FriendsLocationsWorldSummary> {
-    const [summaries, setSummaries] = useState<
-        Map<string, FriendsLocationsWorldSummary>
-    >(() => new Map());
+): ReadonlyMap<string, WorldSummary> {
+    const [summaries, setSummaries] = useState<Map<string, WorldSummary>>(
+        () => new Map()
+    );
     const requestedRef = useRef(new Set<string>());
     const mountedRef = useRef(true);
     const worldIdsKey = worldIds.join(',');

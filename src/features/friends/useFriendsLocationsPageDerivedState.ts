@@ -23,6 +23,7 @@ import {
     positionKnownSizeRows
 } from '@/lib/knownSizeVirtualRows';
 import { useFriendSortContext } from '@/lib/useFriendStats';
+import { useWorldSummaries } from '@/lib/useWorldSummaries';
 import {
     checkCanInvite,
     type InviteLocationCurrentUserSnapshot,
@@ -62,7 +63,6 @@ import {
     type FriendsLocationsViewMode,
     type FriendsLocationsWorldGroup
 } from './friendsLocationsWorlds';
-import { useFriendsLocationsWorldSummaries } from './useFriendsLocationsWorldSummaries';
 
 type FriendsLocationsFavoritePreferences = {
     isDivideByGroup: boolean;
@@ -936,7 +936,7 @@ export function useFriendsLocationsPageDerivedState({
         () => worldGroups.map((group) => group.worldId),
         [worldGroups]
     );
-    const worldSummaries = useFriendsLocationsWorldSummaries(worldIds);
+    const worldSummaries = useWorldSummaries(worldIds);
     const hasVisibleSections = useMemo(
         () =>
             viewMode === 'worlds'
