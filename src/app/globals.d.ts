@@ -39,6 +39,12 @@ declare module 'react' {
     }
 }
 
+declare module 'i18next' {
+    interface CustomTypeOptions {
+        strictInterpolationChecks: false;
+    }
+}
+
 declare module 'lucide-react' {
     interface LucideProps {
         title?: string;
