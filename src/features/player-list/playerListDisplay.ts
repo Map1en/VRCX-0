@@ -5,10 +5,7 @@ import {
     RectangleGogglesIcon
 } from 'lucide-react';
 
-import type {
-    PlatformFileAnalysis,
-    WorldProfileRecord
-} from '@/domain/entities/world';
+import type { WorldProfileRecord } from '@/domain/entities/world';
 import { userStatusDotClassName } from '@/domain/friends/presence';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { parseLocation } from '@/shared/utils/location';
@@ -148,59 +145,4 @@ export function getWorldImage(
 ) {
     const imageUrl = (world?.thumbnailImageUrl || world?.imageUrl || '').trim();
     return imageUrl ? convertFileUrlToImageUrl(imageUrl, 256) : '';
-}
-
-export function resolvePlatformBadge(platform: string): {
-    key: string;
-    label: string;
-    icon: LucideIcon | null;
-} {
-    const normalized = platform.trim().toLowerCase();
-    if (
-        normalized === 'pc' ||
-        normalized === 'standalonewindows' ||
-        normalized === 'windows'
-    ) {
-        return {
-            key: 'PC',
-            label: 'PC',
-            icon: MonitorIcon
-        };
-    }
-    if (normalized === 'quest' || normalized === 'android') {
-        return {
-            key: 'Quest',
-            label: 'Android',
-            icon: RectangleGogglesIcon
-        };
-    }
-    if (normalized === 'ios') {
-        return {
-            key: 'iOS',
-            label: 'iOS',
-            icon: AppleIcon
-        };
-    }
-    const label = platform || '';
-    return {
-        key: label,
-        label,
-        icon: null
-    };
-}
-
-export function fileAnalysisSizeForPlatform(
-    fileAnalysis: PlatformFileAnalysis | null | undefined,
-    platformKey: string
-) {
-    if (platformKey === 'PC') {
-        return fileAnalysis?.standalonewindows?._fileSize?.trim() ?? '';
-    }
-    if (platformKey === 'Quest' || platformKey === 'Android') {
-        return fileAnalysis?.android?._fileSize?.trim() ?? '';
-    }
-    if (platformKey === 'iOS') {
-        return fileAnalysis?.ios?._fileSize?.trim() ?? '';
-    }
-    return '';
 }

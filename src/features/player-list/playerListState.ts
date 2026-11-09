@@ -37,6 +37,7 @@ const PLAYER_LIST_SORTABLE_COLUMN_IDS = [
 ];
 
 export const PLAYER_LIST_MUTUAL_FRIENDS_COLUMN_ID = 'mutualFriends';
+export const PLAYER_LIST_GROUP_ROLES_COLUMN_ID = 'groupRoles';
 
 export const DEFAULT_PLAYER_LIST_SORTING = [{ id: 'timer', desc: true }];
 
@@ -66,7 +67,9 @@ export function sanitizePlayerListSorting(value: unknown): SortingState {
 export function sanitizePlayerListColumnVisibility(
     value: unknown
 ): ColumnVisibilityState {
-    const visibility: ColumnVisibilityState = {};
+    const visibility: ColumnVisibilityState = {
+        [PLAYER_LIST_GROUP_ROLES_COLUMN_ID]: false
+    };
     if (!isRecord(value)) {
         return visibility;
     }

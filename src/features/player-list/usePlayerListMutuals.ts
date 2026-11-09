@@ -1,9 +1,16 @@
 import {
-    useQueries,
+    QueriesObserver,
     useQueryClient,
-    type QueryObserverResult
+    type QueryClient
 } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    startTransition,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState
+} from 'react';
 
 import { toMutualFriendAvatar } from '@/components/mutual-friends/MutualFriendAvatars';
 import {
@@ -23,16 +30,96 @@ import type { PlayerListMutuals, PlayerListRow } from './playerListTypes';
 
 const CELL_AVATAR_LIMIT = 3;
 
+const STRANGER_STATE_FLUSH_MS = 250;
+
 type RoomScan = { context: string; ids: string[] };
 
-function combineStrangerStates(
-    results: QueryObserverResult<UserMutualFriendRow[]>[]
-) {
-    return results.map((result) => ({
-        data: result.data,
-        isError: result.isError,
-        isFetching: result.fetchStatus === 'fetching'
-    }));
+type StrangerStates = {
+    ids: readonly string[];
+    byId: ReadonlyMap<
+        string,
+        {
+            data: UserMutualFriendRow[] | undefined;
+            isError: boolean;
+            isFetching: boolean;
+        }
+    >;
+};
+
+function readStrangerStates(
+    queryClient: QueryClient,
+    ids: readonly string[]
+): StrangerStates {
+    return {
+        ids,
+        byId: new Map(
+            ids.map((userId) => {
+                const state = queryClient.getQueryState(
+                    userMutualFriendsQueryOptions(userId).queryKey
+                );
+                return [
+                    userId,
+                    {
+                        data: state?.data,
+                        isError: state?.status === 'error',
+                        isFetching: state?.fetchStatus === 'fetching'
+                    }
+                ];
+            })
+        )
+    };
+}
+
+function useStrangerStates(ids: readonly string[]) {
+    const queryClient = useQueryClient();
+    const [snapshot, setSnapshot] = useState(() =>
+        readStrangerStates(queryClient, ids)
+    );
+    const flushNowRef = useRef(() => {});
+
+    useEffect(() => {
+        const observer = new QueriesObserver(
+            queryClient,
+            ids.map((userId) => ({
+                ...userMutualFriendsQueryOptions(userId),
+                enabled: false
+            }))
+        );
+        let timer: ReturnType<typeof setTimeout> | null = null;
+        const read = () => setSnapshot(readStrangerStates(queryClient, ids));
+        const flush = () => {
+            timer = null;
+            startTransition(read);
+        };
+        flushNowRef.current = () => {
+            if (timer) {
+                clearTimeout(timer);
+                timer = null;
+            }
+            read();
+        };
+        flush();
+        const unsubscribe = observer.subscribe(() => {
+            timer ??= setTimeout(flush, STRANGER_STATE_FLUSH_MS);
+        });
+        return () => {
+            unsubscribe();
+            flushNowRef.current = () => {};
+            if (timer) {
+                clearTimeout(timer);
+            }
+        };
+    }, [ids, queryClient]);
+
+    const flushNow = useCallback(() => flushNowRef.current(), []);
+
+    return {
+        byId:
+            snapshot.ids === ids
+                ? snapshot.byId
+                : readStrangerStates(queryClient, ids).byId,
+        flushNow
+    };
 }
 
 export function usePlayerListMutuals(
@@ -56,36 +143,21 @@ export function usePlayerListMutuals(
         { withCommunities: true }
     );
 
+    const strangerIdsKey = [
+        ...new Set(
+            rows
+                .filter(
+                    (row) => row.userId && !row.isFriend && !row.isCurrentUser
+                )
+                .map((row) => row.userId)
+        )
+    ].join('\n');
     const strangerIds = useMemo(
-        () => [
-            ...new Set(
-                rows
-                    .filter(
-                        (row) =>
-                            row.userId && !row.isFriend && !row.isCurrentUser
-                    )
-                    .map((row) => row.userId)
-            )
-        ],
-        [rows]
+        () => (strangerIdsKey ? strangerIdsKey.split('\n') : []),
+        [strangerIdsKey]
     );
-    const strangerStates = useQueries({
-        queries: strangerIds.map((userId) => ({
-            ...userMutualFriendsQueryOptions(userId),
-            enabled: false
-        })),
-        combine: combineStrangerStates
-    });
-    const strangerStateById = useMemo(
-        () =>
-            new Map(
-                strangerIds.map((userId, index) => [
-                    userId,
-                    strangerStates[index]
-                ])
-            ),
-        [strangerIds, strangerStates]
-    );
+    const { byId: strangerStateById, flushNow: flushStrangerStates } =
+        useStrangerStates(strangerIds);
 
     const mutualsByUserId = useMemo(() => {
         const readyMutuals = (
@@ -252,6 +324,7 @@ export function usePlayerListMutuals(
                 return;
             }
             scanRef.current = null;
+            flushStrangerStates();
             setScan(null);
             setCompletedContext(nextScan.context);
             useRoomMutualScanStore.getState().setRunning(false);

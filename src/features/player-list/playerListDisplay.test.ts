@@ -3,10 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { onlinePresence } from '@/test/presenceFixtures';
 
 import {
-    fileAnalysisSizeForPlatform,
     getHomeWorldId,
     getWorldImage,
-    resolvePlatformBadge,
     resolvePlatformMeta,
     resolvePlatformMode,
     resolveStatusMeta
@@ -109,7 +107,7 @@ describe('playerListDisplay', () => {
         expect(getHomeWorldId(null)).toBe('');
     });
 
-    it('formats world header images, platform badges, and file sizes', () => {
+    it('formats world header images', () => {
         expect(
             getWorldImage({
                 thumbnailImageUrl: 'https://example.test/thumb.png'
@@ -124,42 +122,5 @@ describe('playerListDisplay', () => {
             'https://api.vrchat.cloud/api/1/image/file_01234567-89ab-cdef-0123-456789abcdef/7/256'
         );
         expect(getWorldImage({})).toBe('');
-        expect(resolvePlatformBadge('standalonewindows')).toMatchObject({
-            key: 'PC',
-            label: 'PC'
-        });
-        expect(resolvePlatformBadge('android')).toMatchObject({
-            key: 'Quest',
-            label: 'Android'
-        });
-        expect(resolvePlatformBadge('ios')).toMatchObject({
-            key: 'iOS',
-            label: 'iOS'
-        });
-        expect(resolvePlatformBadge('custom')).toEqual({
-            key: 'custom',
-            label: 'custom',
-            icon: null
-        });
-        expect(
-            fileAnalysisSizeForPlatform(
-                {
-                    standalonewindows: { _fileSize: '100 MB' },
-                    android: { _fileSize: '50 MB' },
-                    ios: { _fileSize: '30 MB' }
-                },
-                'PC'
-            )
-        ).toBe('100 MB');
-        expect(
-            fileAnalysisSizeForPlatform(
-                { android: { _fileSize: '50 MB' } },
-                'Quest'
-            )
-        ).toBe('50 MB');
-        expect(
-            fileAnalysisSizeForPlatform({ ios: { _fileSize: '30 MB' } }, 'iOS')
-        ).toBe('30 MB');
-        expect(fileAnalysisSizeForPlatform({}, 'Unknown')).toBe('');
     });
 });

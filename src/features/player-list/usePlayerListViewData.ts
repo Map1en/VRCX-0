@@ -94,10 +94,6 @@ export function usePlayerListViewData({
     const headerPlayerCount = isGameRunning
         ? filteredRows.length || Number(context.playerCount) || 0
         : 0;
-    const headerFriendCount = filteredRows.reduce(
-        (total, row) => total + (row.isFriend ? 1 : 0),
-        0
-    );
     const parsedLocation = useMemo(
         () => parseLocation(context.location || currentUserLocation || ''),
         [context.location, currentUserLocation]
@@ -113,7 +109,6 @@ export function usePlayerListViewData({
 
     return {
         filteredRows,
-        headerFriendCount,
         headerPlayerCount,
         isPlayerListSourceUnavailable,
         parsedLocation,

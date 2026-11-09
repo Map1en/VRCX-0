@@ -39,18 +39,23 @@ function renderScan(model: Scan) {
             <PlayerListMutualScan scan={model} />
         </MemoryRouter>
     );
-    return screen.queryAllByRole('button').map((button) => button.textContent);
+    return screen
+        .queryAllByRole('button')
+        .map(
+            (button) => button.getAttribute('aria-label') ?? button.textContent
+        );
 }
 
 afterEach(cleanup);
 
 describe('PlayerListMutualScan', () => {
-    it('offers the first query before anything was checked', () => {
+    it('offers the first query as a quiet icon before anything was checked', () => {
         const model = scan();
 
         expect(renderScan(model)).toEqual([
             'view.player_list.mutual_friends.query'
         ]);
+        expect(screen.getByRole('button').textContent).toBe('');
         fireEvent.click(screen.getByRole('button'));
         expect(model.start).toHaveBeenCalledOnce();
     });
@@ -58,7 +63,10 @@ describe('PlayerListMutualScan', () => {
     it('shows progress that can be stopped while checking', () => {
         const model = scan({ progress: { done: 2, total: 5 }, visible: true });
 
-        expect(renderScan(model)).toEqual(['2/5']);
+        expect(renderScan(model)).toEqual([
+            'view.charts.mutual_friend.actions.stop'
+        ]);
+        expect(screen.getByRole('button').textContent).toBe('2/5');
         fireEvent.click(screen.getByRole('button'));
         expect(model.stop).toHaveBeenCalledOnce();
     });
@@ -81,11 +89,12 @@ describe('PlayerListMutualScan', () => {
         ]);
     });
 
-    it('brings hidden results back, or re-queries when someone new joined meanwhile', () => {
+    it('collapses hidden results back to an icon that restores them, or re-queries when someone new joined meanwhile', () => {
         const hidden = scan({ completed: true, hasPending: false });
         expect(renderScan(hidden)).toEqual([
             'view.player_list.mutual_friends.show'
         ]);
+        expect(screen.getByRole('button').textContent).toBe('');
         fireEvent.click(screen.getByRole('button'));
         expect(hidden.show).toHaveBeenCalledOnce();
         cleanup();

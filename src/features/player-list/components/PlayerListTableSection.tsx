@@ -12,7 +12,10 @@ import {
     filterPlayerListRows,
     type PlayerListFilterScope
 } from '../playerListFilters';
-import { PLAYER_LIST_MUTUAL_FRIENDS_COLUMN_ID } from '../playerListState';
+import {
+    PLAYER_LIST_GROUP_ROLES_COLUMN_ID,
+    PLAYER_LIST_MUTUAL_FRIENDS_COLUMN_ID
+} from '../playerListState';
 import type { PlayerListRow, PlayerListSourceRow } from '../playerListTypes';
 import { usePlayerListGroupRoles } from '../usePlayerListGroupRoles';
 import { usePlayerListMutuals } from '../usePlayerListMutuals';
@@ -116,10 +119,13 @@ export function PlayerListTableSection({
 }) {
     const { t } = useTranslation();
     const tableState = usePlayerListTableState();
+    const groupRolesVisible =
+        tableState.columnVisibility[PLAYER_LIST_GROUP_ROLES_COLUMN_ID] !==
+        false;
     const groupRoles = usePlayerListGroupRoles(
         filterContextKey,
         filteredRows,
-        isGameRunning && tableState.columnVisibility.groupRoles !== false
+        isGameRunning && groupRolesVisible
     );
     const mutuals = usePlayerListMutuals(filterContextKey, groupRoles.rows);
     const tableColumns = usePlayerListColumns();
@@ -240,6 +246,16 @@ export function PlayerListTableSection({
                         }
                         groupSelector={
                             <PlayerListGroupSelector
+                                active={groupRolesVisible}
+                                onActiveChange={(active) =>
+                                    tableState.setColumnVisibility(
+                                        (visibility) => ({
+                                            ...visibility,
+                                            [PLAYER_LIST_GROUP_ROLES_COLUMN_ID]:
+                                                active
+                                        })
+                                    )
+                                }
                                 value={groupRoles.selectedGroup}
                                 groupId={groupRoles.groupId}
                                 instanceGroupId={groupRoles.instanceGroupId}

@@ -32,6 +32,8 @@ function renderSelector(instanceGroupId: string) {
         return (
             <QueryClientProvider client={client}>
                 <PlayerListGroupSelector
+                    active
+                    onActiveChange={() => {}}
                     value={value}
                     groupId={value === 'auto' ? instanceGroupId : value}
                     instanceGroupId={instanceGroupId}
@@ -99,9 +101,36 @@ it('shows the detected instance group and lets a joined group or a typed group I
     client.clear();
 });
 
-it('stays empty outside group instances until a group is picked', async () => {
+it('collapses to a group roles toggle until the column is turned on', async () => {
+    const client = new QueryClient();
+    const onActiveChange = vi.fn();
+    render(
+        <QueryClientProvider client={client}>
+            <PlayerListGroupSelector
+                active={false}
+                onActiveChange={onActiveChange}
+                value="auto"
+                groupId=""
+                instanceGroupId=""
+                onChange={() => {}}
+                onRefresh={() => {}}
+            />
+        </QueryClientProvider>
+    );
+
+    expect(screen.queryByRole('combobox')).toBeNull();
+    await userEvent
+        .setup()
+        .click(
+            screen.getByRole('button', { name: 'table.playerList.groupRoles' })
+        );
+    expect(onActiveChange).toHaveBeenCalledWith(true);
+    client.clear();
+});
+
+it('labels the automatic choice outside group instances until a group is picked', async () => {
     const { client, user, trigger } = renderSelector('');
-    expect(trigger.textContent).toBe('');
+    expect(trigger.textContent).toBe('view.player_list.group_roles.automatic');
     expect(
         screen.queryByRole('button', {
             name: 'view.player_list.group_roles.refresh'

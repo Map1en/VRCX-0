@@ -24,7 +24,18 @@ describe('playerListState', () => {
         expect(sanitizePlayerListColumnOrder(null)).toEqual(
             PLAYER_LIST_COLUMN_IDS
         );
-        expect(sanitizePlayerListColumnVisibility(null)).toEqual({});
+        expect(sanitizePlayerListColumnVisibility(null)).toEqual({
+            groupRoles: false
+        });
+    });
+
+    it('hides the group roles column until the user turns it on', () => {
+        expect(sanitizePlayerListColumnVisibility({})).toEqual({
+            groupRoles: false
+        });
+        expect(
+            sanitizePlayerListColumnVisibility({ groupRoles: true })
+        ).toEqual({ groupRoles: true });
     });
 
     it('keeps valid saved table choices and drops unknown columns', () => {
@@ -48,7 +59,7 @@ describe('playerListState', () => {
                 displayName: 'yes',
                 mutualFriends: true
             })
-        ).toEqual({ avatar: false, timer: true });
+        ).toEqual({ avatar: false, groupRoles: false, timer: true });
 
         expect(
             sanitizePlayerListColumnOrder(['note', 'unknown', 'avatar', 'note'])

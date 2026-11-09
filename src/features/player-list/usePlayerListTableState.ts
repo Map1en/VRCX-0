@@ -60,7 +60,7 @@ export function usePlayerListTableState() {
     }, [columnOrder, columnOrderLocked, columnVisibility]);
 
     function resetLayout() {
-        setColumnVisibility({});
+        setColumnVisibility(sanitizePlayerListColumnVisibility({}));
         setColumnOrder([...COLUMN_IDS]);
         setColumnSizing({});
     }

@@ -55,7 +55,8 @@ export function PlayerListToolbar({
         FILTER_SCOPES.map((filterScope) => ({
             value: filterScope,
             label: scopeLabels[filterScope],
-            count: counts[filterScope]
+            count: counts[filterScope],
+            dimmed: filterScope !== 'all' && counts[filterScope] === 0
         }));
 
     return (

@@ -30,7 +30,6 @@ export function PlayerListPage({
                 clockNow={clockNow}
                 instanceSnapshot={instanceSnapshot}
                 currentUserLocation={playerListLocation}
-                friendCount={viewData.headerFriendCount}
                 isGameRunning={isGameRunning}
                 playerCount={viewData.headerPlayerCount}
                 startedAt={playerListStartedAt}

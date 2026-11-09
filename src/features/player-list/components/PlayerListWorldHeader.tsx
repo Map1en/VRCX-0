@@ -1,17 +1,11 @@
 import { useEffect, useState } from 'react';
 
-import { getFileAnalysisForUnityPackages } from '@/lib/fileAnalysis';
-import {
-    defaultWorldCacheInfo,
-    readWorldCacheInfo
-} from '@/lib/worldAssetBundle';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
-import { useVrchatConfigStore } from '@/state/vrchatConfigStore';
 
 import type { PlayerListContext } from '../playerListTypes';
 import { CurrentWorldHeader } from './PlayerListViewParts';
@@ -20,9 +14,6 @@ type CurrentWorldProfile = Awaited<
     ReturnType<typeof worldProfileRepository.getWorldProfile>
 >;
 type CurrentInstanceProfile = Record<string, unknown>;
-type CurrentWorldFileAnalysis = Awaited<
-    ReturnType<typeof getFileAnalysisForUnityPackages>
->;
 
 function isInstanceProfile(value: unknown): value is CurrentInstanceProfile {
     return Boolean(value && typeof value === 'object' && !Array.isArray(value));
@@ -31,7 +22,6 @@ function isInstanceProfile(value: unknown): value is CurrentInstanceProfile {
 type PlayerListWorldHeaderProps = {
     clockNow: number;
     currentUserLocation?: string;
-    friendCount: number;
     instanceSnapshot: PlayerListContext;
     isGameRunning: boolean;
     playerCount: number;
@@ -41,7 +31,6 @@ type PlayerListWorldHeaderProps = {
 export function PlayerListWorldHeader({
     clockNow,
     currentUserLocation,
-    friendCount,
     instanceSnapshot,
     isGameRunning,
     playerCount,
@@ -52,9 +41,6 @@ export function PlayerListWorldHeader({
     );
     const currentUserSnapshot = useRuntimeStore(
         (state) => state.auth.currentUserSnapshot
-    );
-    const sdkUnityVersion = useVrchatConfigStore((state) =>
-        String(state.snapshot?.sdkUnityVersion || '')
     );
     const openImagePreview = useModalStore((state) => state.openImagePreview);
     const parsedLocation = parseLocation(
@@ -68,19 +54,12 @@ export function PlayerListWorldHeader({
     const [currentInstanceCapacity, setCurrentInstanceCapacity] = useState<
         number | null
     >(null);
-    const [currentWorldFileAnalysis, setCurrentWorldFileAnalysis] =
-        useState<CurrentWorldFileAnalysis>({});
-    const [currentWorldCacheInfo, setCurrentWorldCacheInfo] = useState(() =>
-        defaultWorldCacheInfo()
-    );
 
     useEffect(() => {
         let active = true;
 
         if (!isGameRunning || !worldId) {
             setCurrentWorldProfile(null);
-            setCurrentWorldFileAnalysis({});
-            setCurrentWorldCacheInfo(defaultWorldCacheInfo());
             return () => {
                 active = false;
             };
@@ -95,35 +74,17 @@ export function PlayerListWorldHeader({
                 if (active) {
                     setCurrentWorldProfile(world);
                 }
-                return Promise.all([
-                    getFileAnalysisForUnityPackages({
-                        unityPackages: world?.unityPackages,
-                        sdkUnityVersion,
-                        endpoint: currentUserEndpoint
-                    }),
-                    readWorldCacheInfo(world, sdkUnityVersion)
-                ]);
-            })
-            .then(([fileAnalysis, cacheInfo]) => {
-                if (active) {
-                    setCurrentWorldFileAnalysis(fileAnalysis || {});
-                    setCurrentWorldCacheInfo(
-                        cacheInfo || defaultWorldCacheInfo()
-                    );
-                }
             })
             .catch(() => {
                 if (active) {
                     setCurrentWorldProfile(null);
-                    setCurrentWorldFileAnalysis({});
-                    setCurrentWorldCacheInfo(defaultWorldCacheInfo());
                 }
             });
 
         return () => {
             active = false;
         };
-    }, [currentUserEndpoint, isGameRunning, sdkUnityVersion, worldId]);
+    }, [currentUserEndpoint, isGameRunning, worldId]);
 
     useEffect(() => {
         let active = true;
@@ -171,11 +132,9 @@ export function PlayerListWorldHeader({
 
     return (
         <CurrentWorldHeader
-            cacheInfo={currentWorldCacheInfo}
+            key={worldId}
             clockNow={clockNow}
             currentUserSnapshot={currentUserSnapshot}
-            fileAnalysis={currentWorldFileAnalysis}
-            friendCount={friendCount}
             instanceCapacity={currentInstanceCapacity}
             instanceCreatedAt={instanceSnapshot.createdAt}
             instanceGroupName={normalizeString(instanceSnapshot.groupName)}

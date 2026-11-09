@@ -1,4 +1,4 @@
-import { EyeIcon, EyeOffIcon, UsersRoundIcon, XIcon } from 'lucide-react';
+import { EyeOffIcon, UsersRoundIcon, XIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { MutualGraphBuildHint } from '@/components/mutual-friends/MutualGraphBuildHint';
@@ -8,29 +8,55 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import type { usePlayerListMutuals } from '../usePlayerListMutuals';
 
-export function PlayerListMutualScan({
-    scan
-}: {
-    scan: ReturnType<typeof usePlayerListMutuals>['scan'];
-}) {
+type MutualScan = ReturnType<typeof usePlayerListMutuals>['scan'];
+
+function CollapsedMutualScan({ scan }: { scan: MutualScan }) {
+    const { t } = useTranslation();
+    const startsQuery = !scan.completed || scan.hasPending;
+    const label = !startsQuery
+        ? t('view.player_list.mutual_friends.show')
+        : scan.completed
+          ? t('view.player_list.mutual_friends.requery')
+          : t('view.player_list.mutual_friends.query');
+    const disabled = startsQuery && !scan.canStart;
+
+    return (
+        <Tooltip>
+            <TooltipTrigger
+                render={
+                    <span className="inline-flex">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={label}
+                            data-vrcx-0-control="toolbar"
+                            className="vrcx-0-quiet-control"
+                            disabled={disabled}
+                            onClick={startsQuery ? scan.start : scan.show}
+                        >
+                            <UsersRoundIcon data-icon="icon" />
+                        </Button>
+                    </span>
+                }
+            />
+            <TooltipContent>
+                {disabled && scan.isGraphFetching
+                    ? t('view.player_list.mutual_friends.graph_fetch_running')
+                    : label}
+            </TooltipContent>
+        </Tooltip>
+    );
+}
+
+export function PlayerListMutualScan({ scan }: { scan: MutualScan }) {
     const { t } = useTranslation();
     const { progress, summary } = scan;
     const circlesSuffix = t('view.player_list.mutual_friends.circles_suffix');
-    const queryButton = (
-        <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={!scan.canStart}
-            onClick={scan.start}
-        >
-            <UsersRoundIcon data-icon="inline-start" />
-            {scan.completed
-                ? t('view.player_list.mutual_friends.requery')
-                : t('view.player_list.mutual_friends.query')}
-        </Button>
-    );
-    const showQueryButton = !scan.completed || scan.hasPending;
+
+    if (!progress && !scan.visible) {
+        return <CollapsedMutualScan scan={scan} />;
+    }
 
     return (
         <div className="flex min-w-0 items-center gap-2">
@@ -92,46 +118,29 @@ export function PlayerListMutualScan({
                 </Button>
             ) : (
                 <>
-                    {showQueryButton && scan.isGraphFetching ? (
-                        <Tooltip>
-                            <TooltipTrigger
-                                render={
-                                    <span className="inline-flex">
-                                        {queryButton}
-                                    </span>
-                                }
-                            />
-                            <TooltipContent>
-                                {t(
-                                    'view.player_list.mutual_friends.graph_fetch_running'
-                                )}
-                            </TooltipContent>
-                        </Tooltip>
-                    ) : showQueryButton ? (
-                        queryButton
-                    ) : null}
-                    {scan.completed && scan.visible ? (
+                    {scan.hasPending ? (
                         <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={scan.hide}
+                            disabled={!scan.canStart}
+                            onClick={scan.start}
                         >
-                            <EyeOffIcon data-icon="inline-start" />
-                            {t('view.player_list.mutual_friends.hide')}
+                            <UsersRoundIcon data-icon="inline-start" />
+                            {scan.completed
+                                ? t('view.player_list.mutual_friends.requery')
+                                : t('view.player_list.mutual_friends.query')}
                         </Button>
                     ) : null}
-                    {scan.completed && !scan.visible && !scan.hasPending ? (
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={scan.show}
-                        >
-                            <EyeIcon data-icon="inline-start" />
-                            {t('view.player_list.mutual_friends.show')}
-                        </Button>
-                    ) : null}
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={scan.hide}
+                    >
+                        <EyeOffIcon data-icon="inline-start" />
+                        {t('view.player_list.mutual_friends.hide')}
+                    </Button>
                 </>
             )}
         </div>

@@ -152,6 +152,7 @@ export type ToolbarSegmentOption<TValue extends string> = {
     label: string;
     count?: number;
     icon?: LucideIcon;
+    dimmed?: boolean;
 };
 
 export function ToolbarTabs<TValue extends string>({
@@ -164,7 +165,14 @@ export function ToolbarTabs<TValue extends string>({
             {options.map((option) => {
                 const Icon = option.icon;
                 return (
-                    <TabsTrigger key={option.value} value={option.value}>
+                    <TabsTrigger
+                        key={option.value}
+                        value={option.value}
+                        className={cn(
+                            option.dimmed &&
+                                'not-data-active:not-hover:opacity-50'
+                        )}
+                    >
                         {Icon ? <Icon data-icon="inline-start" /> : null}
                         {option.label}
                         {option.count === undefined ? null : (

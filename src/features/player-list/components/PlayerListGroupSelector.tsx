@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { RefreshCwIcon, UsersRoundIcon } from 'lucide-react';
+import { RefreshCwIcon, ShieldUserIcon, UsersRoundIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ToolbarIconButton } from '@/components/layout/ToolbarControls';
 import type { GroupProfileRecord } from '@/domain/entities/group';
 import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
@@ -63,6 +64,49 @@ function groupOptionOf(
 }
 
 export function PlayerListGroupSelector({
+    active,
+    value,
+    groupId,
+    instanceGroupId,
+    onActiveChange,
+    onChange,
+    onRefresh
+}: {
+    active: boolean;
+    value: string;
+    groupId: string;
+    instanceGroupId: string;
+    onActiveChange(active: boolean): void;
+    onChange(value: string): void;
+    onRefresh(): void;
+}) {
+    const { t } = useTranslation();
+    const toggle = (
+        <ToolbarIconButton
+            icon={ShieldUserIcon}
+            label={t('table.playerList.groupRoles')}
+            active={active}
+            onClick={() => onActiveChange(!active)}
+        />
+    );
+    if (!active) {
+        return toggle;
+    }
+    return (
+        <div className="flex items-center gap-1">
+            {toggle}
+            <PlayerListGroupCombobox
+                value={value}
+                groupId={groupId}
+                instanceGroupId={instanceGroupId}
+                onChange={onChange}
+                onRefresh={onRefresh}
+            />
+        </div>
+    );
+}
+
+function PlayerListGroupCombobox({
     value,
     groupId,
     instanceGroupId,
@@ -174,7 +218,11 @@ export function PlayerListGroupSelector({
                                         {option.name}
                                     </span>
                                 </span>
-                            ) : null;
+                            ) : (
+                                <span className="text-muted-foreground truncate">
+                                    {option?.name ?? id}
+                                </span>
+                            );
                         }}
                     </ComboboxValue>
                 </ComboboxTrigger>
