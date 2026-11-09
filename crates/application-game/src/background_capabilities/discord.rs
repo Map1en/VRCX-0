@@ -21,6 +21,7 @@ use activity_builders::{build_discord_activity, build_running_fallback_activity}
 const GAME_STOP_DISCORD_CLOSE_ATTEMPTS: u8 = 5;
 const DISCORD_ENRICHMENT_RETRY_BASE: Duration = Duration::from_secs(5);
 const DISCORD_ENRICHMENT_RETRY_MAX: Duration = Duration::from_secs(60);
+const DISCORD_ACTIVITY_REFRESH_INTERVAL: Duration = Duration::from_secs(60);
 
 #[derive(Clone, Debug, Default)]
 pub struct BackgroundDiscordPresenceState {
@@ -31,6 +32,7 @@ pub struct BackgroundDiscordPresenceState {
     close_attempts_remaining: u8,
     last_location_details: DiscordLocationDetails,
     last_payload: Option<BackgroundDiscordActivityPayload>,
+    last_published_at: Option<Instant>,
 }
 
 impl BackgroundDiscordPresenceState {
@@ -38,6 +40,7 @@ impl BackgroundDiscordPresenceState {
         self.is_active = false;
         self.last_location_details = DiscordLocationDetails::default();
         self.last_payload = None;
+        self.last_published_at = None;
     }
 
     pub fn apply_clear_failure(&mut self) {
@@ -51,6 +54,7 @@ impl BackgroundDiscordPresenceState {
     ) {
         self.is_active = active;
         self.last_payload = active.then(|| payload.clone());
+        self.last_published_at = active.then(Instant::now);
     }
 }
 
@@ -242,7 +246,7 @@ pub async fn build_background_discord_presence_command(
     let parsed_discord_location = parse_location(discord_location);
     if !parsed_discord_location.is_real_instance {
         let payload = build_running_fallback_activity(&discord_config, facts, labels);
-        return Ok(set_assets_or_noop(state, payload, force));
+        return Ok(set_assets_or_noop(state, payload, force, Instant::now()));
     }
 
     let location_details =
@@ -255,15 +259,19 @@ pub async fn build_background_discord_presence_command(
 
     let payload =
         build_discord_activity(&discord_config, facts, labels, &location_details, &parsed);
-    Ok(set_assets_or_noop(state, payload, force))
+    Ok(set_assets_or_noop(state, payload, force, Instant::now()))
 }
 
 fn set_assets_or_noop(
     state: &BackgroundDiscordPresenceState,
     payload: BackgroundDiscordActivityPayload,
     force: bool,
+    now: Instant,
 ) -> BackgroundDiscordPresenceCommand {
-    if !force && state.is_active && state.last_payload.as_ref() == Some(&payload) {
+    let refresh_due = state.last_published_at.is_none_or(|published_at| {
+        now.saturating_duration_since(published_at) >= DISCORD_ACTIVITY_REFRESH_INTERVAL
+    });
+    if !force && !refresh_due && state.is_active && state.last_payload.as_ref() == Some(&payload) {
         return BackgroundDiscordPresenceCommand::Noop {
             detail: "Discord activity is unchanged.".into(),
         };

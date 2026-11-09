@@ -11,7 +11,8 @@ use super::activity_builders::{
 use super::{
     discord_enrichment_status_retryable, set_assets_or_noop, BackgroundDiscordActivityPayload,
     BackgroundDiscordPresenceCommand, BackgroundDiscordPresenceState, DiscordConfig,
-    DiscordLocationDetails, DiscordPresenceLabels, DISCORD_ENRICHMENT_RETRY_MAX,
+    DiscordLocationDetails, DiscordPresenceLabels, DISCORD_ACTIVITY_REFRESH_INTERVAL,
+    DISCORD_ENRICHMENT_RETRY_MAX,
 };
 
 #[test]
@@ -386,13 +387,48 @@ fn discord_unchanged_payload_is_not_published_twice() {
     };
     let mut state = BackgroundDiscordPresenceState::default();
     state.apply_set_assets_result(&payload, true);
+    let now = Instant::now();
 
     assert!(matches!(
-        set_assets_or_noop(&state, payload.clone(), false),
+        set_assets_or_noop(&state, payload.clone(), false, now),
         BackgroundDiscordPresenceCommand::Noop { .. }
     ));
     assert!(matches!(
-        set_assets_or_noop(&state, payload, true),
+        set_assets_or_noop(&state, payload, true, now),
         BackgroundDiscordPresenceCommand::SetAssets { .. }
     ));
+}
+
+#[test]
+fn discord_unchanged_payload_is_refreshed_after_interval() {
+    let payload = BackgroundDiscordActivityPayload {
+        app_id: DEFAULT_APP_ID.into(),
+        activity: json!({ "details": "VRChat" }).into(),
+        detail: "VRChat".into(),
+    };
+    let mut state = BackgroundDiscordPresenceState::default();
+    state.apply_set_assets_result(&payload, true);
+    let published_at = state.last_published_at.unwrap();
+
+    assert!(matches!(
+        set_assets_or_noop(
+            &state,
+            payload.clone(),
+            false,
+            published_at + DISCORD_ACTIVITY_REFRESH_INTERVAL - Duration::from_secs(1),
+        ),
+        BackgroundDiscordPresenceCommand::Noop { .. }
+    ));
+    assert!(matches!(
+        set_assets_or_noop(
+            &state,
+            payload.clone(),
+            false,
+            published_at + DISCORD_ACTIVITY_REFRESH_INTERVAL,
+        ),
+        BackgroundDiscordPresenceCommand::SetAssets { .. }
+    ));
+
+    state.apply_set_assets_result(&payload, false);
+    assert!(state.last_published_at.is_none());
 }
