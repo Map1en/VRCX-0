@@ -1602,7 +1602,9 @@
                 "collapse_all": "Contraer todo",
                 "players_count": "{count} jugadores",
                 "videos_count": "{count} vídeos",
-                "latest": "Más reciente"
+                "latest": "Más reciente",
+                "show_all_videos": "Ver los {count}",
+                "show_fewer_videos": "Ver menos"
             },
             "label": {
                 "sessions": "Sesiones",

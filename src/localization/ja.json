@@ -1595,7 +1595,9 @@
                 "collapse_all": "すべて折りたたむ",
                 "players_count": "{count} 人",
                 "videos_count": "動画 {count} 件",
-                "latest": "最新"
+                "latest": "最新",
+                "show_all_videos": "すべて表示（{count}件）",
+                "show_fewer_videos": "折りたたむ"
             },
             "label": {
                 "sessions": "セッション",

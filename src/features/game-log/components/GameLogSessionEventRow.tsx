@@ -7,7 +7,7 @@ import {
     LogOutIcon,
     UsersIcon
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { AffinityBadge } from '@/components/affinity/AffinityBadge';
@@ -427,12 +427,12 @@ function VideoActivityRow({ event }: { event: GameLogSessionEvent }) {
                                         openExternalLink(videoUrl);
                                     }}
                                 >
-                                    <span className="line-clamp-2 break-words">
+                                    <span className="line-clamp-2 leading-tight break-words">
                                         {videoLabel}
                                     </span>
                                 </Button>
                             ) : (
-                                <span className="line-clamp-2 min-w-0 break-words">
+                                <span className="line-clamp-2 min-w-0 leading-tight break-words">
                                     {videoLabel}
                                 </span>
                             )}
@@ -509,7 +509,23 @@ function SessionVideoLane({
 }) {
     const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(true);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [isOverflowing, setIsOverflowing] = useState(false);
+    const listRef = useRef<HTMLDivElement | null>(null);
     const label = t('view.game_log.sessions.videos');
+
+    useEffect(() => {
+        const list = listRef.current;
+        if (!list || typeof ResizeObserver !== 'function') {
+            return undefined;
+        }
+        const measure = () =>
+            setIsOverflowing(list.scrollHeight > list.clientHeight + 1);
+        measure();
+        const observer = new ResizeObserver(measure);
+        observer.observe(list);
+        return () => observer.disconnect();
+    }, [events.length, isOpen]);
 
     return (
         <section
@@ -538,9 +554,12 @@ function SessionVideoLane({
             </div>
             <div className="relative min-h-0 flex-1">
                 <div
+                    ref={listRef}
                     data-video-lane-list=""
                     className={cn(
-                        'max-h-48 content-start gap-0.5 overflow-y-auto @min-[56rem]/session-body:absolute @min-[56rem]/session-body:inset-0 @min-[56rem]/session-body:grid @min-[56rem]/session-body:max-h-none',
+                        'content-start gap-1 overflow-y-auto @min-[56rem]/session-body:grid',
+                        !isExpanded &&
+                            'max-h-48 @min-[56rem]/session-body:absolute @min-[56rem]/session-body:inset-0 @min-[56rem]/session-body:max-h-none',
                         isOpen ? 'grid' : 'hidden'
                     )}
                 >
@@ -552,6 +571,22 @@ function SessionVideoLane({
                     ))}
                 </div>
             </div>
+            {isOpen && (isExpanded || isOverflowing) ? (
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    aria-expanded={isExpanded}
+                    className="text-muted-foreground mt-1 h-7 justify-start self-start px-2 text-xs"
+                    onClick={() => setIsExpanded((current) => !current)}
+                >
+                    {isExpanded
+                        ? t('view.game_log.sessions.show_fewer_videos')
+                        : t('view.game_log.sessions.show_all_videos', {
+                              count: events.length
+                          })}
+                </Button>
+            ) : null}
         </section>
     );
 }

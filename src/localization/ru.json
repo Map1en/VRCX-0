@@ -1618,7 +1618,9 @@
                 "collapse_all": "Свернуть все",
                 "players_count": "Игроков: {count}",
                 "videos_count": "Видео: {count}",
-                "latest": "Последние"
+                "latest": "Последние",
+                "show_all_videos": "Показать все ({count})",
+                "show_fewer_videos": "Свернуть"
             },
             "label": {
                 "sessions": "Сессии",

@@ -1599,7 +1599,9 @@
                 "collapse_all": "全部收起",
                 "players_count": "{count} 人",
                 "videos_count": "{count} 个视频",
-                "latest": "最新"
+                "latest": "最新",
+                "show_all_videos": "展开全部 {count} 条",
+                "show_fewer_videos": "收起"
             },
             "label": {
                 "sessions": "会话",

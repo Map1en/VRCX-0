@@ -1602,7 +1602,9 @@
                 "collapse_all": "Alle einklappen",
                 "players_count": "{count} Spieler",
                 "videos_count": "{count} Videos",
-                "latest": "Neueste"
+                "latest": "Neueste",
+                "show_all_videos": "Alle {count} anzeigen",
+                "show_fewer_videos": "Weniger"
             },
             "label": {
                 "sessions": "Sitzungen",

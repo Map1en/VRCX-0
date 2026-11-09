@@ -1602,7 +1602,9 @@
                 "collapse_all": "Collapse all",
                 "players_count": "{count} players",
                 "videos_count": "{count} videos",
-                "latest": "Latest"
+                "latest": "Latest",
+                "show_all_videos": "Show all {count}",
+                "show_fewer_videos": "Show less"
             },
             "label": {
                 "sessions": "Sessions",

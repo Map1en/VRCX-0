@@ -1536,7 +1536,9 @@
                 "collapse_all": "모두 접기",
                 "players_count": "{count}명",
                 "videos_count": "동영상 {count}개",
-                "latest": "최신"
+                "latest": "최신",
+                "show_all_videos": "전체 {count}개 보기",
+                "show_fewer_videos": "접기"
             },
             "label": {
                 "sessions": "세션",

@@ -397,3 +397,74 @@ describe('SessionEventGroups video lane', () => {
         expect(screen.queryByRole('region')).toBeNull();
     });
 });
+
+describe('SessionEventGroups video lane overflow', () => {
+    const descriptors = {
+        scrollHeight: Object.getOwnPropertyDescriptor(
+            HTMLElement.prototype,
+            'scrollHeight'
+        ),
+        clientHeight: Object.getOwnPropertyDescriptor(
+            HTMLElement.prototype,
+            'clientHeight'
+        )
+    };
+
+    afterEach(() => {
+        cleanup();
+        vi.unstubAllGlobals();
+        for (const [name, descriptor] of Object.entries(descriptors)) {
+            if (descriptor) {
+                Object.defineProperty(HTMLElement.prototype, name, descriptor);
+            }
+        }
+    });
+
+    it('offers to show every video when the lane overflows and can fold back', () => {
+        vi.stubGlobal(
+            'ResizeObserver',
+            class {
+                observe() {}
+                disconnect() {}
+            }
+        );
+        Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
+            configurable: true,
+            get() {
+                return 600;
+            }
+        });
+        Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+            configurable: true,
+            get() {
+                return 120;
+            }
+        });
+
+        const view = render(
+            <SessionEventGroups
+                events={Array.from({ length: 20 }, (_, index) => ({
+                    type: 'VideoPlay',
+                    created_at: `video-${index}`,
+                    videoName: `Song ${index}`
+                }))}
+            />,
+            { wrapper: EmptyAffinityProvider }
+        );
+        const list = view.container.querySelector('[data-video-lane-list]');
+        const showAll = screen.getByRole('button', {
+            name: 'view.game_log.sessions.show_all_videos'
+        });
+
+        expect(list?.className).toContain('max-h-48');
+
+        fireEvent.click(showAll);
+
+        expect(list?.className).not.toContain('max-h-48');
+        expect(
+            screen.getByRole('button', {
+                name: 'view.game_log.sessions.show_fewer_videos'
+            })
+        ).toBeTruthy();
+    });
+});

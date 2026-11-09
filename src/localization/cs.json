@@ -1618,7 +1618,9 @@
                 "collapse_all": "Sbalit vše",
                 "players_count": "Hráči: {count}",
                 "videos_count": "Videa: {count}",
-                "latest": "Nejnovější"
+                "latest": "Nejnovější",
+                "show_all_videos": "Zobrazit všech {count}",
+                "show_fewer_videos": "Zobrazit méně"
             },
             "label": {
                 "sessions": "Relace",
