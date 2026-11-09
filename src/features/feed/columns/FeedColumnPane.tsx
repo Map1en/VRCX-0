@@ -20,6 +20,7 @@ import { EmptyState } from '@/components/layout/PageScaffold';
 import { cn } from '@/lib/utils';
 import { FEED_FILTER_TYPES } from '@/repositories/feedRepository';
 import type { FeedTimeDisplayModePreference } from '@/state/preferencesStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -308,19 +309,20 @@ export function FeedColumnPane({
                         <GripVerticalIcon data-icon="icon" />
                     </Button>
                     <DropdownMenu>
-                        <DropdownMenuTrigger
-                            render={
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    className="text-muted-foreground hover:text-foreground"
-                                    aria-label={t('accessibility.more')}
-                                >
-                                    <MoreHorizontalIcon data-icon="icon" />
-                                </Button>
-                            }
-                        />
+                        <HintTooltip label={t('accessibility.more')}>
+                            <DropdownMenuTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        className="text-muted-foreground hover:text-foreground"
+                                    >
+                                        <MoreHorizontalIcon data-icon="icon" />
+                                    </Button>
+                                }
+                            />
+                        </HintTooltip>
                         <DropdownMenuContent align="end">
                             <DropdownMenuGroup>
                                 <DropdownMenuItem

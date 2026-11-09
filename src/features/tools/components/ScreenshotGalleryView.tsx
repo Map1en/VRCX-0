@@ -40,6 +40,7 @@ import {
 import { toast } from '@/services/toastService';
 import { resolveScreenshotCapturedTime } from '@/shared/utils/screenshot';
 import { useShellStore } from '@/state/shellStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     Collapsible,
@@ -722,21 +723,22 @@ export function ScreenshotGalleryView({
                             {t('dialog.screenshot_metadata.scanning')}
                         </div>
                     ) : null}
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        className="ml-auto"
-                        aria-label={t('common.actions.refresh')}
-                        onClick={onRefresh}
-                    >
-                        <RefreshCwIcon
-                            data-icon="inline-start"
-                            className={cn(
-                                scanStatus?.running && 'animate-spin'
-                            )}
-                        />
-                    </Button>
+                    <HintTooltip label={t('common.actions.refresh')}>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            className="ml-auto"
+                            onClick={onRefresh}
+                        >
+                            <RefreshCwIcon
+                                data-icon="inline-start"
+                                className={cn(
+                                    scanStatus?.running && 'animate-spin'
+                                )}
+                            />
+                        </Button>
+                    </HintTooltip>
                 </div>
                 <nav
                     aria-label={t('dialog.screenshot_metadata.folders')}

@@ -9,6 +9,7 @@ import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { isGroupId } from '@/shared/constants/vrchatIds';
 import { useRuntimeStore } from '@/state/runtimeStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -268,14 +269,11 @@ function PlayerListGroupCombobox({
                 </ComboboxContent>
             </Combobox>
             {groupId ? (
-                <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={onRefresh}
-                    aria-label={t('view.player_list.group_roles.refresh')}
-                >
-                    <RefreshCwIcon />
-                </Button>
+                <HintTooltip label={t('view.player_list.group_roles.refresh')}>
+                    <Button variant="ghost" size="icon-sm" onClick={onRefresh}>
+                        <RefreshCwIcon />
+                    </Button>
+                </HintTooltip>
             ) : null}
         </div>
     );

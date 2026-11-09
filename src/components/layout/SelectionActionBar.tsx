@@ -1,6 +1,7 @@
 import { XIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
 
@@ -44,17 +45,18 @@ function SelectionActionBar({
                             {selectAllLabel}
                         </Button>
                         {children}
-                        <Button
-                            type="button"
-                            size="icon-xs"
-                            variant="ghost"
-                            className="rounded-full"
-                            aria-label={clearLabel}
-                            disabled={clearDisabled}
-                            onClick={onClearSelection}
-                        >
-                            <XIcon data-icon="icon" />
-                        </Button>
+                        <HintTooltip label={clearLabel}>
+                            <Button
+                                type="button"
+                                size="icon-xs"
+                                variant="ghost"
+                                className="rounded-full"
+                                disabled={clearDisabled}
+                                onClick={onClearSelection}
+                            >
+                                <XIcon data-icon="icon" />
+                            </Button>
+                        </HintTooltip>
                     </>
                 )}
             </div>

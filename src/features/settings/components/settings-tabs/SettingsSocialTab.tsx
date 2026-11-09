@@ -22,6 +22,7 @@ import { userImage } from '@/services/entityMediaService';
 import { MINUTES_PER_DAY } from '@/shared/constants/time';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -98,6 +99,7 @@ export function SettingsSocialTab() {
     const [hiddenUserPickerOpen, setHiddenUserPickerOpen] = useState(false);
     const [hiddenUserSearch, setHiddenUserSearch] = useState('');
     const endpoint = normalizeEndpoint(currentEndpoint);
+    const removeHiddenFeedLabel = t('view.settings.social.hidden_feed.remove');
     const favoriteGroupLabel =
         selectedFavoriteFriendGroupLabel ||
         t('view.settings.general.favorites.group_placeholder');
@@ -378,22 +380,23 @@ export function SettingsSocialTab() {
                                             <span className="min-w-0 flex-1 truncate text-sm">
                                                 {option.label}
                                             </span>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                className="size-7 shrink-0"
-                                                aria-label={t(
-                                                    'view.settings.social.hidden_feed.remove'
-                                                )}
-                                                onClick={() =>
-                                                    void onRemoveFeedHiddenUser(
-                                                        option.value
-                                                    )
-                                                }
+                                            <HintTooltip
+                                                label={removeHiddenFeedLabel}
                                             >
-                                                <XIcon data-icon="icon" />
-                                            </Button>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="size-7 shrink-0"
+                                                    onClick={() =>
+                                                        void onRemoveFeedHiddenUser(
+                                                            option.value
+                                                        )
+                                                    }
+                                                >
+                                                    <XIcon data-icon="icon" />
+                                                </Button>
+                                            </HintTooltip>
                                         </div>
                                     );
                                 })}

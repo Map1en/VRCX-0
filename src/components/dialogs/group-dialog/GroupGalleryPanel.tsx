@@ -13,6 +13,7 @@ import type {
     GroupGalleryPhotoRow,
     GroupProfileRecord
 } from '@/domain/entities/group';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
@@ -250,23 +251,28 @@ export function GroupGalleryPanel({
                                                     gallery,
                                                     row
                                                 ) ? (
-                                                    <Button
-                                                        type="button"
-                                                        size="icon-sm"
-                                                        variant="secondary"
-                                                        className="text-destructive absolute top-1.5 right-1.5 opacity-0 transition-opacity group-hover/photo:opacity-100 focus-visible:opacity-100"
-                                                        aria-label={t(
+                                                    <HintTooltip
+                                                        label={t(
                                                             'dialog.group.gallery.delete_image'
                                                         )}
-                                                        disabled={editor.saving}
-                                                        onClick={() => {
-                                                            void editor.removeImage(
-                                                                row
-                                                            );
-                                                        }}
                                                     >
-                                                        <Trash2Icon />
-                                                    </Button>
+                                                        <Button
+                                                            type="button"
+                                                            size="icon-sm"
+                                                            variant="secondary"
+                                                            className="text-destructive absolute top-1.5 right-1.5 opacity-0 transition-opacity group-hover/photo:opacity-100 focus-visible:opacity-100"
+                                                            disabled={
+                                                                editor.saving
+                                                            }
+                                                            onClick={() => {
+                                                                void editor.removeImage(
+                                                                    row
+                                                                );
+                                                            }}
+                                                        >
+                                                            <Trash2Icon />
+                                                        </Button>
+                                                    </HintTooltip>
                                                 ) : null}
                                             </div>
                                         );

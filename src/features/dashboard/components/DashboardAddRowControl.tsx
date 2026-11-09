@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { DashboardDirection } from '@/repositories/dashboardRepository';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
@@ -125,16 +126,17 @@ export function DashboardAddRowControl({
                         {t('dashboard.actions.add_vertical_row')}
                     </TooltipContent>
                 </Tooltip>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    className="text-muted-foreground"
-                    aria-label={t('common.actions.cancel')}
-                    onClick={() => setShowOptions(false)}
-                >
-                    <XIcon data-icon="icon" />
-                </Button>
+                <HintTooltip label={t('common.actions.cancel')}>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        className="text-muted-foreground"
+                        onClick={() => setShowOptions(false)}
+                    >
+                        <XIcon data-icon="icon" />
+                    </Button>
+                </HintTooltip>
             </div>
         </div>
     );

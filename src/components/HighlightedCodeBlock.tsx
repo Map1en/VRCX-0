@@ -34,10 +34,7 @@ export function HighlightedCodeBlock({
     const normalizedLanguage = language.toLowerCase();
     const actions = (
         <CodeBlockActions>
-            <CodeBlockCopyButton
-                value={code}
-                aria-label={t('common.actions.copy')}
-            />
+            <CodeBlockCopyButton value={code} />
         </CodeBlockActions>
     );
 

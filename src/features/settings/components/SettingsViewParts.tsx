@@ -6,6 +6,7 @@ import { useRouteScrollMemory } from '@/lib/useRouteScrollMemory';
 import { setTablePageSizesPreference } from '@/services/preferencesService';
 import { toast } from '@/services/toastService';
 import { usePreferencesStore } from '@/state/preferencesStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
@@ -209,18 +210,20 @@ export function TablePageSizesDialog({
                                 className="gap-2"
                             >
                                 {size}
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-xs"
-                                    aria-label={t(
-                                        'accessibility.remove_value',
-                                        { value: size }
-                                    )}
-                                    onClick={() => removePageSize(size)}
+                                <HintTooltip
+                                    label={t('accessibility.remove_value', {
+                                        value: size
+                                    })}
                                 >
-                                    <XIcon data-icon="inline-start" />
-                                </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon-xs"
+                                        onClick={() => removePageSize(size)}
+                                    >
+                                        <XIcon data-icon="inline-start" />
+                                    </Button>
+                                </HintTooltip>
                             </Badge>
                         ))}
                     </div>
@@ -259,16 +262,19 @@ export function TablePageSizesDialog({
                                 />
                             </NumberField>
                             <InputGroupAddon align="inline-end">
-                                <InputGroupButton
-                                    type="button"
-                                    size="icon-xs"
-                                    aria-label={t(
+                                <HintTooltip
+                                    label={t(
                                         'accessibility.add_table_page_size'
                                     )}
-                                    onClick={() => addPageSize()}
                                 >
-                                    <PlusIcon data-icon="inline-start" />
-                                </InputGroupButton>
+                                    <InputGroupButton
+                                        type="button"
+                                        size="icon-xs"
+                                        onClick={() => addPageSize()}
+                                    >
+                                        <PlusIcon data-icon="inline-start" />
+                                    </InputGroupButton>
+                                </HintTooltip>
                             </InputGroupAddon>
                         </InputGroup>
                     </Field>

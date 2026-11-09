@@ -20,6 +20,7 @@ import { TileShell } from '@/components/tile/TileShell';
 import { cn } from '@/lib/utils';
 import { TILE_CHECK } from '@/shared/constants/selectableTile';
 import { useRuntimeStore } from '@/state/runtimeStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -221,6 +222,7 @@ export function MyAvatarGridCard({
     const hiddenTagCount = Math.max(0, tags.length - visibleTags.length);
     const avatarName =
         avatar?.name || t('view.my_avatars.label.untitled_avatar');
+    const avatarActionsLabel = t('view.my_avatars.action.open_avatar_actions');
     const overlayStyle: CSSProperties = {
         padding: `${densityConfig.overlayNameOnlyPaddingTop}px ${densityConfig.overlayPaddingX}px ${densityConfig.overlayPaddingY}px`
     };
@@ -379,32 +381,31 @@ export function MyAvatarGridCard({
                             </div>
                         </TileShell>
                         <DropdownMenu>
-                            <DropdownMenuTrigger
-                                render={
-                                    <Button
-                                        type="button"
-                                        variant="secondary"
-                                        size="icon-xs"
-                                        className="absolute top-1 right-1 opacity-0 shadow-sm transition-opacity group-focus-within/card:opacity-100 group-hover/card:opacity-100 data-popup-open:opacity-100"
-                                        aria-label={t(
-                                            'view.my_avatars.action.open_avatar_actions'
-                                        )}
-                                        disabled={isUpdating}
-                                        onPointerDown={(event) =>
-                                            event.stopPropagation()
-                                        }
-                                        onClick={(event) =>
-                                            event.stopPropagation()
-                                        }
-                                    >
-                                        {isUpdating ? (
-                                            <Spinner data-icon="inline-start" />
-                                        ) : (
-                                            <MoreHorizontalIcon data-icon="inline-start" />
-                                        )}
-                                    </Button>
-                                }
-                            />
+                            <HintTooltip label={avatarActionsLabel}>
+                                <DropdownMenuTrigger
+                                    render={
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            size="icon-xs"
+                                            className="absolute top-1 right-1 opacity-0 shadow-sm transition-opacity group-focus-within/card:opacity-100 group-hover/card:opacity-100 data-popup-open:opacity-100"
+                                            disabled={isUpdating}
+                                            onPointerDown={(event) =>
+                                                event.stopPropagation()
+                                            }
+                                            onClick={(event) =>
+                                                event.stopPropagation()
+                                            }
+                                        >
+                                            {isUpdating ? (
+                                                <Spinner data-icon="inline-start" />
+                                            ) : (
+                                                <MoreHorizontalIcon data-icon="inline-start" />
+                                            )}
+                                        </Button>
+                                    }
+                                />
+                            </HintTooltip>
                             <DropdownMenuContent
                                 align="end"
                                 className="bg-popover! w-max max-w-[90vw] min-w-52"

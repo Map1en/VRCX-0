@@ -53,6 +53,7 @@ import {
     normalizeSidebarTabLayout,
     sidebarTabFallbackIcon
 } from '@/shared/utils/sidebarTabLayout';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
@@ -151,13 +152,11 @@ function NavIconSelect({
             })}
             onValueChange={(value) => onValueChange(value ?? '')}
         >
-            <SelectTrigger
-                size="sm"
-                className="w-auto shrink-0 px-2"
-                aria-label={ariaLabel}
-            >
-                <CurrentIcon data-icon="inline-start" />
-            </SelectTrigger>
+            <HintTooltip label={ariaLabel}>
+                <SelectTrigger size="sm" className="w-auto shrink-0 px-2">
+                    <CurrentIcon data-icon="inline-start" />
+                </SelectTrigger>
+            </HintTooltip>
             <SelectContent align="start">
                 <SelectGroup>
                     {NAV_ICON_OPTIONS.map((option) => {
@@ -658,21 +657,24 @@ export function SidePanelCustomTabsDialog({
                                                                 />
                                                             )}
                                                             <DropdownMenu>
-                                                                <DropdownMenuTrigger
-                                                                    render={
-                                                                        <Button
-                                                                            type="button"
-                                                                            variant="ghost"
-                                                                            size="icon-sm"
-                                                                            className="text-muted-foreground shrink-0"
-                                                                            aria-label={
-                                                                                label
-                                                                            }
-                                                                        >
-                                                                            <MoreVerticalIcon data-icon="inline-start" />
-                                                                        </Button>
+                                                                <HintTooltip
+                                                                    label={
+                                                                        label
                                                                     }
-                                                                />
+                                                                >
+                                                                    <DropdownMenuTrigger
+                                                                        render={
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="ghost"
+                                                                                size="icon-sm"
+                                                                                className="text-muted-foreground shrink-0"
+                                                                            >
+                                                                                <MoreVerticalIcon data-icon="inline-start" />
+                                                                            </Button>
+                                                                        }
+                                                                    />
+                                                                </HintTooltip>
                                                                 <DropdownMenuContent align="end">
                                                                     <DropdownMenuItem
                                                                         disabled={

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import type { MentionTarget } from '@/domain/assistant/types';
 import type { FriendRecord } from '@/domain/friends/types';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     InputGroup,
@@ -242,39 +243,39 @@ export function Composer({
                         rows={2}
                     />
                     <InputGroupAddon align="block-end" className="gap-1">
-                        <InputGroupButton
-                            size="icon-sm"
-                            disabled={disabled}
-                            title={t('assistant.mention.add')}
-                            aria-label={t('assistant.mention.add')}
-                            onClick={startMention}
-                        >
-                            <AtSignIcon />
-                        </InputGroupButton>
+                        <HintTooltip label={t('assistant.mention.add')}>
+                            <InputGroupButton
+                                size="icon-sm"
+                                disabled={disabled}
+                                onClick={startMention}
+                            >
+                                <AtSignIcon />
+                            </InputGroupButton>
+                        </HintTooltip>
                         {toolbar}
                         {busy ? (
-                            <InputGroupButton
-                                size="icon-sm"
-                                variant="secondary"
-                                onClick={onStop}
-                                title={t('assistant.stop')}
-                                aria-label={t('assistant.stop')}
-                                className="ml-auto rounded-full"
-                            >
-                                <SquareIcon />
-                            </InputGroupButton>
+                            <HintTooltip label={t('assistant.stop')}>
+                                <InputGroupButton
+                                    size="icon-sm"
+                                    variant="secondary"
+                                    onClick={onStop}
+                                    className="ml-auto rounded-full"
+                                >
+                                    <SquareIcon />
+                                </InputGroupButton>
+                            </HintTooltip>
                         ) : (
-                            <InputGroupButton
-                                type="submit"
-                                size="icon-sm"
-                                variant="default"
-                                disabled={disabled || !value.trim()}
-                                title={t('assistant.send')}
-                                aria-label={t('assistant.send')}
-                                className="ml-auto rounded-full"
-                            >
-                                <ArrowUpIcon />
-                            </InputGroupButton>
+                            <HintTooltip label={t('assistant.send')}>
+                                <InputGroupButton
+                                    type="submit"
+                                    size="icon-sm"
+                                    variant="default"
+                                    disabled={disabled || !value.trim()}
+                                    className="ml-auto rounded-full"
+                                >
+                                    <ArrowUpIcon />
+                                </InputGroupButton>
+                            </HintTooltip>
                         )}
                     </InputGroupAddon>
                 </InputGroup>

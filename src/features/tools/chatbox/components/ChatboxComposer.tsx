@@ -19,6 +19,7 @@ import {
 import configRepository from '@/repositories/configRepository';
 import { toast } from '@/services/toastService';
 import { getTranslationConfig } from '@/services/translationService';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/shadcn/card';
 import { Spinner } from '@/ui/shadcn/spinner';
@@ -329,19 +330,19 @@ export function ChatboxComposer({
                     </>
                 ) : null}
                 {translationEnabled ? (
-                    <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={t(
+                    <HintTooltip
+                        label={t(
                             'view.tools.chatbox.composer.translation_settings'
                         )}
-                        title={t(
-                            'view.tools.chatbox.composer.translation_settings'
-                        )}
-                        onClick={openTranslationSettings}
                     >
-                        <Settings2Icon />
-                    </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={openTranslationSettings}
+                        >
+                            <Settings2Icon />
+                        </Button>
+                    </HintTooltip>
                 ) : (
                     <Button
                         variant="outline"
@@ -396,16 +397,19 @@ export function ChatboxComposer({
                                 >
                                     {phrase}
                                 </button>
-                                <button
-                                    type="button"
-                                    className="text-muted-foreground hover:text-foreground pr-1.5 opacity-0 group-hover/phrase:opacity-100 focus-visible:opacity-100"
-                                    aria-label={t(
+                                <HintTooltip
+                                    label={t(
                                         'view.tools.chatbox.composer.remove_phrase'
                                     )}
-                                    onClick={() => removePhrase(index)}
                                 >
-                                    <XIcon className="size-3" />
-                                </button>
+                                    <button
+                                        type="button"
+                                        className="text-muted-foreground hover:text-foreground pr-1.5 opacity-0 group-hover/phrase:opacity-100 focus-visible:opacity-100"
+                                        onClick={() => removePhrase(index)}
+                                    >
+                                        <XIcon className="size-3" />
+                                    </button>
+                                </HintTooltip>
                             </span>
                         ))}
                         {canSavePhrase ? (

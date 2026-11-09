@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { FEED_FILTER_TYPES } from '@/repositories/feedRepository';
 import { useFavoriteStore } from '@/state/favoriteStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -240,18 +241,19 @@ export function FeedColumnsManagerDialog({
                             <div className="text-muted-foreground min-w-0 flex-1 truncate text-xs font-medium">
                                 {t('view.feed.columns.manage')}
                             </div>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="icon-sm"
-                                aria-label={t('view.feed.columns.add')}
-                                disabled={
-                                    draftColumns.length >= MAX_FEED_COLUMNS
-                                }
-                                onClick={addColumn}
-                            >
-                                <PlusIcon data-icon="icon" />
-                            </Button>
+                            <HintTooltip label={t('view.feed.columns.add')}>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon-sm"
+                                    disabled={
+                                        draftColumns.length >= MAX_FEED_COLUMNS
+                                    }
+                                    onClick={addColumn}
+                                >
+                                    <PlusIcon data-icon="icon" />
+                                </Button>
+                            </HintTooltip>
                         </div>
                         <div className="flex min-h-0 flex-col gap-1 overflow-y-auto p-1">
                             {draftColumns.map((column) => (
@@ -280,15 +282,20 @@ export function FeedColumnsManagerDialog({
                                             </span>
                                         </span>
                                     </Button>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon-sm"
-                                        aria-label={t('common.actions.delete')}
-                                        onClick={() => deleteColumn(column.id)}
+                                    <HintTooltip
+                                        label={t('common.actions.delete')}
                                     >
-                                        <Trash2Icon data-icon="icon" />
-                                    </Button>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon-sm"
+                                            onClick={() =>
+                                                deleteColumn(column.id)
+                                            }
+                                        >
+                                            <Trash2Icon data-icon="icon" />
+                                        </Button>
+                                    </HintTooltip>
                                 </div>
                             ))}
                         </div>

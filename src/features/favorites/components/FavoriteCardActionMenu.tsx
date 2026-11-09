@@ -14,6 +14,7 @@ import {
     vrcxAvatarDeepLink,
     vrcxWorldDeepLink
 } from '@/shared/constants/vrcxDeepLinks';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -117,24 +118,25 @@ export function FavoriteCardActionMenu({
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger
-                render={
-                    <Button
-                        type="button"
-                        size="icon-sm"
-                        variant="ghost"
-                        aria-label={t('common.actions.configure')}
-                        disabled={model.removing}
-                        onClick={actions.stopInteraction}
-                    >
-                        {model.removing ? (
-                            <Spinner data-icon="inline-start" />
-                        ) : (
-                            <MoreHorizontalIcon data-icon="inline-start" />
-                        )}
-                    </Button>
-                }
-            />
+            <HintTooltip label={t('common.actions.configure')}>
+                <DropdownMenuTrigger
+                    render={
+                        <Button
+                            type="button"
+                            size="icon-sm"
+                            variant="ghost"
+                            disabled={model.removing}
+                            onClick={actions.stopInteraction}
+                        >
+                            {model.removing ? (
+                                <Spinner data-icon="inline-start" />
+                            ) : (
+                                <MoreHorizontalIcon data-icon="inline-start" />
+                            )}
+                        </Button>
+                    }
+                />
+            </HintTooltip>
             <DropdownMenuContent
                 align="end"
                 onClick={actions.stopInteraction}

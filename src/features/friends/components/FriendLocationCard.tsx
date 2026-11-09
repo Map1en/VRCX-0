@@ -31,6 +31,7 @@ import { userImage } from '@/services/entityMediaService';
 import { normalizeUserStatus } from '@/shared/utils/friendStatus';
 import { normalizeLocationValue, parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -327,18 +328,19 @@ export function FriendLocationCard({
             onKeyDown={(event) => event.stopPropagation()}
         >
             <DropdownMenu>
-                <DropdownMenuTrigger
-                    render={
-                        <Button
-                            type="button"
-                            size="icon-xs"
-                            variant="secondary"
-                            aria-label={t('accessibility.more')}
-                        >
-                            <MoreHorizontalIcon />
-                        </Button>
-                    }
-                />
+                <HintTooltip label={t('accessibility.more')}>
+                    <DropdownMenuTrigger
+                        render={
+                            <Button
+                                type="button"
+                                size="icon-xs"
+                                variant="secondary"
+                            >
+                                <MoreHorizontalIcon />
+                            </Button>
+                        }
+                    />
+                </HintTooltip>
                 <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuGroup>
                         <DropdownMenuItem

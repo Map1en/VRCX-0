@@ -8,6 +8,7 @@ import {
 } from '@/platform/tauri/bindings';
 import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -92,23 +93,26 @@ export function SavedGroupFavoriteButton({ groupId }: { groupId: string }) {
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger
-                render={
-                    <Button
-                        type="button"
-                        size="icon-lg"
-                        variant={favoriteCollection ? 'secondary' : 'outline'}
-                        disabled={busy}
-                        aria-label={t('saved_group_favorites.toggle', {
-                            defaultValue: '群组收藏'
-                        })}
-                    >
-                        <StarIcon
-                            className={favoriteCollection ? 'fill-current' : ''}
-                        />
-                    </Button>
-                }
-            />
+            <HintTooltip label={t('saved_group_favorites.toggle')}>
+                <DropdownMenuTrigger
+                    render={
+                        <Button
+                            type="button"
+                            size="icon-lg"
+                            variant={
+                                favoriteCollection ? 'secondary' : 'outline'
+                            }
+                            disabled={busy}
+                        >
+                            <StarIcon
+                                className={
+                                    favoriteCollection ? 'fill-current' : ''
+                                }
+                            />
+                        </Button>
+                    }
+                />
+            </HintTooltip>
             <DropdownMenuContent align="end" className="w-64">
                 {favoriteCollection ? (
                     <DropdownMenuGroup>

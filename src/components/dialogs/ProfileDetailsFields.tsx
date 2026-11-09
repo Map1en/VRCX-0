@@ -6,6 +6,7 @@ import {
     languageOptionLabel,
     normalizeProfileLanguageKeys
 } from '@/shared/utils/userLanguage';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     Combobox,
@@ -194,22 +195,24 @@ export function ProfileLinksField({
                             }}
                         />
                         <InputGroupAddon align="inline-end">
-                            <InputGroupButton
-                                type="button"
-                                size="icon-xs"
-                                disabled={busy || rows.length <= 1}
-                                aria-label={removeLabel}
-                                onClick={() => {
-                                    const nextLinks = rows.filter(
-                                        (_, linkIndex) => linkIndex !== index
-                                    );
-                                    onChange(
-                                        nextLinks.length ? nextLinks : ['']
-                                    );
-                                }}
-                            >
-                                <XIcon data-icon="inline-start" />
-                            </InputGroupButton>
+                            <HintTooltip label={removeLabel}>
+                                <InputGroupButton
+                                    type="button"
+                                    size="icon-xs"
+                                    disabled={busy || rows.length <= 1}
+                                    onClick={() => {
+                                        const nextLinks = rows.filter(
+                                            (_, linkIndex) =>
+                                                linkIndex !== index
+                                        );
+                                        onChange(
+                                            nextLinks.length ? nextLinks : ['']
+                                        );
+                                    }}
+                                >
+                                    <XIcon data-icon="inline-start" />
+                                </InputGroupButton>
+                            </HintTooltip>
                         </InputGroupAddon>
                     </InputGroup>
                 ))}

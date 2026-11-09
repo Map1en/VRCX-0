@@ -20,6 +20,7 @@ import {
 import { openExternalLink } from '@/services/shellIntegrationService';
 import { toast } from '@/services/toastService';
 import { useScreenshotShareStore } from '@/state/screenshotShareStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -97,20 +98,21 @@ function TargetRow({
     const { t } = useTranslation();
     return (
         <div className="flex items-center gap-2 rounded-lg border px-2 py-1.5">
-            <Button
-                type="button"
-                size="icon-sm"
-                variant="ghost"
-                aria-pressed={target.quick}
-                aria-label={t('view.tools.screenshot_share.targets.quick')}
-                onClick={onToggleQuick}
-            >
-                <StarIcon
-                    className={cn(
-                        target.quick && 'fill-current text-amber-400'
-                    )}
-                />
-            </Button>
+            <HintTooltip label={t('view.tools.screenshot_share.targets.quick')}>
+                <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    aria-pressed={target.quick}
+                    onClick={onToggleQuick}
+                >
+                    <StarIcon
+                        className={cn(
+                            target.quick && 'fill-current text-amber-400'
+                        )}
+                    />
+                </Button>
+            </HintTooltip>
             <div className="flex min-w-0 flex-1 items-center gap-2">
                 <span className="truncate text-sm font-medium">
                     {target.name}
@@ -124,24 +126,26 @@ function TargetRow({
                     </Badge>
                 ) : null}
             </div>
-            <Button
-                type="button"
-                size="icon-sm"
-                variant="ghost"
-                aria-label={t('view.tools.screenshot_share.targets.edit')}
-                onClick={onEdit}
-            >
-                <SquarePenIcon />
-            </Button>
-            <Button
-                type="button"
-                size="icon-sm"
-                variant="ghost"
-                aria-label={t('common.actions.delete')}
-                onClick={onDelete}
-            >
-                <Trash2Icon />
-            </Button>
+            <HintTooltip label={t('view.tools.screenshot_share.targets.edit')}>
+                <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={onEdit}
+                >
+                    <SquarePenIcon />
+                </Button>
+            </HintTooltip>
+            <HintTooltip label={t('common.actions.delete')}>
+                <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={onDelete}
+                >
+                    <Trash2Icon />
+                </Button>
+            </HintTooltip>
         </div>
     );
 }
@@ -214,21 +218,26 @@ function HistoryList() {
                         </span>
                     </div>
                     {record.messageUrl ? (
-                        <Button
-                            type="button"
-                            size="icon-sm"
-                            variant="ghost"
-                            aria-label={t(
+                        <HintTooltip
+                            label={t(
                                 'view.tools.screenshot_share.history.open'
                             )}
-                            onClick={() => {
-                                if (record.messageUrl) {
-                                    void openExternalLink(record.messageUrl);
-                                }
-                            }}
                         >
-                            <ExternalLinkIcon />
-                        </Button>
+                            <Button
+                                type="button"
+                                size="icon-sm"
+                                variant="ghost"
+                                onClick={() => {
+                                    if (record.messageUrl) {
+                                        void openExternalLink(
+                                            record.messageUrl
+                                        );
+                                    }
+                                }}
+                            >
+                                <ExternalLinkIcon />
+                            </Button>
+                        </HintTooltip>
                     ) : null}
                     <Button
                         type="button"

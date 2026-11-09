@@ -20,6 +20,7 @@ import {
 } from '@/shared/constants/selectableTile';
 import { parseLocation } from '@/shared/utils/location';
 import { resolveScreenshotCapturedTime } from '@/shared/utils/screenshot';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import { Skeleton } from '@/ui/shadcn/skeleton';
@@ -284,25 +285,26 @@ export function ScreenshotThumbnailCard({
                 </span>
             ) : null}
             {onToggleFavorite && !isSelectionActive ? (
-                <Button
-                    type="button"
-                    variant="secondary"
-                    size="icon-xs"
-                    aria-label={favoriteLabel}
-                    aria-pressed={favorite}
-                    className={cn(
-                        TILE_FAVORITE_TOGGLE,
-                        'bg-background/85 shadow-sm',
-                        favorite && TILE_SELECT_TOGGLE_VISIBLE
-                    )}
-                    onClick={() => onToggleFavorite(!favorite)}
-                >
-                    <StarIcon
+                <HintTooltip label={favoriteLabel}>
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        size="icon-xs"
+                        aria-pressed={favorite}
                         className={cn(
-                            favorite && 'fill-current text-amber-400'
+                            TILE_FAVORITE_TOGGLE,
+                            'bg-background/85 shadow-sm',
+                            favorite && TILE_SELECT_TOGGLE_VISIBLE
                         )}
-                    />
-                </Button>
+                        onClick={() => onToggleFavorite(!favorite)}
+                    >
+                        <StarIcon
+                            className={cn(
+                                favorite && 'fill-current text-amber-400'
+                            )}
+                        />
+                    </Button>
+                </HintTooltip>
             ) : null}
         </div>
     );

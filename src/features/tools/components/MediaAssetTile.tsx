@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import type { ComponentProps, MouseEvent, ReactNode } from 'react';
 import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { FadeInImage } from '@/components/media/FadeInImage';
 import { TileLockOverlay } from '@/components/tile/TileLockOverlay';
@@ -21,6 +22,7 @@ import {
     TILE_SELECT_TOGGLE,
     TILE_SELECT_TOGGLE_VISIBLE
 } from '@/shared/constants/selectableTile';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent } from '@/ui/shadcn/card';
@@ -84,6 +86,7 @@ function TileActionsMenu({
     actions?: Array<MediaAssetAction | null>;
     label?: string;
 }) {
+    const { t } = useTranslation();
     const visibleActions = actions.filter(
         (action): action is MediaAssetAction => Boolean(action)
     );
@@ -93,19 +96,20 @@ function TileActionsMenu({
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger
-                render={
-                    <Button
-                        type="button"
-                        variant="secondary"
-                        size="icon-sm"
-                        className="bg-background/70"
-                        aria-label={label}
-                    >
-                        <MoreHorizontalIcon data-icon="inline-start" />
-                    </Button>
-                }
-            />
+            <HintTooltip label={label ?? t('accessibility.more')}>
+                <DropdownMenuTrigger
+                    render={
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            size="icon-sm"
+                            className="bg-background/70"
+                        >
+                            <MoreHorizontalIcon data-icon="inline-start" />
+                        </Button>
+                    }
+                />
+            </HintTooltip>
             <DropdownMenuContent align="end" className="w-44">
                 <DropdownMenuGroup>
                     {visibleActions.map((action) => (

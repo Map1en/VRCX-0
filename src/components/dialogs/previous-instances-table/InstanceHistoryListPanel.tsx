@@ -16,6 +16,7 @@ import { copyTextToClipboard } from '@/services/clipboardService';
 import { toast } from '@/services/toastService';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -94,6 +95,7 @@ function InstanceHistoryListRow<TRow extends PreviousInstanceRow>({
     const { t } = useTranslation();
     const location = rowLocation(row);
     const createdAt = row?.created_at || row?.createdAt;
+    const moreActionsLabel = t('dialog.previous_instances.action.more_actions');
 
     return (
         <div className="relative flex min-h-9 items-center gap-3 rounded-md px-2 text-xs">
@@ -139,20 +141,19 @@ function InstanceHistoryListRow<TRow extends PreviousInstanceRow>({
                     showInstanceInfo={false}
                 />
                 <DropdownMenu>
-                    <DropdownMenuTrigger
-                        render={
-                            <Button
-                                type="button"
-                                size="icon-xs"
-                                variant="ghost"
-                                aria-label={t(
-                                    'dialog.previous_instances.action.more_actions'
-                                )}
-                            >
-                                <MoreHorizontalIcon data-icon="icon" />
-                            </Button>
-                        }
-                    />
+                    <HintTooltip label={moreActionsLabel}>
+                        <DropdownMenuTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    size="icon-xs"
+                                    variant="ghost"
+                                >
+                                    <MoreHorizontalIcon data-icon="icon" />
+                                </Button>
+                            }
+                        />
+                    </HintTooltip>
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem
                             disabled={!location}

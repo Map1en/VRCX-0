@@ -14,6 +14,7 @@ import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { cn } from '@/lib/utils';
 import { copyTextToClipboard } from '@/services/clipboardService';
 import { toast } from '@/services/toastService';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardHeader } from '@/ui/shadcn/card';
 import {
@@ -291,26 +292,27 @@ function EntityActionDropdown({
     const { t } = useTranslation();
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger
-                render={
-                    <Button
-                        type="button"
-                        size="icon-lg"
-                        variant={dangerous ? 'destructive' : 'outline'}
-                        aria-label={t('common.actions.more_actions')}
-                        className="relative"
-                    >
-                        {busy ? (
-                            <Spinner data-icon="inline-start" />
-                        ) : (
-                            <MoreHorizontalIcon data-icon="inline-start" />
-                        )}
-                        {indicator ? (
-                            <span className="bg-primary absolute top-1.5 right-1.5 size-2 rounded-full" />
-                        ) : null}
-                    </Button>
-                }
-            />
+            <HintTooltip label={t('common.actions.more_actions')}>
+                <DropdownMenuTrigger
+                    render={
+                        <Button
+                            type="button"
+                            size="icon-lg"
+                            variant={dangerous ? 'destructive' : 'outline'}
+                            className="relative"
+                        >
+                            {busy ? (
+                                <Spinner data-icon="inline-start" />
+                            ) : (
+                                <MoreHorizontalIcon data-icon="inline-start" />
+                            )}
+                            {indicator ? (
+                                <span className="bg-primary absolute top-1.5 right-1.5 size-2 rounded-full" />
+                            ) : null}
+                        </Button>
+                    }
+                />
+            </HintTooltip>
             <DropdownMenuContent
                 align="end"
                 className="**:data-[variant=destructive]:text-destructive! **:data-[variant=destructive]:**:text-destructive! min-w-56"

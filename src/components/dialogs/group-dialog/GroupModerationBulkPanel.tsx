@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { GroupProfileRecord } from '@/domain/entities/group';
 import type { EntityRecord } from '@/domain/entities/shared';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -104,14 +105,17 @@ export function GroupModerationBulkPanel({
                                     <span className="max-w-32 truncate">
                                         {moderationRowLabel(row)}
                                     </span>
-                                    <button
-                                        type="button"
-                                        aria-label={t('common.actions.delete')}
-                                        disabled={busy}
-                                        onClick={() => onRemoveRow(userId)}
+                                    <HintTooltip
+                                        label={t('common.actions.delete')}
                                     >
-                                        <XIcon className="size-3" />
-                                    </button>
+                                        <button
+                                            type="button"
+                                            disabled={busy}
+                                            onClick={() => onRemoveRow(userId)}
+                                        >
+                                            <XIcon className="size-3" />
+                                        </button>
+                                    </HintTooltip>
                                 </Badge>
                             );
                         })}
@@ -121,17 +125,18 @@ export function GroupModerationBulkPanel({
                         </span>
                     ) : null}
                 </div>
-                <Button
-                    type="button"
-                    size="icon-sm"
-                    variant="outline"
-                    className="rounded-full"
-                    disabled={busy}
-                    onClick={onClear}
-                    aria-label={t('common.actions.delete')}
-                >
-                    <Trash2Icon />
-                </Button>
+                <HintTooltip label={t('common.actions.delete')}>
+                    <Button
+                        type="button"
+                        size="icon-sm"
+                        variant="outline"
+                        className="rounded-full"
+                        disabled={busy}
+                        onClick={onClear}
+                    >
+                        <Trash2Icon />
+                    </Button>
+                </HintTooltip>
             </div>
 
             {tabValue === 'members' ? (

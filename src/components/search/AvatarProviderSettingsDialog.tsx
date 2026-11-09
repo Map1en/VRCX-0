@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import type { AvatarSearchProviderConfig } from '@/repositories/avatarSearchProviderRepository';
 import avatarSearchProviderRepository from '@/repositories/avatarSearchProviderRepository';
 import { toast } from '@/services/toastService';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -162,18 +163,23 @@ export function AvatarProviderSettingsDialog({
                                     }}
                                 />
                                 <InputGroupAddon align="inline-end">
-                                    <InputGroupButton
-                                        type="button"
-                                        size="icon-xs"
-                                        aria-label={t(
+                                    <HintTooltip
+                                        label={t(
                                             'accessibility.remove_avatar_provider',
                                             { number: index + 1 }
                                         )}
-                                        disabled={isSaving}
-                                        onClick={() => removeProvider(index)}
                                     >
-                                        <Trash2Icon data-icon="inline-start" />
-                                    </InputGroupButton>
+                                        <InputGroupButton
+                                            type="button"
+                                            size="icon-xs"
+                                            disabled={isSaving}
+                                            onClick={() =>
+                                                removeProvider(index)
+                                            }
+                                        >
+                                            <Trash2Icon data-icon="inline-start" />
+                                        </InputGroupButton>
+                                    </HintTooltip>
                                 </InputGroupAddon>
                             </InputGroup>
                         </Field>

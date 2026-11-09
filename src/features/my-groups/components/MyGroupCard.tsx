@@ -19,6 +19,7 @@ import type { GroupMemberVisibility } from '@/platform/tauri/bindings';
 import { openGroupDialog } from '@/services/dialogService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
 import { TILE_SELECT_BOX } from '@/shared/constants/selectableTile';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
@@ -256,20 +257,21 @@ export function MyGroupCard({
             ) : null}
             {editMode ? null : (
                 <DropdownMenu>
-                    <DropdownMenuTrigger
-                        render={
-                            <Button
-                                type="button"
-                                size="icon-xs"
-                                variant="secondary"
-                                className="absolute top-1 right-1 opacity-0 shadow-sm transition-opacity group-focus-within/card:opacity-100 group-hover/card:opacity-100 disabled:invisible data-popup-open:opacity-100"
-                                disabled={actionsDisabled}
-                                aria-label={t('view.my_groups.row_actions')}
-                            >
-                                <MoreHorizontalIcon data-icon="icon" />
-                            </Button>
-                        }
-                    />
+                    <HintTooltip label={t('view.my_groups.row_actions')}>
+                        <DropdownMenuTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    size="icon-xs"
+                                    variant="secondary"
+                                    className="absolute top-1 right-1 opacity-0 shadow-sm transition-opacity group-focus-within/card:opacity-100 group-hover/card:opacity-100 disabled:invisible data-popup-open:opacity-100"
+                                    disabled={actionsDisabled}
+                                >
+                                    <MoreHorizontalIcon data-icon="icon" />
+                                </Button>
+                            }
+                        />
+                    </HintTooltip>
                     <DropdownMenuContent align="end">
                         {visibilityOptions.map((option) => (
                             <DropdownMenuItem

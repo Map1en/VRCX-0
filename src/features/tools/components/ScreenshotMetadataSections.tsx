@@ -28,6 +28,7 @@ import type {
     ScreenshotFacet,
     ScreenshotPeopleMatch
 } from '@/platform/tauri/bindings';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Table, TableBody, TableHeader } from '@/ui/shadcn/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
@@ -315,15 +316,16 @@ export function ScreenshotMetadataResultsTable({
                             <DataTableCell
                                 className={`${DATA_TABLE_CONTROL_CELL_CLASS_NAME} text-right`}
                             >
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    aria-label={t('common.actions.open')}
-                                    onClick={() => onOpenResult(row)}
-                                >
-                                    <ArrowRightIcon data-icon="inline-start" />
-                                </Button>
+                                <HintTooltip label={t('common.actions.open')}>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon-sm"
+                                        onClick={() => onOpenResult(row)}
+                                    >
+                                        <ArrowRightIcon data-icon="inline-start" />
+                                    </Button>
+                                </HintTooltip>
                             </DataTableCell>
                         </DataTableRow>
                     ))}

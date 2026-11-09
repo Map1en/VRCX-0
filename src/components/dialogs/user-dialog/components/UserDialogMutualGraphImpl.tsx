@@ -12,6 +12,7 @@ import { useMutualFriendsSigmaLifecycle } from '@/lib/mutual-friends/useMutualFr
 import { openUserDialog } from '@/services/dialogService';
 import { useResolvedThemeMode } from '@/services/themeService';
 import { useDialogStore } from '@/state/dialogStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     Popover,
@@ -123,21 +124,22 @@ export function UserDialogMutualGraph({
                     className="absolute inset-0"
                 />
                 <Popover>
-                    <PopoverTrigger
-                        render={
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                className="absolute top-2 right-2 z-10"
-                                aria-label={t(
-                                    'view.charts.mutual_friend.settings.title'
-                                )}
-                            >
-                                <Settings2Icon />
-                            </Button>
-                        }
-                    />
+                    <HintTooltip
+                        label={t('view.charts.mutual_friend.settings.title')}
+                    >
+                        <PopoverTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    className="absolute top-2 right-2 z-10"
+                                >
+                                    <Settings2Icon />
+                                </Button>
+                            }
+                        />
+                    </HintTooltip>
                     <PopoverContent
                         align="end"
                         className="flex w-80 flex-col gap-4"

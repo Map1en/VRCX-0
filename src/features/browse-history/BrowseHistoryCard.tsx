@@ -20,6 +20,7 @@ import {
     openWorldDialog
 } from '@/services/dialogService';
 import { convertFileUrlToImageUrl } from '@/services/entityMediaService';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 
 const iconByKind = {
@@ -133,26 +134,27 @@ export const BrowseHistoryCard = memo(function BrowseHistoryCard({
                 </div>
             </button>
             <div className="absolute inset-y-0 right-1 z-10 flex items-center">
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    className={cn(
-                        'object-row__context-action',
-                        'text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive'
-                    )}
-                    aria-label={t('browse_history.actions.remove')}
-                    onClick={() => {
-                        setRemoving(true);
-                        void onRemove(item).then((removed) => {
-                            if (!removed) {
-                                setRemoving(false);
-                            }
-                        });
-                    }}
-                >
-                    <XIcon className="size-3.5" />
-                </Button>
+                <HintTooltip label={t('browse_history.actions.remove')}>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        className={cn(
+                            'object-row__context-action',
+                            'text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:bg-destructive/10 focus-visible:text-destructive'
+                        )}
+                        onClick={() => {
+                            setRemoving(true);
+                            void onRemove(item).then((removed) => {
+                                if (!removed) {
+                                    setRemoving(false);
+                                }
+                            });
+                        }}
+                    >
+                        <XIcon className="size-3.5" />
+                    </Button>
+                </HintTooltip>
             </div>
         </div>
     );

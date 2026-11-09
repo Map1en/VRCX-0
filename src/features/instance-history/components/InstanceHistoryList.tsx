@@ -16,6 +16,7 @@ import type { InstanceHistorySortKey } from '@/features/instance-history/instanc
 import type { InstanceHistoryMode } from '@/features/instance-history/instanceHistoryDayMode';
 import { formatClock, formatDateFilter, formatDateTime } from '@/lib/dateTime';
 import { cn } from '@/lib/utils';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 
 const HEADER_ENTRY_HEIGHT = 28;
@@ -159,16 +160,17 @@ export function InstanceHistoryRow({
                     showRefresh={false}
                     showInstanceInfo={false}
                 />
-                <Button
-                    type="button"
-                    size="icon-sm"
-                    variant="outline"
-                    disabled={!location}
-                    aria-label={t('common.actions.delete')}
-                    onClick={() => onDeleteRow(row)}
-                >
-                    <Trash2Icon data-icon="icon" />
-                </Button>
+                <HintTooltip label={t('common.actions.delete')}>
+                    <Button
+                        type="button"
+                        size="icon-sm"
+                        variant="outline"
+                        disabled={!location}
+                        onClick={() => onDeleteRow(row)}
+                    >
+                        <Trash2Icon data-icon="icon" />
+                    </Button>
+                </HintTooltip>
             </div>
         </div>
     );

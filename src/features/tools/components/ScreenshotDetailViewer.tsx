@@ -22,6 +22,7 @@ import { useFullscreenImageTransform } from '@/components/media/useFullscreenIma
 import { useProgressiveImageSource } from '@/components/media/useProgressiveImageSource';
 import { cn } from '@/lib/utils';
 import type { ScreenshotLibraryImage } from '@/platform/tauri/bindings';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -374,20 +375,20 @@ export function ScreenshotDetailViewer({
                     onClick={onToggleDetails}
                 />
                 <DropdownMenu>
-                    <DropdownMenuTrigger
-                        render={
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                aria-label={t('common.actions.more_actions')}
-                                title={t('common.actions.more_actions')}
-                                disabled={!hasFile}
-                            >
-                                <EllipsisIcon data-icon="inline-start" />
-                            </Button>
-                        }
-                    />
+                    <HintTooltip label={t('common.actions.more_actions')}>
+                        <DropdownMenuTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    disabled={!hasFile}
+                                >
+                                    <EllipsisIcon data-icon="inline-start" />
+                                </Button>
+                            }
+                        />
+                    </HintTooltip>
                     <DropdownMenuContent align="end" className="w-auto">
                         <DropdownMenuItem
                             disabled={

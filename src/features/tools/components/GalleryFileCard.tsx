@@ -92,7 +92,7 @@ export function GalleryFileCard({
             isCurrent={isCurrent}
             currentLabel={t('dialog.gallery_icons.current')}
             locked={locked}
-            menuLabel={t('aria.more')}
+            menuLabel={t('accessibility.more')}
             placeholderIcon={ImageIcon}
             hideContent
             selectable

@@ -28,6 +28,7 @@ import {
 import { toast } from '@/services/toastService';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
 import { useLlmEndpointsStore } from '@/state/llmEndpointsStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -342,28 +343,27 @@ export function AssistantDialog() {
                         ) : null}
                     </div>
                     <div className="flex items-center gap-1.5">
-                        <button
-                            type="button"
-                            onClick={() => setEntityPanelOpen(!entityPanelOpen)}
-                            title={t('assistant.entities_title')}
-                            className={cn(
-                                'rounded-md p-1.5 transition-colors',
-                                entityPanelOpen
-                                    ? 'text-foreground bg-(--state-pressed-surface)'
-                                    : 'text-muted-foreground hover:text-foreground hover:bg-(--state-hover-surface)'
-                            )}
-                        >
-                            <PanelRightIcon className="size-4" />
-                        </button>
-                        <DialogClose
-                            className="text-muted-foreground hover:text-foreground rounded-md p-1.5 transition-colors"
-                            title={t('assistant.close')}
-                        >
-                            <XIcon className="size-4" />
-                            <span className="sr-only">
-                                {t('assistant.close')}
-                            </span>
-                        </DialogClose>
+                        <HintTooltip label={t('assistant.entities_title')}>
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    setEntityPanelOpen(!entityPanelOpen)
+                                }
+                                className={cn(
+                                    'rounded-md p-1.5 transition-colors',
+                                    entityPanelOpen
+                                        ? 'text-foreground bg-(--state-pressed-surface)'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-(--state-hover-surface)'
+                                )}
+                            >
+                                <PanelRightIcon className="size-4" />
+                            </button>
+                        </HintTooltip>
+                        <HintTooltip label={t('assistant.close')}>
+                            <DialogClose className="text-muted-foreground hover:text-foreground rounded-md p-1.5 transition-colors">
+                                <XIcon className="size-4" />
+                            </DialogClose>
+                        </HintTooltip>
                     </div>
                 </DialogHeader>
 
@@ -612,30 +612,33 @@ function RuntimeToolbar({
                 </DropdownMenu>
             ) : null}
             <DropdownMenu>
-                <DropdownMenuTrigger
-                    render={
-                        <InputGroupButton
-                            size={guided ? 'sm' : 'icon-sm'}
-                            title={t(
-                                guided
-                                    ? 'assistant.runtime.guided_hint'
-                                    : 'assistant.runtime.title'
-                            )}
-                            aria-label={
-                                guided
-                                    ? undefined
-                                    : t('assistant.runtime.title')
-                            }
-                            className={cn(
-                                guided &&
-                                    'bg-amber-500/10 text-amber-600 hover:bg-amber-500/15 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-400'
-                            )}
-                        />
-                    }
+                <HintTooltip
+                    label={t(
+                        guided
+                            ? 'assistant.runtime.guided_hint'
+                            : 'assistant.runtime.title'
+                    )}
                 >
-                    <Settings2Icon />
-                    {guided && t('assistant.runtime.guided_badge')}
-                </DropdownMenuTrigger>
+                    <DropdownMenuTrigger
+                        render={
+                            <InputGroupButton
+                                size={guided ? 'sm' : 'icon-sm'}
+                                aria-label={
+                                    guided
+                                        ? undefined
+                                        : t('assistant.runtime.title')
+                                }
+                                className={cn(
+                                    guided &&
+                                        'bg-amber-500/10 text-amber-600 hover:bg-amber-500/15 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-400'
+                                )}
+                            />
+                        }
+                    >
+                        <Settings2Icon />
+                        {guided && t('assistant.runtime.guided_badge')}
+                    </DropdownMenuTrigger>
+                </HintTooltip>
                 <DropdownMenuContent side="top" className="w-64">
                     <p className="text-muted-foreground px-1.5 py-1 text-xs">
                         {sessionScoped

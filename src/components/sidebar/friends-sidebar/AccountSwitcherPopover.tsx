@@ -15,6 +15,7 @@ import {
 import { logoutFromReactShell } from '@/services/authExecutionService';
 import { userImage } from '@/services/entityMediaService';
 import { useRuntimeStore } from '@/state/runtimeStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
@@ -132,24 +133,25 @@ export function AccountSwitcherPopover() {
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger
-                render={
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={t('view.login.savedAccounts')}
-                        className={cn(
-                            'text-muted-foreground shrink-0 transition-opacity',
-                            open
-                                ? 'opacity-100'
-                                : 'opacity-0 group-hover:opacity-100'
-                        )}
-                    >
-                        <ChevronDownIcon />
-                    </Button>
-                }
-            />
+            <HintTooltip label={t('view.login.savedAccounts')}>
+                <PopoverTrigger
+                    render={
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            className={cn(
+                                'text-muted-foreground shrink-0 transition-opacity',
+                                open
+                                    ? 'opacity-100'
+                                    : 'opacity-0 group-hover:opacity-100'
+                            )}
+                        >
+                            <ChevronDownIcon />
+                        </Button>
+                    }
+                />
+            </HintTooltip>
             <PopoverContent
                 side="bottom"
                 align="end"

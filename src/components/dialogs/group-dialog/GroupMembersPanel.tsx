@@ -22,6 +22,7 @@ import type {
     GroupRoleRecord
 } from '@/domain/entities/group';
 import { openUserDialog } from '@/services/dialogService';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -416,18 +417,19 @@ export function GroupMembersPanel({
                         loading={membersBusy}
                     />
                     <DropdownMenu>
-                        <DropdownMenuTrigger
-                            render={
-                                <Button
-                                    type="button"
-                                    size="icon-sm"
-                                    variant="ghost"
-                                    aria-label={t('accessibility.more')}
-                                />
-                            }
-                        >
-                            <MoreHorizontalIcon />
-                        </DropdownMenuTrigger>
+                        <HintTooltip label={t('accessibility.more')}>
+                            <DropdownMenuTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        size="icon-sm"
+                                        variant="ghost"
+                                    />
+                                }
+                            >
+                                <MoreHorizontalIcon />
+                            </DropdownMenuTrigger>
+                        </HintTooltip>
                         <DropdownMenuContent align="end">
                             <DropdownMenuItem
                                 disabled={!members.loadedCount}

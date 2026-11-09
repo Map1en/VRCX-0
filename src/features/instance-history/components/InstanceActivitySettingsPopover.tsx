@@ -1,6 +1,7 @@
 import { Settings2Icon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { Slider } from '@/ui/shadcn/slider';
@@ -27,20 +28,17 @@ export function InstanceActivitySettingsPopover({
 
     return (
         <Popover>
-            <PopoverTrigger
-                render={
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label={t(
-                            'view.charts.instance_activity.settings.header'
-                        )}
-                    >
-                        <Settings2Icon data-icon="inline-start" />
-                    </Button>
-                }
-            />
+            <HintTooltip
+                label={t('view.charts.instance_activity.settings.header')}
+            >
+                <PopoverTrigger
+                    render={
+                        <Button type="button" variant="ghost" size="icon">
+                            <Settings2Icon data-icon="inline-start" />
+                        </Button>
+                    }
+                />
+            </HintTooltip>
             <PopoverContent
                 side="bottom"
                 align="end"

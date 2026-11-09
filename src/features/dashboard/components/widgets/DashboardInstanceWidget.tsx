@@ -30,6 +30,7 @@ import { normalizeProfileLanguageRows } from '@/shared/utils/userLanguage';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -207,18 +208,15 @@ function DashboardInstanceSettingsMenu({
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger
-                render={
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={'Widget settings'}
-                    >
-                        <SettingsIcon data-icon="inline-start" />
-                    </Button>
-                }
-            />
+            <HintTooltip label={t('common.actions.configure')}>
+                <DropdownMenuTrigger
+                    render={
+                        <Button type="button" variant="ghost" size="icon-sm">
+                            <SettingsIcon data-icon="inline-start" />
+                        </Button>
+                    }
+                />
+            </HintTooltip>
             <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuGroup>
                     {DASHBOARD_INSTANCE_WIDGET_COLUMN_DEFINITIONS.map(

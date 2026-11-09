@@ -41,6 +41,7 @@ import { unwrapVrchatResponse } from '@/repositories/vrchatRequest';
 import { toast } from '@/services/toastService';
 import { isRecord } from '@/shared/utils/record';
 import { useModalStore } from '@/state/modalStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
@@ -170,16 +171,17 @@ function RoleListItem({
                 ) : null}
             </button>
             {deletable ? (
-                <Button
-                    type="button"
-                    size="icon-xs"
-                    variant="ghost"
-                    aria-label={t(`${I18N}.delete`)}
-                    className="opacity-0 group-hover/role:opacity-100 focus-visible:opacity-100"
-                    onClick={onDelete}
-                >
-                    <Trash2Icon />
-                </Button>
+                <HintTooltip label={t(`${I18N}.delete`)}>
+                    <Button
+                        type="button"
+                        size="icon-xs"
+                        variant="ghost"
+                        className="opacity-0 group-hover/role:opacity-100 focus-visible:opacity-100"
+                        onClick={onDelete}
+                    >
+                        <Trash2Icon />
+                    </Button>
+                </HintTooltip>
             ) : null}
         </div>
     );
@@ -604,17 +606,18 @@ export function GroupRolesDialog({
                                     {t(`${I18N}.new_role`)}
                                 </Button>
                             ) : null}
-                            <Button
-                                type="button"
-                                size="icon-sm"
-                                variant="ghost"
-                                className="ml-auto"
-                                aria-label={t('common.actions.refresh')}
-                                disabled={loading || saving}
-                                onClick={() => void load()}
-                            >
-                                {loading ? <Spinner /> : <RefreshCwIcon />}
-                            </Button>
+                            <HintTooltip label={t('common.actions.refresh')}>
+                                <Button
+                                    type="button"
+                                    size="icon-sm"
+                                    variant="ghost"
+                                    className="ml-auto"
+                                    disabled={loading || saving}
+                                    onClick={() => void load()}
+                                >
+                                    {loading ? <Spinner /> : <RefreshCwIcon />}
+                                </Button>
+                            </HintTooltip>
                         </div>
                         <ScrollArea className="min-h-0 flex-1">
                             {sortedRoles.length ? (

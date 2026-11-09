@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useScreenshotShareStore } from '@/state/screenshotShareStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -88,22 +89,21 @@ export function ScreenshotShareMenu({
                     </TooltipContent>
                 </Tooltip>
                 <DropdownMenu>
-                    <DropdownMenuTrigger
-                        render={
-                            <Button
-                                type="button"
-                                size="icon-sm"
-                                variant="ghost"
-                                className="rounded-l-none"
-                                disabled={disabled || sending}
-                                aria-label={t(
-                                    'view.tools.screenshot_share.more'
-                                )}
-                            >
-                                <ChevronUpIcon />
-                            </Button>
-                        }
-                    />
+                    <HintTooltip label={t('view.tools.screenshot_share.more')}>
+                        <DropdownMenuTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    size="icon-sm"
+                                    variant="ghost"
+                                    className="rounded-l-none"
+                                    disabled={disabled || sending}
+                                >
+                                    <ChevronUpIcon />
+                                </Button>
+                            }
+                        />
+                    </HintTooltip>
                     <DropdownMenuContent
                         side="top"
                         align="end"

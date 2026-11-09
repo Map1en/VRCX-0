@@ -11,6 +11,7 @@ import {
 } from '@/components/data-table/DataTableView';
 import { formatDateFilter } from '@/lib/dateTime';
 import { useRuntimeStore } from '@/state/runtimeStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
@@ -221,30 +222,31 @@ export function useModerationColumns({
                     }
                     return (
                         <div className="flex justify-end">
-                            <Button
-                                type="button"
-                                size="icon-xs"
-                                variant="ghost"
-                                className="text-muted-foreground hover:text-foreground"
-                                aria-label={t('common.actions.delete')}
-                                disabled={isDeleting}
-                                onClick={() =>
-                                    onDeleteModeration(original, {
-                                        skipConfirm: shiftHeld
-                                    })
-                                }
-                            >
-                                {isDeleting ? (
-                                    <Spinner data-icon="inline-start" />
-                                ) : shiftHeld ? (
-                                    <XIcon
-                                        data-icon="inline-start"
-                                        className="text-destructive"
-                                    />
-                                ) : (
-                                    <Trash2Icon data-icon="inline-start" />
-                                )}
-                            </Button>
+                            <HintTooltip label={t('common.actions.delete')}>
+                                <Button
+                                    type="button"
+                                    size="icon-xs"
+                                    variant="ghost"
+                                    className="text-muted-foreground hover:text-foreground"
+                                    disabled={isDeleting}
+                                    onClick={() =>
+                                        onDeleteModeration(original, {
+                                            skipConfirm: shiftHeld
+                                        })
+                                    }
+                                >
+                                    {isDeleting ? (
+                                        <Spinner data-icon="inline-start" />
+                                    ) : shiftHeld ? (
+                                        <XIcon
+                                            data-icon="inline-start"
+                                            className="text-destructive"
+                                        />
+                                    ) : (
+                                        <Trash2Icon data-icon="inline-start" />
+                                    )}
+                                </Button>
+                            </HintTooltip>
                         </div>
                     );
                 }

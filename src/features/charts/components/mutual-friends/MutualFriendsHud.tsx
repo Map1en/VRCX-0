@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { MutualFriendsFetchProgress } from '@/lib/mutual-friends/mutualFriendsTypes';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
@@ -141,16 +142,17 @@ export function MutualFriendsHud({
             </div>
 
             <MutualFriendsSurface className="pointer-events-auto ml-auto flex items-center gap-1 p-1.5">
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={t('common.actions.refresh')}
-                    disabled={isReloading}
-                    onClick={onRefreshPage}
-                >
-                    {isReloading ? <Spinner /> : <RefreshCcwIcon />}
-                </Button>
+                <HintTooltip label={t('common.actions.refresh')}>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        disabled={isReloading}
+                        onClick={onRefreshPage}
+                    >
+                        {isReloading ? <Spinner /> : <RefreshCcwIcon />}
+                    </Button>
+                </HintTooltip>
                 {settingsSlot}
             </MutualFriendsSurface>
         </div>

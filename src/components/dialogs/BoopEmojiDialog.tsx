@@ -33,6 +33,7 @@ import {
 } from '@/shared/constants/selectableTile';
 import { vrchatDefaultEmojis } from '@/shared/constants/vrchatDefaultEmojis';
 import { isRecord } from '@/shared/utils/record';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -454,17 +455,21 @@ export function BoopEmojiDialog({
                                 </TabsTrigger>
                             </TabsList>
                             {refreshable ? (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="icon-sm"
-                                    aria-label={t('common.actions.refresh')}
-                                    title={t('common.actions.refresh')}
-                                    disabled={refreshable.loading || sending}
-                                    onClick={refreshable.load}
+                                <HintTooltip
+                                    label={t('common.actions.refresh')}
                                 >
-                                    <RefreshCcwIcon />
-                                </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon-sm"
+                                        disabled={
+                                            refreshable.loading || sending
+                                        }
+                                        onClick={refreshable.load}
+                                    >
+                                        <RefreshCcwIcon />
+                                    </Button>
+                                </HintTooltip>
                             ) : null}
                         </div>
                         {recent.rows.length ? (

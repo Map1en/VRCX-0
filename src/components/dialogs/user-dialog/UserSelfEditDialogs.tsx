@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { UserStatus } from '@/platform/tauri/bindings';
 import { userStatusIndicatorClassName } from '@/shared/utils/userStatus';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -130,36 +131,42 @@ function UserSocialStatusDialog({
                             />
                             <InputGroupAddon align="inline-end">
                                 {draft.statusDescription ? (
-                                    <InputGroupButton
-                                        size="icon-xs"
-                                        disabled={busy}
-                                        aria-label={t(
+                                    <HintTooltip
+                                        label={t(
                                             'dialog.user.description.clear_status_description'
                                         )}
-                                        onClick={() => {
-                                            setDraft((current) => ({
-                                                ...current,
-                                                statusDescription: ''
-                                            }));
-                                        }}
                                     >
-                                        <XIcon data-icon="inline-start" />
-                                    </InputGroupButton>
+                                        <InputGroupButton
+                                            size="icon-xs"
+                                            disabled={busy}
+                                            onClick={() => {
+                                                setDraft((current) => ({
+                                                    ...current,
+                                                    statusDescription: ''
+                                                }));
+                                            }}
+                                        >
+                                            <XIcon data-icon="inline-start" />
+                                        </InputGroupButton>
+                                    </HintTooltip>
                                 ) : null}
                                 <DropdownMenu>
-                                    <DropdownMenuTrigger
-                                        render={
-                                            <InputGroupButton
-                                                size="icon-xs"
-                                                disabled={busy}
-                                                aria-label={t(
-                                                    'dialog.user.label.status_history'
-                                                )}
-                                            >
-                                                <HistoryIcon data-icon="inline-start" />
-                                            </InputGroupButton>
-                                        }
-                                    />
+                                    <HintTooltip
+                                        label={t(
+                                            'dialog.user.label.status_history'
+                                        )}
+                                    >
+                                        <DropdownMenuTrigger
+                                            render={
+                                                <InputGroupButton
+                                                    size="icon-xs"
+                                                    disabled={busy}
+                                                >
+                                                    <HistoryIcon data-icon="inline-start" />
+                                                </InputGroupButton>
+                                            }
+                                        />
+                                    </HintTooltip>
                                     <DropdownMenuContent
                                         align="end"
                                         className="max-w-72"
@@ -324,21 +331,24 @@ function UserSocialStatusDialog({
                                                     {label}
                                                 </span>
                                             </Button>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="icon-xs"
-                                                className="shrink-0 rounded-l-none"
-                                                disabled={busy}
-                                                aria-label={t(
+                                            <HintTooltip
+                                                label={t(
                                                     'accessibility.remove_status_preset'
                                                 )}
-                                                onClick={() =>
-                                                    onRemovePreset(index)
-                                                }
                                             >
-                                                <XIcon data-icon="inline-start" />
-                                            </Button>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="icon-xs"
+                                                    className="shrink-0 rounded-l-none"
+                                                    disabled={busy}
+                                                    onClick={() =>
+                                                        onRemovePreset(index)
+                                                    }
+                                                >
+                                                    <XIcon data-icon="inline-start" />
+                                                </Button>
+                                            </HintTooltip>
                                         </div>
                                     );
                                 })}

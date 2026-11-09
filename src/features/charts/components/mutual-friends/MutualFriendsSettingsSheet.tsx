@@ -10,6 +10,7 @@ import type {
     MutualFriendsLayoutSettings
 } from '@/lib/mutual-friends/mutualFriendsTypes';
 import { preserveAppTitleBarOnOpenChange } from '@/lib/overlayTitlebar';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Separator } from '@/ui/shadcn/separator';
 import {
@@ -71,20 +72,15 @@ export function MutualFriendsSettingsSheet({
                 preserveAppTitleBarOnOpenChange(open, eventDetails);
             }}
         >
-            <SheetTrigger
-                render={
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={t(
-                            'view.charts.mutual_friend.settings.title'
-                        )}
-                    >
-                        <Settings2Icon />
-                    </Button>
-                }
-            />
+            <HintTooltip label={t('view.charts.mutual_friend.settings.title')}>
+                <SheetTrigger
+                    render={
+                        <Button type="button" variant="ghost" size="icon-sm">
+                            <Settings2Icon />
+                        </Button>
+                    }
+                />
+            </HintTooltip>
             <SheetContent
                 side="right"
                 variant="inset"

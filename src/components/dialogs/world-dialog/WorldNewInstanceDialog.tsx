@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { WorldProfileRecord } from '@/domain/entities/world';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
@@ -625,18 +626,19 @@ export function WorldNewInstanceDialog({
                                         />
                                         {displayNamePresets.length ? (
                                             <InputGroupAddon align="inline-end">
-                                                <PopoverTrigger
-                                                    render={
-                                                        <InputGroupButton
-                                                            size="icon-xs"
-                                                            aria-label={t(
-                                                                'dialog.new_instance.display_name'
-                                                            )}
-                                                        >
-                                                            <ChevronDownIcon data-icon="inline-start" />
-                                                        </InputGroupButton>
-                                                    }
-                                                />
+                                                <HintTooltip
+                                                    label={t(
+                                                        'dialog.new_instance.display_name'
+                                                    )}
+                                                >
+                                                    <PopoverTrigger
+                                                        render={
+                                                            <InputGroupButton size="icon-xs">
+                                                                <ChevronDownIcon data-icon="inline-start" />
+                                                            </InputGroupButton>
+                                                        }
+                                                    />
+                                                </HintTooltip>
                                             </InputGroupAddon>
                                         ) : null}
                                     </InputGroup>

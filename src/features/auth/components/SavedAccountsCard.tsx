@@ -7,6 +7,7 @@ import type {
 } from '@/repositories/authRepository';
 import { partitionSavedAccounts } from '@/services/accountSwitchService';
 import { userImage } from '@/services/entityMediaService';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/ui/shadcn/card';
@@ -68,6 +69,9 @@ export function SavedAccountsCard({
         );
         const isRelogging = Boolean(userId && activeSavedUserId === userId);
         const avatarUrl = userImage(entry.user, 64);
+        const removeLabel = t('view.login.saved_account_remove.description', {
+            name: getUserDisplayName(entry.user)
+        });
 
         return (
             <div key={userId || index} className="flex items-center gap-2">
@@ -113,24 +117,20 @@ export function SavedAccountsCard({
                         </span>
                     )}
                 </Button>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={t(
-                        'view.login.saved_account_remove.description',
-                        {
-                            name: getUserDisplayName(entry.user)
-                        }
-                    )}
-                    disabled={isDeleting || isAuthBusy}
-                    onClick={() => {
-                        onCancelAutoLogin();
-                        onDeleteStart(entry);
-                    }}
-                >
-                    <Trash2Icon data-icon="inline-start" />
-                </Button>
+                <HintTooltip label={removeLabel}>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        disabled={isDeleting || isAuthBusy}
+                        onClick={() => {
+                            onCancelAutoLogin();
+                            onDeleteStart(entry);
+                        }}
+                    >
+                        <Trash2Icon data-icon="inline-start" />
+                    </Button>
+                </HintTooltip>
             </div>
         );
     }

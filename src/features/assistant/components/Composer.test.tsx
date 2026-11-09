@@ -37,7 +37,9 @@ describe('Composer', () => {
         const input = screen.getByPlaceholderText(
             'Write a message'
         ) as HTMLTextAreaElement;
-        const send = screen.getByTitle('Send') as HTMLButtonElement;
+        const send = screen.getByRole('button', {
+            name: 'Send'
+        }) as HTMLButtonElement;
 
         expect(send.disabled).toBe(true);
         fireEvent.change(input, { target: { value: '   ' } });
@@ -105,7 +107,7 @@ describe('Composer', () => {
         const onStop = vi.fn();
         render(<Composer busy disabled onSend={vi.fn()} onStop={onStop} />);
 
-        expect(screen.queryByTitle('Send')).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Send' })).toBeNull();
         expect(
             (
                 screen.getByPlaceholderText(
@@ -114,7 +116,9 @@ describe('Composer', () => {
             ).disabled
         ).toBe(true);
 
-        const stop = screen.getByTitle('Stop') as HTMLButtonElement;
+        const stop = screen.getByRole('button', {
+            name: 'Stop'
+        }) as HTMLButtonElement;
         expect(stop.disabled).toBe(false);
         fireEvent.click(stop);
         expect(onStop).toHaveBeenCalledOnce();

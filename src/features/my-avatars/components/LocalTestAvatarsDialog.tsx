@@ -11,6 +11,7 @@ import { toast } from '@/services/toastService';
 import { formatBytes } from '@/shared/utils/formatBytes';
 import { useModalStore } from '@/state/modalStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     Dialog,
@@ -211,22 +212,23 @@ function LocalTestAvatarsDialogBody() {
                                         .join(' · ')}
                                 </span>
                             </div>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                aria-label={t('common.actions.delete')}
-                                disabled={Boolean(deletingFileName)}
-                                onClick={() => {
-                                    void handleDelete(avatar);
-                                }}
-                            >
-                                {deletingFileName === avatar.fileName ? (
-                                    <Spinner />
-                                ) : (
-                                    <Trash2Icon />
-                                )}
-                            </Button>
+                            <HintTooltip label={t('common.actions.delete')}>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    disabled={Boolean(deletingFileName)}
+                                    onClick={() => {
+                                        void handleDelete(avatar);
+                                    }}
+                                >
+                                    {deletingFileName === avatar.fileName ? (
+                                        <Spinner />
+                                    ) : (
+                                        <Trash2Icon />
+                                    )}
+                                </Button>
+                            </HintTooltip>
                         </li>
                     ))}
                 </ul>

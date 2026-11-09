@@ -15,6 +15,7 @@ import {
     selectMarkAllSeenRowState,
     useVrcNotificationStore
 } from '@/state/vrcNotificationStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -164,6 +165,7 @@ export function NotificationDrawerRow({
     const showDelete = Boolean(shouldShowDeleteLog(notification));
     const hasMenu =
         showMenuMarkRead || overflowActions.length > 0 || showDelete;
+    const moreActionsLabel = t('side_panel.notification_center.more_actions');
 
     const countdownMs = useExpiryCountdown(
         notification?.expiresAt,
@@ -313,20 +315,21 @@ export function NotificationDrawerRow({
                                 >
                                     {hasMenu ? (
                                         <DropdownMenu>
-                                            <DropdownMenuTrigger
-                                                render={
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon-xs"
-                                                        aria-label={t(
-                                                            'side_panel.notification_center.more_actions'
-                                                        )}
-                                                    >
-                                                        <MoreHorizontalIcon data-icon="icon" />
-                                                    </Button>
-                                                }
-                                            />
+                                            <HintTooltip
+                                                label={moreActionsLabel}
+                                            >
+                                                <DropdownMenuTrigger
+                                                    render={
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon-xs"
+                                                        >
+                                                            <MoreHorizontalIcon data-icon="icon" />
+                                                        </Button>
+                                                    }
+                                                />
+                                            </HintTooltip>
                                             <DropdownMenuContent
                                                 align="end"
                                                 className="w-56"

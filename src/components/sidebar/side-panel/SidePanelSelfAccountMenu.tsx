@@ -21,6 +21,7 @@ import { userImage } from '@/services/entityMediaService';
 import { requestPrivacyLock } from '@/services/privacyLockService';
 import { toast } from '@/services/toastService';
 import { useRuntimeStore } from '@/state/runtimeStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -164,19 +165,20 @@ export function SidePanelSelfAccountMenu() {
 
     return (
         <DropdownMenu open={open} onOpenChange={setOpen}>
-            <DropdownMenuTrigger
-                render={
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={t('side_panel.self_more_actions')}
-                        className="text-muted-foreground shrink-0"
-                    >
-                        <MoreHorizontalIcon />
-                    </Button>
-                }
-            />
+            <HintTooltip label={t('side_panel.self_more_actions')}>
+                <DropdownMenuTrigger
+                    render={
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            className="text-muted-foreground shrink-0"
+                        >
+                            <MoreHorizontalIcon />
+                        </Button>
+                    }
+                />
+            </HintTooltip>
             <DropdownMenuContent align="end" className="w-64">
                 <DropdownMenuGroup>
                     <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">

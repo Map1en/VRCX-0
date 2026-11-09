@@ -15,6 +15,7 @@ import type {
     MutualFriendNode
 } from '@/lib/mutual-friends/mutualFriendsTypes';
 import { userImage } from '@/services/entityMediaService';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
 
@@ -46,16 +47,17 @@ export function MutualFriendsNodeCard({
 
     return (
         <MutualFriendsSurface className="animate-in fade-in-0 slide-in-from-bottom-2 pointer-events-auto absolute right-3 bottom-3 z-10 w-72 p-3 duration-200 ease-out">
-            <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                className="absolute top-2 right-2 size-6"
-                aria-label={t('common.actions.close')}
-                onClick={onClose}
-            >
-                <XIcon className="size-3.5" />
-            </Button>
+            <HintTooltip label={t('common.actions.close')}>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="absolute top-2 right-2 size-6"
+                    onClick={onClose}
+                >
+                    <XIcon className="size-3.5" />
+                </Button>
+            </HintTooltip>
 
             <div className="flex items-center gap-3 pr-6">
                 <span className="bg-muted flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full border">
@@ -117,27 +119,31 @@ export function MutualFriendsNodeCard({
                 >
                     {t('view.charts.mutual_friend.actions.open_profile')}
                 </Button>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="icon-sm"
-                    aria-label={t('common.actions.refresh')}
-                    disabled={isRefreshing}
-                    onClick={onRefresh}
-                >
-                    {isRefreshing ? <Spinner /> : <RefreshCcwIcon />}
-                </Button>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="icon-sm"
-                    aria-label={t(
+                <HintTooltip label={t('common.actions.refresh')}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon-sm"
+                        disabled={isRefreshing}
+                        onClick={onRefresh}
+                    >
+                        {isRefreshing ? <Spinner /> : <RefreshCcwIcon />}
+                    </Button>
+                </HintTooltip>
+                <HintTooltip
+                    label={t(
                         'view.charts.mutual_friend.actions.hide_from_graph'
                     )}
-                    onClick={onHide}
                 >
-                    <EyeOffIcon />
-                </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon-sm"
+                        onClick={onHide}
+                    >
+                        <EyeOffIcon />
+                    </Button>
+                </HintTooltip>
             </div>
         </MutualFriendsSurface>
     );

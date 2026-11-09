@@ -26,6 +26,7 @@ import { FadeInImage } from '@/components/media/FadeInImage';
 import { cn } from '@/lib/utils';
 import { openAvatarDialog } from '@/services/dialogService';
 import { getAvailablePlatforms } from '@/shared/utils/avatarPlatform';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -340,30 +341,30 @@ export function AvatarActionsDropdown({
     const { t } = useTranslation();
 
     const disabled = resolveMyAvatarActionDisabled(avatar, isUpdating);
+    const avatarActionsLabel = t('view.my_avatars.action.open_avatar_actions');
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger
-                render={
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-xs"
-                        aria-label={t(
-                            'view.my_avatars.action.open_avatar_actions'
-                        )}
-                        disabled={isUpdating}
-                        onPointerDown={(event) => event.stopPropagation()}
-                        onClick={(event) => event.stopPropagation()}
-                    >
-                        {isUpdating ? (
-                            <Spinner data-icon="inline-start" />
-                        ) : (
-                            <MoreHorizontalIcon data-icon="inline-start" />
-                        )}
-                    </Button>
-                }
-            />
+            <HintTooltip label={avatarActionsLabel}>
+                <DropdownMenuTrigger
+                    render={
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-xs"
+                            disabled={isUpdating}
+                            onPointerDown={(event) => event.stopPropagation()}
+                            onClick={(event) => event.stopPropagation()}
+                        >
+                            {isUpdating ? (
+                                <Spinner data-icon="inline-start" />
+                            ) : (
+                                <MoreHorizontalIcon data-icon="inline-start" />
+                            )}
+                        </Button>
+                    }
+                />
+            </HintTooltip>
             <DropdownMenuContent
                 align="end"
                 className="bg-popover! w-max max-w-[90vw] min-w-52"

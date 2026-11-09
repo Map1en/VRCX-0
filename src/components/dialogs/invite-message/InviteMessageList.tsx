@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
 import { toast } from '@/services/toastService';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Alert, AlertDescription } from '@/ui/shadcn/alert';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
@@ -196,6 +197,10 @@ export function InviteMessageList({
 
                 const cooldown = cooldownLabel(row);
                 const selected = selectedSlot === row.slot;
+                const editSlotLabel = t(
+                    'dialog.invite_message.dynamic.edit_slot_value',
+                    { value: row.slot }
+                );
                 return (
                     <li
                         key={row.slot}
@@ -233,20 +238,18 @@ export function InviteMessageList({
                                 {cooldown}
                             </span>
                         ) : allowEdit ? (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-xs"
-                                className="shrink-0 opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100"
-                                disabled={disabled}
-                                aria-label={t(
-                                    'dialog.invite_message.dynamic.edit_slot_value',
-                                    { value: row.slot }
-                                )}
-                                onClick={() => beginEdit(row)}
-                            >
-                                <PencilIcon />
-                            </Button>
+                            <HintTooltip label={editSlotLabel}>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    className="shrink-0 opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100"
+                                    disabled={disabled}
+                                    onClick={() => beginEdit(row)}
+                                >
+                                    <PencilIcon />
+                                </Button>
+                            </HintTooltip>
                         ) : null}
                         {onSelect ? (
                             <span className="flex h-6 w-4 shrink-0 items-center">

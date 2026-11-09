@@ -30,6 +30,7 @@ import { useFeedLiveStore } from '@/state/feedLiveStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { usePreferencesStore } from '@/state/preferencesStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -365,18 +366,15 @@ export function DashboardFeedWidget({
     const showType = Boolean(config.showType);
     const settingsMenu = configUpdater ? (
         <DropdownMenu>
-            <DropdownMenuTrigger
-                render={
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={'Widget settings'}
-                    >
-                        <SettingsIcon data-icon="inline-start" />
-                    </Button>
-                }
-            />
+            <HintTooltip label={t('common.actions.configure')}>
+                <DropdownMenuTrigger
+                    render={
+                        <Button type="button" variant="ghost" size="icon-sm">
+                            <SettingsIcon data-icon="inline-start" />
+                        </Button>
+                    }
+                />
+            </HintTooltip>
             <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuGroup>
                     {FEED_FILTER_TYPES.map((filterType) => (

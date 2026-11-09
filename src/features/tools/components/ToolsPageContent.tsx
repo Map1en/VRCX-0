@@ -44,6 +44,7 @@ import { useRouteScrollMemory } from '@/lib/useRouteScrollMemory';
 import { cn } from '@/lib/utils';
 import type { ToolDefinition } from '@/shared/constants/tools';
 import { useNavigationCacheStore } from '@/state/navigationCacheStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -194,32 +195,32 @@ function ToolEditQuickAccessButton({
 >) {
     const isEditRemoveAction = editQuickAccessAction === 'remove';
     const EditQuickAccessIcon = isEditRemoveAction ? MinusIcon : PlusIcon;
+    const editQuickAccessLabel = isEditRemoveAction
+        ? removeQuickAccessLabel
+        : addQuickAccessLabel;
     return (
-        <Button
-            type="button"
-            size="icon-xs"
-            variant="secondary"
-            className="relative size-6"
-            aria-label={
-                isEditRemoveAction
-                    ? removeQuickAccessLabel
-                    : addQuickAccessLabel
-            }
-            onPointerDown={(event) => {
-                event.stopPropagation();
-            }}
-            onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                if (isEditRemoveAction) {
-                    onRemoveQuickAccess();
-                } else {
-                    onAddQuickAccess();
-                }
-            }}
-        >
-            <EditQuickAccessIcon data-icon="inline-start" />
-        </Button>
+        <HintTooltip label={editQuickAccessLabel}>
+            <Button
+                type="button"
+                size="icon-xs"
+                variant="secondary"
+                className="relative size-6"
+                onPointerDown={(event) => {
+                    event.stopPropagation();
+                }}
+                onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (isEditRemoveAction) {
+                        onRemoveQuickAccess();
+                    } else {
+                        onAddQuickAccess();
+                    }
+                }}
+            >
+                <EditQuickAccessIcon data-icon="inline-start" />
+            </Button>
+        </HintTooltip>
     );
 }
 
@@ -249,23 +250,24 @@ function ToolActionsMenu({
 >) {
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger
-                render={
-                    <Button
-                        type="button"
-                        size="icon-xs"
-                        className="text-muted-foreground invisible relative size-6 group-hover/tool:visible group-has-[:focus-visible]/tool:visible aria-expanded:visible"
-                        variant="ghost"
-                        aria-label={actionsLabel}
-                        onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                        }}
-                    >
-                        <MoreHorizontalIcon data-icon="inline-start" />
-                    </Button>
-                }
-            />
+            <HintTooltip label={actionsLabel}>
+                <DropdownMenuTrigger
+                    render={
+                        <Button
+                            type="button"
+                            size="icon-xs"
+                            className="text-muted-foreground invisible relative size-6 group-hover/tool:visible group-has-[:focus-visible]/tool:visible aria-expanded:visible"
+                            variant="ghost"
+                            onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                            }}
+                        >
+                            <MoreHorizontalIcon data-icon="inline-start" />
+                        </Button>
+                    }
+                />
+            </HintTooltip>
             <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuCheckboxItem
                     checked={isQuickAccess}

@@ -25,6 +25,7 @@ import type {
     ChatboxPage,
     ChatboxPageLine
 } from '@/platform/tauri/bindings';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     Card,
@@ -303,22 +304,22 @@ function ChatboxPageBody({
                         )
                     }
                 />
-                <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={t('view.tools.chatbox.pages.remove_page')}
-                    title={t('view.tools.chatbox.pages.remove_page')}
-                    onClick={() =>
-                        onUpdate((current) => ({
-                            ...current,
-                            pages: current.pages.filter(
-                                (candidate) => candidate.id !== page.id
-                            )
-                        }))
-                    }
-                >
-                    <Trash2Icon />
-                </Button>
+                <HintTooltip label={t('view.tools.chatbox.pages.remove_page')}>
+                    <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() =>
+                            onUpdate((current) => ({
+                                ...current,
+                                pages: current.pages.filter(
+                                    (candidate) => candidate.id !== page.id
+                                )
+                            }))
+                        }
+                    >
+                        <Trash2Icon />
+                    </Button>
+                </HintTooltip>
             </div>
             {page.lines.length ? (
                 <DndContext
@@ -418,16 +419,16 @@ function ChatboxLineRow({
                 presetSamples={presetSamples}
                 onUpdate={onUpdate}
             />
-            <Button
-                variant="ghost"
-                size="icon-sm"
-                className="mt-[5px]"
-                aria-label={t('view.tools.chatbox.pages.remove_line')}
-                title={t('view.tools.chatbox.pages.remove_line')}
-                onClick={() => onUpdate(() => null)}
-            >
-                <XIcon />
-            </Button>
+            <HintTooltip label={t('view.tools.chatbox.pages.remove_line')}>
+                <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="mt-[5px]"
+                    onClick={() => onUpdate(() => null)}
+                >
+                    <XIcon />
+                </Button>
+            </HintTooltip>
         </>
     );
 }

@@ -8,6 +8,7 @@ import {
     readFileAsBase64,
     validateImageUploadFile
 } from '@/shared/utils/imageUpload';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Alert, AlertDescription } from '@/ui/shadcn/alert';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -60,19 +61,20 @@ type InviteMessageTemplatesDialogProps = {
 function RefreshButton({ messages }: { messages: InviteMessagesState }) {
     const { t } = useTranslation();
     return (
-        <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            className="absolute top-2 right-10"
-            disabled={messages.loading}
-            aria-label={t('common.actions.refresh')}
-            onClick={() => {
-                messages.reload();
-            }}
-        >
-            <RefreshCcwIcon />
-        </Button>
+        <HintTooltip label={t('common.actions.refresh')}>
+            <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="absolute top-2 right-10"
+                disabled={messages.loading}
+                onClick={() => {
+                    messages.reload();
+                }}
+            >
+                <RefreshCcwIcon />
+            </Button>
+        </HintTooltip>
     );
 }
 

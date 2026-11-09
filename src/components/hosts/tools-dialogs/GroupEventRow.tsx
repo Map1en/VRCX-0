@@ -31,6 +31,7 @@ import type {
     GroupCalendarEventRecord,
     GroupCalendarGroupRecord
 } from '@/repositories/vrchatToolsRepository';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -77,6 +78,9 @@ export function GroupEventRow({
     const [chipsExpanded, setChipsExpanded] = useState(false);
     const event = events[Math.min(selectedIndex, events.length - 1)];
     const isFollowing = followingIds.has(getEventId(event));
+    const followLabel = isFollowing
+        ? t('dialog.tools.label.unfollow_event')
+        : t('dialog.tools.label.follow_event');
     const isSeries = events.length > 1;
     const weeklyStart = isSeries ? weeklySlotStart(events) : null;
     const timeLabel = weeklyStart
@@ -253,38 +257,36 @@ export function GroupEventRow({
                     onClick={(clickEvent) => clickEvent.stopPropagation()}
                     onKeyDown={(keyEvent) => keyEvent.stopPropagation()}
                 >
-                    <Button
-                        type="button"
-                        size="icon-xs"
-                        variant="secondary"
-                        aria-label={
-                            isFollowing
-                                ? t('dialog.tools.label.unfollow_event')
-                                : t('dialog.tools.label.follow_event')
-                        }
-                        aria-pressed={isFollowing}
-                        onClick={() => onToggleFollow(event)}
-                    >
-                        <StarIcon
-                            className={cn(
-                                isFollowing &&
-                                    'fill-current text-[var(--status-askme)]'
-                            )}
-                        />
-                    </Button>
+                    <HintTooltip label={followLabel}>
+                        <Button
+                            type="button"
+                            size="icon-xs"
+                            variant="secondary"
+                            aria-pressed={isFollowing}
+                            onClick={() => onToggleFollow(event)}
+                        >
+                            <StarIcon
+                                className={cn(
+                                    isFollowing &&
+                                        'fill-current text-[var(--status-askme)]'
+                                )}
+                            />
+                        </Button>
+                    </HintTooltip>
                     <DropdownMenu>
-                        <DropdownMenuTrigger
-                            render={
-                                <Button
-                                    type="button"
-                                    size="icon-xs"
-                                    variant="secondary"
-                                    aria-label={t('accessibility.more')}
-                                >
-                                    <EllipsisIcon />
-                                </Button>
-                            }
-                        />
+                        <HintTooltip label={t('accessibility.more')}>
+                            <DropdownMenuTrigger
+                                render={
+                                    <Button
+                                        type="button"
+                                        size="icon-xs"
+                                        variant="secondary"
+                                    >
+                                        <EllipsisIcon />
+                                    </Button>
+                                }
+                            />
+                        </HintTooltip>
                         <DropdownMenuContent align="end" className="w-48">
                             <DropdownMenuItem
                                 onClick={() => {

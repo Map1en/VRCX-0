@@ -14,6 +14,7 @@ import type { SessionSummary } from '@/domain/assistant/types';
 import { useTodayDate } from '@/lib/useTodayDate';
 import { cn } from '@/lib/utils';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -111,13 +112,11 @@ function SessionRow({
             )}
             {!editing && (
                 <DropdownMenu>
-                    <DropdownMenuTrigger
-                        className="text-muted-foreground hover:text-foreground data-popup-open:text-foreground mr-1.5 flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 data-popup-open:opacity-100"
-                        title={t('assistant.session_menu.more')}
-                        aria-label={t('assistant.session_menu.more')}
-                    >
-                        <MoreHorizontalIcon className="size-4" />
-                    </DropdownMenuTrigger>
+                    <HintTooltip label={t('assistant.session_menu.more')}>
+                        <DropdownMenuTrigger className="text-muted-foreground hover:text-foreground data-popup-open:text-foreground mr-1.5 flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 data-popup-open:opacity-100">
+                            <MoreHorizontalIcon className="size-4" />
+                        </DropdownMenuTrigger>
+                    </HintTooltip>
                     <DropdownMenuContent
                         align="start"
                         className="w-40"

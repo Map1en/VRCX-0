@@ -8,6 +8,7 @@ import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useVrcNotificationStore } from '@/state/vrcNotificationStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     ContextMenu,
@@ -79,7 +80,9 @@ function DashboardEntryAction({
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger render={trigger} />
+            <HintTooltip label={t('accessibility.more')}>
+                <DropdownMenuTrigger render={trigger} />
+            </HintTooltip>
             <DropdownMenuContent side="right" align="start" className="w-48">
                 {isDashboard ? (
                     <>

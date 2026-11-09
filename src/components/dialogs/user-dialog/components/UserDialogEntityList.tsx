@@ -20,6 +20,7 @@ import {
 import { useNowMs } from '@/lib/useNowMs';
 import { cn } from '@/lib/utils';
 import { userStatusLabel } from '@/shared/utils/userStatus';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 
 import { groupIdForRow } from '../userDialogGroupRows';
@@ -159,12 +160,18 @@ export function EntityList({
                             displayName={label || '\u2014'}
                             namePrefix={
                                 isInstanceCreator ? (
-                                    <CrownIcon
-                                        className="text-muted-foreground size-3.5 shrink-0"
-                                        aria-label={t(
+                                    <HintTooltip
+                                        label={t(
                                             'dialog.user.info.instance_creator'
                                         )}
-                                    />
+                                    >
+                                        <span
+                                            role="img"
+                                            className="inline-flex shrink-0"
+                                        >
+                                            <CrownIcon className="text-muted-foreground size-3.5 shrink-0" />
+                                        </span>
+                                    </HintTooltip>
                                 ) : undefined
                             }
                             nameStyle={

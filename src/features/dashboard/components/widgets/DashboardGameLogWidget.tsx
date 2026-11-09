@@ -26,6 +26,7 @@ import { normalizeString } from '@/shared/utils/string';
 import { useFavoriteStore } from '@/state/favoriteStore';
 import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     DropdownMenu,
@@ -380,18 +381,15 @@ export function DashboardGameLogWidget({
     const showDetail = Boolean(config.showDetail);
     const settingsMenu = configUpdater ? (
         <DropdownMenu>
-            <DropdownMenuTrigger
-                render={
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={'Widget settings'}
-                    >
-                        <SettingsIcon data-icon="inline-start" />
-                    </Button>
-                }
-            />
+            <HintTooltip label={t('common.actions.configure')}>
+                <DropdownMenuTrigger
+                    render={
+                        <Button type="button" variant="ghost" size="icon-sm">
+                            <SettingsIcon data-icon="inline-start" />
+                        </Button>
+                    }
+                />
+            </HintTooltip>
             <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuGroup>
                     {GAME_LOG_FILTER_TYPES.map((filterType) => (

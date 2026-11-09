@@ -2,6 +2,7 @@ import { RefreshCwIcon } from 'lucide-react';
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 import { Spinner } from '@/ui/shadcn/spinner';
@@ -43,25 +44,26 @@ export function UserDialogSearchHeader<TSearch extends Record<string, string>>({
         <div className="flex min-w-0 flex-wrap items-center gap-2">
             <div className="flex min-w-0 items-center gap-2">
                 {tab ? (
-                    <Button
-                        type="button"
-                        size="icon-sm"
-                        variant="outline"
-                        disabled={running}
-                        aria-label={t('common.actions.refresh')}
-                        onClick={() => {
-                            loadTab(tab, { force: true });
-                        }}
-                    >
-                        {running ? (
-                            <Spinner data-icon="inline-start" />
-                        ) : (
-                            <RefreshCwIcon data-icon="inline-start" />
-                        )}
-                        <span className="sr-only">
-                            {t('common.actions.refresh')}
-                        </span>
-                    </Button>
+                    <HintTooltip label={t('common.actions.refresh')}>
+                        <Button
+                            type="button"
+                            size="icon-sm"
+                            variant="outline"
+                            disabled={running}
+                            onClick={() => {
+                                loadTab(tab, { force: true });
+                            }}
+                        >
+                            {running ? (
+                                <Spinner data-icon="inline-start" />
+                            ) : (
+                                <RefreshCwIcon data-icon="inline-start" />
+                            )}
+                            <span className="sr-only">
+                                {t('common.actions.refresh')}
+                            </span>
+                        </Button>
+                    </HintTooltip>
                 ) : null}
                 {hasSearch ? (
                     <div className="text-muted-foreground min-w-0 text-sm tabular-nums">

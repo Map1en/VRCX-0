@@ -8,6 +8,7 @@ import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import vrchatEconomyRepository, {
     type EconomyListingRecord
 } from '@/repositories/vrchatEconomyRepository';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 
@@ -52,16 +53,17 @@ export function EconomyStoreListings({ storeId }: { storeId: string }) {
                 <span className="text-muted-foreground text-xs">
                     {t('economy.store_read_only_hint')}
                 </span>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={t('common.actions.refresh')}
-                    disabled={state.status === 'loading'}
-                    onClick={() => setRefreshToken((value) => value + 1)}
-                >
-                    <RefreshCwIcon />
-                </Button>
+                <HintTooltip label={t('common.actions.refresh')}>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        disabled={state.status === 'loading'}
+                        onClick={() => setRefreshToken((value) => value + 1)}
+                    >
+                        <RefreshCwIcon />
+                    </Button>
+                </HintTooltip>
             </div>
             {state.status === 'loading' ? (
                 <LoadingState variant="panel" />

@@ -10,6 +10,7 @@ import {
     DATA_TABLE_PRIMARY_CELL_CLASS_NAME
 } from '@/components/data-table/DataTableView';
 import { TimestampText } from '@/components/data-table/TimestampText';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Spinner } from '@/ui/shadcn/spinner';
 
@@ -163,35 +164,36 @@ export function FriendLogDeleteAction({
     const rowKey = getFriendLogRowKey(row, rowsOwnerUserId);
     return (
         <div className="flex justify-end">
-            <Button
-                type="button"
-                size="icon-xs"
-                variant="ghost"
-                className="text-muted-foreground hover:text-foreground"
-                aria-label={t('common.actions.delete')}
-                disabled={
-                    !currentUserId ||
-                    rowsOwnerUserId !== normalizeUserId(currentUserId) ||
-                    loadStatus === 'running' ||
-                    deletingRowKey === rowKey
-                }
-                onClick={(event) =>
-                    handleDeleteRow(row, {
-                        skipConfirm: shiftHeld || event.shiftKey
-                    })
-                }
-            >
-                {deletingRowKey === rowKey ? (
-                    <Spinner data-icon="inline-start" />
-                ) : shiftHeld ? (
-                    <XIcon
-                        data-icon="inline-start"
-                        className="text-destructive"
-                    />
-                ) : (
-                    <Trash2Icon data-icon="inline-start" />
-                )}
-            </Button>
+            <HintTooltip label={t('common.actions.delete')}>
+                <Button
+                    type="button"
+                    size="icon-xs"
+                    variant="ghost"
+                    className="text-muted-foreground hover:text-foreground"
+                    disabled={
+                        !currentUserId ||
+                        rowsOwnerUserId !== normalizeUserId(currentUserId) ||
+                        loadStatus === 'running' ||
+                        deletingRowKey === rowKey
+                    }
+                    onClick={(event) =>
+                        handleDeleteRow(row, {
+                            skipConfirm: shiftHeld || event.shiftKey
+                        })
+                    }
+                >
+                    {deletingRowKey === rowKey ? (
+                        <Spinner data-icon="inline-start" />
+                    ) : shiftHeld ? (
+                        <XIcon
+                            data-icon="inline-start"
+                            className="text-destructive"
+                        />
+                    ) : (
+                        <Trash2Icon data-icon="inline-start" />
+                    )}
+                </Button>
+            </HintTooltip>
         </div>
     );
 }

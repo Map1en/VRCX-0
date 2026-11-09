@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { WorldProfileRecord } from '@/domain/entities/world';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
@@ -724,25 +725,29 @@ function WorldAllowedDomainsDialog({
                                     }
                                 />
                                 <InputGroupAddon align="inline-end">
-                                    <InputGroupButton
-                                        type="button"
-                                        size="icon-xs"
-                                        disabled={saving}
-                                        aria-label={t(
+                                    <HintTooltip
+                                        label={t(
                                             'accessibility.remove_domain',
                                             { number: index + 1 }
                                         )}
-                                        onClick={() =>
-                                            setUrlList((current) =>
-                                                current.filter(
-                                                    (_, currentIndex) =>
-                                                        currentIndex !== index
-                                                )
-                                            )
-                                        }
                                     >
-                                        <Trash2Icon data-icon="inline-start" />
-                                    </InputGroupButton>
+                                        <InputGroupButton
+                                            type="button"
+                                            size="icon-xs"
+                                            disabled={saving}
+                                            onClick={() =>
+                                                setUrlList((current) =>
+                                                    current.filter(
+                                                        (_, currentIndex) =>
+                                                            currentIndex !==
+                                                            index
+                                                    )
+                                                )
+                                            }
+                                        >
+                                            <Trash2Icon data-icon="inline-start" />
+                                        </InputGroupButton>
+                                    </HintTooltip>
                                 </InputGroupAddon>
                             </InputGroup>
                         </Field>

@@ -16,6 +16,7 @@ import vrchatEconomyRepository, {
     type EconomyTransactionRecord
 } from '@/repositories/vrchatEconomyRepository';
 import { openUserDialog } from '@/services/dialogService';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -183,21 +184,22 @@ function PurchaseHistoryDialogBody() {
                             </SelectContent>
                         </Select>
                     ) : null}
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        className="ml-auto"
-                        aria-label={t('common.actions.refresh')}
-                        onClick={() =>
-                            setRefreshTokens((current) => ({
-                                ...current,
-                                [activeTab]: current[activeTab] + 1
-                            }))
-                        }
-                    >
-                        <RefreshCwIcon />
-                    </Button>
+                    <HintTooltip label={t('common.actions.refresh')}>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            className="ml-auto"
+                            onClick={() =>
+                                setRefreshTokens((current) => ({
+                                    ...current,
+                                    [activeTab]: current[activeTab] + 1
+                                }))
+                            }
+                        >
+                            <RefreshCwIcon />
+                        </Button>
+                    </HintTooltip>
                 </div>
                 <TabsContent
                     value="purchases"

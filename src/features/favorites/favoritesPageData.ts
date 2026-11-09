@@ -178,7 +178,7 @@ function defaultFavoriteEntityTitle(kind: FavoriteKind, t: unknown) {
         : translate('view.favorites.empty.avatar_fallback');
 }
 
-function unavailableFavoriteDetailSubtitle(
+export function unavailableFavoriteDetailSubtitle(
     kind: FavoriteKind,
     isUnavailable: boolean,
     t: unknown,

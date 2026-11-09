@@ -6,6 +6,7 @@ import {
     NAV_ICON_OPTIONS,
     normalizeNavIconKey
 } from '@/shared/constants/navIcons';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/shadcn/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
@@ -58,22 +59,21 @@ export function NavIconPicker({
                     const OptionIcon = getNavIconComponent(option.key);
                     const selected = option.key === normalizedIcon;
                     return (
-                        <Button
-                            key={option.key}
-                            type="button"
-                            variant={selected ? 'secondary' : 'ghost'}
-                            size="icon-sm"
-                            title={option.label}
-                            aria-label={option.label}
-                            aria-pressed={selected}
-                            className={cn(selected && 'text-primary')}
-                            onClick={() => {
-                                onValueChange(option.key);
-                                setOpen(false);
-                            }}
-                        >
-                            <OptionIcon data-icon="icon" />
-                        </Button>
+                        <HintTooltip key={option.key} label={option.label}>
+                            <Button
+                                type="button"
+                                variant={selected ? 'secondary' : 'ghost'}
+                                size="icon-sm"
+                                aria-pressed={selected}
+                                className={cn(selected && 'text-primary')}
+                                onClick={() => {
+                                    onValueChange(option.key);
+                                    setOpen(false);
+                                }}
+                            >
+                                <OptionIcon data-icon="icon" />
+                            </Button>
+                        </HintTooltip>
                     );
                 })}
             </PopoverContent>

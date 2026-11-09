@@ -155,7 +155,7 @@ function InventoryFileCard({
                     url: imageUrl
                 })
             }
-            menuLabel={t('aria.more')}
+            menuLabel={t('accessibility.more')}
             menuActions={[
                 {
                     key: 'delete',
@@ -267,7 +267,7 @@ export function InventoryItemCard({
                 })
             }
             primaryAction={primaryAction}
-            menuLabel={t('aria.more')}
+            menuLabel={t('accessibility.more')}
             menuActions={[
                 {
                     key: archived ? 'unarchive' : 'archive',

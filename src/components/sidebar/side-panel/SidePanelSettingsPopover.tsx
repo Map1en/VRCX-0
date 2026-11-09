@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
 import type { FavoriteGroupItem } from '@/shared/utils/sidebarTabLayout';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import { Field, FieldLabel } from '@/ui/shadcn/field';
@@ -164,23 +165,24 @@ export function SidePanelSettingsPopover({
 
     return (
         <Popover open={open} onOpenChange={onOpenChange}>
-            <PopoverTrigger
-                render={
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="text-muted-foreground ml-auto"
-                        aria-label={t('side_panel.settings.display')}
-                    >
-                        {isRefreshing ? (
-                            <Spinner data-icon="inline-start" />
-                        ) : (
-                            <MoreHorizontalIcon data-icon="inline-start" />
-                        )}
-                    </Button>
-                }
-            />
+            <HintTooltip label={t('side_panel.settings.display')}>
+                <PopoverTrigger
+                    render={
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground ml-auto"
+                        >
+                            {isRefreshing ? (
+                                <Spinner data-icon="inline-start" />
+                            ) : (
+                                <MoreHorizontalIcon data-icon="inline-start" />
+                            )}
+                        </Button>
+                    }
+                />
+            </HintTooltip>
             <PopoverContent side="bottom" align="end" className="w-72 p-3">
                 <div className="flex flex-col gap-2.5">
                     <Button

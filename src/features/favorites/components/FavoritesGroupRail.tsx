@@ -38,6 +38,7 @@ import { useTranslation } from 'react-i18next';
 import { EmptyState } from '@/components/layout/PageScaffold';
 import { cn } from '@/lib/utils';
 import type { FavoriteGroupVisibility } from '@/platform/tauri/bindings';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -143,20 +144,21 @@ function GroupMenu({
     if (group.source === 'history') {
         return (
             <DropdownMenu>
-                <DropdownMenuTrigger
-                    render={
-                        <Button
-                            type="button"
-                            size="icon-xs"
-                            variant="ghost"
-                            className="rounded-full"
-                            aria-label={t('common.actions.configure')}
-                            onClick={(event) => event.stopPropagation()}
-                        >
-                            <EllipsisIcon data-icon="inline-start" />
-                        </Button>
-                    }
-                />
+                <HintTooltip label={t('common.actions.configure')}>
+                    <DropdownMenuTrigger
+                        render={
+                            <Button
+                                type="button"
+                                size="icon-xs"
+                                variant="ghost"
+                                className="rounded-full"
+                                onClick={(event) => event.stopPropagation()}
+                            >
+                                <EllipsisIcon data-icon="inline-start" />
+                            </Button>
+                        }
+                    />
+                </HintTooltip>
                 <DropdownMenuContent
                     side="right"
                     align="start"
@@ -178,20 +180,21 @@ function GroupMenu({
     if (group.source === 'remote') {
         return (
             <DropdownMenu>
-                <DropdownMenuTrigger
-                    render={
-                        <Button
-                            type="button"
-                            size="icon-xs"
-                            variant="ghost"
-                            className="rounded-full"
-                            aria-label={t('common.actions.configure')}
-                            onClick={(event) => event.stopPropagation()}
-                        >
-                            <MoreHorizontalIcon data-icon="inline-start" />
-                        </Button>
-                    }
-                />
+                <HintTooltip label={t('common.actions.configure')}>
+                    <DropdownMenuTrigger
+                        render={
+                            <Button
+                                type="button"
+                                size="icon-xs"
+                                variant="ghost"
+                                className="rounded-full"
+                                onClick={(event) => event.stopPropagation()}
+                            >
+                                <MoreHorizontalIcon data-icon="inline-start" />
+                            </Button>
+                        }
+                    />
+                </HintTooltip>
                 <DropdownMenuContent
                     side="right"
                     align="start"
@@ -263,20 +266,21 @@ function GroupMenu({
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger
-                render={
-                    <Button
-                        type="button"
-                        size="icon-xs"
-                        variant="ghost"
-                        className="rounded-full"
-                        aria-label={t('common.actions.configure')}
-                        onClick={(event) => event.stopPropagation()}
-                    >
-                        <EllipsisIcon data-icon="inline-start" />
-                    </Button>
-                }
-            />
+            <HintTooltip label={t('common.actions.configure')}>
+                <DropdownMenuTrigger
+                    render={
+                        <Button
+                            type="button"
+                            size="icon-xs"
+                            variant="ghost"
+                            className="rounded-full"
+                            onClick={(event) => event.stopPropagation()}
+                        >
+                            <EllipsisIcon data-icon="inline-start" />
+                        </Button>
+                    }
+                />
+            </HintTooltip>
             <DropdownMenuContent side="right" align="start" className="w-48">
                 <DropdownMenuGroup>
                     {onShareCollection ? (
@@ -585,21 +589,22 @@ const GroupRailSection = memo(function GroupRailSection({
                     ) : null}
                 </span>
                 {onRefresh ? (
-                    <Button
-                        type="button"
-                        size="icon-sm"
-                        variant="ghost"
-                        className="rounded-full"
-                        aria-label={t('common.actions.refresh')}
-                        disabled={loading}
-                        onClick={onRefresh}
-                    >
-                        {loading ? (
-                            <Spinner data-icon="inline-start" />
-                        ) : (
-                            <RefreshCcwIcon data-icon="inline-start" />
-                        )}
-                    </Button>
+                    <HintTooltip label={t('common.actions.refresh')}>
+                        <Button
+                            type="button"
+                            size="icon-sm"
+                            variant="ghost"
+                            className="rounded-full"
+                            disabled={loading}
+                            onClick={onRefresh}
+                        >
+                            {loading ? (
+                                <Spinner data-icon="inline-start" />
+                            ) : (
+                                <RefreshCcwIcon data-icon="inline-start" />
+                            )}
+                        </Button>
+                    </HintTooltip>
                 ) : null}
             </div>
             <div className="flex flex-col gap-0.5">

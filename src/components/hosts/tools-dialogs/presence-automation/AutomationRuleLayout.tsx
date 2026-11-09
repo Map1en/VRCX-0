@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -178,16 +179,17 @@ export function RuleListItem({
                     aria-label={String(title || '')}
                     onCheckedChange={onEnabledChange}
                 />
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label={removeLabel}
-                    disabled={disabled}
-                    onClick={onRemove}
-                >
-                    <Trash2Icon data-icon="inline-start" />
-                </Button>
+                <HintTooltip label={removeLabel}>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        disabled={disabled}
+                        onClick={onRemove}
+                    >
+                        <Trash2Icon data-icon="inline-start" />
+                    </Button>
+                </HintTooltip>
             </div>
         </div>
     );

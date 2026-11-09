@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import {
     LockIcon,
     Trash2Icon,
@@ -18,10 +19,12 @@ import { TileShell } from '@/components/tile/TileShell';
 import { UserHoverCard } from '@/components/user-hover-card/UserHoverCard';
 import { UserStatusDot } from '@/components/UserStatusDot';
 import { cn } from '@/lib/utils';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Skeleton } from '@/ui/shadcn/skeleton';
 
 import type { FavoritesDensityConfig } from '../favoritesDensity';
+import { unavailableFavoriteDetailSubtitle } from '../favoritesPageData';
 import type { FavoriteItem } from '../favoritesTypes';
 
 export interface FavoriteCardViewModel {
@@ -52,6 +55,48 @@ export interface FavoriteCardViewInteractions {
     shell: HTMLAttributes<HTMLDivElement>;
     stop: (event: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>) => void;
     copyWorldId: () => void;
+}
+
+function favoritePrivateLabel(item: FavoriteItem, t: TFunction) {
+    return item.kind === 'world'
+        ? t('dialog.world.tags.private')
+        : t('dialog.avatar.tags.private');
+}
+
+function FavoriteInlineStatusIcons({
+    item,
+    t,
+    showPrivate
+}: {
+    item: FavoriteItem;
+    t: TFunction;
+    showPrivate: boolean;
+}) {
+    return (
+        <>
+            {item.isUnavailable || item.isDeleted ? (
+                <HintTooltip
+                    label={unavailableFavoriteDetailSubtitle(
+                        item.kind,
+                        true,
+                        t,
+                        item.isDeleted
+                    )}
+                >
+                    {item.isUnavailable ? (
+                        <TriangleAlertIcon className="text-destructive size-4 shrink-0" />
+                    ) : (
+                        <Trash2Icon className="text-muted-foreground size-4 shrink-0" />
+                    )}
+                </HintTooltip>
+            ) : null}
+            {showPrivate && item.isPrivate ? (
+                <HintTooltip label={favoritePrivateLabel(item, t)}>
+                    <LockIcon className="text-muted-foreground size-4 shrink-0" />
+                </HintTooltip>
+            ) : null}
+        </>
+    );
 }
 
 export function FavoriteCardView({
@@ -147,13 +192,29 @@ export function FavoriteCardView({
                         </span>
                     ) : null}
                     {item.isDeleted || item.isPrivate ? (
-                        <span className="bg-background/80 absolute right-1.5 bottom-1.5 z-10 flex size-5 items-center justify-center rounded-full">
-                            {item.isDeleted ? (
-                                <Trash2Icon className="text-muted-foreground size-3.5" />
-                            ) : (
-                                <LockIcon className="text-muted-foreground size-3.5" />
-                            )}
-                        </span>
+                        <HintTooltip
+                            label={
+                                item.isDeleted
+                                    ? unavailableFavoriteDetailSubtitle(
+                                          item.kind,
+                                          true,
+                                          t,
+                                          true
+                                      )
+                                    : favoritePrivateLabel(item, t)
+                            }
+                        >
+                            <span
+                                role="img"
+                                className="bg-background/80 absolute right-1.5 bottom-1.5 z-10 flex size-5 items-center justify-center rounded-full"
+                            >
+                                {item.isDeleted ? (
+                                    <Trash2Icon className="text-muted-foreground size-3.5" />
+                                ) : (
+                                    <LockIcon className="text-muted-foreground size-3.5" />
+                                )}
+                            </span>
+                        </HintTooltip>
                     ) : null}
                 </div>
                 <div className="flex min-h-0 flex-1 flex-col justify-center gap-0.5 px-2.5 py-2">
@@ -177,11 +238,11 @@ export function FavoriteCardView({
                                         {item.title}
                                     </span>
                                 </UserHoverCard>
-                                {item.isUnavailable ? (
-                                    <TriangleAlertIcon className="text-destructive size-4 shrink-0" />
-                                ) : item.isDeleted ? (
-                                    <Trash2Icon className="text-muted-foreground size-4 shrink-0" />
-                                ) : null}
+                                <FavoriteInlineStatusIcons
+                                    item={item}
+                                    t={t}
+                                    showPrivate={false}
+                                />
                             </div>
                             {showUnavailableCopyId ? (
                                 <Button
@@ -259,14 +320,11 @@ export function FavoriteCardView({
                                 >
                                     {item.title}
                                 </span>
-                                {item.isUnavailable ? (
-                                    <TriangleAlertIcon className="text-destructive size-4 shrink-0" />
-                                ) : item.isDeleted ? (
-                                    <Trash2Icon className="text-muted-foreground size-4 shrink-0" />
-                                ) : null}
-                                {item.isPrivate ? (
-                                    <LockIcon className="text-muted-foreground size-4 shrink-0" />
-                                ) : null}
+                                <FavoriteInlineStatusIcons
+                                    item={item}
+                                    t={t}
+                                    showPrivate
+                                />
                             </div>
                             <div className="object-row__meta truncate">
                                 {showPlayerCountBadge ? (
@@ -358,14 +416,7 @@ export function FavoriteCardView({
                             {item.title}
                         </span>
                     </UserHoverCard>
-                    {item.isUnavailable ? (
-                        <TriangleAlertIcon className="text-destructive size-4 shrink-0" />
-                    ) : item.isDeleted ? (
-                        <Trash2Icon className="text-muted-foreground size-4 shrink-0" />
-                    ) : null}
-                    {item.isPrivate ? (
-                        <LockIcon className="text-muted-foreground size-4 shrink-0" />
-                    ) : null}
+                    <FavoriteInlineStatusIcons item={item} t={t} showPrivate />
                 </div>
                 {friendShowsLocation ? (
                     <div

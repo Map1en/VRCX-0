@@ -28,6 +28,7 @@ import groupProfileRepository from '@/repositories/groupProfileRepository';
 import { openGroupDialog } from '@/services/dialogService';
 import { toast } from '@/services/toastService';
 import { useRuntimeStore } from '@/state/runtimeStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -82,19 +83,20 @@ function SavedGroupFavoriteCard({
             }
             actions={
                 <DropdownMenu>
-                    <DropdownMenuTrigger
-                        render={
-                            <Button
-                                type="button"
-                                size="icon-sm"
-                                variant="ghost"
-                                disabled={busy}
-                                aria-label={t('common.actions.configure')}
-                            >
-                                <MoreHorizontalIcon data-icon="inline-start" />
-                            </Button>
-                        }
-                    />
+                    <HintTooltip label={t('common.actions.configure')}>
+                        <DropdownMenuTrigger
+                            render={
+                                <Button
+                                    type="button"
+                                    size="icon-sm"
+                                    variant="ghost"
+                                    disabled={busy}
+                                >
+                                    <MoreHorizontalIcon data-icon="inline-start" />
+                                </Button>
+                            }
+                        />
+                    </HintTooltip>
                     <DropdownMenuContent align="end" className="w-48">
                         <DropdownMenuGroup>
                             <DropdownMenuItem

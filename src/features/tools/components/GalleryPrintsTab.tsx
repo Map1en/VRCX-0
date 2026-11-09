@@ -391,7 +391,7 @@ export function GalleryPrintsTab({ printsTab }: GalleryPrintsTabProps) {
                                                     )
                                             })
                                         }
-                                        menuLabel={t('aria.more')}
+                                        menuLabel={t('accessibility.more')}
                                         menuActions={[
                                             {
                                                 key: isFavorite
