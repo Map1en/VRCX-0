@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Duration;
 use vrcx_0_application_core::RuntimeOperationStatus;
 
 use tauri::{Emitter, Manager};
@@ -232,6 +233,39 @@ fn exit_with_startup_error(app: &tauri::App, error: &AppError) -> ! {
     std::process::exit(1);
 }
 
+const WEBVIEW_DATA_FOLDER_IN_USE_RETRIES: usize = 10;
+const WEBVIEW_DATA_FOLDER_IN_USE_RETRY_DELAY: Duration = Duration::from_millis(500);
+
+fn create_startup_main_window(
+    app: &tauri::AppHandle,
+    proxy_url: Option<&str>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut attempt = 0;
+    loop {
+        match create_main_window(app, proxy_url) {
+            Err(error)
+                if attempt < WEBVIEW_DATA_FOLDER_IN_USE_RETRIES
+                    && is_webview_data_folder_in_use(error.as_ref()) =>
+            {
+                attempt += 1;
+                tracing::warn!(
+                    attempt,
+                    "WebView2 user data folder is still held by a previous instance; retrying"
+                );
+                std::thread::sleep(WEBVIEW_DATA_FOLDER_IN_USE_RETRY_DELAY);
+            }
+            result => return result,
+        }
+    }
+}
+
+fn is_webview_data_folder_in_use(error: &dyn std::fmt::Display) -> bool {
+    error
+        .to_string()
+        .to_ascii_lowercase()
+        .contains("hresult(0x80070020)")
+}
+
 fn exit_with_main_window_error(app: &tauri::App, error: &dyn std::error::Error) -> ! {
     tracing::error!(error = %error, "failed to create the main window");
     show_blocking_dialog(
@@ -294,7 +328,7 @@ pub fn setup_app_with_data_dir(
         "Tauri setup is wiring runtime services.",
         0,
     );
-    if let Err(error) = create_main_window(app.handle(), state.runtime_host().proxy_url()) {
+    if let Err(error) = create_startup_main_window(app.handle(), state.runtime_host().proxy_url()) {
         exit_with_main_window_error(app, error.as_ref());
     }
     super::linux_rendering::start_fallback(app.handle());
@@ -431,10 +465,20 @@ fn emit_deep_link_arrived(app: &tauri::AppHandle) {
 
 #[cfg(test)]
 mod tests {
-    use super::should_capture_gui_error;
     #[cfg(target_os = "windows")]
     use super::{append_browser_arguments, WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS};
+    use super::{is_webview_data_folder_in_use, should_capture_gui_error};
     use tracing::Level;
+
+    #[test]
+    fn webview_sharing_violation_is_retried_but_other_webview_errors_are_not() {
+        assert!(is_webview_data_folder_in_use(
+            &"runtime error: failed to create webview: WebView2 error: WindowsError(Error { code: HRESULT(0x80070020), message: \"in use\" })"
+        ));
+        assert!(!is_webview_data_folder_in_use(
+            &"runtime error: failed to create webview: WebView2 error: WindowsError(Error { code: HRESULT(0x80070002), message: \"missing\" })"
+        ));
+    }
 
     #[test]
     fn gui_error_log_captures_only_own_error_targets() {

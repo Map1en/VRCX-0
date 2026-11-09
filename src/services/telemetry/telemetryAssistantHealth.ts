@@ -25,6 +25,83 @@ const SAFE_STRING_ARG_KEYS = new Set([
     'type'
 ]);
 
+const TIME_PHRASE_ARG_KEYS = new Set([
+    'period',
+    'timeBound',
+    'timeWindow',
+    'time_bound',
+    'time_window'
+]);
+
+const TIME_PHRASE_WORDS = new Set([
+    'a',
+    'ago',
+    'all',
+    'and',
+    'couple',
+    'current',
+    'd',
+    'day',
+    'days',
+    'entire',
+    'ever',
+    'few',
+    'for',
+    'from',
+    'h',
+    'history',
+    'hour',
+    'hours',
+    'in',
+    'last',
+    'lately',
+    'm',
+    'minute',
+    'minutes',
+    'mo',
+    'month',
+    'months',
+    'next',
+    'now',
+    'of',
+    'one',
+    'past',
+    'previous',
+    'recent',
+    'recently',
+    'since',
+    'so',
+    'far',
+    'the',
+    'this',
+    'time',
+    'to',
+    'today',
+    'until',
+    'w',
+    'week',
+    'weekend',
+    'weeks',
+    'y',
+    'year',
+    'years',
+    'yesterday'
+]);
+
+function summarizeTimePhrase(value: string): string | undefined {
+    const words = value.toLowerCase().split(/\s+/);
+    if (words.length < 2 || words.length > 6) {
+        return undefined;
+    }
+    return words
+        .map((word) =>
+            /^\d{1,4}[a-z]{0,2}$/.test(word) || TIME_PHRASE_WORDS.has(word)
+                ? word
+                : '<word>'
+        )
+        .join(' ');
+}
+
 function summarizeArgValue(key: string, value: unknown): string {
     if (value === null) {
         return 'null';
@@ -42,6 +119,9 @@ function summarizeArgValue(key: string, value: unknown): string {
             /^[A-Za-z0-9_.:-]{1,32}$/.test(trimmed)
         ) {
             return trimmed;
+        }
+        if (TIME_PHRASE_ARG_KEYS.has(key)) {
+            return summarizeTimePhrase(trimmed) ?? '<text>';
         }
         return '<text>';
     }

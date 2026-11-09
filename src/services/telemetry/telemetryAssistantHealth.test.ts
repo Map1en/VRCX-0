@@ -43,6 +43,29 @@ describe('assistant health telemetry', () => {
         });
     });
 
+    it('keeps time phrase vocabulary in time window args and masks other words', async () => {
+        const { appTelemetryRecordEvent } = mockTelemetryCommand();
+        const mod = await import('./telemetryAssistantHealth');
+
+        mod.recordAssistantToolError({
+            source: 'get_copresence_summary',
+            args: JSON.stringify({
+                groupBy: 'friend_world',
+                timeWindow: 'Past 30 days',
+                period: 'since I met Alice',
+                query: 'this week'
+            }),
+            summary: "unrecognized timeWindow string 'Past 30 days'"
+        });
+
+        expect(appTelemetryRecordEvent).toHaveBeenCalledWith({
+            type: 'assistantToolError',
+            source: 'get_copresence_summary',
+            summary:
+                'groupBy=friend_world, period=since <word> <word> <word>, query=<text>, timeWindow=past 30 days; result=invalid_args'
+        });
+    });
+
     it('classifies assistant tool result summaries without sending result text', async () => {
         const { appTelemetryRecordEvent } = mockTelemetryCommand();
         const mod = await import('./telemetryAssistantHealth');
