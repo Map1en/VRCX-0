@@ -5982,6 +5982,7 @@
         },
         "image_crop": {
             "crop_area": "Área de recorte. Arraste uma borda ou um canto para redimensioná-la. Arraste a alça acima da moldura para girar a imagem.",
+            "toolbar_label": "Ferramentas de recorte",
             "rotate_left": "Girar para a Esquerda",
             "rotate_right": "Girar para a Direita",
             "rotation_angle": "Ângulo de rotação",

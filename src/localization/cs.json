@@ -6018,6 +6018,7 @@
         },
         "image_crop": {
             "crop_area": "Oblast ořezu. Přetažením okraje nebo rohu změníte její velikost. Obrázek otočíte přetažením úchytu nad rámečkem.",
+            "toolbar_label": "Nástroje ořezu",
             "rotate_left": "Otočit doleva",
             "rotate_right": "Otočit doprava",
             "rotation_angle": "Úhel otočení",

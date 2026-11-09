@@ -38,7 +38,7 @@ export function useScreenshotFavorites(enabled: boolean) {
                     title:
                         error instanceof Error
                             ? error.message
-                            : t('common.errors.action_failed')
+                            : t('common.error.action_failed')
                 });
             }
         } finally {
@@ -82,7 +82,7 @@ export function useScreenshotFavorites(enabled: boolean) {
                     title:
                         error instanceof Error
                             ? error.message
-                            : t('common.errors.action_failed')
+                            : t('common.error.action_failed')
                 });
             }
         },
@@ -99,7 +99,7 @@ export function useScreenshotFavorites(enabled: boolean) {
                 title:
                     error instanceof Error
                         ? error.message
-                        : t('common.errors.action_failed')
+                        : t('common.error.action_failed')
             });
         }
     }, [reloadFavorites, t]);

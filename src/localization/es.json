@@ -6030,6 +6030,7 @@
         },
         "image_crop": {
             "crop_area": "Área de recorte. Arrastra un borde o una esquina para cambiar su tamaño. Arrastra el control sobre el marco para girar la imagen.",
+            "toolbar_label": "Herramientas de recorte",
             "rotate_left": "Girar a la izquierda",
             "rotate_right": "Girar a la derecha",
             "rotation_angle": "Ángulo de rotación",

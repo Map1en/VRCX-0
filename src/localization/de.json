@@ -5982,6 +5982,7 @@
         },
         "image_crop": {
             "crop_area": "Zuschneidebereich. An einer Kante oder Ecke ziehen, um die Größe zu ändern. Zum Drehen den Griff oberhalb des Rahmens ziehen.",
+            "toolbar_label": "Werkzeuge zum Zuschneiden",
             "rotate_left": "Nach links drehen",
             "rotate_right": "Nach rechts drehen",
             "rotation_angle": "Drehwinkel",

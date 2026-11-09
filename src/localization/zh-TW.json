@@ -6009,6 +6009,7 @@
         },
         "image_crop": {
             "crop_area": "裁切區域。拖曳邊緣或角點可調整大小；拖曳裁切框上方的控制點可旋轉。",
+            "toolbar_label": "圖片裁切工具",
             "rotate_left": "向左旋轉",
             "rotate_right": "向右旋轉",
             "rotation_angle": "旋轉角度",

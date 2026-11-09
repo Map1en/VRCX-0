@@ -6018,6 +6018,7 @@
         },
         "image_crop": {
             "crop_area": "裁剪区域。拖动边缘或角点可调整大小；拖动裁剪框上方的手柄可旋转。",
+            "toolbar_label": "图片裁剪工具",
             "rotate_left": "向左旋转",
             "rotate_right": "向右旋转",
             "rotation_angle": "旋转角度",

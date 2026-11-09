@@ -85,9 +85,7 @@ export function ImageCropToolbar({
         <div
             className="bg-muted/40 flex flex-wrap items-center justify-center gap-2 rounded-xl border p-1.5"
             role="toolbar"
-            aria-label={t('dialog.image_crop.toolbar_label', {
-                defaultValue: 'Image crop toolbar'
-            })}
+            aria-label={t('dialog.image_crop.toolbar_label')}
         >
             <div className="bg-background/50 flex items-center gap-0.5 rounded-lg border p-1">
                 {tool(

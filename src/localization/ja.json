@@ -6014,6 +6014,7 @@
         },
         "image_crop": {
             "crop_area": "トリミング枠。辺または角をドラッグするとサイズを変更できます。枠の上にあるハンドルをドラッグすると回転できます。",
+            "toolbar_label": "トリミングツール",
             "rotate_left": "左に回転",
             "rotate_right": "右に回転",
             "rotation_angle": "回転角度",

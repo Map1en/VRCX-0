@@ -893,7 +893,7 @@ export function ScreenshotGalleryView({
                                                         error instanceof Error
                                                             ? error.message
                                                             : t(
-                                                                  'common.errors.action_failed'
+                                                                  'common.error.action_failed'
                                                               )
                                                 });
                                             });

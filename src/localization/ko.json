@@ -5956,6 +5956,7 @@
         },
         "image_crop": {
             "crop_area": "자르기 영역입니다. 가장자리나 모서리를 드래그하여 크기를 조절할 수 있습니다. 프레임 위의 핸들을 드래그하면 회전할 수 있습니다.",
+            "toolbar_label": "이미지 자르기 도구",
             "rotate_left": "왼쪽으로 회전",
             "rotate_right": "오른쪽으로 회전",
             "rotation_angle": "회전 각도",
