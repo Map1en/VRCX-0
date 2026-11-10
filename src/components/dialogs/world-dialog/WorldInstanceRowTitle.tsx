@@ -51,11 +51,11 @@ export function WorldInstanceRowTitle({
 
     return (
         <div className="flex min-w-0 flex-1 items-start">
-            <span className="flex h-5 shrink-0 items-center">
+            <span className="flex h-6 shrink-0 items-center">
                 <RegionCodeBadge region={parseLocation(location).region} />
             </span>
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <div className="flex min-h-5 min-w-0 items-center gap-2">
+                <div className="flex min-h-6 min-w-0 items-center gap-2">
                     {displayName ? (
                         <span
                             className="truncate text-sm font-medium"
