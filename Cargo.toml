@@ -78,7 +78,23 @@ chacha20poly1305 = "0.11"
 chrono = "0.4"
 compact_str = { version = "0.10", features = ["serde"] }
 dirs = "7"
-image = "0.25"
+image = { version = "0.25", default-features = false, features = [
+    "rayon",
+    "bmp",
+    "dds",
+    "exr",
+    "ff",
+    "gif",
+    "hdr",
+    "ico",
+    "jpeg",
+    "png",
+    "pnm",
+    "qoi",
+    "tga",
+    "tiff",
+    "webp"
+] }
 iana-time-zone = "0.1"
 machine-uid = "0.6"
 percent-encoding = "2"

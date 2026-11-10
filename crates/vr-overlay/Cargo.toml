@@ -8,7 +8,7 @@ build = "build.rs"
 
 [features]
 default = []
-slint-ui = ["dep:slint"]
+slint-ui = ["dep:slint", "dep:slint-build"]
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
@@ -16,4 +16,4 @@ slint = { workspace = true, optional = true }
 specta.workspace = true
 
 [build-dependencies]
-slint-build.workspace = true
+slint-build = { workspace = true, optional = true }
