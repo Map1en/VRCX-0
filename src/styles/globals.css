@@ -1529,6 +1529,11 @@
     background-color: var(--popover);
 }
 
+[data-platform='linux'] .vrcx-0-app-root::before,
+[data-platform='linux'] .vrcx-0-background-image-transition-layer {
+    filter: none;
+}
+
 .lucide-person-standing {
     transform: scale(1.45);
     stroke-width: 0.1rem;
