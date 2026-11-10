@@ -63,7 +63,7 @@ export function useFriendsLocationsPageController() {
         resetScrollTop,
         viewportMetrics: scrollMetrics,
         viewportRef: scrollRef
-    } = useScrollViewportMetrics();
+    } = useScrollViewportMetrics({ enabled: viewMode === 'people' });
 
     useEffect(() => {
         resetScrollTop();
