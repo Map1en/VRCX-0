@@ -166,10 +166,10 @@ function normalizeFriendEntry(
               )) ||
         trust.trustLevel;
     const friendNumberSource =
-        source?.friendNumber ??
         source?.$friendNumber ??
-        existingRow?.friendNumber ??
+        source?.friendNumber ??
         existingRow?.$friendNumber ??
+        existingRow?.friendNumber ??
         0;
     const friendNumber = Number.parseInt(String(friendNumberSource), 10) || 0;
     const presence = source.$presence ?? { kind: 'offline' };

@@ -71,14 +71,14 @@ export function useFriendListRows({
     const rosterRows = useMemo<FriendListRow[]>(
         () =>
             orderedFriendIds
-                .map((friendId, index) => {
+                .map((friendId): FriendListRow | null => {
                     const rosterFriend = friendsById[friendId];
                     if (!rosterFriend) {
                         return null;
                     }
                     const stats = statsById[friendId];
                     const profileBio = profileBioById.get(friendId);
-                    const friend: FriendListRow = {
+                    return {
                         ...applyFactDerivedFields(
                             rosterFriend,
                             factsById[friendId]
@@ -92,21 +92,6 @@ export function useFriendListRows({
                         $timeSpent: stats?.timeSpent,
                         $mutualCount: stats?.mutualCount,
                         $mutualOptedOut: stats?.mutualOptedOut
-                    };
-                    const friendNumber =
-                        Number.parseInt(
-                            String(
-                                friend.$friendNumber ?? friend.friendNumber ?? 0
-                            ),
-                            10
-                        ) || 0;
-                    if (friendNumber > 0) {
-                        return friend;
-                    }
-                    return {
-                        ...friend,
-                        friendNumber: index + 1,
-                        $friendNumber: index + 1
                     };
                 })
                 .filter(isPresent),

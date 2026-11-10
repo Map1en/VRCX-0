@@ -96,6 +96,30 @@ pub(crate) fn friend_log_relationship_candidates(
     additions.chain(removals).collect()
 }
 
+pub(crate) fn persisted_friend_numbers(
+    friend_log: &dyn crate::FriendLogStore,
+    config: &dyn ConfigStore,
+    user_id: &str,
+) -> Option<HashMap<String, i64>> {
+    if !config
+        .get_bool(&format!("friendLogInit_{user_id}"), false)
+        .unwrap_or(false)
+    {
+        return None;
+    }
+    match friend_log.friend_log_current_list(user_id) {
+        Ok(rows) => Some(
+            rows.into_iter()
+                .map(|row| (row.user_id, row.friend_number))
+                .collect(),
+        ),
+        Err(error) => {
+            tracing::warn!("friend number read failed: {error}");
+            None
+        }
+    }
+}
+
 pub(super) fn collect_suspicious_friend_ids(
     expected_ids: &[String],
     state_by_id: &HashMap<String, StateBucket>,

@@ -170,8 +170,8 @@ pub(crate) use friends::friend_log_relationship_candidates;
 pub use friends::FriendStatusVerdicts;
 use friends::{apply_friend_roster_baseline_sync_outcome, build_friend_roster_baseline};
 pub(crate) use friends::{
-    reconcile_friend_roster_records, verify_friend_log_relationship_changes,
-    FriendRosterReconcileOutcome,
+    persisted_friend_numbers, reconcile_friend_roster_records,
+    verify_friend_log_relationship_changes, FriendRosterReconcileOutcome,
 };
 pub(crate) use remote::{execute_vrchat_json_request, refetch_users_concurrent};
 use remote::{fetch_friend_statuses_concurrent, fetch_paged_array};

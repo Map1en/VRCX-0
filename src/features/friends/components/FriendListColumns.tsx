@@ -168,15 +168,11 @@ export function useFriendListColumns({
                         className="ml-auto"
                     />
                 ),
-                cell: ({ row }) => {
-                    const friendNumber =
-                        parseListNumber(
-                            row.original?.$friendNumber ??
-                                row.original?.friendNumber ??
-                                row.getValue('friendNumber')
-                        ) || row.index + 1;
-                    return <span>{friendNumber}</span>;
-                }
+                cell: ({ row }) => (
+                    <span>
+                        {parseListNumber(row.getValue('friendNumber')) || ''}
+                    </span>
+                )
             },
             {
                 id: 'avatar',

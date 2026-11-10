@@ -630,7 +630,9 @@ fn next_friend_number(
     user_prefix: &str,
 ) -> Result<i64, Error> {
     let rows = tx.execute(
-        &format!("SELECT MAX(friend_number), COUNT(*) FROM {user_prefix}_friend_log_current"),
+        &format!(
+            "SELECT MAX(COALESCE((SELECT MAX(friend_number) FROM {user_prefix}_friend_log_current), 0), COALESCE((SELECT MAX(friend_number) FROM {user_prefix}_friend_log_history), 0)), (SELECT COUNT(*) FROM {user_prefix}_friend_log_current)"
+        ),
         &Default::default(),
     )?;
     let max_number = rows

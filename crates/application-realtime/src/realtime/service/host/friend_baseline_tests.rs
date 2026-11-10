@@ -607,6 +607,150 @@ fn causal_watermark_rejects_baseline_after_local_friend_log_mutation() -> Result
     Ok(())
 }
 
+fn seed_numbered_friend_log_with_unfriended_top_number(
+    runtime: &TestRealtimeHostRuntime,
+) -> Result<()> {
+    runtime
+        .database()
+        .config
+        .set_bool("friendLogInit_usr_self", true)?;
+    let upsert = |target_user_id: &str, friend_number| FriendLogUpsert {
+        target_user_id: target_user_id.into(),
+        display_name: "Friend".into(),
+        trust_level: "Known".into(),
+        friend_number,
+        created_at: "2026-05-15T00:00:00Z".into(),
+        force_history: false,
+    };
+    write_realtime_batch(
+        runtime.database(),
+        &OwnerId::new("usr_self"),
+        &RealtimePersistenceBatch {
+            friend_log_upserts: vec![upsert("usr_old", 3), upsert("usr_gone", 9)],
+            ..RealtimePersistenceBatch::default()
+        },
+    )?;
+    write_realtime_batch(
+        runtime.database(),
+        &OwnerId::new("usr_self"),
+        &RealtimePersistenceBatch {
+            friend_log_deletes: vec![vrcx_0_contracts::realtime::FriendLogDelete {
+                target_user_id: "usr_gone".into(),
+                created_at: "2026-05-16T00:00:00Z".into(),
+            }],
+            ..RealtimePersistenceBatch::default()
+        },
+    )?;
+    Ok(())
+}
+
+fn api_ordered_friend(user_id: &str, api_order_number: i64) -> FriendBaselineEntry {
+    FriendBaselineEntry {
+        record: FriendRecord {
+            id: user_id.into(),
+            display_name: "Friend".into(),
+            extra: [
+                ("$trustLevel".into(), json!("Known")),
+                ("$friendNumber".into(), json!(api_order_number)),
+            ]
+            .into_iter()
+            .collect(),
+            ..FriendRecord::default()
+        },
+        ..FriendBaselineEntry::default()
+    }
+}
+
+fn roster_friend_number(runtime: &TestRealtimeHostRuntime, user_id: &str) -> Option<i64> {
+    runtime
+        .runtime()
+        .friend_snapshot()?
+        .friends_by_id
+        .get(user_id)?
+        .extra
+        .get("$friendNumber")?
+        .as_i64()
+}
+
+#[test]
+fn baseline_shows_persisted_friend_numbers_instead_of_api_order() -> Result<()> {
+    let (_dir, runtime, active_session) = runtime_with_active_session("persisted-friend-numbers")?;
+    seed_numbered_friend_log_with_unfriended_top_number(&runtime)?;
+    let watermark = runtime.runtime().capture_friend_baseline_watermark()?;
+
+    let outcome = runtime.runtime().sync_friend_snapshot_with_watermark(
+        active_session.clone(),
+        watermark,
+        [
+            ("usr_old".to_string(), api_ordered_friend("usr_old", 1)),
+            ("usr_new".to_string(), api_ordered_friend("usr_new", 2)),
+        ]
+        .into_iter()
+        .collect(),
+        verdict("usr_new", true),
+    )?;
+
+    let snapshot = outcome.snapshot.expect("canonical friend snapshot");
+    assert_eq!(snapshot.friends_by_id["usr_old"].extra["$friendNumber"], 3);
+    assert_eq!(snapshot.friends_by_id["usr_new"].extra["$friendNumber"], 10);
+    let current = runtime
+        .database()
+        .friend_log_current_list(&active_session.user_id)?;
+    let new_row = current.iter().find(|row| row.user_id == "usr_new").unwrap();
+    assert_eq!(new_row.friend_number, 10);
+    let projection = runtime
+        .take_events_for_test()
+        .into_iter()
+        .find(|event| event.name == "realtimeFriendProjection")
+        .expect("baseline should emit a friend projection");
+    let new_patch = projection.payload["patches"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|patch| patch["userId"] == "usr_new")
+        .expect("new friend patch");
+    assert_eq!(new_patch["record"]["$friendNumber"], 10);
+    Ok(())
+}
+
+#[test]
+fn ws_friend_add_shows_the_number_assigned_by_the_friend_log() -> Result<()> {
+    let (_dir, runtime, active_session) = runtime_with_active_session("ws-add-friend-number")?;
+    seed_numbered_friend_log_with_unfriended_top_number(&runtime)?;
+    runtime.sync_friend_baseline(
+        &active_session,
+        [("usr_old".to_string(), api_ordered_friend("usr_old", 1))]
+            .into_iter()
+            .collect(),
+    )?;
+    runtime.take_events_for_test();
+
+    runtime.handle_active_friend_ws_message_for_test(&RealtimeWsMessagePayload {
+        json: json!({
+            "type": "friend-add",
+            "content": {
+                "userId": "usr_new",
+                "user": { "id": "usr_new", "displayName": "New Friend" }
+            }
+        }),
+        raw: "{}".into(),
+        received_at: "2026-05-17T00:00:00Z".into(),
+    });
+
+    assert_eq!(roster_friend_number(&runtime, "usr_old"), Some(3));
+    assert_eq!(roster_friend_number(&runtime, "usr_new"), Some(10));
+    let projection = runtime
+        .take_events_for_test()
+        .into_iter()
+        .find(|event| event.name == "realtimeFriendProjection")
+        .expect("friend-add should emit a friend projection");
+    assert_eq!(
+        projection.payload["patches"][0]["record"]["$friendNumber"],
+        10
+    );
+    Ok(())
+}
+
 fn no_verdicts() -> FriendStatusVerdicts {
     FriendStatusVerdicts::default()
 }

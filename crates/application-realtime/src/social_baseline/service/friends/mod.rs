@@ -35,6 +35,6 @@ pub(crate) use baseline::friend_log_relationship_candidates;
 pub use baseline::FriendStatusVerdicts;
 pub(crate) use baseline::{
     apply_friend_roster_baseline_sync_outcome, build_friend_roster_baseline,
-    reconcile_friend_roster_records, verify_friend_log_relationship_changes,
-    FriendRosterReconcileOutcome,
+    persisted_friend_numbers, reconcile_friend_roster_records,
+    verify_friend_log_relationship_changes, FriendRosterReconcileOutcome,
 };

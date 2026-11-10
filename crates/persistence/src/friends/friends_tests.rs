@@ -393,6 +393,48 @@ fn friend_log_upsert_current_numbers_new_friends_like_the_realtime_writer() {
 }
 
 #[test]
+fn new_friend_number_skips_numbers_held_by_unfriended_users() {
+    let (_dir, db) = test_db("next-friend-number-after-unfriend");
+    friend_log_upsert_current(
+        &db,
+        "usr_self".into(),
+        current_entry("usr_alice", "Alice", Some("Known"), 3),
+        FriendLogUpsertOptionsInput::default(),
+    )
+    .unwrap();
+    friend_log_upsert_current(
+        &db,
+        "usr_self".into(),
+        current_entry("usr_carol", "Carol", Some("Known"), 8),
+        FriendLogUpsertOptionsInput::default(),
+    )
+    .unwrap();
+    db.write_transaction(|tx| {
+        delete_friend_log_current(
+            tx,
+            "usrself",
+            &FriendLogDelete {
+                target_user_id: "usr_carol".into(),
+                created_at: "2026-06-01T00:00:00Z".into(),
+            },
+        )
+    })
+    .unwrap();
+
+    friend_log_upsert_current(
+        &db,
+        "usr_self".into(),
+        current_entry("usr_bob", "Bob", None, 0),
+        FriendLogUpsertOptionsInput::default(),
+    )
+    .unwrap();
+
+    let rows = friend_log_current_list(&db, "usr_self".into()).unwrap();
+    let bob = rows.iter().find(|row| row.user_id == "usr_bob").unwrap();
+    assert_eq!(bob.friend_number, 9);
+}
+
+#[test]
 fn friend_log_upsert_current_keeps_known_trust_and_name_when_the_update_lacks_them() {
     let (_dir, db) = test_db("upsert-keep-known-facts");
     friend_log_upsert_current(

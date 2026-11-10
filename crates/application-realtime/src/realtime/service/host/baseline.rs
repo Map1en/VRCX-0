@@ -7,13 +7,17 @@ use serde_json::Value;
 use vrcx_0_application_core::{Error, Result};
 use vrcx_0_core::friends::{FriendBaselineEntry, FriendRecord, FriendRosterBaseline};
 
-use crate::realtime::friends::{baseline_friend_view, FriendBaselineEffects, RosterDelta};
+use crate::realtime::friends::{
+    apply_friend_number, baseline_friend_view, FriendBaselineEffects, RosterDelta,
+};
 use crate::realtime::{
     FriendBaselineCausalWatermark, FriendBaselineResult, FriendBaselineSyncOutcome,
-    FriendProjection, RealtimeFriendOutput, RealtimeFriendSnapshot, RealtimeSessionContext,
+    FriendProjection, FriendProjectionPatch, RealtimeFriendOutput, RealtimeFriendSnapshot,
+    RealtimeSessionContext,
 };
 use crate::social_baseline::service::{
-    reconcile_friend_roster_records, FriendRosterReconcileOutcome, FriendStatusVerdicts,
+    persisted_friend_numbers, reconcile_friend_roster_records, FriendRosterReconcileOutcome,
+    FriendStatusVerdicts,
 };
 
 use super::state::{
@@ -77,6 +81,20 @@ impl RealtimeHostRuntime {
             self.schedule_friend_wake(result.generation, wake);
         }
         self.schedule_friend_profile_refetches(result.generation, profile_refetch_user_ids);
+    }
+
+    pub(super) fn persisted_friend_numbers(&self, user_id: &str) -> Option<HashMap<String, i64>> {
+        persisted_friend_numbers(
+            self.deps.stores.friend_log.as_ref(),
+            self.deps.config.as_ref(),
+            user_id,
+        )
+    }
+
+    pub(super) fn sync_roster_friend_numbers(&self, user_id: &str) -> Vec<FriendProjectionPatch> {
+        self.persisted_friend_numbers(user_id)
+            .map(|numbers| self.friends.apply_friend_numbers(&numbers))
+            .unwrap_or_default()
     }
 
     pub fn set_reconnect_backfill_check(&self, check: ReconnectBackfillCheck) {
@@ -148,14 +166,22 @@ impl RealtimeHostRuntime {
         self: &Arc<Self>,
         requested_session: RealtimeSessionContext,
         watermark: FriendBaselineCausalWatermark,
-        friends_by_id: HashMap<String, FriendBaselineEntry>,
+        mut friends_by_id: HashMap<String, FriendBaselineEntry>,
         verdicts: FriendStatusVerdicts,
     ) -> Result<FriendBaselineSyncOutcome> {
         let generation = watermark.generation;
         let owner = self.lock_friend_owner();
+        if let Some(numbers) = self.persisted_friend_numbers(&requested_session.user_id) {
+            for (user_id, entry) in &mut friends_by_id {
+                apply_friend_number(user_id, &mut entry.record, &numbers);
+            }
+        }
         let feed_persistence_disabled = self.feed.persistence_disabled();
         let friend_count = u32::try_from(friends_by_id.len()).unwrap_or(u32::MAX);
-        let FriendBaselineApplyPlan { active, effects } = {
+        let FriendBaselineApplyPlan {
+            active,
+            mut effects,
+        } = {
             let mut state = self
                 .state
                 .lock()
@@ -196,7 +222,7 @@ impl RealtimeHostRuntime {
                         ((user_id.clone(), record), (user_id.clone(), presence))
                     })
                     .unzip();
-                let pending_snapshot = RealtimeFriendSnapshot {
+                let mut pending_snapshot = RealtimeFriendSnapshot {
                     current_user_id: requested_session.user_id.clone(),
                     endpoint: requested_session.endpoint.clone(),
                     websocket: requested_session.websocket.clone(),
@@ -244,6 +270,14 @@ impl RealtimeHostRuntime {
                         if queued.session == requested_session {
                             queued.feed_entries = feed_entries;
                         }
+                    }
+                }
+                if let Some(numbers) = friend_log_changed
+                    .then(|| self.persisted_friend_numbers(&pending_snapshot.current_user_id))
+                    .flatten()
+                {
+                    for (user_id, record) in &mut pending_snapshot.friends_by_id {
+                        apply_friend_number(user_id, record, &numbers);
                     }
                 }
                 return Ok(FriendBaselineSyncOutcome::accepted(
@@ -346,6 +380,25 @@ impl RealtimeHostRuntime {
                 )
             })
             .unwrap_or_default();
+        let renumbered = if reconcile_outcome.changed && canonical_snapshot.is_some() {
+            self.sync_roster_friend_numbers(&active.session.user_id)
+        } else {
+            Vec::new()
+        };
+        let canonical_snapshot = if renumbered.is_empty() {
+            canonical_snapshot
+        } else {
+            if let RosterDelta::Changed { patched, .. } = &mut effects.delta {
+                for patch in renumbered {
+                    if !patched.contains(&patch.user_id) {
+                        patched.push(patch.user_id);
+                    }
+                }
+            }
+            self.friends
+                .snapshot()
+                .filter(|snapshot| snapshot.generation == result.generation)
+        };
         self.apply_friend_baseline_effects_owned(
             &owner,
             &OwnerId::new(active.session.user_id.clone()),

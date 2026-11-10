@@ -162,6 +162,24 @@ describe('friendRosterStore', () => {
         });
     });
 
+    it('takes the backend friend number from a later patch', () => {
+        const store = useFriendRosterStore.getState();
+        store.applyFriendPatch({
+            userId: 'usr_new',
+            presence: online(1),
+            patch: { id: 'usr_new', displayName: 'New', $friendNumber: 0 }
+        });
+        store.applyFriendPatch({
+            userId: 'usr_new',
+            presence: online(2),
+            patch: { id: 'usr_new', displayName: 'New', $friendNumber: 42 }
+        });
+
+        expect(
+            useFriendRosterStore.getState().friendsById.usr_new
+        ).toMatchObject({ friendNumber: 42, $friendNumber: 42 });
+    });
+
     it('creates a ready fallback entry when a patch arrives before bootstrap', () => {
         useFriendRosterStore.getState().applyFriendPatch({
             userId: 'usr_new',

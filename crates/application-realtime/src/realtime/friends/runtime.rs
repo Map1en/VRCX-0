@@ -34,4 +34,4 @@ mod ws_trace_replay_test;
 pub(crate) use social_feed::{display_name_feed_entry, trust_level_feed_entry};
 pub use state::RealtimeFriendsRuntime;
 pub(crate) use state::SyntheticFriendEvent;
-pub(crate) use state::{FriendBaselineEffects, RosterDelta};
+pub(crate) use state::{apply_friend_number, FriendBaselineEffects, RosterDelta};

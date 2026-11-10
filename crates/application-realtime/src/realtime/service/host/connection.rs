@@ -12,7 +12,7 @@ use vrcx_0_core::vrchat_endpoints::{
 
 use crate::realtime::connection::RealtimeMessageSink;
 use crate::realtime::current_user::RealtimeCurrentUserRuntime;
-use crate::realtime::friends::RealtimeFriendsRuntime;
+use crate::realtime::friends::{apply_friend_number, RealtimeFriendsRuntime};
 use crate::realtime::user_facts::UserFactStore;
 use crate::realtime::user_query_cache::UserQueryCache;
 use crate::realtime::{
@@ -186,6 +186,7 @@ impl RealtimeHostRuntime {
         self.friend_profile_bulk
             .cancel_friend_profile_bulk_load_for_replacement(&session);
         let session_generation = self.deps.session.set_realtime_context(session.clone());
+        let friend_numbers = self.persisted_friend_numbers(&session.user_id);
         {
             let mut state = self
                 .state
@@ -203,46 +204,52 @@ impl RealtimeHostRuntime {
             state.world_enrichment.inflight.clear();
             state.world_enrichment.pending_corrections.clear();
             state.automation.invite.retain_for_session(&session);
-            let friend_user_ids =
-                if let Some(friends_by_id) = queued_friends.or_else(|| supplied_friends.take()) {
-                    if self
-                        .friends
-                        .session_context()
-                        .is_some_and(|previous| previous != session)
-                    {
-                        self.friends.clear();
+            let friend_user_ids = if let Some(mut friends_by_id) =
+                queued_friends.or_else(|| supplied_friends.take())
+            {
+                if let Some(numbers) = friend_numbers.as_ref() {
+                    for (user_id, entry) in &mut friends_by_id {
+                        apply_friend_number(user_id, &mut entry.record, numbers);
                     }
-                    let friend_user_ids = friends_by_id.keys().cloned().collect::<Vec<_>>();
-                    let effects = self.friends.set_baseline_with_effects(
-                        FriendRosterBaseline {
-                            current_user_id: session.user_id.clone(),
-                            endpoint: session.endpoint.clone(),
-                            websocket: session.websocket.clone(),
-                            friends_by_id,
-                        },
-                        generation,
-                        0,
-                        None,
-                        chrono::Utc::now().timestamp_millis(),
-                    );
-                    start_effects = Some(effects);
-                    friend_user_ids
-                } else {
-                    let Some((friend_user_ids, wakes)) = self
-                        .friends
-                        .restart_preserving_baseline(&session, generation)
-                    else {
-                        self.deps
-                            .session
-                            .clear_realtime_context_if_generation(session_generation);
-                        return Err(Error::Custom(
-                            "Realtime transport requires a pending or preserved friend baseline."
-                                .into(),
-                        ));
-                    };
-                    preserved_wakes = wakes;
-                    friend_user_ids
+                }
+                if self
+                    .friends
+                    .session_context()
+                    .is_some_and(|previous| previous != session)
+                {
+                    self.friends.clear();
+                }
+                let friend_user_ids = friends_by_id.keys().cloned().collect::<Vec<_>>();
+                let effects = self.friends.set_baseline_with_effects(
+                    FriendRosterBaseline {
+                        current_user_id: session.user_id.clone(),
+                        endpoint: session.endpoint.clone(),
+                        websocket: session.websocket.clone(),
+                        friends_by_id,
+                    },
+                    generation,
+                    0,
+                    None,
+                    chrono::Utc::now().timestamp_millis(),
+                );
+                start_effects = Some(effects);
+                friend_user_ids
+            } else {
+                let Some((friend_user_ids, wakes)) = self
+                    .friends
+                    .restart_preserving_baseline(&session, generation)
+                else {
+                    self.deps
+                        .session
+                        .clear_realtime_context_if_generation(session_generation);
+                    return Err(Error::Custom(
+                        "Realtime transport requires a pending or preserved friend baseline."
+                            .into(),
+                    ));
                 };
+                preserved_wakes = wakes;
+                friend_user_ids
+            };
             queued_projection.location_time_snapshot = Some(self.deps.instance_dwell.snapshot());
             state.connection.active_context = Some(ActiveRealtimeContext {
                 session: session.clone(),

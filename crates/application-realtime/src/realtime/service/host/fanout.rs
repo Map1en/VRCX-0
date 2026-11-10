@@ -132,7 +132,7 @@ impl RealtimeHostRuntime {
         let wake = output.wake.take();
         let profile_refetch_user_ids = output.profile_refetch_user_ids.clone();
         let icon_changes = std::mem::take(&mut output.icon_changes);
-        let projection = output.projection.clone();
+        let mut projection = output.projection.clone();
         let projection_generation = projection.generation;
         if !self.is_friend_projection_current(&projection) {
             return FriendOutputApplyOutcome::Stale;
@@ -174,6 +174,24 @@ impl RealtimeHostRuntime {
                 false
             }
         };
+        if persisted
+            && output
+                .persistence
+                .friend_log_upserts
+                .iter()
+                .any(|upsert| upsert.friend_number <= 0)
+        {
+            for patch in self.sync_roster_friend_numbers(output.owner_user_id.as_str()) {
+                match projection
+                    .patches
+                    .iter_mut()
+                    .find(|existing| existing.user_id == patch.user_id)
+                {
+                    Some(existing) => existing.record = patch.record,
+                    None => projection.patches.push(patch),
+                }
+            }
+        }
         self.ingest_friend_activity(&projection, &[live_feed.as_slice(), &joining].concat());
         if !projection.patches.is_empty() || !projection.removals.is_empty() {
             let endpoint = self.active_endpoint();

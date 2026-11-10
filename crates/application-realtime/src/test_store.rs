@@ -596,11 +596,25 @@ fn apply_friend_upsert(
     owner: &str,
     entry: &FriendLogUpsert,
 ) -> u64 {
+    let history_max = state
+        .history
+        .get(owner)
+        .into_iter()
+        .flatten()
+        .map(|row| row.friend_number)
+        .max()
+        .unwrap_or(0);
     let rows = state.current.entry(owner.to_string()).or_default();
     let index = rows
         .iter()
         .position(|row| row.user_id == entry.target_user_id.trim());
-    let next_friend_number = rows.iter().map(|row| row.friend_number).max().unwrap_or(0) + 1;
+    let next_friend_number = rows
+        .iter()
+        .map(|row| row.friend_number)
+        .max()
+        .unwrap_or(0)
+        .max(history_max)
+        + 1;
     let Ok(Some(plan)) = plan_friend_log_upsert(
         FriendLogUpsertInput {
             target_user_id: &entry.target_user_id,
