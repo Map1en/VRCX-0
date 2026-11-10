@@ -1,5 +1,6 @@
 import {
     ChevronRightIcon,
+    CrownIcon,
     ExternalLinkIcon,
     PencilIcon,
     SparklesIcon
@@ -40,6 +41,7 @@ import { parseLocation } from '@/shared/utils/location';
 import { replaceBioSymbols } from '@/shared/utils/string';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
 import { useRuntimeStore } from '@/state/runtimeStore';
+import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import {
     Card,
@@ -587,11 +589,22 @@ function UserDialogProfileLinksPanel({
                             />
                         ) : null}
                         <span className="min-w-0">
-                            <span className="block truncate">
-                                {representedGroup.ownerId === profile.id
-                                    ? 'Owner - '
-                                    : ''}
-                                {representedGroup.name || 'Group'}
+                            <span className="flex min-w-0 items-center gap-1.5">
+                                {representedGroup.ownerId === profile.id && (
+                                    <HintTooltip
+                                        label={t('dialog.group.label.owner_2')}
+                                    >
+                                        <span
+                                            role="img"
+                                            className="inline-flex shrink-0"
+                                        >
+                                            <CrownIcon className="text-muted-foreground size-3.5 shrink-0" />
+                                        </span>
+                                    </HintTooltip>
+                                )}
+                                <span className="truncate">
+                                    {representedGroup.name || 'Group'}
+                                </span>
                             </span>
                             <span className="text-muted-foreground block truncate">
                                 {representedGroup.memberCount
