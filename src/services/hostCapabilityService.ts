@@ -27,7 +27,7 @@ export async function initializeHostCapabilities(
     try {
         const capabilities =
             prefetchedCapabilities ?? (await commands.appGetHostCapabilities());
-        useRuntimeStore.getState().setHostCapabilities(capabilities);
+        applyHostCapabilities(capabilities);
         useRuntimeStore
             .getState()
             .setStartupTask(
@@ -49,8 +49,13 @@ export async function initializeHostCapabilities(
 
 export async function refreshHostCapabilities(): Promise<HostCapabilities> {
     const capabilities = await commands.appGetHostCapabilities();
-    useRuntimeStore.getState().setHostCapabilities(capabilities);
+    applyHostCapabilities(capabilities);
     return capabilities;
+}
+
+function applyHostCapabilities(capabilities: HostCapabilities): void {
+    useRuntimeStore.getState().setHostCapabilities(capabilities);
+    document.documentElement.dataset.platform = capabilities.platform;
 }
 
 function getHostCapabilityStatus(key: HostCapabilityKey): HostCapabilityStatus {

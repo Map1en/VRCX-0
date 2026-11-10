@@ -1508,11 +1508,25 @@
 
 .reduce-effects [data-slot='dialog-overlay'],
 .reduce-effects [data-slot='alert-dialog-overlay'],
-.reduce-effects [data-slot='sheet-overlay'] {
+.reduce-effects [data-slot='sheet-overlay'],
+[data-platform='linux'] [data-slot='dialog-overlay'],
+[data-platform='linux'] [data-slot='alert-dialog-overlay'],
+[data-platform='linux'] [data-slot='sheet-overlay'] {
     --tw-backdrop-blur: initial;
     background-color: rgb(0 0 0 / 0.4) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+}
+
+[data-platform='linux'] *,
+[data-platform='linux'] *::before,
+[data-platform='linux'] *::after {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+
+[data-platform='linux'] [class*='bg-popover/70'] {
+    background-color: var(--popover);
 }
 
 .lucide-person-standing {
