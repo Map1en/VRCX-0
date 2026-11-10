@@ -20,6 +20,7 @@ export function useFriendStatsHydration(enabled: boolean) {
                       (id) =>
                           `${id}:${state.friendsById[id]?.displayName ?? ''}`
                   )
+                  .sort()
                   .join('\u0001')
             : ''
     );
