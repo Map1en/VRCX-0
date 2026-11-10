@@ -356,11 +356,11 @@ pub fn merge_user_fact_owned(
     }
 
     let placeholder = PLACEHOLDER_SOURCES.contains(&options.source.as_str());
-    for (field, value) in &patch {
-        if field == "id" || !is_present(value) {
+    for (field, value) in patch {
+        if field == "id" || !is_present(&value) {
             continue;
         }
-        let Some(field_name) = user_fact_field(field) else {
+        let Some(field_name) = user_fact_field(&field) else {
             continue;
         };
         if placeholder && fact.observed.contains(field_name) {
@@ -369,8 +369,8 @@ pub fn merge_user_fact_owned(
         if !placeholder {
             fact.observed.insert(field_name);
         }
-        if fact.fields.get(field) != Some(value) {
-            fact.fields.insert(field.clone(), value.clone());
+        if fact.fields.get(&field) != Some(&value) {
+            fact.fields.insert(field, value);
             changed = true;
         }
     }
