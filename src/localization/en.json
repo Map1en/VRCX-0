@@ -5087,7 +5087,12 @@
                 "unpin_from_sidebar": "Unpin from Sidebar",
                 "unpinned_from_sidebar": "Unpinned from the sidebar",
                 "unpin_from_sidebar_failed": "Couldn't unpin from the sidebar",
-                "instance_creator": "Instance Creator"
+                "instance_creator": "Instance Creator",
+                "filter_with_friends": "With friends",
+                "filter_hide_unavailable": "Hide closed or full",
+                "filter_category_all": "All",
+                "filter_clear": "Clear filters",
+                "filter_no_match": "No instances match the filters"
             },
             "info": {
                 "header": "Info",

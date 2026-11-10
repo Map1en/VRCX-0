@@ -5071,7 +5071,12 @@
                 "unpin_from_sidebar": "サイドバーから固定を解除",
                 "unpinned_from_sidebar": "サイドバーから固定を解除しました",
                 "unpin_from_sidebar_failed": "サイドバーから固定を解除できませんでした",
-                "instance_creator": "インスタンス作成者"
+                "instance_creator": "インスタンス作成者",
+                "filter_with_friends": "フレンドがいる",
+                "filter_hide_unavailable": "終了・満員を隠す",
+                "filter_category_all": "すべて",
+                "filter_clear": "フィルターをクリア",
+                "filter_no_match": "条件に合うインスタンスはありません"
             },
             "info": {
                 "header": "情報",

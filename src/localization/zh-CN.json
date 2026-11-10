@@ -5075,7 +5075,12 @@
                 "unpin_from_sidebar": "取消固定",
                 "unpinned_from_sidebar": "已从侧边栏取消固定",
                 "unpin_from_sidebar_failed": "从侧边栏取消固定失败",
-                "instance_creator": "房间建立者"
+                "instance_creator": "房间建立者",
+                "filter_with_friends": "有好友在",
+                "filter_hide_unavailable": "隐藏已关闭或已满",
+                "filter_category_all": "全部",
+                "filter_clear": "清除筛选",
+                "filter_no_match": "没有符合筛选条件的房间"
             },
             "info": {
                 "header": "信息",

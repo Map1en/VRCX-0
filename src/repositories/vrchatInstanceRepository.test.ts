@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const tauriApp = vi.hoisted(() => ({
     appVrchatInstanceClose: vi.fn(),
     appVrchatInstanceCreate: vi.fn(),
+    appVrchatInstanceCreateOptionsGet: vi.fn(),
     appVrchatInstanceGet: vi.fn()
 }));
 
@@ -26,6 +27,24 @@ describe('InstanceRepository', () => {
                 data: '{"ok":true}'
             });
         }
+    });
+
+    it('reuses the instance category and vibe options across dialogs', async () => {
+        const options = {
+            categories: [{ id: 'icat_hangout', name: 'Hangout' }],
+            vibes: [{ id: 'ivib_chill', name: 'Chill' }]
+        };
+        tauriApp.appVrchatInstanceCreateOptionsGet.mockResolvedValue(options);
+
+        await expect(
+            vrchatInstanceRepository.getInstanceCreateOptions()
+        ).resolves.toEqual(options);
+        await expect(
+            vrchatInstanceRepository.getInstanceCreateOptions()
+        ).resolves.toEqual(options);
+        expect(
+            tauriApp.appVrchatInstanceCreateOptionsGet
+        ).toHaveBeenCalledOnce();
     });
 
     it('coalesces concurrent instance reads without reusing completed results', async () => {

@@ -41,6 +41,7 @@ export type InstanceLocationSummaryProps = {
     showGroupName?: boolean;
     showWorldName?: boolean;
     showPlayerSummary?: boolean;
+    showRegion?: boolean;
     className?: string;
 };
 
@@ -61,6 +62,7 @@ export function InstanceLocationSummary({
     showGroupName = true,
     showWorldName = true,
     showPlayerSummary = true,
+    showRegion = true,
     className = ''
 }: InstanceLocationSummaryProps) {
     const { t } = useTranslation();
@@ -204,7 +206,7 @@ export function InstanceLocationSummary({
                 className
             )}
         >
-            <RegionCodeBadge region={region} />
+            {showRegion ? <RegionCodeBadge region={region} /> : null}
             {interactive ? (
                 <Button
                     type="button"

@@ -5075,7 +5075,12 @@
                 "unpin_from_sidebar": "取消固定",
                 "unpinned_from_sidebar": "已從側欄取消固定",
                 "unpin_from_sidebar_failed": "從側欄取消固定失敗",
-                "instance_creator": "房間建立者"
+                "instance_creator": "房間建立者",
+                "filter_with_friends": "有好友在",
+                "filter_hide_unavailable": "隱藏已關閉或已滿",
+                "filter_category_all": "全部",
+                "filter_clear": "清除篩選",
+                "filter_no_match": "沒有符合篩選條件的房間"
             },
             "info": {
                 "header": "資訊",

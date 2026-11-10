@@ -9,6 +9,7 @@ import {
     type HttpApiExecuteResponse,
     type InstanceCreateGroupAccessType,
     type InstanceCreateMinimumAvatarPerformance,
+    type InstanceCreateOptions,
     type InstanceCreateRegion,
     type InstanceCreateRequest,
     type InstanceCreateType
@@ -206,6 +207,14 @@ async function createInstance({
     );
 }
 
+function getInstanceCreateOptions(): Promise<InstanceCreateOptions> {
+    return fetchCachedData({
+        queryKey: queryKeys.instanceCreateOptions(DEFAULT_VRCHAT_API_ENDPOINT),
+        policy: entityQueryPolicies.instanceCreateOptions,
+        queryFn: () => commands.appVrchatInstanceCreateOptionsGet()
+    });
+}
+
 async function getInstance({
     worldId,
     instanceId,
@@ -366,6 +375,7 @@ async function closeInstance({
 
 const vrchatInstanceRepository = Object.freeze({
     createInstance,
+    getInstanceCreateOptions,
     getInstance,
     getInstanceShortName,
     selfInvite,

@@ -5119,7 +5119,12 @@
                 "unpin_from_sidebar": "Odepnout z postranního panelu",
                 "unpinned_from_sidebar": "Odepnuto z postranního panelu",
                 "unpin_from_sidebar_failed": "Odepnutí z postranního panelu se nezdařilo",
-                "instance_creator": "Tvůrce instance"
+                "instance_creator": "Tvůrce instance",
+                "filter_with_friends": "S přáteli",
+                "filter_hide_unavailable": "Skrýt zavřené nebo plné",
+                "filter_category_all": "Vše",
+                "filter_clear": "Zrušit filtry",
+                "filter_no_match": "Žádné instance neodpovídají filtrům"
             },
             "info": {
                 "header": "Info",

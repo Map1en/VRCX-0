@@ -17,12 +17,6 @@ vi.mock('@/services/toastService', () => ({
     toast: { add: vi.fn() }
 }));
 
-vi.mock('@/platform/tauri/bindings', () => ({
-    commands: {
-        appVrchatInstanceCreateOptionsGet: mocks.instanceCreateOptionsGet
-    }
-}));
-
 vi.mock('@/repositories/configRepository', () => ({
     default: {
         setString: vi.fn().mockResolvedValue(undefined),
@@ -35,7 +29,10 @@ vi.mock('@/repositories/configRepository', () => ({
 }));
 
 vi.mock('@/repositories/vrchatInstanceRepository', () => ({
-    default: { createInstance: mocks.createInstance }
+    default: {
+        createInstance: mocks.createInstance,
+        getInstanceCreateOptions: mocks.instanceCreateOptionsGet
+    }
 }));
 
 vi.mock('@/services/launchService', () => ({

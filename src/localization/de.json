@@ -5083,7 +5083,12 @@
                 "unpin_from_sidebar": "Von Seitenleiste lösen",
                 "unpinned_from_sidebar": "Von der Seitenleiste gelöst",
                 "unpin_from_sidebar_failed": "Lösen von der Seitenleiste fehlgeschlagen",
-                "instance_creator": "Instanz-Ersteller"
+                "instance_creator": "Instanz-Ersteller",
+                "filter_with_friends": "Mit Freunden",
+                "filter_hide_unavailable": "Geschlossene oder volle ausblenden",
+                "filter_category_all": "Alle",
+                "filter_clear": "Filter zurücksetzen",
+                "filter_no_match": "Keine Instanzen entsprechen den Filtern"
             },
             "info": {
                 "header": "Info",

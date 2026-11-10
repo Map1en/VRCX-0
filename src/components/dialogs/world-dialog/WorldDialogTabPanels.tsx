@@ -1,23 +1,11 @@
-import {
-    ImageIcon,
-    RefreshCwIcon,
-    SparklesIcon,
-    UserIcon,
-    UsersIcon
-} from 'lucide-react';
+import { ImageIcon, RefreshCwIcon, SparklesIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { EconomyStoreListings } from '@/components/economy/EconomyStoreListings';
-import { CurrentInstanceBadge } from '@/components/instances/CurrentInstanceBadge';
-import { InstanceActionBar } from '@/components/instances/InstanceActionBar';
-import { InstanceVisitedBadge } from '@/components/instances/InstanceVisitedBadge';
-import { normalizeLocationText } from '@/components/location/locationModel';
 import { ScreenshotThumbnailCard } from '@/components/media/ScreenshotThumbnailCard';
 import { useScreenshotGalleryGrid } from '@/components/media/useScreenshotGalleryGrid';
 import { formatDateFilterOrFallback, timeToText } from '@/lib/dateTime';
-import { cn } from '@/lib/utils';
 import { openExternalLink } from '@/services/entityMediaService';
-import { isRecord } from '@/shared/utils/record';
 import { useAssistantChatStore } from '@/state/assistantChatStore';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -41,44 +29,19 @@ import {
 } from '../EntityDialogScaffold';
 import { InstanceHistoryListPanel } from '../previous-instances-table/InstanceHistoryListPanel';
 import { formatPreviousInstanceCount } from '../previous-instances-table/previousInstancesRows';
+import { WorldDialogInstancesPanel } from './WorldDialogInstancesPanel';
 import type {
     WorldDialogTabCommands,
     WorldDialogTabModel,
     WorldWorldScreenshots
 } from './WorldDialogTabbedView';
 import { friendVisitSummary } from './worldDialogUtils';
-import {
-    InstanceUserTiles,
-    WorldInstancesEmptyState,
-    platformDisplayName,
-    resolveLaunchLocation
-} from './WorldDialogViewParts';
-import { WorldInstanceRowTitle } from './WorldInstanceRowTitle';
-import { WorldSidebarPinButton } from './WorldSidebarPinButton';
+import { platformDisplayName } from './WorldDialogViewParts';
 
 const WORLD_DATE_FALLBACKS = {
     empty: '',
     invalid: String
 };
-
-function firstKnownValue(...values: unknown[]): number | undefined {
-    for (const value of values) {
-        const numeric = Number(value);
-        if (
-            value !== null &&
-            typeof value !== 'undefined' &&
-            value !== '' &&
-            Number.isFinite(numeric)
-        ) {
-            return numeric;
-        }
-    }
-    return undefined;
-}
-
-function record(value: unknown): Record<string, unknown> {
-    return isRecord(value) ? value : {};
-}
 
 function WorldScreenshotsEmptyState({
     loading = false,
@@ -265,172 +228,16 @@ export function WorldDialogTabPanels({
                 value="instances"
                 className="flex flex-col gap-3 pt-3"
             >
-                <div className="flex flex-wrap items-center gap-1.5">
-                    <Badge variant="outline">
-                        <UserIcon data-icon="inline-start" />
-                        {t('dialog.world.instances.public_count', {
-                            count: world.publicOccupants ?? 0
-                        })}
-                    </Badge>
-                    <Badge variant="outline">
-                        <UserIcon data-icon="inline-start" />
-                        {t('dialog.world.instances.private_count', {
-                            count: world.privateOccupants ?? 0
-                        })}
-                    </Badge>
-                    <Badge variant="outline">
-                        <UsersIcon data-icon="inline-start" />
-                        {t('dialog.world.instances.capacity_count', {
-                            count: world.recommendedCapacity || '—',
-                            max: world.capacity || '—'
-                        })}
-                    </Badge>
-                    <WorldSidebarPinButton
-                        worldId={world.id}
-                        name={world.name}
-                    />
-                </div>
-                <div className="flex flex-col gap-2">
-                    {displayInstanceRows.length ? (
-                        displayInstanceRows.map((instance) => {
-                            const instanceRecord = record(instance);
-                            const instanceRef = record(instance.ref);
-                            const instanceRefWorld = record(instanceRef.world);
-                            const instanceGroup = record(instance.group);
-                            const instanceWorld = record(instanceRecord.world);
-                            const location = resolveLaunchLocation(
-                                world,
-                                instance
-                            );
-                            const shortName = normalizeLocationText(
-                                instance.shortName
-                            );
-                            const launchToken =
-                                shortName ||
-                                normalizeLocationText(instance.secureName);
-                            const playerCount = firstKnownValue(
-                                instance.playerCount,
-                                instance.userCount,
-                                instance.occupants,
-                                Array.isArray(instance.users)
-                                    ? instance.users.length
-                                    : undefined
-                            );
-                            const capacity = firstKnownValue(
-                                instance.capacity,
-                                instanceRef.capacity,
-                                instanceRefWorld.capacity,
-                                world.capacity
-                            );
-                            const isClosed = Boolean(
-                                instanceRef.closedAt || instanceRecord.closedAt
-                            );
-                            return (
-                                <div
-                                    key={instance.id}
-                                    className={cn(
-                                        'bg-muted/10 hover:bg-muted/25 rounded-md border px-2.5 py-2 text-sm transition-colors',
-                                        isClosed && 'opacity-60'
-                                    )}
-                                >
-                                    <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                                        <div className="flex min-w-0 flex-1 items-center gap-1.5">
-                                            <WorldInstanceRowTitle
-                                                location={location}
-                                                displayName={normalizeLocationText(
-                                                    instanceRef.displayName ||
-                                                        instanceRecord.displayName
-                                                )}
-                                                languageSource={{
-                                                    ...instanceRef,
-                                                    ...instanceRecord
-                                                }}
-                                                locationWorldProps={{
-                                                    locationObject: {
-                                                        ...record(instance.ref),
-                                                        ...instance,
-                                                        tag: location,
-                                                        location,
-                                                        shortName,
-                                                        launchToken
-                                                    },
-                                                    currentUserId,
-                                                    worldDialogShortName,
-                                                    grouphint:
-                                                        normalizeLocationText(
-                                                            instanceRecord.groupName
-                                                        ) ||
-                                                        normalizeLocationText(
-                                                            instanceGroup.name
-                                                        ),
-                                                    playerCount,
-                                                    capacity,
-                                                    showWorldName: false,
-                                                    showPlayerSummary: false,
-                                                    hint:
-                                                        world.name ||
-                                                        normalizeLocationText(
-                                                            instanceRecord.worldName
-                                                        ) ||
-                                                        normalizeLocationText(
-                                                            instanceWorld.name
-                                                        )
-                                                }}
-                                            />
-                                            {instance.isCurrentInstance ? (
-                                                <CurrentInstanceBadge className="shrink-0" />
-                                            ) : (
-                                                <InstanceVisitedBadge
-                                                    location={location}
-                                                    className="shrink-0"
-                                                />
-                                            )}
-                                        </div>
-                                        <InstanceActionBar
-                                            className="min-w-0 flex-wrap justify-start sm:justify-end"
-                                            target={{
-                                                location,
-                                                shortName: launchToken,
-                                                worldName:
-                                                    normalizeLocationText(
-                                                        world.name ||
-                                                            instanceRecord.worldName ||
-                                                            instanceWorld.name
-                                                    )
-                                            }}
-                                            instance={instance}
-                                            friendCount={
-                                                Number(
-                                                    instanceRecord.friendCount
-                                                ) || undefined
-                                            }
-                                            playerCount={playerCount}
-                                            capacity={capacity}
-                                            instanceInfoPlacement="start"
-                                            instanceCountAlign="left"
-                                            instanceSummaryOrder="markers-first"
-                                            showHistory={Boolean(
-                                                previousInstances.length
-                                            )}
-                                            historyTooltip="Visit history"
-                                            onHistory={() =>
-                                                onChangeTab('visit-history')
-                                            }
-                                        />
-                                    </div>
-                                    <InstanceUserTiles
-                                        instance={instance}
-                                        instanceLocation={location}
-                                        visibleUserIds={visibleInstanceUserIds}
-                                        showInstanceDuration
-                                    />
-                                </div>
-                            );
-                        })
-                    ) : !isInstanceLocation ? (
-                        <WorldInstancesEmptyState />
-                    ) : null}
-                </div>
+                <WorldDialogInstancesPanel
+                    world={world}
+                    rows={displayInstanceRows}
+                    currentUserId={currentUserId}
+                    worldDialogShortName={worldDialogShortName}
+                    visibleInstanceUserIds={visibleInstanceUserIds}
+                    isInstanceLocation={isInstanceLocation}
+                    showHistory={Boolean(previousInstances.length)}
+                    onShowHistory={() => onChangeTab('visit-history')}
+                />
             </EntityDialogTabContent>
             <EntityDialogTabContent
                 value="visit-history"

@@ -8,10 +8,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import type { WorldProfileRecord } from '@/domain/entities/world';
-import {
-    commands,
-    type InstanceCreateOptions
-} from '@/platform/tauri/bindings';
+import type { InstanceCreateOptions } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
 import { copyTextToClipboard } from '@/services/clipboardService';
@@ -70,7 +67,9 @@ function storedIds(values: unknown) {
 }
 
 function loadInstanceCreateOptions(): Promise<InstanceCreateOptions | null> {
-    return commands.appVrchatInstanceCreateOptionsGet().catch(() => null);
+    return vrchatInstanceRepository
+        .getInstanceCreateOptions()
+        .catch(() => null);
 }
 
 interface UseWorldInstanceActionsInput {

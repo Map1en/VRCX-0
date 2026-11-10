@@ -5087,7 +5087,12 @@
                 "unpin_from_sidebar": "Desfijar de la barra lateral",
                 "unpinned_from_sidebar": "Desfijado de la barra lateral",
                 "unpin_from_sidebar_failed": "No se pudo desfijar de la barra lateral",
-                "instance_creator": "Creador de la instancia"
+                "instance_creator": "Creador de la instancia",
+                "filter_with_friends": "Con amigos",
+                "filter_hide_unavailable": "Ocultar cerradas o llenas",
+                "filter_category_all": "Todas",
+                "filter_clear": "Borrar filtros",
+                "filter_no_match": "Ninguna instancia coincide con los filtros"
             },
             "info": {
                 "header": "Información",

@@ -5113,7 +5113,12 @@
                 "unpin_from_sidebar": "Открепить от боковой панели",
                 "unpinned_from_sidebar": "Откреплено от боковой панели",
                 "unpin_from_sidebar_failed": "Не удалось открепить от боковой панели",
-                "instance_creator": "Создатель инстанса"
+                "instance_creator": "Создатель инстанса",
+                "filter_with_friends": "С друзьями",
+                "filter_hide_unavailable": "Скрыть закрытые и заполненные",
+                "filter_category_all": "Все",
+                "filter_clear": "Сбросить фильтры",
+                "filter_no_match": "Нет инстансов, подходящих под фильтры"
             },
             "info": {
                 "header": "Информация",
