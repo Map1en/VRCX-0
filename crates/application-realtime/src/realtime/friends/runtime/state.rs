@@ -41,6 +41,13 @@ pub(super) struct Roster {
     pub(super) entries: HashMap<String, FriendEntry>,
 }
 
+pub(crate) struct FriendRosterScope {
+    pub(crate) current_user_id: String,
+    pub(crate) endpoint: String,
+    pub(crate) generation: u64,
+    pub(crate) baseline_revision: u64,
+}
+
 pub(crate) enum RosterDelta {
     Rebuilt {
         removed: Vec<String>,
@@ -118,6 +125,17 @@ impl RealtimeFriendsRuntime {
             .roster
             .as_ref()
             .map(|roster| (roster.generation, roster.baseline_revision))
+    }
+
+    pub(crate) fn roster_scope(&self) -> Option<FriendRosterScope> {
+        let state = self.lock_state();
+        let roster = state.roster.as_ref()?;
+        Some(FriendRosterScope {
+            current_user_id: roster.session.user_id.clone(),
+            endpoint: roster.session.endpoint.clone(),
+            generation: roster.generation,
+            baseline_revision: roster.baseline_revision,
+        })
     }
 
     pub(crate) fn friend_rev(&self) -> u64 {

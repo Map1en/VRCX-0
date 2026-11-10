@@ -283,10 +283,16 @@ impl InstanceDwellRegistry {
             return None;
         }
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        let previous = snapshot_locked(&state);
+        let previous = state
+            .friends
+            .get(user_id)
+            .map(|entry| projected_friend(&state, user_id, entry));
         update_friend_entry(&mut state, user_id, place);
-        let next = snapshot_locked(&state);
-        (next != previous).then_some(next)
+        let next = state
+            .friends
+            .get(user_id)
+            .map(|entry| projected_friend(&state, user_id, entry));
+        (next != previous).then(|| snapshot_locked(&state))
     }
 
     pub fn observe_roster(&self, snapshot: &InstanceRosterSnapshot) {
@@ -320,11 +326,9 @@ impl InstanceDwellRegistry {
             return None;
         }
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        let previous = snapshot_locked(&state);
-        state.friends.remove(user_id);
+        let removed = state.friends.remove(user_id).is_some();
         state.local_roster.arrival_starts.remove(user_id);
-        let next = snapshot_locked(&state);
-        (next != previous).then_some(next)
+        removed.then(|| snapshot_locked(&state))
     }
 
     #[cfg(test)]
@@ -733,7 +737,10 @@ mod tests {
             friend("usr_a", "offline", "offline"),
             friend("usr_a", "online", "wrld_b:2"),
         ] {
-            registry.observe_friend("usr_a", &place_from_record(&record, 18_001_000));
+            assert_eq!(
+                registry.observe_friend("usr_a", &place_from_record(&record, 18_001_000)),
+                None
+            );
             let snapshot = registry.snapshot();
             assert_eq!(snapshot[0].location, "wrld_a:1");
             assert_eq!(snapshot[0].since_ms, Some(1_000));
@@ -1073,6 +1080,7 @@ mod tests {
             &place_from_record(&friend("usr_a", "online", "wrld_a:1"), 1_000),
         );
         assert_eq!(registry.forget_friend("usr_a").unwrap(), []);
+        assert_eq!(registry.forget_friend("usr_a"), None);
 
         registry.observe_friend(
             "usr_b",

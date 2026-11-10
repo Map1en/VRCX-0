@@ -31,11 +31,7 @@ impl RealtimeHostRuntime {
     }
 
     pub fn emit_friend_log_changed(&self) {
-        let (generation, baseline_revision) = self
-            .friends
-            .snapshot()
-            .map(|snapshot| (snapshot.generation, snapshot.baseline_revision))
-            .unwrap_or((0, 0));
+        let (generation, baseline_revision) = self.friends.roster_revision().unwrap_or((0, 0));
         self.emit_friend_projection(FriendProjection {
             friend_log_changed: true,
             ..FriendProjection::new(generation, baseline_revision)
@@ -44,17 +40,17 @@ impl RealtimeHostRuntime {
 
     pub fn emit_friend_location_time_snapshot(self: &Arc<Self>) {
         let _owner = self.lock_friend_owner();
-        let Some(snapshot) = self.friends.snapshot() else {
+        let Some(scope) = self.friends.roster_scope() else {
             return;
         };
         if !self
             .deps
             .auth_scope
-            .matches(&snapshot.current_user_id, &snapshot.endpoint)
+            .matches(&scope.current_user_id, &scope.endpoint)
         {
             return;
         }
-        let mut projection = FriendProjection::new(snapshot.generation, snapshot.baseline_revision);
+        let mut projection = FriendProjection::new(scope.generation, scope.baseline_revision);
         projection.location_time_snapshot = Some(self.deps.instance_dwell.snapshot());
         self.emit_friend_projection(projection);
     }
@@ -75,7 +71,11 @@ impl RealtimeHostRuntime {
         }
     }
 
-    fn ingest_friend_activity(&self, projection: &FriendProjection, entries: &[FeedLiveEntry]) {
+    fn ingest_friend_activity<'a>(
+        &self,
+        projection: &FriendProjection,
+        entries: impl Iterator<Item = &'a FeedLiveEntry>,
+    ) {
         let Some(activity) = &self.deps.activity else {
             return;
         };
@@ -87,7 +87,7 @@ impl RealtimeHostRuntime {
                 .collect(),
             projection.removals.clone(),
         );
-        activity.ingest_activity(entries.iter().filter_map(feed_activity_event).collect());
+        activity.ingest_activity(entries.filter_map(feed_activity_event).collect());
     }
 
     pub(super) fn lock_friend_owner(&self) -> FriendOwnerGuard<'_> {
@@ -120,7 +120,7 @@ impl RealtimeHostRuntime {
         if !self.is_friend_projection_current(&projection) {
             return;
         }
-        self.ingest_friend_activity(&projection, &feed_entries);
+        self.ingest_friend_activity(&projection, feed_entries.iter());
         self.emit_feed_entries(generation, owner_user_id, feed_entries);
     }
 
@@ -130,9 +130,9 @@ impl RealtimeHostRuntime {
         mut output: RealtimeFriendOutput,
     ) -> FriendOutputApplyOutcome {
         let wake = output.wake.take();
-        let profile_refetch_user_ids = output.profile_refetch_user_ids.clone();
+        let profile_refetch_user_ids = output.profile_refetch_user_ids;
         let icon_changes = std::mem::take(&mut output.icon_changes);
-        let mut projection = output.projection.clone();
+        let mut projection = output.projection;
         let projection_generation = projection.generation;
         if !self.is_friend_projection_current(&projection) {
             return FriendOutputApplyOutcome::Stale;
@@ -192,7 +192,7 @@ impl RealtimeHostRuntime {
                 }
             }
         }
-        self.ingest_friend_activity(&projection, &[live_feed.as_slice(), &joining].concat());
+        self.ingest_friend_activity(&projection, live_feed.iter().chain(&joining));
         if !projection.patches.is_empty() || !projection.removals.is_empty() {
             let endpoint = self.active_endpoint();
             if !projection.removals.is_empty() {
