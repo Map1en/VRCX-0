@@ -68,6 +68,7 @@ export function useVrchatLogController() {
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [knownCategories, setKnownCategories] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [searchCaseSensitive, setSearchCaseSensitive] = useState(false);
     const [searchRegex, setSearchRegex] = useState(false);
     const [levelCounts, setLevelCounts] = useState<VrchatLogLevelCountOutput[]>(
@@ -83,6 +84,14 @@ export function useVrchatLogController() {
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [isCopying, setIsCopying] = useState(false);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        const timer = window.setTimeout(
+            () => setDebouncedSearchQuery(searchQuery),
+            250
+        );
+        return () => window.clearTimeout(timer);
+    }, [searchQuery]);
 
     const selectedFile = files.find(
         (file) => file.fileName === selectedFileName
@@ -245,16 +254,16 @@ export function useVrchatLogController() {
             fileName: selectedFileName,
             offset,
             limit,
-            query: searchQuery.trim() || null,
+            query: debouncedSearchQuery.trim() || null,
             queryCaseSensitive: searchCaseSensitive,
             queryRegex: searchRegex,
             levels,
             categories: selectedCategories.length ? selectedCategories : null
         }),
         [
+            debouncedSearchQuery,
             levels,
             searchCaseSensitive,
-            searchQuery,
             searchRegex,
             selectedCategories,
             selectedFileName
@@ -461,6 +470,7 @@ export function useVrchatLogController() {
                 setLevels(prefs.levels);
                 setSelectedCategories(prefs.categories);
                 setSearchQuery(prefs.searchQuery);
+                setDebouncedSearchQuery(prefs.searchQuery);
                 setSearchCaseSensitive(prefs.searchCaseSensitive);
                 setSearchRegex(prefs.searchRegex);
                 setFollowLatest(prefs.followLatest);
@@ -515,11 +525,11 @@ export function useVrchatLogController() {
         }
         loadEntries({ reset: true, offset: 0 });
     }, [
+        debouncedSearchQuery,
         levels,
         loadEntries,
         prefsLoaded,
         searchCaseSensitive,
-        searchQuery,
         searchRegex,
         selectedCategories,
         selectedFileName,
@@ -586,7 +596,7 @@ export function useVrchatLogController() {
                         afterLineNumber: lastLineNumberRef.current,
                         fileSize: lastFileSizeRef.current,
                         limit: TAIL_LIMIT,
-                        query: searchQuery.trim() || null,
+                        query: debouncedSearchQuery.trim() || null,
                         queryCaseSensitive: searchCaseSensitive,
                         queryRegex: searchRegex,
                         levels,
@@ -669,12 +679,12 @@ export function useVrchatLogController() {
             window.clearInterval(timer);
         };
     }, [
+        debouncedSearchQuery,
         followLatest,
         levels,
         loadEntries,
         prefsLoaded,
         searchCaseSensitive,
-        searchQuery,
         searchRegex,
         selectedCategories,
         selectedFileName,
