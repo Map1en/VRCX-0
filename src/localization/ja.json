@@ -1081,6 +1081,7 @@
         "about": "VRCX-0 について",
         "messages": {
             "zoom_failed": "ズームの適用に失敗しました",
+            "zoom_level": "ズーム：{value}",
             "logout_failed": "VRCX-0 からのログアウトに失敗しました",
             "restart_failed": "VRCX-0 の再起動に失敗しました",
             "open_devtools_failed": "DevTools を開けませんでした"
@@ -3304,6 +3305,8 @@
                     "theme_mode_pink": "ピンク",
                     "theme_mode_material3": "Material 3",
                     "zoom": "ズーム",
+                    "ctrl_wheel_zoom": "マウスホイールでズーム",
+                    "ctrl_wheel_zoom_description": "Ctrl（macOS では ⌘）を押しながらホイールを回すと表示倍率を変更できます。誤操作を防ぐため、初期設定ではオフです。",
                     "show_instance_id": "インスタンス名を表示",
                     "age_gated_instances": "年齢制限付きインスタンス",
                     "age_gated_instances_description": "年齢制限付きインスタンスを表示します。無効にすると詳細が隠され、「制限付き」とだけ表示されます。",

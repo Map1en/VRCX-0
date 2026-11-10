@@ -103,6 +103,7 @@ export const ConfigKeys = defineConfigKeys({
     dataTableStriped: { type: 'bool', default: false },
     tableDensity: { type: 'string', default: 'standard' },
     reducedMotionAndBlur: { type: 'bool', default: false },
+    ctrlWheelZoom: { type: 'bool', default: false },
     tablePageSize: { type: 'int', default: DEFAULT_TABLE_PAGE_SIZE },
     randomUserColours: { type: 'bool', default: false },
     randomUserColourStyle: { type: 'string', default: 'classic' },

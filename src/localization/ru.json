@@ -1096,6 +1096,7 @@
         "about": "О том, что VRCX-0",
         "messages": {
             "zoom_failed": "Не удалось применить увеличение",
+            "zoom_level": "Масштаб: {value}",
             "logout_failed": "Не удалось выйти из VRCX-0",
             "restart_failed": "Не удалось перезапустить VRCX-0",
             "open_devtools_failed": "Не удалось открыть DevTools"
@@ -3332,6 +3333,8 @@
                     "theme_mode_pink": "Розовый",
                     "theme_mode_material3": "Материал 3",
                     "zoom": "Масштаб",
+                    "ctrl_wheel_zoom": "Масштаб колесом мыши",
+                    "ctrl_wheel_zoom_description": "Удерживайте Ctrl (⌘ в macOS) и прокручивайте колесо мыши, чтобы изменить масштаб. По умолчанию выключено, чтобы избежать случайного изменения.",
                     "show_instance_id": "Показать ID случая",
                     "age_gated_instances": "Ограниченые по возросту Инстансы",
                     "age_gated_instances_description": "В случае инвалидности эти случаи скрываются и показываются как ограниченные.",

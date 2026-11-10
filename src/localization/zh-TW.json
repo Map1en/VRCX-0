@@ -1085,6 +1085,7 @@
         "about": "關於 VRCX-0",
         "messages": {
             "zoom_failed": "無法套用縮放",
+            "zoom_level": "介面縮放：{value}",
             "logout_failed": "登出 VRCX-0 失敗",
             "restart_failed": "重新啟動 VRCX-0 失敗",
             "open_devtools_failed": "開啟開發者工具失敗"
@@ -3308,6 +3309,8 @@
                     "theme_mode_pink": "粉色",
                     "theme_mode_material3": "Material 3",
                     "zoom": "介面縮放",
+                    "ctrl_wheel_zoom": "滾輪調整縮放",
+                    "ctrl_wheel_zoom_description": "按住 Ctrl（macOS 為 ⌘）並捲動滑鼠滾輪來調整介面縮放。預設關閉，避免誤觸。",
                     "show_instance_id": "顯示房間 ID",
                     "age_gated_instances": "年齡限制房間",
                     "age_gated_instances_description": "顯示受年齡限制的房間。停用時，這些房間會隱藏並顯示為受限制。",

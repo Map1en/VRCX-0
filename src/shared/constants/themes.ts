@@ -132,6 +132,6 @@ export const DEFAULT_ZOOM_LEVEL = 100;
 
 export const MIN_ZOOM_LEVEL = 50;
 
-export const MAX_ZOOM_LEVEL = 160;
+export const MAX_ZOOM_LEVEL = 200;
 
 export const ZOOM_STEP = 5;

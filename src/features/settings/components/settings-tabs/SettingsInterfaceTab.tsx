@@ -23,6 +23,7 @@ export function SettingsInterfaceTab() {
             tableDensity: state.tableDensity,
             dataTableStriped: state.dataTableStriped,
             reducedMotionAndBlur: state.reducedMotionAndBlur,
+            ctrlWheelZoom: state.ctrlWheelZoom,
             accessibleStatusIndicators: state.accessibleStatusIndicators,
             showInstanceIdInLocation: state.showInstanceIdInLocation,
             isAgeGatedInstancesVisible: state.isAgeGatedInstancesVisible,
@@ -47,6 +48,7 @@ export function SettingsInterfaceTab() {
         onCjkFontPackChange,
         onZoomInputChange,
         onZoomBlur,
+        onCtrlWheelZoomChange,
         onTableDensityChange,
         onDataTableStripedChange,
         onAccessibleStatusIndicatorsChange,
@@ -78,6 +80,7 @@ export function SettingsInterfaceTab() {
                 onCjkFontPackChange={onCjkFontPackChange}
                 onZoomInputChange={onZoomInputChange}
                 onZoomBlur={onZoomBlur}
+                onCtrlWheelZoomChange={onCtrlWheelZoomChange}
                 onTableDensityChange={onTableDensityChange}
                 onDataTableStripedChange={onDataTableStripedChange}
                 onAccessibleStatusIndicatorsChange={

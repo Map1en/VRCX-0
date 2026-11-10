@@ -1086,6 +1086,7 @@
         "about": "Sobre o VRCX-0",
         "messages": {
             "zoom_failed": "Falha ao aplicar o zoom",
+            "zoom_level": "Zoom: {value}",
             "logout_failed": "Falha ao sair do VRCX-0",
             "restart_failed": "Falha ao reiniciar o VRCX-0",
             "open_devtools_failed": "Falha ao abrir o DevTools"
@@ -3312,6 +3313,8 @@
                     "theme_mode_pink": "Rosa",
                     "theme_mode_material3": "Material 3",
                     "zoom": "Zoom",
+                    "ctrl_wheel_zoom": "Zoom com a roda do mouse",
+                    "ctrl_wheel_zoom_description": "Segure Ctrl (⌘ no macOS) e role a roda do mouse para alterar o zoom. Desativado por padrão para evitar zoom acidental.",
                     "show_instance_id": "Mostrar ID da Instância",
                     "age_gated_instances": "Mostrar Instâncias com Restrição de Idade",
                     "age_gated_instances_description": "Mostrar instâncias com restrição de idade. Quando desativado, essas instâncias ficam ocultas e aparecem como restritas.",

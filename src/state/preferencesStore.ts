@@ -301,6 +301,7 @@ export const DEFAULT_PREFERENCES = Object.freeze({
     dataTableStriped: false,
     tableDensity: 'standard',
     reducedMotionAndBlur: false,
+    ctrlWheelZoom: false,
     accessibleStatusIndicators: false,
     showNewDashboardButton: true,
     recentActionCooldownEnabled: false,
@@ -474,6 +475,7 @@ export function normalizePreferenceSnapshot(snapshot: unknown = {}) {
         dataTableStriped: normalizeBool(next.dataTableStriped),
         tableDensity: normalizeTableDensity(next.tableDensity),
         reducedMotionAndBlur: normalizeBool(next.reducedMotionAndBlur),
+        ctrlWheelZoom: normalizeBool(next.ctrlWheelZoom),
         accessibleStatusIndicators: normalizeBool(
             next.accessibleStatusIndicators
         ),

@@ -118,6 +118,38 @@ export const SHORTCUT_REGISTRY = [
         labelKey: 'app_menu.hide_friends_sidebar'
     },
     {
+        id: 'zoom-in',
+        scope: 'global',
+        keys: ['Mod', '='],
+        allowInTextEntry: true,
+        ignoredModifiers: ['Shift'],
+        group: 'layout',
+        labelKey: 'app_menu.zoom_in'
+    },
+    {
+        id: 'zoom-in-plus',
+        scope: 'global',
+        keys: ['Mod', '+'],
+        allowInTextEntry: true,
+        ignoredModifiers: ['Shift']
+    },
+    {
+        id: 'zoom-out',
+        scope: 'global',
+        keys: ['Mod', '-'],
+        allowInTextEntry: true,
+        group: 'layout',
+        labelKey: 'app_menu.zoom_out'
+    },
+    {
+        id: 'zoom-reset',
+        scope: 'global',
+        keys: ['Mod', '0'],
+        allowInTextEntry: true,
+        group: 'layout',
+        labelKey: 'app_menu.reset_zoom'
+    },
+    {
         id: 'suppress-print',
         scope: 'global',
         keys: ['Mod', 'P'],

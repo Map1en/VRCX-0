@@ -123,6 +123,9 @@ export function buildInterfaceSection({
                 checked
             );
         },
+        onCtrlWheelZoomChange: (checked: boolean) => {
+            saveBoolPreference('ctrlWheelZoom', 'ctrlWheelZoom', checked);
+        },
         onShowInstanceIdInLocationChange: (checked: boolean) => {
             saveBoolPreference(
                 'showInstanceIdInLocation',

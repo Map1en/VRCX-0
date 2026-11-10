@@ -509,5 +509,5 @@ export async function applyZoomLevel(savedZoom: ZoomLevelInput): Promise<void> {
     const numericZoom = normalizeZoomLevel(savedZoom);
 
     useShellStore.getState().setZoomLevel(numericZoom);
-    await tauriClient.webview.setZoom(Math.pow(1.2, numericZoom / 10 - 10));
+    await tauriClient.webview.setZoom(numericZoom / 100);
 }

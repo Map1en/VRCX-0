@@ -1096,6 +1096,7 @@
         "about": "O aplikaci VRCX-0",
         "messages": {
             "zoom_failed": "Nepodařilo se použít přiblížení",
+            "zoom_level": "Přiblížení: {value}",
             "logout_failed": "Nepodařilo se odhlásit z VRCX-0",
             "restart_failed": "Nepodařilo se restartovat VRCX-0",
             "open_devtools_failed": "Nepodařilo se otevřít DevTools"
@@ -3334,6 +3335,8 @@
                     "theme_mode_pink": "Růžový",
                     "theme_mode_material3": "Material 3",
                     "zoom": "Přiblížení",
+                    "ctrl_wheel_zoom": "Přiblížení kolečkem myši",
+                    "ctrl_wheel_zoom_description": "Podržte Ctrl (⌘ v macOS) a otáčejte kolečkem myši pro změnu přiblížení. Ve výchozím stavu vypnuto, aby nedošlo k nechtěné změně.",
                     "show_instance_id": "Zobrazit ID instance",
                     "age_gated_instances": "Zobrazit věkově omezené instance",
                     "age_gated_instances_description": "Zobrazí věkově omezené instance. Když je vypnuto, jsou tyto instance skryty a zobrazeny jako omezené.",

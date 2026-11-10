@@ -14,6 +14,7 @@ import { AppTitleBar } from '@/components/layout/AppTitleBar';
 import { MacNativeMenuActionHost } from '@/components/layout/MacNativeMenuActionHost';
 import { MacOverlayTitleBar } from '@/components/layout/MacOverlayTitleBar';
 import { QuickSearchProvider } from '@/components/layout/QuickSearchProvider';
+import { useAppZoomShortcuts } from '@/components/layout/useAppZoomShortcuts';
 import { useGlobalKeyboardShortcuts } from '@/components/layout/useGlobalKeyboardShortcuts';
 import { useSidebarAutoHide } from '@/components/layout/useSidebarAutoHide';
 import { useTrayShortcut } from '@/components/layout/useTrayShortcut';
@@ -138,6 +139,7 @@ function AppRouterContent() {
         }
     }, [pathname, search, hash, sessionReady]);
     useGlobalKeyboardShortcuts();
+    useAppZoomShortcuts();
     useTrayShortcut();
     useSidebarAutoHide();
     useEffect(() => {

@@ -264,6 +264,13 @@ defineCard(
             labelKey: 'view.settings.appearance.appearance.zoom'
         },
         {
+            key: 'ctrl-wheel-zoom',
+            labelKey: 'view.settings.appearance.appearance.ctrl_wheel_zoom',
+            descriptionKey:
+                'view.settings.appearance.appearance.ctrl_wheel_zoom_description',
+            prefKey: 'ctrlWheelZoom'
+        },
+        {
             key: 'table-density',
             labelKey: 'view.settings.appearance.appearance.table_density',
             prefKey: 'tableDensity'

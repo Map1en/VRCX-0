@@ -1084,6 +1084,7 @@
         "about": "VRCX-0 정보",
         "messages": {
             "zoom_failed": "확대/축소를 적용하지 못했습니다.",
+            "zoom_level": "확대/축소: {value}",
             "logout_failed": "VRCX-0에서 로그아웃하지 못했습니다.",
             "restart_failed": "VRCX-0을 다시 시작하지 못했습니다.",
             "open_devtools_failed": "DevTools를 열지 못했습니다."
@@ -3245,6 +3246,8 @@
                     "theme_mode_pink": "핑크",
                     "theme_mode_material3": "머티리얼 3",
                     "zoom": "줌",
+                    "ctrl_wheel_zoom": "마우스 휠로 확대/축소",
+                    "ctrl_wheel_zoom_description": "Ctrl(macOS에서는 ⌘)을 누른 채 휠을 돌려 확대/축소 비율을 조정합니다. 실수로 조작하지 않도록 기본값은 꺼짐입니다.",
                     "show_instance_id": "인스턴스 ID 표시",
                     "age_gated_instances": "연령 제한 인스턴스 표시",
                     "age_gated_instances_description": "연령 제한 인스턴스를 표시합니다. 끄면 세부 정보 없이 '제한됨'으로만 표시됩니다.",

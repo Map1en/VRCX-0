@@ -10,6 +10,7 @@ import {
     APP_FONT_DEFAULT_KEY,
     APP_FONT_FAMILIES
 } from '@/shared/constants/fonts';
+import { MAX_ZOOM_LEVEL, MIN_ZOOM_LEVEL } from '@/shared/constants/themes';
 import type { TableDensity } from '@/state/shellStore';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -55,6 +56,7 @@ type AppearancePrefs = FontPreferencePrefs & {
     tableDensity: string;
     dataTableStriped: boolean;
     reducedMotionAndBlur: boolean;
+    ctrlWheelZoom: boolean;
     accessibleStatusIndicators: boolean;
 };
 
@@ -68,6 +70,7 @@ type SettingsInterfaceAppearanceCardProps = {
     onCjkFontPackChange: (value: string) => void;
     onZoomInputChange: (value: string) => void;
     onZoomBlur: (value: string) => void;
+    onCtrlWheelZoomChange: (value: boolean) => void;
     onTableDensityChange: (value: TableDensity) => void;
     onDataTableStripedChange: (value: boolean) => void;
     onAccessibleStatusIndicatorsChange: (value: boolean) => void;
@@ -271,6 +274,7 @@ export function SettingsInterfaceAppearanceCard({
     onCjkFontPackChange,
     onZoomInputChange,
     onZoomBlur,
+    onCtrlWheelZoomChange,
     onTableDensityChange,
     onDataTableStripedChange,
     onAccessibleStatusIndicatorsChange,
@@ -324,10 +328,9 @@ export function SettingsInterfaceAppearanceCard({
                     <NumberField
                         id="settings-zoom"
                         name="zoom"
-                        min={30}
-                        max={300}
+                        min={MIN_ZOOM_LEVEL}
+                        max={MAX_ZOOM_LEVEL}
                         step={1}
-                        allowOutOfRange
                         className="w-36"
                         value={zoomInput === '' ? null : Number(zoomInput)}
                         onValueChange={(value) =>
@@ -346,6 +349,22 @@ export function SettingsInterfaceAppearanceCard({
                         </NumberFieldGroup>
                     </NumberField>
                 </div>
+            </Field>
+
+            <Field
+                settingId="interface.appearance.ctrl-wheel-zoom"
+                onReset={() =>
+                    onCtrlWheelZoomChange(SETTINGS_DEFAULT_VALUES.ctrlWheelZoom)
+                }
+                label={t('view.settings.appearance.appearance.ctrl_wheel_zoom')}
+                description={t(
+                    'view.settings.appearance.appearance.ctrl_wheel_zoom_description'
+                )}
+            >
+                <Switch
+                    checked={prefs.ctrlWheelZoom}
+                    onCheckedChange={onCtrlWheelZoomChange}
+                />
             </Field>
 
             <Field

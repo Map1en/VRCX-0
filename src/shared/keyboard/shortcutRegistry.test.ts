@@ -43,7 +43,10 @@ describe('shortcut help derivation', () => {
                     {
                         labelKey: 'app_menu.hide_friends_sidebar',
                         keys: ['Mod', 'Shift', 'B']
-                    }
+                    },
+                    { labelKey: 'app_menu.zoom_in', keys: ['Mod', '='] },
+                    { labelKey: 'app_menu.zoom_out', keys: ['Mod', '-'] },
+                    { labelKey: 'app_menu.reset_zoom', keys: ['Mod', '0'] }
                 ]
             },
             {
