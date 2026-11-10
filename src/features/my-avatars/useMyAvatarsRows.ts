@@ -18,12 +18,17 @@ export function useMyAvatarsRows(source: MyAvatarsSource) {
     const currentEndpoint = useRuntimeStore(
         (state) => state.auth.currentUserEndpoint
     );
-    const currentUserSnapshot = useRuntimeStore(
-        (state) => state.auth.currentUserSnapshot
+    const currentAvatarId = useRuntimeStore((state) =>
+        source === 'own'
+            ? state.auth.currentUserSnapshot?.currentAvatar || ''
+            : ''
     );
-    const currentAvatarId = currentUserSnapshot?.currentAvatar || '';
-    const previousAvatarSwapTime =
-        Number(currentUserSnapshot?.$previousAvatarSwapTime) || 0;
+    const previousAvatarSwapTime = useRuntimeStore((state) =>
+        source === 'own'
+            ? Number(state.auth.currentUserSnapshot?.$previousAvatarSwapTime) ||
+              0
+            : 0
+    );
     const requestIdRef = useRef(0);
     const [avatars, setAvatars] = useState<MyAvatarRow[]>([]);
     const [loadStatus, setLoadStatus] = useState<MyAvatarsLoadStatus>('idle');
