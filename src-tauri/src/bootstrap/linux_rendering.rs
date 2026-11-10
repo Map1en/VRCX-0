@@ -24,6 +24,9 @@ pub struct LinuxRenderingSnapshot {
 }
 
 #[cfg(target_os = "linux")]
+const OWNED_DMABUF_MARKER: &str = "VRCX0_OWNS_DMABUF_RENDERER_ENV";
+
+#[cfg(target_os = "linux")]
 static ENVIRONMENT_OVERRIDE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
 
 #[derive(Default)]
@@ -37,7 +40,15 @@ pub fn apply_webkit_workaround() {
     {
         use webkit2gtk_nvidia_quirk::{apply_workaround_with_options, ApplyWorkaroundOptions};
 
-        let _ = ENVIRONMENT_OVERRIDE.set(std::env::var_os(DMABUF_RENDERER_ENV).is_some());
+        // A restarted process inherits the DMABUF mode this process set; it is not a user override.
+        if std::env::var_os(OWNED_DMABUF_MARKER).is_some() {
+            std::env::remove_var(DMABUF_RENDERER_ENV);
+        }
+        let overridden = std::env::var_os(DMABUF_RENDERER_ENV).is_some();
+        if !overridden {
+            std::env::set_var(OWNED_DMABUF_MARKER, "1");
+        }
+        let _ = ENVIRONMENT_OVERRIDE.set(overridden);
         apply_workaround_with_options(ApplyWorkaroundOptions::default());
     }
 }
