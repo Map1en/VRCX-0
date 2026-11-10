@@ -105,7 +105,8 @@ Security** and click **Open Anyway**.
 
 Hardware acceleration for the app interface is off by default. Turn it on under
 **Settings → System → Hardware acceleration (experimental)**; if the interface
-doesn't display properly, VRCX-0 turns it back off automatically. Setting
+doesn't display properly, VRCX-0 turns it back off automatically. NVIDIA GPUs
+on X11 or Hyprland usually can't use it. Setting
 `WEBKIT_DISABLE_DMABUF_RENDERER` yourself hides this option.
 
 ## Feedback
