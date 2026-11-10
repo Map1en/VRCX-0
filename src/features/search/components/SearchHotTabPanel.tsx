@@ -7,11 +7,7 @@ import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { toast } from '@/services/toastService';
 import { Button } from '@/ui/shadcn/button';
 import { TabsContent } from '@/ui/shadcn/tabs';
-import {
-    ToggleGroup,
-    ToggleGroupItem,
-    ToggleGroupSeparator
-} from '@/ui/shadcn/toggle-group';
+import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 
 import {
     aggregateHotWorlds,
@@ -74,7 +70,7 @@ export function SearchHotTabPanel({ active }: { active: boolean }) {
         >
             <div className="flex flex-wrap items-center gap-3 px-1 pb-3">
                 <ToggleGroup
-                    variant="outline"
+                    variant="default"
                     size="sm"
                     value={[mode]}
                     onValueChange={(nextValue) => {
@@ -89,7 +85,6 @@ export function SearchHotTabPanel({ active }: { active: boolean }) {
                     <ToggleGroupItem value="active">
                         {t('view.search.hot.active')}
                     </ToggleGroupItem>
-                    <ToggleGroupSeparator />
                     <ToggleGroupItem value="discover">
                         {t('view.search.hot.discover')}
                     </ToggleGroupItem>

@@ -9,6 +9,7 @@ import {
     ToolbarViewMenu,
     type ToolbarSegmentOption
 } from '@/components/layout/ToolbarControls';
+import { cn } from '@/lib/utils';
 import { Checkbox } from '@/ui/shadcn/checkbox';
 import {
     DropdownMenuGroup,
@@ -229,7 +230,12 @@ export function SearchControlBand({
     ];
 
     return (
-        <div className="mx-auto flex w-full max-w-2xl shrink-0 flex-col gap-2 px-1 pb-3">
+        <div
+            className={cn(
+                'flex w-full shrink-0 flex-col gap-2 px-1 pb-3',
+                activeTab !== 'hot' && 'mx-auto max-w-2xl'
+            )}
+        >
             {activeTab === 'hot' ? null : (
                 <ToolbarSearch
                     value={searchText}
