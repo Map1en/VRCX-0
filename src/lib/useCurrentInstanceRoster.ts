@@ -68,6 +68,9 @@ export function useCurrentInstanceRoster({
     const [playerRows, setPlayerRows] = useState<CurrentInstanceRosterPlayer[]>(
         []
     );
+    const currentUserDisplayName = normalizeString(
+        currentUserSnapshot?.displayName || currentUserSnapshot?.username
+    );
 
     useEffect(() => {
         let active = true;
@@ -134,10 +137,7 @@ export function useCurrentInstanceRoster({
                     result.context.playerFactsKnown &&
                     parseLocation(rosterLocation).isRealInstance
                         ? decorateCurrentUserInRoster({
-                              currentUserDisplayName: normalizeString(
-                                  currentUserSnapshot?.displayName ||
-                                      currentUserSnapshot?.username
-                              ),
+                              currentUserDisplayName,
                               currentUserId: currentUserId ?? '',
                               joinedAt:
                                   result.context.createdAt ||
@@ -194,9 +194,9 @@ export function useCurrentInstanceRoster({
             active = false;
         };
     }, [
+        currentUserDisplayName,
         currentUserEndpoint,
         currentUserId,
-        currentUserSnapshot,
         isGameRunning,
         logLocationSnapshot?.createdAt,
         logLocationSnapshot?.location,

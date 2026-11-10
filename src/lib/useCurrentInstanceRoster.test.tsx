@@ -162,6 +162,53 @@ describe('useCurrentInstanceRoster', () => {
         expect(mocks.loadCurrentInstanceRoster).toHaveBeenCalledTimes(2);
     });
 
+    it('ignores unrelated profile changes but refreshes when the effective name changes', async () => {
+        const loaded = snapshot('wrld_test:1', 'Player One');
+        loaded.context.playerFactsKnown = true;
+        mocks.loadCurrentInstanceRoster.mockResolvedValue(loaded);
+        const { result, rerender } = renderHook(
+            ({ displayName, username, statusDescription }) =>
+                useCurrentInstanceRoster({
+                    ...props('wrld_test:1'),
+                    currentUserSnapshot: {
+                        id: 'usr_self',
+                        displayName,
+                        username,
+                        statusDescription
+                    }
+                }),
+            {
+                initialProps: {
+                    displayName: 'Current User',
+                    username: 'account',
+                    statusDescription: 'before'
+                }
+            }
+        );
+        await waitFor(() => expect(result.current.loadStatus).toBe('ready'));
+
+        rerender({
+            displayName: 'Current User',
+            username: 'other-account',
+            statusDescription: 'after'
+        });
+        await act(async () => {});
+        expect(mocks.loadCurrentInstanceRoster).toHaveBeenCalledTimes(1);
+        expect(mocks.recordGameRuntimePresence).toHaveBeenCalledTimes(1);
+
+        rerender({
+            displayName: '',
+            username: 'Fallback Name',
+            statusDescription: 'after'
+        });
+        await waitFor(() =>
+            expect(result.current.playerRows[0]?.displayName).toBe(
+                'Fallback Name'
+            )
+        );
+        expect(mocks.loadCurrentInstanceRoster).toHaveBeenCalledTimes(2);
+    });
+
     it('does not let an older location request overwrite the active roster', async () => {
         const oldRequest = deferred<Snapshot>();
         const activeRequest = deferred<Snapshot>();
