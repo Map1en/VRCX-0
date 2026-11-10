@@ -41,7 +41,11 @@ export function useTileSelectionState({
 
     useEffect(() => {
         setSelectedKeys((current) => {
-            const nextKeys = current.filter((key) => keys.includes(key));
+            if (current.length === 0) {
+                return current;
+            }
+            const availableKeys = new Set(keys);
+            const nextKeys = current.filter((key) => availableKeys.has(key));
             return nextKeys.length === current.length ? current : nextKeys;
         });
     }, [keys]);
