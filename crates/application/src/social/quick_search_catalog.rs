@@ -647,9 +647,15 @@ fn search_friends(
             } else {
                 return None;
             };
-            let sort_name = normalized_name.clone();
-            let result = friend_result(friend, name, memo, note, matched_field);
-            Some((!normalized_name.starts_with(query), sort_name, result))
+            Some((
+                !normalized_name.starts_with(query),
+                normalized_name,
+                friend,
+                name,
+                memo,
+                note,
+                matched_field,
+            ))
         })
         .collect::<Vec<_>>();
     matches.sort_by(|left, right| {
@@ -658,7 +664,9 @@ fn search_friends(
     matches
         .into_iter()
         .take(RESULT_LIMIT)
-        .map(|(_, _, result)| result)
+        .map(|(_, _, friend, name, memo, note, matched_field)| {
+            friend_result(friend, name, memo, note, matched_field)
+        })
         .collect()
 }
 
@@ -992,7 +1000,7 @@ mod tests {
     }
 
     #[test]
-    fn candidate_search_prioritizes_prefixes_and_limits_results() {
+    fn candidate_and_friend_search_prioritize_prefixes_and_limit_results() {
         let candidates = [
             candidate("9", "Zed alpha"),
             candidate("1", "Alpha 9"),
@@ -1018,6 +1026,23 @@ mod tests {
                 "Alpha 2", "Alpha 3", "Alpha 4", "Alpha 5", "Alpha 6", "Alpha 7", "Alpha 8",
                 "Alpha 9"
             ]
+        );
+
+        let friends = candidates.iter().map(|candidate| FriendRecord {
+            id: candidate.id.clone(),
+            display_name: candidate.name.as_str().into(),
+            ..FriendRecord::default()
+        });
+        let friend_results = search_friends(friends, &HashMap::new(), &HashMap::new(), "alpha");
+        assert_eq!(
+            friend_results
+                .iter()
+                .map(|row| (&row.id, &row.name))
+                .collect::<Vec<_>>(),
+            results
+                .iter()
+                .map(|row| (&row.id, &row.name))
+                .collect::<Vec<_>>()
         );
     }
 
