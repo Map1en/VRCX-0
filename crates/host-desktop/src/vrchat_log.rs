@@ -149,14 +149,10 @@ fn read_log_entries(
         input.categories,
     )
     .map_err(|message| Error::Custom(format!("Invalid search pattern: {message}")))?;
-    let level_counts = count_levels(&entries, &filter);
+    let (filtered_entries, level_counts) = filter_entries(entries, &filter);
     let output_offset = input.offset.unwrap_or(0);
     let offset = output_offset as usize;
     let limit = normalize_limit(input.limit);
-    let filtered_entries = entries
-        .into_iter()
-        .filter(|entry| filter.matches(entry))
-        .collect::<Vec<_>>();
     let total_entries = filtered_entries.len();
     let page = filtered_entries
         .into_iter()
@@ -245,11 +241,8 @@ fn read_log_tail(
         input.categories,
     )
     .map_err(|message| Error::Custom(format!("Invalid search pattern: {message}")))?;
-    let level_counts = count_levels(&entries, &filter);
-    let filtered_entries = entries
-        .into_iter()
-        .filter(|entry| entry.end_line_number > after_line_number && filter.matches(entry))
-        .collect::<Vec<_>>();
+    let (mut filtered_entries, level_counts) = filter_entries(entries, &filter);
+    filtered_entries.retain(|entry| entry.end_line_number > after_line_number);
     let total_entries = filtered_entries.len();
     let tail_entries = filtered_entries.into_iter().take(limit).collect::<Vec<_>>();
     let last_line_number = if tail_entries.len() >= limit {
@@ -280,25 +273,30 @@ fn read_log_tail(
     })
 }
 
-fn count_levels(entries: &[LogEntry], filter: &LogEntryFilter) -> Vec<VrchatLogLevelCountOutput> {
+fn filter_entries(
+    mut entries: Vec<LogEntry>,
+    filter: &LogEntryFilter,
+) -> (Vec<LogEntry>, Vec<VrchatLogLevelCountOutput>) {
     let mut counts = [0u32; LOG_LEVELS.len()];
-    for entry in entries {
-        let Some(index) = LOG_LEVELS.iter().position(|level| *level == entry.level) else {
-            continue;
-        };
-        if filter.matches_ignoring_level(entry) {
+    entries.retain(|entry| {
+        if !filter.matches_ignoring_level(entry) {
+            return false;
+        }
+        if let Some(index) = LOG_LEVELS.iter().position(|level| *level == entry.level) {
             counts[index] = counts[index].saturating_add(1);
         }
-    }
+        filter.matches_level(entry)
+    });
 
-    LOG_LEVELS
+    let level_counts = LOG_LEVELS
         .iter()
         .zip(counts)
         .map(|(level, count)| VrchatLogLevelCountOutput {
             level: (*level).to_string(),
             count,
         })
-        .collect()
+        .collect();
+    (entries, level_counts)
 }
 
 fn normalize_limit(limit: Option<u32>) -> usize {

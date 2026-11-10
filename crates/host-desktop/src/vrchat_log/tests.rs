@@ -141,6 +141,50 @@ fn entries_read_rejects_an_invalid_regex_query() {
 }
 
 #[test]
+fn tail_level_counts_include_matches_outside_the_cursor_and_selected_levels() {
+    let dir = TestDir::new("tail-filter-counts");
+    let file_name = "output_log_2026-08-11.txt";
+    let file_size = dir.write(
+        file_name,
+        "2026.08.11 12:00:01 Debug - [Behaviour] needle\n2026.08.11 12:00:02 Error - [Behaviour] continued\nneedle detail\n2026.08.11 12:00:03 Debug - [Behaviour] needle\n2026.08.11 12:00:04 Error - [Behaviour] needle\n2026.08.11 12:00:05 Warning - [Other] needle",
+    );
+
+    for (after_line_number, total_entries, last_line_number) in [(2, 2, 3), (3, 1, 5)] {
+        let output = read_log_tail(
+            dir.path(),
+            VrchatLogTailReadInput {
+                file_name: Some(file_name.into()),
+                after_line_number: Some(after_line_number),
+                file_size: Some(file_size),
+                limit: Some(1),
+                query: Some("NEEDLE".into()),
+                query_case_sensitive: None,
+                query_regex: None,
+                levels: Some(vec!["error".into()]),
+                categories: Some(vec!["Behaviour".into()]),
+            },
+        )
+        .unwrap();
+
+        assert_eq!(output.entries.len(), 1);
+        assert_eq!(output.entries[0].level, "Error");
+        assert_eq!(output.entries[0].end_line_number, last_line_number);
+        assert_eq!(output.total_entries, total_entries);
+        assert_eq!(output.last_line_number, last_line_number);
+        assert_eq!(output.total_lines, 6);
+        assert_eq!(
+            output
+                .level_counts
+                .unwrap()
+                .into_iter()
+                .map(|entry| entry.count)
+                .collect::<Vec<_>>(),
+            [2, 0, 2]
+        );
+    }
+}
+
+#[test]
 fn tail_requests_reset_after_the_file_shrinks() {
     let dir = TestDir::new("tail-reset");
     let file_name = "output_log_2026-08-11.txt";

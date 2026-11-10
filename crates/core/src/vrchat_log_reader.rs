@@ -147,7 +147,7 @@ impl LogEntryFilter {
         true
     }
 
-    fn matches_level(&self, entry: &LogEntry) -> bool {
+    pub fn matches_level(&self, entry: &LogEntry) -> bool {
         self.levels
             .as_ref()
             .is_none_or(|levels| levels.contains(&entry.level))
