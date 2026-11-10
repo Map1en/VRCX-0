@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 
+import { cleanup, render, waitFor } from '@testing-library/react';
+import { createElement } from 'react';
 import type Sigma from 'sigma';
 import {
     DEFAULT_STYLES,
@@ -35,6 +37,8 @@ const sigmaMock = vi.hoisted(() => {
         webglConstants,
         handlers: new Map<string, (event: SigmaNodeEvent) => void>(),
         options: [] as SigmaOptions[],
+        initialize: vi.fn(),
+        refresh: vi.fn(),
         kill: vi.fn(),
         killLayer: vi.fn()
     };
@@ -43,19 +47,40 @@ const sigmaMock = vi.hoisted(() => {
 vi.mock('sigma', async (importOriginal) => ({
     ...(await importOriginal<typeof import('sigma')>()),
     default: class {
+        private canvases = new Map<string, HTMLCanvasElement>();
+
         constructor(
             private graph: MutualFriendsSigmaGraph,
-            _container: HTMLElement,
+            private container: HTMLElement,
             private options: SigmaOptions
         ) {
+            sigmaMock.initialize();
             sigmaMock.options.push(options);
         }
-        refresh() {}
+        refresh = sigmaMock.refresh;
         resize() {}
-        kill = sigmaMock.kill;
-        killLayer = sigmaMock.killLayer;
-        createCanvas() {
-            return document.createElement('canvas');
+        kill() {
+            sigmaMock.kill();
+            this.removeAllListeners();
+            for (const canvas of this.canvases.values()) canvas.remove();
+            this.canvases.clear();
+        }
+        killLayer(id: string) {
+            sigmaMock.killLayer(id);
+            const canvas = this.canvases.get(id);
+            if (!canvas) {
+                throw new Error(
+                    `Sigma: cannot kill layer ${id}, which does not exist`
+                );
+            }
+            canvas.remove();
+            this.canvases.delete(id);
+        }
+        createCanvas(id: string) {
+            const canvas = document.createElement('canvas');
+            this.canvases.set(id, canvas);
+            this.container.appendChild(canvas);
+            return canvas;
         }
         getDimensions() {
             return { width: 400, height: 300 };
@@ -100,6 +125,7 @@ import {
 } from './mutualFriendsSigmaGraph';
 import { drawMutualFriendHoverCard } from './mutualFriendsSigmaHoverCard';
 import type { MutualFriendGraph } from './mutualFriendsTypes';
+import { useMutualFriendsSigmaLifecycle } from './useMutualFriendsSigmaLifecycle';
 
 function node(id: string) {
     return {
@@ -137,6 +163,8 @@ function build(forceLabels?: boolean) {
 
 beforeEach(() => {
     sigmaMock.options.length = 0;
+    sigmaMock.initialize.mockReset();
+    sigmaMock.refresh.mockReset();
     sigmaMock.kill.mockClear();
     sigmaMock.killLayer.mockClear();
     vi.mocked(drawMutualFriendHoverCard).mockClear();
@@ -154,8 +182,87 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+    cleanup();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
+});
+
+describe('mutual friends graph lifecycle', () => {
+    it.each([
+        ['initialize', 'unmount'],
+        ['initialize', 'retry'],
+        ['refresh', 'unmount'],
+        ['refresh', 'retry']
+    ] as const)(
+        'handles %s failure during rebuild followed by %s',
+        async (stage, next) => {
+            vi.spyOn(
+                HTMLElement.prototype,
+                'clientWidth',
+                'get'
+            ).mockReturnValue(400);
+            vi.spyOn(
+                HTMLElement.prototype,
+                'clientHeight',
+                'get'
+            ).mockReturnValue(300);
+            const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+            const options = {
+                layoutSettings: MUTUAL_GRAPH_LAYOUT_DEFAULTS,
+                communityIndexById: new Map<string, number>(),
+                namedCommunityIndexes: new Set<number>(),
+                resolvedTheme: 'dark',
+                crossCommunityOnly: false,
+                selectedNodeId: '',
+                selectedNodeIdRef: { current: '' },
+                onSelectNode: vi.fn()
+            };
+            function GraphView({ graph }: { graph: MutualFriendGraph }) {
+                const lifecycle = useMutualFriendsSigmaLifecycle({
+                    ...options,
+                    graph
+                });
+                return createElement('div', {
+                    ref: lifecycle.setGraphElementRef
+                });
+            }
+            const view = render(createElement(GraphView, { graph: GRAPH }));
+            await waitFor(() =>
+                expect(view.container.querySelector('canvas')).not.toBeNull()
+            );
+            const failure = new Error('Renderer initialization failed');
+            sigmaMock[stage].mockImplementationOnce(() => {
+                throw failure;
+            });
+            view.rerender(createElement(GraphView, { graph: { ...GRAPH } }));
+            await waitFor(() =>
+                expect(warn).toHaveBeenCalledWith(
+                    '[MutualFriendsPage] Failed to render mutual graph.',
+                    failure
+                )
+            );
+            expect(sigmaMock.kill).toHaveBeenCalledTimes(1);
+            if (next === 'retry') {
+                view.rerender(
+                    createElement(GraphView, { graph: { ...GRAPH } })
+                );
+                await waitFor(() =>
+                    expect(sigmaMock.options).toHaveLength(
+                        stage === 'initialize' ? 2 : 3
+                    )
+                );
+                expect(view.container.querySelectorAll('canvas')).toHaveLength(
+                    1
+                );
+                expect(warn).toHaveBeenCalledTimes(1);
+            }
+            expect(() => view.unmount()).not.toThrow();
+            expect(sigmaMock.kill).toHaveBeenCalledTimes(
+                1 + (stage === 'refresh' ? 1 : 0) + (next === 'retry' ? 1 : 0)
+            );
+            expect(view.container.querySelector('canvas')).toBeNull();
+        }
+    );
 });
 
 function projectNode(

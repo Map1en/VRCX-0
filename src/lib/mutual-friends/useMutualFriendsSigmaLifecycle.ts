@@ -165,8 +165,7 @@ export function useMutualFriendsSigmaLifecycle({
                     return;
                 }
 
-                graphologyRef.current = builtGraph;
-                controllerRef.current?.dispose();
+                teardownGraph();
                 controllerRef.current = renderSigmaGraph({
                     graph: builtGraph,
                     container,
@@ -179,6 +178,7 @@ export function useMutualFriendsSigmaLifecycle({
                     onOpenNode: (nodeId) => openNodeRef.current?.(nodeId),
                     hoverCardStringsRef
                 });
+                graphologyRef.current = builtGraph;
             })
             .catch((error: unknown) => {
                 if (active) {
