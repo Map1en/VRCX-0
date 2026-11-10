@@ -1,6 +1,7 @@
 import type {
     InstanceCreateGroupAccessType,
-    InstanceCreateMinimumAvatarPerformance
+    InstanceCreateMinimumAvatarPerformance,
+    InstanceCreateOptions
 } from '@/platform/tauri/bindings';
 
 import type { buildCreatedInstanceDetails } from './worldInstances';
@@ -34,6 +35,10 @@ export interface WorldNewInstanceForm {
     ageGate: boolean;
     displayName: string;
     displayNamePresets: string[];
+    description: string;
+    categoryId: string;
+    vibeIds: string[];
+    languages: string[];
     roleIds: string;
     instanceName: string;
     legacyUserId: string;
@@ -50,6 +55,7 @@ export interface WorldNewInstanceRequest {
     selfInvite: boolean;
     afterCreateAction: NewInstanceAfterCreateAction;
     defaults: Partial<WorldNewInstanceForm>;
+    createOptions: InstanceCreateOptions | null;
 }
 
 export interface WorldInstanceInviteRequest {

@@ -45,6 +45,10 @@ interface CreateInstanceOptions extends InstanceRepositoryOptions {
     roleIds?: string[];
     ageGate?: boolean;
     displayName?: string;
+    description?: string;
+    categoryId?: string;
+    vibeIds?: string[];
+    languages?: string[];
 }
 
 interface InstanceIdentityOptions extends InstanceRepositoryOptions {
@@ -126,7 +130,11 @@ async function createInstance({
     queueEnabled = true,
     roleIds = [],
     ageGate = false,
-    displayName = ''
+    displayName = '',
+    description = '',
+    categoryId = '',
+    vibeIds = [],
+    languages = []
 }: CreateInstanceOptions = {}) {
     const normalizedWorldId = worldId?.trim() ?? '';
     const normalizedOwnerId = ownerId?.trim() ?? '';
@@ -175,6 +183,18 @@ async function createInstance({
 
     if (displayName) {
         params.displayName = displayName;
+    }
+    if (description) {
+        params.description = description;
+    }
+    if (categoryId) {
+        params.categoryId = categoryId;
+    }
+    if (vibeIds.length) {
+        params.vibeIds = vibeIds;
+    }
+    if (languages.length) {
+        params.languages = languages;
     }
 
     return unwrapVrchatInstanceResponse(

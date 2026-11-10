@@ -8,6 +8,10 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import type { WorldProfileRecord } from '@/domain/entities/world';
+import {
+    commands,
+    type InstanceCreateOptions
+} from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import vrchatInstanceRepository from '@/repositories/vrchatInstanceRepository';
 import { copyTextToClipboard } from '@/services/clipboardService';
@@ -16,6 +20,7 @@ import { selfInviteToInstance } from '@/services/launchService';
 import { toast } from '@/services/toastService';
 import { parseLocation } from '@/shared/utils/location';
 import { normalizeString } from '@/shared/utils/string';
+import { normalizeProfileLanguageKeys } from '@/shared/utils/userLanguage';
 import type { WorldNewInstanceDefaults } from '@/state/dialogStore';
 import type { LaunchStoreState } from '@/state/launchStore';
 
@@ -27,6 +32,7 @@ import {
     normalizeMinimumAvatarPerformance,
     normalizeNewInstanceSeed
 } from './worldDialogHelpers';
+import { pickInstanceCreateOptionIds } from './worldInstanceCreateOptions';
 import {
     INSTANCE_DIALOG_DISPLAY_NAME_KEY,
     INSTANCE_DIALOG_DISPLAY_NAME_PRESETS_KEY,
@@ -55,6 +61,16 @@ export function resolveNewInstanceAfterCreateAction(
         return '';
     }
     return isGameRunning ? 'openInGame' : 'selfInvite';
+}
+
+function storedIds(values: unknown) {
+    return Array.isArray(values)
+        ? values.filter((value): value is string => typeof value === 'string')
+        : [];
+}
+
+function loadInstanceCreateOptions(): Promise<InstanceCreateOptions | null> {
+    return commands.appVrchatInstanceCreateOptionsGet().catch(() => null);
 }
 
 interface UseWorldInstanceActionsInput {
@@ -107,9 +123,14 @@ export function useWorldInstanceActions({
             queueEnabled,
             displayName,
             displayNamePresets,
+            description,
+            categoryId,
+            vibeIds,
+            languages,
             instanceName,
             legacyUserId,
-            groupOptions
+            groupOptions,
+            createOptions
         ] = await Promise.all([
             configRepository.getString('instanceDialogAccessType', 'public'),
             configRepository.getString('instanceRegion', 'US West'),
@@ -126,15 +147,22 @@ export function useWorldInstanceActions({
                 INSTANCE_DIALOG_DISPLAY_NAME_PRESETS_KEY,
                 []
             ),
+            configRepository.getString('instanceDialogDescription', ''),
+            configRepository.getString('instanceDialogCategoryId', ''),
+            configRepository.getArray('instanceDialogVibeIds', []),
+            configRepository.getArray('instanceDialogLanguages', []),
             configRepository.getString('instanceDialogInstanceName', ''),
             configRepository.getString('instanceDialogUserId', ''),
-            loadNewInstanceGroups()
+            loadNewInstanceGroups(),
+            loadInstanceCreateOptions()
         ]);
+        const rememberedCategoryIds = categoryId ? [categoryId] : [];
+        const rememberedVibeIds = storedIds(vibeIds);
         const seedDefaults = normalizeNewInstanceSeed(seed);
         const selectedGroupId =
             seedDefaults.groupId || normalizeString(groupId) || '';
         const selectedGroup = findGroupOption(groupOptions, selectedGroupId);
-        return {
+        const defaults = {
             accessType:
                 seedDefaults.accessType ||
                 normalizeInstanceAccessType(accessType) ||
@@ -159,10 +187,27 @@ export function useWorldInstanceActions({
                 displayNamePresets,
                 displayName
             ),
+            description,
+            categoryId:
+                (createOptions
+                    ? pickInstanceCreateOptionIds(
+                          rememberedCategoryIds,
+                          createOptions.categories
+                      )
+                    : rememberedCategoryIds
+                )[0] ?? '',
+            vibeIds: createOptions
+                ? pickInstanceCreateOptionIds(
+                      rememberedVibeIds,
+                      createOptions.vibes
+                  )
+                : rememberedVibeIds,
+            languages: normalizeProfileLanguageKeys(languages),
             roleIds: '',
             instanceName,
             legacyUserId: legacyUserId || currentUserId || ''
         };
+        return { defaults, createOptions };
     }
 
     async function openNewInstanceDialog(
@@ -173,7 +218,8 @@ export function useWorldInstanceActions({
             return;
         }
         try {
-            const defaults = await loadNewInstanceDefaults(seed);
+            const { defaults, createOptions } =
+                await loadNewInstanceDefaults(seed);
             const afterCreateAction = resolveNewInstanceAfterCreateAction(
                 requestedFollowUp,
                 isGameRunning
@@ -181,7 +227,8 @@ export function useWorldInstanceActions({
             setNewInstanceRequest({
                 selfInvite: afterCreateAction === 'selfInvite',
                 afterCreateAction,
-                defaults
+                defaults,
+                createOptions
             });
         } catch (error) {
             toast.add({
@@ -239,8 +286,24 @@ export function useWorldInstanceActions({
             configRepository.setString(
                 INSTANCE_DIALOG_DISPLAY_NAME_KEY,
                 form.displayName || ''
-            )
+            ),
+            ...saveInstanceDiscoveryDetails(form)
         ]).catch(() => {});
+    }
+
+    function saveInstanceDiscoveryDetails(form: WorldNewInstanceForm) {
+        return [
+            configRepository.setString(
+                'instanceDialogDescription',
+                form.description
+            ),
+            configRepository.setString(
+                'instanceDialogCategoryId',
+                form.categoryId
+            ),
+            configRepository.setArray('instanceDialogVibeIds', form.vibeIds),
+            configRepository.setArray('instanceDialogLanguages', form.languages)
+        ];
     }
 
     function saveNewInstanceDisplayNamePreset(value: string) {
@@ -329,12 +392,14 @@ export function useWorldInstanceActions({
                 configRepository.setString(
                     INSTANCE_DIALOG_DISPLAY_NAME_KEY,
                     form.displayName || ''
-                )
+                ),
+                ...saveInstanceDiscoveryDetails(form)
             ]);
             const selectedGroup = findGroupOption(
                 newInstanceGroups,
                 form.groupId
             );
+            const createOptions = newInstanceRequest.createOptions;
             const response = await vrchatInstanceRepository.createInstance({
                 worldId: targetWorldId,
                 ownerId: currentUserId || '',
@@ -346,7 +411,18 @@ export function useWorldInstanceActions({
                 queueEnabled: Boolean(form.queueEnabled),
                 ageGate: Boolean(form.ageGate),
                 roleIds: parseRoleIds(form.roleIds),
-                displayName: normalizeString(form.displayName)
+                displayName: normalizeString(form.displayName),
+                description: normalizeString(form.description),
+                categoryId:
+                    pickInstanceCreateOptionIds(
+                        [form.categoryId],
+                        createOptions?.categories ?? []
+                    )[0] ?? '',
+                vibeIds: pickInstanceCreateOptionIds(
+                    form.vibeIds,
+                    createOptions?.vibes ?? []
+                ),
+                languages: form.languages
             });
             const location = resolveInstanceLocation(
                 targetWorldId,

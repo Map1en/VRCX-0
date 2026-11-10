@@ -160,6 +160,40 @@ describe('InstanceRepository', () => {
         });
     });
 
+    it('sends discovery details only when they are filled in', async () => {
+        await vrchatInstanceRepository.createInstance({
+            worldId: 'wrld_public',
+            description: 'Bring snacks',
+            categoryId: 'icat_watch',
+            vibeIds: ['ivib_chill', 'ivib_cozy'],
+            languages: ['jpn', 'eng']
+        });
+        await vrchatInstanceRepository.createInstance({
+            worldId: 'wrld_public',
+            description: '',
+            categoryId: '',
+            vibeIds: [],
+            languages: []
+        });
+
+        expect(
+            tauriApp.appVrchatInstanceCreate.mock.calls[0][0].params
+        ).toMatchObject({
+            description: 'Bring snacks',
+            categoryId: 'icat_watch',
+            vibeIds: ['ivib_chill', 'ivib_cozy'],
+            languages: ['jpn', 'eng']
+        });
+        expect(
+            tauriApp.appVrchatInstanceCreate.mock.calls[1][0].params
+        ).toEqual({
+            type: 'public',
+            canRequestInvite: false,
+            worldId: 'wrld_public',
+            region: 'us'
+        });
+    });
+
     it('includes group role ids only for members access instances', async () => {
         await vrchatInstanceRepository.createInstance({
             worldId: 'wrld_group',

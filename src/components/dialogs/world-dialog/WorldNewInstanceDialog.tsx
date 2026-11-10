@@ -1,8 +1,9 @@
-import { ChevronDownIcon } from 'lucide-react';
+import { ChevronDownIcon, RotateCcwIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { WorldProfileRecord } from '@/domain/entities/world';
+import { languageOptionLabel } from '@/shared/utils/userLanguage';
 import { HintTooltip } from '@/ui/hint-tooltip';
 import { Button } from '@/ui/shadcn/button';
 import { Checkbox } from '@/ui/shadcn/checkbox';
@@ -32,13 +33,23 @@ import {
     SelectValue
 } from '@/ui/shadcn/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { Textarea } from '@/ui/shadcn/textarea';
 
+import { useSpokenLanguageSelection } from '../useSpokenLanguageSelection';
 import { normalizeMinimumAvatarPerformance } from './worldDialogHelpers';
+import {
+    INSTANCE_DESCRIPTION_MAX,
+    INSTANCE_DISPLAY_NAME_MAX,
+    INSTANCE_LANGUAGE_LIMIT,
+    INSTANCE_VIBE_LIMIT,
+    instanceCreateOptionLabel
+} from './worldInstanceCreateOptions';
 import {
     normalizeInstanceDialogDisplayName,
     prependInstanceDialogDisplayNamePreset
 } from './worldInstanceDisplayNamePresets';
 import { buildLegacyCreatedInstance } from './worldInstances';
+import { WorldNewInstanceMultiSelectField } from './WorldNewInstanceMultiSelectField';
 import { isWorldNewInstanceTab } from './worldNewInstanceTypes';
 import type {
     CreatedWorldInstance,
@@ -97,6 +108,24 @@ const minimumAvatarPerformanceOptions = [
         labelKey: 'dialog.new_instance.minimum_avatar_performance_good'
     }
 ];
+
+const normalTabDefaults = {
+    accessType: 'public',
+    region: 'US West',
+    groupId: '',
+    groupAccessType: 'plus',
+    minimumAvatarPerformance: '',
+    queueEnabled: true,
+    ageGate: false,
+    displayName: '',
+    description: '',
+    categoryId: '',
+    vibeIds: [],
+    languages: [],
+    roleIds: ''
+} satisfies Partial<WorldNewInstanceForm>;
+
+const CATEGORY_NONE = 'none';
 
 function normalizeText(value: unknown) {
     return typeof value === 'string'
@@ -164,16 +193,8 @@ export function WorldNewInstanceDialog({
 
     const [form, setForm] = useState<WorldNewInstanceForm>({
         selectedTab: 'Normal',
-        accessType: 'public',
-        region: 'US West',
-        groupId: '',
-        groupAccessType: 'plus',
-        minimumAvatarPerformance: '',
-        queueEnabled: true,
-        ageGate: false,
-        displayName: '',
+        ...normalTabDefaults,
         displayNamePresets: [],
-        roleIds: '',
         instanceName: '',
         legacyUserId: '',
         strict: false
@@ -181,6 +202,8 @@ export function WorldNewInstanceDialog({
     const [legacySeed, setLegacySeed] = useState('00001');
     const [displayNamePresetsOpen, setDisplayNamePresetsOpen] = useState(false);
     const displayNameAnchorRef = useRef<HTMLDivElement>(null);
+    const languageSelection = useSpokenLanguageSelection(form.languages);
+    const createOptions = request?.createOptions ?? null;
 
     useEffect(() => {
         if (open && request?.defaults) {
@@ -189,16 +212,8 @@ export function WorldNewInstanceDialog({
             );
             setForm({
                 selectedTab: 'Normal',
-                accessType: 'public',
-                region: 'US West',
-                groupId: '',
-                groupAccessType: 'plus',
-                minimumAvatarPerformance: '',
-                queueEnabled: true,
-                ageGate: false,
-                displayName: '',
+                ...normalTabDefaults,
                 displayNamePresets: [],
-                roleIds: '',
                 instanceName: '',
                 legacyUserId: currentUserId || '',
                 strict: false,
@@ -247,6 +262,35 @@ export function WorldNewInstanceDialog({
         currentUserId &&
         legacyCreated.ownerId !== currentUserId
     );
+
+    function resetNormalTab() {
+        patchForm({ ...normalTabDefaults, groupName: '' });
+    }
+
+    const categoryItems = [
+        {
+            value: CATEGORY_NONE,
+            label: t('dialog.new_instance.category_none')
+        },
+        ...(createOptions?.categories ?? []).map((category) => ({
+            value: category.id,
+            label: instanceCreateOptionLabel(category, 'category', t)
+        }))
+    ];
+
+    const languageItems = [
+        ...languageSelection.languageRows.filter(
+            (row) => !languageSelection.languageOptionsMap.has(row.key)
+        ),
+        ...languageSelection.languageOptionsMap.values()
+    ].map((option) => ({
+        value: option.key,
+        label: languageOptionLabel(option)
+    }));
+    const vibeItems = (createOptions?.vibes ?? []).map((vibe) => ({
+        value: vibe.id,
+        label: instanceCreateOptionLabel(vibe, 'vibe', t)
+    }));
 
     function patchGroupId(groupId: string | null) {
         const normalizedGroupId = groupId || '';
@@ -346,7 +390,13 @@ export function WorldNewInstanceDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[min(92vw,32rem)]">
+            <DialogContent
+                className={
+                    form.selectedTab === 'Normal'
+                        ? 'sm:max-w-[min(92vw,52rem)]'
+                        : 'sm:max-w-[min(92vw,32rem)]'
+                }
+            >
                 <DialogHeader>
                     <DialogTitle>
                         {t(newInstanceDialogTitleKey(request))}
@@ -374,306 +424,441 @@ export function WorldNewInstanceDialog({
                         </TabsTrigger>
                     </TabsList>
                     <TabsContent value="Normal">
-                        <FieldGroup className="gap-4">
-                            <Field>
-                                <FieldLabel>
-                                    {t('dialog.world.label.access')}
-                                </FieldLabel>
-                                <Select
-                                    value={form.accessType}
-                                    items={accessTypeOptions.map((option) => ({
-                                        value: option.value,
-                                        label: t(option.labelKey)
-                                    }))}
-                                    onValueChange={(value) =>
-                                        patchForm({
-                                            accessType: value || 'public'
-                                        })
-                                    }
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            {accessTypeOptions.map((option) => (
-                                                <SelectItem
-                                                    key={option.value}
-                                                    value={option.value}
-                                                >
-                                                    {t(option.labelKey)}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-                            <Field>
-                                <FieldLabel>
-                                    {t('dialog.new_instance.region')}
-                                </FieldLabel>
-                                <Select
-                                    value={form.region}
-                                    items={regionOptions.map((region) => ({
-                                        value: region.value,
-                                        label: t(region.labelKey)
-                                    }))}
-                                    onValueChange={(value) =>
-                                        patchForm({
-                                            region: value || 'US West'
-                                        })
-                                    }
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            {regionOptions.map((region) => (
-                                                <SelectItem
-                                                    key={region.value}
-                                                    value={region.value}
-                                                >
-                                                    {t(region.labelKey)}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-                            {form.accessType === 'group' ? (
-                                <>
-                                    <Field>
-                                        <FieldLabel htmlFor="world-instance-group-id">
-                                            {t('dialog.new_instance.group_id')}
-                                        </FieldLabel>
-                                        {renderGroupPicker(
-                                            'world-instance-group-id'
+                        <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+                            <FieldGroup className="gap-4">
+                                <Field>
+                                    <FieldLabel>
+                                        {t('dialog.world.label.access')}
+                                    </FieldLabel>
+                                    <Select
+                                        value={form.accessType}
+                                        items={accessTypeOptions.map(
+                                            (option) => ({
+                                                value: option.value,
+                                                label: t(option.labelKey)
+                                            })
                                         )}
-                                    </Field>
-                                    <Field>
-                                        <FieldLabel htmlFor="world-instance-minimum-avatar-performance">
-                                            {t(
-                                                'dialog.new_instance.minimum_avatar_performance'
-                                            )}
-                                        </FieldLabel>
-                                        <Select
-                                            value={
-                                                form.minimumAvatarPerformance ||
-                                                'none'
-                                            }
-                                            items={minimumAvatarPerformanceOptions.map(
-                                                (option) => ({
-                                                    value: option.value,
-                                                    label: t(option.labelKey)
-                                                })
-                                            )}
-                                            onValueChange={(value) =>
-                                                patchForm({
-                                                    minimumAvatarPerformance:
-                                                        normalizeMinimumAvatarPerformance(
-                                                            value === 'none'
-                                                                ? ''
-                                                                : value
-                                                        )
-                                                })
-                                            }
-                                        >
-                                            <SelectTrigger id="world-instance-minimum-avatar-performance">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectGroup>
-                                                    {minimumAvatarPerformanceOptions.map(
-                                                        (option) => (
-                                                            <SelectItem
-                                                                key={
-                                                                    option.value
-                                                                }
-                                                                value={
-                                                                    option.value
-                                                                }
-                                                            >
-                                                                {t(
-                                                                    option.labelKey
-                                                                )}
-                                                            </SelectItem>
-                                                        )
-                                                    )}
-                                                </SelectGroup>
-                                            </SelectContent>
-                                        </Select>
-                                    </Field>
-                                    <Field>
-                                        <FieldLabel>
-                                            {t(
-                                                'dialog.new_instance.group_access_type'
-                                            )}
-                                        </FieldLabel>
-                                        <Select
-                                            value={form.groupAccessType}
-                                            items={groupAccessTypeOptions.map(
-                                                (option) => ({
-                                                    value: option.value,
-                                                    label: t(option.labelKey)
-                                                })
-                                            )}
-                                            onValueChange={(value) =>
-                                                patchForm({
-                                                    groupAccessType:
-                                                        value || 'plus'
-                                                })
-                                            }
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectGroup>
-                                                    {groupAccessTypeOptions.map(
-                                                        (option) => (
-                                                            <SelectItem
-                                                                key={
-                                                                    option.value
-                                                                }
-                                                                value={
-                                                                    option.value
-                                                                }
-                                                            >
-                                                                {t(
-                                                                    option.labelKey
-                                                                )}
-                                                            </SelectItem>
-                                                        )
-                                                    )}
-                                                </SelectGroup>
-                                            </SelectContent>
-                                        </Select>
-                                    </Field>
-                                    {form.groupAccessType === 'members' ? (
-                                        <Field>
-                                            <FieldLabel htmlFor="world-instance-role-ids">
-                                                {t(
-                                                    'dialog.world.label.role_ids'
-                                                )}
-                                            </FieldLabel>
-                                            <Input
-                                                id="world-instance-role-ids"
-                                                value={form.roleIds}
-                                                onChange={(event) =>
-                                                    patchForm({
-                                                        roleIds:
-                                                            event.target.value
-                                                    })
-                                                }
-                                            />
-                                        </Field>
-                                    ) : null}
-                                    <FieldGroup data-slot="checkbox-group">
-                                        <Field orientation="horizontal">
-                                            <Checkbox
-                                                id="world-instance-queue-enabled"
-                                                checked={form.queueEnabled}
-                                                onCheckedChange={(value) =>
-                                                    patchForm({
-                                                        queueEnabled:
-                                                            Boolean(value)
-                                                    })
-                                                }
-                                            />
-                                            <FieldLabel htmlFor="world-instance-queue-enabled">
-                                                {t(
-                                                    'dialog.world.label.queue_enabled'
-                                                )}
-                                            </FieldLabel>
-                                        </Field>
-                                        <Field orientation="horizontal">
-                                            <Checkbox
-                                                id="world-instance-age-gate"
-                                                checked={form.ageGate}
-                                                onCheckedChange={(value) =>
-                                                    patchForm({
-                                                        ageGate: Boolean(value)
-                                                    })
-                                                }
-                                            />
-                                            <FieldLabel htmlFor="world-instance-age-gate">
-                                                {t(
-                                                    'dialog.world.label.age_gate'
-                                                )}
-                                            </FieldLabel>
-                                        </Field>
-                                    </FieldGroup>
-                                </>
-                            ) : null}
-                            <Field>
-                                <FieldLabel htmlFor="world-instance-display-name">
-                                    {t('dialog.new_instance.display_name')}
-                                </FieldLabel>
-                                <Popover
-                                    open={displayNamePresetsOpen}
-                                    onOpenChange={setDisplayNamePresetsOpen}
-                                >
-                                    <InputGroup ref={displayNameAnchorRef}>
-                                        <InputGroupInput
-                                            id="world-instance-display-name"
-                                            value={form.displayName}
-                                            onChange={(event) =>
-                                                patchDisplayName(
-                                                    event.target.value
-                                                )
-                                            }
-                                        />
-                                        {displayNamePresets.length ? (
-                                            <InputGroupAddon align="inline-end">
-                                                <HintTooltip
-                                                    label={t(
-                                                        'dialog.new_instance.display_name'
-                                                    )}
-                                                >
-                                                    <PopoverTrigger
-                                                        render={
-                                                            <InputGroupButton size="icon-xs">
-                                                                <ChevronDownIcon data-icon="inline-start" />
-                                                            </InputGroupButton>
-                                                        }
-                                                    />
-                                                </HintTooltip>
-                                            </InputGroupAddon>
-                                        ) : null}
-                                    </InputGroup>
-                                    {displayNamePresets.length ? (
-                                        <PopoverContent
-                                            align="start"
-                                            anchor={displayNameAnchorRef}
-                                            className="w-80 p-1"
-                                        >
-                                            <div className="flex max-h-64 flex-col gap-1 overflow-y-auto p-1">
-                                                {displayNamePresets.map(
-                                                    (name) => (
-                                                        <Button
-                                                            key={name}
-                                                            type="button"
-                                                            variant="ghost"
-                                                            className="h-auto w-full justify-start p-1.5 text-left font-normal"
-                                                            onClick={() =>
-                                                                selectDisplayNamePreset(
-                                                                    name
-                                                                )
-                                                            }
+                                        onValueChange={(value) =>
+                                            patchForm({
+                                                accessType: value || 'public'
+                                            })
+                                        }
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                {accessTypeOptions.map(
+                                                    (option) => (
+                                                        <SelectItem
+                                                            key={option.value}
+                                                            value={option.value}
                                                         >
-                                                            <span className="truncate">
-                                                                {name}
-                                                            </span>
-                                                        </Button>
+                                                            {t(option.labelKey)}
+                                                        </SelectItem>
                                                     )
                                                 )}
-                                            </div>
-                                        </PopoverContent>
-                                    ) : null}
-                                </Popover>
-                            </Field>
-                        </FieldGroup>
+                                            </SelectGroup>
+                                        </SelectContent>
+                                    </Select>
+                                </Field>
+                                <Field>
+                                    <FieldLabel>
+                                        {t('dialog.new_instance.region')}
+                                    </FieldLabel>
+                                    <Select
+                                        value={form.region}
+                                        items={regionOptions.map((region) => ({
+                                            value: region.value,
+                                            label: t(region.labelKey)
+                                        }))}
+                                        onValueChange={(value) =>
+                                            patchForm({
+                                                region: value || 'US West'
+                                            })
+                                        }
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                {regionOptions.map((region) => (
+                                                    <SelectItem
+                                                        key={region.value}
+                                                        value={region.value}
+                                                    >
+                                                        {t(region.labelKey)}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        </SelectContent>
+                                    </Select>
+                                </Field>
+                                {form.accessType === 'group' ? (
+                                    <>
+                                        <Field>
+                                            <FieldLabel htmlFor="world-instance-group-id">
+                                                {t(
+                                                    'dialog.new_instance.group_id'
+                                                )}
+                                            </FieldLabel>
+                                            {renderGroupPicker(
+                                                'world-instance-group-id'
+                                            )}
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel htmlFor="world-instance-minimum-avatar-performance">
+                                                {t(
+                                                    'dialog.new_instance.minimum_avatar_performance'
+                                                )}
+                                            </FieldLabel>
+                                            <Select
+                                                value={
+                                                    form.minimumAvatarPerformance ||
+                                                    'none'
+                                                }
+                                                items={minimumAvatarPerformanceOptions.map(
+                                                    (option) => ({
+                                                        value: option.value,
+                                                        label: t(
+                                                            option.labelKey
+                                                        )
+                                                    })
+                                                )}
+                                                onValueChange={(value) =>
+                                                    patchForm({
+                                                        minimumAvatarPerformance:
+                                                            normalizeMinimumAvatarPerformance(
+                                                                value === 'none'
+                                                                    ? ''
+                                                                    : value
+                                                            )
+                                                    })
+                                                }
+                                            >
+                                                <SelectTrigger id="world-instance-minimum-avatar-performance">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                        {minimumAvatarPerformanceOptions.map(
+                                                            (option) => (
+                                                                <SelectItem
+                                                                    key={
+                                                                        option.value
+                                                                    }
+                                                                    value={
+                                                                        option.value
+                                                                    }
+                                                                >
+                                                                    {t(
+                                                                        option.labelKey
+                                                                    )}
+                                                                </SelectItem>
+                                                            )
+                                                        )}
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel>
+                                                {t(
+                                                    'dialog.new_instance.group_access_type'
+                                                )}
+                                            </FieldLabel>
+                                            <Select
+                                                value={form.groupAccessType}
+                                                items={groupAccessTypeOptions.map(
+                                                    (option) => ({
+                                                        value: option.value,
+                                                        label: t(
+                                                            option.labelKey
+                                                        )
+                                                    })
+                                                )}
+                                                onValueChange={(value) =>
+                                                    patchForm({
+                                                        groupAccessType:
+                                                            value || 'plus'
+                                                    })
+                                                }
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                        {groupAccessTypeOptions.map(
+                                                            (option) => (
+                                                                <SelectItem
+                                                                    key={
+                                                                        option.value
+                                                                    }
+                                                                    value={
+                                                                        option.value
+                                                                    }
+                                                                >
+                                                                    {t(
+                                                                        option.labelKey
+                                                                    )}
+                                                                </SelectItem>
+                                                            )
+                                                        )}
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
+                                        </Field>
+                                        {form.groupAccessType === 'members' ? (
+                                            <Field>
+                                                <FieldLabel htmlFor="world-instance-role-ids">
+                                                    {t(
+                                                        'dialog.world.label.role_ids'
+                                                    )}
+                                                </FieldLabel>
+                                                <Input
+                                                    id="world-instance-role-ids"
+                                                    value={form.roleIds}
+                                                    onChange={(event) =>
+                                                        patchForm({
+                                                            roleIds:
+                                                                event.target
+                                                                    .value
+                                                        })
+                                                    }
+                                                />
+                                            </Field>
+                                        ) : null}
+                                        <FieldGroup data-slot="checkbox-group">
+                                            <Field orientation="horizontal">
+                                                <Checkbox
+                                                    id="world-instance-queue-enabled"
+                                                    checked={form.queueEnabled}
+                                                    onCheckedChange={(value) =>
+                                                        patchForm({
+                                                            queueEnabled:
+                                                                Boolean(value)
+                                                        })
+                                                    }
+                                                />
+                                                <FieldLabel htmlFor="world-instance-queue-enabled">
+                                                    {t(
+                                                        'dialog.world.label.queue_enabled'
+                                                    )}
+                                                </FieldLabel>
+                                            </Field>
+                                            <Field orientation="horizontal">
+                                                <Checkbox
+                                                    id="world-instance-age-gate"
+                                                    checked={form.ageGate}
+                                                    onCheckedChange={(value) =>
+                                                        patchForm({
+                                                            ageGate:
+                                                                Boolean(value)
+                                                        })
+                                                    }
+                                                />
+                                                <FieldLabel htmlFor="world-instance-age-gate">
+                                                    {t(
+                                                        'dialog.world.label.age_gate'
+                                                    )}
+                                                </FieldLabel>
+                                            </Field>
+                                        </FieldGroup>
+                                    </>
+                                ) : null}
+                            </FieldGroup>
+                            <FieldGroup className="gap-4">
+                                <Field>
+                                    <FieldLabel htmlFor="world-instance-display-name">
+                                        {t('dialog.new_instance.display_name')}
+                                    </FieldLabel>
+                                    <Popover
+                                        open={displayNamePresetsOpen}
+                                        onOpenChange={setDisplayNamePresetsOpen}
+                                    >
+                                        <InputGroup ref={displayNameAnchorRef}>
+                                            <InputGroupInput
+                                                id="world-instance-display-name"
+                                                value={form.displayName}
+                                                maxLength={
+                                                    INSTANCE_DISPLAY_NAME_MAX
+                                                }
+                                                onChange={(event) =>
+                                                    patchDisplayName(
+                                                        event.target.value
+                                                    )
+                                                }
+                                            />
+                                            {displayNamePresets.length ? (
+                                                <InputGroupAddon align="inline-end">
+                                                    <HintTooltip
+                                                        label={t(
+                                                            'dialog.new_instance.display_name'
+                                                        )}
+                                                    >
+                                                        <PopoverTrigger
+                                                            render={
+                                                                <InputGroupButton size="icon-xs">
+                                                                    <ChevronDownIcon data-icon="inline-start" />
+                                                                </InputGroupButton>
+                                                            }
+                                                        />
+                                                    </HintTooltip>
+                                                </InputGroupAddon>
+                                            ) : null}
+                                        </InputGroup>
+                                        {displayNamePresets.length ? (
+                                            <PopoverContent
+                                                align="start"
+                                                anchor={displayNameAnchorRef}
+                                                className="w-80 p-1"
+                                            >
+                                                <div className="flex max-h-64 flex-col gap-1 overflow-y-auto p-1">
+                                                    {displayNamePresets.map(
+                                                        (name) => (
+                                                            <Button
+                                                                key={name}
+                                                                type="button"
+                                                                variant="ghost"
+                                                                className="h-auto w-full justify-start p-1.5 text-left font-normal"
+                                                                onClick={() =>
+                                                                    selectDisplayNamePreset(
+                                                                        name
+                                                                    )
+                                                                }
+                                                            >
+                                                                <span className="truncate">
+                                                                    {name}
+                                                                </span>
+                                                            </Button>
+                                                        )
+                                                    )}
+                                                </div>
+                                            </PopoverContent>
+                                        ) : null}
+                                    </Popover>
+                                </Field>
+                                <Field>
+                                    <div className="flex items-center justify-between gap-2">
+                                        <FieldLabel htmlFor="world-instance-description">
+                                            {t(
+                                                'dialog.new_instance.description'
+                                            )}
+                                        </FieldLabel>
+                                        <span className="text-muted-foreground text-xs tabular-nums">
+                                            {form.description.length}/
+                                            {INSTANCE_DESCRIPTION_MAX}
+                                        </span>
+                                    </div>
+                                    <Textarea
+                                        id="world-instance-description"
+                                        rows={3}
+                                        value={form.description}
+                                        maxLength={INSTANCE_DESCRIPTION_MAX}
+                                        className="resize-none"
+                                        onChange={(event) =>
+                                            patchForm({
+                                                description: event.target.value
+                                            })
+                                        }
+                                    />
+                                </Field>
+                                <WorldNewInstanceMultiSelectField
+                                    id="world-instance-languages"
+                                    label={t('dialog.user.label.languages')}
+                                    placeholder={t(
+                                        'dialog.user.action.select_language'
+                                    )}
+                                    description={
+                                        languageSelection.languageOptionsStatus ===
+                                        'error'
+                                            ? t(
+                                                  'dialog.user.label.vrchat_language_list_unavailable_using_local_language_codes'
+                                              )
+                                            : undefined
+                                    }
+                                    options={languageItems}
+                                    value={form.languages}
+                                    limit={INSTANCE_LANGUAGE_LIMIT}
+                                    disabled={submitting}
+                                    onChange={(languages) =>
+                                        patchForm({ languages })
+                                    }
+                                />
+                                {createOptions ? (
+                                    <>
+                                        <Field>
+                                            <FieldLabel>
+                                                {t(
+                                                    'dialog.new_instance.category'
+                                                )}
+                                            </FieldLabel>
+                                            <Select
+                                                value={
+                                                    form.categoryId ||
+                                                    CATEGORY_NONE
+                                                }
+                                                items={categoryItems}
+                                                onValueChange={(value) =>
+                                                    patchForm({
+                                                        categoryId:
+                                                            !value ||
+                                                            value ===
+                                                                CATEGORY_NONE
+                                                                ? ''
+                                                                : value
+                                                    })
+                                                }
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                        {categoryItems.map(
+                                                            (item) => (
+                                                                <SelectItem
+                                                                    key={
+                                                                        item.value
+                                                                    }
+                                                                    value={
+                                                                        item.value
+                                                                    }
+                                                                >
+                                                                    {item.label}
+                                                                </SelectItem>
+                                                            )
+                                                        )}
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
+                                        </Field>
+                                        <WorldNewInstanceMultiSelectField
+                                            id="world-instance-vibes"
+                                            label={t(
+                                                'dialog.new_instance.vibes'
+                                            )}
+                                            placeholder={t(
+                                                'dialog.new_instance.vibes_placeholder'
+                                            )}
+                                            description={t(
+                                                'dialog.new_instance.vibes_hint'
+                                            )}
+                                            options={vibeItems}
+                                            value={form.vibeIds}
+                                            limit={INSTANCE_VIBE_LIMIT}
+                                            disabled={submitting}
+                                            onChange={(vibeIds) =>
+                                                patchForm({ vibeIds })
+                                            }
+                                        />
+                                    </>
+                                ) : null}
+                            </FieldGroup>
+                        </div>
                     </TabsContent>
                     <TabsContent value="Legacy">
                         <FieldGroup className="gap-4">
@@ -950,6 +1135,18 @@ export function WorldNewInstanceDialog({
                     </DialogFooter>
                 ) : (
                     <DialogFooter>
+                        {form.selectedTab === 'Normal' ? (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                className="sm:mr-auto"
+                                disabled={submitting}
+                                onClick={resetNormalTab}
+                            >
+                                <RotateCcwIcon data-icon="inline-start" />
+                                {t('dialog.new_instance.reset_defaults')}
+                            </Button>
+                        ) : null}
                         <Button
                             type="button"
                             variant="outline"

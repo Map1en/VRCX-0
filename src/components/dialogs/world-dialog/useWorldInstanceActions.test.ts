@@ -9,17 +9,25 @@ const mocks = vi.hoisted(() => ({
     selfInviteToInstance: vi.fn(),
     tryOpenLaunchLocation: vi.fn(),
     showLaunchDialog: vi.fn(),
-    loadNewInstanceGroups: vi.fn().mockResolvedValue([])
+    loadNewInstanceGroups: vi.fn().mockResolvedValue([]),
+    instanceCreateOptionsGet: vi.fn()
 }));
 
 vi.mock('@/services/toastService', () => ({
     toast: { add: vi.fn() }
 }));
 
+vi.mock('@/platform/tauri/bindings', () => ({
+    commands: {
+        appVrchatInstanceCreateOptionsGet: mocks.instanceCreateOptionsGet
+    }
+}));
+
 vi.mock('@/repositories/configRepository', () => ({
     default: {
         setString: vi.fn().mockResolvedValue(undefined),
         setBool: vi.fn().mockResolvedValue(undefined),
+        setArray: vi.fn().mockResolvedValue(undefined),
         getString: vi.fn().mockResolvedValue(''),
         getBool: vi.fn().mockResolvedValue(false),
         getArray: vi.fn().mockResolvedValue([])
@@ -42,6 +50,7 @@ vi.mock('./worldInstanceResolver', () => ({
     resolveCreatedInstanceDetails: mocks.resolveCreatedInstanceDetails
 }));
 
+import type { InstanceCreateOptions } from '@/platform/tauri/bindings';
 import configRepository from '@/repositories/configRepository';
 import worldProfileRepository from '@/repositories/worldProfileRepository';
 
@@ -89,9 +98,18 @@ const created = {
     group: null
 };
 
+const createOptions: InstanceCreateOptions = {
+    categories: [{ id: 'icat_hangout', name: 'Hangout' }],
+    vibes: [
+        { id: 'ivib_chill', name: 'Chill' },
+        { id: 'ivib_cozy', name: 'Cozy' }
+    ]
+};
+
 function renderCreateFlow(
     afterCreateAction: NewInstanceAfterCreateAction,
-    isGameRunning = false
+    isGameRunning = false,
+    options: InstanceCreateOptions | null = createOptions
 ) {
     const actionStatusRef = { current: 'idle' };
     const { result } = renderHook(() =>
@@ -116,10 +134,37 @@ function renderCreateFlow(
         result.current.setNewInstanceRequest({
             selfInvite: afterCreateAction === 'selfInvite',
             afterCreateAction,
-            defaults: {}
+            defaults: {},
+            createOptions: options
         });
     });
     return result;
+}
+
+function newInstanceForm(
+    overrides: Partial<WorldNewInstanceForm> = {}
+): WorldNewInstanceForm {
+    return {
+        selectedTab: 'Normal',
+        accessType: 'public',
+        region: 'US West',
+        groupId: '',
+        groupAccessType: 'plus',
+        minimumAvatarPerformance: '',
+        queueEnabled: true,
+        ageGate: false,
+        displayName: '',
+        displayNamePresets: [],
+        description: '',
+        categoryId: '',
+        vibeIds: [],
+        languages: [],
+        roleIds: '',
+        instanceName: '',
+        legacyUserId: '',
+        strict: false,
+        ...overrides
+    };
 }
 
 async function submit(
@@ -127,29 +172,16 @@ async function submit(
     overrides: Partial<WorldNewInstanceForm> = {}
 ) {
     await act(async () => {
-        await result.current.createWorldInstance({
-            selectedTab: 'Normal',
-            accessType: 'public',
-            region: 'US West',
-            groupId: '',
-            groupAccessType: 'plus',
-            minimumAvatarPerformance: '',
-            queueEnabled: true,
-            ageGate: false,
-            displayName: '',
-            displayNamePresets: [],
-            roleIds: '',
-            instanceName: '',
-            legacyUserId: '',
-            strict: false,
-            ...overrides
-        });
+        await result.current.createWorldInstance(newInstanceForm(overrides));
     });
 }
 
 describe('useWorldInstanceActions createWorldInstance', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.mocked(configRepository.getString).mockResolvedValue('');
+        vi.mocked(configRepository.getArray).mockResolvedValue([]);
+        mocks.instanceCreateOptionsGet.mockResolvedValue(createOptions);
         mocks.createInstance.mockResolvedValue({
             json: { location: created.location }
         });
@@ -170,6 +202,128 @@ describe('useWorldInstanceActions createWorldInstance', () => {
 
         expect(mocks.loadNewInstanceGroups).toHaveBeenCalledOnce();
         expect(result.current.newInstanceRequest).not.toBeNull();
+    });
+
+    it('restores remembered discovery details and drops options VRChat no longer offers', async () => {
+        const strings = new Map([
+            ['instanceDialogDescription', 'Bring snacks'],
+            ['instanceDialogCategoryId', 'icat_deleted']
+        ]);
+        const arrays = new Map([
+            ['instanceDialogVibeIds', ['ivib_cozy', 'ivib_gone']],
+            ['instanceDialogLanguages', ['jpn']]
+        ]);
+        vi.mocked(configRepository.getString).mockImplementation(
+            async (key: string) => strings.get(key) ?? ''
+        );
+        vi.mocked(configRepository.getArray).mockImplementation(
+            async (key: string) => arrays.get(key) ?? []
+        );
+        const result = renderCreateFlow('');
+
+        await act(async () => {
+            await result.current.openNewInstanceDialog();
+        });
+
+        expect(result.current.newInstanceRequest?.createOptions).toEqual(
+            createOptions
+        );
+        expect(result.current.newInstanceRequest?.defaults).toMatchObject({
+            description: 'Bring snacks',
+            categoryId: '',
+            vibeIds: ['ivib_cozy'],
+            languages: ['jpn']
+        });
+    });
+
+    it('still opens the dialog with remembered vibes when the options fail to load', async () => {
+        mocks.instanceCreateOptionsGet.mockRejectedValue(new Error('offline'));
+        vi.mocked(configRepository.getArray).mockImplementation(
+            async (key: string) =>
+                key === 'instanceDialogVibeIds' ? ['ivib_cozy'] : []
+        );
+        const result = renderCreateFlow('');
+
+        await act(async () => {
+            await result.current.openNewInstanceDialog();
+        });
+
+        expect(result.current.newInstanceRequest?.createOptions).toBeNull();
+        expect(result.current.newInstanceRequest?.defaults).toMatchObject({
+            vibeIds: ['ivib_cozy']
+        });
+    });
+
+    it('remembers discovery details as they are edited', () => {
+        const result = renderCreateFlow('');
+
+        act(() => {
+            result.current.saveNewInstanceDraft(
+                newInstanceForm({
+                    description: 'Bring snacks',
+                    categoryId: 'icat_hangout',
+                    vibeIds: ['ivib_chill'],
+                    languages: ['jpn']
+                })
+            );
+        });
+
+        expect(configRepository.setString).toHaveBeenCalledWith(
+            'instanceDialogDescription',
+            'Bring snacks'
+        );
+        expect(configRepository.setString).toHaveBeenCalledWith(
+            'instanceDialogCategoryId',
+            'icat_hangout'
+        );
+        expect(configRepository.setArray).toHaveBeenCalledWith(
+            'instanceDialogVibeIds',
+            ['ivib_chill']
+        );
+        expect(configRepository.setArray).toHaveBeenCalledWith(
+            'instanceDialogLanguages',
+            ['jpn']
+        );
+    });
+
+    it('sends discovery details limited to the options VRChat offers', async () => {
+        const result = renderCreateFlow('');
+        await submit(result, {
+            description: '  Bring snacks  ',
+            categoryId: 'icat_hangout',
+            vibeIds: ['ivib_chill', 'ivib_gone'],
+            languages: ['jpn', 'eng']
+        });
+
+        expect(configRepository.setArray).toHaveBeenCalledWith(
+            'instanceDialogVibeIds',
+            ['ivib_chill', 'ivib_gone']
+        );
+        expect(mocks.createInstance).toHaveBeenCalledWith(
+            expect.objectContaining({
+                description: 'Bring snacks',
+                categoryId: 'icat_hangout',
+                vibeIds: ['ivib_chill'],
+                languages: ['jpn', 'eng']
+            })
+        );
+    });
+
+    it('omits category and vibes when their options could not be loaded', async () => {
+        const result = renderCreateFlow('', false, null);
+        await submit(result, {
+            categoryId: 'icat_hangout',
+            vibeIds: ['ivib_chill'],
+            languages: ['jpn']
+        });
+
+        expect(mocks.createInstance).toHaveBeenCalledWith(
+            expect.objectContaining({
+                categoryId: '',
+                vibeIds: [],
+                languages: ['jpn']
+            })
+        );
     });
 
     it('closes the dialog and hands a plain new instance to the launch dialog', async () => {

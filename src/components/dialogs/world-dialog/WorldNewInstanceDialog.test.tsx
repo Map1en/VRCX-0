@@ -69,6 +69,7 @@ vi.mock('@/ui/shadcn/dialog', () => ({
 
 vi.mock('@/ui/shadcn/field', () => ({
     Field: ({ children }: PropsWithChildren) => <div>{children}</div>,
+    FieldDescription: ({ children }: PropsWithChildren) => <p>{children}</p>,
     FieldGroup: ({ children }: PropsWithChildren) => <div>{children}</div>,
     FieldLabel: ({
         children,
@@ -110,34 +111,87 @@ vi.mock('@/ui/shadcn/popover', () => ({
     PopoverTrigger: ({ render }: { render: ReactNode }) => render
 }));
 
-vi.mock('@/ui/shadcn/select', () => {
+vi.mock('@/ui/shadcn/select', async () => {
+    const { createContext, useCallback, useContext } = await import('react');
+    const MultiSelectContext = createContext<((value: string) => void) | null>(
+        null
+    );
+    function PassThroughWhenMultiple({ children }: PropsWithChildren) {
+        return useContext(MultiSelectContext) ? <div>{children}</div> : null;
+    }
     return {
         Select: ({
+            children,
             disabled,
             items = [],
+            multiple,
             onValueChange,
             value
-        }: {
-            disabled?: boolean;
-            items?: Array<{ label: ReactNode; value: string }>;
-            onValueChange(value: string): void;
-            value: string;
-        }) => (
-            <select
-                disabled={disabled}
-                value={value}
-                onChange={(event) => onValueChange(event.currentTarget.value)}
-            >
-                {items.map((item) => (
-                    <option key={item.value} value={item.value}>
-                        {item.label}
-                    </option>
-                ))}
-            </select>
-        ),
-        SelectContent: () => null,
-        SelectGroup: () => null,
-        SelectItem: () => null,
+        }: PropsWithChildren<
+            | {
+                  disabled?: boolean;
+                  items?: Array<{ label: ReactNode; value: string }>;
+                  multiple?: false;
+                  onValueChange(value: string): void;
+                  value: string;
+              }
+            | {
+                  disabled?: boolean;
+                  items?: Array<{ label: ReactNode; value: string }>;
+                  multiple: true;
+                  onValueChange(value: string[]): void;
+                  value: string[];
+              }
+        >) => {
+            const select = useCallback(
+                (item: string) => {
+                    if (multiple) {
+                        onValueChange([...value, item]);
+                    }
+                },
+                [multiple, onValueChange, value]
+            );
+            if (multiple) {
+                return (
+                    <MultiSelectContext.Provider value={select}>
+                        {children}
+                    </MultiSelectContext.Provider>
+                );
+            }
+            return (
+                <select
+                    disabled={disabled}
+                    value={value}
+                    onChange={(event) =>
+                        onValueChange(event.currentTarget.value)
+                    }
+                >
+                    {items.map((item) => (
+                        <option key={item.value} value={item.value}>
+                            {item.label}
+                        </option>
+                    ))}
+                </select>
+            );
+        },
+        SelectContent: PassThroughWhenMultiple,
+        SelectGroup: PassThroughWhenMultiple,
+        SelectItem: ({
+            children,
+            disabled,
+            value
+        }: PropsWithChildren<{ disabled?: boolean; value: string }>) => {
+            const select = useContext(MultiSelectContext);
+            return select ? (
+                <button
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => select(value)}
+                >
+                    {children}
+                </button>
+            ) : null;
+        },
         SelectTrigger: () => null,
         SelectValue: () => null
     };
@@ -218,13 +272,28 @@ const world: WorldProfileRecord = {
     visits: 0
 };
 
+const createOptions = {
+    categories: [
+        { id: 'icat_hangout', name: 'Hangout' },
+        { id: 'icat_watch', name: 'Watch Party' }
+    ],
+    vibes: [
+        { id: 'ivib_chill', name: 'Chill' },
+        { id: 'ivib_cozy', name: 'Cozy' },
+        { id: 'ivib_social', name: 'Social' },
+        { id: 'ivib_anime', name: 'Anime' }
+    ]
+};
+
 function makeRequest(
-    defaults: WorldNewInstanceRequest['defaults'] = {}
+    defaults: WorldNewInstanceRequest['defaults'] = {},
+    options: WorldNewInstanceRequest['createOptions'] = createOptions
 ): WorldNewInstanceRequest {
     return {
         selfInvite: false,
         afterCreateAction: '',
-        defaults
+        defaults,
+        createOptions: options
     };
 }
 
@@ -384,6 +453,99 @@ describe('WorldNewInstanceDialog', () => {
 
         expect(props.onSubmit).toHaveBeenCalledWith(
             expect.objectContaining({ minimumAvatarPerformance: '' })
+        );
+    });
+
+    it('submits the description, category and up to three vibes with translated labels', async () => {
+        const props = defaultProps();
+        render(<WorldNewInstanceDialog {...props} />);
+
+        const description = await screen.findByLabelText(
+            'dialog.new_instance.description'
+        );
+        expect(description.getAttribute('maxLength')).toBe('256');
+        expect(inputByLabel('dialog.new_instance.display_name').maxLength).toBe(
+            128
+        );
+        fireEvent.change(description, { target: { value: 'Bring snacks' } });
+        fireEvent.change(
+            screen.getByDisplayValue('dialog.new_instance.category_none'),
+            { target: { value: 'icat_watch' } }
+        );
+        expect(
+            screen.getByRole('option', {
+                name: 'Watch Party (dialog.new_instance.category_options.watch_party)'
+            })
+        ).toBeTruthy();
+        for (const name of ['Chill', 'Cozy', 'Social']) {
+            fireEvent.click(
+                buttonByName(
+                    `${name} (dialog.new_instance.vibe_options.${name.toLowerCase()})`
+                )
+            );
+        }
+
+        expect(
+            buttonByName('Anime (dialog.new_instance.vibe_options.anime)')
+                .disabled
+        ).toBe(true);
+        expect(
+            buttonByName('Chill (dialog.new_instance.vibe_options.chill)')
+                .disabled
+        ).toBe(false);
+        fireEvent.click(buttonByName('dialog.new_instance.create_instance'));
+        expect(props.onSubmit).toHaveBeenCalledWith(
+            expect.objectContaining({
+                description: 'Bring snacks',
+                categoryId: 'icat_watch',
+                vibeIds: ['ivib_chill', 'ivib_cozy', 'ivib_social']
+            })
+        );
+    });
+
+    it('hides category and vibes when VRChat options are unavailable', async () => {
+        const props = defaultProps({ request: makeRequest({}, null) });
+        render(<WorldNewInstanceDialog {...props} />);
+
+        await screen.findByLabelText('dialog.new_instance.description');
+        expect(screen.queryByText('dialog.new_instance.category')).toBeNull();
+        expect(screen.queryByText('dialog.new_instance.vibes')).toBeNull();
+    });
+
+    it('resets the normal tab to the defaults but keeps name presets', async () => {
+        const props = defaultProps({
+            request: makeRequest({
+                accessType: 'group',
+                groupId: 'grp_test',
+                region: 'Japan',
+                displayName: 'Movie night',
+                displayNamePresets: ['Movie night'],
+                description: 'Bring snacks',
+                categoryId: 'icat_watch',
+                vibeIds: ['ivib_chill'],
+                languages: ['jpn']
+            })
+        });
+        render(<WorldNewInstanceDialog {...props} />);
+
+        fireEvent.click(
+            await screen.findByRole('button', {
+                name: 'dialog.new_instance.reset_defaults'
+            })
+        );
+
+        expect(props.onChange).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                accessType: 'public',
+                region: 'US West',
+                groupId: '',
+                displayName: '',
+                displayNamePresets: ['Movie night'],
+                description: '',
+                categoryId: '',
+                vibeIds: [],
+                languages: []
+            })
         );
     });
 
