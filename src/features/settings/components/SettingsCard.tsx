@@ -49,14 +49,14 @@ export function SettingsCard({
             className={cn('shrink-0', className)}
         >
             <Card className="bg-surface-raised text-foreground ring-stroke-subtle gap-0 py-0 shadow-none">
-                <CardHeader className="flex flex-row items-center gap-2 p-0">
+                <CardHeader className="has-[[data-slot=collapsible-trigger]:hover:not(:active)]:bg-accent -mb-(--radius-xl) flex flex-row items-center gap-2 p-0 pb-(--radius-xl) transition-colors duration-(--motion-fast) ease-(--ease-out-ui) has-[[data-slot=collapsible-trigger]:active]:bg-(--state-pressed-surface) motion-reduce:transition-none">
                     <h2 className="min-w-0 flex-1" aria-labelledby={titleId}>
                         <CollapsibleTrigger
                             aria-labelledby={titleId}
                             aria-describedby={
                                 description ? descriptionId : undefined
                             }
-                            className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring flex w-full items-center justify-between gap-3 rounded-t-xl px-4 py-2.5 text-left transition-colors duration-(--motion-fast) ease-(--ease-out-ui) outline-none focus-visible:ring-2 focus-visible:ring-inset active:bg-(--state-pressed-surface) motion-reduce:transition-none"
+                            className="hover:text-accent-foreground focus-visible:ring-ring flex w-full items-center justify-between gap-3 rounded-t-xl px-4 py-2.5 text-left transition-colors duration-(--motion-fast) ease-(--ease-out-ui) outline-none focus-visible:ring-2 focus-visible:ring-inset motion-reduce:transition-none"
                         >
                             <span className="flex min-w-0 flex-col gap-0.5">
                                 <span
@@ -90,7 +90,7 @@ export function SettingsCard({
                 <CollapsibleContent keepMounted>
                     <CardContent
                         className={cn(
-                            'bg-surface-panel border-stroke-subtle rounded-t-xl border-t px-4 py-2.5',
+                            'bg-surface-panel border-stroke-subtle relative overflow-hidden rounded-t-xl border-t px-4 py-2.5',
                             bodyClassName
                         )}
                     >
