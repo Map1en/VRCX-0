@@ -6,6 +6,7 @@ use vrcx_0_application::game::{InstanceLaunchInput, InstanceLaunchOutcome};
 use crate::error::AppError;
 use crate::state::AppState;
 use vrcx_0_contracts::vrchat_api::VrchatResponse;
+use vrcx_0_contracts::vrchat_requests::InstanceCreateOptions;
 use vrcx_0_core::json::RawJson;
 
 use super::types::{
@@ -52,6 +53,19 @@ pub async fn app__vrchat_instance_create(
         .runtime_host()
         .vrchat_remote()
         .instance_create(input.params)
+        .await
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__vrchat_instance_create_options_get(
+    state: State<'_, AppState>,
+) -> Result<InstanceCreateOptions, AppError> {
+    state
+        .runtime_host()
+        .vrchat_remote()
+        .instance_create_options()
         .await
         .map_err(AppError::from)
 }

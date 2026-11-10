@@ -93,5 +93,59 @@ pub(super) fn validated_instance_create_request(
         ));
     }
 
+    request.display_name = non_blank_text(request.display_name);
+    request.description = non_blank_text(request.description);
+    request.category_id = non_blank_text(request.category_id);
+    if request
+        .category_id
+        .as_deref()
+        .is_some_and(|category_id| !category_id.starts_with("icat_"))
+    {
+        return Err(HttpApiError::Custom(
+            "VrchatInstanceCreate categoryId must begin with icat_.".into(),
+        ));
+    }
+    request.vibe_ids = non_empty_list(request.vibe_ids, "vibeIds")?;
+    if let Some(vibe_ids) = &request.vibe_ids {
+        if vibe_ids.iter().any(|vibe_id| !vibe_id.starts_with("ivib_")) {
+            return Err(HttpApiError::Custom(
+                "VrchatInstanceCreate vibeIds must begin with ivib_.".into(),
+            ));
+        }
+    }
+    request.languages = non_empty_list(request.languages, "languages")?;
+
     Ok(request)
+}
+
+const MAX_DISCOVERY_LIST_LEN: usize = 3;
+
+fn non_blank_text(value: Option<String>) -> Option<String> {
+    value
+        .map(crate::http_api::normalize_text)
+        .filter(|value| !value.is_empty())
+}
+
+fn non_empty_list(
+    values: Option<Vec<String>>,
+    field: &str,
+) -> Result<Option<Vec<String>>, HttpApiError> {
+    let Some(values) = values.filter(|values| !values.is_empty()) else {
+        return Ok(None);
+    };
+    if values.len() > MAX_DISCOVERY_LIST_LEN {
+        return Err(HttpApiError::Custom(format!(
+            "VrchatInstanceCreate {field} accepts at most {MAX_DISCOVERY_LIST_LEN} values."
+        )));
+    }
+    values
+        .into_iter()
+        .map(|value| {
+            require_text(
+                value,
+                &format!("VrchatInstanceCreate {field} cannot contain blank values."),
+            )
+        })
+        .collect::<Result<Vec<_>, _>>()
+        .map(Some)
 }

@@ -23,9 +23,10 @@ use vrcx_0_vrchat_protocol::favorites::{favorite_groups_get_input, favorite_worl
 use vrcx_0_vrchat_protocol::friends::friend_status_get_input;
 use vrcx_0_vrchat_protocol::instances::{
     active_instances_get_input, discover_instances_get_input, instance_calendar_link_input,
-    instance_close_input, instance_count_get_input, instance_create_input,
-    instance_display_name_input, instance_get_input, instance_self_invite_input,
-    instance_short_name_get_input, InstanceCreateRequest,
+    instance_categories_get_input, instance_category_options, instance_close_input,
+    instance_count_get_input, instance_create_input, instance_display_name_input,
+    instance_get_input, instance_self_invite_input, instance_short_name_get_input,
+    instance_vibe_options, instance_vibes_get_input, InstanceCreateOptions, InstanceCreateRequest,
 };
 use vrcx_0_vrchat_protocol::media::{
     asset_upload_input, avatar_gallery_image_upload_input, cosmetics_index_get_input,
@@ -387,6 +388,27 @@ impl VrchatRemoteFacade {
             VrchatScope::Vrchat,
         )
         .await
+    }
+
+    pub async fn instance_create_options(&self) -> Result<InstanceCreateOptions> {
+        let (categories, vibes) = tokio::try_join!(
+            self.execute(
+                "app__vrchat_instance_create_options_get",
+                "Getting instance categories.",
+                instance_categories_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into()),
+                VrchatScope::Vrchat,
+            ),
+            self.execute(
+                "app__vrchat_instance_create_options_get",
+                "Getting instance vibes.",
+                instance_vibes_get_input(VRCHAT_API_DEFAULT_ENDPOINT.into()),
+                VrchatScope::Vrchat,
+            ),
+        )?;
+        Ok(InstanceCreateOptions {
+            categories: instance_category_options(&categories)?,
+            vibes: instance_vibe_options(&vibes)?,
+        })
     }
 
     pub async fn instance_self_invite(

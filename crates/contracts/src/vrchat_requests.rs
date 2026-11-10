@@ -238,7 +238,29 @@ pub struct InstanceCreateRequest {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub display_name: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub category_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vibe_ids: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub languages: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub minimum_avatar_performance: Option<InstanceCreateMinimumAvatarPerformance>,
+}
+
+#[derive(Clone, Debug, Serialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct InstanceCreateOption {
+    pub id: String,
+    pub name: String,
+}
+
+#[derive(Clone, Debug, Serialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct InstanceCreateOptions {
+    pub categories: Vec<InstanceCreateOption>,
+    pub vibes: Vec<InstanceCreateOption>,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, specta::Type)]

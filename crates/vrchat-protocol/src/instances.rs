@@ -6,7 +6,9 @@ use crate::http_api::{
     api_input_skip_empty_query_string as api_input, get_input_skip_empty_query_string as get_input,
     query_input, require_text, HttpApiError,
 };
-use vrcx_0_contracts::vrchat_api::VrchatRequest;
+use vrcx_0_contracts::vrchat_api::{
+    VrchatFailure, VrchatJsonResponse, VrchatRequest, VrchatResponse,
+};
 
 mod request;
 
@@ -14,6 +16,7 @@ pub use request::{
     InstanceCreateGroupAccessType, InstanceCreateMinimumAvatarPerformance, InstanceCreateRegion,
     InstanceCreateRequest, InstanceCreateType,
 };
+pub use vrcx_0_contracts::vrchat_requests::{InstanceCreateOption, InstanceCreateOptions};
 
 pub fn instance_get_input(
     endpoint: String,
@@ -163,6 +166,61 @@ pub fn instance_count_get_input(endpoint: String) -> VrchatRequest {
     get_input(endpoint, "instances/count", HashMap::new())
 }
 
+pub fn instance_categories_get_input(endpoint: String) -> VrchatRequest {
+    get_input(endpoint, "instanceCategories", HashMap::new())
+}
+
+pub fn instance_vibes_get_input(endpoint: String) -> VrchatRequest {
+    get_input(endpoint, "instanceVibes", HashMap::new())
+}
+
+pub fn instance_category_options(
+    response: &VrchatResponse,
+) -> Result<Vec<InstanceCreateOption>, VrchatFailure> {
+    let mut rows = live_option_rows(response, "name", "Getting instance categories failed.")?;
+    rows.sort_by_key(|(order, _)| *order);
+    Ok(rows.into_iter().map(|(_, option)| option).collect())
+}
+
+pub fn instance_vibe_options(
+    response: &VrchatResponse,
+) -> Result<Vec<InstanceCreateOption>, VrchatFailure> {
+    let rows = live_option_rows(response, "title", "Getting instance vibes failed.")?;
+    Ok(rows.into_iter().map(|(_, option)| option).collect())
+}
+
+fn live_option_rows(
+    response: &VrchatResponse,
+    name_field: &str,
+    fallback: &str,
+) -> Result<Vec<(i64, InstanceCreateOption)>, VrchatFailure> {
+    let response = VrchatJsonResponse::from(response);
+    if let Some(failure) = response.failure_or(fallback) {
+        return Err(failure);
+    }
+    let Value::Array(rows) = response.json else {
+        return Ok(Vec::new());
+    };
+    Ok(rows
+        .iter()
+        .filter(|row| row.get("deleted").and_then(Value::as_bool) != Some(true))
+        .filter_map(|row| {
+            let text = |field: &str| {
+                row.get(field)
+                    .and_then(Value::as_str)
+                    .filter(|value| !value.is_empty())
+                    .map(str::to_string)
+            };
+            let option = InstanceCreateOption {
+                id: text("id")?,
+                name: text(name_field)?,
+            };
+            let order = row.get("order").and_then(Value::as_i64).unwrap_or(i64::MAX);
+            Some((order, option))
+        })
+        .collect())
+}
+
 pub fn active_instances_get_input(endpoint: String, n: i32, offset: i32) -> VrchatRequest {
     get_input(
         endpoint,
@@ -270,8 +328,176 @@ mod tests {
             role_ids: None,
             age_gate: None,
             display_name: None,
+            description: None,
+            category_id: None,
+            vibe_ids: None,
+            languages: None,
             minimum_avatar_performance: None,
         }
+    }
+
+    #[test]
+    fn create_instance_sends_trimmed_discovery_details() {
+        let mut request = public_instance();
+        request.display_name = Some(" Movie night ".into());
+        request.description = Some(" Bring snacks ".into());
+        request.category_id = Some("icat_watch".into());
+        request.vibe_ids = Some(vec!["ivib_chill".into(), "ivib_cozy".into()]);
+        request.languages = Some(vec![" jpn ".into(), "eng".into(), "ase".into()]);
+
+        let request = instance_create_input("endpoint".into(), request).unwrap();
+
+        assert_eq!(
+            request.body.as_json(),
+            Some(&json!({
+                "type": "public",
+                "canRequestInvite": false,
+                "worldId": "wrld_123",
+                "region": "us",
+                "displayName": "Movie night",
+                "description": "Bring snacks",
+                "categoryId": "icat_watch",
+                "vibeIds": ["ivib_chill", "ivib_cozy"],
+                "languages": ["jpn", "eng", "ase"],
+            }))
+        );
+    }
+
+    #[test]
+    fn create_instance_omits_blank_discovery_details() {
+        let mut request = public_instance();
+        request.display_name = Some("   ".into());
+        request.description = Some(" ".into());
+        request.category_id = Some("".into());
+        request.vibe_ids = Some(Vec::new());
+        request.languages = Some(Vec::new());
+
+        let request = instance_create_input("endpoint".into(), request).unwrap();
+
+        assert_eq!(
+            request.body.as_json(),
+            Some(&json!({
+                "type": "public",
+                "canRequestInvite": false,
+                "worldId": "wrld_123",
+                "region": "us",
+            }))
+        );
+    }
+
+    #[test]
+    fn create_instance_rejects_invalid_discovery_details() {
+        let mut request = public_instance();
+        request.vibe_ids = Some(vec![
+            "ivib_1".into(),
+            "ivib_2".into(),
+            "ivib_3".into(),
+            "ivib_4".into(),
+        ]);
+        assert!(instance_create_input("endpoint".into(), request).is_err());
+
+        let mut request = public_instance();
+        request.vibe_ids = Some(vec!["chill".into()]);
+        assert!(instance_create_input("endpoint".into(), request).is_err());
+
+        let mut request = public_instance();
+        request.category_id = Some("hangout".into());
+        assert!(instance_create_input("endpoint".into(), request).is_err());
+
+        let mut request = public_instance();
+        request.languages = Some(vec!["eng".into(), "jpn".into(), "kor".into(), "deu".into()]);
+        assert!(instance_create_input("endpoint".into(), request).is_err());
+
+        let mut request = public_instance();
+        request.languages = Some(vec!["eng".into(), " ".into()]);
+        assert!(instance_create_input("endpoint".into(), request).is_err());
+    }
+
+    fn response(status: i32, data: Value) -> VrchatResponse {
+        VrchatResponse {
+            status,
+            data: data.to_string(),
+        }
+    }
+
+    fn option(id: &str, name: &str) -> InstanceCreateOption {
+        InstanceCreateOption {
+            id: id.into(),
+            name: name.into(),
+        }
+    }
+
+    #[test]
+    fn create_option_lists_request_their_endpoints() {
+        let categories = instance_categories_get_input("endpoint".into());
+        assert_eq!(categories.method.as_deref(), Some("GET"));
+        assert_eq!(categories.path.as_deref(), Some("instanceCategories"));
+
+        let vibes = instance_vibes_get_input("endpoint".into());
+        assert_eq!(vibes.method.as_deref(), Some("GET"));
+        assert_eq!(vibes.path.as_deref(), Some("instanceVibes"));
+    }
+
+    #[test]
+    fn category_options_follow_server_order_and_skip_deleted_rows() {
+        let categories = instance_category_options(&response(
+            200,
+            json!([
+                { "id": "icat_games", "name": "Games", "order": 2, "deleted": false },
+                { "id": "icat_old", "name": "Old", "order": 0, "deleted": true },
+                { "id": "icat_hangout", "name": "Hangout", "order": 0, "deleted": false },
+                { "name": "Broken", "order": 1 },
+                { "id": "icat_music", "name": "Music & Shows", "order": 1 },
+            ]),
+        ))
+        .unwrap();
+
+        assert_eq!(
+            categories,
+            vec![
+                option("icat_hangout", "Hangout"),
+                option("icat_music", "Music & Shows"),
+                option("icat_games", "Games"),
+            ]
+        );
+    }
+
+    #[test]
+    fn vibe_options_keep_server_order_and_skip_deleted_rows() {
+        let vibes = instance_vibe_options(&response(
+            200,
+            json!([
+                { "id": "ivib_adventure", "title": "Adventure", "deleted": false },
+                { "id": "ivib_coffee", "title": "Coffee", "deleted": true },
+                { "id": "ivib_chill", "title": "Chill" },
+                { "id": "ivib_untitled" },
+            ]),
+        ))
+        .unwrap();
+
+        assert_eq!(
+            vibes,
+            vec![
+                option("ivib_adventure", "Adventure"),
+                option("ivib_chill", "Chill"),
+            ]
+        );
+    }
+
+    #[test]
+    fn create_option_lists_surface_api_failures() {
+        let failure = instance_vibe_options(&response(
+            401,
+            json!({ "error": { "message": "Missing Credentials", "status_code": 401 } }),
+        ))
+        .unwrap_err();
+        assert_eq!(failure.status_code, 401);
+        assert_eq!(failure.message, "Missing Credentials");
+
+        assert_eq!(
+            instance_category_options(&response(200, json!({}))).unwrap(),
+            Vec::new()
+        );
     }
 
     #[test]

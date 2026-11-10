@@ -24,16 +24,41 @@ fn instance_create_contract_keeps_protocol_field_names() {
         role_ids: None,
         age_gate: None,
         display_name: None,
+        description: None,
+        category_id: None,
+        vibe_ids: None,
+        languages: None,
         minimum_avatar_performance: None,
     };
 
     assert_eq!(
-        serde_json::to_value(input).unwrap(),
+        serde_json::to_value(&input).unwrap(),
         json!({
             "type": "public",
             "canRequestInvite": false,
             "worldId": "wrld_test",
             "region": "jp"
+        })
+    );
+
+    let described = InstanceCreateRequest {
+        description: Some("Movie night".into()),
+        category_id: Some("icat_watch".into()),
+        vibe_ids: Some(vec!["ivib_chill".into()]),
+        languages: Some(vec!["jpn".into()]),
+        ..input
+    };
+    assert_eq!(
+        serde_json::to_value(described).unwrap(),
+        json!({
+            "type": "public",
+            "canRequestInvite": false,
+            "worldId": "wrld_test",
+            "region": "jp",
+            "description": "Movie night",
+            "categoryId": "icat_watch",
+            "vibeIds": ["ivib_chill"],
+            "languages": ["jpn"]
         })
     );
 }

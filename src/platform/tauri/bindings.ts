@@ -1522,6 +1522,10 @@ export const commands = {
         __TAURI_INVOKE<HttpApiExecuteResponse>('app__vrchat_instance_create', {
             input
         }),
+    appVrchatInstanceCreateOptionsGet: () =>
+        __TAURI_INVOKE<InstanceCreateOptions>(
+            'app__vrchat_instance_create_options_get'
+        ),
     appVrchatInstanceGet: (input: VrchatInstanceIdentityInput) =>
         __TAURI_INVOKE<HttpApiExecuteResponse>('app__vrchat_instance_get', {
             input
@@ -5671,6 +5675,16 @@ export type InstanceCreateGroupAccessType = 'members' | 'plus' | 'public';
 
 export type InstanceCreateMinimumAvatarPerformance = 'Poor' | 'Medium' | 'Good';
 
+export type InstanceCreateOption = {
+    id: string;
+    name: string;
+};
+
+export type InstanceCreateOptions = {
+    categories: InstanceCreateOption[];
+    vibes: InstanceCreateOption[];
+};
+
 export type InstanceCreateRegion = 'eu' | 'jp' | 'us' | 'use';
 
 export type InstanceCreateRequest = {
@@ -5684,6 +5698,10 @@ export type InstanceCreateRequest = {
     roleIds?: string[] | null;
     ageGate?: boolean | null;
     displayName?: string | null;
+    description?: string | null;
+    categoryId?: string | null;
+    vibeIds?: string[] | null;
+    languages?: string[] | null;
     minimumAvatarPerformance?: InstanceCreateMinimumAvatarPerformance | null;
 };
 
