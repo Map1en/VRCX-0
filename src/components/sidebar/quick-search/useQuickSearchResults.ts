@@ -53,28 +53,31 @@ export function useQuickSearchResults({
                 ? { ...current, status: 'running', detail: '' }
                 : createEmptyQuickSearchState('running')
         );
-        loadQuickSearchResults(normalizedQuery)
-            .then((results) => {
-                if (active) {
-                    resultsAccountRef.current = account;
-                    setState(results);
-                }
-            })
-            .catch((error: unknown) => {
-                if (active) {
-                    setState(
-                        createEmptyQuickSearchState(
-                            'error',
-                            error instanceof Error
-                                ? error.message
-                                : 'Search failed.'
-                        )
-                    );
-                }
-            });
+        const timer = window.setTimeout(() => {
+            loadQuickSearchResults(normalizedQuery)
+                .then((results) => {
+                    if (active) {
+                        resultsAccountRef.current = account;
+                        setState(results);
+                    }
+                })
+                .catch((error: unknown) => {
+                    if (active) {
+                        setState(
+                            createEmptyQuickSearchState(
+                                'error',
+                                error instanceof Error
+                                    ? error.message
+                                    : 'Search failed.'
+                            )
+                        );
+                    }
+                });
+        }, 250);
 
         return () => {
             active = false;
+            window.clearTimeout(timer);
         };
     }, [currentEndpoint, currentUserId, normalizedQuery, open]);
 

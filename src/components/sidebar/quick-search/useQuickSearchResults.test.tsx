@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { act, renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, renderHook } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { QuickSearchState } from '../quickSearch';
 
@@ -49,7 +49,59 @@ function deferredResults() {
 
 describe('useQuickSearchResults', () => {
     beforeEach(() => {
+        vi.useFakeTimers();
         mocks.loadQuickSearchResults.mockReset();
+    });
+
+    afterEach(() => {
+        cleanup();
+        vi.useRealTimers();
+    });
+
+    it('only queries the backend after typing settles', async () => {
+        mocks.loadQuickSearchResults.mockResolvedValue(
+            createEmptyQuickSearchState('ready')
+        );
+        const { rerender } = renderHook(
+            ({ normalizedQuery }) =>
+                useQuickSearchResults({
+                    currentUserId: 'usr_current',
+                    currentEndpoint: 'https://example.test',
+                    normalizedQuery,
+                    open: true
+                }),
+            { initialProps: { normalizedQuery: 'a' } }
+        );
+        await act(() => vi.advanceTimersByTimeAsync(100));
+        rerender({ normalizedQuery: 'al' });
+        await act(() => vi.advanceTimersByTimeAsync(100));
+        rerender({ normalizedQuery: 'alpha' });
+        await act(() => vi.advanceTimersByTimeAsync(249));
+        expect(mocks.loadQuickSearchResults).not.toHaveBeenCalled();
+        await act(() => vi.advanceTimersByTimeAsync(1));
+        expect(mocks.loadQuickSearchResults).toHaveBeenCalledExactlyOnceWith(
+            'alpha'
+        );
+    });
+
+    it('cancels pending queries when closed or unmounted', async () => {
+        const { rerender, unmount } = renderHook(
+            ({ open }) =>
+                useQuickSearchResults({
+                    currentUserId: 'usr_current',
+                    currentEndpoint: 'https://example.test',
+                    normalizedQuery: 'alpha',
+                    open
+                }),
+            { initialProps: { open: true } }
+        );
+        rerender({ open: false });
+        await act(() => vi.advanceTimersByTimeAsync(300));
+        expect(mocks.loadQuickSearchResults).not.toHaveBeenCalled();
+        rerender({ open: true });
+        unmount();
+        await act(() => vi.advanceTimersByTimeAsync(300));
+        expect(mocks.loadQuickSearchResults).not.toHaveBeenCalled();
     });
 
     it('does not invoke the backend while the dialog has no query', () => {
@@ -89,6 +141,7 @@ describe('useQuickSearchResults', () => {
                 }
             }
         );
+        await act(() => vi.advanceTimersByTimeAsync(250));
 
         rerender({
             currentUserId: 'usr_second',
@@ -121,6 +174,7 @@ describe('useQuickSearchResults', () => {
         expect(result.current.status).toBe('running');
         expect(result.current.detail).toBe('');
 
+        await act(() => vi.advanceTimersByTimeAsync(250));
         await act(async () => {
             second.resolve(createEmptyQuickSearchState('ready', 'current'));
             await second.promise;
@@ -147,6 +201,7 @@ describe('useQuickSearchResults', () => {
                 }),
             { initialProps: { normalizedQuery: 'alp' } }
         );
+        await act(() => vi.advanceTimersByTimeAsync(250));
 
         await act(async () => {
             first.resolve({
