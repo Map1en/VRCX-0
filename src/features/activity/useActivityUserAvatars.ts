@@ -12,7 +12,10 @@ export function useActivityUserAvatars(
     const friendsById = useFriendRosterStore((state) => state.friendsById);
     const [fetched, setFetched] = useState<Map<string, string>>(new Map());
     const resolvedRef = useRef(new Set<string>());
-    const userIdsKey = userIds.join(',');
+    const pendingRef = useRef(new Map<string, Promise<string | null>>());
+    const userIdsKey = userIds
+        .filter((userId) => !userImage(friendsById[userId], 128))
+        .join(',');
 
     useEffect(() => {
         const ids = (userIdsKey ? userIdsKey.split(',') : []).filter(
@@ -26,11 +29,16 @@ export function useActivityUserAvatars(
         void resolveMissingEntities({
             ids,
             isActive: () => active,
-            fetchOne: async (userId) => {
-                const profile = await userProfileRepository.getUserProfile({
-                    userId
-                });
-                return userImage(profile, 128) || null;
+            fetchOne: (userId) => {
+                let pending = pendingRef.current.get(userId);
+                if (!pending) {
+                    pending = userProfileRepository
+                        .getUserProfile({ userId })
+                        .then((profile) => userImage(profile, 128) || null)
+                        .finally(() => pendingRef.current.delete(userId));
+                    pendingRef.current.set(userId, pending);
+                }
+                return pending;
             },
             onResolved: (userId, image) => {
                 resolvedRef.current.add(userId);
