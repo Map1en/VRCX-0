@@ -252,7 +252,7 @@ export function handleFeedLoggerSyncEvent(event: FeedLoggerSyncEvent) {
             store.setSyncProgress({ phase: event.state, frames: event.frames });
             return;
         case 'finished':
-            store.setSyncProgress(null);
+            store.finishSync('finished');
             if (event.inserted > 0) {
                 store.markBackfilled();
                 toast.add({
@@ -272,7 +272,7 @@ export function handleFeedLoggerSyncEvent(event: FeedLoggerSyncEvent) {
             }
             break;
         case 'failed':
-            store.setSyncProgress(null);
+            store.finishSync('failed');
             toast.add({
                 type: 'error',
                 title: i18n.t('offline_record.toast.backfill_failed'),

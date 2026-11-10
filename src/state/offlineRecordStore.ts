@@ -10,10 +10,12 @@ export type OfflineRecordSyncProgress = {
 type OfflineRecordState = {
     health: FeedLoggerProbe | null;
     syncProgress: OfflineRecordSyncProgress | null;
+    syncOutcome: 'finished' | 'failed' | null;
     backfillRevision: number;
     riskAcknowledged: boolean;
     applyHealth(health: FeedLoggerProbe): void;
     setSyncProgress(progress: OfflineRecordSyncProgress | null): void;
+    finishSync(outcome: 'finished' | 'failed'): void;
     markBackfilled(): void;
     setRiskAcknowledged(riskAcknowledged: boolean): void;
 };
@@ -21,13 +23,17 @@ type OfflineRecordState = {
 export const useOfflineRecordStore = create<OfflineRecordState>((set) => ({
     health: null,
     syncProgress: null,
+    syncOutcome: null,
     backfillRevision: 0,
     riskAcknowledged: false,
     applyHealth(health) {
         set({ health });
     },
     setSyncProgress(syncProgress) {
-        set({ syncProgress });
+        set({ syncProgress, syncOutcome: null });
+    },
+    finishSync(syncOutcome) {
+        set({ syncProgress: null, syncOutcome });
     },
     markBackfilled() {
         set((state) => ({ backfillRevision: state.backfillRevision + 1 }));

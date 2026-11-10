@@ -32,6 +32,7 @@ beforeEach(() => {
     useOfflineRecordStore.setState({
         health: null,
         syncProgress: null,
+        syncOutcome: null,
         backfillRevision: 0
     });
     vi.mocked(commands.appFeedLoggerStatus).mockResolvedValue({
@@ -69,6 +70,7 @@ describe('filling in entries recorded while VRCX-0 was closed', () => {
 
         expect(mocks.toastAdd).not.toHaveBeenCalled();
         expect(useOfflineRecordStore.getState().syncProgress).toBeNull();
+        expect(useOfflineRecordStore.getState().syncOutcome).toBe('finished');
     });
 
     it('warns when recorded entries could not be filled in for lack of a friend list', () => {
@@ -94,6 +96,7 @@ describe('filling in entries recorded while VRCX-0 was closed', () => {
             description: 'disk full'
         });
         expect(useOfflineRecordStore.getState().syncProgress).toBeNull();
+        expect(useOfflineRecordStore.getState().syncOutcome).toBe('failed');
     });
 });
 
