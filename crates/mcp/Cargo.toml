@@ -13,7 +13,7 @@ compact_str = { workspace = true }
 getrandom = "0.4"
 http-body = "1"
 percent-encoding = { workspace = true }
-rmcp = { version = "=3.8.0", features = [
+rmcp = { version = "=3.9.0", features = [
     "client",
     "elicitation",
     "server",
