@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 
 import { useLocalWorldFavorites } from '@/components/favorites/useLocalWorldFavorites';
 import type { FavoriteKind } from '@/domain/favorites/types';
+import type { FriendRosterById } from '@/domain/friends/types';
 import { useKnownUserFacts } from '@/lib/useKnownUser';
 import type { AvatarCacheOutput } from '@/platform/tauri/bindings';
 import avatarLocalRepository from '@/repositories/avatarLocalRepository';
@@ -22,6 +23,7 @@ import { useAvatarDetailFallbacks } from './useAvatarDetailFallbacks';
 import { useFavoriteRemoteDetails } from './useFavoriteRemoteDetails';
 
 const EMPTY_WORLD_DETAILS: Record<string, unknown> = {};
+const EMPTY_FRIENDS: FriendRosterById = {};
 
 function selectRequestedRemoteEntityIds({
     favoriteAvatarIds,
@@ -76,7 +78,9 @@ export function useFavoritesCollectionsState({
     );
     const favoriteState = useFavoriteStore(useShallow(favoriteSelector));
     const localWorldFavorites = useLocalWorldFavorites(kind === 'world');
-    const friendsById = useFriendRosterStore((state) => state.friendsById);
+    const friendsById = useFriendRosterStore((state) =>
+        kind === 'avatar' ? EMPTY_FRIENDS : state.friendsById
+    );
     const [avatarHistoryLoading, setAvatarHistoryLoading] = useState(false);
     const [avatarHistory, setAvatarHistory] = useState<AvatarCacheOutput[]>([]);
     const friendsMap = useMemo(
