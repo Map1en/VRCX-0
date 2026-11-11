@@ -58,11 +58,11 @@ fn development_dependency_names(package_name: &str) -> BTreeSet<String> {
     dependency_names(package_name, DependencyKind::Development)
 }
 
-fn named_struct_body<'a>(source: &'a str, declaration: &str) -> &'a str {
+fn braced_body<'a>(source: &'a str, declaration: &str) -> &'a str {
     let tail = source
         .split_once(declaration)
         .map(|(_, tail)| tail)
-        .unwrap_or_else(|| panic!("find struct declaration: {declaration}"));
+        .unwrap_or_else(|| panic!("find declaration: {declaration}"));
     let mut depth = 1_u32;
     for (index, character) in tail.char_indices() {
         match character {
@@ -76,7 +76,7 @@ fn named_struct_body<'a>(source: &'a str, declaration: &str) -> &'a str {
             _ => {}
         }
     }
-    panic!("find closing brace for struct declaration: {declaration}");
+    panic!("find closing brace for declaration: {declaration}");
 }
 
 fn contains_identifier(source: &str, identifier: &str) -> bool {
@@ -195,7 +195,7 @@ fn composition_state_does_not_leak_through_public_fields_or_deref() {
 
     let context = std::fs::read_to_string(workspace_file("crates/composition/src/context.rs"))
         .expect("read runtime host context");
-    let context_fields = named_struct_body(&context, "pub(crate) struct RuntimeHostContext {");
+    let context_fields = braced_body(&context, "pub(crate) struct RuntimeHostContext {");
     assert!(!context_fields
         .lines()
         .any(|line| line.trim().starts_with("pub ")));
@@ -205,14 +205,14 @@ fn composition_state_does_not_leak_through_public_fields_or_deref() {
     ))
     .expect("read runtime host state");
     let runtime_builder_fields =
-        named_struct_body(&runtime_state, "pub struct RuntimeHostStateBuilder {");
+        braced_body(&runtime_state, "pub struct RuntimeHostStateBuilder {");
     assert!(
         !runtime_builder_fields
             .lines()
             .any(|line| line.trim().starts_with("pub ")),
         "runtime host builder publicly exposes mutable composition graph fields"
     );
-    let runtime_state_fields = named_struct_body(&runtime_state, "pub struct RuntimeHostState {");
+    let runtime_state_fields = braced_body(&runtime_state, "pub struct RuntimeHostState {");
     assert!(!runtime_state_fields
         .lines()
         .any(|line| line.trim().starts_with("pub ")));
@@ -718,7 +718,7 @@ fn expensive_tauri_operations_leave_the_async_workers() {
             continue;
         };
         let body_start = function.find('{').expect("find function body");
-        let body = named_struct_body(&function[body_start..], "{");
+        let body = braced_body(&function[body_start..], "{");
         if !body.contains("run_blocking(") {
             violations.push(format!(
                 "{name} must offload synchronous IO, queries, or shutdown waits"
