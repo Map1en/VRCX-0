@@ -9,7 +9,7 @@ use vrcx_0_application_core::{
 };
 use vrcx_0_contracts::vrchat_api::VrchatResponse;
 use vrcx_0_contracts::vrchat_requests::{
-    QueryOrder, ReleaseStatusFilter, WorldSearchSort, WorldUpdateRequest,
+    QueryOrder, ReleaseStatusFilter, WorldRatingValue, WorldSearchSort, WorldUpdateRequest,
 };
 
 const WORLD_REMOTE_MUTATION_INTERVAL: Duration = Duration::from_millis(250);
@@ -55,6 +55,13 @@ pub enum WorldRemoteOperation {
     PersistentDataDelete {
         user_id: String,
         world_id: String,
+    },
+    RatingGet {
+        world_id: String,
+    },
+    RatingSet {
+        world_id: String,
+        value: Option<WorldRatingValue>,
     },
 }
 
@@ -194,6 +201,22 @@ impl WorldRemoteRuntime {
             "VrchatWorldPersistentDataDelete requires worldId.",
         )?;
         self.execute_mutation(WorldRemoteOperation::PersistentDataDelete { user_id, world_id })
+            .await
+    }
+
+    pub async fn rating_get(&self, world_id: String) -> Result<VrchatResponse> {
+        let world_id = require_text(world_id, "VrchatWorldRatingGet requires worldId.")?;
+        self.execute_read(WorldRemoteOperation::RatingGet { world_id })
+            .await
+    }
+
+    pub async fn rating_set(
+        &self,
+        world_id: String,
+        value: Option<WorldRatingValue>,
+    ) -> Result<VrchatResponse> {
+        let world_id = require_text(world_id, "VrchatWorldRatingSet requires worldId.")?;
+        self.execute_mutation(WorldRemoteOperation::RatingSet { world_id, value })
             .await
     }
 

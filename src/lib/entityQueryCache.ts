@@ -134,6 +134,12 @@ export const entityQueryPolicies = Object.freeze({
         retry: 1,
         refetchOnWindowFocus: false
     }),
+    worldRating: Object.freeze({
+        staleTime: 30 * MINUTE_MS,
+        gcTime: 120 * MINUTE_MS,
+        retry: 1,
+        refetchOnWindowFocus: false
+    }),
     userAppearanceProfile: Object.freeze({
         staleTime: 60 * SECOND_MS,
         gcTime: 300 * SECOND_MS,
@@ -296,7 +302,11 @@ export const queryKeys = Object.freeze({
             worldId = ''
         }: { userId?: string; worldId?: string } = {},
         endpoint: string = ''
-    ) => withEndpoint(['world', worldId, 'persistData', userId], endpoint)
+    ) => withEndpoint(['world', worldId, 'persistData', userId], endpoint),
+    worldRating: (
+        { userId, worldId }: { userId: string; worldId: string },
+        endpoint: string = ''
+    ) => withEndpoint(['world', worldId, 'rating', userId], endpoint)
 });
 
 function toQueryOptions(

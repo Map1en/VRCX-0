@@ -610,6 +610,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::vrchat::worlds::service::app__vrchat_world_persistent_data_delete,
             commands::vrchat::worlds::service::app__vrchat_world_persistent_data_exists,
             commands::vrchat::worlds::service::app__vrchat_world_publish,
+            commands::vrchat::worlds::service::app__vrchat_world_rating_get,
+            commands::vrchat::worlds::service::app__vrchat_world_rating_set,
             commands::vrchat::worlds::service::app__vrchat_world_save,
             commands::vrchat::worlds::service::app__vrchat_world_unpublish,
             commands::host::shell::app__open_link,

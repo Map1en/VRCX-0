@@ -6,7 +6,7 @@ use crate::http_api::{api_input, encode_path_segment, get_input, require_text, H
 use crate::query::{QueryOrder, ReleaseStatusFilter, WorldSearchSort};
 use vrcx_0_contracts::vrchat_api::VrchatRequest;
 
-pub use vrcx_0_contracts::vrchat_requests::WorldUpdateRequest;
+pub use vrcx_0_contracts::vrchat_requests::{WorldRatingValue, WorldUpdateRequest};
 
 pub fn world_get_input(
     endpoint: String,
@@ -146,6 +146,35 @@ pub fn world_unpublish_input(
             None,
         ),
     ))
+}
+
+pub fn world_rating_get_input(
+    endpoint: String,
+    world_id: String,
+) -> Result<(String, VrchatRequest), HttpApiError> {
+    let world_id = require_text(world_id, "VrchatWorldRatingGet requires worldId.")?;
+    Ok((
+        world_id.clone(),
+        get_input(
+            endpoint,
+            format!("worlds/{}/rating", encode_path_segment(&world_id)),
+            HashMap::new(),
+        ),
+    ))
+}
+
+pub fn world_rating_set_input(
+    endpoint: String,
+    world_id: String,
+    value: Option<WorldRatingValue>,
+) -> Result<(String, VrchatRequest), HttpApiError> {
+    let world_id = require_text(world_id, "VrchatWorldRatingSet requires worldId.")?;
+    let path = format!("worlds/{}/rating", encode_path_segment(&world_id));
+    let request = match value {
+        Some(value) => api_input(endpoint, "PUT", path, Some(json!({ "value": value }))),
+        None => api_input(endpoint, "DELETE", path, None),
+    };
+    Ok((world_id, request))
 }
 
 pub fn world_persistent_data_delete_input(
@@ -291,6 +320,37 @@ mod tests {
     }
 
     #[test]
+    fn world_rating_reads_puts_a_value_and_deletes_when_cleared() {
+        let (world_id, get) = world_rating_get_input("endpoint".into(), " wrld/1 ".into()).unwrap();
+        assert_eq!(world_id, "wrld/1");
+        assert_eq!(get.method.as_deref(), Some("GET"));
+        assert_eq!(get.path.as_deref(), Some("worlds/wrld%2F1/rating"));
+
+        let (_, like) = world_rating_set_input(
+            "endpoint".into(),
+            "wrld/1".into(),
+            Some(WorldRatingValue::Like),
+        )
+        .unwrap();
+        assert_eq!(like.method.as_deref(), Some("PUT"));
+        assert_eq!(like.path.as_deref(), Some("worlds/wrld%2F1/rating"));
+        assert_eq!(json_body(&like), &json!({ "value": "like" }));
+
+        let (_, dislike) = world_rating_set_input(
+            "endpoint".into(),
+            "wrld/1".into(),
+            Some(WorldRatingValue::Dislike),
+        )
+        .unwrap();
+        assert_eq!(json_body(&dislike), &json!({ "value": "dislike" }));
+
+        let (_, clear) = world_rating_set_input("endpoint".into(), "wrld/1".into(), None).unwrap();
+        assert_eq!(clear.method.as_deref(), Some("DELETE"));
+        assert_eq!(clear.path.as_deref(), Some("worlds/wrld%2F1/rating"));
+        assert_eq!(clear.body, VrchatRequestBody::Empty);
+    }
+
+    #[test]
     fn world_requests_reject_blank_required_ids() {
         assert!(world_get_input("".into(), " ".into()).is_err());
         assert!(world_list_by_user_get_input(
@@ -323,6 +383,8 @@ mod tests {
         assert!(world_delete_input("".into(), " ".into()).is_err());
         assert!(world_publish_input("".into(), " ".into()).is_err());
         assert!(world_unpublish_input("".into(), " ".into()).is_err());
+        assert!(world_rating_get_input("".into(), " ".into()).is_err());
+        assert!(world_rating_set_input("".into(), " ".into(), None).is_err());
         assert!(world_persistent_data_delete_input("".into(), " ".into(), "world".into()).is_err());
     }
 

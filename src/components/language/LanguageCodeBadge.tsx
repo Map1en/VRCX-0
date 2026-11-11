@@ -19,7 +19,9 @@ export function LanguageCodeBadge({
                     </span>
                 }
             />
-            <TooltipContent side="top">{tooltip}</TooltipContent>
+            <TooltipContent side="top" className="whitespace-pre-line">
+                {tooltip}
+            </TooltipContent>
         </Tooltip>
     );
 }

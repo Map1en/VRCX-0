@@ -19,7 +19,7 @@ pub use vrcx_0_contracts::vrchat_requests::{
     InventoryOrder, InviteMessageType, MediaAssetUploadRequest, MediaFileListParams, MediaFileTag,
     ModerationReportType, PrintUploadParams, ProfileDecorationEquipSlot, QueryOrder,
     ReleaseStatusFilter, RequestInviteRequest, UserSearchCustomField, UserSearchParams,
-    UserSearchSort, WorldSearchParams, WorldSearchSort, WorldUpdateRequest,
+    UserSearchSort, WorldRatingValue, WorldSearchParams, WorldSearchSort, WorldUpdateRequest,
 };
 pub use worlds::{
     deserialize_nonnegative_i32, WorldRemoteFuture, WorldRemoteOperation, WorldRemotePort,

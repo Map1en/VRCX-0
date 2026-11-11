@@ -1,4 +1,5 @@
 import type { ComponentProps } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
     instanceLanguageBadges,
@@ -29,12 +30,19 @@ export function WorldInstanceRowTitle({
     languageSource: unknown;
     locationWorldProps: ComponentProps<typeof LocationWorld>;
 }) {
+    const { t } = useTranslation();
     const { languageOptionsMap } = useSpokenLanguageSelection(NO_LANGUAGE_KEYS);
     const languageBadges = instanceLanguageBadges(
         instanceLanguageRows(
             languageSource,
             (key) => languageOptionsMap.get(key)?.value
-        )
+        ),
+        {
+            declared: (languages) =>
+                t('dialog.world.instances.languages_declared', { languages }),
+            current: (languages) =>
+                t('dialog.world.instances.languages_current', { languages })
+        }
     );
     const visibleBadges = languageBadges.slice(0, VISIBLE_LANGUAGE_BADGES);
     const hiddenBadges = languageBadges.slice(VISIBLE_LANGUAGE_BADGES);

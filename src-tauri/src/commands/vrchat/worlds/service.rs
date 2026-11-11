@@ -8,8 +8,36 @@ use crate::state::AppState;
 
 use super::types::{
     VrchatWorldIdInput, VrchatWorldListByUserInput, VrchatWorldPersistentDataDeleteInput,
-    VrchatWorldSaveInput,
+    VrchatWorldRatingSetInput, VrchatWorldSaveInput,
 };
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__vrchat_world_rating_get(
+    state: State<'_, AppState>,
+    input: VrchatWorldIdInput,
+) -> Result<VrchatResponse, AppError> {
+    state
+        .runtime_host()
+        .worlds()
+        .rating_get(input.world_id)
+        .await
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn app__vrchat_world_rating_set(
+    state: State<'_, AppState>,
+    input: VrchatWorldRatingSetInput,
+) -> Result<VrchatResponse, AppError> {
+    state
+        .runtime_host()
+        .worlds()
+        .rating_set(input.world_id, input.value)
+        .await
+        .map_err(AppError::from)
+}
 
 #[tauri::command]
 #[specta::specta]

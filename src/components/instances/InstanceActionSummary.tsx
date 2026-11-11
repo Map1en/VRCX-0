@@ -12,7 +12,10 @@ import { Spinner } from '@/ui/shadcn/spinner';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { InstanceCalendarEventMarker } from './InstanceCalendarEventMarker';
-import { instanceLanguageRows } from './instanceLanguages';
+import {
+    instanceLanguageRows,
+    instanceLanguageRowText
+} from './instanceLanguages';
 import type { InstanceActionRecord } from './useInstanceActionBarController';
 
 const NO_LANGUAGE_KEYS: string[] = [];
@@ -99,12 +102,7 @@ function InstanceInfoTooltip({
                     {languages.length ? (
                         <div>
                             {t('dialog.instance.label.languages')}{' '}
-                            {languages
-                                .map(
-                                    (language) =>
-                                        `${language.label} ${language.percent}%`
-                                )
-                                .join(' · ')}
+                            {languages.map(instanceLanguageRowText).join(' · ')}
                         </div>
                     ) : null}
                     {instance?.gameServerVersion ? (

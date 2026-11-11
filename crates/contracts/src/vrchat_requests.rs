@@ -916,6 +916,13 @@ pub struct WorldUpdateRequest {
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "lowercase")]
+pub enum WorldRatingValue {
+    Like,
+    Dislike,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, specta::Type)]
 pub enum ContentFilter {
     #[serde(rename = "content_adult")]
     Adult,

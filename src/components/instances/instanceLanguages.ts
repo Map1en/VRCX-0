@@ -5,11 +5,17 @@ export type InstanceLanguageRow = {
     iso639: string;
     label: string;
     percent: number;
+    declared: boolean;
 };
 
 export type InstanceLanguageBadge = {
     code: string;
     tooltip: string;
+};
+
+export type InstanceLanguageTooltipLabels = {
+    declared: (languages: string) => string;
+    current: (languages: string) => string;
 };
 
 function stringList(value: unknown): string[] {
@@ -22,7 +28,15 @@ function stringList(value: unknown): string[] {
 }
 
 function baseCode(code: string) {
-    return code.split('-')[0] ?? code;
+    return (code.split('-')[0] ?? code).toLowerCase();
+}
+
+function sameCode(left: string, right: string) {
+    return left.toLowerCase() === right.toLowerCase();
+}
+
+export function instanceLanguageRowText(row: InstanceLanguageRow) {
+    return row.percent ? `${row.label} ${row.percent}%` : row.label;
 }
 
 export function instanceLanguageRows(
@@ -31,13 +45,28 @@ export function instanceLanguageRows(
 ): InstanceLanguageRow[] {
     const source = isRecord(instance) ? instance : {};
     const ratio = isRecord(source.languageRatio) ? source.languageRatio : {};
-    const declared = stringList(source.languages);
-    const languages = declared.length ? declared : Object.keys(ratio);
+    const percentOf = (code: string) => {
+        const key = Object.keys(ratio).find((entry) => sameCode(entry, code));
+        return key ? Math.round((Number(ratio[key]) || 0) * 100) : 0;
+    };
+    const created = stringList(source.creationLanguages);
+    const listed = stringList(source.languages);
+    const observed = Object.keys(ratio).filter((code) => percentOf(code) > 0);
+    const languages = created.length
+        ? [
+              ...created,
+              ...observed.filter(
+                  (code) => !created.some((entry) => sameCode(entry, code))
+              )
+          ]
+        : listed.length
+          ? listed
+          : observed;
     if (!languages.length) {
         return [];
     }
     const iso639 = stringList(source.languagesIso639);
-    const bases = [...new Set(languages.map(baseCode))];
+    const bases = [...new Set(listed.map(baseCode))];
     const isoByBase = new Map(
         bases.map((base, index) => [base, iso639[index] ?? ''])
     );
@@ -50,25 +79,48 @@ export function instanceLanguageRows(
                 code,
                 iso639: iso,
                 label: region ? `${name} (${region.toUpperCase()})` : name,
-                percent: Math.round((Number(ratio[code]) || 0) * 100)
+                percent: percentOf(code),
+                declared: created.some((entry) => sameCode(entry, code))
             };
         })
-        .sort((left, right) => right.percent - left.percent);
+        .sort(
+            (left, right) =>
+                Number(right.declared) - Number(left.declared) ||
+                (left.declared ? 0 : right.percent - left.percent)
+        );
 }
 
 export function instanceLanguageBadges(
-    rows: InstanceLanguageRow[]
+    rows: InstanceLanguageRow[],
+    labels: InstanceLanguageTooltipLabels
 ): InstanceLanguageBadge[] {
+    const declared = rows.filter((row) => row.declared);
+    const badgeRows = declared.length ? declared : rows;
     const byIso = new Map<string, InstanceLanguageRow[]>();
-    for (const row of rows) {
+    for (const row of badgeRows) {
         if (row.iso639) {
             byIso.set(row.iso639, [...(byIso.get(row.iso639) ?? []), row]);
         }
     }
-    return [...byIso.entries()].map(([iso, isoRows]) => ({
+    if (!declared.length) {
+        return [...byIso.entries()].map(([iso, isoRows]) => ({
+            code: iso.toUpperCase(),
+            tooltip: isoRows.map(instanceLanguageRowText).join(' · ')
+        }));
+    }
+    const current = rows
+        .filter((row) => row.percent > 0)
+        .sort((left, right) => right.percent - left.percent)
+        .map(instanceLanguageRowText)
+        .join(' · ');
+    const tooltip = [
+        labels.declared(declared.map((row) => row.label).join(' · ')),
+        current ? labels.current(current) : ''
+    ]
+        .filter(Boolean)
+        .join('\n');
+    return [...byIso.keys()].map((iso) => ({
         code: iso.toUpperCase(),
-        tooltip: isoRows
-            .map((row) => `${row.label} ${row.percent}%`)
-            .join(' · ')
+        tooltip
     }));
 }

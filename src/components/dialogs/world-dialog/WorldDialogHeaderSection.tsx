@@ -51,6 +51,7 @@ import {
     fileAnalysisSizeForPlatform,
     platformDisplayName
 } from './WorldDialogViewParts';
+import { WorldRatingMenuItems } from './WorldRatingMenuItems';
 
 function overviewValue(value: unknown) {
     return value || value === 0 ? String(value) : '—';
@@ -311,6 +312,7 @@ function WorldOverviewActions({
                 >
                     {t('dialog.world.actions.show_previous_instances')}
                 </EntityActionItem>
+                {world.id ? <WorldRatingMenuItems worldId={world.id} /> : null}
                 {canManageWorld ? (
                     <>
                         <EntityActionSeparator />

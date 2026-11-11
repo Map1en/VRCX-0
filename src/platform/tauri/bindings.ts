@@ -1987,6 +1987,14 @@ export const commands = {
         __TAURI_INVOKE<HttpApiExecuteResponse>('app__vrchat_world_publish', {
             input
         }),
+    appVrchatWorldRatingGet: (input: VrchatWorldIdInput) =>
+        __TAURI_INVOKE<HttpApiExecuteResponse>('app__vrchat_world_rating_get', {
+            input
+        }),
+    appVrchatWorldRatingSet: (input: VrchatWorldRatingSetInput) =>
+        __TAURI_INVOKE<HttpApiExecuteResponse>('app__vrchat_world_rating_set', {
+            input
+        }),
     appVrchatWorldSave: (input: VrchatWorldSaveInput) =>
         __TAURI_INVOKE<HttpApiExecuteResponse>('app__vrchat_world_save', {
             input
@@ -8400,6 +8408,11 @@ export type VrchatWorldPersistentDataDeleteInput = {
     worldId?: string;
 };
 
+export type VrchatWorldRatingSetInput = {
+    worldId?: string;
+    value: WorldRatingValue | null;
+};
+
 export type VrchatWorldSaveInput = {
     worldId?: string;
     params: WorldUpdateRequest;
@@ -8458,6 +8471,8 @@ export type WorldMemoOutput = {
     editedAt: string;
     memo: string;
 };
+
+export type WorldRatingValue = 'like' | 'dislike';
 
 export type WorldSearchParams = {
     featured?: boolean | null;

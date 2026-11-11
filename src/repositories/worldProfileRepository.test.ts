@@ -4,6 +4,8 @@ const tauriMock = vi.hoisted(() => ({
     commands: {
         appWorldGet: vi.fn(),
         appVrchatWorldPersistentDataExists: vi.fn(),
+        appVrchatWorldRatingGet: vi.fn(),
+        appVrchatWorldRatingSet: vi.fn(),
         appWorldOpenRegister: vi.fn()
     }
 }));
@@ -13,8 +15,11 @@ vi.mock('@/platform/tauri/bindings', () => ({
 }));
 
 import { clearEntityQueryCache } from '@/lib/entityQueryCache';
+import { queryClient } from '@/lib/queryClient';
 
-import worldProfileRepository from './worldProfileRepository';
+import worldProfileRepository, {
+    worldRatingQueryOptions
+} from './worldProfileRepository';
 
 describe('WorldProfileRepository', () => {
     beforeEach(async () => {
@@ -220,6 +225,43 @@ describe('WorldProfileRepository', () => {
                 force: true
             })
         ).resolves.toBe(false);
+    });
+
+    it('reads the current rating and keeps the cache in sync when it changes', async () => {
+        tauriMock.commands.appVrchatWorldRatingGet.mockResolvedValueOnce({
+            status: 200,
+            data: '{"value":null}'
+        });
+        const options = worldRatingQueryOptions('usr_1', 'wrld_1');
+
+        await expect(queryClient.fetchQuery(options)).resolves.toBeNull();
+
+        tauriMock.commands.appVrchatWorldRatingSet.mockResolvedValueOnce({
+            status: 200,
+            data: '{"value":"like"}'
+        });
+        await expect(
+            worldProfileRepository.setWorldRating({
+                userId: 'usr_1',
+                worldId: 'wrld_1',
+                value: 'like'
+            })
+        ).resolves.toBe('like');
+        expect(tauriMock.commands.appVrchatWorldRatingSet).toHaveBeenCalledWith(
+            { worldId: 'wrld_1', value: 'like' }
+        );
+        expect(queryClient.getQueryData(options.queryKey)).toBe('like');
+
+        tauriMock.commands.appVrchatWorldRatingSet.mockResolvedValueOnce({
+            status: 200,
+            data: '{"value":null}'
+        });
+        await worldProfileRepository.setWorldRating({
+            userId: 'usr_1',
+            worldId: 'wrld_1',
+            value: null
+        });
+        expect(queryClient.getQueryData(options.queryKey)).toBeNull();
     });
 
     it('throws request errors with status, endpoint, and parsed payload details', async () => {

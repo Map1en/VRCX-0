@@ -133,3 +133,34 @@ async fn mutation_passes_captured_identity_to_the_port() {
     );
     assert_eq!(projection.responses.lock().unwrap().len(), 1);
 }
+
+#[tokio::test]
+async fn rating_set_is_an_authenticated_mutation_that_does_not_hydrate_the_world() {
+    let auth_scope = RuntimeAuthScope::new();
+    auth_scope.set("usr_current", "https://api.example.test/api/1");
+    let port = Arc::new(RecordingPort::default());
+    let projection = Arc::new(RecordingProjection::default());
+    let runtime = WorldRemoteRuntime::new(
+        auth_scope,
+        Arc::new(RemoteMutationGate::default()),
+        port.clone(),
+        projection.clone(),
+    );
+
+    runtime
+        .rating_set(" wrld_test ".into(), Some(super::WorldRatingValue::Like))
+        .await
+        .unwrap();
+
+    let calls = port.calls.lock().unwrap();
+    assert_eq!(calls.len(), 1);
+    assert!(matches!(calls[0].0, WorldRemoteScope::Authenticated { .. }));
+    assert_eq!(
+        calls[0].1,
+        WorldRemoteOperation::RatingSet {
+            world_id: "wrld_test".into(),
+            value: Some(super::WorldRatingValue::Like),
+        }
+    );
+    assert!(projection.responses.lock().unwrap().is_empty());
+}

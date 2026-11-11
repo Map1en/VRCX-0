@@ -9,8 +9,8 @@ use vrcx_0_application_core::{RuntimeDiagnostics, RuntimeSyncEngine, WebClient, 
 use vrcx_0_contracts::vrchat_api::{VrchatResponse, VrchatScope};
 use vrcx_0_vrchat_protocol::worlds::{
     world_delete_input, world_list_by_user_get_input, world_persistent_data_delete_input,
-    world_persistent_data_exists_input, world_publish_input, world_save_input,
-    world_unpublish_input,
+    world_persistent_data_exists_input, world_publish_input, world_rating_get_input,
+    world_rating_set_input, world_save_input, world_unpublish_input,
 };
 
 pub struct VrchatWorldRemote {
@@ -117,6 +117,22 @@ impl WorldRemotePort for VrchatWorldRemote {
                     (
                         "app__vrchat_world_persistent_data_delete",
                         format!("Deleting persistent data for user {user_id} in world {world_id}."),
+                        request,
+                    )
+                }
+                WorldRemoteOperation::RatingGet { world_id } => {
+                    let (world_id, request) = world_rating_get_input(endpoint, world_id)?;
+                    (
+                        "app__vrchat_world_rating_get",
+                        format!("Getting rating for world {world_id}."),
+                        request,
+                    )
+                }
+                WorldRemoteOperation::RatingSet { world_id, value } => {
+                    let (world_id, request) = world_rating_set_input(endpoint, world_id, value)?;
+                    (
+                        "app__vrchat_world_rating_set",
+                        format!("Setting rating for world {world_id}."),
                         request,
                     )
                 }

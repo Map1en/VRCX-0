@@ -1,3 +1,5 @@
+import { queryOptions } from '@tanstack/react-query';
+
 import type { WorldProfileRecord } from '@/domain/entities/world';
 import {
     entityQueryPolicies,
@@ -14,6 +16,7 @@ import {
     type VrchatWorldListByUserInput,
     type VrchatWorldPersistentDataDeleteInput,
     type VrchatWorldSaveInput,
+    type WorldRatingValue,
     type WorldUpdateRequest,
     type WorldSearchSort
 } from '@/platform/tauri/bindings';
@@ -432,6 +435,52 @@ async function hasWorldPersistentData({
     });
 }
 
+function worldRatingFromJson(json: unknown): WorldRatingValue | null {
+    const value = isRecord(json) ? json.value : null;
+    return value === 'like' || value === 'dislike' ? value : null;
+}
+
+export function worldRatingQueryOptions(userId: string, worldId: string) {
+    return queryOptions({
+        queryKey: queryKeys.worldRating(
+            { userId, worldId },
+            DEFAULT_VRCHAT_API_ENDPOINT
+        ),
+        queryFn: async () =>
+            worldRatingFromJson(
+                unwrapVrchatWorldResponse(
+                    await commands.appVrchatWorldRatingGet(
+                        worldIdInput(worldId)
+                    ),
+                    `worlds/${encodeURIComponent(worldId)}/rating`
+                ).json
+            ),
+        ...entityQueryPolicies.worldRating
+    });
+}
+
+async function setWorldRating({
+    userId,
+    worldId,
+    value
+}: {
+    userId: string;
+    worldId: string;
+    value: WorldRatingValue | null;
+}) {
+    const rating = worldRatingFromJson(
+        unwrapVrchatWorldResponse(
+            await commands.appVrchatWorldRatingSet({ worldId, value }),
+            `worlds/${encodeURIComponent(worldId)}/rating`
+        ).json
+    );
+    setCachedQueryData(
+        queryKeys.worldRating({ userId, worldId }, DEFAULT_VRCHAT_API_ENDPOINT),
+        rating
+    );
+    return rating;
+}
+
 function registerWorldOpenShare(worldId: string): void {
     const normalizedWorldId = worldId.trim();
     if (!normalizedWorldId) {
@@ -471,6 +520,7 @@ const worldProfileRepository = Object.freeze({
     unpublishWorld,
     deleteWorldPersistentData,
     hasWorldPersistentData,
+    setWorldRating,
     getAllWorldsByUser,
     registerWorldOpenShare
 });

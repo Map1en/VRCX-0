@@ -1,8 +1,16 @@
 use serde::Deserialize;
 use vrcx_0_application::remote::{
-    deserialize_nonnegative_i32, QueryOrder, ReleaseStatusFilter, WorldSearchSort,
-    WorldUpdateRequest,
+    deserialize_nonnegative_i32, QueryOrder, ReleaseStatusFilter, WorldRatingValue,
+    WorldSearchSort, WorldUpdateRequest,
 };
+
+#[derive(Debug, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct VrchatWorldRatingSetInput {
+    #[serde(default)]
+    pub(crate) world_id: String,
+    pub(crate) value: Option<WorldRatingValue>,
+}
 
 #[derive(Debug, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
