@@ -563,3 +563,124 @@ async fn blocking_tool_queries_leave_the_async_runtime_free() {
     let outcome = outcome.unwrap();
     assert!(!outcome.is_error, "{}", outcome.text);
 }
+
+#[test]
+fn friend_feed_search_completes_with_one_blocking_thread() {
+    let executor = tokio::runtime::Builder::new_current_thread()
+        .max_blocking_threads(1)
+        .enable_all()
+        .build()
+        .unwrap();
+    let outcome = executor.block_on(async {
+        let (_dir, runtime, db) = crate::test_support::test_runtime_with_database(
+            "in-process-single-blocking-thread",
+            "usr_owner",
+        )
+        .unwrap();
+        runtime.tasks.set_executor(TokioTaskExecutor);
+        seed_feed_bio_row(
+            db.as_ref(),
+            "usr_owner",
+            (
+                "2026-08-12T10:00:00.000Z",
+                "usr_alice",
+                "Alice",
+                "needle",
+                "",
+            ),
+        )
+        .unwrap();
+        let tools = spawn_in_process_tools(runtime).await.unwrap();
+        let outcome = tokio::time::timeout(
+            Duration::from_secs(2),
+            tools.call_tool(
+                "search_friend_feed",
+                Some(Map::from_iter([
+                    ("allHistory".into(), json!(true)),
+                    ("query".into(), json!("needle")),
+                    ("eventTypes".into(), json!(["bio"])),
+                ])),
+            ),
+        )
+        .await;
+        tools.client.cancel().await.unwrap();
+        outcome
+    });
+    executor.shutdown_timeout(Duration::from_secs(2));
+    let outcome = outcome
+        .expect("Feed search must not wait for a second blocking thread")
+        .unwrap();
+    assert!(!outcome.is_error, "{}", outcome.text);
+    assert_eq!(outcome.structured.unwrap()["returnedRows"], 1);
+}
+
+#[derive(Default)]
+struct FeedQueryUntilCancelled {
+    started: tokio::sync::Notify,
+    cancelled: std::sync::atomic::AtomicBool,
+}
+
+impl crate::McpFeedQueryPort for FeedQueryUntilCancelled {
+    fn feed_rows_interruptible(
+        &self,
+        _input: vrcx_0_contracts::feed::FeedRowsQueryInput,
+        should_interrupt: crate::McpInterruptCheck,
+    ) -> vrcx_0_application_core::Result<Vec<vrcx_0_contracts::feed::FeedRowOutput>> {
+        self.started.notify_one();
+        let deadline = std::time::Instant::now() + Duration::from_secs(2);
+        while std::time::Instant::now() < deadline {
+            if should_interrupt() {
+                self.cancelled
+                    .store(true, std::sync::atomic::Ordering::Release);
+                return Err(vrcx_0_application_core::Error::Custom(
+                    "query interrupted".into(),
+                ));
+            }
+            std::thread::sleep(Duration::from_millis(1));
+        }
+        Err(vrcx_0_application_core::Error::Custom(
+            "query was not cancelled".into(),
+        ))
+    }
+}
+
+#[test]
+fn friend_feed_cancellation_releases_the_only_blocking_thread() {
+    let executor = tokio::runtime::Builder::new_current_thread()
+        .max_blocking_threads(1)
+        .enable_all()
+        .build()
+        .unwrap();
+    let query = std::sync::Arc::new(FeedQueryUntilCancelled::default());
+    let (started, next_call) = executor.block_on(async {
+        let (_dir, mut runtime) = test_runtime("in-process-feed-cancellation", "usr_owner").unwrap();
+        runtime.tasks.set_executor(TokioTaskExecutor);
+        runtime.feed_queries = query.clone();
+        let tools = spawn_in_process_tools(runtime).await.unwrap();
+        let started = {
+            let call = tools.call_tool(
+                "search_friend_feed",
+                Some(Map::from_iter([("allHistory".into(), json!(true))])),
+            );
+            tokio::pin!(call);
+            tokio::select! {
+                started = tokio::time::timeout(Duration::from_secs(2), query.started.notified()) => started,
+                outcome = &mut call => panic!("Feed search ended before cancellation: {outcome:?}"),
+            }
+        };
+        let next_call = tokio::time::timeout(
+            Duration::from_secs(3),
+            tools.call_tool("get_favorites", None),
+        )
+        .await;
+        tools.client.cancel().await.unwrap();
+        (started, next_call)
+    });
+    executor.shutdown_timeout(Duration::from_secs(2));
+    started.expect("Feed query must start without a spare blocking thread");
+    assert!(query.cancelled.load(std::sync::atomic::Ordering::Acquire));
+    let next_call = next_call
+        .expect("cancelled search must release its blocking thread")
+        .unwrap();
+    assert!(!next_call.is_error, "{}", next_call.text);
+}

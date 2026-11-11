@@ -6,9 +6,11 @@ use std::time::{Duration, Instant};
 use chrono::{DateTime, SecondsFormat, Utc};
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::CallToolResult;
+use rmcp::service::{RequestContext, RoleServer};
 use rmcp::{schemars, tool, tool_router};
 use serde::{Deserialize, Serialize};
 use tokio::sync::Semaphore;
+use tokio_util::sync::CancellationToken;
 use vrcx_0_contracts::feed::{
     FeedCursorInput, FeedFilter, FeedQueryMode, FeedRowOutput, FeedRowsQueryInput,
 };
@@ -39,6 +41,7 @@ impl VrcxMcpServer {
     async fn search_friend_feed(
         &self,
         Parameters(input): Parameters<SearchFriendFeedParams>,
+        context: RequestContext<RoleServer>,
     ) -> Result<CallToolResult, String> {
         let owner_user_id = require_current_user_id(&self.runtime)?;
         let (target_user_id, resolved_user) =
@@ -96,35 +99,26 @@ impl VrcxMcpServer {
             .acquire()
             .await
             .map_err(|_| "search_friend_feed is unavailable".to_string())?;
-        let cancelled = Arc::new(AtomicBool::new(false));
-        let cancellation_guard = CancelSearchOnDrop(Arc::clone(&cancelled));
-        let interruption = FriendFeedSearchInterruption::new(cancelled);
-        let query_interruption = interruption.clone();
-        let feed_queries = Arc::clone(&self.runtime.feed_queries);
-        let output = tokio::task::spawn_blocking(move || {
-            let _permit = permit;
-            search_friend_feed_page(
-                feed_queries.as_ref(),
-                FriendFeedSearchQuery {
-                    owner_user_id: owner_user_id.clone(),
-                    target_user_id,
-                    query: query.unwrap_or_default(),
-                    filters,
-                    date_from,
-                    date_to,
-                    limit,
-                    cursor,
-                },
-                Arc::new(move || query_interruption.should_interrupt()),
-                &interruption,
-            )
-        })
-        .await
-        .map_err(|error| {
-            tracing::warn!(%error, "MCP friend Feed search task failed");
-            "internal task error while searching local friend Feed data".to_string()
-        })??;
-        drop(cancellation_guard);
+        let interruption = Arc::new(FriendFeedSearchInterruption::new(context.ct));
+        let query_interruption = Arc::clone(&interruption);
+        // Dispatch already runs on the blocking pool. A nested blocking task can
+        // deadlock when outer tool calls occupy every thread waiting for queries.
+        let output = search_friend_feed_page(
+            self.runtime.feed_queries.as_ref(),
+            FriendFeedSearchQuery {
+                owner_user_id,
+                target_user_id,
+                query: query.unwrap_or_default(),
+                filters,
+                date_from,
+                date_to,
+                limit,
+                cursor,
+            },
+            Arc::new(move || query_interruption.should_interrupt()),
+            &interruption,
+        )?;
+        drop(permit);
 
         structured_result(WithResolution {
             inner: output,
@@ -133,32 +127,23 @@ impl VrcxMcpServer {
     }
 }
 
-struct CancelSearchOnDrop(Arc<AtomicBool>);
-
-impl Drop for CancelSearchOnDrop {
-    fn drop(&mut self) {
-        self.0.store(true, Ordering::Release);
-    }
-}
-
-#[derive(Clone)]
 struct FriendFeedSearchInterruption {
-    cancelled: Arc<AtomicBool>,
-    timed_out: Arc<AtomicBool>,
+    cancelled: CancellationToken,
+    timed_out: AtomicBool,
     deadline: Instant,
 }
 
 impl FriendFeedSearchInterruption {
-    fn new(cancelled: Arc<AtomicBool>) -> Self {
+    fn new(cancelled: CancellationToken) -> Self {
         Self {
             cancelled,
-            timed_out: Arc::new(AtomicBool::new(false)),
+            timed_out: AtomicBool::new(false),
             deadline: Instant::now() + MAX_SEARCH_DURATION,
         }
     }
 
     fn should_interrupt(&self) -> bool {
-        if self.cancelled.load(Ordering::Acquire) {
+        if self.cancelled.is_cancelled() {
             return true;
         }
         if Instant::now() >= self.deadline {
@@ -173,7 +158,7 @@ impl FriendFeedSearchInterruption {
             return "search_friend_feed exceeded 25 seconds; narrow target, eventTypes, or timeWindow"
                 .into();
         }
-        if self.cancelled.load(Ordering::Acquire) {
+        if self.cancelled.is_cancelled() {
             return "search_friend_feed was cancelled".into();
         }
         map_application_query_error(error)
