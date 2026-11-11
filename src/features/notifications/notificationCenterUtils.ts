@@ -141,7 +141,10 @@ export function shouldShowDeleteLog(
     notification: NotificationRow | null | undefined
 ) {
     const type = notification?.type || '';
-    return type !== 'friendRequest' && type !== 'ignoredFriendRequest';
+    if (type === 'friendRequest' || type === 'ignoredFriendRequest') {
+        return isNotificationExpired(notification);
+    }
+    return true;
 }
 
 const RESPONSE_TEXT_KEYS: Record<string, string> = {
