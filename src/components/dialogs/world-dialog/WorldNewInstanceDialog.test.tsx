@@ -57,6 +57,19 @@ vi.mock('@/ui/shadcn/checkbox', () => ({
     )
 }));
 
+vi.mock('@/ui/shadcn/toggle-group', () => ({
+    ToggleGroup: ({ children }: PropsWithChildren) => <div>{children}</div>,
+    ToggleGroupItem: ({
+        children,
+        value,
+        onClick
+    }: PropsWithChildren<{ value: string; onClick?: () => void }>) => (
+        <button type="button" data-value={value} onClick={onClick}>
+            {children}
+        </button>
+    )
+}));
+
 vi.mock('@/ui/shadcn/dialog', () => ({
     Dialog: ({ children, open }: PropsWithChildren<{ open: boolean }>) =>
         open ? <div>{children}</div> : null,
@@ -468,15 +481,7 @@ describe('WorldNewInstanceDialog', () => {
             128
         );
         fireEvent.change(description, { target: { value: 'Bring snacks' } });
-        fireEvent.change(
-            screen.getByDisplayValue('dialog.new_instance.category_none'),
-            { target: { value: 'icat_watch' } }
-        );
-        expect(
-            screen.getByRole('option', {
-                name: 'Watch Party (dialog.new_instance.category_options.watch_party)'
-            })
-        ).toBeTruthy();
+        fireEvent.click(buttonByName('Watch Party'));
         for (const name of ['Chill', 'Cozy', 'Social']) {
             fireEvent.click(
                 buttonByName(
@@ -542,7 +547,7 @@ describe('WorldNewInstanceDialog', () => {
                 displayName: '',
                 displayNamePresets: ['Movie night'],
                 description: '',
-                categoryId: '',
+                categoryId: 'icat_hangout',
                 vibeIds: [],
                 languages: []
             })

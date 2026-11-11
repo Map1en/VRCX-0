@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
     instanceCreateOptionLabel,
+    instanceCreateOptionTranslation,
     pickInstanceCreateOptionIds
 } from './worldInstanceCreateOptions';
 
@@ -56,6 +57,25 @@ describe('instanceCreateOptionLabel', () => {
                 t
             )
         ).toBe('Brand New Vibe');
+    });
+});
+
+describe('instanceCreateOptionTranslation', () => {
+    it('returns only a translation that differs from the English name', () => {
+        expect(
+            instanceCreateOptionTranslation(
+                { id: 'icat_music', name: 'Music & Shows' },
+                'category',
+                t
+            )
+        ).toBe('音乐与演出');
+        expect(
+            instanceCreateOptionTranslation(
+                { id: 'icat_hangout', name: 'Hangout' },
+                'category',
+                t
+            )
+        ).toBe('');
     });
 });
 

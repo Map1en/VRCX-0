@@ -17,7 +17,7 @@ function optionTranslationSlug(name: string) {
         .replace(/^_+|_+$/g, '');
 }
 
-export function instanceCreateOptionLabel(
+export function instanceCreateOptionTranslation(
     option: InstanceCreateOption,
     kind: InstanceCreateOptionKind,
     t: TFunction
@@ -28,9 +28,16 @@ export function instanceCreateOptionLabel(
               defaultValue: ''
           })
         : '';
-    return translated && translated !== option.name
-        ? `${option.name} (${translated})`
-        : option.name;
+    return translated !== option.name ? translated : '';
+}
+
+export function instanceCreateOptionLabel(
+    option: InstanceCreateOption,
+    kind: InstanceCreateOptionKind,
+    t: TFunction
+) {
+    const translated = instanceCreateOptionTranslation(option, kind, t);
+    return translated ? `${option.name} (${translated})` : option.name;
 }
 
 export function pickInstanceCreateOptionIds(

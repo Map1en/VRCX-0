@@ -187,14 +187,14 @@ export function useWorldInstanceActions({
                 displayName
             ),
             description,
-            categoryId:
-                (createOptions
-                    ? pickInstanceCreateOptionIds(
-                          rememberedCategoryIds,
-                          createOptions.categories
-                      )
-                    : rememberedCategoryIds
-                )[0] ?? '',
+            categoryId: createOptions
+                ? (pickInstanceCreateOptionIds(
+                      rememberedCategoryIds,
+                      createOptions.categories
+                  )[0] ??
+                  createOptions.categories[0]?.id ??
+                  '')
+                : (rememberedCategoryIds[0] ?? ''),
             vibeIds: createOptions
                 ? pickInstanceCreateOptionIds(
                       rememberedVibeIds,

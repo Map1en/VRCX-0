@@ -5779,7 +5779,6 @@
             "display_name": "Instance Name",
             "description": "Description",
             "category": "Category",
-            "category_none": "None",
             "vibes": "Vibes",
             "vibes_placeholder": "Select vibes",
             "vibes_hint": "Pick up to 3. The first one is shown as the main vibe.",
@@ -5795,7 +5794,6 @@
                 "other": "Other"
             },
             "vibe_options": {
-                "18_plus": "18+",
                 "adventure": "Adventure",
                 "anime": "Anime",
                 "arts": "Arts",
@@ -5810,7 +5808,6 @@
                 "cuddle": "Cuddle",
                 "dance": "Dance",
                 "drinking": "Drinking",
-                "edm": "EDM",
                 "education": "Education",
                 "explore": "Explore",
                 "fantasy": "Fantasy",

@@ -34,6 +34,8 @@ import {
 } from '@/ui/shadcn/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { Textarea } from '@/ui/shadcn/textarea';
+import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/shadcn/tooltip';
 
 import { useSpokenLanguageSelection } from '../useSpokenLanguageSelection';
 import { normalizeMinimumAvatarPerformance } from './worldDialogHelpers';
@@ -42,7 +44,8 @@ import {
     INSTANCE_DISPLAY_NAME_MAX,
     INSTANCE_LANGUAGE_LIMIT,
     INSTANCE_VIBE_LIMIT,
-    instanceCreateOptionLabel
+    instanceCreateOptionLabel,
+    instanceCreateOptionTranslation
 } from './worldInstanceCreateOptions';
 import {
     normalizeInstanceDialogDisplayName,
@@ -124,8 +127,6 @@ const normalTabDefaults = {
     languages: [],
     roleIds: ''
 } satisfies Partial<WorldNewInstanceForm>;
-
-const CATEGORY_NONE = 'none';
 
 function normalizeText(value: unknown) {
     return typeof value === 'string'
@@ -264,19 +265,12 @@ export function WorldNewInstanceDialog({
     );
 
     function resetNormalTab() {
-        patchForm({ ...normalTabDefaults, groupName: '' });
+        patchForm({
+            ...normalTabDefaults,
+            groupName: '',
+            categoryId: createOptions?.categories[0]?.id ?? ''
+        });
     }
-
-    const categoryItems = [
-        {
-            value: CATEGORY_NONE,
-            label: t('dialog.new_instance.category_none')
-        },
-        ...(createOptions?.categories ?? []).map((category) => ({
-            value: category.id,
-            label: instanceCreateOptionLabel(category, 'category', t)
-        }))
-    ];
 
     const languageItems = [
         ...languageSelection.languageRows.filter(
@@ -424,8 +418,8 @@ export function WorldNewInstanceDialog({
                         </TabsTrigger>
                     </TabsList>
                     <TabsContent value="Normal">
-                        <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
-                            <FieldGroup className="gap-4">
+                        <div className="flex flex-col gap-4">
+                            <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
                                 <Field>
                                     <FieldLabel>
                                         {t('dialog.world.label.access')}
@@ -463,6 +457,202 @@ export function WorldNewInstanceDialog({
                                         </SelectContent>
                                     </Select>
                                 </Field>
+                                <Field>
+                                    <FieldLabel htmlFor="world-instance-display-name">
+                                        {t('dialog.new_instance.display_name')}
+                                    </FieldLabel>
+                                    <Popover
+                                        open={displayNamePresetsOpen}
+                                        onOpenChange={setDisplayNamePresetsOpen}
+                                    >
+                                        <InputGroup ref={displayNameAnchorRef}>
+                                            <InputGroupInput
+                                                id="world-instance-display-name"
+                                                value={form.displayName}
+                                                maxLength={
+                                                    INSTANCE_DISPLAY_NAME_MAX
+                                                }
+                                                onChange={(event) =>
+                                                    patchDisplayName(
+                                                        event.target.value
+                                                    )
+                                                }
+                                            />
+                                            {displayNamePresets.length ? (
+                                                <InputGroupAddon align="inline-end">
+                                                    <HintTooltip
+                                                        label={t(
+                                                            'dialog.new_instance.display_name'
+                                                        )}
+                                                    >
+                                                        <PopoverTrigger
+                                                            render={
+                                                                <InputGroupButton size="icon-xs">
+                                                                    <ChevronDownIcon data-icon="inline-start" />
+                                                                </InputGroupButton>
+                                                            }
+                                                        />
+                                                    </HintTooltip>
+                                                </InputGroupAddon>
+                                            ) : null}
+                                        </InputGroup>
+                                        {displayNamePresets.length ? (
+                                            <PopoverContent
+                                                align="start"
+                                                anchor={displayNameAnchorRef}
+                                                className="w-80 p-1"
+                                            >
+                                                <div className="flex max-h-64 flex-col gap-1 overflow-y-auto p-1">
+                                                    {displayNamePresets.map(
+                                                        (name) => (
+                                                            <Button
+                                                                key={name}
+                                                                type="button"
+                                                                variant="ghost"
+                                                                className="h-auto w-full justify-start p-1.5 text-left font-normal"
+                                                                onClick={() =>
+                                                                    selectDisplayNamePreset(
+                                                                        name
+                                                                    )
+                                                                }
+                                                            >
+                                                                <span className="truncate">
+                                                                    {name}
+                                                                </span>
+                                                            </Button>
+                                                        )
+                                                    )}
+                                                </div>
+                                            </PopoverContent>
+                                        ) : null}
+                                    </Popover>
+                                </Field>
+                            </div>
+                            <Field>
+                                <div className="flex items-center justify-between gap-2">
+                                    <FieldLabel htmlFor="world-instance-description">
+                                        {t('dialog.new_instance.description')}
+                                    </FieldLabel>
+                                    <span className="text-muted-foreground text-xs tabular-nums">
+                                        {form.description.length}/
+                                        {INSTANCE_DESCRIPTION_MAX}
+                                    </span>
+                                </div>
+                                <Textarea
+                                    id="world-instance-description"
+                                    rows={3}
+                                    value={form.description}
+                                    maxLength={INSTANCE_DESCRIPTION_MAX}
+                                    className="resize-none"
+                                    onChange={(event) =>
+                                        patchForm({
+                                            description: event.target.value
+                                        })
+                                    }
+                                />
+                            </Field>
+                            {createOptions?.categories.length ? (
+                                <Field>
+                                    <FieldLabel>
+                                        {t('dialog.new_instance.category')}
+                                    </FieldLabel>
+                                    <ToggleGroup
+                                        variant="outline"
+                                        size="sm"
+                                        value={[form.categoryId]}
+                                        className="flex w-full flex-wrap gap-1.5"
+                                    >
+                                        {createOptions.categories.map(
+                                            (category) => {
+                                                const translated =
+                                                    instanceCreateOptionTranslation(
+                                                        category,
+                                                        'category',
+                                                        t
+                                                    );
+                                                const item = (
+                                                    <ToggleGroupItem
+                                                        key={category.id}
+                                                        value={category.id}
+                                                        disabled={submitting}
+                                                        className="rounded-full! border! px-3 text-xs"
+                                                        onClick={() =>
+                                                            patchForm({
+                                                                categoryId:
+                                                                    category.id
+                                                            })
+                                                        }
+                                                    >
+                                                        <span className="truncate">
+                                                            {category.name}
+                                                        </span>
+                                                    </ToggleGroupItem>
+                                                );
+                                                return translated ? (
+                                                    <Tooltip key={category.id}>
+                                                        <TooltipTrigger
+                                                            render={item}
+                                                        />
+                                                        <TooltipContent>
+                                                            {translated}
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                ) : (
+                                                    item
+                                                );
+                                            }
+                                        )}
+                                    </ToggleGroup>
+                                </Field>
+                            ) : null}
+                            <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+                                <WorldNewInstanceMultiSelectField
+                                    id="world-instance-languages"
+                                    label={t('dialog.user.label.languages')}
+                                    placeholder={t(
+                                        'dialog.user.action.select_language'
+                                    )}
+                                    description={
+                                        languageSelection.languageOptionsStatus ===
+                                        'error'
+                                            ? t(
+                                                  'dialog.user.label.vrchat_language_list_unavailable_using_local_language_codes'
+                                              )
+                                            : undefined
+                                    }
+                                    options={languageItems}
+                                    value={form.languages}
+                                    limit={INSTANCE_LANGUAGE_LIMIT}
+                                    disabled={submitting}
+                                    onChange={(languages) =>
+                                        patchForm({ languages })
+                                    }
+                                />
+                                {createOptions ? (
+                                    <>
+                                        <WorldNewInstanceMultiSelectField
+                                            id="world-instance-vibes"
+                                            label={t(
+                                                'dialog.new_instance.vibes'
+                                            )}
+                                            placeholder={t(
+                                                'dialog.new_instance.vibes_placeholder'
+                                            )}
+                                            description={t(
+                                                'dialog.new_instance.vibes_hint'
+                                            )}
+                                            options={vibeItems}
+                                            value={form.vibeIds}
+                                            limit={INSTANCE_VIBE_LIMIT}
+                                            disabled={submitting}
+                                            onChange={(vibeIds) =>
+                                                patchForm({ vibeIds })
+                                            }
+                                        />
+                                    </>
+                                ) : null}
+                            </div>
+                            <div className="grid gap-x-6 gap-y-4 border-t pt-4 sm:grid-cols-2">
                                 <Field>
                                     <FieldLabel>
                                         {t('dialog.new_instance.region')}
@@ -669,195 +859,7 @@ export function WorldNewInstanceDialog({
                                         </FieldGroup>
                                     </>
                                 ) : null}
-                            </FieldGroup>
-                            <FieldGroup className="gap-4">
-                                <Field>
-                                    <FieldLabel htmlFor="world-instance-display-name">
-                                        {t('dialog.new_instance.display_name')}
-                                    </FieldLabel>
-                                    <Popover
-                                        open={displayNamePresetsOpen}
-                                        onOpenChange={setDisplayNamePresetsOpen}
-                                    >
-                                        <InputGroup ref={displayNameAnchorRef}>
-                                            <InputGroupInput
-                                                id="world-instance-display-name"
-                                                value={form.displayName}
-                                                maxLength={
-                                                    INSTANCE_DISPLAY_NAME_MAX
-                                                }
-                                                onChange={(event) =>
-                                                    patchDisplayName(
-                                                        event.target.value
-                                                    )
-                                                }
-                                            />
-                                            {displayNamePresets.length ? (
-                                                <InputGroupAddon align="inline-end">
-                                                    <HintTooltip
-                                                        label={t(
-                                                            'dialog.new_instance.display_name'
-                                                        )}
-                                                    >
-                                                        <PopoverTrigger
-                                                            render={
-                                                                <InputGroupButton size="icon-xs">
-                                                                    <ChevronDownIcon data-icon="inline-start" />
-                                                                </InputGroupButton>
-                                                            }
-                                                        />
-                                                    </HintTooltip>
-                                                </InputGroupAddon>
-                                            ) : null}
-                                        </InputGroup>
-                                        {displayNamePresets.length ? (
-                                            <PopoverContent
-                                                align="start"
-                                                anchor={displayNameAnchorRef}
-                                                className="w-80 p-1"
-                                            >
-                                                <div className="flex max-h-64 flex-col gap-1 overflow-y-auto p-1">
-                                                    {displayNamePresets.map(
-                                                        (name) => (
-                                                            <Button
-                                                                key={name}
-                                                                type="button"
-                                                                variant="ghost"
-                                                                className="h-auto w-full justify-start p-1.5 text-left font-normal"
-                                                                onClick={() =>
-                                                                    selectDisplayNamePreset(
-                                                                        name
-                                                                    )
-                                                                }
-                                                            >
-                                                                <span className="truncate">
-                                                                    {name}
-                                                                </span>
-                                                            </Button>
-                                                        )
-                                                    )}
-                                                </div>
-                                            </PopoverContent>
-                                        ) : null}
-                                    </Popover>
-                                </Field>
-                                <Field>
-                                    <div className="flex items-center justify-between gap-2">
-                                        <FieldLabel htmlFor="world-instance-description">
-                                            {t(
-                                                'dialog.new_instance.description'
-                                            )}
-                                        </FieldLabel>
-                                        <span className="text-muted-foreground text-xs tabular-nums">
-                                            {form.description.length}/
-                                            {INSTANCE_DESCRIPTION_MAX}
-                                        </span>
-                                    </div>
-                                    <Textarea
-                                        id="world-instance-description"
-                                        rows={3}
-                                        value={form.description}
-                                        maxLength={INSTANCE_DESCRIPTION_MAX}
-                                        className="resize-none"
-                                        onChange={(event) =>
-                                            patchForm({
-                                                description: event.target.value
-                                            })
-                                        }
-                                    />
-                                </Field>
-                                <WorldNewInstanceMultiSelectField
-                                    id="world-instance-languages"
-                                    label={t('dialog.user.label.languages')}
-                                    placeholder={t(
-                                        'dialog.user.action.select_language'
-                                    )}
-                                    description={
-                                        languageSelection.languageOptionsStatus ===
-                                        'error'
-                                            ? t(
-                                                  'dialog.user.label.vrchat_language_list_unavailable_using_local_language_codes'
-                                              )
-                                            : undefined
-                                    }
-                                    options={languageItems}
-                                    value={form.languages}
-                                    limit={INSTANCE_LANGUAGE_LIMIT}
-                                    disabled={submitting}
-                                    onChange={(languages) =>
-                                        patchForm({ languages })
-                                    }
-                                />
-                                {createOptions ? (
-                                    <>
-                                        <Field>
-                                            <FieldLabel>
-                                                {t(
-                                                    'dialog.new_instance.category'
-                                                )}
-                                            </FieldLabel>
-                                            <Select
-                                                value={
-                                                    form.categoryId ||
-                                                    CATEGORY_NONE
-                                                }
-                                                items={categoryItems}
-                                                onValueChange={(value) =>
-                                                    patchForm({
-                                                        categoryId:
-                                                            !value ||
-                                                            value ===
-                                                                CATEGORY_NONE
-                                                                ? ''
-                                                                : value
-                                                    })
-                                                }
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectGroup>
-                                                        {categoryItems.map(
-                                                            (item) => (
-                                                                <SelectItem
-                                                                    key={
-                                                                        item.value
-                                                                    }
-                                                                    value={
-                                                                        item.value
-                                                                    }
-                                                                >
-                                                                    {item.label}
-                                                                </SelectItem>
-                                                            )
-                                                        )}
-                                                    </SelectGroup>
-                                                </SelectContent>
-                                            </Select>
-                                        </Field>
-                                        <WorldNewInstanceMultiSelectField
-                                            id="world-instance-vibes"
-                                            label={t(
-                                                'dialog.new_instance.vibes'
-                                            )}
-                                            placeholder={t(
-                                                'dialog.new_instance.vibes_placeholder'
-                                            )}
-                                            description={t(
-                                                'dialog.new_instance.vibes_hint'
-                                            )}
-                                            options={vibeItems}
-                                            value={form.vibeIds}
-                                            limit={INSTANCE_VIBE_LIMIT}
-                                            disabled={submitting}
-                                            onChange={(vibeIds) =>
-                                                patchForm({ vibeIds })
-                                            }
-                                        />
-                                    </>
-                                ) : null}
-                            </FieldGroup>
+                            </div>
                         </div>
                     </TabsContent>
                     <TabsContent value="Legacy">

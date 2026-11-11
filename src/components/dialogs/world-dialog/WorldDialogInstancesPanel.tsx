@@ -117,7 +117,12 @@ export function WorldDialogInstancesPanel({
         kind: 'category' | 'vibe'
     ) => {
         const option = options.get(id);
-        return option ? instanceCreateOptionLabel(option, kind, t) : id;
+        if (!option) {
+            return id;
+        }
+        return kind === 'category'
+            ? option.name
+            : instanceCreateOptionLabel(option, kind, t);
     };
     const languageLabel = (key: string) => {
         const option = languageOptionsMap.get(key);

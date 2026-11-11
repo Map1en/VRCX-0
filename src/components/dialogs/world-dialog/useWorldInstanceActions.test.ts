@@ -201,7 +201,7 @@ describe('useWorldInstanceActions createWorldInstance', () => {
         expect(result.current.newInstanceRequest).not.toBeNull();
     });
 
-    it('restores remembered discovery details and drops options VRChat no longer offers', async () => {
+    it('restores remembered discovery details, drops options VRChat no longer offers and defaults to the first category', async () => {
         const strings = new Map([
             ['instanceDialogDescription', 'Bring snacks'],
             ['instanceDialogCategoryId', 'icat_deleted']
@@ -227,7 +227,7 @@ describe('useWorldInstanceActions createWorldInstance', () => {
         );
         expect(result.current.newInstanceRequest?.defaults).toMatchObject({
             description: 'Bring snacks',
-            categoryId: '',
+            categoryId: 'icat_hangout',
             vibeIds: ['ivib_cozy'],
             languages: ['jpn']
         });

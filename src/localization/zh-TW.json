@@ -5758,7 +5758,6 @@
             "display_name": "房間名稱",
             "description": "房間簡介",
             "category": "分類",
-            "category_none": "不選",
             "vibes": "氛圍",
             "vibes_placeholder": "選擇氛圍",
             "vibes_hint": "最多選 3 個，第一個會作為主氛圍顯示。",
@@ -5774,7 +5773,6 @@
                 "other": "其他"
             },
             "vibe_options": {
-                "18_plus": "18+",
                 "adventure": "冒險",
                 "anime": "二次元",
                 "arts": "藝術",
@@ -5789,7 +5787,6 @@
                 "cuddle": "貼貼",
                 "dance": "跳舞",
                 "drinking": "喝酒",
-                "edm": "電音",
                 "education": "學習",
                 "explore": "探索",
                 "fantasy": "奇幻",
@@ -5798,7 +5795,6 @@
                 "furry": "獸圈",
                 "horror": "恐怖",
                 "karaoke": "唱歌",
-                "liminal": "後室風",
                 "meme": "迷因",
                 "military": "軍事",
                 "newcomer_friendly": "新手友善",
