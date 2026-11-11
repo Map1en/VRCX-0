@@ -32,7 +32,15 @@ pub fn render_delivery(
         &entry.content.world_name,
         &entry.content.group_name,
     );
-    let text = combine_text(entry.kind, &title, &body);
+    let text = localizer
+        .activity_sentence(
+            &entry.content.title,
+            &entry.content.body,
+            &entry.content.location,
+            &entry.content.world_name,
+            &entry.content.group_name,
+        )
+        .unwrap_or_else(|| combine_text(entry.kind, &title, &body));
     let display_location = localizer.display_location(
         &entry.content.location,
         &entry.content.world_name,

@@ -211,6 +211,8 @@ export component WristPanel inherits Window {
 
                 if line.has-actor: Text {
                     horizontal-stretch: 0;
+                    max-width: parent.width * 0.45;
+                    overflow: elide;
                     text: line.actor;
                     font-size: 16px;
                     font-weight: 600;

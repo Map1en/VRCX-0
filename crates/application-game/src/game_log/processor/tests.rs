@@ -1153,10 +1153,7 @@ fn instance_avatar_changes_reach_overlay_activity_except_for_the_current_user() 
     assert_eq!(entries.len(), 1);
     assert_eq!(entries[0].kind.key(), "LobbyAvatarChange");
     assert_eq!(entries[0].actor_user_id, "usr_alice");
-    assert_eq!(
-        entries[0].content.body.source_text(),
-        "changed avatar to Second"
-    );
+    assert_eq!(entries[0].content.body.source_text(), "Avatar: Second");
     Ok(())
 }
 

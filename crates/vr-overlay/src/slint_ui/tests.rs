@@ -621,6 +621,27 @@ fn wrist_feed_item_uses_feed_type_accents_and_keeps_severity_precedence() {
     );
 }
 
+#[test]
+fn a_long_wrist_feed_name_leaves_room_for_the_event() {
+    let render_with_detail = |detail: &str| {
+        let mut model = sample_wrist_model();
+        model.feed_rows[0].actor_text = "W".repeat(80);
+        model.feed_rows[0].detail = detail.to_string();
+        SlintWristRenderer::new().render(&model).unwrap()
+    };
+    let without_event = render_with_detail("");
+    let with_event = render_with_detail("Online");
+    let width = with_event.size.width;
+    let right_half_differs = (0..with_event.size.height).any(|y| {
+        (width / 2..width).any(|x| {
+            let index = ((y * width + x) * 4) as usize;
+            with_event.data[index..index + 4] != without_event.data[index..index + 4]
+        })
+    });
+
+    assert!(right_half_differs);
+}
+
 fn sample_wrist_model() -> WristSurfaceModel {
     WristSurfaceModel {
         size: OverlaySize::new(512, 512),

@@ -74,10 +74,7 @@ fn display_name_change_names_the_old_and_new_names() {
     assert_eq!(entries.len(), 1);
     assert_eq!(entries[0].kind, ActivityKind::DisplayName);
     assert_eq!(entries[0].content.title.source_text(), "Old Name");
-    assert_eq!(
-        entries[0].content.body.source_text(),
-        "changed their name to New Name"
-    );
+    assert_eq!(entries[0].content.body.source_text(), "Renamed to New Name");
 }
 
 #[test]
@@ -113,7 +110,7 @@ fn trust_level_change_preserves_new_level_in_overlay_content() {
     );
     assert_eq!(
         entries[0].content.body.source_text(),
-        "Trust level is now Trusted User"
+        "Trust rank: Trusted User"
     );
 }
 

@@ -65,6 +65,82 @@
                 },
                 { "key": "notifications.bio", "source": "notifications.bio" },
                 {
+                    "key": "notifications.sentence.has_joined",
+                    "source": "notifications.sentence.has_joined"
+                },
+                {
+                    "key": "notifications.sentence.has_left",
+                    "source": "notifications.sentence.has_left"
+                },
+                {
+                    "key": "notifications.sentence.is_joining",
+                    "source": "notifications.sentence.is_joining"
+                },
+                {
+                    "key": "notifications.sentence.gps",
+                    "source": "notifications.sentence.gps"
+                },
+                {
+                    "key": "notifications.sentence.online_location",
+                    "source": "notifications.sentence.online_location"
+                },
+                {
+                    "key": "notifications.sentence.online",
+                    "source": "notifications.sentence.online"
+                },
+                {
+                    "key": "notifications.sentence.offline",
+                    "source": "notifications.sentence.offline"
+                },
+                {
+                    "key": "notifications.sentence.status_update",
+                    "source": "notifications.sentence.status_update"
+                },
+                {
+                    "key": "notifications.sentence.invite",
+                    "source": "notifications.sentence.invite"
+                },
+                {
+                    "key": "notifications.sentence.request_invite",
+                    "source": "notifications.sentence.request_invite"
+                },
+                {
+                    "key": "notifications.sentence.invite_response",
+                    "source": "notifications.sentence.invite_response"
+                },
+                {
+                    "key": "notifications.sentence.request_invite_response",
+                    "source": "notifications.sentence.request_invite_response"
+                },
+                {
+                    "key": "notifications.sentence.friend_request",
+                    "source": "notifications.sentence.friend_request"
+                },
+                {
+                    "key": "notifications.sentence.friend",
+                    "source": "notifications.sentence.friend"
+                },
+                {
+                    "key": "notifications.sentence.unfriend",
+                    "source": "notifications.sentence.unfriend"
+                },
+                {
+                    "key": "notifications.sentence.trust_level",
+                    "source": "notifications.sentence.trust_level"
+                },
+                {
+                    "key": "notifications.sentence.display_name",
+                    "source": "notifications.sentence.display_name"
+                },
+                {
+                    "key": "notifications.sentence.bio",
+                    "source": "notifications.sentence.bio"
+                },
+                {
+                    "key": "notifications.sentence.avatar_change",
+                    "source": "notifications.sentence.avatar_change"
+                },
+                {
                     "key": "notifications.invite",
                     "source": "notifications.invite"
                 },

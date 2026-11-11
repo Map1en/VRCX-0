@@ -7,6 +7,16 @@ Source strings live in [`en.json`](en.json). Keep recurring terms consistent wit
 - Never translate placeholders, CLI flags, URLs, HTML or JSON keys.
 - The same English word may need different wording by context; check the JSON path.
 
+## Activity notification text
+
+The user name is shown in its own slot (wrist feed, desktop overlay, HMD, desktop notifications), so `notifications.*` event text must read correctly on its own:
+
+- Never start with a particle or preposition, and never refer to the user (no は/が/と/から, no "has …").
+- Put the event first and the object after it; no sentence-final period or polite ending. Japanese uses noun-ending phrases (オンライン, {location} に移動).
+- Online/Offline use the Online/Offline terms below, not log in/log out.
+
+`notifications.sentence.*` are the full-sentence forms read aloud or shown as one line (TTS, XSOverlay/OVR Toolkit, webhooks). Keep `{name}` and let the word order follow the language; Japanese uses が for the subject and no さん.
+
 ## VRChat (official client terms)
 
 | English                        | Chinese (Simplified)     | Chinese (Traditional)   | Japanese                             | Korean                           |

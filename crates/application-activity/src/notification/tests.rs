@@ -67,6 +67,56 @@ fn overlay_text_joins_title_and_body_the_way_each_type_reads() {
 }
 
 #[test]
+fn keyed_activity_renders_a_standalone_body_and_a_full_sentence() {
+    let mut delivery = delivery();
+    delivery.entry.kind = ActivityKind::Online;
+    delivery.entry.content.title = ActivityText::literal("Alice");
+    delivery.entry.content.body =
+        ActivityText::message(vrcx_0_i18n::OverlayMessage::notifications_online());
+
+    let render = render_delivery(&delivery, OverlayLocale::Ja, false);
+
+    assert_eq!(render.title, "Alice");
+    assert_eq!(render.body, "オンライン");
+    assert_eq!(render.text, "Alice がオンラインになりました");
+}
+
+#[test]
+fn sentence_localizes_the_location_like_the_body() {
+    let mut delivery = delivery();
+    delivery.entry.kind = ActivityKind::Gps;
+    delivery.entry.content.title = ActivityText::literal("Alice");
+    delivery.entry.content.body = ActivityText::message(
+        vrcx_0_i18n::OverlayMessage::notifications_gps("Named World"),
+    );
+    delivery.entry.content.location =
+        "wrld_named:123~group(grp_abc)~groupAccessType(public)".into();
+    delivery.entry.content.group_name = "Named Group".into();
+
+    let render = render_delivery(&delivery, OverlayLocale::En, false);
+
+    assert!(render.body.starts_with("In Named World"));
+    assert!(render.body.contains("(Named Group)"));
+    assert_eq!(
+        render.text,
+        format!("Alice is now {}", render.body.replacen("In", "in", 1))
+    );
+}
+
+#[test]
+fn keyed_activity_without_a_name_falls_back_to_the_body() {
+    let mut delivery = delivery();
+    delivery.entry.kind = ActivityKind::Online;
+    delivery.entry.content.title = ActivityText::literal("");
+    delivery.entry.content.body =
+        ActivityText::message(vrcx_0_i18n::OverlayMessage::notifications_online());
+
+    let render = render_delivery(&delivery, OverlayLocale::En, false);
+
+    assert_eq!(render.text, "Online");
+}
+
+#[test]
 fn generic_webhook_fields_ignore_localized_names() {
     let fields = parse_webhook_fields(r#"["locationId","位置","タイトル"]"#);
     let payload = generic_webhook_payload(&delivery(), &rendered(), &fields);

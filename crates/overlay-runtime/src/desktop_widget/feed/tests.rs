@@ -29,7 +29,7 @@ fn the_actor_is_shown_apart_from_what_happened() {
     let row = &rows(&feed)[0];
 
     assert_eq!(row.actor, "Ada");
-    assert_eq!(row.detail, "has logged in");
+    assert_eq!(row.detail, "Online");
     assert!(row.show_avatar_slot);
 }
 
@@ -130,11 +130,11 @@ fn a_world_name_resolved_later_replaces_the_generic_place() {
     let entry = friend_gps("usr_ada", "Ada", "wrld_1:123", "wrld_1");
     let source_id = entry.source_id.clone();
     feed.push(entry);
-    assert_eq!(rows(&feed)[0].detail, "is in an instance");
+    assert_eq!(rows(&feed)[0].detail, "In an instance");
 
     assert!(feed.resolve_world_name(&source_id, "Test World"));
 
-    assert_eq!(rows(&feed)[0].detail, "is in Test World");
+    assert_eq!(rows(&feed)[0].detail, "In Test World");
 }
 
 #[test]

@@ -103,19 +103,51 @@ impl OverlayLocalizer {
         let Some(message) = text.as_message() else {
             return self.text(text);
         };
-        let should_replace = message
-            .params()
+        let params = self.activity_params(message.params(), location, world_name, group_name);
+        self.message_text(message.key(), &params)
+    }
+
+    pub fn activity_sentence(
+        &self,
+        actor: &ActivityText,
+        text: &ActivityText,
+        location: &str,
+        world_name: &str,
+        group_name: &str,
+    ) -> Option<String> {
+        let message = text.as_message()?;
+        let key = sentence_key(message.key())?;
+        let name = self.text(actor);
+        if name.is_empty() {
+            return None;
+        }
+        let mut params = self
+            .activity_params(message.params(), location, world_name, group_name)
+            .into_owned();
+        params.insert("name".to_string(), name);
+        Some(self.message_text(key, &params))
+    }
+
+    fn activity_params<'a>(
+        &self,
+        params: &'a BTreeMap<String, String>,
+        location: &str,
+        world_name: &str,
+        group_name: &str,
+    ) -> Cow<'a, BTreeMap<String, String>> {
+        let should_replace = params
             .get("location")
             .is_some_and(|value| should_localize_location_param(value, location));
         if !should_replace {
-            return self.text(text);
+            return Cow::Borrowed(params);
         }
-        let mut params = message.params().clone();
         let display_location = self.display_location(location, world_name, group_name);
-        if !display_location.is_empty() {
-            params.insert("location".to_string(), display_location);
+        if display_location.is_empty() {
+            return Cow::Borrowed(params);
         }
-        self.message_text(message.key(), &params)
+        let mut params = params.clone();
+        params.insert("location".to_string(), display_location);
+        Cow::Owned(params)
     }
 
     pub fn display_location(&self, location: &str, world_name: &str, group_name: &str) -> String {
@@ -298,6 +330,32 @@ pub fn discord_title_key(kind: ActivityKind) -> Option<OverlayMessageKey> {
         ActivityKind::Offline => Some(OverlayMessageKey::OverlayDiscordTitleOffline),
         _ => None,
     }
+}
+
+fn sentence_key(key: OverlayMessageKey) -> Option<OverlayMessageKey> {
+    use OverlayMessageKey as Key;
+    Some(match key {
+        Key::NotificationsHasJoined => Key::NotificationsSentenceHasJoined,
+        Key::NotificationsHasLeft => Key::NotificationsSentenceHasLeft,
+        Key::NotificationsIsJoining => Key::NotificationsSentenceIsJoining,
+        Key::NotificationsGps => Key::NotificationsSentenceGps,
+        Key::NotificationsOnlineLocation => Key::NotificationsSentenceOnlineLocation,
+        Key::NotificationsOnline => Key::NotificationsSentenceOnline,
+        Key::NotificationsOffline => Key::NotificationsSentenceOffline,
+        Key::NotificationsStatusUpdate => Key::NotificationsSentenceStatusUpdate,
+        Key::NotificationsInvite => Key::NotificationsSentenceInvite,
+        Key::NotificationsRequestInvite => Key::NotificationsSentenceRequestInvite,
+        Key::NotificationsInviteResponse => Key::NotificationsSentenceInviteResponse,
+        Key::NotificationsRequestInviteResponse => Key::NotificationsSentenceRequestInviteResponse,
+        Key::NotificationsFriendRequest => Key::NotificationsSentenceFriendRequest,
+        Key::NotificationsFriend => Key::NotificationsSentenceFriend,
+        Key::NotificationsUnfriend => Key::NotificationsSentenceUnfriend,
+        Key::NotificationsTrustLevel => Key::NotificationsSentenceTrustLevel,
+        Key::NotificationsDisplayName => Key::NotificationsSentenceDisplayName,
+        Key::NotificationsBio => Key::NotificationsSentenceBio,
+        Key::NotificationsAvatarChange => Key::NotificationsSentenceAvatarChange,
+        _ => return None,
+    })
 }
 
 fn status_label_key(status: &str) -> Option<OverlayMessageKey> {
