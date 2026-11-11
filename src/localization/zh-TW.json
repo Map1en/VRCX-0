@@ -4632,7 +4632,7 @@
                 "unfriend": "解除好友",
                 "edit_note_memo": "編輯備註與本機備註",
                 "edit_profile": "編輯個人資料",
-                "account_standing": "帳號狀態"
+                "vrchat_account": "VRChat 帳號"
             },
             "group_invite": {
                 "description": "選擇要邀請 {value} 加入的群組。",
@@ -4992,12 +4992,31 @@
                 "apply_color": "套用顏色"
             },
             "account_standing": {
-                "header": "帳號狀態",
-                "description": "VRChat 回傳的帳號狀態。",
                 "status": "狀態",
                 "issue_clear_days": "問題清除剩餘天數",
                 "sanctions": "處分",
-                "load_failed": "無法載入帳號狀態"
+                "load_failed": "無法載入帳號狀態",
+                "raw_data": "原始資料"
+            },
+            "vrchat_account": {
+                "header": "VRChat 帳號",
+                "description": "目前登入的 VRChat 帳號的設定與狀態。",
+                "tabs": {
+                    "content_filters": "內容過濾",
+                    "account_standing": "帳號狀態"
+                },
+                "content_filters": {
+                    "description": "隱藏創作者標註了對應內容的角色和環境。變更會儲存到你的 VRChat 帳號，並在遊戲中生效。",
+                    "unavailable": "VRChat 未向此帳號開放內容過濾設定。",
+                    "update_failed": "無法更新內容過濾",
+                    "items": {
+                        "gore": "隱藏過度血腥內容",
+                        "horror": "隱藏極端恐怖內容",
+                        "violence": "隱藏強烈暴力內容",
+                        "sex": "隱藏性暗示內容",
+                        "adult": "隱藏成人語言及主題"
+                    }
+                }
             },
             "relationship": {
                 "friend": "好友",

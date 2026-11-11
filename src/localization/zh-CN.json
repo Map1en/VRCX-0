@@ -4632,7 +4632,7 @@
                 "unfriend": "删除好友",
                 "edit_note_memo": "编辑线上备注与本地备注",
                 "edit_profile": "编辑个人资料",
-                "account_standing": "账号状态"
+                "vrchat_account": "VRChat 账号"
             },
             "group_invite": {
                 "description": "选择要邀请 {value} 加入的群组。",
@@ -4992,12 +4992,31 @@
                 "apply_color": "应用颜色"
             },
             "account_standing": {
-                "header": "账号状态",
-                "description": "VRChat 返回的账号状态。",
                 "status": "状态",
                 "issue_clear_days": "问题清除剩余天数",
                 "sanctions": "处罚",
-                "load_failed": "无法加载账号状态"
+                "load_failed": "无法加载账号状态",
+                "raw_data": "原始数据"
+            },
+            "vrchat_account": {
+                "header": "VRChat 账号",
+                "description": "当前登录的 VRChat 账号的设置与状态。",
+                "tabs": {
+                    "content_filters": "内容过滤",
+                    "account_standing": "账号状态"
+                },
+                "content_filters": {
+                    "description": "隐藏创作者标注了对应内容的模型和世界。更改会保存到你的 VRChat 账号，并在游戏中生效。",
+                    "unavailable": "VRChat 未向此账号开放内容过滤设置。",
+                    "update_failed": "无法更新内容过滤",
+                    "items": {
+                        "gore": "隐藏过度血腥内容",
+                        "horror": "隐藏极端恐怖内容",
+                        "violence": "隐藏强烈暴力内容",
+                        "sex": "隐藏性暗示内容",
+                        "adult": "隐藏成人语言及主题"
+                    }
+                }
             },
             "relationship": {
                 "friend": "好友",

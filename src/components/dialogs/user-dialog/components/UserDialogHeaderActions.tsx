@@ -17,10 +17,10 @@ import {
     RotateCcwIcon,
     SettingsIcon,
     ShieldAlertIcon,
-    ShieldCheckIcon,
     ShieldIcon,
     UserIcon,
     UserCheckIcon,
+    UserCogIcon,
     UserPlusIcon,
     UserRoundMinusIcon,
     UserXIcon,
@@ -84,7 +84,7 @@ type UserActionMenuCommands = Pick<
     | 'onAvatarOverride'
     | 'onExtendedModeration'
     | 'onReportUser'
-    | 'onShowAccountStanding'
+    | 'onShowVrchatAccount'
 >;
 
 function AccountStandingAlertIcon() {
@@ -137,7 +137,7 @@ export function UserDialogHeaderActions({
         onAvatarOverride,
         onExtendedModeration,
         onReportUser,
-        onShowAccountStanding
+        onShowVrchatAccount
     } = commands;
     const isBusy = loadStatus === 'running' || actionStatus !== 'idle';
     const accountStandingAlert =
@@ -226,11 +226,11 @@ export function UserDialogHeaderActions({
                             icon={
                                 accountStandingAlert
                                     ? AccountStandingAlertIcon
-                                    : ShieldCheckIcon
+                                    : UserCogIcon
                             }
-                            onClick={onShowAccountStanding}
+                            onClick={onShowVrchatAccount}
                         >
-                            {t('dialog.user.actions.account_standing')}
+                            {t('dialog.user.actions.vrchat_account')}
                         </EntityActionItem>
                     </>
                 ) : null}

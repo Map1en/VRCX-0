@@ -4628,7 +4628,7 @@
                 "unfriend": "フレンドを解除",
                 "edit_note_memo": "ノートとローカルノートを編集",
                 "edit_profile": "プロフィールを編集",
-                "account_standing": "アカウントの状態"
+                "vrchat_account": "VRChat アカウント"
             },
             "group_invite": {
                 "select_group": "グループを選択",
@@ -4988,12 +4988,31 @@
                 "apply_color": "色を適用"
             },
             "account_standing": {
-                "header": "アカウントの状態",
-                "description": "VRChat から取得したアカウントの状態です。",
                 "status": "状態",
                 "issue_clear_days": "問題が解消されるまでの日数",
                 "sanctions": "処分",
-                "load_failed": "アカウントの状態を読み込めませんでした"
+                "load_failed": "アカウントの状態を読み込めませんでした",
+                "raw_data": "生データ"
+            },
+            "vrchat_account": {
+                "header": "VRChat アカウント",
+                "description": "ログイン中の VRChat アカウントの設定と状態です。",
+                "tabs": {
+                    "content_filters": "コンテンツフィルター",
+                    "account_standing": "アカウントの状態"
+                },
+                "content_filters": {
+                    "description": "クリエイターがタグ付けした内容を含むアバターやワールドを非表示にします。設定は VRChat アカウントに保存され、ゲーム内に反映されます。",
+                    "unavailable": "このアカウントでは VRChat のコンテンツフィルター設定を利用できません。",
+                    "update_failed": "コンテンツフィルターを更新できませんでした",
+                    "items": {
+                        "gore": "過度な流血表現を非表示",
+                        "horror": "過激なホラー表現を非表示",
+                        "violence": "激しい暴力表現を非表示",
+                        "sex": "性的なほのめかしを含む内容を非表示",
+                        "adult": "成人向けの言葉やテーマを非表示"
+                    }
+                }
             },
             "relationship": {
                 "friend": "フレンド",

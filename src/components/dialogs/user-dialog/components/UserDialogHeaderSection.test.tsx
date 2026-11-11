@@ -159,7 +159,7 @@ function createHeaderCommands(): UserHeaderCommands {
         onOpenUserUrl: noop,
         onRefresh: noop,
         onReportUser: noop,
-        onShowAccountStanding: noop,
+        onShowVrchatAccount: noop,
         onShowAvatarAuthor: noop,
         onShowInstanceHistory: noop,
         onToggleBadgeShowcased: noop,
@@ -545,7 +545,7 @@ describe('UserDialogHeaderSection account standing', () => {
 
     it('opens account standing from the own action menu', async () => {
         const headerCommands = createHeaderCommands();
-        headerCommands.onShowAccountStanding = vi.fn();
+        headerCommands.onShowVrchatAccount = vi.fn();
 
         render(
             <UserDialogHeaderSection
@@ -558,10 +558,10 @@ describe('UserDialogHeaderSection account standing', () => {
             screen.getByRole('button', { name: 'common.actions.more_actions' })
         );
         fireEvent.click(
-            await screen.findByText('dialog.user.actions.account_standing')
+            await screen.findByText('dialog.user.actions.vrchat_account')
         );
 
-        expect(headerCommands.onShowAccountStanding).toHaveBeenCalledOnce();
+        expect(headerCommands.onShowVrchatAccount).toHaveBeenCalledOnce();
     });
 
     it('marks the action menu only when the own standing is not good', () => {

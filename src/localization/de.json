@@ -4640,7 +4640,7 @@
                 "unfriend": "Freundschaft beenden",
                 "edit_note_memo": "Notiz und lokale Notiz bearbeiten",
                 "edit_profile": "Profil bearbeiten",
-                "account_standing": "Kontostatus"
+                "vrchat_account": "VRChat-Konto"
             },
             "group_invite": {
                 "select_group": "Gruppe auswählen",
@@ -5000,12 +5000,31 @@
                 "apply_color": "Farbe anwenden"
             },
             "account_standing": {
-                "header": "Kontostatus",
-                "description": "Der Status deines Kontos laut VRChat.",
                 "status": "Status",
                 "issue_clear_days": "Tage bis zur Aufhebung",
                 "sanctions": "Sanktionen",
-                "load_failed": "Kontostatus konnte nicht geladen werden"
+                "load_failed": "Kontostatus konnte nicht geladen werden",
+                "raw_data": "Rohdaten"
+            },
+            "vrchat_account": {
+                "header": "VRChat-Konto",
+                "description": "Einstellungen und Status des angemeldeten VRChat-Kontos.",
+                "tabs": {
+                    "content_filters": "Inhaltsfilter",
+                    "account_standing": "Kontostatus"
+                },
+                "content_filters": {
+                    "description": "Blendet Avatare und Welten aus, die von ihren Erstellern mit diesen Inhalten markiert wurden. Änderungen werden in deinem VRChat-Konto gespeichert und gelten im Spiel.",
+                    "unavailable": "VRChat bietet für dieses Konto keine Inhaltsfilter an.",
+                    "update_failed": "Inhaltsfilter konnten nicht aktualisiert werden",
+                    "items": {
+                        "gore": "Übermäßig blutige Inhalte ausblenden",
+                        "horror": "Extremen Horror ausblenden",
+                        "violence": "Intensive Gewalt ausblenden",
+                        "sex": "Sexuell anzügliche Inhalte ausblenden",
+                        "adult": "Sprache und Themen für Erwachsene ausblenden"
+                    }
+                }
             },
             "relationship": {
                 "friend": "Freund",

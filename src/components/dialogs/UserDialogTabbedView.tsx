@@ -130,7 +130,7 @@ interface UserDialogTabbedViewProps {
     profileControls: {
         onRefresh: () => void;
         onEditMemo: () => void | Promise<void>;
-        onShowAccountStanding: () => void;
+        onShowVrchatAccount: () => void;
     };
     friendControls: {
         onFriendRequest: (action: string) => void;
@@ -274,7 +274,7 @@ export function UserDialogTabbedView({
         onRefreshLocation,
         onPreviousInstancesChange
     } = locationPanel;
-    const { onRefresh, onEditMemo, onShowAccountStanding } = profileControls;
+    const { onRefresh, onEditMemo, onShowVrchatAccount } = profileControls;
     const {
         onFriendRequest,
         onInvite,
@@ -654,7 +654,7 @@ export function UserDialogTabbedView({
         onOpenUserUrl: () => openExternalLink(userUrl),
         onRefresh,
         onReportUser,
-        onShowAccountStanding,
+        onShowVrchatAccount,
         onShowAvatarAuthor: showAvatarAuthor,
         onShowInstanceHistory: openInstanceHistory,
         onToggleBadgeShowcased,

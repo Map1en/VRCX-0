@@ -4674,7 +4674,7 @@
                 "unfriend": "Odebrat z přátel",
                 "edit_note_memo": "Upravit poznámku a lokální poznámku",
                 "edit_profile": "Upravit profil",
-                "account_standing": "Stav účtu"
+                "vrchat_account": "Účet VRChat"
             },
             "group_invite": {
                 "select_group": "Vyberte skupinu",
@@ -5034,12 +5034,31 @@
                 "apply_color": "Použít barvu"
             },
             "account_standing": {
-                "header": "Stav účtu",
-                "description": "Stav vašeho účtu podle VRChatu.",
                 "status": "Stav",
                 "issue_clear_days": "Dní do odstranění",
                 "sanctions": "Sankce",
-                "load_failed": "Stav účtu se nepodařilo načíst"
+                "load_failed": "Stav účtu se nepodařilo načíst",
+                "raw_data": "Nezpracovaná data"
+            },
+            "vrchat_account": {
+                "header": "Účet VRChat",
+                "description": "Nastavení a stav přihlášeného účtu VRChat.",
+                "tabs": {
+                    "content_filters": "Filtry obsahu",
+                    "account_standing": "Stav účtu"
+                },
+                "content_filters": {
+                    "description": "Skryje avatary a světy, které autoři označili tímto obsahem. Změny se uloží do tvého účtu VRChat a platí ve hře.",
+                    "unavailable": "VRChat pro tento účet filtry obsahu nenabízí.",
+                    "update_failed": "Filtry obsahu se nepodařilo aktualizovat",
+                    "items": {
+                        "gore": "Skrýt nadměrně krvavý obsah",
+                        "horror": "Skrýt extrémní horor",
+                        "violence": "Skrýt intenzivní násilí",
+                        "sex": "Skrýt sexuálně podbarvený obsah",
+                        "adult": "Skrýt jazyk a témata pro dospělé"
+                    }
+                }
             },
             "relationship": {
                 "friend": "Přítel",

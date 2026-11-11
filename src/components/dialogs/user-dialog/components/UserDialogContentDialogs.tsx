@@ -4,19 +4,22 @@ import { CurrentUserSocialStatusDialog } from '../UserSelfEditDialogs';
 import type { useUserDialogActions } from '../useUserDialogActions';
 import type { useUserDialogMemoState } from '../useUserDialogMemoState';
 import type { useUserDialogSelfActions } from '../useUserDialogSelfActions';
-import { UserAccountStandingDialog } from './UserAccountStandingDialog';
 import { UserDialogGroupInviteDialog } from './UserDialogGroupInviteDialog';
 import { UserDialogGroupQuickModerationDialog } from './UserDialogGroupQuickModerationDialog';
 import { UserNoteMemoDialog } from './UserNoteMemoDialog';
 import { UserReportDialog } from './UserReportDialog';
+import { UserVrchatAccountDialog } from './UserVrchatAccountDialog';
 
 type UserActionsState = ReturnType<typeof useUserDialogActions>;
 type SelfActionsState = ReturnType<typeof useUserDialogSelfActions>;
 
 type UserDialogContentDialogsProps = {
-    accountStandingDialog: {
+    vrchatAccountDialog: {
         open: boolean;
         onOpenChange: (open: boolean) => void;
+        currentUserId: string;
+        contentFilters: unknown;
+        hideContentFilterSettings: boolean;
     };
     actionStatus: string;
     boopDialog: {
@@ -63,7 +66,7 @@ type UserDialogContentDialogsProps = {
 };
 
 export function UserDialogContentDialogs({
-    accountStandingDialog,
+    vrchatAccountDialog,
     actionStatus,
     boopDialog,
     groupInviteDialog,
@@ -150,10 +153,7 @@ export function UserDialogContentDialogs({
                 targetLabel={reportDialog.targetLabel}
                 onOpenChange={reportDialog.onOpenChange}
             />
-            <UserAccountStandingDialog
-                open={accountStandingDialog.open}
-                onOpenChange={accountStandingDialog.onOpenChange}
-            />
+            <UserVrchatAccountDialog {...vrchatAccountDialog} />
         </>
     );
 }

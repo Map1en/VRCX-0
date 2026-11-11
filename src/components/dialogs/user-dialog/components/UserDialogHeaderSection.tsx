@@ -252,7 +252,7 @@ export interface UserHeaderCommands {
     onOpenUserUrl: () => void;
     onRefresh: () => void;
     onReportUser: () => void;
-    onShowAccountStanding: () => void;
+    onShowVrchatAccount: () => void;
     onShowAvatarAuthor: () => void;
     onShowInstanceHistory: () => void;
     onToggleBadgeShowcased: (
@@ -575,7 +575,7 @@ export function UserDialogHeaderSection({
         onOpenUserUrl,
         onRefresh,
         onReportUser,
-        onShowAccountStanding,
+        onShowVrchatAccount,
         onShowAvatarAuthor,
         onShowInstanceHistory,
         onToggleBadgeShowcased,
@@ -621,7 +621,7 @@ export function UserDialogHeaderSection({
         onOpenFallbackAvatar,
         onRefresh,
         onReportUser,
-        onShowAccountStanding,
+        onShowVrchatAccount,
         onShowAvatarAuthor,
         onShowInstanceHistory,
         onUnfriend

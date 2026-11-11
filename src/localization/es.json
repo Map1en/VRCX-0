@@ -4644,7 +4644,7 @@
                 "unfriend": "Eliminar amigo",
                 "edit_note_memo": "Editar nota y nota local",
                 "edit_profile": "Editar perfil",
-                "account_standing": "Estado de la cuenta"
+                "vrchat_account": "Cuenta de VRChat"
             },
             "group_invite": {
                 "select_group": "Selecciona un grupo",
@@ -5004,12 +5004,31 @@
                 "apply_color": "Aplicar color"
             },
             "account_standing": {
-                "header": "Estado de la cuenta",
-                "description": "El estado de tu cuenta según VRChat.",
                 "status": "Estado",
                 "issue_clear_days": "Días hasta que se resuelva",
                 "sanctions": "Sanciones",
-                "load_failed": "No se pudo cargar el estado de la cuenta"
+                "load_failed": "No se pudo cargar el estado de la cuenta",
+                "raw_data": "Datos sin procesar"
+            },
+            "vrchat_account": {
+                "header": "Cuenta de VRChat",
+                "description": "Ajustes y estado de la cuenta de VRChat con la que has iniciado sesión.",
+                "tabs": {
+                    "content_filters": "Filtros de contenido",
+                    "account_standing": "Estado de la cuenta"
+                },
+                "content_filters": {
+                    "description": "Oculta los avatares y mundos que sus creadores han etiquetado con este contenido. Los cambios se guardan en tu cuenta de VRChat y se aplican en el juego.",
+                    "unavailable": "VRChat no ofrece filtros de contenido para esta cuenta.",
+                    "update_failed": "No se pudieron actualizar los filtros de contenido",
+                    "items": {
+                        "gore": "Ocultar contenido excesivamente sangriento",
+                        "horror": "Ocultar terror extremo",
+                        "violence": "Ocultar violencia intensa",
+                        "sex": "Ocultar contenido sexualmente sugerente",
+                        "adult": "Ocultar lenguaje y temas para adultos"
+                    }
+                }
             },
             "relationship": {
                 "friend": "Amigo",

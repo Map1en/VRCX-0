@@ -4644,7 +4644,7 @@
                 "unfriend": "Unfriend",
                 "edit_note_memo": "Edit Note and Local Note",
                 "edit_profile": "Edit Profile",
-                "account_standing": "Account Standing"
+                "vrchat_account": "VRChat Account"
             },
             "group_invite": {
                 "select_group": "Select a group",
@@ -5004,12 +5004,31 @@
                 "apply_color": "Apply Color"
             },
             "account_standing": {
-                "header": "Account Standing",
-                "description": "Your account standing as reported by VRChat.",
                 "status": "Status",
                 "issue_clear_days": "Days until cleared",
                 "sanctions": "Sanctions",
-                "load_failed": "Couldn't load account standing"
+                "load_failed": "Couldn't load account standing",
+                "raw_data": "Raw data"
+            },
+            "vrchat_account": {
+                "header": "VRChat Account",
+                "description": "Settings and standing for the VRChat account you are signed in with.",
+                "tabs": {
+                    "content_filters": "Content Filters",
+                    "account_standing": "Account Standing"
+                },
+                "content_filters": {
+                    "description": "Hide avatars and worlds that creators have tagged with this content. Changes are saved to your VRChat account and apply in game.",
+                    "unavailable": "VRChat doesn't offer content filter settings for this account.",
+                    "update_failed": "Couldn't update content filters",
+                    "items": {
+                        "gore": "Hide excessive gore",
+                        "horror": "Hide extreme horror",
+                        "violence": "Hide intense violence",
+                        "sex": "Hide sexually suggestive content",
+                        "adult": "Hide adult language and themes"
+                    }
+                }
             },
             "relationship": {
                 "friend": "Friend",
