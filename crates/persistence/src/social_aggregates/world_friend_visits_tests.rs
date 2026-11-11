@@ -134,3 +134,98 @@ fn world_friend_visits_returns_empty_for_non_world_target() {
     assert!(output.friends.is_empty());
     assert!(output.last_visited_at.is_empty());
 }
+
+fn recent_counts(db: &DatabaseService, world_ids: &[&str], since: &str) -> Vec<(String, i64)> {
+    let world_ids = world_ids
+        .iter()
+        .map(|world_id| world_id.to_string())
+        .collect::<Vec<_>>();
+    get_world_recent_friend_counts(db, &OwnerId::new(OWNER_USER_ID), &world_ids, since)
+        .unwrap()
+        .into_iter()
+        .map(|row| (row.world_id, row.friend_count))
+        .collect()
+}
+
+#[test]
+fn world_recent_friend_counts_respects_window_cutoff() {
+    let (_dir, db) = setup("recent-counts-window");
+    add_friend(&db, "usr_alice", "Alice");
+    add_friend(&db, "usr_bob", "Bob");
+    insert_gps(&db, "2026-08-03T23:59:59.000Z", "usr_alice", "wrld_alpha:1");
+    insert_gps(&db, "2026-08-04T00:00:00.000Z", "usr_bob", "wrld_alpha:1");
+
+    let counts = recent_counts(&db, &["wrld_alpha"], "2026-08-04T00:00:00.000Z");
+
+    assert_eq!(counts, vec![("wrld_alpha".to_string(), 1)]);
+}
+
+#[test]
+fn world_recent_friend_counts_counts_each_friend_once() {
+    let (_dir, db) = setup("recent-counts-distinct");
+    add_friend(&db, "usr_alice", "Alice");
+    insert_gps(&db, "2026-08-05T10:00:00.000Z", "usr_alice", "wrld_alpha:1");
+    insert_gps(&db, "2026-08-06T10:00:00.000Z", "usr_alice", "wrld_alpha:2");
+    insert_online_offline(
+        &db,
+        "2026-08-07T10:00:00.000Z",
+        "usr_alice",
+        "Online",
+        "wrld_alpha:1",
+    );
+
+    let counts = recent_counts(&db, &["wrld_alpha"], "2026-08-01T00:00:00.000Z");
+
+    assert_eq!(counts, vec![("wrld_alpha".to_string(), 1)]);
+}
+
+#[test]
+fn world_recent_friend_counts_excludes_non_friends_and_offline_rows() {
+    let (_dir, db) = setup("recent-counts-non-friends");
+    add_friend(&db, "usr_alice", "Alice");
+    insert_gps(
+        &db,
+        "2026-08-05T10:00:00.000Z",
+        "usr_stranger",
+        "wrld_alpha:1",
+    );
+    insert_online_offline(
+        &db,
+        "2026-08-05T11:00:00.000Z",
+        "usr_alice",
+        "Offline",
+        "wrld_alpha:1",
+    );
+
+    let counts = recent_counts(&db, &["wrld_alpha"], "2026-08-01T00:00:00.000Z");
+
+    assert!(counts.is_empty());
+}
+
+#[test]
+fn world_recent_friend_counts_batches_worlds_and_matches_instance_suffixes() {
+    let (_dir, db) = setup("recent-counts-batch");
+    add_friend(&db, "usr_alice", "Alice");
+    add_friend(&db, "usr_bob", "Bob");
+    insert_gps(
+        &db,
+        "2026-08-05T10:00:00.000Z",
+        "usr_alice",
+        "wrld_alpha:1~hidden(usr_x)",
+    );
+    insert_gps(&db, "2026-08-05T10:00:00.000Z", "usr_bob", "wrld_alpha");
+    insert_gps(&db, "2026-08-05T10:00:00.000Z", "usr_bob", "wrld_beta:7");
+    insert_gps(&db, "2026-08-05T10:00:00.000Z", "usr_bob", "wrld_alphax:1");
+    insert_gps(&db, "2026-08-05T10:00:00.000Z", "usr_bob", "wrld_gamma:1");
+
+    let counts = recent_counts(
+        &db,
+        &["wrld_alpha", "wrld_beta", "private", "wrld_missing"],
+        "2026-08-01T00:00:00.000Z",
+    );
+
+    assert_eq!(
+        counts,
+        vec![("wrld_alpha".to_string(), 2), ("wrld_beta".to_string(), 1)]
+    );
+}

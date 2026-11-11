@@ -1,4 +1,5 @@
-use vrcx_0_contracts::feed::WorldFriendVisitsOutput;
+use chrono::{Duration, SecondsFormat, Utc};
+use vrcx_0_contracts::feed::{WorldFriendVisitsOutput, WorldRecentFriendCountRow};
 use vrcx_0_contracts::friend_log::{
     FriendLogCurrentOutput, FriendLogHistoryEntryInput, FriendLogHistoryOutput,
     FriendLogHistoryQueryInput,
@@ -51,6 +52,22 @@ impl LocalDataStore {
                 self.db.as_ref(),
                 owner,
                 &world_id,
+            )?,
+        )
+    }
+
+    pub fn world_recent_friend_counts(
+        &self,
+        owner: &OwnerId,
+        world_ids: Vec<String>,
+    ) -> Result<Vec<WorldRecentFriendCountRow>> {
+        let since = (Utc::now() - Duration::days(7)).to_rfc3339_opts(SecondsFormat::Millis, true);
+        Ok(
+            vrcx_0_persistence::social_aggregates::get_world_recent_friend_counts(
+                self.db.as_ref(),
+                owner,
+                &world_ids,
+                &since,
             )?,
         )
     }

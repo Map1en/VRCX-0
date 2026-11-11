@@ -1811,6 +1811,12 @@
                 "discover": "Descubrir",
                 "shuffle": "Mezclar",
                 "rooms": "{count} instancias",
+                "friends_here_one": "{count} amigo aquí",
+                "friends_here_other": "{count} amigos aquí",
+                "friends_visited_one": "{count} amigo lo visitó en 7 días",
+                "friends_visited_other": "{count} amigos lo visitaron en 7 días",
+                "friends_visited_short_one": "7 días · {count} amigo",
+                "friends_visited_short_other": "7 días · {count} amigos",
                 "empty": "No hay mundos para mostrar"
             },
             "label": {

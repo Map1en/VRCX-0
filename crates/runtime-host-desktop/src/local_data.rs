@@ -36,7 +36,7 @@ use vrcx_0_contracts::browse_history::{
 use vrcx_0_contracts::database_maintenance::{MaintenanceTableSizesOutput, UserTableContextOutput};
 use vrcx_0_contracts::feed::{
     FeedLatestQueryInput, FeedReadModelOutput, FeedRowOutput, FeedRowsQueryInput,
-    FeedSearchQueryInput, WorldFriendVisitsOutput,
+    FeedSearchQueryInput, WorldFriendVisitsOutput, WorldRecentFriendCountRow,
 };
 use vrcx_0_contracts::friend_log::{
     FriendLogCurrentOutput, FriendLogHistoryEntryInput, FriendLogHistoryOutput,
@@ -593,6 +593,14 @@ impl LocalDataRuntime {
     pub fn world_friend_visits(&self, world_id: String) -> Result<WorldFriendVisitsOutput> {
         self.store
             .world_friend_visits(&self.current_owner(), world_id)
+    }
+
+    pub fn world_recent_friend_counts(
+        &self,
+        world_ids: Vec<String>,
+    ) -> Result<Vec<WorldRecentFriendCountRow>> {
+        self.store
+            .world_recent_friend_counts(&self.current_owner(), world_ids)
     }
 
     pub fn game_log_sessions_query(

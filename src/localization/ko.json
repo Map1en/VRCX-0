@@ -1743,6 +1743,9 @@
                 "discover": "발견",
                 "shuffle": "새로 고르기",
                 "rooms": "인스턴스 {count}개",
+                "friends_here_other": "친구 {count}명 있음",
+                "friends_visited_other": "7일 내 친구 {count}명 방문",
+                "friends_visited_short_other": "7일 · 친구 {count}명",
                 "empty": "표시할 월드가 없습니다"
             },
             "label": {

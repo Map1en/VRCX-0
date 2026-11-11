@@ -1825,6 +1825,18 @@
                 "discover": "Открытия",
                 "shuffle": "Перемешать",
                 "rooms": "Инстансов: {count}",
+                "friends_here_one": "{count} друг здесь",
+                "friends_here_few": "{count} друга здесь",
+                "friends_here_many": "{count} друзей здесь",
+                "friends_here_other": "{count} друга здесь",
+                "friends_visited_one": "{count} друг был здесь за 7 дней",
+                "friends_visited_few": "{count} друга были здесь за 7 дней",
+                "friends_visited_many": "{count} друзей были здесь за 7 дней",
+                "friends_visited_other": "{count} друга были здесь за 7 дней",
+                "friends_visited_short_one": "7 дней · {count} друг",
+                "friends_visited_short_few": "7 дней · {count} друга",
+                "friends_visited_short_many": "7 дней · {count} друзей",
+                "friends_visited_short_other": "7 дней · {count} друга",
                 "empty": "Нет миров для показа"
             },
             "label": {

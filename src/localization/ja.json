@@ -1802,6 +1802,9 @@
                 "discover": "発見",
                 "shuffle": "シャッフル",
                 "rooms": "{count} インスタンス",
+                "friends_here_other": "フレンド {count} 人が滞在中",
+                "friends_visited_other": "7日間でフレンド {count} 人が訪問",
+                "friends_visited_short_other": "7日間 · フレンド{count}人",
                 "empty": "表示できるワールドがありません"
             },
             "label": {

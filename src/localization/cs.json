@@ -1825,6 +1825,18 @@
                 "discover": "Objevit",
                 "shuffle": "Zamíchat",
                 "rooms": "Instance: {count}",
+                "friends_here_one": "{count} přítel zde",
+                "friends_here_few": "{count} přátelé zde",
+                "friends_here_many": "{count} přítele zde",
+                "friends_here_other": "{count} přátel zde",
+                "friends_visited_one": "{count} přítel zde byl za 7 dní",
+                "friends_visited_few": "{count} přátelé zde byli za 7 dní",
+                "friends_visited_many": "{count} přítele zde bylo za 7 dní",
+                "friends_visited_other": "{count} přátel zde bylo za 7 dní",
+                "friends_visited_short_one": "7 dní · {count} přítel",
+                "friends_visited_short_few": "7 dní · {count} přátelé",
+                "friends_visited_short_many": "7 dní · {count} přítele",
+                "friends_visited_short_other": "7 dní · {count} přátel",
                 "empty": "Žádné světy k zobrazení"
             },
             "label": {

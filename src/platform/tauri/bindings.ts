@@ -921,6 +921,11 @@ export const commands = {
         __TAURI_INVOKE<WorldFriendVisitsOutput>('app__world_friend_visits', {
             worldId
         }),
+    appWorldRecentFriendCounts: (worldIds: string[]) =>
+        __TAURI_INVOKE<WorldRecentFriendCountRow[]>(
+            'app__world_recent_friend_counts',
+            { worldIds }
+        ),
     appFavoriteList: (kind: FavoriteEntityKind) =>
         __TAURI_INVOKE<FavoriteRow[]>('app__favorite_list', { kind }),
     appFavoriteLocalCustomOrder: (kind: FavoriteEntityKind) =>
@@ -8473,6 +8478,11 @@ export type WorldMemoOutput = {
 };
 
 export type WorldRatingValue = 'like' | 'dislike';
+
+export type WorldRecentFriendCountRow = {
+    worldId: string;
+    friendCount: number;
+};
 
 export type WorldSearchParams = {
     featured?: boolean | null;

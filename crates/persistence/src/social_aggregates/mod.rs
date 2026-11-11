@@ -48,8 +48,10 @@ pub use types::{
     WorldVisitHistory,
 };
 pub use visits::get_visit_timeline;
-pub use vrcx_0_contracts::feed::{WorldFriendVisitRow, WorldFriendVisitsOutput};
-pub use world_friend_visits::get_world_friend_visits;
+pub use vrcx_0_contracts::feed::{
+    WorldFriendVisitRow, WorldFriendVisitsOutput, WorldRecentFriendCountRow,
+};
+pub use world_friend_visits::{get_world_friend_visits, get_world_recent_friend_counts};
 pub use worlds::{
     favorite_local, find_visited_worlds, search_worlds_visited, top_visited_worlds,
     world_visit_history,

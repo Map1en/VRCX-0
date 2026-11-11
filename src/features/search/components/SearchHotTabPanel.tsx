@@ -1,21 +1,30 @@
 import { GlobeIcon, RefreshCwIcon, ShuffleIcon } from 'lucide-react';
-import { useEffect, useEffectEvent, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 
 import { EmptyState } from '@/components/layout/PageScaffold';
 import { userFacingErrorMessage } from '@/lib/errorDisplay';
 import { toast } from '@/services/toastService';
+import { useFriendRosterStore } from '@/state/friendRosterStore';
 import { Button } from '@/ui/shadcn/button';
 import { TabsContent } from '@/ui/shadcn/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/ui/shadcn/toggle-group';
 
 import {
     aggregateHotWorlds,
+    groupFriendsByWorld,
+    hotWorldIdOfFriend,
     loadHotInstances,
+    loadRecentFriendCounts,
     type SearchHotMode,
     type SearchHotWorld
 } from '../searchHotWorlds';
-import { HotWorldCard, SearchLoadingState } from './SearchResultParts';
+import {
+    HotWorldCard,
+    HotWorldHero,
+    SearchLoadingState
+} from './SearchResultParts';
 
 export function SearchHotTabPanel({ active }: { active: boolean }) {
     const { t } = useTranslation();
@@ -26,17 +35,42 @@ export function SearchHotTabPanel({ active }: { active: boolean }) {
     const [loadingModes, setLoadingModes] = useState<
         Partial<Record<SearchHotMode, boolean>>
     >({});
+    const [recentFriendCounts, setRecentFriendCounts] = useState<
+        Partial<Record<SearchHotMode, Record<string, number>>>
+    >({});
+    const friendsInWorlds = useFriendRosterStore(
+        useShallow((state) =>
+            state.onlineIds
+                .map((friendId) => state.friendsById[friendId])
+                .filter((friend) => friend && hotWorldIdOfFriend(friend))
+        )
+    );
+    const friendsByWorld = useMemo(
+        () => groupFriendsByWorld(friendsInWorlds),
+        [friendsInWorlds]
+    );
     const worlds = results[mode] ?? [];
+    const recentCounts = recentFriendCounts[mode] ?? {};
+    const [heroWorld, ...gridWorlds] = worlds;
     const loading = loadingModes[mode] === true;
 
     async function loadWorlds(nextMode: SearchHotMode) {
         setLoadingModes((current) => ({ ...current, [nextMode]: true }));
         try {
             const instances = await loadHotInstances(nextMode);
+            const aggregated = aggregateHotWorlds(instances);
             setResults((current) => ({
                 ...current,
-                [nextMode]: aggregateHotWorlds(instances)
+                [nextMode]: aggregated
             }));
+            loadRecentFriendCounts(aggregated)
+                .then((counts) => {
+                    setRecentFriendCounts((current) => ({
+                        ...current,
+                        [nextMode]: counts
+                    }));
+                })
+                .catch(() => undefined);
         } catch (error) {
             toast.add({
                 type: 'error',
@@ -112,11 +146,35 @@ export function SearchHotTabPanel({ active }: { active: boolean }) {
             <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-1">
                 {loading ? (
                     <SearchLoadingState />
-                ) : worlds.length > 0 ? (
-                    <div className="grid [grid-template-columns:repeat(auto-fill,minmax(220px,1fr))] gap-4">
-                        {worlds.map((entry) => (
-                            <HotWorldCard key={entry.world.id} entry={entry} />
-                        ))}
+                ) : heroWorld ? (
+                    <div className="flex flex-col gap-4">
+                        <HotWorldHero
+                            entry={heroWorld}
+                            friends={
+                                friendsByWorld.get(heroWorld.world.id) ?? []
+                            }
+                            recentFriendCount={
+                                recentCounts[heroWorld.world.id] ?? 0
+                            }
+                        />
+                        {gridWorlds.length > 0 ? (
+                            <div className="grid [grid-template-columns:repeat(auto-fill,minmax(220px,1fr))] gap-4">
+                                {gridWorlds.map((entry) => (
+                                    <HotWorldCard
+                                        key={entry.world.id}
+                                        entry={entry}
+                                        friends={
+                                            friendsByWorld.get(
+                                                entry.world.id
+                                            ) ?? []
+                                        }
+                                        recentFriendCount={
+                                            recentCounts[entry.world.id] ?? 0
+                                        }
+                                    />
+                                ))}
+                            </div>
+                        ) : null}
                     </div>
                 ) : (
                     <EmptyState

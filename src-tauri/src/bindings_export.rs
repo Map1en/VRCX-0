@@ -379,6 +379,7 @@ pub fn builder() -> Builder<tauri::Wry> {
             commands::local::worlds::app__world_get,
             commands::local::files::app__file_metadata_get,
             commands::local::worlds::app__world_friend_visits,
+            commands::local::worlds::app__world_recent_friend_counts,
             commands::local::favorites::app__favorite_list,
             commands::local::favorites::app__favorite_local_custom_order,
             commands::local::favorites::app__favorite_local_snapshot,

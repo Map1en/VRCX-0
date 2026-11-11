@@ -1806,6 +1806,9 @@
                 "discover": "發現",
                 "shuffle": "換一批",
                 "rooms": "{count} 個房間",
+                "friends_here_other": "{count} 位好友在此",
+                "friends_visited_other": "7 天內 {count} 位好友來過",
+                "friends_visited_short_other": "7 天 · {count} 位好友",
                 "empty": "暫時沒有可顯示的世界"
             },
             "label": {
