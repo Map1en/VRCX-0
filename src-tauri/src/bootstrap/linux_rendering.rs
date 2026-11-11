@@ -113,7 +113,9 @@ pub fn start_fallback(app: &AppHandle) {
             return;
         }
         tracing::warn!("Linux rendering trial was not confirmed; restarting without acceleration");
-        crate::commands::host::window::restart_now(&app);
+        if let Err(error) = crate::commands::host::window::restart_now(&app).await {
+            tracing::warn!(%error, "failed to restart after Linux rendering trial");
+        }
     });
 }
 

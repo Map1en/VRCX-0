@@ -2,8 +2,9 @@
 
 use std::path::PathBuf;
 
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Manager, State};
 
+use crate::commands::blocking::run_blocking;
 use crate::error::AppError;
 use crate::state::AppState;
 use vrcx_0_host_desktop::shell_actions;
@@ -36,11 +37,17 @@ pub fn app__open_discord_profile(discord_id: String) -> Result<(), AppError> {
     Ok(shell_actions::open_discord_profile(&discord_id)?)
 }
 
-#[tauri::command(async)]
+#[tauri::command]
 #[specta::specta]
-pub fn app__get_file_base64(state: State<'_, AppState>, path: String) -> Result<String, AppError> {
-    state.runtime_host().ensure_host_read_allowed(&path)?;
-    Ok(shell_actions::file_base64(&path)?)
+pub async fn app__get_file_base64(app_handle: AppHandle, path: String) -> Result<String, AppError> {
+    run_blocking("read file base64", move || -> Result<_, AppError> {
+        app_handle
+            .state::<AppState>()
+            .runtime_host()
+            .ensure_host_read_allowed(&path)?;
+        Ok(shell_actions::file_base64(&path)?)
+    })
+    .await
 }
 
 #[tauri::command(async)]
@@ -76,16 +83,17 @@ pub fn app__vrchat_cache_location_would_change(json: String) -> Result<bool, App
     )?)
 }
 
-#[tauri::command(async)]
+#[tauri::command]
 #[specta::specta]
-pub fn app__write_config_file_with_cache_cleanup(
+pub async fn app__write_config_file_with_cache_cleanup(
     json: String,
 ) -> Result<shell_actions::VrchatConfigWriteResult, AppError> {
     require_host_capability(HostCapability::VrchatPathDiscovery)?;
-    let normalized_json = shell_actions::normalize_config_file_json(&json)?;
-    Ok(shell_actions::write_config_file_with_cache_cleanup(
-        &normalized_json,
-    )?)
+    run_blocking("write config and clean cache", move || {
+        let normalized_json = shell_actions::normalize_config_file_json(&json)?;
+        shell_actions::write_config_file_with_cache_cleanup(&normalized_json)
+    })
+    .await
 }
 
 #[tauri::command(async)]

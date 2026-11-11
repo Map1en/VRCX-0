@@ -6,6 +6,7 @@ use std::sync::{Mutex, OnceLock};
 use tauri::{AppHandle, State};
 use tauri_plugin_autostart::ManagerExt as _;
 
+use crate::commands::blocking::run_blocking;
 use crate::error::AppError;
 use crate::state::AppState;
 use vrcx_0_runtime_host_desktop::AutostartPlatform;
@@ -344,7 +345,7 @@ pub fn app__open_devtools(app_handle: AppHandle) -> Result<(), AppError> {
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__restart_application(app_handle: AppHandle) -> Result<(), AppError> {
+pub async fn app__restart_application(app_handle: AppHandle) -> Result<(), AppError> {
     #[cfg(debug_assertions)]
     {
         tracing::warn!("app__restart_application ignored in dev build; restart VRCX-0 manually");
@@ -354,19 +355,23 @@ pub fn app__restart_application(app_handle: AppHandle) -> Result<(), AppError> {
 
     #[cfg(not(debug_assertions))]
     {
-        restart_now(&app_handle);
-        Ok(())
+        restart_now(&app_handle).await
     }
 }
 
-pub(crate) fn restart_now(app_handle: &AppHandle) {
+pub(crate) async fn restart_now(app_handle: &AppHandle) -> Result<(), AppError> {
     use tauri::Manager;
 
-    stop_runtime_services(app_handle);
-    if let Some(state) = app_handle.try_state::<AppState>() {
-        state.runtime_host().release_profile_lock();
-    }
-    app_handle.request_restart();
+    let app_handle = app_handle.clone();
+    run_blocking("restart application", move || -> Result<(), AppError> {
+        stop_runtime_services(&app_handle);
+        if let Some(state) = app_handle.try_state::<AppState>() {
+            state.runtime_host().release_profile_lock();
+        }
+        app_handle.request_restart();
+        Ok(())
+    })
+    .await
 }
 
 #[tauri::command]
@@ -378,11 +383,9 @@ pub fn app__exit_application(app_handle: AppHandle) -> Result<(), AppError> {
 
 #[tauri::command]
 #[specta::specta]
-pub fn app__set_startup(
-    app_handle: AppHandle,
-    state: State<'_, AppState>,
-    enabled: bool,
-) -> Result<bool, AppError> {
+pub async fn app__set_startup(app_handle: AppHandle, enabled: bool) -> Result<bool, AppError> {
+    use tauri::Manager;
+
     struct TauriAutostartPlatform(AppHandle);
 
     impl AutostartPlatform for TauriAutostartPlatform {
@@ -409,9 +412,13 @@ pub fn app__set_startup(
         }
     }
 
-    Ok(state
-        .runtime_host()
-        .set_autostart_preference(&TauriAutostartPlatform(app_handle), enabled)?)
+    run_blocking("set startup", move || {
+        app_handle
+            .state::<AppState>()
+            .runtime_host()
+            .set_autostart_preference(&TauriAutostartPlatform(app_handle.clone()), enabled)
+    })
+    .await
 }
 
 #[tauri::command]

@@ -2,6 +2,7 @@
 
 use tauri::State;
 
+use crate::commands::blocking::run_blocking;
 use crate::error::AppError;
 use crate::state::AppState;
 
@@ -23,15 +24,15 @@ pub async fn app__world_get(
         .map_err(AppError::from)
 }
 
-#[tauri::command(async)]
+#[tauri::command]
 #[specta::specta]
-pub fn app__world_friend_visits(
+pub async fn app__world_friend_visits(
     state: State<'_, AppState>,
     world_id: String,
 ) -> Result<WorldFriendVisitsOutput, AppError> {
-    state
-        .runtime_host()
-        .local_data()
-        .world_friend_visits(world_id)
-        .map_err(AppError::from)
+    let local_data = state.runtime_host().local_data().clone();
+    run_blocking("world friend visits", move || {
+        local_data.world_friend_visits(world_id)
+    })
+    .await
 }

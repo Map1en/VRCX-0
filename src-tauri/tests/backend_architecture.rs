@@ -662,9 +662,7 @@ fn blocking_tauri_commands_are_limited_to_the_main_thread_allowlist() {
         "app__language_changed",
         "app__open_devtools",
         "app__refresh_tray_menu",
-        "app__restart_application",
         "app__set_linux_rendering",
-        "app__set_startup",
         "app__set_taskbar_overlay_notification",
         "app__set_tray_icon_notification",
     ];
@@ -697,6 +695,37 @@ fn blocking_tauri_commands_are_limited_to_the_main_thread_allowlist() {
         blocking, allowed,
         "blocking Tauri commands run on the main thread; mark the command #[tauri::command(async)], make it an async fn that offloads through commands::blocking::run_blocking, or add it to the allowlist"
     );
+}
+
+#[test]
+fn expensive_tauri_operations_leave_the_async_workers() {
+    let mut violations = Vec::new();
+    for (path, name) in [
+        ("host/window.rs", "app__set_startup"),
+        ("host/window.rs", "restart_now"),
+        ("host/shell.rs", "app__get_file_base64"),
+        ("host/shell.rs", "app__write_config_file_with_cache_cleanup"),
+        ("local/worlds.rs", "app__world_friend_visits"),
+    ] {
+        let source =
+            std::fs::read_to_string(workspace_file(&format!("src-tauri/src/commands/{path}")))
+                .expect("read command source");
+        let signature = format!("async fn {name}(");
+        let Some((_, function)) = source.split_once(&signature) else {
+            violations.push(format!(
+                "{name} must await its blocking work asynchronously"
+            ));
+            continue;
+        };
+        let body_start = function.find('{').expect("find function body");
+        let body = named_struct_body(&function[body_start..], "{");
+        if !body.contains("run_blocking(") {
+            violations.push(format!(
+                "{name} must offload synchronous IO, queries, or shutdown waits"
+            ));
+        }
+    }
+    assert!(violations.is_empty(), "{}", violations.join("\n"));
 }
 
 #[test]
