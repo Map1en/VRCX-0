@@ -305,7 +305,13 @@ export function WorldDialogInstancesPanel({
                 </ToolbarFilterMenu>
                 <WorldSidebarPinButton worldId={world.id} name={world.name} />
             </div>
-            <div className="flex flex-col gap-2">
+            <div
+                className={cn(
+                    'flex flex-col',
+                    visibleRows.length &&
+                        'bg-card ring-stroke-subtle overflow-hidden rounded-xl ring-1'
+                )}
+            >
                 {visibleRows.length ? (
                     visibleRows.map((instance) => {
                         const instanceRecord = record(instance);
@@ -345,7 +351,7 @@ export function WorldDialogInstancesPanel({
                             <div
                                 key={instance.id}
                                 className={cn(
-                                    'bg-muted/10 hover:bg-muted/25 rounded-md border px-2.5 py-2 text-sm transition-colors',
+                                    'group/row border-border/40 hover:bg-muted/25 border-b px-3 py-2 text-sm transition-colors last:border-b-0',
                                     isClosed && 'opacity-60'
                                 )}
                             >
@@ -407,7 +413,7 @@ export function WorldDialogInstancesPanel({
                                         )}
                                     </div>
                                     <InstanceActionBar
-                                        className="min-w-0 flex-wrap justify-start sm:justify-end"
+                                        className="text-muted-foreground group-hover/row:text-foreground min-w-0 flex-wrap justify-start sm:justify-end"
                                         target={{
                                             location,
                                             shortName: launchToken,
@@ -426,7 +432,7 @@ export function WorldDialogInstancesPanel({
                                         playerCount={playerCount}
                                         capacity={capacity}
                                         instanceInfoPlacement="start"
-                                        instanceCountAlign="left"
+                                        instanceCountAlign="right"
                                         instanceSummaryOrder="markers-first"
                                         showHistory={showHistory}
                                         historyTooltip="Visit history"

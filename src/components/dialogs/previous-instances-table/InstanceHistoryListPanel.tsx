@@ -136,7 +136,6 @@ function InstanceHistoryListRow<TRow extends PreviousInstanceRow>({
                         location,
                         worldName: row?.worldName || ''
                     }}
-                    actionVariant="ghost"
                     showRefresh={false}
                     showInstanceInfo={false}
                 />

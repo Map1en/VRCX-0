@@ -5,10 +5,10 @@ import {
     instanceLanguageBadges,
     instanceLanguageRows
 } from '@/components/instances/instanceLanguages';
-import { LanguageCodeBadge } from '@/components/language/LanguageCodeBadge';
 import { RegionCodeBadge } from '@/components/location/RegionCodeBadge';
 import { LocationWorld } from '@/components/LocationWorld';
 import { parseLocation } from '@/shared/utils/location';
+import { HintTooltip } from '@/ui/hint-tooltip';
 
 import { useSpokenLanguageSelection } from '../useSpokenLanguageSelection';
 
@@ -44,8 +44,17 @@ export function WorldInstanceRowTitle({
                 t('dialog.world.instances.languages_current', { languages })
         }
     );
-    const visibleBadges = languageBadges.slice(0, VISIBLE_LANGUAGE_BADGES);
-    const hiddenBadges = languageBadges.slice(VISIBLE_LANGUAGE_BADGES);
+    const languageText = [
+        ...languageBadges
+            .slice(0, VISIBLE_LANGUAGE_BADGES)
+            .map((badge) => badge.code),
+        ...(languageBadges.length > VISIBLE_LANGUAGE_BADGES
+            ? [`+${languageBadges.length - VISIBLE_LANGUAGE_BADGES}`]
+            : [])
+    ].join(' / ');
+    const languageTooltip = languageBadges
+        .map((badge) => badge.tooltip)
+        .join(' · ');
 
     const tagText = tags.join(' · ');
 
@@ -59,60 +68,47 @@ export function WorldInstanceRowTitle({
 
     return (
         <div className="flex min-w-0 flex-1 items-start">
-            <span className="flex h-6 shrink-0 items-center">
-                <RegionCodeBadge region={parseLocation(location).region} />
+            <span className="flex h-6 w-8 shrink-0 items-center">
+                <RegionCodeBadge
+                    region={parseLocation(location).region}
+                    className="text-muted-foreground/80 border-transparent bg-transparent px-0 text-[11px]"
+                />
             </span>
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <div className="flex min-h-6 min-w-0 items-center gap-2">
+                <div className="flex min-h-6 min-w-0 items-center">
                     {displayName ? (
-                        <span
-                            className="truncate text-sm font-medium"
-                            title={displayName}
-                        >
+                        <span className="truncate text-sm font-medium">
                             {displayName}
                         </span>
                     ) : (
                         locationLabel('min-w-0 text-sm')
                     )}
-                    {visibleBadges.length ? (
-                        <span className="ml-auto inline-flex shrink-0 items-center gap-1">
-                            {visibleBadges.map((badge) => (
-                                <LanguageCodeBadge
-                                    key={badge.code}
-                                    code={badge.code}
-                                    tooltip={badge.tooltip}
-                                />
-                            ))}
-                            {hiddenBadges.length ? (
-                                <LanguageCodeBadge
-                                    code={`+${hiddenBadges.length}`}
-                                    tooltip={hiddenBadges
-                                        .map((badge) => badge.tooltip)
-                                        .join(' · ')}
-                                />
-                            ) : null}
-                        </span>
-                    ) : null}
                 </div>
-                {displayName || tagText ? (
+                {displayName || tagText || languageText ? (
                     <div className="text-muted-foreground flex min-w-0 items-center gap-2 text-xs">
                         {displayName
-                            ? locationLabel('min-w-0 shrink text-xs')
+                            ? locationLabel(
+                                  'min-w-0 shrink text-xs [&_button]:text-xs'
+                              )
                             : null}
                         {tagText ? (
-                            <span className="min-w-0 truncate" title={tagText}>
-                                {tagText}
-                            </span>
+                            <span className="min-w-0 truncate">{tagText}</span>
+                        ) : null}
+                        {languageText ? (
+                            <HintTooltip label={languageTooltip}>
+                                <span className="shrink-0 text-[11px]">
+                                    {languageText}
+                                </span>
+                            </HintTooltip>
                         ) : null}
                     </div>
                 ) : null}
                 {description ? (
-                    <p
-                        className="text-muted-foreground line-clamp-2 text-xs break-words whitespace-pre-line"
-                        title={description}
-                    >
-                        {description}
-                    </p>
+                    <HintTooltip label={description}>
+                        <p className="text-muted-foreground truncate text-xs">
+                            {description}
+                        </p>
+                    </HintTooltip>
                 ) : null}
             </div>
         </div>
