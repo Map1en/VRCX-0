@@ -81,10 +81,15 @@ fn set_vrchat_user_moderation_from_root(
     });
 
     if moderation_type != 0 {
-        lines.push(format!("{user_id} {moderation_type:03}"));
+        lines.push(format!("{user_id:<64}{moderation_type:03}"));
     }
 
-    std::fs::write(&path, lines.join("\n"))?;
+    // VRChat requires a 64-byte key field and CRLF after every record, including the last.
+    let mut content = lines.join("\r\n");
+    if !lines.is_empty() {
+        content.push_str("\r\n");
+    }
+    std::fs::write(&path, content)?;
     Ok(true)
 }
 

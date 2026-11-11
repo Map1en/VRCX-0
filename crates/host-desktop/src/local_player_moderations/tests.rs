@@ -83,7 +83,7 @@ fn update_preserves_other_users_and_unparsed_lines() {
     assert!(updated);
     assert_eq!(
         read(&dir.moderation_path("usr_current")),
-        "usr_other 001\nmalformed\nusr_target 004"
+        format!("usr_other 001\r\nmalformed\r\n{:<64}004\r\n", "usr_target")
     );
 }
 
@@ -97,16 +97,50 @@ fn zero_deletes_the_target_without_adding_a_replacement() {
 
     set_vrchat_user_moderation_from_root(&dir.path, "usr_current", "usr_target", 0).unwrap();
 
-    assert_eq!(read(&dir.moderation_path("usr_current")), "usr_other 002");
+    assert_eq!(
+        read(&dir.moderation_path("usr_current")),
+        "usr_other 002\r\n"
+    );
 }
 
 #[test]
-fn new_moderation_uses_three_character_numeric_format() {
+fn new_moderation_uses_padded_key_three_digit_value_and_crlf() {
     let dir = TestDir::new("format");
 
     set_vrchat_user_moderation_from_root(&dir.path, "usr_current", "usr_target", 7).unwrap();
 
-    assert_eq!(read(&dir.moderation_path("usr_current")), "usr_target 007");
+    let content = read(&dir.moderation_path("usr_current"));
+    assert_eq!(content, format!("{:<64}007\r\n", "usr_target"));
+    assert_eq!(content.len(), 69);
+}
+
+#[test]
+fn resetting_one_avatar_preserves_other_vrchat_records_byte_for_byte() {
+    let dir = TestDir::new("reset-preserves-records");
+    let shown = format!("{:<64}005\r\n", "usr_11111111-1111-1111-1111-111111111111");
+    let hidden = format!("{:<64}004\r\n", "usr_22222222-2222-2222-2222-222222222222");
+    let target = "usr_33333333-3333-3333-3333-333333333333";
+    dir.write_moderations(
+        "usr_current",
+        &format!("{shown}{target:<64}005\r\n{hidden}"),
+    );
+
+    set_vrchat_user_moderation_from_root(&dir.path, "usr_current", target, 0).unwrap();
+
+    assert_eq!(
+        read(&dir.moderation_path("usr_current")),
+        format!("{shown}{hidden}")
+    );
+}
+
+#[test]
+fn resetting_the_last_avatar_leaves_an_empty_file() {
+    let dir = TestDir::new("reset-last");
+    dir.write_moderations("usr_current", &format!("{:<64}005\r\n", "usr_target"));
+
+    set_vrchat_user_moderation_from_root(&dir.path, "usr_current", "usr_target", 0).unwrap();
+
+    assert_eq!(read(&dir.moderation_path("usr_current")), "");
 }
 
 #[test]
